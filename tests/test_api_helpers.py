@@ -1,4 +1,8 @@
-from api_helpers import normalize_citation_sources, normalize_perspectives, normalize_summary_text
+from api_helpers import (
+    normalize_citation_sources,
+    normalize_perspectives,
+    normalize_summary_text,
+)
 
 
 def test_normalize_summary_text_dedupes_and_strips_noise():
@@ -19,9 +23,18 @@ def test_normalize_summary_text_dedupes_and_strips_noise():
 def test_normalize_perspectives_infers_angles_and_dedupes():
     raw = [
         "Повеќето извори се вртат околу царините и рокот за обраќање.",
-        {"angle": "Перспектива", "content": "Повеќето извори се вртат околу царините и рокот за обраќање."},
-        {"label": "Перспектива", "text": "Разликите најмногу се во акцентот и формулацијата."},
-        {"angle": "", "content": "Останува нејасно дали мерките ќе стапат веднаш на сила."},
+        {
+            "angle": "Перспектива",
+            "content": "Повеќето извори се вртат околу царините и рокот за обраќање.",
+        },
+        {
+            "label": "Перспектива",
+            "text": "Разликите најмногу се во акцентот и формулацијата.",
+        },
+        {
+            "angle": "",
+            "content": "Останува нејасно дали мерките ќе стапат веднаш на сила.",
+        },
     ]
 
     result = normalize_perspectives(raw)
@@ -34,7 +47,13 @@ def test_normalize_perspectives_infers_angles_and_dedupes():
 
 def test_normalize_citation_sources_orders_and_cleans_rows():
     raw = [
-        {"source": " МИА ", "title": " Наслов ", "link": "https://example.com/1", "created_at": "2026-04-05T12:00:00", "category": " Свет "},
+        {
+            "source": " МИА ",
+            "title": " Наслов ",
+            "link": "https://example.com/1",
+            "created_at": "2026-04-05T12:00:00",
+            "category": " Свет ",
+        },
         {"source": "DW", "title": "Втор наслов", "link": "https://example.com/2"},
     ]
 
@@ -44,4 +63,3 @@ def test_normalize_citation_sources_orders_and_cleans_rows():
     assert result[0]["source"] == "МИА"
     assert result[0]["title"] == "Наслов"
     assert result[0]["category"] == "Свет"
-

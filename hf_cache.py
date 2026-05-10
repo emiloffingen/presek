@@ -7,7 +7,7 @@ def configure_huggingface_cache() -> str:
     production_shared = "/home/emiloffingen/presek-runtime/shared/huggingface"
     if "PYTEST_CURRENT_TEST" in os.environ:
         production_shared = "/non/existent/path/for/tests"
-    
+
     app_root = os.path.dirname(os.path.abspath(__file__))
     if os.path.basename(app_root) == "current":
         shared_root = os.path.join(os.path.dirname(app_root), "shared", "huggingface")
@@ -28,5 +28,7 @@ def configure_huggingface_cache() -> str:
 
     os.environ.setdefault("HF_HOME", cache_root)
     os.environ.setdefault("HF_HUB_CACHE", os.path.join(cache_root, "hub"))
-    os.environ.setdefault("SENTENCE_TRANSFORMERS_HOME", os.path.join(cache_root, "sentence_transformers"))
+    os.environ.setdefault(
+        "SENTENCE_TRANSFORMERS_HOME", os.path.join(cache_root, "sentence_transformers")
+    )
     return cache_root

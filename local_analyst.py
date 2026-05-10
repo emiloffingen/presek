@@ -11,7 +11,7 @@ log = logging.getLogger("presek.analyst")
 
 # Config for Gemma 2 2B on 2-core CPU
 MODEL_PATH = os.environ.get("LOCAL_MODEL_PATH", "models/gemma-2-2b-it-Q4_K_M.gguf")
-N_THREADS = int(os.environ.get("MODEL_THREADS", "2")) 
+N_THREADS = int(os.environ.get("MODEL_THREADS", "2"))
 MODEL_CONTEXT = int(os.environ.get("LOCAL_MODEL_CONTEXT", "4096"))
 MAX_PROMPT_CHARS = int(os.environ.get("LOCAL_MODEL_MAX_PROMPT_CHARS", "9000"))
 
@@ -25,6 +25,7 @@ string ::= "\\"" ([^"\\\\\\x00-\\x1F] | "\\\\" (["\\\\/bfnrt] | "u" [0-9a-fA-F] 
 number ::= ("-"? ([0-9] | [1-9] [0-9]*)) ("." [0-9]+)? ([eE] [-+]? [0-9]+)? ws
 ws ::= ([ \\t\\n\\r])*
 """
+
 
 class LocalAnalyst:
     _instance = None
@@ -46,14 +47,16 @@ class LocalAnalyst:
     def _load_model(self):
         if self.model is not None:
             return True
-        
+
         with self.load_lock:
             # Check again inside lock to prevent double loading
             if self.model is not None:
                 return True
 
             if not os.path.exists(MODEL_PATH):
-                log.warning(f"Local model not found at {MODEL_PATH}. Deep Local tasks will be skipped.")
+                log.warning(
+                    f"Local model not found at {MODEL_PATH}. Deep Local tasks will be skipped."
+                )
                 return False
 
             try:
@@ -63,7 +66,7 @@ class LocalAnalyst:
                     model_path=MODEL_PATH,
                     n_ctx=MODEL_CONTEXT,
                     n_threads=N_THREADS,
-                    verbose=False
+                    verbose=False,
                 )
                 log.info(f"[analyst] Gemma 2 2B loaded in {time.time()-t0:.1f}s")
                 return True
@@ -71,7 +74,13 @@ class LocalAnalyst:
                 log.error(f"[analyst] Failed to load local model: {e}")
                 return False
 
-    def analyze(self, prompt: str, system_prompt: str, max_tokens: int = 512, use_grammar: bool = False) -> Optional[str]:
+    def analyze(
+        self,
+        prompt: str,
+        system_prompt: str,
+        max_tokens: int = 512,
+        use_grammar: bool = False,
+    ) -> Optional[str]:
         if not self._load_model():
             return None
 
@@ -83,20 +92,23 @@ class LocalAnalyst:
                 system_prompt = f"Зборувај ИСКЛУЧИВО на стандарден литературен македонски јазик. ЗАБРАНЕТО е користење на бугарски, српски или хрватски зборови или форми. {system_prompt}"
 
             if len(prompt) > MAX_PROMPT_CHARS:
-                prompt = prompt[:MAX_PROMPT_CHARS] + "\n\n[Контекстот е скратен за локалниот модел.]"
+                prompt = (
+                    prompt[:MAX_PROMPT_CHARS]
+                    + "\n\n[Контекстот е скратен за локалниот модел.]"
+                )
 
             # Gemma 2 Instruct format (optimized for a single user turn).
             full_prompt = f"<start_of_turn>user\n{system_prompt}\n\n{prompt}<end_of_turn>\n<start_of_turn>model\n"
-            
+
             output = self.model(
                 full_prompt,
                 max_tokens=max_tokens,
                 stop=["<end_of_turn>", "<eos>", "###"],
                 echo=False,
-                temperature=0.1, # Low temperature for analytical consistency
-                grammar=self.grammar if use_grammar else None
+                temperature=0.1,  # Low temperature for analytical consistency
+                grammar=self.grammar if use_grammar else None,
             )
-            return output['choices'][0]['text'].strip()
+            return output["choices"][0]["text"].strip()
         except Exception as e:
             log.error(f"[analyst] Generation failed: {e}")
             return None
@@ -124,12 +136,12 @@ class LocalAnalyst:
             "Врати само чист JSON.\n\n"
             "ПРИМЕР:\n"
             "Влез: Владата денеска одлучи да ги зголеми пензиите за 5 проценти почнувајќи од септември...\n"
-            "Излез: {\"facts\": [\"Зголемување на пензиите за 5%\", \"Мерката стапува на сила од септември\", \"Одлука на Владата\"], \"entities\": [\"Влада\"], \"sentiment\": \"позитивен\", \"pulse\": 75}"
+            'Излез: {"facts": ["Зголемување на пензиите за 5%", "Мерката стапува на сила од септември", "Одлука на Владата"], "entities": ["Влада"], "sentiment": "позитивен", "pulse": 75}'
         )
         raw = self.analyze(text[:1500], system, max_tokens=400, use_grammar=True)
         if not raw:
             return {"error": "no_response"}
-            
+
         try:
             return json.loads(raw)
         except Exception as e:
@@ -151,13 +163,21 @@ class LocalAnalyst:
         prompt = "АНАЛИЗИРАЈ ГИ ОВИЕ ИЗВОРИ:\n" + "\n".join(titles_with_sources)
         raw = self.analyze(prompt, system, max_tokens=256, use_grammar=True)
         if not raw:
-            return {"score": 50, "verdict": "Стандардна покриеност", "bias_detected": False}
-            
+            return {
+                "score": 50,
+                "verdict": "Стандардна покриеност",
+                "bias_detected": False,
+            }
+
         try:
             return json.loads(raw)
         except Exception as e:
             log.debug(f"JSON parse error in assess_pluralism: {e}")
-            return {"score": 50, "verdict": "Стандардна покриеност", "bias_detected": False}
+            return {
+                "score": 50,
+                "verdict": "Стандардна покриеност",
+                "bias_detected": False,
+            }
 
     def detect_echo(self, article_text: str, cluster_context: str) -> float:
         """Detects if an article is a unique report or just a 'copy-paste' (echo)."""
@@ -169,7 +189,7 @@ class LocalAnalyst:
         result = self.analyze(prompt, system, max_tokens=10)
         if not result:
             return 1.0
-            
+
         try:
             matches = re.findall(r"[\d.]+", result)
             if matches:
@@ -188,19 +208,24 @@ class LocalAnalyst:
             "Врати го одговорот во JSON формат со полиња: 'answer' (текст со цитати) и 'suggestions' (листа од 3 прашања).\n\n"
             "ПРИМЕР:\n"
             "Влез: Кој е најавениот износ за помош?\\nКонтекст: [МТВ] Владата издвои 10 милиони евра...\n"
-            "Излез: {\"answer\": \"Владата најави помош во износ од 10 милиони евра [МТВ].\", \"suggestions\": [\"Кога ќе се исплати помошта?\", \"Кој ги исполнува критериумите?\", \"Каков е ефектот врз буџетот?\"]}"
+            'Излез: {"answer": "Владата најави помош во износ од 10 милиони евра [МТВ].", "suggestions": ["Кога ќе се исплати помошта?", "Кој ги исполнува критериумите?", "Каков е ефектот врз буџетот?"]}'
         )
         prompt = f"ПРАШАЊЕ: {query}\nКОНТЕКСТ: {context}"
         raw = self.analyze(prompt, system, max_tokens=800, use_grammar=True)
-        
+
         try:
             return json.loads(raw)
         except (json.JSONDecodeError, TypeError, ValueError):
             # Fallback if JSON fails (though grammar should prevent this)
             return {
                 "answer": raw if raw else "Нема доволно информации.",
-                "suggestions": ["Кои се клучните актери?", "Каков е економскиот ефект?", "Кои се следните чекори?"]
+                "suggestions": [
+                    "Кои се клучните актери?",
+                    "Каков е економскиот ефект?",
+                    "Кои се следните чекори?",
+                ],
             }
+
 
 # Singleton instance
 analyst = LocalAnalyst()

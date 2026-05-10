@@ -5,6 +5,7 @@ import time
 from fastapi import FastAPI, Request
 from fastapi.responses import Response
 import fastapi
+
 if not hasattr(fastapi, "responses"):
     import fastapi.responses
 from fastapi.responses import JSONResponse, FileResponse, RedirectResponse
@@ -27,6 +28,7 @@ from version import APP_VERSION, APP_VERSION_LABEL, get_full_version_info
 
 # Initialize logging early (before other imports)
 from logging_config import get_logger
+
 # early_setup() already called by logging_config import
 
 # Initialize Logging - use centralized config
@@ -37,7 +39,7 @@ app = FastAPI(
     title="Пресек API",
     version=APP_VERSION,
     docs_url="/api/docs" if os.environ.get("ENV") != "production" else None,
-    redoc_url="/api/redoc" if os.environ.get("ENV") != "production" else None
+    redoc_url="/api/redoc" if os.environ.get("ENV") != "production" else None,
 )
 from health import _probe_database, _probe_redis
 from api_helpers import (
@@ -49,7 +51,9 @@ from api_helpers import (
 cors_origins = os.environ.get("CORS_ORIGINS", "")
 if cors_origins == "*" and os.environ.get("ENV") == "production":
     cors_origins = ["https://presek.live", "https://www.presek.live"]
-    log.warning("CORS_ORIGINS was '*', defaulting to presek.live for production security")
+    log.warning(
+        "CORS_ORIGINS was '*', defaulting to presek.live for production security"
+    )
 else:
     cors_origins = cors_origins.split(",") if cors_origins else ["*"]
 
@@ -69,6 +73,7 @@ if _rate_limiter_enabled:
     app.add_middleware(SlowAPIMiddleware)
 
 from routes.security import create_security_middleware
+
 create_security_middleware(app)
 
 
@@ -88,9 +93,11 @@ async def validate_input_length(request: Request, call_next):
         if len(value) > MAX_QUERY_PARAM_LENGTH:
             return JSONResponse(
                 status_code=400,
-                content={"error": f"Параметарот '{name}' ја надминува максималната должина од {MAX_QUERY_PARAM_LENGTH} карактери"}
+                content={
+                    "error": f"Параметарот '{name}' ја надминува максималната должина од {MAX_QUERY_PARAM_LENGTH} карактери"
+                },
             )
-    
+
     # Check Content-Length for POST/PUT/PATCH requests
     if request.method in ("POST", "PUT", "PATCH"):
         content_length = request.headers.get("content-length")
@@ -99,11 +106,16 @@ async def validate_input_length(request: Request, call_next):
                 if int(content_length) > MAX_BODY_SIZE:
                     return JSONResponse(
                         status_code=413,
-                        content={"error": f"Големината на барањето ја надминува максималната дозволена големина од {MAX_BODY_SIZE // (1024*1024)}MB"}
+                        content={
+                            "error": f"Големината на барањето ја надминува максималната дозволена големина од {MAX_BODY_SIZE // (1024*1024)}MB"
+                        },
                     )
             except ValueError:
-                return JSONResponse(status_code=400, content={"error": "Невалиден Content-Length наслов"})
-    
+                return JSONResponse(
+                    status_code=400,
+                    content={"error": "Невалиден Content-Length наслов"},
+                )
+
     return await call_next(request)
 
 
@@ -111,6 +123,7 @@ async def validate_input_length(request: Request, call_next):
 # Rate Limit Exceeded Handler
 # =============================================================================
 if _rate_limiter_enabled:
+
     @app.exception_handler(RateLimitExceeded)
     async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
         """Return JSON response for rate limit exceeded errors."""
@@ -119,14 +132,15 @@ if _rate_limiter_enabled:
             content={
                 "error": "Премногу барања",
                 "detail": f"Надминато е ограничувањето за барања: {exc.detail}",
-                "status": "rate_limit_exceeded"
+                "status": "rate_limit_exceeded",
             },
-            headers={"Retry-After": str(getattr(exc, "retry_after", 60))}
+            headers={"Retry-After": str(getattr(exc, "retry_after", 60))},
         )
 
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 # Startup Event
 @app.on_event("startup")
@@ -137,17 +151,22 @@ async def startup_event():
     else:
         log.warning("Rate limiting disabled - slowapi not installed")
 
+
 # Import and include routers
 from routes import home, news, intelligence, profile, stats, system, admin
 
 
-
-def _safe_rank_cluster_citations(question: str, answer: str, articles, citation_numbers) -> list[dict]:
+def _safe_rank_cluster_citations(
+    question: str, answer: str, articles, citation_numbers
+) -> list[dict]:
     try:
         return _rank_cluster_citations(question, answer, articles, citation_numbers)
     except Exception as e:
-        log.warning(f"[fastapi cluster_answer] citation ranking failed: {e}", exc_info=True)
+        log.warning(
+            f"[fastapi cluster_answer] citation ranking failed: {e}", exc_info=True
+        )
         return []
+
 
 @app.get("/api/health")
 @exempt_from_rate_limit
@@ -155,7 +174,7 @@ async def health_check():
     """Comprehensive health check for smoke tests and monitoring."""
     import health
     from health import _freshness_payload, _start_time
-    
+
     db_status = _probe_database()
     redis_status = _probe_redis()
     db_public = dict(db_status)
@@ -164,7 +183,7 @@ async def health_check():
     redis_public.pop("url", None)
     redis_public.pop("error", None)
     redis_public.pop("config", None)
-    
+
     # Get last refresh from Redis
     last_refresh = {}
     try:
@@ -181,26 +200,30 @@ async def health_check():
         "database": db_public,
         "redis": redis_public,
         "freshness": _freshness_payload(last_refresh.get("time")),
-        "time": datetime.datetime.now().isoformat()
+        "time": datetime.datetime.now().isoformat(),
     }
 
 
 if hasattr(app, "head"):
+
     @app.head("/api/health")
     @exempt_from_rate_limit
     async def health_check_head():
         """Allow HEAD-based uptime probes to validate that the health route exists."""
         return Response(status_code=200)
 
+
 @app.get("/api/version")
 async def version_info():
     return get_full_version_info()
+
 
 @app.get("/metrics")
 @exempt_from_rate_limit
 async def metrics():
     """Expose Prometheus metrics."""
     return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
 
 # Proxy for images to avoid CORS/Mixed content issues on client
 @app.get("/proxy")
@@ -212,43 +235,65 @@ async def image_proxy(
     cat: str | None = None,
 ):
     from routes.system import proxy_image
+
     return await proxy_image(url=url, w=w, cid=cid, t=t, cat=cat)
+
 
 # Legacy/Helper endpoints
 @app.get("/favicon.ico")
 async def favicon():
     return FileResponse("static/img/favicon.ico")
 
+
 @app.get("/ads.txt")
 async def ads_txt():
     return FileResponse("static/ads.txt")
+
 
 @app.get("/manifest.json")
 async def manifest():
     return FileResponse("static/manifest.json")
 
+
 @app.get("/sw.js")
 async def sw_js():
     return FileResponse("sw.js")
+
 
 @app.get("/static/generated/{filename}")
 async def get_generated_image(filename: str):
     return FileResponse(os.path.join("static", "generated", filename))
 
+
 @app.get("/api/delivery/track/{event_type}")
 @exempt_from_rate_limit
-async def track_delivery_event(event_type: str, event_id: int, redirect: str = "/briefing"):
+async def track_delivery_event(
+    event_type: str, event_id: int, redirect: str = "/briefing"
+):
     from routes.common import _safe_tracking_redirect_path
-    p = await db.async_execute_one("SELECT sync_token, delivery_kind, channel, target, cluster_id FROM delivery_tracking_events WHERE id = %s", (event_id,))
+
+    p = await db.async_execute_one(
+        "SELECT sync_token, delivery_kind, channel, target, cluster_id FROM delivery_tracking_events WHERE id = %s",
+        (event_id,),
+    )
     if p:
         await db.async_execute(
             "INSERT INTO delivery_tracking_events (parent_event_id, event_type, sync_token, delivery_kind, channel, target, cluster_id) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-            (event_id, event_type, p['sync_token'], p['delivery_kind'], p['channel'], p['target'], p['cluster_id']),
-            fetch=False
+            (
+                event_id,
+                event_type,
+                p["sync_token"],
+                p["delivery_kind"],
+                p["channel"],
+                p["target"],
+                p["cluster_id"],
+            ),
+            fetch=False,
         )
     _public_site_url = os.environ.get("PUBLIC_SITE_URL", "https://presek.live")
     redirect = _safe_tracking_redirect_path(redirect)
     return RedirectResponse(url=f"{_public_site_url}{redirect}", status_code=302)
+
 
 # API Versioning - support both /api (legacy) and /api/v1 (versioned)
 # For new development, use /api/v1. Legacy /api routes are maintained for backward compatibility.

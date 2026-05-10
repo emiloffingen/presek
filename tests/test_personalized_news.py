@@ -6,28 +6,40 @@ from unittest.mock import patch, MagicMock, AsyncMock
 
 # --- Robust Global FastAPI Mocks ---
 
+
 class _FakeHTTPException(Exception):
     def __init__(self, status_code, detail=None):
         super().__init__(detail)
         self.status_code = status_code
         self.detail = detail
 
+
 def _get_fake_fastapi_modules():
     import importlib.machinery
+
     def make_mod(name):
         m = types.ModuleType(name)
         m.__spec__ = importlib.machinery.ModuleSpec(name, None)
         return m
 
     f = make_mod("fastapi")
+
     class _FakeRouter:
         def get(self, *args, **kwargs):
-            def decorator(fn): return fn
+            def decorator(fn):
+                return fn
+
             return decorator
+
         def post(self, *args, **kwargs):
-            def decorator(fn): return fn
+            def decorator(fn):
+                return fn
+
             return decorator
-        def include_router(self, *args, **kwargs): pass
+
+        def include_router(self, *args, **kwargs):
+            pass
+
     f.APIRouter = _FakeRouter
     f.Request = MagicMock
     f.HTTPException = _FakeHTTPException
@@ -36,7 +48,7 @@ def _get_fake_fastapi_modules():
     f.Query = MagicMock
     f.BackgroundTasks = MagicMock
     f.Form = MagicMock
-    
+
     r = make_mod("fastapi.responses")
     r.JSONResponse = MagicMock
     r.RedirectResponse = MagicMock
@@ -56,7 +68,7 @@ def _get_fake_fastapi_modules():
     s.status = MagicMock
 
     return {
-        "fastapi": f, 
+        "fastapi": f,
         "fastapi.responses": r,
         "starlette": s,
         "starlette.responses": s_resp,
@@ -65,9 +77,11 @@ def _get_fake_fastapi_modules():
         "starlette.status": MagicMock(),
     }
 
+
 mock_db_manager = MagicMock()
 mock_db_manager.async_execute = AsyncMock(return_value=[])
 mock_db_manager.async_get_synthesis_ids = AsyncMock(return_value=[])
+
 
 @pytest.fixture(scope="module", autouse=True)
 def _install_test_module_mocks():
@@ -88,21 +102,24 @@ def _install_test_module_mocks():
         for name in ["routes", "routes.profile", "routes.news", "routes.security"]:
             sys.modules.pop(name, None)
 
+
 # --- End Mocks ---
+
 
 def test_get_personalized_news_sync_empty_profile():
     from routes.profile import get_personalized_news_sync
-    
+
     request = MagicMock()
     request.json = AsyncMock(return_value={"profile": {"recentClusters": []}})
-    
+
     response = asyncio.run(get_personalized_news_sync(request))
     assert response["status"] == "success"
     assert response["results"] == []
 
+
 def test_get_personalized_news_sync_with_history():
     from routes.profile import get_personalized_news_sync
-    
+
     # Mock data
     recent = [{"cluster_id": "c1"}]
     mock_db_manager.async_execute.side_effect = [
@@ -119,26 +136,31 @@ def test_get_personalized_news_sync_with_history():
         ],
         # 4. Fetch metadata
         [
-            {"cluster_id": "c2", "representative_image": "img.jpg", "dominant_color": "#fff"}
-        ]
+            {
+                "cluster_id": "c2",
+                "representative_image": "img.jpg",
+                "dominant_color": "#fff",
+            }
+        ],
     ]
     mock_db_manager.async_get_synthesis_ids.return_value = ["c2"]
-    
+
     request = MagicMock()
-    request.json = AsyncMock(return_value={
-        "profile": {
-            "recentClusters": recent
-        },
-        "limit": 5
-    })
-    
-    with patch("routes.profile.annotate_cluster_articles", side_effect=lambda x, **kw: x), \
-         patch("routes.profile.score_cluster", return_value=5.0), \
-         patch("routes.profile.is_balanced", return_value=True), \
-         patch("routes.profile.score_cluster_for_homepage", return_value=4.0), \
-         patch("routes.news._public_article_payload", side_effect=lambda x: x):
+    request.json = AsyncMock(
+        return_value={"profile": {"recentClusters": recent}, "limit": 5}
+    )
+
+    with (
+        patch(
+            "routes.profile.annotate_cluster_articles", side_effect=lambda x, **kw: x
+        ),
+        patch("routes.profile.score_cluster", return_value=5.0),
+        patch("routes.profile.is_balanced", return_value=True),
+        patch("routes.profile.score_cluster_for_homepage", return_value=4.0),
+        patch("routes.news._public_article_payload", side_effect=lambda x: x),
+    ):
         response = asyncio.run(get_personalized_news_sync(request))
-    
+
     assert response["status"] == "success"
     assert len(response["results"]) == 1
     assert response["results"][0]["cluster_id"] == "c2"

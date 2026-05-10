@@ -1,6 +1,7 @@
 """
 security.py - Centralized security utilities and middleware for Presek API
 """
+
 import os
 import re
 import secrets
@@ -21,14 +22,17 @@ def _raise_http_error(status_code: int, detail: str):
         exc_cls = HTTPException
     raise exc_cls(status_code=status_code, detail=detail)
 
+
 # =============================================================================
 # Input Validation Helpers
 # =============================================================================
 
-CLUSTER_ID_PATTERN = re.compile(r'^[a-f0-9\-]{6,64}$')
-UUID_PATTERN = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.I)
-DATE_PATTERN = re.compile(r'^\d{4}-\d{2}-\d{2}$')
-EMAIL_PATTERN = re.compile(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$')
+CLUSTER_ID_PATTERN = re.compile(r"^[a-f0-9\-]{6,64}$")
+UUID_PATTERN = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I
+)
+DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+EMAIL_PATTERN = re.compile(r"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$")
 
 
 def validate_cluster_id(cluster_id: str, param_name: str = "cluster_id") -> str:
@@ -38,7 +42,9 @@ def validate_cluster_id(cluster_id: str, param_name: str = "cluster_id") -> str:
     if not isinstance(cluster_id, str):
         raise HTTPException(status_code=400, detail=f"{param_name} мора да биде текст")
     if not CLUSTER_ID_PATTERN.match(cluster_id):
-        _raise_http_error(400, f"Invalid {param_name}. Must be 6-64 character hexadecimal string.")
+        _raise_http_error(
+            400, f"Invalid {param_name}. Must be 6-64 character hexadecimal string."
+        )
     return cluster_id
 
 
@@ -63,44 +69,67 @@ def validate_email(email: str, param_name: str = "email") -> str:
     return email
 
 
-def validate_string_param(value: str, param_name: str, max_length: int = 200, min_length: int = 0, allow_empty: bool = True) -> str:
+def validate_string_param(
+    value: str,
+    param_name: str,
+    max_length: int = 200,
+    min_length: int = 0,
+    allow_empty: bool = True,
+) -> str:
     """Validate a string parameter with length constraints."""
     if value is None:
         if allow_empty:
             return ""
         raise HTTPException(status_code=400, detail=f"{param_name} е задолжително")
-    
+
     if not isinstance(value, str):
         raise HTTPException(status_code=400, detail=f"{param_name} мора да биде текст")
-    
+
     value = value.strip()
     if not allow_empty and not value:
         raise HTTPException(status_code=400, detail=f"{param_name} е задолжително")
-    
+
     if len(value) > max_length:
-        raise HTTPException(status_code=400, detail=f"{param_name} ја надминува максималната должина од {max_length}")
-    
+        raise HTTPException(
+            status_code=400,
+            detail=f"{param_name} ја надминува максималната должина од {max_length}",
+        )
+
     if len(value) < min_length and value:
-        raise HTTPException(status_code=400, detail=f"{param_name} мора да има барем {min_length} карактери")
-    
+        raise HTTPException(
+            status_code=400,
+            detail=f"{param_name} мора да има барем {min_length} карактери",
+        )
+
     return value
 
 
-def validate_list_param(items, param_name: str, max_items: int = 20, max_item_length: int = 100) -> list:
+def validate_list_param(
+    items, param_name: str, max_items: int = 20, max_item_length: int = 100
+) -> list:
     """Validate a list parameter."""
     if items is None:
         return []
     if not isinstance(items, list):
         raise HTTPException(status_code=400, detail=f"{param_name} мора да биде листа")
     if len(items) > max_items:
-        raise HTTPException(status_code=400, detail=f"{param_name} го надминува максимумот од {max_items} елементи")
+        raise HTTPException(
+            status_code=400,
+            detail=f"{param_name} го надминува максимумот од {max_items} елементи",
+        )
     result = []
     for item in items:
         if not isinstance(item, str):
-            raise HTTPException(status_code=400, detail=f"Сите елементи во {param_name} мора да бидат текст")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Сите елементи во {param_name} мора да бидат текст",
+            )
         cleaned = item.strip()
         if len(cleaned) > max_item_length:
-            raise HTTPException(status_code=400, detail=f"Елементите во {param_name} ја надминуваат максималната должина од {max_item_length}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Елементите во {param_name} ја надминуваат максималната должина од {max_item_length}",
+            )
         if cleaned:
             result.append(cleaned)
     return result
@@ -109,6 +138,7 @@ def validate_list_param(items, param_name: str, max_items: int = 20, max_item_le
 # =============================================================================
 # Authentication Helpers
 # =============================================================================
+
 
 def get_admin_token() -> str:
     """Get the configured admin token."""
@@ -135,6 +165,7 @@ def require_admin_token(request: Request) -> None:
 def verify_sync_token(request: Request) -> str:
     """Extract and validate sync token from request."""
     from .common import _extract_sync_token, _validate_sync_token_value
+
     return _validate_sync_token_value(_extract_sync_token(request))
 
 
@@ -142,18 +173,21 @@ def verify_sync_token(request: Request) -> str:
 # Security Headers Middleware
 # =============================================================================
 
+
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Middleware to add security headers to all responses."""
-    
+
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         response = await call_next(request)
-        
+
         # Add security headers
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
-        
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=63072000; includeSubDomains; preload"
+        )
+
         # Content Security Policy
         csp = (
             "default-src 'self'; "
@@ -168,18 +202,18 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "form-action 'self';"
         )
         response.headers["Content-Security-Policy"] = csp
-        
+
         # Permissions Policy
         response.headers["Permissions-Policy"] = (
             "accelerometer=(), camera=(), geolocation=(), gyroscope=(), "
             "magnetometer=(), microphone=(), payment=(), usb=()"
         )
-        
+
         # Cross-Origin policies
         response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
         response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
         response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
-        
+
         return response
 
 
@@ -194,7 +228,7 @@ MAX_HEADER_VALUE_LENGTH = 2000
 
 class RequestSizeMiddleware(BaseHTTPMiddleware):
     """Middleware to limit request sizes."""
-    
+
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         # Check declared body size before reading the request downstream.
         content_length = request.headers.get("content-length")
@@ -203,18 +237,22 @@ class RequestSizeMiddleware(BaseHTTPMiddleware):
                 if int(content_length) > MAX_REQUEST_BODY_SIZE:
                     _raise_http_error(413, "Request body exceeds maximum size")
             except ValueError:
-                raise HTTPException(status_code=400, detail="Невалиден Content-Length наслов")
+                raise HTTPException(
+                    status_code=400, detail="Невалиден Content-Length наслов"
+                )
 
         # Check query parameters
         for key, value in request.query_params.items():
             if len(value) > MAX_QUERY_PARAM_LENGTH:
-                _raise_http_error(400, f"Query parameter '{key}' exceeds maximum length")
-        
+                _raise_http_error(
+                    400, f"Query parameter '{key}' exceeds maximum length"
+                )
+
         # Check headers
         for key, value in request.headers.items():
             if isinstance(value, str) and len(value) > MAX_HEADER_VALUE_LENGTH:
                 _raise_http_error(400, f"Header '{key}' exceeds maximum length")
-        
+
         response = await call_next(request)
         return response
 
@@ -223,29 +261,30 @@ class RequestSizeMiddleware(BaseHTTPMiddleware):
 # Rate Limit Middleware (Enhanced)
 # =============================================================================
 
+
 class EnhancedRateLimitMiddleware(BaseHTTPMiddleware):
     """Enhanced rate limiting with per-endpoint and per-IP tracking."""
-    
+
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         from .common import _client_ip_for_request, _is_rate_limited_path
         from utils import check_rate_limit
         from .common import _rate_limit_error_payload
-        
+
         client_ip = _client_ip_for_request(request)
-        
+
         # Skip rate limiting for localhost and private IPs in development
         if client_ip in {"127.0.0.1", "::1", "::ffff:127.0.0.1"}:
             return await call_next(request)
-        
+
         # Check if this path should be rate limited
         if _is_rate_limited_path(request.url.path):
             if not check_rate_limit(client_ip, request.url.path):
                 return Response(
                     status_code=429,
                     content=_rate_limit_error_payload(),
-                    headers={"Retry-After": "60"}
+                    headers={"Retry-After": "60"},
                 )
-        
+
         return await call_next(request)
 
 
@@ -253,9 +292,11 @@ class EnhancedRateLimitMiddleware(BaseHTTPMiddleware):
 # Input Sanitization Helpers
 # =============================================================================
 
+
 def sanitize_html(text: str) -> str:
     """Safely remove HTML tags and escape special characters using bleach."""
     import bleach
+
     if not text:
         return ""
     # Clean HTML using bleach with a very restrictive whitelist (none)
@@ -275,6 +316,7 @@ def safe_contains(haystack: str, needle: str) -> bool:
 # Middleware Factory
 # =============================================================================
 
+
 def create_security_middleware(app):
     """Create and add all security middleware to the app."""
     app.add_middleware(SecurityHeadersMiddleware)
@@ -286,7 +328,6 @@ def create_security_middleware(app):
 # =============================================================================
 # Dependency Injectors for Route Protection
 # =============================================================================
-
 
 
 async def admin_user(request: Request) -> bool:

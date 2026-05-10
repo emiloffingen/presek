@@ -11,18 +11,29 @@ from fastapi.responses import JSONResponse, HTMLResponse
 
 from database import db_manager as db
 from utils import (
-    cached_response, set_cache, score_cluster, rank_articles_in_cluster,
-    calculate_reading_time, is_balanced, build_editor_analytics_payload,
+    cached_response,
+    set_cache,
+    score_cluster,
+    rank_articles_in_cluster,
+    calculate_reading_time,
+    is_balanced,
+    build_editor_analytics_payload,
     redis_client,
-    build_source_reputation_rows
+    build_source_reputation_rows,
 )
 from health import get_source_statuses, reset_source_policy
-from config import BREAKING_SCORE_THRESHOLD, SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY, API_MAX_Q_LEN
+from config import (
+    BREAKING_SCORE_THRESHOLD,
+    SOURCE_CREDIBILITY,
+    DEFAULT_CREDIBILITY,
+    API_MAX_Q_LEN,
+)
 from .common import _source_admin_authorized, _error_json
 from .security import validate_date, validate_string_param, validate_email
 
 log = logging.getLogger("presek")
 router = APIRouter()
+
 
 class QuoteOfTheDay(BaseModel):
     quote: str
@@ -30,6 +41,7 @@ class QuoteOfTheDay(BaseModel):
     generated_article: Optional[str] = None
     cluster_id: Optional[str] = None
     title: Optional[str] = None
+
 
 class StatsSummaryResponse(BaseModel):
     status: str
@@ -40,7 +52,9 @@ class StatsSummaryResponse(BaseModel):
     quote_of_the_day: Optional[QuoteOfTheDay] = None
     intelligence: Dict[str, Any]
 
+
 _FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"
+
 
 def get_date_range(date_str: str):
     """Returns (start, end) timestamps for a given YYYY-MM-DD string.
@@ -65,13 +79,13 @@ def _pick_quote_of_the_day(row) -> dict | None:
             clean = re.sub(r"^[-•*]\s*", "", line).strip()
             if not clean:
                 continue
-            
+
             # Remove citation markers like [1], [12], [6]
             clean = re.sub(r"\[\d+\]", "", clean).strip()
-            
+
             # Remove redundant nested quotes at start/end
-            clean = clean.strip("„“\"\'")
-            
+            clean = clean.strip("„“\"'")
+
             if clean:
                 return clean[:280]
         return ""
@@ -90,6 +104,7 @@ def _pick_quote_of_the_day(row) -> dict | None:
         "title": row.get("title"),
     }
 
+
 # Removed get_briefing route
 
 
@@ -97,8 +112,9 @@ def _pick_quote_of_the_day(row) -> dict | None:
 async def get_archive_heatmap():
     cache_key = "archive:heatmap:v2"
     cached = cached_response(cache_key, ttl=3600)
-    if cached: return {"status": "success", "data": cached}
-    
+    if cached:
+        return {"status": "success", "data": cached}
+
     # Use articles table as source of truth for historical presence
     sql = """
         WITH daily_stats AS (
@@ -119,32 +135,56 @@ async def get_archive_heatmap():
         ORDER BY day ASC
     """
     rows = await db.async_execute(sql)
-    fmt = [{"day": r["day"].isoformat() if hasattr(r["day"], "isoformat") else str(r["day"]), "total_clusters": r["total_clusters"], "breaking_clusters": r["breaking_clusters"]} for r in rows]
+    fmt = [
+        {
+            "day": (
+                r["day"].isoformat()
+                if hasattr(r["day"], "isoformat")
+                else str(r["day"])
+            ),
+            "total_clusters": r["total_clusters"],
+            "breaking_clusters": r["breaking_clusters"],
+        }
+        for r in rows
+    ]
     set_cache(cache_key, fmt, ttl=3600)
     return {"status": "success", "data": fmt}
 
+
 @router.get("/archive")
-async def get_archive(date: str = Query(...), q: str = "", source: str = "", topic: str = "", page: int = 0, page_size: int = 50):
+async def get_archive(
+    date: str = Query(...),
+    q: str = "",
+    source: str = "",
+    topic: str = "",
+    page: int = 0,
+    page_size: int = 50,
+):
     try:
         # Validate inputs
         validate_date(date)
         q = validate_string_param(q, "q", max_length=API_MAX_Q_LEN, allow_empty=True)
-        source = validate_string_param(source, "source", max_length=200, allow_empty=True)
+        source = validate_string_param(
+            source, "source", max_length=200, allow_empty=True
+        )
         topic = validate_string_param(topic, "topic", max_length=200, allow_empty=True)
-        
+
         if page < 0 or page > 1000:
             raise HTTPException(status_code=400, detail="Невалиден број на страница")
         if page_size < 1 or page_size > 50:
-            raise HTTPException(status_code=400, detail="Невалидна големина на страница (1-50)")
-        
+            raise HTTPException(
+                status_code=400, detail="Невалидна големина на страница (1-50)"
+            )
+
         # 1. Caching - Only for historical dates (older than today)
         cache_key = f"api:archive:v3:{date}:{q}:{source}:{topic}:{page}:{page_size}"
         today_str = datetime.now().strftime("%Y-%m-%d")
-        is_today = (date == today_str)
-        
+        is_today = date == today_str
+
         if not is_today:
             cached = cached_response(cache_key)
-            if cached: return cached
+            if cached:
+                return cached
 
         d_start, d_end = get_date_range(date)
 
@@ -157,7 +197,9 @@ async def get_archive(date: str = Query(...), q: str = "", source: str = "", top
             """
             params = [d_start, d_end, f"%{q}%", f"%{q}%", f"%{q}%"]
         else:
-            base_sql = "SELECT * FROM articles WHERE created_at >= %s AND created_at < %s"
+            base_sql = (
+                "SELECT * FROM articles WHERE created_at >= %s AND created_at < %s"
+            )
             params = [d_start, d_end]
 
         if source:
@@ -166,12 +208,12 @@ async def get_archive(date: str = Query(...), q: str = "", source: str = "", top
         if topic:
             base_sql += " AND topic = %s"
             params.append(topic)
-        
+
         base_sql += " ORDER BY created_at DESC LIMIT 1500"
-        
+
         # 3. Optimized metrics queries (combined where possible)
         # Combined count and unique sources
-        metrics_sql = f"SELECT COUNT(*) as total, COUNT(DISTINCT source) as source_count FROM articles WHERE created_at >= %s AND created_at < %s"
+        metrics_sql = "SELECT COUNT(*) as total, COUNT(DISTINCT source) as source_count FROM articles WHERE created_at >= %s AND created_at < %s"
         metrics_params = [d_start, d_end]
         if q:
             metrics_sql += " AND (title ILIKE %s OR summary ILIKE %s)"
@@ -182,7 +224,7 @@ async def get_archive(date: str = Query(...), q: str = "", source: str = "", top
         if topic:
             metrics_sql += " AND topic = %s"
             metrics_params.append(topic)
-        
+
         # Groupings
         group_source_sql = "SELECT source, COUNT(*) AS n FROM articles WHERE created_at >= %s AND created_at < %s"
         group_source_params = [d_start, d_end]
@@ -193,7 +235,7 @@ async def get_archive(date: str = Query(...), q: str = "", source: str = "", top
             group_source_sql += " AND topic = %s"
             group_source_params.append(topic)
         group_source_sql += " GROUP BY source ORDER BY n DESC LIMIT 8"
-        
+
         group_topic_sql = "SELECT topic, COUNT(*) AS n FROM articles WHERE created_at >= %s AND created_at < %s"
         group_topic_params = [d_start, d_end]
         if source:
@@ -209,64 +251,96 @@ async def get_archive(date: str = Query(...), q: str = "", source: str = "", top
             db.async_execute(base_sql, tuple(params)),
             db.async_execute_one(metrics_sql, tuple(metrics_params)),
             db.async_execute(group_source_sql, tuple(group_source_params)),
-            db.async_execute(group_topic_sql, tuple(group_topic_params))
+            db.async_execute(group_topic_sql, tuple(group_topic_params)),
         )
 
         clusters = defaultdict(list)
         for r in rows:
             r["reading_time"] = calculate_reading_time(r.get("description", ""))
             clusters[r["cluster_id"]].append(r)
-        
+
         ranked = [rank_articles_in_cluster(arts) for arts in clusters.values()]
-        
+
         if q:
-             from embeddings import generate_query_embedding, parse_embedding_value
-             import numpy as np
-             query_vec = generate_query_embedding(q)
-             if query_vec:
-                 for arts in ranked:
-                     best_sim = 0
-                     for a in arts:
-                         if a.get('embedding'):
-                             a_vec = parse_embedding_value(a['embedding'])
-                             sim = np.dot(query_vec, a_vec) / (np.linalg.norm(query_vec) * np.linalg.norm(a_vec))
-                             if sim > best_sim: best_sim = sim
-                     arts[0]['match_score'] = best_sim
-                 ranked.sort(key=lambda x: x[0].get('match_score', 0), reverse=True)
+            from embeddings import generate_query_embedding, parse_embedding_value
+            import numpy as np
+
+            query_vec = generate_query_embedding(q)
+            if query_vec:
+                for arts in ranked:
+                    best_sim = 0
+                    for a in arts:
+                        if a.get("embedding"):
+                            a_vec = parse_embedding_value(a["embedding"])
+                            sim = np.dot(query_vec, a_vec) / (
+                                np.linalg.norm(query_vec) * np.linalg.norm(a_vec)
+                            )
+                            if sim > best_sim:
+                                best_sim = sim
+                    arts[0]["match_score"] = best_sim
+                ranked.sort(key=lambda x: x[0].get("match_score", 0), reverse=True)
         else:
             ranked.sort(key=score_cluster, reverse=True)
 
         offset = page * page_size
-        paged = ranked[offset: offset + page_size]
+        paged = ranked[offset : offset + page_size]
         cids = [c[0]["cluster_id"] for c in paged]
         s_ids = set(await db.async_get_synthesis_ids(cids)) if cids else set()
-        rep_images = {r["cluster_id"]: r["representative_image"] for r in await db.async_execute("SELECT cluster_id, representative_image FROM cluster_metadata WHERE cluster_id = ANY(%s)", (cids,))} if cids else {}
-        payload = [{"cluster_id": c[0]["cluster_id"], "articles": c, "representative_image": rep_images.get(c[0]["cluster_id"]), "reading_time": c[0].get('reading_time', 1), "score": round(score_cluster(c), 3), "is_breaking": score_cluster(c) >= BREAKING_SCORE_THRESHOLD, "has_synthesis": c[0]["cluster_id"] in s_ids, "has_balanced": is_balanced(c)} for c in paged]
-        
+        rep_images = (
+            {
+                r["cluster_id"]: r["representative_image"]
+                for r in await db.async_execute(
+                    "SELECT cluster_id, representative_image FROM cluster_metadata WHERE cluster_id = ANY(%s)",
+                    (cids,),
+                )
+            }
+            if cids
+            else {}
+        )
+        payload = [
+            {
+                "cluster_id": c[0]["cluster_id"],
+                "articles": c,
+                "representative_image": rep_images.get(c[0]["cluster_id"]),
+                "reading_time": c[0].get("reading_time", 1),
+                "score": round(score_cluster(c), 3),
+                "is_breaking": score_cluster(c) >= BREAKING_SCORE_THRESHOLD,
+                "has_synthesis": c[0]["cluster_id"] in s_ids,
+                "has_balanced": is_balanced(c),
+            }
+            for c in paged
+        ]
+
         res = {
-            "clusters": payload, 
+            "clusters": payload,
             "total": metrics["total"],
             "sources": metrics["source_count"],
-            "date": date, "q": q, "source": source, "topic": topic, "page": page, "page_size": page_size, 
-            "has_more": offset + page_size < len(ranked), 
+            "date": date,
+            "q": q,
+            "source": source,
+            "topic": topic,
+            "page": page,
+            "page_size": page_size,
+            "has_more": offset + page_size < len(ranked),
             "total_clusters": len(ranked),
             "top_sources": top_sources,
-            "top_topics": top_topics
+            "top_topics": top_topics,
         }
-        
+
         # Set cache with long TTL for past dates
         if not is_today:
-            set_cache(cache_key, res, ttl=43200) # 12 hours
+            set_cache(cache_key, res, ttl=43200)  # 12 hours
         else:
-            set_cache(cache_key, res, ttl=300) # 5 mins for today
-            
+            set_cache(cache_key, res, ttl=300)  # 5 mins for today
+
         return res
     except ValueError:
-        raise HTTPException(status_code=400, detail="Невалиден формат на датум. Користете YYYY-MM-DD")
+        raise HTTPException(
+            status_code=400, detail="Невалиден формат на датум. Користете YYYY-MM-DD"
+        )
     except Exception as e:
         log.error(f"Archive Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Неуспешно вчитување на архива")
-
 
 
 @router.get("/archive/daily-briefing")
@@ -275,12 +349,14 @@ async def get_archive_daily_briefing(date: str = Query(...)):
     validate_date(date)
     cache_key = f"archive:briefing:{date}:v1"
     cached = cached_response(cache_key, ttl=86400)
-    if cached: return cached
+    if cached:
+        return cached
 
     d_start, d_end = get_date_range(date)
 
     # Find the top 3 clusters for that day and their summaries
-    top_clusters = await db.async_execute("""
+    top_clusters = await db.async_execute(
+        """
         SELECT s.cluster_id, s.summary, s.synthetic_headline
         FROM cluster_summaries s
         JOIN articles a ON s.cluster_id = a.cluster_id
@@ -288,21 +364,24 @@ async def get_archive_daily_briefing(date: str = Query(...)):
         GROUP BY s.cluster_id, s.summary, s.synthetic_headline, s.pluralism_score
         ORDER BY s.pluralism_score DESC, COUNT(a.id) DESC
         LIMIT 3
-    """, (d_start, d_end))
+    """,
+        (d_start, d_end),
+    )
 
     if not top_clusters:
         return {"briefing": None}
 
     briefing_parts = []
     for c in top_clusters:
-        title = c['synthetic_headline'] or "Важна тема"
-        summary = (c['summary'] or "").split('\n')[0] # Take first bullet
+        title = c["synthetic_headline"] or "Важна тема"
+        summary = (c["summary"] or "").split("\n")[0]  # Take first bullet
         briefing_parts.append(f"**{title}**: {summary}")
 
     briefing = " • ".join(briefing_parts)
     res = {"briefing": briefing}
     set_cache(cache_key, res, ttl=86400)
     return res
+
 
 @router.get("/archive/on-this-day")
 async def get_archive_on_this_day(date: str = Query(...)):
@@ -313,8 +392,9 @@ async def get_archive_on_this_day(date: str = Query(...)):
     for years in [1, 2]:
         past_date = (dt - timedelta(days=365 * years)).strftime("%Y-%m-%d")
         d_start, d_end = get_date_range(past_date)
-        
-        past_cluster = await db.async_execute_one("""
+
+        past_cluster = await db.async_execute_one(
+            """
             SELECT s.cluster_id, s.summary, s.synthetic_headline, m.representative_image
             FROM cluster_summaries s
             JOIN articles a ON s.cluster_id = a.cluster_id
@@ -323,37 +403,51 @@ async def get_archive_on_this_day(date: str = Query(...)):
             GROUP BY s.cluster_id, s.summary, s.synthetic_headline, m.representative_image, s.pluralism_score
             ORDER BY s.pluralism_score DESC, COUNT(a.id) DESC
             LIMIT 1
-        """, (d_start, d_end))
-        
+        """,
+            (d_start, d_end),
+        )
+
         if past_cluster:
             return {
                 "years_ago": years,
                 "date": past_date,
-                "cluster_id": past_cluster['cluster_id'],
-                "title": past_cluster['synthetic_headline'],
-                "summary": past_cluster['summary'],
-                "image": past_cluster['representative_image']
+                "cluster_id": past_cluster["cluster_id"],
+                "title": past_cluster["synthetic_headline"],
+                "summary": past_cluster["summary"],
+                "image": past_cluster["representative_image"],
             }
-            
+
     return {"on_this_day": None}
+
 
 @router.get("/stats")
 async def get_stats_route():
     return {"status": "success", "data": await asyncio.to_thread(db.get_stats)}
 
+
 @router.get("/stats/summary", response_model=StatsSummaryResponse)
 async def get_stats_summary():
     cache_key = "api:stats:summary:v4"
     cached = cached_response(cache_key)
-    if cached: return cached
-    
-    last_24h_res = await db.async_execute_one(f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours'")
+    if cached:
+        return cached
+
+    last_24h_res = await db.async_execute_one(
+        f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours'"
+    )
     last_24h = last_24h_res["count"] if last_24h_res else 0
-    
-    last_1h_res = await db.async_execute_one(f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '1 hour'")
+
+    last_1h_res = await db.async_execute_one(
+        f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '1 hour'"
+    )
     last_1h = last_1h_res["count"] if last_1h_res else 0
-    total_feeds = (await db.async_execute_one("SELECT COUNT(*) FROM sources WHERE is_active = TRUE"))["count"] or 0
-    quote_row = await db.async_execute_one("""
+    total_feeds = (
+        await db.async_execute_one(
+            "SELECT COUNT(*) FROM sources WHERE is_active = TRUE"
+        )
+    )["count"] or 0
+    quote_row = await db.async_execute_one(
+        """
         SELECT s.quote, s.summary, s.generated_article, s.cluster_id,
                (SELECT title FROM articles WHERE cluster_id = s.cluster_id ORDER BY created_at DESC LIMIT 1) as title
         FROM cluster_summaries s
@@ -373,24 +467,33 @@ async def get_stats_summary():
             COALESCE((s.sentiment->'tone_analysis'->>'objectivity')::float, 0.5) DESC,
             s.created_at DESC
         LIMIT 1
-    """)
+    """
+    )
     quote = _pick_quote_of_the_day(quote_row)
-    
+
     runtime_events = {}
     try:
         hgetall = redis_client.hgetall
         if hgetall.__class__.__module__.startswith("unittest.mock"):
             bucket = datetime.now(timezone.utc).strftime("%Y-%m-%d")
             runtime_events = hgetall(f"presek:runtime_events:{bucket}") or {}
-        elif os.environ.get("REDIS_URL") and not os.environ.get("CODEX_SANDBOX_NETWORK_DISABLED"):
+        elif os.environ.get("REDIS_URL") and not os.environ.get(
+            "CODEX_SANDBOX_NETWORK_DISABLED"
+        ):
             bucket = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-            runtime_events = await asyncio.to_thread(hgetall, f"presek:runtime_events:{bucket}") or {}
+            runtime_events = (
+                await asyncio.to_thread(hgetall, f"presek:runtime_events:{bucket}")
+                or {}
+            )
     except Exception as e:
         log.warning(f"[stats] runtime event read failed: {e}")
 
     from .common import build_intelligence_summary_payload
-    intelligence = await build_intelligence_summary_payload(last_24h, runtime_events=runtime_events)
-    
+
+    intelligence = await build_intelligence_summary_payload(
+        last_24h, runtime_events=runtime_events
+    )
+
     res = {
         "status": "success",
         "last_24h": last_24h,
@@ -404,6 +507,7 @@ async def get_stats_summary():
     set_cache(cache_key, res, ttl=300)
     return res
 
+
 @router.post("/newsletter/subscribe")
 async def subscribe_newsletter(request: Request):
     try:
@@ -412,123 +516,190 @@ async def subscribe_newsletter(request: Request):
         raise HTTPException(status_code=400, detail="Невалиден JSON")
     email = validate_email(body.get("email", ""), "email")
     try:
-        await db.async_execute("INSERT INTO subscribers (email) VALUES (%s) ON CONFLICT (email) DO UPDATE SET is_active = TRUE", (email,), fetch=False)
+        await db.async_execute(
+            "INSERT INTO subscribers (email) VALUES (%s) ON CONFLICT (email) DO UPDATE SET is_active = TRUE",
+            (email,),
+            fetch=False,
+        )
     except Exception as e:
         log.warning(f"[subscribe] DB error: {e}")
-        return {"status": "error", "message": "Грешка при зачувување. Обидете се подоцна."}
+        return {
+            "status": "error",
+            "message": "Грешка при зачувување. Обидете се подоцна.",
+        }
     return {"status": "success", "message": "Успешно се пријавивте!"}
+
 
 @router.get("/newsletter/unsubscribe")
 async def unsubscribe_newsletter(email: str):
     try:
-        await db.async_execute("UPDATE subscribers SET is_active = FALSE WHERE email = %s", (email,), fetch=False)
+        await db.async_execute(
+            "UPDATE subscribers SET is_active = FALSE WHERE email = %s",
+            (email,),
+            fetch=False,
+        )
     except Exception as e:
         log.warning(f"[unsubscribe] DB error: {e}")
         return HTMLResponse(content="<h1>Грешка при одјавување.</h1>", status_code=500)
     return HTMLResponse(content="<h1>Успешно се одјавивте од билтенот на Пресек.</h1>")
+
 
 async def _fetch_stats_parallel():
     """Fetch independent database queries in parallel for better performance."""
     # Queries that don't depend on each other can run concurrently
     coroutines = [
         # Basic stats
-        db.async_execute_one(f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours'"),
-        db.async_execute_one("SELECT ROUND(pg_database_size(current_database()) / 1048576.0, 1) AS mb"),
-        db.async_execute_one("SELECT MIN(created_at) AS oldest, MAX(created_at) AS newest FROM articles"),
+        db.async_execute_one(
+            f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours'"
+        ),
+        db.async_execute_one(
+            "SELECT ROUND(pg_database_size(current_database()) / 1048576.0, 1) AS mb"
+        ),
+        db.async_execute_one(
+            "SELECT MIN(created_at) AS oldest, MAX(created_at) AS newest FROM articles"
+        ),
         db.async_execute_one("SELECT COUNT(*) FROM articles"),
-        db.async_execute_one(f"SELECT COUNT(DISTINCT source) AS n FROM articles"),
-        
+        db.async_execute_one("SELECT COUNT(DISTINCT source) AS n FROM articles"),
         # Profile stats
-        db.async_execute_one("""SELECT COUNT(*) AS synced_profiles, COUNT(*) FILTER (WHERE updated_at >= NOW() - INTERVAL '7 days') AS active_profiles_7d, 
+        db.async_execute_one(
+            """SELECT COUNT(*) AS synced_profiles, COUNT(*) FILTER (WHERE updated_at >= NOW() - INTERVAL '7 days') AS active_profiles_7d, 
            COUNT(*) FILTER (WHERE jsonb_array_length(COALESCE(profile_data->'recentClusters', '[]'::jsonb)) > 0) AS profiles_with_recent_reads, 
            COUNT(*) FILTER (WHERE jsonb_array_length(COALESCE(profile_data->'followedTopics', '[]'::jsonb)) > 0) AS profiles_following_topics, 
-           COUNT(*) FILTER (WHERE jsonb_array_length(COALESCE(profile_data->'followedSources', '[]'::jsonb)) > 0) AS profiles_following_sources FROM synced_reader_profiles"""),
-        
+           COUNT(*) FILTER (WHERE jsonb_array_length(COALESCE(profile_data->'followedSources', '[]'::jsonb)) > 0) AS profiles_following_sources FROM synced_reader_profiles"""
+        ),
         # Delivery stats
-        db.async_execute_one("""SELECT COUNT(*) FILTER (WHERE is_active = TRUE) AS delivery_active, COUNT(*) FILTER (WHERE COALESCE(target, '') != '') AS delivery_targets, 
+        db.async_execute_one(
+            """SELECT COUNT(*) FILTER (WHERE is_active = TRUE) AS delivery_active, COUNT(*) FILTER (WHERE COALESCE(target, '') != '') AS delivery_targets, 
            COUNT(*) FILTER (WHERE morning_briefing = TRUE) AS morning_briefings, COUNT(*) FILTER (WHERE weekly_digest = TRUE) AS weekly_digests, 
            COUNT(*) FILTER (WHERE breaking_topics = TRUE) AS breaking_topic_alerts, COUNT(*) FILTER (WHERE breaking_sources = TRUE) AS breaking_source_alerts 
-           FROM synced_delivery_subscriptions"""),
-        
+           FROM synced_delivery_subscriptions"""
+        ),
         # Tracking stats
-        db.async_execute_one("SELECT COUNT(*) FILTER (WHERE event_type = 'send') AS sends_7d, COUNT(*) FILTER (WHERE event_type = 'open') AS opens_7d, COUNT(*) FILTER (WHERE event_type = 'click') AS clicks_7d FROM delivery_tracking_events WHERE created_at >= NOW() - INTERVAL '7 days'"),
+        db.async_execute_one(
+            "SELECT COUNT(*) FILTER (WHERE event_type = 'send') AS sends_7d, COUNT(*) FILTER (WHERE event_type = 'open') AS opens_7d, COUNT(*) FILTER (WHERE event_type = 'click') AS clicks_7d FROM delivery_tracking_events WHERE created_at >= NOW() - INTERVAL '7 days'"
+        ),
     ]
-    
+
     return await asyncio.gather(*coroutines, return_exceptions=True)
 
 
 @router.get("/stats/full")
 async def get_stats_full(request: Request):
-    if not _source_admin_authorized(request): raise HTTPException(status_code=403, detail="Забрането")
+    if not _source_admin_authorized(request):
+        raise HTTPException(status_code=403, detail="Забрането")
     cached = cached_response("stats:full", ttl=120)
-    if cached: return cached
+    if cached:
+        return cached
 
     lock_key = "lock:stats_full_generation"
     try:
         if not redis_client.set(lock_key, "1", nx=True, ex=30):
-            return JSONResponse(status_code=429, content={"message": "Статистиката се генерира, обидете се повторно за кратко."})
+            return JSONResponse(
+                status_code=429,
+                content={
+                    "message": "Статистиката се генерира, обидете се повторно за кратко."
+                },
+            )
     except Exception as e:
         log.warning(f"Redis lock check failed for stats: {e}")
 
     try:
         # Fetch independent queries in parallel
         results = await _fetch_stats_parallel()
-        
+
         # Assign results with error handling
-        last_24h = (results[0] or {}).get("count") if results and len(results) > 0 and isinstance(results[0], dict) else 0
+        last_24h = (
+            (results[0] or {}).get("count")
+            if results and len(results) > 0 and isinstance(results[0], dict)
+            else 0
+        )
         db_size_res = results[1] if len(results) > 1 else {}
         db_size = float(db_size_res.get("mb")) if db_size_res else 0.0
         dates = results[2] if len(results) > 2 else {}
         total_articles_row = results[3] if len(results) > 3 else {}
-        total_articles = total_articles_row.get("count") if isinstance(total_articles_row, dict) else 0
+        total_articles = (
+            total_articles_row.get("count")
+            if isinstance(total_articles_row, dict)
+            else 0
+        )
         total_feeds_row = results[4] if len(results) > 4 else {}
-        total_feeds = total_feeds_row.get("n") if isinstance(total_feeds_row, dict) else 0
+        total_feeds = (
+            total_feeds_row.get("n") if isinstance(total_feeds_row, dict) else 0
+        )
         profile_stats = results[5] if len(results) > 5 else {}
         delivery_stats = results[6] if len(results) > 6 else {}
         tracking_stats = results[7] if len(results) > 7 else {}
-        
+
         # Log any errors from parallel execution
         for i, r in enumerate(results):
             if isinstance(r, Exception):
                 log.error(f"Parallel stats query {i} failed: {r}")
-        
+
         # Sequential queries that depend on results or are complex
         from .common import build_intelligence_summary_payload
+
         intelligence = await build_intelligence_summary_payload(last_24h or 0)
-        
+
         # These aggregation queries can also run in parallel with each other
         by_source, by_category_raw, velocity, speed_leaderboard = await asyncio.gather(
-            db.async_execute(f"SELECT source, COUNT(*) AS n FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY source ORDER BY n DESC LIMIT 10"),
-            db.async_execute("SELECT category, COUNT(*) AS n FROM articles GROUP BY category ORDER BY n DESC LIMIT 8"),
-            db.async_execute(f"SELECT date_trunc('hour', {_FRESHNESS_EXPR}) AS t, COUNT(*) AS n FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY t ORDER BY t"),
-            db.async_execute(f"SELECT source, COUNT(*) AS first_count FROM (SELECT DISTINCT ON (cluster_id) cluster_id, source FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '7 days' ORDER BY cluster_id, {_FRESHNESS_EXPR} ASC, created_at ASC) first_articles GROUP BY source ORDER BY first_count DESC LIMIT 8"),
-            return_exceptions=True
+            db.async_execute(
+                f"SELECT source, COUNT(*) AS n FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY source ORDER BY n DESC LIMIT 10"
+            ),
+            db.async_execute(
+                "SELECT category, COUNT(*) AS n FROM articles GROUP BY category ORDER BY n DESC LIMIT 8"
+            ),
+            db.async_execute(
+                f"SELECT date_trunc('hour', {_FRESHNESS_EXPR}) AS t, COUNT(*) AS n FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY t ORDER BY t"
+            ),
+            db.async_execute(
+                f"SELECT source, COUNT(*) AS first_count FROM (SELECT DISTINCT ON (cluster_id) cluster_id, source FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '7 days' ORDER BY cluster_id, {_FRESHNESS_EXPR} ASC, created_at ASC) first_articles GROUP BY source ORDER BY first_count DESC LIMIT 8"
+            ),
+            return_exceptions=True,
         )
-        
+
         # Editor analytics queries - run in parallel
-        topics_followed, sources_followed, delivery_kind_stats, surface_stats_30d, suggestion_kind_stats, surface_stats_7d = await asyncio.gather(
-            db.async_execute("SELECT value AS topic, COUNT(*) AS followers FROM synced_reader_profiles, jsonb_array_elements_text(COALESCE(profile_data->'followedTopics', '[]'::jsonb)) AS value GROUP BY value ORDER BY followers DESC LIMIT 6"),
-            db.async_execute("SELECT value AS source, COUNT(*) AS followers FROM synced_reader_profiles, jsonb_array_elements_text(COALESCE(profile_data->'followedSources', '[]'::jsonb)) AS value GROUP BY value ORDER BY followers DESC LIMIT 6"),
-            db.async_execute("SELECT delivery_kind, COUNT(*) FILTER (WHERE event_type = 'send') AS sends, COUNT(*) FILTER (WHERE event_type = 'open') AS opens, COUNT(*) FILTER (WHERE event_type = 'click') AS clicks FROM delivery_tracking_events WHERE created_at >= NOW() - INTERVAL '30 days' GROUP BY delivery_kind"),
-            db.async_execute("""SELECT surface, COUNT(*) FILTER (WHERE event_type = 'impression') AS impressions, COUNT(*) FILTER (WHERE event_type = 'follow') AS follows, 
+        (
+            topics_followed,
+            sources_followed,
+            delivery_kind_stats,
+            surface_stats_30d,
+            suggestion_kind_stats,
+            surface_stats_7d,
+        ) = await asyncio.gather(
+            db.async_execute(
+                "SELECT value AS topic, COUNT(*) AS followers FROM synced_reader_profiles, jsonb_array_elements_text(COALESCE(profile_data->'followedTopics', '[]'::jsonb)) AS value GROUP BY value ORDER BY followers DESC LIMIT 6"
+            ),
+            db.async_execute(
+                "SELECT value AS source, COUNT(*) AS followers FROM synced_reader_profiles, jsonb_array_elements_text(COALESCE(profile_data->'followedSources', '[]'::jsonb)) AS value GROUP BY value ORDER BY followers DESC LIMIT 6"
+            ),
+            db.async_execute(
+                "SELECT delivery_kind, COUNT(*) FILTER (WHERE event_type = 'send') AS sends, COUNT(*) FILTER (WHERE event_type = 'open') AS opens, COUNT(*) FILTER (WHERE event_type = 'click') AS clicks FROM delivery_tracking_events WHERE created_at >= NOW() - INTERVAL '30 days' GROUP BY delivery_kind"
+            ),
+            db.async_execute(
+                """SELECT surface, COUNT(*) FILTER (WHERE event_type = 'impression') AS impressions, COUNT(*) FILTER (WHERE event_type = 'follow') AS follows, 
                COUNT(*) FILTER (WHERE event_type = 'dismiss') AS dismissals, 
                COUNT(*) FILTER (WHERE event_type = 'follow' AND suggestion_kind = 'topic') AS topic_follows, 
                COUNT(*) FILTER (WHERE event_type = 'follow' AND suggestion_kind = 'source') AS source_follows 
-               FROM suggestion_surface_events WHERE created_at >= NOW() - INTERVAL '30 days' GROUP BY surface"""),
-            db.async_execute("""SELECT suggestion_kind, COUNT(*) FILTER (WHERE event_type = 'impression') AS impressions, COUNT(*) FILTER (WHERE event_type = 'follow') AS follows, 
+               FROM suggestion_surface_events WHERE created_at >= NOW() - INTERVAL '30 days' GROUP BY surface"""
+            ),
+            db.async_execute(
+                """SELECT suggestion_kind, COUNT(*) FILTER (WHERE event_type = 'impression') AS impressions, COUNT(*) FILTER (WHERE event_type = 'follow') AS follows, 
                COUNT(*) FILTER (WHERE event_type = 'dismiss') AS dismissals 
-               FROM suggestion_surface_events WHERE created_at >= NOW() - INTERVAL '30 days' AND COALESCE(suggestion_kind, '') != '' GROUP BY suggestion_kind"""),
-            db.async_execute("""SELECT surface, COUNT(*) FILTER (WHERE event_type = 'impression' AND created_at >= NOW() - INTERVAL '7 days') AS current_impressions, 
+               FROM suggestion_surface_events WHERE created_at >= NOW() - INTERVAL '30 days' AND COALESCE(suggestion_kind, '') != '' GROUP BY suggestion_kind"""
+            ),
+            db.async_execute(
+                """SELECT surface, COUNT(*) FILTER (WHERE event_type = 'impression' AND created_at >= NOW() - INTERVAL '7 days') AS current_impressions, 
                COUNT(*) FILTER (WHERE event_type = 'follow' AND created_at >= NOW() - INTERVAL '7 days') AS current_follows, 
                COUNT(*) FILTER (WHERE event_type = 'dismiss' AND created_at >= NOW() - INTERVAL '7 days') AS current_dismissals 
-               FROM suggestion_surface_events WHERE created_at >= NOW() - INTERVAL '7 days' GROUP BY surface"""),
-            return_exceptions=True
+               FROM suggestion_surface_events WHERE created_at >= NOW() - INTERVAL '7 days' GROUP BY surface"""
+            ),
+            return_exceptions=True,
         )
-        
+
         # Handle errors from aggregation queries
         def safe_result(r, default=None):
             return r if not isinstance(r, Exception) else default
-        
+
         res = {
             "total_articles": int(total_articles) if total_articles else 0,
             "last_24h": int(last_24h) if last_24h else 0,
@@ -538,67 +709,119 @@ async def get_stats_full(request: Request):
             "oldest_article": dates.get("oldest") if dates else None,
             "new_article": dates.get("newest") if dates else None,
             "by_source": safe_result(by_source, []),
-            "by_category": [{"category": r["category"] or "Друго", "n": r["n"]} for r in safe_result(by_category_raw, [])],
+            "by_category": [
+                {"category": r["category"] or "Друго", "n": r["n"]}
+                for r in safe_result(by_category_raw, [])
+            ],
             "velocity": [{"t": r["t"], "n": r["n"]} for r in safe_result(velocity, [])],
             "speed_leaderboard": safe_result(speed_leaderboard, []),
             "editor_analytics": build_editor_analytics_payload(
-                profile_stats, 
-                delivery_stats, 
+                profile_stats,
+                delivery_stats,
                 safe_result(topics_followed, []),
                 safe_result(sources_followed, []),
                 tracking_stats,
                 safe_result(delivery_kind_stats, []),
                 safe_result(surface_stats_30d, []),
                 safe_result(suggestion_kind_stats, []),
-                safe_result(surface_stats_7d, [])
+                safe_result(surface_stats_7d, []),
             ),
         }
         set_cache("stats:full", res, ttl=120)
         return res
     except Exception as e:
         log.error(f"Full Stats Error: {e}")
-        raise HTTPException(status_code=500, detail="Неуспешно генерирање на статистики")
+        raise HTTPException(
+            status_code=500, detail="Неуспешно генерирање на статистики"
+        )
     finally:
         try:
             redis_client.delete(lock_key)
         except Exception:
             pass
 
+
 @router.get("/sources")
 async def get_sources_route():
-    rows = await db.async_execute("SELECT name, country, category, credibility, is_active, last_fetched, pause_mode, pause_reason, paused_at FROM sources ORDER BY is_active DESC, name ASC")
-    pulse = await db.async_execute(f"SELECT source, COUNT(*) as count FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY source")
-    speed = await db.async_execute(f"SELECT source, COUNT(*) AS first_count FROM (SELECT DISTINCT ON (cluster_id) cluster_id, source FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '7 days' ORDER BY cluster_id, {_FRESHNESS_EXPR} ASC, created_at ASC) first_articles GROUP BY source ORDER BY first_count DESC")
-    history = await db.async_execute(f"WITH cluster_first AS (SELECT DISTINCT ON (cluster_id) cluster_id, source, {_FRESHNESS_EXPR} AS freshness_time FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '30 days' ORDER BY cluster_id, {_FRESHNESS_EXPR} ASC, created_at ASC), cluster_counts AS (SELECT cluster_id, COUNT(DISTINCT source) AS source_count FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '30 days' GROUP BY cluster_id), source_weeks AS (SELECT source, COUNT(*) FILTER (WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '7 days') AS recent_7d_volume, COUNT(*) FILTER (WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '14 days' AND {_FRESHNESS_EXPR} < NOW() - INTERVAL '7 days') AS previous_7d_volume FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '14 days' GROUP BY source) SELECT cf.source, COUNT(*) AS lead_count_30d, COUNT(*) FILTER (WHERE cc.source_count >= 2) AS corroborated_lead_count_30d, COUNT(*) FILTER (WHERE cc.source_count = 1) AS solo_lead_count_30d, COALESCE(sw.recent_7d_volume, 0) AS recent_7d_volume, COALESCE(sw.previous_7d_volume, 0) AS previous_7d_volume FROM cluster_first cf LEFT JOIN cluster_counts cc ON cc.cluster_id = cf.cluster_id LEFT JOIN source_weeks sw ON sw.source = cf.source GROUP BY cf.source, sw.recent_7d_volume, sw.previous_7d_volume")
-    cats = await db.async_execute(f"SELECT source, category, COUNT(*) as count FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '30 days' AND category IS NOT NULL AND category != '' GROUP BY source, category ORDER BY source, count DESC")
+    rows = await db.async_execute(
+        "SELECT name, country, category, credibility, is_active, last_fetched, pause_mode, pause_reason, paused_at FROM sources ORDER BY is_active DESC, name ASC"
+    )
+    pulse = await db.async_execute(
+        f"SELECT source, COUNT(*) as count FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY source"
+    )
+    speed = await db.async_execute(
+        f"SELECT source, COUNT(*) AS first_count FROM (SELECT DISTINCT ON (cluster_id) cluster_id, source FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '7 days' ORDER BY cluster_id, {_FRESHNESS_EXPR} ASC, created_at ASC) first_articles GROUP BY source ORDER BY first_count DESC"
+    )
+    history = await db.async_execute(
+        f"WITH cluster_first AS (SELECT DISTINCT ON (cluster_id) cluster_id, source, {_FRESHNESS_EXPR} AS freshness_time FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '30 days' ORDER BY cluster_id, {_FRESHNESS_EXPR} ASC, created_at ASC), cluster_counts AS (SELECT cluster_id, COUNT(DISTINCT source) AS source_count FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '30 days' GROUP BY cluster_id), source_weeks AS (SELECT source, COUNT(*) FILTER (WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '7 days') AS recent_7d_volume, COUNT(*) FILTER (WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '14 days' AND {_FRESHNESS_EXPR} < NOW() - INTERVAL '7 days') AS previous_7d_volume FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '14 days' GROUP BY source) SELECT cf.source, COUNT(*) AS lead_count_30d, COUNT(*) FILTER (WHERE cc.source_count >= 2) AS corroborated_lead_count_30d, COUNT(*) FILTER (WHERE cc.source_count = 1) AS solo_lead_count_30d, COALESCE(sw.recent_7d_volume, 0) AS recent_7d_volume, COALESCE(sw.previous_7d_volume, 0) AS previous_7d_volume FROM cluster_first cf LEFT JOIN cluster_counts cc ON cc.cluster_id = cf.cluster_id LEFT JOIN source_weeks sw ON sw.source = cf.source GROUP BY cf.source, sw.recent_7d_volume, sw.previous_7d_volume"
+    )
+    cats = await db.async_execute(
+        f"SELECT source, category, COUNT(*) as count FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '30 days' AND category IS NOT NULL AND category != '' GROUP BY source, category ORDER BY source, count DESC"
+    )
     return build_source_reputation_rows(rows, pulse, speed, history, cats)
+
 
 @router.post("/sources/{name}/control")
 async def control_source_route(name: str, request: Request):
-    if not _source_admin_authorized(request): return _error_json("Unauthorized", 403)
+    if not _source_admin_authorized(request):
+        return _error_json("Unauthorized", 403)
     try:
         payload = await request.json()
     except Exception:
         raise HTTPException(status_code=400, detail="Невалиден JSON")
     action = str(payload.get("action", "")).strip().lower()
-    source = await db.async_execute_one("SELECT credibility FROM sources WHERE name = %s", (name,))
-    if not source: return _error_json("Source not found", 404)
+    source = await db.async_execute_one(
+        "SELECT credibility FROM sources WHERE name = %s", (name,)
+    )
+    if not source:
+        return _error_json("Source not found", 404)
     curr = float(source["credibility"])
-    if action == "pause": await db.async_execute("UPDATE sources SET is_active=FALSE, pause_mode='manual', pause_reason='Manual', paused_at=NOW() WHERE name=%s", (name,), fetch=False)
-    elif action == "resume": await db.async_execute("UPDATE sources SET is_active=TRUE, pause_mode=NULL, pause_reason=NULL, paused_at=NULL WHERE name=%s", (name,), fetch=False); reset_source_policy(name)
-    elif action == "downrank": await db.async_execute("UPDATE sources SET credibility=%s WHERE name=%s", (max(0.4, curr-0.2), name), fetch=False)
-    elif action == "uprank": await db.async_execute("UPDATE sources SET credibility=%s WHERE name=%s", (min(3.0, curr+0.2), name), fetch=False)
-    elif action == "reset": await db.async_execute("UPDATE sources SET credibility=%s, pause_mode=NULL WHERE name=%s", (SOURCE_CREDIBILITY.get(name, DEFAULT_CREDIBILITY), name), fetch=False); reset_source_policy(name)
+    if action == "pause":
+        await db.async_execute(
+            "UPDATE sources SET is_active=FALSE, pause_mode='manual', pause_reason='Manual', paused_at=NOW() WHERE name=%s",
+            (name,),
+            fetch=False,
+        )
+    elif action == "resume":
+        await db.async_execute(
+            "UPDATE sources SET is_active=TRUE, pause_mode=NULL, pause_reason=NULL, paused_at=NULL WHERE name=%s",
+            (name,),
+            fetch=False,
+        )
+        reset_source_policy(name)
+    elif action == "downrank":
+        await db.async_execute(
+            "UPDATE sources SET credibility=%s WHERE name=%s",
+            (max(0.4, curr - 0.2), name),
+            fetch=False,
+        )
+    elif action == "uprank":
+        await db.async_execute(
+            "UPDATE sources SET credibility=%s WHERE name=%s",
+            (min(3.0, curr + 0.2), name),
+            fetch=False,
+        )
+    elif action == "reset":
+        await db.async_execute(
+            "UPDATE sources SET credibility=%s, pause_mode=NULL WHERE name=%s",
+            (SOURCE_CREDIBILITY.get(name, DEFAULT_CREDIBILITY), name),
+            fetch=False,
+        )
+        reset_source_policy(name)
     upd = await db.async_execute_one("SELECT * FROM sources WHERE name = %s", (name,))
-    if upd: upd = dict(upd); upd["source_status"] = get_source_statuses().get(name)
+    if upd:
+        upd = dict(upd)
+        upd["source_status"] = get_source_statuses().get(name)
     return {"status": "success", "source": upd}
+
 
 @router.get("/stats/sentiment-trends")
 async def get_sentiment_trends():
     """Returns average sentiment and tone analysis for the last 7 days."""
     cache_key = "api:stats:sentiment:trends:v1"
     cached = cached_response(cache_key, ttl=1800)
-    if cached: return cached
+    if cached:
+        return cached
 
     sql = """
         SELECT 
@@ -620,20 +843,30 @@ async def get_sentiment_trends():
             score = float(r["avg_score"] or 0)
             # Map score to label
             label = "неутрален"
-            if score > 0.4: label = "позитивен"
-            elif score > 0.1: label = "умерено позитивен"
-            elif score < -0.4: label = "негативен"
-            elif score < -0.1: label = "умерено негативен"
+            if score > 0.4:
+                label = "позитивен"
+            elif score > 0.1:
+                label = "умерено позитивен"
+            elif score < -0.4:
+                label = "негативен"
+            elif score < -0.1:
+                label = "умерено негативен"
 
-            data.append({
-                "day": r["day"].isoformat() if hasattr(r["day"], "isoformat") else str(r["day"]),
-                "score": round(score, 2),
-                "label": label,
-                "objectivity": round(float(r["avg_objectivity"] or 0), 2),
-                "sensationalism": round(float(r["avg_sensationalism"] or 0), 2),
-                "count": r["cluster_count"]
-            })
-        
+            data.append(
+                {
+                    "day": (
+                        r["day"].isoformat()
+                        if hasattr(r["day"], "isoformat")
+                        else str(r["day"])
+                    ),
+                    "score": round(score, 2),
+                    "label": label,
+                    "objectivity": round(float(r["avg_objectivity"] or 0), 2),
+                    "sensationalism": round(float(r["avg_sensationalism"] or 0), 2),
+                    "count": r["cluster_count"],
+                }
+            )
+
         res = {"status": "success", "data": data}
         set_cache(cache_key, res, ttl=1800)
         return res
@@ -641,12 +874,14 @@ async def get_sentiment_trends():
         log.error(f"Sentiment Trends Error: {e}")
         return {"status": "error", "message": "Неуспешно вчитување на сентимент"}
 
+
 @router.get("/stats/mood")
 async def get_current_mood():
     """Returns a real-time 'National Mood' based on today's coverage."""
     cache_key = "api:stats:mood:v1"
     cached = cached_response(cache_key, ttl=600)
-    if cached: return cached
+    if cached:
+        return cached
 
     sql = """
         SELECT 
@@ -660,14 +895,19 @@ async def get_current_mood():
     try:
         rows = await db.async_execute(sql)
         if not rows:
-            return {"status": "success", "mood": "неутрален", "score": 0, "objectivity": 1.0}
-        
+            return {
+                "status": "success",
+                "mood": "неутрален",
+                "score": 0,
+                "objectivity": 1.0,
+            }
+
         valid_scores = [r["score"] for r in rows if r["score"] is not None]
         avg_score = sum(valid_scores) / len(valid_scores) if valid_scores else 0.0
-        
+
         valid_objs = [r["objectivity"] for r in rows if r["objectivity"] is not None]
         avg_obj = sum(valid_objs) / len(valid_objs) if valid_objs else 1.0
-        
+
         # Dominant tone (most frequent)
         tones = [r["tone"] for r in rows if r["tone"]]
         dominant_tone = max(set(tones), key=tones.count) if tones else "неутрален"
@@ -677,7 +917,7 @@ async def get_current_mood():
             "mood": dominant_tone,
             "score": round(avg_score, 2),
             "objectivity": round(avg_obj, 2),
-            "sample_size": len(rows)
+            "sample_size": len(rows),
         }
         set_cache(cache_key, res, ttl=600)
         return res

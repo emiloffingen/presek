@@ -51,13 +51,13 @@ class TestExtractWordsWithFlags:
                 assert not is_proper
 
     def test_punctuation_stripped(self):
-        pairs = extract_words_with_flags("\"Владата\" донесе (мерка)")
+        pairs = extract_words_with_flags('"Владата" донесе (мерка)')
         words = {w for w, _ in pairs}
         # Words should be clean, no quotes or parens
         for w in words:
             assert '"' not in w
-            assert '(' not in w
-            assert ')' not in w
+            assert "(" not in w
+            assert ")" not in w
 
     def test_mixed_cyrillic_latin(self):
         pairs = extract_words_with_flags("NATO одлучи за нови мерки")

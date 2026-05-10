@@ -28,7 +28,9 @@ def test_extract_entities_normalizes_common_latin_script_famous_people(monkeypat
     assert "Володимир Зеленски" in names
 
 
-def test_extract_entities_regex_fallback_rejects_generic_sentence_fragments(monkeypatch):
+def test_extract_entities_regex_fallback_rejects_generic_sentence_fragments(
+    monkeypatch,
+):
     monkeypatch.setattr(entities, "_get_spacy", lambda: None)
 
     result = entities.extract_entities(
@@ -43,11 +45,17 @@ def test_extract_entities_regex_fallback_rejects_generic_sentence_fragments(monk
 
 
 def test_normalize_person_surface_name_title_cases_lowercase_person():
-    assert entities.normalize_person_surface_name("hristijan mickoski") == "Hristijan Mickoski"
+    assert (
+        entities.normalize_person_surface_name("hristijan mickoski")
+        == "Hristijan Mickoski"
+    )
 
 
 def test_normalize_person_surface_name_restores_known_surname_first_person():
-    assert entities.normalize_person_surface_name("мицкоски христијан") == "Христијан Мицкоски"
+    assert (
+        entities.normalize_person_surface_name("мицкоски христијан")
+        == "Христијан Мицкоски"
+    )
 
 
 def test_normalize_person_surface_name_keeps_non_person_tags_stable():

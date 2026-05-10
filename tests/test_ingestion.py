@@ -15,19 +15,26 @@ from ingestion import (
     fill_missing_og_images,
 )
 
+
 def test_normalize_headline():
     assert normalize_headline("ВИДЕО: Ова е наслов") == "Ова е наслов"
     assert normalize_headline("Нормален наслов") == "Нормален наслов"
-    assert normalize_headline("  Ова е наслов со празни места  ") == "Ова е наслов со празни места"
+    assert (
+        normalize_headline("  Ова е наслов со празни места  ")
+        == "Ова е наслов со празни места"
+    )
     assert normalize_headline("") == ""
 
+
 def test_clean_rss_footer():
-    text1 = "This is some news content. The post Some title appeared first on Some source."
+    text1 = (
+        "This is some news content. The post Some title appeared first on Some source."
+    )
     assert clean_rss_footer(text1) == "This is some news content."
-    
+
     text2 = "Content. This article was originally published on Site."
     assert clean_rss_footer(text2) == "Content."
-    
+
     text3 = "News text. Source: https://example.com"
     assert clean_rss_footer(text3) == "News text."
 
@@ -51,19 +58,26 @@ def test_clean_rss_footer_no_match():
 
 
 def test_supported_display_language_rejects_albanian_rss_items():
-    assert is_supported_display_language(
-        "Interi vendos për rinovimin me mesfushorin turk",
-        "Klubi zikaltër e kishte marrë vendimin para dopietës kundër Como.",
-    ) is False
-    assert is_supported_display_language(
-        "Директен судир на возови во Данска",
-        "Неколку лица беа повредени во несреќата.",
-    ) is True
+    assert (
+        is_supported_display_language(
+            "Interi vendos për rinovimin me mesfushorin turk",
+            "Klubi zikaltër e kishte marrë vendimin para dopietës kundër Como.",
+        )
+        is False
+    )
+    assert (
+        is_supported_display_language(
+            "Директен судир на возови во Данска",
+            "Неколку лица беа повредени во несреќата.",
+        )
+        is True
+    )
 
 
 def test_normalize_headline_multiple_prefixes():
     """Only the first matching prefix should be stripped."""
     from ingestion import normalize_headline
+
     assert normalize_headline("ФОТО: Галерија од настанот") == "Галерија од настанот"
     assert normalize_headline("ГАЛЕРИЈА: Слики од Скопје") == "Слики од Скопје"
     assert normalize_headline("ПОТВРДЕНО: Нов договор") == "Нов договор"
@@ -74,6 +88,7 @@ def test_normalize_headline_multiple_prefixes():
 
 def test_normalize_headline_html_tags():
     from ingestion import normalize_headline
+
     assert normalize_headline("<p>Текст</p>") == "Текст"
     assert normalize_headline("<b>Важно</b> <i>резиме</i>") == "Важно резиме"
 
@@ -102,7 +117,9 @@ def test_normalize_candidate_title_removes_clock_noise():
 def test_parse_entry_timestamp_uses_published_parsed():
     fallback = datetime.datetime(2026, 4, 4, 22, 0, 0)
     entry = {"published_parsed": time.struct_time((2026, 4, 4, 20, 30, 0, 0, 0, 0))}
-    assert parse_entry_timestamp(entry, fallback) == datetime.datetime(2026, 4, 4, 20, 30, 0)
+    assert parse_entry_timestamp(entry, fallback) == datetime.datetime(
+        2026, 4, 4, 20, 30, 0
+    )
 
 
 def test_parse_entry_timestamp_rejects_future_dates():
@@ -114,8 +131,18 @@ def test_parse_entry_timestamp_rejects_future_dates():
 def test_extract_image_url_prefers_large_media_image():
     entry = {
         "media_content": [
-            {"url": "https://example.com/thumb.jpg", "type": "image/jpeg", "width": "120", "height": "90"},
-            {"url": "https://example.com/hero.jpg", "type": "image/jpeg", "width": "1400", "height": "900"},
+            {
+                "url": "https://example.com/thumb.jpg",
+                "type": "image/jpeg",
+                "width": "120",
+                "height": "90",
+            },
+            {
+                "url": "https://example.com/hero.jpg",
+                "type": "image/jpeg",
+                "width": "1400",
+                "height": "900",
+            },
         ]
     }
     assert extract_image_url(entry) == "https://example.com/hero.jpg"
@@ -127,7 +154,12 @@ def test_extract_image_url_avoids_logo_noise():
             {"href": "https://example.com/logo.png", "type": "image/png"},
         ],
         "enclosures": [
-            {"url": "https://cdn.example.com/story-main.webp", "type": "image/webp", "width": "900", "height": "600"},
+            {
+                "url": "https://cdn.example.com/story-main.webp",
+                "type": "image/webp",
+                "width": "900",
+                "height": "600",
+            },
         ],
     }
     assert extract_image_url(entry) == "https://cdn.example.com/story-main.webp"
@@ -136,7 +168,12 @@ def test_extract_image_url_avoids_logo_noise():
 def test_extract_image_url_rejects_non_http_candidates():
     entry = {
         "media_content": [
-            {"url": "data:image/png;base64,abc", "type": "image/png", "width": "1000", "height": "800"},
+            {
+                "url": "data:image/png;base64,abc",
+                "type": "image/png",
+                "width": "1000",
+                "height": "800",
+            },
         ],
         "enclosures": [
             {"url": "https://cdn.example.com/story.jpg", "type": "image/jpeg"},
@@ -186,7 +223,14 @@ def test_ingest_updates_last_fetched_even_when_all_entries_are_filtered_out():
         def execute(self, sql, params=None):
             self.executed.append((sql, params))
             # Return dicts for the final SELECT id, title...
-            return [{"id": 123, "title": "Вест", "link": "https://example.com/story", "country": "MK"}]
+            return [
+                {
+                    "id": 123,
+                    "title": "Вест",
+                    "link": "https://example.com/story",
+                    "country": "MK",
+                }
+            ]
 
         def cursor(self, cursor_factory=None):
             if cursor_factory:
@@ -210,20 +254,45 @@ def test_ingest_updates_last_fetched_even_when_all_entries_are_filtered_out():
             return False
 
     async def _fake_fetch_feed_async(_client, source):
-        return source["name"], [{"title": "Вест", "link": "https://example.com/story", "summary": ""}], None
+        return (
+            source["name"],
+            [{"title": "Вест", "link": "https://example.com/story", "summary": ""}],
+            None,
+        )
 
     conn = _Conn()
     m_db_manager = MagicMock()
-    m_db_manager.execute.side_effect = lambda sql, params=None, **kwargs: recent_rows if "SELECT link" in sql else None
+    m_db_manager.execute.side_effect = lambda sql, params=None, **kwargs: (
+        recent_rows if "SELECT link" in sql else None
+    )
 
-    with patch.object(ingestion, "get_active_sources", return_value=[{"name": "MIA", "url": "https://feed.example.com", "country": "MK", "category": "Главни"}]), \
-         patch("database.db_manager", m_db_manager), \
-         patch.object(ingestion, "db", conn), \
-         patch.object(ingestion, "httpx", types.SimpleNamespace(AsyncClient=lambda **_kwargs: _AsyncClient())), \
-         patch.object(ingestion, "fetch_feed_async", side_effect=_fake_fetch_feed_async), \
-         patch.object(ingestion, "record_source_fetch"), \
-         patch("utils.redis_client", MagicMock()):
-        new_count, inserted_ids, errors = asyncio.run(ingestion.ingest_all_sources_async())
+    with (
+        patch.object(
+            ingestion,
+            "get_active_sources",
+            return_value=[
+                {
+                    "name": "MIA",
+                    "url": "https://feed.example.com",
+                    "country": "MK",
+                    "category": "Главни",
+                }
+            ],
+        ),
+        patch("database.db_manager", m_db_manager),
+        patch.object(ingestion, "db", conn),
+        patch.object(
+            ingestion,
+            "httpx",
+            types.SimpleNamespace(AsyncClient=lambda **_kwargs: _AsyncClient()),
+        ),
+        patch.object(ingestion, "fetch_feed_async", side_effect=_fake_fetch_feed_async),
+        patch.object(ingestion, "record_source_fetch"),
+        patch("utils.redis_client", MagicMock()),
+    ):
+        new_count, inserted_ids, errors = asyncio.run(
+            ingestion.ingest_all_sources_async()
+        )
     assert new_count == 0
     assert errors == []
     # In ingestion.py: db_manager.execute(...) is used for UPDATE sources
@@ -251,7 +320,7 @@ def test_fetch_og_image_reads_only_limited_head_and_resolves_relative_url():
 
         async def aiter_bytes(self):
             for idx in range(0, len(html), 4096):
-                chunk = html[idx:idx + 4096]
+                chunk = html[idx : idx + 4096]
                 self.read_bytes += len(chunk)
                 yield chunk
 
@@ -284,7 +353,10 @@ def test_fetch_og_image_reads_only_limited_head_and_resolves_relative_url():
 def test_fill_missing_og_images_only_updates_missing_candidates():
     candidates = [
         {"link": "https://example.com/1", "image_url": None},
-        {"link": "https://example.com/2", "image_url": "https://cdn.example.com/existing.jpg"},
+        {
+            "link": "https://example.com/2",
+            "image_url": "https://cdn.example.com/existing.jpg",
+        },
         {"link": "https://example.com/3", "image_url": None},
     ]
 

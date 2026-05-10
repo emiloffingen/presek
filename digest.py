@@ -24,10 +24,10 @@ from collections import defaultdict
 log = logging.getLogger(__name__)
 
 
-
 def send_newsletter_to_all_subscribers(days: int = 1) -> int:
     """Sends the daily HTML digest to all active newsletter subscribers."""
     import os
+
     smtp_user = os.environ.get("SMTP_USER", "")
     smtp_pass = os.environ.get("SMTP_PASS", "")
     if not smtp_user or not smtp_pass:
@@ -46,6 +46,7 @@ def send_newsletter_to_all_subscribers(days: int = 1) -> int:
 
     try:
         from database import db_manager as db
+
         subscribers = db.execute("SELECT email FROM subscribers WHERE is_active = TRUE")
         if not subscribers:
             log.info("Newsletter skipped: No active subscribers.")
@@ -54,16 +55,19 @@ def send_newsletter_to_all_subscribers(days: int = 1) -> int:
         sent_count = 0
         for sub in subscribers:
             user_email = sub["email"]
-            unsubscribe_url = f"https://presek.live/api/newsletter/unsubscribe?email={user_email}"
+            unsubscribe_url = (
+                f"https://presek.live/api/newsletter/unsubscribe?email={user_email}"
+            )
             personalized_html = html.replace("{{UNSUBSCRIBE_URL}}", unsubscribe_url)
-            
+
             if send_email(personalized_html, subject, smtp_user, smtp_pass, user_email):
                 sent_count += 1
-        
+
         return sent_count
     except Exception as e:
         log.error(f"Newsletter distribution error: {e}")
         return 0
+
 
 def send_ntfy_digest(stories_by_cat: dict, topic: str, period_days: int = 1) -> bool:
     """Send a compact daily digest to ntfy.sh."""
@@ -73,13 +77,24 @@ def send_ntfy_digest(stories_by_cat: dict, topic: str, period_days: int = 1) -> 
     total = sum(len(v) for v in stories_by_cat.values())
     lines = [f"📰 ПРЕСЕК — Дневен преглед ({total} приказни)\n"]
 
-    CAT_ORDER = ['Македонија','Политика','Спорт','Хроника','Економија','Балкан','Свет','Дијаспора']
-    cats = [c for c in CAT_ORDER if c in stories_by_cat] +            [c for c in stories_by_cat if c not in CAT_ORDER]
+    CAT_ORDER = [
+        "Македонија",
+        "Политика",
+        "Спорт",
+        "Хроника",
+        "Економија",
+        "Балкан",
+        "Свет",
+        "Дијаспора",
+    ]
+    cats = [c for c in CAT_ORDER if c in stories_by_cat] + [
+        c for c in stories_by_cat if c not in CAT_ORDER
+    ]
 
-    for cat in cats[:6]:   # max 6 categories in notification
+    for cat in cats[:6]:  # max 6 categories in notification
         articles = stories_by_cat[cat]
         lines.append(f"▌ {cat}")
-        for a in articles[:2]:   # max 2 per category
+        for a in articles[:2]:  # max 2 per category
             src_count = a.get("source_count", 1)
             badge = f" [{format_sources(src_count)}]" if src_count > 1 else ""
             lines.append(f"  • {a['title'][:80]}{badge}")
@@ -89,6 +104,7 @@ def send_ntfy_digest(stories_by_cat: dict, topic: str, period_days: int = 1) -> 
 
     try:
         import httpx
+
         with httpx.Client(timeout=10.0) as client:
             resp = client.post(
                 f"https://ntfy.sh/{topic}",
@@ -98,7 +114,7 @@ def send_ntfy_digest(stories_by_cat: dict, topic: str, period_days: int = 1) -> 
                     "Priority": "default",
                     "Tags": "newspaper,macedonia",
                     "Content-Type": "text/plain; charset=utf-8",
-                }
+                },
             )
             ok = resp.status_code == 200
         log.info(f"ntfy {'sent' if ok else 'failed'} to topic '{topic}'")
@@ -108,10 +124,22 @@ def send_ntfy_digest(stories_by_cat: dict, topic: str, period_days: int = 1) -> 
         return False
 
 
-MK_MONTHS = ["јануари","февруари","март","април","мај","јуни",
-             "јули","август","септември","октомври","ноември","декември"]
+MK_MONTHS = [
+    "јануари",
+    "февруари",
+    "март",
+    "април",
+    "мај",
+    "јуни",
+    "јули",
+    "август",
+    "септември",
+    "октомври",
+    "ноември",
+    "декември",
+]
 
-MK_DAYS = ["Понеделник","Вторник","Среда","Четврток","Петок","Сабота","Недела"]
+MK_DAYS = ["Понеделник", "Вторник", "Среда", "Четврток", "Петок", "Сабота", "Недела"]
 
 
 def format_sources(count: int) -> str:
@@ -124,8 +152,7 @@ def mk_date(dt: datetime) -> str:
     return f"{MK_DAYS[dt.weekday()]}, {dt.day} {MK_MONTHS[dt.month-1]} {dt.year}"
 
 
-def fetch_top_stories(days: int = 7,
-                      per_category: int = 3) -> dict[str, list[dict]]:
+def fetch_top_stories(days: int = 7, per_category: int = 3) -> dict[str, list[dict]]:
     """
     Fetch top articles from the last N days, grouped by category.
     Selects the earliest article per cluster (= most-sourced story).
@@ -133,12 +160,15 @@ def fetch_top_stories(days: int = 7,
     try:
         with database.get_db() as conn:
             # In PostgreSQL, we can use INTERVAL 'N days' or (interval '1 day' * N)
-            rows = conn.execute("""
+            rows = conn.execute(
+                """
                 SELECT id, title, link, source, category, summary, cluster_id, created_at
                 FROM articles
                 WHERE created_at >= NOW() - (INTERVAL '1 day' * %s)
                 ORDER BY created_at DESC
-            """, (days,)).fetchall()
+            """,
+                (days,),
+            ).fetchall()
     except Exception as e:
         log.error(f"DB error: {e}")
         return {}
@@ -155,7 +185,7 @@ def fetch_top_stories(days: int = 7,
     by_cat: dict[str, list[dict]] = defaultdict(list)
     for cluster in sorted_clusters:
         main = cluster[0]
-        cat  = main.get("category") or "Македонија"
+        cat = main.get("category") or "Македонија"
         if len(by_cat[cat]) < per_category:
             main["source_count"] = len(cluster)
             by_cat[cat].append(main)
@@ -163,14 +193,21 @@ def fetch_top_stories(days: int = 7,
     return dict(by_cat)
 
 
-def render_html(stories_by_cat: dict[str, list[dict]],
-                period_start: datetime,
-                period_end: datetime) -> str:
+def render_html(
+    stories_by_cat: dict[str, list[dict]], period_start: datetime, period_end: datetime
+) -> str:
     """Render the full HTML digest email with a premium editorial design."""
 
     # 1. Calculate Pulse Stats for the header
     total_stories = sum(len(v) for v in stories_by_cat.values())
-    total_sources = len({a.get("source") for articles in stories_by_cat.values() for a in articles if a.get("source")})
+    total_sources = len(
+        {
+            a.get("source")
+            for articles in stories_by_cat.values()
+            for a in articles
+            if a.get("source")
+        }
+    )
 
     cat_blocks = ""
     for cat, articles in stories_by_cat.items():
@@ -180,10 +217,11 @@ def render_html(stories_by_cat: dict[str, list[dict]],
             if a.get("summary"):
                 # Clean up summary: remove emoji markers and truncate
                 clean = " ".join(
-                    l for l in a["summary"].split("\n")
+                    l
+                    for l in a["summary"].split("\n")
                     if l.strip() and not l.strip().startswith("#")
                 )
-                summary_html = f'<p style="margin:8px 0 0;color:#4a4a4a;font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;letter-spacing:-0.01em">{clean[:220]}…</p>'
+                summary_html = f"<p style=\"margin:8px 0 0;color:#4a4a4a;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;letter-spacing:-0.01em\">{clean[:220]}…</p>"
 
             sources_badge = ""
             if a.get("source_count", 1) > 1:
@@ -220,7 +258,7 @@ def render_html(stories_by_cat: dict[str, list[dict]],
         {items}"""
 
     period_str = f"{mk_date(period_start)} — {mk_date(period_end)}"
-    
+
     html = f"""<!DOCTYPE html>
 <html lang="mk">
 <head>
@@ -315,21 +353,26 @@ def render_html(stories_by_cat: dict[str, list[dict]],
     return html.replace("{{UNSUBSCRIBE_URL}}", "https://presek.live/settings")
 
 
-def send_email(html: str, subject: str,
-               smtp_user: str, smtp_pass: str,
-               to_address: str,
-               smtp_host: str = None,
-               smtp_port: int = None) -> bool:
+def send_email(
+    html: str,
+    subject: str,
+    smtp_user: str,
+    smtp_pass: str,
+    to_address: str,
+    smtp_host: str = None,
+    smtp_port: int = None,
+) -> bool:
     """Send HTML email via SMTP."""
     import os
+
     host = smtp_host or os.environ.get("SMTP_HOST", "smtp.gmail.com")
     port = int(smtp_port or os.environ.get("SMTP_PORT", 587))
     from_addr = os.environ.get("EMAIL_FROM", smtp_user)
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
-    msg["From"]    = from_addr
-    msg["To"]      = to_address
+    msg["From"] = from_addr
+    msg["To"] = to_address
     msg.attach(MIMEText(html, "html", "utf-8"))
 
     try:
@@ -355,17 +398,20 @@ def send_email(html: str, subject: str,
         return False
 
 
-def generate_digest(days: int = 1,
-                    save_path: str | None = None,
-                    smtp_user: str | None = None, smtp_pass: str | None = None,
-                    to_address: str | None = None,
-                    ntfy_topic: str | None = None) -> str:
+def generate_digest(
+    days: int = 1,
+    save_path: str | None = None,
+    smtp_user: str | None = None,
+    smtp_pass: str | None = None,
+    to_address: str | None = None,
+    ntfy_topic: str | None = None,
+) -> str:
     """Main entry point. Returns the rendered HTML."""
-    now    = datetime.now()
-    start  = now - timedelta(days=days)
+    now = datetime.now()
+    start = now - timedelta(days=days)
 
     stories = fetch_top_stories(days=days)
-    html    = render_html(stories, start, now)
+    html = render_html(stories, start, now)
 
     if save_path:
         with open(save_path, "w", encoding="utf-8") as f:
@@ -386,9 +432,10 @@ def send_digest(days: int = 1) -> bool:
     Returns True if at least one delivery succeeded.
     """
     import os
+
     ntfy_topic = os.environ.get("NTFY_TOPIC", "")
-    smtp_user  = os.environ.get("SMTP_USER", "")
-    smtp_pass  = os.environ.get("SMTP_PASS", "")
+    smtp_user = os.environ.get("SMTP_USER", "")
+    smtp_pass = os.environ.get("SMTP_PASS", "")
     to_address = os.environ.get("DIGEST_TO", "")
 
     stories = fetch_top_stories(days=days)
@@ -402,9 +449,9 @@ def send_digest(days: int = 1) -> bool:
         ok = send_ntfy_digest(stories, ntfy_topic, period_days=days) or ok
 
     if smtp_user and smtp_pass and to_address:
-        now   = datetime.now()
+        now = datetime.now()
         start = now - timedelta(days=days)
-        html  = render_html(stories, start, now)
+        html = render_html(stories, start, now)
         subject = f"Пресек — Дневен преглед {mk_date(start)} — {mk_date(now)}"
         ok = send_email(html, subject, smtp_user, smtp_pass, to_address) or ok
 
@@ -414,12 +461,12 @@ def send_digest(days: int = 1) -> bool:
 # ── CLI ───────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Пресек digest generator")
-    parser.add_argument("--days",     default=7, type=int,    help="Days to look back")
-    parser.add_argument("--save",     default="digest.html",  help="Save HTML to file")
-    parser.add_argument("--email",    default=None,           help="Gmail address (sender)")
-    parser.add_argument("--password", default=None,           help="Gmail app password")
-    parser.add_argument("--to",       default=None,           help="Recipient email")
-    parser.add_argument("--ntfy",     default=None,           help="ntfy.sh topic for push digest")
+    parser.add_argument("--days", default=7, type=int, help="Days to look back")
+    parser.add_argument("--save", default="digest.html", help="Save HTML to file")
+    parser.add_argument("--email", default=None, help="Gmail address (sender)")
+    parser.add_argument("--password", default=None, help="Gmail app password")
+    parser.add_argument("--to", default=None, help="Recipient email")
+    parser.add_argument("--ntfy", default=None, help="ntfy.sh topic for push digest")
     args = parser.parse_args()
 
     generate_digest(

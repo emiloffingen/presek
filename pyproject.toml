@@ -29,7 +29,6 @@ dependencies = [
     "pillow-avif-plugin==1.5.5",
     "playwright==1.59.0",
     "prometheus-client==0.25.0",
-    "psycopg2-binary==2.9.12",
     "psycopg[binary,pool]==3.3.3",
     "pydantic==2.13.3",
     "pytest==9.0.3",
@@ -57,4 +56,11 @@ Dev = [
     "codespell==2.3.0",
     "detect-secrets==1.5.0",
     "shellcheck-py==0.10.0.1",
+]
+
+[dependency-groups]
+dev = [
+    "black>=24.8.0",
+    "mypy>=1.11.2",
+    "ruff>=0.15.12",
 ]

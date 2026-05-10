@@ -52,7 +52,9 @@ class TestClusterTagExtraction:
         assert "Доналд Трамп" in tags
         assert "Подготвува Напади" not in tags
 
-    def test_extract_keyphrases_locally_filters_source_noise_and_prefers_real_phrases(self):
+    def test_extract_keyphrases_locally_filters_source_noise_and_prefers_real_phrases(
+        self,
+    ):
         text = (
             "Reuters јавува дека Владата усвои пакет за енергетска поддршка. "
             "Пакетот за енергетска поддршка вреди 120 милиони евра. "
@@ -107,7 +109,9 @@ class TestClusterComparison:
         assert result["common_line"]
         assert result["difference_points"]
         assert result["open_points"]
-        assert any("100" in item or "120" in item for item in result["difference_points"])
+        assert any(
+            "100" in item or "120" in item for item in result["difference_points"]
+        )
 
     def test_compare_cluster_sources_uses_phrase_based_common_line(self):
         articles = [
@@ -162,10 +166,16 @@ class TestClusterComparison:
 
         result = compare_cluster_sources(articles)
 
-        assert any("120" in item or "Стопанската комора" in item for item in result["open_points"])
+        assert any(
+            "120" in item or "Стопанската комора" in item
+            for item in result["open_points"]
+        )
 
-    def test_compare_cluster_sources_reuses_cached_result_for_same_articles(self, monkeypatch):
+    def test_compare_cluster_sources_reuses_cached_result_for_same_articles(
+        self, monkeypatch
+    ):
         import nlp.generation
+
         nlp.generation._comparison_cache.clear()
         calls = {"count": 0}
         original = nlp.generation.extract_keyphrases_locally
@@ -174,7 +184,9 @@ class TestClusterComparison:
             calls["count"] += 1
             return original(*args, **kwargs)
 
-        monkeypatch.setattr(nlp.generation, "extract_keyphrases_locally", counting_extract)
+        monkeypatch.setattr(
+            nlp.generation, "extract_keyphrases_locally", counting_extract
+        )
         articles = [
             {
                 "source": "МИА",
@@ -253,6 +265,7 @@ class TestClusterComparison:
 
     def test_synthesize_cluster_fallback_records_mode(self, monkeypatch):
         import nlp.generation
+
         events = []
 
         def record(event, **fields):
@@ -276,6 +289,7 @@ class TestClusterComparison:
 
         assert ("local_synthesis_path", {"mode": "enhanced_fallback"}) in events
 
+
 class TestArticleSummaryFallback:
     def test_summarize_locally_prefers_information_dense_sentences_over_noise(self):
         text = (
@@ -295,7 +309,7 @@ class TestArticleSummaryFallback:
     def test_summarize_article_fallback_returns_clean_compact_text(self):
         result = summarize_article_fallback(
             "⚪ Трамп најави нови царини",
-            "Трамп изјави дека во вторник ќе има обраќање. #економија #свет"
+            "Трамп изјави дека во вторник ќе има обраќање. #економија #свет",
         )
 
         assert "⚪" not in result
@@ -403,7 +417,9 @@ class TestLocalBriefingFallback:
 
         result = generate_daily_brief_fallback(clusters)
 
-        assert "Собраниската расправа за интерпелацијата влегува во завршна фаза" in result
+        assert (
+            "Собраниската расправа за интерпелацијата влегува во завршна фаза" in result
+        )
         assert "Општ партиски став без многу детали" not in result
 
     def test_generate_daily_brief_fallback_strips_agency_boilerplate(self):
@@ -450,10 +466,15 @@ class TestLocalBriefingFallback:
 
         result = generate_daily_brief_fallback(clusters)
 
-        assert "Земјотрес од 4,8 степени е почувствуван во повеќе градови низ Македонија" in result.splitlines()[2]
+        assert (
+            "Земјотрес од 4,8 степени е почувствуван во повеќе градови низ Македонија"
+            in result.splitlines()[2]
+        )
         assert "СДСМ: Во очајна потрага по добра вест" not in result.splitlines()[2]
 
-    def test_generate_daily_brief_fallback_keeps_required_sections_without_editorial_points(self):
+    def test_generate_daily_brief_fallback_keeps_required_sections_without_editorial_points(
+        self,
+    ):
         clusters = [
             {
                 "title": "Бугарија денеска излегува на парламентарни избори",
@@ -472,7 +493,9 @@ class TestLocalBriefingFallback:
         assert "### 1. Бугарија денеска излегува на парламентарни избори" in result
         assert "Темата се појавува низ" not in result
 
-    def test_generate_daily_brief_fallback_reorders_body_away_from_penalized_titles(self):
+    def test_generate_daily_brief_fallback_reorders_body_away_from_penalized_titles(
+        self,
+    ):
         clusters = [
             {
                 "title": "СДСМ: Во очајна потрага по добра вест",
@@ -528,7 +551,9 @@ class TestLocalBriefingFallback:
         assert result.count("### ") == 2
         assert "### 3. Пјонгјанг повторно лансираше балистички ракети" not in result
 
-    def test_generate_daily_brief_fallback_uses_distinct_description_context_for_importance(self):
+    def test_generate_daily_brief_fallback_uses_distinct_description_context_for_importance(
+        self,
+    ):
         clusters = [
             {
                 "title": "Северна Кореја повторно истрела балистички ракети",
@@ -551,7 +576,9 @@ class TestLocalBriefingFallback:
         assert "итни реакции од соседните држави и сојузниците" in result
         assert "безбедноста на мировните мисии во јужен Либан" in result
 
-    def test_generate_daily_brief_fallback_splits_security_heuristics_by_story_type(self):
+    def test_generate_daily_brief_fallback_splits_security_heuristics_by_story_type(
+        self,
+    ):
         clusters = [
             {
                 "title": "Северна Кореја повторно истрела балистички ракети",
@@ -574,7 +601,9 @@ class TestLocalBriefingFallback:
         assert "нови воени сигнали, предупредувања и дипломатски реакции" in result
         assert "безбедноста на меѓународните мисии и регионалната стабилност" in result
 
-    def test_generate_daily_brief_fallback_keeps_election_importance_outcome_oriented(self):
+    def test_generate_daily_brief_fallback_keeps_election_importance_outcome_oriented(
+        self,
+    ):
         clusters = [
             {
                 "title": "Бугарија денеска излегува на парламентарни избори во последните пет години",
@@ -587,5 +616,8 @@ class TestLocalBriefingFallback:
 
         result = generate_daily_brief_fallback(clusters)
 
-        assert "Исходот може брзо да ја насочи следната политичка фаза и регионалните реакции" in result
+        assert (
+            "Исходот може брзо да ја насочи следната политичка фаза и регионалните реакции"
+            in result
+        )
         assert "52-рото Народно собрание" not in result.split("- Зошто е важно:")[1]

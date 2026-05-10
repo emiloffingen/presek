@@ -55,7 +55,9 @@ class _FakeImage:
 
 def test_process_and_save_uses_async_stream(monkeypatch, tmp_path):
     monkeypatch.setattr(image_service, "_UPLOAD_ROOT", str(tmp_path))
-    monkeypatch.setattr(image_service, "_resolve_public_ips", lambda url: {"203.0.113.10"})
+    monkeypatch.setattr(
+        image_service, "_resolve_public_ips", lambda url: {"203.0.113.10"}
+    )
     monkeypatch.setattr(image_service, "_peer_ip", lambda resp: "203.0.113.10")
     monkeypatch.setattr(image_service.Image, "open", lambda buf: _FakeImage())
     monkeypatch.setattr(
@@ -65,7 +67,9 @@ def test_process_and_save_uses_async_stream(monkeypatch, tmp_path):
     )
 
     result = asyncio.run(
-        image_service.image_service.process_and_save("https://example.com/image.png", 42)
+        image_service.image_service.process_and_save(
+            "https://example.com/image.png", 42
+        )
     )
 
     assert result == "/static/uploads/art_42.webp"

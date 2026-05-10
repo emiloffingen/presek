@@ -1,8 +1,6 @@
-import psycopg2
+import psycopg
 import asyncio
-from psycopg2.extras import DictCursor
-from psycopg2.pool import ThreadedConnectionPool
-from psycopg_pool import AsyncConnectionPool
+from psycopg_pool import AsyncConnectionPool, ConnectionPool
 from psycopg.rows import dict_row
 from contextlib import contextmanager, asynccontextmanager
 from collections import defaultdict
@@ -55,6 +53,7 @@ SQL_ARTICLE_SEARCH = """
     LIMIT %s
 """
 
+
 def _build_hybrid_search_sql(time_filter: str, sort_by: str) -> str:
     """Helper to build dynamic hybrid search SQL."""
     return f"""
@@ -97,8 +96,10 @@ def _build_hybrid_search_sql(time_filter: str, sort_by: str) -> str:
         LIMIT %s
     """
 
+
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     pass
@@ -120,8 +121,10 @@ def _int_env(name: str, default: int) -> int:
 DB_POOL_MINCONN = max(1, _int_env("DB_POOL_MINCONN", 1))
 DB_POOL_MAXCONN = max(DB_POOL_MINCONN, _int_env("DB_POOL_MAXCONN", 5))
 
+
 class AsyncDatabaseManager:
     """Modern Async Database Layer using psycopg 3."""
+
     _instance = None
     _pool = None
     _lock = asyncio.Lock()
@@ -152,11 +155,13 @@ class AsyncDatabaseManager:
                     kwargs={
                         "row_factory": dict_row,
                         "connect_timeout": 5,
-                        "options": DB_SESSION_OPTIONS
-                    }
+                        "options": DB_SESSION_OPTIONS,
+                    },
                 )
                 await self._pool.open()
-                log.info(f"Presek {APP_VERSION_LABEL}: Async database pool initialized (min={DB_POOL_MINCONN}, max={DB_POOL_MAXCONN}).")
+                log.info(
+                    f"Presek {APP_VERSION_LABEL}: Async database pool initialized (min={DB_POOL_MINCONN}, max={DB_POOL_MAXCONN})."
+                )
 
     async def execute(self, sql, params=None, fetch=True):
         await self._ensure_pool()
@@ -182,8 +187,10 @@ class AsyncDatabaseManager:
         async with self._pool.connection() as conn:
             yield conn
 
+
 class DatabaseManager:
     """Centralized Database Access Layer (DAL) for Presek 5.x."""
+
     _instance = None
     _pool = None
 
@@ -197,12 +204,16 @@ class DatabaseManager:
         """Initialize connection pool with exponential backoff retry logic."""
         for attempt in range(retries):
             try:
-                self._pool = ThreadedConnectionPool(
-                    minconn=DB_POOL_MINCONN,
-                    maxconn=DB_POOL_MAXCONN,
-                    dsn=DATABASE_URL,
-                    connect_timeout=5,
-                    options=DB_SESSION_OPTIONS
+                self._pool = ConnectionPool(
+                    conninfo=DATABASE_URL,
+                    min_size=DB_POOL_MINCONN,
+                    max_size=DB_POOL_MAXCONN,
+                    open=True,
+                    kwargs={
+                        "row_factory": dict_row,
+                        "connect_timeout": 5,
+                        "options": DB_SESSION_OPTIONS,
+                    },
                 )
                 log.info(
                     f"Presek {APP_VERSION_LABEL}: Database connection pool initialized "
@@ -211,18 +222,22 @@ class DatabaseManager:
                 return
             except Exception as e:
                 if attempt < retries - 1:
-                    wait_time = backoff_base ** attempt
-                    log.warning(f"Database connection failed (attempt {attempt + 1}/{retries}): {e}. Retrying in {wait_time}s...")
+                    wait_time = backoff_base**attempt
+                    log.warning(
+                        f"Database connection failed (attempt {attempt + 1}/{retries}): {e}. Retrying in {wait_time}s..."
+                    )
                     time.sleep(wait_time)
                 else:
-                    log.error(f"Failed to initialize database connection pool after {retries} attempts: {e}")
+                    log.error(
+                        f"Failed to initialize database connection pool after {retries} attempts: {e}"
+                    )
                     self._pool = None
 
     def _reset_pool(self):
         """Force re-initialization of the pool. Crucial after process forking."""
         if self._pool:
             try:
-                self._pool.closeall()
+                self._pool.close()
             except Exception as e:
                 log.warning(f"Failed to close connection pool: {e}")
         self._pool = None
@@ -230,14 +245,8 @@ class DatabaseManager:
 
     def get_conn(self):
         if not self._pool:
-            return psycopg2.connect(DATABASE_URL)
-        conn = self._pool.getconn()
-        try:
-            conn.isolation_level  # validate connection is alive
-        except Exception:
-            self._pool.putconn(conn, close=True)
-            conn = self._pool.getconn()
-        return conn
+            return psycopg.connect(DATABASE_URL, row_factory=dict_row)
+        return self._pool.getconn()
 
     def put_conn(self, conn):
         if self._pool:
@@ -253,11 +262,11 @@ class DatabaseManager:
         conn = None
         try:
             conn = self.get_conn()
-            with conn.cursor(cursor_factory=DictCursor) as cur:
+            with conn.cursor() as cur:
                 cur.execute(sql, params)
                 results = None
                 if fetch:
-                    results = [dict(r) for r in cur.fetchall()]
+                    results = cur.fetchall()
                 conn.commit()
                 return results if fetch else cur.rowcount
         except Exception as e:
@@ -293,13 +302,25 @@ class DatabaseManager:
     # --- High-Level DAL Methods ---
 
     async def async_get_articles_by_ids(self, ids):
-        return await self.async_execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (ids,))
+        return await self.async_execute(
+            "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
+            (ids,),
+        )
 
-    async def async_search_semantic(self, query_embedding: list[float], limit: int = 100):
+    async def async_search_semantic(
+        self, query_embedding: list[float], limit: int = 100
+    ):
         vec_str = "[" + ",".join(map(str, query_embedding)) + "]"
         return await self.async_execute(SQL_SEMANTIC_SEARCH, (vec_str, vec_str, limit))
 
-    async def async_hybrid_search(self, query_text: str, query_embedding: list[float], limit: int = 50, sort_by: str = "hybrid", timespan: str | None = None):
+    async def async_hybrid_search(
+        self,
+        query_text: str,
+        query_embedding: list[float],
+        limit: int = 50,
+        sort_by: str = "hybrid",
+        timespan: str | None = None,
+    ):
         # Build time constraint
         time_filter = ""
         if timespan == "24h":
@@ -313,7 +334,9 @@ class DatabaseManager:
         sql = _build_hybrid_search_sql(time_filter, sort_by)
         return await self.async_execute(sql, (query_text, query_text, vec_str, limit))
 
-    async def async_search_articles(self, query: str, limit: int = 50, timespan: str | None = None):
+    async def async_search_articles(
+        self, query: str, limit: int = 50, timespan: str | None = None
+    ):
         time_filter = ""
         if timespan == "24h":
             time_filter = "a.created_at >= NOW() - INTERVAL '24 hours' AND "
@@ -321,17 +344,24 @@ class DatabaseManager:
             time_filter = "a.created_at >= NOW() - INTERVAL '7 days' AND "
         elif timespan == "30d":
             time_filter = "a.created_at >= NOW() - INTERVAL '30 days' AND "
-            
+
         sql = SQL_ARTICLE_SEARCH.format(time_filter=time_filter)
         return await self.async_execute(sql, (query, query, None, limit))
 
     async def async_get_synthesis_ids(self, cluster_ids: list[str]):
-        if not cluster_ids: return []
-        rows = await self.async_execute("SELECT cluster_id FROM cluster_summaries WHERE cluster_id = ANY(%s)", (cluster_ids,))
+        if not cluster_ids:
+            return []
+        rows = await self.async_execute(
+            "SELECT cluster_id FROM cluster_summaries WHERE cluster_id = ANY(%s)",
+            (cluster_ids,),
+        )
         return [r["cluster_id"] for r in rows]
 
     def get_articles_by_ids(self, ids):
-        return self.execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (ids,))
+        return self.execute(
+            "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
+            (ids,),
+        )
 
     def search_semantic(self, query_embedding: list[float], limit: int = 100):
         """
@@ -342,13 +372,20 @@ class DatabaseManager:
         vec_str = "[" + ",".join(map(str, query_embedding)) + "]"
         return self.execute(SQL_SEMANTIC_SEARCH, (vec_str, vec_str, limit))
 
-    def hybrid_search(self, query_text: str, query_embedding: list[float], limit: int = 50, sort_by: str = "hybrid", timespan: str | None = None):
+    def hybrid_search(
+        self,
+        query_text: str,
+        query_embedding: list[float],
+        limit: int = 50,
+        sort_by: str = "hybrid",
+        timespan: str | None = None,
+    ):
         """
         Combines Full-Text Search (FTS) and Semantic Search (pgvector) using a weighted score.
         Supports advanced web-style queries (e.g. "phrase search", -exclude).
         """
         vec_str = "[" + ",".join(map(str, query_embedding)) + "]"
-        
+
         # Build time constraint
         time_filter = ""
         if timespan == "24h":
@@ -362,32 +399,40 @@ class DatabaseManager:
         sql = _build_hybrid_search_sql(time_filter, sort_by)
         return self.execute(sql, (query_text, query_text, vec_str, limit))
 
-    def get_articles_by_country(self, country, limit=200, sub=None, topic=None, sentiment=None, category=None):
+    def get_articles_by_country(
+        self, country, limit=200, sub=None, topic=None, sentiment=None, category=None
+    ):
         sql = "SELECT * FROM articles WHERE 1=1"
         params = []
-        
+
         if category:
-            sql += " AND category = %s"; params.append(category)
-        elif country and country != 'MK':
-            sql += " AND country = %s"; params.append(country)
-        elif country == 'MK':
+            sql += " AND category = %s"
+            params.append(category)
+        elif country and country != "MK":
+            sql += " AND country = %s"
+            params.append(country)
+        elif country == "MK":
             sql += " AND (country = 'MK' OR country IS NULL OR country = '')"
-            
+
         if sub:
-            sql += " AND subcategory = %s"; params.append(sub)
+            sql += " AND subcategory = %s"
+            params.append(sub)
         if topic:
-            sql += " AND topic = %s"; params.append(topic)
+            sql += " AND topic = %s"
+            params.append(topic)
         if sentiment:
-            escaped_sentiment = sentiment.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+            escaped_sentiment = (
+                sentiment.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+            )
             sql += " AND summary ILIKE %s ESCAPE '\\'"
             params.append(f"%{escaped_sentiment}%")
-        
+
         # Ensure limit is an integer
         try:
             limit = int(limit)
         except (ValueError, TypeError):
             limit = 200
-            
+
         sql += " ORDER BY created_at DESC LIMIT %s"
         params.append(limit)
         return self.execute(sql, tuple(params))
@@ -397,18 +442,20 @@ class DatabaseManager:
         clauses = []
         params = []
         if follow_sources:
-            clauses.append("source = ANY(%s)"); params.append(follow_sources)
+            clauses.append("source = ANY(%s)")
+            params.append(follow_sources)
         if follow_topics:
-            clauses.append("topic = ANY(%s)"); params.append(follow_topics)
+            clauses.append("topic = ANY(%s)")
+            params.append(follow_topics)
         if clauses:
             sql += " AND (" + " OR ".join(clauses) + ")"
-            
+
         # Ensure limit is an integer
         try:
             limit = int(limit)
         except (ValueError, TypeError):
             limit = 200
-            
+
         sql += " ORDER BY created_at DESC LIMIT %s"
         params.append(limit)
         return self.execute(sql, tuple(params))
@@ -416,9 +463,10 @@ class DatabaseManager:
     def search_articles(self, q, limit=100):
         if not q or len(q) > 500:
             return []
-            
+
         # Generate embedding for semantic search
         from embeddings import generate_query_embedding
+
         vector = generate_query_embedding(q)
         vector_str = "[" + ",".join(map(str, vector)) + "]" if vector else None
 
@@ -427,24 +475,32 @@ class DatabaseManager:
             limit = int(limit)
         except (ValueError, TypeError):
             limit = 100
-            
+
         return self.execute(SQL_ARTICLE_SEARCH, (q, q, vector_str, limit))
 
     def get_synthesis_ids(self, cluster_ids):
-        if not cluster_ids: return []
-        rows = self.execute("SELECT cluster_id FROM cluster_summaries WHERE cluster_id = ANY(%s)", (cluster_ids,))
+        if not cluster_ids:
+            return []
+        rows = self.execute(
+            "SELECT cluster_id FROM cluster_summaries WHERE cluster_id = ANY(%s)",
+            (cluster_ids,),
+        )
         return [r["cluster_id"] for r in rows]
 
     def get_cluster_entities(self, cluster_ids):
-        if not cluster_ids: return {}
-        rows = self.execute("SELECT cluster_id, entity_name FROM cluster_entities WHERE cluster_id = ANY(%s)", (cluster_ids,))
+        if not cluster_ids:
+            return {}
+        rows = self.execute(
+            "SELECT cluster_id, entity_name FROM cluster_entities WHERE cluster_id = ANY(%s)",
+            (cluster_ids,),
+        )
         result = defaultdict(set)
         for r in rows:
             result[r["cluster_id"]].add(r["entity_name"])
         return result
 
     def get_db_size(self):
-        db_name = DATABASE_URL.split('/')[-1].split('?')[0]
+        db_name = DATABASE_URL.split("/")[-1].split("?")[0]
         row = self.execute_one("SELECT pg_database_size(%s)", (db_name,))
         if row:
             size_bytes = list(row.values())[0]
@@ -455,47 +511,71 @@ class DatabaseManager:
         try:
             total_row = self.execute_one("SELECT COUNT(*) FROM articles")
             total = total_row["count"] if total_row else 0
-            
-            by_cat = self.execute("SELECT category, COUNT(*) n FROM articles GROUP BY category ORDER BY n DESC") or []
-            by_source = self.execute("SELECT source, COUNT(*) n FROM articles GROUP BY source ORDER BY n DESC") or []
-            
-            recent_24h_row = self.execute_one("SELECT COUNT(*) FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '1 day'")
+
+            by_cat = (
+                self.execute(
+                    "SELECT category, COUNT(*) n FROM articles GROUP BY category ORDER BY n DESC"
+                )
+                or []
+            )
+            by_source = (
+                self.execute(
+                    "SELECT source, COUNT(*) n FROM articles GROUP BY source ORDER BY n DESC"
+                )
+                or []
+            )
+
+            recent_24h_row = self.execute_one(
+                "SELECT COUNT(*) FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '1 day'"
+            )
             recent_24h = recent_24h_row["count"] if recent_24h_row else 0
-            
-            recent_1h_row = self.execute_one("SELECT COUNT(*) FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '1 hour'")
+
+            recent_1h_row = self.execute_one(
+                "SELECT COUNT(*) FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '1 hour'"
+            )
             recent_1h = recent_1h_row["count"] if recent_1h_row else 0
-            
-            summarized_row = self.execute_one("SELECT COUNT(*) FROM articles WHERE summary IS NOT NULL AND summary != ''")
+
+            summarized_row = self.execute_one(
+                "SELECT COUNT(*) FROM articles WHERE summary IS NOT NULL AND summary != ''"
+            )
             summarized = summarized_row["count"] if summarized_row else 0
-            
+
             return {
                 "total_articles": total,
                 "by_category": by_cat,
                 "by_source": by_source,
                 "last_24h": recent_24h,
                 "last_1h": recent_1h,
-                "summarized": summarized
+                "summarized": summarized,
             }
         except Exception as e:
             log.error(f"Error getting stats: {e}")
             return {
-                "total_articles": 0, "by_category": [], "by_source": [],
-                "last_24h": 0, "last_1h": 0, "summarized": 0
+                "total_articles": 0,
+                "by_category": [],
+                "by_source": [],
+                "last_24h": 0,
+                "last_1h": 0,
+                "summarized": 0,
             }
 
     def init_schema(self):
         """Unified Schema management via Alembic."""
         try:
             # Check for Alembic config file
-            ini_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "alembic.ini")
+            ini_path = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "alembic.ini"
+            )
             if not os.path.exists(ini_path):
-                log.warning(f"Alembic config not found at {ini_path}, skipping migrations.")
+                log.warning(
+                    f"Alembic config not found at {ini_path}, skipping migrations."
+                )
                 return
 
             cfg = alembic.config.Config(ini_path)
             # Ensure URL is set correctly from env
             cfg.set_main_option("sqlalchemy.url", DATABASE_URL)
-            
+
             log.info(f"Presek {APP_VERSION_LABEL}: Running database migrations...")
             alembic.command.upgrade(cfg, "head")
             log.info(f"Presek {APP_VERSION_LABEL}: Schema verification complete.")
@@ -505,46 +585,78 @@ class DatabaseManager:
             # For now, we want to know if it fails.
             raise
 
+
 # --- Legacy Compatibility Wrapper ---
+
 
 class DBWrapper:
     """Wraps a connection to support .cursor(), .execute(), .fetchone(), .fetchall(), and .close() for legacy code."""
+
     def __init__(self, manager):
         self.manager = manager
         self.conn = manager.get_conn()
+
     def cursor(self):
-        return self.conn.cursor(cursor_factory=DictCursor)
+        return self.conn.cursor()
+
     def execute(self, sql, params=None):
         cur = self.cursor()
         cur.execute(sql, params)
         return cur
+
     def commit(self):
         self.conn.commit()
+
     def rollback(self):
         self.conn.rollback()
+
     def close(self):
         self.manager.put_conn(self.conn)
-    def __enter__(self): return self
-    def __exit__(self, exc_type, exc_val, exc_tb): self.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
 
 db_manager = DatabaseManager()
 async_db = AsyncDatabaseManager()
 
-def get_db(): return DBWrapper(db_manager)
-def get_db_size(): return db_manager.get_db_size()
-def init_db(): db_manager.init_schema()
+
+def get_db():
+    return DBWrapper(db_manager)
+
+
+def get_db_size():
+    return db_manager.get_db_size()
+
+
+def init_db():
+    db_manager.init_schema()
+
+
 def prune_db():
     from config import DB_RETAIN_DAYS, DB_RETAIN_FAILED_TASKS_DAYS
+
     interval = f"{int(DB_RETAIN_DAYS)} days"
     failed_interval = f"{int(DB_RETAIN_FAILED_TASKS_DAYS)} days"
     # Delete old articles
-    db_manager.execute("DELETE FROM articles WHERE created_at < NOW() - INTERVAL %s", (interval,), fetch=False)
+    db_manager.execute(
+        "DELETE FROM articles WHERE created_at < NOW() - INTERVAL %s",
+        (interval,),
+        fetch=False,
+    )
 
     # Clean up orphaned metadata/summaries efficiently using NOT EXISTS
-    db_manager.execute("""
+    db_manager.execute(
+        """
         DELETE FROM cluster_summaries cs WHERE NOT EXISTS (SELECT 1 FROM articles a WHERE a.cluster_id = cs.cluster_id);
         DELETE FROM cluster_metadata cm WHERE NOT EXISTS (SELECT 1 FROM articles a WHERE a.cluster_id = cm.cluster_id);
         DELETE FROM cluster_entities ce WHERE NOT EXISTS (SELECT 1 FROM articles a WHERE a.cluster_id = ce.cluster_id);
         DELETE FROM reactions r WHERE NOT EXISTS (SELECT 1 FROM articles a WHERE a.cluster_id = r.cluster_id);
         DELETE FROM failed_tasks WHERE created_at < NOW() - INTERVAL %s;
-    """, (failed_interval,), fetch=False)
+    """,
+        (failed_interval,),
+        fetch=False,
+    )

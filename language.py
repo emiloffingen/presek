@@ -9,6 +9,7 @@ The model file is downloaded lazily on first use from:
     https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.ftz
 and cached at ~/.cache/fasttext/lid.176.ftz so subsequent runs are offline.
 """
+
 import logging
 import os
 import threading
@@ -29,11 +30,16 @@ def _ensure_model_file() -> str | None:
         return _MODEL_PATH
     try:
         os.makedirs(_CACHE_DIR, exist_ok=True)
-        log.info(f"[language] Downloading fastText lid.176.ftz (~917 KB) to {_MODEL_PATH}")
+        log.info(
+            f"[language] Downloading fastText lid.176.ftz (~917 KB) to {_MODEL_PATH}"
+        )
         import httpx
+
         with httpx.Client(timeout=30.0) as client:
             with open(_MODEL_PATH, "wb") as f:
-                with client.stream("GET", _MODEL_URL, follow_redirects=True) as response:
+                with client.stream(
+                    "GET", _MODEL_URL, follow_redirects=True
+                ) as response:
                     response.raise_for_status()
                     for chunk in response.iter_bytes():
                         f.write(chunk)
@@ -94,31 +100,58 @@ def _cyrillic_heuristic(text: str) -> str:
     # Unique letters check (Strongest signal)
     # Bulgarian-only vs MK: ъ, щ, ю, я (MK uses ј + vowel)
     bg_markers = sum(1 for ch in lower if ch in "ъщюя")
-    
+
     # Serbian-only vs MK: ђ, ћ (MK uses ѓ, ќ)
     sr_markers = sum(1 for ch in lower if ch in "ђћ")
 
-    if bg_markers >= 1: return "bg"
-    if sr_markers >= 1: return "sr"
+    if bg_markers >= 1:
+        return "bg"
+    if sr_markers >= 1:
+        return "sr"
 
     # Bulgarian function words not used in MK
     # 'ще' is very strong BG (MK uses 'ќе')
     # 'бъде' is BG (MK uses 'биде')
     # 'върху' is BG (MK uses 'на')
-    bg_words = sum(1 for w in ("също", "защото", "обаче", "няма",
-                               "трябва", "която", "който", "което",
-                               "ще", "бъде", "върху", "след")
-                   if f" {w} " in f" {lower} ")
+    bg_words = sum(
+        1
+        for w in (
+            "също",
+            "защото",
+            "обаче",
+            "няма",
+            "трябва",
+            "която",
+            "който",
+            "което",
+            "ще",
+            "бъде",
+            "върху",
+            "след",
+        )
+        if f" {w} " in f" {lower} "
+    )
     if bg_words >= 1:
         return "bg"
 
     # Serbian function words not used in MK
     # 'da li' is very SR (MK uses 'дали')
     # 'tokom' is SR (MK uses 'за време на')
-    sr_words = sum(1 for w in ("такође", "односно", "ипак",
-                               "међутим", "након", "током",
-                               "саопштио", "изјавио", "наводи")
-                   if f" {w} " in f" {lower} ")
+    sr_words = sum(
+        1
+        for w in (
+            "такође",
+            "односно",
+            "ипак",
+            "међутим",
+            "након",
+            "током",
+            "саопштио",
+            "изјавио",
+            "наводи",
+        )
+        if f" {w} " in f" {lower} "
+    )
     if sr_words >= 1:
         return "sr"
 

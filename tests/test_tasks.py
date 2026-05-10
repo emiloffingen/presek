@@ -13,10 +13,14 @@ class TestBackfillCoverArtTask:
             {"cluster_id": "c3", "title": "C", "summary": ""},
         ]
 
-        with patch("tasks.intelligence.db") as mock_db, \
-             patch("tasks.intelligence.redis_client") as mock_redis, \
-             patch("tasks.intelligence.get_celery_queue_depth", return_value=0), \
-             patch.object(tasks.backfill_cover_art_single_task, "apply_async") as mock_apply:
+        with (
+            patch("tasks.intelligence.db") as mock_db,
+            patch("tasks.intelligence.redis_client") as mock_redis,
+            patch("tasks.intelligence.get_celery_queue_depth", return_value=0),
+            patch.object(
+                tasks.backfill_cover_art_single_task, "apply_async"
+            ) as mock_apply,
+        ):
             mock_db.execute.return_value = rows
             mock_redis.set.return_value = True
             mock_redis.get.return_value = None
@@ -31,9 +35,13 @@ class TestBackfillCoverArtTask:
     def test_backfill_skips_when_queue_backlog_is_high(self):
         import tasks
 
-        with patch("tasks.intelligence.get_celery_queue_depth", return_value=150), \
-             patch("tasks.intelligence.db") as mock_db, \
-             patch.object(tasks.backfill_cover_art_single_task, "apply_async") as mock_apply:
+        with (
+            patch("tasks.intelligence.get_celery_queue_depth", return_value=150),
+            patch("tasks.intelligence.db") as mock_db,
+            patch.object(
+                tasks.backfill_cover_art_single_task, "apply_async"
+            ) as mock_apply,
+        ):
             tasks.backfill_cover_art_task()
 
         mock_db.execute.assert_not_called()
@@ -42,11 +50,14 @@ class TestBackfillCoverArtTask:
     def test_backfill_single_skips_when_queue_backlog_is_high(self):
         import tasks
 
-        with patch("tasks.intelligence.get_celery_queue_depth", return_value=150), \
-             patch("tasks.intelligence.generate_cover_art") as mock_cover_art:
+        with (
+            patch("tasks.intelligence.get_celery_queue_depth", return_value=150),
+            patch("tasks.intelligence.generate_cover_art") as mock_cover_art,
+        ):
             tasks.backfill_cover_art_single_task("cluster-1", "Prompt")
 
         mock_cover_art.assert_not_called()
+
 
 class TestSynthesizeClusterTaskQuality:
     def test_normalizes_ai_summary_and_perspectives_before_store(self):
@@ -74,21 +85,36 @@ class TestSynthesizeClusterTaskQuality:
         ai_payload = {
             "summary": "Статии:\n• Главен развој: Трамп: Вторник, 20:00 часот по источно време\n• Главен развој: Трамп: Вторник, 20:00 часот по источно време",
             "perspectives": [
-                {"angle": "Перспектива", "content": "Повеќето извори се вртат околу царините и рокот за обраќање."},
-                {"angle": "Перспектива", "content": "Разликите најмногу се во акцентот и формулацијата."},
+                {
+                    "angle": "Перспектива",
+                    "content": "Повеќето извори се вртат околу царините и рокот за обраќање.",
+                },
+                {
+                    "angle": "Перспектива",
+                    "content": "Разликите најмногу се во акцентот и формулацијата.",
+                },
             ],
         }
 
-        with patch("tasks.intelligence.db") as mock_db, \
-             patch("tasks.intelligence._call_ai", return_value=(ai_payload, "nvidia")), \
-             patch("tasks.intelligence.clean_json_response", side_effect=lambda value: value), \
-             patch("tasks.intelligence.generate_cover_art", return_value=None), \
-             patch("tasks.intelligence.invalidate_cluster_caches"), \
-             patch("tasks.utils.record_task_event"), \
-             patch("tasks.intelligence.analyst") as mock_analyst, \
-             patch("embeddings.get_cluster_embedding", return_value=None):
-            
-            mock_analyst.extract_deep_metadata.return_value = {"entities": [], "facts": [], "pulse": 50}
+        with (
+            patch("tasks.intelligence.db") as mock_db,
+            patch("tasks.intelligence._call_ai", return_value=(ai_payload, "nvidia")),
+            patch(
+                "tasks.intelligence.clean_json_response",
+                side_effect=lambda value: value,
+            ),
+            patch("tasks.intelligence.generate_cover_art", return_value=None),
+            patch("tasks.intelligence.invalidate_cluster_caches"),
+            patch("tasks.utils.record_task_event"),
+            patch("tasks.intelligence.analyst") as mock_analyst,
+            patch("embeddings.get_cluster_embedding", return_value=None),
+        ):
+
+            mock_analyst.extract_deep_metadata.return_value = {
+                "entities": [],
+                "facts": [],
+                "pulse": 50,
+            }
             mock_analyst.assess_pluralism.return_value = {"score": 50}
 
             # Call 1: _load_cluster_articles_for_synthesis
@@ -140,13 +166,23 @@ class TestReclusterRecentArticlesTask:
             },
         ]
 
-        with patch("tasks.intelligence.db") as mock_db, \
-             patch("clustering.find_or_create_cluster", return_value="old-a"), \
-             patch("tasks.intelligence.invalidate_public_data_caches") as mock_invalidate, \
-             patch("tasks.utils.record_task_event"), \
-             patch.object(tasks.extract_entities_task, "apply_async") as mock_extract_delay, \
-             patch.object(tasks.generate_cluster_metadata_task, "apply_async") as mock_meta_delay, \
-             patch.object(tasks.intelligence.auto_summarize_task, "apply_async") as mock_summary_delay:
+        with (
+            patch("tasks.intelligence.db") as mock_db,
+            patch("clustering.find_or_create_cluster", return_value="old-a"),
+            patch(
+                "tasks.intelligence.invalidate_public_data_caches"
+            ) as mock_invalidate,
+            patch("tasks.utils.record_task_event"),
+            patch.object(
+                tasks.extract_entities_task, "apply_async"
+            ) as mock_extract_delay,
+            patch.object(
+                tasks.generate_cluster_metadata_task, "apply_async"
+            ) as mock_meta_delay,
+            patch.object(
+                tasks.intelligence.auto_summarize_task, "apply_async"
+            ) as mock_summary_delay,
+        ):
             mock_db.execute.side_effect = [
                 recent_rows,
                 1,
@@ -162,11 +198,19 @@ class TestReclusterRecentArticlesTask:
         assert result["reclustered"] == 1
         assert result["touched_clusters"] == 2
         update_call = mock_db.execute.call_args_list[1]
-        assert "UPDATE articles SET cluster_id = %s WHERE id = %s" in update_call.args[0]
+        assert (
+            "UPDATE articles SET cluster_id = %s WHERE id = %s" in update_call.args[0]
+        )
         assert update_call.args[1] == ("old-a", 2)
-        mock_extract_delay.assert_called_once_with(kwargs={'hours': 24, 'target_clusters': ['old-a', 'old-b']}, countdown=5)
-        mock_meta_delay.assert_called_once_with(kwargs={'hours': 24, 'target_clusters': ['old-a', 'old-b']}, countdown=5)
-        mock_summary_delay.assert_called_once_with(args=(['old-a', 'old-b'],), countdown=2)
+        mock_extract_delay.assert_called_once_with(
+            kwargs={"hours": 24, "target_clusters": ["old-a", "old-b"]}, countdown=5
+        )
+        mock_meta_delay.assert_called_once_with(
+            kwargs={"hours": 24, "target_clusters": ["old-a", "old-b"]}, countdown=5
+        )
+        mock_summary_delay.assert_called_once_with(
+            args=(["old-a", "old-b"],), countdown=2
+        )
 
         mock_invalidate.assert_called_once()
 
@@ -175,11 +219,19 @@ class TestSummarizeArticleTaskQuality:
     def test_uses_title_and_description_in_ai_prompt(self):
         import tasks
 
-        with patch("tasks.intelligence.db") as mock_db, \
-             patch("tasks.intelligence._call_ai", return_value=({'summary': 'Чисто резиме.'}, "nvidia")) as mock_call_ai, \
-             patch("tasks.intelligence.clean_json_response", side_effect=lambda value: value), \
-             patch("tasks.intelligence.invalidate_public_data_caches"), \
-             patch("tasks.utils.record_task_event"):
+        with (
+            patch("tasks.intelligence.db") as mock_db,
+            patch(
+                "tasks.intelligence._call_ai",
+                return_value=({"summary": "Чисто резиме."}, "nvidia"),
+            ) as mock_call_ai,
+            patch(
+                "tasks.intelligence.clean_json_response",
+                side_effect=lambda value: value,
+            ),
+            patch("tasks.intelligence.invalidate_public_data_caches"),
+            patch("tasks.utils.record_task_event"),
+        ):
             # Use a description > 200 chars to trigger AI path
             long_desc = "Опис со повеќе детали за настанот. " * 10
             mock_db.execute_one.return_value = {"description": long_desc}
@@ -218,15 +270,27 @@ class TestDailyBriefTaskQuality:
             },
         ]
 
-        with patch("tasks.delivery.db") as mock_db, \
-             patch.object(tasks, "score_cluster_for_homepage", return_value=4.2), \
-             patch.object(tasks, "_load_daily_brief_clusters", return_value=[{"cluster_id": "c1", "title": "T"}]):
+        with (
+            patch("tasks.delivery.db") as mock_db,
+            patch.object(tasks, "score_cluster_for_homepage", return_value=4.2),
+            patch.object(
+                tasks,
+                "_load_daily_brief_clusters",
+                return_value=[{"cluster_id": "c1", "title": "T"}],
+            ),
+        ):
             mock_db.execute.return_value = cluster_articles
             mock_db.execute_one.return_value = {
                 "summary": "• Главен развој: Трамп најави царини\n• Контекст: Реакции на пазарите\n• Што следи: Се чека рокот",
                 "perspectives": [
-                    {"angle": "Различни акценти", "content": "Reuters повеќе го нагласува рокот."},
-                    {"angle": "Што останува отворено", "content": "Не е јасно кога мерките ќе стапат на сила."},
+                    {
+                        "angle": "Различни акценти",
+                        "content": "Reuters повеќе го нагласува рокот.",
+                    },
+                    {
+                        "angle": "Што останува отворено",
+                        "content": "Не е јасно кога мерките ќе стапат на сила.",
+                    },
                 ],
             }
 
@@ -255,6 +319,7 @@ class TestDailyBriefTaskQuality:
 
         # Note: _is_grounded_daily_brief is currently hardcoded to return True
         assert tasks.delivery._is_grounded_daily_brief(brief, context) is True
+
     def test_accepts_daily_brief_when_named_entities_are_in_context(self):
         import tasks.delivery
 
@@ -295,15 +360,29 @@ class TestDailyBriefTaskQuality:
     def test_daily_brief_penalizes_press_release_style_titles(self):
         import tasks.delivery
 
-        assert tasks.delivery._briefing_title_penalty("ВМРО-ДПМНЕ: Во очајна потрага по добра вест") > 3.0
-        assert tasks.delivery._briefing_title_penalty("Земјотрес од 4,8 степени ја потресе Македонија") == 0.0
+        assert (
+            tasks.delivery._briefing_title_penalty(
+                "ВМРО-ДПМНЕ: Во очајна потрага по добра вест"
+            )
+            > 3.0
+        )
+        assert (
+            tasks.delivery._briefing_title_penalty(
+                "Земјотрес од 4,8 степени ја потресе Македонија"
+            )
+            == 0.0
+        )
         assert tasks.delivery._briefing_title_penalty(
             "ВМРО-ДПМНЕ: Во очајна потрага по добра вест",
             source_count=8,
             has_editorial_depth=True,
-        ) < tasks.delivery._briefing_title_penalty("ВМРО-ДПМНЕ: Во очајна потрага по добра вест")
+        ) < tasks.delivery._briefing_title_penalty(
+            "ВМРО-ДПМНЕ: Во очајна потрага по добра вест"
+        )
 
-    def test_load_daily_brief_clusters_pushes_plain_party_pr_behind_public_interest_cluster(self):
+    def test_load_daily_brief_clusters_pushes_plain_party_pr_behind_public_interest_cluster(
+        self,
+    ):
         import tasks
 
         rows = [
@@ -345,8 +424,10 @@ class TestDailyBriefTaskQuality:
                 return 5.0
             return 4.0
 
-        with patch("tasks.delivery.db") as mock_db, \
-             patch.object(tasks, "score_cluster_for_homepage", side_effect=fake_score):
+        with (
+            patch("tasks.delivery.db") as mock_db,
+            patch.object(tasks, "score_cluster_for_homepage", side_effect=fake_score),
+        ):
             mock_db.execute.return_value = rows
             mock_db.execute_one.side_effect = [
                 {"summary": "", "perspectives": []},
@@ -358,7 +439,9 @@ class TestDailyBriefTaskQuality:
         assert clusters[0]["cluster_id"] == "election"
         assert clusters[1]["cluster_id"] == "party-pr"
 
-    def test_load_daily_brief_clusters_excludes_routine_weather_when_higher_signal_clusters_exist(self):
+    def test_load_daily_brief_clusters_excludes_routine_weather_when_higher_signal_clusters_exist(
+        self,
+    ):
         import tasks
 
         rows = [
@@ -404,13 +487,18 @@ class TestDailyBriefTaskQuality:
             },
         ]
 
-        with patch("tasks.delivery.db") as mock_db, \
-             patch.object(tasks, "score_cluster_for_homepage", return_value=4.0):
+        with (
+            patch("tasks.delivery.db") as mock_db,
+            patch.object(tasks, "score_cluster_for_homepage", return_value=4.0),
+        ):
             mock_db.execute.return_value = rows
             mock_db.execute_one.side_effect = [
                 {"summary": "", "perspectives": []},
                 {"summary": "Главен развој со повеќе контекст.", "perspectives": []},
-                {"summary": "Ракетното лансирање повторно ја отвори безбедносната тема.", "perspectives": []},
+                {
+                    "summary": "Ракетното лансирање повторно ја отвори безбедносната тема.",
+                    "perspectives": [],
+                },
             ]
 
             clusters = tasks._load_daily_brief_clusters(limit=2)
@@ -459,12 +547,20 @@ class TestDailyBriefTaskQuality:
                 return 5.0
             return 4.0
 
-        with patch("tasks.delivery.db") as mock_db, \
-             patch.object(tasks, "score_cluster_for_homepage", side_effect=fake_score):
+        with (
+            patch("tasks.delivery.db") as mock_db,
+            patch.object(tasks, "score_cluster_for_homepage", side_effect=fake_score),
+        ):
             mock_db.execute.return_value = rows
             mock_db.execute_one.side_effect = [
-                {"summary": "Внатрепартиска реакција без јасен поширок ефект.", "perspectives": []},
-                {"summary": "Судската одлука отвори спор околу следните правни чекори.", "perspectives": []},
+                {
+                    "summary": "Внатрепартиска реакција без јасен поширок ефект.",
+                    "perspectives": [],
+                },
+                {
+                    "summary": "Судската одлука отвори спор околу следните правни чекори.",
+                    "perspectives": [],
+                },
             ]
 
             clusters = tasks._load_daily_brief_clusters(limit=2)
@@ -487,12 +583,28 @@ class TestProfileDeliveryTasks:
             }
         ]
 
-        with patch("tasks.delivery._load_active_delivery_rows", return_value=rows), \
-             patch("tasks.delivery._select_profile_brief_clusters", return_value=[{"cluster_id": "lead-cluster", "title": "Lead story", "source": "MIA", "source_count": 2, "match_reason": "следена тема: Политика"}]), \
-             patch("tasks.delivery._build_profile_briefing_message", return_value="Digest body"), \
-             patch("tasks.delivery._record_delivery_tracking_event", return_value=11), \
-             patch("tasks.delivery._send_ntfy_message", return_value=True) as mock_send, \
-             patch("tasks.delivery.db") as mock_db:
+        with (
+            patch("tasks.delivery._load_active_delivery_rows", return_value=rows),
+            patch(
+                "tasks.delivery._select_profile_brief_clusters",
+                return_value=[
+                    {
+                        "cluster_id": "lead-cluster",
+                        "title": "Lead story",
+                        "source": "MIA",
+                        "source_count": 2,
+                        "match_reason": "следена тема: Политика",
+                    }
+                ],
+            ),
+            patch(
+                "tasks.delivery._build_profile_briefing_message",
+                return_value="Digest body",
+            ),
+            patch("tasks.delivery._record_delivery_tracking_event", return_value=11),
+            patch("tasks.delivery._send_ntfy_message", return_value=True) as mock_send,
+            patch("tasks.delivery.db") as mock_db,
+        ):
             tasks.send_profile_briefings_task()
 
         mock_send.assert_called_once()
@@ -513,12 +625,28 @@ class TestProfileDeliveryTasks:
             }
         ]
 
-        with patch("tasks.delivery._load_active_delivery_rows", return_value=rows), \
-             patch("tasks.delivery._select_profile_weekly_clusters", return_value=[{"cluster_id": "week-cluster", "title": "Week lead", "source": "MIA", "source_count": 4, "match_reason": "следена тема: Политика"}]), \
-             patch("tasks.delivery._build_profile_weekly_digest_message", return_value="Weekly body"), \
-             patch("tasks.delivery._record_delivery_tracking_event", return_value=22), \
-             patch("tasks.delivery._send_ntfy_message", return_value=True) as mock_send, \
-             patch("tasks.delivery.db") as mock_db:
+        with (
+            patch("tasks.delivery._load_active_delivery_rows", return_value=rows),
+            patch(
+                "tasks.delivery._select_profile_weekly_clusters",
+                return_value=[
+                    {
+                        "cluster_id": "week-cluster",
+                        "title": "Week lead",
+                        "source": "MIA",
+                        "source_count": 4,
+                        "match_reason": "следена тема: Политика",
+                    }
+                ],
+            ),
+            patch(
+                "tasks.delivery._build_profile_weekly_digest_message",
+                return_value="Weekly body",
+            ),
+            patch("tasks.delivery._record_delivery_tracking_event", return_value=22),
+            patch("tasks.delivery._send_ntfy_message", return_value=True) as mock_send,
+            patch("tasks.delivery.db") as mock_db,
+        ):
             tasks.send_profile_weekly_digests_task()
 
         mock_send.assert_called_once()
@@ -526,7 +654,9 @@ class TestProfileDeliveryTasks:
         assert "last_weekly_sent_at" in update_sql
         assert "event_id=22" in mock_send.call_args.kwargs["click_url"]
 
-    def test_select_profile_weekly_clusters_prefers_items_with_real_digest_engagement(self):
+    def test_select_profile_weekly_clusters_prefers_items_with_real_digest_engagement(
+        self,
+    ):
         import tasks
 
         clusters = [
@@ -550,14 +680,30 @@ class TestProfileDeliveryTasks:
             },
         ]
 
-        with patch("tasks.delivery._load_weekly_digest_clusters", return_value=clusters), \
-             patch(
-                 "tasks.delivery._load_weekly_cluster_engagement",
-                 return_value={
-                     "engaged-cluster": {"sends": 4, "opens": 3, "clicks": 1, "open_rate": 0.75, "click_rate": 0.25, "engagement_score": 0.7},
-                     "steady-cluster": {"sends": 4, "opens": 0, "clicks": 0, "open_rate": 0.0, "click_rate": 0.0, "engagement_score": 0.0},
-                 },
-             ):
+        with (
+            patch("tasks.delivery._load_weekly_digest_clusters", return_value=clusters),
+            patch(
+                "tasks.delivery._load_weekly_cluster_engagement",
+                return_value={
+                    "engaged-cluster": {
+                        "sends": 4,
+                        "opens": 3,
+                        "clicks": 1,
+                        "open_rate": 0.75,
+                        "click_rate": 0.25,
+                        "engagement_score": 0.7,
+                    },
+                    "steady-cluster": {
+                        "sends": 4,
+                        "opens": 0,
+                        "clicks": 0,
+                        "open_rate": 0.0,
+                        "click_rate": 0.0,
+                        "engagement_score": 0.0,
+                    },
+                },
+            ),
+        ):
             result = tasks._select_profile_weekly_clusters(
                 {"followedTopics": ["Политика"], "followedSources": []},
                 limit=2,
@@ -568,11 +714,15 @@ class TestProfileDeliveryTasks:
 
     def test_load_weekly_cluster_engagement_uses_send_metadata_cluster_ids(self):
         import tasks
-    
+
         with patch("tasks.delivery.db") as mock_db:
             mock_db.execute.side_effect = [
                 [
-                    {"id": 10, "cluster_id": "lead-cluster", "metadata": {"cluster_ids": ["lead-cluster", "second-cluster"]}},
+                    {
+                        "id": 10,
+                        "cluster_id": "lead-cluster",
+                        "metadata": {"cluster_ids": ["lead-cluster", "second-cluster"]},
+                    },
                 ],
                 [
                     {"parent_event_id": 10, "event_type": "open"},
@@ -580,7 +730,7 @@ class TestProfileDeliveryTasks:
                 ],
             ]
             result = tasks._load_weekly_cluster_engagement(days=30)
-    
+
         assert result["lead-cluster"]["sends"] == 1
         assert result["lead-cluster"]["opens"] == 1
         assert result["lead-cluster"]["clicks"] == 1
@@ -622,7 +772,9 @@ class TestProfileDeliveryTasks:
         assert result["MIA"]["open_rate"] == 1.0
         assert result["Телма"]["click_rate"] == 1.0
 
-    def test_build_weekly_digest_sections_prioritizes_high_performing_followed_topics(self):
+    def test_build_weekly_digest_sections_prioritizes_high_performing_followed_topics(
+        self,
+    ):
         import tasks
 
         clusters = [
@@ -657,7 +809,9 @@ class TestProfileDeliveryTasks:
         assert sections[1]["title"] == "Следена тема: Политика"
         assert "силен интерес" in sections[1]["subtitle"]
 
-    def test_build_weekly_digest_sections_prioritizes_strong_source_section_over_weaker_topic_section(self):
+    def test_build_weekly_digest_sections_prioritizes_strong_source_section_over_weaker_topic_section(
+        self,
+    ):
         import tasks
 
         clusters = [
@@ -709,11 +863,23 @@ class TestProfileDeliveryTasks:
             }
         ]
 
-        with patch("tasks.delivery._load_weekly_topic_engagement", return_value={"Политика": {"section_score": 0.8}}), \
-             patch("tasks.delivery._load_weekly_source_engagement", return_value={}), \
-             patch("tasks.delivery._build_weekly_digest_sections", return_value=[
-                 {"title": "Што најмногу се помести", "subtitle": "главен неделен развој", "clusters": clusters}
-             ]):
+        with (
+            patch(
+                "tasks.delivery._load_weekly_topic_engagement",
+                return_value={"Политика": {"section_score": 0.8}},
+            ),
+            patch("tasks.delivery._load_weekly_source_engagement", return_value={}),
+            patch(
+                "tasks.delivery._build_weekly_digest_sections",
+                return_value=[
+                    {
+                        "title": "Што најмногу се помести",
+                        "subtitle": "главен неделен развој",
+                        "clusters": clusters,
+                    }
+                ],
+            ),
+        ):
             message = tasks._build_profile_weekly_digest_message(
                 {"followedTopics": ["Политика"], "followedSources": []},
                 clusters,
@@ -757,8 +923,10 @@ class TestProfileDeliveryTasks:
 
         profile = {"followedTopics": ["Политика", "Економија"], "followedSources": []}
 
-        with patch("tasks.delivery._load_weekly_digest_clusters", return_value=clusters), \
-             patch("tasks.delivery._load_weekly_cluster_engagement", return_value={}):
+        with (
+            patch("tasks.delivery._load_weekly_digest_clusters", return_value=clusters),
+            patch("tasks.delivery._load_weekly_cluster_engagement", return_value={}),
+        ):
             result = tasks.delivery._select_profile_weekly_clusters(profile, limit=3)
 
         returned_topics = [item["topic"] for item in result]
@@ -832,15 +1000,20 @@ class TestProfileDeliveryTasks:
             "cluster_summary": "Главниот развој.",
         }
 
-        with patch("tasks.delivery.acquire_task_lock", return_value=True), \
-             patch("tasks.delivery.release_task_lock"), \
-             patch("tasks.delivery.get_celery_queue_depth", return_value=0), \
-             patch("tasks.delivery._load_active_delivery_rows", return_value=rows), \
-             patch("tasks.delivery._select_breaking_cluster_for_profile", return_value=candidate), \
-             patch("tasks.delivery._record_delivery_tracking_event", return_value=33), \
-             patch("tasks.delivery._send_ntfy_message", return_value=True) as mock_send, \
-             patch("tasks.delivery.redis_client") as mock_redis, \
-             patch("tasks.delivery.db") as mock_db:
+        with (
+            patch("tasks.delivery.acquire_task_lock", return_value=True),
+            patch("tasks.delivery.release_task_lock"),
+            patch("tasks.delivery.get_celery_queue_depth", return_value=0),
+            patch("tasks.delivery._load_active_delivery_rows", return_value=rows),
+            patch(
+                "tasks.delivery._select_breaking_cluster_for_profile",
+                return_value=candidate,
+            ),
+            patch("tasks.delivery._record_delivery_tracking_event", return_value=33),
+            patch("tasks.delivery._send_ntfy_message", return_value=True) as mock_send,
+            patch("tasks.delivery.redis_client") as mock_redis,
+            patch("tasks.delivery.db") as mock_db,
+        ):
             mock_redis.set.return_value = True
             tasks.send_profile_breaking_alerts_task()
 
@@ -853,10 +1026,12 @@ class TestProfileDeliveryTasks:
     def test_breaking_alerts_skip_when_queue_backlog_is_high(self):
         import tasks
 
-        with patch("tasks.delivery.acquire_task_lock", return_value=True), \
-             patch("tasks.delivery.release_task_lock") as mock_release, \
-             patch("tasks.delivery.get_celery_queue_depth", return_value=200), \
-             patch("tasks.delivery._load_active_delivery_rows") as mock_rows:
+        with (
+            patch("tasks.delivery.acquire_task_lock", return_value=True),
+            patch("tasks.delivery.release_task_lock") as mock_release,
+            patch("tasks.delivery.get_celery_queue_depth", return_value=200),
+            patch("tasks.delivery._load_active_delivery_rows") as mock_rows,
+        ):
             tasks.send_profile_breaking_alerts_task()
 
         mock_rows.assert_not_called()
@@ -865,14 +1040,17 @@ class TestProfileDeliveryTasks:
     def test_breaking_alerts_skip_when_lock_is_held(self):
         import tasks
 
-        with patch("tasks.delivery.acquire_task_lock", return_value=False), \
-             patch("tasks.delivery._load_active_delivery_rows") as mock_rows:
+        with (
+            patch("tasks.delivery.acquire_task_lock", return_value=False),
+            patch("tasks.delivery._load_active_delivery_rows") as mock_rows,
+        ):
             tasks.send_profile_breaking_alerts_task()
 
         mock_rows.assert_not_called()
 
     def test_select_breaking_cluster_skips_recent_topic_cooldown(self):
         import tasks
+
         now = datetime.datetime.now(datetime.timezone.utc)
         recent_iso = now.isoformat()
         cluster = {
@@ -885,13 +1063,33 @@ class TestProfileDeliveryTasks:
             "topic": "Политика",
             "created_at": recent_iso,
         }
-        freshness = {"refresh_needed": True, "freshness_score": 2.1, "reasons": ["new_sources"]}
+        freshness = {
+            "refresh_needed": True,
+            "freshness_score": 2.1,
+            "reasons": ["new_sources"],
+        }
 
-        with patch("tasks.delivery._load_recent_breaking_clusters", return_value=[cluster]), \
-             patch("tasks.delivery._load_cluster_alert_material", return_value=([{"title": "a", "source": "MIA", "created_at": recent_iso}], now)), \
-             patch("tasks.delivery._load_delivery_kind_performance", return_value={}), \
-             patch("tasks.delivery._load_breaking_target_performance", return_value={"topics": {}, "sources": {}}), \
-             patch("tasks.delivery.assess_cluster_synthesis_freshness", return_value=freshness):
+        with (
+            patch(
+                "tasks.delivery._load_recent_breaking_clusters", return_value=[cluster]
+            ),
+            patch(
+                "tasks.delivery._load_cluster_alert_material",
+                return_value=(
+                    [{"title": "a", "source": "MIA", "created_at": recent_iso}],
+                    now,
+                ),
+            ),
+            patch("tasks.delivery._load_delivery_kind_performance", return_value={}),
+            patch(
+                "tasks.delivery._load_breaking_target_performance",
+                return_value={"topics": {}, "sources": {}},
+            ),
+            patch(
+                "tasks.delivery.assess_cluster_synthesis_freshness",
+                return_value=freshness,
+            ),
+        ):
             candidate = tasks._select_breaking_cluster_for_profile(
                 {"followedTopics": ["Политика"], "followedSources": []},
                 [],
@@ -905,7 +1103,10 @@ class TestProfileDeliveryTasks:
 
     def test_select_breaking_cluster_allows_material_refresh_after_seen(self):
         import tasks
-        older = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=5)).isoformat()
+
+        older = (
+            datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=5)
+        ).isoformat()
         cluster = {
             "cluster_id": "same-cluster",
             "title": "Breaking story",
@@ -916,13 +1117,39 @@ class TestProfileDeliveryTasks:
             "topic": "Политика",
             "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         }
-        freshness = {"refresh_needed": True, "freshness_score": 2.6, "reasons": ["new_sources", "new_numbers"]}
+        freshness = {
+            "refresh_needed": True,
+            "freshness_score": 2.6,
+            "reasons": ["new_sources", "new_numbers"],
+        }
 
-        with patch("tasks.delivery._load_recent_breaking_clusters", return_value=[cluster]), \
-             patch("tasks.delivery._load_cluster_alert_material", return_value=([{"title": "a", "source": "MIA", "created_at": cluster["created_at"]}], older)), \
-             patch("tasks.delivery._load_delivery_kind_performance", return_value={}), \
-             patch("tasks.delivery._load_breaking_target_performance", return_value={"topics": {}, "sources": {}}), \
-             patch("tasks.delivery.assess_cluster_synthesis_freshness", return_value=freshness):
+        with (
+            patch(
+                "tasks.delivery._load_recent_breaking_clusters", return_value=[cluster]
+            ),
+            patch(
+                "tasks.delivery._load_cluster_alert_material",
+                return_value=(
+                    [
+                        {
+                            "title": "a",
+                            "source": "MIA",
+                            "created_at": cluster["created_at"],
+                        }
+                    ],
+                    older,
+                ),
+            ),
+            patch("tasks.delivery._load_delivery_kind_performance", return_value={}),
+            patch(
+                "tasks.delivery._load_breaking_target_performance",
+                return_value={"topics": {}, "sources": {}},
+            ),
+            patch(
+                "tasks.delivery.assess_cluster_synthesis_freshness",
+                return_value=freshness,
+            ),
+        ):
             candidate = tasks._select_breaking_cluster_for_profile(
                 {"followedTopics": ["Политика"], "followedSources": []},
                 ["same-cluster"],
@@ -936,7 +1163,9 @@ class TestProfileDeliveryTasks:
         assert candidate["cluster_id"] == "same-cluster"
         assert candidate["alert_label"] == "Итно ажурирање"
 
-    def test_classify_alert_candidate_becomes_stricter_when_breaking_engagement_is_weak(self):
+    def test_classify_alert_candidate_becomes_stricter_when_breaking_engagement_is_weak(
+        self,
+    ):
         import tasks
 
         candidate = tasks._classify_alert_candidate(
@@ -951,7 +1180,9 @@ class TestProfileDeliveryTasks:
         assert candidate["score_adjustment"] < 0
         assert candidate["topic_gap_minutes"] > 360
 
-    def test_classify_alert_candidate_allows_faster_high_signal_alerts_when_engagement_is_strong(self):
+    def test_classify_alert_candidate_allows_faster_high_signal_alerts_when_engagement_is_strong(
+        self,
+    ):
         import tasks
 
         candidate = tasks._classify_alert_candidate(
@@ -975,7 +1206,12 @@ class TestProfileDeliveryTasks:
             ["Политика"],
             [],
             {},
-            {"topics": {"Политика": {"sends": 3, "open_rate": 0.67, "click_rate": 0.25}}, "sources": {}},
+            {
+                "topics": {
+                    "Политика": {"sends": 3, "open_rate": 0.67, "click_rate": 0.25}
+                },
+                "sources": {},
+            },
         )
 
         assert candidate["engagement_label"] == "Силен одзив за следеното"
@@ -991,7 +1227,10 @@ class TestProfileDeliveryTasks:
             [],
             ["MIA"],
             {},
-            {"topics": {}, "sources": {"MIA": {"sends": 4, "open_rate": 0.15, "click_rate": 0.0}}},
+            {
+                "topics": {},
+                "sources": {"MIA": {"sends": 4, "open_rate": 0.15, "click_rate": 0.0}},
+            },
         )
 
         assert candidate["engagement_label"] == "Слаб одзив за следеното"
@@ -1004,7 +1243,13 @@ class TestProfileDeliveryTasks:
         with patch("tasks.delivery.db") as mock_db:
             mock_db.execute.side_effect = [
                 [
-                    {"id": 7, "metadata": {"matched_topics": ["Политика"], "matched_sources": ["MIA"]}},
+                    {
+                        "id": 7,
+                        "metadata": {
+                            "matched_topics": ["Политика"],
+                            "matched_sources": ["MIA"],
+                        },
+                    },
                 ],
                 [
                     {"parent_event_id": 7, "event_type": "open"},

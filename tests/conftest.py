@@ -129,7 +129,9 @@ def _install_starlette_stub():
     middleware_base = types.ModuleType("starlette.middleware.base")
 
     class Response:
-        def __init__(self, content=None, status_code=200, headers=None, media_type=None):
+        def __init__(
+            self, content=None, status_code=200, headers=None, media_type=None
+        ):
             self.content = content
             self.status_code = status_code
             self.headers = headers or {}
@@ -221,13 +223,17 @@ _MODULES_TO_RELOAD = (
 @pytest.fixture(autouse=True)
 def _restore_runtime_modules(request):
     module_name = getattr(request.module, "__name__", "")
-    preserve_fake_database = module_name.endswith("test_personalized_news") or module_name.endswith("test_api_fast")
+    preserve_fake_database = module_name.endswith(
+        "test_personalized_news"
+    ) or module_name.endswith("test_api_fast")
 
     if hasattr(request.module, "_get_fake_fastapi_modules"):
         for name, mod in request.module._get_fake_fastapi_modules().items():
             sys.modules[name] = mod
 
-    if module_name.endswith("test_personalized_news") and hasattr(request.module, "mock_db_manager"):
+    if module_name.endswith("test_personalized_news") and hasattr(
+        request.module, "mock_db_manager"
+    ):
         sys.modules["database"] = MagicMock(db_manager=request.module.mock_db_manager)
     elif not preserve_fake_database:
         sys.modules["database"] = _REAL_DATABASE_MODULE

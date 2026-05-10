@@ -4,17 +4,18 @@ from utils import redis_client
 
 log = logging.getLogger("presek")
 
+
 class BreakingNewsNotifier:
     def __init__(self, topic, threshold=3):
-        self.topic             = topic
-        self.threshold         = threshold
+        self.topic = topic
+        self.threshold = threshold
 
     def _is_notified(self, key: str) -> bool:
         """Check Redis to see if we already notified this event."""
         try:
             return bool(redis_client.get(f"notifier:sent:{key}"))
         except Exception:
-            log.debug(f"[notifier] Redis error in _is_notified")
+            log.debug("[notifier] Redis error in _is_notified")
             return False
 
     def _mark_as_notified(self, key: str, expiry: int = 86400):
@@ -22,18 +23,22 @@ class BreakingNewsNotifier:
         try:
             redis_client.set(f"notifier:sent:{key}", "1", ex=expiry)
         except Exception:
-            log.debug(f"[notifier] Redis error in _mark_as_notified")
+            log.debug("[notifier] Redis error in _mark_as_notified")
             pass
 
     def send_ntfy(self, title, message, cluster_id=None):
         try:
             data = {
-                "topic":   self.topic,
-                "title":   title,
+                "topic": self.topic,
+                "title": title,
                 "message": message,
-                "tags":    ["newspaper", "rotating_light"],
+                "tags": ["newspaper", "rotating_light"],
                 "priority": 4,
-                "click":   f"https://presek.mk/cluster/{cluster_id}" if cluster_id else "https://presek.mk"
+                "click": (
+                    f"https://presek.mk/cluster/{cluster_id}"
+                    if cluster_id
+                    else "https://presek.mk"
+                ),
             }
             with httpx.Client(timeout=5.0) as client:
                 resp = client.post(f"https://ntfy.sh/{self.topic}", json=data)
@@ -53,12 +58,16 @@ class BreakingNewsNotifier:
             msg = f"{teams}\n{msg}"
 
         data = {
-            "topic":   self.topic,
-            "title":   title,
+            "topic": self.topic,
+            "title": title,
             "message": msg,
-            "tags":    ["soccer", "goal_net", "bell"],
-            "priority": 5, # Max priority for scores
-            "click":   f"https://presek.mk/cluster/{cluster_id}" if cluster_id else "https://presek.mk"
+            "tags": ["soccer", "goal_net", "bell"],
+            "priority": 5,  # Max priority for scores
+            "click": (
+                f"https://presek.mk/cluster/{cluster_id}"
+                if cluster_id
+                else "https://presek.mk"
+            ),
         }
         try:
             with httpx.Client(timeout=5.0) as client:
@@ -69,7 +78,15 @@ class BreakingNewsNotifier:
         except Exception as e:
             log.warning(f"[notifier] Score notification failed: {e}")
 
-    def notify(self, headline, sources_count, cluster_id, description=None, sources=None, image_url=None):
+    def notify(
+        self,
+        headline,
+        sources_count,
+        cluster_id,
+        description=None,
+        sources=None,
+        image_url=None,
+    ):
         if self._is_notified(cluster_id):
             return
 
@@ -82,5 +99,9 @@ class BreakingNewsNotifier:
         parts.append(f"<i>{source_line}</i>")
         msg = "\n\n".join(parts)
 
-        self.send_ntfy("Важна вест — Пресек", f"{headline}\n({sources_count} извори известуваат)", cluster_id)
+        self.send_ntfy(
+            "Важна вест — Пресек",
+            f"{headline}\n({sources_count} извори известуваат)",
+            cluster_id,
+        )
         self._mark_as_notified(cluster_id)

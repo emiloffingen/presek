@@ -12,6 +12,7 @@ def _install_fake_fastapi():
         def get(self, *_args, **_kwargs):
             def decorator(fn):
                 return fn
+
             return decorator
 
     class _FakeRequest:

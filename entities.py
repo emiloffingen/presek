@@ -7,6 +7,7 @@ Pipeline:
    people / orgs / locations the lexicon doesn't know about
 3. Regex capitalized-phrase heuristic as a final fallback
 """
+
 import re
 import logging
 import threading
@@ -36,7 +37,9 @@ def _get_spacy():
             _spacy_unavailable = True
             return None
         try:
-            _spacy_nlp = spacy.load("xx_ent_wiki_sm", disable=["tagger", "parser", "lemmatizer"])
+            _spacy_nlp = spacy.load(
+                "xx_ent_wiki_sm", disable=["tagger", "parser", "lemmatizer"]
+            )
             log.info("[entities] spaCy xx_ent_wiki_sm NER loaded")
         except Exception as e:
             log.warning(
@@ -99,7 +102,6 @@ KNOWN_ENTITIES = {
     "Фатмир Битиќи": "PERSON",
     "Халил Снопче": "PERSON",
     "Христијан Мицкоски": "PERSON",
-    
     # Global - People
     "Доналд Трамп": "PERSON",
     "Џо Бајден": "PERSON",
@@ -136,7 +138,6 @@ KNOWN_ENTITIES = {
     "Бил Гејтс": "PERSON",
     "Џеф Безос": "PERSON",
     "Џорџ Сорос": "PERSON",
-
     # Organizations - Domestic
     "Влада": "ORG",
     "Собрание": "ORG",
@@ -190,7 +191,6 @@ KNOWN_ENTITIES = {
     "АД Електрани": "ORG",
     "Агенција за аудио и аудиовизуелни медиумски услуги": "ORG",
     "АВМУ": "ORG",
-
     # Organizations - International
     "Европска Унија": "ORG",
     "ЕУ": "ORG",
@@ -227,22 +227,101 @@ KNOWN_ENTITIES = {
 
 # Words to ignore (common words that are capitalized at start of sentence or follow entities)
 IGNORE_WORDS = {
-    "Денеска", "Утре", "Вчера", "Повеќе", "Според", "Како", "Ова", "Оваа", "Тоа",
-    "Сите", "Нема", "Има", "Беше", "Биде", "Овие", "Никој", "Секој", "Веста",
-    "Информација", "Медиумите", "Новите", "Повторно", "Наместо", "Додека",
-    "Поради", "Заради", "Иако", "Освен", "Меѓутоа", "Сепак", "Затоа", "Но", "Значи",
-    "Кога", "Само", "Она", "Исто", "Истото", "Токму", "Тогаш", "Спротивно",
-    "Впрочем", "Меѓу", "Преку", "Во", "На", "За", "Од", "Со", "До",
-    "Не", "Да", "Дали", "Прво", "Првиот", "Два", "Три", "Потоа", "После",
-    "Фон", "Дер", "Вон", "Веќе", "Кој", "Која", "Кои", "Што", "Каде", "Зошто",
-    "Каков", "Каква", "Какви", "Негов", "Негова", "Нивни", "Може", "Можеби",
-    "Еден", "Една", "Едно", "Пред", "Под", "Над", "Меѓу", "Помеѓу",
+    "Денеска",
+    "Утре",
+    "Вчера",
+    "Повеќе",
+    "Според",
+    "Како",
+    "Ова",
+    "Оваа",
+    "Тоа",
+    "Сите",
+    "Нема",
+    "Има",
+    "Беше",
+    "Биде",
+    "Овие",
+    "Никој",
+    "Секој",
+    "Веста",
+    "Информација",
+    "Медиумите",
+    "Новите",
+    "Повторно",
+    "Наместо",
+    "Додека",
+    "Поради",
+    "Заради",
+    "Иако",
+    "Освен",
+    "Меѓутоа",
+    "Сепак",
+    "Затоа",
+    "Но",
+    "Значи",
+    "Кога",
+    "Само",
+    "Она",
+    "Исто",
+    "Истото",
+    "Токму",
+    "Тогаш",
+    "Спротивно",
+    "Впрочем",
+    "Меѓу",
+    "Преку",
+    "Во",
+    "На",
+    "За",
+    "Од",
+    "Со",
+    "До",
+    "Не",
+    "Да",
+    "Дали",
+    "Прво",
+    "Првиот",
+    "Два",
+    "Три",
+    "Потоа",
+    "После",
+    "Фон",
+    "Дер",
+    "Вон",
+    "Веќе",
+    "Кој",
+    "Која",
+    "Кои",
+    "Што",
+    "Каде",
+    "Зошто",
+    "Каков",
+    "Каква",
+    "Какви",
+    "Негов",
+    "Негова",
+    "Нивни",
+    "Може",
+    "Можеби",
+    "Еден",
+    "Една",
+    "Едно",
+    "Пред",
+    "Под",
+    "Над",
+    "Меѓу",
+    "Помеѓу",
 }
 
 # Regex for detecting Macedonian proper nouns (starts with capital letter)
 # Uses a negative lookahead to avoid matching common trailing noise words
 _trailing_ignore = "|".join(IGNORE_WORDS)
-PROPER_NOUN_PATTERN = re.compile(r"(?:\b[А-ЯЀ-ӿ][а-яѐ-ӿ0-9]+\b(?:[\s-]+\b(?!" + _trailing_ignore + r")[А-ЯЀ-ӿ][а-яѐ-ӿ0-9]+\b){0,3})")
+PROPER_NOUN_PATTERN = re.compile(
+    r"(?:\b[А-ЯЀ-ӿ][а-яѐ-ӿ0-9]+\b(?:[\s-]+\b(?!"
+    + _trailing_ignore
+    + r")[А-ЯЀ-ӿ][а-яѐ-ӿ0-9]+\b){0,3})"
+)
 
 
 # Normalize variants to canonical forms
@@ -336,8 +415,12 @@ _ENTITY_ALIASES_CASEFOLDED = {
     str(alias).strip().casefold(): canonical
     for alias, canonical in ENTITY_ALIASES.items()
 }
-_KNOWN_ENTITIES_ORDERED = sorted(KNOWN_ENTITIES.items(), key=lambda item: (-len(item[0]), item[0]))
-_ENTITY_ALIASES_ORDERED = sorted(ENTITY_ALIASES.items(), key=lambda item: (-len(item[0]), item[0]))
+_KNOWN_ENTITIES_ORDERED = sorted(
+    KNOWN_ENTITIES.items(), key=lambda item: (-len(item[0]), item[0])
+)
+_ENTITY_ALIASES_ORDERED = sorted(
+    ENTITY_ALIASES.items(), key=lambda item: (-len(item[0]), item[0])
+)
 
 _KNOWN_SURNAMES = {}
 _KNOWN_FIRSTNAMES = {}
@@ -427,6 +510,7 @@ def normalize_person_surface_name(name: str) -> str:
 
     return clean
 
+
 def validate_person_names(text: str) -> str:
     """
     Heuristic to fix AI hallucinations of famous names.
@@ -435,21 +519,25 @@ def validate_person_names(text: str) -> str:
     """
     if not text:
         return text
-    
+
     # 1. Look for known name phrases (2 or 3 parts)
     # This regex matches 2 to 3 capitalized words, where each word can contain internal hyphens
-    all_words = re.findall(r"\b[А-ЯЀ-ӿ][а-яѐ-ӿ-]+(?:\s+[А-ЯЀ-ӿ][а-яѐ-ӿ-]+){1,2}\b", text)
+    all_words = re.findall(
+        r"\b[А-ЯЀ-ӿ][а-яѐ-ӿ-]+(?:\s+[А-ЯЀ-ӿ][а-яѐ-ӿ-]+){1,2}\b", text
+    )
     # print(f"DEBUG: all_words={all_words}")
     all_words.sort(key=len, reverse=True)
-    
+
     for pair in all_words:
-        if pair in KNOWN_ENTITIES: continue
-        
+        if pair in KNOWN_ENTITIES:
+            continue
+
         # Normalize whitespace
         clean_pair = re.sub(r"\s+", " ", pair).strip()
         parts = clean_pair.split()
-        if len(parts) < 2: continue
-        
+        if len(parts) < 2:
+            continue
+
         first = parts[0]
         # Check if ANY part of the phrase (except the first) is a known surname
         canonical = None
@@ -458,17 +546,20 @@ def validate_person_names(text: str) -> str:
             last_variants = [part]
             if "-" in part:
                 last_variants.extend(part.split("-"))
-            
+
             for variant in sorted(last_variants, key=len, reverse=True):
                 if len(variant) >= 4 and variant in _KNOWN_SURNAMES:
                     canonical = _KNOWN_SURNAMES[variant]
                     matched_part = part
                     break
-            if canonical: break
-        
+            if canonical:
+                break
+
         # Fallback for very specific high-profile mixups
         if not canonical:
-            if first == "Бујар" and ("Силјановска" in clean_pair or "Сиљановска" in clean_pair):
+            if first == "Бујар" and (
+                "Силјановска" in clean_pair or "Сиљановска" in clean_pair
+            ):
                 canonical = "Гордана Силјановска-Давкова"
                 matched_part = parts[-1]
 
@@ -476,28 +567,35 @@ def validate_person_names(text: str) -> str:
             canonical_parts = canonical.split()
             # Canonical's last part (might be hyphenated)
             canonical_last = canonical_parts[-1]
-            
+
             # Improvement: Replace if first name is wrong OR if surname is an alias/variant (like Osmanoska)
             # is_wrong_first: Bujar (m) used with Siljanovska (f)
-            is_wrong_first = (first != canonical_parts[0] and first in _KNOWN_FIRSTNAMES)
-            
+            is_wrong_first = first != canonical_parts[0] and first in _KNOWN_FIRSTNAMES
+
             # Special logic for Bujar + Siljanovska
-            if first == "Бујар" and ("Силјановска" in (matched_part or "") or "Сиљановска" in (matched_part or "")):
+            if first == "Бујар" and (
+                "Силјановска" in (matched_part or "")
+                or "Сиљановска" in (matched_part or "")
+            ):
                 is_wrong_first = True
                 canonical = "Гордана Силјановска-Давкова"
                 canonical_parts = canonical.split()
                 canonical_last = canonical_parts[-1]
 
-            is_alias_surname = (matched_part != canonical_last)
-            
+            is_alias_surname = matched_part != canonical_last
+
             if is_wrong_first or is_alias_surname:
                 # Use word boundaries and ensure we match the ENTIRE pair
                 # Using clean_pair which is what split into parts
-                pattern = rf"(?<![А-ЯЀ-ӿа-яѐ-ӿ-]){re.escape(clean_pair)}(?![А-ЯЀ-ӿа-яѐ-ӿ-])"
+                pattern = (
+                    rf"(?<![А-ЯЀ-ӿа-яѐ-ӿ-]){re.escape(clean_pair)}(?![А-ЯЀ-ӿа-яѐ-ӿ-])"
+                )
                 if re.search(pattern, text):
                     text = re.sub(pattern, canonical, text)
-                    log.info(f"[entities/fix] Hallucination detected: {clean_pair} -> {canonical}")
-                    
+                    log.info(
+                        f"[entities/fix] Hallucination detected: {clean_pair} -> {canonical}"
+                    )
+
     return text
 
 
@@ -516,13 +614,14 @@ def _is_name_like_phrase(candidate: str) -> bool:
     if any(part in IGNORE_WORDS for part in parts):
         return False
     for part in parts:
-        if len(part) < 2: # "von der" uses short words
+        if len(part) < 2:  # "von der" uses short words
             return False
         if not re.match(r"^[A-ZА-ЯЀ-ӿ][A-Za-zА-Яа-яЀ-ӿѐ-ӿ'.-]*$", part):
             # Allow lowercase parts for particles like 'von', 'der' if already passed IGNORE_WORDS
             # but usually regex fallback captures capitalized words.
             pass
     return True
+
 
 def update_knowledge_graph(entities: list[dict], context_text: str = ""):
     """
@@ -531,14 +630,15 @@ def update_knowledge_graph(entities: list[dict], context_text: str = ""):
     from database import db_manager as db
     from nlp import analyze_sentiment_locally
 
-    if not entities: return
+    if not entities:
+        return
 
     sentiment = analyze_sentiment_locally(context_text) if context_text else 0.0
 
     for ent in entities:
         # Resolve to canonical name before DB update
-        canonical_name = normalize_entity_name(ent['name'])
-        
+        canonical_name = normalize_entity_name(ent["name"])
+
         sql = """
             INSERT INTO knowledge_entities (name, type, total_mentions, last_seen, sentiment_score)
             VALUES (%s, %s, 1, CURRENT_TIMESTAMP, %s)
@@ -547,10 +647,10 @@ def update_knowledge_graph(entities: list[dict], context_text: str = ""):
                 last_seen = EXCLUDED.last_seen,
                 sentiment_score = (knowledge_entities.sentiment_score * 0.8) + (EXCLUDED.sentiment_score * 0.2)
         """
-        db.execute(sql, (canonical_name, ent['type'], sentiment), fetch=False)
+        db.execute(sql, (canonical_name, ent["type"], sentiment), fetch=False)
 
     if len(entities) > 1:
-        sorted_names = sorted([e['name'] for e in entities])
+        sorted_names = sorted([e["name"] for e in entities])
         for i in range(len(sorted_names)):
             for j in range(i + 1, len(sorted_names)):
                 a, b = sorted_names[i], sorted_names[j]
@@ -562,6 +662,7 @@ def update_knowledge_graph(entities: list[dict], context_text: str = ""):
                         last_seen = EXCLUDED.last_seen
                 """
                 db.execute(sql, (a, b), fetch=False)
+
 
 def extract_entities(text: str, max_entities: int = 5) -> list[dict]:
     """
@@ -595,7 +696,11 @@ def extract_entities(text: str, max_entities: int = 5) -> list[dict]:
                 if name in IGNORE_WORDS:
                     continue
                 mapped = _SPACY_LABEL_MAP.get(ent.label_, "ENTITY")
-                if mapped == "PERSON" and not (_is_name_like_phrase(name) or name in ENTITY_ALIASES or name in KNOWN_ENTITIES):
+                if mapped == "PERSON" and not (
+                    _is_name_like_phrase(name)
+                    or name in ENTITY_ALIASES
+                    or name in KNOWN_ENTITIES
+                ):
                     continue
                 # Prefer the curated type if we already matched this name
                 if name in found:
@@ -625,11 +730,11 @@ def extract_entities(text: str, max_entities: int = 5) -> list[dict]:
     result = []
     for name, etype in found.items():
         canonical_name = normalize_entity_name(name)
-        
+
         # Avoid duplicates if multiple variants resolved to the same canonical name
-        if any(r['name'] == canonical_name for r in result):
+        if any(r["name"] == canonical_name for r in result):
             continue
-            
+
         result.append({"name": canonical_name, "type": etype})
         if len(result) >= max_entities:
             break

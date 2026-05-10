@@ -1,4 +1,3 @@
-
 import asyncio
 import logging
 import sys
@@ -8,10 +7,13 @@ from embeddings import generate_query_embedding
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("presek.semantic_prototype")
 
+
 async def run_semantic_search_test(query: str, limit: int = 5):
     print("\n--- Presek Semantic Search Prototype (MiniLM) ---")
-    print(f"Query: \"{query}\"")
-    print("Goal: Find Macedonian news semantically related to this (even if English).\n")
+    print(f'Query: "{query}"')
+    print(
+        "Goal: Find Macedonian news semantically related to this (even if English).\n"
+    )
 
     # 1. Generate the embedding for the query (English or Macedonian)
     vector = generate_query_embedding(query)
@@ -29,18 +31,19 @@ async def run_semantic_search_test(query: str, limit: int = 5):
 
     print(f"Found {len(results)} matches:\n")
     for i, res in enumerate(results, 1):
-        similarity = res.get('similarity', 0)
-        source = res.get('source', 'Unknown')
-        title = res.get('title', 'No Title')
-        
+        similarity = res.get("similarity", 0)
+        source = res.get("source", "Unknown")
+        title = res.get("title", "No Title")
+
         print(f"{i}. [{source}] (Similarity: {similarity:.4f})")
         print(f"   {title}")
         print("-" * 40)
+
 
 if __name__ == "__main__":
     # Default query if none provided
     test_query = "energy crisis and electricity prices"
     if len(sys.argv) > 1:
         test_query = " ".join(sys.argv[1:])
-    
+
     asyncio.run(run_semantic_search_test(test_query))

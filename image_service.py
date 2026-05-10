@@ -23,6 +23,7 @@ _MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB
 _MIN_DIMENSION = 200  # Skip tiny logos/icons
 _TARGET_WIDTH = 1200  # High-res "master" for the proxy to use
 
+
 class ImageService:
     def __init__(self):
         os.makedirs(_UPLOAD_ROOT, exist_ok=True)
@@ -43,14 +44,16 @@ class ImageService:
         filename = f"art_{article_id}.{ext}"
         local_path = os.path.join(_UPLOAD_ROOT, filename)
         rel_path = filename
-        
+
         # If we already have it and it's not empty, skip processing
         if os.path.exists(local_path) and os.path.getsize(local_path) > 0:
             return rel_path
-        
+
         try:
             safe_ips = _resolve_public_ips(url)
-            async with httpx.AsyncClient(headers=self.headers, follow_redirects=True, timeout=10.0) as client:
+            async with httpx.AsyncClient(
+                headers=self.headers, follow_redirects=True, timeout=10.0
+            ) as client:
                 async with client.stream("GET", url) as resp:
                     p_ip = _peer_ip(resp)
                     if not p_ip or p_ip not in safe_ips:
@@ -67,12 +70,12 @@ class ImageService:
 
                 # Open and validate with PIL
                 img = Image.open(BytesIO(content))
-                
+
                 # Filter out small icons/logos
                 if img.width < _MIN_DIMENSION or img.height < _MIN_DIMENSION:
                     log.info(f"Image too small ({img.width}x{img.height}): {url}")
                     return None
-                
+
                 # Basic aspect ratio check (avoid extremely thin banners)
                 ratio = img.width / img.height
                 if ratio > 4.0 or ratio < 0.25:
@@ -82,15 +85,19 @@ class ImageService:
                 # Normalize and Resize
                 if img.mode in ("RGBA", "P"):
                     img = img.convert("RGB")
-                
+
                 if img.width > _TARGET_WIDTH:
                     new_height = int(img.height * (_TARGET_WIDTH / img.width))
-                    img = img.resize((_TARGET_WIDTH, new_height), Image.Resampling.LANCZOS)
+                    img = img.resize(
+                        (_TARGET_WIDTH, new_height), Image.Resampling.LANCZOS
+                    )
 
                 # Save as optimized WebP
                 img.save(local_path, "WEBP", quality=80, method=4)
-                
-                log.info(f"Saved optimized image for article {article_id} to {local_path}")
+
+                log.info(
+                    f"Saved optimized image for article {article_id} to {local_path}"
+                )
                 return f"/static/uploads/{filename}"
 
         except Exception as e:
@@ -105,14 +112,14 @@ class ImageService:
         try:
             # 1. Image Cleanup
             now = time.time()
-            max_age_seconds = 30 * 24 * 60 * 60 # 30 days
-            
+            max_age_seconds = 30 * 24 * 60 * 60  # 30 days
+
             if os.path.exists(_UPLOAD_ROOT):
                 for filename in os.listdir(_UPLOAD_ROOT):
                     if filename.startswith("art_") and filename.endswith(".webp"):
                         try:
                             file_path = os.path.join(_UPLOAD_ROOT, filename)
-                            
+
                             # Check age first
                             if (now - os.path.getmtime(file_path)) > max_age_seconds:
                                 os.remove(file_path)
@@ -120,7 +127,9 @@ class ImageService:
                                 continue
 
                             # Check if still in DB
-                            art_id = int(filename.replace("art_", "").replace(".webp", ""))
+                            art_id = int(
+                                filename.replace("art_", "").replace(".webp", "")
+                            )
                             if art_id not in valid_article_ids:
                                 os.remove(file_path)
                                 log.info(f"Removed orphaned image: {filename}")
@@ -132,10 +141,13 @@ class ImageService:
             if os.path.exists(log_dir):
                 for log_file in os.listdir(log_dir):
                     path = os.path.join(log_dir, log_file)
-                    if os.path.isfile(path) and os.path.getsize(path) > 10 * 1024 * 1024:
+                    if (
+                        os.path.isfile(path)
+                        and os.path.getsize(path) > 10 * 1024 * 1024
+                    ):
                         # Simple truncate: keep last 1MB
                         try:
-                            with open(path, 'rb+') as f:
+                            with open(path, "rb+") as f:
                                 f.seek(-1024 * 1024, os.SEEK_END)
                                 data = f.read()
                                 f.seek(0)
@@ -146,5 +158,6 @@ class ImageService:
                             continue
         except Exception as e:
             log.error(f"Cleanup storage failed: {e}")
+
 
 image_service = ImageService()

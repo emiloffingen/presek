@@ -18,6 +18,7 @@ from utils import (
     event_stream,
 )
 
+
 @pytest.fixture(autouse=True)
 def clear_utils_cache():
     """Ensure every test starts with a clean cache to prevent pollution."""
@@ -39,6 +40,7 @@ def _make_article(source="MIA", created_at=None, clicks=0):
 
 # ── score_cluster ─────────────────────────────────────────────────
 
+
 class TestScoreCluster:
     @patch("utils.get_source_health_map", return_value={})
     def test_single_article_recent(self, _mock_health):
@@ -55,7 +57,11 @@ class TestScoreCluster:
     @patch("utils.get_source_health_map", return_value={})
     def test_recency_decay(self, _mock_health):
         recent = [_make_article(created_at=datetime.datetime.now())]
-        old = [_make_article(created_at=datetime.datetime.now() - datetime.timedelta(hours=24))]
+        old = [
+            _make_article(
+                created_at=datetime.datetime.now() - datetime.timedelta(hours=24)
+            )
+        ]
         assert score_cluster(recent) > score_cluster(old)
 
     @patch("utils.get_source_health_map", return_value={})
@@ -189,7 +195,9 @@ def test_event_stream_stops_when_client_disconnects():
             },
         ]
 
-        assert score_cluster_for_synthesis(richer) > score_cluster_for_synthesis(shallow)
+        assert score_cluster_for_synthesis(richer) > score_cluster_for_synthesis(
+            shallow
+        )
 
     @patch("utils.get_source_health_map", return_value={})
     def test_synthesis_priority_rewards_title_divergence(self, _mock_health):
@@ -218,10 +226,14 @@ def test_event_stream_stops_when_client_disconnects():
             },
         ]
 
-        assert score_cluster_for_synthesis(divergent) > score_cluster_for_synthesis(aligned)
+        assert score_cluster_for_synthesis(divergent) > score_cluster_for_synthesis(
+            aligned
+        )
 
     @patch("utils.get_source_health_map", return_value={})
-    def test_homepage_priority_prefers_corroborated_multi_source_cluster(self, _mock_health):
+    def test_homepage_priority_prefers_corroborated_multi_source_cluster(
+        self, _mock_health
+    ):
         thin = [
             {
                 **_make_article("Press24"),
@@ -229,7 +241,10 @@ def test_event_stream_stops_when_client_disconnects():
                 "description": "",
             },
             {
-                **_make_article("Press24", created_at=datetime.datetime.now() - datetime.timedelta(minutes=5)),
+                **_make_article(
+                    "Press24",
+                    created_at=datetime.datetime.now() - datetime.timedelta(minutes=5),
+                ),
                 "title": "Трамп најави нови мерки",
                 "description": "",
             },
@@ -241,12 +256,18 @@ def test_event_stream_stops_when_client_disconnects():
                 "description": "Главен развој со детали.",
             },
             {
-                **_make_article("Reuters", created_at=datetime.datetime.now() - datetime.timedelta(minutes=8)),
+                **_make_article(
+                    "Reuters",
+                    created_at=datetime.datetime.now() - datetime.timedelta(minutes=8),
+                ),
                 "title": "Reuters пишува за реакциите и рокот за новите царини",
                 "description": "Втор извор со поширок контекст.",
             },
             {
-                **_make_article("DW", created_at=datetime.datetime.now() - datetime.timedelta(minutes=12)),
+                **_make_article(
+                    "DW",
+                    created_at=datetime.datetime.now() - datetime.timedelta(minutes=12),
+                ),
                 "title": "Европските пазари реагираат на најавените царини",
                 "description": "Трет извор со потврда и последица.",
             },
@@ -263,7 +284,10 @@ def test_event_stream_stops_when_client_disconnects():
                 "description": "",
             },
             {
-                **_make_article("Press24", created_at=datetime.datetime.now() - datetime.timedelta(minutes=3)),
+                **_make_article(
+                    "Press24",
+                    created_at=datetime.datetime.now() - datetime.timedelta(minutes=3),
+                ),
                 "title": "Уште краток follow-up за развојот",
                 "description": "",
             },
@@ -275,24 +299,30 @@ def test_event_stream_stops_when_client_disconnects():
                 "description": "Опис еден.",
             },
             {
-                **_make_article("MIA", created_at=datetime.datetime.now() - datetime.timedelta(minutes=6)),
+                **_make_article(
+                    "MIA",
+                    created_at=datetime.datetime.now() - datetime.timedelta(minutes=6),
+                ),
                 "title": "Втор извор го потврдува главниот развој",
                 "description": "Опис два.",
             },
         ]
 
-        assert score_cluster_for_homepage(broader) > score_cluster_for_homepage(single_source)
+        assert score_cluster_for_homepage(broader) > score_cluster_for_homepage(
+            single_source
+        )
 
 
 # ── rank_articles_in_cluster ──────────────────────────────────────
+
 
 class TestRankArticles:
     @patch("utils.get_source_health_map", return_value={})
     def test_highest_credibility_first(self, _mock_health):
         arts = [
-            _make_article("Press24"),   # 0.9
-            _make_article("MIA"),       # 2.0
-            _make_article("Sitel"),     # 1.7
+            _make_article("Press24"),  # 0.9
+            _make_article("MIA"),  # 2.0
+            _make_article("Sitel"),  # 1.7
         ]
         ranked = rank_articles_in_cluster(arts)
         assert ranked[0]["source"] == "MIA"
@@ -327,7 +357,9 @@ class TestRankArticles:
                 "description": "Опис со повеќе детали, рокови и реакција на пазарите.",
             },
             {
-                **_make_article("Reuters", created_at=now - datetime.timedelta(minutes=6)),
+                **_make_article(
+                    "Reuters", created_at=now - datetime.timedelta(minutes=6)
+                ),
                 "title": "Реакциите на пазарите по најавените царини на Трамп",
                 "description": "Втор извор што го потврдува главниот развој и додава контекст.",
             },
@@ -380,8 +412,16 @@ class TestSynthesisFreshness:
     def test_no_new_articles_keeps_synthesis_fresh(self, _mock_health):
         created_at = datetime.datetime.now() - datetime.timedelta(minutes=30)
         arts = [
-            {**_make_article("MIA", created_at=created_at), "title": "Трамп најави царини", "description": "Опис."},
-            {**_make_article("Reuters", created_at=created_at), "title": "Реакции на царините", "description": "Опис."},
+            {
+                **_make_article("MIA", created_at=created_at),
+                "title": "Трамп најави царини",
+                "description": "Опис.",
+            },
+            {
+                **_make_article("Reuters", created_at=created_at),
+                "title": "Реакции на царините",
+                "description": "Опис.",
+            },
         ]
 
         result = assess_cluster_synthesis_freshness(arts, created_at)
@@ -414,16 +454,22 @@ class TestSynthesisFreshness:
         assert "new_numbers" in result["reasons"]
 
     @patch("utils.get_source_health_map", return_value={})
-    def test_single_quick_followup_does_not_force_refresh_in_cooldown(self, _mock_health):
+    def test_single_quick_followup_does_not_force_refresh_in_cooldown(
+        self, _mock_health
+    ):
         synthesis_time = datetime.datetime.now() - datetime.timedelta(minutes=10)
         arts = [
             {
-                **_make_article("MIA", created_at=synthesis_time - datetime.timedelta(minutes=5)),
+                **_make_article(
+                    "MIA", created_at=synthesis_time - datetime.timedelta(minutes=5)
+                ),
                 "title": "Трамп најави царини",
                 "description": "Прв извештај.",
             },
             {
-                **_make_article("MIA", created_at=synthesis_time + datetime.timedelta(minutes=4)),
+                **_make_article(
+                    "MIA", created_at=synthesis_time + datetime.timedelta(minutes=4)
+                ),
                 "title": "Трамп најави царини за увоз",
                 "description": "Мало дополнување без нов извор.",
             },
@@ -445,12 +491,16 @@ class TestSourceSignals:
                 "description": "Прв извештај.",
             },
             {
-                **_make_article("Reuters", created_at=now - datetime.timedelta(minutes=20)),
+                **_make_article(
+                    "Reuters", created_at=now - datetime.timedelta(minutes=20)
+                ),
                 "title": "Реакции на царините и новите мерки на Трамп",
                 "description": "Вториот извор носи дополнителен контекст.",
             },
             {
-                **_make_article("Press24", created_at=now - datetime.timedelta(minutes=10)),
+                **_make_article(
+                    "Press24", created_at=now - datetime.timedelta(minutes=10)
+                ),
                 "title": "Пазарите реагираат на царините",
                 "description": "Follow-up angle.",
             },
@@ -459,7 +509,11 @@ class TestSourceSignals:
         signals = build_cluster_source_signals(arts)
 
         assert signals[0]["trust_label"] == "Висока доверба"
-        assert signals[0]["role_label"] in {"Најпотврден извор", "Водечки доверлив извор", "Прв извештај"}
+        assert signals[0]["role_label"] in {
+            "Најпотврден извор",
+            "Водечки доверлив извор",
+            "Прв извештај",
+        }
         assert len(signals) == 3
 
     @patch("utils.get_source_health_map", return_value={})
@@ -472,7 +526,9 @@ class TestSourceSignals:
                 "description": "Тест опис.",
             },
             {
-                **_make_article("Makfax", created_at=now - datetime.timedelta(minutes=5)),
+                **_make_article(
+                    "Makfax", created_at=now - datetime.timedelta(minutes=5)
+                ),
                 "title": "Друг агол за темата",
                 "description": "Тест опис 2.",
             },
@@ -486,7 +542,9 @@ class TestSourceSignals:
 
 class TestReadNextClusters:
     @patch("utils.get_source_health_map", return_value={})
-    def test_build_read_next_clusters_prefers_meaningful_shared_context(self, _mock_health):
+    def test_build_read_next_clusters_prefers_meaningful_shared_context(
+        self, _mock_health
+    ):
         now = datetime.datetime.now()
         current_articles = [
             {
@@ -497,7 +555,9 @@ class TestReadNextClusters:
                 "topic": "Економија",
             },
             {
-                **_make_article("Reuters", created_at=now - datetime.timedelta(minutes=30)),
+                **_make_article(
+                    "Reuters", created_at=now - datetime.timedelta(minutes=30)
+                ),
                 "title": "Реакции на најавата за царини",
                 "description": "Контекст и реакции.",
                 "entity_names": ["Трамп", "САД"],
@@ -515,7 +575,9 @@ class TestReadNextClusters:
                 "topic": "Економија",
             },
             {
-                **_make_article("Press24", created_at=now - datetime.timedelta(minutes=10)),
+                **_make_article(
+                    "Press24", created_at=now - datetime.timedelta(minutes=10)
+                ),
                 "cluster_id": "next-2",
                 "title": "Сосема друга домашна тема",
                 "description": "Нерелевантен кластер.",
@@ -525,11 +587,18 @@ class TestReadNextClusters:
             },
         ]
 
-        result = build_read_next_clusters("current", current_articles, ["Трамп", "Царини"], candidates, limit=4)
+        result = build_read_next_clusters(
+            "current", current_articles, ["Трамп", "Царини"], candidates, limit=4
+        )
 
         assert result
         assert result[0]["cluster_id"] == "next-1"
-        assert result[0]["relationship_label"] in {"Следен развој", "Позадина и контекст", "Исти актери"}
+        assert result[0]["relationship_label"] in {
+            "Следен развој",
+            "Позадина и контекст",
+            "Исти актери",
+        }
+
     @patch("utils.get_source_health_map", return_value={})
     def test_build_read_next_clusters_skips_weakly_related_noise(self, _mock_health):
         now = datetime.datetime.now()
@@ -544,7 +613,9 @@ class TestReadNextClusters:
         ]
         candidates = [
             {
-                **_make_article("Press24", created_at=now - datetime.timedelta(minutes=5)),
+                **_make_article(
+                    "Press24", created_at=now - datetime.timedelta(minutes=5)
+                ),
                 "cluster_id": "noise-1",
                 "title": "Локален спортски резултат",
                 "description": "Без врска со темата.",
@@ -554,7 +625,9 @@ class TestReadNextClusters:
             },
         ]
 
-        result = build_read_next_clusters("current", current_articles, ["Трамп"], candidates, limit=4)
+        result = build_read_next_clusters(
+            "current", current_articles, ["Трамп"], candidates, limit=4
+        )
 
         assert result == []
 
@@ -563,11 +636,26 @@ class TestSourceReputationRows:
     @patch("utils.get_source_health_map", return_value={})
     def test_build_source_reputation_rows_enriches_sources(self, _mock_health):
         source_rows = [
-            {"name": "MIA", "country": "MK", "category": "Локални", "credibility": 2.0, "is_active": True},
-            {"name": "Press24", "country": "MK", "category": "Локални", "credibility": 0.9, "is_active": True},
+            {
+                "name": "MIA",
+                "country": "MK",
+                "category": "Локални",
+                "credibility": 2.0,
+                "is_active": True,
+            },
+            {
+                "name": "Press24",
+                "country": "MK",
+                "category": "Локални",
+                "credibility": 0.9,
+                "is_active": True,
+            },
         ]
         pulse_rows = [{"source": "MIA", "count": 9}, {"source": "Press24", "count": 2}]
-        speed_rows = [{"source": "MIA", "first_count": 12}, {"source": "Press24", "first_count": 1}]
+        speed_rows = [
+            {"source": "MIA", "first_count": 12},
+            {"source": "Press24", "first_count": 1},
+        ]
         history_rows = [
             {
                 "source": "MIA",
@@ -587,7 +675,9 @@ class TestSourceReputationRows:
             },
         ]
 
-        result = build_source_reputation_rows(source_rows, pulse_rows, speed_rows, history_rows)
+        result = build_source_reputation_rows(
+            source_rows, pulse_rows, speed_rows, history_rows
+        )
 
         assert result[0]["source"] == "MIA"
         assert result[0]["trust_tier"] == "Висока доверба"

@@ -1,10 +1,16 @@
 from nlp.categories import (
-    validate_category, detect_category, detect_subcategory, detect_topic,
-    detect_country, normalize_headline, ALLOWED_CATEGORIES
+    validate_category,
+    detect_category,
+    detect_subcategory,
+    detect_topic,
+    detect_country,
+    normalize_headline,
+    ALLOWED_CATEGORIES,
 )
 
 
 # ── validate_category ─────────────────────────────────────────────
+
 
 class TestValidateCategory:
     def test_valid_categories(self):
@@ -22,6 +28,7 @@ class TestValidateCategory:
 
 
 # ── detect_category ───────────────────────────────────────────────
+
 
 class TestDetectCategory:
     # Forced category
@@ -72,7 +79,10 @@ class TestDetectCategory:
 
     # Description also scanned
     def test_description_matters(self):
-        assert detect_category("Нова одлука", description="Бундестаг гласаше") == "Германија"
+        assert (
+            detect_category("Нова одлука", description="Бундестаг гласаше")
+            == "Германија"
+        )
 
     # Short keyword boundary check (e.g., "сад" should not match "насади")
     def test_short_keyword_word_boundary(self):
@@ -91,21 +101,27 @@ class TestDetectCategory:
     def test_category_scores_richer_group_over_stray_keyword(self):
         result = detect_category(
             "Европска комисија во Брисел расправа за нов пакет",
-            description="Самит на Европската унија со нови мерки и комисијата."
+            description="Самит на Европската унија со нови мерки и комисијата.",
         )
         assert result == "Европа"
 
     def test_category_understands_common_english_geo_terms(self):
         assert detect_category("White House announces new tariffs") == "Америка"
-        assert detect_category("European Commission opens new Brussels talks") == "Европа"
+        assert (
+            detect_category("European Commission opens new Brussels talks") == "Европа"
+        )
 
     def test_foreign_sports_clubs_do_not_default_to_macedonia(self):
         assert detect_category("Лиам Розениор веќе не е тренер на Челзи") == "Европа"
         assert detect_category("ПСЖ го победи Нант со 3:0") == "Европа"
-        assert detect_category("Леброн го предводеше Лејкерс до победа над Хјустон") == "Америка"
+        assert (
+            detect_category("Леброн го предводеше Лејкерс до победа над Хјустон")
+            == "Америка"
+        )
 
 
 # ── detect_subcategory ────────────────────────────────────────────
+
 
 class TestDetectSubcategory:
     def test_skopje(self):
@@ -120,10 +136,14 @@ class TestDetectSubcategory:
         assert detect_subcategory("Владата донесе одлука") is None
 
     def test_description_helps(self):
-        assert detect_subcategory("Нов проект", description="изградба во Скопје") == "Скопје"
+        assert (
+            detect_subcategory("Нов проект", description="изградба во Скопје")
+            == "Скопје"
+        )
 
 
 # ── detect_country ────────────────────────────────────────────────
+
 
 class TestDetectCountry:
     def test_known_sources(self):
@@ -162,6 +182,7 @@ class TestDetectTopic:
 
 # ── normalize_headline ────────────────────────────────────────────
 
+
 class TestNormalizeHeadline:
     def test_strip_prefixes(self):
         assert normalize_headline("ВИДЕО: Ова е наслов") == "Ова е наслов"
@@ -180,7 +201,10 @@ class TestNormalizeHeadline:
         assert normalize_headline(None) == ""
 
     def test_normal_headline_unchanged(self):
-        assert normalize_headline("Нормален наслов без префикси") == "Нормален наслов без префикси"
+        assert (
+            normalize_headline("Нормален наслов без префикси")
+            == "Нормален наслов без префикси"
+        )
 
     def test_case_insensitive_prefix(self):
         assert normalize_headline("видео: мал наслов") == "Мал наслов"
@@ -191,7 +215,10 @@ class TestNormalizeHeadline:
         assert normalize_headline("Информација – SDK.mk") == "Информација"
 
     def test_de_shouting(self):
-        assert normalize_headline("ОВА Е ЦЕЛОСНО ГЛАСЕН НАСЛОВ") == "Ова е целосно гласен наслов"
+        assert (
+            normalize_headline("ОВА Е ЦЕЛОСНО ГЛАСЕН НАСЛОВ")
+            == "Ова е целосно гласен наслов"
+        )
         # Prefix "СКАНДАЛ" is stripped first, then the rest is de-shouted if it was screaming
         assert normalize_headline("СКАНДАЛ ВО МВР И ВМРО") == "Во МВР и ВМРО"
 
@@ -216,12 +243,14 @@ class TestNormalizeHeadline:
         assert normalize_headline(title) == (
             "Трамп вели оти сака да игра лека-полека: не брзам да го завршам конфликтот во Иран"
         )
-        assert normalize_headline("Директен судир на возови во данска: неколку лица беа повредени") == (
-            "Директен судир на возови во Данска: неколку лица беа повредени"
-        )
-        assert normalize_headline("Поранешен шеф на НАТО: европа мора да стане воено независна од САД") == (
-            "Поранешен шеф на НАТО: Европа мора да стане воено независна од САД"
-        )
-        assert normalize_headline("Најбогатиот човек во југославија не бил тито: мистериозниот угостител од македонија заработил милиони") == (
+        assert normalize_headline(
+            "Директен судир на возови во данска: неколку лица беа повредени"
+        ) == ("Директен судир на возови во Данска: неколку лица беа повредени")
+        assert normalize_headline(
+            "Поранешен шеф на НАТО: европа мора да стане воено независна од САД"
+        ) == ("Поранешен шеф на НАТО: Европа мора да стане воено независна од САД")
+        assert normalize_headline(
+            "Најбогатиот човек во југославија не бил тито: мистериозниот угостител од македонија заработил милиони"
+        ) == (
             "Најбогатиот човек во Југославија не бил Тито: мистериозниот угостител од Македонија заработил милиони"
         )

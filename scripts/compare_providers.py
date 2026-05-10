@@ -5,11 +5,13 @@ from dotenv import load_dotenv
 
 # Ensure project root in path for ai_engine import
 import sys
+
 sys.path.append(os.getcwd())
 
 from ai_engine import PROVIDERS
 
 load_dotenv()
+
 
 async def test_provider(name, provider, prompt, system):
     print(f"\n>>> Testing {name.upper()}...")
@@ -26,15 +28,17 @@ async def test_provider(name, provider, prompt, system):
     except Exception as e:
         print(f"ERROR ({name}): {e}")
 
+
 async def main():
     test_prompt = "Напиши кратка анализа за влијанието на вештачката интелигенција врз новинарството во 2026 година."
     test_system = "Ти си професионален новинарски аналитичар. Одговори на литературен македонски јазик."
-    
+
     # 1. Test Nvidia
     await test_provider("nvidia", PROVIDERS["nvidia"], test_prompt, test_system)
-    
+
     # 2. Test Gemini
     await test_provider("gemini", PROVIDERS["gemini"], test_prompt, test_system)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

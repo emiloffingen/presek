@@ -1,24 +1,31 @@
 from local_analyst import analyst
 from tasks.utils import (
-    invalidate_public_data_caches, invalidate_cluster_caches, record_runtime_event,
-    log, redis_client, get_celery_queue_depth
+    invalidate_public_data_caches,
+    invalidate_cluster_caches,
+    record_runtime_event,
+    log,
+    redis_client,
+    get_celery_queue_depth,
 )
 from utils import get_dominant_color
-from api_helpers import normalize_summary_text, normalize_perspectives, normalize_citation_sources
+from api_helpers import (
+    normalize_summary_text,
+    normalize_perspectives,
+    normalize_citation_sources,
+)
 from nlp import (
-    summarize_article_fallback, synthesize_cluster_fallback,
-    extract_cluster_tags_locally, filter_cluster_tags, deShout,
-    generate_local_placeholder
+    summarize_article_fallback,
+    synthesize_cluster_fallback,
+    extract_cluster_tags_locally,
+    filter_cluster_tags,
+    deShout,
+    generate_local_placeholder,
 )
 from entities import extract_entities, validate_person_names
 from nlp.categories import detect_topic, detect_category
-from prompts import (
-    SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT
-)
+from prompts import SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT
 from embeddings import average_embeddings, parse_embedding_value
-from ai_engine import (
-    sync_call_ai as _call_ai, clean_json_response, generate_cover_art
-)
+from ai_engine import sync_call_ai as _call_ai, clean_json_response, generate_cover_art
 from config import CLUSTER_LOOKBACK
 from database import db_manager as db
 from celery_app import celery_app
@@ -59,13 +66,15 @@ def standardize_article_styles_batch_task(article_ids):
         standardize_article_style_task(article_id)
 
 
-@celery_app.task(rate_limit='50/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
+@celery_app.task(
+    rate_limit="50/m", autoretry_for=(Exception,), retry_backoff=True, max_retries=2
+)
 def summarize_article_task(article_id, final_title=None):
     """Refines article content using AI summarization."""
     row = db.execute_one(
         "SELECT title, description, full_content, topic, category FROM articles WHERE id = %s",
-        (article_id,
-         ))
+        (article_id,),
+    )
     if not row:
         return
 
@@ -74,7 +83,11 @@ def summarize_article_task(article_id, final_title=None):
     full_content = row.get("full_content", "")
     topic = row.get("topic")
 
-    context_text = full_content if len(full_content or "") > len(description or "") else description
+    context_text = (
+        full_content
+        if len(full_content or "") > len(description or "")
+        else description
+    )
 
     # AI summarization logic
     prompt_parts = [f"Наслов: {str(title or '').strip()}"]
@@ -82,39 +95,51 @@ def summarize_article_task(article_id, final_title=None):
         prompt_parts.append(
             f"Текст за резимирање:\n<article_content>\n{
                 str(context_text).strip()[
-                    :10000]}\n</article_content>")
+                    :10000]}\n</article_content>"
+        )
     prompt = "\n".join(part for part in prompt_parts if part)
 
-    raw_output, provider = _call_ai(prompt, SUMMARY_SYSTEM_PROMPT,
-                                    task_type="summarize", topic=topic, json_mode=False)
+    raw_output, provider = _call_ai(
+        prompt,
+        SUMMARY_SYSTEM_PROMPT,
+        task_type="summarize",
+        topic=topic,
+        json_mode=False,
+    )
 
     final_text = None
     if raw_output:
         parsed = clean_json_response(raw_output)
-        if isinstance(parsed, dict) and 'summary' in parsed:
-            final_text = parsed['summary']
+        if isinstance(parsed, dict) and "summary" in parsed:
+            final_text = parsed["summary"]
         else:
-            final_text = re.sub(r'^```(json)?\s*', '', raw_output.strip())
-            final_text = re.sub(r'\s*```$', '', final_text)
+            final_text = re.sub(r"^```(json)?\s*", "", raw_output.strip())
+            final_text = re.sub(r"\s*```$", "", final_text)
 
     if final_text:
         final_text = validate_person_names(final_text)
-        db.execute("UPDATE articles SET summary = %s WHERE id = %s",
-                   (final_text, article_id), fetch=False)
+        db.execute(
+            "UPDATE articles SET summary = %s WHERE id = %s",
+            (final_text, article_id),
+            fetch=False,
+        )
         invalidate_public_data_caches()
         log.info(f"Successfully summarized article {article_id}")
     else:
         fallback = summarize_article_fallback(title, context_text, topic=topic)
         if fallback:
-            db.execute("UPDATE articles SET summary = %s WHERE id = %s",
-                       (fallback, article_id), fetch=False)
+            db.execute(
+                "UPDATE articles SET summary = %s WHERE id = %s",
+                (fallback, article_id),
+                fetch=False,
+            )
             invalidate_public_data_caches()
 
 
 def _load_cluster_articles_for_synthesis(cluster_id):
     return db.execute(
         "SELECT title, description, summary, full_content, source, link, created_at, category, topic, embedding FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 8",
-        (cluster_id,)
+        (cluster_id,),
     )
 
 
@@ -173,13 +198,15 @@ def _fallback_key_facts(article_rows, summary="", limit=4):
 def _build_citation_sources(article_rows):
     ordered = []
     for item in article_rows or []:
-        ordered.append({
-            "source": str(item.get("source") or "").strip(),
-            "title": str(item.get("title") or "").strip(),
-            "link": str(item.get("link") or "").strip(),
-            "created_at": str(item.get("created_at") or "").strip(),
-            "category": str(item.get("category") or "").strip(),
-        })
+        ordered.append(
+            {
+                "source": str(item.get("source") or "").strip(),
+                "title": str(item.get("title") or "").strip(),
+                "link": str(item.get("link") or "").strip(),
+                "created_at": str(item.get("created_at") or "").strip(),
+                "category": str(item.get("category") or "").strip(),
+            }
+        )
     return normalize_citation_sources(ordered)
 
 
@@ -194,7 +221,11 @@ def _build_synthesis_source_context(article_rows):
         summary = str(row.get("summary") or "").strip()
         full_content = str(row.get("full_content") or "").strip()
 
-        evidence = full_content if len(full_content or "") > len(description or "") else description
+        evidence = (
+            full_content
+            if len(full_content or "") > len(description or "")
+            else description
+        )
         evidence = evidence[:2200].strip()
         parts = [f"[{idx}] {source}"]
         if category:
@@ -222,15 +253,20 @@ def _cosine_dist(a, b):
     return 1 - (dot / (norm_a * norm_b)) if norm_a and norm_b else 1.0
 
 
-@celery_app.task(rate_limit='10/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
+@celery_app.task(
+    rate_limit="10/m", autoretry_for=(Exception,), retry_backoff=True, max_retries=2
+)
 def standardize_article_style_task(article_id):
     """Refines article linguistic style using Gemma 2 2B (Literary Normalization)."""
     from config import ENABLE_EXPENSIVE_STYLE_TASKS
+
     if not ENABLE_EXPENSIVE_STYLE_TASKS:
         return
 
     row = db.execute_one(
-        "SELECT title, description, topic, category FROM articles WHERE id = %s", (article_id,))
+        "SELECT title, description, topic, category FROM articles WHERE id = %s",
+        (article_id,),
+    )
     if not row:
         return
 
@@ -252,6 +288,7 @@ def standardize_article_style_task(article_id):
         if final_title and final_title.strip().lower() != title.strip().lower():
             # Check semantic similarity to ensure we didn't lose the plot
             from nlp.text_processing import _jaccard_similarity
+
             if _jaccard_similarity(title, final_title) < 0.35:
                 log.warning(f"[style] Rejected over-aggressive polish for {article_id}")
                 return
@@ -259,9 +296,12 @@ def standardize_article_style_task(article_id):
             # Preserve original for transparency/debugging
             db.execute(
                 "UPDATE articles SET title = %s, original_title = %s, is_translated = 1 WHERE id = %s",
-                (final_title, title, article_id), fetch=False
+                (final_title, title, article_id),
+                fetch=False,
             )
-            log.info(f"[style] Standardized title for article {article_id} using Gemma 2 2B")
+            log.info(
+                f"[style] Standardized title for article {article_id} using Gemma 2 2B"
+            )
             # Re-trigger summary if title changed significantly
             summarize_article_task.delay(article_id, final_title)
 
@@ -269,10 +309,13 @@ def standardize_article_style_task(article_id):
         log.error(f"[style] Normalization failed for {article_id}: {e}")
 
 
-@celery_app.task(rate_limit='15/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
+@celery_app.task(
+    rate_limit="15/m", autoretry_for=(Exception,), retry_backoff=True, max_retries=2
+)
 def detect_global_story_task(article_id):
     """Detects if a Macedonian article is a translation of a foreign global report."""
     from config import LOCAL_TRANSLATION_ENABLED
+
     if not LOCAL_TRANSLATION_ENABLED:
         return
 
@@ -301,29 +344,43 @@ def detect_global_story_task(article_id):
         best_similarity = 0
         for head in global_heads:
             g_vec = np.array(head["vec"])
-            sim = np.dot(mk_vec, g_vec) / (np.linalg.norm(mk_vec) * np.linalg.norm(g_vec))
+            sim = np.dot(mk_vec, g_vec) / (
+                np.linalg.norm(mk_vec) * np.linalg.norm(g_vec)
+            )
             if sim > best_similarity:
                 best_similarity = sim
 
         # 4. Verdict (0.82 is a strong semantic match for cross-lingual pairs)
         if best_similarity > 0.82:
-            db.execute("UPDATE articles SET is_global = TRUE WHERE id = %s",
-                       (article_id,), fetch=False)
-            log.info(f"[originality] Flagged article {
-                     article_id} as GLOBAL (Sim: {best_similarity:.4f})")
+            db.execute(
+                "UPDATE articles SET is_global = TRUE WHERE id = %s",
+                (article_id,),
+                fetch=False,
+            )
+            log.info(
+                f"[originality] Flagged article {
+                     article_id} as GLOBAL (Sim: {best_similarity:.4f})"
+            )
 
     except Exception as e:
         log.warning(f"[originality] Detection failed for {article_id}: {e}")
 
 
-@celery_app.task(queue='fast-track', rate_limit='60/m',
-                 autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
+@celery_app.task(
+    queue="fast-track",
+    rate_limit="60/m",
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    max_retries=2,
+)
 def synthesize_urgent_task(cluster_id, content=None):
     """Priority synthesis for new clusters."""
     return synthesize_cluster_task(cluster_id, content, fast_mode=True)
 
 
-@celery_app.task(rate_limit='60/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
+@celery_app.task(
+    rate_limit="60/m", autoretry_for=(Exception,), retry_backoff=True, max_retries=2
+)
 def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=False):
     """Generates a multi-perspective synthesis for a cluster with historical continuity."""
     article_rows = _load_cluster_articles_for_synthesis(cluster_id)
@@ -337,11 +394,13 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
     history_context = ""
     try:
         from embeddings import get_cluster_embedding
+
         current_vec = get_cluster_embedding(cluster_id)
         if current_vec:
             current_vec_str = "[" + ",".join(map(str, current_vec)) + "]"
             # Find semantically similar clusters from the last 7 days
-            related = db.execute("""
+            related = db.execute(
+                """
                 SELECT s.summary, s.generated_article, a.title
                 FROM cluster_summaries s
                 JOIN articles a ON s.cluster_id = a.cluster_id
@@ -352,11 +411,13 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                   AND s.created_at < (SELECT MIN(created_at) FROM articles WHERE cluster_id = %s)
                 ORDER BY m.centroid <=> %s::vector
                 LIMIT 1
-            """, (cluster_id, cluster_id, cluster_id, current_vec_str))
+            """,
+                (cluster_id, cluster_id, cluster_id, current_vec_str),
+            )
 
             if related:
                 r = related[0]
-                prev_text = r['generated_article'] or r['summary']
+                prev_text = r["generated_article"] or r["summary"]
                 if prev_text:
                     history_context = f"\nПРЕТХОДЕН КОНТЕКСТ (за овој настан или поврзана тема од изминатите денови):\n<historical_context>\n{
                         prev_text[:1000]}\n</historical_context>"
@@ -368,7 +429,8 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
         prompt_parts = []
         if fast_mode:
             prompt_parts.append(
-                "PROVIDE A BRIEF 1-PARAGRAPH SUMMARY ONLY. FOCUS ON THE CORE EVENT. IGNORE PERSPECTIVES.")
+                "PROVIDE A BRIEF 1-PARAGRAPH SUMMARY ONLY. FOCUS ON THE CORE EVENT. IGNORE PERSPECTIVES."
+            )
         elif history_context:
             prompt_parts.append(history_context)
 
@@ -379,8 +441,13 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             prompt_parts.append(legacy_summary)
         prompt_parts.append("</articles_context>")
         full_prompt = "\n\n".join(part for part in prompt_parts if part)
-        raw, provider = _call_ai(full_prompt, SYNTHESIS_SYSTEM_PROMPT,
-                                 json_mode=True, task_type="synthesis", max_tokens=max_tokens)
+        raw, provider = _call_ai(
+            full_prompt,
+            SYNTHESIS_SYSTEM_PROMPT,
+            json_mode=True,
+            task_type="synthesis",
+            max_tokens=max_tokens,
+        )
         res_data = {}
 
         if raw:
@@ -388,40 +455,56 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 res = clean_json_response(raw)
             except Exception as e:
                 log.error(
-                    f"[tasks/synthesis] JSON Parse Error for {cluster_id}: {e}. Raw: {raw[:200]}")
+                    f"[tasks/synthesis] JSON Parse Error for {cluster_id}: {e}. Raw: {raw[:200]}"
+                )
                 raise
 
             res_data = res if isinstance(res, dict) else {}
 
             # If the AI returned a string instead of a dict, or if the dict is missing core fields,
             # we should treat it as a partial failure and merge with local fallback
-            if not isinstance(res, dict) or not res.get('summary') or not res.get('article'):
-                log.info(f"[tasks/synthesis] AI returned unstructured or partial response for {
-                         cluster_id}, merging with enhanced fallback.")
+            if (
+                not isinstance(res, dict)
+                or not res.get("summary")
+                or not res.get("article")
+            ):
+                log.info(
+                    f"[tasks/synthesis] AI returned unstructured or partial response for {
+                         cluster_id}, merging with enhanced fallback."
+                )
                 fallback = synthesize_cluster_fallback(article_rows)
 
                 # Merge: Prefer AI summary if it exists and is long enough, otherwise fallback
-                summary = res_data.get('summary') or (res if isinstance(
-                    res, str) and len(res) > 30 else fallback['summary'])
-                generated_article = res_data.get('article') or fallback['generated_article']
-                synthetic_headline = res_data.get(
-                    'synthetic_headline') or fallback['synthetic_headline']
-                synthetic_standfirst = res_data.get(
-                    'synthetic_standfirst') or fallback['synthetic_standfirst']
-                perspectives = res_data.get('perspectives') or fallback['perspectives']
+                summary = res_data.get("summary") or (
+                    res
+                    if isinstance(res, str) and len(res) > 30
+                    else fallback["summary"]
+                )
+                generated_article = (
+                    res_data.get("article") or fallback["generated_article"]
+                )
+                synthetic_headline = (
+                    res_data.get("synthetic_headline") or fallback["synthetic_headline"]
+                )
+                synthetic_standfirst = (
+                    res_data.get("synthetic_standfirst")
+                    or fallback["synthetic_standfirst"]
+                )
+                perspectives = res_data.get("perspectives") or fallback["perspectives"]
             else:
-                summary = res_data.get('summary', '')
-                generated_article = res_data.get('article', '')
-                synthetic_headline = res_data.get('synthetic_headline', '')
-                synthetic_standfirst = res_data.get('synthetic_standfirst', '')
-                perspectives = res_data.get('perspectives', [])
+                summary = res_data.get("summary", "")
+                generated_article = res_data.get("article", "")
+                synthetic_headline = res_data.get("synthetic_headline", "")
+                synthetic_standfirst = res_data.get("synthetic_standfirst", "")
+                perspectives = res_data.get("perspectives", [])
 
-            verification_report = res_data.get('verification_report')
-            quote = validate_person_names(res_data.get('quote', ''))
+            verification_report = res_data.get("verification_report")
+            quote = validate_person_names(res_data.get("quote", ""))
 
             if not summary or (isinstance(summary, str) and len(summary) < 20):
                 log.warning(
-                    f"[tasks/synthesis] AI returned empty or too short summary for {cluster_id}")
+                    f"[tasks/synthesis] AI returned empty or too short summary for {cluster_id}"
+                )
                 raise ValueError("Empty AI summary")
 
             # Sanitize for name hallucinations
@@ -431,35 +514,49 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             synthetic_standfirst = validate_person_names(synthetic_standfirst)
 
             # --- [NEW] 2026 Intelligence: Storyline & Impact ---
-            story_so_far = validate_person_names(res_data.get('story_so_far', ''))
-            impact_data = _ensure_dict(res_data.get('impact_analysis', {}))
-            impact_score = float(impact_data.get('score', 0.0))
-            impact_reasoning = impact_data.get('reasoning', '')
-            log.debug(f"Impact score for {cluster_id}: {impact_score} (Reason: {impact_reasoning})")
+            story_so_far = validate_person_names(res_data.get("story_so_far", ""))
+            impact_data = _ensure_dict(res_data.get("impact_analysis", {}))
+            impact_score = float(impact_data.get("score", 0.0))
+            impact_reasoning = impact_data.get("reasoning", "")
+            log.debug(
+                f"Impact score for {cluster_id}: {impact_score} (Reason: {impact_reasoning})"
+            )
 
             # AI Quality Gate: Hallucination Scanner (SKIP in fast_mode)
             comparison_text = (summary or "") + "\n" + (generated_article or "")
-            if not fast_mode and not _is_grounded_synthesis(
-                    comparison_text, source_context or legacy_summary) and retry_attempt < 2:
-                log.warning(f"Hallucination gate failed for cluster {cluster_id}, retrying...")
+            if (
+                not fast_mode
+                and not _is_grounded_synthesis(
+                    comparison_text, source_context or legacy_summary
+                )
+                and retry_attempt < 2
+            ):
+                log.warning(
+                    f"Hallucination gate failed for cluster {cluster_id}, retrying..."
+                )
                 synthesize_cluster_task.apply_async(
-                    args=(cluster_id, content, retry_attempt + 1), countdown=30)
+                    args=(cluster_id, content, retry_attempt + 1), countdown=30
+                )
                 return
 
             sentiment_data = {
-                "sentiment": res_data.get('sentiment', {}),
-                "tone_analysis": res_data.get('tone_analysis', {})
+                "sentiment": res_data.get("sentiment", {}),
+                "tone_analysis": res_data.get("tone_analysis", {}),
             }
 
             summary, perspectives = _normalize_cluster_synthesis(
-                summary, perspectives, article_rows)
-            record_runtime_event("synthesis_path", mode=provider or "unknown", fast_mode=fast_mode)
+                summary, perspectives, article_rows
+            )
+            record_runtime_event(
+                "synthesis_path", mode=provider or "unknown", fast_mode=fast_mode
+            )
 
             # Phase 3: Deep Local Analyst (SKIP in fast_mode)
             deep_metadata = {}
             pluralism_data = {}
 
             if not fast_mode:
+
                 def _run_analyst_logic():
                     nonlocal deep_metadata, pluralism_data
                     try:
@@ -469,34 +566,46 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                             deep_metadata = analyst.extract_deep_metadata(analyst_text)
 
                             # Phase 3.1: Pluralism Assessment
-                            titles_sources = [f"{a['source']}: {
-                                a['title']}" for a in article_rows[:10]]
+                            titles_sources = [
+                                f"{a['source']}: {
+                                a['title']}"
+                                for a in article_rows[:10]
+                            ]
                             pluralism_data = analyst.assess_pluralism(titles_sources)
 
                             # Phase 3.2: Knowledge Graph Update
-                            entities = deep_metadata.get('entities', [])
+                            entities = deep_metadata.get("entities", [])
                             for entity in entities:
                                 with db.connection() as conn:
                                     with conn.cursor() as cur:
                                         try:
-                                            cur.execute("""
+                                            cur.execute(
+                                                """
                                                 INSERT INTO knowledge_entities (name, type, last_seen, total_mentions)
                                                 VALUES (%s, 'PERSON', NOW(), 1)
                                                 ON CONFLICT (name) DO UPDATE SET
                                                     last_seen = NOW()
-                                            """, (entity,))
-                                            cur.execute("""
+                                            """,
+                                                (entity,),
+                                            )
+                                            cur.execute(
+                                                """
                                                 INSERT INTO entity_mentions_daily (entity_name, cluster_id, day)
                                                 VALUES (%s, %s, CURRENT_DATE)
                                                 ON CONFLICT (entity_name, cluster_id, day) DO NOTHING
-                                            """, (entity, cluster_id))
-                                            cur.execute("""
+                                            """,
+                                                (entity, cluster_id),
+                                            )
+                                            cur.execute(
+                                                """
                                                 UPDATE knowledge_entities
                                                 SET total_mentions = (
                                                     SELECT COUNT(*) FROM entity_mentions_daily WHERE entity_name = %s
                                                 )
                                                 WHERE name = %s
-                                            """, (entity, entity))
+                                            """,
+                                                (entity, entity),
+                                            )
                                             conn.commit()
                                         except Exception:
                                             conn.rollback()
@@ -511,14 +620,17 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 if analyst_thread.is_alive():
                     log.warning(f"[analyst] Timeout reached for cluster {cluster_id}")
                 elif deep_metadata or pluralism_data:
-                    log.info(f"[analyst] Pluralism and KG updated for cluster {cluster_id}")
+                    log.info(
+                        f"[analyst] Pluralism and KG updated for cluster {cluster_id}"
+                    )
 
                 deep_metadata = _ensure_dict(deep_metadata)
                 pluralism_data = _ensure_dict(pluralism_data)
 
         else:
             log.warning(
-                f"[tasks/synthesis] AI provider {provider} returned no content for {cluster_id}, using enhanced fallback")
+                f"[tasks/synthesis] AI provider {provider} returned no content for {cluster_id}, using enhanced fallback"
+            )
             fallback = synthesize_cluster_fallback(article_rows)
             summary = fallback["summary"]
             perspectives = fallback["perspectives"]
@@ -526,7 +638,10 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             synthetic_standfirst = ""
             generated_article = ""
             verification_report = None
-            sentiment_data = {"sentiment": {"score": 0, "tone": "неутрален"}, "tone_analysis": {}}
+            sentiment_data = {
+                "sentiment": {"score": 0, "tone": "неутрален"},
+                "tone_analysis": {},
+            }
             deep_metadata = {}
             pluralism_data = {}
             impact_score = 0.0
@@ -535,11 +650,16 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             story_so_far = ""
             try:
                 from tasks import utils
-                utils.record_task_event(cluster_id, "synthesis_fallback", {"provider": provider})
+
+                utils.record_task_event(
+                    cluster_id, "synthesis_fallback", {"provider": provider}
+                )
                 record_runtime_event("synthesis_path", mode="local_fallback_total")
             except Exception as event_err:
-                log.warning(f"[tasks] Failed to record fallback event for {
-                            cluster_id}: {event_err}")
+                log.warning(
+                    f"[tasks] Failed to record fallback event for {
+                            cluster_id}: {event_err}"
+                )
 
         if summary or perspectives:
             deep_metadata = _ensure_dict(deep_metadata)
@@ -550,7 +670,9 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             if ai_key_facts and isinstance(ai_key_facts, list):
                 key_facts = ai_key_facts
             else:
-                key_facts = deep_metadata.get("facts") or _fallback_key_facts(article_rows, summary)
+                key_facts = deep_metadata.get("facts") or _fallback_key_facts(
+                    article_rows, summary
+                )
 
             analyst_entities = deep_metadata.get("entities") or []
             pulse_score = deep_metadata.get("pulse", 50)
@@ -558,18 +680,26 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             if not pluralism_data:
                 pluralism_data = {
                     "score": pluralism_score,
-                    "verdict": "Проценката е во тек. Диверзитетот на изворите се анализира за целосен плуралистички приказ."}
+                    "verdict": "Проценката е во тек. Диверзитетот на изворите се анализира за целосен плуралистички приказ.",
+                }
             # Calculate Cluster Centroid (Semantic Center)
             centroid = _compute_centroid_from_values(
-                [a.get("embedding") for a in article_rows if a.get("embedding")])
-            centroid_str = f"[{','.join(map(str, centroid))}]" if centroid and len(
-                centroid) == 384 else None
+                [a.get("embedding") for a in article_rows if a.get("embedding")]
+            )
+            centroid_str = (
+                f"[{','.join(map(str, centroid))}]"
+                if centroid and len(centroid) == 384
+                else None
+            )
 
             # Archive current summary before updating (Evolution Log)
             db.execute(
                 """INSERT INTO cluster_summary_history (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, citation_sources, tone_analysis, created_at, key_facts, analyst_entities)
                    SELECT cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, citation_sources, tone_analysis, created_at, key_facts, analyst_entities
-                   FROM cluster_summaries WHERE cluster_id = %s""", (cluster_id,), fetch=False)
+                   FROM cluster_summaries WHERE cluster_id = %s""",
+                (cluster_id,),
+                fetch=False,
+            )
 
             if fast_mode:
                 db.execute(
@@ -587,19 +717,22 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                            pulse_score = EXCLUDED.pulse_score,
                            pluralism_score = EXCLUDED.pluralism_score,
                            narrative_diversity = EXCLUDED.narrative_diversity""",
-                    (cluster_id,
-                     summary,
-                     generated_article,
-                     synthetic_headline,
-                     synthetic_standfirst,
-                     datetime.datetime.now(),
-                     json.dumps(citation_sources),
+                    (
+                        cluster_id,
+                        summary,
+                        generated_article,
+                        synthetic_headline,
+                        synthetic_standfirst,
+                        datetime.datetime.now(),
+                        json.dumps(citation_sources),
                         json.dumps(key_facts),
                         json.dumps(analyst_entities),
                         pulse_score,
                         pluralism_score,
-                        json.dumps(pluralism_data)),
-                    fetch=False)
+                        json.dumps(pluralism_data),
+                    ),
+                    fetch=False,
+                )
             else:
                 db.execute(
                     """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, tone_analysis, verification_report, quote, centroid, citation_sources, key_facts, analyst_entities, pulse_score, pluralism_score, narrative_diversity, storyline_narrative)
@@ -623,19 +756,21 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                            pluralism_score = EXCLUDED.pluralism_score,
                            narrative_diversity = EXCLUDED.narrative_diversity,
                            storyline_narrative = EXCLUDED.storyline_narrative""",
-                    (cluster_id,
-                     summary,
-                     json.dumps(perspectives),
+                    (
+                        cluster_id,
+                        summary,
+                        json.dumps(perspectives),
                         generated_article,
                         synthetic_headline,
                         synthetic_standfirst,
                         datetime.datetime.now(),
                         json.dumps(sentiment_data),
-                        json.dumps(
-                         res_data.get(
-                             'tone_analysis',
-                             {})),
-                        json.dumps(verification_report) if verification_report else None,
+                        json.dumps(res_data.get("tone_analysis", {})),
+                        (
+                            json.dumps(verification_report)
+                            if verification_report
+                            else None
+                        ),
                         quote,
                         centroid_str,
                         json.dumps(citation_sources),
@@ -644,43 +779,59 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                         pulse_score,
                         pluralism_score,
                         json.dumps(pluralism_data),
-                        story_so_far),
-                    fetch=False)
+                        story_so_far,
+                    ),
+                    fetch=False,
+                )
 
             # Update Metadata with Impact Score
-            db.execute("""
+            db.execute(
+                """
                 UPDATE cluster_metadata
                 SET impact_score = %s, impact_explanation = %s
                 WHERE cluster_id = %s
-            """, (impact_score, impact_reasoning, cluster_id), fetch=False)
+            """,
+                (impact_score, impact_reasoning, cluster_id),
+                fetch=False,
+            )
             # Publish SSE event for Real-Time UI updates
             try:
                 from utils import publish_event
+
                 # Determine if breaking
                 is_breaking = False
                 if article_rows:
                     from utils import score_cluster
+
                     cluster_score = score_cluster(article_rows)
                     from config import BREAKING_SCORE_THRESHOLD
+
                     is_breaking = cluster_score >= BREAKING_SCORE_THRESHOLD
 
-                snippet = summary.split('\n')[0] if summary else ""
-                snippet = snippet.replace('•', '').strip()[:150]
-                publish_event("updates", {
-                    "type": "cluster_synthesis_updated",
-                    "cluster_id": cluster_id,
-                    "is_breaking": is_breaking,
-                    "impact_score": impact_score,
-                    "headline": synthetic_headline or article_rows[0].get('title', ''),
-                    "snippet": snippet,
-                    "time": datetime.datetime.now().isoformat()
-                })
+                snippet = summary.split("\n")[0] if summary else ""
+                snippet = snippet.replace("•", "").strip()[:150]
+                publish_event(
+                    "updates",
+                    {
+                        "type": "cluster_synthesis_updated",
+                        "cluster_id": cluster_id,
+                        "is_breaking": is_breaking,
+                        "impact_score": impact_score,
+                        "headline": synthetic_headline
+                        or article_rows[0].get("title", ""),
+                        "snippet": snippet,
+                        "time": datetime.datetime.now().isoformat(),
+                    },
+                )
             except Exception as pub_err:
-                log.warning(f"[tasks] Failed to publish SSE event for {cluster_id}: {pub_err}")
+                log.warning(
+                    f"[tasks] Failed to publish SSE event for {cluster_id}: {pub_err}"
+                )
 
             # Real-time Sports Score Alert
             try:
                 from nlp.categories import detect_topic
+
                 all_titles = " ".join([a.get("title") or "" for a in article_rows])
                 if detect_topic(all_titles) == "Спорт":
                     from nlp.generation import _extract_sports_scores
@@ -688,19 +839,22 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                     from config import NTFY_TOPIC
 
                     # Use articles sorted by date
-                    latest_scores = _extract_sports_scores(article_rows[0].get(
-                        "title") or "") + _extract_sports_scores(article_rows[0].get("description") or "")
+                    latest_scores = _extract_sports_scores(
+                        article_rows[0].get("title") or ""
+                    ) + _extract_sports_scores(article_rows[0].get("description") or "")
                     if latest_scores:
                         latest_score = latest_scores[0]
                         # BreakingNewsNotifier handles deduplication internally
                         notifier = BreakingNewsNotifier(NTFY_TOPIC)
                         notifier.notify_score_change(
-                            article_rows[0].get("title"), latest_score, cluster_id)
+                            article_rows[0].get("title"), latest_score, cluster_id
+                        )
             except Exception as e:
                 log.warning(f"[tasks/sports] Score alert failed: {e}")
 
             # Improved image logic: if no image or ONLY weak visuals exist, generate art
-            strong_img = db.execute_one("""
+            strong_img = db.execute_one(
+                """
                 SELECT 1 FROM articles
                 WHERE cluster_id = %s
                   AND image_url IS NOT NULL
@@ -709,7 +863,9 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                   AND image_url NOT LIKE '%%default%%'
                   AND image_url NOT LIKE '%%.svg'
                 LIMIT 1
-            """, (cluster_id,))
+            """,
+                (cluster_id,),
+            )
 
             if not strong_img:
                 # Trigger cover art generation
@@ -719,34 +875,49 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                     # Update all articles without images to use this generated one
                     db.execute(
                         "UPDATE articles SET image_url = %s WHERE cluster_id = %s AND (image_url IS NULL OR image_url LIKE '%%placeholder%%')",
-                        (img_url,
-                         cluster_id),
-                        fetch=False)
+                        (img_url, cluster_id),
+                        fetch=False,
+                    )
             try:
                 invalidate_cluster_caches(cluster_id)
             except Exception as cache_err:
-                log.warning(f"[tasks] Failed to invalidate caches for {cluster_id}: {cache_err}")
+                log.warning(
+                    f"[tasks] Failed to invalidate caches for {cluster_id}: {cache_err}"
+                )
             try:
                 if os.environ.get("REDIS_URL"):
                     generate_cluster_metadata_task.delay()
             except Exception as queue_err:
-                log.warning(f"[tasks] Failed to queue metadata refresh for {
-                            cluster_id}: {queue_err}")
+                log.warning(
+                    f"[tasks] Failed to queue metadata refresh for {
+                            cluster_id}: {queue_err}"
+                )
             try:
                 from tasks import utils
-                utils.record_task_event("synthesize_cluster", "ok", f"cluster:{cluster_id}")
+
+                utils.record_task_event(
+                    "synthesize_cluster", "ok", f"cluster:{cluster_id}"
+                )
             except Exception as event_err:
-                log.warning(f"[tasks] Failed to record synthesis success for {
-                            cluster_id}: {event_err}")
+                log.warning(
+                    f"[tasks] Failed to record synthesis success for {
+                            cluster_id}: {event_err}"
+                )
             log.info(f"Successfully synthesized cluster {cluster_id}")
         else:
             from tasks import utils
-            utils.record_task_event("synthesize_cluster", "empty", f"cluster:{cluster_id}")
+
+            utils.record_task_event(
+                "synthesize_cluster", "empty", f"cluster:{cluster_id}"
+            )
             log.warning(f"No synthesis generated for cluster {cluster_id}")
     except Exception as e:
         record_runtime_event("synthesis_path", mode="local_exception_fallback")
         fallback = synthesize_cluster_fallback(article_rows)
-        sentiment_data = {"sentiment": {"score": 0, "tone": "неутрален"}, "tone_analysis": {}}
+        sentiment_data = {
+            "sentiment": {"score": 0, "tone": "неутрален"},
+            "tone_analysis": {},
+        }
         summary, perspectives = _normalize_cluster_synthesis(
             fallback.get("summary", ""),
             fallback.get("perspectives", []),
@@ -756,7 +927,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             key_facts = _fallback_key_facts(article_rows, summary)
             pluralism_data = {
                 "score": 50,
-                "verdict": "Автоматска проценка од достапните извори."
+                "verdict": "Автоматска проценка од достапните извори.",
             }
             db.execute(
                 """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, verification_report, citation_sources, key_facts, analyst_entities, pulse_score, pluralism_score, narrative_diversity)
@@ -774,16 +945,38 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                        analyst_entities = EXCLUDED.analyst_entities,
                        pulse_score = EXCLUDED.pulse_score,
                        pluralism_score = EXCLUDED.pluralism_score,
-                       narrative_diversity = EXCLUDED.narrative_diversity""", (cluster_id, summary, json.dumps(perspectives), "", deShout(
-                    article_rows[0]["title"]) if article_rows else "", "", datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(citation_sources), json.dumps(key_facts), json.dumps(
-                    []), 50, 50, json.dumps(pluralism_data)), fetch=False)
+                       narrative_diversity = EXCLUDED.narrative_diversity""",
+                (
+                    cluster_id,
+                    summary,
+                    json.dumps(perspectives),
+                    "",
+                    deShout(article_rows[0]["title"]) if article_rows else "",
+                    "",
+                    datetime.datetime.now(),
+                    json.dumps(sentiment_data),
+                    json.dumps(citation_sources),
+                    json.dumps(key_facts),
+                    json.dumps([]),
+                    50,
+                    50,
+                    json.dumps(pluralism_data),
+                ),
+                fetch=False,
+            )
             invalidate_cluster_caches(cluster_id)
             from tasks import utils
-            utils.record_task_event("synthesize_cluster", "fallback", f"cluster:{cluster_id}")
-            log.warning(f"[tasks] Synthesis failed for {cluster_id}; stored local fallback")
+
+            utils.record_task_event(
+                "synthesize_cluster", "fallback", f"cluster:{cluster_id}"
+            )
+            log.warning(
+                f"[tasks] Synthesis failed for {cluster_id}; stored local fallback"
+            )
             if retry_attempt < 2:
                 synthesize_cluster_task.apply_async(
-                    args=(cluster_id, content, retry_attempt + 1), countdown=1800)
+                    args=(cluster_id, content, retry_attempt + 1), countdown=1800
+                )
         log.error(f"[tasks] Synthesis failed for {cluster_id}: {e}")
 
 
@@ -791,6 +984,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
 def auto_summarize_task(cluster_ids: list[str] = None):
     """Dispatch summarization/synthesis tasks for top clusters or targeted clusters."""
     from ai_engine import auto_summarize_top_clusters
+
     auto_summarize_top_clusters(target_cluster_ids=cluster_ids)
 
 
@@ -808,7 +1002,7 @@ def refresh_cluster_centroid_task(cluster_id):
         db.execute(
             "UPDATE cluster_metadata SET centroid = %s::vector WHERE cluster_id = %s",
             (vec_str, cluster_id),
-            fetch=False
+            fetch=False,
         )
         log.info(f"[tasks] Centroid updated for cluster {cluster_id}")
 
@@ -818,17 +1012,25 @@ def extract_entities_task(*args, hours=24, target_clusters=None, **kwargs):
     """Extract entities for top clusters using local hybrid logic (Lexicon + spaCy + Regex)."""
     try:
         if target_clusters:
-            rows = db.execute("""
+            rows = db.execute(
+                """
                 SELECT cluster_id, array_agg(DISTINCT title) as titles, MAX(description) as desc
                 FROM articles WHERE cluster_id = ANY(%s) GROUP BY cluster_id
-            """, (target_clusters,))
+            """,
+                (target_clusters,),
+            )
         else:
-            cutoff = datetime.datetime.now() - datetime.timedelta(hours=int(hours or 24))
-            rows = db.execute("""
+            cutoff = datetime.datetime.now() - datetime.timedelta(
+                hours=int(hours or 24)
+            )
+            rows = db.execute(
+                """
                 SELECT cluster_id, array_agg(DISTINCT title) as titles, MAX(description) as desc
                 FROM articles WHERE created_at >= %s GROUP BY cluster_id
                 HAVING COUNT(DISTINCT source) >= 2 LIMIT 50
-            """, (cutoff,))
+            """,
+                (cutoff,),
+            )
 
         for r in rows:
             text = f"{' '.join(r['titles'])} {r['desc'] or ''}"
@@ -838,19 +1040,20 @@ def extract_entities_task(*args, hours=24, target_clusters=None, **kwargs):
 
             if entities:
                 from entities import update_knowledge_graph
+
                 # update_knowledge_graph calculates local sentiment automatically
                 update_knowledge_graph(entities, context_text=text)
 
                 for ent in entities:
                     db.execute(
                         "INSERT INTO cluster_entities (cluster_id, entity_name, entity_type) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
-                        (r['cluster_id'],
-                         ent.get('name'),
-                            ent.get('type')),
-                        fetch=False)
+                        (r["cluster_id"], ent.get("name"), ent.get("type")),
+                        fetch=False,
+                    )
 
         invalidate_public_data_caches()
         from tasks import utils
+
         utils.record_task_event("extract_entities", "ok", "clusters:recent:local")
     except Exception as e:
         log.error(f"[tasks] Local entity extraction failed: {e}")
@@ -861,17 +1064,23 @@ def classify_topics_task():
     """Classify default 'Вести' clusters using local rule-based detection."""
     try:
         # Increased limit as local classification is nearly free
-        rows = db.execute("SELECT cluster_id, title FROM articles WHERE topic = 'Вести' LIMIT 200")
+        rows = db.execute(
+            "SELECT cluster_id, title FROM articles WHERE topic = 'Вести' LIMIT 200"
+        )
         for r in rows:
-            topic = detect_topic(r['title'])
-            if topic != 'Вести':
-                db.execute("UPDATE articles SET topic = %s WHERE cluster_id = %s",
-                           (topic, r['cluster_id']), fetch=False)
+            topic = detect_topic(r["title"])
+            if topic != "Вести":
+                db.execute(
+                    "UPDATE articles SET topic = %s WHERE cluster_id = %s",
+                    (topic, r["cluster_id"]),
+                    fetch=False,
+                )
     except Exception as e:
         log.error(f"[tasks] Topic classification failed: {e}")
     else:
         invalidate_public_data_caches()
         from tasks import utils
+
         utils.record_task_event("classify_topics", "ok", "clusters:recent:local")
 
 
@@ -880,21 +1089,27 @@ def recategorize_clusters_task():
     """Verify if 'Македонија' articles belong in specialized categories using rule-based detection."""
     try:
         rows = db.execute(
-            "SELECT cluster_id, title, description FROM articles WHERE category = 'Македонија' LIMIT 20")
+            "SELECT cluster_id, title, description FROM articles WHERE category = 'Македонија' LIMIT 20"
+        )
         for r in rows:
             # Rule-based first (Free)
-            res = detect_category(r['title'], description=r.get('description', ''))
-            if res != 'Македонија':
-                db.execute("UPDATE articles SET category = %s WHERE cluster_id = %s",
-                           (res, r['cluster_id']), fetch=False)
+            res = detect_category(r["title"], description=r.get("description", ""))
+            if res != "Македонија":
+                db.execute(
+                    "UPDATE articles SET category = %s WHERE cluster_id = %s",
+                    (res, r["cluster_id"]),
+                    fetch=False,
+                )
                 continue
     except Exception as e:
         from tasks import utils
+
         utils.record_task_event("recategorize_clusters", "error", "clusters:recent")
         log.error(f"[tasks] Recategorization failed: {e}")
     else:
         invalidate_public_data_caches()
         from tasks import utils
+
         utils.record_task_event("recategorize_clusters", "ok", "clusters:recent")
 
 
@@ -903,46 +1118,58 @@ def generate_cluster_metadata_task(hours=24, target_clusters=None):
     """Tag recent clusters with metadata (entities, source count, centroid, and representative image)."""
     try:
         if target_clusters:
-            rows = db.execute("""
+            rows = db.execute(
+                """
                 SELECT cluster_id, array_agg(DISTINCT source) as sources, array_agg(DISTINCT title) as titles,
                        array_agg(DISTINCT topic) as topics,
                        mode() WITHIN GROUP (ORDER BY category) as dominant_category,
                        array_agg(embedding) FILTER (WHERE embedding IS NOT NULL) as embeddings
                 FROM articles WHERE cluster_id = ANY(%s)
                 GROUP BY cluster_id
-            """, (target_clusters,))
+            """,
+                (target_clusters,),
+            )
         else:
-            cutoff = datetime.datetime.now() - datetime.timedelta(hours=int(hours or 24))
-            rows = db.execute("""
+            cutoff = datetime.datetime.now() - datetime.timedelta(
+                hours=int(hours or 24)
+            )
+            rows = db.execute(
+                """
                 SELECT cluster_id, array_agg(DISTINCT source) as sources, array_agg(DISTINCT title) as titles,
                        array_agg(DISTINCT topic) as topics,
                        mode() WITHIN GROUP (ORDER BY category) as dominant_category,
                        array_agg(embedding) FILTER (WHERE embedding IS NOT NULL) as embeddings
                 FROM articles WHERE created_at >= %s
                 GROUP BY cluster_id
-            """, (cutoff,))
+            """,
+                (cutoff,),
+            )
         for r in rows:
             entities = db.execute(
                 "SELECT entity_name, entity_type FROM cluster_entities WHERE cluster_id = %s",
-                (r['cluster_id'],)
+                (r["cluster_id"],),
             )
             entity_candidates = [dict(e) for e in entities]
             final_tags = extract_cluster_tags_locally(
-                titles=r['titles'],
+                titles=r["titles"],
                 entity_names=entity_candidates,
-                sources=r['sources'],
+                sources=r["sources"],
                 top_n=8,
             )
             if not final_tags:
-                final_tags = filter_cluster_tags(r['sources'], limit=4)
+                final_tags = filter_cluster_tags(r["sources"], limit=4)
 
             # Calculate Centroid (Semantic Center)
             centroid = _compute_centroid_from_values(r.get("embeddings") or [])
-            centroid_str = f"[{','.join(map(str, centroid))}]" if centroid and len(
-                centroid) == 384 else None
+            centroid_str = (
+                f"[{','.join(map(str, centroid))}]"
+                if centroid and len(centroid) == 384
+                else None
+            )
 
             # Smart image selection: prefer high-quality sources and non-placeholder URLs
-            img_row = db.execute_one("""
+            img_row = db.execute_one(
+                """
                 SELECT image_url, source
                 FROM articles
                 WHERE cluster_id = %s
@@ -972,25 +1199,33 @@ def generate_cluster_metadata_task(hours=24, target_clusters=None):
                     ) DESC,
                     created_at DESC
                 LIMIT 1
-            """, (r['cluster_id'],))
+            """,
+                (r["cluster_id"],),
+            )
 
-            rep_image = img_row['image_url'] if img_row else None
+            rep_image = img_row["image_url"] if img_row else None
 
             if not rep_image:
                 # If we still have no image, try to generate one (AI cover art)
                 svg_content = generate_local_placeholder(
-                    r['cluster_id'], r['titles'][0] if r['titles'] else 'Вест')
-                rep_image = generate_cover_art(r['cluster_id'], svg_content)
+                    r["cluster_id"], r["titles"][0] if r["titles"] else "Вест"
+                )
+                rep_image = generate_cover_art(r["cluster_id"], svg_content)
 
             curr_meta = db.execute_one(
                 "SELECT representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = %s",
-                (r['cluster_id'],
-                 ))
-            dominant_color = curr_meta['dominant_color'] if curr_meta else None
+                (r["cluster_id"],),
+            )
+            dominant_color = curr_meta["dominant_color"] if curr_meta else None
 
             if rep_image and (
-                    not curr_meta or curr_meta['representative_image'] != rep_image or not dominant_color):
-                dominant_color = get_dominant_color(rep_image)
+                not curr_meta
+                or curr_meta["representative_image"] != rep_image
+                or not dominant_color
+            ):
+                import asyncio
+
+                dominant_color = asyncio.run(get_dominant_color(rep_image))
 
             db.execute(
                 """INSERT INTO cluster_metadata (cluster_id, tags, topics, representative_image, dominant_color, updated_at, centroid, category)
@@ -1003,18 +1238,29 @@ def generate_cluster_metadata_task(hours=24, target_clusters=None):
                    updated_at = NOW(),
                    centroid = EXCLUDED.centroid,
                    category = EXCLUDED.category""",
-                (r['cluster_id'], final_tags, r['topics'], rep_image, dominant_color, centroid_str, r['dominant_category']), fetch=False
+                (
+                    r["cluster_id"],
+                    final_tags,
+                    r["topics"],
+                    rep_image,
+                    dominant_color,
+                    centroid_str,
+                    r["dominant_category"],
+                ),
+                fetch=False,
             )
         invalidate_public_data_caches()
         from tasks import utils
+
         utils.record_task_event("cluster_metadata", "ok", "clusters:recent")
     except Exception as e:
         from tasks import utils
+
         utils.record_task_event("cluster_metadata", "error", "clusters:recent")
         log.error(f"[tasks] Cluster metadata generation failed: {e}")
 
 
-@celery_app.task(rate_limit='1/h')
+@celery_app.task(rate_limit="1/h")
 def recluster_recent_articles_task(hours=24, limit=800):
     """Re-assign cluster IDs for recent articles using the current clustering logic."""
     try:
@@ -1023,21 +1269,30 @@ def recluster_recent_articles_task(hours=24, limit=800):
         hours = max(1, int(hours or 24))
         limit = max(1, int(limit or 800))
         cutoff = datetime.datetime.now() - datetime.timedelta(hours=hours)
-        rows = db.execute(
-            """
+        rows = (
+            db.execute(
+                """
             SELECT id, cluster_id, title, source, category, topic, created_at, embedding
             FROM articles
             WHERE created_at >= %s
             ORDER BY created_at ASC, id ASC
             LIMIT %s
             """,
-            (cutoff, limit),
-        ) or []
+                (cutoff, limit),
+            )
+            or []
+        )
 
         if not rows:
             from tasks import utils
+
             utils.record_task_event("recluster_recent", "empty", f"hours:{hours}")
-            return {"reclustered": 0, "touched_clusters": 0, "hours": hours, "limit": limit}
+            return {
+                "reclustered": 0,
+                "touched_clusters": 0,
+                "hours": hours,
+                "limit": limit,
+            }
 
         recent_articles = []
         batch_clusters = []
@@ -1063,10 +1318,14 @@ def recluster_recent_articles_task(hours=24, limit=800):
                     if topic == "Вести" or not topic:
                         incoming_entities = clustering._extract_title_entities(title)
                         candidate_entities = candidate.get("entities", set())
-                        shared_entities = incoming_entities.intersection(
-                            candidate_entities) if incoming_entities and candidate_entities else set()
+                        shared_entities = (
+                            incoming_entities.intersection(candidate_entities)
+                            if incoming_entities and candidate_entities
+                            else set()
+                        )
                         phrase_overlap = clustering._cluster_title_overlap(
-                            title, candidate["title"])
+                            title, candidate["title"]
+                        )
                         if not shared_entities and phrase_overlap < 0.34:
                             continue
                     new_cluster_id = candidate["cid"]
@@ -1091,23 +1350,28 @@ def recluster_recent_articles_task(hours=24, limit=800):
                 touched_clusters.add(new_cluster_id)
 
             if parsed_embedding:
-                batch_clusters.append({
-                    "cid": new_cluster_id,
-                    "embedding": parsed_embedding,
+                batch_clusters.append(
+                    {
+                        "cid": new_cluster_id,
+                        "embedding": parsed_embedding,
+                        "category": category,
+                        "topic": topic,
+                        "title": title,
+                        "entities": clustering._extract_title_entities(title),
+                    }
+                )
+
+            recent_articles.insert(
+                0,
+                {
+                    "title": title,
+                    "cluster_id": new_cluster_id,
+                    "created_at": created_at,
                     "category": category,
                     "topic": topic,
-                    "title": title,
-                    "entities": clustering._extract_title_entities(title),
-                })
-
-            recent_articles.insert(0, {
-                "title": title,
-                "cluster_id": new_cluster_id,
-                "created_at": created_at,
-                "category": category,
-                "topic": topic,
-                "source": source,
-            })
+                    "source": source,
+                },
+            )
             if len(recent_articles) > CLUSTER_LOOKBACK:
                 recent_articles.pop()
 
@@ -1125,22 +1389,26 @@ def recluster_recent_articles_task(hours=24, limit=800):
                 "cluster_summaries",
                 "cluster_metadata",
                 "cluster_entities",
-                "reactions")
+                "reactions",
+            )
             for table in _ALLOWED_CLEANUP_TABLES:
                 db.execute(
-                    f"DELETE FROM {table} WHERE cluster_id = ANY(%s)", (touched,), fetch=False)
+                    f"DELETE FROM {table} WHERE cluster_id = ANY(%s)",
+                    (touched,),
+                    fetch=False,
+                )
 
             extract_entities_task.apply_async(
-                kwargs={
-                    'hours': hours,
-                    'target_clusters': touched},
-                countdown=5)
+                kwargs={"hours": hours, "target_clusters": touched}, countdown=5
+            )
             generate_cluster_metadata_task.apply_async(
-                kwargs={'hours': hours, 'target_clusters': touched}, countdown=5)
+                kwargs={"hours": hours, "target_clusters": touched}, countdown=5
+            )
             auto_summarize_task.apply_async(args=(touched,), countdown=2)
             invalidate_public_data_caches()
 
         from tasks import utils
+
         utils.record_task_event("recluster_recent", "ok", f"articles:{len(updates)}")
         return {
             "reclustered": len(updates),
@@ -1150,6 +1418,7 @@ def recluster_recent_articles_task(hours=24, limit=800):
         }
     except Exception as e:
         from tasks import utils
+
         utils.record_task_event("recluster_recent", "error", "clusters:recent")
         log.error(f"[tasks] Recent recluster failed: {e}")
         raise
@@ -1159,24 +1428,27 @@ def recluster_recent_articles_task(hours=24, limit=800):
 def auto_repair_sources_task():
     """Bridge to ingestion module for repair task."""
     from tasks.ingestion_task import auto_repair_sources_task as _task
+
     return _task()
 
 
-@celery_app.task(rate_limit='5/m')
+@celery_app.task(rate_limit="5/m")
 def backfill_cover_art_single_task(cluster_id, title):
     """Generate cover art for a single cluster without blocking a worker."""
     if get_celery_queue_depth() >= _BACKFILL_QUEUE_DEPTH_LIMIT:
         log.info(
             "[tasks] Skipping cover art generation for %s while queue backlog is high.",
-            cluster_id)
+            cluster_id,
+        )
         return
     try:
-        svg_content = generate_local_placeholder(cluster_id, title or 'Вест')
+        svg_content = generate_local_placeholder(cluster_id, title or "Вест")
         img_url = generate_cover_art(cluster_id, svg_content)
         if img_url:
             db.execute(
                 "UPDATE articles SET image_url = %s WHERE cluster_id = %s AND image_url IS NULL",
-                (img_url, cluster_id), fetch=False
+                (img_url, cluster_id),
+                fetch=False,
             )
     except Exception as e:
         log.warning(f"[tasks] Cover art generation failed for {cluster_id}: {e}")
@@ -1189,7 +1461,9 @@ def backfill_cover_art_task():
     cooldown_key = "ai:cover_art:pollinations:cooldown"
     try:
         if not redis_client.set(lock_key, "1", nx=True, ex=1200):
-            log.info("Cover art backfill already in progress, skipping duplicate dispatch.")
+            log.info(
+                "Cover art backfill already in progress, skipping duplicate dispatch."
+            )
             return
     except Exception as e:
         log.warning(f"Redis lock check failed for backfill_cover_art: {e}")
@@ -1210,7 +1484,8 @@ def backfill_cover_art_task():
         # 1. Have no representative image
         # 2. Have a representative image that would be considered 'weak' (placeholders, small thumbs)
         # But SKIP if we already generated AI art for them (to save credits)
-        rows = db.execute("""
+        rows = db.execute(
+            """
             SELECT DISTINCT a.cluster_id,
                    (SELECT summary FROM cluster_summaries WHERE cluster_id = a.cluster_id LIMIT 1) as summary,
                    (SELECT title FROM articles WHERE cluster_id = a.cluster_id ORDER BY created_at DESC LIMIT 1) as title
@@ -1225,11 +1500,12 @@ def backfill_cover_art_task():
               )
               AND (m.representative_image IS NULL OR m.representative_image NOT LIKE '/static/generated/%.jpg')
             LIMIT 12
-        """)
+        """
+        )
         for idx, r in enumerate(rows):
-            prompt_text = r['summary'] or r['title'] or ''
+            prompt_text = r["summary"] or r["title"] or ""
             backfill_cover_art_single_task.apply_async(
-                args=(r['cluster_id'], prompt_text),
+                args=(r["cluster_id"], prompt_text),
                 countdown=idx * 5,  # Faster dispatch
             )
     except Exception as e:
@@ -1241,6 +1517,7 @@ def generate_embeddings_task():
     """Generate pgvector embeddings for articles that don't have one yet."""
     try:
         from embeddings import embed_recent_articles
+
         embed_recent_articles()
     except Exception as e:
         log.warning(f"[tasks] Embedding generation failed: {e}")
@@ -1251,6 +1528,7 @@ def discover_storylines_task():
     """Discover evolving storylines from news clusters."""
     try:
         from topic_discovery import discovery_engine
+
         discovery_engine.run_discovery(lookback_hours=48)
         discovery_engine.refresh_storyline_metadata()
     except Exception as e:
@@ -1262,6 +1540,7 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
         return True
 
     from tasks.delivery import _extract_capitalized_phrases
+
     source_lower = source_context.casefold()
     context_entities = {
         phrase.casefold()
@@ -1270,18 +1549,90 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
     }
 
     allowed_singletons = {
-        "македонија", "скопје", "албанија", "еу", "вмро-дпмне",
-        "иран", "ормускиот теснец", "дојран", "сад", "тексас", "нато",
-        "обединетите нации", "он", "украина", "русија", "сдсм", "вашингтон", "техеран",
-        "блискиот исток", "персискиот залив", "западниот балкан", "европската унија",
-        "брисел", "москва", "киев", "израел", "газа", "либан", "црна гора", "србија", "грција", "бугарија",
-        "ахмети", "мицкоски", "сиљановска", "пендаровски", "ковaчевски", "филипче", "груевски", "заев",
-        "пресек", "битола", "охрид", "тетово", "куманово", "гостивар", "шри ланка", "кирибати",
-        "си џинпинг", "бајден", "трамп", "путин", "зеленски", "макрон", "ердоган", "вучиќ", "рама",
-        "мицкоски", "османи", "маричиќ", "костадиновска-стојчевска", "бисерка", "бочварски",
-        "лига на шампиони", "премиер лига", "реал мадрид", "барселона", "манчестер јунајтед", "баерн минхен",
-        "стеф кари", "леброн џејмс", "јокиќ", "дончиќ", "ѓоковиќ", "алкараз", "синер", "јаник синер",
-        "винисиус", "винисиус жуниор", "мбапе", "халанд", "елмас", "елиф елмас", "пандев"
+        "македонија",
+        "скопје",
+        "албанија",
+        "еу",
+        "вмро-дпмне",
+        "иран",
+        "ормускиот теснец",
+        "дојран",
+        "сад",
+        "тексас",
+        "нато",
+        "обединетите нации",
+        "он",
+        "украина",
+        "русија",
+        "сдсм",
+        "вашингтон",
+        "техеран",
+        "блискиот исток",
+        "персискиот залив",
+        "западниот балкан",
+        "европската унија",
+        "брисел",
+        "москва",
+        "киев",
+        "израел",
+        "газа",
+        "либан",
+        "црна гора",
+        "србија",
+        "грција",
+        "бугарија",
+        "ахмети",
+        "мицкоски",
+        "сиљановска",
+        "пендаровски",
+        "ковaчевски",
+        "филипче",
+        "груевски",
+        "заев",
+        "пресек",
+        "битола",
+        "охрид",
+        "тетово",
+        "куманово",
+        "гостивар",
+        "шри ланка",
+        "кирибати",
+        "си џинпинг",
+        "бајден",
+        "трамп",
+        "путин",
+        "зеленски",
+        "макрон",
+        "ердоган",
+        "вучиќ",
+        "рама",
+        "мицкоски",
+        "османи",
+        "маричиќ",
+        "костадиновска-стојчевска",
+        "бисерка",
+        "бочварски",
+        "лига на шампиони",
+        "премиер лига",
+        "реал мадрид",
+        "барселона",
+        "манчестер јунајтед",
+        "баерн минхен",
+        "стеф кари",
+        "леброн џејмс",
+        "јокиќ",
+        "дончиќ",
+        "ѓоковиќ",
+        "алкараз",
+        "синер",
+        "јаник синер",
+        "винисиус",
+        "винисиус жуниор",
+        "мбапе",
+        "халанд",
+        "елмас",
+        "елиф елмас",
+        "пандев",
     }
 
     hallucinated_count = 0
@@ -1313,12 +1664,15 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
         meaningful_words = [
             word.casefold()
             for word in re.findall(r"[A-Za-zА-Яа-яЀ-ӿ0-9-]{4,}", clean)
-            if word.casefold() not in {"министерката", "министерот", "претседателот", "владата"}
+            if word.casefold()
+            not in {"министерката", "министерот", "претседателот", "владата"}
         ]
         if meaningful_words and all(word in source_lower for word in meaningful_words):
             continue
 
-        log.warning(f"[ai/hallucination] Hallucinated entity detected in synthesis: {clean}")
+        log.warning(
+            f"[ai/hallucination] Hallucinated entity detected in synthesis: {clean}"
+        )
         hallucinated_count += 1
 
     # Allow 1 minor hallucination for very long syntheses to prevent infinite retry loops

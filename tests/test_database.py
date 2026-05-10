@@ -1,4 +1,5 @@
 """Tests for database.py — connection wrapper and utility functions."""
+
 import pytest
 from unittest.mock import patch, MagicMock
 
@@ -8,17 +9,18 @@ class TestDBWrapper:
 
     def test_cursor_uses_dict_cursor(self):
         from database import DBWrapper
-        from psycopg2.extras import DictCursor
+
         mock_manager = MagicMock()
         mock_conn = MagicMock()
         mock_manager.get_conn.return_value = mock_conn
 
         wrapper = DBWrapper(mock_manager)
         wrapper.cursor()
-        mock_conn.cursor.assert_called_with(cursor_factory=DictCursor)
+        mock_conn.cursor.assert_called_with()
 
     def test_close_returns_to_manager(self):
         from database import DBWrapper
+
         mock_manager = MagicMock()
         mock_conn = MagicMock()
         mock_manager.get_conn.return_value = mock_conn
@@ -29,6 +31,7 @@ class TestDBWrapper:
 
     def test_commit_delegates(self):
         from database import DBWrapper
+
         mock_manager = MagicMock()
         mock_conn = MagicMock()
         mock_manager.get_conn.return_value = mock_conn
@@ -39,6 +42,7 @@ class TestDBWrapper:
 
     def test_rollback_delegates(self):
         from database import DBWrapper
+
         mock_manager = MagicMock()
         mock_conn = MagicMock()
         mock_manager.get_conn.return_value = mock_conn
@@ -49,6 +53,7 @@ class TestDBWrapper:
 
     def test_context_manager(self):
         from database import DBWrapper
+
         mock_manager = MagicMock()
         mock_conn = MagicMock()
         mock_manager.get_conn.return_value = mock_conn
@@ -63,6 +68,7 @@ class TestDatabaseManagerExecute:
 
     def test_execute_fetch_returns_dicts(self):
         from database import DatabaseManager
+
         mock_pool = MagicMock()
         mock_conn = MagicMock()
         mock_cursor = MagicMock()
@@ -78,6 +84,7 @@ class TestDatabaseManagerExecute:
 
     def test_execute_no_fetch_commits(self):
         from database import DatabaseManager
+
         mock_pool = MagicMock()
         mock_conn = MagicMock()
         mock_cursor = MagicMock()
@@ -93,6 +100,7 @@ class TestDatabaseManagerExecute:
 
     def test_execute_rolls_back_on_error(self):
         from database import DatabaseManager
+
         mock_pool = MagicMock()
         mock_conn = MagicMock()
         mock_cursor = MagicMock()
@@ -111,7 +119,8 @@ class TestDatabaseManagerExecute:
 class TestGetDb:
     def test_get_db_returns_wrapper(self):
         from database import get_db, DBWrapper
-        with patch('database.db_manager') as mock_manager:
+
+        with patch("database.db_manager") as mock_manager:
             mock_manager.get_conn.return_value = MagicMock()
             conn = get_db()
             assert isinstance(conn, DBWrapper)
@@ -119,6 +128,7 @@ class TestGetDb:
     def test_search_articles_empty_query(self):
         """search_articles returns [] for empty/too-long queries."""
         from database import DatabaseManager
+
         manager = DatabaseManager.__new__(DatabaseManager)
         manager._pool = MagicMock()
         assert manager.search_articles("") == []
@@ -131,13 +141,15 @@ class TestSchemaMigrations:
         from unittest.mock import patch
 
         manager = DatabaseManager.__new__(DatabaseManager)
-        
-        with patch("alembic.command.upgrade") as mock_upgrade, \
-             patch("alembic.config.Config") as mock_config, \
-             patch("os.path.exists", return_value=True):
-            
+
+        with (
+            patch("alembic.command.upgrade") as mock_upgrade,
+            patch("alembic.config.Config") as mock_config,
+            patch("os.path.exists", return_value=True),
+        ):
+
             manager.init_schema()
-            
+
             assert mock_upgrade.called
             assert mock_upgrade.call_args[0][1] == "head"
             assert mock_config.called

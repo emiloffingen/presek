@@ -3,6 +3,7 @@ api_helpers.py — Shared helpers used by the FastAPI backend and background tas
 
 Keeping these in one place ensures bug fixes and behavioural changes apply everywhere.
 """
+
 from __future__ import annotations
 
 import json
@@ -21,6 +22,7 @@ _dns_cache = {}
 _dns_cache_lock = Lock()
 DNS_CACHE_TTL = 300  # 5 minutes
 
+
 def _get_cached_addrinfo(hostname):
     now = time.time()
     with _dns_cache_lock:
@@ -32,6 +34,7 @@ def _get_cached_addrinfo(hostname):
                 del _dns_cache[hostname]
     return None
 
+
 def _set_cached_addrinfo(hostname, addr_infos):
     with _dns_cache_lock:
         # Prevent unbounded growth
@@ -39,41 +42,56 @@ def _set_cached_addrinfo(hostname, addr_infos):
             _dns_cache.clear()
         _dns_cache[hostname] = (addr_infos, time.time())
 
+
 def is_safe_url(url: str) -> bool:
     """Rigorous SSRF protection: block local/private network ranges and DNS rebinding."""
     from urllib.parse import urlparse
-    
+
     parsed = urlparse(url)
     if parsed.scheme not in ["http", "https"]:
         return False
-        
+
     hostname = parsed.hostname
     if not hostname:
         return False
-    
+
     # Strip port if present
-    hostname_only = hostname.split(':')[0].lower()
-    
+    hostname_only = hostname.split(":")[0].lower()
+
     # 1. Direct block for common local hostnames (case-insensitive)
     BLOCKED_HOSTNAMES = {
-        "localhost", "127.0.0.1", "0.0.0.0", "::1", "0:0:0:0:0:0:0:1",
-        "metadata", "metadata.google.internal", "metadata.internal",
-        "169.254.169.254", "fd00:ec2::254",
+        "localhost",
+        "127.0.0.1",
+        "0.0.0.0",
+        "::1",
+        "0:0:0:0:0:0:0:1",
+        "metadata",
+        "metadata.google.internal",
+        "metadata.internal",
+        "169.254.169.254",
+        "fd00:ec2::254",
         "169.254.170.2",
         "100.100.100.200",
     }
     if hostname_only in BLOCKED_HOSTNAMES:
         return False
-    
+
     # 2. Block IP-like hostnames
-    if hostname_only.replace('.', '').replace(':', '').isdigit() or all(c in '0123456789abcdefABCDEF:.' for c in hostname_only):
+    if hostname_only.replace(".", "").replace(":", "").isdigit() or all(
+        c in "0123456789abcdefABCDEF:." for c in hostname_only
+    ):
         try:
             ip_address = ipaddress.ip_address(hostname_only)
-            if ip_address.is_private or ip_address.is_loopback or ip_address.is_link_local or ip_address.is_reserved:
+            if (
+                ip_address.is_private
+                or ip_address.is_loopback
+                or ip_address.is_link_local
+                or ip_address.is_reserved
+            ):
                 return False
         except ValueError:
             pass
-    
+
     # 3. Resolve hostname and check all resolved IPs (DNS rebinding protection)
     try:
         addr_infos = _get_cached_addrinfo(hostname)
@@ -84,25 +102,34 @@ def is_safe_url(url: str) -> bool:
 
         if not addr_infos:
             return False
-        
+
         for addr_info in addr_infos:
             ip = addr_info[4][0]
             try:
                 ip_obj = ipaddress.ip_address(ip)
-                if (ip_obj.is_private or ip_obj.is_loopback or 
-                    ip_obj.is_link_local or ip_obj.is_reserved):
+                if (
+                    ip_obj.is_private
+                    or ip_obj.is_loopback
+                    or ip_obj.is_link_local
+                    or ip_obj.is_reserved
+                ):
                     return False
             except ValueError:
                 continue
-        
+
         # 4. Additional DNS-based checks for cloud metadata
         metadata_markers = [
-            "metadata.", ".metadata", "metadata.google", "metadata.internal",
-            "169.254.", "fd00:ec2", "100.100.100.",
+            "metadata.",
+            ".metadata",
+            "metadata.google",
+            "metadata.internal",
+            "169.254.",
+            "fd00:ec2",
+            "100.100.100.",
         ]
         if any(marker in hostname for marker in metadata_markers):
             return False
-        
+
         return True
     except Exception as e:
         log.error(f"is_safe_url error for {hostname}: {e}")
@@ -119,7 +146,9 @@ def _clean_text_block(value) -> str:
     if not text:
         return ""
     text = re.sub(r"```(?:json)?", "", text, flags=re.IGNORECASE).replace("```", "")
-    text = re.sub(r"^\s*(summary|резиме|сублимат|статии)\s*:\s*", "", text, flags=re.IGNORECASE)
+    text = re.sub(
+        r"^\s*(summary|резиме|сублимат|статии)\s*:\s*", "", text, flags=re.IGNORECASE
+    )
     text = re.sub(r"^[•*\-\u2022]+\s*", "", text)
     text = re.sub(r"\s+", " ", text).strip()
     return text
@@ -129,9 +158,15 @@ def _infer_perspective_angle(content: str, fallback: str = "Клучен аго�
     lowered = content.lower()
     if any(token in lowered for token in ("разлик", "акцент", "формулац", "наглас")):
         return "Различни акценти"
-    if any(token in lowered for token in ("заеднич", "повеќето извори", "иста линија", "сите извори")):
+    if any(
+        token in lowered
+        for token in ("заеднич", "повеќето извори", "иста линија", "сите извори")
+    ):
         return "Заедничка линија"
-    if any(token in lowered for token in ("отворено", "нејас", "непотвр", "сè уште не", "останува")):
+    if any(
+        token in lowered
+        for token in ("отворено", "нејас", "непотвр", "сè уште не", "останува")
+    ):
         return "Што останува отворено"
     if any(token in lowered for token in ("реакц", "одговор", "коментар", "осуд")):
         return "Реакции и одговори"
@@ -145,7 +180,11 @@ def normalize_summary_text(raw_summary) -> str:
         return ""
 
     if isinstance(raw_summary, list):
-        return "\n".join(f"• {_clean_text_block(line)}" for line in raw_summary if _clean_text_block(line))
+        return "\n".join(
+            f"• {_clean_text_block(line)}"
+            for line in raw_summary
+            if _clean_text_block(line)
+        )
 
     text = str(raw_summary).replace("\r", "\n")
     lines = []
@@ -213,10 +252,7 @@ def normalize_perspectives(raw_perspectives) -> list[dict]:
             or ""
         )
         content = _clean_text_block(
-            item.get("content")
-            or item.get("text")
-            or item.get("description")
-            or ""
+            item.get("content") or item.get("text") or item.get("description") or ""
         )
         if not content:
             continue
@@ -254,14 +290,16 @@ def normalize_citation_sources(raw_sources) -> list[dict]:
         category = _clean_text_block(item.get("category"))
         if not source and not title:
             continue
-        result.append({
-            "index": idx,
-            "source": source,
-            "title": title,
-            "link": link,
-            "created_at": created_at,
-            "category": category,
-        })
+        result.append(
+            {
+                "index": idx,
+                "source": source,
+                "title": title,
+                "link": link,
+                "created_at": created_at,
+                "category": category,
+            }
+        )
     return result[:8]
 
 
@@ -269,9 +307,9 @@ def normalize_server_delivery_subscription(payload) -> dict:
     payload = payload or {}
     raw_channel = str(payload.get("channel") or "ntfy").strip().lower()
     channel = raw_channel if raw_channel == "webpush" else "ntfy"
-    
+
     raw_target = str(payload.get("target") or "").strip()
-    
+
     if channel == "ntfy":
         target = _SAFE_TOPIC_RE.sub("-", raw_target).strip("-._")[:120]
     else:
@@ -291,7 +329,9 @@ def normalize_server_delivery_subscription(payload) -> dict:
     }
 
 
-def default_related_questions(question: str, category: Optional[str] = None) -> list[str]:
+def default_related_questions(
+    question: str, category: Optional[str] = None
+) -> list[str]:
     fallback = [
         "Што е главниот развој во оваа приказна?",
         "Како се разликуваат изворите во известувањето?",
@@ -318,13 +358,19 @@ def related_questions_from_context(
         if text and text.casefold() != lowered and text not in suggestions:
             suggestions.append(text)
 
-    if not any(token in lowered for token in ("разлику", "извор", "перспектив")) and (has_perspectives or has_multiple_sources):
+    if not any(token in lowered for token in ("разлику", "извор", "перспектив")) and (
+        has_perspectives or has_multiple_sources
+    ):
         add("Како се разликуваат изворите во известувањето?")
     if not any(token in lowered for token in ("нејас", "непотвр", "отворено")):
         add("Што останува нејасно или непотврдено?")
-    if not any(token in lowered for token in ("следно", "понатаму", "последиц", "реакц")):
+    if not any(
+        token in lowered for token in ("следно", "понатаму", "последиц", "реакц")
+    ):
         add("Што следува понатаму во оваа приказна?")
-    if has_multiple_sources and not any(token in lowered for token in ("најваж", "ново", "главно")):
+    if has_multiple_sources and not any(
+        token in lowered for token in ("најваж", "ново", "главно")
+    ):
         add("Што е најважното ново во оваа вест?")
 
     for item in default_related_questions(question, category):
@@ -338,12 +384,14 @@ def related_questions_from_context(
 
 def text_terms(text: str) -> set[str]:
     from nlp.keywords import TAG_NOISE_WORDS
+
     terms = re.findall(r"[A-Za-zА-Яа-яЀ-ӿ0-9]{3,}", (text or "").lower())
     return {t for t in terms if t not in TAG_NOISE_WORDS and t not in _EXTRA_NOISE}
 
 
 def build_citation_snippet(article):
     from nlp import summarize_locally
+
     title = str((article or {}).get("title") or "").strip()
     description = str((article or {}).get("description") or "").strip()
     if description:
@@ -360,7 +408,7 @@ def rank_cluster_citations(
     preferred_numbers: list,
 ) -> list[dict]:
     from utils import build_cluster_source_signals, get_source_trust_label
-    
+
     question_terms = text_terms(question)
     answer_terms = text_terms(answer)
     combined_terms = question_terms | answer_terms
@@ -386,34 +434,51 @@ def rank_cluster_citations(
 
     ranked = []
     for idx, article in enumerate(articles, start=1):
-        article_text = " ".join([
-            str(article.get("title") or ""),
-            str(article.get("description") or ""),
-            str(article.get("source") or ""),
-        ])
+        article_text = " ".join(
+            [
+                str(article.get("title") or ""),
+                str(article.get("description") or ""),
+                str(article.get("source") or ""),
+            ]
+        )
         article_terms = text_terms(article_text)
         overlap = len(combined_terms & article_terms)
         preferred_bonus = 5 if idx in preferred_order else 0
-        title_bonus = 1 if question_terms & text_terms(str(article.get("title") or "")) else 0
-        trust_bonus = 1 if get_source_trust_label(str(article.get("source") or "")) == "Висока доверба" else 0
-        signal = signal_by_key.get((
-            str(article.get("source") or ""),
-            str(article.get("title") or ""),
-            str(article.get("link") or ""),
-        )) or {}
-        ranked.append((
-            preferred_bonus + overlap + title_bonus + trust_bonus,
-            -idx,
-            {
-                "source": article.get("source"),
-                "title": article.get("title"),
-                "link": article.get("link"),
-                "created_at": article.get("created_at"),
-                "snippet": build_citation_snippet(article),
-                "trust_label": signal.get("trust_label") or get_source_trust_label(str(article.get("source") or "")),
-                "role_label": signal.get("role_label", ""),
-            },
-        ))
+        title_bonus = (
+            1 if question_terms & text_terms(str(article.get("title") or "")) else 0
+        )
+        trust_bonus = (
+            1
+            if get_source_trust_label(str(article.get("source") or ""))
+            == "Висока доверба"
+            else 0
+        )
+        signal = (
+            signal_by_key.get(
+                (
+                    str(article.get("source") or ""),
+                    str(article.get("title") or ""),
+                    str(article.get("link") or ""),
+                )
+            )
+            or {}
+        )
+        ranked.append(
+            (
+                preferred_bonus + overlap + title_bonus + trust_bonus,
+                -idx,
+                {
+                    "source": article.get("source"),
+                    "title": article.get("title"),
+                    "link": article.get("link"),
+                    "created_at": article.get("created_at"),
+                    "snippet": build_citation_snippet(article),
+                    "trust_label": signal.get("trust_label")
+                    or get_source_trust_label(str(article.get("source") or "")),
+                    "role_label": signal.get("role_label", ""),
+                },
+            )
+        )
 
     ranked.sort(reverse=True)
     top = [item[2] for item in ranked if item[0] > 0]

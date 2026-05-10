@@ -14,6 +14,7 @@ from .system import get_trending_route
 log = logging.getLogger("presek")
 router = APIRouter()
 
+
 class HomeResponse(BaseModel):
     status: str
     lead: Optional[Any] = None
@@ -31,13 +32,22 @@ class HomeResponse(BaseModel):
     excluded_cluster_ids: List[str] = Field(default_factory=list)
     message: Optional[str] = None
 
+
 class StatusOnlyResponse(BaseModel):
     status: str
     message: Optional[str] = None
 
+
 _SOFT_EXCLUDE_TOPICS = {"Живот", "Забава", "Здравје"}
 _HARD_NEWS_TOPICS = {"Политика", "Економија", "Криминал", "Спорт", "Технологија"}
-_HARD_NEWS_CATEGORIES = {"Македонија", "Балкан", "Европа", "Германија", "Америка", "Свет"}
+_HARD_NEWS_CATEGORIES = {
+    "Македонија",
+    "Балкан",
+    "Европа",
+    "Германија",
+    "Америка",
+    "Свет",
+}
 _FEATURE_PATTERNS = [
     re.compile(r"издание на", re.IGNORECASE),
     re.compile(r"интервју со", re.IGNORECASE),
@@ -70,7 +80,9 @@ def _title_looks_like_feature(title):
 
 
 def _extract_preview_summary(article):
-    text = str((article or {}).get("summary") or (article or {}).get("description") or "")
+    text = str(
+        (article or {}).get("summary") or (article or {}).get("description") or ""
+    )
     trimmed = text.strip()
     if (
         trimmed.startswith("{")
@@ -149,7 +161,9 @@ def _rank_live_now_clusters(items, exclude_cluster_ids=None, limit=4):
         [
             cluster
             for cluster in (items or [])
-            if cluster and cluster.get("cluster_id") not in exclude and _is_live_now_candidate(cluster)
+            if cluster
+            and cluster.get("cluster_id") not in exclude
+            and _is_live_now_candidate(cluster)
         ],
         key=sort_key,
         reverse=True,
@@ -282,9 +296,9 @@ async def get_home():
             get_trending_route(),
             get_top_entities(limit=12),
             get_stats_summary(),
-            return_exceptions=True
+            return_exceptions=True,
         )
-        
+
         news_result, recent_result, trending, top_entities, stats = results
 
         # Basic error check (ensure news_result is a dict)
@@ -293,12 +307,16 @@ async def get_home():
             raise news_result
         if not isinstance(news_result, dict):
             raise RuntimeError("Homepage news payload unavailable")
-        
+
         # Unpack other results, handling exceptions
-        if isinstance(recent_result, Exception): recent_result = {}
-        if isinstance(trending, Exception): trending = []
-        if isinstance(top_entities, Exception): top_entities = []
-        if isinstance(stats, Exception): stats = {}
+        if isinstance(recent_result, Exception):
+            recent_result = {}
+        if isinstance(trending, Exception):
+            trending = []
+        if isinstance(top_entities, Exception):
+            top_entities = []
+        if isinstance(stats, Exception):
+            stats = {}
 
         clusters = news_result.get("clusters") or []
         global_clusters = news_result.get("global") or []
@@ -312,8 +330,13 @@ async def get_home():
             for cluster in feed_clusters
             if (
                 (
-                    str(cluster.get("story_state") or "") in {"breaking", "developing", "confirmed"}
-                    and int(cluster.get("source_count") or len(cluster.get("articles") or [])) >= 2
+                    str(cluster.get("story_state") or "")
+                    in {"breaking", "developing", "confirmed"}
+                    and int(
+                        cluster.get("source_count")
+                        or len(cluster.get("articles") or [])
+                    )
+                    >= 2
                 )
                 or len(cluster.get("articles") or []) >= 2
             )
@@ -321,12 +344,25 @@ async def get_home():
         wire = [
             cluster
             for cluster in feed_clusters
-            if cluster.get("latest_wire_fit") or str(cluster.get("story_state") or "") == "singleton" or len(cluster.get("articles") or []) < 2
+            if cluster.get("latest_wire_fit")
+            or str(cluster.get("story_state") or "") == "singleton"
+            or len(cluster.get("articles") or []) < 2
         ][:12]
 
-        excluded_cluster_ids = [cluster_id for cluster_id in [lead.get("cluster_id") if lead else None, *[c.get("cluster_id") for c in supporting]] if cluster_id]
-        recent_clusters = recent_result.get("clusters") if isinstance(recent_result, dict) else []
-        live_now = _rank_live_now_clusters(recent_clusters, exclude_cluster_ids=excluded_cluster_ids, limit=4)
+        excluded_cluster_ids = [
+            cluster_id
+            for cluster_id in [
+                lead.get("cluster_id") if lead else None,
+                *[c.get("cluster_id") for c in supporting],
+            ]
+            if cluster_id
+        ]
+        recent_clusters = (
+            recent_result.get("clusters") if isinstance(recent_result, dict) else []
+        )
+        live_now = _rank_live_now_clusters(
+            recent_clusters, exclude_cluster_ids=excluded_cluster_ids, limit=4
+        )
 
         raw_wire_articles = []
         seen_links = set()
@@ -385,10 +421,14 @@ async def get_home_live_now(exclude: str = ""):
             for token in str(exclude or "").split(",")
             if token.strip() and len(token.strip()) <= 80
         ]
-        recent_clusters = recent_result.get("clusters") if isinstance(recent_result, dict) else []
+        recent_clusters = (
+            recent_result.get("clusters") if isinstance(recent_result, dict) else []
+        )
         response = {
             "status": "success",
-            "clusters": _rank_live_now_clusters(recent_clusters, exclude_cluster_ids=exclude_cluster_ids, limit=4),
+            "clusters": _rank_live_now_clusters(
+                recent_clusters, exclude_cluster_ids=exclude_cluster_ids, limit=4
+            ),
         }
         set_cache(cache_key, response, ttl=60)
         return response
@@ -406,7 +446,9 @@ async def get_home_latest_wire(limit: int = 15):
         return cached
     try:
         recent_result = await get_news(sort="recent", page_size=24)
-        recent_clusters = recent_result.get("clusters") if isinstance(recent_result, dict) else []
+        recent_clusters = (
+            recent_result.get("clusters") if isinstance(recent_result, dict) else []
+        )
         raw_wire_articles = []
         seen_links = set()
         for cluster in recent_clusters or []:
@@ -419,7 +461,9 @@ async def get_home_latest_wire(limit: int = 15):
                 raw_wire_articles.append(article)
         response = {
             "status": "success",
-            "articles": _rank_latest_wire_articles(raw_wire_articles, limit=bounded_limit),
+            "articles": _rank_latest_wire_articles(
+                raw_wire_articles, limit=bounded_limit
+            ),
         }
         set_cache(cache_key, response, ttl=120)
         return response

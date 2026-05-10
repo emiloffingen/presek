@@ -1,19 +1,28 @@
 import datetime
 from unittest.mock import patch, MagicMock
-from clustering import mk_stem, text_to_vector, get_cosine, find_or_create_cluster, _title_phrase_overlap, _topic_bridge_allowed
+from clustering import (
+    mk_stem,
+    text_to_vector,
+    get_cosine,
+    find_or_create_cluster,
+    _title_phrase_overlap,
+    _topic_bridge_allowed,
+)
 from collections import Counter
 
 # db_manager is imported inside find_or_create_cluster as `from database import db_manager`,
 # so we must patch the source attribute on the database module.
 _mock_db = MagicMock()
 _mock_db.get_cluster_entities.return_value = {}
-_DB_PATCH = 'database.db_manager'
+_DB_PATCH = "database.db_manager"
+
 
 def test_mk_stem():
     assert mk_stem("владата") == "влад"
     assert mk_stem("влада") == "влада"  # No suffix
     assert mk_stem("учењето") == "учење"  # length constraint skips 'ењето', strips 'то'
     assert mk_stem("краток") == "краток"  # no matching suffix
+
 
 def test_text_to_vector():
     # Stopwords should be removed
@@ -25,44 +34,56 @@ def test_text_to_vector():
     assert vec["тест"] == 1
     assert vec["влад"] == 1
 
+
 def test_get_cosine():
     vec1 = Counter({"влада": 1, "тест": 1})
     vec2 = Counter({"влада": 1, "уче": 1})
     vec3 = Counter({"нешто": 1, "сосема": 1, "различно": 1})
-    
+
     # Cosine similarity of identical vectors should be 1.0
     assert abs(get_cosine(vec1, vec1) - 1.0) < 0.001
-    
+
     # Cosine similarity of completely disjoint vectors should be 0.0
     assert get_cosine(vec1, vec3) == 0.0
-    
+
     # Cosine similarity of partially overlapping vectors
     score = get_cosine(vec1, vec2)
     assert 0.0 < score < 1.0
 
+
 def test_title_phrase_overlap_prefers_shared_bigram_structure():
     close = _title_phrase_overlap(
         "Владата усвои пакет мерки за економија",
-        "Нов пакет мерки за економија усвои владата"
+        "Нов пакет мерки за економија усвои владата",
     )
     far = _title_phrase_overlap(
-        "Владата усвои пакет мерки за економија",
-        "Фудбалски натпревар во Лига Шампиони"
+        "Владата усвои пакет мерки за економија", "Фудбалски натпревар во Лига Шампиони"
     )
     assert close > far
 
 
 def test_topic_bridge_is_more_permissive_for_fresh_followups_than_old_ones():
     shared = {"Кочани"}
-    assert _topic_bridge_allowed("Политика", "Вести", "Македонија", "Македонија", 0.0, 0.55, shared, 4.0) is True
-    assert _topic_bridge_allowed("Политика", "Вести", "Македонија", "Македонија", 0.0, 0.55, shared, 30.0) is False
+    assert (
+        _topic_bridge_allowed(
+            "Политика", "Вести", "Македонија", "Македонија", 0.0, 0.55, shared, 4.0
+        )
+        is True
+    )
+    assert (
+        _topic_bridge_allowed(
+            "Политика", "Вести", "Македонија", "Македонија", 0.0, 0.55, shared, 30.0
+        )
+        is False
+    )
+
 
 @patch(_DB_PATCH, _mock_db)
 def test_find_or_create_cluster():
     recent_articles = [
         {"cluster_id": "c1", "title": "Владата донесе нова мерка за економијата"},
         {"cluster_id": "c1", "title": "Нова мерка на владата за економија"},
-        {"cluster_id": "c2", "title": "Спортски настан во Скопје"}
+        {"cluster_id": "c2", "title": "Спортски настан во Скопје"},
     ]
 
     # Should match cluster 1 (use very similar words to pass threshold 0.35)
@@ -76,13 +97,16 @@ def test_find_or_create_cluster():
     assert cid2 != "c1"
     assert cid2 != "c2"
 
+
 @patch(_DB_PATCH, _mock_db)
 def test_max_cluster_size():
     # Mocking a full cluster
-    recent_articles = [{"cluster_id": "c1", "title": "Владата донесе нова мерка за економијата"}] * 30
+    recent_articles = [
+        {"cluster_id": "c1", "title": "Владата донесе нова мерка за економијата"}
+    ] * 30
     title1 = "Мерки на владата за економија"
     cid1 = find_or_create_cluster(MagicMock(), title1, recent_articles)
-    assert cid1 != "c1" # Should not join full cluster
+    assert cid1 != "c1"  # Should not join full cluster
 
 
 def test_empty_title_creates_new_cluster():
@@ -91,10 +115,12 @@ def test_empty_title_creates_new_cluster():
     cid = find_or_create_cluster(MagicMock(), "", recent)
     assert cid != "c1"
 
+
 def test_no_recent_articles():
     """With no recent articles, should always create new cluster."""
     cid = find_or_create_cluster(MagicMock(), "Нова важна вест", [])
     assert len(cid) == 12  # uuid.hex[:12]
+
 
 @patch(_DB_PATCH, _mock_db)
 def test_completely_different_topic():
@@ -102,8 +128,11 @@ def test_completely_different_topic():
     recent = [
         {"cluster_id": "c1", "title": "Владата донесе нова мерка за економијата"},
     ]
-    cid = find_or_create_cluster(MagicMock(), "Фудбалски натпревар во Лига Шампиони", recent)
+    cid = find_or_create_cluster(
+        MagicMock(), "Фудбалски натпревар во Лига Шампиони", recent
+    )
     assert cid != "c1"
+
 
 def test_mk_stem_short_words_unchanged():
     """Words shorter than 5 chars should not be stemmed."""
@@ -111,36 +140,50 @@ def test_mk_stem_short_words_unchanged():
     assert mk_stem("зема") == "зема"
     assert mk_stem("а") == "а"
 
+
 def test_text_to_vector_empty():
     vec = text_to_vector("")
     assert len(vec) == 0
+
 
 def test_text_to_vector_all_stopwords():
     vec = text_to_vector("и на во од со за")
     assert len(vec) == 0
 
+
 def test_get_cosine_empty_vectors():
     assert get_cosine(Counter(), Counter()) == 0.0
     assert get_cosine(Counter({"a": 1}), Counter()) == 0.0
+
 
 def test_get_cosine_identical():
     vec = Counter({"тест": 3, "влад": 2})
     assert abs(get_cosine(vec, vec) - 1.0) < 0.001
 
+
 @patch(_DB_PATCH, _mock_db)
 def test_cluster_age_decay():
     """Older cluster representatives should be harder to match (higher threshold)."""
     import datetime
+
     old_time = datetime.datetime.now() - datetime.timedelta(hours=48)
     recent_time = datetime.datetime.now() - datetime.timedelta(minutes=5)
 
     title = "Владата донесе мерка за економијата"
 
     recent_articles = [
-        {"cluster_id": "c-old", "title": "Владата донесе нова мерка за економијата", "created_at": old_time},
+        {
+            "cluster_id": "c-old",
+            "title": "Владата донесе нова мерка за економијата",
+            "created_at": old_time,
+        },
     ]
     fresh_articles = [
-        {"cluster_id": "c-new", "title": "Владата донесе нова мерка за економијата", "created_at": recent_time},
+        {
+            "cluster_id": "c-new",
+            "title": "Владата донесе нова мерка за економијата",
+            "created_at": recent_time,
+        },
     ]
 
     cid_old = find_or_create_cluster(MagicMock(), title, recent_articles)
@@ -153,11 +196,21 @@ def test_cluster_age_decay():
 @patch(_DB_PATCH, _mock_db)
 def test_phrase_overlap_helps_short_variants_join_same_cluster():
     recent_articles = [
-        {"cluster_id": "c1", "title": "Пакет мерки за економија од Владата", "created_at": datetime.datetime.now()},
-        {"cluster_id": "c2", "title": "Фудбалски натпревар во Скопје", "created_at": datetime.datetime.now()},
+        {
+            "cluster_id": "c1",
+            "title": "Пакет мерки за економија од Владата",
+            "created_at": datetime.datetime.now(),
+        },
+        {
+            "cluster_id": "c2",
+            "title": "Фудбалски натпревар во Скопје",
+            "created_at": datetime.datetime.now(),
+        },
     ]
 
-    cid = find_or_create_cluster(MagicMock(), "Владата со пакет мерки за економија", recent_articles)
+    cid = find_or_create_cluster(
+        MagicMock(), "Владата со пакет мерки за економија", recent_articles
+    )
     assert cid == "c1"
 
 

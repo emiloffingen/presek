@@ -76,7 +76,9 @@ def _probe_redis():
     return result
 
 
-def _source_quality_payload(status: str, fetched: int, accepted: int, error: str | None = None):
+def _source_quality_payload(
+    status: str, fetched: int, accepted: int, error: str | None = None
+):
     fetched = max(0, int(fetched or 0))
     accepted = max(0, int(accepted or 0))
     acceptance_ratio = (accepted / fetched) if fetched else 0.0
@@ -107,7 +109,9 @@ def _source_quality_payload(status: str, fetched: int, accepted: int, error: str
     }
 
 
-def update_source_policy(source_name: str, status: str, fetched: int = 0, accepted: int = 0):
+def update_source_policy(
+    source_name: str, status: str, fetched: int = 0, accepted: int = 0
+):
     fetched = max(0, int(fetched or 0))
     accepted = max(0, int(accepted or 0))
     acceptance_ratio = (accepted / fetched) if fetched else 0.0
@@ -179,11 +183,11 @@ def record_refresh(article_count: int, errors: list[str] | None = None):
 
 
 def record_source_fetch(
-        source_name: str,
-        status: str,
-        fetched: int = 0,
-        accepted: int = 0,
-        error: str | None = None,
+    source_name: str,
+    status: str,
+    fetched: int = 0,
+    accepted: int = 0,
+    error: str | None = None,
 ):
     """Persist per-source fetch results for operational visibility."""
     if not source_name or not status:
@@ -221,19 +225,33 @@ def get_source_statuses():
 
 def _freshness_payload(last_refresh_time: str | None):
     if not last_refresh_time:
-        return {"status": "stale", "age_minutes": None, "label": "Нема скоро освежување"}
+        return {
+            "status": "stale",
+            "age_minutes": None,
+            "label": "Нема скоро освежување",
+        }
 
     try:
         refresh_dt = datetime.fromisoformat(last_refresh_time.replace("Z", "+00:00"))
-        age_minutes = max(0, int((datetime.now(timezone.utc) - refresh_dt).total_seconds() // 60))
+        age_minutes = max(
+            0, int((datetime.now(timezone.utc) - refresh_dt).total_seconds() // 60)
+        )
     except Exception:
         return {"status": "stale", "age_minutes": None, "label": "Непознато освежување"}
 
     if age_minutes <= 15:
-        return {"status": "fresh", "age_minutes": age_minutes, "label": "Освежено скоро"}
+        return {
+            "status": "fresh",
+            "age_minutes": age_minutes,
+            "label": "Освежено скоро",
+        }
     if age_minutes <= 45:
         return {"status": "aging", "age_minutes": age_minutes, "label": "Мало доцнење"}
-    return {"status": "stale", "age_minutes": age_minutes, "label": "Освежувањето доцни"}
+    return {
+        "status": "stale",
+        "age_minutes": age_minutes,
+        "label": "Освежувањето доцни",
+    }
 
 
 def record_task_event(task_name: str, status: str, detail: str | None = None):

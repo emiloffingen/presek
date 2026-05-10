@@ -29,7 +29,13 @@ class TestRenderHtml:
     def test_basic_render(self):
         stories = {
             "Македонија": [
-                {"title": "Тест наслов", "link": "https://example.com", "source": "MIA", "summary": "Резиме", "source_count": 3}
+                {
+                    "title": "Тест наслов",
+                    "link": "https://example.com",
+                    "source": "MIA",
+                    "summary": "Резиме",
+                    "source_count": 3,
+                }
             ]
         }
         start = datetime(2026, 3, 22)
@@ -50,7 +56,13 @@ class TestRenderHtml:
     def test_no_summary(self):
         stories = {
             "Свет": [
-                {"title": "Наслов", "link": "https://x.com", "source": "CNN", "summary": None, "source_count": 1}
+                {
+                    "title": "Наслов",
+                    "link": "https://x.com",
+                    "source": "CNN",
+                    "summary": None,
+                    "source_count": 1,
+                }
             ]
         }
         html = render_html(stories, datetime(2026, 1, 1), datetime(2026, 1, 2))
@@ -60,8 +72,24 @@ class TestRenderHtml:
 
     def test_multiple_categories(self):
         stories = {
-            "Македонија": [{"title": "МК Вест", "link": "#", "source": "A", "summary": None, "source_count": 1}],
-            "Балкан": [{"title": "БК Вест", "link": "#", "source": "B", "summary": None, "source_count": 1}],
+            "Македонија": [
+                {
+                    "title": "МК Вест",
+                    "link": "#",
+                    "source": "A",
+                    "summary": None,
+                    "source_count": 1,
+                }
+            ],
+            "Балкан": [
+                {
+                    "title": "БК Вест",
+                    "link": "#",
+                    "source": "B",
+                    "summary": None,
+                    "source_count": 1,
+                }
+            ],
         }
         html = render_html(stories, datetime(2026, 1, 1), datetime(2026, 1, 2))
         assert "Македонија" in html

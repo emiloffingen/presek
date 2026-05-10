@@ -23,11 +23,14 @@ class TestAstroFrontendIntegrity:
 
     def test_layout_keeps_theme_sync_and_canonical_metadata(self):
         layout = _read("web/src/layouts/Layout.astro")
-        assert "<html lang=\"mk\">" in layout
-        assert "const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('theme') : null;" in layout
+        assert '<html lang="mk">' in layout
+        assert (
+            "const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('theme') : null;"
+            in layout
+        )
         assert "window.localStorage.setItem('theme', theme);" not in layout
-        assert "<link rel=\"canonical\" href={canonicalUrl} />" in layout
-        assert "<meta property=\"og:url\" content={canonicalUrl} />" in layout
+        assert '<link rel="canonical" href={canonicalUrl} />' in layout
+        assert '<meta property="og:url" content={canonicalUrl} />' in layout
 
     def test_canonical_url_uses_astro_site_and_strips_trailing_slash(self):
         layout = _read("web/src/layouts/Layout.astro")
@@ -35,7 +38,7 @@ class TestAstroFrontendIntegrity:
         assert "Astro.site" in layout
         assert "new URL(" in layout
         # Must strip trailing slashes
-        assert "replace(/\\/+$/" in layout or 'replace(/\\/+$/' in layout
+        assert "replace(/\\/+$/" in layout or "replace(/\\/+$/" in layout
 
     def test_astro_config_enforces_trailing_slash_never(self):
         config = _read("web/astro.config.mjs")
@@ -57,20 +60,20 @@ class TestAstroFrontendIntegrity:
             content = _read(rel_path)
             uses_helper = "apiBaseUrl" in content
             uses_inline_env = "PUBLIC_API_URL" in content
-            assert uses_helper or uses_inline_env, (
-                f"Missing apiBaseUrl()/PUBLIC_API_URL in {rel_path}"
-            )
+            assert (
+                uses_helper or uses_inline_env
+            ), f"Missing apiBaseUrl()/PUBLIC_API_URL in {rel_path}"
             if uses_inline_env:
-                assert "127.0.0.1:5001/api" in content or "\"/api\"" in content, (
-                    f"Missing FastAPI fallback in {rel_path}"
-                )
+                assert (
+                    "127.0.0.1:5001/api" in content or '"/api"' in content
+                ), f"Missing FastAPI fallback in {rel_path}"
 
         # The shared helper must still contain the canonical fallback values
         # so that the assertion above is actually meaningful.
         helper = _read("web/src/lib/apiBase.ts")
         assert "PUBLIC_API_URL" in helper
         assert "127.0.0.1:5001/api" in helper
-        assert "'/api'" in helper or "\"/api\"" in helper
+        assert "'/api'" in helper or '"/api"' in helper
 
     def test_status_route_renders_live_health_page(self):
         status_page = _read("web/src/pages/admin/status.astro")
@@ -87,25 +90,29 @@ class TestAstroFrontendIntegrity:
         # We now check migrations for schema definitions
         migration_file = next(ROOT.glob("migrations/versions/*baseline_schema.py"))
         schema = migration_file.read_text(encoding="utf-8")
-        
+
         ingestion = _read("ingestion.py")
         stats = _read("routes/stats.py")
         homepage = _read("routes/home.py")
         clustering = _read("clustering.py")
 
         assert "ingested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP" in schema
-        assert "\"ingested_at\": cycle_now" in ingestion
+        assert '"ingested_at": cycle_now' in ingestion
         assert "ingested_at" in stats
         assert "INTERVAL '1 hour'" in stats
         assert "_article_freshness_time(article)" in homepage
-        assert "def _cluster_title_overlap(left: str, right: str) -> float:" in clustering
+        assert (
+            "def _cluster_title_overlap(left: str, right: str) -> float:" in clustering
+        )
 
     def test_homepage_focus_entities_preserve_raw_slug_and_display_name(self):
         home_route = _read("routes/home.py")
         homepage = _read("web/src/pages/index.astro")
         entity_route = _read("routes/intelligence.py")
 
-        assert 'normalized["display_name"] = _display_entity_name(raw_name)' in home_route
+        assert (
+            'normalized["display_name"] = _display_entity_name(raw_name)' in home_route
+        )
         assert 'normalized["name"] = raw_name' in home_route
         assert "LOWER(name) = LOWER(%s)" in entity_route
         assert "LOWER(tag) = LOWER(%s)" in entity_route
@@ -119,7 +126,10 @@ class TestAstroFrontendIntegrity:
         assert "getTimeStr(main.ingested_at || main.created_at)" in homepage
         assert "getTimeStr(main.ingested_at || main.created_at)" in interactive_card
         assert "getTimeStr(article.ingested_at || article.created_at)" in live_updates
-        assert "getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)" in lead
+        assert (
+            "getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)"
+            in lead
+        )
 
     def test_generated_article_footnotes_are_sanitized_before_html_rendering(self):
         cluster_page = _read("web/src/pages/cluster/[slug].astro")
@@ -133,46 +143,69 @@ class TestAstroFrontendIntegrity:
         research = _read("web/src/components/ResearchIsland.tsx")
 
         assert "\n...\n" not in source_comparison
-        assert "const totalOverlap = Math.max(1, overlap.shared_clusters + overlap.s1_exclusive + overlap.s2_exclusive);" in source_comparison
+        assert (
+            "const totalOverlap = Math.max(1, overlap.shared_clusters + overlap.s1_exclusive + overlap.s2_exclusive);"
+            in source_comparison
+        )
         assert "Math.max(0, Math.min(100" in source_comparison
         assert "result.report || result.answer" in research
 
     def test_briefing_page_shows_real_error_state_and_not_only_processing_state(self):
         briefing = _read("web/src/pages/briefing.astro")
-        assert 'Брифингот моментално не е достапен.' in briefing
-
-
+        assert "Брифингот моментално не е достапен." in briefing
 
     def test_pulse_page_has_real_error_state_and_safe_category_math(self):
         pulse = _read("web/src/pages/pulse.astro")
         intelligence = _read("routes/intelligence.py")
 
         assert "let ssrFailed = false;" in pulse
-        assert "_FRESHNESS_EXPR = \"COALESCE(ingested_at, created_at)\"" in intelligence
+        assert '_FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"' in intelligence
 
-    def test_for_you_page_surfaces_seed_fetch_errors_and_refetches_on_profile_change(self):
+    def test_for_you_page_surfaces_seed_fetch_errors_and_refetches_on_profile_change(
+        self,
+    ):
         for_you_page = _read("web/src/pages/for-you.astro")
         for_you_island = _read("web/src/components/ForYouPageIsland.tsx")
         profile_route = _read("routes/profile.py")
 
         assert "let initialError: string | null = null;" in for_you_page
-        assert 'initialError = "Не можеме да ги вчитаме почетните препораки во моментов."' in for_you_page
-        assert "<ForYouPageIsland client:load initialClusters={initialClusters} initialError={initialError} />" in for_you_page
-        assert "const [semanticError, setSemanticError] = useState<string | null>(null);" in for_you_island
+        assert (
+            'initialError = "Не можеме да ги вчитаме почетните препораки во моментов."'
+            in for_you_page
+        )
+        assert (
+            "<ForYouPageIsland client:load initialClusters={initialClusters} initialError={initialError} />"
+            in for_you_page
+        )
+        assert (
+            "const [semanticError, setSemanticError] = useState<string | null>(null);"
+            in for_you_island
+        )
         assert "}, [profile]);" in for_you_island
         assert "const pageError = semanticError || initialError;" in for_you_island
         assert "COALESCE(ingested_at, created_at)" in profile_route
-        assert 'f"SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY {_FRESHNESS_EXPR} DESC, created_at DESC"' in profile_route
+        assert (
+            'f"SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY {_FRESHNESS_EXPR} DESC, created_at DESC"'
+            in profile_route
+        )
 
-    def test_secondary_intelligence_and_stats_surfaces_use_ingestion_aware_freshness(self):
+    def test_secondary_intelligence_and_stats_surfaces_use_ingestion_aware_freshness(
+        self,
+    ):
         intelligence = _read("routes/intelligence.py")
         stats = _read("routes/stats.py")
         system = _read("routes/system.py")
 
         assert '_FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"' in intelligence
         assert "WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '48 hours'" in intelligence
-        assert "WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY a.source" in intelligence
-        assert "EXISTS (SELECT 1 FROM unnest(COALESCE(m.tags, '{}')) AS tag WHERE LOWER(tag) = LOWER(%s))" in intelligence
+        assert (
+            "WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY a.source"
+            in intelligence
+        )
+        assert (
+            "EXISTS (SELECT 1 FROM unnest(COALESCE(m.tags, '{}')) AS tag WHERE LOWER(tag) = LOWER(%s))"
+            in intelligence
+        )
         assert '_FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"' in stats
         assert "WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours'" in stats
         assert "ORDER BY cluster_id, {_FRESHNESS_EXPR} ASC, created_at ASC" in stats
@@ -206,10 +239,14 @@ class TestAstroFrontendIntegrity:
         assert '"/api/profile/delivery"' in common
         assert '"/api/profile/suggestion-event"' in common
 
-    def test_public_news_routes_use_article_serializer_instead_of_returning_raw_rows(self):
+    def test_public_news_routes_use_article_serializer_instead_of_returning_raw_rows(
+        self,
+    ):
         news = _read("routes/news.py")
         assert "def _public_article_payload(article):" in news
-        assert '"articles": [_public_article_payload(article) for article in arts]' in news
+        assert (
+            '"articles": [_public_article_payload(article) for article in arts]' in news
+        )
         assert '"articles": public_articles' in news
         assert '"image_caption"' in news
         assert '"is_redundant"' in news
@@ -218,10 +255,16 @@ class TestAstroFrontendIntegrity:
         news = _read("routes/news.py")
         topic_discovery = _read("web/src/lib/topicDiscovery.js")
 
-        assert 'if topic and r.get("topic") != topic and r.get("category") != topic:' in news
+        assert (
+            'if topic and r.get("topic") != topic and r.get("category") != topic:'
+            in news
+        )
         assert 'if category and r.get("category") != category:' in news
         assert "visibleClusterTopics" in topic_discovery
-        assert "visibleClusterTopics.size === 0 || visibleClusterTopics.has(topic)" in topic_discovery
+        assert (
+            "visibleClusterTopics.size === 0 || visibleClusterTopics.has(topic)"
+            in topic_discovery
+        )
 
     def test_cluster_related_payload_preserves_shared_metadata(self):
         news = _read("routes/news.py")
@@ -290,7 +333,7 @@ class TestDeploymentIntegrity:
     def test_nginx_applies_security_headers_to_astro_responses(self):
         nginx_conf = _read("deploy/nginx/presek.live.conf")
         headers_snippet = _read("deploy/nginx/security-headers.conf")
-        assert "add_header Cache-Control \"no-transform\"" in nginx_conf
+        assert 'add_header Cache-Control "no-transform"' in nginx_conf
         assert "presek-security-headers.conf" in nginx_conf
         assert "add_header Strict-Transport-Security" in headers_snippet
         assert "add_header Content-Security-Policy" in headers_snippet
@@ -299,7 +342,7 @@ class TestDeploymentIntegrity:
     def test_release_flow_reloads_nginx_before_smoke_checks(self):
         deploy_script = _read("deploy/deploy_release.sh")
         assert "sudo nginx -t" in deploy_script
-        assert "sudo systemctl reload \"$NGINX_SERVICE\"" in deploy_script
+        assert 'sudo systemctl reload "$NGINX_SERVICE"' in deploy_script
         assert 'sudo systemctl restart "${APP_SERVICES[@]}"' in deploy_script
         assert 'sudo systemctl start "$SYSTEMD_TARGET"' in deploy_script
 
@@ -309,8 +352,15 @@ class TestDeploymentIntegrity:
 
     def test_gitignore_covers_common_patterns(self):
         gitignore = _read(".gitignore")
-        for pattern in (".env", "venv/", "__pycache__/", "node_modules/",
-                        ".mypy_cache/", ".ruff_cache/", "web/dist/"):
+        for pattern in (
+            ".env",
+            "venv/",
+            "__pycache__/",
+            "node_modules/",
+            ".mypy_cache/",
+            ".ruff_cache/",
+            "web/dist/",
+        ):
             assert pattern in gitignore, f"Missing {pattern} in .gitignore"
 
     def test_smoke_check_covers_public_status_and_security_headers(self):
@@ -329,7 +379,7 @@ class TestDeploymentIntegrity:
         assert 'systemctl restart "${APP_SERVICES[@]}"' in install_script
         assert 'sudo systemctl restart "$SYSTEMD_TARGET"' not in deploy_script
         assert 'sudo systemctl restart "$SYSTEMD_TARGET"' not in rollback_script
-        assert 'systemctl restart presek.target' not in install_script
+        assert "systemctl restart presek.target" not in install_script
 
     def test_runtime_config_does_not_embed_seed_source_catalog(self):
         config = _read("config.py")
