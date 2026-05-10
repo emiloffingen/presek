@@ -1,0 +1,27 @@
+# Presek Backup Crontab
+# Install with: crontab /path/to/this/file
+# Or add to root crontab with: crontab -e
+
+# ============================================================================
+# PostgreSQL Backups
+# ============================================================================
+# Daily backup at 2:00 AM
+0 2 * * * /bin/bash /home/emiloffingen/presek/deploy/backup_postgres.sh >> /home/emiloffingen/presek/logs/backup.log 2>&1
+
+# ============================================================================
+# Log Rotation
+# ============================================================================
+# Rotate backup logs weekly
+0 3 * * 0 find /home/emiloffingen/presek/logs/backup*.log -mtime +30 -delete
+
+# ============================================================================
+# Health Checks
+# ============================================================================
+# Daily health check at 3:00 AM
+0 3 * * * curl -sSf http://localhost:8000/api/health || echo "Health check failed at $(date)" >> /home/emiloffingen/presek/logs/health_check.log 2>&1
+
+# ============================================================================
+# Certificate Renewal (if using Let's Encrypt)
+# ============================================================================
+# Uncomment if using certbot
+# 0 3 * * * certbot renew --quiet --post-hook "systemctl reload nginx"

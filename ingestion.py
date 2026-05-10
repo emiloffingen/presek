@@ -345,6 +345,11 @@ def extract_image_url(entry):
                 "favicon",
                 "pixel",
                 "small",
+                "ytimg",      # YouTube thumbnail indicator
+                "video_thumb",
+                "play_button",
+                "player",
+                "tiktok",     # General TikTok related image
             )
         ):
             score -= 6.0
@@ -705,11 +710,13 @@ async def ingest_all_sources_async():
                     ):
                         continue
 
-                    desc = e.get("summary", "") or e.get("description", "")
-                    if not is_supported_display_language(title, desc):
+                    raw_desc = e.get("summary", "") or e.get("description", "")
+                    cleaned_desc = re.sub(r"<[^>]+>", "", raw_desc).strip()
+
+                    if not is_supported_display_language(title, cleaned_desc):
                         continue
 
-                    if is_junk(title, desc):
+                    if is_junk(title, cleaned_desc):
                         continue
 
                     if not title_key:
@@ -728,7 +735,7 @@ async def ingest_all_sources_async():
                             "source": source_name,
                             "title": title,
                             "link": link,
-                            "desc": desc,
+                            "desc": cleaned_desc,
                             "image_url": extract_image_url(e),
                             "country": source_meta["country"],
                             "category": source_meta["category"],

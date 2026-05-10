@@ -555,6 +555,15 @@ function getTimeStr(dateStr: string) {
 			font-size: 2.25rem;
 			line-height: 0.98;
 		}
+        /* New styles for standard card headlines on larger screens */
+        .headline-standard,
+        .headline-compact,
+        .headline-wire {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
 	}
 
 	@media (max-width: 767px) {
