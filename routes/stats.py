@@ -374,7 +374,23 @@ async def get_archive_daily_briefing(date: str = Query(...)):
     briefing_parts = []
     for c in top_clusters:
         title = c["synthetic_headline"] or "Важна тема"
-        summary = (c["summary"] or "").split("\n")[0]  # Take first bullet
+        bullets = [b.strip() for b in (c["summary"] or "").split("\n") if b.strip()]
+        if not bullets:
+            continue
+            
+        summary = bullets[0]
+        # Clean up common prefixes from the bullet
+        if summary.startswith("-"):
+            summary = summary[1:].strip()
+        if summary.lower().startswith("што се случи:"):
+            summary = summary[13:].strip()
+            
+        # If the first bullet is just repeating the headline, try the next bullet
+        if summary.lower() == title.lower() and len(bullets) > 1:
+            summary = bullets[1]
+            if summary.startswith("-"):
+                summary = summary[1:].strip()
+            
         briefing_parts.append(f"**{title}**: {summary}")
 
     briefing = " • ".join(briefing_parts)

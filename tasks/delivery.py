@@ -1188,7 +1188,7 @@ def _send_ntfy_message(topic, title, message, tags="newspaper", click_url=None):
         params["click"] = str(click_url).strip()[:500]
 
     headers = {}
-    if NTFY_TOKEN:
+    if NTFY_TOKEN and NTFY_TOKEN != "YOUR_NTFY_TOKEN_HERE":
         headers["Authorization"] = f"Bearer {NTFY_TOKEN}"
 
     url = f"https://ntfy.sh/{urllib.parse.quote(clean_topic, safe='')}"
