@@ -75,7 +75,7 @@ const IconComponent =
                     <div class="lead-media-placeholder lead-media-placeholder-error design-card absolute inset-0" style="display: none; --placeholder-bg: #27272a;">
                         <div class="design-card-pattern opacity-5"></div>
                         <div class="design-card-main p-8 flex items-center justify-center h-full">
-                            <Newspaper size={48} className="text-white/10" />
+                            <Newspaper size={48} class="text-white/10" />
                         </div>
                     </div>
                 </>
@@ -88,14 +88,14 @@ const IconComponent =
                     
                     <div class="design-card-main">
                         <div class="design-card-icon-wrap">
-                            <IconComponent size={48} strokeWidth={1.2} className="text-white/90" />
+                            <IconComponent size={48} strokeWidth={1.2} class="text-white/90" />
                         </div>
                         <h2 class:list={[{ "headline-cyrillic": leadTitleIsCyrillic }]}>{leadTitle}</h2>
                         <p class="design-card-sub">{cardContext.sub}</p>
                     </div>
 
                     <div class="design-card-footer">
-                        <span class="design-card-cta">ОДИ ДО СТАТИЈАТА <ArrowRight size={14} className="ml-1" /></span>
+                        <span class="design-card-cta">ОДИ ДО СТАТИЈАТА <ArrowRight size={14} class="ml-1" /></span>
                     </div>
                 </div>
             )}
@@ -213,7 +213,7 @@ const IconComponent =
                     <div class="lead-media-placeholder lead-media-placeholder-error design-card absolute inset-0" style="display: none; --placeholder-bg: #27272a;">
                         <div class="design-card-pattern opacity-5"></div>
                         <div class="design-card-main p-8 flex items-center justify-center h-full">
-                            <Newspaper size={48} className="text-white/10" />
+                            <Newspaper size={48} class="text-white/10" />
                         </div>
                     </div>
                 </>
@@ -369,33 +369,6 @@ const IconComponent =
 		color: color-mix(in srgb, var(--muted-foreground) 88%, var(--foreground) 12%);
 	}
 
-	.source-label {
-		font-family: var(--font-sans);
-		font-size: 0.68rem;
-		font-weight: 900;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-	}
-
-	.live-pill {
-		border: 1px solid var(--nyt-red);
-		color: var(--nyt-red);
-		padding: 0.1rem 0.4rem;
-		font-family: var(--font-sans);
-		font-size: 0.62rem;
-		font-weight: 900;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-	}
-
-	.lead-kicker {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.6rem;
-		margin-bottom: 0.75rem;
-	}
-
 	.lead-summary {
 		font-family: var(--font-nyt-body);
 		font-size: var(--text-lg);
@@ -408,20 +381,6 @@ const IconComponent =
 
 	.lead-summary-cyrillic {
 		line-height: 1.65;
-	}
-
-	.lead-signal-badge {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.35rem;
-		background: var(--secondary);
-		color: var(--secondary-foreground);
-		padding: 0.25rem 0.55rem;
-		border-radius: 4px;
-		font-family: var(--font-sans);
-		font-size: 0.65rem;
-		font-weight: 700;
-		letter-spacing: 0.02em;
 	}
 
     .lead-analyst-box {
@@ -454,16 +413,10 @@ const IconComponent =
         text-transform: uppercase;
     }
 
-    .pulse-indicator {
+    .pulse-indicator, .pluralism-indicator {
         display: flex;
         align-items: center;
         gap: 0.4rem;
-    }
-
-    .pluralism-indicator {
-        display: flex;
-        align-items: center;
-        gap: 0.6rem;
     }
 
     .pulse-text {
@@ -567,22 +520,6 @@ const IconComponent =
 		border: 1px solid var(--border);
 	}
 
-    @media (max-width: 639px) {
-        .lead-follow-strip {
-            display: none; /* Hide related articles strip on mobile to save space */
-        }
-        
-        .lead-analyst-box {
-            padding: 0.85rem;
-            margin-top: 0.75rem;
-        }
-
-        .analyst-facts li {
-            font-size: 0.82rem;
-            line-height: 1.3;
-        }
-    }
-
 	.lead-follow-kicker {
 		margin: 0 0 0.2rem;
 		font-family: var(--font-sans);
@@ -591,15 +528,6 @@ const IconComponent =
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		color: var(--muted-foreground);
-	}
-
-	.lead-related-index {
-		padding-top: 0.84rem;
-		font-family: var(--font-sans);
-		font-size: 0.54rem;
-		font-weight: 950;
-		letter-spacing: 0.12em;
-		color: var(--nyt-accent);
 	}
 
 	.lead-media-frame {
@@ -833,22 +761,6 @@ const IconComponent =
 		color: rgba(255,255,255,0.72);
 	}
 
-	.lead-media-fallback-title {
-		position: relative;
-		z-index: 1;
-		margin: 0;
-		max-width: 18ch;
-		font-family: var(--font-serif);
-		font-size: 1rem;
-		line-height: 1.18;
-		color: rgba(255,255,255,0.92);
-	}
-
-	.lead-media-fallback-title-cyrillic {
-		line-height: 1.22;
-		letter-spacing: -0.008em;
-	}
-
 	@media (min-width: 960px) {
 		.lead-hero {
 			grid-template-columns: minmax(0, 1.16fr) minmax(0, 1.04fr);
@@ -886,10 +798,6 @@ const IconComponent =
 			aspect-ratio: 16 / 9;
 			object-position: center;
 		}
-	}
-
-	@media (min-width: 1280px) {
-		/* Space for potential desktop-only tweaks */
 	}
 
 	@media (max-width: 639px) {
@@ -939,11 +847,6 @@ const IconComponent =
             margin-bottom: 0.5rem;
 		}
 
-		.lead-signal-badge {
-			font-size: 0.6rem;
-            padding: 0.2rem 0.45rem;
-		}
-
 		.lead-meta {
 			margin-top: 0.1rem;
 			font-size: 0.65rem;
@@ -955,21 +858,7 @@ const IconComponent =
 		}
 
 		.lead-follow-strip {
-			margin-top: 0.65rem;
-			padding: 0.75rem 0.8rem 0;
-		}
-
-		.lead-related li {
-			gap: 0.55rem;
-		}
-
-		.lead-related a {
-			padding: 0.6rem 0;
-			font-size: 0.9rem;
-		}
-
-		.lead-related-index {
-			padding-top: 0.72rem;
+            display: none;
 		}
 
         .lead-analyst-box {
@@ -979,26 +868,6 @@ const IconComponent =
         }
 
         .analyst-header {
-            margin-bottom: 0.5rem;
-            padding-bottom: 0.35rem;
-        }
-
-        .analyst-label {
-            font-size: 0.5rem;
-        }
-
-        .pulse-text {
-            font-size: 0.48rem;
-        }
-
-        .analyst-facts li {
-            font-size: 0.82rem;
-            line-height: 1.35;
-            padding-left: 1rem;
-        }
-	}
-</style>
--header {
             margin-bottom: 0.5rem;
             padding-bottom: 0.35rem;
         }
