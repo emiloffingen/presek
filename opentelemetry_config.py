@@ -148,9 +148,9 @@ def _setup_auto_instrumentation():
         pass
 
     try:
-        from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
+        from opentelemetry.instrumentation.psycopg import PsycopgInstrumentor
 
-        Psycopg2Instrumentor.instrument()
+        PsycopgInstrumentor.instrument()
     except ImportError:
         pass
 

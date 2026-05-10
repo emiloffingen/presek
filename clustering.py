@@ -449,8 +449,6 @@ def find_cluster_semantic(
     if not embedding:
         return None
     try:
-        from psycopg2.extras import DictCursor
-
         # Adaptive threshold based on category diversity
         # High-entropy categories need STRICTER thresholds (lower distance)
         # to avoid bridging unrelated stories.
@@ -504,7 +502,7 @@ def find_cluster_semantic(
             ORDER BY m.centroid <=> %s::vector
             LIMIT 1
         """
-        with conn.cursor(cursor_factory=DictCursor) as cur:
+        with conn.cursor() as cur:
             cur.execute(sql, tuple(params))
             row = cur.fetchone()
 
@@ -536,7 +534,7 @@ def find_cluster_semantic(
                         return None  # Borderline generic matches need concrete evidence
 
                 # Final Size Check
-                with conn.cursor(cursor_factory=DictCursor) as cur:
+                with conn.cursor() as cur:
                     cur.execute(
                         "SELECT count(*) as n FROM articles WHERE cluster_id = %s",
                         (cid,),

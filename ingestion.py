@@ -791,9 +791,7 @@ async def ingest_all_sources_async():
     # (Rest of the logic remains mostly same but wrapped in async orchestration)
     new_count = 0
     with db.connection() as conn:
-        from database import DictCursor
-
-        cur = conn.cursor(cursor_factory=DictCursor)
+        cur = conn.cursor()
         cur.execute(
             "SELECT title, cluster_id, created_at, category, topic FROM articles ORDER BY created_at DESC LIMIT %s",
             (CLUSTER_LOOKBACK,),
@@ -929,7 +927,7 @@ async def ingest_all_sources_async():
 
         # Batch Insert
         if prepared_rows:
-            from psycopg2.extras import execute_values
+            from psycopg import execute_values
 
             cur = conn.cursor()
             sql = """

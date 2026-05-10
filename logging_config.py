@@ -184,7 +184,7 @@ def _setup_module_loggers() -> None:
             "kombu",
             "amqp",
             "redis",
-            "psycopg2",
+            "psycopg",
             "sqlalchemy",
             "Pillow",
             "PIL",
