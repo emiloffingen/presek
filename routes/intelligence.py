@@ -723,8 +723,6 @@ async def get_global_pulse(category: Optional[str] = None):
     if cached:
         return cached
 
-    freshness_expr = _FRESHNESS_EXPR
-
     cat_filter = ""
     params = []
     if category:

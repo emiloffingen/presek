@@ -10,7 +10,6 @@ from nlp.keywords import (
 from nlp.text_processing import (
     lemmatize_mk,
     rewrite_to_macedonian_locally,
-    _jaccard_similarity,
     synthesize_locally,
 )
 from nlp.generation import (

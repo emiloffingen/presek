@@ -43,7 +43,14 @@ def _probe_database():
         conn = database.get_db()
         # Row is a dict-like object in psycopg 3 with dict_row factory
         row = conn.execute("SELECT COUNT(*) as count FROM articles").fetchone()
-        result["article_count"] = row["count"] if row else 0
+        # Handle both dict rows (psycopg with dict_row) and tuple rows
+        if row is None:
+            result["article_count"] = 0
+        elif isinstance(row, dict):
+            result["article_count"] = row.get("count", 0)
+        else:
+            # Tuple/list row: first column is the count
+            result["article_count"] = row[0] if len(row) > 0 else 0
         result["ok"] = True
     except Exception as exc:
         result["error"] = str(exc)

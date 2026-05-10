@@ -423,7 +423,6 @@ async def get_personalized_news_sync(request: Request):
         if not arts:
             continue
 
-        main = arts[0]
         annotated = annotate_cluster_articles(arts)
         meta = meta_map.get(cid) or {}
         score = score_cluster(arts)

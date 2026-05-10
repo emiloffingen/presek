@@ -169,17 +169,6 @@ class TestDetectTopic:
         assert detect_topic("New software and AI chip launch") == "Технологија"
 
 
-class TestDetectTopic:
-    def test_detects_topic_from_macedonian_keywords(self):
-        assert detect_topic("Владата усвои нов буџет и мерки") == "Економија"
-        assert detect_topic("Протести и дебата во парламентот") == "Политика"
-
-    def test_detects_topic_from_common_english_news_words(self):
-        assert detect_topic("Government announces election summit") == "Политика"
-        assert detect_topic("Markets react to inflation and tariffs") == "Економија"
-        assert detect_topic("New software and AI chip launch") == "Технологија"
-
-
 # ── normalize_headline ────────────────────────────────────────────
 
 

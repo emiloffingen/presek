@@ -471,15 +471,64 @@ def clean_json_response(text: str) -> dict | str | None:
     text = text.strip()
     if not text:
         return ""
-    text = re.sub(r"^```(?:json)?\s*", "", text)
-    text = re.sub(r"\s*```$", "", text)
+
+    # 1. Strip markdown fences if present
+    text = re.sub(r'^```(?:json)?\s*', '', text)
+    text = re.sub(r'\s*```$', '', text)
     text = text.strip()
+
+    # 2. Try direct JSON parse
     try:
         data = json.loads(text)
+        if isinstance(data, dict):
+            # If it's the expected structure, return it
+            if "answer" in data:
+                return data
+            if "report" in data:
+                return {"answer": data["report"], "suggestions": data.get("suggestions", [])}
+            # Single key unwrapping
+            if len(data) == 1:
+                val = list(data.values())[0]
+                if isinstance(val, str) and (len(val) > 20 or " " in val):
+                    return {"answer": val, "suggestions": []}
         return data
-    except Exception as e:
-        log.debug(f"Failed to parse JSON: {e}")
-        return text
+    except Exception:
+        pass
+
+    # 3. Aggressive Regex Extraction (if JSON parse failed)
+    # This handles cases where the model returns broken JSON or text with JSON inside
+    # Look for "answer": "..." OR "report": "..." OR "summary": "..."
+    for key in ("answer", "report", "summary"):
+        pattern = rf'"{key}"\s*:\s*"(.*?)"(?=\s*[,}}])'
+        match = re.search(pattern, text, re.DOTALL)
+        if match:
+            clean_text = (
+                match.group(1).replace("\\n", "\n").replace('\\"', '"').replace("\\'", "'")
+            )
+            return {"answer": clean_text, "suggestions": []}
+
+    # 4. Brute force: find the first { and last } and try parsing that
+    try:
+        first = text.find("{")
+        last = text.rfind("}")
+        if first != -1 and last > first:
+            candidate = text[first : last + 1]
+            data = json.loads(candidate)
+            if isinstance(data, dict):
+                if "answer" in data:
+                    return data
+                if "report" in data:
+                    return {"answer": data["report"], "suggestions": data.get("suggestions", [])}
+    except Exception:
+        pass
+
+    # 5. Final Fallback: Return the raw text but strip common JSON artifacts
+    # if it obviously leaked (e.g. starts with { "answer": )
+    text = re.sub(r'^\{\s*"answer"\s*:\s*"', '', text)
+    text = re.sub(r'"\s*,\s*"suggestions".*\}\s*$', '', text, flags=re.DOTALL)
+    text = re.sub(r'"\s*\}\s*$', '', text)
+
+    return text.replace("\\n", "\n").replace('\\"', '"').strip()
 
 
 def generate_cover_art(safe_id: str, svg_content: str) -> str | None:

@@ -377,7 +377,7 @@ def _is_high_quality_briefing(brief: str) -> bool:
     ]
 
     lines = [
-        l.strip() for l in text.splitlines() if l.strip() and not l.startswith("#")
+        line.strip() for line in text.splitlines() if line.strip() and not line.startswith("#")
     ]
     if not lines:
         return False
@@ -394,7 +394,7 @@ def _is_high_quality_briefing(brief: str) -> bool:
         return False
 
     # 2. Check for minimal diversity in sentence starters
-    sentence_starts = [l[:15].lower() for l in lines if len(l) > 15]
+    sentence_starts = [line[:15].lower() for line in lines if len(line) > 15]
     unique_starts = len(set(sentence_starts))
     if len(sentence_starts) > 5 and unique_starts < 3:
         log.warning("[editorial] Briefing rejected: repetitive sentence structure")

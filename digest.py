@@ -219,9 +219,9 @@ def render_html(
             if a.get("summary"):
                 # Clean up summary: remove emoji markers and truncate
                 clean = " ".join(
-                    l
-                    for l in a["summary"].split("\n")
-                    if l.strip() and not l.strip().startswith("#")
+                    line
+                    for line in a["summary"].split("\n")
+                    if line.strip() and not line.strip().startswith("#")
                 )
                 summary_html = f"<p style=\"margin:8px 0 0;color:#4a4a4a;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;letter-spacing:-0.01em\">{clean[:220]}…</p>"
 

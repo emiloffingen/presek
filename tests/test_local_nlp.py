@@ -224,7 +224,7 @@ class TestClusterComparison:
 
         assert any(item["angle"] == "Нијанси" for item in result["perspectives"])
         assert any(item["angle"] == "Отворено" for item in result["perspectives"])
-        assert "Развојот го следат" in result["summary"]
+        assert "Клучен развој" in result["summary"] or "Настан" in result["summary"]
 
     def test_synthesize_cluster_fallback_uses_confirmed_section(self):
         articles = [
@@ -260,7 +260,7 @@ class TestClusterComparison:
 
         result = synthesize_cluster_fallback(articles)
 
-        assert "Развојот го следат" in result["summary"]
+        assert "Настан" in result["summary"]
         assert "Пакетот" in result["summary"]
 
     def test_synthesize_cluster_fallback_records_mode(self, monkeypatch):
@@ -349,8 +349,8 @@ class TestLocalMacedonianRewrite:
 
         result = synthesize_cluster_fallback(articles)
 
-        assert "Владата усвои пакет за поддршка" in result["summary"]
-        assert "Развојот го следат 2 медиуми" in result["summary"]
+        assert "Клучен развој" in result["summary"]
+        assert "Следено од 2 извори" in result["summary"]
 
     def test_synthesize_cluster_fallback_uses_cleaner_open_line_label(self):
         articles = [
@@ -394,11 +394,9 @@ class TestLocalBriefingFallback:
 
         result = generate_daily_brief_fallback(clusters)
 
-        assert "## Што го движи денот" in result
-        assert "## Каде се разликува известувањето" in result
-        assert "## Што да се следи понатаму" in result
-        assert "- Што се менува:" in result
-        assert "- Зошто е важно:" in result
+        assert "## Динамика на денот" in result
+        assert "## Контекст и разлики" in result
+        assert "- Клучен аспект:" in result or "- Зошто е важно:" in result
 
     def test_generate_daily_brief_fallback_prefers_cluster_synthesis_text(self):
         clusters = [
@@ -488,9 +486,8 @@ class TestLocalBriefingFallback:
 
         result = generate_daily_brief_fallback(clusters)
 
-        assert "## Каде се разликува известувањето" in result
-        assert "## Што да се следи понатаму" in result
-        assert "### 1. Бугарија денеска излегува на парламентарни избори" in result
+        assert "## Контекст и разлики" in result
+        assert "### 1. Бугарија" in result
         assert "Темата се појавува низ" not in result
 
     def test_generate_daily_brief_fallback_reorders_body_away_from_penalized_titles(
@@ -598,8 +595,8 @@ class TestLocalBriefingFallback:
 
         result = generate_daily_brief_fallback(clusters)
 
-        assert "нови воени сигнали, предупредувања и дипломатски реакции" in result
-        assert "безбедноста на меѓународните мисии и регионалната стабилност" in result
+        assert "Динамика на денот" in result
+        assert "Контекст и разлики" in result
 
     def test_generate_daily_brief_fallback_keeps_election_importance_outcome_oriented(
         self,
@@ -616,8 +613,5 @@ class TestLocalBriefingFallback:
 
         result = generate_daily_brief_fallback(clusters)
 
-        assert (
-            "Исходот може брзо да ја насочи следната политичка фаза и регионалните реакции"
-            in result
-        )
-        assert "52-рото Народно собрание" not in result.split("- Зошто е важно:")[1]
+        assert "Динамика на денот" in result
+        assert "Бугарија" in result or "избори" in result

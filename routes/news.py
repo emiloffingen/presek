@@ -824,12 +824,6 @@ async def get_cluster_detail(cluster_id: str):
         current_topics = {
             str(topic or "").strip() for topic in topics if str(topic or "").strip()
         }
-        current_entities = {
-            str(entity or "").strip()
-            for article in articles
-            for entity in (article.get("entity_names") or [])
-            if str(entity or "").strip()
-        }
 
         # Just-in-time extraction if missing
         if rep_image and not dominant_color:

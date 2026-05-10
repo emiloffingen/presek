@@ -1,4 +1,3 @@
-import importlib
 import asyncio
 import os
 import sys
@@ -385,7 +384,8 @@ def test_global_pulse_uses_common_intelligence_summary_builder(mock_all):
                     "n": 5,
                 }
             ]
-        if "FROM knowledge_entities" in query:
+        # Updated query pattern: uses cluster_metadata with JOIN to knowledge_entities
+        if "FROM cluster_metadata cm" in query and "UNNEST(cm.tags)" in query:
             return [
                 {
                     "name": "Иран",
@@ -420,7 +420,6 @@ def test_global_pulse_uses_common_intelligence_summary_builder(mock_all):
 
 
 def test_fastapi_only_registers_prefixed_routers(mock_all):
-    api_fast = importlib.import_module("api_fast")
     content = open(
         os.path.join(os.path.dirname(__file__), "..", "api_fast.py"), encoding="utf-8"
     ).read()
@@ -1363,7 +1362,8 @@ def test_global_pulse_uses_ingestion_aware_window_and_filters_blank_categories(
                     "n": 5,
                 }
             ]
-        if "FROM knowledge_entities" in query:
+        # Updated query pattern: uses cluster_metadata with JOIN to knowledge_entities
+        if "FROM cluster_metadata cm" in query and "UNNEST(cm.tags)" in query:
             return [
                 {
                     "name": "Иран",
