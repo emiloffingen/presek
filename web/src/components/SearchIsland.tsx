@@ -369,8 +369,9 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Пребарајте вести, теми или субјекти..."
-                  className="w-full bg-transparent py-4 text-2xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground/30"
+                  className="w-full bg-transparent py-4 text-2xl md:text-3xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground/40 border-b-2 border-transparent focus:border-nyt-accent transition-colors"
                   autoComplete="off"
+                  spellCheck="false"
                 />
                 {isLoading && (
                   <div className="absolute right-0 top-1/2 -translate-y-1/2">
