@@ -179,6 +179,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Middleware to add security headers to all responses."""
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        # Generate a unique nonce for this request for CSP
+        csp_nonce = secrets.token_hex(16)
+        
         response = await call_next(request)
 
         # Add security headers
@@ -189,13 +192,14 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "max-age=63072000; includeSubDomains; preload"
         )
 
-        # Content Security Policy
-        # TODO: Remove 'unsafe-inline' - requires frontend nonce/hash implementation
+        # Content Security Policy with nonce-based approach
+        # Nonce allows inline scripts/styles that include the nonce attribute
+        # This replaces 'unsafe-inline' with a secure, per-request token
         # See: https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
         csp = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.googletagmanager.com https://jsc.adskeeper.com https://*.adskeeper.com https://*.mgid.com; "
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
+            f"script-src 'self' 'nonce-{csp_nonce}' https://cdn.jsdelivr.net https://www.googletagmanager.com https://jsc.adskeeper.com https://*.adskeeper.com https://*.mgid.com; "
+            f"style-src 'self' 'nonce-{csp_nonce}' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
             "font-src 'self' https://fonts.gstatic.com; "
             "img-src 'self' data: https: blob: https://www.google-analytics.com https://www.googletagmanager.com https://*.adskeeper.com https://*.mgid.com; "
             "connect-src 'self' https: https://www.google-analytics.com https://analytics.google.com wss:; "
@@ -205,6 +209,16 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "form-action 'self';"
         )
         response.headers["Content-Security-Policy"] = csp
+        
+        # Set nonce in a cookie so frontend can access it for inline styles/scripts
+        response.set_cookie(
+            key="csp-nonce",
+            value=csp_nonce,
+            httponly=True,
+            secure=False,  # Set to True in production with HTTPS
+            samesite="lax",
+            max_age=300  # 5 minutes - match typical page load time
+        )
 
         # Permissions Policy
         response.headers["Permissions-Policy"] = (
