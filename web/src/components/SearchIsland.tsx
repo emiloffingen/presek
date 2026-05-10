@@ -450,7 +450,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
       >
         <Search size={14} className="text-muted-foreground group-hover:text-nyt-accent transition-colors" />
         <span className="flex-1 overflow-hidden h-4 block">
-            <span key={placeholderIdx} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 group-hover:text-muted-foreground transition-colors animate-in slide-in-from-bottom-2 duration-300 block truncate">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 group-hover:text-muted-foreground transition-colors animate-in slide-in-from-bottom-2 duration-300 block truncate">
                 {placeholders[placeholderIdx]}
             </span>
         </span>
