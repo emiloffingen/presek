@@ -178,7 +178,7 @@ export const SAMPLE_PROFILES = [
           category: 'Свет',
           primarySource: 'MKD',
           sources: ['MKD', 'Press24'],
-          tags: ['AI'],
+          tags: ['Системски'],
           viewedAt: '2026-04-10T09:00:00Z',
         },
         {

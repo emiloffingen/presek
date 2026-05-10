@@ -153,7 +153,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
         <header className="pb-10 border-b border-border">
           <div className="flex items-center gap-2 mb-3">
             <Sparkles className="text-nyt-accent" size={16} />
-            <span className="font-sans text-[10px] font-black uppercase tracking-[0.25em] text-nyt-accent">УРЕДНИЧКА ИНТЕЛИГЕНЦИЈА</span>
+            <span className="font-sans text-[10px] font-black uppercase tracking-[0.25em] text-nyt-accent">УРЕДНИЧКА СИНТЕЗА</span>
           </div>
           <h1 className="font-serif text-[clamp(2rem,6vw,4rem)] font-black leading-[0.9] mb-6 italic">Личен <span className="serif-display font-light not-italic">Пресек</span></h1>
           <p className="mt-4 font-nyt-body text-[clamp(1rem,2vw,1.25rem)] text-secondary-foreground leading-relaxed italic max-w-2xl">

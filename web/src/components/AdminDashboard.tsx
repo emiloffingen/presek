@@ -112,7 +112,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           icon={<Cpu size={20} />} 
-          label="AI PIPELINE" 
+          label="SYNTHETIC PIPELINE" 
           value={data.ai.current_provider.toUpperCase()} 
           sub={`${(data.ai.gemini_usage_today / 1000).toFixed(1)}k / 2.0M tokens`}
           trend={aiPercent}
@@ -246,7 +246,7 @@ export default function AdminDashboard() {
 
           <div className="bg-nyt-accent/5 border border-nyt-accent/20 rounded-2xl p-6">
             <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 mb-4 text-nyt-accent">
-              <Zap size={14} /> AI USAGE QUOTA
+              <Zap size={14} /> SYSTEM QUOTA
             </h3>
             <div className="relative h-2 bg-zinc-800 rounded-full overflow-hidden mb-4">
               <div 
@@ -309,5 +309,8 @@ function StatusTile({ icon, label, value, detail, ok }: any) {
       </div>
       <p className="mt-4 text-[10px] font-mono text-zinc-500 break-words">{detail}</p>
     </div>
+  );
+}
+>
   );
 }

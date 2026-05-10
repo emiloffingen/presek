@@ -215,7 +215,7 @@ const IzvoriPage: React.FC = () => {
 
         <aside className="broadsheet-rail pl-4">
           <section className="rail-module mb-12 p-8 bg-nyt-accent/5 border border-nyt-accent/10 rounded-xl">
-            <span className="block font-sans text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent mb-4">ИНТЕЛИГЕНЦИЈА</span>
+            <span className="block font-sans text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent mb-4">СИСТЕМСКИ УВИД</span>
             <h3 className="font-serif text-2xl font-black leading-tight mb-4 tracking-tight">КВАЛИТЕТЕН ИНДЕКС (QI)</h3>
             <p className="font-nyt-body text-sm leading-relaxed text-muted-foreground">QI ги спојува брзината, точноста и плурализмот. Пресметано преку нашиот <strong>систем за длабока анализа</strong>. Оценката 1.00 претставува оптимален баланс на пазарот.</p>
           </section>

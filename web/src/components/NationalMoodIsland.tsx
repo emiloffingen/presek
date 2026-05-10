@@ -67,7 +67,7 @@ export default function NationalMoodIsland() {
                 <div className="group relative">
                     <Info size={14} className="text-muted-foreground cursor-help" />
                     <div className="absolute right-0 bottom-full mb-2 w-48 p-2 bg-black text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
-                        Автоматска анализа на емотивниот тон и објективноста во медиумскиот простор за последните 24 часа.
+                        Системска анализа на емотивниот тон и објективноста во медиумскиот простор за последните 24 часа.
                     </div>
                 </div>
             </div>

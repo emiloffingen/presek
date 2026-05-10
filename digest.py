@@ -326,10 +326,10 @@ def render_html(
         <tr>
           <td style="padding:30px 40px;text-align:center;background-color:#f3f4f6;border-top:1px solid #e5e7eb">
             <p style="margin:0;font-family:sans-serif;font-size:10px;font-weight:bold;color:#9ca3af;letter-spacing:0.1em;text-transform:uppercase">
-              Пресек · Македонски вести · Паметен агрегатор
+              Пресек · Медиумска транспарентност · Системска синтеза
             </p>
             <p style="margin:8px 0 0;font-family:sans-serif;font-size:10px;color:#9ca3af;line-height:1.5">
-              Овој преглед е генериран автоматски од нашите алгоритми за групирање.<br>
+              Овој преглед е системски синтетизиран преку нашиот редакциски алгоритам.<br>
               Доколку сакате да се одјавите, кликнете <a href="{{UNSUBSCRIBE_URL}}" style="color:#6b7280;text-decoration:underline">овде</a>.
             </p>
           </td>
