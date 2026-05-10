@@ -41,8 +41,9 @@ def _probe_database():
     conn = None
     try:
         conn = database.get_db()
-        row = conn.execute("SELECT COUNT(*) FROM articles").fetchone()
-        result["article_count"] = row[0] if row else 0
+        # Row is a dict-like object in psycopg 3 with dict_row factory
+        row = conn.execute("SELECT COUNT(*) as count FROM articles").fetchone()
+        result["article_count"] = row["count"] if row else 0
         result["ok"] = True
     except Exception as exc:
         result["error"] = str(exc)
