@@ -507,6 +507,48 @@ function getBriefingSnippet(content: string) {
         align-items: start;
     }
 
+    /* ── Consensus Carousel (Mobile) ─────────────────── */
+    .consensus-carousel-wrap {
+        position: relative;
+    }
+
+    .consensus-grid {
+        display: flex;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        gap: 1.25rem;
+        padding-bottom: 0.5rem;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .consensus-item {
+        scroll-snap-align: start;
+    }
+
+    .carousel-fade-hint.right {
+        position: absolute;
+        top: 0;
+        right: -1rem;
+        bottom: 0;
+        width: 3rem;
+        background: linear-gradient(to left, color-mix(in srgb, var(--background) 50%, var(--secondary)), transparent);
+        pointer-events: none;
+        z-index: 5;
+    }
+
+    @media (min-width: 640px) {
+        .consensus-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            overflow-x: visible;
+            scroll-snap-type: none;
+            padding-bottom: 0;
+        }
+        .consensus-item {
+            width: auto;
+        }
+    }
+
     @media (min-width: 768px) {
         .supporting-featured-grid, 
         .news-feed-grid-featured {

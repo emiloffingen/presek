@@ -273,6 +273,12 @@ function getTimeStr(dateStr: string) {
 	.headline-link:hover .headline {
 	    color: var(--nyt-accent);
 	}
+
+    .nyt-article:active {
+        transform: scale(0.98);
+        transition: transform 0.1s ease;
+    }
+
     /* --- Premium Meta Styles --- */
     .article-meta-v2 {
         display: flex;
@@ -605,9 +611,15 @@ function getTimeStr(dateStr: string) {
 		.nyt-article:not(.lead-story) .summary {
 			font-size: 0.92rem;
 			line-height: 1.52;
-			-webkit-line-clamp: 3;
+			-webkit-line-clamp: 2; /* Reduced from 3 to save space */
 			margin-bottom: 0.6rem;
 		}
+
+        .nyt-article.variant-standard .summary,
+        .nyt-article.variant-compact .summary,
+        .nyt-article.variant-wire .summary {
+            display: none; /* Hide summary for non-featured cards on mobile */
+        }
 
 		.nyt-article:not(.lead-story) .footer-meta {
 			font-size: 0.68rem;

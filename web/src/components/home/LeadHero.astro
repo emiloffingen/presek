@@ -498,11 +498,14 @@ const IconComponent =
     }
 
     .analyst-facts li::before {
-        content: "→";
+        content: "";
         position: absolute;
         left: 0;
-        color: var(--nyt-accent);
-        font-weight: 900;
+        top: 0.5rem;
+        width: 4px;
+        height: 4px;
+        background: var(--nyt-accent);
+        border-radius: 50%;
     }
 
 	.lead-meta {
@@ -522,10 +525,9 @@ const IconComponent =
 	}
 
 	.lead-related li {
-		display: grid;
-		grid-template-columns: auto 1fr;
-		gap: 0.85rem;
-		align-items: start;
+		display: flex;
+		gap: 0.4rem;
+		align-items: center;
 		border-top: 1px solid var(--border);
         transition: background 0.2s ease;
 	}
@@ -536,13 +538,14 @@ const IconComponent =
 
 	.lead-related a {
 		display: block;
-		padding: 0.7rem 0;
+		padding: 0.6rem 0;
 		font-family: var(--font-sans);
-		font-size: 0.96rem;
+		font-size: 0.9rem;
 		font-weight: 700;
-		line-height: 1.28;
+		line-height: 1.25;
 		color: var(--foreground);
 		text-decoration: none;
+        flex: 1;
 	}
 
 	.lead-related a:hover {
@@ -555,6 +558,22 @@ const IconComponent =
 		background: color-mix(in srgb, var(--background) 96%, #efe5d6 4%);
 		border: 1px solid var(--border);
 	}
+
+    @media (max-width: 639px) {
+        .lead-follow-strip {
+            display: none; /* Hide related articles strip on mobile to save space */
+        }
+        
+        .lead-analyst-box {
+            padding: 0.85rem;
+            margin-top: 0.75rem;
+        }
+
+        .analyst-facts li {
+            font-size: 0.82rem;
+            line-height: 1.3;
+        }
+    }
 
 	.lead-follow-kicker {
 		margin: 0 0 0.2rem;
@@ -952,6 +971,26 @@ const IconComponent =
         }
 
         .analyst-header {
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.35rem;
+        }
+
+        .analyst-label {
+            font-size: 0.5rem;
+        }
+
+        .pulse-text {
+            font-size: 0.48rem;
+        }
+
+        .analyst-facts li {
+            font-size: 0.82rem;
+            line-height: 1.35;
+            padding-left: 1rem;
+        }
+	}
+</style>
+-header {
             margin-bottom: 0.5rem;
             padding-bottom: 0.35rem;
         }
