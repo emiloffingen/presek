@@ -147,7 +147,7 @@ def _safe_rank_cluster_citations(question: str, answer: str, articles, citation_
         return _rank_cluster_citations(question, answer, articles, citation_numbers)
     except Exception as e:
         log.warning(f"[fastapi cluster_answer] citation ranking failed: {e}", exc_info=True)
-        return _fallback_citations(articles)
+        return []
 
 @app.get("/api/health")
 @exempt_from_rate_limit

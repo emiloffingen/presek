@@ -11,11 +11,6 @@ from fastapi import APIRouter, Request, Query, HTTPException
 from fastapi.responses import Response, FileResponse
 from pathlib import Path
 
-try:
-    import pillow_avif
-except ImportError:
-    pass
-
 import redis as _redis_lib
 from database import db_manager as db
 from utils import (

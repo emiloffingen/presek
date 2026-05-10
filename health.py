@@ -4,12 +4,15 @@ Used by api_fast.py for /api/health and per-source policy tracking.
 """
 
 import database
+import logging
 import time
 import json
 import os
 from datetime import datetime, timezone
 
 from utils import redis_client as _shared_redis_client
+
+log = logging.getLogger(__name__)
 
 _start_time = time.time()
 _REDIS_KEY = "presek:last_refresh"
@@ -25,52 +28,6 @@ LOW_ACCEPTANCE_MIN_FETCHED = 4
 def _get_redis():
     """Return the shared Redis client (decode_responses=True)."""
     return _shared_redis_client
-
-
-def _probe_database():
-    result = {
-        "ok": False,
-        "article_count": 0,
-        "size_mb": 0.0,
-        "error": "",
-    }
-
-    conn = None
-    try:
-        conn = database.get_db()
-        row = conn.execute("SELECT COUNT(*) FROM articles").fetchone()
-        result["article_count"] = row[0] if row else 0
-        result["ok"] = True
-    except Exception as exc:
-        result["error"] = str(exc)
-        return result
-    finally:
-        if conn is not None:
-            try:
-                conn.close()
-            except Exception:
-                pass
-
-    try:
-        result["size_mb"] = database.get_db_size()
-    except Exception as exc:
-        result["error"] = f"db_size probe failed: {exc}"
-
-    return result
-
-
-def _probe_redis():
-    result = {
-        "ok": False,
-        "url": os.environ.get("REDIS_URL", "redis://localhost:6379/0"),
-        "error": "",
-    }
-    try:
-        _get_redis().ping()
-        result["ok"] = True
-    except Exception as exc:
-        result["error"] = str(exc)
-    return result
 
 
 def _probe_database():
@@ -177,7 +134,11 @@ def update_source_policy(source_name: str, status: str, fetched: int = 0, accept
     else:
         state["consecutive_errors"] = 0
 
-    low_accept = fetched >= LOW_ACCEPTANCE_MIN_FETCHED and acceptance_ratio < LOW_ACCEPTANCE_THRESHOLD and status != "error"
+    low_accept = (
+        fetched >= LOW_ACCEPTANCE_MIN_FETCHED
+        and acceptance_ratio < LOW_ACCEPTANCE_THRESHOLD
+        and status != "error"
+    )
     if low_accept:
         state["low_accept_streak"] = int(state.get("low_accept_streak", 0)) + 1
     elif fetched > 0:
@@ -217,7 +178,13 @@ def record_refresh(article_count: int, errors: list[str] | None = None):
         log.debug(f"Failed to record refresh in Redis: {e}")
 
 
-def record_source_fetch(source_name: str, status: str, fetched: int = 0, accepted: int = 0, error: str | None = None):
+def record_source_fetch(
+        source_name: str,
+        status: str,
+        fetched: int = 0,
+        accepted: int = 0,
+        error: str | None = None,
+):
     """Persist per-source fetch results for operational visibility."""
     if not source_name or not status:
         return
@@ -237,7 +204,6 @@ def record_source_fetch(source_name: str, status: str, fetched: int = 0, accepte
         _get_redis().expire(_SOURCE_REDIS_KEY, 3600 * 12)
     except Exception:
         pass
-
 
 
 def get_source_statuses():
@@ -270,7 +236,6 @@ def _freshness_payload(last_refresh_time: str | None):
     return {"status": "stale", "age_minutes": age_minutes, "label": "Освежувањето доцни"}
 
 
-
 def record_task_event(task_name: str, status: str, detail: str | None = None):
     """Persist a lightweight task-status event for operational visibility."""
     if not task_name or not status:
@@ -287,5 +252,3 @@ def record_task_event(task_name: str, status: str, detail: str | None = None):
         _get_redis().expire(_TASK_REDIS_KEY, 3600 * 12)
     except Exception:
         pass
-
-
