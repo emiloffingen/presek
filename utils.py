@@ -148,7 +148,8 @@ async def get_dominant_color(url: str) -> str:
         ) as client:
             try:
                 safe_ips = _resolve_public_ips(url)
-            except Exception:
+            except Exception as e:
+                log.debug(f"Failed to resolve public IPs for {url}: {e}")
                 return ""
 
             async with client.stream(
@@ -302,8 +303,8 @@ def _peer_ip(response) -> Optional[str]:
                 sock = getattr(conn, "sock", None)
                 if sock is not None:
                     return sock.getpeername()[0]
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug(f"Failed to get peer IP: {e}")
     return None
 
 
@@ -368,7 +369,8 @@ def check_rate_limit(ip: str, path: str = "", is_authenticated: bool = False) ->
         pipe.expire(key, 60)
         results = pipe.execute()
         return results[1] < max_reqs
-    except Exception:
+    except Exception as e:
+        log.debug(f"Rate limit check failed: {e}")
         return True
 
 
@@ -388,7 +390,8 @@ def get_source_health_map(ttl: int = 60) -> Dict[str, Any]:
         parsed = {k: json.loads(v) for k, v in raw.items()}
         _SOURCE_STATUS_CACHE.update({"time": now, "data": parsed})
         return parsed
-    except Exception:
+    except Exception as e:
+        log.debug(f"Failed to load source statuses: {e}")
         return _SOURCE_STATUS_CACHE["data"] or {}
 
 
@@ -427,7 +430,8 @@ def _coerce_datetime(value) -> Optional[datetime.datetime]:
         if dt.tzinfo:
             return dt.astimezone(datetime.timezone.utc).replace(tzinfo=None)
         return dt
-    except Exception:
+    except Exception as e:
+        log.debug(f"Failed to parse datetime: {e}")
         m = re.match(r"(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2})", str(value))
         if m:
             return datetime.datetime.fromisoformat(m.group(1).replace(" ", "T"))
@@ -911,7 +915,8 @@ def score_cluster(arts: List[Dict[str, Any]]) -> float:
     try:
         dt = _coerce_datetime(arts[0]["created_at"]) or datetime.datetime.now()
         hrs = (datetime.datetime.now() - dt).total_seconds() / 3600
-    except Exception:
+    except Exception as e:
+        log.debug(f"Failed to calculate cluster age: {e}")
         hrs = 24
     recency = math.exp(-0.115 * hrs)
     clicks = sum(a.get("clicks", 0) or 0 for a in arts)
@@ -944,44 +949,112 @@ def assess_cluster_synthesis_freshness(
     arts: List[Dict[str, Any]], synth_at
 ) -> Dict[str, Any]:
     if not arts:
-        return {"refresh_needed": False, "reasons": [], "new_article_count": 0}
+        return {
+            "refresh_needed": False,
+            "is_stale": False,
+            "reasons": [],
+            "new_article_count": 0,
+            "latest_article_at": None,
+            "synthesis_updated_at": _coerce_datetime(synth_at),
+        }
     ranked = rank_articles_in_cluster(arts)
     s_dt = _coerce_datetime(synth_at)
+    latest_article_at = max(
+        (_coerce_datetime(a.get("created_at")) for a in ranked), default=None
+    )
     if not s_dt:
         return {
             "refresh_needed": True,
+            "is_stale": True,
             "reasons": ["missing_synthesis"],
             "new_article_count": len(ranked),
+            "latest_article_at": latest_article_at,
+            "synthesis_updated_at": None,
         }
 
-    new = [
+    newer = [
         a
         for a in ranked
         if (_coerce_datetime(a.get("created_at")) or datetime.datetime.min) > s_dt
     ]
-    if not new:
-        return {"refresh_needed": False, "reasons": [], "new_article_count": 0}
+    older = [a for a in ranked if a not in newer]
+
+    if not newer:
+        return {
+            "refresh_needed": False,
+            "is_stale": False,
+            "reasons": [],
+            "new_article_count": 0,
+            "latest_article_at": latest_article_at,
+            "synthesis_updated_at": s_dt,
+        }
 
     reasons = []
     score = 0.0
-    if any(
-        a["source"] not in {o["source"] for o in ranked if o not in new} for a in new
-    ):
-        score += 1.0
+    newer_sources = {a.get("source") for a in newer if a.get("source")}
+    older_sources = {a.get("source") for a in older if a.get("source")}
+    net_new = [s for s in newer_sources if s not in older_sources]
+
+    if net_new:
+        score += min(2.0, 1.0 + len(net_new) * 0.4)
         reasons.append("new_sources")
-    if any(re.findall(r"\b\d+\b", str(a.get("title"))) for a in new):
+
+    def get_nums(articles_list):
+        nums = set()
+        for a in articles_list:
+            nums |= set(
+                re.findall(
+                    r"\b\d+(?::\d+)?(?:[%.,]\d+)?\b",
+                    f"{a.get('title')} {a.get('description')}",
+                )
+            )
+        return nums
+
+    if get_nums(newer) - get_nums(older):
         score += 1.1
         reasons.append("new_numbers")
 
-    refresh = score >= 2.0 or len(new) >= 4
-    if refresh and not reasons:
-        reasons.append("volume")
+    if (
+        older
+        and _cluster_title_overlap(str(newer[0].get("title")), str(older[0].get("title")))
+        < 0.26
+    ):
+        score += 0.9
+        reasons.append("new_angle")
+
+    if len(newer) >= 2:
+        score += 0.5
+        reasons.append("multiple_new_reports")
+
+    if any(get_source_effective_weight(str(a.get("source"))) >= 1.45 for a in newer):
+        score += 0.65
+        reasons.append("credible_new_reporting")
+
+    current_score = score_cluster_for_synthesis(ranked)
+    if current_score >= 3.5:
+        score += 0.5
+        reasons.append("high_priority_cluster")
+
+    if is_balanced(ranked) and not is_balanced(older):
+        score += 1.2
+        reasons.append("broad_coverage_achieved")
+
+    age_min = max(
+        0.0, ((latest_article_at or s_dt) - s_dt).total_seconds() / 60.0
+    )
+    min_cooldown = 40 if current_score < 4.0 else 20
+    refresh_needed = (score >= 2.0 or len(newer) >= 4) and not (
+        age_min < min_cooldown and (len(newer) < 2 and not net_new)
+    )
 
     return {
-        "refresh_needed": refresh,
-        "new_article_count": len(new),
-        "score": score,
+        "refresh_needed": refresh_needed,
+        "is_stale": refresh_needed,
+        "freshness_score": round(score, 3),
         "reasons": reasons,
+        "new_article_count": len(newer),
+        "latest_article_at": latest_article_at,
+        "synthesis_updated_at": s_dt,
     }
 
 
@@ -998,8 +1071,8 @@ def is_balanced(arts: List[Dict[str, Any]]) -> bool:
 def publish_event(channel: str, data: dict):
     try:
         redis_client.publish(channel, json.dumps(data, cls=DateTimeEncoder))
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug(f"Failed to publish event to {channel}: {e}")
 
 
 async def event_stream(channel: str, request=None):
