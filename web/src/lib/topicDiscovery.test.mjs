@@ -7,29 +7,29 @@ test('buildTopicConnections ranks breaking and shared-context topics first', () 
   const clusters = [
     {
       is_breaking: true,
-      articles: [{ source: 'MIA' }, { source: 'Телма' }],
+      articles: [{ source: 'MIA' }, { source: 'Telma' }],
     },
     {
       is_breaking: true,
-      articles: [{ source: 'MIA' }, { source: 'Сител' }],
+      articles: [{ source: 'MIA' }, { source: 'Sitel' }],
     },
     {
       is_breaking: false,
-      articles: [{ source: 'Канал 5' }],
+      articles: [{ source: 'Kanal 5' }],
     },
   ];
 
   const details = [
-    { topics: ['Политика', 'Економија'], tags: ['Буџет', 'Собрание'] },
-    { topics: ['Политика', 'Економија'], tags: ['Буџет', 'Министерство'] },
-    { topics: ['Политика', 'Образование'], tags: ['Универзитет'] },
+    { topics: ['Politika', 'Ekonomija'], tags: ['Budžet', 'Skupština'] },
+    { topics: ['Politika', 'Ekonomija'], tags: ['Budžet', 'Ministarstvo'] },
+    { topics: ['Politika', 'Obrazovanje'], tags: ['Univerzitet'] },
   ];
 
-  const result = buildTopicConnections('Политика', clusters, details, 3);
+  const result = buildTopicConnections('Politika', clusters, details, 3);
 
-  assert.equal(result[0].topic, 'Економија');
-  assert.equal(result[0].relationshipLabel, 'Следна развојна линија');
-  assert.equal(result[1].topic, 'Образование');
+  assert.equal(result[0].topic, 'Ekonomija');
+  assert.equal(result[0].relationshipLabel, 'Sledeća razvojna linija');
+  assert.equal(result[1].topic, 'Obrazovanje');
 });
 
 test('buildTopicConnections skips the current topic and preserves sample tags', () => {
@@ -41,13 +41,13 @@ test('buildTopicConnections skips the current topic and preserves sample tags', 
   ];
 
   const details = [
-    { topics: ['Свет', 'Безбедност'], tags: ['НАТО', 'Самит', 'ЕУ'] },
+    { topics: ['Svet', 'Bezbednost'], tags: ['NATO', 'Samit', 'EU'] },
   ];
 
-  const result = buildTopicConnections('Свет', clusters, details, 3);
+  const result = buildTopicConnections('Svet', clusters, details, 3);
 
   assert.equal(result.length, 1);
-  assert.equal(result[0].topic, 'Безбедност');
-  assert.deepEqual(result[0].sampleTags, ['НАТО', 'Самит', 'ЕУ']);
+  assert.equal(result[0].topic, 'Bezbednost');
+  assert.deepEqual(result[0].sampleTags, ['NATO', 'Samit', 'EU']);
 });
 
