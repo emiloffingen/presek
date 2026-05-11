@@ -42,11 +42,11 @@ try {
   if (otdRes.ok) onThisDay = await otdRes.json();
 
   if (!res.ok) {
-    error = 'Arhivata momentalno ne e dostapna.';
+    error = 'Arhiva trenutno nije dostupna.';
     Astro.response.status = 500;
   }
 } catch (err) {
-  error = 'Greska pri vcituvanje na arhivata.';
+  error = 'Greška pri učitavanju arhive.';
   Astro.response.status = 500;
 }
 

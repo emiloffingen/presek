@@ -336,11 +336,11 @@ async def get_archive(
         return res
     except ValueError:
         raise HTTPException(
-            status_code=400, detail="Nevaliden format na datum. Koristete YYYY-MM-DD"
+            status_code=400, detail="Nevalidan format datuma. Koristite YYYY-MM-DD"
         )
     except Exception as e:
         log.error(f"Archive Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Neuspesno vcituvanje na arhiva")
+        raise HTTPException(status_code=500, detail="Neuspešno učitavanje arhive")
 
 
 @router.get("/archive/daily-briefing")
@@ -888,7 +888,7 @@ async def get_sentiment_trends():
         return res
     except Exception as e:
         log.error(f"Sentiment Trends Error: {e}")
-        return {"status": "error", "message": "Neuspesno vcituvanje na sentiment"}
+        return {"status": "error", "message": "Neuspešno učitavanje sentimenta"}
 
 
 @router.get("/stats/mood")

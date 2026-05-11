@@ -64,10 +64,10 @@ try {
     const res = await fetch(`${API_URL}/cluster/${id}`);
     if (!res.ok) {
         if (res.status === 404) {
-            error = 'Klasterot ne e pronajden.';
+            error = 'Klaster nije pronađen.';
             Astro.response.status = 404;
         } else {
-            error = 'Greska pri vcituvanje na podatocite.';
+            error = 'Greška pri učitavanju podataka.';
             Astro.response.status = 500;
         }
     } else {
@@ -76,7 +76,7 @@ try {
     }
     } catch (e) {
     Astro.response.status = 500;
-    error = 'Neuspesno povrzuvanje so serverot.';
+    error = 'Neuspešno povezivanje sa serverom.';
 }
 
 const mainArticle = cluster?.articles?.[0];
