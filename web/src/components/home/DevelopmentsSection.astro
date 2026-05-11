@@ -52,26 +52,26 @@ const { title, note, developmentsFeatured, developmentsCompact, variant = "compa
 
 <style>
     .feed-section .section-heading-row {
-        margin-bottom: 2rem;
+        margin-bottom: 1rem;
         position: relative;
     }
 
     .feed-tone-global {
         background: color-mix(in srgb, #0f766e 3%, transparent);
-        padding: 2rem 1rem;
+        padding: 1rem 0.5rem;
         border-y: 1px solid color-mix(in srgb, #0f766e 10%, transparent);
     }
 
     .feed-tone-developing {
         background: color-mix(in srgb, #9a3412 3%, transparent);
-        padding: 2rem 1rem;
+        padding: 1rem 0.5rem;
         border-y: 1px solid color-mix(in srgb, #9a3412 10%, transparent);
     }
 
     .section-kicker {
-        margin: 0 0 0.25rem;
+        margin: 0 0 0.15rem;
         font-family: var(--font-sans);
-        font-size: 0.65rem;
+        font-size: 0.6rem;
         font-weight: 950;
         letter-spacing: 0.12em;
         text-transform: uppercase;
@@ -80,21 +80,21 @@ const { title, note, developmentsFeatured, developmentsCompact, variant = "compa
 
     .feed-section .section-title {
         font-family: var(--font-serif);
-        font-size: clamp(1.45rem, 1.15rem + 0.8vw, 2.15rem);
+        font-size: clamp(1.2rem, 1rem + 0.6vw, 1.8rem);
         font-weight: 900;
         font-style: italic;
         line-height: 1.05;
-        margin-bottom: 0.35rem;
+        margin-bottom: 0.25rem;
     }
 
     .feed-section .section-note {
         max-width: 42rem;
         font-family: var(--font-nyt-body);
-        font-size: 0.98rem;
+        font-size: 0.85rem;
         font-weight: 400;
         letter-spacing: 0.01em;
         text-transform: none;
-        line-height: 1.62;
+        line-height: 1.5;
         color: var(--muted-foreground);
     }
 
@@ -112,17 +112,17 @@ const { title, note, developmentsFeatured, developmentsCompact, variant = "compa
 
     @media (max-width: 640px) {
         .feed-section .section-heading-row {
-            margin-bottom: 1rem;
-            padding-bottom: 0.7rem;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
         }
 
         .feed-section .section-title {
-            font-size: 1.4rem;
+            font-size: 1.25rem;
         }
 
         .feed-section .section-note {
-            font-size: 0.9rem;
-            line-height: 1.48;
+            font-size: 0.8rem;
+            line-height: 1.4;
         }
     }
 </style>

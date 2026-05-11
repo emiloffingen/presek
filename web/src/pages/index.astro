@@ -470,23 +470,23 @@ function getBriefingSnippet(content: string) {
     .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: var(--grid-gap); }
     
     @media (min-width: 1024px) {
-        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; gap: calc(var(--grid-gap) * 2); }
-        .broadsheet-main { border-right: 1px solid var(--border); padding-right: calc(var(--grid-gap) * 1.5); }
+        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; gap: calc(var(--grid-gap) * 1.5); }
+        .broadsheet-main { border-right: 1px solid var(--border); padding-right: calc(var(--grid-gap) * 1); }
     }
 
     @media (min-width: 1440px) {
-        :global(.site-layout) { max-width: 1400px; }
-        .broadsheet-grid { gap: calc(var(--grid-gap) * 3); }
+        :global(.site-layout) { max-width: 1600px; }
+        .broadsheet-grid { gap: calc(var(--grid-gap) * 2); }
     }
 
     /* ── Section Dividers ────────────────────────────── */
-    .section-wrapper { border-bottom: 1px solid var(--border); padding-bottom: 2rem; margin-bottom: 2rem; }
+    .section-wrapper { border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1rem; }
     .section-wrapper:last-child { border-bottom: none; }
-    .lead-wrapper { padding-bottom: 1.5rem; margin-bottom: 1.5rem; }
+    .lead-wrapper { padding-bottom: 1rem; margin-bottom: 1rem; }
 
     @media (max-width: 768px) {
-        .section-wrapper { padding-bottom: 1.25rem; margin-bottom: 1.25rem; }
-        .lead-wrapper { padding-bottom: 1rem; margin-bottom: 1rem; }
+        .section-wrapper { padding-bottom: 0.75rem; margin-bottom: 0.75rem; }
+        .lead-wrapper { padding-bottom: 0.75rem; margin-bottom: 0.75rem; }
     }
     
     /* ── Supporting Band & Developments Grids ────────── */
@@ -552,20 +552,20 @@ function getBriefingSnippet(content: string) {
     @media (min-width: 768px) {
         .supporting-featured-grid, 
         .news-feed-grid-featured {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 2rem;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1rem;
         }
 
         .supporting-compact-grid,
         .news-feed-grid-compact {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 1.25rem; /* Keep compact gap */
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.75rem; 
         }
 
-        /* Rule for orphaned items in compact grids to span two columns */
+        /* Remove orphaned items spanning two columns for a denser look */
         .supporting-compact-grid > :last-child:nth-of-type(odd),
         .news-feed-grid-compact > :last-child:nth-of-type(odd) {
-            grid-column: span 2;
+            grid-column: span 1;
         }
     }
 
