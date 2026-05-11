@@ -74,7 +74,7 @@ async def get_dominant_color(url: str) -> str:
 
     internal_proxy_markers = [
         "/api/proxy",
-        "presek.rs/proxy",
+        "presek.live/proxy",
         "localhost:5001/proxy",
         "api:5001/proxy",
     ]

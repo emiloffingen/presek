@@ -58,7 +58,7 @@ def send_newsletter_to_all_subscribers(days: int = 1) -> int:
         for sub in subscribers:
             user_email = sub["email"]
             unsubscribe_url = (
-                f"https://presek.rs/api/newsletter/unsubscribe?email={user_email}"
+                f"https://presek.live/api/newsletter/unsubscribe?email={user_email}"
             )
             personalized_html = html.replace("{{UNSUBSCRIBE_URL}}", unsubscribe_url)
 
@@ -316,7 +316,7 @@ def render_html(
         <!-- Bottom CTA -->
         <tr>
             <td style="padding:0 40px 40px;text-align:center">
-                <a href="https://presek.rs" style="display:inline-block;padding:14px 28px;background-color:#111827;color:#ffffff;font-family:sans-serif;font-size:12px;font-weight:bold;text-decoration:none;text-transform:uppercase;letter-spacing:0.15em;border-radius:2px">
+                <a href="https://presek.live" style="display:inline-block;padding:14px 28px;background-color:#111827;color:#ffffff;font-family:sans-serif;font-size:12px;font-weight:bold;text-decoration:none;text-transform:uppercase;letter-spacing:0.15em;border-radius:2px">
                     Отвори го целосното издание
                 </a>
             </td>
@@ -352,7 +352,7 @@ def render_html(
 </body>
 </html>"""
 
-    return html.replace("{{UNSUBSCRIBE_URL}}", "https://presek.rs/settings")
+    return html.replace("{{UNSUBSCRIBE_URL}}", "https://presek.live/settings")
 
 
 def send_email(

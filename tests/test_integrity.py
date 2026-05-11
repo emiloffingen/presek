@@ -43,7 +43,7 @@ class TestAstroFrontendIntegrity:
     def test_astro_config_enforces_trailing_slash_never(self):
         config = _read("web/astro.config.mjs")
         assert "trailingSlash: 'never'" in config
-        assert "site: 'https://presek.rs'" in config
+        assert "site: 'https://presek.live'" in config
 
     def test_primary_pages_fetch_api_through_supported_base_url(self):
         # Pages can either import the shared apiBaseUrl() helper (which
@@ -321,7 +321,7 @@ class TestDeploymentIntegrity:
             assert "MemoryMax=" in content, f"Missing MemoryMax in {svc}"
 
     def test_nginx_routes_api_and_site_to_separate_upstreams(self):
-        nginx_conf = _read("deploy/nginx/presek.rs.conf")
+        nginx_conf = _read("deploy/nginx/presek.live.conf")
         routes_snippet = _read("deploy/nginx/presek-routes.conf")
         assert "upstream presek_fastapi" in nginx_conf
         assert "upstream presek_astro" in nginx_conf
@@ -331,7 +331,7 @@ class TestDeploymentIntegrity:
         assert "proxy_pass http://presek_astro;" in routes_snippet
 
     def test_nginx_applies_security_headers_to_astro_responses(self):
-        nginx_conf = _read("deploy/nginx/presek.rs.conf")
+        nginx_conf = _read("deploy/nginx/presek.live.conf")
         headers_snippet = _read("deploy/nginx/security-headers.conf")
         assert 'add_header Cache-Control "no-transform"' in nginx_conf
         assert "presek-security-headers.conf" in nginx_conf

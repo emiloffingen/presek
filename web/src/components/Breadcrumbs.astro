@@ -13,7 +13,7 @@ interface Props {
 const { items } = Astro.props;
 
 // For SEO schema
-const siteUrl = (Astro.site?.origin || import.meta.env.PUBLIC_SITE_URL || "https://presek.rs").replace(/\/+$/, "");
+const siteUrl = (Astro.site?.origin || import.meta.env.PUBLIC_SITE_URL || "https://presek.live").replace(/\/+$/, "");
 const breadcrumbSchema = {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",

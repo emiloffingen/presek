@@ -139,13 +139,13 @@ This document provides a comprehensive checklist for deploying Presek in product
 6. **Set up SSL (with Let's Encrypt)**
    ```bash
    sudo apt install certbot python3-certbot-nginx
-   sudo certbot --nginx -d presek.rs -d www.presek.rs
+   sudo certbot --nginx -d presek.live -d www.presek.live
    ```
 
 ## 🔍 Post-Deployment Verification
 
 ### Health Checks
-- [ ] `curl https://presek.rs/api/health` returns healthy status
+- [ ] `curl https://presek.live/api/health` returns healthy status
 - [ ] Database connection is working
 - [ ] Redis connection is working
 - [ ] All services are running (`systemctl status presek-*`)
@@ -204,8 +204,8 @@ This document provides a comprehensive checklist for deploying Presek in product
 
 4. **Verify deployment**
    ```bash
-   curl https://presek.rs/api/health
-   curl https://presek.rs/api/version
+   curl https://presek.live/api/health
+   curl https://presek.live/api/version
    ```
 
 ## 🛑 Rollback Process
@@ -237,7 +237,7 @@ SECRET_KEY=your-very-long-random-secret-key-here
 # Optional but recommended
 ENV=production
 PRESEK_ADMIN_TOKEN=your-admin-token
-CORS_ORIGINS=https://presek.rs,https://www.presek.rs
+CORS_ORIGINS=https://presek.live,https://www.presek.live
 LOG_LEVEL=INFO
 LOG_FORMAT=json
 
@@ -255,7 +255,7 @@ VAPID_PUBLIC_KEY=your-public-key
 # Email
 SMTP_HOST=smtp.example.com
 SMTP_PASS=your-smtp-password
-EMAIL_FROM="Presek <noreply@presek.rs>"
+EMAIL_FROM="Presek <noreply@presek.live>"
 
 # Performance tuning
 DB_POOL_MINCONN=5
@@ -273,16 +273,16 @@ OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
 ```nginx
 server {
     listen 80;
-    server_name presek.rs www.presek.rs;
+    server_name presek.live www.presek.live;
     return 301 https://$host$request_uri;
 }
 
 server {
     listen 443 ssl http2;
-    server_name presek.rs www.presek.rs;
+    server_name presek.live www.presek.live;
     
-    ssl_certificate /etc/letsencrypt/live/presek.rs/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/presek.rs/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/presek.live/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/presek.live/privkey.pem;
     
     location / {
         proxy_pass http://127.0.0.1:3000;

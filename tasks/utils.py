@@ -45,7 +45,7 @@ def send_email(
 
 
 _PUBLIC_SITE_URL = str(
-    os.environ.get("PUBLIC_SITE_URL") or "https://presek.rs"
+    os.environ.get("PUBLIC_SITE_URL") or "https://presek.live"
 ).rstrip("/")
 
 

@@ -50,9 +50,9 @@ from api_helpers import (
 # Security: Restrict CORS to configured origins. In production, never use "*" with allow_credentials=True
 cors_origins = os.environ.get("CORS_ORIGINS", "")
 if cors_origins == "*" and os.environ.get("ENV") == "production":
-    cors_origins = ["https://presek.rs", "https://www.presek.rs"]
+    cors_origins = ["https://presek.live", "https://www.presek.live"]
     log.warning(
-        "CORS_ORIGINS was '*', defaulting to presek.rs for production security"
+        "CORS_ORIGINS was '*', defaulting to presek.live for production security"
     )
 else:
     cors_origins = cors_origins.split(",") if cors_origins else ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5001", "http://127.0.0.1:5001"]
@@ -290,7 +290,7 @@ async def track_delivery_event(
             ),
             fetch=False,
         )
-    _public_site_url = os.environ.get("PUBLIC_SITE_URL", "https://presek.rs")
+    _public_site_url = os.environ.get("PUBLIC_SITE_URL", "https://presek.live")
     redirect = _safe_tracking_redirect_path(redirect)
     return RedirectResponse(url=f"{_public_site_url}{redirect}", status_code=302)
 

@@ -114,7 +114,7 @@ async def serve_manifest():
 @router.get("/robots.txt")
 async def robots_txt():
     return Response(
-        "User-agent: *\nDisallow: /api/\nAllow: /\n\nSitemap: https://presek.rs/sitemap-index.xml\n",
+        "User-agent: *\nDisallow: /api/\nAllow: /\n\nSitemap: https://presek.live/sitemap-index.xml\n",
         media_type="text/plain",
     )
 
@@ -469,7 +469,7 @@ async def get_cluster_share_card(cluster_id: str):
             (90, 550), "СИТЕ ИЗВОРИ НА ЕДНО МЕСТО", fill=(156, 163, 175), font=f_footer
         )
         draw.text(
-            (1110, 550), "presek.rs", fill=(255, 255, 255), font=f_footer, anchor="ra"
+            (1110, 550), "presek.live", fill=(255, 255, 255), font=f_footer, anchor="ra"
         )
 
         out = BytesIO()

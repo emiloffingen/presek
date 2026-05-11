@@ -6,7 +6,7 @@ from api_helpers import is_safe_url
 def test_is_safe_url_valid_public(mock_getaddrinfo):
     mock_getaddrinfo.return_value = [(2, 1, 6, "", ("93.184.216.34", 0))]
     assert is_safe_url("https://google.com") is True
-    assert is_safe_url("http://presek.rs") is True
+    assert is_safe_url("http://presek.live") is True
 
 
 def test_is_safe_url_blocked_hostnames():

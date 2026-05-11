@@ -1,12 +1,12 @@
 # Presek nginx
 
-This nginx config is intended for `presek.rs` behind Cloudflare.
+This nginx config is intended for `presek.live` behind Cloudflare.
 
 Together with the files in `deploy/systemd/`, this is the supported production deployment model for the app.
 
 ## Routing model
 
-- `https://presek.rs/` goes to Astro on `127.0.0.1:3000`
+- `https://presek.live/` goes to Astro on `127.0.0.1:3000`
 - Public `/api/` requests go to FastAPI on `127.0.0.1:5001`
 - `/proxy`, `/static`, `sw.js`, and `manifest.json` also go to FastAPI
 - Only legacy OG image routes remain separate if you keep a compatibility shim during transition
@@ -15,7 +15,7 @@ This keeps a single public API owner for the Astro site.
 
 ## Files
 
-- `presek.rs.conf`: site config for `/etc/nginx/sites-available/`
+- `presek.live.conf`: site config for `/etc/nginx/sites-available/`
 - `cloudflare-realip.conf`: snippet for `/etc/nginx/snippets/`
 
 ## Install
@@ -23,9 +23,9 @@ This keeps a single public API owner for the Astro site.
 Copy the files to the server:
 
 ```sh
-sudo cp deploy/nginx/presek.rs.conf /etc/nginx/sites-available/presek.rs.conf
+sudo cp deploy/nginx/presek.live.conf /etc/nginx/sites-available/presek.live.conf
 sudo cp deploy/nginx/cloudflare-realip.conf /etc/nginx/snippets/cloudflare-realip.conf
-sudo ln -s /etc/nginx/sites-available/presek.rs.conf /etc/nginx/sites-enabled/presek.rs.conf
+sudo ln -s /etc/nginx/sites-available/presek.live.conf /etc/nginx/sites-enabled/presek.live.conf
 sudo nginx -t
 sudo systemctl reload nginx
 ```

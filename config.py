@@ -116,11 +116,11 @@ def _init_config():
 # Run initialization
 _init_config()
 
-NTFY_TOPIC = os.environ.get("NTFY_TOPIC", "presek.rs-vesti")
+NTFY_TOPIC = os.environ.get("NTFY_TOPIC", "presek.live-vesti")
 NTFY_TOKEN = os.environ.get("NTFY_TOKEN", "")
 VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
 VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
-VAPID_CLAIMS = {"sub": "mailto:admin@presek.rs"}
+VAPID_CLAIMS = {"sub": "mailto:admin@presek.live"}
 PRESEK_ADMIN_TOKEN = os.environ.get("PRESEK_ADMIN_TOKEN", "")
 
 # ── Additional AI Providers (Gemini) ───────────────────────────

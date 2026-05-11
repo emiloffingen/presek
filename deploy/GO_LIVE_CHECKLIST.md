@@ -63,9 +63,9 @@ Confirm:
 
 Open and verify:
 
-- `https://presek.rs/`
-- one `https://presek.rs/cluster/...` page
-- `https://presek.rs/archive`
+- `https://presek.live/`
+- one `https://presek.live/cluster/...` page
+- `https://presek.live/archive`
 
 Confirm:
 

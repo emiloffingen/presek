@@ -34,9 +34,9 @@ class BreakingNewsNotifier:
                 "tags": ["newspaper", "rotating_light"],
                 "priority": 4,
                 "click": (
-                    f"https://presek.rs/cluster/{cluster_id}"
+                    f"https://presek.live/cluster/{cluster_id}"
                     if cluster_id
-                    else "https://presek.rs"
+                    else "https://presek.live"
                 ),
             }
             with httpx.Client(timeout=5.0) as client:
@@ -63,9 +63,9 @@ class BreakingNewsNotifier:
             "tags": ["soccer", "goal_net", "bell"],
             "priority": 5,  # Max priority for scores
             "click": (
-                f"https://presek.rs/cluster/{cluster_id}"
+                f"https://presek.live/cluster/{cluster_id}"
                 if cluster_id
-                else "https://presek.rs"
+                else "https://presek.live"
             ),
         }
         try:

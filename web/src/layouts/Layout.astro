@@ -23,8 +23,8 @@ const {
 	robots,
 } = Astro.props;
 
-const siteUrl = (Astro.site?.origin || import.meta.env.PUBLIC_SITE_URL || "https://presek.rs").replace(/\/+$/, "");
-const pageTitle = title.includes("Presek") ? title.replace("Presek", "PRESEK.rs") : `${title} | PRESEK.rs`;
+const siteUrl = (Astro.site?.origin || import.meta.env.PUBLIC_SITE_URL || "https://presek.live").replace(/\/+$/, "");
+const pageTitle = title.includes("Presek") ? title.replace("Presek", "PRESEK.live") : `${title} | PRESEK.live`;
 
 /**
  * Build a strict canonical URL:
@@ -34,7 +34,7 @@ const pageTitle = title.includes("Presek") ? title.replace("Presek", "PRESEK.rs"
  * - Home page resolves to bare origin (no trailing slash)
  */
 function buildCanonicalUrl(pathname: string): string {
-	const base = Astro.site || new URL("https://presek.rs");
+	const base = Astro.site || new URL("https://presek.live");
 	const url = new URL(pathname, base);
 	// Strip trailing slash for all paths except root
 	let clean = url.origin + url.pathname.replace(/\/+$/, "");
@@ -69,12 +69,12 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 		<meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
 		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-		<meta name="apple-mobile-web-app-title" content="PRESEK.rs" />
+		<meta name="apple-mobile-web-app-title" content="PRESEK.live" />
 		<meta name="generator" content={Astro.generator} />
 		<meta name="description" content={description} />
 		{robots && <meta name="robots" content={robots} />}
 		<link rel="canonical" href={canonicalUrl} />
-		<meta property="og:site_name" content="PRESEK.rs" />
+		<meta property="og:site_name" content="PRESEK.live" />
 		<meta property="og:locale" content="sr_RS" />
 		<meta property="og:type" content={type} />
 		<meta property="og:title" content={pageTitle} />

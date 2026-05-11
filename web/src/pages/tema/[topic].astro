@@ -155,7 +155,7 @@ const sourceFollowSuggestions = sourceRows.slice(0, 2).map(([name, count]) => ({
 	reason: `${count} појавувања во активни кластери за оваа тема.`,
 }));
 
-const canonicalUrl = new URL(Astro.url.pathname, Astro.site || 'https://presek.rs').href.replace(/\/+$/, "");
+const canonicalUrl = new URL(Astro.url.pathname, Astro.site || 'https://presek.live').href.replace(/\/+$/, "");
 
 const leadSummary =
 	getDisplaySummary(leadCluster?.articles?.[0] || {}) ||
