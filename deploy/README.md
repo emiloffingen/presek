@@ -29,12 +29,12 @@ It refuses to continue if the Python venv, shared env file, or current release a
 You can override defaults with environment variables:
 
 ```sh
-sudo DOMAIN=presek.live \
+sudo DOMAIN=presek.rs \
   SERVER_USER=emiloffingen \
   APP_ROOT=/home/emiloffingen/presek-runtime \
   INSTALL_NGINX=0 \
-  CERT_FULLCHAIN=/etc/ssl/cloudflare/presek.live/fullchain.pem \
-  CERT_PRIVKEY=/etc/ssl/cloudflare/presek.live/privkey.pem \
+  CERT_FULLCHAIN=/etc/ssl/cloudflare/presek.rs/fullchain.pem \
+  CERT_PRIVKEY=/etc/ssl/cloudflare/presek.rs/privkey.pem \
   bash deploy/install_server.sh
 ```
 

@@ -51,7 +51,7 @@ const SEARCH_ACTIONS: SearchAction[] = [
   { id: 'act-briefing', label: 'Дневен Брифинг', icon: Zap, href: '/briefing', category: 'NAVIGATION', desc: 'Преглед на најважните вести во форма на брифинг.' },
   { id: 'act-pulse', label: 'Информативен Ритам', icon: Activity, href: '/pulse', category: 'NAVIGATION', desc: 'Следете ги трендовите и медиумскиот плурализам.' },
   { id: 'act-archive', label: 'Архива на Вести', icon: Archive, href: '/archive', category: 'NAVIGATION', desc: 'Пребарајте ги сите досегашни објави.' },
-  { id: 'act-about', label: 'За Проектот', icon: HelpCircle, href: '/about', category: 'HELP', desc: 'Дознајте повеќе за Пресек и технологијата зад него.' },
+  { id: 'act-about', label: 'За Проектот', icon: HelpCircle, href: '/about', category: 'HELP', desc: 'Дознајте повеќе за Presek и технологијата зад него.' },
 ];
 
 const CATEGORIES = [

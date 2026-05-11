@@ -20,10 +20,10 @@ const totalSources = cluster.articles.length;
 const showTrustBadge = totalSources >= 2 && Boolean(sourceSignal.trust_label);
 const showSignificanceLabel = cluster.is_breaking || totalSources >= 3;
 const significanceLabel =
-	totalSources >= 6 ? 'Ударна' :
-	totalSources >= 4 ? 'Следена' :
-	cluster.is_breaking ? 'Итен развој' :
-	'Во тек';
+	totalSources >= 6 ? 'Udarna' :
+	totalSources >= 4 ? 'Praćena' :
+	cluster.is_breaking ? 'Hitan razvoj' :
+	'U toku';
 
 const selectedImage = chooseClusterImage(cluster, isLead ? 'hero' : 'card');
 const thumbSrc = selectedImage.proxiedUrl;
@@ -156,7 +156,7 @@ function getTimeStr(dateStr: string) {
 		{hasSynthesis && (
 			<span class="editorial-byline">
                 <Sparkles size={11} className="inline-block mr-1 text-nyt-accent" />
-				Системска синтеза на Пресек
+				Системска синтеза на Presek
 			</span>
 		)}
 
@@ -241,7 +241,7 @@ function getTimeStr(dateStr: string) {
 				)}
 			</a>
             {isFallbackArt && (
-                <span class="fallback-badge-icon" title="Пресек графика">
+                <span class="fallback-badge-icon" title="Presek графика">
                     <Palette size={14} />
                 </span>
             )}

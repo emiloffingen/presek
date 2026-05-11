@@ -145,7 +145,7 @@ TAG_NOISE_WORDS = {
     "извор",
     "извори",
     "кластер",
-    "македонија",
+    "srbija",
     "свет",
     "инфо",
     "фото",
@@ -419,7 +419,7 @@ def normalize_tag_name(name):
         "мицкоскиот": "Христијан Мицкоски",
         "филипчето": "Венко Филипче",
         "филипче": "Венко Филипче",
-        "македонск": "Македонија",
+        "македонск": "Srbija",
         "американ": "Америка",
         "американски": "Америка",
         "европски": "Европа",
@@ -434,7 +434,7 @@ def normalize_tag_name(name):
     }
 
     PROTECTED_NAMES = {
-        "македонија",
+        "srbija",
         "македонци",
         "македонски",
         "македонец",
@@ -451,7 +451,7 @@ def normalize_tag_name(name):
         if lowered == "македон":
             return "Македон"
         if "македон" in lowered:
-            return "Македонија"
+            return "Srbija"
         if "америка" in lowered:
             return "Америка"
         return clean.capitalize()
@@ -572,9 +572,9 @@ def _tokenize_title_terms(text, lemmatize=False):
         and token not in SOURCE_NOISE_WORDS
     ]
     if lemmatize:
-        from nlp.text_processing import lemmatize_mk
+        from nlp.text_processing import lemmatize_sr
 
-        return [lemmatize_mk(t) for t in tokens]
+        return [lemmatize_sr(t) for t in tokens]
     return tokens
 
 
@@ -595,7 +595,7 @@ def _extract_capitalized_phrases(text):
 
 
 def extract_cluster_tags_locally(titles, entity_names=None, sources=None, top_n=8):
-    from nlp.text_processing import lemmatize_mk
+    from nlp.text_processing import lemmatize_sr
     from entities import normalize_entity_name
 
     candidates = []
@@ -633,7 +633,7 @@ def extract_cluster_tags_locally(titles, entity_names=None, sources=None, top_n=
             capitalized[phrase] += 1
 
         tokens = _tokenize_title_terms(title)
-        lemmatized_tokens = [lemmatize_mk(t) for t in tokens]
+        lemmatized_tokens = [lemmatize_sr(t) for t in tokens]
         title_tokens.update(lemmatized_tokens)
 
         for left, right in zip(tokens, tokens[1:]):

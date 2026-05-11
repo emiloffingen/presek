@@ -173,10 +173,10 @@ if (!isHomepage) {
 
 function getLeadSignal(cluster: NewsCluster) {
 	const count = cluster?.articles?.length || 0;
-	if (cluster?.is_breaking) return 'Најбрз развој во денот';
-	if (count >= 6) return 'Приказна што ја движи домашната агенда';
-	if (count >= 4) return 'Тема што брзо се шири низ редакциите';
-	return 'Развој што вреди да се следи';
+	if (cluster?.is_breaking) return 'Najbrži razvoj dana';
+	if (count >= 6) return 'Priča koja pokreće domaću agendu';
+	if (count >= 4) return 'Tema koja se brzo širi kroz redakcije';
+	return 'Razvoj koji vredi pratiti';
 }
 
 function getLeadSummary(cluster: NewsCluster) {
@@ -273,13 +273,13 @@ function getTimeStr(dateStr: string) {
         const diffMs = now.getTime() - date.getTime();
         const diffMins = Math.floor(diffMs / (1000 * 60));
 
-        if (diffMins < 1) return 'ШТОТУКУ';
-        if (diffMins < 60) return `ПРЕД ${diffMins} МИН`;
+        if (diffMins < 1) return 'UPRAVO SADA';
+        if (diffMins < 60) return `PRE ${diffMins} MIN`;
 
-        return date.toLocaleTimeString('mk-MK', { 
+        return date.toLocaleTimeString('sr-RS', { 
             hour: '2-digit', 
             minute: '2-digit',
-            timeZone: 'Europe/Skopje'
+            timeZone: 'Europe/Belgrade'
         });
     } catch {
         return '';
@@ -288,7 +288,7 @@ function getTimeStr(dateStr: string) {
 
 function getBriefingSnippet(content: string) {
     if (!content) return '';
-    const match = content.match(/## Што го движи денот\n+([^#]+)/) || content.match(/^([^#]+)/);
+    const match = content.match(/## Šta pokreće dan\n+([^#]+)/) || content.match(/^([^#]+)/);
     if (match && match[1]) {
         const text = match[1].trim().split('\n')[0];
         return text.length > 150 ? text.substring(0, 147) + '...' : text;
@@ -298,10 +298,10 @@ function getBriefingSnippet(content: string) {
 ---
 
 <Layout
-	title={q || entity || subcategory || category || topic || "Пресек | Медиумска транспарентност и јавен увид"}
+	title={q || entity || subcategory || category || topic || "Presek | Medijska transparentnost i javni uvid"}
 	description={q || entity || subcategory || category || topic
-		? "Пресек ги групира поврзаните вести, ги споредува изворите и ви овозможува побрз преглед на контекстот."
-		: "Пресек е македонски информативен агрегатор што ги собира вестите од сите медиуми, ги групира по тема и покажува како различните извори известуваат за ист настан."}
+		? "Presek grupiše povezane vesti, upoređuje izvore i omogućava vam brži pregled konteksta."
+		: "Presek je srpski informativni agregator koji sakuplja vesti iz svih medija, grupiše ih po temi i pokazuje kako različiti izvori izveštavaju o istom događaju."}
 >
     <NYTHeader q={q} category={category} topic={topic} entity={entity} subcategory={subcategory} stats={stats} />
 
@@ -324,15 +324,15 @@ function getBriefingSnippet(content: string) {
                     <div class="max-w-full overflow-hidden mb-10">
                         <div class="quick-pills-container overflow-x-auto hide-scrollbar -mx-4 px-4 pb-2">
                             <div class="flex items-center gap-3">
-                                <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mr-2 shrink-0">Истражи:</span>
+                                <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mr-2 shrink-0">Istraži:</span>
                                 {[
-                                    { id: 'mk', label: 'Македонија', href: '/?category=' + encodeURIComponent('Македонија') },
-                                    { id: 'pol', label: 'Политика', href: '/?topic=' + encodeURIComponent('Политика') },
-                                    { id: 'eco', label: 'Економија', href: '/?topic=' + encodeURIComponent('Економија') },
-                                    { id: 'spo', label: 'Спорт', href: '/?topic=' + encodeURIComponent('Спорт') },
-                                    { id: 'cul', label: 'Култура', href: '/?topic=' + encodeURIComponent('Култура') },
-                                    { id: 'tech', label: 'Технологија', href: '/?topic=' + encodeURIComponent('Технологија') },
-                                    { id: 'sk', label: 'Скопје', href: '/?subcategory=' + encodeURIComponent('Скопје') }
+                                    { id: 'rs', label: 'Srbija', href: '/?category=' + encodeURIComponent('Srbija') },
+                                    { id: 'pol', label: 'Politika', href: '/?topic=' + encodeURIComponent('Politika') },
+                                    { id: 'eco', label: 'Ekonomija', href: '/?topic=' + encodeURIComponent('Ekonomija') },
+                                    { id: 'spo', label: 'Sport', href: '/?topic=' + encodeURIComponent('Sport') },
+                                    { id: 'cul', label: 'Kultura', href: '/?topic=' + encodeURIComponent('Kultura') },
+                                    { id: 'tech', label: 'Tehnologija', href: '/?topic=' + encodeURIComponent('Tehnologija') },
+                                    { id: 'bg', label: 'Beograd', href: '/?subcategory=' + encodeURIComponent('Beograd') }
                                 ].map(pill => (
                                     <a href={pill.href} class="quick-pill shrink-0" data-track-pill={pill.id}>
                                         {pill.label}
@@ -391,9 +391,9 @@ function getBriefingSnippet(content: string) {
                 {isHomepage && consensusClusters.length > 0 && (
                     <div class="section-wrapper consensus-section bg-secondary/10 p-8 border-y border-border/40">
                         <div class="section-heading-row mb-8">
-                            <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent block mb-2">СИСТЕМСКИ КОНСЕНЗУС</span>
-                            <h2 class="font-serif text-3xl font-black italic">Широка Слика</h2>
-                            <p class="text-sm text-muted-foreground mt-2">Настани за кои известуваат голем број медиуми со висок степен на согласување.</p>
+                            <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent block mb-2">SISTEMSKI KONSENZUS</span>
+                            <h2 class="font-serif text-3xl font-black italic">Šira Slika</h2>
+                            <p class="text-sm text-muted-foreground mt-2">Događaji o kojima izveštava veliki broj medija sa visokim stepenom slaganja.</p>
                         </div>
                         <div class="news-feed-grid news-feed-grid-compact">
                             {consensusClusters.map((cluster: NewsCluster) => (
@@ -406,8 +406,8 @@ function getBriefingSnippet(content: string) {
 				{feedClusters.length > 0 && (
 					<div class="section-wrapper">
 						<DevelopmentsSection
-							title="Теми во развој"
-							note="Актуелни наративи со изразена медиумска динамика и активна уредничка синтеза."
+							title="Teme u razvoju"
+							note="Aktuelni narativi sa izraženom medijskom dinamikom i aktivnom uredničkom sintezom."
 							developmentsFeatured={developmentsFeatured}
 							developmentsCompact={developmentsCompact}
                             tone="developing"
@@ -425,8 +425,8 @@ function getBriefingSnippet(content: string) {
 				{globalClusters.length > 0 && (
 					<div class="section-wrapper">
 						<DevelopmentsSection
-							title="Глобална Сцена"
-							note="Системски преглед на меѓународните случувања од водечките новински агенции."
+							title="Globalna Scena"
+							note="Sistemski pregled međunarodnih dešavanja od vodećih novinskih agencija."
 							developmentsFeatured={globalClusters.slice(0, 2)}
 							developmentsCompact={globalClusters.slice(2)}
                             tone="global"
@@ -437,8 +437,8 @@ function getBriefingSnippet(content: string) {
 				{wireClusters.length > 0 && (
 					<div class="section-wrapper">
 						<DevelopmentsSection
-							title="Последно на лентата"
-							note="Извештаи во реално време: поединечни објави од теренот."
+							title="Poslednje na traci"
+							note="Izveštaji u realnom vremenu: pojedinačne objave sa terena."
 							developmentsFeatured={wireClusters}
 							developmentsCompact={[]}
 							variant="wire"

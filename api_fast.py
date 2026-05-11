@@ -36,7 +36,7 @@ from logging_config import get_logger
 log = get_logger("presek.api")
 
 app = FastAPI(
-    title="Пресек API",
+    title="Presek API",
     version=APP_VERSION,
     docs_url="/api/docs" if os.environ.get("ENV") != "production" else None,
     redoc_url="/api/redoc" if os.environ.get("ENV") != "production" else None,
@@ -50,9 +50,9 @@ from api_helpers import (
 # Security: Restrict CORS to configured origins. In production, never use "*" with allow_credentials=True
 cors_origins = os.environ.get("CORS_ORIGINS", "")
 if cors_origins == "*" and os.environ.get("ENV") == "production":
-    cors_origins = ["https://presek.live", "https://www.presek.live"]
+    cors_origins = ["https://presek.rs", "https://www.presek.rs"]
     log.warning(
-        "CORS_ORIGINS was '*', defaulting to presek.live for production security"
+        "CORS_ORIGINS was '*', defaulting to presek.rs for production security"
     )
 else:
     cors_origins = cors_origins.split(",") if cors_origins else ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5001", "http://127.0.0.1:5001"]
@@ -145,7 +145,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Startup Event
 @app.on_event("startup")
 async def startup_event():
-    log.info(f"Пресек API v{APP_VERSION} ({APP_VERSION_LABEL}) starting up...")
+    log.info(f"Presek API v{APP_VERSION} ({APP_VERSION_LABEL}) starting up...")
     if _rate_limiter_enabled:
         log.info("Rate limiting enabled (slowapi)")
     else:
@@ -290,7 +290,7 @@ async def track_delivery_event(
             ),
             fetch=False,
         )
-    _public_site_url = os.environ.get("PUBLIC_SITE_URL", "https://presek.live")
+    _public_site_url = os.environ.get("PUBLIC_SITE_URL", "https://presek.rs")
     redirect = _safe_tracking_redirect_path(redirect)
     return RedirectResponse(url=f"{_public_site_url}{redirect}", status_code=302)
 

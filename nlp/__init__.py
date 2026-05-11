@@ -8,7 +8,7 @@ from nlp.keywords import (
     is_valid_focus_entity,
 )
 from nlp.text_processing import (
-    lemmatize_mk,
+    lemmatize_sr,
     rewrite_to_macedonian_locally,
     synthesize_locally,
 )
@@ -31,7 +31,7 @@ __all__ = [
     "filter_cluster_tags",
     "normalize_tag_name",
     "is_valid_focus_entity",
-    "lemmatize_mk",
+    "lemmatize_sr",
     "rewrite_to_macedonian_locally",
     "summarize_article_fallback",
     "synthesize_cluster_fallback",

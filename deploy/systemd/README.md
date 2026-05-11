@@ -1,6 +1,6 @@
 # Presek systemd
 
-These units are the supported production runtime for `presek.live`.
+These units are the supported production runtime for `presek.rs`.
 
 `start.sh` remains in the repo only as a local/manual fallback launcher. Do not treat it as the primary live process manager.
 

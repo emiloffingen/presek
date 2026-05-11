@@ -129,7 +129,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         {cluster.has_synthesis && (
             <span className="editorial-byline">
                 <Sparkles size={11} className="inline-block mr-1 text-nyt-accent" />
-                Системска синтеза на Пресек
+                Системска синтеза на Presek
             </span>
         )}
 
@@ -169,7 +169,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
               <div className="article-image-placeholder design-card">
                 <div className="design-card-pattern"></div>
                 <div className="design-card-ribbon">
-                    <span>ПРЕСЕК ПРЕГЛЕД</span>
+                    <span>PRESEK ПРЕГЛЕД</span>
                 </div>
                 <div className="design-card-main">
                     <div className="design-card-icon-wrap">

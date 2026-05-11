@@ -150,7 +150,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
       if (i === 0) {
           return (
             <div key={i} className={`mb-8 md:mb-10 text-left ${animClass}`} style={animStyle}>
-                <span className="editorial-byline">Од уредничкиот тим на Пресек</span>
+                <span className="editorial-byline">Од уредничкиот тим на Presek</span>
                 <p className="mb-6 md:mb-8 text-lg md:text-2xl leading-relaxed text-foreground font-serif italic border-l-4 border-nyt-accent pl-4 md:pl-6 py-2 bg-secondary/5 rounded-r-lg drop-cap">
                     {parseBoldText(trimmed)}
                 </p>
@@ -176,7 +176,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
         <div className="max-w-full md:max-w-3xl">
           <p className="mb-2 flex items-center gap-2 font-sans text-[9px] font-black uppercase tracking-[0.2em] text-nyt-accent">
             <div className="w-4 h-[2px] bg-nyt-accent"></div>
-            ПРЕСЕК ИСТРАЖУВАЧ
+            PRESEK ИСТРАЖУВАЧ
           </p>
           <h2 className="font-serif text-xl md:text-2xl font-black text-foreground mb-2 leading-tight tracking-tight">Постави прашање или побарај анализа</h2>
           <p className="font-serif text-sm md:text-base leading-relaxed text-secondary-foreground italic opacity-90">
@@ -262,7 +262,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
             </div>
 
             <span className="text-[9px] font-black uppercase tracking-[0.18em] text-muted-foreground hidden sm:block">
-              Пресек Истражувач
+              Presek Истражувач
             </span>
 
             <button onClick={() => setData(null)} className="p-1 hover:bg-foreground/5 rounded-lg transition-colors ml-auto">

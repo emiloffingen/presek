@@ -43,7 +43,7 @@ export default function EntityContextCard({ name }: EntityContextCardProps) {
                 
                 <h4 className="font-serif font-black text-lg mb-2">{name}</h4>
                 <p className="text-xs font-nyt-body leading-relaxed text-secondary-foreground mb-4">
-                    {data.bio_summary || `Овој субјект е редовно следен во рамките на македонскиот медиумски простор преку системот на Пресек.`}
+                    {data.bio_summary || `Овој субјект е редовно следен во рамките на македонскиот медиумски простор преку системот на Presek.`}
                 </p>
 
                 <div className="flex items-center justify-between pt-3 border-t border-border">

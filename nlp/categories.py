@@ -1,7 +1,7 @@
 """
-categories.py — Article categorization for Пресек
+categories.py — Article categorization for Presek
 Allowed categories (exactly 6, geographic):
-  Македонија = domestic news, default fallback
+  Srbija = domestic news, default fallback
   Балкан     = Serbia, Kosovo, Albania, Greece, Bulgaria, Montenegro,
                Bosnia, Croatia, Turkey
   Европа     = EU / European news (excluding Germany)
@@ -14,7 +14,7 @@ import re
 import html
 
 ALLOWED_CATEGORIES = {
-    "Македонија",
+    "Srbija",
     "Балкан",
     "Европа",
     "Германија",
@@ -67,8 +67,8 @@ def _score_keyword_group(text: str, keywords: list[str], topic_name: str = "") -
 
 
 def validate_category(category: str) -> str:
-    """Return category if it is in the allowed list, else default to 'Македонија'."""
-    return category if category in ALLOWED_CATEGORIES else "Македонија"
+    """Return category if it is in the allowed list, else default to 'Srbija'."""
+    return category if category in ALLOWED_CATEGORIES else "Srbija"
 
 
 # ORDER MATTERS — first match wins.
@@ -308,9 +308,9 @@ CATEGORIES = [
         ],
     ),
     (
-        "Македонија",
+        "Srbija",
         [
-            "македонија",
+            "srbija",
             "македонски",
             "скопје",
             "битола",
@@ -441,7 +441,7 @@ TITLE_PROPER_NOUNS = [
     (re.compile(r"\bданска\b", re.IGNORECASE), "Данска"),
     (re.compile(r"\bевропа\b", re.IGNORECASE), "Европа"),
     (re.compile(r"\bјугославија\b", re.IGNORECASE), "Југославија"),
-    (re.compile(r"\bмакедонија\b", re.IGNORECASE), "Македонија"),
+    (re.compile(r"\bsrbija\b", re.IGNORECASE), "Srbija"),
     (re.compile(r"\bбугарија\b", re.IGNORECASE), "Бугарија"),
     (re.compile(r"\bсрбија\b", re.IGNORECASE), "Србија"),
     (re.compile(r"\bгрција\b", re.IGNORECASE), "Грција"),
@@ -520,7 +520,7 @@ def detect_category(
             best_score = score
     if best_category and best_score >= 1.0:
         return best_category
-    return "Македонија"
+    return "Srbija"
 
 
 # ── Sub-categories (regional) ──────────────────────────────────────
@@ -1021,7 +1021,7 @@ def detect_topic(title: str, description: str = "") -> str:
 
 def detect_country(source_name: str) -> str:
     """Return the ISO country code for a given source name. Defaults to MK."""
-    return _COUNTRY_MAP.get(source_name, "MK")
+    return _COUNTRY_MAP.get(source_name, "RS")
 
 
 def normalize_headline(title: str) -> str:
@@ -1118,7 +1118,7 @@ def normalize_headline(title: str) -> str:
         "Радио Слободна Европа",
         "RSE",
         "РСЕ",
-        "Нова Македонија",
+        "Нова Srbija",
         "Брифинг",
     ]
     suffix_pattern = r"[\s\|:–—-]+(" + "|".join(sources) + r")$"

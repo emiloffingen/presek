@@ -42,7 +42,7 @@ class TestRenderHtml:
         end = datetime(2026, 3, 29)
         html = render_html(stories, start, end)
 
-        assert "ПРЕСЕК" in html
+        assert "PRESEK" in html
         assert "Тест наслов" in html
         assert "https://example.com" in html
         assert "MIA" in html
@@ -50,7 +50,7 @@ class TestRenderHtml:
 
     def test_empty_stories(self):
         html = render_html({}, datetime(2026, 1, 1), datetime(2026, 1, 2))
-        assert "ПРЕСЕК" in html
+        assert "PRESEK" in html
         # Should render without errors even with no stories
 
     def test_no_summary(self):

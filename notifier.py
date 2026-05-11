@@ -34,9 +34,9 @@ class BreakingNewsNotifier:
                 "tags": ["newspaper", "rotating_light"],
                 "priority": 4,
                 "click": (
-                    f"https://presek.mk/cluster/{cluster_id}"
+                    f"https://presek.rs/cluster/{cluster_id}"
                     if cluster_id
-                    else "https://presek.mk"
+                    else "https://presek.rs"
                 ),
             }
             with httpx.Client(timeout=5.0) as client:
@@ -63,9 +63,9 @@ class BreakingNewsNotifier:
             "tags": ["soccer", "goal_net", "bell"],
             "priority": 5,  # Max priority for scores
             "click": (
-                f"https://presek.mk/cluster/{cluster_id}"
+                f"https://presek.rs/cluster/{cluster_id}"
                 if cluster_id
-                else "https://presek.mk"
+                else "https://presek.rs"
             ),
         }
         try:
@@ -98,7 +98,7 @@ class BreakingNewsNotifier:
         parts.append(f"<i>{source_line}</i>")
 
         self.send_ntfy(
-            "Важна вест — Пресек",
+            "Важна вест — Presek",
             f"{headline}\n({sources_count} извори известуваат)",
             cluster_id,
         )

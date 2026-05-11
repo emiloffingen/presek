@@ -1,5 +1,5 @@
 """
-trending.py — Real trending keywords for Пресек
+trending.py — Real trending keywords for Presek
 Extracts hot topics from recent articles by counting significant words,
 weighted by recency and a proper-noun bonus (capitalized mid-sentence words).
 """

@@ -1,5 +1,5 @@
 """
-digest.py — Weekly HTML digest generator for Пресек
+digest.py — Weekly HTML digest generator for Presek
 Generates a styled HTML email digest of the top stories.
 Can send via Gmail SMTP or save to file.
 
@@ -44,7 +44,7 @@ def send_newsletter_to_all_subscribers(days: int = 1) -> int:
     now = datetime.now()
     start = now - timedelta(days=days)
     html = render_html(stories, start, now)
-    subject = f"Пресек — Утрински Брифинг ({mk_date(now)})"
+    subject = f"Presek — Утрински Брифинг ({mk_date(now)})"
 
     try:
         from database import db_manager as db
@@ -58,7 +58,7 @@ def send_newsletter_to_all_subscribers(days: int = 1) -> int:
         for sub in subscribers:
             user_email = sub["email"]
             unsubscribe_url = (
-                f"https://presek.live/api/newsletter/unsubscribe?email={user_email}"
+                f"https://presek.rs/api/newsletter/unsubscribe?email={user_email}"
             )
             personalized_html = html.replace("{{UNSUBSCRIBE_URL}}", unsubscribe_url)
 
@@ -77,7 +77,7 @@ def send_ntfy_digest(stories_by_cat: dict, topic: str, period_days: int = 1) -> 
         return False
 
     total = sum(len(v) for v in stories_by_cat.values())
-    lines = [f"📰 ПРЕСЕК — Дневен преглед ({total} приказни)\n"]
+    lines = [f"📰 PRESEK — Дневен преглед ({total} приказни)\n"]
 
     CAT_ORDER = [
         "Македонија",
@@ -112,7 +112,7 @@ def send_ntfy_digest(stories_by_cat: dict, topic: str, period_days: int = 1) -> 
                 f"https://ntfy.sh/{topic}",
                 content=body.encode("utf-8"),
                 headers={
-                    "Title": "Пресек — Дневен преглед",
+                    "Title": "Presek — Дневен преглед",
                     "Priority": "default",
                     "Tags": "newspaper,macedonia",
                     "Content-Type": "text/plain; charset=utf-8",
@@ -266,7 +266,7 @@ def render_html(
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Пресек — Дневен преглед</title>
+  <title>Presek — Дневен преглед</title>
 </head>
 <body style="margin:0;padding:0;background-color:#f9fafb;font-family:Georgia,serif;-webkit-font-smoothing:antialiased">
 
@@ -278,7 +278,7 @@ def render_html(
         <tr>
           <td style="padding:40px 40px 30px;text-align:center;border-bottom:4px double #111827">
             <h1 style="margin:0;font-family:Georgia,\'Times New Roman\',serif;font-size:42px;font-weight:900;color:#111827;letter-spacing:-1.5px;text-transform:uppercase">
-              ПРЕСЕК
+              PRESEK
             </h1>
             <p style="margin:10px 0 0;font-family:sans-serif;font-size:11px;font-weight:bold;letter-spacing:0.3em;text-transform:uppercase;color:#6b7280">
               Медиумска транспарентност и јавен увид
@@ -316,7 +316,7 @@ def render_html(
         <!-- Bottom CTA -->
         <tr>
             <td style="padding:0 40px 40px;text-align:center">
-                <a href="https://presek.live" style="display:inline-block;padding:14px 28px;background-color:#111827;color:#ffffff;font-family:sans-serif;font-size:12px;font-weight:bold;text-decoration:none;text-transform:uppercase;letter-spacing:0.15em;border-radius:2px">
+                <a href="https://presek.rs" style="display:inline-block;padding:14px 28px;background-color:#111827;color:#ffffff;font-family:sans-serif;font-size:12px;font-weight:bold;text-decoration:none;text-transform:uppercase;letter-spacing:0.15em;border-radius:2px">
                     Отвори го целосното издание
                 </a>
             </td>
@@ -326,7 +326,7 @@ def render_html(
         <tr>
           <td style="padding:30px 40px;text-align:center;background-color:#f3f4f6;border-top:1px solid #e5e7eb">
             <p style="margin:0;font-family:sans-serif;font-size:10px;font-weight:bold;color:#9ca3af;letter-spacing:0.1em;text-transform:uppercase">
-              Пресек · Медиумска транспарентност · Системска синтеза
+              Presek · Медиумска транспарентност · Системска синтеза
             </p>
             <p style="margin:8px 0 0;font-family:sans-serif;font-size:10px;color:#9ca3af;line-height:1.5">
               Овој преглед е системски синтетизиран преку нашиот редакциски алгоритам.<br>
@@ -341,7 +341,7 @@ def render_html(
         <tr>
             <td style="padding:20px 0;text-align:center">
                 <p style="margin:0;font-family:sans-serif;font-size:10px;color:#9ca3af">
-                    © {datetime.now().year} Пресек. Сите права се задржани.
+                    © {datetime.now().year} Presek. Сите права се задржани.
                 </p>
             </td>
         </tr>
@@ -352,7 +352,7 @@ def render_html(
 </body>
 </html>"""
 
-    return html.replace("{{UNSUBSCRIBE_URL}}", "https://presek.live/settings")
+    return html.replace("{{UNSUBSCRIBE_URL}}", "https://presek.rs/settings")
 
 
 def send_email(
@@ -421,7 +421,7 @@ def generate_digest(
         log.info(f"Saved to {save_path}")
 
     if smtp_user and smtp_pass and to_address:
-        subject = f"Пресек — Дневен преглед {mk_date(start)} — {mk_date(now)}"
+        subject = f"Presek — Дневен преглед {mk_date(start)} — {mk_date(now)}"
         send_email(html, subject, smtp_user, smtp_pass, to_address)
 
     return html
@@ -454,7 +454,7 @@ def send_digest(days: int = 1) -> bool:
         now = datetime.now()
         start = now - timedelta(days=days)
         html = render_html(stories, start, now)
-        subject = f"Пресек — Дневен преглед {mk_date(start)} — {mk_date(now)}"
+        subject = f"Presek — Дневен преглед {mk_date(start)} — {mk_date(now)}"
         ok = send_email(html, subject, smtp_user, smtp_pass, to_address) or ok
 
     return ok
@@ -462,7 +462,7 @@ def send_digest(days: int = 1) -> bool:
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Пресек digest generator")
+    parser = argparse.ArgumentParser(description="Presek digest generator")
     parser.add_argument("--days", default=7, type=int, help="Days to look back")
     parser.add_argument("--save", default="digest.html", help="Save HTML to file")
     parser.add_argument(

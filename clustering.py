@@ -1,5 +1,5 @@
 """
-clustering.py — Advanced Hybrid News Clustering for Пресек
+clustering.py — Advanced Hybrid News Clustering for Presek
 Combines Title Fingerprinting, Semantic (Vector) Search, and Weighted TF-IDF.
 """
 

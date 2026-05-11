@@ -159,7 +159,7 @@ const filteredRelated = relatedClusters.filter((c: { cluster_id: string }) => c.
 
 const adjacentTopic = cluster?.topics?.find((t: string) => t !== 'Македонија') || cluster?.topics?.[0];
 
-const canonicalUrl = `https://presek.live/cluster/${id}`;
+const canonicalUrl = `https://presek.rs/cluster/${id}`;
 const shareDescription = synthesisItems[0]?.content || mainArticle?.description || '';
 
 function getLeadVisual(c: ClusterDetail | null) {
@@ -219,20 +219,20 @@ const articleSchema = cluster ? {
 	"@type": "NewsArticle",
 	"headline": displayHeadline,
 	"description": cluster.generated_article?.slice(0, 200) || cluster.synthesis?.slice(0, 200) || displayHeadline,
-	"image": cluster.representative_image || (leadVisual?.rawUrl?.startsWith('http') ? leadVisual.rawUrl : "https://presek.live/static/img/presek_emblem.png"),
+	"image": cluster.representative_image || (leadVisual?.rawUrl?.startsWith('http') ? leadVisual.rawUrl : "https://presek.rs/static/img/presek_emblem.png"),
 	"datePublished": cluster.articles?.[cluster.articles.length - 1]?.created_at,
 	"dateModified": cluster.synthesis_updated_at || cluster.articles?.[0]?.created_at,
 	"author": {
 		"@type": "Organization",
-		"name": "ПРЕСЕК.мк",
-		"url": "https://presek.live"
+		"name": "PRESEK.мк",
+		"url": "https://presek.rs"
 	},
 	"publisher": {
 		"@type": "Organization",
-		"name": "ПРЕСЕК.мк",
+		"name": "PRESEK.мк",
 		"logo": {
 			"@type": "ImageObject",
-			"url": "https://presek.live/static/img/presek_emblem.png"
+			"url": "https://presek.rs/static/img/presek_emblem.png"
 		}
 	}
 } : null;

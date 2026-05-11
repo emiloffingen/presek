@@ -148,7 +148,7 @@ const IzvoriPage: React.FC = () => {
         </div>
         <div className="masthead-main mb-12">
           <h1 className="masthead-title font-serif text-5xl md:text-7xl font-black leading-[0.9] tracking-tighter">Медиумски <span className="text-nyt-accent italic font-light">Извори</span></h1>
-          <p className="mt-6 font-serif text-xl italic text-muted-foreground leading-snug max-w-2xl">Рангирање и детална статистика на сите медиуми што Пресек ги следи — по активност, брзина и доверливост.</p>
+          <p className="mt-6 font-serif text-xl italic text-muted-foreground leading-snug max-w-2xl">Рангирање и детална статистика на сите медиуми што Presek ги следи — по активност, брзина и доверливост.</p>
         </div>
         
         <div className="masthead-controls sticky top-[72px] z-30 bg-background/80 backdrop-blur-xl border-y border-border py-4 flex flex-col md:flex-row justify-between items-center gap-6">

@@ -557,7 +557,7 @@ async def unsubscribe_newsletter(email: str):
     except Exception as e:
         log.warning(f"[unsubscribe] DB error: {e}")
         return HTMLResponse(content="<h1>Грешка при одјавување.</h1>", status_code=500)
-    return HTMLResponse(content="<h1>Успешно се одјавивте од билтенот на Пресек.</h1>")
+    return HTMLResponse(content="<h1>Успешно се одјавивте од билтенот на Presek.</h1>")
 
 
 async def _fetch_stats_parallel():

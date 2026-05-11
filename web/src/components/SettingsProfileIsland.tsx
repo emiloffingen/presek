@@ -115,7 +115,7 @@ export default function SettingsProfileIsland() {
         <div className="settings-module-head">
           <div>
             <p className="settings-kicker"><Sparkles size={14} /> Вашиот профил на читање</p>
-            <h2>Што Пресек памети на овој уред</h2>
+            <h2>Што Presek памети на овој уред</h2>
           </div>
           <p className="settings-copy">
             Овие сигнали го обликуваат вашиот модул „За Вас“, изборот на известувања и неделната достава уште пред нешто да се синхронизира.

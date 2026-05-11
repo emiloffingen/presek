@@ -1,6 +1,6 @@
 {
-  "name": "Пресек",
-  "short_name": "Пресек",
+  "name": "Presek",
+  "short_name": "Presek",
   "description": "Македонски информативен агрегатор со подлабок контекст и напредна јазична обработка.",
   "start_url": "/?utm_source=pwa",
   "display": "standalone",

@@ -1,253 +1,236 @@
 import re
 import math
 
-# Irregular lemmas for Macedonian
-_MK_IRREGULAR_LEMMAS = {
-    "луѓе": "човек",
-    "деца": "дете",
-    "пазари": "пазар",
-    "пазарот": "пазар",
-    "министри": "министер",
-    "министерот": "министер",
-    "претседатели": "претседател",
-    "избори": "избор",
-    "изборите": "избор",
-    "патишта": "пат",
-    "светови": "свет",
+# Irregular lemmas for Serbian
+_SR_IRREGULAR_LEMMAS = {
+    "ljudi": "čovek",
+    "deca": "dete",
+    "pijace": "pijaca",
+    "ministri": "ministar",
+    "predsednici": "predsednik",
+    "izbori": "izbor",
+    "putevi": "put",
+    "svetovi": "svet",
 }
 
-_MK_PLURAL_SUFFIXES = [
-    (re.compile(r"ите$"), ""),
-    (re.compile(r"ата$"), ""),
-    (re.compile(r"ото$"), ""),
-    (re.compile(r"та$"), ""),
-    (re.compile(r"то$"), ""),
-    (re.compile(r"от$"), ""),
-    (re.compile(r"те$"), ""),
-    (re.compile(r"и$"), ""),
-    (re.compile(r"а$"), ""),
-    (re.compile(r"е$"), ""),
-    (re.compile(r"овци$"), ""),
-    (re.compile(r"евци$"), ""),
+_SR_PLURAL_SUFFIXES = [
+    (re.compile(r"ovima$"), ""),
+    (re.compile(r"evima$"), ""),
+    (re.compile(r"ima$"), ""),
+    (re.compile(r"om$"), ""),
+    (re.compile(r"em$"), ""),
+    (re.compile(r"ovi$"), ""),
+    (re.compile(r"evi$"), ""),
+    (re.compile(r"og$"), ""),
+    (re.compile(r"eg$"), ""),
+    (re.compile(r"ih$"), ""),
+    (re.compile(r"im$"), ""),
+    (re.compile(r"oj$"), ""),
+    (re.compile(r"i$"), ""),
+    (re.compile(r"e$"), ""),
+    (re.compile(r"a$"), ""),
+    (re.compile(r"u$"), ""),
 ]
 
-
-def lemmatize_mk(word: str) -> str:
-    """Reduces a Macedonian word to its approximate lemma (base form)."""
+def lemmatize_sr(word: str) -> str:
+    """Reduces a Serbian word to its approximate lemma (base form)."""
     w = word.lower().strip()
     if len(w) <= 3:
         return w
-    if w in _MK_IRREGULAR_LEMMAS:
-        return _MK_IRREGULAR_LEMMAS[w]
+    if w in _SR_IRREGULAR_LEMMAS:
+        return _SR_IRREGULAR_LEMMAS[w]
 
-    # Selective suffix stripping (adjectives -> nouns where clear)
-    # PROTECT stems that are common in news and shouldn't be truncated to fragments
+    # PROTECT stems that are common in news
     if any(
         w.startswith(p)
-        for p in ["македон", "мицкос", "америк", "европ", "русиј", "израел", "украин"]
+        for p in ["srbij", "vučić", "amerik", "evrop", "rusij", "izrael", "ukrajin"]
     ):
-        if w == "македон":
-            return "Македон"  # Preserve name
-        if w.startswith("македон"):
-            return "Македонија"
-        if w.startswith("америк"):
-            return "Америка"
-        if w.startswith("европ"):
-            return "Европа"
-        if w.startswith("русиј"):
-            return "Русија"
-        if w.startswith("украин"):
-            return "Украина"
-        if w.startswith("израел"):
-            return "Израел"
+        if w.startswith("srbij"):
+            return "Srbija"
+        if w.startswith("amerik"):
+            return "Amerika"
+        if w.startswith("evrop"):
+            return "Evropa"
+        if w.startswith("rusij"):
+            return "Rusija"
+        if w.startswith("ukrajin"):
+            return "Ukrajina"
+        if w.startswith("izrael"):
+            return "Izrael"
         return w
 
-    # Strip common adjective suffixes to get to the root/noun form
-    # But only if it leaves a reasonable word behind
-    if len(w) > 7:
-        # Avoid stripping if it ends with 'нија' (like Македонија, Германија)
-        if not w.endswith("нија"):
-            w = re.sub(r"(овски|евски|скиот|ската|ското|ските|ски)$", "", w)
+    # Strip common adjective suffixes
+    if len(w) > 6:
+        w = re.sub(r"(ski|ški|čki|skog|škog|čkog|skim|škim|čkim)$", "", w)
 
     if len(w) <= 3:
         return w
 
-    for rx, repl in _MK_PLURAL_SUFFIXES[:7]:
+    for rx, repl in _SR_PLURAL_SUFFIXES:
         if rx.search(w):
             w = rx.sub(repl, w)
             break
-    if len(w) > 3:
-        for rx, repl in _MK_PLURAL_SUFFIXES[7:]:
-            if rx.search(w):
-                w = rx.sub(repl, w)
-                break
 
-    # 'ц' -> 'це' was too aggressive (e.g. теснец -> теснеце is wrong)
-    # Only applies to very specific cases, safer to avoid for general entity tags
-    # if w.endswith("ц"): w = w[:-1] + "це"
-
-    if w.endswith("шт"):
-        w = w[:-2] + "ште"
     return w
 
 
 LOCAL_TRANSLATION_PHRASES = [
-    (r"\bbreaking news\b", "итна вест"),
-    (r"\blive updates?\b", "следење во живо"),
-    (r"\baccording to\b", "според"),
-    (r"\bprime minister\b", "премиерот"),
-    (r"\bforeign minister\b", "министерот за надворешни работи"),
-    (r"\bfinance minister\b", "министерот за финансии"),
-    (r"\bdefense minister\b", "министерот за одбрана"),
-    (r"\binterior minister\b", "министерот за внатрешни работи"),
-    (r"\bhealth minister\b", "министерот за здравство"),
-    (r"\bceasefire\b", "прекин на огнот"),
-    (r"\binterest rates?\b", "каматни стапки"),
-    (r"\bcentral bank\b", "централната банка"),
-    (r"\bwhite house\b", "Белата куќа"),
-    (r"\beuropean union\b", "Европската Унија"),
-    (r"\bunited nations\b", "Обединетите нации"),
-    (r"\bsecurity council\b", "Советот за безбедност"),
-    (r"\bhuman rights\b", "човекови права"),
-    (r"\bclimate change\b", "климатски промени"),
-    (r"\bsupreme court\b", "Врховниот суд"),
-    (r"\belection commission\b", "изборната комисија"),
+    (r"\bbreaking news\b", "hitna vest"),
+    (r"\blive updates?\b", "uživo praćenje"),
+    (r"\baccording to\b", "prema"),
+    (r"\bprime minister\b", "premijer"),
+    (r"\bforeign minister\b", "ministar spoljnih poslova"),
+    (r"\bfinance minister\b", "ministar finansija"),
+    (r"\bdefense minister\b", "ministar odbrane"),
+    (r"\binterior minister\b", "ministar unutrašnjih poslova"),
+    (r"\bhealth minister\b", "ministar zdravlja"),
+    (r"\bceasefire\b", "prekid vatre"),
+    (r"\binterest rates?\b", "kamatne stope"),
+    (r"\bcentral bank\b", "centralna banka"),
+    (r"\bwhite house\b", "Bela kuća"),
+    (r"\beuropean union\b", "Evropska Unija"),
+    (r"\bunited nations\b", "Ujedinjene nacije"),
+    (r"\bsecurity council\b", "Savet bezbednosti"),
+    (r"\bhuman rights\b", "ljudska prava"),
+    (r"\bclimate change\b", "klimatske promene"),
+    (r"\bsupreme court\b", "Vrhovni sud"),
+    (r"\belection commission\b", "izborna komisija"),
 ]
 
 LOCAL_TRANSLATION_WORDS = {
-    "government": "владата",
-    "minister": "министерот",
-    "president": "претседателот",
-    "parliament": "парламентот",
-    "opposition": "опозицијата",
-    "police": "полицијата",
-    "court": "судот",
-    "judges": "судиите",
-    "judge": "судијата",
-    "election": "избори",
-    "elections": "избори",
-    "voters": "гласачите",
-    "vote": "гласање",
-    "campaign": "кампања",
-    "tariff": "царина",
-    "tariffs": "царини",
-    "sanction": "санкција",
-    "sanctions": "санкции",
-    "attack": "напад",
-    "attacks": "напади",
-    "protest": "протест",
-    "protests": "протести",
-    "strike": "штрајк",
-    "strikes": "штрајкови",
-    "package": "пакет",
-    "packages": "пакети",
-    "measure": "мерка",
-    "measures": "мерки",
-    "budget": "буџетот",
-    "economy": "економијата",
-    "inflation": "инфлација",
-    "market": "пазарот",
-    "markets": "пазарите",
-    "company": "компанијата",
-    "companies": "компаниите",
-    "deal": "договор",
-    "agreement": "договор",
-    "talks": "разговори",
-    "negotiations": "преговори",
-    "support": "поддршка",
-    "aid": "помош",
-    "bill": "законски предлог",
-    "law": "законот",
-    "report": "извештај",
-    "reports": "известува",
-    "reported": "објави",
-    "says": "вели",
-    "said": "изјави",
-    "announce": "најавува",
-    "announces": "најавува",
-    "announced": "најави",
-    "warns": "предупредува",
-    "warned": "предупреди",
-    "approves": "одобрува",
-    "approved": "одобри",
-    "launches": "почнува",
-    "launched": "почна",
-    "delays": "одложува",
-    "delayed": "одложи",
-    "confirms": "потврува",
-    "confirmed": "потврди",
-    "denies": "негира",
-    "denied": "негираше",
-    "urges": "повикува",
-    "plans": "планира",
-    "plan": "план",
-    "new": "нов",
-    "latest": "најнов",
-    "official": "официјален",
-    "officials": "официјални претставници",
-    "citizens": "граѓани",
-    "crisis": "криза",
-    "war": "војна",
-    "peace": "мир",
-    "military": "војската",
-    "troops": "трупи",
-    "leader": "лидерот",
-    "leaders": "лидерите",
-    "meeting": "средба",
-    "summit": "самит",
+    "government": "vlada",
+    "minister": "ministar",
+    "president": "predsednik",
+    "parliament": "parlament",
+    "opposition": "opozicija",
+    "police": "policija",
+    "court": "sud",
+    "judges": "sudije",
+    "judge": "sudija",
+    "election": "izbori",
+    "elections": "izbori",
+    "voters": "glasači",
+    "vote": "glasanje",
+    "campaign": "kampanja",
+    "tariff": "carina",
+    "tariffs": "carine",
+    "sanction": "sankcija",
+    "sanctions": "sankcije",
+    "attack": "napad",
+    "attacks": "napadi",
+    "protest": "protest",
+    "protests": "protesti",
+    "strike": "štrajk",
+    "strikes": "štrajkovi",
+    "package": "paket",
+    "packages": "paketi",
+    "measure": "mera",
+    "measures": "mere",
+    "budget": "budžet",
+    "economy": "ekonomija",
+    "inflation": "inflacija",
+    "market": "tržište",
+    "markets": "tržišta",
+    "company": "kompanija",
+    "companies": "kompanije",
+    "deal": "dogovor",
+    "agreement": "dogovor",
+    "talks": "razgovori",
+    "negotiations": "pregovori",
+    "support": "podrška",
+    "aid": "pomoć",
+    "bill": "predlog zakona",
+    "law": "zakon",
+    "report": "izveštaj",
+    "reports": "izveštava",
+    "reported": "objavio",
+    "says": "kaže",
+    "said": "izjavio",
+    "announce": "najavljuje",
+    "announces": "najavljuje",
+    "announced": "najavio",
+    "warns": "upozorava",
+    "warned": "upozorio",
+    "approves": "odobrava",
+    "approved": "odobrio",
+    "launches": "pokreće",
+    "launched": "pokrenuo",
+    "delays": "odlaže",
+    "delayed": "odložio",
+    "confirms": "potvrđuje",
+    "confirmed": "potvrdio",
+    "denies": "negira",
+    "denied": "negirao",
+    "urges": "poziva",
+    "plans": "planira",
+    "plan": "plan",
+    "new": "novi",
+    "latest": "najnoviji",
+    "official": "zvanični",
+    "officials": "zvaničnici",
+    "citizens": "građani",
+    "crisis": "kriza",
+    "war": "rat",
+    "peace": "mir",
+    "military": "vojska",
+    "troops": "trupe",
+    "leader": "lider",
+    "leaders": "lideri",
+    "meeting": "sastanak",
+    "summit": "samit",
 }
 
 LOCAL_TRANSLATION_MONTHS = {
-    "january": "јануари",
-    "february": "февруари",
-    "march": "март",
-    "april": "април",
-    "may": "мај",
-    "june": "јуни",
-    "july": "јули",
-    "august": "август",
-    "september": "септември",
-    "october": "октомври",
-    "november": "ноември",
-    "december": "декември",
+    "january": "januar",
+    "february": "februar",
+    "march": "mart",
+    "april": "april",
+    "may": "maj",
+    "june": "jun",
+    "july": "jul",
+    "august": "avgust",
+    "september": "septembar",
+    "october": "oktobar",
+    "november": "novembar",
+    "december": "decembar",
 }
 
 LOCAL_TRANSLATION_EXTRA = {
-    "monday": "понеделник",
-    "tuesday": "вторник",
-    "wednesday": "среда",
-    "thursday": "четврток",
-    "friday": "петок",
-    "saturday": "сабота",
-    "sunday": "недела",
-    "today": "денес",
-    "tomorrow": "утре",
-    "yesterday": "вчера",
+    "monday": "ponedeljak",
+    "tuesday": "utorak",
+    "wednesday": "sreda",
+    "thursday": "četvrtak",
+    "friday": "petak",
+    "saturday": "subota",
+    "sunday": "nedelja",
+    "today": "danas",
+    "tomorrow": "sutra",
+    "yesterday": "juče",
 }
 
 JUNK_NEWS_PHRASES = [
-    "прочитајте и",
-    "можеби ќе ве интересира",
-    "поврзано:",
-    "извор:",
-    "фото:",
-    "видео:",
-    "галерија:",
-    "следете нè",
-    "преземањето е дозволено",
-    "автор:",
-    "пишува:",
-    "фокус на денот",
-    "трендинг",
-    "најчитано",
+    "pročitajte i",
+    "možda će vas zanimati",
+    "povezano:",
+    "izvor:",
+    "foto:",
+    "video:",
+    "galerija:",
+    "pratite nas",
+    "preuzimanje je dozvoljeno",
+    "autor:",
+    "piše:",
+    "fokus dana",
+    "trending",
+    "najčitanije",
     "exclusive:",
     "breaking:",
     "read more",
     "related:",
     "source:",
     "follow us",
-    "дознајте повеќе",
-    "според информациите на",
+    "saznajte više",
+    "prema informacijama",
 ]
 
 

@@ -1,4 +1,4 @@
-// Пресек — Service Worker v24
+// Presek — Service Worker v24
 // Astro-only frontend caching: Stale-While-Revalidate for API and Cache-First for static assets
 
 const CACHE_NAME = 'presek-v24';

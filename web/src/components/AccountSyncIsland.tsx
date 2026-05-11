@@ -114,7 +114,7 @@ export default function AccountSyncIsland() {
               <div className="flex gap-3">
                 <ShieldCheck size={18} className="text-nyt-accent shrink-0" />
                 <p className="text-xs text-zinc-300 leading-relaxed">
-                  Пресек не бара регистрација. Вашиот профил се чува локално, но можете да го пренесете на друг уред со помош на таен клуч.
+                  Presek не бара регистрација. Вашиот профил се чува локално, но можете да го пренесете на друг уред со помош на таен клуч.
                 </p>
               </div>
             </div>

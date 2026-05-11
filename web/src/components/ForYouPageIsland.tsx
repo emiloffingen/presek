@@ -137,7 +137,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
             </div>
             <h1 className="font-serif text-4xl md:text-5xl font-black mb-4 tracking-tight">Вашиот Личен Простор</h1>
             <p className="text-lg md:text-xl text-secondary-foreground max-w-xl mx-auto italic font-serif">
-                Оваа страница е место каде што Пресек се прилагодува на вашиот ритам. Изберете теми што ве интересираат за да започнете.
+                Оваа страница е место каде што Presek се прилагодува на вашиот ритам. Изберете теми што ве интересираат за да започнете.
             </p>
         </header>
         <div className="bg-secondary/5 border border-border p-8 md:p-12 rounded-3xl shadow-inner">
@@ -155,7 +155,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
             <Sparkles className="text-nyt-accent" size={16} />
             <span className="font-sans text-[10px] font-black uppercase tracking-[0.25em] text-nyt-accent">УРЕДНИЧКА СИНТЕЗА</span>
           </div>
-          <h1 className="font-serif text-[clamp(2rem,6vw,4rem)] font-black leading-[0.9] mb-6 italic">Личен <span className="serif-display font-light not-italic">Пресек</span></h1>
+          <h1 className="font-serif text-[clamp(2rem,6vw,4rem)] font-black leading-[0.9] mb-6 italic">Личен <span className="serif-display font-light not-italic">Presek</span></h1>
           <p className="mt-4 font-nyt-body text-[clamp(1rem,2vw,1.25rem)] text-secondary-foreground leading-relaxed italic max-w-2xl">
              Вашиот дневен преглед, синтетизиран според темите, личностите и изворите што ги следите.
           </p>

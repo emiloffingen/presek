@@ -235,7 +235,7 @@ export default function EntityIsland({
       <div className="entity-grid">
         <div className="sources-main">
           <section className="entity-summary entity-featured">
-            <h2 className="entity-section-title flex items-center gap-2"><Sparkles size={14} /> Медиумски Пресек</h2>
+            <h2 className="entity-section-title flex items-center gap-2"><Sparkles size={14} /> Медиумски Presek</h2>
             <p className="entity-summary-copy">{whyItMatters}</p>
             <div className="entity-chip-list">
               <span className="entity-chip">{clusters.length} активни теми</span>
