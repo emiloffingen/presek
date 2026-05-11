@@ -85,18 +85,18 @@ function getWhyItMatters() {
 		return `${sourceSignal.role_label}. Prikaznata se zacvrstuva niz povece nezavisni linii na izvestuvanje.`;
 	}
 	if (sourceSignal.role_label && totalSources >= 2) {
-		return `${sourceSignal.role_label}. Temata se prosiruva so novi potvrdi i oficijalni reakcije.`;
+		return `${sourceSignal.role_label}. Tema se širi novim potvrama i zvaničnim reakcijama.`;
 	}
 	if (totalSources >= 6) {
-		return `razvoj so izrazena mediumska tezina poddrzana od ${totalSources} razliciti izvori.`;
+		return `razvoj sa izražénom medijskom težinom podržan od ${totalSources} različiti izvori.`;
 	}
 	if (totalSources >= 4) {
-		return 'Povece redakcii vece dodavaat novi sloevi na informacii i specificen kontekst.';
+		return 'Više redakcija dodaje nove slojeve informacija i specifičan kontekst.';
 	}
 	if (totalSources >= 2) {
-		return 'prica koja brzo dobiva sistemska potvrda i siri opstestven odglas.';
+		return 'priča koja brzo dobija sistemske potvrde i širi javni odjek.';
 	}
-	return 'razvoj so potencijal za dopolnitelna tematska evolucija.';
+	return 'razvoj sa potencijalom za dopunsku tematsku evoluciju.';
 }
 
 
@@ -111,13 +111,13 @@ function getTimeStr(dateStr: string) {
         const diffMs = now.getTime() - date.getTime();
         const diffMins = Math.floor(diffMs / (1000 * 60));
 
-        if (diffMins < 1) return 'STOTUKU';
-        if (diffMins < 60) return `PRED ${diffMins} MIN`;
+        if (diffMins < 1) return 'JUST NOW';
+        if (diffMins < 60) return `PRE ${diffMins} MIN`;
 
-        return date.toLocaleTimeString('mk-RS', { 
+        return date.toLocaleTimeString('sr-RS', { 
             hour: '2-digit', 
             minute: '2-digit',
-            timeZone: 'Europe/Skopje'
+            timeZone: 'Europe/Belgrade'
         });
     } catch {
         return '';

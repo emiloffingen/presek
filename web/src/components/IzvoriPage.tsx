@@ -198,7 +198,7 @@ const IzvoriPage: React.FC = () => {
           ) : (
             <div className="space-y-24">
               <section>
-                <h2 className="font-serif text-3xl font-black italic mb-10 pb-3 border-b-4 border-foreground">Makedonski Mediumi</h2>
+                <h2 className="font-serif text-3xl font-black italic mb-10 pb-3 border-b-4 border-foreground">Srpski Mediji</h2>
                 <div className="flex flex-col">
                   {mkSources.map(renderSourceRow)}
                 </div>
@@ -237,7 +237,7 @@ const IzvoriPage: React.FC = () => {
             <ul className="space-y-4">
               <li className="flex flex-col gap-1">
                 <span className="font-sans text-[9px] font-black uppercase tracking-widest text-foreground">Doverba</span>
-                <span className="text-xs text-muted-foreground leading-snug">Ponderiran vlez spored istoriska tocnost i stabilnost na izvestuvanje.</span>
+                <span className="text-xs text-muted-foreground leading-snug">Ponderisan uđe na osnovu istorijske tačnosti i stabilnosti izveštavanja.</span>
               </li>
               <li className="flex flex-col gap-1">
                 <span className="font-sans text-[9px] font-black uppercase tracking-widest text-foreground">Vodstvo</span>

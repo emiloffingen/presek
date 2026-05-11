@@ -37,13 +37,13 @@ function getTimeStr(dateStr?: string) {
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / (1000 * 60));
 
-    if (diffMins < 1) return 'STOTUKU';
-    if (diffMins < 60) return `PRED ${diffMins} MIN`;
+    if (diffMins < 1) return 'JUST NOW';
+    if (diffMins < 60) return `PRE ${diffMins} MIN`;
     
-    return date.toLocaleTimeString('mk-RS', { 
+    return date.toLocaleTimeString('sr-RS', { 
       hour: '2-digit', 
       minute: '2-digit',
-      timeZone: 'Europe/Skopje' 
+      timeZone: 'Europe/Belgrade' 
     });
   } catch {
     return '';

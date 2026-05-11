@@ -1,7 +1,7 @@
 import datetime
 from unittest.mock import patch, MagicMock
 from clustering import (
-    mk_stem,
+    sr_stem,
     text_to_vector,
     get_cosine,
     find_or_create_cluster,
@@ -17,11 +17,11 @@ _mock_db.get_cluster_entities.return_value = {}
 _DB_PATCH = "database.db_manager"
 
 
-def test_mk_stem():
-    assert mk_stem("vladata") == "vlad"
-    assert mk_stem("vlada") == "vlada"  # No suffix
-    assert mk_stem("ucenjeto") == "ucenje"  # length constraint skips 'enjeto', strips 'to'
-    assert mk_stem("kratok") == "kratok"  # no matching suffix
+def test_sr_stem():
+    assert sr_stem("vladata") == "vlad"
+    assert sr_stem("vlada") == "vlada"  # No suffix
+    assert sr_stem("ucenjeto") == "ucenje"  # length constraint skips 'enjeto', strips 'to'
+    assert sr_stem("kratok") == "kratok"  # no matching suffix
 
 
 def test_text_to_vector():
@@ -134,11 +134,11 @@ def test_completely_different_topic():
     assert cid != "c1"
 
 
-def test_mk_stem_short_words_unchanged():
+def test_sr_stem_short_words_unchanged():
     """Words shorter than 5 chars should not be stemmed."""
-    assert mk_stem("mir") == "mir"
-    assert mk_stem("zema") == "zema"
-    assert mk_stem("a") == "a"
+    assert sr_stem("mir") == "mir"
+    assert sr_stem("zema") == "zema"
+    assert sr_stem("a") == "a"
 
 
 def test_text_to_vector_empty():

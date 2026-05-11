@@ -1,4 +1,4 @@
-from local_nlp import (
+from nlp import (
     filter_cluster_tags,
     extract_cluster_tags_locally,
     extract_keyphrases_locally,

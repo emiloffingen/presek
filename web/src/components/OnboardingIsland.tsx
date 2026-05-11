@@ -96,8 +96,8 @@ export default function OnboardingIsland({ compact = false }: { compact?: boolea
     <section className={`onboarding-card ${compact ? 'is-compact' : ''}`}>
       <div className="onboarding-head">
         <div>
-          <p className="onboarding-kicker"><Sparkles size={14} /> Pocetno postavuvanje</p>
-          <h2>Postavete sto sakate da sledite</h2>
+          <p className="onboarding-kicker"><Sparkles size={14} /> Početno podešavanje</p>
+          <h2>Postavite šta želite da pratite</h2>
         </div>
         <button type="button" className="onboarding-dismiss" onClick={close} aria-label="Zatvori">
           <X size={14} />
@@ -105,12 +105,12 @@ export default function OnboardingIsland({ compact = false }: { compact?: boolea
       </div>
 
       <p className="onboarding-copy">
-        Izberete nekolku temi ili izvori za da me personalizirate vasata sodrzina. Ovie signali pomagaat modulot „Za Vas“, dnevniot brifing i izvestuvanjata da stanat poprecizni.
+        Izaberite nekoliko tema ili izvora da biste personalizovali vaš sadržaj. Ovi signali pomažu modulu „Za Vas“, dnevni brifing i izveštaji da budu precizniji.
       </p>
 
       <div className="onboarding-progress">
         <strong>{progress.doneCount}/{progress.total}</strong>
-        <span> cekori zavrseni</span>
+        <span> koraka završeno</span>
       </div>
 
       <div className="onboarding-steps">

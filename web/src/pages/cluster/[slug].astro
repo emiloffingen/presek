@@ -25,14 +25,14 @@ function getRelativeTimeStr(dateStr: string) {
         const diffMs = now.getTime() - date.getTime();
         const diffMins = Math.floor(diffMs / (1000 * 60));
 
-        if (diffMins < 1) return 'STOTUKU';
-        if (diffMins < 60) return `PRED ${diffMins} MIN`;
+        if (diffMins < 1) return 'JUST NOW';
+        if (diffMins < 60) return `PRE ${diffMins} MIN`;
         
         const diffHours = Math.floor(diffMins / 60);
-        if (diffHours < 24) return `PRED ${diffHours} ${diffHours === 1 ? 'CAS' : 'CASA'}`;
+        if (diffHours < 24) return `PRE ${diffHours} ${diffHours === 1 ? 'ČAS' : 'ČASA'}`;
 
         const diffDays = Math.floor(diffHours / 24);
-        return `PRED ${diffDays} ${diffDays === 1 ? 'DEN' : 'DENA'}`;
+        return `PRE ${diffDays} ${diffDays === 1 ? 'DAN' : 'DANA'}`;
     } catch (e) {
         return '';
     }

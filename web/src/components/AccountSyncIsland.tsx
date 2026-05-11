@@ -28,10 +28,10 @@ export default function AccountSyncIsland() {
       updateSyncToken(data.token);
       setInputToken(data.token);
       setStatus('done');
-      setMessage('Klucot za sinhronizacija e kreiran. Vasiot lokalen profil e podgotven za sinhronizacija medju uredi.');
+      setMessage('Kljuc za sinhronizaciju je kreiran. Vaš lokalni profil je pripremljen za sinhronizaciju između uređaja.');
     } catch {
       setStatus('error');
-      setMessage('Ne mozev da kreiram kluc za sinhronizacija vo momentov.');
+      setMessage('Ne mogu da kreiram ključ za sinhronizaciju u ovom trenutku.');
     }
   };
 
@@ -54,10 +54,10 @@ export default function AccountSyncIsland() {
       mergeSyncPayload(data.profile);
       updateSyncToken(nextToken);
       setStatus('done');
-      setMessage('Lokalniot profil e sinhroniziran so vasiot kluc za profil.');
+      setMessage('Lokalni profil je sinhroniziran sa vašim ključem za profil.');
     } catch {
       setStatus('error');
-      setMessage('Ne mozev da ga ispratam ovoj profil vo momentov.');
+      setMessage('Ne mogu da pošaljem ovaj profil u ovom trenutku.');
     }
   };
 
@@ -76,10 +76,10 @@ export default function AccountSyncIsland() {
       updateSyncToken(nextToken);
       setInputToken(nextToken);
       setStatus('done');
-      setMessage('Sinhroniziraniot profil e vcitan na ovoj ured.');
+      setMessage('Sinhronizirani profil je učitan na ovom uređaju.');
     } catch {
       setStatus('error');
-      setMessage('Ne mozev da ga vcitam toj kluc za sinhronizacija.');
+      setMessage('Ne mogu da učitam taj ključ za sinhronizaciju.');
     }
   };
 
@@ -88,10 +88,10 @@ export default function AccountSyncIsland() {
     try {
       await navigator.clipboard.writeText(token);
       setStatus('done');
-      setMessage('Klucot za sinhronizacija e kopiran.');
+      setMessage('Kljuc za sinhronizaciju je kopiran.');
     } catch {
       setStatus('error');
-      setMessage('Ne mozev da ga kopiram klucot za sinhronizacija.');
+      setMessage('Ne mogu da kopiram ključ za sinhronizaciju.');
     }
   };
 
@@ -104,7 +104,7 @@ export default function AccountSyncIsland() {
           </div>
           <div>
             <h3 className="text-lg font-black font-sans uppercase tracking-tight">Sinhronizacija</h3>
-            <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">Anonimen kluc za prenos na profilot</p>
+            <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">Anoniman ključ za prenos profila</p>
           </div>
         </div>
 
@@ -114,7 +114,7 @@ export default function AccountSyncIsland() {
               <div className="flex gap-3">
                 <ShieldCheck size={18} className="text-nyt-accent shrink-0" />
                 <p className="text-xs text-zinc-300 leading-relaxed">
-                  Presek ne bara registracija. Vasiot profil se cuva lokalno, no mozete da ga prenesete na drug ured so pomos na taen kluc.
+                  Presek ne zahteva registraciju. Vaš profil se čuva lokalno, ali možete da ga prenesete na drugi uređaj uz pomoć tajnog ključa.
                 </p>
               </div>
             </div>
@@ -125,18 +125,18 @@ export default function AccountSyncIsland() {
               className="w-full bg-nyt-accent hover:bg-nyt-accent/90 text-white font-black py-4 rounded-lg flex items-center justify-center gap-2 transition-all transform active:scale-[0.98]"
             >
               {status === 'working' ? <RefreshCw className="animate-spin" size={18} /> : <KeyRound size={18} />}
-              GENERIRAJ KLUC
+              GENERIŠI KLJUČ
             </button>
 
             <div className="relative py-4">
               <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-zinc-800"></span></div>
-              <div className="relative flex justify-center text-[10px] uppercase font-black text-zinc-500 bg-zinc-900 dark:bg-black px-2">Ili vnesete postoecki</div>
+              <div className="relative flex justify-center text-[10px] uppercase font-black text-zinc-500 bg-zinc-900 dark:bg-black px-2"> Ili unesite postojeći</div>
             </div>
 
             <div className="space-y-3">
               <input
                 type="text"
-                placeholder="Vnesete ga vasiot kluc..."
+                placeholder="Unesite vaš ključ..."
                 value={inputToken}
                 onChange={(e) => setInputToken(e.target.value)}
                 className="w-full bg-zinc-800 border border-zinc-700 text-white p-4 rounded-lg text-sm font-mono placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-nyt-accent/50"
@@ -147,14 +147,14 @@ export default function AccountSyncIsland() {
                 className="w-full bg-zinc-100 hover:bg-white text-black font-black py-4 rounded-lg flex items-center justify-center gap-2 transition-all"
               >
                 <Download size={18} />
-                VCITAJ PROFIL
+                UCITAJ PROFIL
               </button>
             </div>
           </div>
         ) : (
           <div className="space-y-6">
             <div className="bg-zinc-800/80 p-4 rounded-lg border border-zinc-700">
-              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Vasiot taen kluc</p>
+              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Vaš tajni ključ</p>
               <div className="flex items-center gap-3">
                 <code className="flex-1 text-sm font-mono text-nyt-accent truncate">{token}</code>
                 <button onClick={copyToken} className="text-zinc-400 hover:text-white transition-colors">
@@ -170,7 +170,7 @@ export default function AccountSyncIsland() {
                 className="flex-1 bg-nyt-accent/10 border border-nyt-accent/30 hover:bg-nyt-accent/20 text-nyt-accent font-black py-4 rounded-lg flex flex-col items-center justify-center gap-2 transition-all"
               >
                 {status === 'working' ? <RefreshCw className="animate-spin" size={18} /> : <Upload size={18} />}
-                <span className="text-[10px] uppercase">Isprati sega</span>
+                <span className="text-[10px] uppercase">Pošalji sada</span>
               </button>
               <button
                 onClick={() => pullRemoteProfile()}
@@ -178,14 +178,14 @@ export default function AccountSyncIsland() {
                 className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-black py-4 rounded-lg flex flex-col items-center justify-center gap-2 transition-all"
               >
                 {status === 'working' ? <RefreshCw className="animate-spin" size={18} /> : <Download size={18} />}
-                <span className="text-[10px] uppercase">Vcitaj od oblak</span>
+                <span className="text-[10px] uppercase">Učitaj iz oblaka</span>
               </button>
             </div>
 
             <div className="flex gap-3 bg-zinc-800/30 p-3 rounded-lg">
               <Info size={14} className="text-zinc-500 shrink-0" />
               <p className="text-[10px] text-zinc-400 leading-normal">
-                Zacuvajte ga ovoj kluc. Ako ga izgubite, ne mozeme da vi ga vratime profilot bidejci ne sobirame licni podatoci.
+                Sačuvajte ovaj ključ. Ako ga izgubite, ne možemo da vam vratimo profil jer ne čuvamo lične podatke.
               </p>
             </div>
           </div>

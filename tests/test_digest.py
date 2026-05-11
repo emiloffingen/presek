@@ -1,11 +1,11 @@
 from datetime import datetime
-from digest import mk_date, render_html, MK_MONTHS, MK_DAYS
+from digest import sr_date, render_html, SR_MONTHS, SR_DAYS
 
 
 class TestMkDate:
     def test_known_date(self):
         dt = datetime(2026, 3, 29)  # Sunday
-        result = mk_date(dt)
+        result = sr_date(dt)
         assert "Nedelja" in result
         assert "29" in result
         assert "mart" in result
@@ -13,16 +13,16 @@ class TestMkDate:
 
     def test_monday(self):
         dt = datetime(2026, 3, 23)  # Monday
-        result = mk_date(dt)
+        result = sr_date(dt)
         assert "Ponedeljak" in result
 
     def test_all_months_covered(self):
-        assert len(MK_MONTHS) == 12
-        assert MK_MONTHS[0] == "januar"
-        assert MK_MONTHS[11] == "decembar"
+        assert len(SR_MONTHS) == 12
+        assert SR_MONTHS[0] == "januar"
+        assert SR_MONTHS[11] == "decembar"
 
     def test_all_days_covered(self):
-        assert len(MK_DAYS) == 7
+        assert len(SR_DAYS) == 7
 
 
 class TestRenderHtml:
@@ -99,4 +99,4 @@ class TestRenderHtml:
         html = render_html({}, datetime(2026, 1, 1), datetime(2026, 1, 2))
         assert html.startswith("<!DOCTYPE html>")
         assert "</html>" in html
-        assert 'lang="mk"' in html
+        assert 'lang="sr"' in html

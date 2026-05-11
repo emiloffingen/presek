@@ -43,11 +43,11 @@ export default function EntityContextCard({ name }: EntityContextCardProps) {
                 
                 <h4 className="font-serif font-black text-lg mb-2">{name}</h4>
                 <p className="text-xs font-nyt-body leading-relaxed text-secondary-foreground mb-4">
-                    {data.bio_summary || `Ovoj subjekt e redovno sleden vo ramkite na makedonskiot mediumski prostor preku sistemot na Presek.`}
+                    {data.bio_summary || `Ovaj subjekt se redovno prati u okviru srpskog medijskog prostora preko sistema Presek.`}
                 </p>
 
                 <div className="flex items-center justify-between pt-3 border-t border-border">
-                    <span className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">Posledno viden: {new Date(data.last_seen).toLocaleDateString('mk-RS')}</span>
+                    <span className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">Posledno viđeno: {new Date(data.last_seen).toLocaleDateString('sr-RS')}</span>
                     <a href={`/subjekt/${encodeURIComponent(name)}`} className="text-[9px] font-black uppercase text-nyt-accent border-b border-nyt-accent">Profil</a>
                 </div>
             </div>

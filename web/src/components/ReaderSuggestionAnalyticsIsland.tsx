@@ -26,7 +26,7 @@ export default function ReaderSuggestionAnalyticsIsland() {
         <div>
           <h2 className="stats-section-title">Lokalna Analitika Na Predlozi</h2>
           <p className="reader-analytics-copy">
-            Na ovoj ured: koi povrsini najcesto dobivaat sledenje, i dali podobro rabotat predlozi za temi ili za izvori.
+            Na ovom uređaju: koje površine najčešće dobijaju praćenje, i da li bolje funkcionisu predlozi za teme ili za izvore.
           </p>
         </div>
         <div className="reader-analytics-total">

@@ -18,19 +18,19 @@ try {
         const data = await res.json();
         initialClusters = data.clusters || [];
     } else {
-        initialError = "Ne mozeme da im vcitame pocetnite preporaki vo momentov.";
+        initialError = "Ne možemo da učitamo početne preporuke u ovom trenutku.";
         Astro.response.status = 500;
     }
 } catch (e) {
     console.error("ForYou page fetch error:", e);
-    initialError = "Ne mozeme da im vcitame pocetnite preporaki vo momentov.";
+    initialError = "Ne možemo da učitamo početne preporuke u ovom trenutku.";
     Astro.response.status = 500;
 }
 ---
 
 <Layout 
     title="Za Vas" 
-    description="Vasiot licen pregled na vesti, prilagoden spored temite i izvorite sto im sledite."
+    description="Vaš lični pregled vest, prilagođen prema temama i izvorima koje pratite."
 >
     <NYTHeader />
     <main class="site-layout py-[var(--page-py)]">

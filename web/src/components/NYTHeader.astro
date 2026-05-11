@@ -18,11 +18,11 @@ interface Props {
 
 const { category, topic, entity, subcategory, q, stats: propStats } = Astro.props;
 
-const currentDate = new Intl.DateTimeFormat('mk-RS', {
+const currentDate = new Intl.DateTimeFormat('sr-RS', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
-    timeZone: 'Europe/Skopje'
+    timeZone: 'Europe/Belgrade'
 }).format(new Date());
 
 const currentEdition = getEditionStr(new Date());
@@ -96,7 +96,7 @@ function getRelativeTimeStr(dateStr?: string) {
         const diffMs = now.getTime() - date.getTime();
         const diffMins = Math.floor(diffMs / (1000 * 60));
 
-        if (diffMins < 1) return 'STOTUKU';
+        if (diffMins < 1) return 'JUST NOW';
         if (diffMins < 60) return `${diffMins} MIN`;
         
         return date.toLocaleTimeString('mk-RS', { 

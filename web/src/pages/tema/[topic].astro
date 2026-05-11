@@ -152,7 +152,7 @@ const topicFollowSuggestions = topicConnections.slice(0, 2).map((item: any) => (
 }));
 const sourceFollowSuggestions = sourceRows.slice(0, 2).map(([name, count]) => ({
 	source: name,
-	reason: `${count} pojavuvanja vo aktivni klasteri za ova tema.`,
+	reason: `${count} pojavljivanja u aktivnim klasterima za ovu temu.`,
 }));
 
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site || 'https://presek.live').href.replace(/\/+$/, "");
@@ -208,7 +208,7 @@ function topicIntro() {
 				<div class="topic-empty-inner">
 					<span class="topic-kicker">Tema</span>
 					<h1 class="topic-empty-title">{topic}</h1>
-					<p>Nema dovolno aktivni klasteri za ova tema vo momentov.</p>
+					<p>Nema dovoljno aktivnih klastera za ovu temu u ovom trenutku.</p>
 					<div class="topic-empty-actions">
 						<a href="/" class="topic-empty-link">Pocetna</a>
 						<a href="/archive" class="topic-empty-link topic-empty-link-secondary">Pobaraj vo arhiva</a>
@@ -240,11 +240,11 @@ function topicIntro() {
 								<strong>{uniqueSources.size}</strong>
 							</div>
 							<div>
-								<span class="micro-label">Izvestai</span>
+								<span class="micro-label">Izveštaji</span>
 								<strong>{totalReports}</strong>
 							</div>
 							<div>
-								<span class="micro-label">Vo razvoj</span>
+								<span class="micro-label">U razvoju</span>
 								<strong>{breakingCount}</strong>
 							</div>
 						</div>
@@ -274,7 +274,7 @@ function topicIntro() {
 							<section class="topic-lead">
 								<div class="section-heading-row">
 									<h2 class="section-title">Vodecka prica</h2>
-									<p class="section-note">Klasterot sto najmnogu me nosi temata napred vo momentov.</p>
+									<p class="section-note">Klaster koji najviše nosi temu napred u ovom trenutku.</p>
 								</div>
 								<NewsCard cluster={leadCluster} isLead={true} />
 							</section>

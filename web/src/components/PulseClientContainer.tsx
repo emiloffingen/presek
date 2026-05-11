@@ -186,7 +186,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
             <div className="bg-secondary/10 border border-border p-6 rounded-lg mb-20 flex flex-col md:flex-row gap-6 md:gap-8 items-start md:items-center border-l-4 border-l-nyt-accent shadow-sm">
                 <div className="flex-1 w-full">
                     <div className="flex items-center gap-2 mb-2">
-                         <h3 className="text-[11px] font-black uppercase tracking-widest text-nyt-accent">Klucni Uvidi</h3>
+                         <h3 className="text-[11px] font-black uppercase tracking-widest text-nyt-accent">Kljucni uvidi</h3>
                          <span className="h-px flex-1 bg-nyt-accent/10"></span>
                     </div>
                     <p className="font-serif italic text-lg md:text-xl leading-snug">
@@ -279,7 +279,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                     {/* 2. KEY ACTORS GRID */}
                     <section className="mb-20">
                         <div className="flex items-center justify-between mb-8 border-b border-border pb-4">
-                            <h2 className="section-title-italic !mb-0 text-3xl">Klucni Aktori</h2>
+                            <h2 className="section-title-italic !mb-0 text-3xl">Kljucni akteri</h2>
                             <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                                 <Users size={12} /> vo fokus
                             </div>
@@ -333,7 +333,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                         <p className="rail-kicker">Metodologija</p>
                         <h3 className="rail-title italic font-serif text-lg">Urednicki Algoritam</h3>
                         <p className="rail-text">
-                            Informaciite vo ovoj indeks se generiraat preku avtomatska obrabotka na prirodniot jazik (NLP) na site vkluceni makedonski izvori za izminatite 24 casa.
+                            Informacije u ovom indeksu generišu se putem automatske obrade prirodnog jezika (NLP) na svim uključenim srpskim izvorima za proteklih 24 časa.
                         </p>
                     </section>
 
@@ -417,7 +417,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                                             <span>OBJEKTIVNOST</span>
                                             <Info size={10} className="opacity-40 group-hover:opacity-100" />
                                             <div className="absolute hidden group-hover:block bg-foreground text-background text-[10px] p-2 rounded shadow-xl mt-12 z-50 w-48 font-sans normal-case tracking-normal">
-                                                Fakticko izvestuvanje bez subjektivni komentari.
+                                                Faktičko izveštavanje bez subjektivnih komentara.
                                             </div>
                                         </div>
                                     </th>

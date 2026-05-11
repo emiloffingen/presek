@@ -127,9 +127,9 @@ function buildWhyItMatters(profile: EntityProfile, clusters: NewsCluster[], rela
     return `${profile.name} e vo silen fokus so ${recentCount} aktivni temi vo posledniot period, sto ukazuva na visok javen i mediumski interes.`;
   }
   if (related.length >= 5) {
-    return `${profile.name} se pojavuva vo kontekst na ${related.length} drugi klucni subjekti, gradejci kompleksna mreza na povrzanost vo vestite.`;
+    return `${profile.name} se pojavljuje u kontekstu ${related.length} drugih ključnih subjekata, gradeći kompleksnu mrežu povezanosti u vestima.`;
   }
-  return `Prisustvoto na ${profile.name} vo mediumite se sledi preku analiza na tonot i frekvencijata na spomenuvanje vo realno vreme.`;
+  return `Prisustvo ${profile.name} u medijima se prati putem analize tona i frekvencije pomenja u realnom vremenu.`;
 }
 
 function coMentionedEntities(clusters: NewsCluster[], currentName: string) {
@@ -198,7 +198,7 @@ export default function EntityIsland({
             <span className="entity-type">{profile.type === 'ORG' ? 'Organizacija' : 'Subjekt'}</span>
             <h1 className="entity-name">{profile.name}</h1>
             <p className="entity-summary-copy">
-              Sistemski profil koj ga sledi mediumskoto prisustvo, mrezata na povrzanost i tonot na izvestuvanje za {profile.name}.
+              Sistemske profile koji prati medijsko prisustvo, mreža povezanosti i ton izveštavanja za {profile.name}.
             </p>
           </div>
         </div>
