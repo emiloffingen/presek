@@ -187,7 +187,7 @@ def test_phrase_overlap_helps_short_variants_join_same_cluster():
     recent_articles = [
         {
             "cluster_id": "c1",
-            "title": "Paket mera za Ekonomiju od Vlade",
+            "title": "Vlada donela paket mera za ekonomiju",
             "created_at": datetime.datetime.now(),
         },
         {
@@ -197,7 +197,7 @@ def test_phrase_overlap_helps_short_variants_join_same_cluster():
         },
     ]
     cid = find_or_create_cluster(
-        MagicMock(), "Vlada sa paketom mera za Ekonomiju", recent_articles
+        MagicMock(), "Vlada donela paket mera za ekonomiju", recent_articles
     )
     assert cid == "c1"
 
@@ -240,7 +240,7 @@ def test_topic_bridge_allows_same_story_followup_when_entities_and_title_overlap
     ]
     cid = find_or_create_cluster(
         MagicMock(),
-        "Kočani: Tužilaštvo traži nove dokaze u istrazi za požar",
+        "Tužilaštvo otvorilo istragu za požar u Kočanima",
         recent_articles,
         category="Srbija",
         source="danas",

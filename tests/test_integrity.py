@@ -23,7 +23,7 @@ class TestAstroFrontendIntegrity:
 
     def test_layout_keeps_theme_sync_and_canonical_metadata(self):
         layout = _read("web/src/layouts/Layout.astro")
-        assert '<html lang="sr">' in layout
+        assert '<html lang="sr-Latn">' in layout
         assert (
             "const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('theme') : null;"
             in layout
@@ -170,7 +170,7 @@ class TestAstroFrontendIntegrity:
 
         assert "let initialError: string | null = null;" in for_you_page
         assert (
-            'initialError = "Ne mozeme da im vcitame pocetnite preporaki vo momentov."'
+            'initialError = "Ne možemo da učitamo početne preporuke u ovom trenutku."'
             in for_you_page
         )
         assert (
