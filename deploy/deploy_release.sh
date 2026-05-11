@@ -39,11 +39,33 @@ RUN_TESTS="${RUN_TESTS:-0}"
 BACKUP_BEFORE_MIGRATIONS="${BACKUP_BEFORE_MIGRATIONS:-1}"
 MIN_FREE_DISK_GB="${MIN_FREE_DISK_GB:-2}"
 
+# Environment Validation
+validate_env() {
+  info "Validating environment configuration"
+  local env_file="$SHARED_DIR/.env"
+  [ -f "$env_file" ] || fail "Missing shared env file at $env_file"
+  
+  # Check for essential variables (e.g., DATABASE_URL, REDIS_URL)
+  local required_vars=("DATABASE_URL" "REDIS_URL")
+  for var in "${required_vars[@]}"; do
+    if ! grep -q "^$var=" "$env_file"; then
+      fail "Missing required environment variable in $env_file: $var"
+    fi
+  done
+  ok "Environment configuration valid"
+}
+
+# Logging
+LOG_FILE="$SHARED_DIR/logs/deploy-$(date +%Y%m%d).log"
+exec > >(tee -a "$LOG_FILE") 2>&1
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting deployment: $RELEASE_ID"
+
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; BLUE='\033[0;34m'; RESET='\033[0m'
-ok()   { echo -e "${GREEN}✓${RESET}  $*"; }
-warn() { echo -e "${YELLOW}!${RESET}  $*"; }
-info() { echo -e "${BLUE}>${RESET}  $*"; }
-fail() { echo -e "${RED}x${RESET}  $*"; [ -n "${RELEASE_ID:-}" ] && notify_deploy "Deployment failed for release $RELEASE_ID: $*" "danger"; exit 1; }
+log_msg() { echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
+ok()   { log_msg "${GREEN}✓${RESET}  $*"; }
+warn() { log_msg "${YELLOW}!${RESET}  $*"; }
+info() { log_msg "${BLUE}>${RESET}  $*"; }
+fail() { log_msg "${RED}x${RESET}  $*"; [ -n "${RELEASE_ID:-}" ] && notify_deploy "Deployment failed for release $RELEASE_ID: $*" "danger"; exit 1; }
 
 need_cmd() {
   command -v "$1" >/dev/null 2>&1 || fail "Missing required command: $1"
@@ -550,12 +572,40 @@ restart_and_smoke() {
   sudo systemctl reload "$NGINX_SERVICE" || return 1
 
   cleanup_orphaned_runtime_listeners
+wait_for_services() {
+  info "Waiting for application services to be ready"
+  local max_attempts=10
+  local attempt=1
+  while [ $attempt -le $max_attempts ]; do
+    local all_ready=1
+    for service in "${APP_SERVICES[@]}"; do
+      if ! systemctl is-active --quiet "$service"; then
+        all_ready=0
+        break
+      fi
+    done
 
+    if [ $all_ready -eq 1 ]; then
+      ok "All services are active"
+      return 0
+    fi
+
+    warn "Services not ready (attempt $attempt/$max_attempts), waiting..."
+    sleep 3
+    attempt=$((attempt + 1))
+  done
+
+  fail "Services failed to become active after restart"
+}
+
+# ... (in restart_and_smoke)
   info "Restarting application services"
   sudo systemctl restart "${APP_SERVICES[@]}" || return 1
   sudo systemctl start "$SYSTEMD_TARGET" || return 1
+  wait_for_services || return 1
 
   info "Running smoke checks"
+# ...
   ENABLE_PUBLIC_CHECK="$ENABLE_PUBLIC_CHECK" ENABLE_ADMIN_CHECK="$ENABLE_ADMIN_CHECK" APP_ROOT="$APP_ROOT" bash "$SMOKE_SCRIPT" || return 1
 }
 
@@ -626,6 +676,7 @@ main() {
   assert_git_deployable
   assert_git_pushed
   assert_web_lockfile
+  validate_env
   ensure_layout
   normalize_legacy_runtime_links
   discover_app_services
@@ -653,10 +704,38 @@ main() {
   fi
   [ -n "$current_venv_target" ] || fail "Could not resolve active Python runtime from $VENV_DIR"
   [ -n "$current_web_deps_target" ] || fail "Could not resolve active Astro dependencies from $SHARED_WEB_NODE_MODULES"
+# Flags
+DRY_RUN="${DRY_RUN:-0}"
+if [ "${1:-}" == "--dry-run" ]; then
+  DRY_RUN=1
+  shift
+fi
 
+generate_manifest() {
+  local manifest_path="$RELEASE_DIR/manifest.json"
+  info "Generating release manifest"
+  cat > "$manifest_path" <<EOF
+{
+  "release_id": "$RELEASE_ID",
+  "deployed_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "git_sha": "$(git -C "$SOURCE_ROOT" rev-parse HEAD 2>/dev/null || echo "unknown")",
+  "deployed_by": "$(whoami)"
+}
+EOF
+}
+
+# ...
   # 1. Prepare environment and copy source
   copy_release_tree
+  generate_manifest
+
+  if [ "$DRY_RUN" = "1" ]; then
+    ok "Dry run complete: release tree copied to $RELEASE_DIR and manifest generated. Exiting."
+    exit 0
+  fi
+
   prepare_release_runtime_links
+# ...
   ensure_release_venv
   ensure_playwright_browsers
   ensure_release_web_deps
