@@ -194,6 +194,7 @@ def _briefing_title_penalty(
 
 
 def _load_daily_brief_clusters(limit=5):
+    # Fetch articles in one query
     rows = db.execute(
         "SELECT cluster_id, title, description, summary, source, category, topic, created_at FROM articles "
         "WHERE created_at >= NOW() - INTERVAL '24 hours' ORDER BY created_at DESC LIMIT 180"
@@ -202,16 +203,25 @@ def _load_daily_brief_clusters(limit=5):
     for row in rows:
         clusters.setdefault(row["cluster_id"], []).append(row)
 
+    # Batch fetch all cluster summaries at once (fix N+1 query)
+    cluster_ids = list(clusters.keys())
+    if cluster_ids:
+        summaries_rows = db.execute(
+            "SELECT cluster_id, summary, perspectives FROM cluster_summaries WHERE cluster_id = ANY(%s)",
+            (cluster_ids,)
+        )
+        summaries_map = {r["cluster_id"]: r for r in summaries_rows}
+    else:
+        summaries_map = {}
+
     ranked_clusters = []
     for cluster_id, articles in clusters.items():
         ranked = rank_articles_in_cluster(articles)
         if not ranked:
             continue
         lead = ranked[0]
-        synthesis_row = db.execute_one(
-            "SELECT summary, perspectives FROM cluster_summaries WHERE cluster_id = %s",
-            (cluster_id,),
-        )
+        # Use pre-fetched summary instead of individual query
+        synthesis_row = summaries_map.get(cluster_id)
         normalized_perspectives = normalize_perspectives(
             (synthesis_row or {}).get("perspectives") or []
         )
@@ -578,16 +588,25 @@ def _load_weekly_digest_clusters(limit=32):
     for row in rows:
         clusters.setdefault(row["cluster_id"], []).append(row)
 
+    # Batch fetch all cluster summaries at once (fix N+1 query)
+    cluster_ids = list(clusters.keys())
+    if cluster_ids:
+        summaries_rows = db.execute(
+            "SELECT cluster_id, summary, perspectives FROM cluster_summaries WHERE cluster_id = ANY(%s)",
+            (cluster_ids,)
+        )
+        summaries_map = {r["cluster_id"]: r for r in summaries_rows}
+    else:
+        summaries_map = {}
+
     ranked_clusters = []
     for cluster_id, articles in clusters.items():
         ranked = rank_articles_in_cluster(articles)
         if not ranked:
             continue
         lead = ranked[0]
-        synthesis_row = db.execute_one(
-            "SELECT summary, perspectives FROM cluster_summaries WHERE cluster_id = %s",
-            (cluster_id,),
-        )
+        # Use pre-fetched summary instead of individual query
+        synthesis_row = summaries_map.get(cluster_id)
         normalized_perspectives = normalize_perspectives(
             (synthesis_row or {}).get("perspectives") or []
         )
@@ -954,11 +973,14 @@ def _build_weekly_digest_sections(
     return (static_lead + dynamic_sections)[:4]
 
 
-def _select_profile_weekly_clusters(profile, limit=5):
+def _select_profile_weekly_clusters(profile, limit=5, _cached_clusters=None, _cached_engagement=None):
+    """Select weekly clusters for a profile with optional cached data to avoid N+1 queries."""
     profile = _normalize_synced_profile_for_delivery(profile)
-    engagement_map = _load_weekly_cluster_engagement()
+    # Use cached data if provided, otherwise fetch fresh
+    engagement_map = _cached_engagement if _cached_engagement is not None else _load_weekly_cluster_engagement()
+    clusters_to_score = _cached_clusters if _cached_clusters is not None else _load_weekly_digest_clusters(limit=28)
     ranked = []
-    for cluster in _load_weekly_digest_clusters(limit=28):
+    for cluster in clusters_to_score:
         match_score, reasons, _, _ = _cluster_delivery_match(cluster, profile)
         engagement = (
             engagement_map.get(str(cluster.get("cluster_id") or "").strip()) or {}
@@ -1065,10 +1087,13 @@ def _build_profile_weekly_digest_message(profile, clusters):
     return "\n".join(line for line in lines if line is not None).strip()
 
 
-def _select_profile_brief_clusters(profile, limit=4):
+def _select_profile_brief_clusters(profile, limit=4, _cached_clusters=None):
+    """Select clusters for a profile with optional cached clusters to avoid N+1 queries."""
     profile = _normalize_synced_profile_for_delivery(profile)
     ranked = []
-    for cluster in _load_daily_brief_clusters(limit=18):
+    # Use cached clusters if provided, otherwise fetch fresh
+    clusters_to_score = _cached_clusters if _cached_clusters is not None else _load_daily_brief_clusters(limit=18)
+    for cluster in clusters_to_score:
         match_score, reasons, _, _ = _cluster_delivery_match(cluster, profile)
         total_score = match_score + min(1.4, float(cluster.get("score") or 0) * 0.18)
         ranked.append(
@@ -1801,6 +1826,9 @@ def send_profile_briefings_task():
 
     try:
         rows = _load_active_delivery_rows()
+        # Cache daily brief clusters to avoid N+1 queries (one per subscriber)
+        all_daily_clusters = _load_daily_brief_clusters(limit=18)
+        
         for row in rows:
             if not row.get("morning_briefing"):
                 continue
@@ -1813,7 +1841,8 @@ def send_profile_briefings_task():
             profile = _normalize_synced_profile_for_delivery(
                 row.get("profile_data") or {}
             )
-            clusters = _select_profile_brief_clusters(profile)
+            # Use cached clusters instead of re-fetching for each profile
+            clusters = _select_profile_brief_clusters(profile, _cached_clusters=all_daily_clusters)
             if not clusters:
                 continue
 
@@ -1881,6 +1910,10 @@ def send_profile_weekly_digests_task():
 
     try:
         rows = _load_active_delivery_rows()
+        # Cache weekly digest clusters and engagement to avoid N+1 queries
+        all_weekly_clusters = _load_weekly_digest_clusters(limit=28)
+        engagement_map = _load_weekly_cluster_engagement()
+        
         for row in rows:
             if not row.get("weekly_digest"):
                 continue
@@ -1898,7 +1931,12 @@ def send_profile_weekly_digests_task():
             profile = _normalize_synced_profile_for_delivery(
                 row.get("profile_data") or {}
             )
-            clusters = _select_profile_weekly_clusters(profile)
+            # Use cached data instead of re-fetching for each profile
+            clusters = _select_profile_weekly_clusters(
+                profile, 
+                _cached_clusters=all_weekly_clusters,
+                _cached_engagement=engagement_map
+            )
             if not clusters:
                 continue
 
@@ -1979,6 +2017,14 @@ def send_profile_breaking_alerts_task():
             return
 
         rows = _load_active_delivery_rows()
+        # Cache breaking clusters and performance data to avoid N+1 queries
+        all_breaking_clusters = _load_recent_breaking_clusters()
+        delivery_performance = _load_delivery_kind_performance()
+        target_performance = _load_breaking_target_performance()
+        # Batch load alert material for all breaking clusters
+        cluster_ids = [str(c.get("cluster_id") or "").strip() for c in all_breaking_clusters if c.get("cluster_id")]
+        alert_materials = _batch_load_cluster_alert_materials(cluster_ids) if cluster_ids else {}
+        
         for row in rows:
             if not row.get("breaking_topics") and not row.get("breaking_sources"):
                 continue
@@ -1995,6 +2041,10 @@ def send_profile_breaking_alerts_task():
                 last_breaking_sent_at=row.get("last_breaking_sent_at"),
                 include_topics=bool(row.get("breaking_topics")),
                 include_sources=bool(row.get("breaking_sources")),
+                _cached_clusters=all_breaking_clusters,
+                _cached_materials=alert_materials,
+                _cached_delivery_perf=delivery_performance,
+                _cached_target_perf=target_performance,
             )
             if not candidate:
                 continue
