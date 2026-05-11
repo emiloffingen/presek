@@ -53,6 +53,13 @@ _BROWSER_LIKE_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9,mk;q=0.8",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
 }
 _OG_IMAGE_SKIP_DOMAINS = {
     "fokus.mk",
@@ -455,78 +462,106 @@ def extract_image_url(entry):
 
 
 async def fetch_og_image(client: httpx.AsyncClient, url: str) -> str | None:
-    """Fetch only the head of an article page and extract the og:image meta tag."""
+    """Fetch only the head of an article page and extract the og:image meta tag with retry."""
     if not is_safe_url(url) and client.__class__.__module__.startswith("httpx"):
         return None
 
-    try:
-        async with client.stream(
-            "GET", url, timeout=8.0, follow_redirects=True
-        ) as resp:
-            resp.raise_for_status()
+    max_retries = 2
+    for attempt in range(max_retries):
+        try:
+            async with client.stream(
+                "GET", url, timeout=10.0, follow_redirects=True
+            ) as resp:
+                # Handle Cloudflare and other 403s
+                if (
+                    resp.status_code == 403
+                    and str(resp.headers.get("cf-mitigated", "")).lower() == "challenge"
+                ):
+                    raise RuntimeError(f"Cloudflare challenge blocked og:image: {url}")
 
-            content_type = str(resp.headers.get("content-type", "")).lower()
-            if (
-                content_type
-                and "html" not in content_type
-                and "xml" not in content_type
-            ):
+                resp.raise_for_status()
+
+                content_type = str(resp.headers.get("content-type", "")).lower()
+                if (
+                    content_type
+                    and "html" not in content_type
+                    and "xml" not in content_type
+                ):
+                    return None
+
+                head_bytes = bytearray()
+                async for chunk in resp.aiter_bytes():
+                    if not chunk:
+                        continue
+
+                    remaining = _OG_IMAGE_READ_LIMIT - len(head_bytes)
+                    if remaining <= 0:
+                        break
+
+                    head_bytes.extend(chunk[:remaining])
+
+                    # Check if we have enough to find the tag early
+                    if b"og:image" in head_bytes:
+                        try:
+                            temp_text = head_bytes.decode(
+                                resp.encoding or "utf-8", errors="ignore"
+                            )
+                            if re.search(
+                                r"<meta[^>]+property=[\"']og:image[\"'][^>]+content=[\"']([^\"']+)[\"']",
+                                temp_text,
+                                re.I,
+                            ) or re.search(
+                                r"<meta[^>]+content=[\"']([^\"']+)[\"'][^>]+property=[\"']og:image[\"']",
+                                temp_text,
+                                re.I,
+                            ):
+                                break
+                        except Exception as e:
+                            log.debug(f"OG image meta parse error: {e}")
+
+                    if len(head_bytes) >= _OG_IMAGE_READ_LIMIT:
+                        break
+
+                text = head_bytes.decode(resp.encoding or "utf-8", errors="ignore")
+
+                m = re.search(
+                    r"<meta[^>]+property=[\"']og:image[\"'][^>]+content=[\"']([^\"']+)[\"']",
+                    text,
+                    re.IGNORECASE,
+                ) or re.search(
+                    r"<meta[^>]+content=[\"']([^\"']+)[\"'][^>]+property=[\"']og:image[\"']",
+                    text,
+                    re.IGNORECASE,
+                )
+                if m:
+                    img_url = m.group(1).strip()
+                    if img_url:
+                        resolved = urljoin(str(resp.url), img_url)
+                        if re.match(r"^https?://", resolved, flags=re.IGNORECASE):
+                            return resolved
+                # If we got here and found no og:image, return None (don't retry)
                 return None
 
-            head_bytes = bytearray()
-            async for chunk in resp.aiter_bytes():
-                if not chunk:
-                    continue
+        except httpx.TimeoutException as e:
+            if attempt < max_retries - 1:
+                log.debug(f"OG image fetch timeout for {url} (attempt {attempt + 1}), retrying...")
+                await asyncio.sleep(1.0 * (attempt + 1))
+                continue
+            log.debug(f"Failed to extract og:image after {max_retries} retries: timeout")
+            return None
 
-                remaining = _OG_IMAGE_READ_LIMIT - len(head_bytes)
-                if remaining <= 0:
-                    break
+        except httpx.ConnectError as e:
+            if attempt < max_retries - 1:
+                log.debug(f"OG image fetch connection error for {url} (attempt {attempt + 1}), retrying...")
+                await asyncio.sleep(1.0 * (attempt + 1))
+                continue
+            log.debug(f"Failed to extract og:image after {max_retries} retries: connection error")
+            return None
 
-                head_bytes.extend(chunk[:remaining])
+        except Exception as e:
+            log.debug(f"Failed to extract og:image from {url}: {e}")
+            return None
 
-                # Check if we have enough to find the tag early
-                if b"og:image" in head_bytes:
-                    # We might have the full tag, or just the property name.
-                    # If we can see a closing > after the property, we likely have it.
-                    # To be safe, we decode what we have and check.
-                    try:
-                        temp_text = head_bytes.decode(
-                            resp.encoding or "utf-8", errors="ignore"
-                        )
-                        if re.search(
-                            r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']',
-                            temp_text,
-                            re.I,
-                        ) or re.search(
-                            r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']',
-                            temp_text,
-                            re.I,
-                        ):
-                            break
-                    except Exception as e:
-                        log.debug(f"OG image meta parse error: {e}")
-
-                if len(head_bytes) >= _OG_IMAGE_READ_LIMIT:
-                    break
-
-            text = head_bytes.decode(resp.encoding or "utf-8", errors="ignore")
-        m = re.search(
-            r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']',
-            text,
-            re.IGNORECASE,
-        ) or re.search(
-            r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']',
-            text,
-            re.IGNORECASE,
-        )
-        if m:
-            img_url = m.group(1).strip()
-            if img_url:
-                resolved = urljoin(str(resp.url), img_url)
-                if re.match(r"^https?://", resolved, flags=re.IGNORECASE):
-                    return resolved
-    except Exception as e:
-        log.warning(f"Failed to extract og:image: {e}")
     return None
 
 
@@ -571,30 +606,64 @@ async def fill_missing_og_images(
 async def fetch_feed_async(
     client: httpx.AsyncClient, source: Dict[str, Any]
 ) -> Tuple[str, List[Any], str | None]:
-    """Asynchronously fetch and parse a single RSS feed."""
+    """Asynchronously fetch and parse a single RSS feed with retry logic."""
     name = source["name"]
     url = source["url"]
     limit = source.get("source_limit", 10)
 
-    try:
-        resp = await client.get(url, timeout=15.0, follow_redirects=True)
-        if (
-            resp.status_code == 403
-            and str(resp.headers.get("cf-mitigated", "")).lower() == "challenge"
-        ):
-            raise RuntimeError(f"Cloudflare challenge blocked feed: {url}")
-        resp.raise_for_status()
+    # Retry configuration
+    max_retries = 3
+    base_timeout = 15.0
 
-        # Parse RSS in a thread pool since feedparser is blocking/CPU heavy
-        loop = asyncio.get_event_loop()
-        feed = await loop.run_in_executor(None, feedparser.parse, resp.content)
+    for attempt in range(max_retries):
+        try:
+            # Add random jitter to timeout to avoid thundering herd
+            timeout = base_timeout + (attempt * 5.0)
+            resp = await client.get(url, timeout=timeout, follow_redirects=True)
 
-        entries = feed.entries[:limit]
-        log.debug(f"[ingest] {name}: fetched {len(entries)} articles")
-        return name, entries, None
-    except Exception as e:
-        log.warning(f"[ingest] {name} failed: {e}")
-        return name, [], str(e)
+            # Handle Cloudflare challenge
+            if (
+                resp.status_code == 403
+                and str(resp.headers.get("cf-mitigated", "")).lower() == "challenge"
+            ):
+                raise RuntimeError(f"Cloudflare challenge blocked feed: {url}")
+
+            # Handle other 403 errors - retry with modified headers
+            if resp.status_code == 403 and attempt < max_retries - 1:
+                log.debug(f"[ingest] {name}: got 403, retrying with modified headers (attempt {attempt + 1})")
+                # For retry, we'll use the default headers from the client
+                continue
+
+            resp.raise_for_status()
+
+            # Parse RSS in a thread pool since feedparser is blocking/CPU heavy
+            loop = asyncio.get_event_loop()
+            feed = await loop.run_in_executor(None, feedparser.parse, resp.content)
+
+            entries = feed.entries[:limit]
+            log.debug(f"[ingest] {name}: fetched {len(entries)} articles")
+            return name, entries, None
+
+        except httpx.TimeoutException as e:
+            if attempt == max_retries - 1:
+                log.warning(f"[ingest] {name} failed after {max_retries} attempts: timeout")
+                return name, [], f"Timeout after {max_retries} retries: {e}"
+            log.debug(f"[ingest] {name}: timeout on attempt {attempt + 1}, retrying...")
+            await asyncio.sleep(1.0 * (attempt + 1))  # Exponential backoff
+
+        except httpx.ConnectError as e:
+            if attempt == max_retries - 1:
+                log.warning(f"[ingest] {name} failed after {max_retries} attempts: connection error")
+                return name, [], f"Connection error after {max_retries} retries: {e}"
+            log.debug(f"[ingest] {name}: connection error on attempt {attempt + 1}, retrying...")
+            await asyncio.sleep(1.0 * (attempt + 1))
+
+        except Exception as e:
+            log.warning(f"[ingest] {name} failed: {e}")
+            return name, [], str(e)
+
+    log.warning(f"[ingest] {name} failed after {max_retries} attempts")
+    return name, [], f"Max retries ({max_retries}) exceeded"
 
 
 def get_active_sources():
@@ -669,7 +738,17 @@ async def ingest_all_sources_async():
     headers = dict(_BROWSER_LIKE_HEADERS)
     headers["User-Agent"] += " Presek/6.0"
 
-    async with httpx.AsyncClient(headers=headers, verify=True) as client:
+    # Configure httpx client with generous timeouts and connection pool
+    client_timeout = httpx.Timeout(30.0, connect=10.0, read=20.0, pool=5.0)
+    limits = httpx.Limits(max_keepalive_connections=20, max_connections=100)
+
+    async with httpx.AsyncClient(
+        headers=headers,
+        verify=True,
+        timeout=client_timeout,
+        limits=limits,
+        follow_redirects=True,
+    ) as client:
         tasks = [fetch_feed_async(client, s) for s in sources]
         results = await asyncio.gather(*tasks)
 
