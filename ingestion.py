@@ -34,6 +34,21 @@ from prometheus_client import Counter
 
 log = logging.getLogger("presek")
 
+# Feeds known to have persistent fetch issues
+_PROBLEMATIC_FEEDS = {
+    "Denar": "Cloudflare challenge",
+    "Kapital": "403 Forbidden",
+    "Sportmanija": "403 Forbidden",
+    "Vreme": "Connection error",
+    "Vecer": "Connection error",
+    "Espreso": "Connection error",
+    "Cooltura": "Connection error",
+    "Kultura.mk": "Connection error",
+    "Off.net.mk": "Connection error",
+    "TV21": "Connection error",
+    "Brif": "Connection error",
+}
+
 # --- Prometheus Metrics ---
 INGESTION_TOTAL = Counter(
     "presek_ingestion_total", "Total articles fetched by source", ["source"]
@@ -622,17 +637,38 @@ async def fetch_feed_async(
             resp = await client.get(url, timeout=timeout, follow_redirects=True)
 
             # Handle Cloudflare challenge
-            if (
+            is_cf_challenge = (
                 resp.status_code == 403
                 and str(resp.headers.get("cf-mitigated", "")).lower() == "challenge"
-            ):
+            )
+
+            # For known problematic feeds, log and continue
+            if is_cf_challenge and name in _PROBLEMATIC_FEEDS:
+                reason = _PROBLEMATIC_FEEDS.get(name, "Unknown")
+                log.debug(f"[ingest] {name}: Known problematic feed ({reason}), skipping retries")
+                return name, [], f"Blocked ({reason}): {url}"
+
+            # Handle Cloudflare challenge for other feeds
+            if is_cf_challenge:
                 raise RuntimeError(f"Cloudflare challenge blocked feed: {url}")
 
-            # Handle other 403 errors - retry with modified headers
-            if resp.status_code == 403 and attempt < max_retries - 1:
-                log.debug(f"[ingest] {name}: got 403, retrying with modified headers (attempt {attempt + 1})")
-                # For retry, we'll use the default headers from the client
-                continue
+            # Handle other 403 errors - retry
+            if resp.status_code == 403:
+                if attempt < max_retries - 1:
+                    log.debug(f"[ingest] {name}: got 403, trying cloudscraper (attempt {attempt + 1})")
+                    loop = asyncio.get_event_loop()
+                    try:
+                        content = await loop.run_in_executor(
+                            None, _fetch_with_cloudscraper, url, timeout
+                        )
+                        feed = feedparser.parse(content)
+                        entries = feed.entries[:limit]
+                        log.debug(f"[ingest] {name}: fetched {len(entries)} articles via cloudscraper")
+                        return name, entries, None
+                    except Exception as e:
+                        log.debug(f"[ingest] {name}: cloudscraper failed: {e}, retrying with httpx...")
+                        await asyncio.sleep(1.0 * (attempt + 1))
+                        continue
 
             resp.raise_for_status()
 
