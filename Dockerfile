@@ -32,17 +32,14 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
 RUN groupadd -r presek && useradd -r -g presek presek
 
 # Copy installed python dependencies
-COPY --from=python-builder /app/.venv /app/.venv
+COPY --chown=presek:presek --from=python-builder /app/.venv /app/.venv
 ENV PATH=/app/.venv/bin:$PATH
 
 # Copy application code
-COPY . .
+COPY --chown=presek:presek . .
 
 # Copy built frontend assets
-COPY --from=node-builder /app/web/dist ./static/dist
-
-# Set ownership for all files
-RUN chown -R presek:presek /app
+COPY --chown=presek:presek --from=node-builder /app/web/dist ./static/dist
 
 # Switch to non-root user
 USER presek
