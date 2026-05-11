@@ -195,9 +195,17 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 		</script>
         
         <!-- AdsKeeper In-Site Notification Widget -->
-        <div data-type="_mgwidget" data-widget-id="2007018"></div>
+        <div id="ads-notification-widget" data-type="_mgwidget" data-widget-id="2007018"></div>
         <script is:inline data-astro-rerun>
-            (function(w,q){w[q]=w[q]||[];w[q].push(["_mgc.load"])})(window,"_mgq");
+            (function(w,q){
+                const el = document.getElementById('ads-notification-widget');
+                if (el) {
+                    const isDark = document.documentElement.classList.contains('dark');
+                    el.setAttribute('data-color-theme', isDark ? 'dark' : 'light');
+                }
+                w[q]=w[q]||[];
+                w[q].push(["_mgc.load"])
+            })(window,"_mgq");
         </script>
 		<script>
 			// Global Headline Reveal Animation

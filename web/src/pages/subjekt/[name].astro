@@ -3,6 +3,7 @@ import Layout from '../../layouts/Layout.astro';
 import NYTHeader from '../../components/NYTHeader.astro';
 import NewsCard from '../../components/NewsCard.astro';
 import EntityIsland from '../../components/EntityIsland';
+import AdsKeeperWidget from '../../components/AdsKeeperWidget.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import Footer from '../../components/Footer.astro';
 import { apiBaseUrl } from '../../lib/apiBase';
@@ -65,6 +66,8 @@ const nameIsCyrillic = isMostlyCyrillic(decodedName);
                         <EntityIsland client:visible name={decodedName} initialData={entityData} />
                     </div>
 
+                    <AdsKeeperWidget placement="in-article" class="mt-12" />
+
                     <section class="mt-16">
                         <h2 class="section-title-italic mb-8">Поврзани настани</h2>
                         
@@ -102,6 +105,8 @@ const nameIsCyrillic = isMostlyCyrillic(decodedName);
                             Овој профил е автоматски генериран преку анализа на медиумскиот интензитет. Ги прикажуваме само настаните каде {decodedName} е клучен актер или значаен дел од контекстот.
                         </p>
                     </section>
+                    
+                    <AdsKeeperWidget placement="sidebar" class="mt-8" />
                 </aside>
             </div>
         )}

@@ -6,6 +6,7 @@ import BriefingHeader from '../components/briefing/BriefingHeader.astro';
 import BriefingContent from '../components/briefing/BriefingContent.astro';
 import BriefingSidebar from '../components/briefing/BriefingSidebar.astro';
 import BriefingDigest from '../components/briefing/BriefingDigest.astro';
+import AdsKeeperWidget from '../components/AdsKeeperWidget.astro';
 import { apiBaseUrl } from '../lib/apiBase';
 import { formatBriefing } from '../utils/briefingFormatter';
 import { Newspaper } from 'lucide-react';
@@ -79,6 +80,8 @@ const displayDate = briefingData?.date
                         <div class="editorial-divider mb-12"></div>
 
                         <BriefingContent formattedBriefing={formattedBriefing} />
+
+                        <AdsKeeperWidget placement="in-article" class="mt-12" />
 
                         {homeData && (
                             <div class="mt-32 pt-16 border-t-4 border-foreground">
