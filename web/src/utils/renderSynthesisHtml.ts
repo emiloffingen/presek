@@ -10,10 +10,10 @@ import { sanitizeHtml } from '../lib/sanitize';
  * Render synthesis text with markdown formatting and citation handling.
  * 
  * Features:
- * - Strips AI placeholders like [ПРЕТХОДЕН КОНТЕКСТ]
+ * - Strips AI placeholders like [PRETHODEN kontekst]
  * - Converts **text** to <strong>text</strong>
  * - Converts *text* to <em>text</em>
- * - Converts (Извор: Name) or (Name) to <span class="citation-badge">Name</span>
+ * - Converts (izvor: Name) or (Name) to <span class="citation-badge">Name</span>
  * - Handles footnotes if hasCitationSources is true
  * - Removes [1], [2] etc. citation markers if !hasCitationSources
  * 
@@ -27,7 +27,7 @@ export function renderSynthesisHtml(text: string, hasCitationSources: boolean = 
 	if (!clean) return '';
 
 	// 1. Strip residual AI placeholders
-	clean = clean.replace(/\[ПРЕТХОДЕН КОНТЕКСТ\]/gi, '');
+	clean = clean.replace(/\[PRETHODEN kontekst\]/gi, '');
 
 	// 2. Handle Markdown Bold: **text** -> <strong>text</strong>
 	clean = clean.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
@@ -35,9 +35,9 @@ export function renderSynthesisHtml(text: string, hasCitationSources: boolean = 
 	// 3. Handle Markdown Italics: *text* -> <em>text</em>
 	clean = clean.replace(/\*(.*?)\*/g, '<em>$1</em>');
 
-	// 4. Handle Parenthetical Citations: (Извор: Име) or (Име) -> <span class="citation-badge">Име</span>
+	// 4. Handle Parenthetical Citations: (izvor: Ime) or (Ime) -> <span class="citation-badge">Ime</span>
 	// We target common news source patterns (capitalised, 1-3 words)
-	clean = clean.replace(/\((?:Извор:\s*)?([A-ZА-Ш][a-zа-ш0-9\s\.]{2,20})\)/g, (match: string, name: string) => {
+	clean = clean.replace(/\((?:izvor:\s*)?([A-ZA-S][a-za-s0-9\s\.]{2,20})\)/g, (match: string, name: string) => {
 		return `<span class="citation-badge">${name.trim()}</span>`;
 	});
 

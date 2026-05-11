@@ -8,7 +8,7 @@ log = logging.getLogger("presek")
 
 _CLEAN_ARTIFACTS = [
     re.compile(r"Read\s+More\s*[»\>\-]*\s*$", re.I),
-    re.compile(r"Прочитај\s+повеќе\s*$", re.I),
+    re.compile(r"Procitaj\s+povece\s*$", re.I),
     re.compile(r"Continue\s+reading\s*$", re.I),
     re.compile(r"\[\s*&#\d+;\s*\]"),
     re.compile(r"\[\s*\.\.\.\s*\]"),
@@ -35,8 +35,8 @@ def deShout(text: str) -> str:
         return ""
     s = str(text)
     # If text doesn't have many lowercase letters, it's probably shouting
-    lowerCount = len(re.findall(r"[a-zа-ш]", s))
-    totalAlpha = len(re.findall(r"[a-zA-Zа-шА-Ш]", s))
+    lowerCount = len(re.findall(r"[a-za-s]", s))
+    totalAlpha = len(re.findall(r"[a-zA-Za-sA-S]", s))
 
     if totalAlpha > 5 and lowerCount < totalAlpha * 0.2:
         return s.lower().capitalize()
@@ -94,7 +94,7 @@ def _normalize_articles_for_local_use(articles):
             {
                 "title": str(article.get("title") or "").strip(),
                 "description": str(article.get("description") or "").strip(),
-                "source": str(article.get("source") or "Извор").strip(),
+                "source": str(article.get("source") or "izvor").strip(),
                 "link": article.get("link"),
                 "created_at": article.get("created_at"),
                 "category": article.get("category"),

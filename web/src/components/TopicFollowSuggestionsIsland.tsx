@@ -38,7 +38,7 @@ export default function TopicFollowSuggestionsIsland({
     const topicItems = [
       {
         topic: String(currentTopic || '').trim(),
-        reason: 'Ова е темата што веќе ја читате во длабочина.',
+        reason: 'ova e temata sto vece me citate vo dlabocina.',
       },
       ...relatedTopics,
       ...base.topics.map((item) => ({ topic: item.value, reason: item.reason })),
@@ -81,10 +81,10 @@ export default function TopicFollowSuggestionsIsland({
     <section className="topic-follow-suggestions">
       <div className="topic-follow-suggestions-head">
         <p className="nyt-section-label flex items-center gap-1 text-muted-foreground">
-          <Sparkles size={12} /> Следете понатаму
+          <Sparkles size={12} /> Sledete dalje
         </p>
         <p className="topic-follow-suggestions-copy">
-          Зачувајте ја темата или водечките извори за следниот преглед да биде попрецизен.
+          Zacuvajte me temata ili vodeckite izvori za sledniot pregled da bide poprecizen.
         </p>
       </div>
 
@@ -92,14 +92,14 @@ export default function TopicFollowSuggestionsIsland({
         {suggestions.topics.map((item) => (
           <div key={`topic:${item.topic}`} className="topic-follow-suggestion-card">
             <div>
-              <p className="topic-follow-suggestion-kicker">Предлог тема</p>
+              <p className="topic-follow-suggestion-kicker">Predlog tema</p>
               <h4>{item.topic}</h4>
               <p className="topic-follow-suggestion-reason">{item.reason}</p>
             </div>
             <PreferenceToggle
               kind="topic"
               value={item.topic}
-              label={`тема: ${item.topic}`}
+              label={`tema: ${item.topic}`}
               analyticsSurface="topic"
             />
           </div>
@@ -108,14 +108,14 @@ export default function TopicFollowSuggestionsIsland({
         {suggestions.sources.map((item) => (
           <div key={`source:${item.source}`} className="topic-follow-suggestion-card">
             <div>
-              <p className="topic-follow-suggestion-kicker">Предлог извор</p>
+              <p className="topic-follow-suggestion-kicker">Predlog izvor</p>
               <h4>{item.source}</h4>
               <p className="topic-follow-suggestion-reason">{item.reason}</p>
             </div>
             <PreferenceToggle
               kind="source"
               value={item.source}
-              label={`извор: ${item.source}`}
+              label={`izvor: ${item.source}`}
               analyticsSurface="topic"
             />
           </div>

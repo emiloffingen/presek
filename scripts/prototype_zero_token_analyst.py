@@ -13,8 +13,8 @@ def extract_local_facts(texts):
     # Patterns for numbers, percentages, dates
     patterns = [
         r"\d+(?:\.\d+)?%",  # Percentages
-        r"\d+(?:\.\d+)?\s*(?:милиони|милијарди|евра|денари|USD|EUR)",  # Money
-        r"(?:во|на)\s+\d{1,2}\s+(?:јануари|февруари|март|април|мај|јуни|јули|август|септември|октомври|ноември|декември)",  # Dates
+        r"\d+(?:\.\d+)?\s*(?:milioni|milijardi|evra|denari|USD|EUR)",  # Money
+        r"(?:vo|na)\s+\d{1,2}\s+(?:januar|februar|mart|april|maj|jun|jul|avgust|septembar|oktobar|novembar|decembar)",  # Dates
     ]
 
     for text in texts:
@@ -33,7 +33,7 @@ def extract_local_perspectives(texts):
     """Zero-token quote/perspective extraction."""
     perspectives = []
     # Journalistic attribution verbs
-    verbs = ["изјави", "рече", "додаде", "посочи", "истакна", "нагласи", "вели"]
+    verbs = ["izjavi", "rece", "dodade", "posoci", "istakna", "naglasi", "veli"]
 
     for text in texts:
         if not text:
@@ -88,7 +88,7 @@ async def run_analyst_prototype():
     print("\n🔍 [MODE: CONTEXT]")
     # We reuse our semantic history for context
     # (Simplified for prototype)
-    print("  • Системот користи pgvector за поврзување со минати настани.")
+    print("  • Sistemot koristi pgvector za povrzuvanje so minati nastani.")
 
 
 if __name__ == "__main__":

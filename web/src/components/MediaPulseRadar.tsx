@@ -86,9 +86,9 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
             <line x1="100" y1="100" x2={cx + radius * Math.sin(240 * Math.PI / 180)} y2={cy - radius * Math.cos(240 * Math.PI / 180)} stroke="currentColor" strokeWidth="1.5" className="text-border" />
 
             {/* Labels */}
-            <text x="100" y={cy - radius - 15} textAnchor="middle" className="text-[11px] font-black fill-muted-foreground uppercase tracking-[0.2em]">Објективност</text>
-            <text x={cx + radius * Math.sin(120 * Math.PI / 180) + 18} y={cy - radius * Math.cos(120 * Math.PI / 180) + 18} textAnchor="middle" className="text-[11px] font-black fill-muted-foreground uppercase tracking-[0.2em]">Сензационализам</text>
-            <text x={cx + radius * Math.sin(240 * Math.PI / 180) - 18} y={cy - radius * Math.cos(240 * Math.PI / 180) + 18} textAnchor="middle" className="text-[11px] font-black fill-muted-foreground uppercase tracking-[0.2em]">Емоции</text>
+            <text x="100" y={cy - radius - 15} textAnchor="middle" className="text-[11px] font-black fill-muted-foreground uppercase tracking-[0.2em]">Objektivnost</text>
+            <text x={cx + radius * Math.sin(120 * Math.PI / 180) + 18} y={cy - radius * Math.cos(120 * Math.PI / 180) + 18} textAnchor="middle" className="text-[11px] font-black fill-muted-foreground uppercase tracking-[0.2em]">Senzacionalizam</text>
+            <text x={cx + radius * Math.sin(240 * Math.PI / 180) - 18} y={cy - radius * Math.cos(240 * Math.PI / 180) + 18} textAnchor="middle" className="text-[11px] font-black fill-muted-foreground uppercase tracking-[0.2em]">Emocii</text>
 
             {/* Data shape */}
             <polygon 
@@ -111,15 +111,15 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
         {/* Text Metrics */}
         <div className="flex-1 w-full space-y-8">
           <div className="text-center md:text-left">
-            <span className="inline-block bg-nyt-accent/10 px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest text-nyt-accent mb-3">Медиумски Пулс</span>
+            <span className="inline-block bg-nyt-accent/10 px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest text-nyt-accent mb-3">Mediumski Puls</span>
             <p className="text-3xl md:text-4xl font-serif font-black leading-tight text-foreground">
-              Тон: <span className={getSentimentColor(sentiment.score)}>{sentiment.tone}</span>
+              Ton: <span className={getSentimentColor(sentiment.score)}>{sentiment.tone}</span>
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 md:gap-10 pt-8 border-t border-border">
             <div className="space-y-3">
-              <span className="text-[11px] font-black uppercase text-muted-foreground block tracking-[0.15em]">Објективност</span>
+              <span className="text-[11px] font-black uppercase text-muted-foreground block tracking-[0.15em]">Objektivnost</span>
               <div className="flex items-end gap-3">
                 <span className="text-3xl md:text-4xl font-black tabular-nums tracking-tighter">{objectivity.toFixed(0)}%</span>
                 <div className="h-2 flex-1 mb-2.5 bg-border rounded-full overflow-hidden">
@@ -128,7 +128,7 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
               </div>
             </div>
             <div className="space-y-3">
-              <span className="text-[11px] font-black uppercase text-muted-foreground block tracking-[0.15em]">Сензационализам</span>
+              <span className="text-[11px] font-black uppercase text-muted-foreground block tracking-[0.15em]">Senzacionalizam</span>
               <div className="flex items-end gap-3">
                 <span className="text-3xl md:text-4xl font-black tabular-nums tracking-tighter">{sensationalism.toFixed(0)}%</span>
                 <div className="h-2 flex-1 mb-2.5 bg-border rounded-full overflow-hidden">
@@ -137,7 +137,7 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
               </div>
             </div>
             <div className="space-y-3">
-              <span className="text-[11px] font-black uppercase text-muted-foreground block tracking-[0.15em]">Емоционалност</span>
+              <span className="text-[11px] font-black uppercase text-muted-foreground block tracking-[0.15em]">Emocionalnost</span>
               <div className="flex items-end gap-3">
                 <span className="text-3xl md:text-4xl font-black tabular-nums tracking-tighter">{emotionalCharge.toFixed(0)}%</span>
                 <div className="h-2 flex-1 mb-2.5 bg-border rounded-full overflow-hidden">
@@ -148,7 +148,7 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
           </div>
 
           <p className="text-[10px] md:text-[11px] text-zinc-500 dark:text-zinc-400 font-medium leading-relaxed italic border-l-2 border-zinc-200 dark:border-zinc-800 pl-4 py-1">
-            * Оваа анализа е генерирана автоматски преку споредба на јазичните форми и структурата на известување кај сите вклучени медиуми.
+            * ova analiza e generirana avtomatski preku sporedba na jazicnite formi i strukturata na izvestuvanje kaj site vkluceni mediumi.
           </p>
         </div>
       </div>

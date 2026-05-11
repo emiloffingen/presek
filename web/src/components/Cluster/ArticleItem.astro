@@ -17,7 +17,7 @@ const { article: a } = Astro.props;
 			<span class={`tone-badge tone-${a.relationship.tone}`}>{a.relationship.label}</span>
 			
             {a.quality.isObjective && (
-                <span class="quality-badge badge-obj" title="Висок степен на фактичко известување">
+                <span class="quality-badge badge-obj" title="Visok stepen na fakticko izvestuvanje">
                     <ShieldCheck size={10} />
                 </span>
             )}
@@ -33,7 +33,7 @@ const { article: a } = Astro.props;
 	<p class="row-snippet" set:html={sanitizeHtml(a.description)}></p>
 	<div class="row-footer">
 		<a href={a.link} target="_blank" rel="noopener noreferrer" class="read-original">
-			Оригинална објава <Link2 size={12} />
+			Originalna objava <Link2 size={12} />
 		</a>
 	</div>
 </div>

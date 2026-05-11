@@ -125,7 +125,7 @@ def score_cluster_for_homepage(arts):
     reg = get_source_registry()
     category_count = len(
         {
-            reg.get(str(article.get("source") or ""), {}).get("category", "Локални")
+            reg.get(str(article.get("source") or ""), {}).get("category", "Lokalni")
             for article in ranked
             if article.get("source")
         }
@@ -240,7 +240,7 @@ def build_cluster_source_signals(arts):
         source = str(article.get("source") or "")
         title = str(article.get("title") or "")
         effective_weight = get_source_effective_weight(source)
-        category = SOURCE_CATEGORIES.get(source, "Локални")
+        category = SOURCE_CATEGORIES.get(source, "Lokalni")
         trust_label = get_source_trust_label(source)
         article_dt = _coerce_datetime(article.get("created_at"))
         overlap_with_lead = (
@@ -250,26 +250,26 @@ def build_cluster_source_signals(arts):
         corroborated_by = corroboration_scores[index]
         if index == 0 and corroborated_by >= 2:
             role_label, role_note, role_tone = (
-                "Примарен извор",
-                "Овој извор ја носи главната линија што ја потврдуваат и повеќе други редакции.",
+                "Primaren izvor",
+                "Ovoj izvor me nosi glavnata linija sto me potvrduvaat i povece drugi redakcii.",
                 "confirm",
             )
         elif index == 0 and effective_weight >= 1.6:
             role_label, role_note, role_tone = (
-                "Водечки доверлив извор",
-                "Овој извор стои највисоко по доверба и ја дава најцелосната водечка рамка.",
+                "Vodecki doverliv izvor",
+                "Ovoj izvor stoi najvisoko po doverba i me dava najcelosnata vodecka ramka.",
                 "lead",
             )
         elif is_earliest and effective_weight >= 1.3:
             role_label, role_note, role_tone = (
-                "Прв извештај",
-                "Овој извор бил меѓу првите што го објавиле развојот.",
+                "Prv izvestaj",
+                "Ovoj izvor bil medju prvite sto ga objavile razvojot.",
                 "lead",
             )
         elif overlap_with_lead < 0.22:
             role_label, role_note, role_tone = (
-                "Различен агол",
-                "Овој извор ја отвора приказната од друг аспект, а не само ја повторува водечката линија.",
+                "Razlicen ugao",
+                "Ovoj izvor me otvora prikaznata od drug aspekt, a ne samo me povtoruva vodeckata linija.",
                 "contrast",
             )
         elif (
@@ -278,14 +278,14 @@ def build_cluster_source_signals(arts):
             and article_dt > lead_dt + datetime.timedelta(minutes=90)
         ):
             role_label, role_note, role_tone = (
-                "Следење / реакција",
-                "Овој извор доаѓа подоцна и повеќе носи реакција, последица или follow-up.",
+                "Sledenje / reakcija",
+                "Ovoj izvor doadja podocna i povece nosi reakcija, posledica ili follow-up.",
                 "context",
             )
         else:
             role_label, role_note, role_tone = (
-                "Дополнува контекст",
-                "Овој извор ја потврдува главната приказна, но додава и свој контекст или детали.",
+                "Dopolnuva kontekst",
+                "Ovoj izvor me potvrduva glavnata prica, no dodava i svoj kontekst ili detali.",
                 "confirm" if overlap_with_lead >= 0.4 else "context",
             )
         signals.append(
@@ -306,24 +306,24 @@ def annotate_cluster_articles(arts, prefer_recent=False):
     ranked = rank_articles_in_cluster(arts, prefer_recent=prefer_recent)
     signals = build_cluster_source_signals(ranked)
     TIER_MAP = {
-        "Агенциски": "M",
-        "Јавен Сервис": "M",
-        "Главни": "M",
-        "Независни": "I",
-        "Истражувачки": "I",
-        "Регионални": "R",
-        "Алтернативни": "R",
-        "Локални": "R",
+        "Agenciski": "M",
+        "Javen Servis": "M",
+        "glavni": "M",
+        "Nezavisni": "I",
+        "Istrazuvacki": "I",
+        "Regionalni": "R",
+        "Alternativni": "R",
+        "Lokalni": "R",
     }
     tiers_present = {
-        TIER_MAP.get(SOURCE_CATEGORIES.get(art.get("source"), "Локални"), "R")
+        TIER_MAP.get(SOURCE_CATEGORIES.get(art.get("source"), "Lokalni"), "R")
         for art in ranked
     }
     balance_score = len(tiers_present)
     balance_label = (
-        "Широк Консензус"
+        "sirok Konsenzus"
         if balance_score >= 3
-        else ("Разновидни Извори" if balance_score == 2 else None)
+        else ("Raznovidni izvori" if balance_score == 2 else None)
     )
     annotated = []
     lead_article = ranked[0] if ranked else None
@@ -334,16 +334,16 @@ def annotate_cluster_articles(arts, prefer_recent=False):
         if idx == 0:
             enriched["relationship_to_lead"] = {
                 "tone": "lead",
-                "label": "ОСНОВНА ОБЈАВА",
+                "label": "OSNOVNA OBJAVA",
             }
         else:
             overlap = _cluster_title_overlap(
                 lead_article.get("title", ""), article.get("title", "")
             )
             label = (
-                "ИСТА ПРИКАЗНА"
+                "ISTA prica"
                 if overlap >= 0.45
-                else ("ПОВРЗАНА ПРИКАЗНА" if overlap >= 0.20 else "ИСТ КОНТЕКСТ")
+                else ("POVRZANA prica" if overlap >= 0.20 else "IST kontekst")
             )
             enriched["relationship_to_lead"] = {"tone": "neutral", "label": label}
         annotated.append(enriched)

@@ -50,7 +50,7 @@ export default function ThemeIsland({ fixed = false }: { fixed?: boolean }) {
     <button 
       onClick={toggleTheme}
       className={`${baseClasses} ${fixed ? fixedClasses : inlineClasses}`}
-      aria-label="Промени тема"
+      aria-label="Promeni tema"
     >
       <div className={`relative transition-transform duration-500 ${theme === 'dark' ? 'rotate-[360deg]' : 'rotate-0'}`}>
         {theme === 'light' ? (

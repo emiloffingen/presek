@@ -1,5 +1,5 @@
 export const genericAskError =
-  'Во моментов не можам сигурно да одговорам на ова прашање. Обидете се повторно за кратко.';
+  'Vo momentov ne mozam sigurno da odgovoram na ova prasanje. Obidete se povtorno za kratko.';
 
 export function normalizeAskErrorMessage(message, status) {
   const clean = String(message || '').trim();

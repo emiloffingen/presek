@@ -122,11 +122,11 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
       <section className={`for-you-module ${semanticLoading ? 'opacity-70' : ''}`} aria-labelledby="for-you-title">
         <div className="for-you-head">
           <div>
-            <p className="for-you-kicker"><Sparkles size={14} /> За Вас</p>
-            <h2 id="for-you-title">Персонализиран избор</h2>
+            <p className="for-you-kicker"><Sparkles size={14} /> Za Vas</p>
+            <h2 id="for-you-title">Personaliziran izbor</h2>
           </div>
           <p className="for-you-note">
-            Избор според темите и изворите што веќе ги следите.
+            Izbor spored temite i izvorite sto vece im sledite.
           </p>
         </div>
 
@@ -139,20 +139,20 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
             const isSemantic = Boolean(item.similarity);
 
             return (
-              <a key={cluster.cluster_id} href={`/cluster/${cluster.cluster_id}`} className="for-you-card" aria-label={`Отвори кластер: ${title}`}>
+              <a key={cluster.cluster_id} href={`/cluster/${cluster.cluster_id}`} className="for-you-card" aria-label={`Otvori klaster: ${title}`}>
                 <p className={`for-you-card-kicker ${isSemantic ? 'text-nyt-accent' : ''}`}>
                   {isSemantic ? <BrainCircuit size={12} /> : <Compass size={12} />}
-                  <span>{isSemantic ? 'Семантичка препорака' : (item.reason || 'Сродна тема')}</span>
+                  <span>{isSemantic ? 'Semanticka preporaka' : (item.reason || 'Srodna tema')}</span>
                 </p>
                 <h3 dangerouslySetInnerHTML={{ __html: sanitizeHtml(highlightScores(title)) }}></h3>
                 {summary && <p className="for-you-card-copy">{summary}</p>}
                 <div className="for-you-card-footer">
                   <div className="for-you-card-meta">
-                    <span>{article.source || 'Извор'}</span>
+                    <span>{article.source || 'izvor'}</span>
                     <span>·</span>
-                    <span>{cluster.sources_count ?? cluster.articles?.length ?? 0} { (cluster.sources_count ?? cluster.articles?.length ?? 0) === 1 ? 'извор' : 'извори' }</span>
+                    <span>{cluster.sources_count ?? cluster.articles?.length ?? 0} { (cluster.sources_count ?? cluster.articles?.length ?? 0) === 1 ? 'izvor' : 'izvori' }</span>
                   </div>
-                  <span className="for-you-card-cta">Отвори <ArrowUpRight size={12} /></span>
+                  <span className="for-you-card-cta">Otvori <ArrowUpRight size={12} /></span>
                 </div>
               </a>
             );
@@ -169,11 +169,11 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
     <section className="for-you-module" aria-labelledby="discover-title">
       <div className="for-you-head">
         <div>
-          <p className="for-you-kicker"><Compass size={14} /> Откријте</p>
-          <h2 id="discover-title">Најново за вас</h2>
+          <p className="for-you-kicker"><Compass size={14} /> Otkrijte</p>
+          <h2 id="discover-title">Najnovo za vas</h2>
         </div>
         <p className="for-you-note">
-          Почетен избор додека не поставите што сакате да следите.
+          Poceten izbor dodeka ne postavite sto sakate da sledite.
         </p>
       </div>
       
@@ -184,20 +184,20 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
             const summary = getSummary(cluster);
             const title = getTitle(cluster);
             return (
-              <a key={cluster.cluster_id} href={`/cluster/${cluster.cluster_id}`} className="for-you-card" aria-label={`Отвори кластер: ${title}`}>
+              <a key={cluster.cluster_id} href={`/cluster/${cluster.cluster_id}`} className="for-you-card" aria-label={`Otvori klaster: ${title}`}>
                 <p className="for-you-card-kicker">
                   <Clock3 size={12} />
-                  <span>Актуелно во моментот</span>
+                  <span>Aktuelno vo momentot</span>
                 </p>
                 <h3 dangerouslySetInnerHTML={{ __html: sanitizeHtml(highlightScores(title)) }}></h3>
                 {summary && <p className="for-you-card-copy">{summary}</p>}
                 <div className="for-you-card-footer">
                   <div className="for-you-card-meta">
-                    <span>{article.source || 'Извор'}</span>
+                    <span>{article.source || 'izvor'}</span>
                     <span>·</span>
-                    <span>{cluster.sources_count ?? cluster.articles?.length ?? 0} { (cluster.sources_count ?? cluster.articles?.length ?? 0) === 1 ? 'извор' : 'извори' }</span>
+                    <span>{cluster.sources_count ?? cluster.articles?.length ?? 0} { (cluster.sources_count ?? cluster.articles?.length ?? 0) === 1 ? 'izvor' : 'izvori' }</span>
                   </div>
-                  <span className="for-you-card-cta">Отвори <ArrowUpRight size={12} /></span>
+                  <span className="for-you-card-cta">Otvori <ArrowUpRight size={12} /></span>
                 </div>
               </a>
             );
@@ -205,7 +205,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
         </div>
       ) : (
         <div className="py-12 text-center border border-dashed border-border rounded-lg bg-secondary/5">
-          <p className="text-sm text-muted-foreground">Нема нови препораки во овој момент.</p>
+          <p className="text-sm text-muted-foreground">Nema novi preporaki vo ovoj moment.</p>
         </div>
       )}
 
@@ -221,13 +221,13 @@ function OnboardingIslandCompact({ profile, recommendations }: any) {
   return (
     <div className="for-you-follow-block">
       <div className="for-you-follow-head">
-          <p className="for-you-kicker"><Sparkles size={14} /> Следете понатаму</p>
+          <p className="for-you-kicker"><Sparkles size={14} /> Sledete dalje</p>
       </div>
       <div className="for-you-follow-grid">
         {recommendations.topics.slice(0, 2).map((item: any) => (
           <div key={`topic:${item.value}`} className="for-you-follow-card">
             <div>
-              <p className="for-you-follow-kicker">Тема</p>
+              <p className="for-you-follow-kicker">Tema</p>
               <strong>{item.value}</strong>
               {item.reason && <p className="text-[10px] text-muted-foreground mt-1 opacity-80">{item.reason}</p>}
             </div>
@@ -241,7 +241,7 @@ function OnboardingIslandCompact({ profile, recommendations }: any) {
         {recommendations.sources.slice(0, 1).map((item: any) => (
           <div key={`source:${item.value}`} className="for-you-follow-card">
             <div>
-              <p className="for-you-follow-kicker">Извор</p>
+              <p className="for-you-follow-kicker">izvor</p>
               <strong>{item.value}</strong>
               {item.reason && <p className="text-[10px] text-muted-foreground mt-1 opacity-80">{item.reason}</p>}
             </div>

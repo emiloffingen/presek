@@ -65,33 +65,33 @@ class TestSynthesizeClusterTaskQuality:
 
         article_rows = [
             {
-                "title": "Трамп: Вторник, 20:00 часот по источно време",
-                "description": "Американскиот претседател најави важно обраќање за царините.",
-                "source": "МИА",
+                "title": "Tramp: Utorak, 20:00 casot po istocno vreme",
+                "description": "Amerikanskiot pretsedatel najavi vazno obracanje za carinite.",
+                "source": "MIA",
                 "link": "https://example.com/1",
                 "created_at": "2026-04-05T12:00:00",
-                "category": "Свет",
+                "category": "Svet",
             },
             {
-                "title": "Трамп: Вторник, 20:00 часот по Источно време",
-                "description": "Повеќе извори пренесуваат дека темата се однесува на царини.",
+                "title": "Tramp: Utorak, 20:00 casot po Istocno vreme",
+                "description": "Povece izvori prenesuvaat deka temata se odnesuva na carini.",
                 "source": "DW",
                 "link": "https://example.com/2",
                 "created_at": "2026-04-05T11:00:00",
-                "category": "Свет",
+                "category": "Svet",
             },
         ]
 
         ai_payload = {
-            "summary": "Статии:\n• Главен развој: Трамп: Вторник, 20:00 часот по источно време\n• Главен развој: Трамп: Вторник, 20:00 часот по источно време",
+            "summary": "clanci:\n• Glaven razvoj: Tramp: Utorak, 20:00 casot po istocno vreme\n• Glaven razvoj: Tramp: Utorak, 20:00 casot po istocno vreme",
             "perspectives": [
                 {
-                    "angle": "Перспектива",
-                    "content": "Повеќето извори се вртат околу царините и рокот за обраќање.",
+                    "angle": "perspektiva",
+                    "content": "Poveceto izvori se vrtat okolu carinite i rokot za obracanje.",
                 },
                 {
-                    "angle": "Перспектива",
-                    "content": "Разликите најмногу се во акцентот и формулацијата.",
+                    "angle": "perspektiva",
+                    "content": "Razlikite najmnogu se vo akcentot i formulacijata.",
                 },
             ],
         }
@@ -131,11 +131,11 @@ class TestSynthesizeClusterTaskQuality:
         stored_perspectives = json.loads(insert_call.args[1][2])
         stored_citation_sources = json.loads(insert_call.args[1][12])
 
-        assert "Статии" not in stored_summary
-        assert stored_summary.count("Главен развој") == 1
-        assert stored_perspectives[0]["angle"] == "Заедничка линија"
-        assert stored_perspectives[1]["angle"] == "Различни акценти"
-        assert [item["source"] for item in stored_citation_sources] == ["МИА", "DW"]
+        assert "clanci" not in stored_summary
+        assert stored_summary.count("Glaven razvoj") == 1
+        assert stored_perspectives[0]["angle"] == "Zajednicka linija"
+        assert stored_perspectives[1]["angle"] == "Razliciti akcenti"
+        assert [item["source"] for item in stored_citation_sources] == ["MIA", "DW"]
         assert stored_citation_sources[0]["index"] == 1
 
 
@@ -147,20 +147,20 @@ class TestReclusterRecentArticlesTask:
             {
                 "id": 1,
                 "cluster_id": "old-a",
-                "title": "Пожар во магацин во Скопје",
-                "source": "МИА",
+                "title": "Pozar vo magacin vo Beograd",
+                "source": "MIA",
                 "category": "Srbija",
-                "topic": "Криминал",
+                "topic": "Kriminal",
                 "created_at": "2026-04-23T09:00:00",
                 "embedding": "[1,0,0]",
             },
             {
                 "id": 2,
                 "cluster_id": "old-b",
-                "title": "Пожар во магацин во Скопје, двајца повредени",
-                "source": "Телма",
+                "title": "Pozar vo magacin vo Beograd, dvajca povredeni",
+                "source": "Telma",
                 "category": "Srbija",
-                "topic": "Криминал",
+                "topic": "Kriminal",
                 "created_at": "2026-04-23T09:05:00",
                 "embedding": "[0.99,0.01,0]",
             },
@@ -223,7 +223,7 @@ class TestSummarizeArticleTaskQuality:
             patch("tasks.intelligence.db") as mock_db,
             patch(
                 "tasks.intelligence._call_ai",
-                return_value=({"summary": "Чисто резиме."}, "nvidia"),
+                return_value=({"summary": "Cisto rezime."}, "nvidia"),
             ) as mock_call_ai,
             patch(
                 "tasks.intelligence.clean_json_response",
@@ -233,14 +233,14 @@ class TestSummarizeArticleTaskQuality:
             patch("tasks.utils.record_task_event"),
         ):
             # Use a description > 200 chars to trigger AI path
-            long_desc = "Опис со повеќе детали за настанот. " * 10
+            long_desc = "Opis so povece detali za nastanot. " * 10
             mock_db.execute_one.return_value = {"description": long_desc}
 
-            tasks.summarize_article_task(123, "Наслов на веста")
+            tasks.summarize_article_task(123, "Naslov na vesta")
 
         prompt = mock_call_ai.call_args.args[0]
-        assert "Наслов на веста" in prompt
-        assert "Опис со повеќе детали за настанот." in prompt
+        assert "Naslov na vesta" in prompt
+        assert "Opis so povece detali za nastanot." in prompt
 
 
 class TestDailyBriefTaskQuality:
@@ -250,22 +250,22 @@ class TestDailyBriefTaskQuality:
         cluster_articles = [
             {
                 "cluster_id": "c1",
-                "title": "Трамп најави нови царини",
-                "description": "Главниот развој.",
-                "summary": "Кратко резиме.",
+                "title": "Tramp najavi novi carini",
+                "description": "glavni razvoj.",
+                "summary": "Kratko rezime.",
                 "source": "MIA",
-                "category": "Свет",
-                "topic": "Економија",
+                "category": "Svet",
+                "topic": "Ekonomija",
                 "created_at": "2026-04-05T10:00:00",
             },
             {
                 "cluster_id": "c1",
-                "title": "Reuters акцентира на рокот и реакциите",
-                "description": "Втор агол.",
+                "title": "Reuters akcentira na rokot i reakciite",
+                "description": "Vtor ugao.",
                 "summary": "",
                 "source": "Reuters",
-                "category": "Свет",
-                "topic": "Економија",
+                "category": "Svet",
+                "topic": "Ekonomija",
                 "created_at": "2026-04-05T10:10:00",
             },
         ]
@@ -281,15 +281,15 @@ class TestDailyBriefTaskQuality:
         ):
             mock_db.execute.return_value = cluster_articles
             mock_db.execute_one.return_value = {
-                "summary": "• Главен развој: Трамп најави царини\n• Контекст: Реакции на пазарите\n• Што следи: Се чека рокот",
+                "summary": "• Glaven razvoj: Tramp najavi carini\n• kontekst: reakcije na pazarite\n• Sto sledi: Se ceka rokot",
                 "perspectives": [
                     {
-                        "angle": "Различни акценти",
-                        "content": "Reuters повеќе го нагласува рокот.",
+                        "angle": "Razliciti akcenti",
+                        "content": "Reuters povece ga naglasuva rokot.",
                     },
                     {
-                        "angle": "Што останува отворено",
-                        "content": "Не е јасно кога мерките ќе стапат на сила.",
+                        "angle": "Sta ostaje otvoreno",
+                        "content": "Ne e jasno koga merkite ce stapat na sila.",
                     },
                 ],
             }
@@ -298,23 +298,23 @@ class TestDailyBriefTaskQuality:
             context = tasks._build_daily_brief_context(clusters)
 
         assert clusters
-        assert "### Кластер 1" in context or "###" in context
+        assert "### klaster 1" in context or "###" in context
 
     def test_rejects_daily_brief_with_named_entity_missing_from_context(self):
         import tasks.delivery
 
         context = (
-            "### Кластер 1\n"
-            "Наслов: Интерпелација на владата\n"
-            "Категорија: Политика\n"
-            "Водечки извор: МИА\n"
-            "Краток контекст: Опозицијата поднесе интерпелација.\n"
+            "### klaster 1\n"
+            "Naslov: Interpelacija na vladata\n"
+            "Kategorija: Politika\n"
+            "Vodeci izvor: MIA\n"
+            "Kratok kontekst: Opozicijata podnese interpelacija.\n"
         )
         brief = (
-            "## Што го движи денот\n\n"
-            "### 1. Интерпелацијата на владата\n"
-            "- Што е новото: Премиерот Димитар Ковачевски ја оцени како неиздржана.\n"
-            "- Зошто е важно: Политичкиот судир се продлабочува.\n"
+            "## Sto ga dvizi denot\n\n"
+            "### 1. Interpelacijata na vladata\n"
+            "- Sto e novoto: Premierot Dimitar Kovacevski me oceni kako neizdrzana.\n"
+            "- Zosto e vazno: Politickiot sudir se prodlabocuva.\n"
         )
 
         # Note: _is_grounded_daily_brief is currently hardcoded to return True
@@ -324,17 +324,17 @@ class TestDailyBriefTaskQuality:
         import tasks.delivery
 
         context = (
-            "### Кластер 1\n"
-            "Наслов: Интерпелација на владата\n"
-            "Категорија: Политика\n"
-            "Водечки извор: МИА\n"
-            "Краток контекст: Премиерот Христијан Мицкоски одговори на интерпелацијата.\n"
+            "### klaster 1\n"
+            "Naslov: Interpelacija na vladata\n"
+            "Kategorija: Politika\n"
+            "Vodeci izvor: MIA\n"
+            "Kratok kontekst: Premierot Hristijan Mickoski odgovori na interpelacijata.\n"
         )
         brief = (
-            "## Што го движи денот\n\n"
-            "### 1. Интерпелацијата на владата\n"
-            "- Што е новото: Премиерот Христијан Мицкоски одговори на интерпелацијата.\n"
-            "- Зошто е важно: Темата останува во политички фокус.\n"
+            "## Sto ga dvizi denot\n\n"
+            "### 1. Interpelacijata na vladata\n"
+            "- Sto e novoto: Premierot Hristijan Mickoski odgovori na interpelacijata.\n"
+            "- Zosto e vazno: Temata ostaje vo politicki fokus.\n"
         )
 
         assert tasks.delivery._is_grounded_daily_brief(brief, context) is True
@@ -342,16 +342,16 @@ class TestDailyBriefTaskQuality:
     def test_daily_brief_structure_validator_rejects_malformed_body(self):
         import tasks.delivery
 
-        malformed = "# Утрински Диспач\n\n| нешто | нешто друго |"
+        malformed = "# Utrinski Dispac\n\n| nesto | nesto drugo |"
         valid = (
-            "## Големата Слика\n\n"
-            "Макро состојба.\n"
-            "## Глобални и Локални Оски\n"
-            "Поврзување на настани.\n"
-            "## Медиумски Радар\n"
-            "Анализа на известување.\n"
-            "## Што да се следи\n"
-            "Заклучок.\n"
+            "## Golemata Slika\n\n"
+            "Makro sostojba.\n"
+            "## Globalni i Lokalni Oski\n"
+            "Povrzuvanje na nastani.\n"
+            "## Mediumski Radar\n"
+            "Analiza na izvestuvanje.\n"
+            "## Sto da se sledi\n"
+            "Zaklucok.\n"
         )
 
         assert tasks.delivery._has_valid_daily_brief_structure(malformed) is False
@@ -362,22 +362,22 @@ class TestDailyBriefTaskQuality:
 
         assert (
             tasks.delivery._briefing_title_penalty(
-                "ВМРО-ДПМНЕ: Во очајна потрага по добра вест"
+                "VMRO-DPMNE: Vo ocajna potraga po dobra vest"
             )
             > 3.0
         )
         assert (
             tasks.delivery._briefing_title_penalty(
-                "Земјотрес од 4,8 степени ја потресе Srbija"
+                "Zemjotres od 4,8 stepeni me potrese Srbija"
             )
             == 0.0
         )
         assert tasks.delivery._briefing_title_penalty(
-            "ВМРО-ДПМНЕ: Во очајна потрага по добра вест",
+            "VMRO-DPMNE: Vo ocajna potraga po dobra vest",
             source_count=8,
             has_editorial_depth=True,
         ) < tasks.delivery._briefing_title_penalty(
-            "ВМРО-ДПМНЕ: Во очајна потрага по добра вест"
+            "VMRO-DPMNE: Vo ocajna potraga po dobra vest"
         )
 
     def test_load_daily_brief_clusters_pushes_plain_party_pr_behind_public_interest_cluster(
@@ -388,39 +388,39 @@ class TestDailyBriefTaskQuality:
         rows = [
             {
                 "cluster_id": "party-pr",
-                "title": "СДСМ: Бараме локален референдум за рудникот",
-                "description": "Партиско соопштение.",
+                "title": "SDSM: Barame lokalen referendum za rudnikot",
+                "description": "Partisko soopstenie.",
                 "summary": "",
-                "source": "МИА",
-                "category": "Политика",
-                "topic": "Политика",
+                "source": "MIA",
+                "category": "Politika",
+                "topic": "Politika",
                 "created_at": "2026-04-19T09:00:00",
             },
             {
                 "cluster_id": "election",
-                "title": "Бугарија денеска излегува на парламентарни избори",
-                "description": "Гласањето се одржува денеска.",
+                "title": "Bugarija danas izleguva na parlamentarni izbori",
+                "description": "Glasanjeto se odrzuva danas.",
                 "summary": "",
                 "source": "Reuters",
-                "category": "Политика",
-                "topic": "Политика",
+                "category": "Politika",
+                "topic": "Politika",
                 "created_at": "2026-04-19T09:05:00",
             },
             {
                 "cluster_id": "election",
-                "title": "Во Бугарија се отвораат избирачките места",
-                "description": "Следуваат резултати и реакции.",
+                "title": "Vo Bugarija se otvoraat izbirackite mesta",
+                "description": "Sleduvaat rezultati i reakcije.",
                 "summary": "",
                 "source": "DW",
-                "category": "Политика",
-                "topic": "Политика",
+                "category": "Politika",
+                "topic": "Politika",
                 "created_at": "2026-04-19T09:06:00",
             },
         ]
 
         def fake_score(ranked):
             lead_title = ranked[0]["title"]
-            if "СДСМ:" in lead_title:
+            if "SDSM:" in lead_title:
                 return 5.0
             return 4.0
 
@@ -431,7 +431,7 @@ class TestDailyBriefTaskQuality:
             mock_db.execute.return_value = rows
             mock_db.execute_one.side_effect = [
                 {"summary": "", "perspectives": []},
-                {"summary": "Главен развој со повеќе контекст.", "perspectives": []},
+                {"summary": "Glaven razvoj so povece kontekst.", "perspectives": []},
             ]
 
             clusters = tasks._load_daily_brief_clusters(limit=2)
@@ -447,42 +447,42 @@ class TestDailyBriefTaskQuality:
         rows = [
             {
                 "cluster_id": "weather",
-                "title": "Најстудено изутринава во Берово минус еден степен",
-                "description": "Очекува се сончево и релативно топло време.",
+                "title": "Najstudeno izutrinava vo Berovo minus eden stepen",
+                "description": "Ocekuva se soncevo i relativno toplo vreme.",
                 "summary": "",
-                "source": "УХМР",
-                "category": "Вести",
-                "topic": "Вести",
+                "source": "UHMR",
+                "category": "vesti",
+                "topic": "vesti",
                 "created_at": "2026-04-19T09:00:00",
             },
             {
                 "cluster_id": "election",
-                "title": "Бугарија денеска излегува на парламентарни избори",
-                "description": "Гласањето се одржува денеска.",
+                "title": "Bugarija danas izleguva na parlamentarni izbori",
+                "description": "Glasanjeto se odrzuva danas.",
                 "summary": "",
                 "source": "Reuters",
-                "category": "Политика",
-                "topic": "Политика",
+                "category": "Politika",
+                "topic": "Politika",
                 "created_at": "2026-04-19T09:05:00",
             },
             {
                 "cluster_id": "election",
-                "title": "Во Бугарија се отвораат избирачките места",
-                "description": "Следуваат резултати и реакции.",
+                "title": "Vo Bugarija se otvoraat izbirackite mesta",
+                "description": "Sleduvaat rezultati i reakcije.",
                 "summary": "",
                 "source": "DW",
-                "category": "Политика",
-                "topic": "Политика",
+                "category": "Politika",
+                "topic": "Politika",
                 "created_at": "2026-04-19T09:06:00",
             },
             {
                 "cluster_id": "missiles",
-                "title": "Северна Кореја повторно истрела балистички ракети",
-                "description": "Потегот предизвика меѓународни реакции.",
+                "title": "Severna Koreja povtorno istrela balisticki raketi",
+                "description": "Potegot predizvika medjunarodni reakcije.",
                 "summary": "",
                 "source": "AP",
-                "category": "Свет",
-                "topic": "Вести",
+                "category": "Svet",
+                "topic": "vesti",
                 "created_at": "2026-04-19T09:07:00",
             },
         ]
@@ -494,9 +494,9 @@ class TestDailyBriefTaskQuality:
             mock_db.execute.return_value = rows
             mock_db.execute_one.side_effect = [
                 {"summary": "", "perspectives": []},
-                {"summary": "Главен развој со повеќе контекст.", "perspectives": []},
+                {"summary": "Glaven razvoj so povece kontekst.", "perspectives": []},
                 {
-                    "summary": "Ракетното лансирање повторно ја отвори безбедносната тема.",
+                    "summary": "Raketnoto lansiranje povtorno me otvori bezbednosnata tema.",
                     "perspectives": [],
                 },
             ]
@@ -512,32 +512,32 @@ class TestDailyBriefTaskQuality:
         rows = [
             {
                 "cluster_id": "party-pr",
-                "title": "ВРЕДИ: Партиска реакција по дневнополитичко прашање",
-                "description": "Партиско соопштение без јасен јавен ефект.",
+                "title": "VREDI: Partiska reakcija po dnevnopoliticko prasanje",
+                "description": "Partisko soopstenie bez jasen javen efekt.",
                 "summary": "",
-                "source": "МИА",
-                "category": "Политика",
-                "topic": "Политика",
+                "source": "MIA",
+                "category": "Politika",
+                "topic": "Politika",
                 "created_at": "2026-04-19T09:00:00",
             },
             {
                 "cluster_id": "court",
-                "title": "Судска одлука отвори правна расправа",
-                "description": "Следуваат реакции и толкувања.",
+                "title": "Sudska odluka otvori pravna rasprava",
+                "description": "Sleduvaat reakcije i tolkuvanja.",
                 "summary": "",
                 "source": "Reuters",
-                "category": "Политика",
-                "topic": "Политика",
+                "category": "Politika",
+                "topic": "Politika",
                 "created_at": "2026-04-19T09:05:00",
             },
             {
                 "cluster_id": "court",
-                "title": "Повеќе извори ја анализираат судската одлука",
-                "description": "Се отвораат прашања за следните чекори.",
+                "title": "Povece izvori me analiziraat sudskata odluka",
+                "description": "Se otvoraat prasanja za slednite cekori.",
                 "summary": "",
                 "source": "DW",
-                "category": "Политика",
-                "topic": "Политика",
+                "category": "Politika",
+                "topic": "Politika",
                 "created_at": "2026-04-19T09:06:00",
             },
         ]
@@ -554,11 +554,11 @@ class TestDailyBriefTaskQuality:
             mock_db.execute.return_value = rows
             mock_db.execute_one.side_effect = [
                 {
-                    "summary": "Внатрепартиска реакција без јасен поширок ефект.",
+                    "summary": "Vnatrepartiska reakcija bez jasen siri efekt.",
                     "perspectives": [],
                 },
                 {
-                    "summary": "Судската одлука отвори спор околу следните правни чекори.",
+                    "summary": "Sudskata odluka otvori spor okolu slednite pravni cekori.",
                     "perspectives": [],
                 },
             ]
@@ -578,7 +578,7 @@ class TestProfileDeliveryTasks:
                 "sync_token": "sync-token-123",
                 "target": "reader-feed",
                 "morning_briefing": True,
-                "profile_data": {"followedTopics": ["Политика"], "followedSources": []},
+                "profile_data": {"followedTopics": ["Politika"], "followedSources": []},
                 "last_morning_sent_at": None,
             }
         ]
@@ -593,7 +593,7 @@ class TestProfileDeliveryTasks:
                         "title": "Lead story",
                         "source": "MIA",
                         "source_count": 2,
-                        "match_reason": "следена тема: Политика",
+                        "match_reason": "sledena tema: Politika",
                     }
                 ],
             ),
@@ -620,7 +620,7 @@ class TestProfileDeliveryTasks:
                 "sync_token": "sync-token-123",
                 "target": "reader-feed",
                 "weekly_digest": True,
-                "profile_data": {"followedTopics": ["Политика"], "followedSources": []},
+                "profile_data": {"followedTopics": ["Politika"], "followedSources": []},
                 "last_weekly_sent_at": None,
             }
         ]
@@ -635,7 +635,7 @@ class TestProfileDeliveryTasks:
                         "title": "Week lead",
                         "source": "MIA",
                         "source_count": 4,
-                        "match_reason": "следена тема: Политика",
+                        "match_reason": "sledena tema: Politika",
                     }
                 ],
             ),
@@ -665,17 +665,17 @@ class TestProfileDeliveryTasks:
                 "title": "Steady story",
                 "source": "MIA",
                 "source_count": 3,
-                "category": "Политика",
-                "topic": "Политика",
+                "category": "Politika",
+                "topic": "Politika",
                 "score": 4.8,
             },
             {
                 "cluster_id": "engaged-cluster",
                 "title": "Engaged story",
-                "source": "Телма",
+                "source": "Telma",
                 "source_count": 2,
-                "category": "Политика",
-                "topic": "Политика",
+                "category": "Politika",
+                "topic": "Politika",
                 "score": 4.1,
             },
         ]
@@ -705,12 +705,12 @@ class TestProfileDeliveryTasks:
             ),
         ):
             result = tasks._select_profile_weekly_clusters(
-                {"followedTopics": ["Политика"], "followedSources": []},
+                {"followedTopics": ["Politika"], "followedSources": []},
                 limit=2,
             )
 
         assert result[0]["cluster_id"] == "engaged-cluster"
-        assert "силен одзив" in result[0]["match_reason"]
+        assert "silen odziv" in result[0]["match_reason"]
 
     def test_load_weekly_cluster_engagement_uses_send_metadata_cluster_ids(self):
         import tasks
@@ -742,7 +742,7 @@ class TestProfileDeliveryTasks:
         with patch("tasks.delivery.db") as mock_db:
             mock_db.execute.side_effect = [
                 [
-                    {"id": 15, "metadata": {"focus_topics": ["Политика", "Економија"]}},
+                    {"id": 15, "metadata": {"focus_topics": ["Politika", "Ekonomija"]}},
                 ],
                 [
                     {"parent_event_id": 15, "event_type": "open"},
@@ -751,8 +751,8 @@ class TestProfileDeliveryTasks:
             ]
             result = tasks._load_weekly_topic_engagement(days=30)
 
-        assert result["Политика"]["open_rate"] == 1.0
-        assert result["Економија"]["click_rate"] == 1.0
+        assert result["Politika"]["open_rate"] == 1.0
+        assert result["Ekonomija"]["click_rate"] == 1.0
 
     def test_load_weekly_source_engagement_uses_focus_sources_from_send_metadata(self):
         import tasks
@@ -760,7 +760,7 @@ class TestProfileDeliveryTasks:
         with patch("tasks.delivery.db") as mock_db:
             mock_db.execute.side_effect = [
                 [
-                    {"id": 21, "metadata": {"focus_sources": ["MIA", "Телма"]}},
+                    {"id": 21, "metadata": {"focus_sources": ["MIA", "Telma"]}},
                 ],
                 [
                     {"parent_event_id": 21, "event_type": "open"},
@@ -770,7 +770,7 @@ class TestProfileDeliveryTasks:
             result = tasks._load_weekly_source_engagement(days=30)
 
         assert result["MIA"]["open_rate"] == 1.0
-        assert result["Телма"]["click_rate"] == 1.0
+        assert result["Telma"]["click_rate"] == 1.0
 
     def test_build_weekly_digest_sections_prioritizes_high_performing_followed_topics(
         self,
@@ -783,31 +783,31 @@ class TestProfileDeliveryTasks:
                 "title": "Political lead",
                 "source": "MIA",
                 "source_count": 4,
-                "topic": "Политика",
-                "category": "Политика",
+                "topic": "Politika",
+                "category": "Politika",
                 "match_score": 4.2,
-                "match_reason": "следена тема: Политика",
+                "match_reason": "sledena tema: Politika",
             },
             {
                 "cluster_id": "economy-1",
                 "title": "Economy lead",
-                "source": "Телма",
+                "source": "Telma",
                 "source_count": 3,
-                "topic": "Економија",
-                "category": "Економија",
+                "topic": "Ekonomija",
+                "category": "Ekonomija",
                 "match_score": 3.8,
-                "match_reason": "следена тема: Економија",
+                "match_reason": "sledena tema: Ekonomija",
             },
         ]
 
         sections = tasks._build_weekly_digest_sections(
-            {"followedTopics": ["Политика", "Економија"], "followedSources": []},
+            {"followedTopics": ["Politika", "Ekonomija"], "followedSources": []},
             clusters,
-            {"Политика": {"section_score": 0.8}, "Економија": {"section_score": 0.1}},
+            {"Politika": {"section_score": 0.8}, "Ekonomija": {"section_score": 0.1}},
         )
 
-        assert sections[1]["title"] == "Следена тема: Политика"
-        assert "силен интерес" in sections[1]["subtitle"]
+        assert sections[1]["title"] == "Sledena tema: Politika"
+        assert "silen interes" in sections[1]["subtitle"]
 
     def test_build_weekly_digest_sections_prioritizes_strong_source_section_over_weaker_topic_section(
         self,
@@ -820,32 +820,32 @@ class TestProfileDeliveryTasks:
                 "title": "Lead weekly story",
                 "source": "MIA",
                 "source_count": 4,
-                "topic": "Политика",
-                "category": "Политика",
+                "topic": "Politika",
+                "category": "Politika",
                 "match_score": 3.1,
-                "match_reason": "следена тема: Политика",
+                "match_reason": "sledena tema: Politika",
             },
             {
                 "cluster_id": "source-1",
                 "title": "Source-led follow-up",
-                "source": "Телма",
+                "source": "Telma",
                 "source_count": 3,
-                "topic": "Свет",
-                "category": "Свет",
+                "topic": "Svet",
+                "category": "Svet",
                 "match_score": 4.0,
-                "match_reason": "следен извор: Телма",
+                "match_reason": "sledeci izvor: Telma",
             },
         ]
 
         sections = tasks._build_weekly_digest_sections(
-            {"followedTopics": ["Политика"], "followedSources": ["Телма"]},
+            {"followedTopics": ["Politika"], "followedSources": ["Telma"]},
             clusters,
-            {"Политика": {"section_score": 0.15}},
-            {"Телма": {"section_score": 0.85}},
+            {"Politika": {"section_score": 0.15}},
+            {"Telma": {"section_score": 0.85}},
         )
 
-        assert sections[1]["title"] == "Извори што ги следите"
-        assert "Телма" in sections[1]["subtitle"]
+        assert sections[1]["title"] == "izvori sto im sledite"
+        assert "Telma" in sections[1]["subtitle"]
 
     def test_build_profile_weekly_digest_message_renders_section_headings(self):
         import tasks
@@ -856,8 +856,8 @@ class TestProfileDeliveryTasks:
                 "title": "Lead weekly story",
                 "source": "MIA",
                 "source_count": 4,
-                "match_reason": "следена тема: Политика",
-                "cluster_summary": "Главен развој неделава.",
+                "match_reason": "sledena tema: Politika",
+                "cluster_summary": "Glaven razvoj nedelava.",
                 "difference_point": "",
                 "open_point": "",
             }
@@ -866,26 +866,26 @@ class TestProfileDeliveryTasks:
         with (
             patch(
                 "tasks.delivery._load_weekly_topic_engagement",
-                return_value={"Политика": {"section_score": 0.8}},
+                return_value={"Politika": {"section_score": 0.8}},
             ),
             patch("tasks.delivery._load_weekly_source_engagement", return_value={}),
             patch(
                 "tasks.delivery._build_weekly_digest_sections",
                 return_value=[
                     {
-                        "title": "Што најмногу се помести",
-                        "subtitle": "главен неделен развој",
+                        "title": "Sto najmnogu se pomesti",
+                        "subtitle": "glaven nedelen razvoj",
                         "clusters": clusters,
                     }
                 ],
             ),
         ):
             message = tasks._build_profile_weekly_digest_message(
-                {"followedTopics": ["Политика"], "followedSources": []},
+                {"followedTopics": ["Politika"], "followedSources": []},
                 clusters,
             )
 
-        assert "## Што најмногу се помести" in message
+        assert "## Sto najmnogu se pomesti" in message
         assert "Lead weekly story" in message
 
     def test_select_profile_weekly_clusters_avoids_duplicate_heavy_same_topic_mix(self):
@@ -894,34 +894,34 @@ class TestProfileDeliveryTasks:
         clusters = [
             {
                 "cluster_id": "p1",
-                "title": "Политички развој 1",
+                "title": "Politicki razvoj 1",
                 "source": "MIA",
                 "source_count": 4,
-                "topic": "Политика",
-                "category": "Политика",
+                "topic": "Politika",
+                "category": "Politika",
                 "score": 4.8,
             },
             {
                 "cluster_id": "p2",
-                "title": "Политички развој 2",
+                "title": "Politicki razvoj 2",
                 "source": "Reuters",
                 "source_count": 3,
-                "topic": "Политика",
-                "category": "Политика",
+                "topic": "Politika",
+                "category": "Politika",
                 "score": 4.1,
             },
             {
                 "cluster_id": "e1",
-                "title": "Економски развој",
-                "source": "Телма",
+                "title": "Ekonomski razvoj",
+                "source": "Telma",
                 "source_count": 3,
-                "topic": "Економија",
-                "category": "Економија",
+                "topic": "Ekonomija",
+                "category": "Ekonomija",
                 "score": 3.9,
             },
         ]
 
-        profile = {"followedTopics": ["Политика", "Економија"], "followedSources": []}
+        profile = {"followedTopics": ["Politika", "Ekonomija"], "followedSources": []}
 
         with (
             patch("tasks.delivery._load_weekly_digest_clusters", return_value=clusters),
@@ -930,8 +930,8 @@ class TestProfileDeliveryTasks:
             result = tasks.delivery._select_profile_weekly_clusters(profile, limit=3)
 
         returned_topics = [item["topic"] for item in result]
-        assert "Економија" in returned_topics
-        assert returned_topics.count("Политика") <= 1
+        assert "Ekonomija" in returned_topics
+        assert returned_topics.count("Politika") <= 1
 
     def test_select_profile_brief_clusters_prefers_richer_editorial_cluster(self):
         import tasks
@@ -939,11 +939,11 @@ class TestProfileDeliveryTasks:
         clusters = [
             {
                 "cluster_id": "thin-1",
-                "title": "Краток развој",
+                "title": "Kratok razvoj",
                 "source": "Makfax",
                 "source_count": 2,
-                "topic": "Политика",
-                "category": "Политика",
+                "topic": "Politika",
+                "category": "Politika",
                 "score": 3.2,
                 "difference_point": "",
                 "open_point": "",
@@ -952,20 +952,20 @@ class TestProfileDeliveryTasks:
             },
             {
                 "cluster_id": "rich-1",
-                "title": "Развој со различни акценти",
+                "title": "razvoj so Razliciti akcenti",
                 "source": "MIA",
                 "source_count": 4,
-                "topic": "Политика",
-                "category": "Политика",
+                "topic": "Politika",
+                "category": "Politika",
                 "score": 3.0,
-                "difference_point": "Изворите се разликуваат околу рокот.",
-                "open_point": "Останува да се потврди точниот датум.",
-                "cluster_summary": "Главниот развој со повеќе контекст.",
-                "other_titles": ["Агол 1", "Агол 2"],
+                "difference_point": "Izvorite se razlikuvaat okolu rokot.",
+                "open_point": "ostaje da se potvrdi tocniot datum.",
+                "cluster_summary": "glavni razvoj so povece kontekst.",
+                "other_titles": ["ugao 1", "ugao 2"],
             },
         ]
 
-        profile = {"followedTopics": ["Политика"], "followedSources": []}
+        profile = {"followedTopics": ["Politika"], "followedSources": []}
 
         with patch("tasks.delivery._load_daily_brief_clusters", return_value=clusters):
             result = tasks._select_profile_brief_clusters(profile, limit=2)
@@ -981,7 +981,7 @@ class TestProfileDeliveryTasks:
                 "target": "reader-feed",
                 "breaking_topics": True,
                 "breaking_sources": False,
-                "profile_data": {"followedTopics": ["Политика"], "followedSources": []},
+                "profile_data": {"followedTopics": ["Politika"], "followedSources": []},
                 "last_alert_cluster_ids": ["old-cluster"],
                 "last_alert_context": {},
                 "last_breaking_sent_at": None,
@@ -992,12 +992,12 @@ class TestProfileDeliveryTasks:
             "title": "Breaking story",
             "source": "MIA",
             "source_count": 3,
-            "match_reason": "следена тема: Политика",
-            "alert_label": "Итно ажурирање",
-            "alert_reason": "се појави нов доверлив извор или значаен развој",
+            "match_reason": "sledena tema: Politika",
+            "alert_label": "Itno azuriranje",
+            "alert_reason": "se pojavi nov doverliv izvor ili znacaen razvoj",
             "alert_tags": "rotating_light,newspaper",
-            "throttle_keys": ["cluster:new-cluster", "topic:Политика"],
-            "cluster_summary": "Главниот развој.",
+            "throttle_keys": ["cluster:new-cluster", "topic:Politika"],
+            "cluster_summary": "glavni razvoj.",
         }
 
         with (
@@ -1020,7 +1020,7 @@ class TestProfileDeliveryTasks:
         mock_send.assert_called_once()
         params = mock_db.execute.call_args_list[-1].args[1]
         assert "new-cluster" in params[0]
-        assert "topic:Политика" in json.loads(params[1])
+        assert "topic:Politika" in json.loads(params[1])
         assert "event_id=33" in mock_send.call_args.kwargs["click_url"]
 
     def test_breaking_alerts_skip_when_queue_backlog_is_high(self):
@@ -1059,8 +1059,8 @@ class TestProfileDeliveryTasks:
             "source": "MIA",
             "source_count": 3,
             "score": 5.2,
-            "category": "Политика",
-            "topic": "Политика",
+            "category": "Politika",
+            "topic": "Politika",
             "created_at": recent_iso,
         }
         freshness = {
@@ -1091,9 +1091,9 @@ class TestProfileDeliveryTasks:
             ),
         ):
             candidate = tasks._select_breaking_cluster_for_profile(
-                {"followedTopics": ["Политика"], "followedSources": []},
+                {"followedTopics": ["Politika"], "followedSources": []},
                 [],
-                alert_context={"topic:Политика": recent_iso},
+                alert_context={"topic:Politika": recent_iso},
                 last_breaking_sent_at=None,
                 include_topics=True,
                 include_sources=False,
@@ -1113,8 +1113,8 @@ class TestProfileDeliveryTasks:
             "source": "MIA",
             "source_count": 4,
             "score": 5.8,
-            "category": "Политика",
-            "topic": "Политика",
+            "category": "Politika",
+            "topic": "Politika",
             "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         }
         freshness = {
@@ -1151,7 +1151,7 @@ class TestProfileDeliveryTasks:
             ),
         ):
             candidate = tasks._select_breaking_cluster_for_profile(
-                {"followedTopics": ["Политика"], "followedSources": []},
+                {"followedTopics": ["Politika"], "followedSources": []},
                 ["same-cluster"],
                 alert_context={"cluster:same-cluster": older},
                 last_breaking_sent_at=older,
@@ -1161,7 +1161,7 @@ class TestProfileDeliveryTasks:
 
         assert candidate is not None
         assert candidate["cluster_id"] == "same-cluster"
-        assert candidate["alert_label"] == "Итно ажурирање"
+        assert candidate["alert_label"] == "Itno azuriranje"
 
     def test_classify_alert_candidate_becomes_stricter_when_breaking_engagement_is_weak(
         self,
@@ -1171,12 +1171,12 @@ class TestProfileDeliveryTasks:
         candidate = tasks._classify_alert_candidate(
             {"cluster_id": "weak-1", "score": 2.8},
             {"freshness_score": 1.2, "reasons": ["multiple_new_reports"]},
-            ["Политика"],
+            ["Politika"],
             [],
             {"breaking": {"sends": 12, "open_rate": 0.25, "click_rate": 0.08}},
         )
 
-        assert candidate["engagement_label"] == "Слаб одзив"
+        assert candidate["engagement_label"] == "Slab odziv"
         assert candidate["score_adjustment"] < 0
         assert candidate["topic_gap_minutes"] > 360
 
@@ -1188,12 +1188,12 @@ class TestProfileDeliveryTasks:
         candidate = tasks._classify_alert_candidate(
             {"cluster_id": "strong-1", "score": 5.9},
             {"freshness_score": 2.2, "reasons": ["new_numbers"]},
-            ["Политика"],
+            ["Politika"],
             ["MIA"],
             {"breaking": {"sends": 10, "open_rate": 0.61, "click_rate": 0.28}},
         )
 
-        assert candidate["engagement_label"] == "Силен одзив"
+        assert candidate["engagement_label"] == "Silen odziv"
         assert candidate["score_adjustment"] > 0
         assert candidate["min_gap_minutes"] < 60
 
@@ -1203,20 +1203,20 @@ class TestProfileDeliveryTasks:
         candidate = tasks._classify_alert_candidate(
             {"cluster_id": "topic-strong", "score": 5.1},
             {"freshness_score": 1.9, "reasons": ["new_angle"]},
-            ["Политика"],
+            ["Politika"],
             [],
             {},
             {
                 "topics": {
-                    "Политика": {"sends": 3, "open_rate": 0.67, "click_rate": 0.25}
+                    "Politika": {"sends": 3, "open_rate": 0.67, "click_rate": 0.25}
                 },
                 "sources": {},
             },
         )
 
-        assert candidate["engagement_label"] == "Силен одзив за следеното"
+        assert candidate["engagement_label"] == "Silen odziv za sledenoto"
         assert candidate["score_adjustment"] > 0
-        assert "силен одзив" in candidate["alert_reason"]
+        assert "silen odziv" in candidate["alert_reason"]
 
     def test_classify_alert_candidate_slows_weak_source_with_no_clicks(self):
         import tasks
@@ -1233,7 +1233,7 @@ class TestProfileDeliveryTasks:
             },
         )
 
-        assert candidate["engagement_label"] == "Слаб одзив за следеното"
+        assert candidate["engagement_label"] == "Slab odziv za sledenoto"
         assert candidate["score_adjustment"] < 0
         assert candidate["source_gap_minutes"] > 240
 
@@ -1246,7 +1246,7 @@ class TestProfileDeliveryTasks:
                     {
                         "id": 7,
                         "metadata": {
-                            "matched_topics": ["Политика"],
+                            "matched_topics": ["Politika"],
                             "matched_sources": ["MIA"],
                         },
                     },
@@ -1258,5 +1258,5 @@ class TestProfileDeliveryTasks:
             ]
             result = tasks._load_breaking_target_performance(days=30)
 
-        assert result["topics"]["Политика"]["open_rate"] == 1.0
+        assert result["topics"]["Politika"]["open_rate"] == 1.0
         assert result["sources"]["MIA"]["click_rate"] == 1.0

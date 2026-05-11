@@ -1,4 +1,4 @@
-// Named HTML entities we actually see in scraped MK/EN news. Covers the long
+// Named HTML entities we actually see in scraped RS/EN news. Covers the long
 // tail via numeric fall-through; anything else passes through unchanged.
 const NAMED_ENTITIES: Record<string, string> = {
     amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: '\u00A0',
@@ -9,45 +9,45 @@ const NAMED_ENTITIES: Record<string, string> = {
 
 const TITLE_PROPER_NOUNS: Array<[RegExp, string]> = [
     [/\bsrbija\b/gi, 'Srbija'],
-    [/\bбугарија\b/gi, 'Бугарија'],
-    [/\bсрбија\b/gi, 'Србија'],
-    [/\bгрција\b/gi, 'Грција'],
-    [/\bалбанија\b/gi, 'Албанија'],
-    [/\bкосово\b/gi, 'Косово'],
-    [/\bрусија\b/gi, 'Русија'],
-    [/\bукраина\b/gi, 'Украина'],
-    [/\bизраел\b/gi, 'Израел'],
-    [/\bпалестина\b/gi, 'Палестина'],
-    [/\bгерманија\b/gi, 'Германија'],
-    [/\bфранција\b/gi, 'Франција'],
-    [/\bбританска\b/gi, 'Британска'],
-    [/\bбританскиот\b/gi, 'Британскиот'],
-    [/\bбританија\b/gi, 'Британија'],
-    [/\bкина\b/gi, 'Кина'],
-    [/\bпекинг\b/gi, 'Пекинг'],
-    [/\bси џинпинг\b/gi, 'Си Џинпинг'],
-    [/\bсад\b/gi, 'САД'],
-    [/\bеу\b/gi, 'ЕУ'],
-    [/\bнато\b/gi, 'НАТО'],
-    [/\bмосква\b/gi, 'Москва'],
-    [/\bданиел христов\b/gi, 'Даниел Христов'],
-    [/\bбудимпешта\b/gi, 'Будимпешта'],
-    [/\bунгарска\b/gi, 'Унгарска'],
-    [/\bкрива паланка\b/gi, 'Крива Паланка'],
-    [/\bјугославија\b/gi, 'Југославија'],
-    [/\bердоган\b/gi, 'Ердоган'],
-    [/\bруте\b/gi, 'Руте'],
-    [/\bтурција\b/gi, 'Турција'],
-    [/\bрусија\b/gi, 'Русија'],
-    [/\bукраина\b/gi, 'Украина'],
-    [/\bиран\b/gi, 'Иран'],
-    [/\bданска\b/gi, 'Данска'],
-    [/\bевропа\b/gi, 'Европа'],
-    [/\bтито\b/gi, 'Тито'],
-    [/\bсрпската опозиција\b/gi, 'Српската опозиција'],
-    [/\bзаев\b/gi, 'Заев'],
-    [/\bбашановиќ\b/gi, 'Башановиќ'],
-    [/\bбашановик\b/gi, 'Башановиќ'],
+    [/\bbugarija\b/gi, 'Bugarija'],
+    [/\bsrbija\b/gi, 'Srbija'],
+    [/\bgrcija\b/gi, 'Grcija'],
+    [/\balbanija\b/gi, 'Albanija'],
+    [/\bkosovo\b/gi, 'Kosovo'],
+    [/\brusija\b/gi, 'Rusija'],
+    [/\bukraina\b/gi, 'Ukraina'],
+    [/\bizrael\b/gi, 'Izrael'],
+    [/\bpalestina\b/gi, 'Palestina'],
+    [/\bgermanija\b/gi, 'Germanija'],
+    [/\bfrancija\b/gi, 'Francija'],
+    [/\bbritanska\b/gi, 'Britanska'],
+    [/\bbritanskiot\b/gi, 'Britanskiot'],
+    [/\bbritanija\b/gi, 'Britanija'],
+    [/\bkina\b/gi, 'Kina'],
+    [/\bpeking\b/gi, 'Peking'],
+    [/\bsi dzinping\b/gi, 'Si Dzinping'],
+    [/\bsad\b/gi, 'SAD'],
+    [/\beu\b/gi, 'EU'],
+    [/\bnato\b/gi, 'NATO'],
+    [/\bmoskva\b/gi, 'Moskva'],
+    [/\bdaniel hristov\b/gi, 'Daniel Hristov'],
+    [/\bbudimpesta\b/gi, 'Budimpesta'],
+    [/\bungarska\b/gi, 'Ungarska'],
+    [/\bkriva palanka\b/gi, 'Kriva Palanka'],
+    [/\bjugoslavija\b/gi, 'Jugoslavija'],
+    [/\berdogan\b/gi, 'Erdogan'],
+    [/\brute\b/gi, 'Rute'],
+    [/\bturcija\b/gi, 'Turcija'],
+    [/\brusija\b/gi, 'Rusija'],
+    [/\bukraina\b/gi, 'Ukraina'],
+    [/\biran\b/gi, 'Iran'],
+    [/\bdanska\b/gi, 'Danska'],
+    [/\bevropa\b/gi, 'Evropa'],
+    [/\btito\b/gi, 'Tito'],
+    [/\bsrpskata opozicija\b/gi, 'Srpskata opozicija'],
+    [/\bzaev\b/gi, 'Zaev'],
+    [/\bbasanovic\b/gi, 'Basanovic'],
+    [/\bbasanovik\b/gi, 'Basanovic'],
 ];
 
 export function decodeHtmlEntities(text: any): string {
@@ -67,12 +67,12 @@ export function decodeHtmlEntities(text: any): string {
  */
 export function transliterate(text: string): string {
     const map: Record<string, string> = {
-        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'ѓ': 'gj', 'е': 'e', 'ж': 'zh', 'з': 'z', 'ѕ': 'dz',
-        'и': 'i', 'ј': 'j', 'к': 'k', 'л': 'l', 'љ': 'lj', 'м': 'm', 'н': 'n', 'њ': 'nj', 'о': 'o', 'п': 'p',
-        'р': 'r', 'с': 's', 'т': 't', 'ќ': 'kj', 'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'c', 'ч': 'ch', 'џ': 'dzh', 'ш': 'sh',
-        'А': 'a', 'Б': 'b', 'В': 'v', 'Г': 'g', 'Д': 'd', 'Ѓ': 'gj', 'Е': 'e', 'Ж': 'zh', 'З': 'z', 'Ѕ': 'dz',
-        'И': 'i', 'Ј': 'j', 'К': 'k', 'Л': 'l', 'Љ': 'lj', 'М': 'm', 'Н': 'n', 'Њ': 'nj', 'О': 'o', 'П': 'p',
-        'Р': 'r', 'С': 's', 'Т': 't', 'Ќ': 'kj', 'У': 'u', 'Ф': 'f', 'Х': 'h', 'Ц': 'c', 'Ч': 'ch', 'Џ': 'dzh', 'Ш': 'sh'
+        'a': 'a', 'b': 'b', 'v': 'v', 'g': 'g', 'd': 'd', 'dj': 'gj', 'e': 'e', 'z': 'zh', 'z': 'z', 'ѕ': 'dz',
+        'i': 'i', 'j': 'j', 'k': 'k', 'l': 'l', 'lj': 'lj', 'm': 'm', 'n': 'n', 'nj': 'nj', 'o': 'o', 'p': 'p',
+        'r': 'r', 's': 's', 't': 't', 'c': 'kj', 'u': 'u', 'f': 'f', 'h': 'h', 'c': 'c', 'c': 'ch', 'dz': 'dzh', 's': 'sh',
+        'A': 'a', 'B': 'b', 'V': 'v', 'G': 'g', 'D': 'd', 'Dj': 'gj', 'E': 'e', 'Z': 'zh', 'Z': 'z', 'Ѕ': 'dz',
+        'I': 'i', 'J': 'j', 'K': 'k', 'L': 'l', 'Lj': 'lj', 'M': 'm', 'N': 'n', 'Nj': 'nj', 'O': 'o', 'P': 'p',
+        'R': 'r', 'S': 's', 'T': 't', 'C': 'kj', 'U': 'u', 'F': 'f', 'H': 'h', 'C': 'c', 'C': 'ch', 'Dz': 'dzh', 'S': 'sh'
     };
     return text.split('').map(char => map[char] || char).join('');
 }
@@ -97,8 +97,8 @@ export function slugify(text: string): string {
 export function deShout(text: string): string {
     if (!text) return '';
     // If text doesn't have many lowercase letters, it's probably shouting
-    const lowerCount = (text.match(/[a-zа-ш]/g) || []).length;
-    const totalAlpha = (text.match(/[a-zA-Zа-шА-Ш]/g) || []).length;
+    const lowerCount = (text.match(/[a-za-s]/g) || []).length;
+    const totalAlpha = (text.match(/[a-zA-Za-sA-S]/g) || []).length;
     
     if (totalAlpha > 5 && lowerCount < totalAlpha * 0.2) {
         const lower = text.toLowerCase();
@@ -118,10 +118,10 @@ export function cleanAndDecode(text: any): string {
     let cleaned = decodeHtmlEntities(text);
     
     // 1. Strip scraping artifacts from the end or middle
-    // Handles variants like: Read More », Read More, [&#8230;], Прочитај повеќе, etc.
+    // Handles variants like: Read More », Read More, [&#8230;], Procitaj povece, etc.
     const artifacts = [
         /Read\s+More\s*[»\>\-]*\s*$/gi,
-        /Прочитај\s+повеќе\s*$/gi,
+        /Procitaj\s+povece\s*$/gi,
         /Continue\s+reading\s*$/gi,
         /\[\s*&#\d+;\s*\]/g,      // Handles [&#8230;]
         /\[\s*\.\.\.\s*\]/g,      // Handles [...]
@@ -267,9 +267,9 @@ export function getEditionStr(dateInput: any): string {
         timeZone: 'Europe/Skopje',
     }).format(date));
     
-    if (hour >= 5 && hour < 12) return 'УТРИНСКО ИЗДАНИЕ';
-    if (hour >= 12 && hour < 18) return 'ПЛАДНЕВНО ИЗДАНИЕ';
-    return 'ВЕЧЕРНО ИЗДАНИЕ';
+    if (hour >= 5 && hour < 12) return 'UTRINSKO IZDANIE';
+    if (hour >= 12 && hour < 18) return 'PLADNEVNO IZDANIE';
+    return 'VECERNO IZDANIE';
 }
 
 /**
@@ -279,23 +279,23 @@ export function getDesignCardContext(cluster: any) {
     const topic = (cluster.topics?.[0] || cluster.articles?.[0]?.topic || '').toLowerCase();
     const category = (cluster.articles?.[0]?.category || '').toLowerCase();
     
-    if (topic.includes('култура') || category.includes('култура') || topic.includes('уметност')) {
-        return { label: 'КУЛТУРНА ПРЕПОРАКА', icon: 'palette', sub: 'Преглед на најзначајните дела од историјата на македонската уметност.' };
+    if (topic.includes('Kultura') || category.includes('Kultura') || topic.includes('umetnost')) {
+        return { label: 'KULTURNA PREPORAKA', icon: 'palette', sub: 'Pregled na najznacajnite dela od istorijata na makedonskata umetnost.' };
     }
-    if (topic.includes('политика') || category.includes('политика')) {
-        return { label: 'ПОЛИТИЧКИ ФОКУС', icon: 'building-2', sub: 'Длабинска анализа на клучните политички процеси и одлуки.' };
+    if (topic.includes('Politika') || category.includes('Politika')) {
+        return { label: 'POLITICKI FOKUS', icon: 'building-2', sub: 'Dlabinska analiza na klucnite politicki procesi i odluki.' };
     }
-    if (topic.includes('економија') || category.includes('економија') || topic.includes('бизнис')) {
-        return { label: 'ЕКОНОМСКИ БРИФИНГ', icon: 'trending-up', sub: 'Преглед на економските трендови и финансиските пазари.' };
+    if (topic.includes('Ekonomija') || category.includes('Ekonomija') || topic.includes('biznis')) {
+        return { label: 'EKONOMSKI BRIFING', icon: 'trending-up', sub: 'Pregled na ekonomskite trendovi i finansiskite pazari.' };
     }
-    if (topic.includes('спорт') || category.includes('спорт')) {
-        return { label: 'СПОРТСКИ ПУЛС', icon: 'award', sub: 'Најважните настани и резултати од светот на спортот.' };
+    if (topic.includes('Sport') || category.includes('Sport')) {
+        return { label: 'SPORTSKI PULS', icon: 'award', sub: 'Najvaznite nastani i rezultati od svetot na sportot.' };
     }
-    if (topic.includes('технологија') || category.includes('технологија') || topic.includes('наука')) {
-        return { label: 'ТЕХНОЛОШКИ ПРЕСЕК', icon: 'cpu', sub: 'Иновации и откритија кои ја обликуваат нашата иднина.' };
+    if (topic.includes('Tehnologija') || category.includes('Tehnologija') || topic.includes('nauka')) {
+        return { label: 'TEHNOLOSKI PRESEK', icon: 'cpu', sub: 'Inovacii i otkritija koi me oblikuvaat nasata idnina.' };
     }
     
-    return { label: 'СИСТЕМСКИ ПРЕГЛЕД', icon: 'newspaper', sub: 'Алгоритамска синтеза на водечките информации од домашните медиуми.' };
+    return { label: 'SISTEMSKI PREGLED', icon: 'newspaper', sub: 'Algoritamska sinteza na vodeckite informacii od domasnite mediumi.' };
 }
 
 /**
@@ -308,7 +308,7 @@ export function parseFootnotes(text: string): string {
 
     // 1. Convert raw numbers at the end of words/sentences into brackets
     // Matches a space, then 1-3 digits, followed by a period or end of string
-    // e.g. "претседателот 1" -> "претседателот [1]"
+    // e.g. "pretsedatelot 1" -> "pretsedatelot [1]"
     processed = processed.replace(/\s(\d{1,3})(?=\.|\,|$|\s)/g, ' [$1]');
 
     // 2. Handle [1, 2, 3] style (comma separated inside brackets)
@@ -319,6 +319,6 @@ export function parseFootnotes(text: string): string {
 
     // 3. Convert all [N] into superscript links
     return processed.replace(/\[(\d+)\]/g, (match, num) => {
-        return `<sup class="text-nyt-accent font-black ml-0.5 cursor-help" title="Извор ${num}">${num}</sup>`;
+        return `<sup class="text-nyt-accent font-black ml-0.5 cursor-help" title="izvor ${num}">${num}</sup>`;
     });
 }

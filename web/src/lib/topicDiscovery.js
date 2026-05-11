@@ -66,18 +66,18 @@ export function buildTopicConnections(currentTopic, clusters = [], details = [],
         entry.sharedTagCount * 0.38 +
         entry.sharedSourceCount * 0.26;
 
-      let relationshipLabel = 'Поврзана тема';
-      let relationshipNote = `${entry.clusterCount} кластери веќе се прелеваат од ${currentTopic} кон ${entry.topic}.`;
+      let relationshipLabel = 'Povrzana tema';
+      let relationshipNote = `${entry.clusterCount} klasteri vece se prelevaat od ${currentTopic} kon ${entry.topic}.`;
 
       if (entry.breakingCount >= 2) {
-        relationshipLabel = 'Следна развојна линија';
-        relationshipNote = `${entry.topic} станува следниот фронт на приказната, со ${entry.breakingCount} активни развои што се надоврзуваат на ${currentTopic}.`;
+        relationshipLabel = 'Sledna razvojna linija';
+        relationshipNote = `${entry.topic} stanuva sledniot front na prikaznata, so ${entry.breakingCount} aktivni razvoi sto se nadovrzuvaat na ${currentTopic}.`;
       } else if (entry.sharedTagCount >= 3) {
-        relationshipLabel = 'Поширока рамка';
-        relationshipNote = `${entry.topic} ја шири истата приказна преку исти имиња и агли, не само преку површна тематска блискост.`;
+        relationshipLabel = 'Posiroka ramka';
+        relationshipNote = `${entry.topic} ja siri istata prica preku isti iminja i agli, ne samo preku povrsna tematska bliskost.`;
       } else if (entry.sharedSourceCount >= 3) {
-        relationshipLabel = 'Истите актери, друг фронт';
-        relationshipNote = `${entry.topic} ја следат многу од истите редакции и извори што го туркаат и ${currentTopic}, но со поинаква последица или арена.`;
+        relationshipLabel = 'Istite akteri, drug front';
+        relationshipNote = `${entry.topic} ja sledat mnogu od istite redakcii i izvori sto ga turkaat i ${currentTopic}, no so poinakva posledica ili arena.`;
       }
 
       return {

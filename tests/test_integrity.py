@@ -78,7 +78,7 @@ class TestAstroFrontendIntegrity:
     def test_status_route_renders_live_health_page(self):
         status_page = _read("web/src/pages/admin/status.astro")
         assert "fetch(`${API_URL}/health`)" in status_page
-        assert "Состојба на системот" in status_page
+        assert "Sostojba na sistemot" in status_page
 
     def test_header_fetches_stats_summary_when_page_does_not_supply_stats(self):
         header = _read("web/src/components/NYTHeader.astro")
@@ -152,7 +152,7 @@ class TestAstroFrontendIntegrity:
 
     def test_briefing_page_shows_real_error_state_and_not_only_processing_state(self):
         briefing = _read("web/src/pages/briefing.astro")
-        assert "Брифингот моментално не е достапен." in briefing
+        assert "Brifingot momentalno ne e dostapen." in briefing
 
     def test_pulse_page_has_real_error_state_and_safe_category_math(self):
         pulse = _read("web/src/pages/pulse.astro")
@@ -170,7 +170,7 @@ class TestAstroFrontendIntegrity:
 
         assert "let initialError: string | null = null;" in for_you_page
         assert (
-            'initialError = "Не можеме да ги вчитаме почетните препораки во моментов."'
+            'initialError = "Ne mozeme da im vcitame pocetnite preporaki vo momentov."'
             in for_you_page
         )
         assert (

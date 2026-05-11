@@ -17,7 +17,7 @@ const renderSynthesisHtml = (text: string) => sharedRenderSynthesisHtml(text, ha
 <section class="editorial-section analysis-section mb-16 border-t-4 border-foreground pt-12">
 	<div class="section-eyebrow mb-10">
 		<ShieldCheck size={18} className="text-foreground" />
-		<h2 class="section-label">ПЛУРАЛИЗАМ</h2>
+		<h2 class="section-label">PLURALIZAM</h2>
 		<div class="section-divider"></div>
 	</div>
 
@@ -27,7 +27,7 @@ const renderSynthesisHtml = (text: string) => sharedRenderSynthesisHtml(text, ha
 				<div class="factcheck-col agreements">
 					<header class="col-header">
 						<ShieldCheck size={18} className="text-emerald-600" />
-						<h3>Потврдени факти</h3>
+						<h3>potvrdeni fakti</h3>
 					</header>
 					<ul class="fact-list">
 						{verificationReport.agreements.map((item: string) => (
@@ -39,7 +39,7 @@ const renderSynthesisHtml = (text: string) => sharedRenderSynthesisHtml(text, ha
 				<div class="factcheck-col conflicts">
 					<header class="col-header">
 						<TriangleAlert size={18} className="text-nyt-red" />
-						<h3>Разлики во известувањето</h3>
+						<h3>Razliki vo izvestaj</h3>
 					</header>
 					<ul class="fact-list">
 						{verificationReport.conflicts.map((item: string) => (
@@ -52,9 +52,9 @@ const renderSynthesisHtml = (text: string) => sharedRenderSynthesisHtml(text, ha
 					<div class="factcheck-col missing-info mt-6 col-span-full border-t border-border pt-4">
 						<header class="col-header">
 							<Search size={18} className="text-amber-500" />
-							<h3>КОНТЕКСТ</h3>
+							<h3>kontekst</h3>
 						</header>
-						<p class="text-xs text-muted-foreground mb-3 font-sans uppercase font-bold tracking-wider">Што изоставуваат одредени извори:</p>
+						<p class="text-xs text-muted-foreground mb-3 font-sans uppercase font-bold tracking-wider">Sto izostavuvaat odredeni izvori:</p>
 						<ul class="fact-list">
 							{verificationReport.missing_info.map((item: string) => (
 								<li class="fact-item amber" set:html={renderSynthesisHtml(item)}></li>
@@ -74,7 +74,7 @@ const renderSynthesisHtml = (text: string) => sharedRenderSynthesisHtml(text, ha
 
 	{perspectives.length > 0 && (
 		<div class="perspectives-area">
-			<h4 class="text-[11px] font-black uppercase tracking-widest text-center mb-8 text-muted-foreground/60">ДИВЕРЗИТЕТ</h4>
+			<h4 class="text-[11px] font-black uppercase tracking-widest text-center mb-8 text-muted-foreground/60">DIVERZITET</h4>
 			<div class="perspective-grid-v2">
 				{perspectives.map((p: any) => (
 					<div class="editorial-angle-card">

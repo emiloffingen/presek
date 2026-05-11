@@ -53,7 +53,7 @@ const KnowledgeGraphIsland: React.FC<{ apiUrl: string }> = ({ apiUrl }) => {
             <section>
                 <div className="flex items-center gap-2 mb-6 border-b border-border pb-4">
                     <TrendingUp size={20} className="text-nyt-accent" />
-                    <h2 className="font-sans text-xs font-black uppercase tracking-widest">Актуелни Субјекти</h2>
+                    <h2 className="font-sans text-xs font-black uppercase tracking-widest">Aktuelni Subjekti</h2>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     {data.trending.map((ent) => (
@@ -62,10 +62,10 @@ const KnowledgeGraphIsland: React.FC<{ apiUrl: string }> = ({ apiUrl }) => {
                             href={`/subjekt/${encodeURIComponent(ent.name)}`}
                             className="p-4 border border-border bg-card hover:border-nyt-accent transition-all group"
                         >
-                            <span className="text-[10px] font-black uppercase text-muted-foreground block mb-2">{ent.type || 'СУБЈЕКТ'}</span>
+                            <span className="text-[10px] font-black uppercase text-muted-foreground block mb-2">{ent.type || 'SUBJEKT'}</span>
                             <h3 className="font-serif font-bold text-lg leading-tight group-hover:text-nyt-accent">{ent.name}</h3>
                             <div className="mt-3 flex items-center justify-between">
-                                <span className="text-[10px] font-bold uppercase">{ent.total_mentions} објави</span>
+                                <span className="text-[10px] font-bold uppercase">{ent.total_mentions} objavi</span>
                                 <div className={`w-2 h-2 rounded-full ${ent.sentiment_score > 0.1 ? 'bg-green-500' : ent.sentiment_score < -0.1 ? 'bg-nyt-red' : 'bg-muted'}`}></div>
                             </div>
                         </a>
@@ -78,7 +78,7 @@ const KnowledgeGraphIsland: React.FC<{ apiUrl: string }> = ({ apiUrl }) => {
                 <section>
                     <div className="flex items-center gap-2 mb-6 border-b border-border pb-4">
                         <Heart size={20} className="text-green-600" />
-                        <h2 className="font-sans text-xs font-black uppercase tracking-widest">Позитивен Пулс</h2>
+                        <h2 className="font-sans text-xs font-black uppercase tracking-widest">Pozitiven Puls</h2>
                     </div>
                     <div className="space-y-3">
                         {data.sentiment.positives.map((ent) => (
@@ -93,7 +93,7 @@ const KnowledgeGraphIsland: React.FC<{ apiUrl: string }> = ({ apiUrl }) => {
                 <section>
                     <div className="flex items-center gap-2 mb-6 border-b border-border pb-4">
                         <Activity size={20} className="text-nyt-red" />
-                        <h2 className="font-sans text-xs font-black uppercase tracking-widest">Критичен Пулс</h2>
+                        <h2 className="font-sans text-xs font-black uppercase tracking-widest">Kriticen Puls</h2>
                     </div>
                     <div className="space-y-3">
                         {data.sentiment.negatives.map((ent) => (
@@ -110,7 +110,7 @@ const KnowledgeGraphIsland: React.FC<{ apiUrl: string }> = ({ apiUrl }) => {
             <section>
                 <div className="flex items-center gap-2 mb-6 border-b border-border pb-4">
                     <Users size={20} className="text-nyt-accent" />
-                    <h2 className="font-sans text-xs font-black uppercase tracking-widest">Мрежа на Конекции</h2>
+                    <h2 className="font-sans text-xs font-black uppercase tracking-widest">Mreza na Konekcii</h2>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {data.relationships.map((rel, idx) => (

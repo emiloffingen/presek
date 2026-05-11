@@ -7,59 +7,59 @@ from api_helpers import (
 
 def test_normalize_summary_text_dedupes_and_strips_noise():
     raw = """
-    Статии:
-    • Главен развој: Трамп: Вторник, 20:00 часот по источно време
-    • Главен развој: Трамп: Вторник, 20:00 часот по источно време
-    Контекст: Американскиот претседател најави важно обраќање.
+    clanci:
+    • Glaven razvoj: Tramp: Utorak, 20:00 casot po istocno vreme
+    • Glaven razvoj: Tramp: Utorak, 20:00 casot po istocno vreme
+    kontekst: Amerikanskiot pretsedatel najavi vazno obracanje.
     """
 
     result = normalize_summary_text(raw)
 
-    assert "Статии" not in result
-    assert result.count("Главен развој") == 1
-    assert "Американскиот претседател" in result
+    assert "clanci" not in result
+    assert result.count("Glaven razvoj") == 1
+    assert "Amerikanskiot pretsedatel" in result
 
 
 def test_normalize_perspectives_infers_angles_and_dedupes():
     raw = [
-        "Повеќето извори се вртат околу царините и рокот за обраќање.",
+        "Poveceto izvori se vrtat okolu carinite i rokot za obracanje.",
         {
-            "angle": "Перспектива",
-            "content": "Повеќето извори се вртат околу царините и рокот за обраќање.",
+            "angle": "perspektiva",
+            "content": "Poveceto izvori se vrtat okolu carinite i rokot za obracanje.",
         },
         {
-            "label": "Перспектива",
-            "text": "Разликите најмногу се во акцентот и формулацијата.",
+            "label": "perspektiva",
+            "text": "Razlikite najmnogu se vo akcentot i formulacijata.",
         },
         {
             "angle": "",
-            "content": "Останува нејасно дали мерките ќе стапат веднаш на сила.",
+            "content": "ostaje nejasno dali merkite ce stapat vednas na sila.",
         },
     ]
 
     result = normalize_perspectives(raw)
 
     assert len(result) == 3
-    assert result[0]["angle"] == "Заедничка линија"
-    assert result[1]["angle"] == "Различни акценти"
-    assert result[2]["angle"] == "Што останува отворено"
+    assert result[0]["angle"] == "Zajednicka linija"
+    assert result[1]["angle"] == "Razliciti akcenti"
+    assert result[2]["angle"] == "Sta ostaje otvoreno"
 
 
 def test_normalize_citation_sources_orders_and_cleans_rows():
     raw = [
         {
-            "source": " МИА ",
-            "title": " Наслов ",
+            "source": " MIA ",
+            "title": " Naslov ",
             "link": "https://example.com/1",
             "created_at": "2026-04-05T12:00:00",
-            "category": " Свет ",
+            "category": " Svet ",
         },
-        {"source": "DW", "title": "Втор наслов", "link": "https://example.com/2"},
+        {"source": "DW", "title": "Vtor naslov", "link": "https://example.com/2"},
     ]
 
     result = normalize_citation_sources(raw)
 
     assert [item["index"] for item in result] == [1, 2]
-    assert result[0]["source"] == "МИА"
-    assert result[0]["title"] == "Наслов"
-    assert result[0]["category"] == "Свет"
+    assert result[0]["source"] == "MIA"
+    assert result[0]["title"] == "Naslov"
+    assert result[0]["category"] == "Svet"

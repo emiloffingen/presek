@@ -245,7 +245,7 @@ def repair_knowledge_graph_task():
 
         # 3. Noise cleanup (Must delete relationships first)
         noise_entities = db.execute(
-            "SELECT name FROM knowledge_entities WHERE name ~* ' (веќе|како|сами|самите|биле|има|беше)$'"
+            "SELECT name FROM knowledge_entities WHERE name ~* ' (vece|kako|sami|samite|bile|ima|bese)$'"
         )
         if noise_entities:
             noise_names = [n["name"] for n in noise_entities]

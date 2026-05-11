@@ -18,27 +18,27 @@ _DB_PATCH = "database.db_manager"
 
 
 def test_mk_stem():
-    assert mk_stem("владата") == "влад"
-    assert mk_stem("влада") == "влада"  # No suffix
-    assert mk_stem("учењето") == "учење"  # length constraint skips 'ењето', strips 'то'
-    assert mk_stem("краток") == "краток"  # no matching suffix
+    assert mk_stem("vladata") == "vlad"
+    assert mk_stem("vlada") == "vlada"  # No suffix
+    assert mk_stem("ucenjeto") == "ucenje"  # length constraint skips 'enjeto', strips 'to'
+    assert mk_stem("kratok") == "kratok"  # no matching suffix
 
 
 def test_text_to_vector():
     # Stopwords should be removed
-    vec = text_to_vector("Ова е тест за владата")
-    assert "ова" not in vec
-    assert "е" not in vec
-    assert "за" not in vec
+    vec = text_to_vector("ova e test za vladata")
+    assert "ova" not in vec
+    assert "e" not in vec
+    assert "za" not in vec
     # Stemming should be applied
-    assert vec["тест"] == 1
-    assert vec["влад"] == 1
+    assert vec["test"] == 1
+    assert vec["vlad"] == 1
 
 
 def test_get_cosine():
-    vec1 = Counter({"влада": 1, "тест": 1})
-    vec2 = Counter({"влада": 1, "уче": 1})
-    vec3 = Counter({"нешто": 1, "сосема": 1, "различно": 1})
+    vec1 = Counter({"vlada": 1, "test": 1})
+    vec2 = Counter({"vlada": 1, "uce": 1})
+    vec3 = Counter({"nesto": 1, "sosema": 1, "razlicito": 1})
 
     # Cosine similarity of identical vectors should be 1.0
     assert abs(get_cosine(vec1, vec1) - 1.0) < 0.001
@@ -53,26 +53,26 @@ def test_get_cosine():
 
 def test_title_phrase_overlap_prefers_shared_bigram_structure():
     close = _title_phrase_overlap(
-        "Владата усвои пакет мерки за економија",
-        "Нов пакет мерки за економија усвои владата",
+        "Vladata usvoi paket merki za Ekonomija",
+        "Nov paket merki za Ekonomija usvoi vladata",
     )
     far = _title_phrase_overlap(
-        "Владата усвои пакет мерки за економија", "Фудбалски натпревар во Лига Шампиони"
+        "Vladata usvoi paket merki za Ekonomija", "Fudbalski natprevar vo Liga Sampioni"
     )
     assert close > far
 
 
 def test_topic_bridge_is_more_permissive_for_fresh_followups_than_old_ones():
-    shared = {"Кочани"}
+    shared = {"Kocani"}
     assert (
         _topic_bridge_allowed(
-            "Политика", "Вести", "Srbija", "Srbija", 0.0, 0.55, shared, 4.0
+            "Politika", "vesti", "Srbija", "Srbija", 0.0, 0.55, shared, 4.0
         )
         is True
     )
     assert (
         _topic_bridge_allowed(
-            "Политика", "Вести", "Srbija", "Srbija", 0.0, 0.55, shared, 30.0
+            "Politika", "vesti", "Srbija", "Srbija", 0.0, 0.55, shared, 30.0
         )
         is False
     )
@@ -81,18 +81,18 @@ def test_topic_bridge_is_more_permissive_for_fresh_followups_than_old_ones():
 @patch(_DB_PATCH, _mock_db)
 def test_find_or_create_cluster():
     recent_articles = [
-        {"cluster_id": "c1", "title": "Владата донесе нова мерка за економијата"},
-        {"cluster_id": "c1", "title": "Нова мерка на владата за економија"},
-        {"cluster_id": "c2", "title": "Спортски настан во Скопје"},
+        {"cluster_id": "c1", "title": "Vladata donese nova merka za ekonomijata"},
+        {"cluster_id": "c1", "title": "nova merka na vladata za Ekonomija"},
+        {"cluster_id": "c2", "title": "Sportski nastan vo Beograd"},
     ]
 
     # Should match cluster 1 (use very similar words to pass threshold 0.35)
-    title1 = "Владата донесе мерка за економијата"
+    title1 = "Vladata donese merka za ekonomijata"
     cid1 = find_or_create_cluster(MagicMock(), title1, recent_articles)
     assert cid1 == "c1"
 
     # Should create new cluster
-    title2 = "Временска прогноза за утре"
+    title2 = "Vremenska prognoza za sutra"
     cid2 = find_or_create_cluster(MagicMock(), title2, recent_articles)
     assert cid2 != "c1"
     assert cid2 != "c2"
@@ -102,23 +102,23 @@ def test_find_or_create_cluster():
 def test_max_cluster_size():
     # Mocking a full cluster
     recent_articles = [
-        {"cluster_id": "c1", "title": "Владата донесе нова мерка за економијата"}
+        {"cluster_id": "c1", "title": "Vladata donese nova merka za ekonomijata"}
     ] * 30
-    title1 = "Мерки на владата за економија"
+    title1 = "Merki na vladata za Ekonomija"
     cid1 = find_or_create_cluster(MagicMock(), title1, recent_articles)
     assert cid1 != "c1"  # Should not join full cluster
 
 
 def test_empty_title_creates_new_cluster():
     """Empty or very short title should create a new cluster."""
-    recent = [{"cluster_id": "c1", "title": "Владата донесе мерка"}]
+    recent = [{"cluster_id": "c1", "title": "Vladata donese merka"}]
     cid = find_or_create_cluster(MagicMock(), "", recent)
     assert cid != "c1"
 
 
 def test_no_recent_articles():
     """With no recent articles, should always create new cluster."""
-    cid = find_or_create_cluster(MagicMock(), "Нова важна вест", [])
+    cid = find_or_create_cluster(MagicMock(), "nova vazna vest", [])
     assert len(cid) == 12  # uuid.hex[:12]
 
 
@@ -126,19 +126,19 @@ def test_no_recent_articles():
 def test_completely_different_topic():
     """Completely unrelated titles should not cluster together."""
     recent = [
-        {"cluster_id": "c1", "title": "Владата донесе нова мерка за економијата"},
+        {"cluster_id": "c1", "title": "Vladata donese nova merka za ekonomijata"},
     ]
     cid = find_or_create_cluster(
-        MagicMock(), "Фудбалски натпревар во Лига Шампиони", recent
+        MagicMock(), "Fudbalski natprevar vo Liga Sampioni", recent
     )
     assert cid != "c1"
 
 
 def test_mk_stem_short_words_unchanged():
     """Words shorter than 5 chars should not be stemmed."""
-    assert mk_stem("мир") == "мир"
-    assert mk_stem("зема") == "зема"
-    assert mk_stem("а") == "а"
+    assert mk_stem("mir") == "mir"
+    assert mk_stem("zema") == "zema"
+    assert mk_stem("a") == "a"
 
 
 def test_text_to_vector_empty():
@@ -147,7 +147,7 @@ def test_text_to_vector_empty():
 
 
 def test_text_to_vector_all_stopwords():
-    vec = text_to_vector("и на во од со за")
+    vec = text_to_vector("i na vo od so za")
     assert len(vec) == 0
 
 
@@ -157,7 +157,7 @@ def test_get_cosine_empty_vectors():
 
 
 def test_get_cosine_identical():
-    vec = Counter({"тест": 3, "влад": 2})
+    vec = Counter({"test": 3, "vlad": 2})
     assert abs(get_cosine(vec, vec) - 1.0) < 0.001
 
 
@@ -169,19 +169,19 @@ def test_cluster_age_decay():
     old_time = datetime.datetime.now() - datetime.timedelta(hours=48)
     recent_time = datetime.datetime.now() - datetime.timedelta(minutes=5)
 
-    title = "Владата донесе мерка за економијата"
+    title = "Vladata donese merka za ekonomijata"
 
     recent_articles = [
         {
             "cluster_id": "c-old",
-            "title": "Владата донесе нова мерка за економијата",
+            "title": "Vladata donese nova merka za ekonomijata",
             "created_at": old_time,
         },
     ]
     fresh_articles = [
         {
             "cluster_id": "c-new",
-            "title": "Владата донесе нова мерка за економијата",
+            "title": "Vladata donese nova merka za ekonomijata",
             "created_at": recent_time,
         },
     ]
@@ -198,18 +198,18 @@ def test_phrase_overlap_helps_short_variants_join_same_cluster():
     recent_articles = [
         {
             "cluster_id": "c1",
-            "title": "Пакет мерки за економија од Владата",
+            "title": "Paket merki za Ekonomija od Vladata",
             "created_at": datetime.datetime.now(),
         },
         {
             "cluster_id": "c2",
-            "title": "Фудбалски натпревар во Скопје",
+            "title": "Fudbalski natprevar vo Beograd",
             "created_at": datetime.datetime.now(),
         },
     ]
 
     cid = find_or_create_cluster(
-        MagicMock(), "Владата со пакет мерки за економија", recent_articles
+        MagicMock(), "Vladata so paket merki za Ekonomija", recent_articles
     )
     assert cid == "c1"
 
@@ -219,21 +219,21 @@ def test_same_source_unrelated_followup_does_not_merge_after_time_gap():
     recent_articles = [
         {
             "cluster_id": "c1",
-            "title": "Денес е Упокоение на Свети Методиј Солунски",
+            "title": "danas e Upokoenie na Sveti Metodij Solunski",
             "created_at": datetime.datetime.now() - datetime.timedelta(hours=23),
             "source": "Skopje Info",
             "category": "Srbija",
-            "topic": "Вести",
+            "topic": "vesti",
         }
     ]
 
     cid = find_or_create_cluster(
         MagicMock(),
-        "Пишува „Скопски Херој“: Главен град без ноќен живот – каде исчезна урбаното Скопје?",
+        "Pisuva „Skopski Heroj“: Glaven grad bez nocen zivot – kade iscezna urbanoto Beograd?",
         recent_articles,
         category="Srbija",
         source="Skopje Info",
-        topic="Вести",
+        topic="vesti",
     )
 
     assert cid != "c1"
@@ -241,25 +241,25 @@ def test_same_source_unrelated_followup_does_not_merge_after_time_gap():
 
 @patch(_DB_PATCH, _mock_db)
 def test_topic_bridge_allows_same_story_followup_when_entities_and_title_overlap_are_strong():
-    _mock_db.get_cluster_entities.return_value = {"c1": {"Кочани", "Обвинителство"}}
+    _mock_db.get_cluster_entities.return_value = {"c1": {"Kocani", "Obvinitelstvo"}}
     recent_articles = [
         {
             "cluster_id": "c1",
-            "title": "Обвинителството отвори истрага за пожарот во Кочани",
+            "title": "Obvinitelstvoto otvori istraga za pozarot vo Kocani",
             "created_at": datetime.datetime.now(),
-            "source": "МИА",
+            "source": "MIA",
             "category": "Srbija",
-            "topic": "Вести",
+            "topic": "vesti",
         }
     ]
 
     cid = find_or_create_cluster(
         MagicMock(),
-        "Кочани: Обвинителството бара нови докази во истрагата за пожарот",
+        "Kocani: Obvinitelstvoto bara novi dokazi vo istragata za pozarot",
         recent_articles,
         category="Srbija",
-        source="Телма",
-        topic="Политика",
+        source="Telma",
+        topic="Politika",
     )
 
     assert cid == "c1"
@@ -267,25 +267,25 @@ def test_topic_bridge_allows_same_story_followup_when_entities_and_title_overlap
 
 @patch(_DB_PATCH, _mock_db)
 def test_topic_bridge_does_not_merge_same_category_story_without_shared_entities_or_overlap():
-    _mock_db.get_cluster_entities.return_value = {"c1": {"Кочани", "Обвинителство"}}
+    _mock_db.get_cluster_entities.return_value = {"c1": {"Kocani", "Obvinitelstvo"}}
     recent_articles = [
         {
             "cluster_id": "c1",
-            "title": "Обвинителството отвори истрага за пожарот во Кочани",
+            "title": "Obvinitelstvoto otvori istraga za pozarot vo Kocani",
             "created_at": datetime.datetime.now(),
-            "source": "МИА",
+            "source": "MIA",
             "category": "Srbija",
-            "topic": "Вести",
+            "topic": "vesti",
         }
     ]
 
     cid = find_or_create_cluster(
         MagicMock(),
-        "Владата отвора нов конкурс за директори на училишта",
+        "Vladata otvora nov konkurs za direktori na ucilista",
         recent_articles,
         category="Srbija",
-        source="Сител",
-        topic="Политика",
+        source="Sitel",
+        topic="Politika",
     )
 
     assert cid != "c1"

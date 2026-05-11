@@ -44,7 +44,7 @@ export default function PreferenceToggle({
       window.clearTimeout(feedbackTimerRef.current);
     }
 
-    setFeedback(nextFollowing ? 'Зачувано' : 'Отстрането');
+    setFeedback(nextFollowing ? 'Zacuvano' : 'Otstraneto');
     if (typeof window !== 'undefined') {
       feedbackTimerRef.current = window.setTimeout(() => setFeedback(''), 1800);
     }
@@ -61,12 +61,12 @@ export default function PreferenceToggle({
 
   const statusId = `pref-status-${kind}-${String(value || '').replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'value'}`;
 
-  const shortAction = isFollowing ? 'Се следи' : kind === 'topic' ? 'Следи тема' : 'Следи извор';
-  const clitic = kind === 'topic' ? 'Ја' : 'Го';
+  const shortAction = isFollowing ? 'Se sledi' : kind === 'topic' ? 'Sledi tema' : 'Sledi izvor';
+  const clitic = kind === 'topic' ? 'Ja' : 'Go';
   const buttonLabel = feedback || shortAction;
   const liveMessage = feedback
     ? `${feedback}: ${value}`
-    : `${isFollowing ? clitic + ' следите' : 'Не ' + clitic.toLowerCase() + ' следите'} ${value}`;
+    : `${isFollowing ? clitic + ' sledite' : 'Ne ' + clitic.toLowerCase() + ' sledite'} ${value}`;
 
   return (
     <>

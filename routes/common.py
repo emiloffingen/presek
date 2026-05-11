@@ -43,12 +43,12 @@ def _validate_sync_token_value(value: str, *, required: bool = True) -> str:
     if not token:
         if required:
             raise HTTPException(
-                status_code=400, detail="Недостасува клуч за синхронизација"
+                status_code=400, detail="Nedostasuva kluc za sinhronizacija"
             )
         return ""
     if not SYNC_TOKEN_PATTERN.fullmatch(token):
         raise HTTPException(
-            status_code=400, detail="Невалиден формат на клучот за синхронизација"
+            status_code=400, detail="Nevaliden format na klucot za sinhronizacija"
         )
     return token
 
@@ -83,7 +83,7 @@ def _preferred_cluster_headline(rows) -> str:
             return title
         if preferred_mk is None and _looks_macedonian_headline(title):
             preferred_mk = title
-    return preferred_mk or fallback or "Вест"
+    return preferred_mk or fallback or "vest"
 
 
 def _parse_ip_literal(value: str) -> str:
@@ -246,7 +246,7 @@ def _is_rate_limited_path(path: str) -> bool:
 
 def _rate_limit_error_payload() -> dict:
     return {
-        "error": "Синтезата се подготвува... Ве молиме обидете се повторно за некоја минута."
+        "error": "Sintezata se podgotvuva... Ve molime obidete se povtorno za nekoja minuta."
     }
 
 
@@ -279,7 +279,7 @@ async def build_intelligence_summary_payload(
         f"""
         SELECT 
             COUNT(*) as total,
-            COUNT(*) FILTER (WHERE a.category IN ('Свет', 'Европа', 'Балкан', 'Регион', 'Америка', 'САД') OR a.is_global = TRUE) as intl
+            COUNT(*) FILTER (WHERE a.category IN ('Svet', 'Evropa', 'Balkan', 'Region', 'Amerika', 'SAD') OR a.is_global = TRUE) as intl
         FROM articles a
         WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours' {cat_filter}
     """,
@@ -328,8 +328,8 @@ async def build_intelligence_summary_payload(
         WITH cluster_tiers AS (
             SELECT cluster_id, COUNT(DISTINCT
                 CASE
-                    WHEN s.category IN ('Агенциски', 'Јавен Сервис', 'Главни') THEN 'M'
-                    WHEN s.category IN ('Независни', 'Истражувачки') THEN 'I'
+                    WHEN s.category IN ('Agenciski', 'Javen Servis', 'glavni') THEN 'M'
+                    WHEN s.category IN ('Nezavisni', 'Istrazuvacki') THEN 'I'
                     ELSE 'R'
                 END) as group_count
             FROM articles a

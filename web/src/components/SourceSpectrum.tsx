@@ -6,27 +6,27 @@ interface SourceSpectrumProps {
 }
 
 const CATEGORY_MAP: Record<string, string> = {
-  "MIA": "Агенциски", "Makfax": "Агенциски",
-  "MRT": "Јавен Сервис", 
-  "Sitel": "Главни", "Kanal 5": "Главни", "Telma": "Главни", "24 Вести": "Главни", "TV21": "Главни", "Alsat-M": "Главни", "Pressing TV": "Главни",
-  "Sloboden Pecat": "Независни", "Fokus": "Независни", "Nezavisen": "Независни", "Meta": "Независни", "360 Stepeni": "Независни", "Antropol": "Независни", "RSE": "Независни", "DW": "Независни", "A1on": "Независни",
-  "IRL": "Истражувачки", "Vistinomer": "Истражувачки", "Birn": "Истражувачки", "Prizma": "Истражувачки",
-  "NetPress": "Алтернативни", "Kurir": "Алтернативни", "Republika": "Алтернативни", "Infomax": "Алтернативни", "Lider": "Алтернативни",
-  "Plusinfo": "Локални", "Makpress": "Локални", "Libertas": "Локални", "Skopje1": "Локални", "Factor": "Локални", "Lokalno": "Локални", "Nova TV": "Локални", "Denesen": "Локални", "Ekonomski": "Локални",
-  "Bitola News": "Регионални", "Ohrid1": "Регионални", "KumanovoNews": "Регионални",
-  "PopUp": "Култура", "Kultura.mk": "Култура", "Reper": "Култура",
+  "MIA": "Agenciski", "Makfax": "Agenciski",
+  "MRT": "Javen Servis", 
+  "Sitel": "glavni", "Kanal 5": "glavni", "Telma": "glavni", "24 vesti": "glavni", "TV21": "glavni", "Alsat-M": "glavni", "Pressing TV": "glavni",
+  "Sloboden Pecat": "Nezavisni", "Fokus": "Nezavisni", "Nezavisen": "Nezavisni", "Meta": "Nezavisni", "360 Stepeni": "Nezavisni", "Antropol": "Nezavisni", "RSE": "Nezavisni", "DW": "Nezavisni", "A1on": "Nezavisni",
+  "IRL": "Istrazuvacki", "Vistinomer": "Istrazuvacki", "Birn": "Istrazuvacki", "Prizma": "Istrazuvacki",
+  "NetPress": "Alternativni", "Kurir": "Alternativni", "Republika": "Alternativni", "Infomax": "Alternativni", "Lider": "Alternativni",
+  "Plusinfo": "Lokalni", "Makpress": "Lokalni", "Libertas": "Lokalni", "Skopje1": "Lokalni", "Factor": "Lokalni", "Lokalno": "Lokalni", "Nova TV": "Lokalni", "Denesen": "Lokalni", "Ekonomski": "Lokalni",
+  "Bitola News": "Regionalni", "Ohrid1": "Regionalni", "KumanovoNews": "Regionalni",
+  "PopUp": "Kultura", "Kultura.mk": "Kultura", "Reper": "Kultura",
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  "Агенциски": "#3b82f6", 
-  "Јавен Сервис": "#10b981", 
-  "Главни": "#f59e0b", 
-  "Независни": "#8b5cf6", 
-  "Истражувачки": "#ec4899", 
-  "Алтернативни": "#ef4444", 
-  "Локални": "#0ea5e9", // Lighter blue for portal style
-  "Регионални": "#6366f1", 
-  "Култура": "#14b8a6", 
+  "Agenciski": "#3b82f6", 
+  "Javen Servis": "#10b981", 
+  "glavni": "#f59e0b", 
+  "Nezavisni": "#8b5cf6", 
+  "Istrazuvacki": "#ec4899", 
+  "Alternativni": "#ef4444", 
+  "Lokalni": "#0ea5e9", // Lighter blue for portal style
+  "Regionalni": "#6366f1", 
+  "Kultura": "#14b8a6", 
 };
 
 export const SourceSpectrum: React.FC<SourceSpectrumProps> = ({ articles }) => {
@@ -35,7 +35,7 @@ export const SourceSpectrum: React.FC<SourceSpectrumProps> = ({ articles }) => {
     const sourcesByCategory: Record<string, string[]> = {};
     
     articles.forEach(art => {
-      const cat = CATEGORY_MAP[art.source] || "Локални";
+      const cat = CATEGORY_MAP[art.source] || "Lokalni";
       counts[cat] = (counts[cat] || 0) + 1;
       if (!sourcesByCategory[cat]) sourcesByCategory[cat] = [];
       if (!sourcesByCategory[cat].includes(art.source)) {
@@ -49,7 +49,7 @@ export const SourceSpectrum: React.FC<SourceSpectrumProps> = ({ articles }) => {
         name,
         count,
         percentage: (count / total) * 100,
-        color: CATEGORY_COLORS[name] || CATEGORY_COLORS["Локални"],
+        color: CATEGORY_COLORS[name] || CATEGORY_COLORS["Lokalni"],
         sources: sourcesByCategory[name]
       }))
       .sort((a, b) => b.count - a.count);
@@ -63,7 +63,7 @@ export const SourceSpectrum: React.FC<SourceSpectrumProps> = ({ articles }) => {
             key={s.name}
             style={{ width: `${s.percentage}%`, backgroundColor: s.color }}
             className="h-full transition-all duration-700 hover:opacity-80 border-r border-background/20 last:border-0"
-            title={`${s.name}: ${s.count} извори`}
+            title={`${s.name}: ${s.count} izvori`}
           />
         ))}
       </div>

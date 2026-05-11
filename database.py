@@ -445,11 +445,11 @@ class DatabaseManager:
         if category:
             sql += " AND category = %s"
             params.append(category)
-        elif country and country != "MK":
+        elif country and country != "RS":
             sql += " AND country = %s"
             params.append(country)
-        elif country == "MK":
-            sql += " AND (country = 'MK' OR country IS NULL OR country = '')"
+        elif country == "RS":
+            sql += " AND (country = 'RS' OR country IS NULL OR country = '')"
 
         if sub:
             sql += " AND subcategory = %s"

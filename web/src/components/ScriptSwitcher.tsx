@@ -28,7 +28,7 @@ const ScriptSwitcher = () => {
             onClick={toggleScript}
             className="flex items-center gap-1.5 px-2 py-1 bg-secondary rounded text-[9px] font-black uppercase tracking-widest hover:bg-nyt-accent hover:text-white transition-all"
         >
-            {script === 'latin' ? 'LAT' : 'ЋИР'}
+            {script === 'latin' ? 'LAT' : 'ЋIR'}
         </button>
     );
 };

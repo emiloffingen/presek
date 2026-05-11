@@ -40,9 +40,9 @@ EMAIL_PATTERN = re.compile(r"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
 def validate_cluster_id(cluster_id: str, param_name: str = "cluster_id") -> str:
     """Validate cluster ID format (hex string, 6-64 chars)."""
     if not cluster_id:
-        raise HTTPException(status_code=400, detail=f"{param_name} е задолжително")
+        raise HTTPException(status_code=400, detail=f"{param_name} e zadolzitelno")
     if not isinstance(cluster_id, str):
-        raise HTTPException(status_code=400, detail=f"{param_name} мора да биде текст")
+        raise HTTPException(status_code=400, detail=f"{param_name} mora da bide tekst")
     if not CLUSTER_ID_PATTERN.match(cluster_id):
         _raise_http_error(
             400, f"Invalid {param_name}. Must be 6-64 character hexadecimal string."
@@ -53,7 +53,7 @@ def validate_cluster_id(cluster_id: str, param_name: str = "cluster_id") -> str:
 def validate_date(date_str: str, param_name: str = "date") -> str:
     """Validate date format (YYYY-MM-DD)."""
     if not date_str:
-        raise HTTPException(status_code=400, detail=f"{param_name} е задолжително")
+        raise HTTPException(status_code=400, detail=f"{param_name} e zadolzitelno")
     if not DATE_PATTERN.match(date_str):
         _raise_http_error(400, f"Invalid {param_name}. Must be in YYYY-MM-DD format.")
     return date_str
@@ -62,12 +62,12 @@ def validate_date(date_str: str, param_name: str = "date") -> str:
 def validate_email(email: str, param_name: str = "email") -> str:
     """Validate email format."""
     if not email:
-        raise HTTPException(status_code=400, detail=f"{param_name} е задолжително")
+        raise HTTPException(status_code=400, detail=f"{param_name} e zadolzitelno")
     email = email.strip().lower()
     if len(email) > 254:
-        raise HTTPException(status_code=400, detail=f"{param_name} е предолго")
+        raise HTTPException(status_code=400, detail=f"{param_name} e predolgo")
     if not EMAIL_PATTERN.match(email):
-        raise HTTPException(status_code=400, detail=f"Невалидно {param_name}")
+        raise HTTPException(status_code=400, detail=f"Nevalidno {param_name}")
     return email
 
 
@@ -82,25 +82,25 @@ def validate_string_param(
     if value is None:
         if allow_empty:
             return ""
-        raise HTTPException(status_code=400, detail=f"{param_name} е задолжително")
+        raise HTTPException(status_code=400, detail=f"{param_name} e zadolzitelno")
 
     if not isinstance(value, str):
-        raise HTTPException(status_code=400, detail=f"{param_name} мора да биде текст")
+        raise HTTPException(status_code=400, detail=f"{param_name} mora da bide tekst")
 
     value = value.strip()
     if not allow_empty and not value:
-        raise HTTPException(status_code=400, detail=f"{param_name} е задолжително")
+        raise HTTPException(status_code=400, detail=f"{param_name} e zadolzitelno")
 
     if len(value) > max_length:
         raise HTTPException(
             status_code=400,
-            detail=f"{param_name} ја надминува максималната должина од {max_length}",
+            detail=f"{param_name} ja nadminuva maksimalnata dolzina od {max_length}",
         )
 
     if len(value) < min_length and value:
         raise HTTPException(
             status_code=400,
-            detail=f"{param_name} мора да има барем {min_length} карактери",
+            detail=f"{param_name} mora da ima barem {min_length} karakteri",
         )
 
     return value
@@ -113,24 +113,24 @@ def validate_list_param(
     if items is None:
         return []
     if not isinstance(items, list):
-        raise HTTPException(status_code=400, detail=f"{param_name} мора да биде листа")
+        raise HTTPException(status_code=400, detail=f"{param_name} mora da bide lista")
     if len(items) > max_items:
         raise HTTPException(
             status_code=400,
-            detail=f"{param_name} го надминува максимумот од {max_items} елементи",
+            detail=f"{param_name} go nadminuva maksimumot od {max_items} elementi",
         )
     result = []
     for item in items:
         if not isinstance(item, str):
             raise HTTPException(
                 status_code=400,
-                detail=f"Сите елементи во {param_name} мора да бидат текст",
+                detail=f"Site elementi vo {param_name} mora da bidat tekst",
             )
         cleaned = item.strip()
         if len(cleaned) > max_item_length:
             raise HTTPException(
                 status_code=400,
-                detail=f"Елементите во {param_name} ја надминуваат максималната должина од {max_item_length}",
+                detail=f"Elementite vo {param_name} ja nadminuvaat maksimalnata dolzina od {max_item_length}",
             )
         if cleaned:
             result.append(cleaned)
@@ -161,7 +161,7 @@ def verify_admin_token(request: Request) -> bool:
 def require_admin_token(request: Request) -> None:
     """Raise 403 if not authenticated as admin."""
     if not verify_admin_token(request):
-        raise HTTPException(status_code=403, detail="Забрането")
+        raise HTTPException(status_code=403, detail="Zabraneto")
 
 
 def verify_sync_token(request: Request) -> str:
@@ -256,7 +256,7 @@ class RequestSizeMiddleware(BaseHTTPMiddleware):
                     _raise_http_error(413, "Request body exceeds maximum size")
             except ValueError:
                 raise HTTPException(
-                    status_code=400, detail="Невалиден Content-Length наслов"
+                    status_code=400, detail="Nevaliden Content-Length naslov"
                 )
 
         # Check query parameters

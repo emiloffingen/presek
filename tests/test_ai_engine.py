@@ -2,31 +2,31 @@ from ai_engine import clean_json_response
 
 
 def test_clean_json_response_raw_text():
-    assert clean_json_response("Ова е обичен текст.") == "Ова е обичен текст."
+    assert clean_json_response("ova e obicen tekst.") == "ova e obicen tekst."
 
 
 def test_clean_json_response_markdown_json():
     # Markdown wrapped JSON
-    text = '```json\n{"summary": "Ова е резимето."}\n```'
+    text = '```json\n{"summary": "ova e rezimeto."}\n```'
     res = clean_json_response(text)
     assert isinstance(res, dict)
-    assert res["answer"] == "Ова е резимето."
+    assert res["answer"] == "ova e rezimeto."
 
 
 def test_clean_json_response_raw_json():
     # Raw JSON string
-    text = '{"summary": "Ова е резимето."}'
+    text = '{"summary": "ova e rezimeto."}'
     res = clean_json_response(text)
     assert isinstance(res, dict)
-    assert res["answer"] == "Ова е резимето."
+    assert res["answer"] == "ova e rezimeto."
 
 
 def test_clean_json_response_malformed_json():
     # Malformed JSON, should fallback to string
-    text = '{"summary": "Ова е резимето.", }'  # trailing comma invalid in JSON
+    text = '{"summary": "ova e rezimeto.", }'  # trailing comma invalid in JSON
     # Since the string contains '{' and '}', it will try to parse.
     # Parsing fails, so it falls back to stripping the string and removing markdown if any.
-    assert clean_json_response(text) == {"answer": "Ова е резимето.", "suggestions": []}
+    assert clean_json_response(text) == {"answer": "ova e rezimeto.", "suggestions": []}
 
 
 def test_clean_json_response_empty():
@@ -35,32 +35,32 @@ def test_clean_json_response_empty():
 
 
 def test_clean_json_response_json_with_summary_key():
-    text = '{"summary": "Ова е резиме", "perspectives": ["а","б"]}'
+    text = '{"summary": "ova e rezime", "perspectives": ["a","b"]}'
     res = clean_json_response(text)
     assert isinstance(res, dict)
-    assert res["summary"] == "Ова е резиме"
-    assert res["perspectives"] == ["а", "б"]
+    assert res["summary"] == "ova e rezime"
+    assert res["perspectives"] == ["a", "b"]
 
 
 def test_clean_json_response_json_with_entities_key():
-    text = '{"entities": [{"name": "Заев", "type": "PERSON"}]}'
+    text = '{"entities": [{"name": "Zaev", "type": "PERSON"}]}'
     res = clean_json_response(text)
     assert isinstance(res, dict)
     assert "entities" in res
 
 
 def test_clean_json_response_json_array():
-    text = '[{"tag": "политика"}, {"tag": "економија"}]'
+    text = '[{"tag": "Politika"}, {"tag": "Ekonomija"}]'
     res = clean_json_response(text)
     assert isinstance(res, list)
     assert len(res) == 2
 
 
 def test_clean_json_response_mixed_text_and_json():
-    text = 'Here is the result:\n```json\n{"summary": "Резиме"}\n```\nDone.'
+    text = 'Here is the result:\n```json\n{"summary": "rezime"}\n```\nDone.'
     res = clean_json_response(text)
     assert isinstance(res, dict)
-    assert res["answer"] == "Резиме"
+    assert res["answer"] == "rezime"
 
 
 def test_clean_json_response_triple_backtick_no_json():

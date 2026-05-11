@@ -112,7 +112,7 @@ if (isHomepage) {
         clusters = [...lead, ...supportingClusters, ...(Array.isArray(home?.for_you_pool) ? home.for_you_pool : []), ...feedClusters];
     } else {
         console.error('Home fetch error:', homePayload.status === 'rejected' ? homePayload.reason : homePayload.value);
-        error = 'Грешка при вчитување на вестите.';
+        error = 'Greska pri vcituvanje na vestite.';
         Astro.response.status = 500;
     }
 } else {
@@ -143,7 +143,7 @@ if (isHomepage) {
         globalClusters = newsResult.value?.global_clusters || [];
     } else {
         console.error('News fetch error:', newsResult.reason);
-        error = 'Грешка при вчитување на вестите.';
+        error = 'Greska pri vcituvanje na vestite.';
         Astro.response.status = 500;
     }
 
@@ -196,7 +196,7 @@ const effectiveLeadSignal = isHomepage
     : leadSignal;
 
 // Remove the verbose development signal if it matches the default
-const finalLeadSignal = effectiveLeadSignal === 'Развој што вреди да се следи' ? '' : effectiveLeadSignal;
+const finalLeadSignal = effectiveLeadSignal === 'razvoj sto vredi da se sledi' ? '' : effectiveLeadSignal;
 const leadTitleIsCyrillic = isMostlyCyrillic(leadTitle);
 const leadSummaryIsCyrillic = isMostlyCyrillic(leadSummary);
 const leadVisual = leadCluster ? chooseClusterImage(leadCluster, 'hero') : null;

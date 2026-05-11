@@ -170,10 +170,10 @@ async def get_archive(
         topic = validate_string_param(topic, "topic", max_length=200, allow_empty=True)
 
         if page < 0 or page > 1000:
-            raise HTTPException(status_code=400, detail="Невалиден број на страница")
+            raise HTTPException(status_code=400, detail="Nevaliden broj na stranica")
         if page_size < 1 or page_size > 50:
             raise HTTPException(
-                status_code=400, detail="Невалидна големина на страница (1-50)"
+                status_code=400, detail="Nevalidna golemina na stranica (1-50)"
             )
 
         # 1. Caching - Only for historical dates (older than today)
@@ -336,11 +336,11 @@ async def get_archive(
         return res
     except ValueError:
         raise HTTPException(
-            status_code=400, detail="Невалиден формат на датум. Користете YYYY-MM-DD"
+            status_code=400, detail="Nevaliden format na datum. Koristete YYYY-MM-DD"
         )
     except Exception as e:
         log.error(f"Archive Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Неуспешно вчитување на архива")
+        raise HTTPException(status_code=500, detail="Neuspesno vcituvanje na arhiva")
 
 
 @router.get("/archive/daily-briefing")
@@ -373,7 +373,7 @@ async def get_archive_daily_briefing(date: str = Query(...)):
 
     briefing_parts = []
     for c in top_clusters:
-        title = c["synthetic_headline"] or "Важна тема"
+        title = c["synthetic_headline"] or "Vazna tema"
         bullets = [b.strip() for b in (c["summary"] or "").split("\n") if b.strip()]
         if not bullets:
             continue
@@ -382,7 +382,7 @@ async def get_archive_daily_briefing(date: str = Query(...)):
         # Clean up common prefixes from the bullet
         if summary.startswith("-"):
             summary = summary[1:].strip()
-        if summary.lower().startswith("што се случи:"):
+        if summary.lower().startswith("sto se sluci:"):
             summary = summary[13:].strip()
             
         # If the first bullet is just repeating the headline, try the next bullet
@@ -529,7 +529,7 @@ async def subscribe_newsletter(request: Request):
     try:
         body = await request.json()
     except Exception:
-        raise HTTPException(status_code=400, detail="Невалиден JSON")
+        raise HTTPException(status_code=400, detail="Nevaliden JSON")
     email = validate_email(body.get("email", ""), "email")
     try:
         await db.async_execute(
@@ -541,9 +541,9 @@ async def subscribe_newsletter(request: Request):
         log.warning(f"[subscribe] DB error: {e}")
         return {
             "status": "error",
-            "message": "Грешка при зачувување. Обидете се подоцна.",
+            "message": "Greska pri zacuvuvanje. Obidete se podocna.",
         }
-    return {"status": "success", "message": "Успешно се пријавивте!"}
+    return {"status": "success", "message": "Uspesno se prijavivte!"}
 
 
 @router.get("/newsletter/unsubscribe")
@@ -556,8 +556,8 @@ async def unsubscribe_newsletter(email: str):
         )
     except Exception as e:
         log.warning(f"[unsubscribe] DB error: {e}")
-        return HTMLResponse(content="<h1>Грешка при одјавување.</h1>", status_code=500)
-    return HTMLResponse(content="<h1>Успешно се одјавивте од билтенот на Presek.</h1>")
+        return HTMLResponse(content="<h1>Greska pri odjavuvanje.</h1>", status_code=500)
+    return HTMLResponse(content="<h1>Uspesno se odjavivte od biltenot na Presek.</h1>")
 
 
 async def _fetch_stats_parallel():
@@ -602,7 +602,7 @@ async def _fetch_stats_parallel():
 @router.get("/stats/full")
 async def get_stats_full(request: Request):
     if not _source_admin_authorized(request):
-        raise HTTPException(status_code=403, detail="Забрането")
+        raise HTTPException(status_code=403, detail="Zabraneto")
     cached = cached_response("stats:full", ttl=120)
     if cached:
         return cached
@@ -613,7 +613,7 @@ async def get_stats_full(request: Request):
             return JSONResponse(
                 status_code=429,
                 content={
-                    "message": "Статистиката се генерира, обидете се повторно за кратко."
+                    "message": "Statistikata se generira, obidete se povtorno za kratko."
                 },
             )
     except Exception as e:
@@ -726,7 +726,7 @@ async def get_stats_full(request: Request):
             "new_article": dates.get("newest") if dates else None,
             "by_source": safe_result(by_source, []),
             "by_category": [
-                {"category": r["category"] or "Друго", "n": r["n"]}
+                {"category": r["category"] or "Drugo", "n": r["n"]}
                 for r in safe_result(by_category_raw, [])
             ],
             "velocity": [{"t": r["t"], "n": r["n"]} for r in safe_result(velocity, [])],
@@ -748,7 +748,7 @@ async def get_stats_full(request: Request):
     except Exception as e:
         log.error(f"Full Stats Error: {e}")
         raise HTTPException(
-            status_code=500, detail="Неуспешно генерирање на статистики"
+            status_code=500, detail="Neuspesno generiranje na statistiki"
         )
     finally:
         try:
@@ -784,7 +784,7 @@ async def control_source_route(name: str, request: Request):
     try:
         payload = await request.json()
     except Exception:
-        raise HTTPException(status_code=400, detail="Невалиден JSON")
+        raise HTTPException(status_code=400, detail="Nevaliden JSON")
     action = str(payload.get("action", "")).strip().lower()
     source = await db.async_execute_one(
         "SELECT credibility FROM sources WHERE name = %s", (name,)
@@ -858,15 +858,15 @@ async def get_sentiment_trends():
         for r in rows:
             score = float(r["avg_score"] or 0)
             # Map score to label
-            label = "неутрален"
+            label = "neutralen"
             if score > 0.4:
-                label = "позитивен"
+                label = "pozitiven"
             elif score > 0.1:
-                label = "умерено позитивен"
+                label = "umereno pozitiven"
             elif score < -0.4:
-                label = "негативен"
+                label = "negativen"
             elif score < -0.1:
-                label = "умерено негативен"
+                label = "umereno negativen"
 
             data.append(
                 {
@@ -888,7 +888,7 @@ async def get_sentiment_trends():
         return res
     except Exception as e:
         log.error(f"Sentiment Trends Error: {e}")
-        return {"status": "error", "message": "Неуспешно вчитување на сентимент"}
+        return {"status": "error", "message": "Neuspesno vcituvanje na sentiment"}
 
 
 @router.get("/stats/mood")
@@ -913,7 +913,7 @@ async def get_current_mood():
         if not rows:
             return {
                 "status": "success",
-                "mood": "неутрален",
+                "mood": "neutralen",
                 "score": 0,
                 "objectivity": 1.0,
             }
@@ -926,7 +926,7 @@ async def get_current_mood():
 
         # Dominant tone (most frequent)
         tones = [r["tone"] for r in rows if r["tone"]]
-        dominant_tone = max(set(tones), key=tones.count) if tones else "неутрален"
+        dominant_tone = max(set(tones), key=tones.count) if tones else "neutralen"
 
         res = {
             "status": "success",
@@ -939,4 +939,4 @@ async def get_current_mood():
         return res
     except Exception as e:
         log.error(f"Mood Error: {e}")
-        return {"status": "error", "mood": "неутрален"}
+        return {"status": "error", "mood": "neutralen"}

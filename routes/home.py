@@ -38,29 +38,29 @@ class StatusOnlyResponse(BaseModel):
     message: Optional[str] = None
 
 
-_SOFT_EXCLUDE_TOPICS = {"Живот", "Забава", "Здравје"}
-_HARD_NEWS_TOPICS = {"Политика", "Економија", "Криминал", "Спорт", "Технологија"}
+_SOFT_EXCLUDE_TOPICS = {"Zivot", "Zabava", "Zdravje"}
+_HARD_NEWS_TOPICS = {"Politika", "Ekonomija", "Kriminal", "Sport", "Tehnologija"}
 _HARD_NEWS_CATEGORIES = {
     "Srbija",
-    "Балкан",
-    "Европа",
-    "Германија",
-    "Америка",
-    "Свет",
+    "Balkan",
+    "Evropa",
+    "Germanija",
+    "Amerika",
+    "Svet",
 }
 _FEATURE_PATTERNS = [
-    re.compile(r"издание на", re.IGNORECASE),
-    re.compile(r"интервју со", re.IGNORECASE),
-    re.compile(r"интервју\b", re.IGNORECASE),
-    re.compile(r"проверете дали", re.IGNORECASE),
-    re.compile(r"пред да ", re.IGNORECASE),
-    re.compile(r"постојано сте уморни", re.IGNORECASE),
-    re.compile(r"овој минерал", re.IGNORECASE),
-    re.compile(r"хороскоп", re.IGNORECASE),
-    re.compile(r"рецепт", re.IGNORECASE),
-    re.compile(r"фото\b", re.IGNORECASE),
-    re.compile(r"видео\b", re.IGNORECASE),
-    re.compile(r"галерија", re.IGNORECASE),
+    re.compile(r"izdanie na", re.IGNORECASE),
+    re.compile(r"intervju so", re.IGNORECASE),
+    re.compile(r"intervju\b", re.IGNORECASE),
+    re.compile(r"proverete dali", re.IGNORECASE),
+    re.compile(r"pred da ", re.IGNORECASE),
+    re.compile(r"postojano ste umorni", re.IGNORECASE),
+    re.compile(r"ovoj mineral", re.IGNORECASE),
+    re.compile(r"horoskop", re.IGNORECASE),
+    re.compile(r"recept", re.IGNORECASE),
+    re.compile(r"foto\b", re.IGNORECASE),
+    re.compile(r"video\b", re.IGNORECASE),
+    re.compile(r"galerija", re.IGNORECASE),
 ]
 
 
@@ -232,13 +232,13 @@ def _build_lead_display(cluster):
         return {}
     source_count = len((cluster or {}).get("articles") or [])
     if cluster.get("is_breaking"):
-        signal = "Најбрз развој во денот"
+        signal = "Najbrz razvoj vo denot"
     elif source_count >= 6:
-        signal = "Приказна што ја движи домашната агенда"
+        signal = "prica sto me dvizi domasnata agenda"
     elif source_count >= 4:
-        signal = "Тема што брзо се шири низ редакциите"
+        signal = "Tema sto brzo se siri niz redakciite"
     else:
-        signal = "Развој што вреди да се следи"
+        signal = "razvoj sto vredi da se sledi"
     return {
         "title": cleanAndDecode(article.get("title") or ""),
         "summary": _extract_preview_summary(article),

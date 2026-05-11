@@ -51,7 +51,7 @@ export const GET: APIRoute = async ({ params }) => {
 		const data = await res.json();
 		const cluster = data?.data;
 		const lead = cluster?.articles?.[0];
-		const title = escapeXml(lead?.title || 'Пресек анализа');
+		const title = escapeXml(lead?.title || 'Presek analiza');
 		const description = escapeXml(
 			String(lead?.description || cluster?.summary || '')
 				.replace(/\s+/g, ' ')
@@ -59,7 +59,7 @@ export const GET: APIRoute = async ({ params }) => {
 				.slice(0, 150)
 		);
 		const sourceCount = Number(cluster?.articles?.length || 0);
-		const category = escapeXml(lead?.category || 'Вести');
+		const category = escapeXml(lead?.category || 'vesti');
 		const [line1, line2] = splitHeadline(title);
 
 		const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
@@ -69,9 +69,9 @@ export const GET: APIRoute = async ({ params }) => {
   <text x="84" y="210" font-family="Georgia, serif" font-size="58" font-weight="700" fill="#f8fafc">${escapeXml(line1)}</text>
   <text x="84" y="286" font-family="Georgia, serif" font-size="58" font-weight="700" fill="#f8fafc">${escapeXml(line2)}</text>
   <text x="84" y="400" font-family="Arial, sans-serif" font-size="30" fill="#cbd5e1">${description}</text>
-  <text x="84" y="532" font-family="Arial, sans-serif" font-size="28" fill="#94a3b8">${sourceCount} ${sourceCount === 1 ? 'извор' : 'извори'} во споредба</text>
+  <text x="84" y="532" font-family="Arial, sans-serif" font-size="28" fill="#94a3b8">${sourceCount} ${sourceCount === 1 ? 'izvor' : 'izvori'} vo sporedba</text>
 
-  <text x="1116" y="556" font-family="Georgia, serif" font-size="46" font-weight="700" fill="#f8fafc" text-anchor="end">ПРЕСЕК.мк</text>
+  <text x="1116" y="556" font-family="Georgia, serif" font-size="46" font-weight="700" fill="#f8fafc" text-anchor="end">PRESEK.rs</text>
 </svg>`;
 
 		return new Response(svg, {

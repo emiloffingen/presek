@@ -7,41 +7,41 @@ import Breadcrumbs from '../components/Breadcrumbs.astro';
 Astro.response.status = 404;
 ---
 
-<Layout title="404 — Страницата не е пронајдена" robots="noindex, nofollow">
+<Layout title="404 — Stranicata ne e pronajdena" robots="noindex, nofollow">
 	<NYTHeader />
 	<main class="site-layout py-[var(--page-py)]">
-		<Breadcrumbs items={[{ label: "Страницата не е пронајдена" }]} />
+		<Breadcrumbs items={[{ label: "Stranicata ne e pronajdena" }]} />
 
 		<section class="not-found-shell">
 			<div class="not-found-main">
 				<span class="page-kicker">404</span>
-				<h1 class="not-found-headline">Страницата не е пронајдена</h1>
+				<h1 class="not-found-headline">Stranicata ne e pronajdena</h1>
 				<p class="not-found-intro">
-					Линкот што го отворивте не постои, е преместен или повеќе не е достапен. Најчесто ова се случува кога кластерот е стар, адресата е нецелосна или линкот е копиран погрешно.
+					Linkot sto ga otvorivte ne postoi, e premesten ili povece ne e dostapen. Najcesto ova se slucuva koga klasterot e star, adresata e necelosna ili linkot e kopiran pogresno.
 				</p>
 
 				<div class="not-found-actions">
-					<a href="/" class="not-found-link not-found-link-primary">Почетна</a>
-					<a href="/archive" class="not-found-link">Архива</a>
-					<a href="/briefing" class="not-found-link">Брифинг</a>
+					<a href="/" class="not-found-link not-found-link-primary">Pocetna</a>
+					<a href="/archive" class="not-found-link">Arhiva</a>
+					<a href="/briefing" class="not-found-link">Brifing</a>
 				</div>
 			</div>
 
 			<aside class="not-found-rail">
 				<div class="rail-card rail-card-accent">
-					<h2 class="rail-card-title">Каде Да Одите</h2>
+					<h2 class="rail-card-title">Kade Da Odite</h2>
 					<p class="rail-copy">
-						Ако баравте конкретна вест или кластер, најдобро е да почнете од архивата. Ако само сакате брз преглед на денот, вратете се на почетната или отворете го брифингот.
+						Ako baravte konkretna vest ili klaster, najdobro e da pocnete od arhivata. Ako samo sakate brz pregled na denot, vratete se na pocetnata ili otvorete ga brifingot.
 					</p>
 				</div>
 
 				<div class="rail-card">
-					<h2 class="rail-card-title">Брзи Патеки</h2>
+					<h2 class="rail-card-title">Brzi Pateki</h2>
 					<div class="not-found-list">
-						<a href="/archive">Прелистај ден по ден</a>
-						<a href="/izvori">Погледни ги изворите</a>
-						<a href="/pulse">Спореди медиуми</a>
-						<a href="/contact">Пријави скршен линк</a>
+						<a href="/archive">Prelistaj den po den</a>
+						<a href="/izvori">Pogledni im izvorite</a>
+						<a href="/pulse">Sporedi mediumi</a>
+						<a href="/contact">Prijavi skrsen link</a>
 					</div>
 				</div>
 			</aside>

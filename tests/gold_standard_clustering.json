@@ -1,33 +1,33 @@
 [
   {
-    "title_a": "Денеска се празнува Свети Никита Исповедник",
-    "title_b": "Денес се празнува Свети Никита Исповедник",
+    "title_a": "danas se praznuva Sveti Nikita Ispovednik",
+    "title_b": "danas se praznuva Sveti Nikita Ispovednik",
     "should_cluster": true,
-    "entities": ["Никита", "Исповедник"],
+    "entities": ["Nikita", "Ispovednik"],
     "reason": "Exact story duplicate"
   },
   {
-    "title_a": "Ивица Џепароски стана дописен член на МАНУ",
-    "title_b": "ТРЕНЕР НА КОЛОТО: Борче Христов (Тиквеш)",
+    "title_a": "Ivica Dzeparoski stana dopisen clen na MANU",
+    "title_b": "TRENER NA KOLOTO: Borce Hristov (Tikves)",
     "should_cluster": false,
     "reason": "Unrelated news (Politics vs Sport)"
   },
   {
-    "title_a": "Страв од природата – нова фобија на урбаниот човек",
-    "title_b": "Денеска се празнува Свети Никита Исповедник",
+    "title_a": "Strav od prirodata – nova fobija na urbaniot covek",
+    "title_b": "danas se praznuva Sveti Nikita Ispovednik",
     "should_cluster": false,
     "reason": "Unrelated news (Health/Lifestyle vs Religion)"
   },
   {
-    "title_a": "Владата усвои нов пакет мерки за помош на стопанството",
-    "title_b": "Министерството за економија најави поддршка за фирмите",
+    "title_a": "Vladata usvoi nov paket merki za pomos na stopanstvoto",
+    "title_b": "Ministerstvoto za Ekonomija najavi poddrska za firmite",
     "should_cluster": true,
-    "entities": ["Влада", "Економија", "Стопанство"],
+    "entities": ["Vlada", "Ekonomija", "Stopanstvo"],
     "reason": "Same economic policy event"
   },
   {
-    "title_a": "Вардар победи во дербито против Пелистер",
-    "title_b": "Шкупи ремизираше со Силекс во Кратово",
+    "title_a": "Vardar pobedi vo derbito protiv Pelister",
+    "title_b": "Skupi remizirase so Sileks vo Kratovo",
     "should_cluster": false,
     "reason": "Different sports matches"
   }

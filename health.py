@@ -103,11 +103,11 @@ def _source_quality_payload(
     score = round(max(0.2, min(1.0, score)), 2)
 
     if score >= 0.85:
-        label = "Стабилен извор"
+        label = "Stabilen izvor"
     elif score >= 0.6:
-        label = "Намален квалитет"
+        label = "Namalen kvalitet"
     else:
-        label = "Проблематичен извор"
+        label = "Problematicen izvor"
 
     return {
         "quality_score": score,
@@ -237,7 +237,7 @@ def _freshness_payload(last_refresh_time: str | None):
         return {
             "status": "stale",
             "age_minutes": None,
-            "label": "Нема скоро освежување",
+            "label": "Nema skoro osvezuvanje",
         }
 
     try:
@@ -247,20 +247,20 @@ def _freshness_payload(last_refresh_time: str | None):
         )
     except Exception as e:
         log.debug(f"Failed to parse refresh time {last_refresh_time}: {e}")
-        return {"status": "stale", "age_minutes": None, "label": "Непознато освежување"}
+        return {"status": "stale", "age_minutes": None, "label": "Nepoznato osvezuvanje"}
 
     if age_minutes <= 15:
         return {
             "status": "fresh",
             "age_minutes": age_minutes,
-            "label": "Освежено скоро",
+            "label": "Osvezeno skoro",
         }
     if age_minutes <= 45:
-        return {"status": "aging", "age_minutes": age_minutes, "label": "Мало доцнење"}
+        return {"status": "aging", "age_minutes": age_minutes, "label": "Malo docnenje"}
     return {
         "status": "stale",
         "age_minutes": age_minutes,
-        "label": "Освежувањето доцни",
+        "label": "Osvezuvanjeto docni",
     }
 
 

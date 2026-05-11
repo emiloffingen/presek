@@ -14,65 +14,52 @@ from config import CLUSTERING_THRESHOLDS
 
 log = logging.getLogger("presek")
 
-# ── Macedonian stemmer ────────────────────────────────────────────
-MK_SUFFIXES = [
-    "увањето",
-    "ување",
-    "ањето",
-    "ање",
-    "ењето",
-    "ење",
-    "истите",
-    "истот",
-    "иста",
-    "исти",
-    "ските",
-    "скиот",
-    "ската",
-    "ски",
-    "ска",
-    "ско",
-    "овските",
-    "овскиот",
-    "овата",
-    "овото",
-    "овски",
-    "овска",
-    "овско",
-    "евските",
-    "евскиот",
-    "евата",
-    "евото",
-    "евски",
-    "евска",
-    "евско",
-    "ните",
-    "ниот",
-    "ната",
-    "ното",
-    "нава",
-    "наво",
-    "ни",
-    "ите",
-    "иот",
-    "ата",
-    "ото",
-    "от",
-    "та",
-    "то",
-    "вме",
-    "вте",
-    "аа",
-    "еа",
-    "ше",
-    "ат",
-    "ет",
-    "ов",
-    "ев",
+# ── Serbian stemmer ────────────────────────────────────────────
+SR_SUFFIXES = [
+    "ovanje",
+    "ovanje",
+    "anje",
+    "enje",
+    "anje",
+    "enje",
+    "isti",
+    "istot",
+    "ista",
+    "isti",
+    "ski",
+    "skih",
+    "skog",
+    "skom",
+    "ska",
+    "sko",
+    "ovski",
+    "ovska",
+    "ovsko",
+    "evski",
+    "evska",
+    "evsko",
+    "nji",
+    "njeg",
+    "njoj",
+    "njim",
+    "njih",
+    "ni",
+    "ti",
+    "te",
+    "tu",
+    "at",
+    "et",
+    "it",
+    "ov",
+    "ev",
+    "iv",
+    "an",
+    "en",
+    "on",
 ]
 
 
-def mk_stem(word: str) -> str:
+def sr_stem(word: str) -> str:
     if len(word) < 4:
         return word
     # Don't stem proper nouns (starts with capital) unless it's the very start of a sentence
@@ -81,120 +68,108 @@ def mk_stem(word: str) -> str:
     word = re.sub(r"[^\w\s]", "", word)
 
     # Strip common comparative/superlative prefixes
-    if word.startswith("нај") and len(word) > 6:
+    if word.startswith("naj") and len(word) > 6:
         word = word[3:]
-    elif word.startswith("по") and len(word) > 5:
+    elif word.startswith("po") and len(word) > 5:
         word = word[2:]
 
-    for suffix in MK_SUFFIXES:
+    for suffix in SR_SUFFIXES:
         if word.endswith(suffix) and len(word) - len(suffix) >= 3:
             return word[: -len(suffix)]
     return word
 
 
-MK_STOPWORDS = {
-    "и",
-    "на",
-    "во",
-    "од",
-    "со",
-    "за",
-    "се",
-    "е",
-    "не",
-    "да",
-    "по",
-    "до",
-    "при",
-    "но",
-    "или",
-    "ако",
-    "што",
-    "кој",
-    "која",
-    "кое",
-    "кои",
-    "дека",
-    "оти",
-    "ги",
-    "го",
-    "им",
-    "му",
-    "ја",
-    "ми",
-    "ме",
-    "те",
-    "ве",
-    "ни",
-    "си",
-    "ке",
-    "во",
-    "со",
-    "на",
-    "од",
-    "до",
-    "при",
-    "пред",
-    "под",
-    "над",
-    "зад",
-    "меѓу",
-    "овој",
-    "оваа",
-    "ова",
-    "овие",
-    "тој",
-    "таа",
-    "тоа",
-    "тие",
-    "еден",
-    "една",
-    "едно",
-    "еднa",
-    "нема",
-    "нови",
-    "нов",
-    "нова",
-    "само",
-    "уште",
-    "преку",
-    "бидејќи",
-    "поради",
-    "каде",
-    "како",
-    "кога",
-    "туку",
-    "пак",
-    "сепак",
-    "затоа",
-    "бидејки",
-    "ваков",
-    "ваква",
-    "вакви",
-    "според",
-    "соопштија",
-    "информираат",
-    "изјави",
-    "вели",
-    "изјавија",
-    "рече",
-    "порача",
-    "велат",
-    "пренесе",
-    "објави",
-    "пишува",
-    "денес",
-    "денеска",
-    "денешната",
-    "денешниот",
-    "вчера",
-    "утре",
+SR_STOPWORDS = {
+    "i",
+    "na",
+    "u",
+    "od",
+    "sa",
+    "za",
+    "se",
+    "e",
+    "ne",
+    "da",
+    "po",
+    "do",
+    "pri",
+    "no",
+    "ili",
+    "ako",
+    "sto",
+    "ko",
+    "koji",
+    "koja",
+    "koje",
+    "koji",
+    "da",
+    "iz",
+    "o",
+    "je",
+    "su",
+    "a",
+    "u",
+    "po",
+    "od",
+    "do",
+    "pri",
+    "pred",
+    "pod",
+    "nad",
+    "zad",
+    "medju",
+    "ovaj",
+    "ova",
+    "ovo",
+    "ovi",
+    "taj",
+    "ta",
+    "to",
+    "ti",
+    "jedan",
+    "jedna",
+    "jedno",
+    "nema",
+    "novi",
+    "nov",
+    "nova",
+    "samo",
+    "jos",
+    "preko",
+    "buduci",
+    "zbog",
+    "gde",
+    "kako",
+    "kad",
+    "tok",
+    "pak",
+    "ipak",
+    "zato",
+    "buduci",
+    "ovakav",
+    "ovakva",
+    "ovakvi",
+    "prema",
+    "saopstenja",
+    "informisu",
+    "izjave",
+    "veli",
+    "izjavili",
+    "rece",
+    "porucuje",
+    "kazu",
+    "prenose",
+    "objavi",
+    "pise",
+    "danas",
+    "juce",
+    "sutra",
     "srbija",
-    "северна",
-    "сад",
-    "кина",
-    "еу",
-    "нато",
+    "severna",
+    "sad",
+    "kina",
+    "eu",
+    "nato",
     "the",
     "and",
     "for",
@@ -216,30 +191,30 @@ def _normalize_cluster_title(title: str) -> str:
 def _get_fingerprint(title: str) -> str:
     """Create a minimal fingerprint for exact/near-exact title matches."""
     normalized = _normalize_cluster_title(title)
-    words = re.findall(r"[А-Яа-яЀ-ӿ\w]+", normalized)
+    words = re.findall(r"[A-Za-z\w]+", normalized)
     # Sort words to catch permutated titles
-    return "".join(sorted([w for w in words if w not in MK_STOPWORDS]))
+    return "".join(sorted([w for w in words if w not in SR_STOPWORDS]))
 
 
 # ── Synonym Mapping ──────────────────────────────────────────────
 NEWS_SYNONYMS = {
-    "стопанств": "економија",
-    "стопанство": "економија",
-    "влада": "влад",
-    "министерств": "влад",
-    "министерство": "влад",
-    "кабинет": "влад",
-    "компани": "фирм",
-    "претпријати": "фирм",
-    "мвр": "полици",
-    "фудбал": "меч",
-    "кошарка": "меч",
-    "ракомет": "меч",
-    "усвои": "најави",
-    "соопшти": "најави",
-    "информира": "најави",
-    "потврди": "најави",
-    "поддршка": "мерки",
+    "ekonomij": "ekonomija",
+    "ekonomija": "ekonomija",
+    "vlada": "vlad",
+    "ministarstv": "vlad",
+    "ministarstvo": "vlad",
+    "kabinet": "vlad",
+    "kompani": "firma",
+    "preduzeca": "firma",
+    "mup": "policija",
+    "fudbal": "mec",
+    "kosarka": "mec",
+    "rukomet": "mec",
+    "usvoji": "najavi",
+    "saopsti": "najavi",
+    "informise": "najavi",
+    "potvrdi": "najavi",
+    "podrska": "mere",
 }
 
 
@@ -249,8 +224,8 @@ def _apply_synonyms(terms: list[str]) -> list[str]:
 
 def _title_terms(title: str) -> list[str]:
     normalized = _normalize_cluster_title(title)
-    words = re.findall(r"[А-Яа-яЀ-ӿ\w]{3,}", normalized)
-    stems = [mk_stem(word) for word in words if word not in MK_STOPWORDS]
+    words = re.findall(r"[A-Za-z\w]{3,}", normalized)
+    stems = [sr_stem(word) for word in words if word not in SR_STOPWORDS]
     return _apply_synonyms(stems)
 
 
@@ -301,8 +276,8 @@ def _temporal_decay(created_at) -> float:
 
 
 def text_to_vector(text: str) -> Counter:
-    words = re.findall(r"[А-Яа-яЀ-ӿ\w]{3,}", text.lower())
-    stems = [mk_stem(w) for w in words if w not in MK_STOPWORDS]
+    words = re.findall(r"[A-Za-z\w]{3,}", text.lower())
+    stems = [sr_stem(w) for w in words if w not in SR_STOPWORDS]
     return Counter(_apply_synonyms(stems))
 
 
@@ -343,15 +318,15 @@ def _entity_token_overlap(
     left_entities: set[str], right_entities: set[str]
 ) -> set[str]:
     # Use lowercase stemmed tokens and apply synonyms to improve overlap detection
-    # (e.g., "Владата" and "Министерството" -> "влад")
+    # (e.g., "Vlada" and "Ministarstvo" -> "vlad")
     left_tokens = {
-        _apply_synonyms([mk_stem(token.strip().lower())])[0]
+        _apply_synonyms([sr_stem(token.strip().lower())])[0]
         for entity in (left_entities or set())
         for token in str(entity).split()
         if len(token.strip()) >= 4
     }
     right_tokens = {
-        _apply_synonyms([mk_stem(token.strip().lower())])[0]
+        _apply_synonyms([sr_stem(token.strip().lower())])[0]
         for entity in (right_entities or set())
         for token in str(entity).split()
         if len(token.strip()) >= 4
@@ -389,15 +364,15 @@ def _topic_bridge_allowed(
     freshest_rep_hours: float,
 ) -> bool:
     """Allow tight same-story continuations to survive small topic-label drift and category evolution."""
-    incoming_clean = str(incoming_topic or "Вести").strip() or "Вести"
-    rep_clean = str(rep_topic or "Вести").strip() or "Вести"
+    incoming_clean = str(incoming_topic or "Vesti").strip() or "Vesti"
+    rep_clean = str(rep_topic or "Vesti").strip() or "Vesti"
 
     if incoming_clean == rep_clean and category == rep_category:
         return True
 
     # Sports should remain strictly isolated; score updates and match reports
     # are too collision-prone to bridge across topics.
-    if "Спорт" in {incoming_clean, rep_clean}:
+    if "Sport" in {incoming_clean, rep_clean}:
         return False
 
     shared_count = len(shared_entities or set())
@@ -414,7 +389,7 @@ def _topic_bridge_allowed(
             return True
         return False
 
-    generic_mismatch = "Вести" in {incoming_clean, rep_clean}
+    generic_mismatch = "Vesti" in {incoming_clean, rep_clean}
 
     if generic_mismatch:
         return (
@@ -456,22 +431,22 @@ def find_cluster_semantic(
 
         # 1. Stricter for international/regional news where stories are often broad
         if category in (
-            "Свет",
-            "Европа",
-            "Балкан",
-            "САД",
-            "Америка",
-            "Регион",
-            "Германија",
+            "Svet",
+            "Evropa",
+            "Balkan",
+            "SAD",
+            "Amerika",
+            "Region",
+            "Nemacka",
         ):
             threshold = (
                 0.22  # Slightly more lenient to catch related global developments
             )
 
-        # 2. EVEN STRICTER for the generic 'Вести' topic (the catch-all)
-        # Articles tagged only as 'Вести' often lack specific keywords, causing
+        # 2. EVEN STRICTER for the generic 'Vesti' topic (the catch-all)
+        # Articles tagged only as 'Vesti' often lack specific keywords, causing
         # vector-based 'gravitational' pull for unrelated content.
-        if topic == "Вести" or not topic:
+        if topic == "Vesti" or not topic:
             threshold = min(
                 threshold, 0.24
             )  # Increased for better recall on general news
@@ -523,7 +498,7 @@ def find_cluster_semantic(
             if dist < threshold:
                 # Entity Gating: For generic topics, if the distance is borderline,
                 # require at least one shared proper noun (Entity).
-                if topic == "Вести" or not topic:
+                if topic == "Vesti" or not topic:
                     from database import db_manager
 
                     ents = db_manager.get_cluster_entities([cid]).get(cid, set())
@@ -627,8 +602,8 @@ def find_or_create_cluster(
             continue
 
         rep_entities = cluster_entities.get(cid, set())
-        rep_topic = rep_0.get("topic", "Вести")
-        incoming_topic = topic or "Вести"
+        rep_topic = rep_0.get("topic", "Vesti")
+        incoming_topic = topic or "Vesti"
         rep_category = rep_0.get("category")
         freshest_rep_hours = min(
             (_rep_age_hours(rep.get("created_at")) for rep in reps), default=999.0
@@ -661,7 +636,7 @@ def find_or_create_cluster(
             continue
 
         if (
-            incoming_topic == "Вести"
+            incoming_topic == "Vesti"
             and potential_entities
             and rep_entities
             and not potential_entities.intersection(rep_entities)
@@ -752,7 +727,7 @@ def find_or_create_cluster(
                 current_best_rep_score = score
 
         # Sports Match Validation (Avoid mixing different matches)
-        if topic == "Спорт" and rep_0.get("topic") == "Спорт":
+        if topic == "Sport" and rep_0.get("topic") == "Sport":
             # We check if they share any common "team-like" entities
             if potential_entities and rep_entities:
                 shared_entities = potential_entities.intersection(rep_entities)
@@ -767,8 +742,8 @@ def find_or_create_cluster(
         # Adaptive Lexical Threshold
         # Generic topics should require higher similarity to merge.
         current_threshold = threshold
-        if incoming_topic == "Вести" and incoming_topic == rep_topic:
-            current_threshold = max(threshold, 0.58)  # Be more demanding for 'Вести'
+        if incoming_topic == "Vesti" and incoming_topic == rep_topic:
+            current_threshold = max(threshold, 0.58)  # Be more demanding for 'Vesti'
         elif topic_bridge and incoming_topic != rep_topic:
             if freshest_rep_hours <= 12:  # Within half-day cycle
                 current_threshold = min(threshold, 0.40)

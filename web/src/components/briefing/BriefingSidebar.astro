@@ -21,11 +21,11 @@ function getTimeStr(dateStr: string) {
         const diffMins = Math.floor(diffMs / (1000 * 60));
         const diffHours = Math.floor(diffMins / 60);
 
-        if (diffMins < 1) return 'ШТОТУКУ';
-        if (diffMins < 60) return `ПРЕД ${diffMins} МИН`;
-        if (diffHours < 24) return `ПРЕД ${diffHours} ЧАСА`;
+        if (diffMins < 1) return 'STOTUKU';
+        if (diffMins < 60) return `PRED ${diffMins} MIN`;
+        if (diffHours < 24) return `PRED ${diffHours} CASA`;
         
-        return date.toLocaleDateString('mk-MK', { day: 'numeric', month: 'short' }).toUpperCase();
+        return date.toLocaleDateString('mk-RS', { day: 'numeric', month: 'short' }).toUpperCase();
     } catch {
         return '';
     }
@@ -41,7 +41,7 @@ function getTimeStr(dateStr: string) {
 			<section class="sidebar-module">
 				<div class="flex items-center gap-2 mb-4 pb-2 border-b border-border">
 					<Activity size={14} className="text-foreground" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">ПРЕТХОДНИ ИЗДАНИЈА</h4>
+					<h4 class="text-[10px] font-black uppercase tracking-widest">PRETHODNI IZDANIJA</h4>
 				</div>
 				<div class="flex flex-col gap-2">
 					{historicalDates.map((d: any) => (
@@ -49,7 +49,7 @@ function getTimeStr(dateStr: string) {
 							href={`/briefing?date=${d.day}`} 
 							class={`text-xs font-bold hover:text-nyt-accent transition-colors block py-1 ${briefing?.date === d.day ? 'text-nyt-accent' : 'text-muted-foreground'}`}
 						>
-							● {new Date(d.day).toLocaleDateString('mk-MK', { day: 'numeric', month: 'short' })}
+							● {new Date(d.day).toLocaleDateString('mk-RS', { day: 'numeric', month: 'short' })}
 						</a>
 					))}
 				</div>
@@ -60,12 +60,12 @@ function getTimeStr(dateStr: string) {
 			<section class="sidebar-module">
 				<div class="flex items-center gap-2 mb-4 pb-2 border-b border-border">
 					<Activity size={14} className="text-emerald-600" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">СИСТЕМСКИ БАЛАНС</h4>
+					<h4 class="text-[10px] font-black uppercase tracking-widest">SISTEMSKI BALANS</h4>
 				</div>
 				<div class="space-y-6">
 					<div>
 						<div class="flex justify-between text-[10px] font-bold uppercase mb-2">
-							<span>Медиумски Плурализам</span>
+							<span>Mediumski Pluralizam</span>
 							<span>{stats.intelligence.pluralism.pluralism_pct}%</span>
 						</div>
 						<div class="h-1 bg-secondary rounded-full overflow-hidden">
@@ -74,7 +74,7 @@ function getTimeStr(dateStr: string) {
 					</div>
 					<div>
 						<div class="flex justify-between text-[10px] font-bold uppercase mb-2">
-							<span>Висок Консензус</span>
+							<span>Visok Konsenzus</span>
 							<span>{stats.intelligence.pluralism.high_consensus_pct}%</span>
 						</div>
 						<div class="h-1 bg-secondary rounded-full overflow-hidden">
@@ -89,7 +89,7 @@ function getTimeStr(dateStr: string) {
 			<section class="sidebar-module">
 				<div class="flex items-center gap-2 mb-4 pb-2 border-b border-border">
 					<Users size={14} className="text-foreground" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">КЛУЧНИ АКТЕРИ ДЕНЕС</h4>
+					<h4 class="text-[10px] font-black uppercase tracking-widest">KLUCNI AKTERI danas</h4>
 				</div>
 				<div class="flex flex-col gap-3">
 					{briefing.subjects.map((subject: any) => (
@@ -106,7 +106,7 @@ function getTimeStr(dateStr: string) {
 			<section class="sidebar-module">
 				<div class="flex items-center gap-2 mb-4 pb-2 border-b border-border">
 					<MapPin size={14} className="text-foreground" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">ФОКУС ЛОКАЦИИ</h4>
+					<h4 class="text-[10px] font-black uppercase tracking-widest">FOKUS LOKACII</h4>
 				</div>
 				<div class="flex flex-wrap gap-2">
 					{briefing.locations.map((loc: any) => (
@@ -122,7 +122,7 @@ function getTimeStr(dateStr: string) {
 			<section class="sidebar-module">
 				<div class="flex items-center gap-2 mb-4 pb-2 border-b border-border">
 					<Zap size={14} className="text-nyt-accent" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">АКТУЕЛНО СЕГА</h4>
+					<h4 class="text-[10px] font-black uppercase tracking-widest">AKTUELNO SEGA</h4>
 				</div>
 				<a href={`/cluster/${leadCluster.cluster_id}`} class="group block">
 					<p class="font-serif font-bold text-sm leading-snug group-hover:text-nyt-accent transition-colors">

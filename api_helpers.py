@@ -136,8 +136,8 @@ def is_safe_url(url: str) -> bool:
         return False
 
 
-_EXTRA_NOISE = {"вести", "вест", "извор", "извори", "кластер"}
-_GENERIC_ANGLES = {"перспектива", "агол", "точка", "став", "гледиште"}
+_EXTRA_NOISE = {"vesti", "vest", "izvor", "izvori", "klaster"}
+_GENERIC_ANGLES = {"perspektiva", "ugao", "tacka", "stav", "glediste"}
 _SAFE_TOPIC_RE = re.compile(r"[^A-Za-z0-9._-]+")
 
 
@@ -147,31 +147,31 @@ def _clean_text_block(value) -> str:
         return ""
     text = re.sub(r"```(?:json)?", "", text, flags=re.IGNORECASE).replace("```", "")
     text = re.sub(
-        r"^\s*(summary|резиме|сублимат|статии)\s*:\s*", "", text, flags=re.IGNORECASE
+        r"^\s*(summary|rezime|sublimat|clanci)\s*:\s*", "", text, flags=re.IGNORECASE
     )
     text = re.sub(r"^[•*\-\u2022]+\s*", "", text)
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
 
-def _infer_perspective_angle(content: str, fallback: str = "Клучен агол") -> str:
+def _infer_perspective_angle(content: str, fallback: str = "Kljucan ugao") -> str:
     lowered = content.lower()
-    if any(token in lowered for token in ("разлик", "акцент", "формулац", "наглас")):
-        return "Различни акценти"
+    if any(token in lowered for token in ("razlik", "akcenat", "formulac", "naglas")):
+        return "Razliciti akcenti"
     if any(
         token in lowered
-        for token in ("заеднич", "повеќето извори", "иста линија", "сите извори")
+        for token in ("zajednick", "vecina izvori", "ista linija", "svi izvori")
     ):
-        return "Заедничка линија"
+        return "Zajednicka linija"
     if any(
         token in lowered
-        for token in ("отворено", "нејас", "непотвр", "сè уште не", "останува")
+        for token in ("otvoreno", "nejasno", "nepotvrdeno", "jos uvek ne", "ostaje")
     ):
-        return "Што останува отворено"
-    if any(token in lowered for token in ("реакц", "одговор", "коментар", "осуд")):
-        return "Реакции и одговори"
-    if any(token in lowered for token in ("контекст", "позадин", "поширок")):
-        return "Поширок контекст"
+        return "Sta ostaje otvoreno"
+    if any(token in lowered for token in ("reakcija", "odgovor", "komentar", "osuda")):
+        return "Reakcije i odgovori"
+    if any(token in lowered for token in ("kontekst", "pozadina", "siri")):
+        return "Siri kontekst"
     return fallback
 
 
@@ -194,7 +194,7 @@ def normalize_summary_text(raw_summary) -> str:
         clean = _clean_text_block(raw_line)
         if not clean:
             continue
-        if clean.lower() == "статии:":
+        if clean.lower() == "clanci:":
             continue
         key = clean.casefold()
         if key in seen:
@@ -263,7 +263,7 @@ def normalize_perspectives(raw_perspectives) -> list[dict]:
         if key in seen:
             continue
         seen.add(key)
-        result.append({"angle": angle or "Клучен агол", "content": content})
+        result.append({"angle": angle or "Kljucan ugao", "content": content})
 
     return result[:4]
 
@@ -335,12 +335,12 @@ def default_related_questions(
     question: str, category: Optional[str] = None
 ) -> list[str]:
     fallback = [
-        "Што е главниот развој во оваа приказна?",
-        "Како се разликуваат изворите во известувањето?",
-        "Што сè уште не е потврдено?",
+        "Sta je glavni razvoj u ovoj prici?",
+        "Kako se razlikuju izvori u izvestaju?",
+        "Sta jos uvek nije potvrdeno?",
     ]
     if category:
-        fallback[0] = f"Кој е најважниот развој во темата {str(category).lower()}?"
+        fallback[0] = f"Koji je najvazniji razvoj u temi {str(category).lower()}?"
     return [q for q in fallback if q.strip() and q.strip() != question.strip()][:3]
 
 
@@ -360,26 +360,26 @@ def related_questions_from_context(
         if text and text.casefold() != lowered and text not in suggestions:
             suggestions.append(text)
 
-    if not any(token in lowered for token in ("разлику", "извор", "перспектив")) and (
+    if not any(token in lowered for token in ("razliku", "izvor", "perspektive")) and (
         has_perspectives or has_multiple_sources
     ):
-        add("Како се разликуваат изворите во известувањето?")
-    if not any(token in lowered for token in ("нејас", "непотвр", "отворено")):
-        add("Што останува нејасно или непотврдено?")
+        add("Kako se razlikuju izvori u izvestaju?")
+    if not any(token in lowered for token in ("nejasno", "nepotvrdeno", "otvoreno")):
+        add("Sta ostaje nejasno ili nepotvrdeno?")
     if not any(
-        token in lowered for token in ("следно", "понатаму", "последиц", "реакц")
+        token in lowered for token in ("sledece", "dalje", "posledice", "reakcija")
     ):
-        add("Што следува понатаму во оваа приказна?")
+        add("Sta slede dalje u ovoj prici?")
     if has_multiple_sources and not any(
-        token in lowered for token in ("најваж", "ново", "главно")
+        token in lowered for token in ("najvazniji", "novo", "glavno")
     ):
-        add("Што е најважното ново во оваа вест?")
+        add("Sta je najvaznija vest u ovoj vest?")
 
     for item in default_related_questions(question, category):
         add(item)
 
     if has_unclear_points:
-        add("Кои детали сè уште зависат од следни потвди?")
+        add("Koji detalji jos uvek zavise od sledecih potvrda?")
 
     return suggestions[:3]
 
@@ -387,7 +387,7 @@ def related_questions_from_context(
 def text_terms(text: str) -> set[str]:
     from nlp.keywords import TAG_NOISE_WORDS
 
-    terms = re.findall(r"[A-Za-zА-Яа-яЀ-ӿ0-9]{3,}", (text or "").lower())
+    terms = re.findall(r"[A-Za-z0-9]{3,}", (text or "").lower())
     return {t for t in terms if t not in TAG_NOISE_WORDS and t not in _EXTRA_NOISE}
 
 
@@ -453,7 +453,7 @@ def rank_cluster_citations(
         trust_bonus = (
             1
             if get_source_trust_label(str(article.get("source") or ""))
-            == "Висока доверба"
+            == "Visoko poverenje"
             else 0
         )
         signal = (

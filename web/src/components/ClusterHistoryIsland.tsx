@@ -49,22 +49,22 @@ export default function ClusterHistoryIsland({ clusterId }: { clusterId: string 
       >
         <div className="w-6 h-[1px] bg-border group-hover:bg-nyt-accent transition-colors" />
         <History size={11} className="group-hover:rotate-[-30deg] transition-transform" />
-        РЕДАКЦИСКИ ЛОГ
+        REDAKCISKI LOG
         {isOpen ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
       </button>
 
       {isOpen && (
         <div className="mt-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-500">
           {loading ? (
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 animate-pulse">Архивски увид...</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 animate-pulse">Arhivski uvid...</p>
           ) : history.length === 0 ? (
             <div className="flex items-center gap-3 p-4 border border-border/40 bg-secondary/5 rounded-sm">
                 <Sparkles size={14} className="text-nyt-accent" />
-                <span className="text-[11px] font-black uppercase tracking-widest text-foreground">Нов наратив: Прва верзија на синтезата</span>
+                <span className="text-[11px] font-black uppercase tracking-widest text-foreground">Nov narativ: Prva verzija na sintezata</span>
             </div>
           ) : (
             <div className="space-y-3">
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4">ЕВОЛУЦИЈА НА СТОРИЈАТА</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4">EVOLUCIJA NA STORIJATA</p>
                 {history.map((item, idx) => (
                 <div key={idx} className="border border-border/60 bg-background shadow-sm hover:border-nyt-accent/30 transition-all">
                     <button 
@@ -74,13 +74,13 @@ export default function ClusterHistoryIsland({ clusterId }: { clusterId: string 
                     <div className="flex items-center gap-4">
                         <Clock size={12} className="text-muted-foreground/60" />
                         <span className="text-[11px] font-black tabular-nums text-foreground">
-                            {new Date(item.created_at).toLocaleString('mk-MK', { 
+                            {new Date(item.created_at).toLocaleString('mk-RS', { 
                                 day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' 
                             })}
                         </span>
                     </div>
                     <span className="text-[9px] font-black uppercase tracking-[0.1em] border border-border px-2 py-1 rounded-sm text-muted-foreground group-hover:text-nyt-accent transition-colors">
-                        РЕВИЗИЈА {history.length - idx}
+                        REVIZIJA {history.length - idx}
                     </span>
                     </button>
                     

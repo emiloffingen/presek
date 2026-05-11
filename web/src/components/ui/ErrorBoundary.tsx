@@ -22,8 +22,8 @@ export class ErrorBoundary extends React.Component<Props, { hasError: boolean }>
     if (this.state.hasError) {
       return (
         <div className="p-4 border border-red-200 bg-red-50 rounded-lg text-red-800 text-xs text-center">
-          <p>Се појави грешка. Обидете се повторно.</p>
-          <button onClick={() => this.setState({ hasError: false })} className="mt-2 font-bold underline">Рестарт</button>
+          <p>Se pojavi greska. Obidete se povtorno.</p>
+          <button onClick={() => this.setState({ hasError: false })} className="mt-2 font-bold underline">Restart</button>
         </div>
       );
     }

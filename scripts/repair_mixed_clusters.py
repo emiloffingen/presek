@@ -13,7 +13,7 @@ def fix_mixed_cluster(target_cluster_id):
         return
 
     # Keywords for the main story (Gordana Duvnjak)
-    main_keywords = ["Гордана", "Дувњак", "почина", "новинарка"]
+    main_keywords = ["Gordana", "Duvnjak", "pocina", "novinarka"]
 
     to_move = []
     for art in articles:

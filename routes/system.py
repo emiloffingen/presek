@@ -247,13 +247,13 @@ async def get_navigation():
 
     sub_act = {r["subcategory"]: r["n"] for r in sub_activity}
 
-    # 3. GEOGRAPHY (Excluding Macedonia as it's the home default)
-    # The header "Географија" is defined by the section label in the final payload structure
+    # 3. GEOGRAPHY (Excluding Srbija as it's the home default)
+    # The header "Geografija" is defined by the section label in the final payload structure
     geo_items = []
     for label, display in [
-        ("Балкан", "Балкан"),
-        ("Европа", "Европа"),
-        ("Свет", "Свет"),
+        ("Balkan", "Balkan"),
+        ("Evropa", "Evropa"),
+        ("Svet", "Svet"),
     ]:
         count = cat_act.get(label, 0)
         geo_items.append(
@@ -266,7 +266,7 @@ async def get_navigation():
 
     # 4. CORE NEWS (The Pillars + Skopje)
     news_items = []
-    core_news = ["Политика", "Економија", "Спорт", "Криминал"]
+    core_news = ["Politika", "Ekonomija", "Sport", "Kriminal"]
     for label in core_news:
         count = top_act.get(label, 0)
         news_items.append(
@@ -278,14 +278,14 @@ async def get_navigation():
         )
 
     # Add Skopje as the local anchor
-    skopje_count = sub_act.get("Скопје", 0)
+    skopje_count = sub_act.get("Beograd", 0)
     news_items.append(
-        {"label": "Скопје", "href": "/?subcategory=Скопје", "count": skopje_count}
+        {"label": "Beograd", "href": "/?subcategory=Beograd", "count": skopje_count}
     )
 
     # 5. MAGAZINE (Lifestyle & Culture)
     magazine_items = []
-    magazine_topics = ["Култура", "Живот"]
+    magazine_topics = ["Kultura", "Zivot"]
     for label in magazine_topics:
         count = top_act.get(label, 0)
         magazine_items.append(
@@ -296,19 +296,19 @@ async def get_navigation():
             }
         )
 
-    tech_count = top_act.get("Технологија", 0)
+    tech_count = top_act.get("Tehnologija", 0)
     magazine_items.append(
-        {"label": "Технологија", "href": "/?topic=Технологија", "count": tech_count}
+        {"label": "Tehnologija", "href": "/?topic=Tehnologija", "count": tech_count}
     )
 
-    health_count = top_act.get("Здравје", 0)
+    health_count = top_act.get("Zdravje", 0)
     magazine_items.append(
-        {"label": "Здравје", "href": "/?topic=Здравје", "count": health_count}
+        {"label": "Zdravje", "href": "/?topic=Zdravje", "count": health_count}
     )
 
-    entertainment_count = top_act.get("Забава", 0)
+    entertainment_count = top_act.get("Zabava", 0)
     magazine_items.append(
-        {"label": "Забава", "href": "/?topic=Забава", "count": entertainment_count}
+        {"label": "Zabava", "href": "/?topic=Zabava", "count": entertainment_count}
     )
 
     # 6. TRENDING STORIES (Top Entities)
@@ -326,10 +326,10 @@ async def get_navigation():
     res = {
         "breaking": breaking_items,
         "sections": [
-            {"label": "Географија", "items": geo_items, "type": "core"},
-            {"label": "Вести", "items": news_items, "type": "dynamic"},
-            {"label": "Магазин", "items": magazine_items, "type": "magazine"},
-            {"label": "Во Фокус", "items": entities[:5], "type": "trending"},
+            {"label": "Geografija", "items": geo_items, "type": "core"},
+            {"label": "vesti", "items": news_items, "type": "dynamic"},
+            {"label": "Magazin", "items": magazine_items, "type": "magazine"},
+            {"label": "Vo Fokus", "items": entities[:5], "type": "trending"},
         ],
     }
     set_cache(cache_key, res, ttl=300)
@@ -359,7 +359,7 @@ async def get_cluster_share_card(cluster_id: str):
         )
         headline = cleanAndDecode(arts[0]["title"])
         source_count = len(set(a["source"] for a in arts))
-        cat = (arts[0]["category"] or "ВЕСТИ").upper()
+        cat = (arts[0]["category"] or "vesti").upper()
 
         # 2. Setup Canvas (OG Standard: 1200x630)
         img = Image.new("RGB", (1200, 630), color=(15, 13, 12))
@@ -446,13 +446,13 @@ async def get_cluster_share_card(cluster_id: str):
             f_title = f_kicker = f_footer = ImageFont.load_default()
 
         # 5. Draw Branding (Masthead)
-        draw.text((90, 80), "PRESEK.мк", fill=(185, 28, 28), font=f_title)  # NYT Red
+        draw.text((90, 80), "PRESEK.rs", fill=(185, 28, 28), font=f_title)  # NYT Red
         draw.rectangle([90, 165, 450, 168], fill=(185, 28, 28))  # Underline
 
         # 6. Draw Kicker
         draw.text(
             (90, 200),
-            f"{cat} · {source_count} ИЗВОРИ ИЗВЕСТУВААТ",
+            f"{cat} · {source_count} izvori IZVESTUVAAT",
             fill=(209, 213, 235),
             font=f_kicker,
         )
@@ -466,7 +466,7 @@ async def get_cluster_share_card(cluster_id: str):
 
         # 8. Footer Info
         draw.text(
-            (90, 550), "СИТЕ ИЗВОРИ НА ЕДНО МЕСТО", fill=(156, 163, 175), font=f_footer
+            (90, 550), "SITE izvori NA EDNO MESTO", fill=(156, 163, 175), font=f_footer
         )
         draw.text(
             (1110, 550), "presek.live", fill=(255, 255, 255), font=f_footer, anchor="ra"
@@ -505,7 +505,7 @@ async def proxy_image(
     cat: Optional[str] = None,
 ):
     if not url:
-        raise HTTPException(status_code=400, detail="Недостасува УРЛ адреса")
+        raise HTTPException(status_code=400, detail="Nedostasuva URL adresa")
 
     if url.startswith("/static/"):
         relative = url[len("/static/") :].lstrip("/")
@@ -546,7 +546,7 @@ async def proxy_image(
             raise HTTPException(status_code=403)
 
     if not re.match(r"^https?://", url):
-        raise HTTPException(status_code=400, detail="Невалидна УРЛ шема")
+        raise HTTPException(status_code=400, detail="Nevalidna URL sema")
 
     target_w = int(w) if w and w.isdigit() else 600
     target_w = max(20, min(1200, target_w))
@@ -564,7 +564,7 @@ async def proxy_image(
         log.debug(f"Binary Redis cache lookup failed: {e}")
 
     def serve_fallback(reason="error"):
-        svg = generate_local_placeholder(cid or "px", t or "Вест", cat or "Вести")
+        svg = generate_local_placeholder(cid or "px", t or "vest", cat or "vesti")
         return Response(
             svg,
             media_type="image/svg+xml",

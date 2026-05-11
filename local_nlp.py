@@ -10,62 +10,62 @@ def classify_news_quality_locally(title: str, description: str) -> dict:
 
     # 1. High-Value / Hard News Indicators (Policy, Law, Infrastructure)
     hard_keywords = {
-        "собрание",
-        "парламент",
-        "влада",
-        "министер",
-        "премиер",
-        "претседател",
-        "закон",
-        "устав",
-        "буџет",
-        "економија",
-        "инфлација",
-        "берза",
-        "суд",
-        "обвинителство",
-        "истрага",
-        "полиција",
-        "криминал",
-        "брисел",
-        "еу",
-        "нато",
-        "вашингтон",
-        "преговори",
-        "инфраструктура",
-        "изградба",
-        "енергетика",
-        "здравство",
-        "образование",
+        "sobranie",
+        "parlament",
+        "vlada",
+        "minister",
+        "premier",
+        "pretsedatel",
+        "zakon",
+        "ustav",
+        "budzet",
+        "Ekonomija",
+        "inflacija",
+        "berza",
+        "sud",
+        "obvinitelstvo",
+        "istraga",
+        "policija",
+        "kriminal",
+        "brisel",
+        "eu",
+        "nato",
+        "vasington",
+        "pregovori",
+        "infrastruktura",
+        "izgradba",
+        "energetika",
+        "Zdravstvo",
+        "Obrazovanje",
     }
 
     # 2. Low-Value / Junk Indicators
     soft_keywords = {
-        "хороскоп",
-        "хороскопот",
-        "ѕвездите",
-        "предвидуваат",
-        "астро",
-        "фустан",
-        "мода",
-        "изглед",
-        "шокира",
-        "скандал",
-        "развод",
-        "рецепт",
-        "состојки",
-        "кујна",
-        "вкусна",
-        "диета",
-        "вирално",
-        "хит",
-        "социјалните мрежи",
-        "тиктокер",
-        "инфлуенсер",
-        "фото",
-        "галерија",
-        "гледајте",
-        "нема да верувате",
+        "horoskop",
+        "horoskopot",
+        "zvezdite",
+        "predvidu",
+        "astro",
+        "fustan",
+        "moda",
+        "izgled",
+        "sokira",
+        "skandal",
+        "razvod",
+        "recept",
+        "sostojki",
+        "kujna",
+        "vkusna",
+        "dieta",
+        "viralno",
+        "hit",
+        "socijalnite mrezi",
+        "tiktoker",
+        "influenser",
+        "foto",
+        "galerija",
+        "gledajte",
+        "nema da veruvate",
     }
 
     # 3. Literacy / Professionalism Penalties
@@ -73,11 +73,11 @@ def classify_news_quality_locally(title: str, description: str) -> dict:
     literacy_penalty = 0.0
     if "!!!" in text or "???" in text:
         literacy_penalty += 0.2
-    if "шокантно" in text or "скандалозно" in text:
+    if "sokantno" in text or "skandalozno" in text:
         literacy_penalty += 0.15
 
     # Check for informal particles/slang common in low-quality portals
-    if any(s in text for s in ["еве што", "како да", "само што"]):
+    if any(s in text for s in ["eve sto", "kako da", "samo sto"]):
         literacy_penalty += 0.1
 
     # 4. Entity Density Check (Hard news has more unique named entities)

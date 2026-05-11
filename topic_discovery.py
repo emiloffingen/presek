@@ -110,8 +110,8 @@ class StoryDiscoveryEngine:
         from local_analyst import analyst
 
         story_title = analyst.analyze(
-            f"Наслови: {' | '.join(titles[:5])}",
-            "Ти си главен уредник. Врз основа на овие наслови, генерирај еден краток, моќен наслов за целата приказна (storyline) на македонски јазик. Врати само наслов.",
+            f"Naslovi: {' | '.join(titles[:5])}",
+            "Ti si glaven urednik. Vrz osnova na ovie naslovi, generiraj eden kratok, mocen naslov za celata prica (storyline) na makedonski jazik. Vrati samo naslov.",
             max_tokens=48,
         )
 
@@ -121,7 +121,7 @@ class StoryDiscoveryEngine:
             story_title = " ".join(tags) if tags else titles[0][:100]
 
         # Basic slugification
-        slug = re.sub(r"[^a-z0-9а-я]", "-", story_title.lower())
+        slug = re.sub(r"[^a-z0-9]", "-", story_title.lower())
         slug = re.sub(r"-+", "-", slug).strip("-")
         slug = f"{slug}-{cid[:8]}"  # Ensure uniqueness
 
@@ -175,7 +175,7 @@ class StoryDiscoveryEngine:
             )
             story_summary = analyst.analyze(
                 combined_text,
-                "Напиши краток преглед (2-3 реченици) на македонски јазик за досегашниот развој на оваа приказна врз основа на настаните подолу. Фокусирај се на главниот наратив.",
+                "Napisi kratok pregled (2-3 recenici) na makedonski jazik za dosegasniot razvoj na ova prica vrz osnova na nastanite podolu. Fokusiraj se na glavni narativ.",
                 max_tokens=256,
             )
 

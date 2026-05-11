@@ -40,15 +40,15 @@ export default function ClusterFollowSuggestionsIsland({
 
     addUnique(topicSuggestions, {
       value: String(topic || '').trim(),
-      reason: 'Ова е главната тема на кластерот што го читате.',
+      reason: 'ova e glavnata tema na klasterot sto ga citate.',
     }, followedTopics);
     addUnique(topicSuggestions, {
       value: String(adjacentTopic || '').trim(),
-      reason: 'Оваа поврзана тема често ја носи следната развојна линија.',
+      reason: 'ova povrzana tema cesto me nosi slednata razvojna linija.',
     }, followedTopics);
     addUnique(sourceSuggestions, {
       value: String(source || '').trim(),
-      reason: 'Овој извор ја води главната линија во кластерот што го читате.',
+      reason: 'Ovoj izvor me vodi glavnata linija vo klasterot sto ga citate.',
     }, followedSources);
 
     return {
@@ -80,10 +80,10 @@ export default function ClusterFollowSuggestionsIsland({
     <section className="cluster-follow-suggestions">
       <div className="cluster-follow-suggestions-head">
         <p className="nyt-section-label flex items-center gap-1 text-muted-foreground">
-          <Sparkles size={12} /> Следете понатаму
+          <Sparkles size={12} /> Sledete dalje
         </p>
         <p className="cluster-follow-suggestions-copy">
-          Зачувајте ја темата или изворот што најмногу ја продолжува оваа приказна.
+          Zacuvajte me temata ili izvor sto najmnogu me prodolzuva ova prica.
         </p>
       </div>
 
@@ -91,14 +91,14 @@ export default function ClusterFollowSuggestionsIsland({
         {suggestions.topics.map((item) => (
           <div key={`topic:${item.value}`} className="cluster-follow-suggestion-card">
             <div>
-              <p className="cluster-follow-suggestion-kicker">Предлог тема</p>
+              <p className="cluster-follow-suggestion-kicker">Predlog tema</p>
               <h4>{item.value}</h4>
               <p className="cluster-follow-suggestion-reason">{item.reason}</p>
             </div>
             <PreferenceToggle
               kind="topic"
               value={item.value}
-              label={`тема: ${item.value}`}
+              label={`tema: ${item.value}`}
               analyticsSurface="cluster"
             />
           </div>
@@ -107,14 +107,14 @@ export default function ClusterFollowSuggestionsIsland({
         {suggestions.sources.map((item) => (
           <div key={`source:${item.value}`} className="cluster-follow-suggestion-card">
             <div>
-              <p className="cluster-follow-suggestion-kicker">Предлог извор</p>
+              <p className="cluster-follow-suggestion-kicker">Predlog izvor</p>
               <h4>{item.value}</h4>
               <p className="cluster-follow-suggestion-reason">{item.reason}</p>
             </div>
             <PreferenceToggle
               kind="source"
               value={item.value}
-              label={`извор: ${item.value}`}
+              label={`izvor: ${item.value}`}
               analyticsSurface="cluster"
             />
           </div>

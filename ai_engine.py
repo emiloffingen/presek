@@ -154,7 +154,7 @@ class LocalProvider(AIProvider):
 
         if (
             "synthesis" in lowered_system
-            or "синтез" in lowered_system
+            or "sintez" in lowered_system
             or task_type == "synthesis"
         ):
             res = analyst.analyze(prompt, system, max_tokens=max_tokens)

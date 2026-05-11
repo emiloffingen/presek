@@ -49,33 +49,33 @@ _CASE_INSENSITIVE_TAG_EXISTS = "EXISTS (SELECT 1 FROM unnest(COALESCE(m.tags, '{
 
 _RESEARCH_MODE_QUERIES = {
     "facts": (
-        "Извлечи ги најважните бројки, датуми, факти и временска рамка од оваа приказна. "
-        "Не додавај бројки што не постојат во контекстот."
+        "Izvleci im najvaznite brojki, datumi, fakti i vremenska ramka od ova prica. "
+        "Ne dodavaj brojki sto ne postojat vo kontekstot."
     ),
     "perspectives": (
-        "Идентификувај ги клучните актери, нивните ставови, изјави и различните агли во приказната. "
-        "Не измислувај изјави што не се во контекстот."
+        "Identifikuvaj im klucnite akteri, nivnite stavovi, izjavi i razlicnite agli vo prikaznata. "
+        "Ne izmisluvaj izjavi sto ne se vo kontekstot."
     ),
     "context": (
-        "Објасни го поширокиот контекст, претходните поврзани случувања и можните последици од оваа приказна. "
-        "Јасно оддели што е во изворите од аналитичката рамка."
+        "Objasni ga posirokiot kontekst, prethodnite povrzani slucuvanja i moznite posledice od ova prica. "
+        "Jasno oddeli sto e vo izvorite od analitickata ramka."
     ),
 }
 
 _RESEARCH_MODE_LABELS = {
-    "facts": "Факти и податоци",
-    "perspectives": "Перспективи и изјави",
-    "context": "Контекстуална рамка",
-    "custom": "Одговор на истражувањето",
+    "facts": "Fakti i podatoci",
+    "perspectives": "Perspektivi i izjavi",
+    "context": "Kontekstualna ramka",
+    "custom": "odgovor na istrazuvanjeto",
 }
 
 _FOCUS_ENTITY_GENERIC_SINGLE_WORDS = {
-    "договор",
-    "теснец",
-    "реакции",
-    "одлука",
-    "мерки",
-    "избори",
+    "dogovor",
+    "tesnec",
+    "reakcije",
+    "odluka",
+    "merki",
+    "izbori",
 }
 
 
@@ -108,7 +108,7 @@ async def _build_gemma_research_context(
         )
 
     if not articles:
-        raise HTTPException(status_code=404, detail="Кластерот не е пронајден")
+        raise HTTPException(status_code=404, detail="Klasterot ne e pronajden")
 
     summary_row = await db.async_execute_one(
         """
@@ -122,9 +122,9 @@ async def _build_gemma_research_context(
     parts = []
     if summary_row:
         if summary_row.get("summary"):
-            parts.append(f"УРЕДНИЧКО РЕЗИМЕ:\n{summary_row['summary']}")
+            parts.append(f"UREDNICKO rezime:\n{summary_row['summary']}")
         if summary_row.get("generated_article"):
-            parts.append(f"СИНТЕЗА:\n{summary_row['generated_article']}")
+            parts.append(f"SINTEZA:\n{summary_row['generated_article']}")
         if summary_row.get("verification_report"):
             try:
                 vr = (
@@ -133,7 +133,7 @@ async def _build_gemma_research_context(
                     else summary_row["verification_report"]
                 )
                 parts.append(
-                    f"ПРОВЕРКА НА ФАКТИ (Системска анализа):\n{json.dumps(vr, ensure_ascii=False, indent=2)}"
+                    f"PROVERKA NA FAKTI (Sistemska analiza):\n{json.dumps(vr, ensure_ascii=False, indent=2)}"
                 )
             except Exception as e:
                 log.debug(f"Failed to parse verification_report JSON: {e}")
@@ -145,19 +145,19 @@ async def _build_gemma_research_context(
                     else summary_row["perspectives"]
                 )
                 parts.append(
-                    f"МЕДИУМСКИ ПЕРСПЕКТИВИ (Системска анализа):\n{json.dumps(pers, ensure_ascii=False, indent=2)}"
+                    f"MEDIUMSKI PERSPEKTIVI (Sistemska analiza):\n{json.dumps(pers, ensure_ascii=False, indent=2)}"
                 )
             except Exception as e:
                 log.debug(f"Failed to parse perspectives JSON: {e}")
 
     sources = []
     for article in articles:
-        source = str(article.get("source") or "Непознат извор").strip()
+        source = str(article.get("source") or "Nepoznat izvor").strip()
         if source and source not in sources:
             sources.append(source)
         text = article.get("full_content") or article.get("title") or ""
         parts.append(
-            f"--- ИЗВОР: {source} ({article['created_at'].strftime('%H:%M %d.%m.%Y')}) ---\n{text}"
+            f"--- izvor: {source} ({article['created_at'].strftime('%H:%M %d.%m.%Y')}) ---\n{text}"
         )
 
     if mode == "context":
@@ -195,7 +195,7 @@ async def _build_gemma_research_context(
                         ]
                     )
                     parts.append(
-                        f"ПОВРЗАНИ ПРЕТХОДНИ НАСТАНИ ОД БАЗАТА:\n{history_list}"
+                        f"POVRZANI PRETHODNI NASTANI OD BAZATA:\n{history_list}"
                     )
         except Exception as e:
             log.warning(f"Failed to fetch Gemma research history context: {e}")
@@ -211,19 +211,19 @@ def _compact_focus_entities(items: list[dict], limit: int) -> list[dict]:
     }
 
     # Merge common fragmented geopolitics phrase into one canonical entity.
-    if "ормуз" in by_key and "теснец" in by_key:
+    if "ormuz" in by_key and "tesnec" in by_key:
         merged_mentions = max(
-            int(by_key.get("ормуз", {}).get("total_mentions") or 0),
-            int(by_key.get("теснец", {}).get("total_mentions") or 0),
-            int(by_key.get("ормуски теснец", {}).get("total_mentions") or 0),
+            int(by_key.get("ormuz", {}).get("total_mentions") or 0),
+            int(by_key.get("tesnec", {}).get("total_mentions") or 0),
+            int(by_key.get("ormuski tesnec", {}).get("total_mentions") or 0),
         )
-        by_key["ормуски теснец"] = {
-            "name": "Ормуски Теснец",
-            "type": by_key.get("ормуски теснец", {}).get("type") or "LOC",
+        by_key["ormuski tesnec"] = {
+            "name": "Ormuski Tesnec",
+            "type": by_key.get("ormuski tesnec", {}).get("type") or "LOC",
             "total_mentions": merged_mentions,
         }
-        by_key.pop("ормуз", None)
-        by_key.pop("теснец", None)
+        by_key.pop("ormuz", None)
+        by_key.pop("tesnec", None)
 
     compact = []
     # Sort and take top N without further destructive processing
@@ -379,7 +379,7 @@ async def get_deep_research(
     if clean_mode == "custom" and not clean_query:
         return {
             "status": "error",
-            "message": "Внесете конкретно прашање за истражување.",
+            "message": "Vnesete konkretno prasanje za istrazuvanje.",
         }
 
     query = (
@@ -397,7 +397,7 @@ async def get_deep_research(
         context, sources = await _build_gemma_research_context(
             cluster_id, clean_mode, clean_query
         )
-        prompt = f"ПРАШАЊЕ: {query}\n\nКОНТЕКСТ ЗА АНАЛИЗА:\n{context}"
+        prompt = f"PRASANjE: {query}\n\nKONTEKST ZA ANALIZA:\n{context}"
 
         # Use cascading AI engine (will route to mistral -> local based on task_type="research")
         raw, provider = sync_call_ai(
@@ -409,7 +409,7 @@ async def get_deep_research(
         )
 
         if not raw:
-            return {"status": "error", "message": "Системот моментално не е достапен."}
+            return {"status": "error", "message": "Sistemot momentalno ne e dostapen."}
 
         # Parse structured response
         response = clean_json_response(raw)
@@ -436,11 +436,11 @@ async def get_deep_research(
             else:
                 return {
                     "status": "error",
-                    "message": "Системот врати невалиден формат. Обидете се со друго прашање.",
+                    "message": "Sistemot vrati nevaliden format. Obidete se so drugo prasanje.",
                 }
 
         if not answer:
-            return {"status": "error", "message": "Не успеав да генерирам одговор."}
+            return {"status": "error", "message": "Ne uspeav da generiram odgovor."}
 
         result = {
             "status": "success",
@@ -459,7 +459,7 @@ async def get_deep_research(
 
     except Exception as e:
         log.error(f"Deep research error: {e}", exc_info=True)
-        return {"status": "error", "message": "Грешка при пребарувањето."}
+        return {"status": "error", "message": "Greska pri prebaruvanjeto."}
 
 
 @router.get("/intelligence/cluster/{cluster_id}/analyst")
@@ -495,7 +495,7 @@ async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts"):
         )
 
         if not report:
-            return {"status": "error", "message": "Аналитичарот е зафатен."}
+            return {"status": "error", "message": "Analiticarot e zafaten."}
 
         # Apply final name validation on the report
         from entities import validate_person_names
@@ -515,7 +515,7 @@ async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts"):
 
     except Exception as e:
         log.error(f"[analyst] Unexpected error for {cluster_id}: {e}", exc_info=True)
-        return {"status": "error", "message": "Грешка при анализата."}
+        return {"status": "error", "message": "Greska pri analizata."}
 
 
 @router.get("/intelligence/source-pulse")
@@ -646,7 +646,7 @@ async def get_entity_profile(name: str):
             f"SELECT 1 FROM cluster_metadata m WHERE {_CASE_INSENSITIVE_TAG_EXISTS} LIMIT 1",
             (name,),
         ):
-            raise HTTPException(status_code=404, detail="Субјектот не е пронајден")
+            raise HTTPException(status_code=404, detail="Subjektot ne e pronajden")
         entity = {
             "name": name,
             "type": "ENTITY",
@@ -683,7 +683,7 @@ async def get_entity_profile(name: str):
         bullets = [
             re.sub(r"^[-•*]\s*", "", line).strip()
             for line in (c["summary"] or "").split("\n")
-            if line.strip() and not line.strip().lower().startswith("статии:")
+            if line.strip() and not line.strip().lower().startswith("clanci:")
         ]
         sent = None
         try:
@@ -693,7 +693,7 @@ async def get_entity_profile(name: str):
                 else c["sentiment"]
             )
         except Exception:
-            sent = {"sentiment": {"score": 0, "tone": "неутрално"}}
+            sent = {"sentiment": {"score": 0, "tone": "neutralno"}}
         processed.append(
             {
                 "cluster_id": c["cluster_id"],
@@ -925,7 +925,7 @@ async def cluster_research(request: Request, cluster_id: str, q: str):
     )
 
     if not row:
-        raise HTTPException(status_code=404, detail="Кластерот не е пронајден")
+        raise HTTPException(status_code=404, detail="Klasterot ne e pronajden")
 
     context = f"{row['summary']}\n{row['generated_article']}"
     res = analyst.research_query(q, context)
@@ -1012,7 +1012,7 @@ async def get_personalized_recommendations(request: Request):
     try:
         payload = await request.json()
     except Exception:
-        raise HTTPException(status_code=400, detail="Невалиден JSON")
+        raise HTTPException(status_code=400, detail="Nevaliden JSON")
     recent_ids = validate_list_param(
         payload.get("recentlyRead", []),
         "recentlyRead",
@@ -1100,7 +1100,7 @@ async def get_personalized_recommendations(request: Request):
                 "score": score_cluster(arts),
                 "has_synthesis": bool(s_row and s_row["summary"]),
                 "is_breaking": any(a.get("is_breaking") for a in arts),
-                "reason": "Предлог за Вас",
+                "reason": "Predlog za Vas",
             }
         )
     return {"status": "success", "clusters": formatted}
@@ -1122,7 +1122,7 @@ async def get_latest_briefing(date: Optional[str] = None):
         )
 
     if not row:
-        return {"status": "error", "message": "Брифингот не е пронајден"}
+        return {"status": "error", "message": "Brifingot ne e pronajden"}
 
     target_date = row["date"]
 

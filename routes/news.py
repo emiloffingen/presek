@@ -68,29 +68,29 @@ class NewsResponse(BaseModel):
     entity: Optional[Any] = None
 
 
-_SOFT_EXCLUDE_TOPICS = {"Живот", "Забава", "Здравје"}
-_HARD_NEWS_TOPICS = {"Политика", "Економија", "Криминал", "Спорт", "Технологија"}
+_SOFT_EXCLUDE_TOPICS = {"Zivot", "Zabava", "Zdravje"}
+_HARD_NEWS_TOPICS = {"Politika", "Ekonomija", "Kriminal", "Sport", "Tehnologija"}
 _HARD_NEWS_CATEGORIES = {
     "Srbija",
-    "Балкан",
-    "Европа",
-    "Германија",
-    "Америка",
-    "Свет",
+    "Balkan",
+    "Evropa",
+    "Germanija",
+    "Amerika",
+    "Svet",
 }
 _FEATURE_PATTERNS = [
-    re.compile(r"издание на", re.IGNORECASE),
-    re.compile(r"интервју со", re.IGNORECASE),
-    re.compile(r"интервју\b", re.IGNORECASE),
-    re.compile(r"проверете дали", re.IGNORECASE),
-    re.compile(r"пред да ", re.IGNORECASE),
-    re.compile(r"постојано сте уморни", re.IGNORECASE),
-    re.compile(r"овој минерал", re.IGNORECASE),
-    re.compile(r"хороскоп", re.IGNORECASE),
-    re.compile(r"рецепт", re.IGNORECASE),
-    re.compile(r"фото\b", re.IGNORECASE),
-    re.compile(r"видео\b", re.IGNORECASE),
-    re.compile(r"галерија", re.IGNORECASE),
+    re.compile(r"izdanie na", re.IGNORECASE),
+    re.compile(r"intervju so", re.IGNORECASE),
+    re.compile(r"intervju\b", re.IGNORECASE),
+    re.compile(r"proverete dali", re.IGNORECASE),
+    re.compile(r"pred da ", re.IGNORECASE),
+    re.compile(r"postojano ste umorni", re.IGNORECASE),
+    re.compile(r"ovoj mineral", re.IGNORECASE),
+    re.compile(r"horoskop", re.IGNORECASE),
+    re.compile(r"recept", re.IGNORECASE),
+    re.compile(r"foto\b", re.IGNORECASE),
+    re.compile(r"video\b", re.IGNORECASE),
+    re.compile(r"galerija", re.IGNORECASE),
 ]
 
 
@@ -164,7 +164,7 @@ def _public_article_payload(article):
             res[key] = value
 
     # Check if the article is from a global category
-    res["is_global"] = article.get("category") in ("Америка", "Германија")
+    res["is_global"] = article.get("category") in ("Amerika", "Germanija")
     return res
 
 
@@ -575,7 +575,7 @@ async def get_news(
             g_rows = await db.async_execute(
                 """
                 SELECT * FROM articles 
-                WHERE category IN ('Америка', 'Германија') 
+                WHERE category IN ('Amerika', 'Germanija') 
                   AND created_at >= NOW() - INTERVAL '48 hours'
                 ORDER BY created_at DESC LIMIT 100
             """
@@ -692,7 +692,7 @@ async def semantic_search(
         query_vec = generate_query_embedding(q)
         if not query_vec:
             raise HTTPException(
-                status_code=500, detail="Неуспешно генерирање на вектор за пребарување"
+                status_code=500, detail="Neuspesno generiranje na vektor za prebaruvanje"
             )
 
         # Fetch articles using vector distance
@@ -757,10 +757,10 @@ async def get_cluster_detail(cluster_id: str):
             (cluster_id,),
         )
         if not rows:
-            raise HTTPException(status_code=404, detail="Кластерот не е пронајден")
+            raise HTTPException(status_code=404, detail="Klasterot ne e pronajden")
         rows = [row for row in rows if _is_publicly_displayable_article(row)]
         if not rows:
-            raise HTTPException(status_code=404, detail="Кластерот не е пронајден")
+            raise HTTPException(status_code=404, detail="Klasterot ne e pronajden")
         articles = annotate_cluster_articles(rows, prefer_recent=True)
         for a in articles:
             a["reading_time"] = calculate_reading_time(a.get("description", ""))
@@ -895,7 +895,7 @@ async def get_cluster_detail(cluster_id: str):
                             "image_url": item.get("image_url"),
                             "tags": shared_tags,
                             "relationship_label": item.get("relationship_label")
-                            or "Сродна тема",
+                            or "Srodna tema",
                             "shared_tags": shared_tags,
                             "shared_topics": shared_topics,
                             "shared_entities": shared_entities,
@@ -973,7 +973,7 @@ async def get_cluster_detail(cluster_id: str):
                             "image_url": item.get("image_url"),
                             "tags": shared_tags,
                             "relationship_label": item.get("relationship_label")
-                            or "Сродна тема",
+                            or "Srodna tema",
                             "shared_tags": shared_tags,
                             "shared_topics": shared_topics,
                             "shared_entities": shared_entities,
@@ -986,12 +986,12 @@ async def get_cluster_detail(cluster_id: str):
         for i, a in enumerate(chrono):
             is_major = (a.get("source_signal") or {}).get("trust_level", 0) >= 0.8
             milestone = (
-                "ПОЧЕТОК"
+                "POCETOK"
                 if i == 0
                 else (
-                    "КОНСЕНЗУС"
+                    "KONSENZUS"
                     if i == len(chrono) - 1 and len(chrono) >= 3
-                    else "РАЗВОЈ"
+                    else "razvoj"
                 )
             )
             timeline.append(
@@ -1042,7 +1042,7 @@ async def get_cluster_detail(cluster_id: str):
         raise
     except Exception as e:
         log.error(f"Cluster Detail Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Внатрешна серверска грешка")
+        raise HTTPException(status_code=500, detail="Vnatresna serverska greska")
 
 
 @router.get("/cluster/{cluster_id}/history")

@@ -25,12 +25,12 @@ const topic = (() => {
 
 const API_URL = apiBaseUrl();
 const topicQueryMap: Record<string, { primary: 'topic' | 'category'; secondary?: 'topic' | 'category' }> = {
-	'Политика': { primary: 'topic', secondary: 'category' },
-	'Економија': { primary: 'topic', secondary: 'category' },
-	'Свет': { primary: 'category', secondary: 'topic' },
-	'Спорт': { primary: 'topic', secondary: 'category' },
-	'Технологија': { primary: 'topic', secondary: 'category' },
-	'Забава': { primary: 'topic', secondary: 'category' },
+	'Politika': { primary: 'topic', secondary: 'category' },
+	'Ekonomija': { primary: 'topic', secondary: 'category' },
+	'Svet': { primary: 'category', secondary: 'topic' },
+	'Sport': { primary: 'topic', secondary: 'category' },
+	'Tehnologija': { primary: 'topic', secondary: 'category' },
+	'Zabava': { primary: 'topic', secondary: 'category' },
 };
 
 let clusters: any[] = [];
@@ -58,7 +58,7 @@ function parseSynthesis(text?: string) {
 		.split('\n')
 		.map((line) => line.trim().replace(/^[-•]\s+/, ''))
 		.filter(Boolean)
-		.filter((line) => line.toLowerCase() !== 'статии:')
+		.filter((line) => line.toLowerCase() !== 'clanci:')
 		.map((line) => line.replace(/^\[[^\]]+\]:\s*/, '').trim())
 		.filter(Boolean);
 }
@@ -68,10 +68,10 @@ function normalizePerspectives(items: any[]) {
 	return items
 		.map((item) => {
 			if (!item || typeof item !== 'object') return null;
-			const angle = String(item.angle ?? item.label ?? 'Перспектива').trim();
+			const angle = String(item.angle ?? item.label ?? 'perspektiva').trim();
 			const content = String(item.content ?? item.text ?? item.description ?? '').trim();
 			if (!content) return null;
-			return { angle: angle || 'Перспектива', content };
+			return { angle: angle || 'perspektiva', content };
 		})
 		.filter(Boolean);
 }
@@ -119,7 +119,7 @@ try {
 	}
 } catch (e: any) {
 	console.error(e);
-	error = 'Темата моментално не е достапна.';
+	error = 'Temata momentalno ne e dostapna.';
 	Astro.response.status = e.status || 500;
 }
 
@@ -152,14 +152,14 @@ const topicFollowSuggestions = topicConnections.slice(0, 2).map((item: any) => (
 }));
 const sourceFollowSuggestions = sourceRows.slice(0, 2).map(([name, count]) => ({
 	source: name,
-	reason: `${count} појавувања во активни кластери за оваа тема.`,
+	reason: `${count} pojavuvanja vo aktivni klasteri za ova tema.`,
 }));
 
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site || 'https://presek.live').href.replace(/\/+$/, "");
 
 const leadSummary =
 	getDisplaySummary(leadCluster?.articles?.[0] || {}) ||
-	'Најсилните кластери во оваа тема се подредени според тежина, доверба и развој.';
+	'Najsilnite klasteri vo ova tema se podredeni spored tezina, doverba i razvoj.';
 
 const keyAngles = normalizePerspectives(leadDetail?.perspectives || []).slice(0, 3);
 const synthesisLines = parseSynthesis(leadDetail?.synthesis || '').slice(0, 3);
@@ -168,36 +168,36 @@ const relatedClusters = Array.isArray(leadDetail?.related) ? leadDetail.related.
 function topicIntro() {
 	if (!clusters.length) return '';
 	if (breakingCount >= 2) {
-		return `Темата ${topic} денес се развива брзо, со ${clusters.length} активни кластери и ${uniqueSources.size} извори што додаваат нови детали.`;
+		return `Temata ${topic} danas se razviva brzo, so ${clusters.length} aktivni klasteri i ${uniqueSources.size} izvori sto dodavaat novi detali.`;
 	}
 	if (clusters.length >= 6) {
-		return `Темата ${topic} е широко присутна низ денешниот циклус, со ${clusters.length} кластери и ${totalReports} извештаи што се надоврзуваат еден на друг.`;
+		return `Temata ${topic} e siroko prisutna niz denesniot ciklus, so ${clusters.length} klasteri i ${totalReports} izvestai sto se nadovrzuvaat eden na drug.`;
 	}
-	return `Темата ${topic} останува релевантна денес, со ${clusters.length} кластери и повеќе редакции што ја следат од различни агли.`;
+	return `Temata ${topic} ostaje relevantna danas, so ${clusters.length} klasteri i povece redakcii sto me sledat od razliciti agli.`;
 }
 ---
 
 <Layout 
-	title={topic ? `${topic} | Тема` : 'Тема'} 
-	description={`Сè што е активно за темата ${topic} — кластери, извори, перспективи и развој.`}
+	title={topic ? `${topic} | Tema` : 'Tema'} 
+	description={`jos sto e aktivno za temata ${topic} — klasteri, izvori, perspektivi i razvoj.`}
 	canonical={canonicalUrl}
 >
 	<NYTHeader topic={topic} />
 
 	<main class="site-layout py-[var(--page-py)]">
 		{(error || !clusters.length) && (
-			<Breadcrumbs items={[{ label: "Теми", href: "/" }, { label: topic || "Тема" }]} />
+			<Breadcrumbs items={[{ label: "Temi", href: "/" }, { label: topic || "Tema" }]} />
 		)}
 
 		{error && (
 			<div class="topic-empty">
 				<div class="topic-empty-inner">
-					<span class="topic-kicker">Тема</span>
-					<h1 class="topic-empty-title">{topic || 'Тема'}</h1>
+					<span class="topic-kicker">Tema</span>
+					<h1 class="topic-empty-title">{topic || 'Tema'}</h1>
 					<p>{error}</p>
 					<div class="topic-empty-actions">
-						<a href="/" class="topic-empty-link">Назад на почеток</a>
-						<a href="/archive" class="topic-empty-link topic-empty-link-secondary">Отвори архива</a>
+						<a href="/" class="topic-empty-link">Nazad na pocetok</a>
+						<a href="/archive" class="topic-empty-link topic-empty-link-secondary">Otvori arhiva</a>
 					</div>
 				</div>
 			</div>
@@ -206,12 +206,12 @@ function topicIntro() {
 		{!error && !clusters.length && (
 			<div class="topic-empty">
 				<div class="topic-empty-inner">
-					<span class="topic-kicker">Тема</span>
+					<span class="topic-kicker">Tema</span>
 					<h1 class="topic-empty-title">{topic}</h1>
-					<p>Нема доволно активни кластери за оваа тема во моментов.</p>
+					<p>Nema dovolno aktivni klasteri za ova tema vo momentov.</p>
 					<div class="topic-empty-actions">
-						<a href="/" class="topic-empty-link">Почетна</a>
-						<a href="/archive" class="topic-empty-link topic-empty-link-secondary">Побарај во архива</a>
+						<a href="/" class="topic-empty-link">Pocetna</a>
+						<a href="/archive" class="topic-empty-link topic-empty-link-secondary">Pobaraj vo arhiva</a>
 					</div>
 				</div>
 			</div>
@@ -222,7 +222,7 @@ function topicIntro() {
 				<header class="topic-hero">
 					<div class="topic-hero-copy">
 						<Breadcrumbs items={[{ label: topic }]} />
-						<span class="topic-kicker">Тема</span>
+						<span class="topic-kicker">Tema</span>
 						<h1 class="topic-headline">{topic}</h1>
 						<div class="topic-actions">
 							<PreferenceToggle client:visible kind="topic" value={topic} />
@@ -232,19 +232,19 @@ function topicIntro() {
 
 						<div class="topic-stats">
 							<div>
-								<span class="micro-label">Кластери</span>
+								<span class="micro-label">klasteri</span>
 								<strong>{clusters.length}</strong>
 							</div>
 							<div>
-								<span class="micro-label">Извори</span>
+								<span class="micro-label">izvori</span>
 								<strong>{uniqueSources.size}</strong>
 							</div>
 							<div>
-								<span class="micro-label">Извештаи</span>
+								<span class="micro-label">Izvestai</span>
 								<strong>{totalReports}</strong>
 							</div>
 							<div>
-								<span class="micro-label">Во развој</span>
+								<span class="micro-label">Vo razvoj</span>
 								<strong>{breakingCount}</strong>
 							</div>
 						</div>
@@ -252,7 +252,7 @@ function topicIntro() {
 
 					<div class="topic-hero-side">
 						<div class="topic-note-card">
-							<p class="topic-note-label">Што го движи овој простор</p>
+							<p class="topic-note-label">Sto ga dvizi ovoj prostor</p>
 							<ul class="topic-note-list">
 								{(synthesisLines.length > 0 ? synthesisLines : [leadSummary]).map((line: string) => (
 									<li>{line}</li>
@@ -273,8 +273,8 @@ function topicIntro() {
 						{leadCluster && (
 							<section class="topic-lead">
 								<div class="section-heading-row">
-									<h2 class="section-title">Водечка Приказна</h2>
-									<p class="section-note">Кластерот што најмногу ја носи темата напред во моментов.</p>
+									<h2 class="section-title">Vodecka prica</h2>
+									<p class="section-note">Klasterot sto najmnogu me nosi temata napred vo momentov.</p>
 								</div>
 								<NewsCard cluster={leadCluster} isLead={true} />
 							</section>
@@ -285,8 +285,8 @@ function topicIntro() {
 						{keyAngles.length > 0 && (
 							<section class="topic-angles">
 								<div class="section-heading-row">
-									<h2 class="section-title">Каде Се Разликува Покривањето</h2>
-									<p class="section-note">Главните агли што излегуваат од водечкиот кластер во темата.</p>
+									<h2 class="section-title">Kade Se Razlikuva Pokrivanjeto</h2>
+									<p class="section-note">Glavnite agli sto izleguvaat od vodeckiot klaster vo temata.</p>
 								</div>
 								<div class="topic-angle-grid">
 									{keyAngles.map((item: any) => (
@@ -302,8 +302,8 @@ function topicIntro() {
 						{supportingClusters.length > 0 && (
 							<section class="topic-supporting">
 								<div class="section-heading-row">
-									<h2 class="section-title">Што Се Развива Понатаму</h2>
-									<p class="section-note">Придружни и следни кластери што ја прошируваат темата.</p>
+									<h2 class="section-title">Sto Se Razviva dalje</h2>
+									<p class="section-note">Pridruzni i sledni klasteri sto me prosiruvaat temata.</p>
 								</div>
 								<div class="topic-supporting-grid">
 									{supportingClusters.map((cluster: any, index: number) => (
@@ -316,8 +316,8 @@ function topicIntro() {
 						{feedClusters.length > 0 && (
 							<section class="topic-feed">
 								<div class="section-heading-row">
-									<h2 class="section-title">Повеќе Од Оваа Тема</h2>
-									<p class="section-note">Останати активни кластери што вреди да останат во видното поле.</p>
+									<h2 class="section-title">Povece Od ova Tema</h2>
+									<p class="section-note">Ostanati aktivni klasteri sto vredi da ostanat vo vidnoto pole.</p>
 								</div>
 								{featuredFeedClusters.length > 0 && (
 									<div class="topic-feed-grid topic-feed-grid-featured">
@@ -340,7 +340,7 @@ function topicIntro() {
 					<aside class="topic-rail">
 						{tagRows.length > 0 && (
 							<section class="rail-card">
-								<h3 class="rail-card-title">Имиња И Агли</h3>
+								<h3 class="rail-card-title">Iminja I Agli</h3>
 								<div class="topic-chip-list">
 									{tagRows.map(([name, count]) => (
 										<a href={`/?q=${encodeURIComponent(name)}`} class="topic-chip">
@@ -353,7 +353,7 @@ function topicIntro() {
 
 						{topicConnections.length > 0 && (
 							<section class="rail-card">
-								<h3 class="rail-card-title">Каде Да Одите Понатаму</h3>
+								<h3 class="rail-card-title">Kade Da Odite dalje</h3>
 								<div class="topic-connection-list">
 									{topicConnections.map((item: any) => (
 										<a href={`/tema/${encodeURIComponent(item.topic)}`} class="topic-connection-card">
@@ -371,14 +371,14 @@ function topicIntro() {
 
 						{sourceRows.length > 0 && (
 							<section class="rail-card">
-								<h3 class="rail-card-title">Извори Што Ја Водат Темата</h3>
+								<h3 class="rail-card-title">izvori Sto me Vodat Temata</h3>
 								<div class="topic-source-list">
 									{sourceRows.map(([name, count], index) => (
 										<div class="topic-source-row">
 											<span class="topic-source-rank">{String(index + 1).padStart(2, '0')}</span>
 											<div>
 												<p>{name}</p>
-												<span>{count} појавувања во кластери</span>
+												<span>{count} pojavuvanja vo klasteri</span>
 											</div>
 										</div>
 									))}
@@ -388,14 +388,14 @@ function topicIntro() {
 
 						{relatedClusters.length > 0 && (
 							<section class="rail-card">
-								<h3 class="rail-card-title">Што Да Читате Понатаму</h3>
+								<h3 class="rail-card-title">Sto Da Citate dalje</h3>
 								<div class="topic-related-list">
 									{relatedClusters.map((item: any) => (
 										<a href={`/cluster/${item.cluster_id}`} class="topic-related-link">
 											{item.relationship_label && <span class="topic-related-kicker">{item.relationship_label}</span>}
 											<strong>{item.title}</strong>
 											{item.relationship_note && <p>{item.relationship_note}</p>}
-											<span class="topic-related-cta">Отвори кластер <ArrowRight size={12} /></span>
+											<span class="topic-related-cta">Otvori klaster <ArrowRight size={12} /></span>
 										</a>
 									))}
 								</div>

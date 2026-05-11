@@ -63,7 +63,7 @@ def _load_home_module():
     def _fake_clean_and_decode(text):
         cleaned = str(text or "").replace("&amp;", "&").replace("&quot;", '"').strip()
         cleaned = re.sub(r"Read\s+More\s*[»>\-]*\s*$", "", cleaned, flags=re.IGNORECASE)
-        cleaned = re.sub(r"Прочитај\s+повеќе\s*$", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"Procitaj\s+povece\s*$", "", cleaned, flags=re.IGNORECASE)
         cleaned = re.sub(r"\s+", " ", cleaned)
         return cleaned.strip()
 
@@ -107,7 +107,7 @@ def _load_home_module():
 def test_title_looks_like_feature_ignores_scrape_noise():
     home = _load_home_module()
 
-    assert home._title_looks_like_feature("Прочитај повеќе")
+    assert home._title_looks_like_feature("Procitaj povece")
     assert home._title_looks_like_feature("Read More »")
 
 
@@ -116,15 +116,15 @@ def test_rank_latest_wire_articles_dedupes_cleaned_titles():
 
     items = [
         {
-            "title": "Владата усвои мерки &amp; пакет",
-            "topic": "Политика",
+            "title": "Vladata usvoi merki &amp; paket",
+            "topic": "Politika",
             "category": "Srbija",
             "created_at": "2026-04-22T10:00:00",
             "source": "A",
         },
         {
-            "title": "Владата усвои мерки & пакет",
-            "topic": "Политика",
+            "title": "Vladata usvoi merki & paket",
+            "topic": "Politika",
             "category": "Srbija",
             "created_at": "2026-04-22T10:05:00",
             "source": "B",
@@ -141,10 +141,10 @@ def test_extract_preview_summary_parses_jsonish_summary_blob():
 
     article = {
         "summary": "",
-        "description": '{"summary":"Чисто резиме","text":"Резервно"}',
+        "description": '{"summary":"Cisto rezime","text":"Rezervno"}',
     }
 
-    assert home._extract_preview_summary(article) == "Чисто резиме"
+    assert home._extract_preview_summary(article) == "Cisto rezime"
 
 
 def test_build_lead_display_returns_cleaned_preview_fields():
@@ -154,19 +154,19 @@ def test_build_lead_display_returns_cleaned_preview_fields():
         "is_breaking": True,
         "articles": [
             {
-                "title": "Владата &amp; мерки",
-                "summary": "Прочитај повеќе",
-                "description": "Опис",
+                "title": "Vladata &amp; merki",
+                "summary": "Procitaj povece",
+                "description": "Opis",
             },
-            {"title": "Втор агол"},
+            {"title": "Vtor ugao"},
         ],
     }
 
     display = home._build_lead_display(cluster)
 
-    assert display["title"] == "Владата & мерки"
+    assert display["title"] == "Vladata & merki"
     assert display["summary"] == ""
-    assert display["signal"] == "Најбрз развој во денот"
+    assert display["signal"] == "Najbrz razvoj vo denot"
 
 
 def test_decorate_cluster_display_adds_display_fields_to_articles():
@@ -176,14 +176,14 @@ def test_decorate_cluster_display_adds_display_fields_to_articles():
         "cluster_id": "abc123",
         "articles": [
             {
-                "title": "Владата &amp; мерки",
+                "title": "Vladata &amp; merki",
                 "summary": "",
-                "description": "Опис",
+                "description": "Opis",
             }
         ],
     }
 
     decorated = home._decorate_cluster_display(cluster)
 
-    assert decorated["articles"][0]["display_title"] == "Владата & мерки"
-    assert decorated["articles"][0]["display_summary"] == "Опис"
+    assert decorated["articles"][0]["display_title"] == "Vladata & merki"
+    assert decorated["articles"][0]["display_summary"] == "Opis"

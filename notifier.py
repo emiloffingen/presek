@@ -51,8 +51,8 @@ class BreakingNewsNotifier:
         if self._is_notified(score_key):
             return
 
-        title = f"ГОЛ! {score}" if "0" not in score else f"Резултат: {score}"
-        msg = f"{headline}\n\nНов резултат: {score}"
+        title = f"GOL! {score}" if "0" not in score else f"Rezultat: {score}"
+        msg = f"{headline}\n\nNov rezultat: {score}"
         if teams:
             msg = f"{teams}\n{msg}"
 
@@ -92,14 +92,14 @@ class BreakingNewsNotifier:
         parts = [f"<b>{headline}</b>"]
         if description:
             parts.append(description)
-        source_line = f"{sources_count} извори известуваат"
+        source_line = f"{sources_count} izvori izvestuvaat"
         if sources:
             source_line += f" ({', '.join(sources[:5])})"
         parts.append(f"<i>{source_line}</i>")
 
         self.send_ntfy(
-            "Важна вест — Presek",
-            f"{headline}\n({sources_count} извори известуваат)",
+            "Vazna vest — Presek",
+            f"{headline}\n({sources_count} izvori izvestuvaat)",
             cluster_id,
         )
         self._mark_as_notified(cluster_id)

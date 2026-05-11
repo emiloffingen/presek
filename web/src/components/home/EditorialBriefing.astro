@@ -24,7 +24,7 @@ function parseBriefing(text: string) {
         
         if (titleLine.startsWith('## ')) {
             const sectionName = titleLine.replace('## ', '').trim();
-            const isKey = sectionName.toLowerCase().includes('клучно') || sectionName.toLowerCase().includes('пулс');
+            const isKey = sectionName.toLowerCase().includes('klucno') || sectionName.toLowerCase().includes('puls');
             parsed[sectionName] = { 
                 lines: lines.slice(1).map(l => l.trim()).filter(Boolean),
                 isKey
@@ -43,7 +43,7 @@ const briefingData = parseBriefing(content);
 function formatDate(dateStr: string) {
     try {
         const d = new Date(dateStr);
-        return d.toLocaleDateString('mk-MK', { 
+        return d.toLocaleDateString('mk-RS', { 
             weekday: 'long', 
             year: 'numeric', 
             month: 'long', 
@@ -60,7 +60,7 @@ function formatDate(dateStr: string) {
         <div class="briefing-header">
             <div class="briefing-kicker">
                 <span class="live-dot"></span>
-                Уреднички брифинг
+                Urednicki brifing
             </div>
             <h2 class="briefing-date">{formatDate(date)}</h2>
         </div>
@@ -88,7 +88,7 @@ function formatDate(dateStr: string) {
         </div>
         
         <div class="briefing-footer">
-            <p>Генерирано со помош на Presek Системска Синтеза • Базирано на денешните водечки кластери</p>
+            <p>Generirano so pomos na Presek Sistemska Sinteza • Bazirano na denesnite vodecki klasteri</p>
         </div>
     </section>
 )}

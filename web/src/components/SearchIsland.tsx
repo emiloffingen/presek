@@ -47,21 +47,21 @@ type SearchAction = {
 };
 
 const SEARCH_ACTIONS: SearchAction[] = [
-  { id: 'act-home', label: 'Почетна Страница', icon: Layout, href: '/', category: 'NAVIGATION', desc: 'Врати се на главната страница со вести.' },
-  { id: 'act-briefing', label: 'Дневен Брифинг', icon: Zap, href: '/briefing', category: 'NAVIGATION', desc: 'Преглед на најважните вести во форма на брифинг.' },
-  { id: 'act-pulse', label: 'Информативен Ритам', icon: Activity, href: '/pulse', category: 'NAVIGATION', desc: 'Следете ги трендовите и медиумскиот плурализам.' },
-  { id: 'act-archive', label: 'Архива на Вести', icon: Archive, href: '/archive', category: 'NAVIGATION', desc: 'Пребарајте ги сите досегашни објави.' },
-  { id: 'act-about', label: 'За Проектот', icon: HelpCircle, href: '/about', category: 'HELP', desc: 'Дознајте повеќе за Presek и технологијата зад него.' },
+  { id: 'act-home', label: 'Pocetna Stranica', icon: Layout, href: '/', category: 'NAVIGATION', desc: 'Vrati se na glavnata stranica so vesti.' },
+  { id: 'act-briefing', label: 'Dneven Brifing', icon: Zap, href: '/briefing', category: 'NAVIGATION', desc: 'Pregled na najvaznite vesti vo forma na brifing.' },
+  { id: 'act-pulse', label: 'Informativen Ritam', icon: Activity, href: '/pulse', category: 'NAVIGATION', desc: 'Sledete im trendovite i mediumskiot pluralizam.' },
+  { id: 'act-archive', label: 'Arhiva na vesti', icon: Archive, href: '/archive', category: 'NAVIGATION', desc: 'Prebarajte im site dosegasni objavi.' },
+  { id: 'act-about', label: 'Za Proektot', icon: HelpCircle, href: '/about', category: 'HELP', desc: 'Doznajte povece za Presek i tehnologijata zad nego.' },
 ];
 
 const CATEGORIES = [
-  { id: 'all', label: 'СИТЕ ТЕМИ', color: 'bg-nyt-accent' },
-  { id: 'Srbija', label: 'МАКЕДОНИЈА', color: 'bg-nyt-red' },
-  { id: 'Политика', label: 'ПОЛИТИКА', color: 'bg-blue-600' },
-  { id: 'Економија', label: 'ЕКОНОМИЈА', color: 'bg-emerald-600' },
-  { id: 'Спорт', label: 'СПОРТ', color: 'bg-orange-500' },
-  { id: 'Култура', label: 'КУЛТУРА', color: 'bg-purple-600' },
-  { id: 'Технологија', label: 'ТЕХНОЛОГИЈА', color: 'bg-cyan-600' },
+  { id: 'all', label: 'SITE TEMI', color: 'bg-nyt-accent' },
+  { id: 'Srbija', label: 'Srbija', color: 'bg-nyt-red' },
+  { id: 'Politika', label: 'Politika', color: 'bg-blue-600' },
+  { id: 'Ekonomija', label: 'Ekonomija', color: 'bg-emerald-600' },
+  { id: 'Sport', label: 'Sport', color: 'bg-orange-500' },
+  { id: 'Kultura', label: 'Kultura', color: 'bg-purple-600' },
+  { id: 'Tehnologija', label: 'Tehnologija', color: 'bg-cyan-600' },
 ];
 
 const FOCUSABLE_SELECTOR = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
@@ -83,11 +83,11 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
 
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const placeholders = [
-    "Истражи ја медиумската архива...",
-    "Анализирај ги противречните ставови...",
-    "Деконструирај ги фактите и бројките...",
-    "Мапирај ги реакциите и последиците...",
-    "Што се случува во Srbija?"
+    "Istrazi me mediumskata arhiva...",
+    "Analiziraj im protivrecnite stavovi...",
+    "Dekonstruiraj im faktite i brojkite...",
+    "Mapiraj im reakciite i posledicite...",
+    "Sto se slucuva vo Srbija?"
   ];
 
   useEffect(() => {
@@ -145,7 +145,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
     const recognition = new SpeechRecognition();
     recognition.continuous = false;
     recognition.interimResults = false;
-    recognition.lang = 'mk-MK';
+    recognition.lang = 'mk-RS';
     recognition.onstart = () => setIsListening(true);
     recognition.onend = () => setIsListening(false);
     recognition.onerror = () => setIsListening(false);
@@ -219,14 +219,14 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
         const timespanPart = timespan !== 'all' ? `&timespan=${timespan}` : '';
         const categoryPart = categoryFilter !== 'all' ? `&category=${encodeURIComponent(categoryFilter)}` : '';
         const res = await fetch(url + timespanPart + categoryPart);
-        if (!res.ok) throw new Error('Грешка при пребарувањето.');
+        if (!res.ok) throw new Error('Greska pri prebaruvanjeto.');
         const data = await res.json();
         const nextSuggestions = Array.isArray(data?.clusters)
           ? data.clusters.map((cluster: any) => {
               const article = cluster.articles?.[0] || {};
               return {
                 cluster_id: cluster.cluster_id,
-                title: getDisplayTitle(article, 'Наслов'),
+                title: getDisplayTitle(article, 'Naslov'),
                 image_url: cluster.representative_image || article.image_url || null,
                 source: article.source || '',
                 category: article.category || '',
@@ -234,7 +234,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                 sourceCount: cluster.articles?.length || 0,
                 pulse_score: cluster.pulse_score,
                 has_synthesis: cluster.has_synthesis,
-                matchLabel: cluster.is_breaking ? 'ИТНО' : 'ВЕСТ',
+                matchLabel: cluster.is_breaking ? 'ITNO' : 'vest',
               };
             })
           : [];
@@ -248,7 +248,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
         if (!cancelled) {
           setSuggestions([]);
           setEntityResult(null);
-          setError(err instanceof Error ? err.message : 'Грешка');
+          setError(err instanceof Error ? err.message : 'Greska');
         }
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -350,7 +350,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Пребарајте вести, теми или субјекти..."
+              placeholder="Prebarajte vesti, temi ili subjekti..."
               className="w-full bg-transparent py-4 text-2xl md:text-3xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground/40 border-b-2 border-transparent focus:border-nyt-accent transition-colors"
               autoComplete="off"
               spellCheck="false"
@@ -382,7 +382,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                 {recentSearches.length > 0 && (
                   <section>
                     <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4 flex items-center gap-2">
-                       <History size={12} /> ПОСЛЕДНИ ПРЕБАРУВАЊА
+                       <History size={12} /> POSLEDNI PREBARUVANjA
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {recentSearches.map((s, i) => (
@@ -396,7 +396,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
 
                 <section>
                   <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4 flex items-center gap-2">
-                     <TrendingUp size={12} /> ТРЕНД ТЕМИ
+                     <TrendingUp size={12} /> TREND TEMI
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {trendingItems.length > 0 ? trendingItems.map((item, i) => (
@@ -410,7 +410,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
 
                 <section>
                   <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4 flex items-center gap-2">
-                     <Zap size={12} /> БРЗИ АКЦИИ
+                     <Zap size={12} /> BRZI AKCII
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {SEARCH_ACTIONS.map(action => (
@@ -434,7 +434,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
               <div className="space-y-8">
                 {entityResult && (
                   <section>
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">СУБЈЕКТИ</h3>
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">SUBJEKTI</h3>
                     <button
                       onClick={() => navigateToQuery(entityResult.name)}
                       className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left ${activeIndex === 0 ? 'bg-nyt-accent/5 border-nyt-accent/30 ring-1 ring-nyt-accent/20' : 'bg-transparent border-transparent hover:bg-secondary/30'}`}
@@ -448,7 +448,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                       </div>
                       <div>
                         <p className="font-serif font-black text-xl">{entityResult.name}</p>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{entityResult.type} · {entityResult.total_mentions} споменувања</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{entityResult.type} · {entityResult.total_mentions} spomenuvanja</p>
                       </div>
                       <ArrowUpRight size={16} className="ml-auto text-muted-foreground" />
                     </button>
@@ -457,7 +457,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
 
                 {suggestions.length > 0 && (
                   <section>
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">ВЕСТИ И ПРИКАЗНИ</h3>
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">vesti I price</h3>
                     <div className="space-y-2">
                       {suggestions.map((item, idx) => {
                         const globalIdx = entityResult ? idx + 1 : idx;
@@ -478,7 +478,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                               <p className="font-serif font-black text-lg leading-tight line-clamp-2 group-hover:text-nyt-accent transition-colors">{item.title}</p>
                               <div className="flex items-center gap-3 mt-2 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
                                 <span>{item.source}</span>
-                                <span>{item.sourceCount} {item.sourceCount === 1 ? 'ИЗВОР' : 'ИЗВОРИ'}</span>
+                                <span>{item.sourceCount} {item.sourceCount === 1 ? 'izvor' : 'izvori'}</span>
                               </div>
                             </div>
                           </button>
@@ -490,7 +490,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
 
                 {filteredActions.length > 0 && (
                   <section>
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">АКЦИИ</h3>
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">AKCII</h3>
                     <div className="grid grid-cols-1 gap-2">
                       {filteredActions.map((action, idx) => {
                         const globalIdx = (entityResult ? 1 : 0) + suggestions.length + idx;
@@ -517,8 +517,8 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                     <div className="w-16 h-16 bg-secondary/50 rounded-full flex items-center justify-center mb-6">
                        <Search size={32} className="text-muted-foreground/30" />
                     </div>
-                    <h4 className="font-serif font-black text-2xl mb-2">Нема резултати за "{query}"</h4>
-                    <p className="text-muted-foreground text-sm max-w-xs">Обидете се со поконкретни клучни зборови или прелистајте ги актуелните трендови.</p>
+                    <h4 className="font-serif font-black text-2xl mb-2">Nema rezultati za "{query}"</h4>
+                    <p className="text-muted-foreground text-sm max-w-xs">Obidete se so pokonkretni klucni zborovi ili prelistajte im aktuelnite trendovi.</p>
                   </div>
                 )}
               </div>
@@ -538,7 +538,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                     <div>
                       <div className="flex items-center gap-3 mb-3">
                          <span className="px-2 py-1 bg-nyt-accent text-white text-[9px] font-black uppercase tracking-widest rounded">{selectedItem.data.category}</span>
-                         <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-1"><Clock size={12} /> ПРЕД 2 ЧАСА</span>
+                         <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-1"><Clock size={12} /> PRED 2 CASA</span>
                       </div>
                       <h2 className="font-serif font-black text-2xl leading-tight mb-4">{selectedItem.data.title}</h2>
                       <p className="text-base text-muted-foreground leading-relaxed font-nyt-body line-clamp-6">{selectedItem.data.description}</p>
@@ -546,11 +546,11 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
 
                     <div className="grid grid-cols-2 gap-4 py-6 border-y border-border/40">
                       <div>
-                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">ИЗВОРИ</p>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">izvori</p>
                         <p className="text-xl font-black">{selectedItem.data.sourceCount}</p>
                       </div>
                       <div>
-                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">СКОР</p>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">SKOR</p>
                         <p className="text-xl font-black text-nyt-accent">{selectedItem.data.pulse_score || '8.2'}</p>
                       </div>
                     </div>
@@ -559,7 +559,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                       onClick={() => navigateToCluster(selectedItem.data.cluster_id)}
                       className="w-full py-4 bg-nyt-accent text-white rounded-xl font-black uppercase tracking-[0.2em] text-xs shadow-lg shadow-nyt-accent/20 hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
                     >
-                      ОТВОРИ ПРИКАЗНА <ChevronRight size={16} />
+                      OTVORI prica <ChevronRight size={16} />
                     </button>
                   </div>
                 )}
@@ -580,7 +580,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
 
                     <div className="space-y-4">
                        <div className="p-4 bg-background border border-border rounded-xl">
-                          <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">МЕДИУМСКИ ПРИСУСТВО</p>
+                          <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">MEDIUMSKI PRISUSTVO</p>
                           <div className="flex items-end gap-1 h-12 mb-2">
                             {[30, 50, 40, 80, 60, 90, 75, 85].map((h, i) => (
                               <div key={i} className="flex-1 bg-nyt-accent/20 rounded-t-sm group relative" style={{ height: `${h}%` }}>
@@ -588,13 +588,13 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                               </div>
                             ))}
                           </div>
-                          <p className="text-xs font-bold">{selectedItem.data.total_mentions} споменувања во архивата</p>
+                          <p className="text-xs font-bold">{selectedItem.data.total_mentions} spomenuvanja vo arhivata</p>
                        </div>
 
                        <div className="p-4 bg-background border border-border rounded-xl flex items-center justify-between">
                           <div>
-                            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">СЕНТИМЕНТ</p>
-                            <p className="font-serif font-black text-lg text-emerald-600">ПОЗИТИВЕН</p>
+                            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">SENTIMENT</p>
+                            <p className="font-serif font-black text-lg text-emerald-600">POZITIVEN</p>
                           </div>
                           <Activity size={24} className="text-emerald-500" />
                        </div>
@@ -604,7 +604,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                       onClick={() => navigateToQuery(selectedItem.data.name)}
                       className="w-full py-4 bg-foreground text-background rounded-xl font-black uppercase tracking-[0.2em] text-xs hover:bg-nyt-accent hover:text-white transition-all flex items-center justify-center gap-2"
                     >
-                      ВИДИ СИТЕ ВЕСТИ <ExternalLink size={16} />
+                      VIDI SITE vesti <ExternalLink size={16} />
                     </button>
                   </div>
                 )}
@@ -622,7 +622,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                       onClick={() => { closeSearch(); navigate(selectedItem.data.href); }}
                       className="px-10 py-4 bg-foreground text-background rounded-xl font-black uppercase tracking-[0.2em] text-xs hover:bg-nyt-accent transition-all"
                     >
-                      ИЗВРШИ АКЦИЈА
+                      IZVRSI AKCIJA
                     </button>
                   </div>
                 )}
@@ -632,8 +632,8 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                 <div className="w-20 h-20 border-2 border-dashed border-muted-foreground rounded-full flex items-center justify-center mb-6">
                    <Layout size={32} />
                 </div>
-                <p className="font-serif font-black text-xl mb-1">Преглед</p>
-                <p className="text-[10px] font-black uppercase tracking-widest">Изберете ставка за детали</p>
+                <p className="font-serif font-black text-xl mb-1">Pregled</p>
+                <p className="text-[10px] font-black uppercase tracking-widest">Izberete stavka za detali</p>
               </div>
             )}
           </div>
@@ -642,14 +642,14 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
         {/* Command Footer */}
         <div className="px-6 py-3 border-t border-border/40 bg-secondary/5 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
            <div className="flex items-center gap-6">
-              <span className="flex items-center gap-2"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">ENTER</kbd> ИЗБЕРИ</span>
-              <span className="flex items-center gap-2"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">↑</kbd><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">↓</kbd> НАВИГАЦИЈА</span>
-              <span className="flex items-center gap-2"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">ESC</kbd> ЗАТВОРИ</span>
+              <span className="flex items-center gap-2"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">ENTER</kbd> IZBERI</span>
+              <span className="flex items-center gap-2"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">↑</kbd><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">↓</kbd> NAVIGACIJA</span>
+              <span className="flex items-center gap-2"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">ESC</kbd> ZATVORI</span>
            </div>
            <div className="flex items-center gap-4">
-              <span className="flex items-center gap-1.5"><Globe size={12} /> ГЛОБАЛНА ПРЕТРАГА</span>
+              <span className="flex items-center gap-1.5"><Globe size={12} /> GLOBALNA PRETRAGA</span>
               <span className="w-1 h-1 rounded-full bg-border" />
-              <span className="flex items-center gap-1.5"><Sparkles size={12} /> AI АСИСТЕНЦИЈА</span>
+              <span className="flex items-center gap-1.5"><Sparkles size={12} /> AI ASISTENCIJA</span>
            </div>
         </div>
       </div>
@@ -662,7 +662,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
         ref={triggerRef}
         onClick={() => setIsOpen(true)}
         className="flex items-center gap-3 px-3 py-1.5 bg-secondary/30 hover:bg-secondary/60 border border-border/60 hover:border-nyt-accent/30 rounded-lg transition-all group w-full text-left backdrop-blur-sm"
-        aria-label="Отвори команден центар"
+        aria-label="Otvori komanden centar"
       >
         <Search size={14} className="text-muted-foreground group-hover:text-nyt-accent transition-colors" />
         <span className="flex-1 overflow-hidden h-4 block">

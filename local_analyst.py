@@ -88,13 +88,13 @@ class LocalAnalyst:
             prompt = prompt or ""
             system_prompt = system_prompt or ""
             # Enforce literary Macedonian
-            if "македонски" not in system_prompt.lower():
-                system_prompt = f"Зборувај ИСКЛУЧИВО на стандарден литературен македонски јазик. ЗАБРАНЕТО е користење на бугарски, српски или хрватски зборови или форми. {system_prompt}"
+            if "makedonski" not in system_prompt.lower():
+                system_prompt = f"Zboruvaj ISKLUCIVO na standarden literaturen makedonski jazik. ZABRANETO e koristenje na bugarski, srpski ili hrvatski zborovi ili formi. {system_prompt}"
 
             if len(prompt) > MAX_PROMPT_CHARS:
                 prompt = (
                     prompt[:MAX_PROMPT_CHARS]
-                    + "\n\n[Контекстот е скратен за локалниот модел.]"
+                    + "\n\n[Kontekstot e skraten za lokalniot model.]"
                 )
 
             # Gemma 2 Instruct format (optimized for a single user turn).
@@ -114,29 +114,29 @@ class LocalAnalyst:
             return None
 
     def normalize_headline(self, title: str) -> str:
-        """Converts sensationalist MK headlines to literary/broadsheet style."""
+        """Converts sensationalist RS headlines to literary/broadsheet style."""
         system = (
-            "Ти си искусен уредник во македонски сериозен весник. "
-            "Претвори го насловот во литературен, неутрален и информативен стил. "
-            "Отстрани сензационализам, извичници и кликбејт зборови како 'ШОК', 'СКАНДАЛ', 'ЕВЕ ШТО'. "
-            "Врати само еден прочистен наслов на македонски јазик.\n\n"
-            "ПРИМЕР:\n"
-            "Влез: ШОКАНТНО: Мицкоски ја разнесе опозицијата со оваа изјава!!!\n"
-            "Излез: Мицкоски упати критики до опозициските партии"
+            "Ti si iskusen urednik vo makedonski seriozen vesnik. "
+            "Pretvori ga naslovot vo literaturen, neutralen i informativen stil. "
+            "Otstrani senzacionalizam, izvicnici i klikbejt zborovi kako 'SOK', 'SKANDAL', 'EVE STO'. "
+            "Vrati samo eden procisten naslov na makedonski jazik.\n\n"
+            "PRIMER:\n"
+            "Vlez: SOKANTNO: Mickoski me raznese opozicijata so ova izjava!!!\n"
+            "Izlez: Mickoski upati kritiki do opoziciskite partii"
         )
-        result = self.analyze(f"Наслов: {title}", system, max_tokens=64)
+        result = self.analyze(f"Naslov: {title}", system, max_tokens=64)
         return result if result else title
 
     def extract_deep_metadata(self, text: str) -> Dict[str, Any]:
         """Extracts facts and pulse from Macedonian text."""
         system = (
-            "Анализирај го текстот на македонски јазик и врати JSON со следните полиња: "
-            "'facts' (листа од 3 клучни факти), 'entities' (листа од имиња и институции), "
-            "'sentiment' (позитивен, негативен или неутрален), 'pulse' (од 1 до 100 важност). "
-            "Врати само чист JSON.\n\n"
-            "ПРИМЕР:\n"
-            "Влез: Владата денеска одлучи да ги зголеми пензиите за 5 проценти почнувајќи од септември...\n"
-            'Излез: {"facts": ["Зголемување на пензиите за 5%", "Мерката стапува на сила од септември", "Одлука на Владата"], "entities": ["Влада"], "sentiment": "позитивен", "pulse": 75}'
+            "Analiziraj ga tekstot na makedonski jazik i vrati JSON so slednite polinja: "
+            "'facts' (lista od 3 klucni fakti), 'entities' (lista od iminja i institucii), "
+            "'sentiment' (pozitiven, negativen ili neutralen), 'pulse' (od 1 do 100 vaznost). "
+            "Vrati samo cist JSON.\n\n"
+            "PRIMER:\n"
+            "Vlez: Vladata danas odluci da im zgolemi penziite za 5 procenti pocnuvajci od septembar...\n"
+            'Izlez: {"facts": ["Zgolemuvanje na penziite za 5%", "Merkata stapuva na sila od septembar", "Odluka na Vladata"], "entities": ["Vlada"], "sentiment": "pozitiven", "pulse": 75}'
         )
         raw = self.analyze(text[:1500], system, max_tokens=400, use_grammar=True)
         if not raw:
@@ -151,21 +151,21 @@ class LocalAnalyst:
     def assess_pluralism(self, titles_with_sources: List[str]) -> Dict[str, Any]:
         """Analyzes if a cluster represents a diverse consensus or an echo chamber."""
         system = (
-            "Ти си експерт за медиумски плурализам. Анализирај го диверзитетот на изворите и насловите од Srbija. "
-            "Биди многу строг. Ако сите извори се од иста група или имаат ист наслов, дај низок скор (под 40). "
-            "Ако има различни перспективи (на пр. про-владини и опозициски извори), дај висок скор (над 70).\n\n"
-            "Врати ИСКЛУЧИВО JSON објект со следните клучни зборови:\n"
-            "- 'score': цел број од 0 до 100\n"
-            "- 'verdict': кратка реченица на македонски која го објаснува скорот\n"
-            "- 'bias_detected': точно/неточно (boolean)\n\n"
-            "Пример за 'verdict': 'Висок плурализам со разновидни извори и спротивставени ставови.'\n"
+            "Ti si ekspert za mediumski pluralizam. Analiziraj ga diverzitetot na izvorite i naslovite od Srbija. "
+            "Bidi mnogu strog. Ako site izvori se od ista grupa ili imaat ist naslov, daj nizok skor (pod 40). "
+            "Ako ima razliciti perspektivi (na pr. pro-vladini i opoziciski izvori), daj visok skor (nad 70).\n\n"
+            "Vrati ISKLUCIVO JSON objekt so slednite klucni zborovi:\n"
+            "- 'score': cel broj od 0 do 100\n"
+            "- 'verdict': kratka recenica na makedonski koja ga objasnuva skorot\n"
+            "- 'bias_detected': tocno/netocno (boolean)\n\n"
+            "Primer za 'verdict': 'Visok pluralizam so raznovidni izvori i sprotivstaveni stavovi.'\n"
         )
-        prompt = "АНАЛИЗИРАЈ ГИ ОВИЕ ИЗВОРИ:\n" + "\n".join(titles_with_sources)
+        prompt = "ANALIZIRAJ im OVIE izvori:\n" + "\n".join(titles_with_sources)
         raw = self.analyze(prompt, system, max_tokens=256, use_grammar=True)
         if not raw:
             return {
                 "score": 50,
-                "verdict": "Стандардна покриеност",
+                "verdict": "Standardna pokrienost",
                 "bias_detected": False,
             }
 
@@ -175,17 +175,17 @@ class LocalAnalyst:
             log.debug(f"JSON parse error in assess_pluralism: {e}")
             return {
                 "score": 50,
-                "verdict": "Стандардна покриеност",
+                "verdict": "Standardna pokrienost",
                 "bias_detected": False,
             }
 
     def detect_echo(self, article_text: str, cluster_context: str) -> float:
         """Detects if an article is a unique report or just a 'copy-paste' (echo)."""
         system = (
-            "Спореди го текстот со контекстот. Дали носи нови информации или е само препишано? "
-            "Врати само бројка од 0.0 (целосна копија) до 1.0 (целосно уникатно)."
+            "Sporedi ga tekstot so kontekstot. Dali nosi novi informacii ili e samo prepisano? "
+            "Vrati samo brojka od 0.0 (celosna kopija) do 1.0 (celosno unikatno)."
         )
-        prompt = f"ТЕКСТ: {article_text[:500]}\nКОНТЕКСТ: {cluster_context[:1000]}"
+        prompt = f"TEKST: {article_text[:500]}\nKONTEKST: {cluster_context[:1000]}"
         result = self.analyze(prompt, system, max_tokens=10)
         if not result:
             return 1.0
@@ -202,15 +202,15 @@ class LocalAnalyst:
     def research_query(self, query: str, context: str) -> Dict[str, Any]:
         """Acts as a local researcher providing cited answers and follow-up suggestions."""
         system = (
-            "Ти си Presek Истражувач. Одговори на прашањето користејќи го само дадениот контекст од македонските медиуми. "
-            "1. За секој клучен факт или бројка, наведи го името на медиумот во квадратни загради, на пример: [Сител]. "
-            "2. На крајот од одговорот, генерирај точно 3 предлог-прашања за следно истражување поврзани со оваа тема. "
-            "Врати го одговорот во JSON формат со полиња: 'answer' (текст со цитати) и 'suggestions' (листа од 3 прашања).\n\n"
-            "ПРИМЕР:\n"
-            "Влез: Кој е најавениот износ за помош?\\nКонтекст: [МТВ] Владата издвои 10 милиони евра...\n"
-            'Излез: {"answer": "Владата најави помош во износ од 10 милиони евра [МТВ].", "suggestions": ["Кога ќе се исплати помошта?", "Кој ги исполнува критериумите?", "Каков е ефектот врз буџетот?"]}'
+            "Ti si Presek Istrazuvac. odgovori na prasanjeto koristejci ga samo dadeniot kontekst od makedonskite mediumi. "
+            "1. Za sekoj klucen fakt ili brojka, navedi ga imeto na mediumot vo kvadratni zagradi, na primer: [Sitel]. "
+            "2. Na krajot od odgovorot, generiraj tocno 3 predlog-prasanja za sledece istrazuvanje povrzani so ova tema. "
+            "Vrati ga odgovorot vo JSON format so polinja: 'answer' (tekst so citati) i 'suggestions' (lista od 3 prasanja).\n\n"
+            "PRIMER:\n"
+            "Vlez: Koj e najaveniot iznos za pomos?\\nKontekst: [MTV] Vladata izdvoi 10 milioni evra...\n"
+            'Izlez: {"answer": "Vladata najavi pomos vo iznos od 10 milioni evra [MTV].", "suggestions": ["Koga ce se isplati pomosta?", "Koj im ispolnuva kriteriumite?", "Kakov e efektot vrz budzetot?"]}'
         )
-        prompt = f"ПРАШАЊЕ: {query}\nКОНТЕКСТ: {context}"
+        prompt = f"PRASANjE: {query}\nKONTEKST: {context}"
         raw = self.analyze(prompt, system, max_tokens=800, use_grammar=True)
 
         try:
@@ -218,11 +218,11 @@ class LocalAnalyst:
         except (json.JSONDecodeError, TypeError, ValueError):
             # Fallback if JSON fails (though grammar should prevent this)
             return {
-                "answer": raw if raw else "Нема доволно информации.",
+                "answer": raw if raw else "Nema dovolno informacii.",
                 "suggestions": [
-                    "Кои се клучните актери?",
-                    "Каков е економскиот ефект?",
-                    "Кои се следните чекори?",
+                    "Koi se klucnite akteri?",
+                    "Kakov e ekonomskiot efekt?",
+                    "Koi se slednite cekori?",
                 ],
             }
 

@@ -17,11 +17,11 @@ from ingestion import (
 
 
 def test_normalize_headline():
-    assert normalize_headline("ВИДЕО: Ова е наслов") == "Ова е наслов"
-    assert normalize_headline("Нормален наслов") == "Нормален наслов"
+    assert normalize_headline("VIDEO: ova e naslov") == "ova e naslov"
+    assert normalize_headline("Normalen naslov") == "Normalen naslov"
     assert (
-        normalize_headline("  Ова е наслов со празни места  ")
-        == "Ова е наслов со празни места"
+        normalize_headline("  ova e naslov so prazni mesta  ")
+        == "ova e naslov so prazni mesta"
     )
     assert normalize_headline("") == ""
 
@@ -43,8 +43,8 @@ def test_clean_rss_footer():
 
 
 def test_clean_rss_footer_macedonian():
-    text = "Содржина на вестта. Прочитајте повеќе на example.com"
-    assert clean_rss_footer(text) == "Содржина на вестта."
+    text = "Sodrzina na vestta. Procitajte povece na example.com"
+    assert clean_rss_footer(text) == "Sodrzina na vestta."
 
 
 def test_clean_rss_footer_empty():
@@ -67,8 +67,8 @@ def test_supported_display_language_rejects_albanian_rss_items():
     )
     assert (
         is_supported_display_language(
-            "Директен судир на возови во Данска",
-            "Неколку лица беа повредени во несреќата.",
+            "Direkten sudir na vozovi vo Danska",
+            "Nekolku lica bea povredeni vo nesrecata.",
         )
         is True
     )
@@ -78,19 +78,19 @@ def test_normalize_headline_multiple_prefixes():
     """Only the first matching prefix should be stripped."""
     from ingestion import normalize_headline
 
-    assert normalize_headline("ФОТО: Галерија од настанот") == "Галерија од настанот"
-    assert normalize_headline("ГАЛЕРИЈА: Слики од Скопје") == "Слики од Скопје"
-    assert normalize_headline("ПОТВРДЕНО: Нов договор") == "Нов договор"
-    assert normalize_headline("СКАНДАЛ: Откривање") == "Откривање"
-    assert normalize_headline("УЖАС: Несреќа на пат") == "Несреќа на пат"
-    assert normalize_headline("ТРАГЕДИЈА: Жртви") == "Жртви"
+    assert normalize_headline("FOTO: Galerija od nastanot") == "Galerija od nastanot"
+    assert normalize_headline("GALERIJA: Sliki od Beograd") == "Sliki od Beograd"
+    assert normalize_headline("potvrdeno: Nov dogovor") == "Nov dogovor"
+    assert normalize_headline("SKANDAL: Otkrivanje") == "Otkrivanje"
+    assert normalize_headline("UZAS: Nesreca na pat") == "Nesreca na pat"
+    assert normalize_headline("TRAGEDIJA: Zrtvi") == "Zrtvi"
 
 
 def test_normalize_headline_html_tags():
     from ingestion import normalize_headline
 
-    assert normalize_headline("<p>Текст</p>") == "Текст"
-    assert normalize_headline("<b>Важно</b> <i>резиме</i>") == "Важно резиме"
+    assert normalize_headline("<p>Tekst</p>") == "Tekst"
+    assert normalize_headline("<b>Vazno</b> <i>rezime</i>") == "Vazno rezime"
 
 
 def test_normalize_feed_link_strips_tracking_params():
@@ -99,7 +99,7 @@ def test_normalize_feed_link_strips_tracking_params():
 
 
 def test_normalize_candidate_title_removes_prefix_noise():
-    assert normalize_candidate_title("ВИДЕО: <b>Ова е</b> наслов") == "ова е наслов"
+    assert normalize_candidate_title("VIDEO: <b>ova e</b> naslov") == "ova e naslov"
 
 
 def test_normalize_candidate_title_removes_live_update_churn():
@@ -109,8 +109,8 @@ def test_normalize_candidate_title_removes_live_update_churn():
 
 
 def test_normalize_candidate_title_removes_clock_noise():
-    base = normalize_candidate_title("Владата најави пакет мерки")
-    variant = normalize_candidate_title("09:30 Владата најави пакет мерки")
+    base = normalize_candidate_title("Vladata najavi paket merki")
+    variant = normalize_candidate_title("09:30 Vladata najavi paket merki")
     assert variant == base
 
 
@@ -186,7 +186,7 @@ def test_ingest_updates_last_fetched_even_when_all_entries_are_filtered_out():
     import ingestion
 
     recent_rows = [
-        {"link": "https://example.com/story", "source": "MIA", "title": "Вест"},
+        {"link": "https://example.com/story", "source": "MIA", "title": "vest"},
     ]
 
     class _Result:
@@ -209,7 +209,7 @@ def test_ingest_updates_last_fetched_even_when_all_entries_are_filtered_out():
     # If the code expects r[0], then the dict MUST have integer keys or be a tuple.
     # Wait, ingestion.py line 562 does 'inserted_ids = [r[0] for r in results]'
     # This implies results from cur.fetchall() are tuples/lists.
-    m_std_cur.fetchall.return_value = [(123, "MK")]
+    m_std_cur.fetchall.return_value = [(123, "RS")]
     m_std_cur.connection.encoding = "UTF8"
     m_std_cur.mogrify.side_effect = lambda sql, args: b"(dummy)"
 
@@ -226,9 +226,9 @@ def test_ingest_updates_last_fetched_even_when_all_entries_are_filtered_out():
             return [
                 {
                     "id": 123,
-                    "title": "Вест",
+                    "title": "vest",
                     "link": "https://example.com/story",
-                    "country": "MK",
+                    "country": "RS",
                 }
             ]
 
@@ -256,7 +256,7 @@ def test_ingest_updates_last_fetched_even_when_all_entries_are_filtered_out():
     async def _fake_fetch_feed_async(_client, source):
         return (
             source["name"],
-            [{"title": "Вест", "link": "https://example.com/story", "summary": ""}],
+            [{"title": "vest", "link": "https://example.com/story", "summary": ""}],
             None,
         )
 
@@ -274,8 +274,8 @@ def test_ingest_updates_last_fetched_even_when_all_entries_are_filtered_out():
                 {
                     "name": "MIA",
                     "url": "https://feed.example.com",
-                    "country": "MK",
-                    "category": "Главни",
+                    "country": "RS",
+                    "category": "glavni",
                 }
             ],
         ),

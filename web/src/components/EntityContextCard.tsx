@@ -19,7 +19,7 @@ export default function EntityContextCard({ name }: EntityContextCardProps) {
       .finally(() => setLoading(false));
   }, [name]);
 
-  if (loading) return <div className="p-4 bg-background border border-border flex items-center gap-3"><Loader2 className="animate-spin text-nyt-accent" size={14} /> <span className="text-[10px] uppercase font-black">Вчитувам контекст...</span></div>;
+  if (loading) return <div className="p-4 bg-background border border-border flex items-center gap-3"><Loader2 className="animate-spin text-nyt-accent" size={14} /> <span className="text-[10px] uppercase font-black">Vcituvam kontekst...</span></div>;
   if (!data) return null;
 
   return (
@@ -27,14 +27,14 @@ export default function EntityContextCard({ name }: EntityContextCardProps) {
         <div className="flex items-center gap-2 px-3 py-1.5 bg-secondary/30 border border-border rounded-sm hover:border-nyt-accent transition-colors cursor-help">
             <User size={12} className="text-nyt-accent" />
             <span className="text-[11px] font-bold uppercase tracking-tight">{name}</span>
-            <div className="ml-2 w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" title="Активен субјект"></div>
+            <div className="ml-2 w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" title="Aktiven subjekt"></div>
         </div>
 
         {/* Hover Popover */}
         <div className="absolute bottom-full left-0 mb-3 w-64 bg-background border-2 border-foreground shadow-2xl opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all z-50 pointer-events-none group-hover:pointer-events-auto">
             <div className="p-4">
                 <div className="flex justify-between items-start mb-3 pb-2 border-b border-border">
-                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-nyt-accent">Контекст Карта</span>
+                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-nyt-accent">kontekst Karta</span>
                     <div className="flex items-center gap-1.5 bg-secondary px-2 py-0.5 rounded-full">
                         <TrendingUp size={10} />
                         <span className="text-[9px] font-black">{data.importance_score}</span>
@@ -43,12 +43,12 @@ export default function EntityContextCard({ name }: EntityContextCardProps) {
                 
                 <h4 className="font-serif font-black text-lg mb-2">{name}</h4>
                 <p className="text-xs font-nyt-body leading-relaxed text-secondary-foreground mb-4">
-                    {data.bio_summary || `Овој субјект е редовно следен во рамките на македонскиот медиумски простор преку системот на Presek.`}
+                    {data.bio_summary || `Ovoj subjekt e redovno sleden vo ramkite na makedonskiot mediumski prostor preku sistemot na Presek.`}
                 </p>
 
                 <div className="flex items-center justify-between pt-3 border-t border-border">
-                    <span className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">Последно виден: {new Date(data.last_seen).toLocaleDateString('mk-MK')}</span>
-                    <a href={`/subjekt/${encodeURIComponent(name)}`} className="text-[9px] font-black uppercase text-nyt-accent border-b border-nyt-accent">Профил</a>
+                    <span className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">Posledno viden: {new Date(data.last_seen).toLocaleDateString('mk-RS')}</span>
+                    <a href={`/subjekt/${encodeURIComponent(name)}`} className="text-[9px] font-black uppercase text-nyt-accent border-b border-nyt-accent">Profil</a>
                 </div>
             </div>
             {/* Pointer notch */}

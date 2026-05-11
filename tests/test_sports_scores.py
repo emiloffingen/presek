@@ -7,16 +7,16 @@ from nlp.generation import (
 
 
 def test_extract_sports_scores():
-    assert "4:0" in _extract_sports_scores("Резултатот е 4:0 за тимот")
-    assert "1-0" in _extract_sports_scores("Заврши 1-0")
-    assert "0-0" in _extract_sports_scores("(0-0) на полувреме")
+    assert "4:0" in _extract_sports_scores("Rezultatot e 4:0 za timot")
+    assert "1-0" in _extract_sports_scores("Zavrsi 1-0")
+    assert "0-0" in _extract_sports_scores("(0-0) na poluvreme")
     # Clock times should be excluded
-    assert "15:00" not in _extract_sports_scores("Мечот почнува во 15:00 часот")
-    assert "20:45" not in _extract_sports_scores("Кикоф во 20:45")
+    assert "15:00" not in _extract_sports_scores("Mecot pocnuva vo 15:00 casot")
+    assert "20:45" not in _extract_sports_scores("Kikof vo 20:45")
 
 
 def test_extract_number_tokens_excludes_time():
-    tokens = _extract_number_tokens("Пакетот е 100 милиони евра, почнува во 15:00")
+    tokens = _extract_number_tokens("Paketot e 100 milioni evra, pocnuva vo 15:00")
     assert "100" in tokens
     assert "15:00" not in tokens
 
@@ -27,13 +27,13 @@ def test_compare_cluster_sources_sports_conflict():
     articles = [
         {
             "source": "S1",
-            "title": "Вардар победи 1-0",
-            "description": "Спортски извештај",
+            "title": "Vardar pobedi 1-0",
+            "description": "Sportski izvestaj",
         },
         {
             "source": "S2",
-            "title": "Вардар победи 2-0",
-            "description": "Различен резултат",
+            "title": "Vardar pobedi 2-0",
+            "description": "Razlicen rezultat",
         },
     ]
     all_titles = " ".join([a.get("title") or "" for a in articles])

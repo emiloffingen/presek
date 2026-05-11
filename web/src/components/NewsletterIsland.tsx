@@ -29,7 +29,7 @@ export default function NewsletterIsland() {
       }
     } catch (err) {
       setStatus('error');
-      setMessage('Грешка при поврзување.');
+      setMessage('Greska pri povrzuvanje.');
     }
   };
 
@@ -38,9 +38,9 @@ export default function NewsletterIsland() {
       <section className="bg-secondary/30 p-6 border border-border/60 relative overflow-hidden animate-in fade-in duration-500">
         <div className="flex flex-col items-center text-center relative z-10">
           <CheckCircle2 className="text-nyt-accent mb-4" size={28} />
-          <h3 className="font-serif font-black text-lg mb-3 tracking-tight">Успешно се пријавивте!</h3>
+          <h3 className="font-serif font-black text-lg mb-3 tracking-tight">Uspesno se prijavivte!</h3>
           <p className="font-serif italic text-sm text-secondary-foreground leading-relaxed">
-            Секое утро во 08:00 часот ќе го добивате најважниот пресек на вестите директно во вашето сандаче.
+            Sekoe utro vo 08:00 casot ce ga dobivate najvazniji presek na vestite direktno vo vaseto sandace.
           </p>
         </div>
         <div className="absolute -right-4 -bottom-4 opacity-5">
@@ -54,12 +54,12 @@ export default function NewsletterIsland() {
     <section className="bg-secondary/30 p-6 border border-border/60 relative overflow-hidden group">
       <div className="relative z-10">
         <header className="mb-5 pb-4 border-b border-border/40">
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent block mb-2">ДНЕВЕН ПРЕГЛЕД</span>
-          <h3 className="font-serif text-xl font-black leading-tight tracking-tight">Уреден преглед на денот низ објективот на плурализмот.</h3>
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent block mb-2">DNEVEN PREGLED</span>
+          <h3 className="font-serif text-xl font-black leading-tight tracking-tight">Ureden pregled na denot niz objektivot na pluralizmot.</h3>
         </header>
 
         <p className="font-serif italic text-sm text-secondary-foreground leading-relaxed mb-6">
-          Секое утро добивајте дистилиран сублимат на настаните што ја обликуваат јавната дебата.
+          Sekoe utro dobivajte distiliran sublimat na nastanite sto me oblikuvaat javnata debata.
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
@@ -68,7 +68,7 @@ export default function NewsletterIsland() {
             <input
               type="email"
               required
-              placeholder="Вашата е-пошта"
+              placeholder="Vasata e-posta"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full pl-9 pr-4 py-2.5 bg-background border border-border focus:border-nyt-accent outline-none font-sans text-sm transition-all"
@@ -87,13 +87,13 @@ export default function NewsletterIsland() {
             {status === 'loading' ? (
               <Loader2 size={14} className="animate-spin" />
             ) : (
-              "ПРИЈАВИ СЕ"
+              "PRIJAVI SE"
             )}
           </button>
         </form>
 
         <p className="text-[9px] text-muted-foreground mt-4 leading-relaxed opacity-60">
-          * Со пријавувањето се согласувате со нашите услови. Можете да се одјавите во секое време.
+          * So prijavuvanjeto se soglasuvate so nasite uslovi. Mozete da se odjavite vo sekoe vreme.
         </p>
       </div>
       

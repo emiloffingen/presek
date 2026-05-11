@@ -6,7 +6,7 @@ describe('Presek Smoke Tests', () => {
   })
 
   it('loads the homepage', () => {
-    cy.contains('Пресек').should('be.visible')
+    cy.contains('Presek').should('be.visible')
   })
 
   it('has working navigation', () => {
@@ -28,6 +28,6 @@ describe('Presek Smoke Tests', () => {
   it('cluster page loads', () => {
     cy.get('[data-testid="cluster-link"]').first().click()
     cy.url().should('include', '/cluster/')
-    cy.contains('Кластер').should('be.visible')
+    cy.contains('klaster').should('be.visible')
   })
 })

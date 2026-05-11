@@ -98,10 +98,10 @@ def _cyrillic_heuristic(text: str) -> str:
     lower = text.lower()
 
     # Unique letters check (Strongest signal)
-    # Bulgarian-only vs MK: ъ, щ, ю, я (MK uses ј + vowel)
+    # Bulgarian-only vs RS: ъ, щ, ю, я (RS uses j + vowel)
     bg_markers = sum(1 for ch in lower if ch in "ъщюя")
 
-    # Serbian-only vs MK: ђ, ћ (MK uses ѓ, ќ)
+    # Serbian-only vs RS: ђ, ћ (RS uses Dj, c)
     sr_markers = sum(1 for ch in lower if ch in "ђћ")
 
     if bg_markers >= 1:
@@ -109,46 +109,46 @@ def _cyrillic_heuristic(text: str) -> str:
     if sr_markers >= 1:
         return "sr"
 
-    # Bulgarian function words not used in MK
-    # 'ще' is very strong BG (MK uses 'ќе')
-    # 'бъде' is BG (MK uses 'биде')
-    # 'върху' is BG (MK uses 'на')
+    # Bulgarian function words not used in RS
+    # 'щe' is very strong BG (RS uses 'ce')
+    # 'bъde' is BG (RS uses 'bide')
+    # 'vъrhu' is BG (RS uses 'na')
     bg_words = sum(
         1
         for w in (
-            "също",
-            "защото",
-            "обаче",
-            "няма",
-            "трябва",
-            "която",
-            "който",
-            "което",
-            "ще",
-            "бъде",
-            "върху",
-            "след",
+            "sъщo",
+            "zaщoto",
+            "obace",
+            "nяma",
+            "trяbva",
+            "koяto",
+            "koйto",
+            "koeto",
+            "щe",
+            "bъde",
+            "vъrhu",
+            "sled",
         )
         if f" {w} " in f" {lower} "
     )
     if bg_words >= 1:
         return "bg"
 
-    # Serbian function words not used in MK
-    # 'da li' is very SR (MK uses 'дали')
-    # 'tokom' is SR (MK uses 'за време на')
+    # Serbian function words not used in RS
+    # 'da li' is very SR (RS uses 'dali')
+    # 'tokom' is SR (RS uses 'za vreme na')
     sr_words = sum(
         1
         for w in (
-            "такође",
-            "односно",
-            "ипак",
-            "међутим",
-            "након",
-            "током",
-            "саопштио",
-            "изјавио",
-            "наводи",
+            "takoђe",
+            "odnosno",
+            "ipak",
+            "meђutim",
+            "nakon",
+            "tokom",
+            "saopstio",
+            "izjavio",
+            "navodi",
         )
         if f" {w} " in f" {lower} "
     )

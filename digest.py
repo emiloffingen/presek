@@ -44,7 +44,7 @@ def send_newsletter_to_all_subscribers(days: int = 1) -> int:
     now = datetime.now()
     start = now - timedelta(days=days)
     html = render_html(stories, start, now)
-    subject = f"Presek — Утрински Брифинг ({mk_date(now)})"
+    subject = f"Presek — Jutarnji Brifing ({sr_date(now)})"
 
     try:
         from database import db_manager as db
@@ -77,17 +77,17 @@ def send_ntfy_digest(stories_by_cat: dict, topic: str, period_days: int = 1) -> 
         return False
 
     total = sum(len(v) for v in stories_by_cat.values())
-    lines = [f"📰 PRESEK — Дневен преглед ({total} приказни)\n"]
+    lines = [f"📰 PRESEK — Dnevni pregled ({total} priče)\n"]
 
     CAT_ORDER = [
         "Srbija",
-        "Политика",
-        "Спорт",
-        "Хроника",
-        "Економија",
-        "Балкан",
-        "Свет",
-        "Дијаспора",
+        "Politika",
+        "Sport",
+        "Hronika",
+        "Ekonomija",
+        "Balkan",
+        "Svet",
+        "Dijaspora",
     ]
     cats = [c for c in CAT_ORDER if c in stories_by_cat] + [
         c for c in stories_by_cat if c not in CAT_ORDER
@@ -112,9 +112,9 @@ def send_ntfy_digest(stories_by_cat: dict, topic: str, period_days: int = 1) -> 
                 f"https://ntfy.sh/{topic}",
                 content=body.encode("utf-8"),
                 headers={
-                    "Title": "Presek — Дневен преглед",
+                    "Title": "Presek — Dnevni pregled",
                     "Priority": "default",
-                    "Tags": "newspaper,macedonia",
+                    "Tags": "newspaper,serbia",
                     "Content-Type": "text/plain; charset=utf-8",
                 },
             )
@@ -126,32 +126,32 @@ def send_ntfy_digest(stories_by_cat: dict, topic: str, period_days: int = 1) -> 
         return False
 
 
-MK_MONTHS = [
-    "јануари",
-    "февруари",
-    "март",
-    "април",
-    "мај",
-    "јуни",
-    "јули",
-    "август",
-    "септември",
-    "октомври",
-    "ноември",
-    "декември",
+SR_MONTHS = [
+    "januar",
+    "februar",
+    "mart",
+    "april",
+    "maj",
+    "jun",
+    "jul",
+    "avgust",
+    "septembar",
+    "oktobar",
+    "novembar",
+    "decembar",
 ]
 
-MK_DAYS = ["Понеделник", "Вторник", "Среда", "Четврток", "Петок", "Сабота", "Недела"]
+SR_DAYS = ["Ponedeljak", "Utorak", "Sreda", "Cetvrtak", "Petak", "Subota", "Nedelja"]
 
 
 def format_sources(count: int) -> str:
     if count == 1:
-        return "1 извор"
-    return f"{count} извори"
+        return "1 izvor"
+    return f"{count} izvori"
 
 
-def mk_date(dt: datetime) -> str:
-    return f"{MK_DAYS[dt.weekday()]}, {dt.day} {MK_MONTHS[dt.month-1]} {dt.year}"
+def sr_date(dt: datetime) -> str:
+    return f"{SR_DAYS[dt.weekday()]}, {dt.day} {SR_MONTHS[dt.month-1]} {dt.year}"
 
 
 def fetch_top_stories(days: int = 7, per_category: int = 3) -> dict[str, list[dict]]:
@@ -232,13 +232,13 @@ def render_html(
             items += f"""
             <tr>
               <td style="padding:20px 0;border-bottom:1px solid #e5e7eb">
-                <p style="margin:0 0 6px;font-family:sans-serif;font-size:10px;font-weight:bold;color:#b91c1c;text-transform:uppercase;letter-spacing:0.1em">{a.get('source','') or 'ИЗВОР'}</p>
+                <p style="margin:0 0 6px;font-family:sans-serif;font-size:10px;font-weight:bold;color:#b91c1c;text-transform:uppercase;letter-spacing:0.1em">{a.get('source','') or 'izvor'}</p>
                 <a href="{a['link']}" style="font-family:Georgia,\'Times New Roman\',serif;font-size:19px;font-weight:900;color:#111827;text-decoration:none;line-height:1.25;display:block">
                   {a['title']}
                 </a>
                 {summary_html}
                 <div style="margin-top:12px">
-                    <a href="{a['link']}" style="font-family:sans-serif;font-size:11px;font-weight:bold;color:#6b7280;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em">Прочитај ја веста →</a>
+                    <a href="{a['link']}" style="font-family:sans-serif;font-size:11px;font-weight:bold;color:#6b7280;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em">Procitaj me vesta →</a>
                     {sources_badge}
                 </div>
               </td>
@@ -259,14 +259,14 @@ def render_html(
         </tr>
         {items}"""
 
-    period_str = f"{mk_date(period_start)} — {mk_date(period_end)}"
+    period_str = f"{sr_date(period_start)} — {sr_date(period_end)}"
 
     html = f"""<!DOCTYPE html>
-<html lang="mk">
+<html lang="sr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Presek — Дневен преглед</title>
+  <title>Presek — Dnevni pregled</title>
 </head>
 <body style="margin:0;padding:0;background-color:#f9fafb;font-family:Georgia,serif;-webkit-font-smoothing:antialiased">
 
@@ -281,7 +281,7 @@ def render_html(
               PRESEK
             </h1>
             <p style="margin:10px 0 0;font-family:sans-serif;font-size:11px;font-weight:bold;letter-spacing:0.3em;text-transform:uppercase;color:#6b7280">
-              Медиумска транспарентност и јавен увид
+              Mediumska transparentnost i javen uvid
             </p>
           </td>
         </tr>
@@ -290,7 +290,7 @@ def render_html(
         <tr>
           <td style="background-color:#111827;padding:12px 40px;text-align:center">
             <p style="margin:0;font-family:sans-serif;font-size:10px;font-weight:bold;color:#9ca3af;letter-spacing:0.1em;text-transform:uppercase">
-              <span style="color:#ffffff">МЕДИУМСКИ ПУЛС:</span> &nbsp; {total_stories} теми во фокус &nbsp; • &nbsp; {total_sources} извори анализирани
+              <span style="color:#ffffff">MEDIUMSKI PULS:</span> &nbsp; {total_stories} temi vo fokus &nbsp; • &nbsp; {total_sources} izvori analizirani
             </p>
           </td>
         </tr>
@@ -317,7 +317,7 @@ def render_html(
         <tr>
             <td style="padding:0 40px 40px;text-align:center">
                 <a href="https://presek.live" style="display:inline-block;padding:14px 28px;background-color:#111827;color:#ffffff;font-family:sans-serif;font-size:12px;font-weight:bold;text-decoration:none;text-transform:uppercase;letter-spacing:0.15em;border-radius:2px">
-                    Отвори го целосното издание
+                    Otvori ga celosnoto izdanie
                 </a>
             </td>
         </tr>
@@ -326,11 +326,11 @@ def render_html(
         <tr>
           <td style="padding:30px 40px;text-align:center;background-color:#f3f4f6;border-top:1px solid #e5e7eb">
             <p style="margin:0;font-family:sans-serif;font-size:10px;font-weight:bold;color:#9ca3af;letter-spacing:0.1em;text-transform:uppercase">
-              Presek · Медиумска транспарентност · Системска синтеза
+              Presek · Mediumska transparentnost · Sistemska sinteza
             </p>
             <p style="margin:8px 0 0;font-family:sans-serif;font-size:10px;color:#9ca3af;line-height:1.5">
-              Овој преглед е системски синтетизиран преку нашиот редакциски алгоритам.<br>
-              Доколку сакате да се одјавите, кликнете <a href="{{UNSUBSCRIBE_URL}}" style="color:#6b7280;text-decoration:underline">овде</a>.
+              Ovoj pregled e sistemski sintetiziran preku nasiot redakciski algoritam.<br>
+              Dokolku sakate da se odjavite, kliknete <a href="{{UNSUBSCRIBE_URL}}" style="color:#6b7280;text-decoration:underline">ovde</a>.
             </p>
           </td>
         </tr>
@@ -341,7 +341,7 @@ def render_html(
         <tr>
             <td style="padding:20px 0;text-align:center">
                 <p style="margin:0;font-family:sans-serif;font-size:10px;color:#9ca3af">
-                    © {datetime.now().year} Presek. Сите права се задржани.
+                    © {datetime.now().year} Presek. Site prava se zadrzani.
                 </p>
             </td>
         </tr>
@@ -421,7 +421,7 @@ def generate_digest(
         log.info(f"Saved to {save_path}")
 
     if smtp_user and smtp_pass and to_address:
-        subject = f"Presek — Дневен преглед {mk_date(start)} — {mk_date(now)}"
+        subject = f"Presek — Dneven pregled {mk_date(start)} — {mk_date(now)}"
         send_email(html, subject, smtp_user, smtp_pass, to_address)
 
     return html
@@ -454,7 +454,7 @@ def send_digest(days: int = 1) -> bool:
         now = datetime.now()
         start = now - timedelta(days=days)
         html = render_html(stories, start, now)
-        subject = f"Presek — Дневен преглед {mk_date(start)} — {mk_date(now)}"
+        subject = f"Presek — Dneven pregled {mk_date(start)} — {mk_date(now)}"
         ok = send_email(html, subject, smtp_user, smtp_pass, to_address) or ok
 
     return ok

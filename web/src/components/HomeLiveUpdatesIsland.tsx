@@ -37,10 +37,10 @@ function getTimeStr(dateStr?: string) {
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / (1000 * 60));
 
-    if (diffMins < 1) return 'ШТОТУКУ';
-    if (diffMins < 60) return `ПРЕД ${diffMins} МИН`;
+    if (diffMins < 1) return 'STOTUKU';
+    if (diffMins < 60) return `PRED ${diffMins} MIN`;
     
-    return date.toLocaleTimeString('mk-MK', { 
+    return date.toLocaleTimeString('mk-RS', { 
       hour: '2-digit', 
       minute: '2-digit',
       timeZone: 'Europe/Skopje' 
@@ -123,18 +123,18 @@ export default function HomeLiveUpdatesIsland({ excludeClusterIds = [], initialC
       <div className="live-now-head">
         <div>
           <p className="live-now-kicker">
-            <Radio size={13} /> Во живо
+            <Radio size={13} /> Vo zivo
           </p>
-          <h2 id="live-now-title">Што пристигнува токму сега</h2>
+          <h2 id="live-now-title">Sto pristignuva tokmu sega</h2>
         </div>
         <div className="live-now-status">
           {liveState ? (
             <>
-              <span className="live-now-badge">+{liveState.count} нови објави</span>
+              <span className="live-now-badge">+{liveState.count} novi objavi</span>
               <span className="live-now-time">{getTimeStr(liveState.time)}</span>
             </>
           ) : (
-            <span className="live-now-time">Следење во реално време</span>
+            <span className="live-now-time">Sledenje vo realno vreme</span>
           )}
         </div>
       </div>
@@ -146,7 +146,7 @@ export default function HomeLiveUpdatesIsland({ excludeClusterIds = [], initialC
           return (
             <a key={cluster.cluster_id} href={`/cluster/${cluster.cluster_id}`} className="live-now-card group">
               <div className="live-now-meta flex items-center justify-between gap-2 mb-2">
-                <span className="live-now-source text-[10px] font-black uppercase tracking-widest text-nyt-accent group-hover:text-foreground transition-colors">{article.source || 'Извор'}</span>
+                <span className="live-now-source text-[10px] font-black uppercase tracking-widest text-nyt-accent group-hover:text-foreground transition-colors">{article.source || 'izvor'}</span>
                 <span className="text-[10px] font-bold text-muted-foreground tabular-nums">{getTimeStr(article.ingested_at || article.created_at)}</span>
               </div>
               <h3 className="text-sm font-bold leading-snug group-hover:text-nyt-accent transition-colors line-clamp-3">{title}</h3>

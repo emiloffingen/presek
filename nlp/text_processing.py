@@ -270,7 +270,7 @@ def rewrite_to_macedonian_locally(text):
     )
     text = re.sub(r"^\s*summary\s*:\s*", "", text, flags=re.IGNORECASE)
 
-    cyrillic_chars = len(re.findall(r"[А-Яа-яЀ-ӿ]", text))
+    cyrillic_chars = len(re.findall(r"[A-Za-z]", text))
     latin_chars = len(re.findall(r"[A-Za-z]", text))
     if cyrillic_chars >= max(8, latin_chars):
         normalized = re.sub(r"\s+", " ", text).strip(" -–—")
@@ -305,7 +305,7 @@ def rewrite_to_macedonian_locally(text):
     working = re.sub(r"\s+\.", ".", working)
     working = re.sub(r"\s{2,}", " ", working).strip(" -–—")
 
-    if not re.search(r"[А-Яа-яЀ-ӿ]", working):
+    if not re.search(r"[A-Za-z]", working):
         return text[:420]
     if not re.search(r"[.!?]$", working):
         working += "."
@@ -319,7 +319,7 @@ def _is_noisy_summary_sentence(sentence, title_terms=None):
     lowered = text.lower()
 
     if lowered.startswith(
-        ("фото:", "видео:", "gallery:", "галерија:", "коментар:", "реклама:", "извор:")
+        ("foto:", "video:", "gallery:", "galerija:", "komentar:", "reklama:", "izvor:")
     ):
         return True
     if any(phrase in lowered for phrase in JUNK_NEWS_PHRASES):
@@ -345,7 +345,7 @@ def synthesize_locally(articles, sentence_count=4, topic=None):
 
     all_candidates = []
     for art in articles:
-        src = art.get("source", "Извор")
+        src = art.get("source", "izvor")
         text = f"{art.get('title', '')}. {art.get('description', '')}"
         raw_sents = re.split(r"(?<=[.!?])\s+", text)
         for idx, s in enumerate(raw_sents):
@@ -355,13 +355,13 @@ def synthesize_locally(articles, sentence_count=4, topic=None):
             is_action = any(
                 v in clean_s.lower()
                 for v in [
-                    "изјави",
-                    "најави",
-                    "предупреди",
-                    "порача",
-                    "истакна",
-                    "повика",
-                    "одлучи",
+                    "izjavi",
+                    "najavi",
+                    "predupredi",
+                    "poraca",
+                    "istakna",
+                    "povika",
+                    "odluci",
                 ]
             )
             s_words = _sentence_tokens(clean_s)

@@ -96,21 +96,21 @@ export default function OnboardingIsland({ compact = false }: { compact?: boolea
     <section className={`onboarding-card ${compact ? 'is-compact' : ''}`}>
       <div className="onboarding-head">
         <div>
-          <p className="onboarding-kicker"><Sparkles size={14} /> Почетно поставување</p>
-          <h2>Поставете што сакате да следите</h2>
+          <p className="onboarding-kicker"><Sparkles size={14} /> Pocetno postavuvanje</p>
+          <h2>Postavete sto sakate da sledite</h2>
         </div>
-        <button type="button" className="onboarding-dismiss" onClick={close} aria-label="Затвори">
+        <button type="button" className="onboarding-dismiss" onClick={close} aria-label="Zatvori">
           <X size={14} />
         </button>
       </div>
 
       <p className="onboarding-copy">
-        Изберете неколку теми или извори за да ја персонализирате вашата содржина. Овие сигнали помагаат модулот „За Вас“, дневниот брифинг и известувањата да станат попрецизни.
+        Izberete nekolku temi ili izvori za da me personalizirate vasata sodrzina. Ovie signali pomagaat modulot „Za Vas“, dnevniot brifing i izvestuvanjata da stanat poprecizni.
       </p>
 
       <div className="onboarding-progress">
         <strong>{progress.doneCount}/{progress.total}</strong>
-        <span> чекори завршени</span>
+        <span> cekori zavrseni</span>
       </div>
 
       <div className="onboarding-steps">
@@ -125,8 +125,8 @@ export default function OnboardingIsland({ compact = false }: { compact?: boolea
       {compact && (recommendations.topics.length > 0 || recommendations.sources.length > 0) && (
         <div className="onboarding-starters">
           <div>
-            <p className="onboarding-starters-title">Брз почеток</p>
-            <p className="onboarding-starters-copy">Изберете 1 до 2 сигнали за првиот персонализиран преглед.</p>
+            <p className="onboarding-starters-title">Brz pocetok</p>
+            <p className="onboarding-starters-copy">Izberete 1 do 2 signali za prviot personaliziran pregled.</p>
           </div>
 
           {recommendations.topics.length > 0 && (
@@ -164,8 +164,8 @@ export default function OnboardingIsland({ compact = false }: { compact?: boolea
       )}
 
       <div className="onboarding-actions">
-        <a href="/settings" className="onboarding-action">Отвори поставки</a>
-        <button type="button" className="onboarding-action secondary" onClick={markDone}>Скриј го водичот</button>
+        <a href="/settings" className="onboarding-action">Otvori postavki</a>
+        <button type="button" className="onboarding-action secondary" onClick={markDone}>Skrij ga vodicot</button>
       </div>
     </section>
   );

@@ -26,7 +26,7 @@ def get_source_registry(ttl_seconds: int = 300) -> Dict[str, Dict[str, Any]]:
         registry[name] = {
             "name": name,
             "credibility": float(SOURCE_CREDIBILITY.get(name, DEFAULT_CREDIBILITY)),
-            "category": SOURCE_CATEGORIES.get(name, "Локални"),
+            "category": SOURCE_CATEGORIES.get(name, "Lokalni"),
         }
 
     try:
@@ -45,7 +45,7 @@ def get_source_registry(ttl_seconds: int = 300) -> Dict[str, Dict[str, Any]]:
                     if cred is not None
                     else SOURCE_CREDIBILITY.get(name, DEFAULT_CREDIBILITY)
                 ),
-                "category": cat or SOURCE_CATEGORIES.get(name, "Локални"),
+                "category": cat or SOURCE_CATEGORIES.get(name, "Lokalni"),
             }
     except Exception as e:
         log.warning(

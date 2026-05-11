@@ -33,12 +33,12 @@ def _clean_briefing_snippet(text):
     if not clean:
         return ""
     clean = re.sub(
-        r"^[A-ZА-ЯЀ-Я][^,]{0,40},\s*\d{1,2}\s+[^\d]{3,20}\s+\d{4}\s*\([^)]{2,20}\)\s*[-–—]\s*",
+        r"^[A-Za-z][^,]{0,40},\s*\d{1,2}\s+[^\d]{3,20}\s+\d{4}\s*\([^)]{2,20}\)\s*[-–—]\s*",
         "",
         clean,
     )
     clean = re.sub(
-        r"^(Скопје|Битола|Охрид|Тетово|Штип|Прилеп|Велес|Куманово|Берово|Дојран)\s*,\s*",
+        r"^(Beograd|Bitola|Ohrid|Tetovo|Stip|Prilep|Veles|Kumanovo|Berovo|Dojran)\s*,\s*",
         "",
         clean,
     )
@@ -51,7 +51,7 @@ def _normalize_briefing_line(text):
     clean = re.sub(r"^[\-•*#\d.\)\s]+", "", clean).strip()
     clean = re.sub(r"\[\d+\]", "", clean).strip()
     clean = re.sub(
-        r"^(Што е новото|Што се менува|Зошто е важно|Што се случува|Што е потврдено|Покриеност|Контекст|Разлика|Отворено)\s*:\s*",
+        r"^(Sto e novoto|Sto se menuva|Zosto e vazno|Sto se slucuva|Sto e potvrdeno|Pokrienost|kontekst|Razlika|otvoreno)\s*:\s*",
         "",
         clean,
         flags=re.IGNORECASE,
@@ -143,10 +143,10 @@ def _extract_briefing_importance(cluster):
     context = f"{clean_title} {clean_description}".casefold()
     
     # Check for domain-specific impact markers
-    if any(term in context for term in ("избори", "гласање", "парламентар")):
-        return "Потенцијална промена во политичката моќ и регионалните стратегии."
-    if any(term in context for term in ("цена", "поскап", "инфлација", "буџет")):
-        return "Директно влијание врз економската стабилност и стандардот на граѓаните."
+    if any(term in context for term in ("izbori", "glasanje", "parlamentar")):
+        return "Potencijalna promena vo politickata moc i regionalnite strategii."
+    if any(term in context for term in ("cena", "poskap", "inflacija", "budzet")):
+        return "Direktno vlijanie vrz ekonomskata stabilnost i standardot na gradjanite."
 
     # 1. Fact Extraction: Find the most informative sentence in description that adds new info
     # We use a stricter overlap check than the 'update' to ensure importance is different
@@ -169,9 +169,9 @@ def _extract_briefing_importance(cluster):
     # 2. Coverage-based fallback
     source_count = cluster.get("source_count") or 1
     if source_count >= 3:
-        return f"Потврден развој со висок медиумски консензус од {source_count} извори."
+        return f"Potvrden razvoj so visok mediumski konsenzus od {source_count} izvori."
 
-    return "Настанот е во фаза на развој и се очекуваат понатамошни официјални потврди."
+    return "Nastanot e vo faza na razvoj i se ocekuvaat ponatamosni oficijalni potvrdi."
 
 
 def _condense_briefing_update(text, *, max_chars=180):
@@ -239,20 +239,20 @@ def _dedupe_briefing_clusters(clusters, limit=4):
 def _is_penalized_briefing_title(title):
     clean = str(title or "").strip()
     lowered = clean.casefold()
-    if re.match(r"^[A-ZА-ЯЀ-Я0-9\-]{2,}:\s", clean):
+    if re.match(r"^[A-ZA-ЯЀ-Я0-9\-]{2,}:\s", clean):
         return True
     return any(
         marker in lowered
         for marker in {
-            "во очајна потрага",
-            "крах систем",
-            "слави победа",
-            "предавство",
-            "скандал",
-            "шокантно",
-            "удри",
-            "жестоко",
-            "катастрофа",
+            "vo ocajna potraga",
+            "krah sistem",
+            "slavi pobeda",
+            "predavstvo",
+            "skandal",
+            "sokantno",
+            "udri",
+            "zestoko",
+            "katastrofa",
         }
     )
 
@@ -260,7 +260,7 @@ def _is_penalized_briefing_title(title):
 def _extract_terms(text):
     return [
         term
-        for term in re.findall(r"[A-Za-zА-Яа-яЀ-ӿ0-9]{3,}", (text or "").lower())
+        for term in re.findall(r"[A-Za-zA-Za-z0-9]{3,}", (text or "").lower())
         if term not in STOPWORDS
     ]
 
@@ -360,49 +360,49 @@ def summarize_locally(text, sentence_count=3, topic=None, title=None):
         word_freq[word] = word_freq[word] / max_freq
 
     topic_boost_words = set()
-    if topic == "Економија":
+    if topic == "Ekonomija":
         topic_boost_words = {
-            "денари",
-            "евра",
-            "процент",
-            "милиони",
-            "буџет",
-            "плата",
-            "цени",
-            "инфлација",
-            "берза",
+            "denari",
+            "evra",
+            "procent",
+            "milioni",
+            "budzet",
+            "plata",
+            "ceni",
+            "inflacija",
+            "berza",
         }
-    elif topic == "Политика":
+    elif topic == "Politika":
         topic_boost_words = {
-            "министер",
-            "претседател",
-            "собрание",
-            "закон",
-            "партија",
-            "лидер",
-            "влада",
-            "избори",
+            "minister",
+            "pretsedatel",
+            "sobranie",
+            "zakon",
+            "partija",
+            "lider",
+            "vlada",
+            "izbori",
         }
-    elif topic == "Спорт":
+    elif topic == "Sport":
         topic_boost_words = {
-            "натпревар",
-            "гол",
-            "победа",
-            "првенство",
-            "клуб",
-            "лига",
-            "фудбал",
-            "кошарка",
+            "natprevar",
+            "gol",
+            "pobeda",
+            "prvenstvo",
+            "klub",
+            "liga",
+            "fudbal",
+            "kosarka",
         }
-    elif topic == "Криминал":
+    elif topic == "Kriminal":
         topic_boost_words = {
-            "полиција",
-            "апсење",
-            "убиство",
-            "суд",
-            "обвинителство",
-            "затвор",
-            "напад",
+            "policija",
+            "apsenje",
+            "ubistvo",
+            "sud",
+            "obvinitelstvo",
+            "zatvor",
+            "napad",
         }
 
     sentence_scores = {}
@@ -499,7 +499,7 @@ def _extract_comparison_entities(text):
 
 def _source_list(articles, limit=3):
     names = [
-        str(article.get("source") or "Извор").strip() for article in articles[:limit]
+        str(article.get("source") or "izvor").strip() for article in articles[:limit]
     ]
     return ", ".join(name for name in names if name)
 
@@ -517,16 +517,16 @@ def compare_cluster_sources(articles):
     record_runtime_event("local_compare_cache", mode="miss")
 
     uncertainty_markers = (
-        "тврди",
-        "според",
-        "непотвр",
-        "навод",
-        "се очекува",
-        "може",
-        "би мож",
-        "засега",
-        "се уште",
-        "се развива",
+        "tvrdi",
+        "spored",
+        "nepotvr",
+        "navod",
+        "se ocekuva",
+        "moze",
+        "bi moz",
+        "zasega",
+        "se jos",
+        "se razviva",
     )
     all_terms = Counter()
     article_term_sets, article_texts_lower, title_pairs = [], [], []
@@ -583,15 +583,15 @@ def compare_cluster_sources(articles):
         except Exception as e:
             log.debug(f"[nlp.generation] Error formatting common line: {e}")
             common_line = (
-                "Повеќето извори се согласуваат околу "
+                "Poveceto izvori se soglasuvaat okolu "
                 + ", ".join(common_phrases[:3])
-                + " као теми во фокус."
+                + " kao temi vo fokus."
             )
     elif common_terms:
         common_line = (
-            "Повеќето извори се согласуваат околу "
+            "Poveceto izvori se soglasuvaat okolu "
             + ", ".join(common_terms[:4])
-            + " како теми во фокус."
+            + " kako temi vo fokus."
         )
 
     difference_points, seen_titles = [], set()
@@ -602,7 +602,7 @@ def compare_cluster_sources(articles):
             unique_titles.append((s, t))
     if len(unique_titles) >= 2:
         difference_points.append(
-            f"{unique_titles[0][0]} најдиректно го формулира развојот како „{unique_titles[0][1]}“, додека {unique_titles[1][0]} повеќе нагласува „{unique_titles[1][1]}“."
+            f"{unique_titles[0][0]} najdirektno ga formulira razvojot kako „{unique_titles[0][1]}“, dodeka {unique_titles[1][0]} povece naglasuva „{unique_titles[1][1]}“."
         )
 
     open_points = []
@@ -612,24 +612,24 @@ def compare_cluster_sources(articles):
         if any(
             m in (a.get("title") or "").lower() or (a.get("description") or "").lower()
             for m in [
-                "можеби",
-                "се очекува",
-                "наводно",
-                "според неименувани",
-                "непотврдено",
+                "mozebi",
+                "se ocekuva",
+                "navodno",
+                "spored neimenuvani",
+                "nepotvrdeno",
             ]
         )
     ]
     if uncertain_sources:
         open_points.append(
-            f"Деталите околу овој развој остануваат непотврдени кај {', '.join(uncertain_sources[:2])}."
+            f"Detalite okolu ovoj razvoj ostanuvaat nepotvrdeni kaj {', '.join(uncertain_sources[:2])}."
         )
 
     # Extra check for numbers mismatch as open points
     from nlp.categories import detect_topic
 
     all_titles = " ".join([a.get("title") or "" for a in articles])
-    is_sport = detect_topic(all_titles) == "Спорт"
+    is_sport = detect_topic(all_titles) == "Sport"
 
     if is_sport:
         scores = [
@@ -645,7 +645,7 @@ def compare_cluster_sources(articles):
         ]
         if conflicting_scores:
             open_points.append(
-                f"Информациите за конечниот резултат се разликуваат (на пример: {conflicting_scores[0]}), што може да укажува на промена во текот на мечот."
+                f"Informaciite za konecniot rezultat se razlikuvaat (na primer: {conflicting_scores[0]}), sto moze da ukazuva na promena vo tekot na mecot."
             )
 
     # Generic numbers only if not many articles (less noise)
@@ -659,7 +659,7 @@ def compare_cluster_sources(articles):
             n in "".join(open_points) for n in conflicting_nums
         ):
             open_points.append(
-                f"Постојат различни информации околу бројките (на пример: {conflicting_nums[0]}), што укажува на динамично известување."
+                f"Postojat razliciti informacii okolu brojkite (na primer: {conflicting_nums[0]}), sto ukazuva na dinamicno izvestuvanje."
             )
 
     result = {
@@ -700,30 +700,30 @@ def synthesize_cluster_fallback(articles):
     # Use the improved update extraction to avoid title repetition
     update_point = _extract_briefing_update({"title": lead_title, "description": desc})
     if update_point and update_point.casefold() != lead_title.casefold():
-        summary_lines.append(f"• Клучен развој: {update_point}")
+        summary_lines.append(f"• Klucen razvoj: {update_point}")
     else:
         # If no good update found, use a refined version of the title
-        summary_lines.append(f"• Настан: {lead_title}")
+        summary_lines.append(f"• Nastan: {lead_title}")
 
     if len(sentences) > 1:
-        summary_lines.append(f"• Детали: {sentences[0]}")
+        summary_lines.append(f"• Detali: {sentences[0]}")
 
     common = (
         comparison.get("common_line", "")
-        .replace("Повеќето извори се согласуваат околу ", "")
-        .replace(" како теми во фокус.", "")
+        .replace("Poveceto izvori se soglasuvaat okolu ", "")
+        .replace(" kako temi vo fokus.", "")
         .strip()
     )
     if common and len(common) > 18 and "," not in common:
-        summary_lines.append(f"• Фокус: {common}")
+        summary_lines.append(f"• Fokus: {common}")
 
     sources_str = _source_list(articles, limit=4)
     summary_lines.append(
-        f"• Медиумска покриеност: Следено од {len(articles)} извори ({sources_str})."
+        f"• Mediumska pokrienost: Sledeno od {len(articles)} izvori ({sources_str})."
     )
     
     if comparison.get("open_points"):
-        summary_lines.append(f"• Отворено: {comparison['open_points'][0]}")
+        summary_lines.append(f"• otvoreno: {comparison['open_points'][0]}")
 
     summary = "\n".join(summary_lines)
 
@@ -732,7 +732,7 @@ def synthesize_cluster_fallback(articles):
     if update_point and update_point.casefold() != lead_title.casefold():
         article_body.append(f"{lead_title}. {update_point}.")
     else:
-        article_body.append(f"{lead_title}. Развојот на настаните го следат повеќе медиуми.")
+        article_body.append(f"{lead_title}. Razvojot na nastanite ga sledat povece mediumi.")
 
     if comparison.get("common_line"):
         article_body.append(comparison["common_line"])
@@ -747,19 +747,19 @@ def synthesize_cluster_fallback(articles):
     if len(articles) > 1:
         perspectives.append(
             {
-                "angle": "Консензус",
-                "content": f"{articles[0]['source']} и {articles[1]['source']} ја потврдуваат истата основна линија на настанот.",
+                "angle": "Konsenzus",
+                "content": f"{articles[0]['source']} i {articles[1]['source']} ja potvrduvaat istata osnovna linija na nastanot.",
             }
         )
 
     if comparison["difference_points"]:
         perspectives.append(
-            {"angle": "Нијанси", "content": comparison["difference_points"][0]}
+            {"angle": "Nijansi", "content": comparison["difference_points"][0]}
         )
 
     if comparison.get("open_points"):
         perspectives.append(
-            {"angle": "Отворено", "content": comparison["open_points"][0]}
+            {"angle": "otvoreno", "content": comparison["open_points"][0]}
         )
 
     record_runtime_event("local_synthesis_path", mode="enhanced_fallback")
@@ -768,13 +768,13 @@ def synthesize_cluster_fallback(articles):
         "perspectives": perspectives[:3],
         "synthetic_headline": lead_title,
         "generated_article": generated_article,
-        "synthetic_standfirst": f"Системски преглед базиран на {len(articles)} извори.",
+        "synthetic_standfirst": f"Sistemski pregled baziran na {len(articles)} izvori.",
     }
 
 
 def generate_daily_brief_fallback(clusters):
     if not clusters:
-        return "## Дневен Брифинг\n\nНема доволно достапни вести."
+        return "## Dneven Brifing\n\nNema dovolno dostapni vesti."
     display_clusters = sorted(
         clusters[:4],
         key=lambda item: (
@@ -784,24 +784,24 @@ def generate_daily_brief_fallback(clusters):
         ),
     )
     display_clusters = _dedupe_briefing_clusters(display_clusters, limit=4)
-    lines = ["## Динамика на денот", ""]
+    lines = ["## Dinamika na denot", ""]
     
     if len(display_clusters) >= 1:
         lead_update = _condense_briefing_update(
             _extract_briefing_update(display_clusters[0]), max_chars=150
         )
-        intro_line = f"Денешниот преглед е обележан со: {lead_update}."
+        intro_line = f"Denesniot pregled e obelezan so: {lead_update}."
 
         if len(display_clusters) >= 2:
             sec_update = _condense_briefing_update(
                 _extract_briefing_update(display_clusters[1]), max_chars=150
             )
-            intro_line = f"Денот го обележа {lead_update}, а внимание привлекува и {sec_update}."
+            intro_line = f"Denot ga obeleza {lead_update}, a vnimanie privlekuva i {sec_update}."
 
         lines.append(intro_line)
         lines.append("")
 
-    lines.append("## Контекст и разлики")
+    lines.append("## kontekst i razliki")
     lines.append("")
     difference_added = False
     for cluster in display_clusters[:3]:
@@ -829,13 +829,13 @@ def generate_daily_brief_fallback(clusters):
         lines.append(f"### {index}. {clean_title or title}")
         
         if summary and summary.casefold() != (clean_title or title).casefold():
-            lines.append(f"- Клучен аспект: {summary}.")
+            lines.append(f"- Klucen aspekt: {summary}.")
         
-        lines.append(f"- Зошто е важно: {importance}.")
+        lines.append(f"- Zosto e vazno: {importance}.")
         lines.append("")
         
     lines.append(
-        "**Белешка**: Содржината е генерирана преку локална системска анализа."
+        "**Beleska**: Sodrzinata e generirana preku lokalna sistemska analiza."
     )
     return "\n".join(lines).strip()
 
@@ -982,26 +982,26 @@ def _build_grounded_answer_from_evidence(evidence, comparison=None):
         p_snip = _coerce_grounded_snippet(
             summarize_locally(p["article"].get("description", ""), sentence_count=1)
         )
-    return f"Најдиректно од достапните извори: {p_snip}"
+    return f"Najdirektno od dostapnite izvori: {p_snip}"
 
 
 def _build_minimum_cluster_summary(articles, comparison=None):
     articles = _normalize_articles_for_local_use(articles)
     if not articles:
         return ""
-    return f"• Што се случува: {articles[0]['title']}\n• Покриеност: {len(articles)} извори, вклучувајќи го и {_source_list(articles)}."
+    return f"• Sto se slucuva: {articles[0]['title']}\n• Pokrienost: {len(articles)} izvori, vklucuvajci ga i {_source_list(articles)}."
 
 
-def generate_local_placeholder(cluster_id, title, category="Вести"):
+def generate_local_placeholder(cluster_id, title, category="vesti"):
     colors = {
         "Srbija": "#a63d40",
-        "Балкан": "#3d6b63",
-        "Европа": "#3f7d8a",
-        "Америка": "#3e6282",
-        "Свет": "#5f556f",
-        "Спорт": "#b36b24",
-        "Технологија": "#3e4954",
-        "Економија": "#456a4f",
+        "Balkan": "#3d6b63",
+        "Evropa": "#3f7d8a",
+        "Amerika": "#3e6282",
+        "Svet": "#5f556f",
+        "Sport": "#b36b24",
+        "Tehnologija": "#3e4954",
+        "Ekonomija": "#456a4f",
         "default": "#5f6470",
     }
     bg = colors.get(category, colors["default"])

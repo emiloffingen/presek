@@ -10,21 +10,21 @@ import OnboardingIsland from '../components/OnboardingIsland.tsx';
 import { KeyRound, Radio, ShieldCheck, UserCircle2, Sparkles, ArrowUpRight } from 'lucide-react';
 ---
 
-<Layout title="Поставки" description="Управувајте со синхронизацијата, следењата и доставата на брифингот во Presek.">
+<Layout title="Postavki" description="Upravuvajte so sinhronizacijata, sledenjata i dostavata na brifingot vo Presek.">
   <NYTHeader />
 
   <main class="site-layout py-[var(--page-py)]">
-    <Breadcrumbs items={[{ label: "Поставки" }]} />
+    <Breadcrumbs items={[{ label: "Postavki" }]} />
     
     <div class="settings-shell editorial-shell mt-12">
       <header class="settings-header editorial-header mb-[clamp(2rem, 5vw, 4rem)] motion-rise">
         <div class="flex items-center gap-3 mb-4">
             <div class="w-10 h-[1px] bg-nyt-accent"></div>
-            <span class="page-kicker !mb-0 text-[var(--text-xs)]">КОНТРОЛЕН ЦЕНТАР</span>
+            <span class="page-kicker !mb-0 text-[var(--text-xs)]">KONTROLEN CENTAR</span>
         </div>
-        <h1 class="settings-headline editorial-headline italic text-[clamp(2rem, 4vw, 3.5rem)] font-serif">Вашиот <span>Дигитален</span> Профил</h1>
+        <h1 class="settings-headline editorial-headline italic text-[clamp(2rem, 4vw, 3.5rem)] font-serif">Vasiot <span>Digitalen</span> Profil</h1>
         <p class="settings-lede editorial-intro max-w-3xl mt-6 text-[var(--text-lg)] text-muted-foreground">
-          Presek работи без лозинки. Вашиот профил е анонимен, но синхронизиран. Овде ги контролирате темите што ги следите и начинот на кој ги добивате вестите.
+          Presek raboti bez lozinki. Vasiot profil e anonimen, no sinhroniziran. Ovde im kontrolirate temite sto im sledite i nacinot na koj im dobivate vestite.
         </p>
       </header>
 
@@ -34,7 +34,7 @@ import { KeyRound, Radio, ShieldCheck, UserCircle2, Sparkles, ArrowUpRight } fro
             <section class="settings-section">
                 <div class="section-eyebrow mb-8 flex items-center gap-2">
                     <ShieldCheck size={18} className="text-nyt-accent" />
-                    <h2 class="section-label font-sans text-[var(--text-sm)] font-black uppercase tracking-widest text-foreground">ВАШИ ИНТЕРЕСИ</h2>
+                    <h2 class="section-label font-sans text-[var(--text-sm)] font-black uppercase tracking-widest text-foreground">VASI INTERESI</h2>
                     <div class="section-divider flex-1 h-[1px] bg-border ml-4"></div>
                 </div>
                 <SettingsProfileIsland client:visible />
@@ -44,7 +44,7 @@ import { KeyRound, Radio, ShieldCheck, UserCircle2, Sparkles, ArrowUpRight } fro
             <section class="settings-section border-t border-border pt-16">
                 <div class="section-eyebrow mb-8 flex items-center gap-2">
                     <Sparkles size={18} className="text-nyt-accent" />
-                    <h2 class="section-label font-sans text-[var(--text-sm)] font-black uppercase tracking-widest text-foreground">ОТКРИЈТЕ ПОВЕЌЕ</h2>
+                    <h2 class="section-label font-sans text-[var(--text-sm)] font-black uppercase tracking-widest text-foreground">OTKRIJTE POVECE</h2>
                     <div class="section-divider flex-1 h-[1px] bg-border ml-4"></div>
                 </div>
                 <div class="bg-secondary/20 p-8 rounded-sm border border-border">
@@ -56,7 +56,7 @@ import { KeyRound, Radio, ShieldCheck, UserCircle2, Sparkles, ArrowUpRight } fro
         <aside class="settings-rail space-y-12 motion-rise">
           {/* DIGITAL PASSPORT - SYNC */}
           <div class="sidebar-module">
-            <h3 class="sidebar-label flex items-center gap-2 font-sans text-[var(--text-xs)] font-black uppercase tracking-widest text-muted-foreground"><KeyRound size={14} /> ДИГИТАЛЕН ПАСОШ</h3>
+            <h3 class="sidebar-label flex items-center gap-2 font-sans text-[var(--text-xs)] font-black uppercase tracking-widest text-muted-foreground"><KeyRound size={14} /> DIGITALEN PASOS</h3>
             <div class="mt-6">
                 <AccountSyncIsland client:visible />
             </div>
@@ -64,18 +64,18 @@ import { KeyRound, Radio, ShieldCheck, UserCircle2, Sparkles, ArrowUpRight } fro
 
           {/* SUBSCRIPTIONS */}
           <div class="sidebar-module border-t border-border pt-12">
-            <h3 class="sidebar-label flex items-center gap-2 font-sans text-[var(--text-xs)] font-black uppercase tracking-widest text-muted-foreground"><Radio size={14} /> ДОСТАВА</h3>
+            <h3 class="sidebar-label flex items-center gap-2 font-sans text-[var(--text-xs)] font-black uppercase tracking-widest text-muted-foreground"><Radio size={14} /> DOSTAVA</h3>
             <div class="mt-6 bg-secondary/20 border border-border p-6 rounded-sm">
                 <BriefingDeliveryIsland client:visible variant="full" />
             </div>
           </div>
 
           <div class="sidebar-module border-t border-border pt-12">
-            <h4 class="sidebar-label font-sans text-[var(--text-xs)] font-black uppercase tracking-widest text-muted-foreground">ПОМОШ И ПОДДРШКА</h4>
+            <h4 class="sidebar-label font-sans text-[var(--text-xs)] font-black uppercase tracking-widest text-muted-foreground">POMOS I PODDRSKA</h4>
             <div class="settings-rail-links mt-6 flex flex-col gap-4 text-[var(--text-sm)] font-medium text-foreground">
-              <a href="/briefing" class="flex justify-between items-center group">Отвори брифинг <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-all" /></a>
-              <a href="/izvori" class="flex justify-between items-center group">Уреди извори <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-all" /></a>
-              <a href="/contact" class="flex justify-between items-center group">Кореспонденција <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-all" /></a>
+              <a href="/briefing" class="flex justify-between items-center group">Otvori brifing <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-all" /></a>
+              <a href="/izvori" class="flex justify-between items-center group">Uredi izvori <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-all" /></a>
+              <a href="/contact" class="flex justify-between items-center group">Korespondencija <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-all" /></a>
             </div>
           </div>
         </aside>

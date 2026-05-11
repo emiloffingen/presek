@@ -40,88 +40,88 @@ _BREAKING_ALERT_TASK_LOCK = "lock:breaking_alerts"
 _BREAKING_ALERT_LOCK_TTL = 300
 
 _BRIEFING_PARTISAN_MARKERS = {
-    "во очајна потрага",
-    "крах систем",
-    "слави победа",
-    "предавство",
-    "скандал",
-    "шокантно",
-    "удри",
-    "жестоко",
-    "катастрофа",
+    "vo ocajna potraga",
+    "krah sistem",
+    "slavi pobeda",
+    "predavstvo",
+    "skandal",
+    "sokantno",
+    "udri",
+    "zestoko",
+    "katastrofa",
 }
 
 _BRIEFING_PARTY_PREFIXES = (
-    "вмро-дпмне:",
-    "сдсм:",
-    "дуи:",
-    "вреди:",
-    "левица:",
-    "знам:",
-    "аллијанса за албанците:",
-    "алтернатива:",
-    "гром:",
-    "дпа:",
-    "нсдп:",
+    "vmro-dpmne:",
+    "sdsm:",
+    "dui:",
+    "vredi:",
+    "levica:",
+    "znam:",
+    "allijansa za albancite:",
+    "alternativa:",
+    "grom:",
+    "dpa:",
+    "nsdp:",
 )
 
 _BRIEFING_LOW_SIGNAL_TITLE_MARKERS = (
-    "временска прогноза",
-    "најстудено",
-    "сончево",
-    "релативно топло",
-    "промоција на активностите",
-    "по повод 100 години",
-    "години скопје зоо",
-    "свеченост",
-    "одбележување",
-    "годишнина",
+    "vremenska prognoza",
+    "najstudeno",
+    "soncevo",
+    "relativno toplo",
+    "promocija na aktivnostite",
+    "po povod 100 godini",
+    "godini Beograd zoo",
+    "svecenost",
+    "odbelezuvanje",
+    "godisnina",
 )
 
 _BRIEFING_PUBLIC_INTEREST_MARKERS = (
-    "избор",
-    "избори",
-    "суд",
-    "правосуд",
-    "земјотрес",
-    "пожар",
-    "влада",
-    "собрание",
-    "закон",
-    "одлука",
-    "министер",
-    "обвинител",
-    "полиц",
-    "либан",
-    "он",
-    "обединетите нации",
-    "напад",
-    "безбед",
-    "референдум",
+    "izbor",
+    "izbori",
+    "sud",
+    "pravosud",
+    "zemjotres",
+    "pozar",
+    "vlada",
+    "sobranie",
+    "zakon",
+    "odluka",
+    "minister",
+    "obvinitel",
+    "polic",
+    "liban",
+    "on",
+    "obedinetite nacii",
+    "napad",
+    "bezbed",
+    "referendum",
 )
 
 _BRIEFING_WEATHER_MARKERS = (
-    "време",
-    "временска прогноза",
-    "сончево",
-    "облачност",
-    "температура",
-    "најстудено",
-    "ухмр",
-    "ветер",
-    "врнежи",
+    "vreme",
+    "vremenska prognoza",
+    "soncevo",
+    "oblacnost",
+    "temperatura",
+    "najstudeno",
+    "uhmr",
+    "veter",
+    "vrnezi",
 )
 
 _BRIEFING_SEVERE_WEATHER_MARKERS = (
-    "невреме",
-    "портокалов",
-    "црвен аларм",
-    "предупредување",
-    "поплава",
-    "силен ветер",
-    "град",
-    "екстремна температура",
-    "жолт аларм",
+    "nevreme",
+    "portokalov",
+    "crven alarm",
+    "predupreduvanje",
+    "poplava",
+    "silen veter",
+    "grad",
+    "ekstremna temperatura",
+    "zolt alarm",
 )
 
 
@@ -180,7 +180,7 @@ def _briefing_title_penalty(
     lowered = clean.casefold()
     penalty = 0.0
 
-    if re.match(r"^[A-ZА-ЯЀ-Я0-9\-]{2,}:\s", clean):
+    if re.match(r"^[A-Za-z0-9\-]{2,}:\s", clean):
         penalty += 1.8
     if any(marker in lowered for marker in _BRIEFING_PARTISAN_MARKERS):
         penalty += 1.8
@@ -233,9 +233,9 @@ def _load_daily_brief_clusters(limit=5):
                 content = str(item.get("content") or "").strip()
                 if not content:
                     continue
-                if not difference_point and ("различ" in angle or "акцент" in angle):
+                if not difference_point and ("razlic" in angle or "akcenat" in angle):
                     difference_point = content
-                if not open_point and ("отвор" in angle or "нејас" in angle):
+                if not open_point and ("otvor" in angle or "nejas" in angle):
                     open_point = content
 
         source_count = len({a.get("source") for a in ranked if a.get("source")})
@@ -318,17 +318,17 @@ def _build_daily_brief_context(clusters):
         blocks.append(
             "\n".join(
                 [
-                    f"### Кластер {index}",
+                    f"### klaster {index}",
                     f"ID: {cluster.get('cluster_id') or ''}",
-                    f"Наслов: {cluster.get('title') or ''}",
-                    f"Категорија: {cluster.get('category') or cluster.get('topic') or 'Вести'}",
-                    f"Водечки извор: {cluster.get('source') or 'Извор'}",
-                    f"Број на извори: {cluster.get('source_count') or 1}",
-                    f"Краток контекст: {cluster.get('description') or ''}",
-                    f"Синтеза: {cluster.get('cluster_summary') or ''}",
-                    f"Други агли: {' | '.join(cluster.get('other_titles') or [])}",
-                    f"Разлики: {cluster.get('difference_point') or ''}",
-                    f"Отворено: {cluster.get('open_point') or ''}",
+                    f"Naslov: {cluster.get('title') or ''}",
+                    f"Kategorija: {cluster.get('category') or cluster.get('topic') or 'vesti'}",
+                    f"Vodeci izvor: {cluster.get('source') or 'izvor'}",
+                    f"Broj izvora: {cluster.get('source_count') or 1}",
+                    f"Kratok kontekst: {cluster.get('description') or ''}",
+                    f"Sinteza: {cluster.get('cluster_summary') or ''}",
+                    f"Drugi agli: {' | '.join(cluster.get('other_titles') or [])}",
+                    f"Razliki: {cluster.get('difference_point') or ''}",
+                    f"otvoreno: {cluster.get('open_point') or ''}",
                 ]
             )
         )
@@ -349,10 +349,10 @@ def _has_valid_daily_brief_structure(brief: str) -> bool:
         return False
     # Check for the new structure - make it case-insensitive and more flexible
     required_phrases = [
-        "Големата Слика",
-        "Глобални и Локални Оски",
-        "Медиумски Радар",
-        "Што да се следи",
+        "Golemata Slika",
+        "Globalni i Lokalni Oski",
+        "Mediumski Radar",
+        "Sto da se sledi",
     ]
     found_count = 0
     for phrase in required_phrases:
@@ -377,13 +377,13 @@ def _is_high_quality_briefing(brief: str) -> bool:
 
     # 1. Reject if too many vague markers (filler speak)
     vague_markers = [
-        "ќе покаже",
-        "останува важно",
-        "може да влијае",
-        "вреди да се следи",
-        "останува да се види",
-        "допрва ќе",
-        "времето ќе покаже",
+        "ce pokaze",
+        "ostaje vazno",
+        "moze da vlijae",
+        "vredi da se sledi",
+        "ostaje da se vidi",
+        "doprva ce",
+        "vremeto ce pokaze",
     ]
 
     lines = [
@@ -470,11 +470,11 @@ def _cluster_delivery_match(
     )
     if include_topics and topic_hits:
         score += 2.8 + (0.4 * len(topic_hits))
-        reasons.append(f"следена тема: {', '.join(topic_hits[:2])}")
+        reasons.append(f"sledena tema: {', '.join(topic_hits[:2])}")
 
     if include_sources and lead_source and lead_source in followed_sources:
         score += 2.4
-        reasons.append(f"следен извор: {lead_source}")
+        reasons.append(f"sledeci izvor: {lead_source}")
 
     score += min(1.0, max(0, int(cluster.get("source_count") or 0) - 1) * 0.2)
     score += min(0.9, float(cluster.get("score") or 0) * 0.12)
@@ -491,28 +491,28 @@ def _build_profile_briefing_message(profile, clusters):
     profile = _normalize_synced_profile_for_delivery(profile)
     followed_topics = profile["followedTopics"][:3]
     followed_sources = profile["followedSources"][:3]
-    lines = ["Presek персонализиран брифинг"]
+    lines = ["Presek personaliziran brifing"]
 
     if followed_topics:
-        lines.append(f"Следени теми: {', '.join(followed_topics)}")
+        lines.append(f"Sledeni temi: {', '.join(followed_topics)}")
     if followed_sources:
-        lines.append(f"Следени извори: {', '.join(followed_sources)}")
+        lines.append(f"Praceni izvori: {', '.join(followed_sources)}")
 
     for cluster in clusters[:4]:
-        reason_text = cluster.get("match_reason") or "важна развојна линија"
+        reason_text = cluster.get("match_reason") or "vazna razvojna linija"
         lines.append("")
-        lines.append(f"• {cluster.get('title') or 'Важна приказна'}")
+        lines.append(f"• {cluster.get('title') or 'Vazna prica'}")
         lines.append(
-            f"  {cluster.get('source') or 'Извор'} · {cluster.get('source_count') or 1} извори · {reason_text}"
+            f"  {cluster.get('source') or 'izvor'} · {cluster.get('source_count') or 1} izvori · {reason_text}"
         )
         if cluster.get("cluster_summary"):
             lines.append(f"  {str(cluster['cluster_summary']).splitlines()[0][:220]}")
         elif cluster.get("description"):
             lines.append(f"  {str(cluster['description'])[:220]}")
         if cluster.get("difference_point"):
-            lines.append(f"  Разлика: {str(cluster['difference_point'])[:180]}")
+            lines.append(f"  Razlika: {str(cluster['difference_point'])[:180]}")
         elif cluster.get("open_point"):
-            lines.append(f"  Отворено: {str(cluster['open_point'])[:180]}")
+            lines.append(f"  otvoreno: {str(cluster['open_point'])[:180]}")
 
     return "\n".join(line for line in lines if line is not None).strip()
 
@@ -539,7 +539,7 @@ def _dedupe_briefing_candidates(candidates, limit=4):
 
     for item in candidates:
         title = str(item.get("title") or "").strip()
-        topic = str(item.get("topic") or item.get("category") or "Вести").strip()
+        topic = str(item.get("topic") or item.get("category") or "vesti").strip()
         if not title:
             continue
 
@@ -617,9 +617,9 @@ def _load_weekly_digest_clusters(limit=32):
             content = str(item.get("content") or "").strip()
             if not content:
                 continue
-            if not difference_point and ("различ" in angle or "акцент" in angle):
+            if not difference_point and ("razlic" in angle or "akcenat" in angle):
                 difference_point = content
-            if not open_point and ("отвор" in angle or "нејас" in angle):
+            if not open_point and ("otvor" in angle or "nejas" in angle):
                 open_point = content
 
         ranked_clusters.append(
@@ -877,8 +877,8 @@ def _build_weekly_digest_sections(
     if lead_cluster:
         sections.append(
             {
-                "title": "Што најмногу се помести",
-                "subtitle": lead_cluster.get("match_reason") or "главен неделен развој",
+                "title": "Sto najmnogu se pomesti",
+                "subtitle": lead_cluster.get("match_reason") or "glaven nedelen razvoj",
                 "clusters": [lead_cluster],
             }
         )
@@ -899,11 +899,11 @@ def _build_weekly_digest_sections(
         performance = topic_engagement.get(topic) or {}
         topic_sections.append(
             {
-                "title": f"Следена тема: {topic}",
+                "title": f"Sledena tema: {topic}",
                 "subtitle": (
-                    "силен интерес во претходните неделни прегледи"
+                    "silen interes vo prethodnite nedelni pregledi"
                     if float(performance.get("section_score") or 0.0) >= 0.65
-                    else "најважните линии за темата што ја следите"
+                    else "najvaznite linii za temata sto me sledite"
                 ),
                 "clusters": matches[:2],
                 "score": float(performance.get("section_score") or 0.0)
@@ -942,11 +942,11 @@ def _build_weekly_digest_sections(
         strongest_source_perf = source_engagement.get(strongest_source) or {}
         sections.append(
             {
-                "title": "Извори што ги следите",
+                "title": "izvori sto im sledite",
                 "subtitle": (
-                    f"{strongest_source} носи најсилен одзив меѓу следените извори оваа недела"
+                    f"{strongest_source} nosi najsilen odziv medju sledenite izvori ova Nedelja"
                     if float(strongest_source_perf.get("section_score") or 0.0) >= 0.6
-                    else "каде следените извори ја водат или потврдуваат неделата"
+                    else "kade sledenite izvori me vodat ili potvrduvaat nedelata"
                 ),
                 "clusters": source_clusters,
                 "score": float(strongest_source_perf.get("section_score") or 0.0)
@@ -958,8 +958,8 @@ def _build_weekly_digest_sections(
     if open_items:
         sections.append(
             {
-                "title": "Што останува отворено",
-                "subtitle": "линии што влегуваат во следната недела без целосна потврда",
+                "title": "Sta ostaje otvoreno",
+                "subtitle": "linii sto vleguvaat vo slednata Nedelja bez celosna potvrda",
                 "clusters": open_items[:2],
                 "score": max(float(open_items[0].get("match_score") or 0.0), 0.0),
             }
@@ -992,15 +992,15 @@ def _select_profile_weekly_clusters(profile, limit=5, _cached_clusters=None, _ca
         click_rate = float(engagement.get("click_rate") or 0.0)
         if sends >= 2 and click_rate >= 0.22:
             engagement_bonus = 0.85
-            engagement_note = "силен одзив во неделните прегледи"
+            engagement_note = "silen odziv vo nedelnite pregledi"
         elif sends >= 2 and open_rate >= 0.55:
             engagement_bonus = 0.45
-            engagement_note = "добар одзив во неделните прегледи"
+            engagement_note = "dobar odziv vo nedelnite pregledi"
         elif (
             sends >= 3 and open_rate < 0.25 and int(engagement.get("clicks") or 0) == 0
         ):
             engagement_bonus = -0.35
-            engagement_note = "послаб одзив во неделните прегледи"
+            engagement_note = "poslab odziv vo nedelnite pregledi"
 
         total_score = (
             match_score
@@ -1008,7 +1008,7 @@ def _select_profile_weekly_clusters(profile, limit=5, _cached_clusters=None, _ca
             + engagement_bonus
             + min(0.55, float(engagement.get("engagement_score") or 0.0) * 0.35)
         )
-        match_reason = "; ".join(reasons[:2]) or "неделна важност"
+        match_reason = "; ".join(reasons[:2]) or "nedelna vaznost"
         if engagement_note:
             match_reason = f"{match_reason}; {engagement_note}"
         ranked.append(
@@ -1037,11 +1037,11 @@ def _build_profile_weekly_digest_message(profile, clusters):
         _load_weekly_source_engagement(),
     )
 
-    lines = ["Presek неделен преглед"]
+    lines = ["Presek nedelen pregled"]
     if followed_topics:
-        lines.append(f"Фокус теми: {', '.join(followed_topics)}")
+        lines.append(f"Fokus temi: {', '.join(followed_topics)}")
     if followed_sources:
-        lines.append(f"Фокус извори: {', '.join(followed_sources)}")
+        lines.append(f"Fokus izvori: {', '.join(followed_sources)}")
 
     rendered_cluster_ids = set()
     for section in sections:
@@ -1056,14 +1056,14 @@ def _build_profile_weekly_digest_message(profile, clusters):
             continue
 
         lines.append("")
-        lines.append(f"## {section.get('title') or 'Клучен дел'}")
+        lines.append(f"## {section.get('title') or 'Klucen del'}")
         if section.get("subtitle"):
             lines.append(str(section["subtitle"]))
 
         for cluster in section_clusters[:2]:
-            lines.append(f"• {cluster.get('title') or 'Клучна приказна неделава'}")
+            lines.append(f"• {cluster.get('title') or 'Kljucna prica nedeljna'}")
             lines.append(
-                f"  {cluster.get('source') or 'Извор'} · {cluster.get('source_count') or 1} извори · {cluster.get('match_reason') or 'неделен контекст'}"
+                f"  {cluster.get('source') or 'izvor'} · {cluster.get('source_count') or 1} izvori · {cluster.get('match_reason') or 'nedeljni kontekst'}"
             )
             if cluster.get("cluster_summary"):
                 lines.append(
@@ -1073,16 +1073,16 @@ def _build_profile_weekly_digest_message(profile, clusters):
                 lines.append(f"  {str(cluster['description'])[:220]}")
             if cluster.get("difference_point"):
                 lines.append(
-                    f"  Главна разлика: {str(cluster['difference_point'])[:180]}"
+                    f"  glavna razlika: {str(cluster['difference_point'])[:180]}"
                 )
             elif cluster.get("open_point"):
                 lines.append(
-                    f"  Што остана отворено: {str(cluster['open_point'])[:180]}"
+                    f"  Sto ostana otvoreno: {str(cluster['open_point'])[:180]}"
                 )
 
     lines.append("")
     lines.append(
-        "Што да следите понатаму: Проверете ги темите и кластерите што остануваат отворени или влегуваат во нова фаза."
+        "Sto da sledite dalje: Proverete im temite i klasterite sto ostanuvaat otvoreni ili vleguvaat vo nova faza."
     )
     return "\n".join(line for line in lines if line is not None).strip()
 
@@ -1448,10 +1448,10 @@ def _classify_alert_candidate(
     breaking_open_rate = float(breaking_perf.get("open_rate") or 0.0)
     breaking_click_rate = float(breaking_perf.get("click_rate") or 0.0)
 
-    alert_label = "Важно ажурирање"
+    alert_label = "Vazno azuriranje"
     alert_reason = (
         cluster.get("match_reason")
-        or "оваа приказна силно се врзува со вашите следени теми или извори"
+        or "ova prica silno se vrzuva so vasite sledeni temi ili izvori"
     )
     alert_tags = "newspaper"
     min_gap_minutes = 90
@@ -1459,57 +1459,57 @@ def _classify_alert_candidate(
     source_gap_minutes = 180
     severity_rank = 1
     score_adjustment = 0.0
-    engagement_label = "Нормален одзив"
+    engagement_label = "Normalen odziv"
 
     if (
         "credible_new_reporting" in reasons
         or "new_sources" in reasons
         or base_score >= BREAKING_SCORE_THRESHOLD + 1.4
     ):
-        alert_label = "Итно ажурирање"
-        alert_reason = "се појави нов доверлив извор или значаен развој"
+        alert_label = "Itno azuriranje"
+        alert_reason = "se pojavi nov doverliv izvor ili znacaen razvoj"
         alert_tags = "rotating_light,newspaper"
         min_gap_minutes = 30
         topic_gap_minutes = 120
         source_gap_minutes = 90
         severity_rank = 3
     elif "new_numbers" in reasons or "new_angle" in reasons or freshness_score >= 1.8:
-        alert_label = "Нова важна промена"
-        alert_reason = "има нов агол, бројки или појасна промена во известувањето"
+        alert_label = "nova vazna promena"
+        alert_reason = "ima nov ugao, brojki ili pojasna promena vo izvestaj"
         alert_tags = "newspaper,warning"
         min_gap_minutes = 60
         topic_gap_minutes = 180
         source_gap_minutes = 150
         severity_rank = 2
     elif "multiple_new_reports" in reasons:
-        alert_label = "Следен развој"
-        alert_reason = "се натрупуваат повеќе нови извештаи околу истата приказна"
+        alert_label = "Sleden razvoj"
+        alert_reason = "se natrupuvaat povece novi izvestai okolu istata prica"
         alert_tags = "newspaper"
         min_gap_minutes = 120
         topic_gap_minutes = 360
         source_gap_minutes = 240
 
     if breaking_sends >= 8 and breaking_click_rate < 0.12 and breaking_open_rate < 0.35:
-        engagement_label = "Слаб одзив"
+        engagement_label = "Slab odziv"
         min_gap_minutes += 75
         topic_gap_minutes += 180
         source_gap_minutes += 120
         if severity_rank < 3:
             score_adjustment -= 0.45
             alert_reason = (
-                f"{alert_reason}; праќаме само посилни ажурирања додека одзивот е низок"
+                f"{alert_reason}; pracame samo posilni azuriranja dodeka odzivot e nizok"
             )
     elif breaking_sends >= 6 and (
         breaking_click_rate >= 0.22 or breaking_open_rate >= 0.58
     ):
-        engagement_label = "Силен одзив"
+        engagement_label = "Silen odziv"
         min_gap_minutes = max(20, min_gap_minutes - 15)
         topic_gap_minutes = max(90, topic_gap_minutes - 45)
         source_gap_minutes = max(75, source_gap_minutes - 30)
         if severity_rank >= 2:
             score_adjustment += 0.25
             alert_reason = (
-                f"{alert_reason}; вакви ажурирања и претходно добиваа силен одзив"
+                f"{alert_reason}; vakvi azuriranja i prethodno dobivaa silen odziv"
             )
 
     topic_performance = target_performance.get("topics") or {}
@@ -1542,21 +1542,21 @@ def _classify_alert_candidate(
     )
 
     if strong_target_signal:
-        engagement_label = "Силен одзив за следеното"
+        engagement_label = "Silen odziv za sledenoto"
         min_gap_minutes = max(20, min_gap_minutes - 15)
         topic_gap_minutes = max(75, topic_gap_minutes - 60)
         source_gap_minutes = max(60, source_gap_minutes - 45)
         score_adjustment += 0.3
         alert_reason = (
-            f"{alert_reason}; оваа тема или извор претходно добивале силен одзив"
+            f"{alert_reason}; ova tema ili izvor prethodno dobivale silen odziv"
         )
     elif weak_target_signal and severity_rank < 3:
-        engagement_label = "Слаб одзив за следеното"
+        engagement_label = "Slab odziv za sledenoto"
         min_gap_minutes += 60
         topic_gap_minutes += 120
         source_gap_minutes += 120
         score_adjustment -= 0.35
-        alert_reason = f"{alert_reason}; оваа тема или извор претходно имале слаб одзив"
+        alert_reason = f"{alert_reason}; ova tema ili izvor prethodno imale slab odziv"
 
     throttle_keys = [f"cluster:{str(cluster.get('cluster_id') or '').strip()}"]
     throttle_keys.extend(f"topic:{topic}" for topic in matched_topics[:2])
@@ -1721,8 +1721,8 @@ def generate_daily_brief_task(retry_attempt=0):
             WITH cluster_tiers AS (
                 SELECT cluster_id, COUNT(DISTINCT 
                     CASE 
-                        WHEN s.category IN ('Агенциски', 'Јавен Сервис', 'Главни') THEN 'M'
-                        WHEN s.category IN ('Независни', 'Истражувачки') THEN 'I'
+                        WHEN s.category IN ('Agenciski', 'Javen Servis', 'glavni') THEN 'M'
+                        WHEN s.category IN ('Nezavisni', 'Istrazuvacki') THEN 'I'
                         ELSE 'R'
                     END) as group_count
                 FROM articles a
@@ -1766,24 +1766,24 @@ def generate_daily_brief_task(retry_attempt=0):
         # 2. Prep Dispatch Name
         hour = datetime.datetime.now().hour
         if 5 <= hour < 12:
-            dispatch_name = "Утрински Диспач"
+            dispatch_name = "Utrinski Dispac"
         elif 12 <= hour < 18:
-            dispatch_name = "Пладневен Преглед"
+            dispatch_name = "Pladneven Pregled"
         else:
-            dispatch_name = "Вечерен Преглед"
+            dispatch_name = "Veceren Pregled"
 
         # 3. Build AI Context
         clusters = _load_daily_brief_clusters(limit=10)
         content_context = _build_daily_brief_context(clusters)
 
         system_insight = (
-            f"\n\n[СИСТЕМСКА АНАЛИЗА ЗА ПОСЛЕДНИТЕ 24Ч]\n"
-            f"- Обработени статии: {total_24h}\n"
-            f"- Удел на светски вести: {intl_pct}%\n"
-            f"- Индекс на плурализам (разновидни извори): {diverse_pct}%\n"
-            f"- Најзастапени актери: {top_subjects or 'Нема'}\n"
-            f"- Во фокус локации: {top_locations or 'Нема'}\n"
-            f"- Наслов на диспачот: {dispatch_name}"
+            f"\n\n[SISTEMSKA ANALIZA ZA POSLEDNITE 24C]\n"
+            f"- Obraboteni clanci: {total_24h}\n"
+            f"- Udel na svetski vesti: {intl_pct}%\n"
+            f"- Indeks na pluralizam (raznovidni izvori): {diverse_pct}%\n"
+            f"- Najzastapeni akteri: {top_subjects or 'Nema'}\n"
+            f"- Vo fokus lokacii: {top_locations or 'Nema'}\n"
+            f"- Naslov na dispacot: {dispatch_name}"
         )
 
         full_context = f"<briefing_context>\n{content_context}\n{system_insight}\n</briefing_context>"
@@ -1928,11 +1928,11 @@ def send_profile_briefings_task():
             message_with_link = (
                 message
                 if not click_track_url
-                else f"{message}\n\nОтвори брифинг: {click_track_url}"
+                else f"{message}\n\nOtvori brifing: {click_track_url}"
             )
             if _send_ntfy_message(
                 target,
-                "Presek · Утрински брифинг",
+                "Presek · Utrinski brifing",
                 message_with_link,
                 tags="newspaper,sunrise",
                 click_url=click_url,
@@ -2022,11 +2022,11 @@ def send_profile_weekly_digests_task():
             message_with_link = (
                 message
                 if not click_track_url
-                else f"{message}\n\nОтвори преглед: {click_track_url}"
+                else f"{message}\n\nOtvori pregled: {click_track_url}"
             )
             if _send_ntfy_message(
                 target,
-                "Presek · Неделен преглед",
+                "Presek · Nedelen pregled",
                 message_with_link,
                 tags="spiral_calendar,newspaper",
                 click_url=click_url,
@@ -2102,17 +2102,17 @@ def send_profile_breaking_alerts_task():
             if not redis_client.set(alert_lock_key, "1", nx=True, ex=3600):
                 continue
 
-            title = f"Presek · {candidate.get('alert_label') or 'Важно ажурирање'}"
+            title = f"Presek · {candidate.get('alert_label') or 'Vazno azuriranje'}"
             message_lines = [
-                candidate.get("title") or "Нова важна развојна линија",
-                f"{candidate.get('source') or 'Извор'} · {candidate.get('source_count') or 1} извори",
+                candidate.get("title") or "nova vazna razvojna linija",
+                f"{candidate.get('source') or 'izvor'} · {candidate.get('source_count') or 1} izvori",
             ]
             why_now = candidate.get("alert_reason") or candidate.get("match_reason")
             if why_now:
-                message_lines.append(f"Зошто сега: {why_now}")
+                message_lines.append(f"Zosto sega: {why_now}")
             if candidate.get("match_reason"):
                 message_lines.append(
-                    f"Зошто го добивате ова: {candidate['match_reason']}"
+                    f"Zosto ga dobivate ova: {candidate['match_reason']}"
                 )
             if candidate.get("cluster_summary"):
                 message_lines.append(
@@ -2122,10 +2122,10 @@ def send_profile_breaking_alerts_task():
                 message_lines.append(str(candidate["description"])[:240])
             if candidate.get("difference_point"):
                 message_lines.append(
-                    f"Разлика: {str(candidate['difference_point'])[:180]}"
+                    f"Razlika: {str(candidate['difference_point'])[:180]}"
                 )
             elif candidate.get("open_point"):
-                message_lines.append(f"Отворено: {str(candidate['open_point'])[:180]}")
+                message_lines.append(f"otvoreno: {str(candidate['open_point'])[:180]}")
 
             cluster_id = str(candidate.get("cluster_id") or "").strip() or None
             send_event_id = _record_delivery_tracking_event(
@@ -2160,7 +2160,7 @@ def send_profile_breaking_alerts_task():
             )
             message_text = "\n".join(message_lines)
             if click_track_url:
-                message_text = f"{message_text}\nОтвори кластер: {click_track_url}"
+                message_text = f"{message_text}\nOtvori klaster: {click_track_url}"
 
             delivery_channel = str(row.get("channel") or "ntfy").strip().lower()
             sent_success = False

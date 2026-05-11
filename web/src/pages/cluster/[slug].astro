@@ -25,14 +25,14 @@ function getRelativeTimeStr(dateStr: string) {
         const diffMs = now.getTime() - date.getTime();
         const diffMins = Math.floor(diffMs / (1000 * 60));
 
-        if (diffMins < 1) return 'ШТОТУКУ';
-        if (diffMins < 60) return `ПРЕД ${diffMins} МИН`;
+        if (diffMins < 1) return 'STOTUKU';
+        if (diffMins < 60) return `PRED ${diffMins} MIN`;
         
         const diffHours = Math.floor(diffMins / 60);
-        if (diffHours < 24) return `ПРЕД ${diffHours} ${diffHours === 1 ? 'ЧАС' : 'ЧАСА'}`;
+        if (diffHours < 24) return `PRED ${diffHours} ${diffHours === 1 ? 'CAS' : 'CASA'}`;
 
         const diffDays = Math.floor(diffHours / 24);
-        return `ПРЕД ${diffDays} ${diffDays === 1 ? 'ДЕН' : 'ДЕНА'}`;
+        return `PRED ${diffDays} ${diffDays === 1 ? 'DEN' : 'DENA'}`;
     } catch (e) {
         return '';
     }
@@ -64,10 +64,10 @@ try {
     const res = await fetch(`${API_URL}/cluster/${id}`);
     if (!res.ok) {
         if (res.status === 404) {
-            error = 'Кластерот не е пронајден.';
+            error = 'Klasterot ne e pronajden.';
             Astro.response.status = 404;
         } else {
-            error = 'Грешка при вчитување на податоците.';
+            error = 'Greska pri vcituvanje na podatocite.';
             Astro.response.status = 500;
         }
     } else {
@@ -76,11 +76,11 @@ try {
     }
     } catch (e) {
     Astro.response.status = 500;
-    error = 'Неуспешно поврзување со серверот.';
+    error = 'Neuspesno povrzuvanje so serverot.';
 }
 
 const mainArticle = cluster?.articles?.[0];
-const displayHeadline = cluster?.synthetic_headline || (mainArticle ? cleanAndDecode(mainArticle.title) : 'Детали за веста');
+const displayHeadline = cluster?.synthetic_headline || (mainArticle ? cleanAndDecode(mainArticle.title) : 'Detali za vesta');
 
 // --- SEO Slug Enforcement ---
 // If the current slug is just the ID or doesn't match the headline slug,
@@ -122,32 +122,32 @@ const articleRows = (cluster?.articles || []).map((a: Article, idx: number, arr:
     const signal = a.source_signal || {};
     
     // 1. Dynamic Journalistic Role (Timeline)
-    let relLabel = 'ПОВРЗАНА ПРИКАЗНА';
+    let relLabel = 'POVRZANA prica';
     let relTone = 'neutral';
     
     if (idx === arr.length - 1) {
-        relLabel = 'ИНИЦИЈАЛНА ОБЈАВА';
+        relLabel = 'INICIJALNA OBJAVA';
         relTone = 'origin';
     } else if (idx === 0 && !synthesisFreshness.is_stale) {
-        relLabel = 'ПОСЛЕДЕН РАЗВОЈ';
+        relLabel = 'POSLEDEN razvoj';
         relTone = 'latest';
     } else if (signal.role_label) {
         relLabel = signal.role_label.toUpperCase();
         relTone = signal.role_tone || 'deep';
     } else if ((a.credibility || 0) > 1.2) {
-        relLabel = 'ПРОШИРЕН ИЗВЕШТАЈ';
+        relLabel = 'PROSIREN IZVESTAJ';
         relTone = 'deep';
     }
 
     // 2. Individual Quality Signals
-    const isObjective = (a.credibility || 0) >= 1.4 || signal.trust_label === 'Висока доверба';
+    const isObjective = (a.credibility || 0) >= 1.4 || signal.trust_label === 'Visoko poverenje';
     const isSensational = (a.credibility || 0) < 0.8 && !isObjective;
 
     return {
         ...a,
         title: deShout(cleanAndDecode(a.title)),
         description: cleanAndDecode(a.description || a.summary || ''),
-        exactTime: d.toLocaleTimeString('mk-MK', { hour: '2-digit', minute: '2-digit' }),
+        exactTime: d.toLocaleTimeString('mk-RS', { hour: '2-digit', minute: '2-digit' }),
         relativeTime: getRelativeTimeStr(a.created_at),
         relationship: { tone: relTone, label: relLabel },
         quality: { isObjective, isSensational }
@@ -185,11 +185,11 @@ const hasGeneratedNarrative = Boolean(generatedArticle && generatedArticle.trim(
 const hasSublimat = synthesisItems.length > 0;
 const hasFactcheck = Boolean(verificationReport && (verificationReport.agreements?.length > 0 || verificationReport.conflicts?.length > 0));
 const hasStrongLeadNarrative = hasGeneratedNarrative && (cluster?.articles?.length || 0) >= 3;
-const primaryNarrativeLabel = 'СИНТЕЗА';
-const primaryNarrativeEyebrow = 'РЕДАКЦИСКИ ПРЕГЛЕД';
+const primaryNarrativeLabel = 'SINTEZA';
+const primaryNarrativeEyebrow = 'REDAKCISKI PREGLED';
 
 const sentimentData = cluster?.sentiment ? {
-    sentiment: cluster.sentiment.sentiment || { score: 0, tone: 'неутрално' },
+    sentiment: cluster.sentiment.sentiment || { score: 0, tone: 'neutralno' },
     tone_analysis: cluster.sentiment.tone_analysis || { sensationalism: 0, objectivity: 0, emotional_charge: 0 }
 } : null;
 
@@ -198,15 +198,15 @@ const conflictsCount = verificationReport?.conflicts?.length || 0;
 const totalSourcesCount = cluster?.articles?.length || 0;
 const isBreakingFlag = cluster?.articles?.some((a: Article) => a.is_breaking) || false;
 
-let momentumKicker = { label: 'РЕДАКЦИСКИ УВИД', color: 'text-muted-foreground' };
+let momentumKicker = { label: 'REDAKCISKI UVID', color: 'text-muted-foreground' };
 if (isBreakingFlag && totalSourcesCount >= 4) {
-    momentumKicker = { label: 'УДАРЕН НАРАТИВ', color: 'text-nyt-red' };
+    momentumKicker = { label: 'UDAREN NARATIV', color: 'text-nyt-red' };
 } else if (conflictsCount >= 3) {
-    momentumKicker = { label: 'КОНТРАДИКТОРЕН РАЗВОЈ', color: 'text-amber-600' };
+    momentumKicker = { label: 'KONTRADIKTOREN razvoj', color: 'text-amber-600' };
 } else if (totalSourcesCount >= 6) {
-    momentumKicker = { label: 'СЕОПФАТЕН ИНТЕРЕС', color: 'text-emerald-700 dark:text-emerald-500' };
+    momentumKicker = { label: 'SEOPFATEN INTERES', color: 'text-emerald-700 dark:text-emerald-500' };
 } else if (totalSourcesCount >= 2 && !synthesisFreshness.is_stale) {
-    momentumKicker = { label: 'КОНСОЛИДИРАН ПРЕГЛЕД', color: 'text-blue-700 dark:text-blue-500' };
+    momentumKicker = { label: 'KONSOLIDIRAN PREGLED', color: 'text-blue-700 dark:text-blue-500' };
 }
 
 // --- SEO & Schema ---
@@ -224,12 +224,12 @@ const articleSchema = cluster ? {
 	"dateModified": cluster.synthesis_updated_at || cluster.articles?.[0]?.created_at,
 	"author": {
 		"@type": "Organization",
-		"name": "PRESEK.мк",
+		"name": "PRESEK.rs",
 		"url": "https://presek.live"
 	},
 	"publisher": {
 		"@type": "Organization",
-		"name": "PRESEK.мк",
+		"name": "PRESEK.rs",
 		"logo": {
 			"@type": "ImageObject",
 			"url": "https://presek.live/static/img/presek_emblem.png"
@@ -261,21 +261,21 @@ const articleSchema = cluster ? {
 
 	<main class="site-layout py-[var(--page-py)]">
 		<Breadcrumbs items={[
-			{ label: cluster?.articles?.[0]?.category || 'Вести', href: cluster?.articles?.[0]?.category ? `/?category=${cluster.articles[0].category}` : '/' },
-			{ label: adjacentTopic || 'Детали' }
+			{ label: cluster?.articles?.[0]?.category || 'vesti', href: cluster?.articles?.[0]?.category ? `/?category=${cluster.articles[0].category}` : '/' },
+			{ label: adjacentTopic || 'Detali' }
 		]} />
 
 		{error ? (
 			<div class="py-20 text-center">
 				<h1 class="text-2xl font-serif mb-4">{error}</h1>
-				<a href="/" class="text-nyt-accent hover:underline">Назад на почетна</a>
+				<a href="/" class="text-nyt-accent hover:underline">Nazad na pocetna</a>
 			</div>
 		) : cluster && (
 			<article class="cluster-article-container">
 				{/* 1. THE LEDE */}
 				<ClusterHeader 
 					momentumKicker={momentumKicker}
-					category={cluster.articles?.[0].category || 'ВЕСТИ'}
+					category={cluster.articles?.[0].category || 'vesti'}
 					createdAt={cluster.articles?.[0].created_at}
 					displayHeadline={displayHeadline}
 					headlineIsCyrillic={headlineIsCyrillic}
@@ -300,17 +300,17 @@ const articleSchema = cluster ? {
 <div class="editorial-grid">
 	{/* 3. MAIN COLUMN */}
 	<div class="editorial-main-col">
-{/* EXECUTIVE SUMMARY / BRИФИНГ - Hidden when we have a full narrative centerpiece */}
+{/* EXECUTIVE SUMMARY / BRIFING - Hidden when we have a full narrative centerpiece */}
 		{(!hasGeneratedNarrative && (headerBriefItems.length > 0 || (cluster.key_facts && cluster.key_facts.length > 0))) && (
 <div class="executive-summary mb-12 p-8 bg-secondary/15 border-l-4 border-nyt-accent">
 ...
                                 <div class="flex items-center gap-2 mb-6">
                                     <Sparkles size={14} className="text-nyt-accent" />
-                                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent">КРАТОК ПРЕГЛЕД</span>
+                                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent">KRATOK PREGLED</span>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <div>
-                                        <h4 class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">КЛУЧНИ ПОЕНТИ</h4>
+                                        <h4 class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">KLUCNI POENTI</h4>
                                         <ul class="space-y-3">
                                             {headerBriefItems.map(item => (
                                                 <li class="font-serif text-base md:text-lg leading-snug italic text-foreground/90 relative pl-5">
@@ -322,7 +322,7 @@ const articleSchema = cluster ? {
                                     </div>
                                     {cluster.key_facts && cluster.key_facts.length > 0 && (
                                         <div class="border-t md:border-t-0 md:border-l border-border/40 pt-6 md:pt-0 md:pl-8">
-                                            <h4 class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">СИСТЕМСКИ ПОДАТОЦИ</h4>
+                                            <h4 class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">SISTEMSKI PODATOCI</h4>
                                             <ul class="space-y-3">
                                                 {cluster.key_facts.map((fact: string) => (
                                                     <li class="font-sans text-[13px] font-bold leading-tight text-foreground/80 flex items-start gap-2">
@@ -359,7 +359,7 @@ const articleSchema = cluster ? {
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         {headerBriefItems.length > 0 && (
                                             <div>
-                                                <h4 class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">КЛУЧНИ ПОЕНТИ</h4>
+                                                <h4 class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">KLUCNI POENTI</h4>
                                                 <ul class="space-y-2">
                                                     {headerBriefItems.map(item => (
                                                         <li class="font-sans text-[13px] leading-snug text-foreground/80 flex items-start gap-2">
@@ -372,7 +372,7 @@ const articleSchema = cluster ? {
                                         )}
                                         {cluster.key_facts && cluster.key_facts.length > 0 && (
                                             <div class="border-t md:border-t-0 md:border-l border-border/40 pt-6 md:pt-0 md:pl-8">
-                                                <h4 class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">СИСТЕМСКИ ПОДАТОЦИ</h4>
+                                                <h4 class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">SISTEMSKI PODATOCI</h4>
                                                 <ul class="space-y-2">
                                                     {cluster.key_facts.map((fact: string) => (
                                                         <li class="font-sans text-[12px] font-bold leading-tight text-foreground/70 flex items-start gap-2">
@@ -405,7 +405,7 @@ const articleSchema = cluster ? {
 						<section class="editorial-section sources-section mb-16 border-t border-border/40 pt-12">
 							<div class="section-eyebrow mb-8">
 								<Newspaper size={18} className="text-muted-foreground" />
-								<h2 class="section-label">ИЗВОРНА ДОКУМЕНТАЦИЈА</h2>
+								<h2 class="section-label">IZVORNA DOKUMENTACIJA</h2>
 								<div class="section-divider"></div>
 							</div>
 
@@ -422,7 +422,7 @@ const articleSchema = cluster ? {
 							<section class="editorial-section related-section mb-16 border-t border-border/40 pt-12">
 								<div class="section-eyebrow mb-10">
 									<Zap size={18} className="text-nyt-red" />
-									<h2 class="section-label">ПОВРЗАНИ СОДРЖИНИ</h2>
+									<h2 class="section-label">POVRZANI SODRZINI</h2>
 									<div class="section-divider"></div>
 								</div>
 								<div class="related-editorial-grid">
@@ -437,7 +437,7 @@ const articleSchema = cluster ? {
                                                     </div>
                                                 )}
                                                 <div class="card-body">
-                                                    <span class="card-kicker">{rel.relationship_label || 'Сродна тема'}</span>
+                                                    <span class="card-kicker">{rel.relationship_label || 'Srodna tema'}</span>
                                                     <h3 class="card-title">{deShout(cleanAndDecode(rel.title))}</h3>
                                                 </div>
                                                 </a>
@@ -450,7 +450,7 @@ const articleSchema = cluster ? {
                                                 {/* ADVANCED ANALYTICS */}
                                                     <section class="editorial-section advanced-tools mb-12 md:mb-16 bg-secondary/5 p-4 md:p-10 border-y border-border/40">							<div class="section-eyebrow mb-8 md:mb-10">
                                                 <Radio size={18} className="text-muted-foreground" />
-                                                <h2 class="section-label">ДЛАБИНСКА СИНТЕЗА</h2>
+                                                <h2 class="section-label">DLABINSKA SINTEZA</h2>
                                                 <div class="section-divider"></div>
                                                 </div>
                                                 <div class="space-y-12">
@@ -469,7 +469,7 @@ const articleSchema = cluster ? {
                             {/* NEW: Data Anchors in Sidebar */}
                             {sentimentData && (
                                 <div class="sidebar-module">
-                                    <h4 class="sidebar-label">МЕДИУМСКИ ПУЛС</h4>
+                                    <h4 class="sidebar-label">MEDIUMSKI PULS</h4>
                                     <div class="mt-4">
                                         <MediaPulseRadar data={sentimentData} client:visible />
                                     </div>
@@ -477,7 +477,7 @@ const articleSchema = cluster ? {
                             )}
 
                             <div class="sidebar-module">
-                                <h4 class="sidebar-label">СПЕКТАР НА ИЗВОРИ</h4>
+                                <h4 class="sidebar-label">SPEKTAR NA izvori</h4>
                                 <div class="mt-6">
                                     <SourceSpectrum articles={cluster.articles.map((a: Article) => ({ source: a.source })) as any} client:visible />
                                 </div>
@@ -500,10 +500,10 @@ const articleSchema = cluster ? {
 
 							{cluster.pluralism_score != null && (
 								<div class="sidebar-module p-6 bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-200/50 rounded-sm">
-									<h4 class="sidebar-label !border-emerald-500 !text-emerald-700 dark:!text-emerald-400">МЕДИУМСКИ ПЛУРАЛИЗАМ</h4>
+									<h4 class="sidebar-label !border-emerald-500 !text-emerald-700 dark:!text-emerald-400">MEDIUMSKI PLURALIZAM</h4>
 									<div class="mt-4">
 										<div class="flex items-center justify-between mb-2">
-											<span class="text-[10px] font-black uppercase">Разновидност</span>
+											<span class="text-[10px] font-black uppercase">Raznovidnost</span>
 											<span class="text-xs font-black">{cluster.pluralism_score}%</span>
 										</div>
 										<div class="h-1.5 w-full bg-emerald-200 dark:bg-emerald-900 rounded-full overflow-hidden">
@@ -520,7 +520,7 @@ const articleSchema = cluster ? {
 
 							{cluster.analyst_entities && cluster.analyst_entities.length > 0 && (
 								<div class="sidebar-module">
-									<h4 class="sidebar-label">КЛУЧНИ СУБЈЕКТИ</h4>
+									<h4 class="sidebar-label">KLUCNI SUBJEKTI</h4>
 									<div class="flex flex-col gap-3 mt-4">
 											{cluster.analyst_entities.map((name: string) => (
 											<EntityContextCard name={name} client:visible />

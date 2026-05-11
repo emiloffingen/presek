@@ -137,7 +137,7 @@ def is_junk(title: str, desc: str) -> bool:
     if clean_title:
         # Check if the title starts with an all-caps segment followed by a colon
         # We use a precise range for uppercase Cyrillic to avoid matching lowercase
-        prefix_match = re.match(r"^([А-ЯЁЃЄЅІЇЈЉЊЋЌЍЎЏ\s]{8,}):", clean_title)
+        prefix_match = re.match(r"^([A-Za-z\s]{8,}):", clean_title)
         if prefix_match:
             return True
 
@@ -148,16 +148,16 @@ def is_junk(title: str, desc: str) -> bool:
     if any(
         phrase in text
         for phrase in [
-            "приведен 27-годишњак",
-            "приведено лице",
-            "повреден скопјанец",
-            "паднал од велосипед",
-            "изгубил контрола",
-            "мвр билтен",
-            "дневно мени",
-            "рецепт на денот",
-            "курсна листа",
-            "лото резултати",
+            "priveden 27-godisnjak",
+            "privedeno lice",
+            "povreden skopjanec",
+            "padnal od velosiped",
+            "izgubil kontrola",
+            "mvr bilten",
+            "dnevno meni",
+            "recept na denot",
+            "kursna lista",
+            "loto rezultati",
         ]
     ):
         return True
@@ -188,18 +188,18 @@ def detect_fact_check(source: str, title: str) -> bool:
         return True
 
     fact_keywords = [
-        "проверка на факти",
-        "факти:",
-        "неточно:",
-        "дезинформација",
-        "манипулација",
-        "вистина или лага",
-        "факт-чек",
-        "факт чек",
+        "proverka na fakti",
+        "fakti:",
+        "netocno:",
+        "dezinformacija",
+        "manipulacija",
+        "vistina ili laga",
+        "fakt-cek",
+        "fakt cek",
         "fact-check",
         "fact check",
-        "лажна вест",
-        "лажни вести",
+        "lazna vest",
+        "lazni vesti",
     ]
     lowered_title = title.lower()
     return any(kw in lowered_title for kw in fact_keywords)
@@ -211,13 +211,13 @@ def clean_rss_footer(text: str) -> str:
         return ""
     text = html.unescape(text)
     text = re.sub(r"The post .* appeared first on .*", "", text)
-    text = re.sub(r"Прочитајте повеќе на .*", "", text)
+    text = re.sub(r"Procitajte povece na .*", "", text)
     text = re.sub(r"This article was originally published on .*", "", text)
     text = re.sub(r"Source: https?://.*", "", text)
 
     # Generic 'Read More' artifacts
     text = re.sub(r"Read More\s*»?\s*$", "", text, flags=re.IGNORECASE)
-    text = re.sub(r"Прочитај повеќе\s*$", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"Procitaj povece\s*$", "", text, flags=re.IGNORECASE)
     text = re.sub(r"Continue reading\s*\.*$", "", text, flags=re.IGNORECASE)
 
     return text.strip()
@@ -978,8 +978,8 @@ async def ingest_all_sources_async():
                 )
                 topic = detect_topic(c["title"], description=c["desc"])
 
-                is_intl = c["country"] != "MK"
-                # Always normalize headlines to strip ВИДЕО, ФОТО, etc.
+                is_intl = c["country"] != "RS"
+                # Always normalize headlines to strip VIDEO, FOTO, etc.
                 display_title = normalize_headline(c["title"])
 
                 cluster_id = None
@@ -993,7 +993,7 @@ async def ingest_all_sources_async():
                         dist = cosine_dist(emb, bc["embedding"])
                         if dist >= (VECTOR_THRESHOLD * 0.78):
                             continue
-                        if topic == "Вести" or not topic:
+                        if topic == "vesti" or not topic:
                             incoming_entities = _extract_title_entities(display_title)
                             batch_entities = bc.get("entities", set())
                             shared_entities = (

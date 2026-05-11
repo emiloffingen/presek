@@ -19,7 +19,7 @@ async def verify_admin(request: Request):
         or not token
         or not secrets.compare_digest(token, PRESEK_ADMIN_TOKEN)
     ):
-        raise HTTPException(status_code=403, detail="Неовластен пристап")
+        raise HTTPException(status_code=403, detail="Neovlasten pristap")
     return True
 
 

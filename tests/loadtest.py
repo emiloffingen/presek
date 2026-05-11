@@ -32,13 +32,13 @@ class PresekUser(HttpUser):
         """Search for articles with various queries."""
         queries = [
             "Srbija",
-            "Скопје",
-            "Политика",
-            "Економија",
-            "Спорт",
-            "Култура",
-            "Здравство",
-            "Образование",
+            "Beograd",
+            "Politika",
+            "Ekonomija",
+            "Sport",
+            "Kultura",
+            "Zdravstvo",
+            "Obrazovanje",
         ]
         query = random.choice(queries)
         self.client.get(f"/api/search?q={query}&limit=10")

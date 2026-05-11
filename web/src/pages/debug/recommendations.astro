@@ -23,7 +23,7 @@ try {
   evaluation = await getRecommendationEvaluation();
   }
 } catch (err) {
-  error = err instanceof Error ? err.message : 'Не успеа вчитувањето на евалуацијата.';
+  error = err instanceof Error ? err.message : 'Ne uspea vcituvanjeto na evaluacijata.';
 }
 ---
 
@@ -35,13 +35,13 @@ try {
     {!isAuthorized ? (
       <section class="debug-panel debug-error">
         <span class="page-kicker">Internal Debug</span>
-        <h1 class="debug-title">Страницата не е јавно достапна</h1>
-        <p class="debug-copy">Овој екран е ограничен на интерна употреба и бара валиден debug token во барањето.</p>
+        <h1 class="debug-title">Stranicata ne e javno dostapna</h1>
+        <p class="debug-copy">Ovoj ekran e ogranicen na interna upotreba i bara validen debug token vo baranjeto.</p>
       </section>
     ) : error ? (
       <section class="debug-panel debug-error">
         <span class="page-kicker">Internal Debug</span>
-        <h1 class="debug-title">Грешка при евалуација</h1>
+        <h1 class="debug-title">Greska pri evaluacija</h1>
         <p class="debug-copy">{error}</p>
       </section>
     ) : evaluation && (
@@ -50,7 +50,7 @@ try {
           <span class="page-kicker">Internal Debug</span>
           <h1 class="debug-title">Recommendation Evaluation</h1>
           <p class="debug-copy">
-            Внатрешен преглед на пример-профили, активни препораки и рангирање врз основа на тековните локални податоци.
+            Vnatresen pregled na primer-profili, aktivni preporaki i rangiranje vrz osnova na tekovnite lokalni podatoci.
           </p>
         </header>
 
@@ -70,9 +70,9 @@ try {
         </section>
 
         <aside class="debug-callout debug-panel">
-          <h2 class="debug-section-title">Како Да Се Чита</h2>
+          <h2 class="debug-section-title">Kako Da Se Cita</h2>
           <p class="debug-copy">
-            Ова е работен преглед за тоа како различни профили добиваат персонализирани кластери и кои сигнали стигнуваат до home rail, for you и topic логиката.
+            ova e raboten pregled za toa kako razliciti profili dobivaat personalizirani klasteri i koi signali stignuvaat do home rail, for you i topic logikata.
           </p>
         </aside>
 
@@ -81,12 +81,12 @@ try {
             <article class="debug-panel profile-panel">
               <div class="profile-head">
                 <h2>{entry.profile}</h2>
-                <span>{entry.personalized.length} персонализирани кластери</span>
+                <span>{entry.personalized.length} personalizirani klasteri</span>
               </div>
 
               <div class="debug-grid">
                 <section>
-                  <h3>Персонализирано</h3>
+                  <h3>Personalizirano</h3>
                   {entry.personalized.length > 0 ? (
                     <ul class="debug-list">
                       {entry.personalized.map((item) => (
@@ -98,7 +98,7 @@ try {
                       ))}
                     </ul>
                   ) : (
-                    <p class="debug-empty">Нема препораки.</p>
+                    <p class="debug-empty">Nema preporaki.</p>
                   )}
                 </section>
 

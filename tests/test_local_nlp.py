@@ -15,72 +15,72 @@ from local_nlp import (
 class TestTagFiltering:
     def test_filters_noise_and_time_fragments(self):
         tags = [
-            "часа",
-            "слушаме гласот",
-            "Израел",
+            "casa",
+            "slusame glasot",
+            "Izrael",
             "18:30",
-            "Добронамерните",
-            "Иран",
+            "Dobronamernite",
+            "Iran",
         ]
 
-        assert filter_cluster_tags(tags) == ["Израел", "Иран"]
+        assert filter_cluster_tags(tags) == ["Izrael", "Iran"]
 
     def test_rejects_generic_fragment_entities(self):
-        assert not is_valid_focus_entity("Подготвува Напади", None)
-        assert not is_valid_focus_entity("Напади Ирански", None)
-        assert is_valid_focus_entity("Израел", "country")
+        assert not is_valid_focus_entity("Podgotvuva Napadi", None)
+        assert not is_valid_focus_entity("Napadi Iranski", None)
+        assert is_valid_focus_entity("Izrael", "country")
 
 
 class TestClusterTagExtraction:
     def test_prefers_coherent_cluster_tags(self):
         titles = [
-            "Израел подготвува напади врз ирански цели, тврдат извори",
-            "Иран најавува одговор по израелски напади врз нуклеарни цели",
-            "Трамп повика на воздржаност по ескалацијата меѓу Израел и Иран",
+            "Izrael podgotvuva napadi vrz iranski celi, tvrdat izvori",
+            "Iran najavuva odgovor po izraelski napadi vrz nuklearni celi",
+            "Tramp povika na vozdrzanost po eskalacijata medju Izrael i Iran",
         ]
         entities = [
-            {"entity_name": "Израел", "entity_type": "country"},
-            {"entity_name": "Иран", "entity_type": "country"},
-            {"entity_name": "Трамп", "entity_type": "person"},
-            {"entity_name": "Подготвува Напади", "entity_type": "event"},
+            {"entity_name": "Izrael", "entity_type": "country"},
+            {"entity_name": "Iran", "entity_type": "country"},
+            {"entity_name": "Tramp", "entity_type": "person"},
+            {"entity_name": "Podgotvuva Napadi", "entity_type": "event"},
         ]
 
         tags = extract_cluster_tags_locally(titles, entity_names=entities, top_n=5)
 
-        assert "Израел" in tags
-        assert "Иран" in tags
-        assert "Доналд Трамп" in tags
-        assert "Подготвува Напади" not in tags
+        assert "Izrael" in tags
+        assert "Iran" in tags
+        assert "Donald Tramp" in tags
+        assert "Podgotvuva Napadi" not in tags
 
     def test_extract_keyphrases_locally_filters_source_noise_and_prefers_real_phrases(
         self,
     ):
         text = (
-            "Reuters јавува дека Владата усвои пакет за енергетска поддршка. "
-            "Пакетот за енергетска поддршка вреди 120 милиони евра. "
-            "AP пишува дека мерките почнуваат во вторник."
+            "Reuters javuva deka Vladata usvoi paket za energetska poddrska. "
+            "Paketot za energetska poddrska vredi 120 milioni evra. "
+            "AP pisuva deka merkite pocnuvaat vo Utorak."
         )
 
         phrases = extract_keyphrases_locally(text, top_n=5)
 
-        assert any("пакет" in item.lower() for item in phrases)
+        assert any("paket" in item.lower() for item in phrases)
         assert not any(item.lower() == "reuters" for item in phrases)
         assert not any(item.lower() == "ap" for item in phrases)
 
     def test_prefers_repeated_explicit_entities_over_generic_tokens(self):
         titles = [
-            "Европска комисија предлага нов пакет мерки за енергија",
-            "Реакција на Европска комисија по расправата за нови мерки",
-            "Лидерите чекаат одлука од Европска комисија",
+            "Evropska komisija predlaga nov paket merki za energija",
+            "reakcija na Evropska komisija po raspravata za novi merki",
+            "Liderite cekaat odluka od Evropska komisija",
         ]
         entities = [
-            {"entity_name": "Европска комисија", "entity_type": "organization"},
+            {"entity_name": "Evropska komisija", "entity_type": "organization"},
             {"entity_name": "Reuters", "entity_type": "organization"},
         ]
 
         tags = extract_cluster_tags_locally(titles, entity_names=entities, top_n=4)
 
-        assert tags[0] == "Европска комисија"
+        assert tags[0] == "Evropska komisija"
         assert "Reuters" not in tags
 
 
@@ -88,19 +88,19 @@ class TestClusterComparison:
     def test_compare_cluster_sources_finds_common_line_and_differences(self):
         articles = [
             {
-                "source": "МИА",
-                "title": "Избори во вторник со 100 набљудувачи",
-                "description": "МИА тврди дека подготовките се во завршна фаза.",
+                "source": "MIA",
+                "title": "Izbori vo Utorak so 100 nabljuduvaci",
+                "description": "MIA tvrdi deka podgotovkite se vo zavrsna faza.",
             },
             {
                 "source": "Reuters",
-                "title": "Фокусот е на реакциите и рокот за избори",
-                "description": "Reuters пишува за 120 набљудувачи и можни дополнителни мерки.",
+                "title": "Fokusot e na reakciite i rokot za izbori",
+                "description": "Reuters pisuva za 120 nabljuduvaci i mozni dopolnitelni merki.",
             },
             {
                 "source": "AP",
-                "title": "Избори и реакции на опозицијата",
-                "description": "Се очекува дополнителна потврда за бројките.",
+                "title": "Izbori i reakcije na opozicijata",
+                "description": "Se ocekuva dopolnitelna potvrda za brojkite.",
             },
         ]
 
@@ -116,58 +116,58 @@ class TestClusterComparison:
     def test_compare_cluster_sources_uses_phrase_based_common_line(self):
         articles = [
             {
-                "source": "МИА",
-                "title": "Владата усвои пакет за енергетска поддршка",
-                "description": "Пакетот за енергетска поддршка стартува во вторник со 120 милиони евра.",
+                "source": "MIA",
+                "title": "Vladata usvoi paket za energetska poddrska",
+                "description": "Paketot za energetska poddrska startuva vo Utorak so 120 milioni evra.",
             },
             {
                 "source": "Reuters",
-                "title": "Реакциите се врзуваат за пакетот за енергетска поддршка",
-                "description": "Reuters наведува дека пакетот за енергетска поддршка носи мерки за домаќинствата.",
+                "title": "Reakciite se vrzuvaat za paketot za energetska poddrska",
+                "description": "Reuters naveduva deka paketot za energetska poddrska nosi merki za domacinstvata.",
             },
         ]
 
         result = compare_cluster_sources(articles)
 
-        assert "во фокус" in result["common_line"].lower()
-        assert "енергетска поддршка" in result["common_line"].lower()
+        assert "vo fokus" in result["common_line"].lower()
+        assert "energetska poddrska" in result["common_line"].lower()
 
     def test_compare_cluster_sources_surfaces_unique_entities_by_source(self):
         articles = [
             {
-                "source": "МИА",
-                "title": "Средба меѓу Владата и Синдикатот за нов пакет",
-                "description": "Владата и Синдикатот разговарале за почетокот на мерките.",
+                "source": "MIA",
+                "title": "Sredba medju Vladata i Sindikatot za nov paket",
+                "description": "Vladata i Sindikatot razgovarale za pocetokot na merkite.",
             },
             {
                 "source": "Reuters",
-                "title": "Reuters јавува за реакција од Стопанската комора",
-                "description": "Стопанската комора бара дополнителни гаранции за пакетот.",
+                "title": "Reuters javuva za reakcija od Stopanskata komora",
+                "description": "Stopanskata komora bara dopolnitelni garancii za paketot.",
             },
         ]
 
         result = compare_cluster_sources(articles)
 
-        assert any("Стопанската комора" in item for item in result["difference_points"])
+        assert any("Stopanskata komora" in item for item in result["difference_points"])
 
     def test_compare_cluster_sources_open_points_include_uncertain_unique_details(self):
         articles = [
             {
-                "source": "МИА",
-                "title": "Владата најави пакет од 100 милиони евра",
-                "description": "Мерките почнуваат во вторник.",
+                "source": "MIA",
+                "title": "Vladata najavi paket od 100 milioni evra",
+                "description": "Merkite pocnuvaat vo Utorak.",
             },
             {
                 "source": "Reuters",
-                "title": "Reuters наведува можен поширок опфат",
-                "description": "Се очекува пакетот да достигне 120 милиони евра и да вклучи Стопанската комора во консултациите.",
+                "title": "Reuters naveduva mozen siri opfat",
+                "description": "Se ocekuva paketot da dostigne 120 milioni evra i da vkluci Stopanskata komora vo konsultaciite.",
             },
         ]
 
         result = compare_cluster_sources(articles)
 
         assert any(
-            "120" in item or "Стопанската комора" in item
+            "120" in item or "Stopanskata komora" in item
             for item in result["open_points"]
         )
 
@@ -189,14 +189,14 @@ class TestClusterComparison:
         )
         articles = [
             {
-                "source": "МИА",
-                "title": "Владата усвои пакет за енергетска поддршка",
-                "description": "Пакетот за енергетска поддршка стартува во вторник со 120 милиони евра.",
+                "source": "MIA",
+                "title": "Vladata usvoi paket za energetska poddrska",
+                "description": "Paketot za energetska poddrska startuva vo Utorak so 120 milioni evra.",
             },
             {
                 "source": "Reuters",
-                "title": "Реакциите се врзуваат за пакетот за енергетска поддршка",
-                "description": "Reuters наведува дека пакетот за енергетска поддршка носи мерки за домаќинствата.",
+                "title": "Reakciite se vrzuvaat za paketot za energetska poddrska",
+                "description": "Reuters naveduva deka paketot za energetska poddrska nosi merki za domacinstvata.",
             },
         ]
 
@@ -209,59 +209,59 @@ class TestClusterComparison:
     def test_synthesize_cluster_fallback_uses_comparison_output(self):
         articles = [
             {
-                "source": "МИА",
-                "title": "Пакетот влегува во владина процедура",
-                "description": "Според Владата, мерките почнуваат во среда.",
+                "source": "MIA",
+                "title": "Paketot vleguva vo vladina procedura",
+                "description": "Spored Vladata, merkite pocnuvaat vo Sreda.",
             },
             {
                 "source": "Reuters",
-                "title": "Reuters акцентира на рокот и реакциите",
-                "description": "Се уште не е потврдено кога точно ќе стартува пакетот.",
+                "title": "Reuters akcentira na rokot i reakciite",
+                "description": "Se jos ne e potvrdeno koga tocno ce startuva paketot.",
             },
         ]
 
         result = synthesize_cluster_fallback(articles)
 
-        assert any(item["angle"] == "Нијанси" for item in result["perspectives"])
-        assert any(item["angle"] == "Отворено" for item in result["perspectives"])
-        assert "Клучен развој" in result["summary"] or "Настан" in result["summary"]
+        assert any(item["angle"] == "Nijansi" for item in result["perspectives"])
+        assert any(item["angle"] == "otvoreno" for item in result["perspectives"])
+        assert "Klucen razvoj" in result["summary"] or "Nastan" in result["summary"]
 
     def test_synthesize_cluster_fallback_uses_confirmed_section(self):
         articles = [
             {
-                "source": "МИА",
-                "title": "Владата усвои пакет за енергетска поддршка",
-                "description": "Пакетот за енергетска поддршка стартува во вторник со 120 милиони евра.",
+                "source": "MIA",
+                "title": "Vladata usvoi paket za energetska poddrska",
+                "description": "Paketot za energetska poddrska startuva vo Utorak so 120 milioni evra.",
             },
             {
                 "source": "Reuters",
-                "title": "Реакциите се врзуваат за пакетот за енергетска поддршка",
-                "description": "Reuters наведува дека пакетот за енергетска поддршка носи мерки за домаќинствата.",
+                "title": "Reakciite se vrzuvaat za paketot za energetska poddrska",
+                "description": "Reuters naveduva deka paketot za energetska poddrska nosi merki za domacinstvata.",
             },
         ]
 
         result = synthesize_cluster_fallback(articles)
 
-        assert "енергетска поддршка" in result["summary"].lower()
+        assert "energetska poddrska" in result["summary"].lower()
 
     def test_synthesize_cluster_fallback_quality_gate_keeps_grounded_structure(self):
         articles = [
             {
-                "source": "МИА",
-                "title": "Пакетот",
+                "source": "MIA",
+                "title": "Paketot",
                 "description": "",
             },
             {
                 "source": "Reuters",
-                "title": "Пакетот",
+                "title": "Paketot",
                 "description": "",
             },
         ]
 
         result = synthesize_cluster_fallback(articles)
 
-        assert "Настан" in result["summary"]
-        assert "Пакетот" in result["summary"]
+        assert "Nastan" in result["summary"]
+        assert "Paketot" in result["summary"]
 
     def test_synthesize_cluster_fallback_records_mode(self, monkeypatch):
         import nlp.generation
@@ -274,14 +274,14 @@ class TestClusterComparison:
         monkeypatch.setattr(nlp.generation, "record_runtime_event", record)
         articles = [
             {
-                "source": "МИА",
-                "title": "Владата усвои пакет за енергетска поддршка",
-                "description": "Пакетот за енергетска поддршка стартува во вторник со 120 милиони евра.",
+                "source": "MIA",
+                "title": "Vladata usvoi paket za energetska poddrska",
+                "description": "Paketot za energetska poddrska startuva vo Utorak so 120 milioni evra.",
             },
             {
                 "source": "Reuters",
-                "title": "Реакциите се врзуваат за пакетот за енергетска поддршка",
-                "description": "Reuters наведува дека пакетот за енергетска поддршка носи мерки за домаќинствата.",
+                "title": "Reakciite se vrzuvaat za paketot za energetska poddrska",
+                "description": "Reuters naveduva deka paketot za energetska poddrska nosi merki za domacinstvata.",
             },
         ]
 
@@ -293,28 +293,28 @@ class TestClusterComparison:
 class TestArticleSummaryFallback:
     def test_summarize_locally_prefers_information_dense_sentences_over_noise(self):
         text = (
-            "ФОТО: Галерија од настанот. "
-            "Владата денеска усвои пакет од 120 милиони евра за енергетска поддршка на домаќинствата и малите компании. "
-            "Премиерот најави дека мерките ќе почнат да важат од вторник по објавата во Службен весник. "
-            "#економија #вести #најново."
+            "FOTO: Galerija od nastanot. "
+            "Vladata danas usvoi paket od 120 milioni evra za energetska poddrska na domacinstvata i malite kompanii. "
+            "Premierot najavi deka merkite ce pocnat da vazat od Utorak po objavata vo Sluzben vesnik. "
+            "#Ekonomija #vesti #najnovo."
         )
 
         result = summarize_locally(text, sentence_count=2)
 
-        assert "120 милиони евра" in result
-        assert "вторник" in result.lower()
-        assert "ФОТО:" not in result
-        assert "#економија" not in result
+        assert "120 milioni evra" in result
+        assert "Utorak" in result.lower()
+        assert "FOTO:" not in result
+        assert "#Ekonomija" not in result
 
     def test_summarize_article_fallback_returns_clean_compact_text(self):
         result = summarize_article_fallback(
-            "⚪ Трамп најави нови царини",
-            "Трамп изјави дека во вторник ќе има обраќање. #економија #свет",
+            "⚪ Tramp najavi novi carini",
+            "Tramp izjavi deka vo Utorak ce ima obracanje. #Ekonomija #Svet",
         )
 
         assert "⚪" not in result
-        assert "#економија" not in result
-        assert "Трамп" in result
+        assert "#Ekonomija" not in result
+        assert "Tramp" in result
 
 
 class TestLocalMacedonianRewrite:
@@ -324,90 +324,90 @@ class TestLocalMacedonianRewrite:
         )
 
         lowered = result.lower()
-        assert "премиерот" in lowered
-        assert "мерки" in lowered
-        assert "вторник" in lowered
-        assert "официјални претставници" in lowered or "според" in lowered
+        assert "premierot" in lowered
+        assert "merki" in lowered
+        assert "Utorak" in lowered
+        assert "oficijalni pretstavnici" in lowered or "spored" in lowered
 
     def test_keeps_existing_macedonian_text_clean(self):
-        result = rewrite_to_macedonian_locally("  Владата   најави   нов пакет мерки  ")
-        assert result == "Владата најави нов пакет мерки"
+        result = rewrite_to_macedonian_locally("  Vladata   najavi   nov paket merki  ")
+        assert result == "Vladata najavi nov paket merki"
 
     def test_synthesize_cluster_fallback_uses_common_line_in_summary(self):
         articles = [
             {
-                "source": "МИА",
-                "title": "Владата усвои пакет за поддршка",
-                "description": "Повеќето мерки стартуваат во вторник со пакет од 120 милиони евра.",
+                "source": "MIA",
+                "title": "Vladata usvoi paket za poddrska",
+                "description": "Poveceto merki startuvaat vo Utorak so paket od 120 milioni evra.",
             },
             {
                 "source": "Reuters",
-                "title": "Фокусот е на реакциите за пакетот за поддршка",
-                "description": "И Reuters пишува за пакетот од 120 милиони евра и владината одлука.",
+                "title": "Fokusot e na reakciite za paketot za poddrska",
+                "description": "I Reuters pisuva za paketot od 120 milioni evra i vladinata odluka.",
             },
         ]
 
         result = synthesize_cluster_fallback(articles)
 
-        assert "Клучен развој" in result["summary"]
-        assert "Следено од 2 извори" in result["summary"]
+        assert "Klucen razvoj" in result["summary"]
+        assert "Sledeno od 2 izvori" in result["summary"]
 
     def test_synthesize_cluster_fallback_uses_cleaner_open_line_label(self):
         articles = [
             {
-                "source": "МИА",
-                "title": "Пакетот влегува во владина процедура",
-                "description": "Според Владата, мерките почнуваат во среда.",
+                "source": "MIA",
+                "title": "Paketot vleguva vo vladina procedura",
+                "description": "Spored Vladata, merkite pocnuvaat vo Sreda.",
             },
             {
                 "source": "Reuters",
-                "title": "Reuters акцентира на рокот и реакциите",
-                "description": "Се уште не е потвредeно кога точно ќе стартува пакетот.",
+                "title": "Reuters akcentira na rokot i reakciite",
+                "description": "Se jos ne e potvredeno koga tocno ce startuva paketot.",
             },
         ]
 
         result = synthesize_cluster_fallback(articles)
-        assert any(p["angle"] == "Нијанси" for p in result["perspectives"])
-        assert any(p["angle"] == "Отворено" for p in result["perspectives"])
+        assert any(p["angle"] == "Nijansi" for p in result["perspectives"])
+        assert any(p["angle"] == "otvoreno" for p in result["perspectives"])
 
 
 class TestLocalBriefingFallback:
     def test_generate_daily_brief_fallback_uses_editorial_sections(self):
         clusters = [
             {
-                "title": "Владата усвои пакет за поддршка",
-                "source": "МИА",
-                "topic": "Економија",
-                "description": "Пакетот вреди 120 милиони евра и стартува во вторник.",
+                "title": "Vladata usvoi paket za poddrska",
+                "source": "MIA",
+                "topic": "Ekonomija",
+                "description": "Paketot vredi 120 milioni evra i startuva vo Utorak.",
                 "source_count": 4,
-                "difference_point": "Изворите се разликуваат околу рокот за почеток.",
-                "open_point": "Останува да се потврди точниот датум на старт.",
+                "difference_point": "Izvorite se razlikuvaat okolu rokot za pocetok.",
+                "open_point": "ostaje da se potvrdi tocniot datum na start.",
             },
             {
-                "title": "Опозицијата бара дополнителна расправа",
+                "title": "Opozicijata bara dopolnitelna rasprava",
                 "source": "Reuters",
-                "topic": "Политика",
-                "description": "Опозицијата бара дополнителни објаснувања за мерките.",
+                "topic": "Politika",
+                "description": "Opozicijata bara dopolnitelni objasnuvanja za merkite.",
                 "source_count": 3,
             },
         ]
 
         result = generate_daily_brief_fallback(clusters)
 
-        assert "## Динамика на денот" in result
-        assert "## Контекст и разлики" in result
-        assert "- Клучен аспект:" in result or "- Зошто е важно:" in result
+        assert "## Dinamika na denot" in result
+        assert "## kontekst i razliki" in result
+        assert "- Klucen aspekt:" in result or "- Zosto e vazno:" in result
 
     def test_generate_daily_brief_fallback_prefers_cluster_synthesis_text(self):
         clusters = [
             {
-                "title": "СДСМ: Партиско соопштение за дневната политика",
-                "source": "МИА",
-                "topic": "Политика",
-                "description": "Општ партиски став без многу детали.",
+                "title": "SDSM: Partisko soopstenie za dnevnata Politika",
+                "source": "MIA",
+                "topic": "Politika",
+                "description": "Opst partiski stav bez mnogu detali.",
                 "cluster_summary": (
-                    "Што се случува: Собраниската расправа за интерпелацијата влегува во завршна фаза.\n"
-                    "Зошто е важно: Исходот ќе влијае врз темпото на политичката агенда."
+                    "Sto se slucuva: Sobraniskata rasprava za interpelacijata vleguva vo zavrsna faza.\n"
+                    "Zosto e vazno: Ishodot ce vlijae vrz tempoto na politickata agenda."
                 ),
                 "source_count": 5,
             }
@@ -416,48 +416,48 @@ class TestLocalBriefingFallback:
         result = generate_daily_brief_fallback(clusters)
 
         assert (
-            "Собраниската расправа за интерпелацијата влегува во завршна фаза" in result
+            "Sobraniskata rasprava za interpelacijata vleguva vo zavrsna faza" in result
         )
-        assert "Општ партиски став без многу детали" not in result
+        assert "Opst partiski stav bez mnogu detali" not in result
 
     def test_generate_daily_brief_fallback_strips_agency_boilerplate(self):
         clusters = [
             {
-                "title": "СДСМ: Бараме локален референдум за рудникот",
-                "source": "МИА",
-                "topic": "Политика",
-                "description": "Скопје, 19 април 2026 (МИА) - За најавата на Мицкоски за отворање рудник со антимон мора да има јавна дебата.",
+                "title": "SDSM: Barame lokalen referendum za rudnikot",
+                "source": "MIA",
+                "topic": "Politika",
+                "description": "Beograd, 19 april 2026 (MIA) - Za najavata na Mickoski za otvoranje rudnik so antimon mora da ima javna debata.",
                 "source_count": 5,
             }
         ]
 
         result = generate_daily_brief_fallback(clusters)
 
-        assert "Скопје, 19 април 2026 (МИА) -" not in result
+        assert "Beograd, 19 april 2026 (MIA) -" not in result
 
     def test_generate_daily_brief_fallback_intro_prefers_less_partisan_updates(self):
         clusters = [
             {
-                "title": "СДСМ: Во очајна потрага по добра вест",
-                "source": "МИА",
-                "topic": "Политика",
-                "description": "Партиско соопштение.",
+                "title": "SDSM: Vo ocajna potraga po dobra vest",
+                "source": "MIA",
+                "topic": "Politika",
+                "description": "Partisko soopstenie.",
                 "source_count": 7,
             },
             {
-                "title": "Земјотрес од 4,8 степени ја потресе Srbija",
-                "source": "ММС",
-                "topic": "Вести",
-                "description": "Потресот е почувствуван во повеќе градови.",
-                "cluster_summary": "Земјотрес од 4,8 степени е почувствуван во повеќе градови низ Srbija.",
+                "title": "Zemjotres od 4,8 stepeni me potrese Srbija",
+                "source": "MMS",
+                "topic": "vesti",
+                "description": "Potresot e pocuvstvuvan vo povece gradovi.",
+                "cluster_summary": "Zemjotres od 4,8 stepeni e pocuvstvuvan vo povece gradovi niz Srbija.",
                 "source_count": 8,
             },
             {
-                "title": "Бугарија денеска излегува на парламентарни избори",
+                "title": "Bugarija danas izleguva na parlamentarni izbori",
                 "source": "Reuters",
-                "topic": "Политика",
-                "description": "Гласањето се одржува денеска.",
-                "cluster_summary": "Бугарија денеска гласа на парламентарни избори со неизвесен исход.",
+                "topic": "Politika",
+                "description": "Glasanjeto se odrzuva danas.",
+                "cluster_summary": "Bugarija danas glasa na parlamentarni izbori so neizvesen ishod.",
                 "source_count": 9,
             },
         ]
@@ -465,80 +465,80 @@ class TestLocalBriefingFallback:
         result = generate_daily_brief_fallback(clusters)
 
         assert (
-            "Земјотрес од 4,8 степени е почувствуван во повеќе градови низ Srbija"
+            "Zemjotres od 4,8 stepeni e pocuvstvuvan vo povece gradovi niz Srbija"
             in result.splitlines()[2]
         )
-        assert "СДСМ: Во очајна потрага по добра вест" not in result.splitlines()[2]
+        assert "SDSM: Vo ocajna potraga po dobra vest" not in result.splitlines()[2]
 
     def test_generate_daily_brief_fallback_keeps_required_sections_without_editorial_points(
         self,
     ):
         clusters = [
             {
-                "title": "Бугарија денеска излегува на парламентарни избори",
+                "title": "Bugarija danas izleguva na parlamentarni izbori",
                 "source": "Reuters",
-                "topic": "Политика",
-                "description": "Гласањето се одржува денеска.",
-                "cluster_summary": "Бугарија денеска гласа на парламентарни избори со неизвесен исход.",
+                "topic": "Politika",
+                "description": "Glasanjeto se odrzuva danas.",
+                "cluster_summary": "Bugarija danas glasa na parlamentarni izbori so neizvesen ishod.",
                 "source_count": 3,
             }
         ]
 
         result = generate_daily_brief_fallback(clusters)
 
-        assert "## Контекст и разлики" in result
-        assert "### 1. Бугарија" in result
-        assert "Темата се појавува низ" not in result
+        assert "## kontekst i razliki" in result
+        assert "### 1. Bugarija" in result
+        assert "Temata se pojavuva niz" not in result
 
     def test_generate_daily_brief_fallback_reorders_body_away_from_penalized_titles(
         self,
     ):
         clusters = [
             {
-                "title": "СДСМ: Во очајна потрага по добра вест",
-                "source": "МИА",
-                "topic": "Политика",
-                "description": "Партиско соопштение.",
+                "title": "SDSM: Vo ocajna potraga po dobra vest",
+                "source": "MIA",
+                "topic": "Politika",
+                "description": "Partisko soopstenie.",
                 "source_count": 8,
             },
             {
-                "title": "Бугарија денеска излегува на парламентарни избори",
+                "title": "Bugarija danas izleguva na parlamentarni izbori",
                 "source": "Reuters",
-                "topic": "Политика",
-                "description": "Гласањето се одржува денеска.",
-                "cluster_summary": "Бугарија денеска гласа на парламентарни избори со неизвесен исход.",
+                "topic": "Politika",
+                "description": "Glasanjeto se odrzuva danas.",
+                "cluster_summary": "Bugarija danas glasa na parlamentarni izbori so neizvesen ishod.",
                 "source_count": 7,
             },
         ]
 
         result = generate_daily_brief_fallback(clusters)
 
-        assert "### 1. Бугарија денеска излегува на парламентарни избори" in result
+        assert "### 1. Bugarija danas izleguva na parlamentarni izbori" in result
 
     def test_generate_daily_brief_fallback_dedupes_near_identical_story_slots(self):
         clusters = [
             {
-                "title": "Северна Кореја повторно истрела балистички ракети",
+                "title": "Severna Koreja povtorno istrela balisticki raketi",
                 "source": "AP",
-                "topic": "Вести",
-                "description": "Ракетното лансирање предизвика меѓународни реакции.",
-                "cluster_summary": "Северна Кореја повторно истрела балистички ракети.",
+                "topic": "vesti",
+                "description": "Raketnoto lansiranje predizvika medjunarodni reakcije.",
+                "cluster_summary": "Severna Koreja povtorno istrela balisticki raketi.",
                 "source_count": 5,
             },
             {
-                "title": "Пјонгјанг повторно лансираше балистички ракети",
+                "title": "Pjongjang povtorno lansirase balisticki raketi",
                 "source": "Reuters",
-                "topic": "Вести",
-                "description": "Северна Кореја повторно истрела балистички ракети кон морето.",
-                "cluster_summary": "Северна Кореја повторно истрела балистички ракети.",
+                "topic": "vesti",
+                "description": "Severna Koreja povtorno istrela balisticki raketi kon moreto.",
+                "cluster_summary": "Severna Koreja povtorno istrela balisticki raketi.",
                 "source_count": 4,
             },
             {
-                "title": "Бугарија денеска излегува на парламентарни избори",
+                "title": "Bugarija danas izleguva na parlamentarni izbori",
                 "source": "Reuters",
-                "topic": "Политика",
-                "description": "Гласањето се одржува денеска.",
-                "cluster_summary": "Бугарија денеска гласа на парламентарни избори со неизвесен исход.",
+                "topic": "Politika",
+                "description": "Glasanjeto se odrzuva danas.",
+                "cluster_summary": "Bugarija danas glasa na parlamentarni izbori so neizvesen ishod.",
                 "source_count": 9,
             },
         ]
@@ -546,48 +546,48 @@ class TestLocalBriefingFallback:
         result = generate_daily_brief_fallback(clusters)
 
         assert result.count("### ") == 2
-        assert "### 3. Пјонгјанг повторно лансираше балистички ракети" not in result
+        assert "### 3. Pjongjang povtorno lansirase balisticki raketi" not in result
 
     def test_generate_daily_brief_fallback_uses_distinct_description_context_for_importance(
         self,
     ):
         clusters = [
             {
-                "title": "Северна Кореја повторно истрела балистички ракети",
+                "title": "Severna Koreja povtorno istrela balisticki raketi",
                 "source": "AP",
-                "topic": "Вести",
-                "description": "Ракетното лансирање предизвика итни реакции од соседните држави и сојузниците.",
+                "topic": "vesti",
+                "description": "Raketnoto lansiranje predizvika itni reakcije od sosednite drzavi i sojuznicite.",
                 "source_count": 5,
             },
             {
-                "title": "Гутереш го осуди нападот во кој беше убиен француски мировник на ОН во Либан",
+                "title": "Guteres ga osudi napadot vo koj bese ubien francuski mirovnik na ON vo Liban",
                 "source": "Reuters",
-                "topic": "Вести",
-                "description": "Нападот повторно отвори прашања за безбедноста на мировните мисии во јужен Либан.",
+                "topic": "vesti",
+                "description": "Napadot povtorno otvori prasanja za bezbednosta na mirovnite misii vo juzen Liban.",
                 "source_count": 4,
             },
         ]
 
         result = generate_daily_brief_fallback(clusters)
 
-        assert "итни реакции од соседните држави и сојузниците" in result
-        assert "безбедноста на мировните мисии во јужен Либан" in result
+        assert "itni reakcije od sosednite drzavi i sojuznicite" in result
+        assert "bezbednosta na mirovnite misii vo juzen Liban" in result
 
     def test_generate_daily_brief_fallback_splits_security_heuristics_by_story_type(
         self,
     ):
         clusters = [
             {
-                "title": "Северна Кореја повторно истрела балистички ракети",
+                "title": "Severna Koreja povtorno istrela balisticki raketi",
                 "source": "AP",
-                "topic": "Вести",
+                "topic": "vesti",
                 "description": "",
                 "source_count": 5,
             },
             {
-                "title": "Гутереш го осуди нападот во кој беше убиен француски мировник на ОН во Либан",
+                "title": "Guteres ga osudi napadot vo koj bese ubien francuski mirovnik na ON vo Liban",
                 "source": "Reuters",
-                "topic": "Вести",
+                "topic": "vesti",
                 "description": "",
                 "source_count": 4,
             },
@@ -595,23 +595,23 @@ class TestLocalBriefingFallback:
 
         result = generate_daily_brief_fallback(clusters)
 
-        assert "Динамика на денот" in result
-        assert "Контекст и разлики" in result
+        assert "Dinamika na denot" in result
+        assert "kontekst i razliki" in result
 
     def test_generate_daily_brief_fallback_keeps_election_importance_outcome_oriented(
         self,
     ):
         clusters = [
             {
-                "title": "Бугарија денеска излегува на парламентарни избори во последните пет години",
+                "title": "Bugarija danas izleguva na parlamentarni izbori vo poslednite pet godini",
                 "source": "Reuters",
-                "topic": "Политика",
-                "description": "Во Бугарија денеска се одржуваат парламентарни избори за состав на 52-рото Народно собрание.",
+                "topic": "Politika",
+                "description": "Vo Bugarija danas se odrzuvaat parlamentarni izbori za sostav na 52-roto Narodno sobranie.",
                 "source_count": 9,
             }
         ]
 
         result = generate_daily_brief_fallback(clusters)
 
-        assert "Динамика на денот" in result
-        assert "Бугарија" in result or "избори" in result
+        assert "Dinamika na denot" in result
+        assert "Bugarija" in result or "izbori" in result

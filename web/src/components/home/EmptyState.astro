@@ -7,9 +7,9 @@ const { trending } = Astro.props;
 ---
 
 <div class="empty-state">
-	<p class="empty-kicker">ТИВКО НА ЛЕНТАТА</p>
-	<h2>Нема нови вести за оваа тема.</h2>
-	<p class="empty-copy">Пробајте со поопшт поим или пребарајте нешто актуелно:</p>
+	<p class="empty-kicker">TIVKO NA LENTATA</p>
+	<h2>Nema novi vesti za ova tema.</h2>
+	<p class="empty-copy">Probajte so poopst poim ili prebarajte nesto aktuelno:</p>
 	<div class="trend-links">
 		{trending.slice(0, 8).map((t: any) => (
 			<a href={`/?q=${encodeURIComponent(t.word)}`}>{t.word}</a>

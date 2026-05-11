@@ -50,9 +50,9 @@ const StoryTimeline: React.FC<StoryTimelineProps> = ({ timeline, clusterId, apiU
   const processedTimeline = timeline.map((item, index) => {
     let milestone = item.milestone;
     if (!milestone) {
-        if (item.is_first) milestone = "ПОЧЕТОК";
-        else if (index === Math.floor(timeline.length / 2) && timeline.length >= 4) milestone = "ДИВЕРГЕНЦИЈА";
-        else if (index === timeline.length - 1 && timeline.length >= 3) milestone = "КОНСЕНЗУС";
+        if (item.is_first) milestone = "POCETOK";
+        else if (index === Math.floor(timeline.length / 2) && timeline.length >= 4) milestone = "DIVERGENCIJA";
+        else if (index === timeline.length - 1 && timeline.length >= 3) milestone = "KONSENZUS";
     }
     return { ...item, milestone };
   });
@@ -60,7 +60,7 @@ const StoryTimeline: React.FC<StoryTimelineProps> = ({ timeline, clusterId, apiU
   const getTimeStr = (dateStr: string) => {
     try {
       const date = new Date(dateStr);
-      return date.toLocaleTimeString('mk-MK', { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleTimeString('mk-RS', { hour: '2-digit', minute: '2-digit' });
     } catch {
       return '';
     }
@@ -69,7 +69,7 @@ const StoryTimeline: React.FC<StoryTimelineProps> = ({ timeline, clusterId, apiU
   const getDateStr = (dateStr: string) => {
     try {
       const date = new Date(dateStr);
-      return date.toLocaleDateString('mk-MK', { day: 'numeric', month: 'short' });
+      return date.toLocaleDateString('mk-RS', { day: 'numeric', month: 'short' });
     } catch {
       return '';
     }
@@ -79,7 +79,7 @@ const StoryTimeline: React.FC<StoryTimelineProps> = ({ timeline, clusterId, apiU
     <div className="story-timeline py-6">
       <div className="flex items-center gap-2 mb-10 border-b border-border pb-2">
         <History size={18} className="text-nyt-accent" />
-        <h2 className="nyt-section-label text-nyt-accent tracking-[0.2em] mb-0">ЕВОЛУЦИЈА НА ПРИКАЗНАТА</h2>
+        <h2 className="nyt-section-label text-nyt-accent tracking-[0.2em] mb-0">EVOLUCIJA NA PRIKAZNATA</h2>
       </div>
 
       <div className="relative border-l-2 border-border ml-3 pl-8 space-y-12">
@@ -93,7 +93,7 @@ const StoryTimeline: React.FC<StoryTimelineProps> = ({ timeline, clusterId, apiU
             )}
 
             {/* The dot */}
-            <div className={`absolute -left-[41px] top-1.5 w-4 h-4 rounded-full border-2 border-background ${item.is_first ? 'bg-nyt-red scale-125' : item.milestone === 'КОНСЕНЗУС' ? 'bg-green-600' : 'bg-border'}`}>
+            <div className={`absolute -left-[41px] top-1.5 w-4 h-4 rounded-full border-2 border-background ${item.is_first ? 'bg-nyt-red scale-125' : item.milestone === 'KONSENZUS' ? 'bg-green-600' : 'bg-border'}`}>
               {item.is_first && <div className="absolute inset-0 rounded-full animate-ping bg-nyt-red opacity-20"></div>}
             </div>
 
@@ -102,20 +102,20 @@ const StoryTimeline: React.FC<StoryTimelineProps> = ({ timeline, clusterId, apiU
                 <span className="flex items-center gap-1 font-sans"><Clock size={10} /> {getTimeStr(item.created_at)}</span>
                 <span>·</span>
                 <span className="font-sans">{getDateStr(item.created_at)}</span>
-                {item.is_first && <span className="text-nyt-red ml-2 bg-nyt-red/5 px-1.5 border border-nyt-red/20 font-sans">ПРВА ОБЈАВА</span>}
+                {item.is_first && <span className="text-nyt-red ml-2 bg-nyt-red/5 px-1.5 border border-nyt-red/20 font-sans">PRVA OBJAVA</span>}
               </div>
               <h3 className={`font-serif leading-snug tracking-tight ${item.is_major || item.milestone ? 'text-lg font-black text-foreground' : 'text-base font-bold text-secondary-foreground opacity-80'}`}>
                 {item.title}
               </h3>
               <div className="flex items-center justify-between">
                 <p className="text-[11px] font-black uppercase tracking-wider text-muted-foreground font-sans">
-                    Извор: <span className="text-foreground">{item.source}</span>
+                    izvor: <span className="text-foreground">{item.source}</span>
                 </p>
-                {item.milestone === 'ДИВЕРГЕНЦИЈА' && (
-                    <span className="text-[9px] font-black bg-nyt-red/10 text-nyt-red px-2 py-0.5 rounded font-sans">РАЗЛИКИ ВО ИЗВЕСТУВАЊЕТО</span>
+                {item.milestone === 'DIVERGENCIJA' && (
+                    <span className="text-[9px] font-black bg-nyt-red/10 text-nyt-red px-2 py-0.5 rounded font-sans">RAZLIKI VO izvestaj</span>
                 )}
-                {item.milestone === 'КОНСЕНЗУС' && (
-                    <span className="text-[9px] font-black bg-green-600/10 text-green-600 px-2 py-0.5 rounded font-sans">ПОТВРДЕНИ ФАКТИ</span>
+                {item.milestone === 'KONSENZUS' && (
+                    <span className="text-[9px] font-black bg-green-600/10 text-green-600 px-2 py-0.5 rounded font-sans">potvrdeni FAKTI</span>
                 )}
               </div>
             </div>
@@ -135,14 +135,14 @@ const StoryTimeline: React.FC<StoryTimelineProps> = ({ timeline, clusterId, apiU
                       <Calendar size={10} /> {getDateStr(item.first_seen)}
                     </span>
                     <span>·</span>
-                    <span className="font-sans">Претходен кластер</span>
+                    <span className="font-sans">Prethoden klaster</span>
                   </div>
                   <a href={`/cluster/${item.cluster_id}`} className="group block">
                     <h3 className="font-serif text-base font-bold leading-snug tracking-tight text-secondary-foreground transition-colors group-hover:text-nyt-accent">
                       {item.title}
                     </h3>
                     <div className="mt-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-nyt-accent opacity-0 transition-opacity group-hover:opacity-100">
-                      Види го кластерот <ArrowRight size={12} />
+                      Vidi ga klasterot <ArrowRight size={12} />
                     </div>
                   </a>
                 </div>
@@ -154,7 +154,7 @@ const StoryTimeline: React.FC<StoryTimelineProps> = ({ timeline, clusterId, apiU
       
       <div className="mt-12 flex justify-center">
         <div className="bg-secondary/30 px-6 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground border border-border rounded-full flex items-center gap-2 hover:bg-secondary/50 transition-colors cursor-default">
-          <ArrowDown size={12} /> Крај на хронологијата
+          <ArrowDown size={12} /> Kraj na hronologijata
         </div>
       </div>
     </div>

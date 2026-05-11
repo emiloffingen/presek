@@ -94,7 +94,7 @@ async def validate_input_length(request: Request, call_next):
             return JSONResponse(
                 status_code=400,
                 content={
-                    "error": f"Параметарот '{name}' ја надминува максималната должина од {MAX_QUERY_PARAM_LENGTH} карактери"
+                    "error": f"Parametarot '{name}' ja nadminuva maksimalnata dolzina od {MAX_QUERY_PARAM_LENGTH} karakteri"
                 },
             )
 
@@ -107,13 +107,13 @@ async def validate_input_length(request: Request, call_next):
                     return JSONResponse(
                         status_code=413,
                         content={
-                            "error": f"Големината на барањето ја надминува максималната дозволена големина од {MAX_BODY_SIZE // (1024*1024)}MB"
+                            "error": f"Goleminata na baranjeto me nadminuva maksimalnata dozvolena golemina od {MAX_BODY_SIZE // (1024*1024)}MB"
                         },
                     )
             except ValueError:
                 return JSONResponse(
                     status_code=400,
-                    content={"error": "Невалиден Content-Length наслов"},
+                    content={"error": "Nevaliden Content-Length naslov"},
                 )
 
     return await call_next(request)
@@ -130,8 +130,8 @@ if _rate_limiter_enabled:
         return JSONResponse(
             status_code=429,
             content={
-                "error": "Премногу барања",
-                "detail": f"Надминато е ограничувањето за барања: {exc.detail}",
+                "error": "Premnogu baranja",
+                "detail": f"Nadminato e ogranicuvanjeto za baranja: {exc.detail}",
                 "status": "rate_limit_exceeded",
             },
             headers={"Retry-After": str(getattr(exc, "retry_after", 60))},

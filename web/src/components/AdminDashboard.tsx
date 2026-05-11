@@ -38,11 +38,11 @@ export default function AdminDashboard() {
         setIsAuth(true);
         if (typeof window !== 'undefined') sessionStorage.setItem('presek_admin_token', activeToken);
       } else {
-        setError('Пристапот е одбиен. Невалиден токен.');
+        setError('Pristapot e odbien. Nevaliden token.');
         setIsAuth(false);
       }
     } catch (e) {
-      setError('Грешка при поврзување со API-то.');
+      setError('Greska pri povrzuvanje so API-to.');
     } finally {
       setLoading(false);
     }
@@ -57,7 +57,7 @@ export default function AdminDashboard() {
       });
       fetchDashboard();
     } catch (e) {
-      alert('Грешка при рестартирање задачи.');
+      alert('Greska pri restartiranje zadaci.');
     } finally {
       setActionLoading(false);
     }

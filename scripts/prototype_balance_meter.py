@@ -8,14 +8,14 @@ log = logging.getLogger("presek.balance_prototype")
 
 # Define Pluralism Tiers
 TIER_MAP = {
-    "Агенциски": "Mainstream",
-    "Јавен Сервис": "Mainstream",
-    "Главни": "Mainstream",
-    "Независни": "Independent",
-    "Истражувачки": "Independent",
-    "Регионални": "Regional/Alt",
-    "Алтернативни": "Regional/Alt",
-    "Локални": "Regional/Alt",
+    "Agenciski": "Mainstream",
+    "Javen Servis": "Mainstream",
+    "glavni": "Mainstream",
+    "Nezavisni": "Independent",
+    "Istrazuvacki": "Independent",
+    "Regionalni": "Regional/Alt",
+    "Alternativni": "Regional/Alt",
+    "Lokalni": "Regional/Alt",
 }
 
 
@@ -25,7 +25,7 @@ def get_cluster_diversity(articles):
 
     for art in articles:
         source = art.get("source")
-        cat = SOURCE_CATEGORIES.get(source, "Локални")
+        cat = SOURCE_CATEGORIES.get(source, "Lokalni")
         tier = TIER_MAP.get(cat, "Regional/Alt")
         tiers_present.add(tier)
         source_names.append(f"{source} ({tier})")
@@ -64,13 +64,13 @@ async def run_balance_prototype(limit=5):
 
         if len(tiers) >= 3:
             verdict = "💎 HIGH PLURALISM (Agency + Independent + Regional)"
-            badge = "Широк Консензус"
+            badge = "sirok Konsenzus"
         elif len(tiers) == 2:
             verdict = "✅ BALANCED COVERAGE (Mixed Media Groups)"
-            badge = "Разновидни Извори"
+            badge = "Raznovidni izvori"
         else:
             verdict = "⚠️ ECHO CHAMBER (Reported only by one media group)"
-            badge = "Еднострано"
+            badge = "Ednostrano"
 
         print(f"  ⚖️ Verdict: {verdict}")
         print(f"  🏷️ UI Badge: [{badge}]")

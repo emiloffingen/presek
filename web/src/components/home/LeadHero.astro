@@ -34,9 +34,9 @@ const {
 
 const tintColor = dominantColor || '#1e40af';
 const primaryArticle = leadCluster.articles?.[0] || {};
-const primaryDisplayTitle = getDisplayTitle(primaryArticle, 'Водечка приказна');
+const primaryDisplayTitle = getDisplayTitle(primaryArticle, 'Vodecka prica');
 const relatedArticles = leadCluster.articles.slice(1, 4);
-const mediaLabel = filterLabel || primaryArticle.topic || primaryArticle.category || 'Водечка тема';
+const mediaLabel = filterLabel || primaryArticle.topic || primaryArticle.category || 'Vodecka tema';
 
 const cardContext = getDesignCardContext(leadCluster);
 const IconComponent = 
@@ -95,7 +95,7 @@ const IconComponent =
                     </div>
 
                     <div class="design-card-footer">
-                        <span class="design-card-cta">ОДИ ДО СТАТИЈАТА <ArrowRight size={14} class="ml-1" /></span>
+                        <span class="design-card-cta">ODI DO STATIJATA <ArrowRight size={14} class="ml-1" /></span>
                     </div>
                 </div>
             )}
@@ -103,13 +103,13 @@ const IconComponent =
     </a>
     <div class="lead-copy">
         <div class="lead-edition-bar">
-            <span class="lead-edition-label">ВОДЕЧКИ НАРАТИВ</span>
-            <span class="lead-edition-note">Консензус помеѓу {leadCluster.articles.length} {leadCluster.articles.length === 1 ? 'редакција' : 'редакции'}</span>
+            <span class="lead-edition-label">VODECKI NARATIV</span>
+            <span class="lead-edition-note">Konsenzus pomedju {leadCluster.articles.length} {leadCluster.articles.length === 1 ? 'redakcija' : 'redakcii'}</span>
         </div>
         <div class="lead-kicker-v2 mb-4">
             <span class="source-badge">{leadCluster.articles?.[0].source}</span>
             <div class="flex items-center gap-2">
-                {leadCluster.is_breaking && <span class="significance-badge is-breaking">УДАРНА</span>}
+                {leadCluster.is_breaking && <span class="significance-badge is-breaking">UDARNA</span>}
                 {leadSignal && (
                     <span class="lead-status-badge">
                         <span class="status-dot"></span>
@@ -131,12 +131,12 @@ const IconComponent =
                 <div class="analyst-header">
                     <div class="flex items-center gap-2">
                         <Zap size={14} class="text-nyt-accent fill-nyt-accent/20" />
-                        <span class="analyst-label">СИСТЕМСКИ УВИД</span>
+                        <span class="analyst-label">SISTEMSKI UVID</span>
                     </div>
                     <div class="flex items-center gap-3">
                         {leadCluster.pulse_score && (
                             <div class="pulse-indicator">
-                                <span class="pulse-text">ПУЛС: {leadCluster.pulse_score}</span>
+                                <span class="pulse-text">PULS: {leadCluster.pulse_score}</span>
                                 <div class="pulse-bar-bg">
                                     <div class="pulse-bar-fill" style={`width: ${leadCluster.pulse_score}%`}></div>
                                 </div>
@@ -144,7 +144,7 @@ const IconComponent =
                         )}
                         {leadCluster.pluralism_score !== undefined && (
                             <div class="pluralism-indicator hidden sm:flex">
-                                <span class="pulse-text">ПЛУРАЛИЗАМ: {leadCluster.pluralism_score}</span>
+                                <span class="pulse-text">PLURALIZAM: {leadCluster.pluralism_score}</span>
                                 <div class="pulse-bar-bg">
                                     <div class="pulse-bar-fill bg-emerald-500" style={`width: ${leadCluster.pluralism_score}%`}></div>
                                 </div>
@@ -163,14 +163,14 @@ const IconComponent =
             <div class="flex items-center gap-2">
                 <span>{getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)}</span>
                 <span class="opacity-30">·</span>
-                <span>{leadCluster.articles.length} {leadCluster.articles.length === 1 ? 'извор' : 'извори'}</span>
+                <span>{leadCluster.articles.length} {leadCluster.articles.length === 1 ? 'izvor' : 'izvori'}</span>
             </div>
-            <a href={`/cluster/${leadCluster.cluster_id}`} class="text-[10px] font-black uppercase tracking-widest text-nyt-accent hover:underline">Целосна синтеза →</a>
+            <a href={`/cluster/${leadCluster.cluster_id}`} class="text-[10px] font-black uppercase tracking-widest text-nyt-accent hover:underline">Celosna sinteza →</a>
         </div>
 
         {relatedArticles.length > 0 && (
             <div class="lead-follow-strip">
-                <p class="lead-follow-kicker">КЛУЧНИ ПЕРСПЕКТИВИ</p>
+                <p class="lead-follow-kicker">KLUCNI PERSPEKTIVI</p>
                 <ul class="lead-related">
                     {relatedArticles.map((article: any) => (
                         <li>
@@ -221,10 +221,10 @@ const IconComponent =
                 <div class="lead-media-placeholder" style={`--placeholder-bg: ${tintColor};`}>
                     <div class="lead-media-placeholder-bg-text" set:html={sanitizeHtml(leadTitle)}></div>
                     <div class="lead-media-topline">
-                        <p class="lead-media-kicker">PRESEK.мк Преглед</p>
+                        <p class="lead-media-kicker">PRESEK.rs Pregled</p>
                         <div class="lead-media-status">
                            {leadCluster.is_breaking && <Zap size={10} fill="currentColor" />}
-                           <p class="lead-media-chip">{leadCluster.articles.length} {leadCluster.articles.length === 1 ? 'извор' : 'извори'}</p>
+                           <p class="lead-media-chip">{leadCluster.articles.length} {leadCluster.articles.length === 1 ? 'izvor' : 'izvori'}</p>
                         </div>
                     </div>
                     <div class="lead-media-content">

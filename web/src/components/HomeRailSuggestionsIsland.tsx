@@ -44,10 +44,10 @@ export default function HomeRailSuggestionsIsland() {
     <section className="rail-module rail-suggestions">
       <div className="rail-suggestions-head">
         <h3 className="rail-title">
-          <Sparkles size={14} /> ШТО ДА СЛЕДИТЕ
+          <Sparkles size={14} /> STO DA SLEDITE
         </h3>
         <p className="rail-note">
-          Неколку следења се доволни за `За Вас` и доставата да станат попрецизни.
+          Nekolku sledenja se dovolni za `Za Vas` i dostavata da stanat poprecizni.
         </p>
       </div>
 
@@ -55,14 +55,14 @@ export default function HomeRailSuggestionsIsland() {
         {suggestions.topics.map((item) => (
           <div key={`topic:${item.value}`} className="rail-suggestion-card">
             <div>
-              <p className="rail-suggestion-kicker">Тема</p>
+              <p className="rail-suggestion-kicker">Tema</p>
               <strong>{item.value}</strong>
               <p>{item.reason}</p>
             </div>
             <PreferenceToggle
               kind="topic"
               value={item.value}
-              label={`тема: ${item.value}`}
+              label={`tema: ${item.value}`}
               analyticsSurface="home_rail"
             />
           </div>
@@ -71,14 +71,14 @@ export default function HomeRailSuggestionsIsland() {
         {suggestions.sources.map((item) => (
           <div key={`source:${item.value}`} className="rail-suggestion-card">
             <div>
-              <p className="rail-suggestion-kicker">Извор</p>
+              <p className="rail-suggestion-kicker">izvor</p>
               <strong>{item.value}</strong>
               <p>{item.reason}</p>
             </div>
             <PreferenceToggle
               kind="source"
               value={item.value}
-              label={`извор: ${item.value}`}
+              label={`izvor: ${item.value}`}
               analyticsSurface="home_rail"
             />
           </div>

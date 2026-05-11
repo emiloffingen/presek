@@ -12,19 +12,19 @@ from nlp.sentiment import analyze_sentiment_locally
 
 def verify():
     print("--- Testing Local Entity Extraction (spaCy) ---")
-    text = "Христијан Мицкоски оствари средба со амбасадорот на Германија во Скопје. ВМРО-ДПМНЕ најави нови реформи."
+    text = "Hristijan Mickoski ostvari sredba so ambasadorot na Germanija vo Beograd. VMRO-DPMNE najavi novi reformi."
     entities = extract_entities(text)
     print(f"Text: {text}")
     print(f"Extracted Entities: {entities}")
 
     # Check if we got the expected ones
     names = [e["name"] for e in entities]
-    assert "Христијан Мицкоски" in names, "Failed to extract person from lexicon/spacy"
-    assert "ВМРО-ДПМНЕ" in names, "Failed to extract organization from lexicon"
+    assert "Hristijan Mickoski" in names, "Failed to extract person from lexicon/spacy"
+    assert "VMRO-DPMNE" in names, "Failed to extract organization from lexicon"
 
     print("\n--- Testing Local Sentiment Analysis ---")
-    pos_text = "Одличен напредок и голем успех за македонската економија."
-    neg_text = "Страшен скандал и корупција во здравството предизвикаа хаос."
+    pos_text = "Odlicen napredok i golem uspeh za makedonskata Ekonomija."
+    neg_text = "Strasen skandal i korupcija vo zdravstvoto predizvikaa haos."
 
     pos_score = analyze_sentiment_locally(pos_text)
     neg_score = analyze_sentiment_locally(neg_text)

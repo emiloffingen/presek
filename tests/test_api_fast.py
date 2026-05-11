@@ -233,7 +233,7 @@ def test_fastapi_news_scales_query_fetch_limit_with_page_depth(mock_all):
         patch("routes.news.cached_response", return_value=None),
         patch("embeddings.generate_query_embedding", return_value=None),
     ):
-        asyncio.run(news_routes.get_news(q="економија", page=3, page_size=25))
+        asyncio.run(news_routes.get_news(q="Ekonomija", page=3, page_size=25))
     assert mock_all["db"].async_search_articles.called
     assert mock_all["db"].async_search_articles.call_args.kwargs["limit"] == 1200
 
@@ -261,12 +261,12 @@ def test_top_entities_compacts_fragments_and_filters_noise(mock_all):
     import routes.intelligence as intelligence
 
     mock_all["db"].async_execute.return_value = [
-        {"name": "МИА", "total_mentions": 12},
-        {"name": "Ормуз", "total_mentions": 8},
-        {"name": "Теснец", "total_mentions": 7},
-        {"name": "Вчера", "total_mentions": 6},
-        {"name": "Иран", "total_mentions": 10},
-        {"name": "Доналд Трамп", "total_mentions": 9},
+        {"name": "MIA", "total_mentions": 12},
+        {"name": "Ormuz", "total_mentions": 8},
+        {"name": "Tesnec", "total_mentions": 7},
+        {"name": "juce", "total_mentions": 6},
+        {"name": "Iran", "total_mentions": 10},
+        {"name": "Donald Tramp", "total_mentions": 9},
     ]
 
     with (
@@ -276,12 +276,12 @@ def test_top_entities_compacts_fragments_and_filters_noise(mock_all):
         data = asyncio.run(intelligence.get_top_entities(limit=10))
 
     names = [item["name"] for item in data]
-    assert "МИА" not in names
-    assert "Вчера" not in names
-    assert "Ормуз" not in names
-    assert "Теснец" not in names
-    assert "Ормуски Теснец" in names
-    assert "Иран" in names
+    assert "MIA" not in names
+    assert "juce" not in names
+    assert "Ormuz" not in names
+    assert "Tesnec" not in names
+    assert "Ormuski Tesnec" in names
+    assert "Iran" in names
 
 
 def test_client_ip_only_trusts_configured_proxies(mock_all):
@@ -377,7 +377,7 @@ def test_global_pulse_uses_common_intelligence_summary_builder(mock_all):
         if "FROM cluster_summaries s" in query and "AVG(CAST(s.sentiment" in query:
             return [
                 {
-                    "topic": "Политика",
+                    "topic": "Politika",
                     "avg_sentiment": 0.2,
                     "avg_objectivity": 0.8,
                     "avg_sensationalism": 0.1,
@@ -388,7 +388,7 @@ def test_global_pulse_uses_common_intelligence_summary_builder(mock_all):
         if "FROM cluster_metadata cm" in query and "UNNEST(cm.tags)" in query:
             return [
                 {
-                    "name": "Иран",
+                    "name": "Iran",
                     "total_mentions": 9,
                     "sentiment_score": 0.1,
                     "type": "GPE",
@@ -440,7 +440,7 @@ def test_home_route_composes_named_slots(mock_all):
                     {
                         "title": "Lead",
                         "source": "MIA",
-                        "topic": "Политика",
+                        "topic": "Politika",
                         "category": "Srbija",
                         "created_at": "2026-04-22T18:00:00Z",
                     }
@@ -453,7 +453,7 @@ def test_home_route_composes_named_slots(mock_all):
                     {
                         "title": "Support 1",
                         "source": "Alsat",
-                        "topic": "Политика",
+                        "topic": "Politika",
                         "category": "Srbija",
                         "created_at": "2026-04-22T17:00:00Z",
                     }
@@ -466,7 +466,7 @@ def test_home_route_composes_named_slots(mock_all):
                     {
                         "title": "Support 2",
                         "source": "Telma",
-                        "topic": "Економија",
+                        "topic": "Ekonomija",
                         "category": "Srbija",
                         "created_at": "2026-04-22T16:00:00Z",
                     }
@@ -479,7 +479,7 @@ def test_home_route_composes_named_slots(mock_all):
                     {
                         "title": "Support 3",
                         "source": "Kanal 5",
-                        "topic": "Криминал",
+                        "topic": "Kriminal",
                         "category": "Srbija",
                         "created_at": "2026-04-22T15:00:00Z",
                     }
@@ -492,7 +492,7 @@ def test_home_route_composes_named_slots(mock_all):
                     {
                         "title": "Support 4",
                         "source": "360",
-                        "topic": "Политика",
+                        "topic": "Politika",
                         "category": "Srbija",
                         "created_at": "2026-04-22T14:00:00Z",
                     }
@@ -505,7 +505,7 @@ def test_home_route_composes_named_slots(mock_all):
                     {
                         "title": "For you 1",
                         "source": "MRT",
-                        "topic": "Политика",
+                        "topic": "Politika",
                         "category": "Srbija",
                         "created_at": "2026-04-22T13:00:00Z",
                     }
@@ -518,7 +518,7 @@ def test_home_route_composes_named_slots(mock_all):
                     {
                         "title": "For you 2",
                         "source": "Nova",
-                        "topic": "Политика",
+                        "topic": "Politika",
                         "category": "Srbija",
                         "created_at": "2026-04-22T12:00:00Z",
                     }
@@ -531,7 +531,7 @@ def test_home_route_composes_named_slots(mock_all):
                     {
                         "title": "For you 3",
                         "source": "Factor",
-                        "topic": "Политика",
+                        "topic": "Politika",
                         "category": "Srbija",
                         "created_at": "2026-04-22T11:00:00Z",
                     }
@@ -544,7 +544,7 @@ def test_home_route_composes_named_slots(mock_all):
                     {
                         "title": "For you 4",
                         "source": "Vecer",
-                        "topic": "Политика",
+                        "topic": "Politika",
                         "category": "Srbija",
                         "created_at": "2026-04-22T10:00:00Z",
                     }
@@ -557,7 +557,7 @@ def test_home_route_composes_named_slots(mock_all):
                     {
                         "title": "For you 5",
                         "source": "Makfax",
-                        "topic": "Политика",
+                        "topic": "Politika",
                         "category": "Srbija",
                         "created_at": "2026-04-22T09:00:00Z",
                     }
@@ -570,7 +570,7 @@ def test_home_route_composes_named_slots(mock_all):
                     {
                         "title": "For you 6",
                         "source": "Plusinfo",
-                        "topic": "Политика",
+                        "topic": "Politika",
                         "category": "Srbija",
                         "created_at": "2026-04-22T08:00:00Z",
                     }
@@ -583,14 +583,14 @@ def test_home_route_composes_named_slots(mock_all):
                     {
                         "title": "Developing 1",
                         "source": "MIA",
-                        "topic": "Економија",
+                        "topic": "Ekonomija",
                         "category": "Srbija",
                         "created_at": "2026-04-22T07:00:00Z",
                     },
                     {
                         "title": "Developing 1 / corroboration",
                         "source": "Telma",
-                        "topic": "Економија",
+                        "topic": "Ekonomija",
                         "category": "Srbija",
                         "created_at": "2026-04-22T06:55:00Z",
                     },
@@ -601,9 +601,9 @@ def test_home_route_composes_named_slots(mock_all):
                 "cluster_id": "wire-1",
                 "articles": [
                     {
-                        "title": "Обвинителството отвори истрага",
+                        "title": "Obvinitelstvoto otvori istraga",
                         "source": "Press24",
-                        "topic": "Криминал",
+                        "topic": "Kriminal",
                         "category": "Srbija",
                         "created_at": "2026-04-22T06:00:00Z",
                         "link": "https://a/1",
@@ -619,8 +619,8 @@ def test_home_route_composes_named_slots(mock_all):
                     {
                         "title": "Global",
                         "source": "CNN",
-                        "topic": "Политика",
-                        "category": "Америка",
+                        "topic": "Politika",
+                        "category": "Amerika",
                         "created_at": "2026-04-22T05:00:00Z",
                     }
                 ],
@@ -637,7 +637,7 @@ def test_home_route_composes_named_slots(mock_all):
                     {
                         "title": "Lead",
                         "source": "MIA",
-                        "topic": "Политика",
+                        "topic": "Politika",
                         "category": "Srbija",
                         "created_at": "2026-04-22T18:00:00Z",
                         "link": "https://lead",
@@ -649,9 +649,9 @@ def test_home_route_composes_named_slots(mock_all):
                 "cluster_id": "live-1",
                 "articles": [
                     {
-                        "title": "Собранието отвори расправа за буџетот",
+                        "title": "Sobranieto otvori rasprava za budzetot",
                         "source": "Kanal 5",
-                        "topic": "Економија",
+                        "topic": "Ekonomija",
                         "category": "Srbija",
                         "created_at": "2026-04-22T18:10:00Z",
                         "link": "https://live-1",
@@ -663,9 +663,9 @@ def test_home_route_composes_named_slots(mock_all):
                 "cluster_id": "junk-1",
                 "articles": [
                     {
-                        "title": "Издание на 360°: интервју со министерот",
+                        "title": "Izdanie na 360°: intervju so ministerot",
                         "source": "360",
-                        "topic": "Политика",
+                        "topic": "Politika",
                         "category": "Srbija",
                         "created_at": "2026-04-22T18:11:00Z",
                         "link": "https://junk-1",
@@ -677,9 +677,9 @@ def test_home_route_composes_named_slots(mock_all):
                 "cluster_id": "wire-2",
                 "articles": [
                     {
-                        "title": "Тешка сообраќајка на експресниот пат кај Ранковце",
+                        "title": "Teska soobracajka na ekspresniot pat kaj Rankovce",
                         "source": "Press24",
-                        "topic": "Криминал",
+                        "topic": "Kriminal",
                         "category": "Srbija",
                         "created_at": "2026-04-22T18:12:00Z",
                         "link": "https://wire-2",
@@ -691,9 +691,9 @@ def test_home_route_composes_named_slots(mock_all):
                 "cluster_id": "wire-3",
                 "articles": [
                     {
-                        "title": "Постојано сте уморни, проверете дали ви недостига овој минерал",
+                        "title": "Postojano ste umorni, proverete dali vi nedostiga ovoj mineral",
                         "source": "Expres",
-                        "topic": "Здравје",
+                        "topic": "Zdravje",
                         "category": "Srbija",
                         "created_at": "2026-04-22T18:13:00Z",
                         "link": "https://wire-3",
@@ -713,12 +713,12 @@ def test_home_route_composes_named_slots(mock_all):
         patch("routes.home.set_cache"),
         patch(
             "routes.home.get_trending_route",
-            new=AsyncMock(return_value=[{"word": "Буџет", "trend": "↑"}]),
+            new=AsyncMock(return_value=[{"word": "Budzet", "trend": "↑"}]),
         ),
         patch(
             "routes.home.get_top_entities",
             new=AsyncMock(
-                return_value=[{"name": "влада", "total_mentions": 7, "type": "ORG"}]
+                return_value=[{"name": "vlada", "total_mentions": 7, "type": "ORG"}]
             ),
         ),
         patch(
@@ -756,12 +756,12 @@ def test_home_route_composes_named_slots(mock_all):
     assert [item["cluster_id"] for item in data["wire"]] == ["wire-1"]
     assert [item["cluster_id"] for item in data["live_now"]] == ["wire-2", "live-1"]
     assert [item["title"] for item in data["latest_wire"]] == [
-        "Тешка сообраќајка на експресниот пат кај Ранковце",
-        "Собранието отвори расправа за буџетот",
+        "Teska soobracajka na ekspresniot pat kaj Rankovce",
+        "Sobranieto otvori rasprava za budzetot",
         "Lead",
     ]
-    assert data["focus_entities"][0]["name"] == "влада"
-    assert data["focus_entities"][0]["display_name"] == "Влада"
+    assert data["focus_entities"][0]["name"] == "vlada"
+    assert data["focus_entities"][0]["display_name"] == "Vlada"
 
 
 def test_home_live_now_route_uses_backend_selection(mock_all):
@@ -838,9 +838,9 @@ def test_home_latest_wire_route_uses_backend_selection(mock_all):
                 "cluster_id": "wire-1",
                 "articles": [
                     {
-                        "title": "Тешка сообраќајка на експресниот пат кај Ранковце",
+                        "title": "Teska soobracajka na ekspresniot pat kaj Rankovce",
                         "source": "Press24",
-                        "topic": "Криминал",
+                        "topic": "Kriminal",
                         "category": "Srbija",
                         "created_at": "2026-04-22T18:12:00Z",
                         "link": "https://wire-1",
@@ -851,9 +851,9 @@ def test_home_latest_wire_route_uses_backend_selection(mock_all):
                 "cluster_id": "junk-1",
                 "articles": [
                     {
-                        "title": "Издание на 360°: интервју со министерот",
+                        "title": "Izdanie na 360°: intervju so ministerot",
                         "source": "360",
-                        "topic": "Политика",
+                        "topic": "Politika",
                         "category": "Srbija",
                         "created_at": "2026-04-22T18:11:00Z",
                         "link": "https://junk-1",
@@ -864,9 +864,9 @@ def test_home_latest_wire_route_uses_backend_selection(mock_all):
                 "cluster_id": "wire-2",
                 "articles": [
                     {
-                        "title": "Собранието отвори расправа за буџетот",
+                        "title": "Sobranieto otvori rasprava za budzetot",
                         "source": "Kanal 5",
-                        "topic": "Економија",
+                        "topic": "Ekonomija",
                         "category": "Srbija",
                         "created_at": "2026-04-22T18:10:00Z",
                         "link": "https://wire-2",
@@ -877,9 +877,9 @@ def test_home_latest_wire_route_uses_backend_selection(mock_all):
                 "cluster_id": "wire-3",
                 "articles": [
                     {
-                        "title": "Постојано сте уморни, проверете дали ви недостига овој минерал",
+                        "title": "Postojano ste umorni, proverete dali vi nedostiga ovoj mineral",
                         "source": "Expres",
-                        "topic": "Здравје",
+                        "topic": "Zdravje",
                         "category": "Srbija",
                         "created_at": "2026-04-22T18:13:00Z",
                         "link": "https://wire-3",
@@ -894,8 +894,8 @@ def test_home_latest_wire_route_uses_backend_selection(mock_all):
 
     assert data["status"] == "success"
     assert [item["title"] for item in data["articles"]] == [
-        "Тешка сообраќајка на експресниот пат кај Ранковце",
-        "Собранието отвори расправа за буџетот",
+        "Teska soobracajka na ekspresniot pat kaj Rankovce",
+        "Sobranieto otvori rasprava za budzetot",
     ]
 
 
@@ -911,9 +911,9 @@ def test_news_topic_response_filters_mixed_cluster_articles(mock_all):
                     "id": 1,
                     "cluster_id": "mixed",
                     "source": "Vecer",
-                    "title": "Екс-фудбалерот на Челзи ќе биде наследникот на Розениор?",
+                    "title": "Eks-fudbalerot na Celzi ce bide naslednikot na Rozenior?",
                     "description": "",
-                    "topic": "Вести",
+                    "topic": "vesti",
                     "category": "Srbija",
                     "created_at": "2026-04-22T20:00:00Z",
                 },
@@ -921,10 +921,10 @@ def test_news_topic_response_filters_mixed_cluster_articles(mock_all):
                     "id": 2,
                     "cluster_id": "mixed",
                     "source": "SportSport",
-                    "title": "Екс-фудбалерот на Челзи ќе биде наследникот на Розениор?",
+                    "title": "Eks-fudbalerot na Celzi ce bide naslednikot na Rozenior?",
                     "description": "",
-                    "topic": "Спорт",
-                    "category": "Европа",
+                    "topic": "Sport",
+                    "category": "Evropa",
                     "created_at": "2026-04-22T19:55:00Z",
                 },
             ]
@@ -952,12 +952,12 @@ def test_news_topic_response_filters_mixed_cluster_articles(mock_all):
         patch("routes.news.score_cluster", return_value=1.0),
         patch("routes.news.score_cluster_for_homepage", return_value=1.0),
     ):
-        data = asyncio.run(news.get_news(topic="Спорт", page_size=10))
+        data = asyncio.run(news.get_news(topic="Sport", page_size=10))
 
     assert data["status"] == "success"
     assert len(data["clusters"]) == 1
     assert [article["topic"] for article in data["clusters"][0]["articles"]] == [
-        "Спорт"
+        "Sport"
     ]
     assert data["clusters"][0]["articles"][0]["source"] == "SportSport"
 
@@ -983,11 +983,11 @@ def test_news_entity_response_merges_metadata_and_article_matches(mock_all):
                     "id": 1,
                     "cluster_id": "fresh-text-match",
                     "source": "MIA",
-                    "title": "Иран испрати нов предлог",
-                    "description": "Нови детали за разговорите.",
-                    "summary": "Иран е дел од актуелниот предлог.",
-                    "topic": "Свет",
-                    "category": "Свет",
+                    "title": "Iran isprati nov predlog",
+                    "description": "novi detali za razgovorite.",
+                    "summary": "Iran e del od aktuelniot predlog.",
+                    "topic": "Svet",
+                    "category": "Svet",
                     "created_at": "2026-04-30T23:20:00Z",
                     "ingested_at": "2026-04-30T23:21:00Z",
                 },
@@ -995,11 +995,11 @@ def test_news_entity_response_merges_metadata_and_article_matches(mock_all):
                     "id": 2,
                     "cluster_id": "old-entity-match",
                     "source": "Archive",
-                    "title": "Постара вест за Иран",
+                    "title": "Postara vest za Iran",
                     "description": "",
                     "summary": "",
-                    "topic": "Свет",
-                    "category": "Свет",
+                    "topic": "Svet",
+                    "category": "Svet",
                     "created_at": "2026-04-27T12:00:00Z",
                     "ingested_at": "2026-04-27T12:01:00Z",
                 },
@@ -1033,7 +1033,7 @@ def test_news_entity_response_merges_metadata_and_article_matches(mock_all):
         patch("routes.news.score_cluster", return_value=1.0),
         patch("routes.news.score_cluster_for_homepage", return_value=1.0),
     ):
-        data = asyncio.run(news.get_news(entity="Иран", page_size=10))
+        data = asyncio.run(news.get_news(entity="Iran", page_size=10))
 
     assert data["status"] == "success"
     assert [cluster["cluster_id"] for cluster in data["clusters"]] == [
@@ -1054,9 +1054,9 @@ def test_news_category_response_filters_mixed_cluster_articles(mock_all):
                     "id": 1,
                     "cluster_id": "mixed-geo",
                     "source": "Domestic",
-                    "title": "Домашна реакција",
+                    "title": "Domasna reakcija",
                     "description": "",
-                    "topic": "Политика",
+                    "topic": "Politika",
                     "category": "Srbija",
                     "created_at": "2026-04-22T20:00:00Z",
                 },
@@ -1064,10 +1064,10 @@ def test_news_category_response_filters_mixed_cluster_articles(mock_all):
                     "id": 2,
                     "cluster_id": "mixed-geo",
                     "source": "Foreign",
-                    "title": "Европска реакција",
+                    "title": "Evropska reakcija",
                     "description": "",
-                    "topic": "Политика",
-                    "category": "Европа",
+                    "topic": "Politika",
+                    "category": "Evropa",
                     "created_at": "2026-04-22T19:55:00Z",
                 },
             ]
@@ -1095,12 +1095,12 @@ def test_news_category_response_filters_mixed_cluster_articles(mock_all):
         patch("routes.news.score_cluster", return_value=1.0),
         patch("routes.news.score_cluster_for_homepage", return_value=1.0),
     ):
-        data = asyncio.run(news.get_news(category="Европа", page_size=10))
+        data = asyncio.run(news.get_news(category="Evropa", page_size=10))
 
     assert data["status"] == "success"
     assert len(data["clusters"]) == 1
     assert [article["category"] for article in data["clusters"][0]["articles"]] == [
-        "Европа"
+        "Evropa"
     ]
     assert data["clusters"][0]["articles"][0]["source"] == "Foreign"
 
@@ -1110,23 +1110,23 @@ def test_news_editorial_signals_classify_story_state(mock_all):
 
     arts = [
         {
-            "title": "Собранието отвори расправа за буџетот",
+            "title": "Sobranieto otvori rasprava za budzetot",
             "source": "MIA",
-            "topic": "Политика",
+            "topic": "Politika",
             "category": "Srbija",
             "created_at": "2026-04-22T18:10:00Z",
         },
         {
-            "title": "Телма: расправата за буџетот продолжува",
+            "title": "Telma: raspravata za budzetot prodolzuva",
             "source": "Telma",
-            "topic": "Политика",
+            "topic": "Politika",
             "category": "Srbija",
             "created_at": "2026-04-22T18:05:00Z",
         },
         {
-            "title": "Канал 5: нови детали од расправата",
+            "title": "Kanal 5: novi detali od raspravata",
             "source": "Kanal 5",
-            "topic": "Политика",
+            "topic": "Politika",
             "category": "Srbija",
             "created_at": "2026-04-22T18:00:00Z",
         },
@@ -1278,7 +1278,7 @@ def test_stats_summary_includes_intelligence_payload(mock_all):
     import routes.stats
 
     def execute_one_side_effect(query, *args, **kwargs):
-        if "category IN" in query and ("is_global" in query or "Свет" in query):
+        if "category IN" in query and ("is_global" in query or "Svet" in query):
             return {"count": 18}
         if (
             "COUNT(*) FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '1 hour'"
@@ -1355,7 +1355,7 @@ def test_global_pulse_uses_ingestion_aware_window_and_filters_blank_categories(
         if "FROM cluster_summaries s" in query and "AVG(CAST(s.sentiment" in query:
             return [
                 {
-                    "topic": "Политика",
+                    "topic": "Politika",
                     "avg_sentiment": 0.2,
                     "avg_objectivity": 0.8,
                     "avg_sensationalism": 0.1,
@@ -1366,7 +1366,7 @@ def test_global_pulse_uses_ingestion_aware_window_and_filters_blank_categories(
         if "FROM cluster_metadata cm" in query and "UNNEST(cm.tags)" in query:
             return [
                 {
-                    "name": "Иран",
+                    "name": "Iran",
                     "total_mentions": 9,
                     "sentiment_score": 0.1,
                     "type": "GPE",
@@ -1410,11 +1410,11 @@ def test_navigation_counts_use_article_level_classifications(mock_all):
                 in query
             )
             return [
-                {"category": "Европа", "topic": "Спорт", "n": 3},
-                {"category": "Srbija", "topic": "Политика", "n": 4},
+                {"category": "Evropa", "topic": "Sport", "n": 3},
+                {"category": "Srbija", "topic": "Politika", "n": 4},
             ]
         if "SELECT subcategory, COUNT(DISTINCT cluster_id) as n" in query:
-            return [{"subcategory": "Скопје", "n": 2}]
+            return [{"subcategory": "Beograd", "n": 2}]
         raise AssertionError(f"Unexpected query: {query}")
 
     mock_all["db"].async_execute.side_effect = execute_side_effect
@@ -1428,10 +1428,10 @@ def test_navigation_counts_use_article_level_classifications(mock_all):
 
     geography = data["sections"][0]["items"]
     news_items = data["sections"][1]["items"]
-    assert next(item for item in geography if item["label"] == "Европа")["count"] == 3
-    assert next(item for item in news_items if item["label"] == "Спорт")["count"] == 3
+    assert next(item for item in geography if item["label"] == "Evropa")["count"] == 3
+    assert next(item for item in news_items if item["label"] == "Sport")["count"] == 3
     assert (
-        next(item for item in news_items if item["label"] == "Политика")["count"] == 4
+        next(item for item in news_items if item["label"] == "Politika")["count"] == 4
     )
 
 
@@ -1440,17 +1440,17 @@ def test_editorial_signals_prefer_ingested_at_for_freshness(mock_all):
 
     arts = [
         {
-            "title": "Собранието отвори расправа за буџетот",
+            "title": "Sobranieto otvori rasprava za budzetot",
             "source": "MIA",
-            "topic": "Политика",
+            "topic": "Politika",
             "category": "Srbija",
             "created_at": "2026-04-22T08:00:00Z",
             "ingested_at": "2026-04-22T18:10:00Z",
         },
         {
-            "title": "Телма: расправата за буџетот продолжува",
+            "title": "Telma: raspravata za budzetot prodolzuva",
             "source": "Telma",
-            "topic": "Политика",
+            "topic": "Politika",
             "category": "Srbija",
             "created_at": "2026-04-22T07:55:00Z",
             "ingested_at": "2026-04-22T18:05:00Z",

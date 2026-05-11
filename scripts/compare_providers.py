@@ -30,8 +30,8 @@ async def test_provider(name, provider, prompt, system):
 
 
 async def main():
-    test_prompt = "Напиши кратка анализа за влијанието на вештачката интелигенција врз новинарството во 2026 година."
-    test_system = "Ти си професионален новинарски аналитичар. Одговори на литературен македонски јазик."
+    test_prompt = "Napisi kratka analiza za vlijanieto na vestackata inteligencija vrz novinarstvoto vo 2026 godina."
+    test_system = "Ti si profesionalen novinarski analiticar. odgovori na literaturen makedonski jazik."
 
     # 1. Test Nvidia
     await test_provider("nvidia", PROVIDERS["nvidia"], test_prompt, test_system)

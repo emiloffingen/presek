@@ -13,7 +13,7 @@ export function formatBriefing(markdown: string): string {
     html = html.replace(/^#\s+(.+)$/gm, ''); // Main title is handled by BriefingHeader
     html = html.replace(/^##\s+(.+)$/gm, '<h2 class="briefing-section-title">$1</h2>');
     html = html.replace(/^###\s+(\d+\.\s+)?(.+?)(\s+\[\[(.+?)\]\])?$/gm, (match, num, title, idGroup, id) => {
-        const idBadge = id ? `<a href="/cluster/${id}" class="briefing-inline-badge">Отвори кластер</a>` : '';
+        const idBadge = id ? `<a href="/cluster/${id}" class="briefing-inline-badge">Otvori klaster</a>` : '';
         return `<h3 class="briefing-item-title">${num || ''}${title}${idBadge}</h3>`;
     });
 
@@ -55,7 +55,7 @@ export function formatBriefing(markdown: string): string {
 
     // 6. Handle Inline Cluster Links [[id]]
     html = html.replace(/\[\[([a-f0-9\-]+)\]\]/g, (match, id) => {
-        return `<a href="/cluster/${id}" class="briefing-inline-link" title="Погледни го овој кластер">
+        return `<a href="/cluster/${id}" class="briefing-inline-link" title="Pogledni ga ovoj klaster">
             <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="inline-block"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
         </a>`;
     });

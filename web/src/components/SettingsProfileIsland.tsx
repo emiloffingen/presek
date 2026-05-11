@@ -63,7 +63,7 @@ export default function SettingsProfileIsland() {
     if (recentItems.length === 0) return null;
     const counts: Record<string, number> = {};
     recentItems.forEach((item: any) => {
-        const t = item.topic || 'Вести';
+        const t = item.topic || 'vesti';
         counts[t] = (counts[t] || 0) + 1;
     });
     const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
@@ -114,25 +114,25 @@ export default function SettingsProfileIsland() {
       <section className="settings-module">
         <div className="settings-module-head">
           <div>
-            <p className="settings-kicker"><Sparkles size={14} /> Вашиот профил на читање</p>
-            <h2>Што Presek памети на овој уред</h2>
+            <p className="settings-kicker"><Sparkles size={14} /> Vasiot profil na citanje</p>
+            <h2>Sto Presek pameti na ovoj ured</h2>
           </div>
           <p className="settings-copy">
-            Овие сигнали го обликуваат вашиот модул „За Вас“, изборот на известувања и неделната достава уште пред нешто да се синхронизира.
+            Ovie signali ga oblikuvaat vasiot modul „Za Vas“, izborot na izvestuvanja i nedelnata dostava jos pred nesto da se sinhronizira.
           </p>
         </div>
 
         <div className="settings-stat-grid">
           <div className="settings-stat-card">
-            <span>Следени теми</span>
+            <span>Sledeni temi</span>
             <strong>{followedTopics.length}</strong>
           </div>
           <div className="settings-stat-card">
-            <span>Следени извори</span>
+            <span>Praceni izvori</span>
             <strong>{followedSources.length}</strong>
           </div>
           <div className="settings-stat-card">
-            <span>Неодамнешни кластери</span>
+            <span>Neodamnesni klasteri</span>
             <strong>{(profile?.recentClusters || []).length}</strong>
           </div>
         </div>
@@ -140,11 +140,11 @@ export default function SettingsProfileIsland() {
         {topFocusTopic && (
             <div className="mt-8 p-4 bg-nyt-accent/5 border border-nyt-accent/20 rounded-lg flex items-center justify-between">
                 <div>
-                    <p className="text-[10px] font-black uppercase text-nyt-accent tracking-widest mb-1">Вашиот примарен фокус</p>
+                    <p className="text-[10px] font-black uppercase text-nyt-accent tracking-widest mb-1">Vasiot primaren fokus</p>
                     <h4 className="font-serif font-black text-xl italic">{topFocusTopic}</h4>
                 </div>
                 <div className="text-right">
-                    <p className="text-[10px] font-bold text-muted-foreground leading-tight">Врз основа на последното читање.<br/>Го користиме за „За Вас“.</p>
+                    <p className="text-[10px] font-bold text-muted-foreground leading-tight">Vrz osnova na poslednoto citanje.<br/>Go koristime za „Za Vas“.</p>
                 </div>
             </div>
         )}
@@ -154,8 +154,8 @@ export default function SettingsProfileIsland() {
         <div className="settings-module">
           <div className="settings-module-head">
             <div>
-              <p className="settings-kicker"><Newspaper size={14} /> Следени теми</p>
-              <h3>Теми што сакате да излегуваат побрзо</h3>
+              <p className="settings-kicker"><Newspaper size={14} /> Sledeni temi</p>
+              <h3>Temi sto sakate da izleguvaat pobrzo</h3>
             </div>
           </div>
           {followedTopics.length > 0 ? (
@@ -173,15 +173,15 @@ export default function SettingsProfileIsland() {
               ))}
             </div>
           ) : (
-            <p className="settings-empty">Сè уште немате следени теми. Следете тема од страницата за теми за доставата и рангирањето да станат полични.</p>
+            <p className="settings-empty">jos uvek nemate sledeni temi. Sledete tema od stranicata za temi za dostavata i rangiranjeto da stanat policni.</p>
           )}
         </div>
 
         <div className="settings-module">
           <div className="settings-module-head">
             <div>
-              <p className="settings-kicker"><Newspaper size={14} /> Следени извори</p>
-              <h3>Извори што сакате внимателно да се следат</h3>
+              <p className="settings-kicker"><Newspaper size={14} /> Praceni izvori</p>
+              <h3>izvori sto sakate vnimatelno da se sledat</h3>
             </div>
           </div>
           {followedSources.length > 0 ? (
@@ -199,7 +199,7 @@ export default function SettingsProfileIsland() {
               ))}
             </div>
           ) : (
-            <p className="settings-empty">Сè уште немате следени извори. Следете водечки извор од кластер страница за да добивате извор-специфични ажурирања.</p>
+            <p className="settings-empty">jos uvek nemate Praceni izvori. Sledete Vodeci izvor od klaster stranica za da dobivate izvor-specificni azuriranja.</p>
           )}
         </div>
       </section>
@@ -208,8 +208,8 @@ export default function SettingsProfileIsland() {
         <div className="settings-module">
           <div className="settings-module-head">
             <div>
-              <p className="settings-kicker"><Sparkles size={14} /> Предлози за теми</p>
-              <h3>Што вреди да следите следно</h3>
+              <p className="settings-kicker"><Sparkles size={14} /> Predlozi za temi</p>
+              <h3>Sto vredi da sledite sledece</h3>
             </div>
           </div>
           {recommendations.topics.length > 0 ? (
@@ -227,15 +227,15 @@ export default function SettingsProfileIsland() {
               ))}
             </div>
           ) : (
-            <p className="settings-empty">Кога ќе прочитате уште неколку кластери, тука ќе се појават теми што има смисла да ги следите.</p>
+            <p className="settings-empty">Koga ce procitate jos nekolku klasteri, tuka ce se pojavat temi sto ima smisla da im sledite.</p>
           )}
         </div>
 
         <div className="settings-module">
           <div className="settings-module-head">
             <div>
-              <p className="settings-kicker"><Sparkles size={14} /> Предлози за извори</p>
-              <h3>Извори што веќе се вклопуваат во вашето читање</h3>
+              <p className="settings-kicker"><Sparkles size={14} /> Predlozi za izvori</p>
+              <h3>izvori sto vece se vklopuvaat vo vaseto citanje</h3>
             </div>
           </div>
           {recommendations.sources.length > 0 ? (
@@ -253,7 +253,7 @@ export default function SettingsProfileIsland() {
               ))}
             </div>
           ) : (
-            <p className="settings-empty">Кога ќе се појават повторливи извори во вашето читање, тука ќе добиете брзи предлози за следење.</p>
+            <p className="settings-empty">Koga ce se pojavat povtorlivi izvori vo vaseto citanje, tuka ce dobiete brzi predlozi za sledenje.</p>
           )}
         </div>
       </section>
@@ -261,8 +261,8 @@ export default function SettingsProfileIsland() {
       <section className="settings-module">
         <div className="settings-module-head">
           <div>
-            <p className="settings-kicker"><Clock3 size={14} /> Неодамнешно читање</p>
-            <h3>Кластери што го обликуваа вашиот тековен профил</h3>
+            <p className="settings-kicker"><Clock3 size={14} /> Neodamnesno citanje</p>
+            <h3>klasteri sto ga oblikuvaa vasiot tekoven profil</h3>
           </div>
         </div>
         {recentItems.length > 0 ? (
@@ -270,16 +270,16 @@ export default function SettingsProfileIsland() {
             {recentItems.map((item: any) => (
               <a key={item.clusterId} href={`/cluster/${item.clusterId}`} className="settings-recent-item">
                 <div>
-                  <p className="settings-recent-topic">{item.topic || 'Кластер'}</p>
+                  <p className="settings-recent-topic">{item.topic || 'klaster'}</p>
                   <h4>{item.title}</h4>
-                  <p className="settings-recent-source">{item.source || 'Извор'}</p>
+                  <p className="settings-recent-source">{item.source || 'izvor'}</p>
                 </div>
                 <ArrowUpRight size={14} />
               </a>
             ))}
           </div>
         ) : (
-          <p className="settings-empty">Отворете неколку кластери и оваа страница ќе почне да објаснува што ги движи вашата персонализација и достава.</p>
+          <p className="settings-empty">Otvorete nekolku klasteri i ova stranica ce pocne da objasnuva sto im dvizi vasata personalizacija i dostava.</p>
         )}
       </section>
     </div>

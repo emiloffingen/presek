@@ -76,27 +76,27 @@ const hasSynthesis = cluster.has_synthesis;
 
 function getWhyItMatters() {
 	if (cluster.articles.some(a => a.is_fact_check)) {
-		return 'Приказна со активна системска верификација и детална деконструкција на наводите.';
+		return 'prica so aktivna sistemska verifikacija i detalna dekonstrukcija na navodite.';
 	}
 	if (cluster.is_breaking && totalSources >= 4) {
-		return 'Итен развој со висок интензитет кој веќе добива сеопфатно медиумско внимание.';
+		return 'Iten razvoj so visok intenzitet koj vece dobiva seopfatno mediumsko vnimanie.';
 	}
 	if (sourceSignal.role_label && totalSources >= 4) {
-		return `${sourceSignal.role_label}. Приказната се зацврстува низ повеќе независни линии на известување.`;
+		return `${sourceSignal.role_label}. Prikaznata se zacvrstuva niz povece nezavisni linii na izvestuvanje.`;
 	}
 	if (sourceSignal.role_label && totalSources >= 2) {
-		return `${sourceSignal.role_label}. Темата се проширува со нови потврди и официјални реакции.`;
+		return `${sourceSignal.role_label}. Temata se prosiruva so novi potvrdi i oficijalni reakcije.`;
 	}
 	if (totalSources >= 6) {
-		return `Развој со изразена медиумска тежина поддржана од ${totalSources} различни извори.`;
+		return `razvoj so izrazena mediumska tezina poddrzana od ${totalSources} razliciti izvori.`;
 	}
 	if (totalSources >= 4) {
-		return 'Повеќе редакции веќе додаваат нови слоеви на информации и специфичен контекст.';
+		return 'Povece redakcii vece dodavaat novi sloevi na informacii i specificen kontekst.';
 	}
 	if (totalSources >= 2) {
-		return 'Приказна која брзо добива системска потврда и поширок општествен одглас.';
+		return 'prica koja brzo dobiva sistemska potvrda i siri opstestven odglas.';
 	}
-	return 'Развој со потенцијал за дополнителна тематска еволуција.';
+	return 'razvoj so potencijal za dopolnitelna tematska evolucija.';
 }
 
 
@@ -111,10 +111,10 @@ function getTimeStr(dateStr: string) {
         const diffMs = now.getTime() - date.getTime();
         const diffMins = Math.floor(diffMs / (1000 * 60));
 
-        if (diffMins < 1) return 'ШТОТУКУ';
-        if (diffMins < 60) return `ПРЕД ${diffMins} МИН`;
+        if (diffMins < 1) return 'STOTUKU';
+        if (diffMins < 60) return `PRED ${diffMins} MIN`;
 
-        return date.toLocaleTimeString('mk-MK', { 
+        return date.toLocaleTimeString('mk-RS', { 
             hour: '2-digit', 
             minute: '2-digit',
             timeZone: 'Europe/Skopje'
@@ -130,7 +130,7 @@ function getTimeStr(dateStr: string) {
 		<div class="article-meta-v2">
 			<div class="kicker-group">
                 <span class="kicker">{main.source}</span>
-                {showTrustBadge && sourceSignal.trust_label === 'Висока доверба' && (
+                {showTrustBadge && sourceSignal.trust_label === 'Visoko poverenje' && (
                     <ShieldCheck size={10} className="text-blue-500" />
                 )}
                 {main.is_global && (
@@ -156,7 +156,7 @@ function getTimeStr(dateStr: string) {
 		{hasSynthesis && (
 			<span class="editorial-byline">
                 <Sparkles size={11} className="inline-block mr-1 text-nyt-accent" />
-				Системска синтеза на Presek
+				Sistemska sinteza na Presek
 			</span>
 		)}
 
@@ -189,7 +189,7 @@ function getTimeStr(dateStr: string) {
 		</span>
 			<span class="flex items-center gap-1">
 		<Layers size={11} className="opacity-70" />
-		{uniqueSources} {uniqueSources === 1 ? 'извор' : 'извори'}
+		{uniqueSources} {uniqueSources === 1 ? 'izvor' : 'izvori'}
 		{totalSources > uniqueSources && <span class="text-muted-foreground ml-0.5">({totalSources})</span>}
 		</span>
 		</div>
@@ -213,7 +213,7 @@ function getTimeStr(dateStr: string) {
                             <p class="design-card-sub">{cardContext.sub}</p>
                         </div>
                         <div class="design-card-footer">
-                            <span class="design-card-cta">ОДИ ДО СТАТИЈАТА <ArrowRight size={12} className="ml-1" /></span>
+                            <span class="design-card-cta">ODI DO STATIJATA <ArrowRight size={12} className="ml-1" /></span>
                         </div>
 					</div>
 				) : (
@@ -241,7 +241,7 @@ function getTimeStr(dateStr: string) {
 				)}
 			</a>
             {isFallbackArt && (
-                <span class="fallback-badge-icon" title="Presek графика">
+                <span class="fallback-badge-icon" title="Presek grafika">
                     <Palette size={14} />
                 </span>
             )}

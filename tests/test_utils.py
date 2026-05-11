@@ -168,30 +168,30 @@ def test_event_stream_stops_when_client_disconnects():
         shallow = [
             {
                 **_make_article("MIA"),
-                "title": "Трамп најави говор",
+                "title": "Tramp najavi govor",
                 "description": "",
             },
             {
                 **_make_article("MIA"),
-                "title": "Трамп најави говор",
+                "title": "Tramp najavi govor",
                 "description": "",
             },
         ]
         richer = [
             {
                 **_make_article("MIA"),
-                "title": "Трамп најави говор за царини",
-                "description": "Опис со повеќе детали за царините.",
+                "title": "Tramp najavi govor za carini",
+                "description": "Opis so povece detali za carinite.",
             },
             {
                 **_make_article("Reuters"),
-                "title": "Трамп ќе објави економски мерки во вторник",
-                "description": "Вториот извор додава контекст и реакција.",
+                "title": "Tramp ce objavi ekonomski merki vo Utorak",
+                "description": "Vtoriot izvor dodava kontekst i reakcija.",
             },
             {
                 **_make_article("DW"),
-                "title": "Европските пазари реагираат на најавата на Трамп",
-                "description": "Трет извор со поинаков акцент.",
+                "title": "Evropskite pazari reagiraat na najavata na Tramp",
+                "description": "Tret izvor so poinakov akcenat.",
             },
         ]
 
@@ -204,25 +204,25 @@ def test_event_stream_stops_when_client_disconnects():
         aligned = [
             {
                 **_make_article("MIA"),
-                "title": "Трамп најави говор за царини",
-                "description": "Опис еден.",
+                "title": "Tramp najavi govor za carini",
+                "description": "Opis eden.",
             },
             {
                 **_make_article("Reuters"),
-                "title": "Трамп најави говор за царини",
-                "description": "Опис два.",
+                "title": "Tramp najavi govor za carini",
+                "description": "Opis dva.",
             },
         ]
         divergent = [
             {
                 **_make_article("MIA"),
-                "title": "Трамп најави говор за царини",
-                "description": "Опис еден.",
+                "title": "Tramp najavi govor za carini",
+                "description": "Opis eden.",
             },
             {
                 **_make_article("Reuters"),
-                "title": "Пазарите реагираат на говорот на Трамп и новите мерки",
-                "description": "Опис два.",
+                "title": "Pazarite reagiraat na govorot na Tramp i novite merki",
+                "description": "Opis dva.",
             },
         ]
 
@@ -237,7 +237,7 @@ def test_event_stream_stops_when_client_disconnects():
         thin = [
             {
                 **_make_article("Press24"),
-                "title": "Трамп најави мерки",
+                "title": "Tramp najavi merki",
                 "description": "",
             },
             {
@@ -245,31 +245,31 @@ def test_event_stream_stops_when_client_disconnects():
                     "Press24",
                     created_at=datetime.datetime.now() - datetime.timedelta(minutes=5),
                 ),
-                "title": "Трамп најави нови мерки",
+                "title": "Tramp najavi novi merki",
                 "description": "",
             },
         ]
         richer = [
             {
                 **_make_article("MIA"),
-                "title": "Трамп најави нови царини",
-                "description": "Главен развој со детали.",
+                "title": "Tramp najavi novi carini",
+                "description": "Glaven razvoj so detali.",
             },
             {
                 **_make_article(
                     "Reuters",
                     created_at=datetime.datetime.now() - datetime.timedelta(minutes=8),
                 ),
-                "title": "Reuters пишува за реакциите и рокот за новите царини",
-                "description": "Втор извор со поширок контекст.",
+                "title": "Reuters pisuva za reakciite i rokot za novite carini",
+                "description": "Vtor izvor so Siri kontekst.",
             },
             {
                 **_make_article(
                     "DW",
                     created_at=datetime.datetime.now() - datetime.timedelta(minutes=12),
                 ),
-                "title": "Европските пазари реагираат на најавените царини",
-                "description": "Трет извор со потврда и последица.",
+                "title": "Evropskite pazari reagiraat na najavenite carini",
+                "description": "Tret izvor so potvrda i posledica.",
             },
         ]
 
@@ -280,7 +280,7 @@ def test_event_stream_stops_when_client_disconnects():
         single_source = [
             {
                 **_make_article("Press24"),
-                "title": "Кратка вест за развојот",
+                "title": "Kratka vest za razvojot",
                 "description": "",
             },
             {
@@ -288,23 +288,23 @@ def test_event_stream_stops_when_client_disconnects():
                     "Press24",
                     created_at=datetime.datetime.now() - datetime.timedelta(minutes=3),
                 ),
-                "title": "Уште краток follow-up за развојот",
+                "title": "jos kratok follow-up za razvojot",
                 "description": "",
             },
         ]
         broader = [
             {
                 **_make_article("Makfax"),
-                "title": "Главен развој во темата",
-                "description": "Опис еден.",
+                "title": "Glaven razvoj vo temata",
+                "description": "Opis eden.",
             },
             {
                 **_make_article(
                     "MIA",
                     created_at=datetime.datetime.now() - datetime.timedelta(minutes=6),
                 ),
-                "title": "Втор извор го потврдува главниот развој",
-                "description": "Опис два.",
+                "title": "Vtor izvor ga potvrduva glavni razvoj",
+                "description": "Opis dva.",
             },
         ]
 
@@ -348,20 +348,20 @@ class TestRankArticles:
         arts = [
             {
                 **_make_article("Makfax", created_at=now),
-                "title": "Трамп најави мерки",
+                "title": "Tramp najavi merki",
                 "description": "",
             },
             {
                 **_make_article("MIA", created_at=now - datetime.timedelta(minutes=4)),
-                "title": "Трамп најави мерки за царини и реакциите",
-                "description": "Опис со повеќе детали, рокови и реакција на пазарите.",
+                "title": "Tramp najavi merki za carini i reakciite",
+                "description": "Opis so povece detali, rokovi i reakcija na pazarite.",
             },
             {
                 **_make_article(
                     "Reuters", created_at=now - datetime.timedelta(minutes=6)
                 ),
-                "title": "Реакциите на пазарите по најавените царини на Трамп",
-                "description": "Втор извор што го потврдува главниот развој и додава контекст.",
+                "title": "Reakciite na pazarite po najavenite carini na Tramp",
+                "description": "Vtor izvor sto ga potvrduva glavni razvoj i dodava kontekst.",
             },
         ]
 
@@ -382,9 +382,9 @@ class TestSourceEffectiveWeight:
 
     @patch("utils.get_source_health_map", return_value={})
     def test_trust_label_reflects_source_weight(self, _mock_health):
-        assert get_source_trust_label("MIA") == "Висока доверба"
-        assert get_source_trust_label("Makfax") == "Потврден извор"
-        assert get_source_trust_label("Press24") == "Следен извор"
+        assert get_source_trust_label("MIA") == "Visoko poverenje"
+        assert get_source_trust_label("Makfax") == "Potvrden izvor"
+        assert get_source_trust_label("Press24") == "sledeci izvor"
 
 
 class TestSynthesisFreshness:
@@ -393,13 +393,13 @@ class TestSynthesisFreshness:
         arts = [
             {
                 **_make_article("MIA"),
-                "title": "Трамп најави нови царини",
-                "description": "Прв извештај со главниот развој.",
+                "title": "Tramp najavi novi carini",
+                "description": "Prv izvestaj so glavni razvoj.",
             },
             {
                 **_make_article("Reuters"),
-                "title": "Реакции по најавата на Трамп",
-                "description": "Втор извор со контекст.",
+                "title": "reakcije po najavata na Tramp",
+                "description": "Vtor izvor so kontekst.",
             },
         ]
 
@@ -414,13 +414,13 @@ class TestSynthesisFreshness:
         arts = [
             {
                 **_make_article("MIA", created_at=created_at),
-                "title": "Трамп најави царини",
-                "description": "Опис.",
+                "title": "Tramp najavi carini",
+                "description": "Opis.",
             },
             {
                 **_make_article("Reuters", created_at=created_at),
-                "title": "Реакции на царините",
-                "description": "Опис.",
+                "title": "reakcije na carinite",
+                "description": "Opis.",
             },
         ]
 
@@ -437,13 +437,13 @@ class TestSynthesisFreshness:
         arts = [
             {
                 **_make_article("MIA", created_at=old_time),
-                "title": "Владата најави пакет од 100 милиони",
-                "description": "Прв извештај за пакетот.",
+                "title": "Vladata najavi paket od 100 milioni",
+                "description": "Prv izvestaj za paketot.",
             },
             {
                 **_make_article("Reuters", created_at=new_time),
-                "title": "Reuters пишува за 120 милиони и нов рок",
-                "description": "Се додава друга бројка и нов извор.",
+                "title": "Reuters pisuva za 120 milioni i nov rok",
+                "description": "Se dodava druga brojka i nov izvor.",
             },
         ]
 
@@ -463,15 +463,15 @@ class TestSynthesisFreshness:
                 **_make_article(
                     "MIA", created_at=synthesis_time - datetime.timedelta(minutes=5)
                 ),
-                "title": "Трамп најави царини",
-                "description": "Прв извештај.",
+                "title": "Tramp najavi carini",
+                "description": "Prv izvestaj.",
             },
             {
                 **_make_article(
                     "MIA", created_at=synthesis_time + datetime.timedelta(minutes=4)
                 ),
-                "title": "Трамп најави царини за увоз",
-                "description": "Мало дополнување без нов извор.",
+                "title": "Tramp najavi carini za uvoz",
+                "description": "Malo dopolnuvanje bez nov izvor.",
             },
         ]
 
@@ -487,32 +487,32 @@ class TestSourceSignals:
         arts = [
             {
                 **_make_article("MIA", created_at=now - datetime.timedelta(minutes=30)),
-                "title": "Трамп најави царини",
-                "description": "Прв извештај.",
+                "title": "Tramp najavi carini",
+                "description": "Prv izvestaj.",
             },
             {
                 **_make_article(
                     "Reuters", created_at=now - datetime.timedelta(minutes=20)
                 ),
-                "title": "Реакции на царините и новите мерки на Трамп",
-                "description": "Вториот извор носи дополнителен контекст.",
+                "title": "reakcije na carinite i novite merki na Tramp",
+                "description": "Vtoriot izvor nosi dopolnitelen kontekst.",
             },
             {
                 **_make_article(
                     "Press24", created_at=now - datetime.timedelta(minutes=10)
                 ),
-                "title": "Пазарите реагираат на царините",
+                "title": "Pazarite reagiraat na carinite",
                 "description": "Follow-up angle.",
             },
         ]
 
         signals = build_cluster_source_signals(arts)
 
-        assert signals[0]["trust_label"] == "Висока доверба"
+        assert signals[0]["trust_label"] == "Visoko poverenje"
         assert signals[0]["role_label"] in {
-            "Најпотврден извор",
-            "Водечки доверлив извор",
-            "Прв извештај",
+            "Najpotvrden izvor",
+            "Vodecki doverliv izvor",
+            "Prv izvestaj",
         }
         assert len(signals) == 3
 
@@ -522,15 +522,15 @@ class TestSourceSignals:
         arts = [
             {
                 **_make_article("MIA", created_at=now),
-                "title": "Тест наслов",
-                "description": "Тест опис.",
+                "title": "Test naslov",
+                "description": "Test opis.",
             },
             {
                 **_make_article(
                     "Makfax", created_at=now - datetime.timedelta(minutes=5)
                 ),
-                "title": "Друг агол за темата",
-                "description": "Тест опис 2.",
+                "title": "Drug ugao za temata",
+                "description": "Test opis 2.",
             },
         ]
 
@@ -549,54 +549,54 @@ class TestReadNextClusters:
         current_articles = [
             {
                 **_make_article("MIA", created_at=now - datetime.timedelta(minutes=40)),
-                "title": "Трамп најави царини за увоз",
-                "description": "Главниот развој.",
-                "entity_names": ["Трамп", "САД"],
-                "topic": "Економија",
+                "title": "Tramp najavi carini za uvoz",
+                "description": "glavni razvoj.",
+                "entity_names": ["Tramp", "SAD"],
+                "topic": "Ekonomija",
             },
             {
                 **_make_article(
                     "Reuters", created_at=now - datetime.timedelta(minutes=30)
                 ),
-                "title": "Реакции на најавата за царини",
-                "description": "Контекст и реакции.",
-                "entity_names": ["Трамп", "САД"],
-                "topic": "Економија",
+                "title": "reakcije na najavata za carini",
+                "description": "kontekst i reakcije.",
+                "entity_names": ["Tramp", "SAD"],
+                "topic": "Ekonomija",
             },
         ]
         candidates = [
             {
                 **_make_article("DW", created_at=now - datetime.timedelta(minutes=20)),
                 "cluster_id": "next-1",
-                "title": "Европските пазари реагираат на царините на Трамп",
-                "description": "Следна фаза на истата тема.",
-                "entity_names": ["Трамп", "ЕУ"],
-                "cluster_tags": ["Трамп", "Царини"],
-                "topic": "Економија",
+                "title": "Evropskite pazari reagiraat na carinite na Tramp",
+                "description": "Sledna faza na istata tema.",
+                "entity_names": ["Tramp", "EU"],
+                "cluster_tags": ["Tramp", "Carini"],
+                "topic": "Ekonomija",
             },
             {
                 **_make_article(
                     "Press24", created_at=now - datetime.timedelta(minutes=10)
                 ),
                 "cluster_id": "next-2",
-                "title": "Сосема друга домашна тема",
-                "description": "Нерелевантен кластер.",
-                "entity_names": ["Скопје"],
-                "cluster_tags": ["Скопје"],
+                "title": "Sosema druga domasna tema",
+                "description": "Nerelevanten klaster.",
+                "entity_names": ["Beograd"],
+                "cluster_tags": ["Beograd"],
                 "topic": "Srbija",
             },
         ]
 
         result = build_read_next_clusters(
-            "current", current_articles, ["Трамп", "Царини"], candidates, limit=4
+            "current", current_articles, ["Tramp", "Carini"], candidates, limit=4
         )
 
         assert result
         assert result[0]["cluster_id"] == "next-1"
         assert result[0]["relationship_label"] in {
-            "Следен развој",
-            "Позадина и контекст",
-            "Исти актери",
+            "Sleden razvoj",
+            "pozadina i kontekst",
+            "Isti akteri",
         }
 
     @patch("utils.get_source_health_map", return_value={})
@@ -605,10 +605,10 @@ class TestReadNextClusters:
         current_articles = [
             {
                 **_make_article("MIA", created_at=now - datetime.timedelta(minutes=40)),
-                "title": "Главен развој за Трамп",
-                "description": "Главен опис.",
-                "entity_names": ["Трамп"],
-                "topic": "Свет",
+                "title": "Glaven razvoj za Tramp",
+                "description": "Glaven opis.",
+                "entity_names": ["Tramp"],
+                "topic": "Svet",
             },
         ]
         candidates = [
@@ -617,16 +617,16 @@ class TestReadNextClusters:
                     "Press24", created_at=now - datetime.timedelta(minutes=5)
                 ),
                 "cluster_id": "noise-1",
-                "title": "Локален спортски резултат",
-                "description": "Без врска со темата.",
-                "entity_names": ["Вардар"],
-                "cluster_tags": ["Спорт"],
-                "topic": "Спорт",
+                "title": "Lokalen sportski rezultat",
+                "description": "Bez vrska so temata.",
+                "entity_names": ["Vardar"],
+                "cluster_tags": ["Sport"],
+                "topic": "Sport",
             },
         ]
 
         result = build_read_next_clusters(
-            "current", current_articles, ["Трамп"], candidates, limit=4
+            "current", current_articles, ["Tramp"], candidates, limit=4
         )
 
         assert result == []
@@ -638,15 +638,15 @@ class TestSourceReputationRows:
         source_rows = [
             {
                 "name": "MIA",
-                "country": "MK",
-                "category": "Локални",
+                "country": "RS",
+                "category": "Lokalni",
                 "credibility": 2.0,
                 "is_active": True,
             },
             {
                 "name": "Press24",
-                "country": "MK",
-                "category": "Локални",
+                "country": "RS",
+                "category": "Lokalni",
                 "credibility": 0.9,
                 "is_active": True,
             },
@@ -680,12 +680,12 @@ class TestSourceReputationRows:
         )
 
         assert result[0]["source"] == "MIA"
-        assert result[0]["trust_tier"] == "Висока доверба"
+        assert result[0]["trust_tier"] == "Visoko poverenje"
         assert result[0]["recent_volume"] == 9
         assert result[0]["speed_first_count"] == 12
         assert result[0]["corroboration_rate"] == 0.8
         assert result[0]["lone_lead_rate"] == 0.2
-        assert result[0]["trend_label"] == "Расте"
-        assert result[0]["tendency"] == "Често прв на приказната"
-        assert result[1]["trend_label"] == "Слабее"
+        assert result[0]["trend_label"] == "Raste"
+        assert result[0]["tendency"] == "Cesto prv na prikaznata"
+        assert result[1]["trend_label"] == "Slabee"
         assert result[1]["lone_lead_rate"] == 0.8

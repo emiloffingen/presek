@@ -90,10 +90,10 @@ def summarize_article_task(article_id, final_title=None):
     )
 
     # AI summarization logic
-    prompt_parts = [f"Наслов: {str(title or '').strip()}"]
+    prompt_parts = [f"Naslov: {str(title or '').strip()}"]
     if context_text:
         prompt_parts.append(
-            f"Текст за резимирање:\n<article_content>\n{
+            f"Tekst za rezimiranje:\n<article_content>\n{
                 str(context_text).strip()[
                     :10000]}\n</article_content>"
         )
@@ -146,7 +146,7 @@ def _load_cluster_articles_for_synthesis(cluster_id):
 def _build_cluster_synthesis_content(article_rows):
     rows = article_rows or []
     return "\n".join(
-        f"- [{row.get('source') or 'Извор'}]: {row.get('title') or ''}"
+        f"- [{row.get('source') or 'izvor'}]: {row.get('title') or ''}"
         for row in rows[:10]
         if row.get("title")
     )
@@ -180,7 +180,7 @@ def _fallback_key_facts(article_rows, summary="", limit=4):
     seen = set()
 
     for article in article_rows or []:
-        source = str(article.get("source") or "Извор").strip()
+        source = str(article.get("source") or "izvor").strip()
         title = deShout(str(article.get("title") or "").strip())
         if not title:
             continue
@@ -214,7 +214,7 @@ def _build_synthesis_source_context(article_rows):
     blocks = []
     for idx, row in enumerate(article_rows or [], start=1):
         title = str(row.get("title") or "").strip()
-        source = str(row.get("source") or "Извор").strip()
+        source = str(row.get("source") or "izvor").strip()
         category = str(row.get("category") or "").strip()
         topic = str(row.get("topic") or "").strip()
         description = str(row.get("description") or "").strip()
@@ -229,15 +229,15 @@ def _build_synthesis_source_context(article_rows):
         evidence = evidence[:2200].strip()
         parts = [f"[{idx}] {source}"]
         if category:
-            parts.append(f"Категорија: {category}")
+            parts.append(f"Kategorija: {category}")
         if topic:
-            parts.append(f"Тема: {topic}")
+            parts.append(f"Tema: {topic}")
         if title:
-            parts.append(f"Наслов: {title}")
+            parts.append(f"Naslov: {title}")
         if summary:
-            parts.append(f"Постоечко резиме: {summary[:500]}")
+            parts.append(f"Postoecko rezime: {summary[:500]}")
         if evidence:
-            parts.append(f"Контекст:\n{evidence}")
+            parts.append(f"kontekst:\n{evidence}")
         blocks.append("\n".join(parts))
     return "\n\n".join(blocks)
 
@@ -279,7 +279,7 @@ def standardize_article_style_task(article_id):
 
     try:
         # Topic-Aware Bypass: Don't over-polish sports or entertainment as it kills the "vibe"
-        if topic == "Спорт" or category == "Спорт":
+        if topic == "Sport" or category == "Sport":
             return
 
         # Use Gemma 2 2B for Literary Normalization
@@ -419,7 +419,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 r = related[0]
                 prev_text = r["generated_article"] or r["summary"]
                 if prev_text:
-                    history_context = f"\nПРЕТХОДЕН КОНТЕКСТ (за овој настан или поврзана тема од изминатите денови):\n<historical_context>\n{
+                    history_context = f"\nPRETHODEN kontekst (za ovoj nastan ili povrzana tema od izminatite denovi):\n<historical_context>\n{
                         prev_text[:1000]}\n</historical_context>"
     except Exception as e:
         log.warning(f"[tasks/memory] Failed to fetch history for {cluster_id}: {e}")
@@ -434,7 +434,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
         elif history_context:
             prompt_parts.append(history_context)
 
-        prompt_parts.append("НОВИ СТАТИИ ОД ДЕНЕС:\n<articles_context>")
+        prompt_parts.append("novi clanci OD danas:\n<articles_context>")
         if source_context:
             prompt_parts.append(source_context)
         elif legacy_summary:
@@ -566,7 +566,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                     try:
                         # Use semaphore to limit concurrent heavy CPU tasks
                         with _analyst_semaphore:
-                            analyst_text = f"НАСЛОВ: {synthetic_headline}\n{summary}"
+                            analyst_text = f"NASLOV: {synthetic_headline}\n{summary}"
                             deep_metadata = analyst.extract_deep_metadata(analyst_text)
 
                             # Phase 3.1: Pluralism Assessment
@@ -644,7 +644,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             generated_article = ""
             verification_report = None
             sentiment_data = {
-                "sentiment": {"score": 0, "tone": "неутрален"},
+                "sentiment": {"score": 0, "tone": "neutralen"},
                 "tone_analysis": {},
             }
             deep_metadata = {}
@@ -685,7 +685,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             if not pluralism_data:
                 pluralism_data = {
                     "score": pluralism_score,
-                    "verdict": "Проценката е во тек. Диверзитетот на изворите се анализира за целосен плуралистички приказ.",
+                    "verdict": "Procenkata e vo tek. Diverzitetot na izvorite se analizira za celosen pluralisticki prikaz.",
                 }
             # Calculate Cluster Centroid (Semantic Center)
             centroid = _compute_centroid_from_values(
@@ -838,7 +838,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 from nlp.categories import detect_topic
 
                 all_titles = " ".join([a.get("title") or "" for a in article_rows])
-                if detect_topic(all_titles) == "Спорт":
+                if detect_topic(all_titles) == "Sport":
                     from nlp.generation import _extract_sports_scores
                     from notifier import BreakingNewsNotifier
                     from config import NTFY_TOPIC
@@ -920,7 +920,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
         record_runtime_event("synthesis_path", mode="local_exception_fallback")
         fallback = synthesize_cluster_fallback(article_rows)
         sentiment_data = {
-            "sentiment": {"score": 0, "tone": "неутрален"},
+            "sentiment": {"score": 0, "tone": "neutralen"},
             "tone_analysis": {},
         }
         summary, perspectives = _normalize_cluster_synthesis(
@@ -932,7 +932,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             key_facts = _fallback_key_facts(article_rows, summary)
             pluralism_data = {
                 "score": 50,
-                "verdict": "Автоматска проценка од достапните извори.",
+                "verdict": "Avtomatska procenka od dostapnite izvori.",
             }
             db.execute(
                 """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, tone_analysis, verification_report, citation_sources, key_facts, analyst_entities, pulse_score, pluralism_score, narrative_diversity)
@@ -1068,15 +1068,15 @@ def extract_entities_task(*args, hours=24, target_clusters=None, **kwargs):
 
 @celery_app.task
 def classify_topics_task(*args, **kwargs):
-    """Classify default 'Вести' clusters using local rule-based detection."""
+    """Classify default 'vesti' clusters using local rule-based detection."""
     try:
         # Increased limit as local classification is nearly free
         rows = db.execute(
-            "SELECT cluster_id, title FROM articles WHERE topic = 'Вести' LIMIT 200"
+            "SELECT cluster_id, title FROM articles WHERE topic = 'vesti' LIMIT 200"
         )
         for r in rows:
             topic = detect_topic(r["title"])
-            if topic != "Вести":
+            if topic != "vesti":
                 db.execute(
                     "UPDATE articles SET topic = %s WHERE cluster_id = %s",
                     (topic, r["cluster_id"]),
@@ -1215,7 +1215,7 @@ def generate_cluster_metadata_task(hours=24, target_clusters=None):
             if not rep_image:
                 # If we still have no image, try to generate one (AI cover art)
                 svg_content = generate_local_placeholder(
-                    r["cluster_id"], r["titles"][0] if r["titles"] else "Вест"
+                    r["cluster_id"], r["titles"][0] if r["titles"] else "vest"
                 )
                 rep_image = generate_cover_art(r["cluster_id"], svg_content)
 
@@ -1309,7 +1309,7 @@ def recluster_recent_articles_task(hours=24, limit=800):
         for row in rows:
             title = str(row.get("title") or "").strip()
             category = row.get("category")
-            topic = str(row.get("topic") or "Вести").strip() or "Вести"
+            topic = str(row.get("topic") or "vesti").strip() or "vesti"
             source = row.get("source")
             created_at = row.get("created_at")
             parsed_embedding = parse_embedding_value(row.get("embedding"))
@@ -1322,7 +1322,7 @@ def recluster_recent_articles_task(hours=24, limit=800):
                     dist = _cosine_dist(parsed_embedding, candidate["embedding"])
                     if dist >= (clustering.VECTOR_THRESHOLD * 0.78):
                         continue
-                    if topic == "Вести" or not topic:
+                    if topic == "vesti" or not topic:
                         incoming_entities = clustering._extract_title_entities(title)
                         candidate_entities = candidate.get("entities", set())
                         shared_entities = (
@@ -1449,7 +1449,7 @@ def backfill_cover_art_single_task(cluster_id, title):
         )
         return
     try:
-        svg_content = generate_local_placeholder(cluster_id, title or "Вест")
+        svg_content = generate_local_placeholder(cluster_id, title or "vest")
         img_url = generate_cover_art(cluster_id, svg_content)
         if img_url:
             db.execute(
@@ -1557,89 +1557,89 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
 
     allowed_singletons = {
         "srbija",
-        "скопје",
-        "албанија",
-        "еу",
-        "вмро-дпмне",
-        "иран",
-        "ормускиот теснец",
-        "дојран",
-        "сад",
-        "тексас",
-        "нато",
-        "обединетите нации",
-        "он",
-        "украина",
-        "русија",
-        "сдсм",
-        "вашингтон",
-        "техеран",
-        "блискиот исток",
-        "персискиот залив",
-        "западниот балкан",
-        "европската унија",
-        "брисел",
-        "москва",
-        "киев",
-        "израел",
-        "газа",
-        "либан",
-        "црна гора",
-        "србија",
-        "грција",
-        "бугарија",
-        "ахмети",
-        "мицкоски",
-        "сиљановска",
-        "пендаровски",
-        "ковaчевски",
-        "филипче",
-        "груевски",
-        "заев",
-        "пресек",
-        "битола",
-        "охрид",
-        "тетово",
-        "куманово",
-        "гостивар",
-        "шри ланка",
-        "кирибати",
-        "си џинпинг",
-        "бајден",
-        "трамп",
-        "путин",
-        "зеленски",
-        "макрон",
-        "ердоган",
-        "вучиќ",
-        "рама",
-        "мицкоски",
-        "османи",
-        "маричиќ",
-        "костадиновска-стојчевска",
-        "бисерка",
-        "бочварски",
-        "лига на шампиони",
-        "премиер лига",
-        "реал мадрид",
-        "барселона",
-        "манчестер јунајтед",
-        "баерн минхен",
-        "стеф кари",
-        "леброн џејмс",
-        "јокиќ",
-        "дончиќ",
-        "ѓоковиќ",
-        "алкараз",
-        "синер",
-        "јаник синер",
-        "винисиус",
-        "винисиус жуниор",
-        "мбапе",
-        "халанд",
-        "елмас",
-        "елиф елмас",
-        "пандев",
+        "Beograd",
+        "albanija",
+        "eu",
+        "vmro-dpmne",
+        "iran",
+        "ormuskiot tesnec",
+        "dojran",
+        "sad",
+        "teksas",
+        "nato",
+        "obedinetite nacii",
+        "on",
+        "ukraina",
+        "rusija",
+        "sdsm",
+        "vasington",
+        "teheran",
+        "bliskiot istok",
+        "persiskiot zaliv",
+        "zapadniot Balkan",
+        "evropskata unija",
+        "brisel",
+        "moskva",
+        "kiev",
+        "izrael",
+        "gaza",
+        "liban",
+        "crna gora",
+        "srbija",
+        "grcija",
+        "bugarija",
+        "ahmeti",
+        "mickoski",
+        "siljanovska",
+        "pendarovski",
+        "kovacevski",
+        "filipce",
+        "gruevski",
+        "zaev",
+        "presek",
+        "bitola",
+        "ohrid",
+        "tetovo",
+        "kumanovo",
+        "gostivar",
+        "sri lanka",
+        "kiribati",
+        "si dzinping",
+        "bajden",
+        "tramp",
+        "putin",
+        "zelenski",
+        "makron",
+        "erdogan",
+        "vucic",
+        "rama",
+        "mickoski",
+        "osmani",
+        "maricic",
+        "kostadinovska-stojcevska",
+        "biserka",
+        "bocvarski",
+        "liga na sampioni",
+        "premier liga",
+        "real madrid",
+        "barselona",
+        "mancester junajted",
+        "baern minhen",
+        "stef kari",
+        "lebron dzejms",
+        "jokic",
+        "doncic",
+        "djokovic",
+        "alkaraz",
+        "siner",
+        "janik siner",
+        "vinisius",
+        "vinisius zunior",
+        "mbape",
+        "haland",
+        "elmas",
+        "elif elmas",
+        "pandev",
     }
 
     hallucinated_count = 0
@@ -1647,7 +1647,7 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
         clean = str(phrase or "").strip()
         if len(clean) < 4:
             continue
-        if clean.split()[0].lower() in {"од", "во", "на", "со", "за", "низ"}:
+        if clean.split()[0].lower() in {"od", "vo", "na", "so", "za", "niz"}:
             clean_parts = clean.split()[1:]
             if not clean_parts:
                 continue
@@ -1670,9 +1670,9 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
             continue
         meaningful_words = [
             word.casefold()
-            for word in re.findall(r"[A-Za-zА-Яа-яЀ-ӿ0-9-]{4,}", clean)
+            for word in re.findall(r"[A-Za-zA-Za-z0-9-]{4,}", clean)
             if word.casefold()
-            not in {"министерката", "министерот", "претседателот", "владата"}
+            not in {"ministerkata", "ministerot", "pretsedatelot", "vladata"}
         ]
         if meaningful_words and all(word in source_lower for word in meaningful_words):
             continue

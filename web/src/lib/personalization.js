@@ -21,17 +21,17 @@ const SECONDARY_SOURCE_MIN_SIGNAL = 1.25;
 const SURFACE_TOPIC_FALLBACK_MIN_SIGNAL = 0.65;
 
 const SUGGESTION_SURFACE_LABELS = {
-  onboarding: 'Почетен водич',
-  home_rail: 'Почетна десна колона',
-  cluster: 'Кластер страница',
-  topic: 'Тема страница',
-  for_you: 'За Вас',
-  settings: 'Поставки',
+  onboarding: 'Poceten vodic',
+  home_rail: 'Pocetna desna kolona',
+  cluster: 'klaster stranica',
+  topic: 'Tema stranica',
+  for_you: 'Za Vas',
+  settings: 'Postavki',
 };
 
 const SUGGESTION_KIND_LABELS = {
-  topic: 'Теми',
-  source: 'Извори',
+  topic: 'Temi',
+  source: 'izvori',
 };
 
 function normalizeValue(value) {
@@ -589,14 +589,14 @@ function isWeakRecommendationValue(value) {
   const clean = normalizedLabelKey(value);
   if (!clean) return true;
   return [
-    'вести',
+    'vesti',
     'srbija',
-    'свет',
-    'балкан',
-    'спорт',
-    'култура',
-    'технологија',
-    'живот',
+    'Svet',
+    'Balkan',
+    'Sport',
+    'Kultura',
+    'Tehnologija',
+    'zivot',
   ].includes(clean);
 }
 
@@ -638,8 +638,8 @@ function buildTopicSignalFallbacks(topicCounts, followedTopics, existingTopics, 
         value: topic,
         count,
         reason: count >= FOLLOW_RECOMMENDATION_MIN_SIGNAL
-          ? `Оваа тема се повторува во вашето читање`
-          : `Се појавува како споредна тема во кластерите што ги читате`,
+          ? `ova tema se povtoruva vo vaseto citanje`
+          : `Se pojavuva kako sporedna tema vo klasterite sto im citate`,
       })),
     limit
   );
@@ -670,24 +670,24 @@ export function scoreClusterForReader(cluster, profile) {
   for (const topic of clusterTopics) {
     if (followedTopics.has(topic)) {
       score += 3.2;
-      reasons.push({ weight: 3.2, label: `Следена тема: ${topic}` });
+      reasons.push({ weight: 3.2, label: `Sledena tema: ${topic}` });
     }
     if (isStrongTopicSignal(topic) && signals.topicCounts.has(topic)) {
       const weight = Math.min(2.7, 0.55 + signals.topicCounts.get(topic) * 0.5);
       score += weight;
-      reasons.push({ weight, label: `Често читате ${topic}` });
+      reasons.push({ weight, label: `Cesto citate ${topic}` });
     }
   }
 
   for (const source of sources) {
     if (followedSources.has(source)) {
       score += 2.9;
-      reasons.push({ weight: 2.9, label: `Следен извор: ${source}` });
+      reasons.push({ weight: 2.9, label: `sledeci izvor: ${source}` });
     }
     if (signals.sourceCounts.has(source)) {
       const weight = Math.min(1.65, 0.3 + signals.sourceCounts.get(source) * 0.28);
       score += weight;
-      reasons.push({ weight, label: `${source} често се појавува во вашето читање` });
+      reasons.push({ weight, label: `${source} cesto se pojavuva vo vaseto citanje` });
     }
   }
 
@@ -695,7 +695,7 @@ export function scoreClusterForReader(cluster, profile) {
     if (signals.tagCounts.has(tag)) {
       const weight = Math.min(1.9, 0.4 + signals.tagCounts.get(tag) * 0.4);
       score += weight;
-      reasons.push({ weight, label: `Поврзано со ${tag}` });
+      reasons.push({ weight, label: `Povrzano so ${tag}` });
     }
   }
 
@@ -747,13 +747,13 @@ export function buildDeliveryDigest(content, profile, prefs) {
   const introBits = [];
 
   if (prefs?.morningBriefing !== false) {
-    introBits.push('Вашиот дневен брифинг е подготвен.');
+    introBits.push('Vasiot dneven brifing e podgotven.');
   }
   if (followedTopics.length > 0) {
-    introBits.push(`Следени теми: ${followedTopics.join(', ')}.`);
+    introBits.push(`Sledeni temi: ${followedTopics.join(', ')}.`);
   }
   if (followedSources.length > 0) {
-    introBits.push(`Следени извори: ${followedSources.join(', ')}.`);
+    introBits.push(`Praceni izvori: ${followedSources.join(', ')}.`);
   }
 
   return [
@@ -813,22 +813,22 @@ export function getOnboardingProgress(storage = globalThis?.localStorage) {
   const steps = [
     {
       id: 'read',
-      label: 'Отворете неколку кластери',
+      label: 'Otvorete nekolku klasteri',
       done: (profile.recentClusters || []).length >= 2,
     },
     {
       id: 'topic',
-      label: 'Следете 2 теми',
+      label: 'Sledete 2 temi',
       done: (profile.followedTopics || []).length >= 2,
     },
     {
       id: 'source',
-      label: 'Следете 1 извор',
+      label: 'Sledete 1 izvor',
       done: (profile.followedSources || []).length >= 1,
     },
     {
       id: 'delivery',
-      label: 'Вклучете известувања или достава',
+      label: 'Vklucete izvestuvanja ili dostava',
       done: delivery.browserPermission === 'granted' || Boolean(syncToken),
     },
   ];
@@ -869,7 +869,7 @@ export function buildFollowRecommendations(profile, limit = 4) {
     .map(([topic, count]) => ({
       value: topic,
       count,
-      reason: count >= 3 ? `Често читате теми поврзани со ${topic}` : `Оваа тема се повторува во вашето читање`,
+      reason: count >= 3 ? `Cesto citate temi povrzani so ${topic}` : `ova tema se povtoruva vo vaseto citanje`,
     })),
     limit
   );
@@ -884,7 +884,7 @@ export function buildFollowRecommendations(profile, limit = 4) {
     .map(([source, count]) => ({
       value: source,
       count,
-      reason: count >= 3 ? `${source} постојано се појавува во вашето читање` : `Овој извор се повторува низ кластерите што ги отворате`,
+      reason: count >= 3 ? `${source} postojano se pojavuva vo vaseto citanje` : `Ovoj izvor se povtoruva niz klasterite sto im otvorate`,
     })),
     limit
   );

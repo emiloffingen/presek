@@ -1,7 +1,7 @@
 {
   "name": "Presek",
   "short_name": "Presek",
-  "description": "Македонски информативен агрегатор со подлабок контекст и напредна јазична обработка.",
+  "description": "Makedonski informativen agregator so podlabok kontekst i napredna jazicna obrabotka.",
   "start_url": "/?utm_source=pwa",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -30,20 +30,20 @@
   "categories": ["news", "politics"],
   "shortcuts": [
     {
-      "name": "Дневен Брифинг",
-      "short_name": "Брифинг",
+      "name": "Dneven Brifing",
+      "short_name": "Brifing",
       "url": "/briefing",
       "icons": [{ "src": "/img/presek_emblem.svg", "sizes": "any" }]
     },
     {
-      "name": "Медиумски Пулс",
-      "short_name": "Пулс",
+      "name": "Mediumski Puls",
+      "short_name": "Puls",
       "url": "/stats",
       "icons": [{ "src": "/img/presek_emblem.svg", "sizes": "any" }]
     },
     {
-      "name": "Извори",
-      "short_name": "Извори",
+      "name": "izvori",
+      "short_name": "izvori",
       "url": "/izvori",
       "icons": [{ "src": "/img/presek_emblem.svg", "sizes": "any" }]
     }
