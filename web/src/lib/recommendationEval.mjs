@@ -22,7 +22,7 @@ export const SAMPLE_PROFILES = [
         {
           cluster_id: 'a',
           topic: 'Политика',
-          category: 'Македонија',
+          category: 'Srbija',
           primarySource: 'Republika',
           sources: ['Republika', 'Press24'],
           tags: ['Влада'],
@@ -31,7 +31,7 @@ export const SAMPLE_PROFILES = [
         {
           cluster_id: 'b',
           topic: 'Политика',
-          category: 'Македонија',
+          category: 'Srbija',
           primarySource: 'Press24',
           sources: ['Press24', 'Kanal 5'],
           tags: ['Влада', 'Собрание'],
@@ -40,7 +40,7 @@ export const SAMPLE_PROFILES = [
         {
           cluster_id: 'c',
           topic: 'Економија',
-          category: 'Македонија',
+          category: 'Srbija',
           primarySource: 'Republika',
           sources: ['Republika', 'MKD'],
           tags: ['Инфлација'],
@@ -58,7 +58,7 @@ export const SAMPLE_PROFILES = [
         {
           cluster_id: 'd',
           topic: 'Скопје',
-          category: 'Македонија',
+          category: 'Srbija',
           primarySource: 'Skopje Info',
           sources: ['Skopje Info', 'MKD'],
           tags: ['Скопје'],
@@ -67,7 +67,7 @@ export const SAMPLE_PROFILES = [
         {
           cluster_id: 'e',
           topic: 'Живот',
-          category: 'Македонија',
+          category: 'Srbija',
           primarySource: 'Libertas',
           sources: ['Libertas', 'Kanal 5'],
           tags: ['Велигден'],
@@ -76,7 +76,7 @@ export const SAMPLE_PROFILES = [
         {
           cluster_id: 'f',
           topic: 'Политика',
-          category: 'Македонија',
+          category: 'Srbija',
           primarySource: 'Press24',
           sources: ['Press24', 'Republika'],
           tags: ['Мицкоски'],
@@ -85,7 +85,7 @@ export const SAMPLE_PROFILES = [
         {
           cluster_id: 'g',
           topic: 'Скопје',
-          category: 'Македонија',
+          category: 'Srbija',
           primarySource: 'Skopje Info',
           sources: ['Skopje Info', 'Kanal 5'],
           tags: ['Транспорт'],
@@ -103,7 +103,7 @@ export const SAMPLE_PROFILES = [
         {
           cluster_id: 'h',
           topic: 'Политика',
-          category: 'Македонија',
+          category: 'Srbija',
           primarySource: 'Kanal 5',
           sources: ['Kanal 5', 'Press24'],
           tags: ['Влада'],
@@ -120,8 +120,8 @@ export const SAMPLE_PROFILES = [
         },
         {
           cluster_id: 'j',
-          topic: 'Македонија',
-          category: 'Македонија',
+          topic: 'Srbija',
+          category: 'Srbija',
           primarySource: 'Kanal 5',
           sources: ['Kanal 5', 'MKD'],
           tags: ['Скопје'],
@@ -139,7 +139,7 @@ export const SAMPLE_PROFILES = [
         {
           cluster_id: 'k',
           topic: 'Економија',
-          category: 'Македонија',
+          category: 'Srbija',
           primarySource: 'Republika',
           sources: ['Republika', 'Press24'],
           tags: ['Буџет'],
@@ -166,7 +166,7 @@ export const SAMPLE_PROFILES = [
         {
           cluster_id: 'm',
           topic: 'Политика',
-          category: 'Македонија',
+          category: 'Srbija',
           primarySource: 'Press24',
           sources: ['Press24', 'Republika'],
           tags: ['Мицкоски'],
@@ -184,7 +184,7 @@ export const SAMPLE_PROFILES = [
         {
           cluster_id: 'o',
           topic: 'Скопје',
-          category: 'Македонија',
+          category: 'Srbija',
           primarySource: 'Skopje Info',
           sources: ['Skopje Info', 'Kanal 5'],
           tags: ['Транспорт'],
@@ -193,7 +193,7 @@ export const SAMPLE_PROFILES = [
         {
           cluster_id: 'p',
           topic: 'Политика',
-          category: 'Македонија',
+          category: 'Srbija',
           primarySource: 'Republika',
           sources: ['Republika', 'Kanal 5'],
           tags: ['Влада'],

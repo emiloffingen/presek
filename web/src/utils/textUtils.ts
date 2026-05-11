@@ -8,7 +8,7 @@ const NAMED_ENTITIES: Record<string, string> = {
 };
 
 const TITLE_PROPER_NOUNS: Array<[RegExp, string]> = [
-    [/\bмакедонија\b/gi, 'Македонија'],
+    [/\bsrbija\b/gi, 'Srbija'],
     [/\bбугарија\b/gi, 'Бугарија'],
     [/\bсрбија\b/gi, 'Србија'],
     [/\bгрција\b/gi, 'Грција'],
