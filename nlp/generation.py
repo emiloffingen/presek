@@ -239,7 +239,7 @@ def _dedupe_briefing_clusters(clusters, limit=4):
 def _is_penalized_briefing_title(title):
     clean = str(title or "").strip()
     lowered = clean.casefold()
-    if re.match(r"^[A-ZA-ЯЀ-Я0-9\-]{2,}:\s", clean):
+    if re.match(r"^[A-Za-z0-9\-]{2,}:\s", clean):
         return True
     return any(
         marker in lowered

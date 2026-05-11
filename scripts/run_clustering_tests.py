@@ -14,7 +14,7 @@ from nlp.categories import detect_category, detect_topic
 
 def simple_extract_entities(text):
     # Match capitalized words (simplified fallback for testing)
-    return set(re.findall(r"[A-ЯЀ-ӿ][a-яѐ-ӿ]+", text))
+    return set(re.findall(r"[A-Za-z][a-z]+", text))
 
 
 def test_clustering_suite():
