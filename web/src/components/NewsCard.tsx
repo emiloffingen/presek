@@ -63,7 +63,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
       return 'Povece redakcii vece dodavaat novi detali.';
     }
     if (sourceCount >= 2) {
-      return 'prica sto pocnuva da dobiva potvrdi i Siri kontekst.';
+      return 'prica sto pocnuva da dobiva potvrdi i siri kontekst.';
     }
     return 'Prv signal. Vredi da se sledi dali ce dobie posiroka potvrda.';
   };

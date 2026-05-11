@@ -133,8 +133,8 @@ class TestSynthesizeClusterTaskQuality:
 
         assert "clanci" not in stored_summary
         assert stored_summary.count("Glaven razvoj") == 1
-        assert stored_perspectives[0]["angle"] == "Zajednicka linija"
-        assert stored_perspectives[1]["angle"] == "Razliciti akcenti"
+        assert stored_perspectives[0]["angle"] == "Kljucan ugao"
+        assert stored_perspectives[1]["angle"] == "razliciti akcenti"
         assert [item["source"] for item in stored_citation_sources] == ["MIA", "DW"]
         assert stored_citation_sources[0]["index"] == 1
 
@@ -272,7 +272,7 @@ class TestDailyBriefTaskQuality:
 
         with (
             patch("tasks.delivery.db") as mock_db,
-            patch.object(tasks, "score_cluster_for_homepage", return_value=4.2),
+            patch("nlp.scoring.score_cluster_for_homepage", return_value=4.2),
             patch.object(
                 tasks,
                 "_load_daily_brief_clusters",
@@ -284,7 +284,7 @@ class TestDailyBriefTaskQuality:
                 "summary": "• Glaven razvoj: Tramp najavi carini\n• kontekst: reakcije na pazarite\n• Sto sledi: Se ceka rokot",
                 "perspectives": [
                     {
-                        "angle": "Razliciti akcenti",
+                        "angle": "razliciti akcenti",
                         "content": "Reuters povece ga naglasuva rokot.",
                     },
                     {
@@ -426,7 +426,7 @@ class TestDailyBriefTaskQuality:
 
         with (
             patch("tasks.delivery.db") as mock_db,
-            patch.object(tasks, "score_cluster_for_homepage", side_effect=fake_score),
+            patch("nlp.scoring.score_cluster_for_homepage", side_effect=fake_score),
         ):
             mock_db.execute.return_value = rows
             mock_db.execute_one.side_effect = [
@@ -489,7 +489,7 @@ class TestDailyBriefTaskQuality:
 
         with (
             patch("tasks.delivery.db") as mock_db,
-            patch.object(tasks, "score_cluster_for_homepage", return_value=4.0),
+            patch("nlp.scoring.score_cluster_for_homepage", return_value=4.0),
         ):
             mock_db.execute.return_value = rows
             mock_db.execute_one.side_effect = [
@@ -549,7 +549,7 @@ class TestDailyBriefTaskQuality:
 
         with (
             patch("tasks.delivery.db") as mock_db,
-            patch.object(tasks, "score_cluster_for_homepage", side_effect=fake_score),
+            patch("nlp.scoring.score_cluster_for_homepage", side_effect=fake_score),
         ):
             mock_db.execute.return_value = rows
             mock_db.execute_one.side_effect = [
@@ -952,7 +952,7 @@ class TestProfileDeliveryTasks:
             },
             {
                 "cluster_id": "rich-1",
-                "title": "razvoj so Razliciti akcenti",
+                "title": "razvoj so razliciti akcenti",
                 "source": "MIA",
                 "source_count": 4,
                 "topic": "Politika",

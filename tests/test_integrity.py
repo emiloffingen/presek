@@ -23,7 +23,7 @@ class TestAstroFrontendIntegrity:
 
     def test_layout_keeps_theme_sync_and_canonical_metadata(self):
         layout = _read("web/src/layouts/Layout.astro")
-        assert '<html lang="mk">' in layout
+        assert '<html lang="sr">' in layout
         assert (
             "const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('theme') : null;"
             in layout
@@ -152,7 +152,7 @@ class TestAstroFrontendIntegrity:
 
     def test_briefing_page_shows_real_error_state_and_not_only_processing_state(self):
         briefing = _read("web/src/pages/briefing.astro")
-        assert "Brifingot momentalno ne e dostapen." in briefing
+        assert "Brifing trenutno nije dostupan." in briefing
 
     def test_pulse_page_has_real_error_state_and_safe_category_math(self):
         pulse = _read("web/src/pages/pulse.astro")

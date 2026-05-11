@@ -1080,7 +1080,7 @@ def normalize_headline(title: str) -> str:
     t = re.sub(prefix_pattern, "", t, count=1, flags=re.IGNORECASE)
 
     # Strip any remaining all-caps prefix followed by colon (e.g. "Beograd: ...")
-    t = re.sub(r"^[A-Za-z\s]{3,}:", "", t).strip()
+    t = re.sub(r"^[A-Za-z\s\-]{3,}:", "", t).strip()
 
     # 3. Suffix / Source Attribution Cleanup
     sources = [
@@ -1135,32 +1135,23 @@ def normalize_headline(title: str) -> str:
     long_upper_prefix = re.match(r"^([A-Za-z\s]{6,}):", t)
 
     if (alpha_count >= 6 and (upper_count / alpha_count) > 0.65) or long_upper_prefix:
-        # Before lower-casing, protect common Macedonian/International acronyms
+        # Before lower-casing, protect common Serbian/International acronyms
         acronyms = {
             "EU",
             "NATO",
             "SAD",
             "MVR",
             "SZO",
-            "SDSM",
-            "VMRO",
-            "DUI",
-            "ZNAM",
-            "DIK",
-            "SEP",
+            "SNS",
+            "DS",
             "UJP",
-            "MNR",
-            "MO",
-            "MZ",
-            "UBK",
             "OJO",
-            "AEK",
-            "FFM",
-            "MOK",
+            "VMRO",
         }
 
-        # Capitalize only first letter, lower the rest
-        t_normalized = t.capitalize()
+        # Lowercase and capitalize only first letter
+        t_normalized = t.lower()
+        t_normalized = t_normalized[0].upper() + t_normalized[1:]
 
         # Restore acronyms
         for acronym in acronyms:
@@ -1169,9 +1160,8 @@ def normalize_headline(title: str) -> str:
             )
         t = t_normalized
 
-    # 5. Macedonian Quote Standardization (Standard quotes „...“)
+    # 5. Serbian Quote Standardization (Standard quotes „...“)
     t = t.replace("''", '"')
-    # Replace simple quotes with balanced Macedonian ones
     t = re.sub(r'["\']([^"\']+)["\']', r"„\1“", t)
 
     # 6. Technical Polish

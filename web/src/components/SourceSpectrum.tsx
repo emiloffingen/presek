@@ -12,7 +12,7 @@ const CATEGORY_MAP: Record<string, string> = {
   "Sloboden Pecat": "Nezavisni", "Fokus": "Nezavisni", "Nezavisen": "Nezavisni", "Meta": "Nezavisni", "360 Stepeni": "Nezavisni", "Antropol": "Nezavisni", "RSE": "Nezavisni", "DW": "Nezavisni", "A1on": "Nezavisni",
   "IRL": "Istrazuvacki", "Vistinomer": "Istrazuvacki", "Birn": "Istrazuvacki", "Prizma": "Istrazuvacki",
   "NetPress": "Alternativni", "Kurir": "Alternativni", "Republika": "Alternativni", "Infomax": "Alternativni", "Lider": "Alternativni",
-  "Plusinfo": "Lokalni", "Makpress": "Lokalni", "Libertas": "Lokalni", "Skopje1": "Lokalni", "Factor": "Lokalni", "Lokalno": "Lokalni", "Nova TV": "Lokalni", "Denesen": "Lokalni", "Ekonomski": "Lokalni",
+  "Plusinfo": "Lokalni", "Makpress": "Lokalni", "Libertas": "Lokalni", "Skopje1": "Lokalni", "Factor": "Lokalni", "Lokalno": "Lokalni", "nova TV": "Lokalni", "Denesen": "Lokalni", "Ekonomski": "Lokalni",
   "Bitola News": "Regionalni", "Ohrid1": "Regionalni", "KumanovoNews": "Regionalni",
   "PopUp": "Kultura", "Kultura.mk": "Kultura", "Reper": "Kultura",
 };

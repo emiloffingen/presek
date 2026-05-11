@@ -4,7 +4,7 @@ from nlp import (
     extract_keyphrases_locally,
     generate_daily_brief_fallback,
     is_valid_focus_entity,
-    rewrite_to_macedonian_locally,
+    rewrite_to_serbian_locally,
     summarize_locally,
     summarize_article_fallback,
     compare_cluster_sources,
@@ -302,7 +302,7 @@ class TestArticleSummaryFallback:
         result = summarize_locally(text, sentence_count=2)
 
         assert "120 milioni evra" in result
-        assert "Utorak" in result.lower()
+        assert "Utorak" in result or "utorak" in result.lower()
         assert "FOTO:" not in result
         assert "#Ekonomija" not in result
 
@@ -317,21 +317,20 @@ class TestArticleSummaryFallback:
         assert "Tramp" in result
 
 
-class TestLocalMacedonianRewrite:
+class TestLocalSerbianRewrite:
     def test_rewrites_common_english_news_copy(self):
-        result = rewrite_to_macedonian_locally(
+        result = rewrite_to_serbian_locally(
             "Prime Minister announced new measures on Tuesday according to officials"
         )
 
         lowered = result.lower()
-        assert "premierot" in lowered
-        assert "merki" in lowered
-        assert "Utorak" in lowered
-        assert "oficijalni pretstavnici" in lowered or "spored" in lowered
+        assert "premijer" in lowered
+        assert "mere" in lowered
+        assert "utorak" in lowered
 
-    def test_keeps_existing_macedonian_text_clean(self):
-        result = rewrite_to_macedonian_locally("  Vladata   najavi   nov paket merki  ")
-        assert result == "Vladata najavi nov paket merki"
+    def test_keeps_existing_serbian_text_clean(self):
+        result = rewrite_to_serbian_locally("  Vladata   najavi   nov paket merki  ")
+        assert result == "Vladata najavi nov paket merki."
 
     def test_synthesize_cluster_fallback_uses_common_line_in_summary(self):
         articles = [

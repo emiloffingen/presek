@@ -135,7 +135,7 @@ const articleRows = (cluster?.articles || []).map((a: Article, idx: number, arr:
         relLabel = signal.role_label.toUpperCase();
         relTone = signal.role_tone || 'deep';
     } else if ((a.credibility || 0) > 1.2) {
-        relLabel = 'PROSIREN IZVESTAJ';
+        relLabel = 'PROSIREN izvestaj';
         relTone = 'deep';
     }
 

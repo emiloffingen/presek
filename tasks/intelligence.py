@@ -1556,7 +1556,7 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
     }
 
     allowed_singletons = {
-        "srbija",
+        "Srbija",
         "Beograd",
         "albanija",
         "eu",
@@ -1585,7 +1585,7 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
         "gaza",
         "liban",
         "crna gora",
-        "srbija",
+        "Srbija",
         "grcija",
         "bugarija",
         "ahmeti",

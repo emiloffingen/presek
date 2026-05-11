@@ -180,7 +180,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
           </p>
           <h2 className="font-serif text-xl md:text-2xl font-black text-foreground mb-2 leading-tight tracking-tight">Postavi prasanje ili pobaraj analiza</h2>
           <p className="font-serif text-sm md:text-base leading-relaxed text-secondary-foreground italic opacity-90">
-            Izberete sto vi nedostiga: brojki, stavovi na akteri ili Siri kontekst.
+            Izberete sto vi nedostiga: brojki, stavovi na akteri ili siri kontekst.
           </p>
         </div>
       </div>

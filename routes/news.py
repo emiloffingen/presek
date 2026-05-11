@@ -757,10 +757,10 @@ async def get_cluster_detail(cluster_id: str):
             (cluster_id,),
         )
         if not rows:
-            raise HTTPException(status_code=404, detail="Klaster nije pronadjen")
+            raise HTTPException(status_code=404, detail="klaster nije pronadjen")
         rows = [row for row in rows if _is_publicly_displayable_article(row)]
         if not rows:
-            raise HTTPException(status_code=404, detail="Klaster nije pronadjen")
+            raise HTTPException(status_code=404, detail="klaster nije pronadjen")
         articles = annotate_cluster_articles(rows, prefer_recent=True)
         for a in articles:
             a["reading_time"] = calculate_reading_time(a.get("description", ""))

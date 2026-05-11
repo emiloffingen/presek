@@ -590,7 +590,7 @@ function isWeakRecommendationValue(value) {
   if (!clean) return true;
   return [
     'vesti',
-    'srbija',
+    'Srbija',
     'Svet',
     'Balkan',
     'Sport',

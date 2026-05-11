@@ -164,7 +164,7 @@ SR_STOPWORDS = {
     "danas",
     "juce",
     "sutra",
-    "srbija",
+    "Srbija",
     "severna",
     "sad",
     "kina",
@@ -198,8 +198,8 @@ def _get_fingerprint(title: str) -> str:
 
 # ── Synonym Mapping ──────────────────────────────────────────────
 NEWS_SYNONYMS = {
-    "ekonomij": "ekonomija",
-    "ekonomija": "ekonomija",
+    "ekonomij": "Ekonomija",
+    "Ekonomija": "Ekonomija",
     "vlada": "vlad",
     "ministarstv": "vlad",
     "ministarstvo": "vlad",
@@ -364,8 +364,8 @@ def _topic_bridge_allowed(
     freshest_rep_hours: float,
 ) -> bool:
     """Allow tight same-story continuations to survive small topic-label drift and category evolution."""
-    incoming_clean = str(incoming_topic or "Vesti").strip() or "Vesti"
-    rep_clean = str(rep_topic or "Vesti").strip() or "Vesti"
+    incoming_clean = str(incoming_topic or "vesti").strip() or "vesti"
+    rep_clean = str(rep_topic or "vesti").strip() or "vesti"
 
     if incoming_clean == rep_clean and category == rep_category:
         return True
@@ -389,7 +389,7 @@ def _topic_bridge_allowed(
             return True
         return False
 
-    generic_mismatch = "Vesti" in {incoming_clean, rep_clean}
+    generic_mismatch = "vesti" in {incoming_clean, rep_clean}
 
     if generic_mismatch:
         return (
@@ -443,10 +443,10 @@ def find_cluster_semantic(
                 0.22  # Slightly more lenient to catch related global developments
             )
 
-        # 2. EVEN STRICTER for the generic 'Vesti' topic (the catch-all)
-        # Articles tagged only as 'Vesti' often lack specific keywords, causing
+        # 2. EVEN STRICTER for the generic 'vesti' topic (the catch-all)
+        # Articles tagged only as 'vesti' often lack specific keywords, causing
         # vector-based 'gravitational' pull for unrelated content.
-        if topic == "Vesti" or not topic:
+        if topic == "vesti" or not topic:
             threshold = min(
                 threshold, 0.24
             )  # Increased for better recall on general news
@@ -498,7 +498,7 @@ def find_cluster_semantic(
             if dist < threshold:
                 # Entity Gating: For generic topics, if the distance is borderline,
                 # require at least one shared proper noun (Entity).
-                if topic == "Vesti" or not topic:
+                if topic == "vesti" or not topic:
                     from database import db_manager
 
                     ents = db_manager.get_cluster_entities([cid]).get(cid, set())
@@ -602,8 +602,8 @@ def find_or_create_cluster(
             continue
 
         rep_entities = cluster_entities.get(cid, set())
-        rep_topic = rep_0.get("topic", "Vesti")
-        incoming_topic = topic or "Vesti"
+        rep_topic = rep_0.get("topic", "vesti")
+        incoming_topic = topic or "vesti"
         rep_category = rep_0.get("category")
         freshest_rep_hours = min(
             (_rep_age_hours(rep.get("created_at")) for rep in reps), default=999.0
@@ -636,7 +636,7 @@ def find_or_create_cluster(
             continue
 
         if (
-            incoming_topic == "Vesti"
+            incoming_topic == "vesti"
             and potential_entities
             and rep_entities
             and not potential_entities.intersection(rep_entities)
@@ -742,8 +742,8 @@ def find_or_create_cluster(
         # Adaptive Lexical Threshold
         # Generic topics should require higher similarity to merge.
         current_threshold = threshold
-        if incoming_topic == "Vesti" and incoming_topic == rep_topic:
-            current_threshold = max(threshold, 0.58)  # Be more demanding for 'Vesti'
+        if incoming_topic == "vesti" and incoming_topic == rep_topic:
+            current_threshold = max(threshold, 0.58)  # Be more demanding for 'vesti'
         elif topic_bridge and incoming_topic != rep_topic:
             if freshest_rep_hours <= 12:  # Within half-day cycle
                 current_threshold = min(threshold, 0.40)

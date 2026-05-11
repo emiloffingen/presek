@@ -215,7 +215,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
 
             {profile.followedSources.length > 0 && (
                 <div>
-                    <p className="text-[9px] font-black uppercase text-muted-foreground mb-4 tracking-widest">Izvori</p>
+                    <p className="text-[9px] font-black uppercase text-muted-foreground mb-4 tracking-widest">izvori</p>
                     <div className="flex flex-wrap gap-2">
                         {profile.followedSources.map((s: string) => (
                             <PreferenceToggle key={s} kind="source" value={s} analyticsSurface="for_you_page" />
@@ -225,7 +225,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
             )}
             
             <a href="/settings" className="block text-center py-3 bg-secondary/50 rounded-lg text-[10px] font-black uppercase tracking-widest text-nyt-accent hover:bg-nyt-accent hover:text-white transition-all">
-                Uredite sve svoje interese →
+                Uredite sva svoje interese →
             </a>
           </div>
         </section>
@@ -239,7 +239,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
                         <div key={item.value} className="flex items-center justify-between gap-4 p-3 bg-background border border-border rounded-lg group hover:border-nyt-accent/30 transition-all">
                             <div className="min-w-0">
                                 <p className="text-[10px] font-black truncate uppercase tracking-tighter">{item.value}</p>
-                                <p className="text-[8px] text-muted-foreground uppercase font-bold">{item.kind === 'topic' ? 'Tema' : 'Izvor'}</p>
+                                <p className="text-[8px] text-muted-foreground uppercase font-bold">{item.kind === 'topic' ? 'Tema' : 'izvor'}</p>
                             </div>
                             <PreferenceToggle 
                                 kind={item.kind as any} 

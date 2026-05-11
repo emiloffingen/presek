@@ -358,7 +358,7 @@ export default function BriefingDeliveryIsland({
           <button type="button" className={`flex w-full items-center justify-between p-4 rounded-xl border transition ${serverDelivery.isActive ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => updateServerDelivery({ isActive: !serverDelivery.isActive })}>
             <span className="text-left">
               <span className="block font-sans font-bold text-sm">Zakazana dostava je aktivna</span>
-              <span className="block text-[11px] text-muted-foreground mt-0.5">Glavni prekidač za serversku dostavu na ovom profilu.</span>
+              <span className="block text-[11px] text-muted-foreground mt-0.5">glavni prekidač za serversku dostavu na ovom profilu.</span>
             </span>
             <strong className={`text-[10px] font-black uppercase tracking-widest ${serverDelivery.isActive ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{serverDelivery.isActive ? 'Omogućeno' : 'Onemogućeno'}</strong>
           </button>

@@ -517,7 +517,7 @@ def test_home_route_composes_named_slots(mock_all):
                 "articles": [
                     {
                         "title": "For you 2",
-                        "source": "Nova",
+                        "source": "nova",
                         "topic": "Politika",
                         "category": "Srbija",
                         "created_at": "2026-04-22T12:00:00Z",

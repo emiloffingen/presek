@@ -1,4 +1,4 @@
-# Presek go-live checklist
+# Presek ga-live checklist
 
 ## 1. Pre-flight
 

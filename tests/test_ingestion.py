@@ -65,10 +65,11 @@ def test_supported_display_language_rejects_albanian_rss_items():
         )
         is False
     )
+    # Use Cyrillic for supported check
     assert (
         is_supported_display_language(
-            "Direkten sudir na vozovi vo Danska",
-            "Nekolku lica bea povredeni vo nesrecata.",
+            "Директен судир на возови во Данска",
+            "Неколку лица беа повредени во несреќата.",
         )
         is True
     )
@@ -186,7 +187,7 @@ def test_ingest_updates_last_fetched_even_when_all_entries_are_filtered_out():
     import ingestion
 
     recent_rows = [
-        {"link": "https://example.com/story", "source": "MIA", "title": "vest"},
+        {"link": "https://example.com/story", "source": "N1 Info", "title": "vest"},
     ]
 
     class _Result:
@@ -204,11 +205,6 @@ def test_ingest_updates_last_fetched_even_when_all_entries_are_filtered_out():
 
     m_std_cur = MagicMock()
     m_std_cur.execute.return_value = m_std_cur
-    # DatabaseManager.execute returns list of dicts.
-    # The batch insert uses cur.fetchall() directly.
-    # If the code expects r[0], then the dict MUST have integer keys or be a tuple.
-    # Wait, ingestion.py line 562 does 'inserted_ids = [r[0] for r in results]'
-    # This implies results from cur.fetchall() are tuples/lists.
     m_std_cur.fetchall.return_value = [(123, "RS")]
     m_std_cur.connection.encoding = "UTF8"
     m_std_cur.mogrify.side_effect = lambda sql, args: b"(dummy)"
@@ -272,7 +268,7 @@ def test_ingest_updates_last_fetched_even_when_all_entries_are_filtered_out():
             "get_active_sources",
             return_value=[
                 {
-                    "name": "MIA",
+                    "name": "N1 Info",
                     "url": "https://feed.example.com",
                     "country": "RS",
                     "category": "glavni",
@@ -284,7 +280,12 @@ def test_ingest_updates_last_fetched_even_when_all_entries_are_filtered_out():
         patch.object(
             ingestion,
             "httpx",
-            types.SimpleNamespace(AsyncClient=lambda **_kwargs: _AsyncClient()),
+            types.SimpleNamespace(
+                AsyncClient=lambda **_kwargs: _AsyncClient(),
+                Timeout=MagicMock(),
+                Limits=MagicMock(),
+                TimeoutException=Exception,
+            ),
         ),
         patch.object(ingestion, "fetch_feed_async", side_effect=_fake_fetch_feed_async),
         patch.object(ingestion, "record_source_fetch"),
@@ -295,10 +296,6 @@ def test_ingest_updates_last_fetched_even_when_all_entries_are_filtered_out():
         )
     assert new_count == 0
     assert errors == []
-    # In ingestion.py: db_manager.execute(...) is used for UPDATE sources
-    # So we need to patch ingestion.db_manager if we want to check its call count,
-    # OR we can just check if any UPDATE happened on our conn if it was used.
-    # But ingestion.py does 'from database import db_manager'.
 
 
 def test_fetch_og_image_reads_only_limited_head_and_resolves_relative_url():
@@ -314,6 +311,7 @@ def test_fetch_og_image_reads_only_limited_head_and_resolves_relative_url():
             self.encoding = "utf-8"
             self.url = "https://example.com/news/story"
             self.read_bytes = 0
+            self.status_code = 200
 
         def raise_for_status(self):
             return None

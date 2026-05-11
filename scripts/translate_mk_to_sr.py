@@ -77,12 +77,12 @@ MK_TO_SR: Dict[str, str] = {
     
     # Perspective labels
     "Kljucan ugao": "Kljucan ugao",
-    "Razliciti akcenti": "Razliciti akcenti",
-    "Zajednicka linija": "Zajednicka linija",
+    "razliciti akcenti": "razliciti akcenti",
+    "zajednicka linija": "zajednicka linija",
     "Sta ostaje otvoreno": "Sta ostaje otvoreno",
     "Sta ostaje otvoreno": "Sta ostaje otvoreno",
-    "Reakcije i odgovori": "Reakcije i odgovori",
-    "Siri kontekst": "Siri kontekst",
+    "reakcije i odgovori": "reakcije i odgovori",
+    "siri kontekst": "siri kontekst",
     "Visoko poverenje": "Visoko poverenje",
     "Nisko poverenje": "Nisko poverenje",
     "Srednje poverenje": "Srednje poverenje",
@@ -147,12 +147,12 @@ MK_TO_SR: Dict[str, str] = {
     " si": " si",
     "ce": "ce",
     "a": "a", "b": "b", "v": "v", "g": "g", "d": "d",
-    "dj": "dj", "e": "e", "z": "z", "z": "z",
+    "Dj": "Dj", "e": "e", "z": "z", "z": "z",
     "i": "i", "j": "j", "k": "k", "l": "l",
-    "lj": "lj", "m": "m", "n": "n", "nj": "nj",
+    "Lj": "Lj", "m": "m", "n": "n", "Nj": "Nj",
     "o": "o", "p": "p", "r": "r", "s": "s",
     "t": "t", "c": "c", "u": "u", "f": "f",
-    "h": "h", "c": "c", "c": "c", "dz": "dz",
+    "h": "h", "c": "c", "c": "c", "Dz": "Dz",
     "s": "s",
     "A": "A", "B": "B", "V": "V", "G": "G", "D": "D",
     "Dj": "Dj", "E": "E", "Z": "Z", "Z": "Z",
@@ -167,7 +167,7 @@ MK_TO_SR: Dict[str, str] = {
 # RS country code to RS
 MK_CODE_TO_RS: Dict[str, str] = {
     "RS": "RS", "rs": "rs",
-    "Srbija": "Srbija", "srbija": "srbija",
+    "Srbija": "Srbija", "Srbija": "Srbija",
 }
 
 # Cyrillic regex patterns

@@ -261,7 +261,7 @@ def test_event_stream_stops_when_client_disconnects():
                     created_at=datetime.datetime.now() - datetime.timedelta(minutes=8),
                 ),
                 "title": "Reuters pisuva za reakciite i rokot za novite carini",
-                "description": "Vtor izvor so Siri kontekst.",
+                "description": "Vtor izvor so siri kontekst.",
             },
             {
                 **_make_article(

@@ -108,7 +108,7 @@ async def _build_gemma_research_context(
         )
 
     if not articles:
-        raise HTTPException(status_code=404, detail="Klaster nije pronadjen")
+        raise HTTPException(status_code=404, detail="klaster nije pronadjen")
 
     summary_row = await db.async_execute_one(
         """
@@ -925,7 +925,7 @@ async def cluster_research(request: Request, cluster_id: str, q: str):
     )
 
     if not row:
-        raise HTTPException(status_code=404, detail="Klaster nije pronadjen")
+        raise HTTPException(status_code=404, detail="klaster nije pronadjen")
 
     context = f"{row['summary']}\n{row['generated_article']}"
     res = analyst.research_query(q, context)

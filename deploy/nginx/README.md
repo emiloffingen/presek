@@ -7,8 +7,8 @@ Together with the files in `deploy/systemd/`, this is the supported production d
 ## Routing model
 
 - `https://presek.live/` goes to Astro on `127.0.0.1:3000`
-- Public `/api/` requests go to FastAPI on `127.0.0.1:5001`
-- `/proxy`, `/static`, `sw.js`, and `manifest.json` also go to FastAPI
+- Public `/api/` requests ga to FastAPI on `127.0.0.1:5001`
+- `/proxy`, `/static`, `sw.js`, and `manifest.json` also ga to FastAPI
 - Only legacy OG image routes remain separate if you keep a compatibility shim during transition
 
 This keeps a single public API owner for the Astro site.

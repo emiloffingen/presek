@@ -10,7 +10,7 @@ _SR_IRREGULAR_LEMMAS = {
     "predsednici": "predsednik",
     "izbori": "izbor",
     "putevi": "put",
-    "svetovi": "svet",
+    "svetovi": "Svet",
 }
 
 _SR_PLURAL_SUFFIXES = [
@@ -127,7 +127,7 @@ LOCAL_TRANSLATION_WORDS = {
     "measure": "mera",
     "measures": "mere",
     "budget": "budžet",
-    "economy": "ekonomija",
+    "economy": "Ekonomija",
     "inflation": "inflacija",
     "market": "tržište",
     "markets": "tržišta",
@@ -196,13 +196,13 @@ LOCAL_TRANSLATION_MONTHS = {
 }
 
 LOCAL_TRANSLATION_EXTRA = {
-    "monday": "ponedeljak",
-    "tuesday": "utorak",
-    "wednesday": "sreda",
+    "monday": "Ponedeljak",
+    "tuesday": "Utorak",
+    "wednesday": "Sreda",
     "thursday": "četvrtak",
-    "friday": "petak",
-    "saturday": "subota",
-    "sunday": "nedelja",
+    "friday": "Petak",
+    "saturday": "Subota",
+    "sunday": "Nedelja",
     "today": "danas",
     "tomorrow": "sutra",
     "yesterday": "juče",
@@ -259,8 +259,8 @@ def _jaccard_similarity(sent1, sent2):
     return len(words1 & words2) / len(words1 | words2)
 
 
-def rewrite_to_macedonian_locally(text):
-    """Deterministic, low-cost rewrite for short news text."""
+def rewrite_to_serbian_locally(text):
+    """Deterministic, low-cost rewrite for short news text in Serbian."""
     text = re.sub(r"\s+", " ", str(text or "")).strip()
     if not text:
         return text
@@ -270,13 +270,10 @@ def rewrite_to_macedonian_locally(text):
     )
     text = re.sub(r"^\s*summary\s*:\s*", "", text, flags=re.IGNORECASE)
 
-    cyrillic_chars = len(re.findall(r"[A-Za-z]", text))
-    latin_chars = len(re.findall(r"[A-Za-z]", text))
-    if cyrillic_chars >= max(8, latin_chars):
-        normalized = re.sub(r"\s+", " ", text).strip(" -–—")
-        return normalized[:420]
-
-    working = f" {text} "
+    # Simplified normalization - no longer enforced Macedonian Cyrillic threshold
+    normalized = re.sub(r"\s+", " ", text).strip(" -–—")
+    
+    working = f" {normalized} "
     for pattern, replacement in LOCAL_TRANSLATION_PHRASES:
         working = re.sub(pattern, replacement, working, flags=re.IGNORECASE)
 
@@ -298,6 +295,8 @@ def rewrite_to_macedonian_locally(text):
 
     working = re.sub(r"\b[A-Za-z][A-Za-z'-]*\b", _replace_word, working)
     working = re.sub(r"\s+", " ", working).strip()
+    
+    # Remove articles
     for w in ["the", "a", "an"]:
         working = re.sub(rf"\b{w}\b", "", working, flags=re.IGNORECASE)
 
@@ -305,8 +304,6 @@ def rewrite_to_macedonian_locally(text):
     working = re.sub(r"\s+\.", ".", working)
     working = re.sub(r"\s{2,}", " ", working).strip(" -–—")
 
-    if not re.search(r"[A-Za-z]", working):
-        return text[:420]
     if not re.search(r"[.!?]$", working):
         working += "."
     return working[:420]

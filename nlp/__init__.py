@@ -9,7 +9,7 @@ from nlp.keywords import (
 )
 from nlp.text_processing import (
     lemmatize_sr,
-    rewrite_to_macedonian_locally,
+    rewrite_to_serbian_locally,
     synthesize_locally,
 )
 from nlp.generation import (
@@ -32,7 +32,7 @@ __all__ = [
     "normalize_tag_name",
     "is_valid_focus_entity",
     "lemmatize_sr",
-    "rewrite_to_macedonian_locally",
+    "rewrite_to_serbian_locally",
     "summarize_article_fallback",
     "synthesize_cluster_fallback",
     "generate_daily_brief_fallback",

@@ -23,7 +23,7 @@ This document defines the visual and structural language of the Presek platform,
   - Style: Heavy weight (800-900) for labels, wide tracking (0.1em) for kickers.
 
 ### Cyrillic Optimization
-- **Macedonian Vertical Rhythm:** Cyrillic headlines use an increased `line-height` (1.12 - 1.15) to prevent collision of descenders and ascenders (e.g., dj, j, c).
+- **Macedonian Vertical Rhythm:** Cyrillic headlines use an increased `line-height` (1.12 - 1.15) to prevent collision of descenders and ascenders (e.g., Dj, j, c).
 - **Features:** `font-variant-ligatures: common-ligatures` and `font-kerning: normal` are enabled globally for serif text.
 
 ## 2. Grid & Structural Rules
@@ -71,4 +71,4 @@ This document defines the visual and structural language of the Presek platform,
 - **Pattern:** Elements enter with a `18px` upward translate and opacity fade over `620ms`.
 
 ---
-*Last updated: April 2026 • Presek AI Design System*
+*Last updated: april 2026 • Presek AI Design System*

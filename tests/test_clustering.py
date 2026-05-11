@@ -18,17 +18,17 @@ _DB_PATCH = "database.db_manager"
 
 
 def test_sr_stem():
-    assert sr_stem("vladata") == "vlad"
-    assert sr_stem("vlada") == "vlada"  # No suffix
-    assert sr_stem("ucenjeto") == "ucenje"  # length constraint skips 'enjeto', strips 'to'
-    assert sr_stem("kratok") == "kratok"  # no matching suffix
+    assert sr_stem("vladanje") == "vlad"
+    assert sr_stem("vlada") == "vlada"
+    assert sr_stem("pevanje") == "pev"
+    assert sr_stem("kratak") == "kratak"
 
 
 def test_text_to_vector():
     # Stopwords should be removed
-    vec = text_to_vector("ova e test za vladata")
+    vec = text_to_vector("ova je test za vladanje")
     assert "ova" not in vec
-    assert "e" not in vec
+    assert "je" not in vec
     assert "za" not in vec
     # Stemming should be applied
     assert vec["test"] == 1
@@ -36,8 +36,8 @@ def test_text_to_vector():
 
 
 def test_get_cosine():
-    vec1 = Counter({"vlada": 1, "test": 1})
-    vec2 = Counter({"vlada": 1, "uce": 1})
+    vec1 = Counter({"vlad": 1, "test": 1})
+    vec2 = Counter({"vlad": 1, "uce": 1})
     vec3 = Counter({"nesto": 1, "sosema": 1, "razlicito": 1})
 
     # Cosine similarity of identical vectors should be 1.0
@@ -53,17 +53,17 @@ def test_get_cosine():
 
 def test_title_phrase_overlap_prefers_shared_bigram_structure():
     close = _title_phrase_overlap(
-        "Vladata usvoi paket merki za Ekonomija",
-        "Nov paket merki za Ekonomija usvoi vladata",
+        "Vlada usvojila paket mera za Ekonomiju",
+        "Nov paket mera za Ekonomiju usvojila vlada",
     )
     far = _title_phrase_overlap(
-        "Vladata usvoi paket merki za Ekonomija", "Fudbalski natprevar vo Liga Sampioni"
+        "Vlada usvojila paket mera za Ekonomiju", "Fudbalski meč u Ligi Šampiona"
     )
     assert close > far
 
 
 def test_topic_bridge_is_more_permissive_for_fresh_followups_than_old_ones():
-    shared = {"Kocani"}
+    shared = {"Kočani"}
     assert (
         _topic_bridge_allowed(
             "Politika", "vesti", "Srbija", "Srbija", 0.0, 0.55, shared, 4.0
@@ -81,13 +81,13 @@ def test_topic_bridge_is_more_permissive_for_fresh_followups_than_old_ones():
 @patch(_DB_PATCH, _mock_db)
 def test_find_or_create_cluster():
     recent_articles = [
-        {"cluster_id": "c1", "title": "Vladata donese nova merka za ekonomijata"},
-        {"cluster_id": "c1", "title": "nova merka na vladata za Ekonomija"},
-        {"cluster_id": "c2", "title": "Sportski nastan vo Beograd"},
+        {"cluster_id": "c1", "title": "Vlada donela novu meru za ekonomiju"},
+        {"cluster_id": "c1", "title": "nova mera vlade za Ekonomiju"},
+        {"cluster_id": "c2", "title": "Sportski događaj u Beogradu"},
     ]
 
-    # Should match cluster 1 (use very similar words to pass threshold 0.35)
-    title1 = "Vladata donese merka za ekonomijata"
+    # Should match cluster 1
+    title1 = "Vlada donela meru za ekonomiju"
     cid1 = find_or_create_cluster(MagicMock(), title1, recent_articles)
     assert cid1 == "c1"
 
@@ -102,42 +102,38 @@ def test_find_or_create_cluster():
 def test_max_cluster_size():
     # Mocking a full cluster
     recent_articles = [
-        {"cluster_id": "c1", "title": "Vladata donese nova merka za ekonomijata"}
-    ] * 30
-    title1 = "Merki na vladata za Ekonomija"
+        {"cluster_id": "c1", "title": "Vlada donela novu meru za ekonomiju"}
+    ] * 40
+    title1 = "Mere vlade za Ekonomiju"
     cid1 = find_or_create_cluster(MagicMock(), title1, recent_articles)
-    assert cid1 != "c1"  # Should not join full cluster
+    assert cid1 != "c1"
 
 
 def test_empty_title_creates_new_cluster():
-    """Empty or very short title should create a new cluster."""
-    recent = [{"cluster_id": "c1", "title": "Vladata donese merka"}]
+    recent = [{"cluster_id": "c1", "title": "Vlada donela meru"}]
     cid = find_or_create_cluster(MagicMock(), "", recent)
     assert cid != "c1"
 
 
 def test_no_recent_articles():
-    """With no recent articles, should always create new cluster."""
     cid = find_or_create_cluster(MagicMock(), "nova vazna vest", [])
-    assert len(cid) == 12  # uuid.hex[:12]
+    assert len(cid) == 12
 
 
 @patch(_DB_PATCH, _mock_db)
 def test_completely_different_topic():
-    """Completely unrelated titles should not cluster together."""
     recent = [
-        {"cluster_id": "c1", "title": "Vladata donese nova merka za ekonomijata"},
+        {"cluster_id": "c1", "title": "Vlada donela novu meru za ekonomiju"},
     ]
     cid = find_or_create_cluster(
-        MagicMock(), "Fudbalski natprevar vo Liga Sampioni", recent
+        MagicMock(), "Fudbalski meč u Ligi Šampiona", recent
     )
     assert cid != "c1"
 
 
 def test_sr_stem_short_words_unchanged():
-    """Words shorter than 5 chars should not be stemmed."""
     assert sr_stem("mir") == "mir"
-    assert sr_stem("zema") == "zema"
+    assert sr_stem("ovaj") == "ovaj"
     assert sr_stem("a") == "a"
 
 
@@ -147,7 +143,7 @@ def test_text_to_vector_empty():
 
 
 def test_text_to_vector_all_stopwords():
-    vec = text_to_vector("i na vo od so za")
+    vec = text_to_vector("i na u od sa za")
     assert len(vec) == 0
 
 
@@ -163,33 +159,26 @@ def test_get_cosine_identical():
 
 @patch(_DB_PATCH, _mock_db)
 def test_cluster_age_decay():
-    """Older cluster representatives should be harder to match (higher threshold)."""
     import datetime
-
     old_time = datetime.datetime.now() - datetime.timedelta(hours=48)
     recent_time = datetime.datetime.now() - datetime.timedelta(minutes=5)
-
-    title = "Vladata donese merka za ekonomijata"
-
+    title = "Vlada donela meru za ekonomiju"
     recent_articles = [
         {
             "cluster_id": "c-old",
-            "title": "Vladata donese nova merka za ekonomijata",
+            "title": "Vlada donela novu meru za ekonomiju",
             "created_at": old_time,
         },
     ]
     fresh_articles = [
         {
             "cluster_id": "c-new",
-            "title": "Vladata donese nova merka za ekonomijata",
+            "title": "Vlada donela novu meru za ekonomiju",
             "created_at": recent_time,
         },
     ]
-
     cid_old = find_or_create_cluster(MagicMock(), title, recent_articles)
     cid_new = find_or_create_cluster(MagicMock(), title, fresh_articles)
-
-    # Fresh cluster should be matched, old cluster may not due to age penalty
     assert cid_new == "c-new"
 
 
@@ -198,18 +187,17 @@ def test_phrase_overlap_helps_short_variants_join_same_cluster():
     recent_articles = [
         {
             "cluster_id": "c1",
-            "title": "Paket merki za Ekonomija od Vladata",
+            "title": "Paket mera za Ekonomiju od Vlade",
             "created_at": datetime.datetime.now(),
         },
         {
             "cluster_id": "c2",
-            "title": "Fudbalski natprevar vo Beograd",
+            "title": "Fudbalski meč u Beogradu",
             "created_at": datetime.datetime.now(),
         },
     ]
-
     cid = find_or_create_cluster(
-        MagicMock(), "Vladata so paket merki za Ekonomija", recent_articles
+        MagicMock(), "Vlada sa paketom mera za Ekonomiju", recent_articles
     )
     assert cid == "c1"
 
@@ -219,73 +207,67 @@ def test_same_source_unrelated_followup_does_not_merge_after_time_gap():
     recent_articles = [
         {
             "cluster_id": "c1",
-            "title": "danas e Upokoenie na Sveti Metodij Solunski",
+            "title": "danas je Upokojenje Svetog Metodija Solunskog",
             "created_at": datetime.datetime.now() - datetime.timedelta(hours=23),
-            "source": "Skopje Info",
+            "source": "Beograd Info",
             "category": "Srbija",
             "topic": "vesti",
         }
     ]
-
     cid = find_or_create_cluster(
         MagicMock(),
-        "Pisuva „Skopski Heroj“: Glaven grad bez nocen zivot – kade iscezna urbanoto Beograd?",
+        "Piše „Beogradski Heroj“: glavni grad bez noćnog života",
         recent_articles,
         category="Srbija",
-        source="Skopje Info",
+        source="Beograd Info",
         topic="vesti",
     )
-
     assert cid != "c1"
 
 
 @patch(_DB_PATCH, _mock_db)
 def test_topic_bridge_allows_same_story_followup_when_entities_and_title_overlap_are_strong():
-    _mock_db.get_cluster_entities.return_value = {"c1": {"Kocani", "Obvinitelstvo"}}
+    _mock_db.get_cluster_entities.return_value = {"c1": {"Kočani", "Tužilaštvo"}}
     recent_articles = [
         {
             "cluster_id": "c1",
-            "title": "Obvinitelstvoto otvori istraga za pozarot vo Kocani",
+            "title": "Tužilaštvo otvorilo istragu za požar u Kočanima",
             "created_at": datetime.datetime.now(),
-            "source": "MIA",
+            "source": "N1 Info",
             "category": "Srbija",
             "topic": "vesti",
         }
     ]
-
     cid = find_or_create_cluster(
         MagicMock(),
-        "Kocani: Obvinitelstvoto bara novi dokazi vo istragata za pozarot",
+        "Kočani: Tužilaštvo traži nove dokaze u istrazi za požar",
         recent_articles,
         category="Srbija",
-        source="Telma",
+        source="danas",
         topic="Politika",
     )
-
     assert cid == "c1"
 
 
 @patch(_DB_PATCH, _mock_db)
 def test_topic_bridge_does_not_merge_same_category_story_without_shared_entities_or_overlap():
-    _mock_db.get_cluster_entities.return_value = {"c1": {"Kocani", "Obvinitelstvo"}}
+    _mock_db.get_cluster_entities.return_value = {"c1": {"Kočani", "Tužilaštvo"}}
     recent_articles = [
         {
             "cluster_id": "c1",
-            "title": "Obvinitelstvoto otvori istraga za pozarot vo Kocani",
+            "title": "Tužilaštvo otvorilo istragu za požar u Kočanima",
             "created_at": datetime.datetime.now(),
-            "source": "MIA",
+            "source": "N1 Info",
             "category": "Srbija",
             "topic": "vesti",
         }
     ]
-
     cid = find_or_create_cluster(
         MagicMock(),
-        "Vladata otvora nov konkurs za direktori na ucilista",
+        "Vlada otvara nov konkurs za direktore škola",
         recent_articles,
         category="Srbija",
-        source="Sitel",
+        source="nova.rs",
         topic="Politika",
     )
-
     assert cid != "c1"
