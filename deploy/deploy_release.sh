@@ -76,6 +76,12 @@ assert_disk_space() {
 
 discover_app_services() {
   info "Discovering Presek systemd services"
+  
+  # Validate systemd target exists
+  if ! systemctl list-unit-files "$SYSTEMD_TARGET" >/dev/null 2>&1; then
+    fail "systemd target not found: $SYSTEMD_TARGET"
+  fi
+  
   # Find all services starting with presek- that are part of the target or known to be part of the app
   local services=()
   while IFS= read -r line; do
@@ -97,6 +103,11 @@ discover_app_services() {
   else
     APP_SERVICES=("${services[@]}")
     info "Discovered ${#APP_SERVICES[@]} services: ${APP_SERVICES[*]}"
+  fi
+  
+  # Validate we have at least one service
+  if [ "${#APP_SERVICES[@]}" -eq 0 ]; then
+    fail "No application services discovered or configured"
   fi
 }
 
@@ -244,6 +255,8 @@ ensure_layout() {
   [ -x "$VENV_DIR/bin/uvicorn" ] || fail "Missing Python runtime at $VENV_DIR/bin/uvicorn"
   [ -d "$SHARED_WEB_NODE_MODULES" ] || fail "Missing shared Astro dependencies at $SHARED_WEB_NODE_MODULES. Run deploy/bootstrap_runtime_root.sh first."
   [ -f "$SOURCE_ROOT/web/package.json" ] || fail "Missing Astro app at $SOURCE_ROOT/web/package.json"
+  # Validate shared models directory exists for symlinking
+  install -d "$SHARED_DIR/models"
 }
 
 copy_release_tree() {
@@ -274,7 +287,12 @@ copy_release_tree() {
     --exclude 'static/uploads/*' \
     --exclude 'static/generated/*' \
     --exclude 'models/' \
-    "$SOURCE_ROOT/" "$RELEASE_DIR/"
+    "$SOURCE_ROOT/" "$RELEASE_DIR/" || fail "rsync failed to copy source tree"
+  
+  # Validate key files were copied
+  [ -f "$RELEASE_DIR/api_fast.py" ] || fail "api_fast.py missing after copy"
+  [ -f "$RELEASE_DIR/celery_app.py" ] || fail "celery_app.py missing after copy"
+  [ -f "$RELEASE_DIR/web/package.json" ] || fail "web/package.json missing after copy"
 }
 
 prepare_release_runtime_links() {
@@ -329,10 +347,15 @@ ensure_release_venv() {
     # --frozen ensures we use exactly what's in uv.lock
     # --no-dev excludes development dependencies
     # --no-install-project skips installing the current package itself
-    UV_PROJECT_ENVIRONMENT="$versioned_venv" uv sync --frozen --no-dev --no-install-project --directory "$RELEASE_DIR"
+    UV_PROJECT_ENVIRONMENT="$versioned_venv" uv sync --frozen --no-dev --no-install-project --directory "$RELEASE_DIR" || fail "uv sync failed for versioned venv"
   else
     info "Reusing versioned Python runtime $versioned_venv"
   fi
+
+  # Validate venv was created/exists and has required binaries
+  [ -x "$versioned_venv/bin/python3" ] || fail "Versioned Python runtime not found at $versioned_venv/bin/python3"
+  [ -x "$versioned_venv/bin/uvicorn" ] || fail "uvicorn not found in versioned venv"
+  [ -x "$versioned_venv/bin/celery" ] || fail "celery not found in versioned venv"
 
   RELEASE_VENV_TARGET="$versioned_venv"
 }
@@ -361,18 +384,21 @@ ensure_release_web_deps() {
       (cd "$versioned_web_deps" && npm ci) || {
         if [ "$ALLOW_NPM_INSTALL_FALLBACK" = "1" ]; then
           warn "npm ci failed; falling back to npm install (ALLOW_NPM_INSTALL_FALLBACK=1)"
-          (cd "$versioned_web_deps" && npm install)
+          (cd "$versioned_web_deps" && npm install) || fail "npm install fallback failed"
         else
           fail "npm ci failed. Fix package-lock.json or set ALLOW_NPM_INSTALL_FALLBACK=1 intentionally."
         fi
       }
     else
       warn "package-lock.json missing; using npm install"
-      (cd "$versioned_web_deps" && npm install)
+      (cd "$versioned_web_deps" && npm install) || fail "npm install failed"
     fi
   else
     info "Reusing versioned Astro dependencies $versioned_web_deps"
   fi
+
+  # Validate node_modules exists
+  [ -d "$versioned_web_deps/node_modules" ] || fail "node_modules not found at $versioned_web_deps/node_modules"
 
   RELEASE_WEB_NODE_MODULES_TARGET="$versioned_web_deps/node_modules"
 }
@@ -382,10 +408,17 @@ update_active_runtime_links() {
   local web_target="$2"
   local temp_venv="$APP_ROOT/.venv.$$"
   local temp_web="$APP_ROOT/.web-node_modules.$$"
-  ln -sfn "$venv_target" "$temp_venv"
-  mv -Tf "$temp_venv" "$VENV_DIR"
-  ln -sfn "$web_target" "$temp_web"
-  mv -Tf "$temp_web" "$SHARED_WEB_NODE_MODULES"
+  
+  # Cleanup any stale temp links from previous failed runs
+  rm -f "$temp_venv" "$temp_web"
+  
+  ln -sfn "$venv_target" "$temp_venv" || fail "Failed to create temp venv symlink"
+  mv -Tf "$temp_venv" "$VENV_DIR" || fail "Failed to update venv symlink"
+  ln -sfn "$web_target" "$temp_web" || fail "Failed to create temp web modules symlink"
+  mv -Tf "$temp_web" "$SHARED_WEB_NODE_MODULES" || fail "Failed to update web modules symlink"
+  
+  # Cleanup temp files
+  rm -f "$temp_venv" "$temp_web"
 }
 
 build_release() {
@@ -453,7 +486,7 @@ PY
 run_migrations() {
   if [ "$BACKUP_BEFORE_MIGRATIONS" = "1" ]; then
     info "Creating database backup before schema updates"
-    REQUIRE_BACKUP_ENCRYPTION="$REQUIRE_ENCRYPTED_BACKUPS" APP_ROOT="$APP_ROOT" bash "$BACKUP_SCRIPT"
+    REQUIRE_BACKUP_ENCRYPTION="$REQUIRE_ENCRYPTED_BACKUPS" APP_ROOT="$APP_ROOT" bash "$BACKUP_SCRIPT" || fail "Database backup failed"
     DB_BACKUP_CREATED=1
   else
     warn "Skipping pre-migration database backup (BACKUP_BEFORE_MIGRATIONS=0)"
@@ -462,9 +495,9 @@ run_migrations() {
   info "Running database schema updates"
   # Try Alembic first, fallback to legacy init_db if needed
   if [ -f "$RELEASE_DIR/alembic.ini" ]; then
-    (cd "$RELEASE_DIR" && "$RELEASE_VENV_TARGET/bin/alembic" upgrade head)
+    (cd "$RELEASE_DIR" && "$RELEASE_VENV_TARGET/bin/alembic" upgrade head) || fail "Alembic migrations failed"
   else
-    (cd "$RELEASE_DIR" && "$RELEASE_VENV_TARGET/bin/python3" -c "import config; from database import init_db; init_db()")
+    (cd "$RELEASE_DIR" && "$RELEASE_VENV_TARGET/bin/python3" -c "import config; from database import init_db; init_db()") || fail "Legacy schema init failed"
   fi
   SCHEMA_UPDATED=1
 }
@@ -486,7 +519,7 @@ restart_and_smoke() {
     info "Syncing nginx snippets"
     sudo install -d /etc/nginx/snippets || return 1
     
-    # Backup existing snippets
+    # Backup existing snippets for potential rollback
     [ -f /etc/nginx/snippets/presek-security-headers.conf ] && sudo cp /etc/nginx/snippets/presek-security-headers.conf /etc/nginx/snippets/presek-security-headers.conf.bak
     [ -f /etc/nginx/snippets/presek-routes.conf ] && sudo cp /etc/nginx/snippets/presek-routes.conf /etc/nginx/snippets/presek-routes.conf.bak
 
@@ -543,9 +576,28 @@ rollback_release() {
   switch_current_link "$previous_target"
   ln -sfn "$failed_release" "$PREVIOUS_LINK"
   update_active_runtime_links "$current_venv_target" "$current_web_deps_target"
+  
+  # Restore nginx snippets if backups exist
+  if [ -f /etc/nginx/snippets/presek-security-headers.conf.bak ]; then
+    info "Restoring nginx security headers from backup"
+    sudo mv /etc/nginx/snippets/presek-security-headers.conf.bak /etc/nginx/snippets/presek-security-headers.conf || warn "Failed to restore nginx security headers"
+  fi
+  if [ -f /etc/nginx/snippets/presek-routes.conf.bak ]; then
+    info "Restoring nginx routes from backup"
+    sudo mv /etc/nginx/snippets/presek-routes.conf.bak /etc/nginx/snippets/presek-routes.conf || warn "Failed to restore nginx routes"
+  fi
+  
   cleanup_orphaned_runtime_listeners
   sudo systemctl restart "${APP_SERVICES[@]}" || return 1
   sudo systemctl start "$SYSTEMD_TARGET" || return 1
+  
+  # Validate nginx config after rollback
+  if ! sudo nginx -t 2>/dev/null; then
+    warn "Nginx configuration invalid after rollback. Manual intervention required."
+  else
+    sudo systemctl reload "$NGINX_SERVICE" || warn "Failed to reload nginx after rollback"
+  fi
+  
   if [ "$failed_release_schema_updated" = "1" ]; then
     if [ "$failed_release_backup_created" = "1" ]; then
       warn "Code rollback completed after schema updates. Restore the pre-deploy database backup if the previous release is not schema-compatible."
@@ -566,6 +618,7 @@ main() {
   need_cmd flock
   need_cmd sha256sum
   need_cmd uv
+  need_cmd curl
   need_cmd "$PYTHON_BIN"
 
   assert_paths_safe
