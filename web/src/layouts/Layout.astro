@@ -51,7 +51,6 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 <!doctype html>
 <html lang="mk">
 	<head>
-		<script async src="https://jsc.adskeeper.com/site/1093736.js" async></script>
 		<script async src="https://www.googletagmanager.com/gtag/js?id=G-SV2R3LZJ5C"></script>
 		<script is:inline>
 			window.dataLayer = window.dataLayer || [];
@@ -194,19 +193,6 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 			document.addEventListener('astro:page-load', initParallax);
 		</script>
         
-        <!-- AdsKeeper In-Site Notification Widget -->
-        <div id="ads-notification-widget" data-type="_mgwidget" data-widget-id="2007018"></div>
-        <script is:inline data-astro-rerun>
-            (function(w,q){
-                const el = document.getElementById('ads-notification-widget');
-                if (el) {
-                    const isDark = document.documentElement.classList.contains('dark');
-                    el.setAttribute('data-color-theme', isDark ? 'dark' : 'light');
-                }
-                w[q]=w[q]||[];
-                w[q].push(["_mgc.load"])
-            })(window,"_mgq");
-        </script>
 		<script>
 			// Global Headline Reveal Animation
 			const initHeadlineReveal = () => {

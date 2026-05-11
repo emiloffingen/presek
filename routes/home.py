@@ -263,6 +263,11 @@ def _decorate_cluster_display(cluster):
         _decorate_article_display(article)
         for article in (cluster.get("articles") or [])
     ]
+    # Inject synthesized fields if they exist in the cluster data
+    if "synthetic_headline" in cluster:
+        decorated["synthetic_headline"] = cluster["synthetic_headline"]
+    if "synthetic_standfirst" in cluster:
+        decorated["synthetic_standfirst"] = cluster["synthetic_standfirst"]
     return decorated
 
 

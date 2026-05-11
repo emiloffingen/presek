@@ -419,14 +419,13 @@ ENABLE_EXPENSIVE_STYLE_TASKS = (
 )
 
 # ── AI Routing Configuration ────────────────────────────────────
-# Use Mistral large (free) first, then small (paid), then Local fallback
-PROVIDER_FALLBACK_ORDER_RESEARCH = ["mistral_large", "gemini", "mistral_small", "local"]
-PROVIDER_FALLBACK_ORDER_SUMMARY = ["mistral_large", "gemini", "mistral_small", "local"]
+# Use Mistral large (free) first, then small (paid)
+PROVIDER_FALLBACK_ORDER_RESEARCH = ["mistral_large", "gemini", "mistral_small"]
+PROVIDER_FALLBACK_ORDER_SUMMARY = ["mistral_large", "gemini", "mistral_small"]
 PROVIDER_FALLBACK_ORDER = [
     "mistral_large",
     "gemini",
     "mistral_small",
-    "local",
 ]  # default
 
 # ── Clustering Parameters ───────────────────────────────────────
