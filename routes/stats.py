@@ -843,8 +843,8 @@ async def get_sentiment_trends():
         SELECT 
             DATE(created_at) as day,
             AVG((sentiment->'sentiment'->>'score')::float) as avg_score,
-            AVG((sentiment->'tone_analysis'->>'objectivity')::float) as avg_objectivity,
-            AVG((sentiment->'tone_analysis'->>'sensationalism')::float) as avg_sensationalism,
+            AVG((tone_analysis->>'objectivity')::float) as avg_objectivity,
+            AVG((tone_analysis->>'sensationalism')::float) as avg_sensationalism,
             COUNT(*) as cluster_count
         FROM cluster_summaries
         WHERE created_at >= NOW() - INTERVAL '7 days'
@@ -903,7 +903,7 @@ async def get_current_mood():
         SELECT 
             sentiment->'sentiment'->>'tone' as tone,
             (sentiment->'sentiment'->>'score')::float as score,
-            (sentiment->'tone_analysis'->>'objectivity')::float as objectivity
+            (tone_analysis->>'objectivity')::float as objectivity
         FROM cluster_summaries
         WHERE created_at >= NOW() - INTERVAL '24 hours'
           AND sentiment IS NOT NULL

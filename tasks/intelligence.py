@@ -387,8 +387,8 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
     citation_sources = _build_citation_sources(article_rows)
     source_context = _build_synthesis_source_context(article_rows)
 
-    # In fast mode, we use a much shorter token limit to get a response in seconds
-    max_tokens = 800 if fast_mode else 3200
+    # In fast mode, we use a slightly shorter token limit but still enough for the full JSON schema
+    max_tokens = 1600 if fast_mode else 3200
 
     # 1. Fetch Historical Context (Cross-Story Memory)
     history_context = ""
@@ -497,6 +497,10 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 synthetic_headline = res_data.get("synthetic_headline", "")
                 synthetic_standfirst = res_data.get("synthetic_standfirst", "")
                 perspectives = res_data.get("perspectives", [])
+
+            # Ensure summary is a string for validation and comparison
+            if isinstance(summary, list):
+                summary = "\n".join(str(s) for s in summary)
 
             verification_report = res_data.get("verification_report")
             quote = validate_person_names(res_data.get("quote", ""))
@@ -931,8 +935,8 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 "verdict": "Автоматска проценка од достапните извори.",
             }
             db.execute(
-                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, verification_report, citation_sources, key_facts, analyst_entities, pulse_score, pluralism_score, narrative_diversity)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NULL, %s, %s, %s, %s, %s, %s)
+                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, tone_analysis, verification_report, citation_sources, key_facts, analyst_entities, pulse_score, pluralism_score, narrative_diversity)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NULL, %s, %s, %s, %s, %s, %s)
                    ON CONFLICT (cluster_id) DO UPDATE
                    SET summary = EXCLUDED.summary,
                        perspectives = EXCLUDED.perspectives,
@@ -941,6 +945,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                        synthetic_standfirst = EXCLUDED.synthetic_standfirst,
                        created_at = EXCLUDED.created_at,
                        sentiment = EXCLUDED.sentiment,
+                       tone_analysis = EXCLUDED.tone_analysis,
                        citation_sources = EXCLUDED.citation_sources,
                        key_facts = EXCLUDED.key_facts,
                        analyst_entities = EXCLUDED.analyst_entities,
@@ -956,6 +961,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                     "",
                     datetime.datetime.now(),
                     json.dumps(sentiment_data),
+                    json.dumps(sentiment_data.get("tone_analysis", {})),
                     json.dumps(citation_sources),
                     json.dumps(key_facts),
                     json.dumps([]),

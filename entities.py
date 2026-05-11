@@ -511,7 +511,7 @@ def normalize_person_surface_name(name: str) -> str:
     return clean
 
 
-def validate_person_names(text: str) -> str:
+def validate_person_names(text: str | list[str]) -> str | list[str]:
     """
     Heuristic to fix AI hallucinations of famous names.
     If it finds 'Dimitar Filipce' but 'Filipce' is known as 'Venko', and 'Dimitar' is known as 'Kovacevski',
@@ -520,12 +520,17 @@ def validate_person_names(text: str) -> str:
     if not text:
         return text
 
+    is_list = isinstance(text, list)
+    if is_list:
+        joined_text = "\n".join(str(t) for t in text)
+    else:
+        joined_text = str(text)
+
     # 1. Look for known name phrases (2 or 3 parts)
-    # This regex matches 2 to 3 capitalized words, where each word can contain internal hyphens
     all_words = re.findall(
-        r"\b[А-ЯЀ-ӿ][а-яѐ-ӿ-]+(?:\s+[А-ЯЀ-ӿ][а-яѐ-ӿ-]+){1,2}\b", text
+        r"\b[А-ЯЀ-ӿ][а-яѐ-ӿ-]+(?:\s+[А-ЯЀ-ӿ][а-яѐ-ӿ-]+){1,2}\b", joined_text
     )
-    # print(f"DEBUG: all_words={all_words}")
+    all_words = list(set(all_words))  # De-duplicate for efficiency
     all_words.sort(key=len, reverse=True)
 
     for pair in all_words:
@@ -569,7 +574,6 @@ def validate_person_names(text: str) -> str:
             canonical_last = canonical_parts[-1]
 
             # Improvement: Replace if first name is wrong OR if surname is an alias/variant (like Osmanoska)
-            # is_wrong_first: Bujar (m) used with Siljanovska (f)
             is_wrong_first = first != canonical_parts[0] and first in _KNOWN_FIRSTNAMES
 
             # Special logic for Bujar + Siljanovska
@@ -579,24 +583,23 @@ def validate_person_names(text: str) -> str:
             ):
                 is_wrong_first = True
                 canonical = "Гордана Силјановска-Давкова"
-                canonical_parts = canonical.split()
-                canonical_last = canonical_parts[-1]
 
             is_alias_surname = matched_part != canonical_last
 
             if is_wrong_first or is_alias_surname:
                 # Use word boundaries and ensure we match the ENTIRE pair
-                # Using clean_pair which is what split into parts
                 pattern = (
                     rf"(?<![А-ЯЀ-ӿа-яѐ-ӿ-]){re.escape(clean_pair)}(?![А-ЯЀ-ӿа-яѐ-ӿ-])"
                 )
-                if re.search(pattern, text):
-                    text = re.sub(pattern, canonical, text)
+                if re.search(pattern, joined_text):
+                    joined_text = re.sub(pattern, canonical, joined_text)
                     log.info(
                         f"[entities/fix] Hallucination detected: {clean_pair} -> {canonical}"
                     )
 
-    return text
+    if is_list:
+        return joined_text.split("\n")
+    return joined_text
 
 
 def normalize_entity_name(name: str) -> str:

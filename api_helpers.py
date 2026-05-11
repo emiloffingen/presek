@@ -226,7 +226,7 @@ def normalize_perspectives(raw_perspectives) -> list[dict]:
         try:
             raw_perspectives = json.loads(raw_perspectives)
         except Exception as e:
-            log.debug(f"Failed to parse perspectives JSON: {e}")
+            log.warning(f"Failed to parse perspectives JSON: {e}")
             return []
     if not isinstance(raw_perspectives, list):
         return []

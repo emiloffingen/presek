@@ -546,8 +546,8 @@ async def get_source_pulse(category: Optional[str] = None):
             SELECT
                 a.source,
                 COALESCE(AVG(CAST(s.sentiment->'sentiment'->>'score' AS REAL)), 0) as avg_sentiment,
-                COALESCE(AVG(CAST(s.sentiment->'tone_analysis'->>'objectivity' AS REAL)), 0) as avg_objectivity,
-                COALESCE(AVG(CAST(s.sentiment->'tone_analysis'->>'sensationalism' AS REAL)), 0) as avg_sensationalism,
+                COALESCE(AVG(CAST(s.tone_analysis->>'objectivity' AS REAL)), 0) as avg_objectivity,
+                COALESCE(AVG(CAST(s.tone_analysis->>'sensationalism' AS REAL)), 0) as avg_sensationalism,
                 COUNT(DISTINCT a.cluster_id) as cluster_count
             FROM cluster_summaries s
             JOIN articles a ON s.cluster_id = a.cluster_id
@@ -776,8 +776,8 @@ async def get_global_pulse(category: Optional[str] = None):
             SELECT 
                 t as topic,
                 COALESCE(AVG(CAST(s.sentiment->'sentiment'->>'score' AS REAL)), 0) as avg_sentiment,
-                COALESCE(AVG(CAST(s.sentiment->'tone_analysis'->>'objectivity' AS REAL)), 0) as avg_objectivity,
-                COALESCE(AVG(CAST(s.sentiment->'tone_analysis'->>'sensationalism' AS REAL)), 0) as avg_sensationalism,
+                COALESCE(AVG(CAST(s.tone_analysis->>'objectivity' AS REAL)), 0) as avg_objectivity,
+                COALESCE(AVG(CAST(s.tone_analysis->>'sensationalism' AS REAL)), 0) as avg_sensationalism,
                 COUNT(*) as n
             FROM cluster_summaries s
             JOIN cluster_metadata m ON s.cluster_id = m.cluster_id,

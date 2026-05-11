@@ -526,7 +526,7 @@ async def fetch_og_image(client: httpx.AsyncClient, url: str) -> str | None:
                 if re.match(r"^https?://", resolved, flags=re.IGNORECASE):
                     return resolved
     except Exception as e:
-        log.debug(f"Failed to extract og:image: {e}")
+        log.warning(f"Failed to extract og:image: {e}")
     return None
 
 

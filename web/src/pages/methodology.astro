@@ -1,0 +1,168 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+---
+
+<Layout 
+    title="Методологија — Пресек"
+    description="Дознајте повеќе за методологијата зад Пресек, уредничкиот алгоритам и начинот на кој ги обработуваме информациите."
+>
+    <NYTHeader />
+    <main class="site-layout broadsheet-layout py-[var(--page-py)]">
+        <header class="editorial-masthead mb-12">
+            <div class="masthead-top">
+                <span class="masthead-kicker">ТЕХНОЛОШКА РАМКА</span>
+            </div>
+            <div class="masthead-main">
+                <h1 class="masthead-title">Методологија</h1>
+            </div>
+            <p class="masthead-intro">
+                Пресек е систем за објективна агрегација и синтеза на вестите, заснован на принципи на транспарентност и алгоритамска прецизност.
+            </p>
+        </header>
+
+        <div class="broadsheet-grid">
+            <div class="broadsheet-main">
+                <article class="prose-editorial">
+                    <h2 class="section-title-italic">Уреднички Алгоритам</h2>
+                    <p class="first-paragraph">
+                        Информациите во овој индекс се генерираат преку автоматска обработка на природниот јазик (NLP) на сите вклучени македонски извори за изминатите 24 часа. Системот користи напредни јазични модели за да ги групира сличните вести, да ги идентификува клучните факти и да овозможи објективен преглед на медиумскиот пејзаж.
+                    </p>
+
+                    <div class="editorial-divider"></div>
+
+                    <h2 class="section-title-italic">Тематска Тензија</h2>
+                    <p>
+                        Тематската тензија го мери интензитетот на известување и поларизацијата околу одредени општествени теми. Преку анализа на фреквенцијата и тонот на објавите, системот ги мапира областите каде што постои најголем јавен и медиумски фокус.
+                    </p>
+
+                    <div class="editorial-divider"></div>
+
+                    <h2 class="section-title-italic">Емоционален Пејзаж</h2>
+                    <p>
+                        Емоционалниот пејзаж овозможува увид во доминантниот тон на известување за различните категории на вести. Овие вредности го рефлектираат медиумскиот интензитет и емотивниот набој во реално време.
+                    </p>
+
+                    <div class="stats-grid mt-8">
+                        <div class="stat-card">
+                            <span class="stat-label">Политика</span>
+                            <div class="stat-bar-wrapper">
+                                <div class="stat-bar" style="width: 100%;"></div>
+                                <span class="stat-value">100%</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Вести</span>
+                            <div class="stat-bar-wrapper">
+                                <div class="stat-bar" style="width: 100%;"></div>
+                                <span class="stat-value">100%</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Економија</span>
+                            <div class="stat-bar-wrapper">
+                                <div class="stat-bar" style="width: 100%;"></div>
+                                <span class="stat-value">100%</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Криминал</span>
+                            <div class="stat-bar-wrapper">
+                                <div class="stat-bar" style="width: 100%;"></div>
+                                <span class="stat-value">100%</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Здравје</span>
+                            <div class="stat-bar-wrapper">
+                                <div class="stat-bar" style="width: 100%;"></div>
+                                <span class="stat-value">100%</span>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </div>
+
+            <aside class="broadsheet-rail">
+                <section class="rail-block rail-block-alt">
+                    <p class="rail-kicker">Стандарди</p>
+                    <h3 class="rail-title">АЛГОРИТМАКА ПРЕЦИЗНОСТ</h3>
+                    <p class="rail-text">Нашата цел е да овозможиме непристрасен увид во вестите преку примена на најсовремени методи за обработка на податоци.</p>
+                </section>
+
+                <section class="rail-block">
+                    <p class="rail-kicker">Поврзано</p>
+                    <div class="rail-directory">
+                        <a href="/editorial" class="dir-link"><span class="name">Уреднички стандарди</span></a>
+                        <a href="/about" class="dir-link"><span class="name">За проектот</span></a>
+                        <a href="/pulse" class="dir-link"><span class="name">Медиумски Пулс</span></a>
+                    </div>
+                </section>
+            </aside>
+        </div>
+    </main>
+
+    <Footer />
+</Layout>
+
+<style>
+    /* ── Masthead ────────────────────────────────────── */
+    .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 2rem; margin-bottom: 3rem; }
+    .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
+    .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; margin: 1.5rem 0; letter-spacing: -0.02em; }
+    .masthead-intro { font-family: var(--font-nyt-body); font-size: 1.15rem; line-height: 1.6; color: var(--secondary-foreground); max-width: 42rem; }
+
+    /* ── Broadstreet Layout ───────────────────────────── */
+    .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
+    @media (min-width: 1024px) {
+        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; }
+        .broadsheet-main { border-right: 1px solid var(--border); padding-right: 3rem; }
+        .broadsheet-rail { position: sticky; top: 8rem; align-self: start; }
+    }
+
+    /* ── Prose ───────────────────────────────────────── */
+    .prose-editorial { font-family: var(--font-nyt-body); font-size: 1.1rem; line-height: 1.75; color: var(--secondary-foreground); }
+    .first-paragraph::first-letter { float: left; font-family: var(--font-serif); font-size: 5rem; font-weight: 900; line-height: 0.8; padding-top: 0.5rem; padding-right: 0.75rem; color: var(--foreground); }
+    .prose-editorial p { margin-bottom: 1.5rem; text-wrap: pretty; }
+    
+    .section-title-italic { font-family: var(--font-serif); font-size: 1.8rem; font-weight: 900; font-style: italic; margin-bottom: 1.5rem; }
+    .editorial-divider { height: 1px; background: var(--border); margin: 3rem 0; }
+
+    /* ── Thematic Pulse ──────────────────────────────── */
+    .thematic-pulse-container { border: 1px solid var(--border); background: var(--secondary); padding: 2rem; border-radius: 4px; }
+    .pulse-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
+    .pulse-time-kicker { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
+    
+    .pulse-table { display: flex; flex-direction: column; gap: 1.5rem; }
+    .pulse-row { display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent); }
+    .pulse-row:last-child { border-bottom: none; padding-bottom: 0; }
+    
+    .pulse-category-info { display: flex; flex-direction: column; gap: 0.25rem; }
+    .pulse-category-name { font-family: var(--font-serif); font-size: 1.25rem; font-weight: 900; color: var(--foreground); }
+    .pulse-story-count { font-family: var(--font-sans); font-size: 0.7rem; font-weight: 800; color: var(--muted-foreground); text-transform: uppercase; letter-spacing: 0.05em; }
+    
+    .pulse-metrics { display: flex; gap: 3rem; }
+    .metric-item { display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem; }
+    .metric-label { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.1em; }
+    .metric-value { font-family: var(--font-serif); font-size: 1.1rem; font-weight: 900; color: var(--foreground); }
+
+    @media (max-width: 640px) {
+        .pulse-row { flex-direction: column; align-items: flex-start; gap: 1rem; }
+        .pulse-metrics { width: 100%; justify-content: space-between; gap: 1rem; }
+        .metric-item { align-items: flex-start; }
+    }
+
+    /* ── Rail ────────────────────────────────────────── */
+    .rail-block { margin-bottom: 2.5rem; }
+    .rail-block-alt { padding: 1.25rem; background: var(--secondary); border-radius: 4px; }
+    .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
+    .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+    .rail-text { font-family: var(--font-nyt-body); font-size: 0.9rem; line-height: 1.5; color: var(--secondary-foreground); }
+    
+    .rail-directory { display: flex; flex-direction: column; }
+    .dir-link { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid var(--border); text-decoration: none; color: inherit; }
+    .dir-link .name { font-family: var(--font-serif); font-size: 1rem; font-weight: 700; }
+    .dir-link:hover .name { color: var(--nyt-accent); text-decoration: underline; }
+</style>
