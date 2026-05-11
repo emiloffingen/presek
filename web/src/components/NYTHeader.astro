@@ -1,6 +1,7 @@
 ---
 import SearchIsland from './SearchIsland';
 import ThemeIsland from './ThemeIsland';
+import ScriptSwitcher from './ScriptSwitcher';
 import { Sparkles, BarChart3, Radio, ShieldCheck } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
 import { getEditionStr } from '../utils/textUtils';
@@ -181,11 +182,12 @@ function getRelativeTimeStr(dateStr?: string) {
                 
                 <div class="topbar-util">
                     {stats?.last_1h && stats.last_1h > 0 && (
-                        <div class="activity-chip" title="Нови вести во последен час">
+                        <div class="activity-chip" title="Нове вести у последњих сат времена">
                             <span class="activity-dot"></span>
                             +{stats.last_1h}
                         </div>
                     )}
+                    <ScriptSwitcher client:idle />
                     <ThemeIsland client:idle />
                 </div>
             </div>
