@@ -1721,8 +1721,8 @@ def generate_daily_brief_task(retry_attempt=0):
             WITH cluster_tiers AS (
                 SELECT cluster_id, COUNT(DISTINCT 
                     CASE 
-                        WHEN s.category IN ('Agenciski', 'Javen Servis', 'glavni') THEN 'M'
-                        WHEN s.category IN ('Nezavisni', 'Istrazuvacki') THEN 'I'
+                        WHEN s.category IN ('Agencijski', 'Javni servis', 'glavni') THEN 'M'
+                        WHEN s.category IN ('Nezavisni', 'Istraživački') THEN 'I'
                         ELSE 'R'
                     END) as group_count
                 FROM articles a
@@ -1766,24 +1766,24 @@ def generate_daily_brief_task(retry_attempt=0):
         # 2. Prep Dispatch Name
         hour = datetime.datetime.now().hour
         if 5 <= hour < 12:
-            dispatch_name = "Utrinski Dispac"
+            dispatch_name = "Jutarnji brifing"
         elif 12 <= hour < 18:
-            dispatch_name = "Pladneven Pregled"
+            dispatch_name = "Podnevni pregled"
         else:
-            dispatch_name = "Veceren Pregled"
+            dispatch_name = "Vecernji pregled"
 
         # 3. Build AI Context
         clusters = _load_daily_brief_clusters(limit=10)
         content_context = _build_daily_brief_context(clusters)
 
         system_insight = (
-            f"\n\n[SISTEMSKA ANALIZA ZA POSLEDNITE 24C]\n"
-            f"- Obraboteni clanci: {total_24h}\n"
-            f"- Udel na svetski vesti: {intl_pct}%\n"
-            f"- Indeks na pluralizam (raznovidni izvori): {diverse_pct}%\n"
-            f"- Najzastapeni akteri: {top_subjects or 'Nema'}\n"
-            f"- Vo fokus lokacii: {top_locations or 'Nema'}\n"
-            f"- Naslov na dispacot: {dispatch_name}"
+            f"\n\n[SISTEMSKA ANALIZA ZA POSLEDNJIH 24 SATA]\n"
+            f"- Obradjeni clanci: {total_24h}\n"
+            f"- Udeo svetskih vest: {intl_pct}%\n"
+            f"- Indeks pluralizma (raznovrsni izvori): {diverse_pct}%\n"
+            f"- Najzastupljeni akteri: {top_subjects or 'Nema'}\n"
+            f"- U focusu lokacije: {top_locations or 'Nema'}\n"
+            f"- Naziv izvestaja: {dispatch_name}"
         )
 
         full_context = f"<briefing_context>\n{content_context}\n{system_insight}\n</briefing_context>"

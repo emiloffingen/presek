@@ -151,11 +151,11 @@ def annotate_cluster_articles(
     signals = build_cluster_source_signals(ranked)
 
     TIER_MAP = {
-        "Agenciski": "M",
-        "Javen Servis": "M",
+        "Agencijski": "M",
+        "Javni servis": "M",
         "glavni": "M",
         "Nezavisni": "I",
-        "Istrazuvacki": "I",
+        "Istraživački": "I",
         "Regionalni": "R",
         "Alternativni": "R",
         "Lokalni": "R",

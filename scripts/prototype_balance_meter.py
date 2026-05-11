@@ -8,11 +8,11 @@ log = logging.getLogger("presek.balance_prototype")
 
 # Define Pluralism Tiers
 TIER_MAP = {
-    "Agenciski": "Mainstream",
-    "Javen Servis": "Mainstream",
+    "Agencijski": "Mainstream",
+    "Javni servis": "Mainstream",
     "glavni": "Mainstream",
     "Nezavisni": "Independent",
-    "Istrazuvacki": "Independent",
+    "Istraživački": "Independent",
     "Regionalni": "Regional/Alt",
     "Alternativni": "Regional/Alt",
     "Lokalni": "Regional/Alt",

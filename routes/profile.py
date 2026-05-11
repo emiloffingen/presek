@@ -203,7 +203,7 @@ async def get_profile_sync(request: Request):
         (token,),
     )
     if not row:
-        raise HTTPException(status_code=404, detail="Profilot ne e pronajden")
+        raise HTTPException(status_code=404, detail="Profil nije pronadjen")
     profile = _normalize_synced_profile(row.get("profile_data") or {})
     pruned_recent = await _prune_recent_clusters(profile.get("recentClusters") or [])
     if len(pruned_recent) != len(profile.get("recentClusters") or []):
@@ -233,7 +233,7 @@ async def save_profile_sync(request: Request):
         (token,),
     )
     if not existing:
-        raise HTTPException(status_code=404, detail="Profilot ne e pronajden")
+        raise HTTPException(status_code=404, detail="Profil nije pronadjen")
     merged = _merge_synced_profiles(existing.get("profile_data") or {}, incoming)
     merged["recentClusters"] = await _prune_recent_clusters(
         merged.get("recentClusters") or []
@@ -251,7 +251,7 @@ async def get_vapid_key():
     from config import VAPID_PUBLIC_KEY
 
     if not VAPID_PUBLIC_KEY:
-        raise HTTPException(status_code=404, detail="Web Push ne e konfiguriran")
+        raise HTTPException(status_code=404, detail="Web Push nije konfigurisan")
     return {"status": "success", "key": VAPID_PUBLIC_KEY}
 
 

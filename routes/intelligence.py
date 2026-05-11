@@ -108,7 +108,7 @@ async def _build_gemma_research_context(
         )
 
     if not articles:
-        raise HTTPException(status_code=404, detail="Klasterot ne e pronajden")
+        raise HTTPException(status_code=404, detail="Klaster nije pronadjen")
 
     summary_row = await db.async_execute_one(
         """
@@ -409,7 +409,7 @@ async def get_deep_research(
         )
 
         if not raw:
-            return {"status": "error", "message": "Sistemot momentalno ne e dostapen."}
+            return {"status": "error", "message": "Sistem trenutno nije dostupan."}
 
         # Parse structured response
         response = clean_json_response(raw)
@@ -646,7 +646,7 @@ async def get_entity_profile(name: str):
             f"SELECT 1 FROM cluster_metadata m WHERE {_CASE_INSENSITIVE_TAG_EXISTS} LIMIT 1",
             (name,),
         ):
-            raise HTTPException(status_code=404, detail="Subjektot ne e pronajden")
+            raise HTTPException(status_code=404, detail="Subjekat nije pronadjen")
         entity = {
             "name": name,
             "type": "ENTITY",
@@ -925,7 +925,7 @@ async def cluster_research(request: Request, cluster_id: str, q: str):
     )
 
     if not row:
-        raise HTTPException(status_code=404, detail="Klasterot ne e pronajden")
+        raise HTTPException(status_code=404, detail="Klaster nije pronadjen")
 
     context = f"{row['summary']}\n{row['generated_article']}"
     res = analyst.research_query(q, context)
@@ -1122,7 +1122,7 @@ async def get_latest_briefing(date: Optional[str] = None):
         )
 
     if not row:
-        return {"status": "error", "message": "Brifingot ne e pronajden"}
+        return {"status": "error", "message": "Brifing nije pronadjen"}
 
     target_date = row["date"]
 

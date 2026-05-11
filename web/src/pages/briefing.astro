@@ -36,10 +36,10 @@ try {
     if (statsRes.ok) stats = await statsRes.json();
 
     if (!briefingData || briefingData.status === 'error') {
-        error = briefingData?.message || "Brifingot momentalno ne e dostapen.";
+        error = briefingData?.message || "Brifing trenutno nije dostupan.";
     }
 } catch (e) {
-    error = "Greska pri vcituvanje na podatocite.";
+    error = "Greška pri učitavanju podataka.";
 }
 
 const formattedBriefing = briefingData?.content ? formatBriefing(briefingData.content) : "";
@@ -54,7 +54,7 @@ const displayDate = briefingData?.date
     : "";
 ---
 
-<Layout title="Urednicki Brifing — Presek">
+<Layout title="Urednički brifing — Presek">
     <NYTHeader stats={stats} />
     
     <main class="site-layout broadsheet-layout py-[var(--page-py)]">
@@ -62,7 +62,7 @@ const displayDate = briefingData?.date
             {error ? (
                 <div class="py-20 text-center">
                     <h2 class="font-serif text-3xl mb-6 font-black italic">{error}</h2>
-                    <a href="/briefing" class="inline-flex items-center gap-2 px-6 py-3 bg-foreground text-background font-sans font-black text-xs uppercase tracking-widest hover:bg-nyt-accent transition-colors">Vrati se na poslednoto izdanie</a>
+                    <a href="/briefing" class="inline-flex items-center gap-2 px-6 py-3 bg-foreground text-background font-sans font-black text-xs uppercase tracking-widest hover:bg-nyt-accent transition-colors">Vrati se na poslednje izdanje</a>
                 </div>
             ) : briefingData ? (
                 <div class="briefing-layout-grid relative">

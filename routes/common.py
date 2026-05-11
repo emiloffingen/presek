@@ -328,8 +328,8 @@ async def build_intelligence_summary_payload(
         WITH cluster_tiers AS (
             SELECT cluster_id, COUNT(DISTINCT
                 CASE
-                    WHEN s.category IN ('Agenciski', 'Javen Servis', 'glavni') THEN 'M'
-                    WHEN s.category IN ('Nezavisni', 'Istrazuvacki') THEN 'I'
+                    WHEN s.category IN ('Agencijski', 'Javni servis', 'glavni') THEN 'M'
+                    WHEN s.category IN ('Nezavisni', 'Istraživački') THEN 'I'
                     ELSE 'R'
                 END) as group_count
             FROM articles a
