@@ -1,4 +1,5 @@
 # Re-exporting functions for backward compatibility
+# pylint: disable=unused-import
 from .time import DateTimeEncoder, _coerce_datetime
 from .text import format_sources, calculate_reading_time
 from .network import _resolve_public_ips, _peer_ip, get_dominant_color

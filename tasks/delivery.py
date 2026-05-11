@@ -1283,6 +1283,54 @@ def _load_cluster_alert_material(cluster_id):
     return articles, (summary_row or {}).get("created_at")
 
 
+def _batch_load_cluster_alert_materials(cluster_ids):
+    """Batch load alert materials for multiple cluster IDs."""
+    if not cluster_ids:
+        return {}
+    
+    # Fetch all articles for the given cluster IDs
+    cluster_id_tuple = tuple(cluster_ids)
+    articles_by_cluster = {}
+    
+    rows = db.execute(
+        "SELECT title, description, source, link, created_at, category, topic, cluster_id "
+        "FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
+        (cluster_id_tuple,),
+    )
+    
+    for row in rows or []:
+        cid = str(row.get("cluster_id") or "")
+        if cid not in articles_by_cluster:
+            articles_by_cluster[cid] = []
+        articles_by_cluster[cid].append(row)
+    
+    # Limit to 8 articles per cluster
+    for cid in articles_by_cluster:
+        articles_by_cluster[cid] = articles_by_cluster[cid][:8]
+    
+    # Fetch summary dates
+    summary_rows = db.execute(
+        "SELECT cluster_id, created_at FROM cluster_summaries WHERE cluster_id = ANY(%s)",
+        (cluster_id_tuple,),
+    )
+    
+    summaries_by_cluster = {}
+    for row in summary_rows or []:
+        cid = str(row.get("cluster_id") or "")
+        summaries_by_cluster[cid] = row.get("created_at")
+    
+    # Build result dict
+    result = {}
+    for cid in cluster_ids:
+        cid_str = str(cid)
+        result[cid_str] = {
+            "articles": articles_by_cluster.get(cid_str, []),
+            "summary_date": summaries_by_cluster.get(cid_str),
+        }
+    
+    return result
+
+
 def _load_delivery_kind_performance(days=30):
     rows = db.execute(
         "SELECT delivery_kind, "

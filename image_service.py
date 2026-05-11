@@ -7,9 +7,11 @@ from PIL import Image
 from typing import Optional
 
 try:
-    import pillow_avif  # noqa: F401 - registers AVIF support with Pillow
+    import pillow_avif  # noqa: F401
+    _ = pillow_avif  # Reference to suppress unused import warning
+    HAS_AVIF = True
 except ImportError:
-    pass
+    HAS_AVIF = False
 
 from utils import _resolve_public_ips, _peer_ip
 

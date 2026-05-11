@@ -16,6 +16,11 @@ try:
 except ModuleNotFoundError:
     httpx = None
 
+try:
+    import cloudscraper
+except ModuleNotFoundError:
+    cloudscraper = None
+
 import clustering
 from nlp.categories import (
     detect_category,
@@ -94,6 +99,19 @@ _TRACKING_PARAMS = {
     "ref",
     "ref_src",
 }
+
+
+def _fetch_with_cloudscraper(url: str, timeout: int = 30) -> bytes:
+    """Fetch URL content using cloudscraper to bypass Cloudflare protection."""
+    if cloudscraper is None:
+        raise ImportError("cloudscraper is not installed")
+    scraper = cloudscraper.create_scraper()
+    try:
+        resp = scraper.get(url, timeout=timeout)
+        resp.raise_for_status()
+        return resp.content
+    finally:
+        scraper.close()
 
 
 def is_junk(title: str, desc: str) -> bool:
@@ -559,18 +577,18 @@ async def fetch_og_image(client: httpx.AsyncClient, url: str) -> str | None:
 
         except httpx.TimeoutException as e:
             if attempt < max_retries - 1:
-                log.debug(f"OG image fetch timeout for {url} (attempt {attempt + 1}), retrying...")
+                log.debug(f"OG image fetch timeout for {url} (attempt {attempt + 1}), retrying...: {e}")
                 await asyncio.sleep(1.0 * (attempt + 1))
                 continue
-            log.debug(f"Failed to extract og:image after {max_retries} retries: timeout")
+            log.debug(f"Failed to extract og:image after {max_retries} retries: timeout: {e}")
             return None
 
         except httpx.ConnectError as e:
             if attempt < max_retries - 1:
-                log.debug(f"OG image fetch connection error for {url} (attempt {attempt + 1}), retrying...")
+                log.debug(f"OG image fetch connection error for {url} (attempt {attempt + 1}), retrying...: {e}")
                 await asyncio.sleep(1.0 * (attempt + 1))
                 continue
-            log.debug(f"Failed to extract og:image after {max_retries} retries: connection error")
+            log.debug(f"Failed to extract og:image after {max_retries} retries: connection error: {e}")
             return None
 
         except Exception as e:

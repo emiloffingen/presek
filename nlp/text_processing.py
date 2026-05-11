@@ -453,7 +453,6 @@ def extract_entities_semantic(text: str) -> set[str]:
     if _ner_pipeline is None:
         try:
             from transformers import pipeline
-            import torch
             import logging
 
             log = logging.getLogger("presek.nlp")
