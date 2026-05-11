@@ -13,7 +13,6 @@ from tasks.intelligence import (
     extract_entities_task,
     classify_topics_task,
     recluster_recent_articles_task,
-    refresh_global_headlines_task,
     synthesize_storylines_task,
     generate_cluster_metadata_task,
     backfill_cover_art_single_task,
@@ -31,6 +30,7 @@ from tasks.delivery import (
 )
 from tasks.maintenance import (
     run_prune_db,
+    refresh_global_headlines_task,
 )
 
 # Explicitly import private delivery functions for test accessibility
