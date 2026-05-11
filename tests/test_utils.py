@@ -583,7 +583,7 @@ class TestReadNextClusters:
                 "description": "Нерелевантен кластер.",
                 "entity_names": ["Скопје"],
                 "cluster_tags": ["Скопје"],
-                "topic": "Македонија",
+                "topic": "Srbija",
             },
         ]
 

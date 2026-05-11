@@ -445,11 +445,11 @@ class TestLocalBriefingFallback:
                 "source_count": 7,
             },
             {
-                "title": "Земјотрес од 4,8 степени ја потресе Македонија",
+                "title": "Земјотрес од 4,8 степени ја потресе Srbija",
                 "source": "ММС",
                 "topic": "Вести",
                 "description": "Потресот е почувствуван во повеќе градови.",
-                "cluster_summary": "Земјотрес од 4,8 степени е почувствуван во повеќе градови низ Македонија.",
+                "cluster_summary": "Земјотрес од 4,8 степени е почувствуван во повеќе градови низ Srbija.",
                 "source_count": 8,
             },
             {
@@ -465,7 +465,7 @@ class TestLocalBriefingFallback:
         result = generate_daily_brief_fallback(clusters)
 
         assert (
-            "Земјотрес од 4,8 степени е почувствуван во повеќе градови низ Македонија"
+            "Земјотрес од 4,8 степени е почувствуван во повеќе градови низ Srbija"
             in result.splitlines()[2]
         )
         assert "СДСМ: Во очајна потрага по добра вест" not in result.splitlines()[2]

@@ -28,7 +28,7 @@ class TestMkDate:
 class TestRenderHtml:
     def test_basic_render(self):
         stories = {
-            "Македонија": [
+            "Srbija": [
                 {
                     "title": "Тест наслов",
                     "link": "https://example.com",
@@ -72,7 +72,7 @@ class TestRenderHtml:
 
     def test_multiple_categories(self):
         stories = {
-            "Македонија": [
+            "Srbija": [
                 {
                     "title": "МК Вест",
                     "link": "#",
@@ -92,7 +92,7 @@ class TestRenderHtml:
             ],
         }
         html = render_html(stories, datetime(2026, 1, 1), datetime(2026, 1, 2))
-        assert "Македонија" in html
+        assert "Srbija" in html
         assert "Балкан" in html
 
     def test_html_structure(self):

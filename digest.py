@@ -80,7 +80,7 @@ def send_ntfy_digest(stories_by_cat: dict, topic: str, period_days: int = 1) -> 
     lines = [f"📰 PRESEK — Дневен преглед ({total} приказни)\n"]
 
     CAT_ORDER = [
-        "Македонија",
+        "Srbija",
         "Политика",
         "Спорт",
         "Хроника",
@@ -187,7 +187,7 @@ def fetch_top_stories(days: int = 7, per_category: int = 3) -> dict[str, list[di
     by_cat: dict[str, list[dict]] = defaultdict(list)
     for cluster in sorted_clusters:
         main = cluster[0]
-        cat = main.get("category") or "Македонија"
+        cat = main.get("category") or "Srbija"
         if len(by_cat[cat]) < per_category:
             main["source_count"] = len(cluster)
             by_cat[cat].append(main)

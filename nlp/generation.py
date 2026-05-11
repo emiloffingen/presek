@@ -994,7 +994,7 @@ def _build_minimum_cluster_summary(articles, comparison=None):
 
 def generate_local_placeholder(cluster_id, title, category="Вести"):
     colors = {
-        "Македонија": "#a63d40",
+        "Srbija": "#a63d40",
         "Балкан": "#3d6b63",
         "Европа": "#3f7d8a",
         "Америка": "#3e6282",

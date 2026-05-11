@@ -439,7 +439,7 @@ def get_trending(hours: int = 12, limit: int = MAX_RESULTS) -> list[dict]:
                 "russia": "русија",
                 "rusija": "русија",
                 "skopje": "скопје",
-                "macedonia": "македонија",
+                "macedonia": "srbija",
                 "ormuz": "ормуз",
                 "ormuski": "ормуз",
                 "ormutski": "ормуз",

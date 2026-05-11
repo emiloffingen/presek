@@ -41,7 +41,7 @@ class StatusOnlyResponse(BaseModel):
 _SOFT_EXCLUDE_TOPICS = {"Живот", "Забава", "Здравје"}
 _HARD_NEWS_TOPICS = {"Политика", "Економија", "Криминал", "Спорт", "Технологија"}
 _HARD_NEWS_CATEGORIES = {
-    "Македонија",
+    "Srbija",
     "Балкан",
     "Европа",
     "Германија",

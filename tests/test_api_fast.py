@@ -373,7 +373,7 @@ def test_global_pulse_uses_common_intelligence_summary_builder(mock_all):
         if "GROUP BY a.category" in query or (
             "GROUP BY category" in query and "ORDER BY n DESC" in query
         ):
-            return [{"category": "Македонија", "n": 12}]
+            return [{"category": "Srbija", "n": 12}]
         if "FROM cluster_summaries s" in query and "AVG(CAST(s.sentiment" in query:
             return [
                 {
@@ -441,7 +441,7 @@ def test_home_route_composes_named_slots(mock_all):
                         "title": "Lead",
                         "source": "MIA",
                         "topic": "Политика",
-                        "category": "Македонија",
+                        "category": "Srbija",
                         "created_at": "2026-04-22T18:00:00Z",
                     }
                 ],
@@ -454,7 +454,7 @@ def test_home_route_composes_named_slots(mock_all):
                         "title": "Support 1",
                         "source": "Alsat",
                         "topic": "Политика",
-                        "category": "Македонија",
+                        "category": "Srbija",
                         "created_at": "2026-04-22T17:00:00Z",
                     }
                 ],
@@ -467,7 +467,7 @@ def test_home_route_composes_named_slots(mock_all):
                         "title": "Support 2",
                         "source": "Telma",
                         "topic": "Економија",
-                        "category": "Македонија",
+                        "category": "Srbija",
                         "created_at": "2026-04-22T16:00:00Z",
                     }
                 ],
@@ -480,7 +480,7 @@ def test_home_route_composes_named_slots(mock_all):
                         "title": "Support 3",
                         "source": "Kanal 5",
                         "topic": "Криминал",
-                        "category": "Македонија",
+                        "category": "Srbija",
                         "created_at": "2026-04-22T15:00:00Z",
                     }
                 ],
@@ -493,7 +493,7 @@ def test_home_route_composes_named_slots(mock_all):
                         "title": "Support 4",
                         "source": "360",
                         "topic": "Политика",
-                        "category": "Македонија",
+                        "category": "Srbija",
                         "created_at": "2026-04-22T14:00:00Z",
                     }
                 ],
@@ -506,7 +506,7 @@ def test_home_route_composes_named_slots(mock_all):
                         "title": "For you 1",
                         "source": "MRT",
                         "topic": "Политика",
-                        "category": "Македонија",
+                        "category": "Srbija",
                         "created_at": "2026-04-22T13:00:00Z",
                     }
                 ],
@@ -519,7 +519,7 @@ def test_home_route_composes_named_slots(mock_all):
                         "title": "For you 2",
                         "source": "Nova",
                         "topic": "Политика",
-                        "category": "Македонија",
+                        "category": "Srbija",
                         "created_at": "2026-04-22T12:00:00Z",
                     }
                 ],
@@ -532,7 +532,7 @@ def test_home_route_composes_named_slots(mock_all):
                         "title": "For you 3",
                         "source": "Factor",
                         "topic": "Политика",
-                        "category": "Македонија",
+                        "category": "Srbija",
                         "created_at": "2026-04-22T11:00:00Z",
                     }
                 ],
@@ -545,7 +545,7 @@ def test_home_route_composes_named_slots(mock_all):
                         "title": "For you 4",
                         "source": "Vecer",
                         "topic": "Политика",
-                        "category": "Македонија",
+                        "category": "Srbija",
                         "created_at": "2026-04-22T10:00:00Z",
                     }
                 ],
@@ -558,7 +558,7 @@ def test_home_route_composes_named_slots(mock_all):
                         "title": "For you 5",
                         "source": "Makfax",
                         "topic": "Политика",
-                        "category": "Македонија",
+                        "category": "Srbija",
                         "created_at": "2026-04-22T09:00:00Z",
                     }
                 ],
@@ -571,7 +571,7 @@ def test_home_route_composes_named_slots(mock_all):
                         "title": "For you 6",
                         "source": "Plusinfo",
                         "topic": "Политика",
-                        "category": "Македонија",
+                        "category": "Srbija",
                         "created_at": "2026-04-22T08:00:00Z",
                     }
                 ],
@@ -584,14 +584,14 @@ def test_home_route_composes_named_slots(mock_all):
                         "title": "Developing 1",
                         "source": "MIA",
                         "topic": "Економија",
-                        "category": "Македонија",
+                        "category": "Srbija",
                         "created_at": "2026-04-22T07:00:00Z",
                     },
                     {
                         "title": "Developing 1 / corroboration",
                         "source": "Telma",
                         "topic": "Економија",
-                        "category": "Македонија",
+                        "category": "Srbija",
                         "created_at": "2026-04-22T06:55:00Z",
                     },
                 ],
@@ -604,7 +604,7 @@ def test_home_route_composes_named_slots(mock_all):
                         "title": "Обвинителството отвори истрага",
                         "source": "Press24",
                         "topic": "Криминал",
-                        "category": "Македонија",
+                        "category": "Srbija",
                         "created_at": "2026-04-22T06:00:00Z",
                         "link": "https://a/1",
                     }
@@ -638,7 +638,7 @@ def test_home_route_composes_named_slots(mock_all):
                         "title": "Lead",
                         "source": "MIA",
                         "topic": "Политика",
-                        "category": "Македонија",
+                        "category": "Srbija",
                         "created_at": "2026-04-22T18:00:00Z",
                         "link": "https://lead",
                     }
@@ -652,7 +652,7 @@ def test_home_route_composes_named_slots(mock_all):
                         "title": "Собранието отвори расправа за буџетот",
                         "source": "Kanal 5",
                         "topic": "Економија",
-                        "category": "Македонија",
+                        "category": "Srbija",
                         "created_at": "2026-04-22T18:10:00Z",
                         "link": "https://live-1",
                     }
@@ -666,7 +666,7 @@ def test_home_route_composes_named_slots(mock_all):
                         "title": "Издание на 360°: интервју со министерот",
                         "source": "360",
                         "topic": "Политика",
-                        "category": "Македонија",
+                        "category": "Srbija",
                         "created_at": "2026-04-22T18:11:00Z",
                         "link": "https://junk-1",
                     }
@@ -680,7 +680,7 @@ def test_home_route_composes_named_slots(mock_all):
                         "title": "Тешка сообраќајка на експресниот пат кај Ранковце",
                         "source": "Press24",
                         "topic": "Криминал",
-                        "category": "Македонија",
+                        "category": "Srbija",
                         "created_at": "2026-04-22T18:12:00Z",
                         "link": "https://wire-2",
                     }
@@ -694,7 +694,7 @@ def test_home_route_composes_named_slots(mock_all):
                         "title": "Постојано сте уморни, проверете дали ви недостига овој минерал",
                         "source": "Expres",
                         "topic": "Здравје",
-                        "category": "Македонија",
+                        "category": "Srbija",
                         "created_at": "2026-04-22T18:13:00Z",
                         "link": "https://wire-3",
                     }
@@ -841,7 +841,7 @@ def test_home_latest_wire_route_uses_backend_selection(mock_all):
                         "title": "Тешка сообраќајка на експресниот пат кај Ранковце",
                         "source": "Press24",
                         "topic": "Криминал",
-                        "category": "Македонија",
+                        "category": "Srbija",
                         "created_at": "2026-04-22T18:12:00Z",
                         "link": "https://wire-1",
                     }
@@ -854,7 +854,7 @@ def test_home_latest_wire_route_uses_backend_selection(mock_all):
                         "title": "Издание на 360°: интервју со министерот",
                         "source": "360",
                         "topic": "Политика",
-                        "category": "Македонија",
+                        "category": "Srbija",
                         "created_at": "2026-04-22T18:11:00Z",
                         "link": "https://junk-1",
                     }
@@ -867,7 +867,7 @@ def test_home_latest_wire_route_uses_backend_selection(mock_all):
                         "title": "Собранието отвори расправа за буџетот",
                         "source": "Kanal 5",
                         "topic": "Економија",
-                        "category": "Македонија",
+                        "category": "Srbija",
                         "created_at": "2026-04-22T18:10:00Z",
                         "link": "https://wire-2",
                     }
@@ -880,7 +880,7 @@ def test_home_latest_wire_route_uses_backend_selection(mock_all):
                         "title": "Постојано сте уморни, проверете дали ви недостига овој минерал",
                         "source": "Expres",
                         "topic": "Здравје",
-                        "category": "Македонија",
+                        "category": "Srbija",
                         "created_at": "2026-04-22T18:13:00Z",
                         "link": "https://wire-3",
                     }
@@ -914,7 +914,7 @@ def test_news_topic_response_filters_mixed_cluster_articles(mock_all):
                     "title": "Екс-фудбалерот на Челзи ќе биде наследникот на Розениор?",
                     "description": "",
                     "topic": "Вести",
-                    "category": "Македонија",
+                    "category": "Srbija",
                     "created_at": "2026-04-22T20:00:00Z",
                 },
                 {
@@ -1057,7 +1057,7 @@ def test_news_category_response_filters_mixed_cluster_articles(mock_all):
                     "title": "Домашна реакција",
                     "description": "",
                     "topic": "Политика",
-                    "category": "Македонија",
+                    "category": "Srbija",
                     "created_at": "2026-04-22T20:00:00Z",
                 },
                 {
@@ -1113,21 +1113,21 @@ def test_news_editorial_signals_classify_story_state(mock_all):
             "title": "Собранието отвори расправа за буџетот",
             "source": "MIA",
             "topic": "Политика",
-            "category": "Македонија",
+            "category": "Srbija",
             "created_at": "2026-04-22T18:10:00Z",
         },
         {
             "title": "Телма: расправата за буџетот продолжува",
             "source": "Telma",
             "topic": "Политика",
-            "category": "Македонија",
+            "category": "Srbija",
             "created_at": "2026-04-22T18:05:00Z",
         },
         {
             "title": "Канал 5: нови детали од расправата",
             "source": "Kanal 5",
             "topic": "Политика",
-            "category": "Македонија",
+            "category": "Srbija",
             "created_at": "2026-04-22T18:00:00Z",
         },
     ]
@@ -1351,7 +1351,7 @@ def test_global_pulse_uses_ingestion_aware_window_and_filters_blank_categories(
         ):
             assert "category IS NOT NULL" in query
             assert "category != ''" in query
-            return [{"category": "Македонија", "n": 12}]
+            return [{"category": "Srbija", "n": 12}]
         if "FROM cluster_summaries s" in query and "AVG(CAST(s.sentiment" in query:
             return [
                 {
@@ -1394,7 +1394,7 @@ def test_global_pulse_uses_ingestion_aware_window_and_filters_blank_categories(
         data = asyncio.run(intelligence.get_global_pulse())
 
     assert data["last_24h"] == 12
-    assert data["by_category"][0]["category"] == "Македонија"
+    assert data["by_category"][0]["category"] == "Srbija"
 
 
 def test_navigation_counts_use_article_level_classifications(mock_all):
@@ -1411,7 +1411,7 @@ def test_navigation_counts_use_article_level_classifications(mock_all):
             )
             return [
                 {"category": "Европа", "topic": "Спорт", "n": 3},
-                {"category": "Македонија", "topic": "Политика", "n": 4},
+                {"category": "Srbija", "topic": "Политика", "n": 4},
             ]
         if "SELECT subcategory, COUNT(DISTINCT cluster_id) as n" in query:
             return [{"subcategory": "Скопје", "n": 2}]
@@ -1443,7 +1443,7 @@ def test_editorial_signals_prefer_ingested_at_for_freshness(mock_all):
             "title": "Собранието отвори расправа за буџетот",
             "source": "MIA",
             "topic": "Политика",
-            "category": "Македонија",
+            "category": "Srbija",
             "created_at": "2026-04-22T08:00:00Z",
             "ingested_at": "2026-04-22T18:10:00Z",
         },
@@ -1451,7 +1451,7 @@ def test_editorial_signals_prefer_ingested_at_for_freshness(mock_all):
             "title": "Телма: расправата за буџетот продолжува",
             "source": "Telma",
             "topic": "Политика",
-            "category": "Македонија",
+            "category": "Srbija",
             "created_at": "2026-04-22T07:55:00Z",
             "ingested_at": "2026-04-22T18:05:00Z",
         },

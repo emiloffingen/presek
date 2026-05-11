@@ -31,7 +31,7 @@ class PresekUser(HttpUser):
     def search_articles(self):
         """Search for articles with various queries."""
         queries = [
-            "Македонија",
+            "Srbija",
             "Скопје",
             "Политика",
             "Економија",

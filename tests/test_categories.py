@@ -18,13 +18,13 @@ class TestValidateCategory:
             assert validate_category(cat) == cat
 
     def test_invalid_falls_back(self):
-        assert validate_category("Политика") == "Македонија"
-        assert validate_category("") == "Македонија"
-        assert validate_category("Random") == "Македонија"
+        assert validate_category("Политика") == "Srbija"
+        assert validate_category("") == "Srbija"
+        assert validate_category("Random") == "Srbija"
 
     def test_case_sensitive(self):
-        assert validate_category("македонија") == "Македонија"
-        assert validate_category("ЕВРОПА") == "Македонија"
+        assert validate_category("srbija") == "Srbija"
+        assert validate_category("ЕВРОПА") == "Srbija"
 
 
 # ── detect_category ───────────────────────────────────────────────
@@ -74,8 +74,8 @@ class TestDetectCategory:
 
     # Default
     def test_default_makedonija(self):
-        assert detect_category("Нов мост во Скопје") == "Македонија"
-        assert detect_category("Времето утре ќе биде сончево") == "Македонија"
+        assert detect_category("Нов мост во Скопје") == "Srbija"
+        assert detect_category("Времето утре ќе биде сончево") == "Srbija"
 
     # Description also scanned
     def test_description_matters(self):
@@ -88,7 +88,7 @@ class TestDetectCategory:
     def test_short_keyword_word_boundary(self):
         # "кина" should not match inside "прекинато"
         result = detect_category("Преговорите се прекинати")
-        assert result == "Македонија"  # Should NOT be "Свет"
+        assert result == "Srbija"  # Should NOT be "Свет"
 
     # Germany before Europa (order matters)
     def test_germany_before_europa(self):
@@ -239,7 +239,7 @@ class TestNormalizeHeadline:
             "Поранешен шеф на НАТО: европа мора да стане воено независна од САД"
         ) == ("Поранешен шеф на НАТО: Европа мора да стане воено независна од САД")
         assert normalize_headline(
-            "Најбогатиот човек во југославија не бил тито: мистериозниот угостител од македонија заработил милиони"
+            "Најбогатиот човек во југославија не бил тито: мистериозниот угостител од srbija заработил милиони"
         ) == (
-            "Најбогатиот човек во Југославија не бил Тито: мистериозниот угостител од Македонија заработил милиони"
+            "Најбогатиот човек во Југославија не бил Тито: мистериозниот угостител од Srbija заработил милиони"
         )

@@ -66,13 +66,13 @@ def test_topic_bridge_is_more_permissive_for_fresh_followups_than_old_ones():
     shared = {"Кочани"}
     assert (
         _topic_bridge_allowed(
-            "Политика", "Вести", "Македонија", "Македонија", 0.0, 0.55, shared, 4.0
+            "Политика", "Вести", "Srbija", "Srbija", 0.0, 0.55, shared, 4.0
         )
         is True
     )
     assert (
         _topic_bridge_allowed(
-            "Политика", "Вести", "Македонија", "Македонија", 0.0, 0.55, shared, 30.0
+            "Политика", "Вести", "Srbija", "Srbija", 0.0, 0.55, shared, 30.0
         )
         is False
     )
@@ -222,7 +222,7 @@ def test_same_source_unrelated_followup_does_not_merge_after_time_gap():
             "title": "Денес е Упокоение на Свети Методиј Солунски",
             "created_at": datetime.datetime.now() - datetime.timedelta(hours=23),
             "source": "Skopje Info",
-            "category": "Македонија",
+            "category": "Srbija",
             "topic": "Вести",
         }
     ]
@@ -231,7 +231,7 @@ def test_same_source_unrelated_followup_does_not_merge_after_time_gap():
         MagicMock(),
         "Пишува „Скопски Херој“: Главен град без ноќен живот – каде исчезна урбаното Скопје?",
         recent_articles,
-        category="Македонија",
+        category="Srbija",
         source="Skopje Info",
         topic="Вести",
     )
@@ -248,7 +248,7 @@ def test_topic_bridge_allows_same_story_followup_when_entities_and_title_overlap
             "title": "Обвинителството отвори истрага за пожарот во Кочани",
             "created_at": datetime.datetime.now(),
             "source": "МИА",
-            "category": "Македонија",
+            "category": "Srbija",
             "topic": "Вести",
         }
     ]
@@ -257,7 +257,7 @@ def test_topic_bridge_allows_same_story_followup_when_entities_and_title_overlap
         MagicMock(),
         "Кочани: Обвинителството бара нови докази во истрагата за пожарот",
         recent_articles,
-        category="Македонија",
+        category="Srbija",
         source="Телма",
         topic="Политика",
     )
@@ -274,7 +274,7 @@ def test_topic_bridge_does_not_merge_same_category_story_without_shared_entities
             "title": "Обвинителството отвори истрага за пожарот во Кочани",
             "created_at": datetime.datetime.now(),
             "source": "МИА",
-            "category": "Македонија",
+            "category": "Srbija",
             "topic": "Вести",
         }
     ]
@@ -283,7 +283,7 @@ def test_topic_bridge_does_not_merge_same_category_story_without_shared_entities
         MagicMock(),
         "Владата отвора нов конкурс за директори на училишта",
         recent_articles,
-        category="Македонија",
+        category="Srbija",
         source="Сител",
         topic="Политика",
     )

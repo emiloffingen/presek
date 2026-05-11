@@ -149,7 +149,7 @@ class TestReclusterRecentArticlesTask:
                 "cluster_id": "old-a",
                 "title": "Пожар во магацин во Скопје",
                 "source": "МИА",
-                "category": "Македонија",
+                "category": "Srbija",
                 "topic": "Криминал",
                 "created_at": "2026-04-23T09:00:00",
                 "embedding": "[1,0,0]",
@@ -159,7 +159,7 @@ class TestReclusterRecentArticlesTask:
                 "cluster_id": "old-b",
                 "title": "Пожар во магацин во Скопје, двајца повредени",
                 "source": "Телма",
-                "category": "Македонија",
+                "category": "Srbija",
                 "topic": "Криминал",
                 "created_at": "2026-04-23T09:05:00",
                 "embedding": "[0.99,0.01,0]",
@@ -368,7 +368,7 @@ class TestDailyBriefTaskQuality:
         )
         assert (
             tasks.delivery._briefing_title_penalty(
-                "Земјотрес од 4,8 степени ја потресе Македонија"
+                "Земјотрес од 4,8 степени ја потресе Srbija"
             )
             == 0.0
         )

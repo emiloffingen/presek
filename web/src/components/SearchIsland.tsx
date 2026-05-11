@@ -56,7 +56,7 @@ const SEARCH_ACTIONS: SearchAction[] = [
 
 const CATEGORIES = [
   { id: 'all', label: 'СИТЕ ТЕМИ', color: 'bg-nyt-accent' },
-  { id: 'Македонија', label: 'МАКЕДОНИЈА', color: 'bg-nyt-red' },
+  { id: 'Srbija', label: 'МАКЕДОНИЈА', color: 'bg-nyt-red' },
   { id: 'Политика', label: 'ПОЛИТИКА', color: 'bg-blue-600' },
   { id: 'Економија', label: 'ЕКОНОМИЈА', color: 'bg-emerald-600' },
   { id: 'Спорт', label: 'СПОРТ', color: 'bg-orange-500' },
@@ -87,7 +87,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
     "Анализирај ги противречните ставови...",
     "Деконструирај ги фактите и бројките...",
     "Мапирај ги реакциите и последиците...",
-    "Што се случува во Македонија?"
+    "Што се случува во Srbija?"
   ];
 
   useEffect(() => {

@@ -1093,15 +1093,15 @@ def classify_topics_task(*args, **kwargs):
 
 @celery_app.task
 def recategorize_clusters_task(*args, **kwargs):
-    """Verify if 'Македонија' articles belong in specialized categories using rule-based detection."""
+    """Verify if 'Srbija' articles belong in specialized categories using rule-based detection."""
     try:
         rows = db.execute(
-            "SELECT cluster_id, title, description FROM articles WHERE category = 'Македонија' LIMIT 20"
+            "SELECT cluster_id, title, description FROM articles WHERE category = 'Srbija' LIMIT 20"
         )
         for r in rows:
             # Rule-based first (Free)
             res = detect_category(r["title"], description=r.get("description", ""))
-            if res != "Македонија":
+            if res != "Srbija":
                 db.execute(
                     "UPDATE articles SET category = %s WHERE cluster_id = %s",
                     (res, r["cluster_id"]),
@@ -1556,7 +1556,7 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
     }
 
     allowed_singletons = {
-        "македонија",
+        "srbija",
         "скопје",
         "албанија",
         "еу",

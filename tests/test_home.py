@@ -118,14 +118,14 @@ def test_rank_latest_wire_articles_dedupes_cleaned_titles():
         {
             "title": "Владата усвои мерки &amp; пакет",
             "topic": "Политика",
-            "category": "Македонија",
+            "category": "Srbija",
             "created_at": "2026-04-22T10:00:00",
             "source": "A",
         },
         {
             "title": "Владата усвои мерки & пакет",
             "topic": "Политика",
-            "category": "Македонија",
+            "category": "Srbija",
             "created_at": "2026-04-22T10:05:00",
             "source": "B",
         },
