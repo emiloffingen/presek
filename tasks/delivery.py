@@ -1932,7 +1932,7 @@ def send_profile_briefings_task():
             )
             if _send_ntfy_message(
                 target,
-                "Presek · Utrinski brifing",
+                "Presek · Jutarnji brifing",
                 message_with_link,
                 tags="newspaper,sunrise",
                 click_url=click_url,

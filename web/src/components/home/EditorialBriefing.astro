@@ -43,7 +43,7 @@ const briefingData = parseBriefing(content);
 function formatDate(dateStr: string) {
     try {
         const d = new Date(dateStr);
-        return d.toLocaleDateString('mk-RS', { 
+        return d.toLocaleDateString('sr-RS', { 
             weekday: 'long', 
             year: 'numeric', 
             month: 'long', 
@@ -88,7 +88,7 @@ function formatDate(dateStr: string) {
         </div>
         
         <div class="briefing-footer">
-            <p>Generirano so pomos na Presek Sistemska Sinteza • Bazirano na denesnite vodecki klasteri</p>
+            <p>Generisano uz pomoć Presek Sistemska Sinteza • Bazirano na današnje vodeće klastere</p>
         </div>
     </section>
 )}

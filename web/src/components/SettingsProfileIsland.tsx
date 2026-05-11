@@ -114,25 +114,25 @@ export default function SettingsProfileIsland() {
       <section className="settings-module">
         <div className="settings-module-head">
           <div>
-            <p className="settings-kicker"><Sparkles size={14} /> Vasiot profil na citanje</p>
-            <h2>Sto Presek pameti na ovoj ured</h2>
+            <p className="settings-kicker"><Sparkles size={14} /> Vaš profil čitanja</p>
+            <h2>Šta Presek pami na ovom uređaju</h2>
           </div>
           <p className="settings-copy">
-            Ovie signali ga oblikuvaat vasiot modul „Za Vas“, izborot na izvestuvanja i nedelnata dostava jos pred nesto da se sinhronizira.
+            Ovi signali oblikuju vaš „Za Vas“ modul, izbor izveštaja i nedeljnju dostavu još pre sinhronizacije.
           </p>
         </div>
 
         <div className="settings-stat-grid">
           <div className="settings-stat-card">
-            <span>Sledeni temi</span>
+            <span>Praćene teme</span>
             <strong>{followedTopics.length}</strong>
           </div>
           <div className="settings-stat-card">
-            <span>Praceni izvori</span>
+            <span>Praćeni izvori</span>
             <strong>{followedSources.length}</strong>
           </div>
           <div className="settings-stat-card">
-            <span>Neodamnesni klasteri</span>
+            <span>Nedavni klasteri</span>
             <strong>{(profile?.recentClusters || []).length}</strong>
           </div>
         </div>
@@ -140,11 +140,11 @@ export default function SettingsProfileIsland() {
         {topFocusTopic && (
             <div className="mt-8 p-4 bg-nyt-accent/5 border border-nyt-accent/20 rounded-lg flex items-center justify-between">
                 <div>
-                    <p className="text-[10px] font-black uppercase text-nyt-accent tracking-widest mb-1">Vasiot primaren fokus</p>
+                    <p className="text-[10px] font-black uppercase text-nyt-accent tracking-widest mb-1">Vaša primarna fokus tema</p>
                     <h4 className="font-serif font-black text-xl italic">{topFocusTopic}</h4>
                 </div>
                 <div className="text-right">
-                    <p className="text-[10px] font-bold text-muted-foreground leading-tight">Vrz osnova na poslednoto citanje.<br/>Go koristime za „Za Vas“.</p>
+                    <p className="text-[10px] font-bold text-muted-foreground leading-tight">Na osnovu poslednjeg čitanja.<br/>Koristimo ga za „Za Vas“.</p>
                 </div>
             </div>
         )}
@@ -154,8 +154,8 @@ export default function SettingsProfileIsland() {
         <div className="settings-module">
           <div className="settings-module-head">
             <div>
-              <p className="settings-kicker"><Newspaper size={14} /> Sledeni temi</p>
-              <h3>Temi sto sakate da izleguvaat pobrzo</h3>
+              <p className="settings-kicker"><Newspaper size={14} /> Praćene teme</p>
+              <h3>Teme koje želite da se pojavljuju brže</h3>
             </div>
           </div>
           {followedTopics.length > 0 ? (
@@ -173,15 +173,15 @@ export default function SettingsProfileIsland() {
               ))}
             </div>
           ) : (
-            <p className="settings-empty">jos uvek nemate sledeni temi. Sledete tema od stranicata za temi za dostavata i rangiranjeto da stanat policni.</p>
+            <p className="settings-empty">još uvek nemate praćene teme. Pratite temu sa strane za teme da biste dobili personalizovanu dostavu i rangiranje.</p>
           )}
         </div>
 
         <div className="settings-module">
           <div className="settings-module-head">
             <div>
-              <p className="settings-kicker"><Newspaper size={14} /> Praceni izvori</p>
-              <h3>izvori sto sakate vnimatelno da se sledat</h3>
+              <p className="settings-kicker"><Newspaper size={14} /> Praćeni izvori</p>
+              <h3>izvori koje želite pažljivije da pratite</h3>
             </div>
           </div>
           {followedSources.length > 0 ? (
@@ -199,7 +199,7 @@ export default function SettingsProfileIsland() {
               ))}
             </div>
           ) : (
-            <p className="settings-empty">jos uvek nemate Praceni izvori. Sledete Vodeci izvor od klaster stranica za da dobivate izvor-specificni azuriranja.</p>
+            <p className="settings-empty">još uvek nemate praćene izvore. Pratite vodeći izvor sa stranice klastera da biste dobijali ažuriranja specifična za izvor.</p>
           )}
         </div>
       </section>
@@ -208,8 +208,8 @@ export default function SettingsProfileIsland() {
         <div className="settings-module">
           <div className="settings-module-head">
             <div>
-              <p className="settings-kicker"><Sparkles size={14} /> Predlozi za temi</p>
-              <h3>Sto vredi da sledite sledece</h3>
+              <p className="settings-kicker"><Sparkles size={14} /> Predlozi za teme</p>
+              <h3>Šta vredno sledeće pratite</h3>
             </div>
           </div>
           {recommendations.topics.length > 0 ? (
@@ -227,15 +227,15 @@ export default function SettingsProfileIsland() {
               ))}
             </div>
           ) : (
-            <p className="settings-empty">Koga ce procitate jos nekolku klasteri, tuka ce se pojavat temi sto ima smisla da im sledite.</p>
+            <p className="settings-empty">Kad pročitate još nekoliko klastera, ovde će se pojaviti teme koje ima smisla da pratite.</p>
           )}
         </div>
 
         <div className="settings-module">
           <div className="settings-module-head">
             <div>
-              <p className="settings-kicker"><Sparkles size={14} /> Predlozi za izvori</p>
-              <h3>izvori sto vece se vklopuvaat vo vaseto citanje</h3>
+              <p className="settings-kicker"><Sparkles size={14} /> Predlozi za izvore</p>
+              <h3>izvori koji se već uklapaju u vaše čitanje</h3>
             </div>
           </div>
           {recommendations.sources.length > 0 ? (
@@ -253,7 +253,7 @@ export default function SettingsProfileIsland() {
               ))}
             </div>
           ) : (
-            <p className="settings-empty">Koga ce se pojavat povtorlivi izvori vo vaseto citanje, tuka ce dobiete brzi predlozi za sledenje.</p>
+            <p className="settings-empty">Kad se pojave ponavljajući izvori u vašem čitanju, ovde ćete dobiti brze predloge za praćenje.</p>
           )}
         </div>
       </section>
@@ -261,8 +261,8 @@ export default function SettingsProfileIsland() {
       <section className="settings-module">
         <div className="settings-module-head">
           <div>
-            <p className="settings-kicker"><Clock3 size={14} /> Neodamnesno citanje</p>
-            <h3>klasteri sto ga oblikuvaa vasiot tekoven profil</h3>
+            <p className="settings-kicker"><Clock3 size={14} /> Nedavno čitanje</p>
+            <h3>klasteri koji oblikuju vaš trenutni profil</h3>
           </div>
         </div>
         {recentItems.length > 0 ? (
@@ -279,7 +279,7 @@ export default function SettingsProfileIsland() {
             ))}
           </div>
         ) : (
-          <p className="settings-empty">Otvorete nekolku klasteri i ova stranica ce pocne da objasnuva sto im dvizi vasata personalizacija i dostava.</p>
+          <p className="settings-empty">Otvorite nekoliko klastera i ova stranica će početi da objašnjava što pokreće vašu personalizaciju i dostavu.</p>
         )}
       </section>
     </div>

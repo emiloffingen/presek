@@ -21,11 +21,11 @@ function getTimeStr(dateStr: string) {
         const diffMins = Math.floor(diffMs / (1000 * 60));
         const diffHours = Math.floor(diffMins / 60);
 
-        if (diffMins < 1) return 'STOTUKU';
-        if (diffMins < 60) return `PRED ${diffMins} MIN`;
-        if (diffHours < 24) return `PRED ${diffHours} CASA`;
+        if (diffMins < 1) return 'JUST NOW';
+        if (diffMins < 60) return `PRE ${diffMins} MIN`;
+        if (diffHours < 24) return `PRE ${diffHours} ČASA`;
         
-        return date.toLocaleDateString('mk-RS', { day: 'numeric', month: 'short' }).toUpperCase();
+        return date.toLocaleDateString('sr-RS', { day: 'numeric', month: 'short' }).toUpperCase();
     } catch {
         return '';
     }
@@ -41,7 +41,7 @@ function getTimeStr(dateStr: string) {
 			<section class="sidebar-module">
 				<div class="flex items-center gap-2 mb-4 pb-2 border-b border-border">
 					<Activity size={14} className="text-foreground" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">PRETHODNI IZDANIJA</h4>
+					<h4 class="text-[10px] font-black uppercase tracking-widest">PRETHODNA IZDANJA</h4>
 				</div>
 				<div class="flex flex-col gap-2">
 					{historicalDates.map((d: any) => (
@@ -60,12 +60,12 @@ function getTimeStr(dateStr: string) {
 			<section class="sidebar-module">
 				<div class="flex items-center gap-2 mb-4 pb-2 border-b border-border">
 					<Activity size={14} className="text-emerald-600" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">SISTEMSKI BALANS</h4>
+					<h4 class="text-[10px] font-black uppercase tracking-widest">SISTEMSKA RAVNOTEŽA</h4>
 				</div>
 				<div class="space-y-6">
 					<div>
 						<div class="flex justify-between text-[10px] font-bold uppercase mb-2">
-							<span>Mediumski Pluralizam</span>
+							<span>Medijski pluralizam</span>
 							<span>{stats.intelligence.pluralism.pluralism_pct}%</span>
 						</div>
 						<div class="h-1 bg-secondary rounded-full overflow-hidden">
@@ -74,7 +74,7 @@ function getTimeStr(dateStr: string) {
 					</div>
 					<div>
 						<div class="flex justify-between text-[10px] font-bold uppercase mb-2">
-							<span>Visok Konsenzus</span>
+							<span>Visok konsenzus</span>
 							<span>{stats.intelligence.pluralism.high_consensus_pct}%</span>
 						</div>
 						<div class="h-1 bg-secondary rounded-full overflow-hidden">
@@ -89,7 +89,7 @@ function getTimeStr(dateStr: string) {
 			<section class="sidebar-module">
 				<div class="flex items-center gap-2 mb-4 pb-2 border-b border-border">
 					<Users size={14} className="text-foreground" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">KLUCNI AKTERI danas</h4>
+					<h4 class="text-[10px] font-black uppercase tracking-widest">KLJUČNI AKTERI danas</h4>
 				</div>
 				<div class="flex flex-col gap-3">
 					{briefing.subjects.map((subject: any) => (
@@ -106,7 +106,7 @@ function getTimeStr(dateStr: string) {
 			<section class="sidebar-module">
 				<div class="flex items-center gap-2 mb-4 pb-2 border-b border-border">
 					<MapPin size={14} className="text-foreground" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">FOKUS LOKACII</h4>
+					<h4 class="text-[10px] font-black uppercase tracking-widest">FOKUS LOKACIJE</h4>
 				</div>
 				<div class="flex flex-wrap gap-2">
 					{briefing.locations.map((loc: any) => (
@@ -122,7 +122,7 @@ function getTimeStr(dateStr: string) {
 			<section class="sidebar-module">
 				<div class="flex items-center gap-2 mb-4 pb-2 border-b border-border">
 					<Zap size={14} className="text-nyt-accent" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">AKTUELNO SEGA</h4>
+					<h4 class="text-[10px] font-black uppercase tracking-widest">AKTUELNO SAD</h4>
 				</div>
 				<a href={`/cluster/${leadCluster.cluster_id}`} class="group block">
 					<p class="font-serif font-bold text-sm leading-snug group-hover:text-nyt-accent transition-colors">
