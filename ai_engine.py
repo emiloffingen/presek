@@ -47,7 +47,7 @@ _PROMPT_INJECTION_PATTERNS = [
     # Delimiter attacks
     r"```\s*(?:system|assistant|user|developer)",
     r"\<\s*(?:system|assistant|user|developer)",
-    r"\\[\s*(?:system|assistant|user|developer)",
+    r"\[\s*(?:system|assistant|user|developer)",
     # Jailbreak attempts
     r"DAN\s*\:\s*",  # "DAN:" (Do Anything Now)
     r"developer\s+mode",
@@ -722,7 +722,9 @@ def auto_summarize_top_clusters(target_cluster_ids: list[str] = None):
         from tasks.intelligence import synthesize_cluster_task
 
         for cid, arts, src_count, dt in top:
-            synthesize_cluster_task.delay(cid)
+            # Aggregate article content for the synthesizer
+            content = "\n\n".join([a.get("title", "") + ": " + a.get("summary", "") for a in arts])
+            synthesize_cluster_task.delay(cid, content=content)
 
     except Exception as e:
         log.error(f"[ai/auto_summarize] Orchestration failed: {e}")
