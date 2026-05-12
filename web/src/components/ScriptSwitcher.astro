@@ -1,5 +1,5 @@
 <button id="script-toggle" class="text-[9px] font-black uppercase tracking-widest text-nyt-accent hover:text-foreground transition-colors">
-    Ćir/Lat
+    LAT/ЋIR
 </button>
 
 <script>
@@ -7,22 +7,20 @@
         const toggle = document.getElementById('script-toggle');
         if (!toggle) return;
 
-        let isCyrillic = true;
+        let isCyrillic = false;
 
         function traverse(node) {
             if (node.nodeType === Node.TEXT_NODE) {
                 if (node.textContent.trim().length > 0) {
                     node.textContent = isCyrillic 
-                        ? transliterateToLat(node.textContent) 
-                        : transliterateToCyr(node.textContent);
+                        ? cyrToLat(node.textContent) 
+                        : latToCyr(node.textContent);
                 }
             } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName !== 'SCRIPT' && node.tagName !== 'STYLE') {
                 node.childNodes.forEach(traverse);
             }
         }
 
-        // Import logic from our utility (simplified for client-side)
-        // In a real build, we'd bundle this better; here we use a global approach
         toggle.addEventListener('click', () => {
             isCyrillic = !isCyrillic;
             traverse(document.body);
