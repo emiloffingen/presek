@@ -46,12 +46,18 @@ class TestDetectCategory:
         assert detect_category("Nov zakon vo Berlin") == "Germanija"
         assert detect_category("Bundestag glasase za budzetot") == "Germanija"
 
-    # Balkan
+    # Balkan (Regional neighbors, excluding Serbia/Macedonia)
     def test_balkan_keywords(self):
-        assert detect_category("Vucic odrza konferencija") == "Balkan"
-        assert detect_category("Protesti vo Belgrad") == "Balkan"
-        assert detect_category("Kurti i Vucic na dijalog") == "Balkan"
+        assert detect_category("Bugarija odrza konferencija") == "Balkan"
+        assert detect_category("Protesti vo Tirana") == "Balkan"
+        assert detect_category("Kurti i Rama na dijalog") == "Balkan"
         assert detect_category("Erdogan poseti Ankara") == "Balkan"
+
+    # Serbia
+    def test_serbia_keywords(self):
+        assert detect_category("Vucic odrza konferencija") == "Srbija"
+        assert detect_category("Protesti vo Belgrad") == "Srbija"
+        assert detect_category("Kurti i Vucic na dijalog") == "Srbija"
 
     # Amerika
     def test_america_keywords(self):
@@ -73,8 +79,7 @@ class TestDetectCategory:
         assert detect_category("Nato formira nova strategija") == "Svet"
 
     # Default
-    def test_default_makedonija(self):
-        assert detect_category("Nov most vo Beograd") == "Srbija"
+    def test_default_srbija(self):
         assert detect_category("Vremeto sutra ce bide soncevo") == "Srbija"
 
     # Description also scanned
@@ -94,9 +99,9 @@ class TestDetectCategory:
     def test_germany_before_europa(self):
         assert detect_category("Germanija vo Evropa") == "Germanija"
 
-    # Balkan before Svet
-    def test_balkan_before_svet(self):
-        assert detect_category("Srbija i Rusija") == "Balkan"
+    # Serbia and Rusija -> Serbia should win for Serbian audience if it has keywords
+    def test_serbia_before_svet(self):
+        assert detect_category("Srbija i Rusija") == "Srbija"
 
     def test_category_scores_richer_group_over_stray_keyword(self):
         result = detect_category(

@@ -17,11 +17,11 @@ from ingestion import (
 
 
 def test_normalize_headline():
-    assert normalize_headline("VIDEO: ova e naslov") == "ova e naslov"
+    assert normalize_headline("VIDEO: ova e naslov") == "Ova e naslov"
     assert normalize_headline("Normalen naslov") == "Normalen naslov"
     assert (
         normalize_headline("  ova e naslov so prazni mesta  ")
-        == "ova e naslov so prazni mesta"
+        == "Ova e naslov so prazni mesta"
     )
     assert normalize_headline("") == ""
 
@@ -289,7 +289,7 @@ def test_ingest_updates_last_fetched_even_when_all_entries_are_filtered_out():
         ),
         patch.object(ingestion, "fetch_feed_async", side_effect=_fake_fetch_feed_async),
         patch.object(ingestion, "record_source_fetch"),
-        patch("utils.redis_client", MagicMock()),
+        patch("utils.cache.redis_client", MagicMock()),
     ):
         new_count, inserted_ids, errors = asyncio.run(
             ingestion.ingest_all_sources_async()

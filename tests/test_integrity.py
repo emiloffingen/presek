@@ -398,7 +398,7 @@ class TestDeploymentIntegrity:
 
     def test_live_route_uses_request_aware_event_stream(self):
         news_route = _read("routes/news.py")
-        utils_module = _read("utils.py")
+        utils_module = _read("utils/cache.py")
         assert 'event_stream("updates", request=request)' in news_route
         assert "await request.is_disconnected()" in utils_module
 

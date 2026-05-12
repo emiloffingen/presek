@@ -335,25 +335,6 @@ CATEGORIES = [
         ],
     ),
     (
-        "Srbija",
-        [
-            "Srbija",
-            "srpski",
-            "Beograd",
-            "Nis",
-            "Novi Sad",
-            "vladata",
-            "sobranieto",
-            "pretsedatelot",
-            "ministerstvoto",
-            "vucic",
-            "dacic",
-            "brnabic",
-            "izbori",
-            "protesti",
-        ],
-    ),
-    (
         "Svet",
         [
             "rusija",

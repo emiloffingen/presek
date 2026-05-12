@@ -181,9 +181,7 @@ def run_ingestion():
                 classify_topics_task.si(),
                 extract_entities_task.si(),
                 recategorize_clusters_task.si(),
-                auto_summarize_task.signature(
-                    kwargs={"cluster_ids": modified_cluster_ids}
-                ),
+                auto_summarize_task.si(cluster_ids=modified_cluster_ids),
             )
             ingestion_chain.apply_async()
 

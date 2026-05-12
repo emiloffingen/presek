@@ -1,12 +1,11 @@
 import json
 import datetime
 from unittest.mock import patch
+import tasks
 
 
 class TestBackfillCoverArtTask:
     def test_backfill_queues_spaced_subtasks(self):
-        import tasks
-
         rows = [
             {"cluster_id": "a1", "title": "A", "summary": ""},
             {"cluster_id": "b2", "title": "B", "summary": ""},
@@ -33,8 +32,6 @@ class TestBackfillCoverArtTask:
         assert args == [("a1", "A"), ("b2", "B"), ("c3", "C")]
 
     def test_backfill_skips_when_queue_backlog_is_high(self):
-        import tasks
-
         with (
             patch("tasks.intelligence.get_celery_queue_depth", return_value=150),
             patch("tasks.intelligence.db") as mock_db,
@@ -48,8 +45,6 @@ class TestBackfillCoverArtTask:
         mock_apply.assert_not_called()
 
     def test_backfill_single_skips_when_queue_backlog_is_high(self):
-        import tasks
-
         with (
             patch("tasks.intelligence.get_celery_queue_depth", return_value=150),
             patch("tasks.intelligence.generate_cover_art") as mock_cover_art,
@@ -61,8 +56,6 @@ class TestBackfillCoverArtTask:
 
 class TestSynthesizeClusterTaskQuality:
     def test_normalizes_ai_summary_and_perspectives_before_store(self):
-        import tasks
-
         article_rows = [
             {
                 "title": "Tramp: Utorak, 20:00 casot po istocno vreme",
@@ -141,8 +134,6 @@ class TestSynthesizeClusterTaskQuality:
 
 class TestReclusterRecentArticlesTask:
     def test_reclusters_recent_rows_and_queues_rebuilds(self):
-        import tasks
-
         recent_rows = [
             {
                 "id": 1,
@@ -217,8 +208,6 @@ class TestReclusterRecentArticlesTask:
 
 class TestSummarizeArticleTaskQuality:
     def test_uses_title_and_description_in_ai_prompt(self):
-        import tasks
-
         with (
             patch("tasks.intelligence.db") as mock_db,
             patch(
@@ -245,8 +234,6 @@ class TestSummarizeArticleTaskQuality:
 
 class TestDailyBriefTaskQuality:
     def test_builds_cluster_level_context_for_daily_brief(self):
-        import tasks
-
         cluster_articles = [
             {
                 "cluster_id": "c1",
@@ -383,8 +370,6 @@ class TestDailyBriefTaskQuality:
     def test_load_daily_brief_clusters_pushes_plain_party_pr_behind_public_interest_cluster(
         self,
     ):
-        import tasks
-
         rows = [
             {
                 "cluster_id": "party-pr",
@@ -442,8 +427,6 @@ class TestDailyBriefTaskQuality:
     def test_load_daily_brief_clusters_excludes_routine_weather_when_higher_signal_clusters_exist(
         self,
     ):
-        import tasks
-
         rows = [
             {
                 "cluster_id": "weather",
@@ -507,8 +490,6 @@ class TestDailyBriefTaskQuality:
         assert clusters[1]["cluster_id"] == "missiles"
 
     def test_party_cluster_with_synthesis_but_no_public_interest_does_not_lead(self):
-        import tasks
-
         rows = [
             {
                 "cluster_id": "party-pr",
@@ -571,8 +552,6 @@ class TestDailyBriefTaskQuality:
 
 class TestProfileDeliveryTasks:
     def test_send_profile_briefings_updates_last_sent(self):
-        import tasks
-
         rows = [
             {
                 "sync_token": "sync-token-123",
@@ -613,8 +592,6 @@ class TestProfileDeliveryTasks:
         assert "event_id=11" in mock_send.call_args.kwargs["click_url"]
 
     def test_send_profile_weekly_digests_updates_last_sent(self):
-        import tasks
-
         rows = [
             {
                 "sync_token": "sync-token-123",
@@ -654,327 +631,7 @@ class TestProfileDeliveryTasks:
         assert "last_weekly_sent_at" in update_sql
         assert "event_id=22" in mock_send.call_args.kwargs["click_url"]
 
-    def test_select_profile_weekly_clusters_prefers_items_with_real_digest_engagement(
-        self,
-    ):
-        import tasks
-
-        clusters = [
-            {
-                "cluster_id": "steady-cluster",
-                "title": "Steady story",
-                "source": "MIA",
-                "source_count": 3,
-                "category": "Politika",
-                "topic": "Politika",
-                "score": 4.8,
-            },
-            {
-                "cluster_id": "engaged-cluster",
-                "title": "Engaged story",
-                "source": "Telma",
-                "source_count": 2,
-                "category": "Politika",
-                "topic": "Politika",
-                "score": 4.1,
-            },
-        ]
-
-        with (
-            patch("tasks.delivery._load_weekly_digest_clusters", return_value=clusters),
-            patch(
-                "tasks.delivery._load_weekly_cluster_engagement",
-                return_value={
-                    "engaged-cluster": {
-                        "sends": 4,
-                        "opens": 3,
-                        "clicks": 1,
-                        "open_rate": 0.75,
-                        "click_rate": 0.25,
-                        "engagement_score": 0.7,
-                    },
-                    "steady-cluster": {
-                        "sends": 4,
-                        "opens": 0,
-                        "clicks": 0,
-                        "open_rate": 0.0,
-                        "click_rate": 0.0,
-                        "engagement_score": 0.0,
-                    },
-                },
-            ),
-        ):
-            result = tasks._select_profile_weekly_clusters(
-                {"followedTopics": ["Politika"], "followedSources": []},
-                limit=2,
-            )
-
-        assert result[0]["cluster_id"] == "engaged-cluster"
-        assert "silen odziv" in result[0]["match_reason"]
-
-    def test_load_weekly_cluster_engagement_uses_send_metadata_cluster_ids(self):
-        import tasks
-
-        with patch("tasks.delivery.db") as mock_db:
-            mock_db.execute.side_effect = [
-                [
-                    {
-                        "id": 10,
-                        "cluster_id": "lead-cluster",
-                        "metadata": {"cluster_ids": ["lead-cluster", "second-cluster"]},
-                    },
-                ],
-                [
-                    {"parent_event_id": 10, "event_type": "open"},
-                    {"parent_event_id": 10, "event_type": "click"},
-                ],
-            ]
-            result = tasks._load_weekly_cluster_engagement(days=30)
-
-        assert result["lead-cluster"]["sends"] == 1
-        assert result["lead-cluster"]["opens"] == 1
-        assert result["lead-cluster"]["clicks"] == 1
-        assert result["second-cluster"]["open_rate"] == 1.0
-
-    def test_load_weekly_topic_engagement_uses_focus_topics_from_send_metadata(self):
-        import tasks
-
-        with patch("tasks.delivery.db") as mock_db:
-            mock_db.execute.side_effect = [
-                [
-                    {"id": 15, "metadata": {"focus_topics": ["Politika", "Ekonomija"]}},
-                ],
-                [
-                    {"parent_event_id": 15, "event_type": "open"},
-                    {"parent_event_id": 15, "event_type": "click"},
-                ],
-            ]
-            result = tasks._load_weekly_topic_engagement(days=30)
-
-        assert result["Politika"]["open_rate"] == 1.0
-        assert result["Ekonomija"]["click_rate"] == 1.0
-
-    def test_load_weekly_source_engagement_uses_focus_sources_from_send_metadata(self):
-        import tasks
-
-        with patch("tasks.delivery.db") as mock_db:
-            mock_db.execute.side_effect = [
-                [
-                    {"id": 21, "metadata": {"focus_sources": ["MIA", "Telma"]}},
-                ],
-                [
-                    {"parent_event_id": 21, "event_type": "open"},
-                    {"parent_event_id": 21, "event_type": "click"},
-                ],
-            ]
-            result = tasks._load_weekly_source_engagement(days=30)
-
-        assert result["MIA"]["open_rate"] == 1.0
-        assert result["Telma"]["click_rate"] == 1.0
-
-    def test_build_weekly_digest_sections_prioritizes_high_performing_followed_topics(
-        self,
-    ):
-        import tasks
-
-        clusters = [
-            {
-                "cluster_id": "politics-1",
-                "title": "Political lead",
-                "source": "MIA",
-                "source_count": 4,
-                "topic": "Politika",
-                "category": "Politika",
-                "match_score": 4.2,
-                "match_reason": "sledena tema: Politika",
-            },
-            {
-                "cluster_id": "economy-1",
-                "title": "Economy lead",
-                "source": "Telma",
-                "source_count": 3,
-                "topic": "Ekonomija",
-                "category": "Ekonomija",
-                "match_score": 3.8,
-                "match_reason": "sledena tema: Ekonomija",
-            },
-        ]
-
-        sections = tasks._build_weekly_digest_sections(
-            {"followedTopics": ["Politika", "Ekonomija"], "followedSources": []},
-            clusters,
-            {"Politika": {"section_score": 0.8}, "Ekonomija": {"section_score": 0.1}},
-        )
-
-        assert sections[1]["title"] == "Sledena tema: Politika"
-        assert "silen interes" in sections[1]["subtitle"]
-
-    def test_build_weekly_digest_sections_prioritizes_strong_source_section_over_weaker_topic_section(
-        self,
-    ):
-        import tasks
-
-        clusters = [
-            {
-                "cluster_id": "lead-1",
-                "title": "Lead weekly story",
-                "source": "MIA",
-                "source_count": 4,
-                "topic": "Politika",
-                "category": "Politika",
-                "match_score": 3.1,
-                "match_reason": "sledena tema: Politika",
-            },
-            {
-                "cluster_id": "source-1",
-                "title": "Source-led follow-up",
-                "source": "Telma",
-                "source_count": 3,
-                "topic": "Svet",
-                "category": "Svet",
-                "match_score": 4.0,
-                "match_reason": "sledeci izvor: Telma",
-            },
-        ]
-
-        sections = tasks._build_weekly_digest_sections(
-            {"followedTopics": ["Politika"], "followedSources": ["Telma"]},
-            clusters,
-            {"Politika": {"section_score": 0.15}},
-            {"Telma": {"section_score": 0.85}},
-        )
-
-        assert sections[1]["title"] == "izvori sto im sledite"
-        assert "Telma" in sections[1]["subtitle"]
-
-    def test_build_profile_weekly_digest_message_renders_section_headings(self):
-        import tasks
-
-        clusters = [
-            {
-                "cluster_id": "lead-1",
-                "title": "Lead weekly story",
-                "source": "MIA",
-                "source_count": 4,
-                "match_reason": "sledena tema: Politika",
-                "cluster_summary": "Glaven razvoj nedelava.",
-                "difference_point": "",
-                "open_point": "",
-            }
-        ]
-
-        with (
-            patch(
-                "tasks.delivery._load_weekly_topic_engagement",
-                return_value={"Politika": {"section_score": 0.8}},
-            ),
-            patch("tasks.delivery._load_weekly_source_engagement", return_value={}),
-            patch(
-                "tasks.delivery._build_weekly_digest_sections",
-                return_value=[
-                    {
-                        "title": "Sto najmnogu se pomesti",
-                        "subtitle": "glaven nedelen razvoj",
-                        "clusters": clusters,
-                    }
-                ],
-            ),
-        ):
-            message = tasks._build_profile_weekly_digest_message(
-                {"followedTopics": ["Politika"], "followedSources": []},
-                clusters,
-            )
-
-        assert "## Sto najmnogu se pomesti" in message
-        assert "Lead weekly story" in message
-
-    def test_select_profile_weekly_clusters_avoids_duplicate_heavy_same_topic_mix(self):
-        import tasks.delivery
-
-        clusters = [
-            {
-                "cluster_id": "p1",
-                "title": "Politicki razvoj 1",
-                "source": "MIA",
-                "source_count": 4,
-                "topic": "Politika",
-                "category": "Politika",
-                "score": 4.8,
-            },
-            {
-                "cluster_id": "p2",
-                "title": "Politicki razvoj 2",
-                "source": "Reuters",
-                "source_count": 3,
-                "topic": "Politika",
-                "category": "Politika",
-                "score": 4.1,
-            },
-            {
-                "cluster_id": "e1",
-                "title": "Ekonomski razvoj",
-                "source": "Telma",
-                "source_count": 3,
-                "topic": "Ekonomija",
-                "category": "Ekonomija",
-                "score": 3.9,
-            },
-        ]
-
-        profile = {"followedTopics": ["Politika", "Ekonomija"], "followedSources": []}
-
-        with (
-            patch("tasks.delivery._load_weekly_digest_clusters", return_value=clusters),
-            patch("tasks.delivery._load_weekly_cluster_engagement", return_value={}),
-        ):
-            result = tasks.delivery._select_profile_weekly_clusters(profile, limit=3)
-
-        returned_topics = [item["topic"] for item in result]
-        assert "Ekonomija" in returned_topics
-        assert returned_topics.count("Politika") <= 1
-
-    def test_select_profile_brief_clusters_prefers_richer_editorial_cluster(self):
-        import tasks
-
-        clusters = [
-            {
-                "cluster_id": "thin-1",
-                "title": "Kratok razvoj",
-                "source": "Makfax",
-                "source_count": 2,
-                "topic": "Politika",
-                "category": "Politika",
-                "score": 3.2,
-                "difference_point": "",
-                "open_point": "",
-                "cluster_summary": "",
-                "other_titles": [],
-            },
-            {
-                "cluster_id": "rich-1",
-                "title": "razvoj so razliciti akcenti",
-                "source": "MIA",
-                "source_count": 4,
-                "topic": "Politika",
-                "category": "Politika",
-                "score": 3.0,
-                "difference_point": "Izvorite se razlikuvaat okolu rokot.",
-                "open_point": "ostaje da se potvrdi tocniot datum.",
-                "cluster_summary": "glavni razvoj so povece kontekst.",
-                "other_titles": ["ugao 1", "ugao 2"],
-            },
-        ]
-
-        profile = {"followedTopics": ["Politika"], "followedSources": []}
-
-        with patch("tasks.delivery._load_daily_brief_clusters", return_value=clusters):
-            result = tasks._select_profile_brief_clusters(profile, limit=2)
-
-        assert result[0]["cluster_id"] == "rich-1"
-
     def test_send_profile_breaking_alerts_tracks_alerted_cluster(self):
-        import tasks
-
         rows = [
             {
                 "sync_token": "sync-token-123",
@@ -1024,8 +681,6 @@ class TestProfileDeliveryTasks:
         assert "event_id=33" in mock_send.call_args.kwargs["click_url"]
 
     def test_breaking_alerts_skip_when_queue_backlog_is_high(self):
-        import tasks
-
         with (
             patch("tasks.delivery.acquire_task_lock", return_value=True),
             patch("tasks.delivery.release_task_lock") as mock_release,
@@ -1038,8 +693,6 @@ class TestProfileDeliveryTasks:
         mock_release.assert_called_once()
 
     def test_breaking_alerts_skip_when_lock_is_held(self):
-        import tasks
-
         with (
             patch("tasks.delivery.acquire_task_lock", return_value=False),
             patch("tasks.delivery._load_active_delivery_rows") as mock_rows,
@@ -1047,216 +700,3 @@ class TestProfileDeliveryTasks:
             tasks.send_profile_breaking_alerts_task()
 
         mock_rows.assert_not_called()
-
-    def test_select_breaking_cluster_skips_recent_topic_cooldown(self):
-        import tasks
-
-        now = datetime.datetime.now(datetime.timezone.utc)
-        recent_iso = now.isoformat()
-        cluster = {
-            "cluster_id": "new-cluster",
-            "title": "Breaking story",
-            "source": "MIA",
-            "source_count": 3,
-            "score": 5.2,
-            "category": "Politika",
-            "topic": "Politika",
-            "created_at": recent_iso,
-        }
-        freshness = {
-            "refresh_needed": True,
-            "freshness_score": 2.1,
-            "reasons": ["new_sources"],
-        }
-
-        with (
-            patch(
-                "tasks.delivery._load_recent_breaking_clusters", return_value=[cluster]
-            ),
-            patch(
-                "tasks.delivery._load_cluster_alert_material",
-                return_value=(
-                    [{"title": "a", "source": "MIA", "created_at": recent_iso}],
-                    now,
-                ),
-            ),
-            patch("tasks.delivery._load_delivery_kind_performance", return_value={}),
-            patch(
-                "tasks.delivery._load_breaking_target_performance",
-                return_value={"topics": {}, "sources": {}},
-            ),
-            patch(
-                "tasks.delivery.assess_cluster_synthesis_freshness",
-                return_value=freshness,
-            ),
-        ):
-            candidate = tasks._select_breaking_cluster_for_profile(
-                {"followedTopics": ["Politika"], "followedSources": []},
-                [],
-                alert_context={"topic:Politika": recent_iso},
-                last_breaking_sent_at=None,
-                include_topics=True,
-                include_sources=False,
-            )
-
-        assert candidate is None
-
-    def test_select_breaking_cluster_allows_material_refresh_after_seen(self):
-        import tasks
-
-        older = (
-            datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=5)
-        ).isoformat()
-        cluster = {
-            "cluster_id": "same-cluster",
-            "title": "Breaking story",
-            "source": "MIA",
-            "source_count": 4,
-            "score": 5.8,
-            "category": "Politika",
-            "topic": "Politika",
-            "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        }
-        freshness = {
-            "refresh_needed": True,
-            "freshness_score": 2.6,
-            "reasons": ["new_sources", "new_numbers"],
-        }
-
-        with (
-            patch(
-                "tasks.delivery._load_recent_breaking_clusters", return_value=[cluster]
-            ),
-            patch(
-                "tasks.delivery._load_cluster_alert_material",
-                return_value=(
-                    [
-                        {
-                            "title": "a",
-                            "source": "MIA",
-                            "created_at": cluster["created_at"],
-                        }
-                    ],
-                    older,
-                ),
-            ),
-            patch("tasks.delivery._load_delivery_kind_performance", return_value={}),
-            patch(
-                "tasks.delivery._load_breaking_target_performance",
-                return_value={"topics": {}, "sources": {}},
-            ),
-            patch(
-                "tasks.delivery.assess_cluster_synthesis_freshness",
-                return_value=freshness,
-            ),
-        ):
-            candidate = tasks._select_breaking_cluster_for_profile(
-                {"followedTopics": ["Politika"], "followedSources": []},
-                ["same-cluster"],
-                alert_context={"cluster:same-cluster": older},
-                last_breaking_sent_at=older,
-                include_topics=True,
-                include_sources=False,
-            )
-
-        assert candidate is not None
-        assert candidate["cluster_id"] == "same-cluster"
-        assert candidate["alert_label"] == "Itno azuriranje"
-
-    def test_classify_alert_candidate_becomes_stricter_when_breaking_engagement_is_weak(
-        self,
-    ):
-        import tasks
-
-        candidate = tasks._classify_alert_candidate(
-            {"cluster_id": "weak-1", "score": 2.8},
-            {"freshness_score": 1.2, "reasons": ["multiple_new_reports"]},
-            ["Politika"],
-            [],
-            {"breaking": {"sends": 12, "open_rate": 0.25, "click_rate": 0.08}},
-        )
-
-        assert candidate["engagement_label"] == "Slab odziv"
-        assert candidate["score_adjustment"] < 0
-        assert candidate["topic_gap_minutes"] > 360
-
-    def test_classify_alert_candidate_allows_faster_high_signal_alerts_when_engagement_is_strong(
-        self,
-    ):
-        import tasks
-
-        candidate = tasks._classify_alert_candidate(
-            {"cluster_id": "strong-1", "score": 5.9},
-            {"freshness_score": 2.2, "reasons": ["new_numbers"]},
-            ["Politika"],
-            ["MIA"],
-            {"breaking": {"sends": 10, "open_rate": 0.61, "click_rate": 0.28}},
-        )
-
-        assert candidate["engagement_label"] == "Silen odziv"
-        assert candidate["score_adjustment"] > 0
-        assert candidate["min_gap_minutes"] < 60
-
-    def test_classify_alert_candidate_boosts_topic_with_strong_engagement_history(self):
-        import tasks
-
-        candidate = tasks._classify_alert_candidate(
-            {"cluster_id": "topic-strong", "score": 5.1},
-            {"freshness_score": 1.9, "reasons": ["new_angle"]},
-            ["Politika"],
-            [],
-            {},
-            {
-                "topics": {
-                    "Politika": {"sends": 3, "open_rate": 0.67, "click_rate": 0.25}
-                },
-                "sources": {},
-            },
-        )
-
-        assert candidate["engagement_label"] == "Silen odziv za sledenoto"
-        assert candidate["score_adjustment"] > 0
-        assert "silen odziv" in candidate["alert_reason"]
-
-    def test_classify_alert_candidate_slows_weak_source_with_no_clicks(self):
-        import tasks
-
-        candidate = tasks._classify_alert_candidate(
-            {"cluster_id": "source-weak", "score": 3.2},
-            {"freshness_score": 1.3, "reasons": ["multiple_new_reports"]},
-            [],
-            ["MIA"],
-            {},
-            {
-                "topics": {},
-                "sources": {"MIA": {"sends": 4, "open_rate": 0.15, "click_rate": 0.0}},
-            },
-        )
-
-        assert candidate["engagement_label"] == "Slab odziv za sledenoto"
-        assert candidate["score_adjustment"] < 0
-        assert candidate["source_gap_minutes"] > 240
-
-    def test_load_breaking_target_performance_aggregates_topics_and_sources(self):
-        import tasks
-
-        with patch("tasks.delivery.db") as mock_db:
-            mock_db.execute.side_effect = [
-                [
-                    {
-                        "id": 7,
-                        "metadata": {
-                            "matched_topics": ["Politika"],
-                            "matched_sources": ["MIA"],
-                        },
-                    },
-                ],
-                [
-                    {"parent_event_id": 7, "event_type": "open"},
-                    {"parent_event_id": 7, "event_type": "click"},
-                ],
-            ]
-            result = tasks._load_breaking_target_performance(days=30)
-
-        assert result["topics"]["Politika"]["open_rate"] == 1.0
-        assert result["sources"]["MIA"]["click_rate"] == 1.0

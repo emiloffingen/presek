@@ -5,7 +5,7 @@ from unittest.mock import patch, MagicMock
 
 
 class TestCachedResponse:
-    @patch("utils.redis_client")
+    @patch("utils.cache.redis_client")
     def test_cache_hit(self, mock_redis):
         from utils import cached_response
 
@@ -13,7 +13,7 @@ class TestCachedResponse:
         result = cached_response("test-key", ttl=60)
         assert result == {"data": "cached"}
 
-    @patch("utils.redis_client")
+    @patch("utils.cache.redis_client")
     def test_cache_miss(self, mock_redis):
         from utils import cached_response
 
@@ -21,7 +21,7 @@ class TestCachedResponse:
         result = cached_response("test-key", ttl=60)
         assert result is None
 
-    @patch("utils.redis_client")
+    @patch("utils.cache.redis_client")
     def test_cache_redis_error(self, mock_redis):
         from utils import cached_response
 
@@ -31,14 +31,14 @@ class TestCachedResponse:
 
 
 class TestSetCache:
-    @patch("utils.redis_client")
+    @patch("utils.cache.redis_client")
     def test_set_cache_stores_json(self, mock_redis):
         from utils import set_cache
 
         set_cache("key", {"foo": "bar"}, ttl=120)
         mock_redis.setex.assert_called_once_with("key", 120, json.dumps({"foo": "bar"}))
 
-    @patch("utils.redis_client")
+    @patch("utils.cache.redis_client")
     def test_set_cache_redis_error(self, mock_redis):
         from utils import set_cache
 
@@ -48,7 +48,7 @@ class TestSetCache:
 
 
 class TestCheckRateLimit:
-    @patch("utils.redis_client")
+    @patch("utils.cache.redis_client")
     def test_under_limit(self, mock_redis):
         from utils import check_rate_limit
 
@@ -57,7 +57,7 @@ class TestCheckRateLimit:
         mock_redis.pipeline.return_value = pipe
         assert check_rate_limit("1.2.3.4") is True
 
-    @patch("utils.redis_client")
+    @patch("utils.cache.redis_client")
     def test_over_limit(self, mock_redis):
         from utils import check_rate_limit
 
@@ -66,7 +66,7 @@ class TestCheckRateLimit:
         mock_redis.pipeline.return_value = pipe
         assert check_rate_limit("1.2.3.4") is False
 
-    @patch("utils.redis_client")
+    @patch("utils.cache.redis_client")
     def test_redis_failure_allows_request(self, mock_redis):
         """If Redis is down, rate limiter should fail open to keep the site up."""
         from utils import check_rate_limit
@@ -74,7 +74,7 @@ class TestCheckRateLimit:
         mock_redis.pipeline.side_effect = Exception("Connection refused")
         assert check_rate_limit("1.2.3.4") is True
 
-    @patch("utils.redis_client")
+    @patch("utils.cache.redis_client")
     def test_ai_path_uses_daily_limit(self, mock_redis):
         from utils import check_rate_limit
 
@@ -89,7 +89,7 @@ class TestCheckRateLimit:
             is False
         )
 
-    @patch("utils.redis_client")
+    @patch("utils.cache.redis_client")
     def test_ai_path_uses_tighter_window_limit(self, mock_redis):
         from utils import check_rate_limit
 
