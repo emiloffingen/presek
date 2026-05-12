@@ -35,7 +35,7 @@ from nlp import synthesize_locally
 # legitimate user content to pass through
 _PROMPT_INJECTION_PATTERNS = [
     # System prompt extraction attempts
-    r"(?:system|assistant|user|developer|engineer|admin|root)[\s:]*[:\-\]\[]*\s*prompt",
+    r"(?:system|assistant|user|developer|engineer|admin|root)[\s:]*[\:-\[\]]*\s*prompt",
     r"ignore\s+(?:all\s+)?(?:previous|above|prior)\s+(?:instructions?|prompts?|rules?)",
     r"disregard\s+(?:all\s+)?(?:previous|above|prior)\s+(?:instructions?|prompts?|rules?)",
     r"forget\s+(?:all\s+)?(?:previous|above|prior)\s+(?:instructions?|prompts?|rules?)",
@@ -55,7 +55,9 @@ _PROMPT_INJECTION_PATTERNS = [
     r"bypass\s+(?:safety|content|filter)",
     r"disable\s+(?:safety|content|filter)",
     # Code execution attempts
-    r"(?:exec|evaluate|run|execute)\s*[(\[\{\s]\s*[\"']?\s*[a-zA-Z0-9_\s]",
+    r"(?:exec|evaluate|run|execute)\s*\(",
+    r"(?:exec|evaluate|run|execute)\s*\[",
+    r"(?:exec|evaluate|run|execute)\s*\{",
     r"python\s*\:",
     r"javascript\s*\:",
     r"bash\s*\:",
