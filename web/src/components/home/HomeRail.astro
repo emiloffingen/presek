@@ -4,7 +4,7 @@ import NationalMoodIsland from '../NationalMoodIsland.tsx';
 import HomeRailSuggestionsIsland from '../HomeRailSuggestionsIsland.tsx';
 import NewsletterIsland from '../NewsletterIsland.tsx';
 import { getDisplayTitle } from '../../utils/textUtils';
-import AdsKeeperWidget from '../AdsKeeperWidget.astro';
+
 
 interface Props {
 	railWireArticles: any[];
@@ -79,8 +79,6 @@ const { railWireArticles, briefing, stats, focusEntities, getTimeStr, getBriefin
 			))}
 		</div>
 	</section>
-
-	<AdsKeeperWidget placement="sidebar" class="mt-8" />
 </aside>
 
 <style>

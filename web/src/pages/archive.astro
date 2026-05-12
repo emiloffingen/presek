@@ -5,7 +5,7 @@ import Footer from '../components/Footer.astro';
 import NewsCard from '../components/NewsCard.astro';
 import ArchiveFeedIsland from '../components/ArchiveFeedIsland.tsx';
 import ArchiveHeatmapIsland from '../components/ArchiveHeatmapIsland.tsx';
-import AdsKeeperWidget from '../components/AdsKeeperWidget.astro';
+
 import { apiBaseUrl } from '../lib/apiBase';
 import { sanitizeHtml } from '../lib/sanitize';
 import { CalendarDays, ChevronRight, Hash, Building2, Sparkles, Search, Activity } from 'lucide-react';
@@ -288,8 +288,6 @@ function formatBriefingItem(item: string) {
                     ))}
                 </div>
             </div>
-
-            <AdsKeeperWidget placement="sidebar" class="mt-8" />
         </aside>
     </div>
   </main>

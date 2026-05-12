@@ -3,7 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import PulseClientContainer from '../components/PulseClientContainer';
-import AdsKeeperWidget from '../components/AdsKeeperWidget.astro';
+
 import { apiBaseUrl } from '../lib/apiBase';
 import { Activity, Timer, Zap } from 'lucide-react';
 
@@ -121,7 +121,6 @@ const currentDate = new Date().toLocaleDateString('mk-RS', {
             </div>
         </div>
 
-        <AdsKeeperWidget placement="in-article" class="mb-16" />
 
         <PulseClientContainer 
             client:load 
@@ -131,7 +130,6 @@ const currentDate = new Date().toLocaleDateString('mk-RS', {
             ssrFailed={ssrFailed}
         />
 
-        <AdsKeeperWidget placement="under-article" class="mt-16" />
     </main>
     <Footer />
 </Layout>

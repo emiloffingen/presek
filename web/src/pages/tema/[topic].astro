@@ -6,7 +6,7 @@ import NewsCard from '../../components/NewsCard.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import PreferenceToggle from '../../components/PreferenceToggle.tsx';
 import TopicFollowSuggestionsIsland from '../../components/TopicFollowSuggestionsIsland.tsx';
-import AdsKeeperWidget from '../../components/AdsKeeperWidget.astro';
+
 import { buildTopicConnections } from '../../lib/topicDiscovery.js';
 import { apiBaseUrl } from '../../lib/apiBase';
 import { cleanAndDecode, getDisplaySummary } from '../../utils/textUtils';
@@ -280,8 +280,6 @@ function topicIntro() {
 							</section>
 						)}
 
-						<AdsKeeperWidget placement="in-article" class="mb-12" />
-
 						{keyAngles.length > 0 && (
 							<section class="topic-angles">
 								<div class="section-heading-row">
@@ -402,7 +400,6 @@ function topicIntro() {
 							</section>
 						)}
 
-						<AdsKeeperWidget placement="sidebar" class="mt-8" />
 					</aside>
 				</div>
 			</>

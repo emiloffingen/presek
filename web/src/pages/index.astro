@@ -4,7 +4,7 @@ import Layout from '../layouts/Layout.astro';
 import NewsCard from '../components/NewsCard.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
-import AdsKeeperWidget from '../components/AdsKeeperWidget.astro';
+
 import ForYouIsland from '../components/ForYouIsland.tsx';
 import HomeRailSuggestionsIsland from '../components/HomeRailSuggestionsIsland.tsx';
 import NationalMoodIsland from '../components/NationalMoodIsland.tsx';
@@ -374,7 +374,6 @@ function getBriefingSnippet(content: string) {
 							filtered={!isHomepage}
 							filterLabel={activeFilterLabel}
 						/>
-                        <AdsKeeperWidget placement="in-article" class="mt-12" />
 					</div>
 				)}
 
@@ -412,7 +411,6 @@ function getBriefingSnippet(content: string) {
 							developmentsCompact={developmentsCompact}
                             tone="developing"
 						/>
-                        <AdsKeeperWidget placement="in-article" />
 					</div>
 				)}
 
@@ -447,7 +445,6 @@ function getBriefingSnippet(content: string) {
 					</div>
 				)}
 
-                <AdsKeeperWidget placement="under-article" class="mt-4 mb-12" />
 			</div>
 
 			<HomeRail 
