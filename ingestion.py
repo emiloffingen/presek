@@ -812,9 +812,6 @@ async def ingest_all_sources_async():
         from utils import redis_client
 
         for source_name, entries, err in results:
-            if len(candidates) >= 80:
-                break
-
             # Per-source lock to prevent concurrent processing of the same feed across workers
             lock_key = f"lock:ingest:source:{source_name}"
             try:
@@ -841,9 +838,6 @@ async def ingest_all_sources_async():
 
                 source_meta = next(s for s in sources if s["name"] == source_name)
                 for e in entries:
-                    if len(candidates) >= 80:
-                        break
-
                     title = e.get("title", "").strip()
                     link = normalize_feed_link(e.get("link", ""))
                     title_key = normalize_candidate_title(title)
