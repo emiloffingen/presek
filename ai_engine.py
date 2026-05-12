@@ -26,6 +26,124 @@ log = logging.getLogger("presek")
 from nlp import synthesize_locally
 
 
+# =============================================================================
+# Prompt Injection Protection
+# =============================================================================
+
+# Patterns that indicate potential prompt injection attempts
+# These are designed to catch common injection techniques while allowing
+# legitimate user content to pass through
+_PROMPT_INJECTION_PATTERNS = [
+    # System prompt extraction attempts
+    r"(?:system|assistant|user|developer|engineer|admin|root)[\s:]*[:\-\]\[]*\s*prompt",
+    r"ignore\s+(?:all\s+)?(?:previous|above|prior)\s+(?:instructions?|prompts?|rules?)",
+    r"disregard\s+(?:all\s+)?(?:previous|above|prior)\s+(?:instructions?|prompts?|rules?)",
+    r"forget\s+(?:all\s+)?(?:previous|above|prior)\s+(?:instructions?|prompts?|rules?)",
+    # Role manipulation
+    r"you\s+are\s+(?:now|actually)\s+a",
+    r"pretend\s+(?:you\s+are|to\s+be)",
+    r"act\s+as\s+(?:if\s+you\s+are|a)",
+    r"roleplay\s+as",
+    # Delimiter attacks
+    r"```\s*(?:system|assistant|user|developer)",
+    r"\<\s*(?:system|assistant|user|developer)",
+    r"\\[\s*(?:system|assistant|user|developer)",
+    # Jailbreak attempts
+    r"DAN\s*\:\s*",  # "DAN:" (Do Anything Now)
+    r"developer\s+mode",
+    r"jailbreak",
+    r"bypass\s+(?:safety|content|filter)",
+    r"disable\s+(?:safety|content|filter)",
+    # Code execution attempts
+    r"(?:exec|evaluate|run|execute)\s*[(\[\{\s]\s*[\"']?\s*[a-zA-Z0-9_\s]",
+    r"python\s*\:",
+    r"javascript\s*\:",
+    r"bash\s*\:",
+    r"\$\s*\{",
+    # Data exfiltration attempts
+    r"send\s+(?:this|the|all)\s+(?:data|information|content|response)\s+to",
+    r"post\s+(?:this|the|all)\s+(?:data|information|content|response)\s+to",
+    r"email\s+(?:this|the|all)\s+(?:data|information|content|response)",
+]
+
+# Maximum prompt length to prevent DoS via huge prompts
+MAX_PROMPT_LENGTH = 32000
+
+
+def sanitize_ai_prompt(prompt: str, context: str = "user") -> str:
+    """
+    Sanitize AI prompts to prevent prompt injection attacks.
+    
+    This function:
+    1. Validates prompt length
+    2. Checks for known injection patterns
+    3. Logs suspicious attempts
+    4. Returns sanitized prompt or raises ValueError if injection detected
+    
+    Args:
+        prompt: The prompt text to sanitize
+        context: Context for logging (e.g., "user", "system", "article")
+    
+    Returns:
+        The sanitized prompt string
+        
+    Raises:
+        ValueError: If prompt injection is detected
+    """
+    if not prompt:
+        return prompt
+    
+    if not isinstance(prompt, str):
+        raise ValueError(f"Prompt must be a string, got {type(prompt).__name__}")
+    
+    # Check length
+    if len(prompt) > MAX_PROMPT_LENGTH:
+        raise ValueError(
+            f"Prompt exceeds maximum length of {MAX_PROMPT_LENGTH} characters "
+            f"(got {len(prompt)} characters) from context: {context}"
+        )
+    
+    # Check for injection patterns (case-insensitive)
+    lower_prompt = prompt.lower()
+    for pattern in _PROMPT_INJECTION_PATTERNS:
+        if re.search(pattern, lower_prompt, re.IGNORECASE):
+            # Log the attempt (without the actual prompt for security)
+            log.warning(
+                f"[SECURITY] Potential prompt injection attempt detected "
+                f"from context '{context}'. "
+                f"Pattern matched: {pattern[:50]}..."
+            )
+            raise ValueError(
+                f"Prompt contains disallowed content pattern from context: {context}"
+            )
+    
+    # Remove or escape problematic characters
+    # Replace null bytes and control characters
+    prompt = prompt.replace("\x00", "")
+    
+    # Normalize whitespace to prevent encoding-based attacks
+    # But preserve intentional newlines and formatting
+    prompt = " ".join(prompt.split())
+    
+    return prompt
+
+
+def sanitize_ai_system_prompt(system: str) -> str:
+    """
+    Sanitize system prompts with stricter checks.
+    System prompts are more sensitive as they define the AI's behavior.
+    """
+    return sanitize_ai_prompt(system, context="system")
+
+
+def sanitize_ai_user_prompt(user_prompt: str) -> str:
+    """
+    Sanitize user prompts.
+    User prompts are checked but with slightly more leniency for natural language.
+    """
+    return sanitize_ai_prompt(user_prompt, context="user")
+
+
 # --- Prometheus Metrics ---
 def _metric_or_existing(factory, name: str, *args, **kwargs):
     try:
@@ -340,6 +458,15 @@ async def _call_ai_async(
     topic: str = None,
 ):
     """Entrypoint with cascading failover."""
+    # Sanitize prompts to prevent injection attacks
+    try:
+        system = sanitize_ai_system_prompt(system)
+        prompt = sanitize_ai_user_prompt(prompt)
+    except ValueError as e:
+        log.error(f"[ai/cascade] Prompt sanitization failed: {e}")
+        AI_CALLS.labels(provider="sanitization", task_type=task_type, status="blocked").inc()
+        return None, None
+    
     fallback_order = PROVIDER_FALLBACK_ORDER
     if task_type == "research":
         fallback_order = PROVIDER_FALLBACK_ORDER_RESEARCH
@@ -412,6 +539,15 @@ def _call_ai(
     topic: str = None,
 ):
     """Synchronous AI entrypoint with cascading failover."""
+    # Sanitize prompts to prevent injection attacks
+    try:
+        system = sanitize_ai_system_prompt(system)
+        prompt = sanitize_ai_user_prompt(prompt)
+    except ValueError as e:
+        log.error(f"[ai/cascade] Prompt sanitization failed: {e}")
+        AI_CALLS.labels(provider="sanitization", task_type=task_type, status="blocked").inc()
+        return None, None
+    
     fallback_order = PROVIDER_FALLBACK_ORDER
     if task_type == "research":
         fallback_order = PROVIDER_FALLBACK_ORDER_RESEARCH

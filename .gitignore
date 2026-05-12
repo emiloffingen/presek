@@ -77,7 +77,6 @@ nohup.out
 # Digests and caches
 digests/
 .hf_cache/
-*.pem
 
 # Application specific
 celerybeat-schedule

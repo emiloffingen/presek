@@ -54,6 +54,12 @@ if cors_origins == "*" and os.environ.get("ENV") == "production":
     log.warning(
         "CORS_ORIGINS was '*', defaulting to presek.live for production security"
     )
+elif cors_origins == "*":
+    # In development, still avoid wildcard - use explicit localhost origins
+    cors_origins = ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5001", "http://127.0.0.1:5001"]
+    log.warning(
+        "CORS_ORIGINS set to '*' in development - using explicit localhost origins instead"
+    )
 else:
     cors_origins = cors_origins.split(",") if cors_origins else ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5001", "http://127.0.0.1:5001"]
 
