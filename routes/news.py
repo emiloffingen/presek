@@ -334,7 +334,7 @@ async def get_news(
     topic: Optional[str] = None,
     entity: Optional[str] = None,
     subcategory: Optional[str] = None,
-    lang: Optional[str] = None,
+    lang: Optional[str] = "sr",
     sort: str = "recent",
     timespan: Optional[str] = None,  # '24h', '7d', '30d', 'all'
     page: int = 0,
@@ -352,12 +352,10 @@ async def get_news(
         if q:
             q = q.strip()[:API_MAX_Q_LEN]
 
-        # Base filter for language
-        lang_filter = ""
-        lang_param = []
-        if lang:
-            lang_filter = "AND a.language = %s"
-            lang_param = [lang]
+        # Base filter for language/region
+        # If no specific filter, default to the language's primary category
+        if not q and not category and not topic and not entity and not subcategory:
+            category = "Makedonija" if lang == "mk" else "Srbija"
 
         entity_info = None
         if q and page == 0:
@@ -507,15 +505,14 @@ async def get_news(
                 else []
             )
         else:
+            # Fallback (should be covered by the category assignment above, but for safety)
             rows = await db.async_execute(
                 f"""
                 SELECT m.cluster_id, m.updated_at as last_article 
                 FROM cluster_metadata m
-                JOIN articles a ON a.cluster_id = m.cluster_id
-                WHERE 1=1 {lang_filter}
                 ORDER BY m.updated_at DESC LIMIT %s
             """,
-                (*lang_param, page_size * (page + 1)),
+                (page_size * (page + 1),),
             )
             cids = [
                 r["cluster_id"] for r in rows[page * page_size : (page + 1) * page_size]
@@ -528,6 +525,7 @@ async def get_news(
                 if cids
                 else []
             )
+
 
         clusters = defaultdict(list)
         cluster_relevance = {}

@@ -15,6 +15,7 @@ import html
 
 ALLOWED_CATEGORIES = {
     "Srbija",
+    "Makedonija",
     "Balkan",
     "Evropa",
     "Germanija",
@@ -66,9 +67,9 @@ def _score_keyword_group(text: str, keywords: list[str], topic_name: str = "") -
     return score
 
 
-def validate_category(category: str) -> str:
-    """Return category if it is in the allowed list, else default to 'Srbija'."""
-    return category if category in ALLOWED_CATEGORIES else "Srbija"
+def validate_category(category: str, default: str = "Srbija") -> str:
+    """Return category if it is in the allowed list, else default."""
+    return category if category in ALLOWED_CATEGORIES else default
 
 
 # ORDER MATTERS — first match wins.
@@ -100,15 +101,42 @@ CATEGORIES = [
         ],
     ),
     (
-        "Balkan",
+        "Makedonija",
         [
-            "Srbija",
+            "makedonija",
+            "makedonski",
+            "makedonska",
+            "skopje",
+            "bitola",
+            "ohrid",
+            "tetovo",
+            "kumanovo",
+            "mickoski",
+            "siljanovska",
+            "filipce",
+            "macedonia",
+            "skopje",
+        ],
+    ),
+    (
+        "Srbija",
+        [
+            "srbija",
             "srpski",
-            "belgrad",
+            "srpska",
+            "beograd",
             "vucic",
             "dacic",
             "brnabic",
-            "pavlovic",
+            "nis",
+            "novi sad",
+            "serbia",
+            "belgrade",
+        ],
+    ),
+    (
+        "Balkan",
+        [
             "bugarija",
             "bugarski",
             "sofija",
@@ -154,7 +182,6 @@ CATEGORIES = [
             "fidan",
             "Balkan",
             "balkanski",
-            "serbia",
             "bulgaria",
             "greece",
             "albania",
@@ -311,40 +338,19 @@ CATEGORIES = [
         "Srbija",
         [
             "Srbija",
-            "makedonski",
+            "srpski",
             "Beograd",
-            "bitola",
-            "ohrid",
-            "tetovo",
-            "kumanovo",
+            "Nis",
+            "Novi Sad",
             "vladata",
             "sobranieto",
             "pretsedatelot",
             "ministerstvoto",
-            "mickoski",
-            "siljanovska",
-            "davkova",
-            "ahmeti",
-            "filipce",
-            "apasiev",
-            "medziti",
-            "taravari",
-            "kasami",
-            "gasi",
-            "stoilkovic",
-            "mucunski",
-            "nikoloski",
-            "misajlovski",
-            "sdsm",
-            "vmro-dpmne",
-            "dui",
-            "levica",
-            "znam",
-            "vredi",
-            "evropski front",
-            "makedonski koncept",
-            "parlamentarni izbori",
-            "lokalni izbori",
+            "vucic",
+            "dacic",
+            "brnabic",
+            "izbori",
+            "protesti",
         ],
     ),
     (
@@ -459,7 +465,7 @@ TITLE_PROPER_NOUNS = [
     (re.compile(r"\bsad\b", re.IGNORECASE), "SAD"),
     (re.compile(r"\beu\b", re.IGNORECASE), "EU"),
     (re.compile(r"\bnato\b", re.IGNORECASE), "NATO"),
-    (re.compile(r"\bskopje\b", re.IGNORECASE), "Beograd"),
+    (re.compile(r"\bskopje\b", re.IGNORECASE), "Skopje"),
     (re.compile(r"\bbitola\b", re.IGNORECASE), "Bitola"),
     (re.compile(r"\bohrid\b", re.IGNORECASE), "Ohrid"),
     (re.compile(r"\btetovo\b", re.IGNORECASE), "Tetovo"),
@@ -504,7 +510,11 @@ TITLE_PROPER_NOUNS = [
 
 
 def detect_category(
-    title: str, description: str = "", source: str = "", forced_category: str = None
+    title: str,
+    description: str = "",
+    source: str = "",
+    forced_category: str = None,
+    lang: str = "sr",
 ) -> str:
     """Return category for an article."""
     if forced_category and forced_category in ALLOWED_CATEGORIES:
@@ -518,9 +528,11 @@ def detect_category(
         if score > best_score:
             best_category = cat_name
             best_score = score
+
     if best_category and best_score >= 1.0:
         return best_category
-    return "Srbija"
+
+    return "Makedonija" if lang == "mk" else "Srbija"
 
 
 # ── Sub-categories (regional) ──────────────────────────────────────
