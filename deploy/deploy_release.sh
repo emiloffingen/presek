@@ -112,19 +112,18 @@ discover_app_services() {
   
   if [ "${#services[@]}" -eq 0 ]; then
     # Fallback to a set of default services if discovery fails or target is empty
-    if [ "${#services[@]}" -eq 0 ]; then
-      warn "No services found via systemctl dependencies; using defaults"
-      APP_SERVICES=(
-        presek-fastapi.service
-        presek-astro.service
-        presek-mk.service
-        presek-worker.service
-        presek-worker-ingestion.service
-        presek-worker-fasttrack.service
-        presek-worker-delivery.service
-        presek-beat.service
-      )
-
+    warn "No services found via systemctl dependencies; using defaults"
+    APP_SERVICES=(
+      presek-fastapi.service
+      presek-astro.service
+      presek-mk.service
+      presek-worker.service
+      presek-worker-ingestion.service
+      presek-worker-fasttrack.service
+      presek-worker-delivery.service
+      presek-beat.service
+    )
+  else
     APP_SERVICES=("${services[@]}")
     info "Discovered ${#APP_SERVICES[@]} services: ${APP_SERVICES[*]}"
   fi
