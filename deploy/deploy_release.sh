@@ -316,6 +316,7 @@ copy_release_tree() {
   [ -f "$RELEASE_DIR/api_fast.py" ] || fail "api_fast.py missing after copy"
   [ -f "$RELEASE_DIR/celery_app.py" ] || fail "celery_app.py missing after copy"
   [ -f "$RELEASE_DIR/web/package.json" ] || fail "web/package.json missing after copy"
+  [ -f "$RELEASE_DIR/web-mk/package.json" ] || fail "web-mk/package.json missing after copy"
 }
 
 prepare_release_runtime_links() {
@@ -557,6 +558,29 @@ restart_and_smoke() {
       [ -f /etc/nginx/snippets/presek-routes.conf.bak ] && sudo mv /etc/nginx/snippets/presek-routes.conf.bak /etc/nginx/snippets/presek-routes.conf
       return 1
     fi
+    
+    # Sync nginx site configurations for both Serbian (presek.live) and Macedonian (presek.mk)
+    info "Syncing nginx site configurations"
+    sudo install -d /etc/nginx/sites-available || return 1
+    sudo install -d /etc/nginx/sites-enabled || return 1
+    
+    # Backup existing site configs for rollback
+    [ -f /etc/nginx/sites-available/presek.live.conf ] && sudo cp /etc/nginx/sites-available/presek.live.conf /etc/nginx/sites-available/presek.live.conf.bak
+    [ -f /etc/nginx/sites-available/presek-mk.conf ] && sudo cp /etc/nginx/sites-available/presek-mk.conf /etc/nginx/sites-available/presek-mk.conf.bak
+    [ -L /etc/nginx/sites-enabled/presek.live.conf ] && sudo cp /etc/nginx/sites-enabled/presek.live.conf /tmp/presek.live.conf.bak 2>/dev/null
+    [ -L /etc/nginx/sites-enabled/presek-mk.conf ] && sudo cp /etc/nginx/sites-enabled/presek-mk.conf /tmp/presek-mk.conf.bak 2>/dev/null
+
+    if ! sudo cp "$RELEASE_DIR/deploy/nginx/presek.live.conf" /etc/nginx/sites-available/presek.live.conf || \
+       ! sudo cp "$RELEASE_DIR/deploy/nginx/presek-mk.conf" /etc/nginx/sites-available/presek-mk.conf; then
+      warn "Failed to copy nginx site configs; restoring backups"
+      [ -f /etc/nginx/sites-available/presek.live.conf.bak ] && sudo mv /etc/nginx/sites-available/presek.live.conf.bak /etc/nginx/sites-available/presek.live.conf
+      [ -f /etc/nginx/sites-available/presek-mk.conf.bak ] && sudo mv /etc/nginx/sites-available/presek-mk.conf.bak /etc/nginx/sites-available/presek-mk.conf
+      return 1
+    fi
+    
+    # Enable both site configs
+    sudo ln -sf /etc/nginx/sites-available/presek.live.conf /etc/nginx/sites-enabled/presek.live.conf || return 1
+    sudo ln -sf /etc/nginx/sites-available/presek-mk.conf /etc/nginx/sites-enabled/presek-mk.conf || return 1
   fi
 
   info "Validating nginx configuration"
@@ -640,6 +664,24 @@ rollback_release() {
   if [ -f /etc/nginx/snippets/presek-routes.conf.bak ]; then
     info "Restoring nginx routes from backup"
     sudo mv /etc/nginx/snippets/presek-routes.conf.bak /etc/nginx/snippets/presek-routes.conf || warn "Failed to restore nginx routes"
+  fi
+  
+  # Restore nginx site configurations if backups exist
+  if [ -f /etc/nginx/sites-available/presek.live.conf.bak ]; then
+    info "Restoring nginx site config for presek.live from backup"
+    sudo mv /etc/nginx/sites-available/presek.live.conf.bak /etc/nginx/sites-available/presek.live.conf || warn "Failed to restore presek.live nginx config"
+  fi
+  if [ -f /etc/nginx/sites-available/presek-mk.conf.bak ]; then
+    info "Restoring nginx site config for presek.mk from backup"
+    sudo mv /etc/nginx/sites-available/presek-mk.conf.bak /etc/nginx/sites-available/presek-mk.conf || warn "Failed to restore presek.mk nginx config"
+  fi
+  if [ -f /tmp/presek.live.conf.bak ]; then
+    sudo cp /tmp/presek.live.conf.bak /etc/nginx/sites-enabled/presek.live.conf || warn "Failed to restore presek.live enabled config"
+    sudo rm -f /tmp/presek.live.conf.bak
+  fi
+  if [ -f /tmp/presek-mk.conf.bak ]; then
+    sudo cp /tmp/presek-mk.conf.bak /etc/nginx/sites-enabled/presek-mk.conf || warn "Failed to restore presek.mk enabled config"
+    sudo rm -f /tmp/presek-mk.conf.bak
   fi
   
   cleanup_orphaned_runtime_listeners

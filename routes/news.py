@@ -509,11 +509,11 @@ async def get_news(
         else:
             rows = await db.async_execute(
                 f"""
-                SELECT cluster_id, updated_at as last_article 
+                SELECT m.cluster_id, m.updated_at as last_article 
                 FROM cluster_metadata m
                 JOIN articles a ON a.cluster_id = m.cluster_id
                 WHERE 1=1 {lang_filter}
-                ORDER BY updated_at DESC LIMIT %s
+                ORDER BY m.updated_at DESC LIMIT %s
             """,
                 (*lang_param, page_size * (page + 1)),
             )

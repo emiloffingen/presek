@@ -14,15 +14,20 @@ CERT_PRIVKEY="${CERT_PRIVKEY:-/etc/ssl/cloudflare/presek.live/privkey.pem}"
 INSTALL_NGINX="${INSTALL_NGINX:-auto}"
 CURRENT_ROOT="$APP_ROOT/current"
 SHARED_ROOT="$APP_ROOT/shared"
-APP_SERVICES=(
-  presek-fastapi.service
-  presek-astro.service
-  presek-worker.service
-  presek-worker-ingestion.service
-  presek-worker-fasttrack.service
-  presek-worker-delivery.service
-  presek-beat.service
-)
+
+# Discover units and services dynamically
+ALL_UNITS=()
+while IFS= read -r -d '' file; do
+  ALL_UNITS+=("$(basename "$file")")
+done < <(find "$SYSTEMD_DIR" -maxdepth 1 -type f \( -name "*.service" -o -name "*.target" -o -name "*.timer" \) -print0)
+
+APP_SERVICES=()
+for unit in "${ALL_UNITS[@]}"; do
+  if [[ "$unit" == *.service ]]; then
+    APP_SERVICES+=("$unit")
+  fi
+done
+
 HAS_CURRENT_RELEASE=0
 
 SITE_NAME="$DOMAIN.conf"
@@ -98,11 +103,17 @@ main() {
   install -d -o "$SERVER_USER" -g "$SERVER_USER" "$SHARED_ROOT/huggingface/sentence_transformers"
   install -d /etc/systemd/system
 
-  for unit in presek.target presek-worker.service presek-worker-ingestion.service presek-worker-fasttrack.service presek-worker-delivery.service presek-beat.service presek-fastapi.service presek-astro.service; do
+  for unit in "${ALL_UNITS[@]}"; do
     replace_paths "$SYSTEMD_DIR/$unit" "/etc/systemd/system/$unit"
   done
 
-  systemd-analyze verify /etc/systemd/system/presek.target /etc/systemd/system/presek-worker.service /etc/systemd/system/presek-worker-ingestion.service /etc/systemd/system/presek-worker-fasttrack.service /etc/systemd/system/presek-worker-delivery.service /etc/systemd/system/presek-beat.service /etc/systemd/system/presek-fastapi.service /etc/systemd/system/presek-astro.service
+  # Build list of paths for verification
+  VERIFY_PATHS=()
+  for unit in "${ALL_UNITS[@]}"; do
+    VERIFY_PATHS+=("/etc/systemd/system/$unit")
+  done
+
+  systemd-analyze verify "${VERIFY_PATHS[@]}"
 
   systemctl daemon-reload
   systemctl enable presek.target

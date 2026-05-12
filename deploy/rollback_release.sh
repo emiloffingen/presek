@@ -12,14 +12,24 @@ SYSTEMD_TARGET="${SYSTEMD_TARGET:-presek.target}"
 ENABLE_PUBLIC_CHECK="${ENABLE_PUBLIC_CHECK:-1}"
 SKIP_RESTART="${SKIP_RESTART:-0}"
 SMOKE_SCRIPT="$SOURCE_ROOT/deploy/smoke_check.sh"
-APP_SERVICES=(
-  presek-fastapi.service
-  presek-astro.service
-  presek-worker.service
-  presek-worker-ingestion.service
-  presek-worker-delivery.service
-  presek-beat.service
-)
+
+# Discover services dynamically
+APP_SERVICES=()
+while IFS= read -r line; do
+    [ -n "$line" ] && APP_SERVICES+=("$line")
+done < <(systemctl list-dependencies "$SYSTEMD_TARGET" --plain --all | grep '^presek-' | sed 's/^[ \t]*//' || true)
+
+if [ "${#APP_SERVICES[@]}" -eq 0 ]; then
+    # Fallback if discovery fails or target is empty
+    APP_SERVICES=(
+      presek-fastapi.service
+      presek-astro.service
+      presek-worker.service
+      presek-worker-ingestion.service
+      presek-worker-delivery.service
+      presek-beat.service
+    )
+fi
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; BLUE='\033[0;34m'; RESET='\033[0m'
 ok()   { echo -e "${GREEN}✓${RESET}  $*"; }
