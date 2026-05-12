@@ -263,11 +263,31 @@ def test_topic_bridge_does_not_merge_same_category_story_without_shared_entities
         }
     ]
     cid = find_or_create_cluster(
-        MagicMock(),
-        "Vlada otvara nov konkurs za direktore škola",
+        MagicMock(), "Vlada otvara nov konkurs za direktore škola",
         recent_articles,
         category="Srbija",
         source="nova.rs",
         topic="Politika",
     )
     assert cid != "c1"
+
+
+@patch(_DB_PATCH, _mock_db)
+def test_different_category_does_not_merge():
+    recent_articles = [
+        {
+            "cluster_id": "c1",
+            "title": "Novak Đoković pobedio na Vimbldonu",
+            "category": "Sport",
+            "created_at": datetime.datetime.now(),
+        }
+    ]
+    # Even if title is similar (unlikely here, but for testing category filter)
+    cid = find_or_create_cluster(
+        MagicMock(),
+        "Novak Đoković se sastao sa predsednikom vlade",
+        recent_articles,
+        category="Politika",
+    )
+    assert cid != "c1"
+
