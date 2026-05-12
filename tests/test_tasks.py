@@ -1,12 +1,11 @@
 import json
 import datetime
 from unittest.mock import patch
+import tasks
 
 
 class TestBackfillCoverArtTask:
     def test_backfill_queues_spaced_subtasks(self):
-        import tasks
-
         rows = [
             {"cluster_id": "a1", "title": "A", "summary": ""},
             {"cluster_id": "b2", "title": "B", "summary": ""},
@@ -33,7 +32,6 @@ class TestBackfillCoverArtTask:
         assert args == [("a1", "A"), ("b2", "B"), ("c3", "C")]
 
     def test_backfill_skips_when_queue_backlog_is_high(self):
-        import tasks
 
         with (
             patch("tasks.intelligence.get_celery_queue_depth", return_value=150),
@@ -48,7 +46,6 @@ class TestBackfillCoverArtTask:
         mock_apply.assert_not_called()
 
     def test_backfill_single_skips_when_queue_backlog_is_high(self):
-        import tasks
 
         with (
             patch("tasks.intelligence.get_celery_queue_depth", return_value=150),
@@ -61,7 +58,6 @@ class TestBackfillCoverArtTask:
 
 class TestSynthesizeClusterTaskQuality:
     def test_normalizes_ai_summary_and_perspectives_before_store(self):
-        import tasks
 
         article_rows = [
             {
@@ -141,7 +137,6 @@ class TestSynthesizeClusterTaskQuality:
 
 class TestReclusterRecentArticlesTask:
     def test_reclusters_recent_rows_and_queues_rebuilds(self):
-        import tasks
 
         recent_rows = [
             {
@@ -217,7 +212,6 @@ class TestReclusterRecentArticlesTask:
 
 class TestSummarizeArticleTaskQuality:
     def test_uses_title_and_description_in_ai_prompt(self):
-        import tasks
 
         with (
             patch("tasks.intelligence.db") as mock_db,
@@ -245,7 +239,6 @@ class TestSummarizeArticleTaskQuality:
 
 class TestDailyBriefTaskQuality:
     def test_builds_cluster_level_context_for_daily_brief(self):
-        import tasks
 
         cluster_articles = [
             {
@@ -301,7 +294,6 @@ class TestDailyBriefTaskQuality:
         assert "### klaster 1" in context or "###" in context
 
     def test_rejects_daily_brief_with_named_entity_missing_from_context(self):
-        import tasks.delivery
 
         context = (
             "### klaster 1\n"
@@ -321,7 +313,6 @@ class TestDailyBriefTaskQuality:
         assert tasks.delivery._is_grounded_daily_brief(brief, context) is True
 
     def test_accepts_daily_brief_when_named_entities_are_in_context(self):
-        import tasks.delivery
 
         context = (
             "### klaster 1\n"
@@ -340,7 +331,6 @@ class TestDailyBriefTaskQuality:
         assert tasks.delivery._is_grounded_daily_brief(brief, context) is True
 
     def test_daily_brief_structure_validator_rejects_malformed_body(self):
-        import tasks.delivery
 
         malformed = "# Utrinski Dispac\n\n| nesto | nesto drugo |"
         valid = (
@@ -358,7 +348,6 @@ class TestDailyBriefTaskQuality:
         assert tasks.delivery._has_valid_daily_brief_structure(valid) is True
 
     def test_daily_brief_penalizes_press_release_style_titles(self):
-        import tasks.delivery
 
         assert (
             tasks.delivery._briefing_title_penalty(
@@ -383,7 +372,6 @@ class TestDailyBriefTaskQuality:
     def test_load_daily_brief_clusters_pushes_plain_party_pr_behind_public_interest_cluster(
         self,
     ):
-        import tasks
 
         rows = [
             {
@@ -442,7 +430,6 @@ class TestDailyBriefTaskQuality:
     def test_load_daily_brief_clusters_excludes_routine_weather_when_higher_signal_clusters_exist(
         self,
     ):
-        import tasks
 
         rows = [
             {
@@ -507,7 +494,6 @@ class TestDailyBriefTaskQuality:
         assert clusters[1]["cluster_id"] == "missiles"
 
     def test_party_cluster_with_synthesis_but_no_public_interest_does_not_lead(self):
-        import tasks
 
         rows = [
             {
@@ -571,7 +557,6 @@ class TestDailyBriefTaskQuality:
 
 class TestProfileDeliveryTasks:
     def test_send_profile_briefings_updates_last_sent(self):
-        import tasks
 
         rows = [
             {
@@ -613,7 +598,6 @@ class TestProfileDeliveryTasks:
         assert "event_id=11" in mock_send.call_args.kwargs["click_url"]
 
     def test_send_profile_weekly_digests_updates_last_sent(self):
-        import tasks
 
         rows = [
             {
@@ -657,7 +641,6 @@ class TestProfileDeliveryTasks:
     def test_select_profile_weekly_clusters_prefers_items_with_real_digest_engagement(
         self,
     ):
-        import tasks
 
         clusters = [
             {
@@ -713,7 +696,6 @@ class TestProfileDeliveryTasks:
         assert "silen odziv" in result[0]["match_reason"]
 
     def test_load_weekly_cluster_engagement_uses_send_metadata_cluster_ids(self):
-        import tasks
 
         with patch("tasks.delivery.db") as mock_db:
             mock_db.execute.side_effect = [
@@ -737,7 +719,6 @@ class TestProfileDeliveryTasks:
         assert result["second-cluster"]["open_rate"] == 1.0
 
     def test_load_weekly_topic_engagement_uses_focus_topics_from_send_metadata(self):
-        import tasks
 
         with patch("tasks.delivery.db") as mock_db:
             mock_db.execute.side_effect = [
@@ -755,7 +736,6 @@ class TestProfileDeliveryTasks:
         assert result["Ekonomija"]["click_rate"] == 1.0
 
     def test_load_weekly_source_engagement_uses_focus_sources_from_send_metadata(self):
-        import tasks
 
         with patch("tasks.delivery.db") as mock_db:
             mock_db.execute.side_effect = [
@@ -775,7 +755,6 @@ class TestProfileDeliveryTasks:
     def test_build_weekly_digest_sections_prioritizes_high_performing_followed_topics(
         self,
     ):
-        import tasks
 
         clusters = [
             {
@@ -812,7 +791,6 @@ class TestProfileDeliveryTasks:
     def test_build_weekly_digest_sections_prioritizes_strong_source_section_over_weaker_topic_section(
         self,
     ):
-        import tasks
 
         clusters = [
             {
@@ -848,7 +826,6 @@ class TestProfileDeliveryTasks:
         assert "Telma" in sections[1]["subtitle"]
 
     def test_build_profile_weekly_digest_message_renders_section_headings(self):
-        import tasks
 
         clusters = [
             {
@@ -889,7 +866,6 @@ class TestProfileDeliveryTasks:
         assert "Lead weekly story" in message
 
     def test_select_profile_weekly_clusters_avoids_duplicate_heavy_same_topic_mix(self):
-        import tasks.delivery
 
         clusters = [
             {
@@ -934,7 +910,6 @@ class TestProfileDeliveryTasks:
         assert returned_topics.count("Politika") <= 1
 
     def test_select_profile_brief_clusters_prefers_richer_editorial_cluster(self):
-        import tasks
 
         clusters = [
             {
@@ -973,7 +948,6 @@ class TestProfileDeliveryTasks:
         assert result[0]["cluster_id"] == "rich-1"
 
     def test_send_profile_breaking_alerts_tracks_alerted_cluster(self):
-        import tasks
 
         rows = [
             {
@@ -1024,7 +998,6 @@ class TestProfileDeliveryTasks:
         assert "event_id=33" in mock_send.call_args.kwargs["click_url"]
 
     def test_breaking_alerts_skip_when_queue_backlog_is_high(self):
-        import tasks
 
         with (
             patch("tasks.delivery.acquire_task_lock", return_value=True),
@@ -1038,7 +1011,6 @@ class TestProfileDeliveryTasks:
         mock_release.assert_called_once()
 
     def test_breaking_alerts_skip_when_lock_is_held(self):
-        import tasks
 
         with (
             patch("tasks.delivery.acquire_task_lock", return_value=False),
@@ -1049,7 +1021,6 @@ class TestProfileDeliveryTasks:
         mock_rows.assert_not_called()
 
     def test_select_breaking_cluster_skips_recent_topic_cooldown(self):
-        import tasks
 
         now = datetime.datetime.now(datetime.timezone.utc)
         recent_iso = now.isoformat()
@@ -1102,7 +1073,6 @@ class TestProfileDeliveryTasks:
         assert candidate is None
 
     def test_select_breaking_cluster_allows_material_refresh_after_seen(self):
-        import tasks
 
         older = (
             datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=5)
@@ -1166,7 +1136,6 @@ class TestProfileDeliveryTasks:
     def test_classify_alert_candidate_becomes_stricter_when_breaking_engagement_is_weak(
         self,
     ):
-        import tasks
 
         candidate = tasks._classify_alert_candidate(
             {"cluster_id": "weak-1", "score": 2.8},
@@ -1183,7 +1152,6 @@ class TestProfileDeliveryTasks:
     def test_classify_alert_candidate_allows_faster_high_signal_alerts_when_engagement_is_strong(
         self,
     ):
-        import tasks
 
         candidate = tasks._classify_alert_candidate(
             {"cluster_id": "strong-1", "score": 5.9},
@@ -1198,7 +1166,6 @@ class TestProfileDeliveryTasks:
         assert candidate["min_gap_minutes"] < 60
 
     def test_classify_alert_candidate_boosts_topic_with_strong_engagement_history(self):
-        import tasks
 
         candidate = tasks._classify_alert_candidate(
             {"cluster_id": "topic-strong", "score": 5.1},
@@ -1219,7 +1186,6 @@ class TestProfileDeliveryTasks:
         assert "silen odziv" in candidate["alert_reason"]
 
     def test_classify_alert_candidate_slows_weak_source_with_no_clicks(self):
-        import tasks
 
         candidate = tasks._classify_alert_candidate(
             {"cluster_id": "source-weak", "score": 3.2},
@@ -1238,7 +1204,6 @@ class TestProfileDeliveryTasks:
         assert candidate["source_gap_minutes"] > 240
 
     def test_load_breaking_target_performance_aggregates_topics_and_sources(self):
-        import tasks
 
         with patch("tasks.delivery.db") as mock_db:
             mock_db.execute.side_effect = [
