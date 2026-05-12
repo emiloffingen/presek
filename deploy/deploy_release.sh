@@ -659,6 +659,26 @@ rollback_release() {
   ENABLE_PUBLIC_CHECK="$ENABLE_PUBLIC_CHECK" ENABLE_ADMIN_CHECK="$ENABLE_ADMIN_CHECK" APP_ROOT="$APP_ROOT" bash "$SMOKE_SCRIPT" || warn "Post-rollback smoke checks also failed"
 }
 
+# Flags
+DRY_RUN="${DRY_RUN:-0}"
+if [ "${1:-}" == "--dry-run" ]; then
+  DRY_RUN=1
+  shift
+fi
+
+generate_manifest() {
+  local manifest_path="$RELEASE_DIR/manifest.json"
+  info "Generating release manifest"
+  cat > "$manifest_path" <<EOF
+{
+  "release_id": "$RELEASE_ID",
+  "deployed_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "git_sha": "$(git -C "$SOURCE_ROOT" rev-parse HEAD 2>/dev/null || echo "unknown")",
+  "deployed_by": "$(whoami)"
+}
+EOF
+}
+
 main() {
   need_cmd rsync
   need_cmd npm
@@ -704,25 +724,6 @@ main() {
   fi
   [ -n "$current_venv_target" ] || fail "Could not resolve active Python runtime from $VENV_DIR"
   [ -n "$current_web_deps_target" ] || fail "Could not resolve active Astro dependencies from $SHARED_WEB_NODE_MODULES"
-# Flags
-DRY_RUN="${DRY_RUN:-0}"
-if [ "${1:-}" == "--dry-run" ]; then
-  DRY_RUN=1
-  shift
-fi
-
-generate_manifest() {
-  local manifest_path="$RELEASE_DIR/manifest.json"
-  info "Generating release manifest"
-  cat > "$manifest_path" <<EOF
-{
-  "release_id": "$RELEASE_ID",
-  "deployed_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "git_sha": "$(git -C "$SOURCE_ROOT" rev-parse HEAD 2>/dev/null || echo "unknown")",
-  "deployed_by": "$(whoami)"
-}
-EOF
-}
 
 # ...
   # 1. Prepare environment and copy source
