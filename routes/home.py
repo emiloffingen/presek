@@ -324,7 +324,7 @@ async def get_home():
             stats = {}
 
         clusters = news_result.get("clusters") or []
-        global_clusters = news_result.get("global") or []
+        global_clusters = news_result.get("global_clusters") or []
 
         lead = clusters[0] if clusters else None
         supporting = clusters[1:5]

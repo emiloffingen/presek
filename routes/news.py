@@ -164,7 +164,7 @@ def _public_article_payload(article):
             res[key] = value
 
     # Check if the article is from a global category
-    res["is_global"] = article.get("category") in ("Amerika", "Germanija")
+    res["is_global"] = article.get("category") in ("Amerika", "Evropa", "Germanija")
     return res
 
 
@@ -569,13 +569,13 @@ async def get_news(
         paged_clusters = ranked_clusters[start : start + page_size]
         cid_list = [c[0]["cluster_id"] for c in paged_clusters]
 
-        # --- NEW: Fetch Global Clusters (America & Germany) for homepage highlights ---
+        # --- NEW: Fetch Global Clusters (America & Europe) for homepage highlights ---
         global_clusters_raw = []
         if not q and not category and not topic and not entity and page == 0:
             g_rows = await db.async_execute(
                 """
                 SELECT * FROM articles 
-                WHERE category IN ('Amerika', 'Germanija') 
+                WHERE category IN ('Amerika', 'Evropa') 
                   AND created_at >= NOW() - INTERVAL '48 hours'
                 ORDER BY created_at DESC LIMIT 100
             """
