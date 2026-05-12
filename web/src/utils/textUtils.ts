@@ -67,12 +67,12 @@ export function decodeHtmlEntities(text: any): string {
  */
 export function transliterate(text: string): string {
     const map: Record<string, string> = {
-        'a': 'a', 'b': 'b', 'v': 'v', 'g': 'g', 'd': 'd', 'Dj': 'gj', 'e': 'e', 'z': 'zh', 'z_alt': 'z', 'ѕ': 'Dz',
-        'i': 'i', 'j': 'j', 'k': 'k', 'l': 'l', 'Lj': 'Lj', 'm': 'm', 'n': 'n', 'Nj': 'Nj', 'o': 'o', 'p': 'p',
-        'r': 'r', 's': 's', 't': 't', 'c_kj': 'kj', 'u': 'u', 'f': 'f', 'h': 'h', 'c': 'c', 'c_ch': 'ch', 'Dz': 'dzh', 's_sh': 'sh',
-        'A': 'a', 'B': 'b', 'V': 'v', 'G': 'g', 'D': 'd', 'Dj': 'gj', 'E': 'e', 'Z': 'zh', 'Z_alt': 'z', 'Ѕ': 'Dz',
-        'I': 'i', 'J': 'j', 'K': 'k', 'L': 'l', 'Lj': 'Lj', 'M': 'm', 'N': 'n', 'Nj': 'Nj', 'O': 'o', 'P': 'p',
-        'R': 'r', 'S': 's', 'T': 't', 'C_kj': 'kj', 'U': 'u', 'F': 'f', 'H': 'h', 'C': 'c', 'C_ch': 'ch', 'Dz': 'dzh', 'S_sh': 'sh'
+        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'ѓ': 'gj', 'е': 'e', 'ж': 'zh', 'з': 'z', 'ѕ': 'dz',
+        'и': 'i', 'ј': 'j', 'к': 'k', 'л': 'l', 'љ': 'lj', 'м': 'm', 'н': 'n', 'њ': 'nj', 'о': 'o', 'п': 'p',
+        'р': 'r', 'с': 's', 'т': 't', 'ќ': 'kj', 'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'c', 'ч': 'ch', 'џ': 'dzh', 'ш': 'sh',
+        'А': 'a', 'Б': 'b', 'В': 'v', 'Г': 'g', 'Д': 'd', 'Ѓ': 'gj', 'Е': 'e', 'Ж': 'zh', 'З': 'z', 'Ѕ': 'dz',
+        'И': 'i', 'Ј': 'j', 'К': 'k', 'Л': 'l', 'Љ': 'lj', 'М': 'm', 'Н': 'n', 'Њ': 'nj', 'О': 'o', 'П': 'p',
+        'Р': 'r', 'С': 's', 'Т': 't', 'Ќ': 'kj', 'У': 'u', 'Ф': 'f', 'Х': 'h', 'Ц': 'c', 'Ч': 'ch', 'Џ': 'dzh', 'Ш': 'sh'
     };
     return text.split('').map(char => map[char] || char).join('');
 }
