@@ -179,7 +179,6 @@ function getRelativeTimeStr(dateStr?: string) {
                         <BarChart3 size={11} strokeWidth={3} /> <span>Puls</span>
                     </a>
                 </div>
-                
                 <div class="topbar-util">
                     {stats?.last_1h && stats.last_1h > 0 && (
                         <div class="activity-chip" title="nove vesti u poslednjih sat vremena">
@@ -188,6 +187,9 @@ function getRelativeTimeStr(dateStr?: string) {
                         </div>
                     )}
                     <ScriptSwitcher client:idle />
+                    <ThemeIsland client:idle />
+                </div>
+
                     <ThemeIsland client:idle />
                 </div>
             </div>

@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-User=presek
+User=emiloffingen
 WorkingDirectory=/home/emiloffingen/presek-runtime/current/web-mk
 ExecStart=/usr/bin/node dist/server/entry.mjs
 Restart=always

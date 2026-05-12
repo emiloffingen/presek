@@ -287,8 +287,8 @@ def _display_entity_name(name):
 
 
 @router.get("/home", response_model=HomeResponse)
-async def get_home():
-    cache_key = "api:home:v3"
+async def get_home(lang: Optional[str] = None):
+    cache_key = f"api:home:v3:{lang}"
     cached = cached_response(cache_key, ttl=3600)
     if cached:
         return cached
@@ -296,8 +296,8 @@ async def get_home():
     try:
         # Fetch all dependencies in parallel
         results = await asyncio.gather(
-            get_news(page_size=48),
-            get_news(sort="recent", page_size=24),
+            get_news(page_size=48, lang=lang),
+            get_news(sort="recent", page_size=24, lang=lang),
             get_trending_route(),
             get_top_entities(limit=12),
             get_stats_summary(),

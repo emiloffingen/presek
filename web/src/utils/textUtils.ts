@@ -62,19 +62,19 @@ export function decodeHtmlEntities(text: any): string {
     });
 }
 
-/**
- * Converts Macedonian Cyrillic characters to Latin for URL slugs.
- */
-export function transliterate(text: string): string {
-    const map: Record<string, string> = {
-        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'ѓ': 'gj', 'е': 'e', 'ж': 'zh', 'з': 'z', 'ѕ': 'dz',
-        'и': 'i', 'ј': 'j', 'к': 'k', 'л': 'l', 'љ': 'lj', 'м': 'm', 'н': 'n', 'њ': 'nj', 'о': 'o', 'п': 'p',
-        'р': 'r', 'с': 's', 'т': 't', 'ќ': 'kj', 'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'c', 'ч': 'ch', 'џ': 'dzh', 'ш': 'sh',
-        'А': 'a', 'Б': 'b', 'В': 'v', 'Г': 'g', 'Д': 'd', 'Ѓ': 'gj', 'Е': 'e', 'Ж': 'zh', 'З': 'z', 'Ѕ': 'dz',
-        'И': 'i', 'Ј': 'j', 'К': 'k', 'Л': 'l', 'Љ': 'lj', 'М': 'm', 'Н': 'n', 'Њ': 'nj', 'О': 'o', 'П': 'p',
-        'Р': 'r', 'С': 's', 'Т': 't', 'Ќ': 'kj', 'У': 'u', 'Ф': 'f', 'Х': 'h', 'Ц': 'c', 'Ч': 'ch', 'Џ': 'dzh', 'Ш': 'sh'
-    };
-    return text.split('').map(char => map[char] || char).join('');
+export const CYR_TO_LAT: Record<string, string> = {
+    'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Ѓ': 'Ǵ', 'Е': 'E', 'Ж': 'Ž', 'З': 'Z', 'Ѕ': 'Dz', 'И': 'I', 'Ј': 'J', 'К': 'K', 'Л': 'L', 'Љ': 'Lj', 'М': 'M', 'Н': 'N', 'Њ': 'Nj', 'О': 'O', 'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'Ќ': 'Ḱ', 'У': 'U', 'Ф': 'F', 'Х': 'H', 'Ц': 'C', 'Ч': 'Č', 'Џ': 'Dž', 'Ш': 'Š',
+    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'ѓ': 'ǵ', 'е': 'e', 'ж': 'ž', 'з': 'z', 'ѕ': 'dz', 'и': 'i', 'ј': 'j', 'к': 'k', 'л': 'l', 'љ': 'lj', 'м': 'm', 'н': 'n', 'њ': 'nj', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'ќ': 'ḱ', 'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'c', 'ч': 'č', 'џ': 'dž', 'ш': 'š'
+};
+
+export function cyrToLat(text: string): string {
+    return text.split('').map(char => CYR_TO_LAT[char] || char).join('');
+}
+
+export function latToCyr(text: string): string {
+    const latToCyrMap: Record<string, string> = Object.fromEntries(Object.entries(CYR_TO_LAT).map(([k, v]) => [v, k]));
+    // Simple reverse map; caution: some multi-char mappings like 'Dž' need special handling if used
+    return text.split('').map(char => latToCyrMap[char] || char).join('');
 }
 
 /**
