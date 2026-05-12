@@ -153,6 +153,7 @@ main() {
 
   wait_health_ready "API health" "$HEALTH_URL" 1 1
   wait_http_ok "Astro frontend" "$ASTRO_URL" 200
+  wait_http_ok "Astro MK frontend" "http://127.0.0.1:3001" 200
 
   if [ "$ENABLE_FASTAPI_CHECK" = "1" ]; then
     wait_health_ready "FastAPI health" "$FASTAPI_URL" 1 1
