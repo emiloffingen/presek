@@ -71,6 +71,9 @@ export function cyrToLat(text: string): string {
     return text.split('').map(char => CYR_TO_LAT[char] || char).join('');
 }
 
+// Alias for backward compatibility - transliterate means Cyrillic to Latin
+export const transliterate = cyrToLat;
+
 export function latToCyr(text: string): string {
     const latToCyrMap: Record<string, string> = Object.fromEntries(Object.entries(CYR_TO_LAT).map(([k, v]) => [v, k]));
     // Simple reverse map; caution: some multi-char mappings like 'Dž' need special handling if used
