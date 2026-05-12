@@ -334,12 +334,13 @@ async def get_news(
     topic: Optional[str] = None,
     entity: Optional[str] = None,
     subcategory: Optional[str] = None,
+    lang: Optional[str] = None,
     sort: str = "recent",
     timespan: Optional[str] = None,  # '24h', '7d', '30d', 'all'
     page: int = 0,
     page_size: int = 24,
 ):
-    cache_key = f"api:news:v2:{q}:{category}:{topic}:{entity}:{subcategory}:{sort}:{timespan}:{page}:{page_size}"
+    cache_key = f"api:news:v2:{q}:{category}:{topic}:{entity}:{subcategory}:{lang}:{sort}:{timespan}:{page}:{page_size}"
     cached = cached_response(cache_key)
     if cached:
         return cached
@@ -350,6 +351,13 @@ async def get_news(
         row_limit = _news_row_limit(page, page_size)
         if q:
             q = q.strip()[:API_MAX_Q_LEN]
+
+        # Base filter for language
+        lang_filter = ""
+        lang_param = []
+        if lang:
+            lang_filter = "AND a.language = %s"
+            lang_param = [lang]
 
         entity_info = None
         if q and page == 0:
@@ -500,12 +508,14 @@ async def get_news(
             )
         else:
             rows = await db.async_execute(
-                """
+                f"""
                 SELECT cluster_id, updated_at as last_article 
                 FROM cluster_metadata m
+                JOIN articles a ON a.cluster_id = m.cluster_id
+                WHERE 1=1 {lang_filter}
                 ORDER BY updated_at DESC LIMIT %s
             """,
-                (page_size * (page + 1),),
+                (*lang_param, page_size * (page + 1)),
             )
             cids = [
                 r["cluster_id"] for r in rows[page * page_size : (page + 1) * page_size]

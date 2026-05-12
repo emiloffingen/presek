@@ -445,11 +445,15 @@ update_active_runtime_links() {
 
 build_release() {
   ln -sfn "$RELEASE_WEB_NODE_MODULES_TARGET" "$RELEASE_DIR/web/node_modules"
+  ln -sfn "$RELEASE_WEB_NODE_MODULES_TARGET" "$RELEASE_DIR/web-mk/node_modules"
   mkdir -p "$RELEASE_DIR/web/.astro/collections"
+  mkdir -p "$RELEASE_DIR/web-mk/.astro/collections"
 
-  info "Building Astro release"
+  info "Building Astro releases"
   (cd "$RELEASE_DIR/web" && npm run build)
-  [ -f "$RELEASE_DIR/web/dist/server/entry.mjs" ] || fail "Release build did not produce web/dist/server/entry.mjs"
+  [ -f "$RELEASE_DIR/web/dist/server/entry.mjs" ] || fail "Release build failed for 'web'"
+  (cd "$RELEASE_DIR/web-mk" && npm run build)
+  [ -f "$RELEASE_DIR/web-mk/dist/server/entry.mjs" ] || fail "Release build failed for 'web-mk'"
 }
 
 invalidate_public_api_caches() {
