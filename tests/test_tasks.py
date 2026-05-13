@@ -117,15 +117,17 @@ class TestSynthesizeClusterTaskQuality:
             # Call 2: Archive history
             # Call 3: INSERT INTO cluster_summaries
             # Call 4: Strong image check
-            mock_db.execute.side_effect = [article_rows, None, None, None]
+            # Call 5: Update cluster_metadata impact_score
+            # Call 6: Strong image check (second call)
+            mock_db.execute.side_effect = [article_rows, None, None, None, None, None]
             mock_db.execute_one.return_value = {"dummy": 1}
 
             tasks.synthesize_cluster_task("cluster-1", "content")
 
         insert_call = mock_db.execute.call_args_list[2]
-        stored_summary = insert_call.args[1][1]
-        stored_perspectives = json.loads(insert_call.args[1][2])
-        stored_citation_sources = json.loads(insert_call.args[1][12])
+        stored_summary = insert_call.args[1][2]
+        stored_perspectives = json.loads(insert_call.args[1][3])
+        stored_citation_sources = json.loads(insert_call.args[1][13])
 
         assert "clanci" not in stored_summary
         assert stored_summary.count("Glaven razvoj") == 1

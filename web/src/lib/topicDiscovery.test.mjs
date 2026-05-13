@@ -28,7 +28,7 @@ test('buildTopicConnections ranks breaking and shared-context topics first', () 
   const result = buildTopicConnections('Politika', clusters, details, 3);
 
   assert.equal(result[0].topic, 'Ekonomija');
-  assert.equal(result[0].relationshipLabel, 'Sledeća razvojna linija');
+  assert.equal(result[0].relationshipLabel, 'Следна развојна линија');
   assert.equal(result[1].topic, 'Obrazovanje');
 });
 

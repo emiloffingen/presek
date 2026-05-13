@@ -70,8 +70,8 @@ export function buildTopicConnections(currentTopic, clusters = [], details = [],
       let relationshipNote = `${entry.clusterCount} klasteri vece se prelevaat od ${currentTopic} kon ${entry.topic}.`;
 
       if (entry.breakingCount >= 2) {
-        relationshipLabel = 'Sledna razvojna linija';
-        relationshipNote = `${entry.topic} stanuva sledniot front na prikaznata, so ${entry.breakingCount} aktivni razvoi sto se nadovrzuvaat na ${currentTopic}.`;
+        relationshipLabel = 'Следна развојна линија';
+        relationshipNote = `${entry.topic} станува следниот фронт на приказната, со ${entry.breakingCount} активни развои што се надоврзуваат на ${currentTopic}.`;
       } else if (entry.sharedTagCount >= 3) {
         relationshipLabel = 'Posiroka ramka';
         relationshipNote = `${entry.topic} ja siri istata prica preku isti iminja i agli, ne samo preku povrsna tematska bliskost.`;

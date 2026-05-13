@@ -670,7 +670,7 @@ export function scoreClusterForReader(cluster, profile) {
   for (const topic of clusterTopics) {
     if (followedTopics.has(topic)) {
       score += 3.2;
-      reasons.push({ weight: 3.2, label: `Sledena tema: ${topic}` });
+      reasons.push({ weight: 3.2, label: `Следена тема: ${topic}` });
     }
     if (isStrongTopicSignal(topic) && signals.topicCounts.has(topic)) {
       const weight = Math.min(2.7, 0.55 + signals.topicCounts.get(topic) * 0.5);
@@ -750,10 +750,10 @@ export function buildDeliveryDigest(content, profile, prefs) {
     introBits.push('Vasiot dneven brifing e podgotven.');
   }
   if (followedTopics.length > 0) {
-    introBits.push(`Sledeni temi: ${followedTopics.join(', ')}.`);
+    introBits.push(`Следени теми: ${followedTopics.join(', ')}.`);
   }
   if (followedSources.length > 0) {
-    introBits.push(`Praceni izvori: ${followedSources.join(', ')}.`);
+    introBits.push(`Следени извори: ${followedSources.join(', ')}.`);
   }
 
   return [
