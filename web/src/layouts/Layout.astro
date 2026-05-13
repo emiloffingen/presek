@@ -1,323 +1,78 @@
 ---
-import '../styles/global.css';
-import '../lib/transliterationInit.js';
-import ConsentBanner from '../components/ConsentBanner';
-import { ClientRouter } from 'astro:transitions';
-
 interface Props {
 	title: string;
 	description?: string;
-	image?: string;
-	canonical?: string;
-	type?: string;
-	schema?: object;
-	robots?: string;
 }
 
 const {
 	title,
-	description = "Presek je moderni srpski agregator vesti koji koristi naprednu jezičku obradu (NLP) za grupisanje i sumiranje najvažnijih događaja iz svih medija.",
-	image = "/static/img/presek_emblem.png",
-	canonical,
-	type = "website",
-	schema,
-	robots,
+	description = "Presek e modern agregator na vesti.",
 } = Astro.props;
 
-const siteUrl = (Astro.site?.origin || import.meta.env.PUBLIC_SITE_URL || "https://presek.live").replace(/\/+$/, "");
-const pageTitle = title.includes("Presek") ? title.replace("Presek", "PRESEK.live") : `${title} | PRESEK.live`;
-
-/**
- * Build a strict canonical URL:
- * - Always absolute via new URL(pathname, Astro.site)
- * - Strip trailing slashes (trailingSlash: 'never' policy)
- * - Strip query parameters and hash fragments
- * - Home page resolves to bare origin (no trailing slash)
- */
-function buildCanonicalUrl(pathname: string): string {
-	const base = Astro.site || new URL("https://presek.live");
-	const url = new URL(pathname, base);
-	// Strip trailing slash for all paths except root
-	let clean = url.origin + url.pathname.replace(/\/+$/, "");
-	// Ensure root is just the origin
-	if (clean === url.origin || clean === url.origin + "") return url.origin;
-	return clean;
-}
-
-const canonicalUrl = canonical || buildCanonicalUrl(Astro.url.pathname);
-
-const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.startsWith("/") ? image : `/${image}`}`;
+const canonicalUrl = Astro.url.href;
 ---
 
 <!doctype html>
-<html lang="sr-Latn">
+<html lang="sr">
 	<head>
-		<script async src="https://www.googletagmanager.com/gtag/js?id=G-SV2R3LZJ5C"></script>
-		<script is:inline>
-			window.dataLayer = window.dataLayer || [];
-			function gtag(){dataLayer.push(arguments);}
-			gtag('js', new Date());
-
-			gtag('config', 'G-SV2R3LZJ5C');
-		</script>
-
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<link rel="icon" type="image/svg+xml" href="/img/presek_emblem.svg?v=4" />
-		<link rel="apple-touch-icon" href="/img/presek_emblem.png?v=4" />
-		<link rel="manifest" href="/manifest.json" />
-		<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
-		<meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
-		<meta name="apple-mobile-web-app-capable" content="yes" />
-		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-		<meta name="apple-mobile-web-app-title" content="PRESEK.live" />
-		<meta name="generator" content={Astro.generator} />
+		<title>{title}</title>
 		<meta name="description" content={description} />
-		{robots && <meta name="robots" content={robots} />}
-		<link rel="canonical" href={canonicalUrl} />
-		<meta property="og:site_name" content="PRESEK.live" />
-		<meta property="og:locale" content="sr_RS" />
-		<meta property="og:type" content={type} />
-		<meta property="og:title" content={pageTitle} />
-		<meta property="og:description" content={description} />
-		<meta property="og:url" content={canonicalUrl} />
-		<meta property="og:image" content={imageUrl} />
-		<meta property="og:image:width" content="1200" />
-		<meta property="og:image:height" content="630" />
-		<meta name="twitter:card" content="summary_large_image" />
-		<meta name="twitter:title" content={pageTitle} />
-		<meta name="twitter:description" content={description} />
-		<meta name="twitter:image" content={imageUrl} />
-		
-		<title>{pageTitle}</title>
-
-		<ClientRouter />
-
-		{schema && (
-			<script type="application/ld+json" is:inline set:html={JSON.stringify(schema)} />
-		)}
-
-		<script is:inline>
-			/**
-			 * Immediate theme sync to prevent flicker. 
-			 * We encapsulate in a function so it can be re-run on 'astro:after-swap'.
-			 */
-			function applyTheme() {
-				const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('theme') : null;
-				const isDark = stored ? stored === 'dark' : true;
-				
-				if (isDark) {
-					document.documentElement.classList.add('dark');
-				} else {
-					document.documentElement.classList.remove('dark');
-				}
-
-				// Update theme-color meta tags
-				const lightMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: light)"]');
-				const darkMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: dark)"]');
-				if (lightMeta) lightMeta.setAttribute('content', isDark ? '#000000' : '#fafafb');
-				if (darkMeta) darkMeta.setAttribute('content', isDark ? '#000000' : '#1a1715');
-			}
-
-			applyTheme();
-			document.addEventListener('astro:after-swap', applyTheme);
-		</script>
+		<meta name="theme-color" content="#ff6600" />
 	</head>
-<style is:global>
-    .noise-overlay {
-        position: fixed;
-        inset: 0;
-        z-index: 9998;
-        pointer-events: none;
-        opacity: 0.015;
-        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-    }
-    
-    .dark .noise-overlay {
-        opacity: 0.025;
-    }
-
-    #loading-bar {
-        box-shadow: 0 0 12px var(--nyt-accent);
-        background: linear-gradient(to right, var(--nyt-accent), #3b82f6);
-    }
-</style>
-
-	<body id="top" class="antialiased min-h-screen bg-background text-foreground transition-colors duration-300 overflow-x-hidden w-full">
-		<div class="noise-overlay"></div>
-		<div id="loading-bar" class="fixed top-0 left-0 h-[3px] bg-nyt-accent z-[9999] transition-all duration-300 opacity-0 w-0"></div>
+	<body>
 		<slot />
-		<ConsentBanner client:idle />
-		<script>
-			// Handle Astro transitions loading state
-			document.addEventListener('astro:before-preparation', () => {
-				const bar = document.getElementById('loading-bar');
-				if (bar) {
-					bar.style.width = '30%';
-					bar.style.opacity = '1';
-				}
-			});
-
-			document.addEventListener('astro:after-preparation', () => {
-				const bar = document.getElementById('loading-bar');
-				if (bar) {
-					bar.style.width = '100%';
-					setTimeout(() => {
-						bar.style.opacity = '0';
-						setTimeout(() => { bar.style.width = '0'; }, 300);
-					}, 200);
-				}
-			});
-		</script>
-		<script is:inline>
-			if ('serviceWorker' in navigator) {
-				window.addEventListener('load', () => {
-					navigator.serviceWorker.register('/sw.js').catch(err => {
-						console.warn('Service Worker registration failed:', err);
-					});
-				});
-			}
-
-			// Parallax Effect for Hero Images
-			function initParallax() {
-				if (window.innerWidth < 1024) return;
-				const handleScroll = () => {
-					const scrolled = window.scrollY;
-					document.querySelectorAll('.lead-media-image, .cluster-visual-image').forEach(el => {
-						const speed = 0.15;
-						el.style.setProperty('--parallax-y', `${scrolled * speed}px`);
-					});
-				};
-				window.addEventListener('scroll', handleScroll, { passive: true });
-			}
-			initParallax();
-			document.addEventListener('astro:page-load', initParallax);
-		</script>
-        
-		<script>
-			// Global Headline Reveal Animation
-			const initHeadlineReveal = () => {
-				const observer = new IntersectionObserver((entries) => {
-					entries.forEach(entry => {
-						if (entry.isIntersecting) {
-							entry.target.classList.add('is-visible');
-						}
-					});
-				}, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
-
-				document.querySelectorAll('.headline, .editorial-headline, .lead-media-frame').forEach(el => {
-					observer.observe(el);
-				});
-			};
-
-			document.addEventListener('astro:page-load', initHeadlineReveal);
-			initHeadlineReveal();
-		</script>
 	</body>
 </html>
 
 <style is:global>
-	:root {
-		--layout-cache-bust-20260409: 1;
-	}
-
-    *, *::before, *::after {
-        box-sizing: border-box;
-    }
-
-    html, body {
-        overflow-x: hidden;
-        width: 100%;
-        position: relative;
+    body {
+        font-family: Verdana, Geneva, sans-serif;
+        font-size: 10pt;
+        color: #828282;
+        background-color: white;
         margin: 0;
         padding: 0;
-        box-sizing: border-box;
     }
-
-	/* Broadstreet Aesthetic Adjustments */
-	.dark .site-logo {		filter: invert(1) brightness(1.5);
-	}
-	.dark .site-emblem {
-		filter: invert(1) brightness(1.5);
-	}
+    td { font-family: Verdana, Geneva, sans-serif; font-size: 10pt; }
     
-    /* Ensure serif fonts are applied to all broadsheet text */
-    .nyt-serif {
-        font-family: var(--font-serif);
-    }
+    a:link { color: #000000; text-decoration: none; }
+    a:visited { color: #828282; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .pagetop { font-family: Verdana, Geneva, sans-serif; font-size: 10pt; color: #222222; }
+    .pagetop a:link, .pagetop a:visited { color: #000000; }
     
-    .nyt-sans {
-        font-family: var(--font-sans);
+    .hnname { font-weight: bold; margin-right: 5px; }
+    .hnname a:link, .hnname a:visited { color: #000000; text-decoration: none; }
+
+    .rank { color: #828282; }
+    .titleline { font-size: 10pt; }
+    .titleline a:link { color: #000000; }
+    .titleline a:visited { color: #828282; }
+    
+    .sitebit { font-size: 8pt; color: #828282; }
+    .comhead { font-size: 8pt; color: #828282; }
+    .comhead a:link, .comhead a:visited { color: #828282; }
+    .comhead a:hover { text-decoration: underline; }
+
+    .subtext { font-size: 7pt; color: #828282; }
+    .subtext a:link, .subtext a:visited { color: #828282; }
+    .subtext a:hover { text-decoration: underline; }
+
+    .votearrow {
+        width: 10px;
+        height: 10px;
+        border: 0px;
+        margin: 3px 2px 6px;
+        background: url('data:image/svg+xml;utf8,<svg width="10" height="10" viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg"><polygon points="5,0 10,10 0,10" fill="%23828282" /></svg>') no-repeat;
     }
 
-    /* Skeleton Loading */
-    .skeleton {
-        position: relative;
-        overflow: hidden;
-        background-color: var(--muted);
-        border-radius: 4px;
-    }
+    .yclinks { font-size: 8pt; color: #828282; }
+    .yclinks a:link, .yclinks a:visited { color: #828282; }
+    .yclinks a:hover { text-decoration: underline; }
 
-    .skeleton::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        transform: translateX(-100%);
-        background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(255, 255, 255, 0.08),
-            transparent
-        );
-        animation: shimmer 2s infinite;
-    }
-
-    .dark .skeleton::after {
-        background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(255, 255, 255, 0.05),
-            transparent
-        );
-    }
-
-    @keyframes shimmer {
-        100% {
-            transform: translateX(100%);
-        }
-    }
-
-    /* Selection Color */
-    ::selection {
-        background-color: #326891;
-        color: white;
-    }
-
-    /* --- CRITICAL MOBILE UI FIXES --- */
-    html, body {
-        overflow-x: hidden !important;
-        width: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        box-sizing: border-box !important;
-        -webkit-text-size-adjust: 100%;
-        position: relative;
-    }
-
-    * {
-        box-sizing: border-box !important;
-    }
-
-    img, video, canvas, svg, iframe {
-        max-width: 100% !important;
-        height: auto !important;
-    }
-
-    /* Prevent wide tables from breaking layout */
-    table {
-        display: block;
-        max-width: 100%;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    </style>
+    input { font-family: monospace; font-size: 10pt; }
+</style>
