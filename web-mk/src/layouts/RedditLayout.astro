@@ -1,0 +1,101 @@
+---
+import Layout from './Layout.astro';
+import RedditHeader from '../components/reddit/RedditHeader.astro';
+import RedditSidebar from '../components/reddit/RedditSidebar.astro';
+import type { NewsCluster } from '@/types';
+
+interface Props {
+    title: string;
+    description?: string;
+    image?: string;
+    canonical?: string;
+    type?: string;
+    schema?: object;
+    robots?: string;
+    trending?: any[];
+    focusEntities?: any[];
+    stats?: any;
+    globalClusters?: NewsCluster[];
+}
+
+const props = Astro.props;
+---
+
+<Layout 
+    title={props.title}
+    description={props.description}
+    image={props.image}
+    canonical={props.canonical}
+    type={props.type}
+    schema={props.schema}
+    robots={props.robots}
+>
+    <div class="reddit-layout">
+        <RedditHeader 
+            q={Astro.url.searchParams.get('q') || undefined}
+            category={Astro.url.searchParams.get('category') || undefined}
+            topic={Astro.url.searchParams.get('topic') || undefined}
+            entity={Astro.url.searchParams.get('entity') || undefined}
+            subcategory={Astro.url.searchParams.get('subcategory') || undefined}
+        />
+        
+        <div class="reddit-main-content">
+            <main class="reddit-feed-container">
+                <slot />
+            </main>
+            
+            <aside class="reddit-sidebar-container">
+                <RedditSidebar 
+                    trending={props.trending}
+                    focusEntities={props.focusEntities}
+                    stats={props.stats}
+                    globalClusters={props.globalClusters}
+                />
+            </aside>
+        </div>
+    </div>
+</Layout>
+
+<style is:global>
+    .reddit-layout {
+        min-height: 100vh;
+        background: var(--background);
+        color: var(--foreground);
+    }
+    
+    .reddit-main-content {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 24px;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 24px 16px;
+    }
+    
+    @media (min-width: 1024px) {
+        .reddit-main-content {
+            grid-template-columns: minmax(0, 1fr) 312px;
+            gap: 24px;
+            padding: 24px;
+        }
+    }
+    
+    .reddit-feed-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .reddit-sidebar-container {
+        position: sticky;
+        top: 0;
+        height: fit-content;
+        align-self: start;
+    }
+    
+    @media (max-width: 1024px) {
+        .reddit-sidebar-container {
+            position: static;
+        }
+    }
+</style>

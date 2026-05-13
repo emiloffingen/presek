@@ -1,0 +1,177 @@
+---
+/* Reddit-style homepage for presek.mk */
+import RedditLayout from '../../layouts/RedditLayout.astro';
+import RedditPostCard from '../../components/reddit/RedditPostCard.astro';
+import { apiBaseUrl } from '@/lib/apiBase';
+import type { NewsCluster } from '@/types';
+import { TrendingUp, Fire, Clock, Globe } from 'lucide-react';
+
+const API_URL = apiBaseUrl();
+
+const { searchParams } = Astro.url;
+const category = searchParams.get('category') || null;
+const topic = searchParams.get('topic') || null;
+const entity = searchParams.get('entity') || null;
+const q = searchParams.get('q') || null;
+
+let clusters: NewsCluster[] = [];
+let trending = [];
+let focusEntities = [];
+let stats = null;
+let globalClusters: NewsCluster[] = [];
+let error = null;
+
+async function fetchJson(url: string) {
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`Request failed: ${response.status} ${url}`);
+    }
+    return response.json();
+}
+
+try {
+    const [homeResult, trendResult, entityResult, statsResult] = await Promise.allSettled([
+        fetchJson(`${API_URL}/home?lang=mk`),
+        fetchJson(`${API_URL}/trending`),
+        fetchJson(`${API_URL}/intelligence/top-entities?limit=12`),
+        fetchJson(`${API_URL}/stats/summary`),
+    ]);
+
+    if (homeResult.status === 'fulfilled') {
+        const home = homeResult.value;
+        clusters = home?.lead ? [home.lead, ...(home.supporting || []), ...(home.developing || []), ...(home.wire || [])] : [];
+        globalClusters = home?.global || [];
+    }
+
+    if (trendResult.status === 'fulfilled') {
+        trending = Array.isArray(trendResult.value) ? trendResult.value : [];
+    }
+
+    if (entityResult.status === 'fulfilled') {
+        focusEntities = Array.isArray(entityResult.value) ? entityResult.value : [];
+    }
+
+    if (statsResult.status === 'fulfilled') {
+        stats = statsResult.value;
+    }
+} catch (err) {
+    console.error('Error fetching data:', err);
+    error = 'Greška pri učitavanju podataka';
+}
+
+// Filter clusters based on search params if present
+if (q || category || topic || entity) {
+    clusters = clusters.filter(cluster => {
+        if (q) {
+            const query = q.toLowerCase();
+            const title = (cluster.articles?.[0]?.title || '').toLowerCase();
+            const summary = (cluster.articles?.[0]?.summary || '').toLowerCase();
+            return title.includes(query) || summary.includes(query);
+        }
+        if (category) {
+            return cluster.articles?.[0]?.category?.toLowerCase() === category.toLowerCase();
+        }
+        if (topic) {
+            return cluster.topics?.some(t => t.toLowerCase() === topic.toLowerCase());
+        }
+        if (entity) {
+            return cluster.tags?.some(t => t.toLowerCase() === entity.toLowerCase());
+        }
+        return true;
+    });
+}
+
+function getPageTitle() {
+    if (q) return `Rezultati za: "${q}"`;
+    if (category) return `Kategorija: ${category}`;
+    if (topic) return `Tema: ${topic}`;
+    if (entity) return `Entitet: ${entity}`;
+    return 'Presek | Početna - Agregator vesti u Reddit stilu';
+}
+
+function getPageDescription() {
+    if (q) return `Pretražujte vesti o: ${q}`;
+    if (category) return `Sve vesti iz kategorije: ${category}`;
+    if (topic) return `Sve vesti o temi: ${topic}`;
+    if (entity) return `Sve vesti o entitetu: ${entity}`;
+    return 'Presek u Reddit stilu - Pregledajte vesti, glasajte i diskutujte o najnovijim događajima';
+}
+
+const pageTitle = getPageTitle();
+const pageDescription = getPageDescription();
+---
+
+<RedditLayout
+    title={pageTitle}
+    description={pageDescription}
+    trending={trending}
+    focusEntities={focusEntities}
+    stats={stats}
+    globalClusters={globalClusters}
+>
+    <!-- Filter Notice -->
+    {(q || category || topic || entity) && (
+        <div class="bg-[var(--secondary)] border border-[var(--border)] rounded-md p-4">
+            <div class="flex items-center gap-2 text-sm">
+                <span class="font-medium">Filter:</span>
+                {q && <span class="reddit-flair">"{q}"</span>}
+                {category && <span class="reddit-flair">{category}</span>}
+                {topic && <span class="reddit-flair">{topic}</span>}
+                {entity && <span class="reddit-flair">{entity}</span>}
+                <a href="/r/" class="text-[var(--primary)] hover:underline ml-auto">Clear</a>
+            </div>
+        </div>
+    )}
+
+    <!-- Feed Tabs -->
+    <div class="flex gap-2 border-b border-[var(--border)] pb-2 mb-4">
+        <a href="/r/" class:list={['reddit-nav-link', 'px-4 py-2 rounded-t-md', Astro.url.pathname === '/r/' ? 'bg-[var(--card)] border-b-2 border-[var(--primary)] text-[var(--foreground)]' : '']}>
+            <span class="font-medium">Glavno</span>
+        </a>
+        <a href="/r/?timespan=24h" class:list={['reddit-nav-link', 'px-4 py-2 rounded-t-md', Astro.url.searchParams.get('timespan') === '24h' ? 'bg-[var(--card)] border-b-2 border-[var(--primary)] text-[var(--foreground)]' : '']}>
+            <span class="font-medium flex items-center gap-1"><Clock class="w-4 h-4" /> Poslednjih 24h</span>
+        </a>
+        <a href="/r/?topic=Politika" class:list={['reddit-nav-link', 'px-4 py-2 rounded-t-md', topic === 'Politika' ? 'bg-[var(--card)] border-b-2 border-[var(--primary)] text-[var(--foreground)]' : '']}>
+            <span class="font-medium flex items-center gap-1"><Fire class="w-4 h-4" /> Popularno</span>
+        </a>
+        <a href="/r/?category=Globalna" class:list={['reddit-nav-link', 'px-4 py-2 rounded-t-md', category === 'Globalna' ? 'bg-[var(--card)] border-b-2 border-[var(--primary)] text-[var(--foreground)]' : '']}>
+            <span class="font-medium flex items-center gap-1"><Globe class="w-4 h-4" /> Globalno</span>
+        </a>
+    </div>
+
+    <!-- Feed -->
+    <div class="space-y-4">
+        {error && (
+            <div class="bg-[var(--surface-soft)] border border-[var(--border)] rounded-md p-4 text-center text-[var(--foreground)]">
+                {error}
+            </div>
+        )}
+
+        {clusters.length === 0 && !error && (
+            <div class="bg-[var(--secondary)] border border-[var(--border)] rounded-md p-8 text-center">
+                <h3 class="text-lg font-bold mb-2">Nema rezultata</h3>
+                <p class="text-sm text-[var(--muted-foreground)]">
+                    {q ? `Nema vesti za pretragu "${q}"` : 'Trenutno nema dostupnih vesti. Proverite kasnije.'}
+                </p>
+            </div>
+        )}
+
+        {clusters.map((cluster, idx) => (
+            <RedditPostCard 
+                cluster={cluster} 
+                index={idx}
+                showSubreddit={true}
+                showVotes={true}
+            />
+        ))}
+    </div>
+
+    <!-- Load More (placeholder) -->
+    {clusters.length > 0 && (
+        <div class="text-center py-8">
+            <button class="reddit-auth-button bg-[var(--surface-soft)]">
+                Učitaj još
+            </button>
+        </div>
+    )}
+</RedditLayout>

@@ -1,0 +1,167 @@
+---
+import type { NewsCluster } from '@/types';
+
+interface Props {
+    trending?: any[];
+    focusEntities?: any[];
+    stats?: any;
+    globalClusters?: NewsCluster[];
+}
+
+const { trending = [], focusEntities = [], stats, globalClusters = [] } = Astro.props;
+
+function formatNumber(num: number): string {
+    if (num >= 1000) {
+        return (num / 1000).toFixed(1) + 'k';
+    }
+    return num.toString();
+}
+
+// Popular "subreddits" (topics) based on focus entities
+const popularSubreddits = [
+    { name: 'r/Srbija', members: '2.5M', online: '8.2k', description: 'Nova i diskusije o Srbiji' },
+    { name: 'r/Politika', members: '1.8M', online: '5.1k', description: 'Politički događaji i analize' },
+    { name: 'r/Ekonomija', members: '1.2M', online: '3.4k', description: 'Ekonomska kreta i vesti' },
+    { name: 'r/Sport', members: '2.1M', online: '6.8k', description: 'Sportski događaji i rezultati' },
+    { name: 'r/Kultura', members: '980k', online: '2.3k', description: 'Kultura, umetnost i društvo' },
+    { name: 'r/Tehnologija', members: '1.5M', online: '4.2k', description: 'Tehnološki napredak i inovacije' },
+];
+
+const rules = [
+    'Budi priiključan i poštuj druge',
+    'Nemoj objavljuju lažne vesti',
+    'Nemoj spamovati',
+    'Samo relevantan sadržaj',
+];
+
+const subredditInfo = {
+    name: 'r/PRESEK',
+    members: formatNumber(stats?.total_articles || 150000),
+    online: formatNumber(stats?.active_today || 5000),
+    created: 'Jun 2020',
+    description: 'Presek je platforma za agregaciju i diskusiju vesti iz svih medija u Srbiji i regionu.'
+};
+---
+
+<aside class="reddit-sidebar">
+    <!-- Create Post Button (placeholder) -->
+    <div class="mb-6">
+        <button class="w-full reddit-auth-button bg-[var(--surface-soft)] text-foreground hover:bg-[var(--secondary)]">
+            + Kreiraj objavu
+        </button>
+    </div>
+
+    <!-- About Community -->
+    <div class="reddit-sidebar-section">
+        <h3 class="reddit-sidebar-title">About Community</h3>
+        <div class="space-y-3">
+            <div class="flex items-start gap-3">
+                <div class="w-10 h-10 bg-[var(--primary)] rounded-full flex items-center justify-center shrink-0">
+                    <span class="text-white font-bold text-lg">P</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h4 class="font-bold text-foreground">{subredditInfo.name}</h4>
+                    <p class="text-sm text-muted-foreground line-clamp-2">{subredditInfo.description}</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                    <div class="text-muted-foreground text-xs uppercase">Members</div>
+                    <div class="font-bold text-foreground">{subredditInfo.members}</div>
+                </div>
+                <div>
+                    <div class="text-muted-foreground text-xs uppercase">Online</div>
+                    <div class="font-bold text-foreground">{subredditInfo.online}</div>
+                </div>
+            </div>
+            <button class="reddit-action-button w-full">
+                <span>Join</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Create Post Box -->
+    <div class="reddit-sidebar-section">
+        <div class="bg-[var(--secondary)] rounded-md p-4">
+            <textarea 
+                class="w-full bg-transparent border border-[var(--border)] rounded-md p-3 text-sm resize-none focus:outline-none focus:border-[var(--primary)]" 
+                rows="2"
+                placeholder="About what do you want to ask?"
+            ></textarea>
+        </div>
+    </div>
+
+    <!-- Rules -->
+    <div class="reddit-sidebar-section">
+        <h3 class="reddit-sidebar-title">Rules</h3>
+        <ol class="space-y-3">
+            {rules.map((rule, idx) => (
+                <li class="text-sm">
+                    <span class="text-muted-foreground mr-2">{idx + 1}.</span>
+                    <span>{rule}</span>
+                </li>
+            ))}
+        </ol>
+    </div>
+
+    <!-- Topics (as subreddits) -->
+    <div class="reddit-sidebar-section">
+        <h3 class="reddit-sidebar-title">Top Communities</h3>
+        <div class="space-y-2">
+            {popularSubreddits.map((sub) => (
+                <a href={`/r/?topic=${encodeURIComponent(sub.name.replace('r/', ''))}`} class="reddit-subreddit-link">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="font-medium text-sm">{sub.name}</div>
+                            <div class="text-xs text-muted-foreground">{sub.description}</div>
+                        </div>
+                        <div class="text-right text-xs text-muted-foreground">
+                            <div>{sub.members}</div>
+                            <div>{sub.online} online</div>
+                        </div>
+                    </div>
+                </a>
+            ))}
+        </div>
+    </div>
+
+    <!-- Trending Topics -->
+    {trending.length > 0 && (
+        <div class="reddit-sidebar-section">
+            <h3 class="reddit-sidebar-title">Trending Topics</h3>
+            <div class="space-y-2">
+                {trending.slice(0, 5).map((item, idx) => (
+                    <a href={`/?q=${encodeURIComponent(item.name || item.title || '')}`} class="reddit-subreddit-link">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm">#{idx + 1} {item.name || item.title}</span>
+                            <span class="text-xs text-muted-foreground">{formatNumber(item.count || item.score || 0)} posts</span>
+                        </div>
+                    </a>
+                ))}
+            </div>
+        </div>
+    )}
+
+    <!-- Focus Entities -->
+    {focusEntities.length > 0 && (
+        <div class="reddit-sidebar-section">
+            <h3 class="reddit-sidebar-title">Top Entities</h3>
+            <div class="space-y-2">
+                {focusEntities.slice(0, 5).map((entity) => (
+                    <a href={`/?entity=${encodeURIComponent(entity.name)}`} class="reddit-subreddit-link">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm">{entity.display_name || entity.name}</span>
+                            <span class="text-xs text-muted-foreground">{formatNumber(entity.total_mentions || 0)} mentions</span>
+                        </div>
+                    </a>
+                ))}
+            </div>
+        </div>
+    )}
+
+    <!-- Footer -->
+    <div class="text-xs text-muted-foreground pt-4 border-t border-[var(--border)]">
+        <p>Created with ❤️ for the Macedonian community</p>
+        <p class="mt-2">Presek aggregates news from all media sources and presents them in an unbiased, aggregated format.</p>
+    </div>
+</aside>
