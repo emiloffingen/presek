@@ -11,13 +11,14 @@ declare global {
   namespace Cypress {
     interface Chainable {
       // Custom commands can be added here
-      login(email: string, password: string): Chainable<Element>
-      getByTestId(id: string): Chainable<Element>
+      login(email: string, password: string): Chainable<JQuery<HTMLElement>>
+      getByTestId(id: string): Chainable<JQuery<HTMLElement>>
+      waitForAPI(): Chainable<void>
     }
   }
 }
 
 // Add custom commands
-Cypress.Commands.add('getByTestId', { prevSubject: false }, (id: string) => {
+Cypress.Commands.add('getByTestId', (id: string) => {
   return cy.get(`[data-testid="${id}"]`)
 })

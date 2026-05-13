@@ -60,8 +60,12 @@ Dockerfile now pins uv to v0.4.24 instead of using `latest` tag for reproducibil
 Removed conflicting CSP from nginx security-headers.conf. CSP is now solely handled by FastAPI middleware with per-request nonces, eliminating `unsafe-inline` usage.
 *   **Status:** ✅ Resolved
 
-### [FIXED] Cloudflare IP Ranges
-Updated verification date in cloudflare-realip.conf to 2026-05-13. IP ranges are current.
+### [FIXED] CI/CD Pipeline Failures
+Resolved multiple issues causing pipeline #125 to fail:
+*   **Backend:** Added `pytest-timeout` to dev dependencies to support the `--timeout` argument in CI.
+*   **Frontend:** Resolved TypeScript `baseUrl` deprecation warning and fixed several type errors in `SearchIsland.tsx` using discriminated unions (`as const`). Fixed React `class` vs `className` errors in `IzvoriPage.tsx`.
+*   **Security:** Upgraded `black` to v26.3.1 to resolve CVE-2026-32274. Aligned `uv` version in `Dockerfile` with CI (v0.11.11).
+*   **Cypress:** Fixed TypeScript type mismatches in Cypress custom commands.
 *   **Status:** ✅ Resolved
 
 ### [OBSERVATION] Hardcoded Service Lists

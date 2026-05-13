@@ -321,11 +321,11 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
   );
 
   const selectedItem = (entityResult && activeIndex === 0) 
-    ? { type: 'ENTITY', data: entityResult } 
+    ? { type: 'ENTITY' as const, data: entityResult } 
     : (activeIndex >= (entityResult ? 1 : 0) && activeIndex < (entityResult ? 1 : 0) + suggestions.length)
-      ? { type: 'CLUSTER', data: suggestions[entityResult ? activeIndex - 1 : activeIndex] }
+      ? { type: 'CLUSTER' as const, data: suggestions[entityResult ? activeIndex - 1 : activeIndex] }
       : (activeIndex >= (entityResult ? 1 : 0) + suggestions.length)
-        ? { type: 'ACTION', data: filteredActions[activeIndex - (entityResult ? 1 : 0) - suggestions.length] }
+        ? { type: 'ACTION' as const, data: filteredActions[activeIndex - (entityResult ? 1 : 0) - suggestions.length] }
         : null;
 
   const overlayContent = isOpen && (

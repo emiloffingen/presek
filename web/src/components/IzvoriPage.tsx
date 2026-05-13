@@ -143,7 +143,7 @@ const IzvoriPage: React.FC = () => {
   return (
     <div className="broadsheet-sources pt-12">
       <header className="editorial-masthead mb-16 border-t border-foreground pt-4">
-        <div class="masthead-top mb-8">
+        <div className="masthead-top mb-8">
           <span className="masthead-kicker font-sans text-[10px] font-black uppercase tracking-[0.25em] text-nyt-accent">MEDIUMSKA REPUTACIJA</span>
         </div>
         <div className="masthead-main mb-12">
