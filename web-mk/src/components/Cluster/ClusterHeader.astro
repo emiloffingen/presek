@@ -1,0 +1,115 @@
+---
+import { Clock } from 'lucide-react';
+import { getEditionStr } from '../../utils/textUtils';
+import ShareIsland from '../ShareIsland.tsx';
+import PreferenceToggle from '../PreferenceToggle.tsx';
+
+interface Props {
+	momentumKicker: { label: string; color: string };
+	category: string;
+	createdAt: string;
+	displayHeadline: string;
+	headlineIsCyrillic: boolean;
+	syntheticStandfirst?: string;
+	canonicalUrl: string;
+	topics: string[];
+	getRelativeTimeStr: (dateStr: string) => string;
+}
+
+const { 
+	momentumKicker, 
+	category, 
+	createdAt, 
+	displayHeadline, 
+	headlineIsCyrillic, 
+	syntheticStandfirst, 
+	canonicalUrl, 
+	topics,
+	getRelativeTimeStr
+} = Astro.props;
+---
+
+<header class="editorial-lede mb-12">
+	<div class="lede-meta mb-8">
+		<span class:list={["font-black uppercase tracking-[0.3em] text-[10px] mr-6", momentumKicker.color]}>{momentumKicker.label}</span>
+		<span class="nyt-section-label text-foreground/50 mr-6">{category}</span>
+		<span class="lede-time-meta inline-flex items-center gap-2 text-muted-foreground">
+			<Clock size={12} />
+			<span class="text-[10px] font-bold uppercase tracking-wider">{getRelativeTimeStr(createdAt)}</span>
+			<span class="mx-2 opacity-30">·</span>
+			<span class="font-black uppercase tracking-widest text-[10px] text-nyt-accent/80">
+				{getEditionStr(createdAt)}
+			</span>
+		</span>
+	</div>
+
+	<h1 class:list={["editorial-headline mb-10", { "is-cyrillic": headlineIsCyrillic }]}>
+		{displayHeadline}
+	</h1>
+
+	{syntheticStandfirst && (
+		<p class="editorial-standfirst font-serif text-2xl md:text-3xl leading-tight text-muted-foreground/90 italic max-w-4xl border-l-4 border-nyt-accent/30 pl-8 mb-12">
+			{syntheticStandfirst}
+		</p>
+	)}
+
+	<div class="flex flex-wrap gap-5 items-center mb-16 border-y border-border/40 py-6">
+		<ShareIsland
+			title={displayHeadline}
+			url={canonicalUrl}
+			client:idle
+		/>
+		<div class="h-6 w-px bg-border/60 mx-3"></div>
+		<PreferenceToggle
+			kind="topic"
+			value={topics?.[0] || category}
+			client:idle
+		/>
+	</div>
+</header>
+
+<style>
+	.editorial-headline {
+		font-family: var(--font-serif);
+		font-size: clamp(3.2rem, 8vw, 6.2rem);
+		font-weight: 950;
+		line-height: 0.88;
+		letter-spacing: -0.05em;
+		color: var(--foreground);
+		text-wrap: balance;
+        /* Subtle ink sheen */
+        background: linear-gradient(135deg, var(--foreground) 75%, color-mix(in srgb, var(--foreground), var(--nyt-accent) 20%));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0 1px 0 rgba(255,255,255,0.05));
+	}
+
+    .dark .editorial-headline {
+        filter: drop-shadow(0 1px 0 rgba(0,0,0,0.5));
+    }
+
+	.editorial-headline.is-cyrillic {
+		line-height: 1.05;
+		letter-spacing: -0.02em;
+	}
+
+	.editorial-standfirst {
+		text-wrap: pretty;
+        font-family: var(--font-nyt-body);
+        font-weight: 450;
+        line-height: 1.4;
+        letter-spacing: -0.01em;
+	}
+
+	.nyt-section-label {
+		font-family: var(--font-sans);
+		font-size: 0.7rem;
+		font-weight: 950;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+	}
+
+	.lede-time-meta {
+		font-family: var(--font-sans);
+	}
+</style>

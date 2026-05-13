@@ -1,0 +1,31 @@
+<button id="script-toggle" class="text-[9px] font-black uppercase tracking-widest text-nyt-accent hover:text-foreground transition-colors">
+    Ћир/Lat
+</button>
+
+<script>
+    import { cyrToLat, latToCyr } from '../utils/textUtils';
+
+    document.addEventListener('astro:page-load', () => {
+        const toggle = document.getElementById('script-toggle');
+        if (!toggle) return;
+
+        let isCyrillic = true;
+
+        function traverse(node) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                if (node.textContent && node.textContent.trim().length > 0) {
+                    node.textContent = isCyrillic 
+                        ? cyrToLat(node.textContent) 
+                        : latToCyr(node.textContent);
+                }
+            } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName !== 'SCRIPT' && node.tagName !== 'STYLE') {
+                node.childNodes.forEach(traverse);
+            }
+        }
+
+        toggle.addEventListener('click', () => {
+            isCyrillic = !isCyrillic;
+            traverse(document.body);
+        });
+    });
+</script>

@@ -1,0 +1,132 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+---
+
+<Layout
+    title="O Projektu — Presek"
+    description="Presek je srpski informativni agregator koji vam omogućava da vidite celokupnu sliku."
+>
+    <NYTHeader />
+    <main class="site-layout broadsheet-layout py-[var(--page-py)]">
+        <header class="editorial-masthead mb-12">
+            <div class="masthead-top">
+                <span class="masthead-kicker">MISIJA & VIZIJA</span>
+            </div>
+            <div class="masthead-main">
+                <h1 class="masthead-title">Pojasen pregled <span>na denot</span></h1>
+            </div>
+            <p class="masthead-intro">
+                Presek je digitalna servis za medijsku transparentnost i javni uvid. Naša misija je da vratimo jasnoću u informativni prostor kroz mapiranje pluralizma.
+            </p>
+        </header>
+
+        <div class="broadsheet-grid">
+            <div class="broadsheet-main">
+                <article class="prose-editorial">
+                    <p class="first-paragraph">
+                        U danima prepunim ponavljanjem, preterivanjem i brzim naslovima, Presek služi kao discipliniran pregled onoga što se zapravo dešava. Slične objave grupise u „klastere“ da biste jednu priču mogli videti kroz više izvora, umesto da lovite komadiće po komadić.
+                    </p>
+
+                    <p>
+                        Umesto da tvrdi da zamenjuje redakcije, Presek radi nešto korisno: daje vam strukturu. Iz te strukture proističu nekoliko ključnih slojeva koji oblikuju vašu informisanost.
+                    </p>
+
+                    <div class="editorial-divider"></div>
+
+                    <h2 class="section-title-italic">Kljucni stubovi</h2>
+                    <ul class="editorial-list">
+                        <li><strong>Sistemske sinteze:</strong> Automatizirani urednički pregled dana koji ujedinjuje činjenice sa svih dostupnih izvora u jednu koherentnu priču.</li>
+                        <li><strong>Medijski pluralizam:</strong> Precizno mapiranje različitih ugla izveštavanja, identifikovanje informativnih praznina i tonalnih razlika između redakcija.</li>
+                        <li><strong>Dnevni brifing:</strong> Destilirano jutarnje izdanje tema koje nose najveću težinu javnog interesa.</li>
+                    </ul>
+
+                    <p>
+                        Namera je jednostavna: manje šuma, više konteksta. Presek vam ne kaže šta da mislite; pomaže vam da brže vidite što se dešava, ko kako izveštava i što još uvek ostaje nejasno.
+                    </p>
+
+                    <div class="editorial-divider"></div>
+
+                    <h2 class="section-title-italic">Tim i Misija</h2>
+                    <div class="two-col-grid">
+                        <div class="grid-item">
+                            <h3>Arhitektura</h3>
+                            <p>Presek 5.48 razvijen je od strane tima inženjera posvećenih obradi srpskog jezika. Sistem koristi napredni sistem dubloke obrade kako bi garantovao visu preciznost i nezavisnu uredničku sintezu vest.</p>
+                        </div>
+                        <div class="grid-item">
+                            <h3>Vizija</h3>
+                            <p>Naš cilj je da izgradimo digitalni prostor u kojem se vesti vrednuju po svojoj sadržini i podršci više izvora, promovišući informisano građanstvo.</p>
+                        </div>
+                    </div>
+                </article>
+            </div>
+
+            <aside class="broadsheet-rail">
+                <section class="rail-block rail-block-alt">
+                    <p class="rail-kicker">Nakuso</p>
+                    <h3 class="rail-title">glavna NAMERA</h3>
+                    <p class="rail-text">Pomalku sum, povece kontekst. Pomalku rasfrlani naslovi, povece jasnost za toa sto navistina ga oblikuva denot.</p>
+                </section>
+
+                <section class="rail-block">
+                    <p class="rail-kicker">dalje</p>
+                    <div class="rail-directory">
+                        <a href="/editorial" class="dir-link"><span class="name">Standardi</span></a>
+                        <a href="/briefing" class="dir-link"><span class="name">Brifing</span></a>
+                        <a href="/izvori" class="dir-link"><span class="name">izvori</span></a>
+                    </div>
+                </section>
+            </aside>
+        </div>
+    </main>
+
+	<Footer />
+</Layout>
+
+<style>
+    /* ── Masthead ────────────────────────────────────── */
+    .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 2rem; margin-bottom: 3rem; }
+    .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
+    .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; margin: 1.5rem 0; letter-spacing: -0.02em; }
+    .masthead-title span { font-weight: 400; italic: true; }
+    .masthead-intro { font-family: var(--font-nyt-body); font-size: 1.15rem; line-height: 1.6; color: var(--secondary-foreground); max-width: 42rem; }
+
+    /* ── Broadstreet Layout ───────────────────────────── */
+    .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
+    @media (min-width: 1024px) {
+        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; }
+        .broadsheet-main { border-right: 1px solid var(--border); padding-right: 3rem; }
+        .broadsheet-rail { position: sticky; top: 8rem; align-self: start; }
+    }
+
+    /* ── Prose ───────────────────────────────────────── */
+    .prose-editorial { font-family: var(--font-nyt-body); font-size: 1.1rem; line-height: 1.75; color: var(--secondary-foreground); }
+    .first-paragraph::first-letter { float: left; font-family: var(--font-serif); font-size: 5rem; font-weight: 900; line-height: 0.8; padding-top: 0.5rem; padding-right: 0.75rem; color: var(--foreground); }
+    .prose-editorial p { margin-bottom: 1.5rem; text-wrap: pretty; }
+    
+    .section-title-italic { font-family: var(--font-serif); font-size: 1.8rem; font-weight: 900; italic: true; margin-bottom: 1.5rem; }
+    .editorial-divider { height: 1px; background: var(--border); margin: 3rem 0; }
+
+    .editorial-list { list-style: none; padding: 0; margin-bottom: 2rem; }
+    .editorial-list li { margin-bottom: 1rem; padding-left: 1.5rem; position: relative; }
+    .editorial-list li::before { content: "—"; position: absolute; left: 0; color: var(--nyt-accent); font-weight: 900; }
+
+    .two-col-grid { display: grid; grid-template-columns: 1fr; gap: 2rem; margin-top: 2rem; }
+    @media (min-width: 640px) { .two-col-grid { grid-template-columns: 1fr 1fr; } }
+    .grid-item h3 { font-family: var(--font-serif); font-size: 1.25rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .grid-item p { font-size: 0.95rem; line-height: 1.6; }
+
+    /* ── Rail ────────────────────────────────────────── */
+    .rail-block { margin-bottom: 2.5rem; }
+    .rail-block-alt { padding: 1.25rem; background: var(--secondary); border-radius: 4px; }
+    .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
+    .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+    .rail-text { font-family: var(--font-nyt-body); font-size: 0.9rem; line-height: 1.5; color: var(--secondary-foreground); }
+    
+    .rail-directory { display: flex; flex-direction: column; }
+    .dir-link { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid var(--border); text-decoration: none; color: inherit; }
+    .dir-link .name { font-family: var(--font-serif); font-size: 1rem; font-weight: 700; }
+    .dir-link:hover .name { color: var(--nyt-accent); text-decoration: underline; }
+</style>

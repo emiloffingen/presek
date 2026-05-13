@@ -1,0 +1,67 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+import { WifiOff, BookOpen, Clock } from 'lucide-react';
+---
+
+<Layout title="Vrskata e izgubena — Presek" robots="noindex">
+    <NYTHeader />
+
+    <main class="site-layout broadsheet-layout py-[var(--page-py)] min-h-[60vh] flex flex-col items-center justify-center text-center">
+        <div class="offline-hero mb-12">
+            <div class="relative inline-block">
+                <WifiOff size={80} className="text-muted-foreground/20" strokeWidth={1} />
+                <div class="absolute inset-0 flex items-center justify-center animate-pulse">
+                     <WifiOff size={80} className="text-nyt-accent/40" strokeWidth={1} />
+                </div>
+            </div>
+        </div>
+
+        <h1 class="font-serif text-3xl md:text-5xl font-black mb-6 tracking-tight">Vrskata e prekinata</h1>
+        <p class="max-w-xl font-nyt-body text-xl text-secondary-foreground leading-relaxed mb-10">
+            Trenutno nemate aktivnu internet vezu. Ipak, možete da pristupite sadržaju koji vaš uređaj već ima sačuvano u svojoj memoriji.
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
+            <a href="/" class="offline-action-card">
+                <Clock size={24} className="text-nyt-accent" />
+                <div class="text-left">
+                    <h3 class="font-black text-xs uppercase tracking-widest mb-1">Otvori pocetna</h3>
+                    <p class="text-[11px] text-muted-foreground">Prikazi im posledno vcitanite vesti</p>
+                </div>
+            </a>
+            <a href="/briefing" class="offline-action-card">
+                <BookOpen size={24} className="text-nyt-accent" />
+                <div class="text-left">
+                    <h3 class="font-black text-xs uppercase tracking-widest mb-1">Dneven Brifing</h3>
+                    <p class="text-[11px] text-muted-foreground">Procitaj ga posledniot sublimat</p>
+                </div>
+            </a>
+        </div>
+
+        <button onclick="window.location.reload()" class="mt-12 px-8 py-3 bg-foreground text-background font-black uppercase text-[10px] tracking-[0.2em] hover:bg-nyt-accent transition-colors">
+            OBNOVI VRSKA
+        </button>
+    </main>
+
+    <Footer />
+</Layout>
+
+<style>
+    .offline-action-card {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        padding: 1.5rem;
+        border: 1px solid var(--border);
+        background: var(--card);
+        transition: all 0.2s ease;
+    }
+
+    .offline-action-card:hover {
+        border-color: var(--nyt-accent);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    }
+</style>

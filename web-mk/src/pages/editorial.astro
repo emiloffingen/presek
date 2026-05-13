@@ -1,0 +1,119 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+---
+
+<Layout 
+    title="Urednicki Standardi — Presek"
+    description="Doznajte kako Presek im grupira vestite i kako raboti nasata metodologija."
+>
+    <NYTHeader />
+    <main class="site-layout broadsheet-layout py-[var(--page-py)]">
+        <header class="editorial-masthead mb-12">
+            <div class="masthead-top">
+                <span class="masthead-kicker">TRANSPARENTNOST & METODOLOGIJA</span>
+            </div>
+            <div class="masthead-main">
+                <h1 class="masthead-title">Urednicki <span>Standardi</span></h1>
+            </div>
+            <p class="masthead-intro">
+                Presek e tehnoloska platforma koja koristi napredna jazicna obrabotka za da vnese red vo mediumskiot sum preku principi na neutralnost i transparentnost.
+            </p>
+        </header>
+
+        <div class="broadsheet-grid">
+            <div class="broadsheet-main">
+                <article class="prose-editorial">
+                    <h2 class="section-title-italic">1. Evolucija na narativite</h2>
+                    <p class="first-paragraph">
+                        Sistem kontinuirano nadgleda informativnu aktivnost na preko 60 srpskih i međunarodnih redakcija. Koristeći algoritme vektorske semantike, Presek identifikuje tematske niti i organizuje ih u koherente hronološke prikaze — dugoročni narativi koji omogućavaju praćenje jednog događaja kroz njegov ceo razvojni ciklus.
+                    </p>
+                    <p>
+                        Ovaj pristup ne samo što grupise vesti, već i mapira pluralizam mišljenja, omogućavajući čitaocu da prepozna različite uredničke akcente u realnom vremenu bez subjektivnog uticaja.
+                    </p>
+
+                    <div class="editorial-divider"></div>
+
+                    <h2 class="section-title-italic">2. Sinteza i Sistemska Analiza</h2>
+                    <p>
+                        Presek 5.48 koristi napredna sistemska sinteza za da generira „sublimat“ — seopfaten pregled koj im obedinuva faktite. Ovoj proces podlezi na strogi kontrolni mehanizmi (Quality Gates):
+                    </p>
+                    <ul class="editorial-list">
+                        <li><strong>Faktografska verifikacija:</strong> Integriran sistemski modul koj garantira deka sekoj navod e direktno potkrepen od originalnite izvorni clanci.</li>
+                        <li><strong>Mapiranje na pluralizam:</strong> Sistemot avtomatski identifikuva fakti koi odredeni izvori im izostavuvaat, a drugi im naglasuvaat, obezbeduvajci balans vo izvestaj.</li>
+                        <li><strong>Tonalna dekonstrukcija:</strong> Objektivna procenka na senzacionalizmot i tonot na izvestaj preku „Mediumski Puls“.</li>
+                    </ul>
+
+                    <div class="editorial-divider"></div>
+
+                    <h2 class="section-title-italic">3. Objektivna relevantnost</h2>
+                    <p>
+                        Rangiranje informacija je oslobođeno od subjektivnih uticaja. Naslovna stranica se formira putem algoritamske proračune medijskog intenziteta, brzine eskalacije i indeksa konsenzusa između različitih izvora.
+                    </p>
+                </article>
+            </div>
+
+            <aside class="broadsheet-rail">
+                <section class="rail-block rail-block-alt">
+                    <p class="rail-kicker">Fokus</p>
+                    <h3 class="rail-title">AVTOMATIZACIJA</h3>
+                    <p class="rail-text">Celta na avtomatizacijata ne e da ga zameni novinarstvoto, tuku da ga napravi popregledno za korisnikot vo era na informativno preoptovaruvanje.</p>
+                </section>
+
+                <section class="rail-block">
+                    <p class="rail-kicker">Povrzano</p>
+                    <div class="rail-directory">
+                        <a href="/about" class="dir-link"><span class="name">Za proektot</span></a>
+                        <a href="/privacy" class="dir-link"><span class="name">Privatnost</span></a>
+                        <a href="/contact" class="dir-link"><span class="name">Kontakt</span></a>
+                    </div>
+                </section>
+            </aside>
+        </div>
+    </main>
+
+    <Footer />
+</Layout>
+
+<style>
+    /* ── Masthead ────────────────────────────────────── */
+    .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 2rem; margin-bottom: 3rem; }
+    .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
+    .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; margin: 1.5rem 0; letter-spacing: -0.02em; }
+    .masthead-title span { font-weight: 400; font-style: italic; }
+    .masthead-intro { font-family: var(--font-nyt-body); font-size: 1.15rem; line-height: 1.6; color: var(--secondary-foreground); max-width: 42rem; }
+
+    /* ── Broadstreet Layout ───────────────────────────── */
+    .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
+    @media (min-width: 1024px) {
+        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; }
+        .broadsheet-main { border-right: 1px solid var(--border); padding-right: 3rem; }
+        .broadsheet-rail { position: sticky; top: 8rem; align-self: start; }
+    }
+
+    /* ── Prose ───────────────────────────────────────── */
+    .prose-editorial { font-family: var(--font-nyt-body); font-size: 1.1rem; line-height: 1.75; color: var(--secondary-foreground); }
+    .first-paragraph::first-letter { float: left; font-family: var(--font-serif); font-size: 5rem; font-weight: 900; line-height: 0.8; padding-top: 0.5rem; padding-right: 0.75rem; color: var(--foreground); }
+    .prose-editorial p { margin-bottom: 1.5rem; text-wrap: pretty; }
+    
+    .section-title-italic { font-family: var(--font-serif); font-size: 1.8rem; font-weight: 900; font-style: italic; margin-bottom: 1.5rem; }
+    .editorial-divider { height: 1px; background: var(--border); margin: 3rem 0; }
+
+    .editorial-list { list-style: none; padding: 0; margin-bottom: 2rem; }
+    .editorial-list li { margin-bottom: 1rem; padding-left: 1.5rem; position: relative; }
+    .editorial-list li::before { content: "—"; position: absolute; left: 0; color: var(--nyt-accent); font-weight: 900; }
+
+    /* ── Rail ────────────────────────────────────────── */
+    .rail-block { margin-bottom: 2.5rem; }
+    .rail-block-alt { padding: 1.25rem; background: var(--secondary); border-radius: 4px; }
+    .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
+    .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+    .rail-text { font-family: var(--font-nyt-body); font-size: 0.9rem; line-height: 1.5; color: var(--secondary-foreground); }
+    
+    .rail-directory { display: flex; flex-direction: column; }
+    .dir-link { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid var(--border); text-decoration: none; color: inherit; }
+    .dir-link .name { font-family: var(--font-serif); font-size: 1rem; font-weight: 700; }
+    .dir-link:hover .name { color: var(--nyt-accent); text-decoration: underline; }
+</style>

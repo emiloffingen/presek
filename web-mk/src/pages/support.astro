@@ -1,0 +1,120 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import { Heart, Coffee, ShieldCheck, Cpu, Globe } from 'lucide-react';
+---
+
+<Layout 
+    title="Podržite Projekat — Presek" 
+    description="Presek je nezavisan servis za vesti. Pomozite nam da sačuvamo čistu informisanost."
+>
+    <NYTHeader />
+    <main class="site-layout broadsheet-layout py-[var(--page-py)]">
+        <header class="editorial-masthead mb-12">
+            <div class="masthead-top">
+                <span class="masthead-kicker">PODRŠKA & ZAJEDNICA</span>
+            </div>
+            <div class="masthead-main">
+                <h1 class="masthead-title">Podržite <span>Presek</span></h1>
+            </div>
+            <p class="masthead-intro">
+                Mi smo nezavisan projekat posvećen čistoj i objektivnoj informisanosti preko Tehnologije. Vaš doprinos direktno omogućava opstanak ovog servisa.
+            </p>
+        </header>
+
+        <div class="broadsheet-grid">
+            <div class="broadsheet-main">
+                <article class="prose-editorial">
+                    <p class="first-paragraph">
+                        Presek raboti bez pretplati i bez agresivni reklami. Za da platformata ostane besplatna, brza i postojano dostapna za site gradjani, se potpirame na zaednicata koja me koristi i me vrednuva nasata rabota.
+                    </p>
+
+                    <div class="support-pillars my-12">
+                        <div class="pillar">
+                            <Cpu size={24} className="text-nyt-accent" />
+                            <h3>SISTEMSKA OBRABOTKA</h3>
+                            <p>Odrzuvanje na napredniot sistem za avtonomna analiza i sinteza na iljadnici objavi dnevno.</p>
+                        </div>
+                        <div class="pillar">
+                            <Globe size={24} className="text-nyt-accent" />
+                            <h3>INFRASTRUKTURA</h3>
+                            <p>Odrzuvanje na brzi i sigurni serveri za momentalen pristap do informaciite.</p>
+                        </div>
+                        <div class="pillar">
+                            <ShieldCheck size={24} className="text-nyt-accent" />
+                            <h3>NEZAVISNOST</h3>
+                            <p>Zacuvuvanje na urednickata neutralnost i otpornost na nadvoresni pritisoci.</p>
+                        </div>
+                    </div>
+
+                    <div class="support-box">
+                        <div class="support-box-content">
+                            <Coffee size={40} className="text-[#ff5e5b] mb-6" />
+                            <h2 class="font-serif text-3xl font-black mb-4">Stani poddrzuvac</h2>
+                            <p class="text-lg opacity-80 mb-10">Svaki doprinos je važan. Podržite nas jednokratnim „kafom“ putem Ko-fi platforme.</p>
+                            
+                            <a href="https://ko-fi.com/presek" target="_blank" rel="noopener noreferrer" class="support-cta">
+                                <img src="https://ko-fi.com/img/cup-border.png" alt="" class="h-6" />
+                                <span>CESTI KAFE NA KO-FI</span>
+                            </a>
+                        </div>
+                    </div>
+                </article>
+            </div>
+
+            <aside class="broadsheet-rail">
+                <section class="rail-block rail-block-alt">
+                    <p class="rail-kicker">Zosto sega?</p>
+                    <h3 class="rail-title">MISIJA</h3>
+                    <p class="rail-text">Digitalniot javen prostor ima potreba od alatki koi vnesuvaat red, a ne haos. Presek e nasiot pridones kon taa cel.</p>
+                </section>
+
+                <div class="rail-meta-box">
+                    <p class="text-[10px] font-black uppercase tracking-widest mb-4 opacity-50">BEZBEDNOST</p>
+                    <p class="text-xs leading-relaxed">Donaciite se obrabotuvaat preku Ko-fi (Stripe/PayPal) i se 100% nameneti za razvoj i odrzuvanje na Presek.rs.</p>
+                </div>
+            </aside>
+        </div>
+    </main>
+    <Footer />
+</Layout>
+
+<style>
+    /* ── Masthead ────────────────────────────────────── */
+    .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 2rem; margin-bottom: 3rem; }
+    .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
+    .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; margin: 1.5rem 0; letter-spacing: -0.02em; }
+    .masthead-title span { font-weight: 400; font-style: italic; }
+    .masthead-intro { font-family: var(--font-nyt-body); font-size: 1.15rem; line-height: 1.6; color: var(--secondary-foreground); max-width: 42rem; }
+
+    /* ── Broadstreet Layout ───────────────────────────── */
+    .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
+    @media (min-width: 1024px) {
+        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; }
+        .broadsheet-main { border-right: 1px solid var(--border); padding-right: 3rem; }
+        .broadsheet-rail { position: sticky; top: 8rem; align-self: start; }
+    }
+
+    /* ── Prose & Content ─────────────────────────────── */
+    .prose-editorial { font-family: var(--font-nyt-body); font-size: 1.1rem; line-height: 1.75; color: var(--secondary-foreground); }
+    .first-paragraph::first-letter { float: left; font-family: var(--font-serif); font-size: 5rem; font-weight: 900; line-height: 0.8; padding-top: 0.5rem; padding-right: 0.75rem; color: var(--foreground); }
+    
+    .support-pillars { display: grid; grid-template-columns: 1fr; gap: 2rem; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 3rem 0; }
+    @media (min-width: 640px) { .support-pillars { grid-template-columns: repeat(3, 1fr); } }
+    .pillar h3 { font-family: var(--font-sans); font-size: 0.7rem; font-weight: 950; letter-spacing: 0.1em; margin: 1rem 0 0.5rem; color: var(--foreground); }
+    .pillar p { font-size: 0.85rem; line-height: 1.5; margin: 0; }
+
+    .support-box { padding: 4rem 2rem; border: 1px solid var(--border); background: var(--secondary); text-align: center; }
+    .support-cta { display: inline-flex; align-items: center; gap: 0.75rem; padding: 1.25rem 2.5rem; background: #ff5e5b; color: white; font-family: var(--font-sans); font-size: 0.85rem; font-weight: 950; letter-spacing: 0.1em; text-decoration: none; border-radius: 4px; transition: transform 0.2s, background 0.2s; }
+    .support-cta:hover { transform: scale(1.02); background: #e54b48; }
+
+    /* ── Rail ────────────────────────────────────────── */
+    .rail-block { margin-bottom: 2.5rem; }
+    .rail-block-alt { padding: 1.25rem; background: var(--secondary); border-radius: 4px; }
+    .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
+    .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+    .rail-text { font-family: var(--font-nyt-body); font-size: 0.9rem; line-height: 1.5; color: var(--secondary-foreground); }
+    .rail-meta-box { padding: 1.5rem; border: 1px solid var(--border); }
+</style>

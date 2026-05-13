@@ -1,0 +1,146 @@
+---
+interface Props {
+    mode?: 'full' | 'emblem' | 'logo';
+    class?: string;
+}
+
+const { mode = 'full', class: className } = Astro.props;
+---
+
+<div class:list={["presek-branding", mode, className]}>
+    {(mode === 'full' || mode === 'emblem') && (
+        <div class="emblem-container">
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" class="presek-emblem-svg">
+                <rect x="4" y="4" width="92" height="92" stroke="currentColor" stroke-width="8" fill="none" />
+                <path d="M50 4 L50 96" stroke="currentColor" stroke-width="1.5" opacity="0.15" />
+                <path d="M4 50 L96 50" stroke="currentColor" stroke-width="1.5" opacity="0.15" />
+                <rect x="26" y="26" width="48" height="48" fill="var(--nyt-accent)" class="accent-block" />
+                <text x="50" y="70" font-family="var(--font-serif)" font-weight="950" font-size="58" text-anchor="middle" fill="white" style="letter-spacing: -0.02em;">P</text>
+            </svg>
+            <div class="pulse-ring"></div>
+        </div>
+    )}
+
+    {(mode === 'full' || mode === 'logo') && (
+        <div class="logo-text-group">
+            <svg viewBox="0 0 600 115" fill="none" xmlns="http://www.w3.org/2000/svg" class="presek-logo-svg">
+                <text x="0" y="72" font-family="var(--font-serif)" font-weight="950" font-size="94" letter-spacing="-3" fill="currentColor">PRESEK</text>
+                <text x="375" y="72" font-family="var(--font-serif)" font-weight="300" font-size="94" letter-spacing="-3" fill="var(--nyt-accent)" font-style="italic">.rs</text>
+                {/* Modern Editorial Double-Rule */}
+                <rect x="0" y="96" width="600" height="4.5" fill="currentColor" />
+                <rect x="0" y="106" width="450" height="1.2" fill="currentColor" opacity="0.5" />
+            </svg>
+            <span class="logo-sublabel">DIGITALEN AGREGATOR NA vesti ZA SINTEZA</span>
+        </div>
+    )}
+</div>
+
+<style>
+    .presek-branding {
+        display: flex;
+        align-items: center;
+        gap: 1.2rem;
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        color: var(--foreground);
+        min-width: 0;
+    }
+
+    .emblem-container { position: relative; display: flex; align-items: center; justify-content: center; }
+
+    .presek-emblem-svg {
+        position: relative;
+        z-index: 2;
+        width: 45px;
+        height: 45px;
+        filter: drop-shadow(0 4px 12px rgba(0,0,0,0.08));
+        transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .logo-text-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        min-width: 0;
+    }
+
+    .presek-logo-svg {
+        width: 220px;
+        height: 44px;
+    }
+
+    .logo-sublabel {
+        font-family: var(--font-sans);
+        font-size: 0.52rem;
+        font-weight: 950;
+        letter-spacing: 0.28em;
+        color: var(--muted-foreground);
+        text-transform: uppercase;
+        line-height: 1;
+        opacity: 0.8;
+    }
+
+    .accent-block {
+        transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* --- LIVE PULSE EFFECT --- */
+    .pulse-ring {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border: 2px solid var(--nyt-accent);
+        opacity: 0;
+        z-index: 1;
+        animation: logo-pulse 4s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+    }
+
+    @keyframes logo-pulse {
+        0% { transform: scale(0.8); opacity: 0; }
+        50% { opacity: 0.2; }
+        100% { transform: scale(1.8); opacity: 0; }
+    }
+
+    /* --- HOVER DYNAMICS --- */
+    .presek-branding:hover .presek-emblem-svg {
+        transform: scale(1.05);
+    }
+    
+    .presek-branding:hover .accent-block {
+        transform: rotate(90deg) scale(1.1);
+    }
+
+    .presek-branding:hover .logo-sublabel {
+        color: var(--nyt-accent);
+        opacity: 1;
+    }
+
+    /* --- DARK MODE ADJUSTMENTS --- */
+    :global(.dark) .presek-branding {
+        color: color-mix(in srgb, var(--foreground) 95%, white 5%);
+    }
+
+    /* --- SIZE VARIANTS --- */
+    .presek-branding.footer-logo-premium .presek-emblem-svg { width: 55px; height: 50px; }
+    .presek-branding.footer-logo-premium .logo-sublabel { font-size: 0.6rem; }
+
+    @media (max-width: 960px) {
+        .presek-branding { gap: 0.75rem; }
+        .presek-emblem-svg { width: 32px; height: 32px; }
+        .logo-sublabel { display: none; }
+        .presek-logo-svg { width: 140px; }
+    }
+
+    @media (max-width: 768px) {
+        .presek-branding { gap: 0.5rem; }
+        .presek-emblem-svg { width: 28px; height: 28px; }
+        .presek-logo-svg { width: 120px; }
+    }
+
+    @media (max-width: 480px) {
+        .presek-branding { gap: 0.4rem; }
+        .presek-emblem-svg { width: 24px; height: 24px; }
+        .presek-logo-svg { width: 100px; }
+        .presek-branding.footer-logo-premium .presek-emblem-svg { width: 40px; height: 36px; }
+        .presek-branding.footer-logo-premium .presek-logo-svg { width: 160px; }
+    }
+</style>

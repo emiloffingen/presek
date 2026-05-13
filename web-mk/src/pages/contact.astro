@@ -1,0 +1,95 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import { Mail, MessageSquare, Info } from 'lucide-react';
+---
+
+<Layout 
+    title="Kontakt — Presek" 
+    description="Kontaktirajte tim Presek za saradnju, predloge ili tehničku podršku."
+>
+    <NYTHeader />
+    <main class="site-layout broadsheet-layout py-[var(--page-py)]">
+        <header class="editorial-masthead mb-12">
+            <div class="masthead-top">
+                <span class="masthead-kicker">KORESPONDENCIJA & PODDRSKA</span>
+            </div>
+            <div class="masthead-main">
+                <h1 class="masthead-title">Kontakt <span>Informacije</span></h1>
+            </div>
+            <p class="masthead-intro">
+                Otvoreni smo za vaše predloge, pitanja i nove ideje za saradnju. Komunikacija sa našim čitaocima i partnerima je ključna za razvoj platforme.
+            </p>
+        </header>
+
+        <div class="broadsheet-grid">
+            <div class="broadsheet-main">
+                <article class="prose-editorial">
+                    <p class="first-paragraph">
+                        Presek 5.48 je dinamičan projekat u stalnoj evoluciji. Vaša saradnja je ključna da bismo unapredili naše sisteme za obradu, da oštrimo uredničku sintezu i da učini korisničko iskustvo još transparentnijim i korisnijim za javnost.
+                    </p>
+
+                    <div class="contact-channels space-y-8 my-10">
+                        <div class="channel-item p-8 border border-border bg-secondary/10">
+                            <h3 class="font-serif text-2xl font-black mb-4">Redakciska korespondencija</h3>
+                            <p class="mb-6">Za sva opšta pitanja, medijske zahteve ili institucionalnu saradnju, kontaktirajte nas putem naše zvanične adrese:</p>
+                            <a href="mailto:contact@presek.live" class="text-2xl font-black text-nyt-accent underline">contact@presek.live</a>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="channel-item p-6 border border-border">
+                                <h4 class="font-sans font-black text-[10px] uppercase tracking-widest mb-3">Saradnja sa medijima</h4>
+                                <p class="text-sm leading-relaxed">Ako vaša redakcija želi da bude deo našeg sistema za mapiranje pluralizma, molimo vas da pošaljete informacije o vašim zvaničnim kanalima za distribuciju.</p>
+                            </div>
+                            <div class="channel-item p-6 border border-border">
+                                <h4 class="font-sans font-black text-[10px] uppercase tracking-widest mb-3">Operativne napomene</h4>
+                                <p class="text-sm leading-relaxed">Zabeležili ste tehnički propust ili netačnost u sistemskom grupisanju? Pošaljite nam detaljan opis za bržu korekciju od strane našeg tima.</p>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </div>
+
+            <aside class="broadsheet-rail">
+                <section class="rail-block rail-block-alt">
+                    <p class="rail-kicker">odgovor</p>
+                    <h3 class="rail-title">VREMENSKA RAMKA</h3>
+                    <p class="rail-text">Nastojuvame da odgovorime na site legitimni baranja vo rok od 24 do 48 casa.</p>
+                </section>
+
+                <div class="rail-meta-box">
+                    <p class="text-[10px] font-black uppercase tracking-widest mb-4 opacity-50">KOMUNIKACIJA</p>
+                    <p class="text-xs leading-relaxed italic">Presek.rs im ceni konstruktivnite kritiki i sugestii od zaednicata.</p>
+                </div>
+            </aside>
+        </div>
+    </main>
+    <Footer />
+</Layout>
+
+<style>
+    .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 2rem; margin-bottom: 3rem; }
+    .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
+    .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; margin: 1.5rem 0; letter-spacing: -0.02em; }
+    .masthead-title span { font-weight: 400; font-style: italic; }
+    .masthead-intro { font-family: var(--font-nyt-body); font-size: 1.15rem; line-height: 1.6; color: var(--secondary-foreground); max-width: 42rem; }
+
+    .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
+    @media (min-width: 1024px) {
+        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; }
+        .broadsheet-main { border-right: 1px solid var(--border); padding-right: 3rem; }
+        .broadsheet-rail { position: sticky; top: 8rem; align-self: start; }
+    }
+
+    .prose-editorial { font-family: var(--font-nyt-body); font-size: 1.1rem; line-height: 1.75; color: var(--secondary-foreground); }
+    .first-paragraph::first-letter { float: left; font-family: var(--font-serif); font-size: 5rem; font-weight: 900; line-height: 0.8; padding-top: 0.5rem; padding-right: 0.75rem; color: var(--foreground); }
+
+    .rail-block { margin-bottom: 2.5rem; }
+    .rail-block-alt { padding: 1.25rem; background: var(--secondary); border-radius: 4px; }
+    .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
+    .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+    .rail-text { font-family: var(--font-nyt-body); font-size: 0.9rem; line-height: 1.5; color: var(--secondary-foreground); }
+    .rail-meta-box { padding: 1.5rem; border: 1px solid var(--border); }
+</style>

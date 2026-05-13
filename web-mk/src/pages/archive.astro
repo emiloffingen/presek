@@ -1,0 +1,310 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+import NewsCard from '../components/NewsCard.astro';
+import ArchiveFeedIsland from '../components/ArchiveFeedIsland.tsx';
+import ArchiveHeatmapIsland from '../components/ArchiveHeatmapIsland.tsx';
+
+import { apiBaseUrl } from '../lib/apiBase';
+import { sanitizeHtml } from '../lib/sanitize';
+import { CalendarDays, ChevronRight, Hash, Building2, Sparkles, Search, Activity } from 'lucide-react';
+
+const date = Astro.url.searchParams.get('date') || new Date().toISOString().split('T')[0];
+const q = Astro.url.searchParams.get('q') || '';
+const source = Astro.url.searchParams.get('source') || '';
+const topic = Astro.url.searchParams.get('topic') || '';
+const page = Math.max(0, Number.parseInt(Astro.url.searchParams.get('page') || '0', 10) || 0);
+const API_URL = apiBaseUrl();
+
+let archive = { clusters: [], total: 0, sources: 0, date, page, page_size: 50, has_more: false, total_clusters: 0, top_sources: [], top_topics: [] };
+let briefingData = { briefing: null };
+let onThisDay = { on_this_day: null };
+let error = null;
+
+try {
+  const archiveUrl = new URL(`${API_URL}/archive`);
+  archiveUrl.searchParams.set('date', date);
+  archiveUrl.searchParams.set('lang', 'sr');
+  archiveUrl.searchParams.set('page', String(page));
+  archiveUrl.searchParams.set('page_size', '50');
+  if (q) archiveUrl.searchParams.set('q', q);
+  if (source) archiveUrl.searchParams.set('source', source);
+  if (topic) archiveUrl.searchParams.set('topic', topic);
+  
+  const [res, briefRes, otdRes] = await Promise.all([
+    fetch(archiveUrl),
+    fetch(`${API_URL}/archive/daily-briefing?date=${date}&lang=mk`),
+    fetch(`${API_URL}/archive/on-this-day?date=${date}&lang=mk`)
+  ]);
+
+  if (res.ok) archive = await res.json();
+  if (briefRes.ok) briefingData = await briefRes.json();
+  if (otdRes.ok) onThisDay = await otdRes.json();
+
+  if (!res.ok) {
+    error = 'Arhiva trenutno nije dostupna.';
+    Astro.response.status = 500;
+  }
+} catch (err) {
+  error = 'Greška pri učitavanju arhive.';
+  Astro.response.status = 500;
+}
+
+const buildFilterHref = (kind: 'source' | 'topic' | 'q', value: string) => {
+  const params = new URLSearchParams({ date });
+  if (kind === 'source') { if (value) params.set('source', value); if (topic) params.set('topic', topic); if (q) params.set('q', q); }
+  else if (kind === 'topic') { if (source) params.set('source', source); if (value) params.set('topic', value); if (q) params.set('q', q); }
+  else { if (source) params.set('source', source); if (topic) params.set('topic', topic); if (value) params.set('q', value); }
+  return `/archive?${params.toString()}`;
+};
+
+const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-RS', { day: 'numeric', month: 'long', year: 'numeric' });
+
+// More robust splitting to handle different bullet characters or spacing
+const briefingItems = briefingData.briefing ? briefingData.briefing.split(/\s*[•·]\s*/) : [];
+
+function formatBriefingItem(item: string) {
+    if (!item) return '';
+    // 1. First, handle markdown bolding
+    const bolded = item.replace(/\*\*(.*?)\*\*/g, '<strong class="font-black text-foreground not-italic">$1</strong>');
+    // 2. Sanitize resulting HTML (allows strong, b, etc.)
+    return sanitizeHtml(bolded);
+}
+---
+
+<Layout title="Arhiva — Presek" description="Prebaruvajte niz istorijata na makedonskite mediumi.">
+  <NYTHeader />
+  
+  <main class="site-layout broadsheet-layout pt-32 pb-[var(--page-py)]">
+    <header class="editorial-masthead mb-16 border-t border-foreground pt-4">
+        <div class="masthead-top mb-8 flex justify-between items-center">
+            <span class="masthead-kicker font-sans text-[10px] font-black uppercase tracking-[0.25em] text-nyt-accent">MEDIUMSKA MEMORIJA</span>
+            <div class="masthead-meta-compact hidden md:flex items-center gap-6 font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
+                <span class="flex items-center gap-2"><CalendarDays size={12} /> {formattedDisplayDate}</span>
+                <span class="w-1 h-1 rounded-full bg-border"></span>
+                <span>{archive.total_clusters} temi</span>
+                <span class="w-1 h-1 rounded-full bg-border"></span>
+                <span>{archive.sources} mediumi</span>
+            </div>
+        </div>
+
+        <div class="masthead-main flex flex-col md:flex-row justify-between items-start md:items-end gap-12 mb-12">
+            <div class="max-w-3xl">
+                <h1 class="masthead-title font-serif text-5xl md:text-7xl font-black leading-[0.9] tracking-tighter mb-4">Arhiva na <span class="text-nyt-accent italic font-light">Izdanija</span></h1>
+                <p class="font-serif text-xl italic text-muted-foreground leading-snug max-w-2xl">Pregled na mediumskiot ciklus i istoriskiot narativ niz konsolidiranite izvestai na Presek.</p>
+            </div>
+            <div class="masthead-data-deck grid grid-cols-3 gap-0 border border-border/60 bg-secondary/10 overflow-hidden rounded-sm w-full md:w-auto min-w-[320px]">
+                <div class="deck-stat p-6 border-r border-border/60 text-center">
+                    <span class="block text-2xl font-black tabular-nums">{archive.total.toLocaleString('mk-RS')}</span>
+                    <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Objavi</span>
+                </div>
+                <div class="deck-stat p-6 border-r border-border/60 text-center">
+                    <span class="block text-2xl font-black tabular-nums">{archive.sources}</span>
+                    <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Redakcije</span>
+                </div>
+                <div class="deck-stat p-6 bg-nyt-accent/5 text-center">
+                    <span class="block text-2xl font-black tabular-nums text-nyt-accent">{archive.total_clusters}</span>
+                    <span class="text-[9px] font-black uppercase tracking-widest text-nyt-accent/70">Temi</span>
+                </div>
+            </div>
+        </div>
+
+        {briefingItems.length > 0 && (
+            <div class="daily-briefing-highlight mb-16 p-8 bg-background border-l-4 border-nyt-accent shadow-editorial">
+                <div class="flex items-center gap-2 mb-6">
+                    <Sparkles size={14} className="text-nyt-accent" />
+                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent">KRATOK BRIFING ZA DENOT</span>
+                </div>
+                <ul class="space-y-4">
+                    {briefingItems.map(item => (
+                        <li class="font-nyt-body text-lg md:text-xl leading-relaxed italic text-foreground/80 relative pl-6">
+                            <span class="absolute left-0 top-3 w-1.5 h-1.5 rounded-full bg-nyt-accent/40"></span>
+                            <span set:html={formatBriefingItem(item)}></span>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+        )}
+
+        <div class="archive-nav-bar sticky top-[72px] z-30 bg-background/80 backdrop-blur-xl border-y border-border py-4 mb-16">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                <div class="flex items-center gap-4 flex-wrap">
+                    <form method="get" class="date-select-form">
+                        <div class="relative group">
+                            <input 
+                                type="date" 
+                                name="date" 
+                                value={date} 
+                                onchange="this.form.submit()" 
+                                class="bg-secondary/40 border border-border px-4 py-2 rounded font-sans text-xs font-black uppercase tracking-widest outline-none focus:border-nyt-accent transition-all cursor-pointer"
+                            />
+                            <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none opacity-40 group-hover:opacity-100 transition-opacity">
+                                <CalendarDays size={14} />
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="flex items-center gap-1">
+                        <a 
+                            href={`/archive?date=${new Date(new Date(date).getTime() - 86400000).toISOString().split('T')[0]}`} 
+                            class="px-4 py-2 bg-secondary/50 border border-border/60 rounded font-sans text-[10px] font-black uppercase tracking-widest hover:bg-foreground hover:text-background transition-all"
+                        >
+                            ← PRETHODEN
+                        </a>
+                        {new Date(date) < new Date(new Date().toISOString().split('T')[0]) && (
+                            <a 
+                                href={`/archive?date=${new Date(new Date(date).getTime() + 86400000).toISOString().split('T')[0]}`} 
+                                class="px-4 py-2 bg-secondary/50 border border-border/60 rounded font-sans text-[10px] font-black uppercase tracking-widest hover:bg-foreground hover:text-background transition-all"
+                            >
+                                SLEDEN →
+                            </a>
+                        )}
+                    </div>
+                </div>
+
+                <form method="get" class="w-full md:w-80">
+                    <input type="hidden" name="date" value={date} />
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            name="q" 
+                            value={q} 
+                            placeholder="Prebaraj vo ovoj den..." 
+                            class="w-full bg-secondary/20 border-b-2 border-border py-2 pl-2 pr-10 font-serif font-bold text-lg outline-none focus:border-nyt-accent placeholder:italic placeholder:font-normal placeholder:opacity-40 transition-all"
+                        />
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none opacity-40">
+                            <Search size={18} />
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <details class="archive-pulse-toggle mb-20 group border border-border rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md">
+        <summary class="list-none p-6 bg-secondary/5 cursor-pointer flex justify-between items-center group-open:bg-secondary/10">
+            <div class="flex items-center gap-4">
+                <div class="p-2 bg-nyt-accent/10 rounded-lg text-nyt-accent">
+                    <Activity size={18} />
+                </div>
+                <div>
+                    <span class="block font-sans text-[11px] font-black uppercase tracking-widest">Mediumski Puls</span>
+                    <span class="text-xs text-muted-foreground">Intenzitet na izvestuvanje i tematski ciklusi</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 font-sans text-[10px] font-black uppercase tracking-widest text-nyt-accent">
+                <span class="group-open:hidden">OTVORI PREGLED ↓</span>
+                <span class="hidden group-open:inline">ZATVORI PREGLED ↑</span>
+            </div>
+        </summary>
+        <div class="p-8 border-t border-border bg-white dark:bg-zinc-950/50">
+            <ArchiveHeatmapIsland client:visible selectedDate={date} />
+        </div>
+    </details>
+
+    <div class="broadsheet-grid">
+        <section class="broadsheet-main pr-12 border-r border-border/40">
+            {q || source || topic ? (
+                <div class="active-filters mb-12 flex items-center gap-4 p-4 bg-nyt-accent/[0.03] border border-nyt-accent/10 rounded-lg">
+                    <span class="font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground">AKTIVEN FILTER:</span>
+                    <div class="flex flex-wrap gap-2">
+                        {q && <span class="px-3 py-1 bg-foreground text-background rounded-full font-sans text-[10px] font-black uppercase tracking-widest flex items-center gap-2">🔍 {q} <a href={buildFilterHref('q', '')} class="ml-1 opacity-60 hover:opacity-100">×</a></span>}
+                        {source && <span class="px-3 py-1 bg-foreground text-background rounded-full font-sans text-[10px] font-black uppercase tracking-widest flex items-center gap-2">🏢 {source} <a href={buildFilterHref('source', '')} class="ml-1 opacity-60 hover:opacity-100">×</a></span>}
+                        {topic && <span class="px-3 py-1 bg-foreground text-background rounded-full font-sans text-[10px] font-black uppercase tracking-widest flex items-center gap-2"># {topic} <a href={buildFilterHref('topic', '')} class="ml-1 opacity-60 hover:opacity-100">×</a></span>}
+                    </div>
+                    <a href={`/archive?date=${date}`} class="ml-auto font-sans text-[10px] font-black uppercase tracking-widest text-nyt-accent underline decoration-2 underline-offset-4">ISCISTI jos</a>
+                </div>
+            ) : null}
+
+            <div class="archive-feed-wrapper">
+                {error ? (
+                    <div class="py-24 text-center border-2 border-dashed border-border rounded-2xl">
+                        <p class="font-serif text-2xl italic text-muted-foreground">{error}</p>
+                    </div>
+                ) : archive.clusters.length > 0 ? (
+                    <ArchiveFeedIsland client:visible initialClusters={archive.clusters} initialHasMore={archive.has_more} pageSize={archive.page_size || 50} date={date} q={q} source={source} topic={topic} />
+                ) : (
+                    <div class="py-32 text-center border-2 border-dashed border-border rounded-2xl">
+                        <h2 class="font-serif text-3xl font-black italic mb-4">Nema pronajdeni izdanija.</h2>
+                        <p class="font-nyt-body text-muted-foreground">Probajte so drug datum ili prilagodete im filtrite za prebaruvanje.</p>
+                        <a href="/archive" class="mt-8 inline-block px-8 py-3 bg-foreground text-background font-sans text-[10px] font-black uppercase tracking-widest hover:bg-nyt-accent transition-all">Vrati se danas</a>
+                    </div>
+                )}
+            </div>
+        </section>
+
+        <aside class="broadsheet-rail pl-4">
+            <div class="rail-nav-block mb-12">
+                <a href="/archive" class="group flex items-center justify-between p-4 bg-foreground text-background rounded-sm transition-all hover:bg-nyt-accent shadow-lg shadow-black/5 hover:-translate-y-1">
+                    <span class="font-sans text-[11px] font-black uppercase tracking-widest">VRATI SE danas</span>
+                    <ChevronRight size={16} />
+                </a>
+            </div>
+
+            {onThisDay && onThisDay.cluster_id && (
+                <div class="rail-module mb-12 p-6 bg-secondary/10 border border-border/40 rounded-xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10">
+                        <CalendarDays size={64} />
+                    </div>
+                    <span class="block font-sans text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent mb-4">NA OVOJ DEN</span>
+                    <h3 class="font-serif text-2xl font-black leading-tight mb-4 tracking-tight">PRED {onThisDay.years_ago} {onThisDay.years_ago === 1 ? 'GODINA' : 'GODINI'}</h3>
+                    <div class="otd-content group">
+                        {onThisDay.image && (
+                            <div class="mb-4 overflow-hidden rounded-lg shadow-sm">
+                                <img src={onThisDay.image} alt="" class="w-full aspect-video object-cover transition-transform group-hover:scale-105 duration-700" />
+                            </div>
+                        )}
+                        <a href={`/cluster/${onThisDay.cluster_id}`} class="block group">
+                            <h4 class="font-serif font-black text-lg leading-tight group-hover:text-nyt-accent transition-colors mb-3">{onThisDay.title}</h4>
+                        </a>
+                        <p class="font-nyt-body text-sm leading-relaxed text-muted-foreground line-clamp-4 italic">"{onThisDay.summary}"</p>
+                    </div>
+                </div>
+            )}
+
+            <div class="rail-directory-module mb-12">
+                <h3 class="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-foreground mb-6 pb-2 border-b-2 border-foreground">TEMI VO FOKUS</h3>
+                <div class="flex flex-col gap-1">
+                    {archive.top_topics?.slice(0, 15).map((item: any) => (
+                        <a href={buildFilterHref('topic', item.topic)} class="group flex items-center justify-between py-2 border-b border-border/40 hover:bg-secondary/20 transition-all px-1">
+                            <span class="font-serif font-bold text-base group-hover:text-nyt-accent transition-colors">{item.topic}</span>
+                            <span class="font-sans text-[10px] font-black text-muted-foreground bg-secondary/50 px-1.5 py-0.5 rounded">{item.n}</span>
+                        </a>
+                    ))}
+                </div>
+            </div>
+
+            <div class="rail-directory-module">
+                <h3 class="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-foreground mb-6 pb-2 border-b-2 border-foreground">VODECKI KANALI</h3>
+                <div class="flex flex-col gap-1">
+                    {archive.top_sources?.slice(0, 15).map((item: any) => (
+                        <a href={buildFilterHref('source', item.source)} class="group flex items-center justify-between py-2 border-b border-border/40 hover:bg-secondary/20 transition-all px-1">
+                            <span class="font-serif font-bold text-base group-hover:text-nyt-accent transition-colors flex items-center gap-2">
+                                <Building2 size={12} className="opacity-30 group-hover:opacity-100 transition-opacity" />
+                                {item.source}
+                            </span>
+                            <span class="font-sans text-[10px] font-black text-muted-foreground bg-secondary/50 px-1.5 py-0.5 rounded">{item.n}</span>
+                        </a>
+                    ))}
+                </div>
+            </div>
+        </aside>
+    </div>
+  </main>
+
+  <Footer />
+</Layout>
+
+<style>
+    /* Clean up legacy styles, keeping only layout-critical ones */
+    .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
+    @media (min-width: 1024px) {
+        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 320px; }
+        .broadsheet-rail { position: sticky; top: 8rem; align-self: start; }
+    }
+    
+    /* Custom scrollbar for heatmaps */
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+</style>

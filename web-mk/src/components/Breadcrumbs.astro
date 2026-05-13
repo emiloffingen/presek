@@ -1,0 +1,60 @@
+---
+import { ChevronRight, Home } from 'lucide-react';
+
+interface Crumb {
+  label: string;
+  href?: string;
+}
+
+interface Props {
+  items: Crumb[];
+}
+
+const { items } = Astro.props;
+
+// For SEO schema
+const siteUrl = (Astro.site?.origin || import.meta.env.PUBLIC_SITE_URL || "https://presek.live").replace(/\/+$/, "");
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": items.map((item, index) => ({
+    "@type": "ListItem",
+    "position": index + 1,
+    "name": item.label,
+    "item": item.href ? (item.href.startsWith('http') ? item.href : `${siteUrl}${item.href}`) : undefined
+  }))
+};
+---
+
+<nav class="breadcrumb-container" aria-label="Breadcrumb">
+  <ol class="flex items-center flex-wrap gap-2 text-[11px] font-sans font-bold uppercase tracking-widest text-muted-foreground">
+    <li class="flex items-center">
+      <a href="/" class="hover:text-nyt-accent transition-colors flex items-center gap-1">
+        <Home size={12} />
+        <span>Pocetna</span>
+      </a>
+    </li>
+    
+    {items.map((item, index) => (
+      <li class="flex items-center gap-2">
+        <ChevronRight size={10} className="opacity-40" />
+        {item.href ? (
+          <a href={item.href} class="hover:text-nyt-accent transition-colors">
+            {item.label}
+          </a>
+        ) : (
+          <span class="text-foreground">{item.label}</span>
+        )}
+      </li>
+    ))}
+  </ol>
+
+  <script type="application/ld+json" is:inline set:html={JSON.stringify(breadcrumbSchema)} />
+</nav>
+
+<style>
+  .breadcrumb-container {
+    margin-bottom: 1.5rem;
+    padding: 0.5rem 0;
+  }
+</style>

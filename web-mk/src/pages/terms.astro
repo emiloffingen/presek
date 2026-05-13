@@ -1,0 +1,97 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import { Scale, FileText, AlertCircle } from 'lucide-react';
+---
+
+<Layout 
+    title="Uslovi za korišćenje — Presek" 
+    description="Pravni okviri za korišćenje platforme Presek.rs i zaštitu sadržaja."
+>
+    <NYTHeader />
+    <main class="site-layout broadsheet-layout py-[var(--page-py)]">
+        <header class="editorial-masthead mb-12">
+            <div class="masthead-top">
+                <span class="masthead-kicker">PRAVNO & REGULATIVA</span>
+            </div>
+            <div class="masthead-main">
+                <h1 class="masthead-title">Uslovi za <span>Koristenje</span></h1>
+            </div>
+            <p class="masthead-intro">
+                Uputstva za korišćenje našeg servisa i definisanje odgovornosti između platforme, izdavača i čitalaca.
+            </p>
+        </header>
+
+        <div class="broadsheet-grid">
+            <div class="broadsheet-main">
+                <article class="prose-editorial">
+                    <p class="first-paragraph">
+                        Presek je informativni agregator koji prikuplja javno dostupne sadržaje sa srpskih i međunarodnih medija. Korišćenjem naše platforme, vi se slažete sa uslovima ispod koji regulišu upotrebu automatski generisanih podataka i pristup spoljnim izvorima.
+                    </p>
+
+                    <h2 class="section-title-italic">1. Avtorski prava</h2>
+                    <p>
+                        Site novinarski tekstovi, fotografii i multimedijalni sodrzini prikazani na Presek se sopstvenost na nivnite originalni izdavaci. Presek prikazuva samo naslovi, kratki izvadoci i linkovi kon izvornite stranici. Dizajnot, kodot i avtomatski generiranite sublimati se sopstvenost na Presek.
+                    </p>
+
+                    <h2 class="section-title-italic">2. Avtomatizirani sodrzini</h2>
+                    <p>
+                        Sublimatite i analizite na Presek se generirani preku napredni algoritmi za jazicna obrabotka. Iako se stremime kon maksimalna tocnost, ovie sodrzini moze da sodrzat greski i ne pretstavuvaat urednicko mislenje na timot. Za verifikacija na faktite, sekogas koristete im originalnite izvori.
+                    </p>
+
+                    <h2 class="section-title-italic">3. Ogranicuvanja</h2>
+                    <p>
+                        Zabraneto e sekakvo avtomatsko prezemanje (scraping) na sodrzini od Presek bez prethodna dozvola. Platformata e nameneta za licna, nekomercijalna upotreba i za informiranje na posirokata javnost.
+                    </p>
+
+                    <h2 class="section-title-italic">4. Odgovornost</h2>
+                    <p>
+                        Presek ne snosi odgovornost za tocnosta na informaciite objaveni od treti strani (mediumi) nitu za eventualni steti nastanati od koristenje na avtomatskite analizi. Nasata uloga e cisto agregatorska i tehnoloska.
+                    </p>
+                </article>
+            </div>
+
+            <aside class="broadsheet-rail">
+                <section class="rail-block rail-block-alt">
+                    <p class="rail-kicker">Napomena</p>
+                    <h3 class="rail-title">PRAVEN STATUS</h3>
+                    <p class="rail-text">Presek ne e mediumski izdavac, tuku tehnoloska alatka za transparentnost i organizacija na podatoci.</p>
+                </section>
+
+                <div class="rail-meta-box">
+                    <p class="text-[10px] font-black uppercase tracking-widest mb-4 opacity-50">AZURIRANO</p>
+                    <p class="text-xs">Posledna izmena: 25 april, 2026</p>
+                </div>
+            </aside>
+        </div>
+    </main>
+    <Footer />
+</Layout>
+
+<style>
+    .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 2rem; margin-bottom: 3rem; }
+    .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
+    .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; margin: 1.5rem 0; letter-spacing: -0.02em; }
+    .masthead-title span { font-weight: 400; font-style: italic; }
+    .masthead-intro { font-family: var(--font-nyt-body); font-size: 1.15rem; line-height: 1.6; color: var(--secondary-foreground); max-width: 42rem; }
+
+    .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
+    @media (min-width: 1024px) {
+        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; }
+        .broadsheet-main { border-right: 1px solid var(--border); padding-right: 3rem; }
+        .broadsheet-rail { position: sticky; top: 8rem; align-self: start; }
+    }
+
+    .prose-editorial { font-family: var(--font-nyt-body); font-size: 1.1rem; line-height: 1.75; color: var(--secondary-foreground); }
+    .first-paragraph::first-letter { float: left; font-family: var(--font-serif); font-size: 5rem; font-weight: 900; line-height: 0.8; padding-top: 0.5rem; padding-right: 0.75rem; color: var(--foreground); }
+    .section-title-italic { font-family: var(--font-serif); font-size: 1.8rem; font-weight: 900; font-style: italic; margin-top: 3rem; margin-bottom: 1.5rem; color: var(--foreground); }
+
+    .rail-block { margin-bottom: 2.5rem; }
+    .rail-block-alt { padding: 1.25rem; background: var(--secondary); border-radius: 4px; }
+    .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
+    .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+    .rail-text { font-family: var(--font-nyt-body); font-size: 0.9rem; line-height: 1.5; color: var(--secondary-foreground); }
+    .rail-meta-box { padding: 1.5rem; border: 1px solid var(--border); }
+</style>

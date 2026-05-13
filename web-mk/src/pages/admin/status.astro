@@ -1,0 +1,57 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { apiBaseUrl } from '../../lib/apiBase';
+
+const API_URL = apiBaseUrl();
+let health: any = null;
+let error = '';
+
+try {
+  const response = await fetch(`${API_URL}/health`);
+  if (response.ok) {
+    health = await response.json();
+  } else {
+    error = `HTTP ${response.status}`;
+  }
+} catch (err) {
+  error = err instanceof Error ? err.message : 'Unknown error';
+}
+
+const services = [
+  ['API', health?.status || (error ? 'error' : 'unknown')],
+  ['Database', health?.database || health?.db || 'unknown'],
+  ['Redis', health?.redis || 'unknown'],
+  ['Version', health?.version || 'unknown'],
+];
+---
+
+<Layout title="Sostojba na sistemot" description="Administrativna sostojba na Presek" robots="noindex, nofollow">
+  <main class="min-h-screen bg-zinc-950 text-zinc-100 px-6 py-10">
+    <div class="mx-auto max-w-5xl">
+      <div class="mb-8 flex items-center justify-between gap-4">
+        <div>
+          <p class="text-xs font-mono uppercase tracking-widest text-zinc-500">Admin</p>
+          <h1 class="text-3xl font-black tracking-tight">Sostojba na sistemot</h1>
+        </div>
+        <a class="text-xs font-bold uppercase tracking-widest text-zinc-400 hover:text-white" href="/admin">Nazad</a>
+      </div>
+
+      {error && (
+        <div class="mb-6 border border-red-900 bg-red-950/40 p-4 text-sm text-red-100">
+          Health endpoint error: {error}
+        </div>
+      )}
+
+      <section class="grid gap-4 md:grid-cols-2">
+        {services.map(([label, value]) => (
+          <div class="border border-zinc-800 bg-zinc-900/50 p-5">
+            <p class="text-xs font-mono uppercase tracking-widest text-zinc-500">{label}</p>
+            <p class="mt-2 text-xl font-black">{String(value).toUpperCase()}</p>
+          </div>
+        ))}
+      </section>
+
+      <pre class="mt-8 overflow-x-auto border border-zinc-800 bg-black p-5 text-xs text-zinc-300">{JSON.stringify(health || { error }, null, 2)}</pre>
+    </div>
+  </main>
+</Layout>

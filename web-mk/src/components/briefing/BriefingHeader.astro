@@ -1,0 +1,74 @@
+---
+import { Timer, Activity } from 'lucide-react';
+
+interface Props {
+	currentDate: string;
+	dispatchIcon: any;
+	stats: any;
+	readingTime?: number;
+}
+
+const { currentDate, dispatchIcon: DispatchIcon, stats, readingTime = 5 } = Astro.props;
+---
+
+<header class="briefing-masthead motion-rise">
+	<div class="masthead-top pb-6 mb-8 border-b border-border/40">
+		<span class="masthead-kicker text-nyt-accent">UREDNIČKO IZDANJE</span>
+		<div class="masthead-meta">
+			<span class="meta-item"><Timer size={12} className="text-nyt-accent" /> {readingTime} MIN. ČITANJE</span>
+			<span class="meta-item"><Activity size={12} className="text-nyt-accent" /> VERZIJA 5.48</span>
+		</div>
+	</div>
+
+	<div class="masthead-main mb-12">
+		<div class="masthead-branding mb-6">
+			<div class="p-3 bg-nyt-accent/10 rounded-xl mb-4">
+                <DispatchIcon size={40} className="text-nyt-accent" fill="currentColor" />
+            </div>
+			<h1 class="masthead-title">Jutarnji <span class="text-nyt-accent italic font-light">Brifing</span></h1>
+		</div>
+		<div class="masthead-date-bar py-3 border-y-2 border-foreground">
+			<p class="font-serif font-black text-lg md:text-2xl uppercase tracking-tighter">{currentDate}</p>
+		</div>
+	</div>
+
+	<div class="masthead-standfirst mb-12">
+		<p class="font-serif text-xl md:text-3xl leading-snug text-foreground/80 italic text-balance">
+            "Vaš sistemski generisan dnevni pregled: sinteza najvažnijih srpskih i svetskih vesti kroz naprednu uredničku obradu."
+        </p>
+	</div>
+
+	<div class="masthead-deck grid grid-cols-3 gap-0 border border-border/60 rounded-sm bg-secondary/10 overflow-hidden">
+		<div class="deck-item flex flex-col items-center justify-center p-6 border-r border-border/60">
+            <span class="text-3xl font-black mb-1 tabular-nums">{stats?.total_feeds || 0}</span>
+            <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Redakcije</span>
+        </div>
+		<div class="deck-item flex flex-col items-center justify-center p-6 border-r border-border/60">
+            <span class="text-3xl font-black mb-1 tabular-nums">{stats?.last_24h || 0}</span>
+            <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Izveštaji</span>
+        </div>
+		<div class="deck-item flex flex-col items-center justify-center p-6 bg-nyt-accent/5">
+            <span class="text-3xl font-black mb-1 tabular-nums text-nyt-accent">{stats?.intelligence?.pluralism?.pluralism_pct || 0}%</span>
+            <span class="text-[10px] font-black uppercase tracking-widest text-nyt-accent/70">Raznovrsnost</span>
+        </div>
+	</div>
+</header>
+
+<style>
+    .briefing-masthead { margin-bottom: 4rem; }
+    .masthead-top { display: flex; justify-content: space-between; align-items: center; }
+    .masthead-kicker { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 950; letter-spacing: 0.25em; }
+    .masthead-meta { display: flex; gap: 2rem; }
+    .meta-item { display: flex; align-items: center; gap: 0.6rem; font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--muted-foreground); text-transform: uppercase; letter-spacing: 0.05em; }
+    .masthead-main { display: flex; flex-direction: column; align-items: center; text-align: center; }
+    .masthead-branding { display: flex; flex-direction: column; align-items: center; }
+    .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 8vw, 5.5rem); font-weight: 950; line-height: 0.85; letter-spacing: -0.04em; margin: 0; }
+    .masthead-date-bar { width: 100%; text-align: center; }
+    .masthead-standfirst { max-width: 900px; margin-left: auto; margin-right: auto; text-align: center; }
+
+    @media (max-width: 640px) {
+        .masthead-meta { display: none; }
+        .masthead-title { line-height: 0.9; }
+        .deck-item span:first-child { font-size: 1.5rem; }
+    }
+</style>
