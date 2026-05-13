@@ -55,7 +55,7 @@ function getSubredditName(cluster: NewsCluster): string {
     if (cluster.topics?.[0]) return `r/${cluster.topics[0].replace(/\s+/g, '_')}`;
     if (cluster.tags?.[0]) return `r/${cluster.tags[0].replace(/\s+/g, '_')}`;
     if (article.category) return `r/${article.category.replace(/\s+/g, '_')}`;
-    return 'r/PRESEK';
+    return 'r/ПРЕСЕК';
 }
 
 // Get flair based on cluster properties
@@ -103,7 +103,7 @@ const commentCount = Math.floor(sourceCount * 2.5); // Simulate comments
                     <span class="text-muted-foreground">•</span>
                 </>
             )}
-            <span class="reddit-username">Posted by u/PRESEK_BOT</span>
+            <span class="reddit-username">Објавено од u/ПРЕСЕК_БОТ</span>
             <span class="text-muted-foreground">•</span>
             <span class="reddit-post-time">{timeAgo}</span>
         </div>

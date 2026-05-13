@@ -964,6 +964,7 @@ async def ingest_all_sources_async():
                         description=c["desc"],
                         source=c["source"],
                         forced_category=forced,
+                        lang="mk" if c["country"] == "MK" else "sr",
                     )
                     or c["category"]
                 )

@@ -1,5 +1,5 @@
 ---
-/* Reddit-style homepage for presek.mk */
+/* Reddit-style homepage for пресек.мк */
 import RedditLayout from '../../layouts/RedditLayout.astro';
 import RedditPostCard from '../../components/reddit/RedditPostCard.astro';
 import { apiBaseUrl } from '@/lib/apiBase';
@@ -56,7 +56,7 @@ try {
     }
 } catch (err) {
     console.error('Error fetching data:', err);
-    error = 'Greška pri učitavanju podataka';
+    error = 'Грешка при вчитувањето на податоци';
 }
 
 // Filter clusters based on search params if present
@@ -82,19 +82,19 @@ if (q || category || topic || entity) {
 }
 
 function getPageTitle() {
-    if (q) return `Rezultati za: "${q}"`;
-    if (category) return `Kategorija: ${category}`;
-    if (topic) return `Tema: ${topic}`;
-    if (entity) return `Entitet: ${entity}`;
-    return 'Presek | Početna - Agregator vesti u Reddit stilu';
+    if (q) return `Резултати за: "${q}"`;
+    if (category) return `Категорија: ${category}`;
+    if (topic) return `Тема: ${topic}`;
+    if (entity) return `Субјект: ${entity}`;
+    return 'Пресек | Почетна - Агрегатор на вести во Reddit стил';
 }
 
 function getPageDescription() {
-    if (q) return `Pretražujte vesti o: ${q}`;
-    if (category) return `Sve vesti iz kategorije: ${category}`;
-    if (topic) return `Sve vesti o temi: ${topic}`;
-    if (entity) return `Sve vesti o entitetu: ${entity}`;
-    return 'Presek u Reddit stilu - Pregledajte vesti, glasajte i diskutujte o najnovijim događajima';
+    if (q) return `Пребарај вести за: ${q}`;
+    if (category) return `Сите вести од категоријата: ${category}`;
+    if (topic) return `Сите вести за темата: ${topic}`;
+    if (entity) return `Сите вести за субјектот: ${entity}`;
+    return 'Пресек во Reddit стил - Прегледајте вести, гласајте и дискутирајте за најновите настани';
 }
 
 const pageTitle = getPageTitle();
@@ -126,16 +126,16 @@ const pageDescription = getPageDescription();
     <!-- Feed Tabs -->
     <div class="flex gap-2 border-b border-[var(--border)] pb-2 mb-4">
         <a href="/r/" class:list={['reddit-nav-link', 'px-4 py-2 rounded-t-md', Astro.url.pathname === '/r/' ? 'bg-[var(--card)] border-b-2 border-[var(--primary)] text-[var(--foreground)]' : '']}>
-            <span class="font-medium">Glavno</span>
+            <span class="font-medium">Главно</span>
         </a>
         <a href="/r/?timespan=24h" class:list={['reddit-nav-link', 'px-4 py-2 rounded-t-md', Astro.url.searchParams.get('timespan') === '24h' ? 'bg-[var(--card)] border-b-2 border-[var(--primary)] text-[var(--foreground)]' : '']}>
-            <span class="font-medium flex items-center gap-1"><Clock class="w-4 h-4" /> Poslednjih 24h</span>
+            <span class="font-medium flex items-center gap-1"><Clock class="w-4 h-4" /> Последните 24ч</span>
         </a>
         <a href="/r/?topic=Politika" class:list={['reddit-nav-link', 'px-4 py-2 rounded-t-md', topic === 'Politika' ? 'bg-[var(--card)] border-b-2 border-[var(--primary)] text-[var(--foreground)]' : '']}>
-            <span class="font-medium flex items-center gap-1"><Flame class="w-4 h-4" /> Popularno</span>
+            <span class="font-medium flex items-center gap-1"><Flame class="w-4 h-4" /> Популарно</span>
         </a>
         <a href="/r/?category=Globalna" class:list={['reddit-nav-link', 'px-4 py-2 rounded-t-md', category === 'Globalna' ? 'bg-[var(--card)] border-b-2 border-[var(--primary)] text-[var(--foreground)]' : '']}>
-            <span class="font-medium flex items-center gap-1"><Globe2 class="w-4 h-4" /> Globalno</span>
+            <span class="font-medium flex items-center gap-1"><Globe2 class="w-4 h-4" /> Глобално</span>
         </a>
     </div>
 
@@ -151,7 +151,7 @@ const pageDescription = getPageDescription();
             <div class="bg-[var(--secondary)] border border-[var(--border)] rounded-md p-8 text-center">
                 <h3 class="text-lg font-bold mb-2">Nema rezultata</h3>
                 <p class="text-sm text-[var(--muted-foreground)]">
-                    {q ? `Nema vesti za pretragu "${q}"` : 'Trenutno nema dostupnih vesti. Proverite kasnije.'}
+                    {q ? `Нема вести за пребарувањето "${q}"` : 'Моментално нема достапни вести. Проверете поднето.'}
                 </p>
             </div>
         )}
@@ -170,7 +170,7 @@ const pageDescription = getPageDescription();
     {clusters.length > 0 && (
         <div class="text-center py-8">
             <button class="reddit-auth-button bg-[var(--surface-soft)]">
-                Učitaj još
+                Вчитај уште
             </button>
         </div>
     )}

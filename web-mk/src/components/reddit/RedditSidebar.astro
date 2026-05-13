@@ -35,11 +35,11 @@ const rules = [
 ];
 
 const subredditInfo = {
-    name: 'r/PRESEK',
+    name: 'r/ПРЕСЕК',
     members: formatNumber(stats?.total_articles || 150000),
     online: formatNumber(stats?.active_today || 5000),
-    created: 'Jun 2020',
-    description: 'Presek je platforma za agregaciju i diskusiju vesti iz svih medija u Srbiji i regionu.'
+    created: 'јун 2020',
+    description: 'Пресек е платформа за агрегација и дискусија на вести од сите медиуми во Македонија и регионот.'
 };
 ---
 
@@ -57,7 +57,7 @@ const subredditInfo = {
         <div class="space-y-3">
             <div class="flex items-start gap-3">
                 <div class="w-10 h-10 bg-[var(--primary)] rounded-full flex items-center justify-center shrink-0">
-                    <span class="text-white font-bold text-lg">P</span>
+                    <span class="text-white font-bold text-lg">П</span>
                 </div>
                 <div class="flex-1 min-w-0">
                     <h4 class="font-bold text-foreground">{subredditInfo.name}</h4>
@@ -161,7 +161,7 @@ const subredditInfo = {
 
     <!-- Footer -->
     <div class="text-xs text-muted-foreground pt-4 border-t border-[var(--border)]">
-        <p>Created with ❤️ for the Macedonian community</p>
-        <p class="mt-2">Presek aggregates news from all media sources and presents them in an unbiased, aggregated format.</p>
+        <p>Креирано со ❤️ за македонската заједница</p>
+        <p class="mt-2">Пресек ги агрегира вестите од сите извори на вести и ги претставува во неpriстрасна, агрегирана форма.</p>
     </div>
 </aside>

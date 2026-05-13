@@ -34,7 +34,7 @@ function getDomain(url: string): string {
         const domain = new URL(url).hostname;
         return domain.replace(/^www\./, '');
     } catch {
-        return article.source || 'presek.mk';
+        return article.source || 'пресек.мк';
     }
 }
 
@@ -74,7 +74,7 @@ const displayTitle = article.title || cluster.title || 'No title';
         </div>
         <div class="hn-meta">
             <span class="hn-score">{score} points</span> by 
-            <a href="#">PRESEK_BOT</a> 
+            <a href="#">ПРЕСЕК_БОТ</a> 
             <span>{timeAgo}</span> | 
             <a href="#">hide</a> | 
             <a href={`/hn/cluster/${cluster.cluster_id}`}>{commentCount} comments</a>

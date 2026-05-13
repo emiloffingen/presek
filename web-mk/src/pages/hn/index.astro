@@ -1,5 +1,5 @@
 ---
-/* Hacker News-style homepage for presek.mk */
+/* Hacker News-style homepage for пресек.мк */
 import HNLayout from '../../layouts/HNLayout.astro';
 import HNPostRow from '../../components/hn/HNPostRow.astro';
 import { apiBaseUrl } from '@/lib/apiBase';
@@ -82,11 +82,11 @@ if (q || category || topic || entity) {
 clusters.sort((a, b) => (b.articles?.length || 0) - (a.articles?.length || 0));
 
 function getPageTitle() {
-    if (q) return `Search: "${q}" - Presek.mk`;
-    if (category) return `Category: ${category} - Presek.mk`;
-    if (topic) return `Topic: ${topic} - Presek.mk`;
-    if (entity) return `Entity: ${entity} - Presek.mk`;
-    return 'Presek.mk - Hacker News Style';
+    if (q) return `Пребарување: "${q}" - Пресек.мк`;
+    if (category) return `Категорија: ${category} - Пресек.мк`;
+    if (topic) return `Тема: ${topic} - Пресек.мк`;
+    if (entity) return `Субјект: ${entity} - Пресек.мк`;
+    return 'Пресек.мк - Хакер News Стил';
 }
 
 const pageTitle = getPageTitle();
@@ -94,14 +94,14 @@ const pageTitle = getPageTitle();
 
 <HNLayout
     title={pageTitle}
-    description="Presek.mk in Hacker News style - News aggregator for Macedonian audience"
+    description="Пресек.мк во Хакер News стил - Агрегатор на вести за македонска публика"
     trending={trending}
     focusEntities={focusEntities}
     stats={stats}
 >
     <!-- Top bar with user info -->
     <div class="hn-topbar">
-        <span>Macedonian news aggregator | </span>
+        <span>Македонски агрегатор на вести | </span>
         <a href="/hn/">home</a> | 
         <a href="/hn/new">new</a> | 
         <a href="/hn/popular">popular</a>

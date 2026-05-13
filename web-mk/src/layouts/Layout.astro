@@ -16,7 +16,7 @@ interface Props {
 
 const {
 	title,
-	description = "Presek je moderni srpski agregator vesti koji koristi naprednu jezičku obradu (NLP) za grupisanje i sumiranje najvažnijih događaja iz svih medija.",
+	description = "Пресек е современ македонски агрегатор на вести кој користи напредна јазична обработка (NLP) за групирање и резимирање на најважните настани од сите медиуми.",
 	image = "/static/img/presek_emblem.png",
 	canonical,
 	type = "website",
@@ -24,8 +24,8 @@ const {
 	robots,
 } = Astro.props;
 
-const siteUrl = (Astro.site?.origin || import.meta.env.PUBLIC_SITE_URL || "https://presek.mk").replace(/\/+$/, "");
-const pageTitle = title.includes("Presek") ? title.replace("Presek", "PRESEK.mk") : `${title} | PRESEK.mk`;
+const siteUrl = (Astro.site?.origin || import.meta.env.PUBLIC_SITE_URL || "https://пресек.мк").replace(/\/+$/, "");
+const pageTitle = title.includes("Пресек") ? title.replace("Пресек", "ПРЕСЕК.мк") : `${title} | ПРЕСЕК.мк`;
 
 /**
  * Build a strict canonical URL:
@@ -35,7 +35,7 @@ const pageTitle = title.includes("Presek") ? title.replace("Presek", "PRESEK.mk"
  * - Home page resolves to bare origin (no trailing slash)
  */
 function buildCanonicalUrl(pathname: string): string {
-	const base = Astro.site || new URL("https://presek.mk");
+	const base = Astro.site || new URL("https://пресек.мк");
 	const url = new URL(pathname, base);
 	// Strip trailing slash for all paths except root
 	let clean = url.origin + url.pathname.replace(/\/+$/, "");
@@ -70,12 +70,12 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 		<meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
 		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-		<meta name="apple-mobile-web-app-title" content="PRESEK.mk" />
+		<meta name="apple-mobile-web-app-title" content="ПРЕСЕК.мк" />
 		<meta name="generator" content={Astro.generator} />
 		<meta name="description" content={description} />
 		{robots && <meta name="robots" content={robots} />}
 		<link rel="canonical" href={canonicalUrl} />
-		<meta property="og:site_name" content="PRESEK.mk" />
+		<meta property="og:site_name" content="ПРЕСЕК.мк" />
 		<meta property="og:locale" content="mk_MK" />
 		<meta property="og:type" content={type} />
 		<meta property="og:title" content={pageTitle} />
