@@ -611,14 +611,17 @@ async def get_news(
         # --- NEW: Fetch Global Clusters (America & Europe) for homepage highlights ---
         global_clusters_raw = []
         if not q and not category and not topic and not entity and page == 0:
-            g_rows = await db.async_execute(
-                """
+            g_query = """
                 SELECT * FROM articles 
                 WHERE category IN ('Amerika', 'Evropa') 
                   AND created_at >= NOW() - INTERVAL '48 hours'
-                ORDER BY created_at DESC LIMIT 100
             """
-            )
+            g_params = []
+            if country:
+                g_query += " AND country = %s"
+                g_params.append(country)
+            g_query += " ORDER BY created_at DESC LIMIT 100"
+            g_rows = await db.async_execute(g_query, tuple(g_params))
             if g_rows:
                 g_grouped = defaultdict(list)
                 for r in g_rows:
