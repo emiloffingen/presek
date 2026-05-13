@@ -645,7 +645,7 @@ async def get_news(
         )
         meta_map = {r["cluster_id"]: r for r in meta_rows}
         synthesis_ids = (
-            set(await db.async_get_synthesis_ids(all_cids)) if all_cids else set()
+            set(await db.async_get_synthesis_ids(all_cids, lang=lang)) if all_cids else set()
         )
         summary_rows = (
             await db.async_execute(
@@ -653,9 +653,9 @@ async def get_news(
             SELECT cluster_id, synthetic_headline, synthetic_standfirst, key_facts,
                    analyst_entities, pulse_score, pluralism_score, narrative_diversity
             FROM cluster_summaries
-            WHERE cluster_id = ANY(%s)
+            WHERE cluster_id = ANY(%s) AND lang = %s
             """,
-                (all_cids,),
+                (all_cids, lang),
             )
             if all_cids
             else []
@@ -787,10 +787,10 @@ async def semantic_search(
 
 
 @router.get("/cluster/{cluster_id}")
-async def get_cluster_detail(cluster_id: str):
+async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
     # Validate cluster_id
     validate_cluster_id(cluster_id)
-    cache_key = f"api:cluster:detail:v2:{cluster_id}"
+    cache_key = f"api:cluster:detail:v2:{cluster_id}:{lang}"
     cached = cached_response(cache_key, ttl=3600)
     if cached:
         return cached
@@ -810,7 +810,7 @@ async def get_cluster_detail(cluster_id: str):
             a["reading_time"] = calculate_reading_time(a.get("description", ""))
         public_articles = [_public_article_payload(article) for article in articles]
 
-        log.debug(f"[debug] Fetching summary for cluster_id: '{cluster_id}'")
+        log.debug(f"[debug] Fetching summary for cluster_id: '{cluster_id}' ({lang})")
         s_row = await db.async_execute_one(
             """
             SELECT summary, generated_article, synthetic_headline, synthetic_standfirst,
@@ -818,10 +818,26 @@ async def get_cluster_detail(cluster_id: str):
                    citation_sources, key_facts, analyst_entities, pulse_score,
                    pluralism_score, narrative_diversity, storyline_narrative
             FROM cluster_summaries
-            WHERE cluster_id = %s
+            WHERE cluster_id = %s AND lang = %s
             """,
-            (cluster_id,),
+            (cluster_id, lang),
         )
+
+        # Fallback to Serbian if the requested language summary is missing
+        if not s_row and lang != "sr":
+            log.info(f"Summary for {cluster_id} not found in {lang}, falling back to sr")
+            s_row = await db.async_execute_one(
+                """
+                SELECT summary, generated_article, synthetic_headline, synthetic_standfirst,
+                       perspectives, created_at, sentiment, tone_analysis, verification_report,
+                       citation_sources, key_facts, analyst_entities, pulse_score,
+                       pluralism_score, narrative_diversity, storyline_narrative
+                FROM cluster_summaries
+                WHERE cluster_id = %s AND lang = 'sr'
+                """,
+                (cluster_id,),
+            )
+        
         log.debug(f"[debug] s_row found: {bool(s_row)}")
 
         # Synthesis and AI Content Mapping
@@ -1090,7 +1106,7 @@ async def get_cluster_detail(cluster_id: str):
 
 
 @router.get("/cluster/{cluster_id}/history")
-async def get_cluster_history(cluster_id: str):
+async def get_cluster_history(cluster_id: str, lang: Optional[str] = "sr"):
     """
     Returns the historical versions of a cluster synthesis.
     """
@@ -1100,11 +1116,11 @@ async def get_cluster_history(cluster_id: str):
             """
             SELECT summary, generated_article, synthetic_headline, synthetic_standfirst, perspectives, verification_report, created_at 
             FROM cluster_summary_history 
-            WHERE cluster_id = %s 
+            WHERE cluster_id = %s AND lang = %s
             ORDER BY created_at DESC 
             LIMIT 20
         """,
-            (cluster_id,),
+            (cluster_id, lang),
         )
 
         def _parse_maybe_json(val):

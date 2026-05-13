@@ -400,13 +400,15 @@ class DatabaseManager:
         sql = SQL_ARTICLE_SEARCH.format(time_filter=time_filter)
         return await self.async_execute(sql, (query, query, None, limit))
 
-    async def async_get_synthesis_ids(self, cluster_ids: list[str]):
+    async def async_get_synthesis_ids(self, cluster_ids: list[str], lang: str = None):
         if not cluster_ids:
             return []
-        rows = await self.async_execute(
-            "SELECT cluster_id FROM cluster_summaries WHERE cluster_id = ANY(%s)",
-            (cluster_ids,),
-        )
+        sql = "SELECT cluster_id FROM cluster_summaries WHERE cluster_id = ANY(%s)"
+        params = [cluster_ids]
+        if lang:
+            sql += " AND lang = %s"
+            params.append(lang)
+        rows = await self.async_execute(sql, tuple(params))
         return [r["cluster_id"] for r in rows]
 
     def get_articles_by_ids(self, ids):
@@ -525,13 +527,15 @@ class DatabaseManager:
 
         return self.execute(SQL_ARTICLE_SEARCH, (q, q, vector_str, limit))
 
-    def get_synthesis_ids(self, cluster_ids):
+    def get_synthesis_ids(self, cluster_ids, lang: str = None):
         if not cluster_ids:
             return []
-        rows = self.execute(
-            "SELECT cluster_id FROM cluster_summaries WHERE cluster_id = ANY(%s)",
-            (cluster_ids,),
-        )
+        sql = "SELECT cluster_id FROM cluster_summaries WHERE cluster_id = ANY(%s)"
+        params = [cluster_ids]
+        if lang:
+            sql += " AND lang = %s"
+            params.append(lang)
+        rows = self.execute(sql, tuple(params))
         return [r["cluster_id"] for r in rows]
 
     def get_cluster_entities(self, cluster_ids):

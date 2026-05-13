@@ -23,7 +23,14 @@ from nlp import (
 )
 from entities import extract_entities, validate_person_names
 from nlp.categories import detect_topic, detect_category
-from prompts import SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT
+from prompts import (
+    SUMMARY_SYSTEM_PROMPT_SR,
+    SYNTHESIS_SYSTEM_PROMPT_SR,
+    SUMMARY_SYSTEM_PROMPT_MK,
+    SYNTHESIS_SYSTEM_PROMPT_MK,
+)
+
+SUPPORTED_LANGS = ["sr", "mk"]
 from embeddings import average_embeddings, parse_embedding_value
 from ai_engine import sync_call_ai as _call_ai, clean_json_response, generate_cover_art
 from config import CLUSTER_LOOKBACK
@@ -99,9 +106,16 @@ def summarize_article_task(article_id, final_title=None):
         )
     prompt = "\n".join(part for part in prompt_parts if part)
 
+    # Determine which prompt to use based on existing category or topic if possible, 
+    # but default to Serbian as the primary processing language for now.
+    # In a full multi-lang setup, we'd summarize in the language of the source.
+    from language import detect_language
+    lang = detect_language(title + " " + (description or ""))
+    system_prompt = SUMMARY_SYSTEM_PROMPT_MK if lang == "mk" else SUMMARY_SYSTEM_PROMPT_SR
+
     raw_output, provider = _call_ai(
         prompt,
-        SUMMARY_SYSTEM_PROMPT,
+        system_prompt,
         task_type="summarize",
         topic=topic,
         json_mode=False,
@@ -391,6 +405,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
     max_tokens = 1600 if fast_mode else 3200
 
     # 1. Fetch Historical Context (Cross-Story Memory)
+    # We'll fetch this once for the primary language (sr) to use as context for all syntheses
     history_context = ""
     try:
         from embeddings import get_cluster_embedding
@@ -398,21 +413,21 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
         current_vec = get_cluster_embedding(cluster_id)
         if current_vec:
             current_vec_str = "[" + ",".join(map(str, current_vec)) + "]"
-            # Find semantically similar clusters from the last 7 days
+            # Find semantically similar clusters from the last 7 days (prefer Serbian for context)
             related = db.execute(
                 """
                 SELECT s.summary, s.generated_article, a.title
                 FROM cluster_summaries s
                 JOIN articles a ON s.cluster_id = a.cluster_id
                 JOIN cluster_metadata m ON s.cluster_id = m.cluster_id
-                JOIN articles current_a ON current_a.cluster_id = %s
                 WHERE s.cluster_id != %s
+                  AND s.lang = 'sr'
                   AND s.created_at >= NOW() - INTERVAL '7 days'
                   AND s.created_at < (SELECT MIN(created_at) FROM articles WHERE cluster_id = %s)
                 ORDER BY m.centroid <=> %s::vector
                 LIMIT 1
             """,
-                (cluster_id, cluster_id, cluster_id, current_vec_str),
+                (cluster_id, cluster_id, current_vec_str),
             )
 
             if related:
@@ -424,567 +439,462 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
     except Exception as e:
         log.warning(f"[tasks/memory] Failed to fetch history for {cluster_id}: {e}")
 
-    try:
-        legacy_summary = str(content or "").strip()
-        prompt_parts = []
-        if fast_mode:
-            prompt_parts.append(
-                "PROVIDE A BRIEF 1-PARAGRAPH SUMMARY ONLY. FOCUS ON THE CORE EVENT. IGNORE PERSPECTIVES."
-            )
-        elif history_context:
-            prompt_parts.append(history_context)
+    legacy_summary = str(content or "").strip()
+    
+    # Track shared metrics that only need to be computed once per cluster
+    shared_metrics = {
+        "impact_score": 0.0,
+        "impact_reasoning": "",
+        "story_so_far": "",
+        "centroid_str": None,
+        "deep_metadata": {},
+        "pluralism_data": {},
+        "sentiment_data": {"sentiment": {"score": 0, "tone": "neutralan"}, "tone_analysis": {}},
+        "citation_sources": citation_sources,
+        "pulse_score": 50,
+        "pluralism_score": 50,
+        "analyst_entities": []
+    }
+    shared_computed = False
 
-        prompt_parts.append("novi clanci OD danas:\n<articles_context>")
-        if source_context:
-            prompt_parts.append(source_context)
-        elif legacy_summary:
-            prompt_parts.append(legacy_summary)
-        prompt_parts.append("</articles_context>")
-        full_prompt = "\n\n".join(part for part in prompt_parts if part)
-        raw, provider = _call_ai(
-            full_prompt,
-            SYNTHESIS_SYSTEM_PROMPT,
-            json_mode=True,
-            task_type="synthesis",
-            max_tokens=max_tokens,
-        )
-        res_data = {}
-
-        if raw:
-            try:
-                res = clean_json_response(raw)
-            except Exception as e:
-                log.error(
-                    f"[tasks/synthesis] JSON Parse Error for {cluster_id}: {e}. Raw: {raw[:200]}"
+    for lang in SUPPORTED_LANGS:
+        try:
+            log.info(f"Generating synthesis for cluster {cluster_id} in {lang}")
+            prompt_parts = []
+            if fast_mode:
+                prompt_parts.append(
+                    "PROVIDE A BRIEF 1-PARAGRAPH SUMMARY ONLY. FOCUS ON THE CORE EVENT. IGNORE PERSPECTIVES."
                 )
-                raise
+            elif history_context:
+                prompt_parts.append(history_context)
 
-            res_data = res if isinstance(res, dict) else {}
+            prompt_parts.append("novi clanci OD danas:\n<articles_context>")
+            if source_context:
+                prompt_parts.append(source_context)
+            elif legacy_summary:
+                prompt_parts.append(legacy_summary)
+            prompt_parts.append("</articles_context>")
+            full_prompt = "\n\n".join(part for part in prompt_parts if part)
+            
+            system_prompt = SYNTHESIS_SYSTEM_PROMPT_MK if lang == "mk" else SYNTHESIS_SYSTEM_PROMPT_SR
+            
+            raw, provider = _call_ai(
+                full_prompt,
+                system_prompt,
+                json_mode=True,
+                task_type="synthesis",
+                max_tokens=max_tokens,
+            )
+            res_data = {}
 
-            # If the AI returned a string instead of a dict, or if the dict is missing core fields,
-            # we should treat it as a partial failure and merge with local fallback
-            if (
-                not isinstance(res, dict)
-                or not res.get("summary")
-                or not res.get("article")
-            ):
-                log.info(
-                    f"[tasks/synthesis] AI returned unstructured or partial response for {
-                         cluster_id}, merging with enhanced fallback."
+            if raw:
+                try:
+                    res = clean_json_response(raw)
+                except Exception as e:
+                    log.error(
+                        f"[tasks/synthesis] JSON Parse Error for {cluster_id} ({lang}): {e}. Raw: {raw[:200]}"
+                    )
+                    continue # Try next language
+
+                res_data = res if isinstance(res, dict) else {}
+
+                # If the AI returned a string instead of a dict, or if the dict is missing core fields,
+                # we should treat it as a partial failure and merge with local fallback
+                if (
+                    not isinstance(res, dict)
+                    or not res.get("summary")
+                    or not res.get("article")
+                ):
+                    log.info(
+                        f"[tasks/synthesis] AI returned unstructured or partial response for {
+                             cluster_id} ({lang}), merging with enhanced fallback."
+                    )
+                    fallback = synthesize_cluster_fallback(article_rows)
+
+                    # Merge: Prefer AI summary if it exists and is long enough, otherwise fallback
+                    summary = res_data.get("summary") or (
+                        res
+                        if isinstance(res, str) and len(res) > 30
+                        else fallback["summary"]
+                    )
+                    generated_article = (
+                        res_data.get("article") or fallback["generated_article"]
+                    )
+                    synthetic_headline = (
+                        res_data.get("synthetic_headline") or fallback["synthetic_headline"]
+                    )
+                    synthetic_standfirst = (
+                        res_data.get("synthetic_standfirst")
+                        or fallback["synthetic_standfirst"]
+                    )
+                    perspectives = res_data.get("perspectives") or fallback["perspectives"]
+                else:
+                    summary = res_data.get("summary", "")
+                    generated_article = res_data.get("article", "")
+                    synthetic_headline = res_data.get("synthetic_headline", "")
+                    synthetic_standfirst = res_data.get("synthetic_standfirst", "")
+                    perspectives = res_data.get("perspectives", [])
+
+                # Ensure summary is a string for validation and comparison
+                if isinstance(summary, list):
+                    summary = "\n".join(str(s) for s in summary)
+
+                verification_report = res_data.get("verification_report")
+                quote = validate_person_names(res_data.get("quote", ""))
+
+                if not summary or (isinstance(summary, str) and len(summary) < 20):
+                    log.warning(
+                        f"[tasks/synthesis] AI returned empty or too short summary for {cluster_id} ({lang})"
+                    )
+                    continue
+
+                # Sanitize for name hallucinations
+                summary = validate_person_names(summary)
+                generated_article = validate_person_names(generated_article)
+                synthetic_headline = validate_person_names(synthetic_headline)
+                synthetic_standfirst = validate_person_names(synthetic_standfirst)
+
+                # --- [NEW] 2026 Intelligence: Storyline & Impact ---
+                current_story_so_far = validate_person_names(res_data.get("story_so_far", ""))
+                impact_data = _ensure_dict(res_data.get("impact_analysis", {}))
+                current_impact_score = float(impact_data.get("score", 0.0))
+                current_impact_reasoning = impact_data.get("reasoning", "")
+
+                # AI Quality Gate: Hallucination Scanner (SKIP in fast_mode)
+                comparison_text = (summary or "") + "\n" + (generated_article or "")
+                if (
+                    not fast_mode
+                    and not _is_grounded_synthesis(
+                        comparison_text, source_context or legacy_summary
+                    )
+                    and retry_attempt < 2
+                ):
+                    log.warning(
+                        f"Hallucination gate failed for cluster {cluster_id} ({lang}), retrying later..."
+                    )
+                    # We don't return here because we might want to try other languages
+                    continue
+
+                current_sentiment_data = {
+                    "sentiment": res_data.get("sentiment", {}),
+                    "tone_analysis": res_data.get("tone_analysis", {}),
+                }
+
+                summary, perspectives = _normalize_cluster_synthesis(
+                    summary, perspectives, article_rows
+                )
+                record_runtime_event(
+                    "synthesis_path", mode=provider or "unknown", fast_mode=fast_mode, lang=lang
+                )
+
+                # Phase 3: Deep Local Analyst (SKIP in fast_mode)
+                # Only run shared cluster-wide logic once (on first successful lang, usually sr)
+                if not fast_mode and not shared_computed:
+
+                    def _run_analyst_logic():
+                        nonlocal shared_metrics
+                        try:
+                            # Use semaphore to limit concurrent heavy CPU tasks
+                            with _analyst_semaphore:
+                                # Run analyst on the current (first successful) summary
+                                analyst_text = f"NASLOV: {synthetic_headline}\n{summary}"
+                                shared_metrics["deep_metadata"] = analyst.extract_deep_metadata(analyst_text)
+
+                                # Phase 3.1: Pluralism Assessment
+                                titles_sources = [
+                                    f"{a['source']}: {
+                                    a['title']}"
+                                    for a in article_rows[:10]
+                                ]
+                                shared_metrics["pluralism_data"] = analyst.assess_pluralism(titles_sources)
+
+                                # Phase 3.2: Knowledge Graph Update
+                                entities = shared_metrics["deep_metadata"].get("entities", [])
+                                for entity in entities:
+                                    with db.connection() as conn:
+                                        with conn.cursor() as cur:
+                                            try:
+                                                cur.execute(
+                                                    """
+                                                    INSERT INTO knowledge_entities (name, type, last_seen, total_mentions)
+                                                    VALUES (%s, 'PERSON', NOW(), 1)
+                                                    ON CONFLICT (name) DO UPDATE SET
+                                                        last_seen = NOW()
+                                                """,
+                                                    (entity,),
+                                                )
+                                                cur.execute(
+                                                    """
+                                                    INSERT INTO entity_mentions_daily (entity_name, cluster_id, day)
+                                                    VALUES (%s, %s, CURRENT_DATE)
+                                                    ON CONFLICT (entity_name, cluster_id, day) DO NOTHING
+                                                """,
+                                                    (entity, cluster_id),
+                                                )
+                                                cur.execute(
+                                                    """
+                                                    UPDATE knowledge_entities
+                                                    SET total_mentions = (
+                                                        SELECT COUNT(*) FROM entity_mentions_daily WHERE entity_name = %s
+                                                    )
+                                                    WHERE name = %s
+                                                """,
+                                                    (entity, entity),
+                                                )
+                                                conn.commit()
+                                            except Exception as e:
+                                                log.debug(f"Failed to update entity mentions: {e}")
+                                                conn.rollback()
+                                                raise
+                        except Exception as e:
+                            log.error(f"[analyst] Internal logic error: {e}")
+
+                    analyst_thread = threading.Thread(target=_run_analyst_logic)
+                    analyst_thread.start()
+                    analyst_thread.join(timeout=240)  # 4 minute limit for low-core CPUs
+
+                    if analyst_thread.is_alive():
+                        log.warning(f"[analyst] Timeout reached for cluster {cluster_id}")
+                    
+                    shared_metrics["deep_metadata"] = _ensure_dict(shared_metrics["deep_metadata"])
+                    shared_metrics["pluralism_data"] = _ensure_dict(shared_metrics["pluralism_data"])
+                    
+                    shared_metrics["impact_score"] = current_impact_score
+                    shared_metrics["impact_reasoning"] = current_impact_reasoning
+                    shared_metrics["story_so_far"] = current_story_so_far
+                    shared_metrics["sentiment_data"] = current_sentiment_data
+                    
+                    shared_metrics["pulse_score"] = shared_metrics["deep_metadata"].get("pulse", 50)
+                    shared_metrics["pluralism_score"] = shared_metrics["pluralism_data"].get("score", 50)
+                    shared_metrics["analyst_entities"] = shared_metrics["deep_metadata"].get("entities") or []
+                    
+                    # Calculate Cluster Centroid (Semantic Center)
+                    centroid = _compute_centroid_from_values(
+                        [a.get("embedding") for a in article_rows if a.get("embedding")]
+                    )
+                    shared_metrics["centroid_str"] = (
+                        f"[{','.join(map(str, centroid))}]"
+                        if centroid and len(centroid) == 384
+                        else None
+                    )
+                    
+                    shared_computed = True
+
+            else:
+                log.warning(
+                    f"[tasks/synthesis] AI provider {provider} returned no content for {cluster_id} ({lang}), using enhanced fallback"
                 )
                 fallback = synthesize_cluster_fallback(article_rows)
+                summary = fallback["summary"]
+                perspectives = fallback["perspectives"]
+                synthetic_headline = deShout(article_rows[0]["title"])
+                synthetic_standfirst = ""
+                generated_article = ""
+                verification_report = None
+                quote = ""
+                current_sentiment_data = shared_metrics["sentiment_data"]
+                
+                if not shared_computed:
+                    shared_metrics["impact_score"] = 0.0
+                    shared_metrics["impact_reasoning"] = ""
+                    shared_metrics["story_so_far"] = ""
+                    shared_computed = True # Mark as computed even if fallback
 
-                # Merge: Prefer AI summary if it exists and is long enough, otherwise fallback
-                summary = res_data.get("summary") or (
-                    res
-                    if isinstance(res, str) and len(res) > 30
-                    else fallback["summary"]
-                )
-                generated_article = (
-                    res_data.get("article") or fallback["generated_article"]
-                )
-                synthetic_headline = (
-                    res_data.get("synthetic_headline") or fallback["synthetic_headline"]
-                )
-                synthetic_standfirst = (
-                    res_data.get("synthetic_standfirst")
-                    or fallback["synthetic_standfirst"]
-                )
-                perspectives = res_data.get("perspectives") or fallback["perspectives"]
-            else:
-                summary = res_data.get("summary", "")
-                generated_article = res_data.get("article", "")
-                synthetic_headline = res_data.get("synthetic_headline", "")
-                synthetic_standfirst = res_data.get("synthetic_standfirst", "")
-                perspectives = res_data.get("perspectives", [])
-
-            # Ensure summary is a string for validation and comparison
-            if isinstance(summary, list):
-                summary = "\n".join(str(s) for s in summary)
-
-            verification_report = res_data.get("verification_report")
-            quote = validate_person_names(res_data.get("quote", ""))
-
-            if not summary or (isinstance(summary, str) and len(summary) < 20):
-                log.warning(
-                    f"[tasks/synthesis] AI returned empty or too short summary for {cluster_id}"
-                )
-                raise ValueError("Empty AI summary")
-
-            # Sanitize for name hallucinations
-            summary = validate_person_names(summary)
-            generated_article = validate_person_names(generated_article)
-            synthetic_headline = validate_person_names(synthetic_headline)
-            synthetic_standfirst = validate_person_names(synthetic_standfirst)
-
-            # --- [NEW] 2026 Intelligence: Storyline & Impact ---
-            story_so_far = validate_person_names(res_data.get("story_so_far", ""))
-            impact_data = _ensure_dict(res_data.get("impact_analysis", {}))
-            impact_score = float(impact_data.get("score", 0.0))
-            impact_reasoning = impact_data.get("reasoning", "")
-            log.debug(
-                f"Impact score for {cluster_id}: {impact_score} (Reason: {impact_reasoning})"
-            )
-
-            # AI Quality Gate: Hallucination Scanner (SKIP in fast_mode)
-            comparison_text = (summary or "") + "\n" + (generated_article or "")
-            if (
-                not fast_mode
-                and not _is_grounded_synthesis(
-                    comparison_text, source_context or legacy_summary
-                )
-                and retry_attempt < 2
-            ):
-                log.warning(
-                    f"Hallucination gate failed for cluster {cluster_id}, retrying..."
-                )
-                synthesize_cluster_task.apply_async(
-                    args=(cluster_id, content, retry_attempt + 1), countdown=30
-                )
-                return
-
-            sentiment_data = {
-                "sentiment": res_data.get("sentiment", {}),
-                "tone_analysis": res_data.get("tone_analysis", {}),
-            }
-
-            summary, perspectives = _normalize_cluster_synthesis(
-                summary, perspectives, article_rows
-            )
-            record_runtime_event(
-                "synthesis_path", mode=provider or "unknown", fast_mode=fast_mode
-            )
-
-            # Phase 3: Deep Local Analyst (SKIP in fast_mode)
-            deep_metadata = {}
-            pluralism_data = {}
-
-            if not fast_mode:
-
-                def _run_analyst_logic():
-                    nonlocal deep_metadata, pluralism_data
-                    try:
-                        # Use semaphore to limit concurrent heavy CPU tasks
-                        with _analyst_semaphore:
-                            analyst_text = f"NASLOV: {synthetic_headline}\n{summary}"
-                            deep_metadata = analyst.extract_deep_metadata(analyst_text)
-
-                            # Phase 3.1: Pluralism Assessment
-                            titles_sources = [
-                                f"{a['source']}: {
-                                a['title']}"
-                                for a in article_rows[:10]
-                            ]
-                            pluralism_data = analyst.assess_pluralism(titles_sources)
-
-                            # Phase 3.2: Knowledge Graph Update
-                            entities = deep_metadata.get("entities", [])
-                            for entity in entities:
-                                with db.connection() as conn:
-                                    with conn.cursor() as cur:
-                                        try:
-                                            cur.execute(
-                                                """
-                                                INSERT INTO knowledge_entities (name, type, last_seen, total_mentions)
-                                                VALUES (%s, 'PERSON', NOW(), 1)
-                                                ON CONFLICT (name) DO UPDATE SET
-                                                    last_seen = NOW()
-                                            """,
-                                                (entity,),
-                                            )
-                                            cur.execute(
-                                                """
-                                                INSERT INTO entity_mentions_daily (entity_name, cluster_id, day)
-                                                VALUES (%s, %s, CURRENT_DATE)
-                                                ON CONFLICT (entity_name, cluster_id, day) DO NOTHING
-                                            """,
-                                                (entity, cluster_id),
-                                            )
-                                            cur.execute(
-                                                """
-                                                UPDATE knowledge_entities
-                                                SET total_mentions = (
-                                                    SELECT COUNT(*) FROM entity_mentions_daily WHERE entity_name = %s
-                                                )
-                                                WHERE name = %s
-                                            """,
-                                                (entity, entity),
-                                            )
-                                            conn.commit()
-                                        except Exception as e:
-                                            log.debug(f"Failed to update entity mentions: {e}")
-                                            conn.rollback()
-                                            raise
-                    except Exception as e:
-                        log.error(f"[analyst] Internal logic error: {e}")
-
-                analyst_thread = threading.Thread(target=_run_analyst_logic)
-                analyst_thread.start()
-                analyst_thread.join(timeout=240)  # 4 minute limit for low-core CPUs
-
-                if analyst_thread.is_alive():
-                    log.warning(f"[analyst] Timeout reached for cluster {cluster_id}")
-                elif deep_metadata or pluralism_data:
-                    log.info(
-                        f"[analyst] Pluralism and KG updated for cluster {cluster_id}"
+            if summary or perspectives:
+                # Use shared metrics for DB save
+                pulse_score = shared_metrics["pulse_score"]
+                pluralism_score = shared_metrics["pluralism_score"]
+                pluralism_data = shared_metrics["pluralism_data"]
+                if not pluralism_data:
+                    pluralism_data = {
+                        "score": pluralism_score,
+                        "verdict": "Procenkata e vo tek." if lang == "mk" else "Procena je u toku.",
+                    }
+                
+                key_facts = res_data.get("key_facts")
+                if not key_facts or not isinstance(key_facts, list):
+                    key_facts = shared_metrics["deep_metadata"].get("facts") or _fallback_key_facts(
+                        article_rows, summary
                     )
 
-                deep_metadata = _ensure_dict(deep_metadata)
-                pluralism_data = _ensure_dict(pluralism_data)
-
-        else:
-            log.warning(
-                f"[tasks/synthesis] AI provider {provider} returned no content for {cluster_id}, using enhanced fallback"
-            )
-            fallback = synthesize_cluster_fallback(article_rows)
-            summary = fallback["summary"]
-            perspectives = fallback["perspectives"]
-            synthetic_headline = deShout(article_rows[0]["title"])
-            synthetic_standfirst = ""
-            generated_article = ""
-            verification_report = None
-            sentiment_data = {
-                "sentiment": {"score": 0, "tone": "neutralen"},
-                "tone_analysis": {},
-            }
-            deep_metadata = {}
-            pluralism_data = {}
-            impact_score = 0.0
-            impact_reasoning = ""
-            quote = ""
-            story_so_far = ""
-            try:
-                from tasks import utils
-
-                utils.record_task_event(
-                    cluster_id, "synthesis_fallback", {"provider": provider}
-                )
-                record_runtime_event("synthesis_path", mode="local_fallback_total")
-            except Exception as event_err:
-                log.warning(
-                    f"[tasks] Failed to record fallback event for {
-                            cluster_id}: {event_err}"
-                )
-
-        if summary or perspectives:
-            deep_metadata = _ensure_dict(deep_metadata)
-            pluralism_data = _ensure_dict(pluralism_data)
-
-            # Prefer AI-generated key_facts from synthesis if available
-            ai_key_facts = res_data.get("key_facts")
-            if ai_key_facts and isinstance(ai_key_facts, list):
-                key_facts = ai_key_facts
-            else:
-                key_facts = deep_metadata.get("facts") or _fallback_key_facts(
-                    article_rows, summary
-                )
-
-            analyst_entities = deep_metadata.get("entities") or []
-            pulse_score = deep_metadata.get("pulse", 50)
-            pluralism_score = pluralism_data.get("score", 50)
-            if not pluralism_data:
-                pluralism_data = {
-                    "score": pluralism_score,
-                    "verdict": "Procenkata e vo tek. Diverzitetot na izvorite se analizira za celosen pluralisticki prikaz.",
-                }
-            # Calculate Cluster Centroid (Semantic Center)
-            centroid = _compute_centroid_from_values(
-                [a.get("embedding") for a in article_rows if a.get("embedding")]
-            )
-            centroid_str = (
-                f"[{','.join(map(str, centroid))}]"
-                if centroid and len(centroid) == 384
-                else None
-            )
-
-            # Archive current summary before updating (Evolution Log)
-            db.execute(
-                """INSERT INTO cluster_summary_history (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, citation_sources, tone_analysis, created_at, key_facts, analyst_entities)
-                   SELECT cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, citation_sources, tone_analysis, created_at, key_facts, analyst_entities
-                   FROM cluster_summaries WHERE cluster_id = %s""",
-                (cluster_id,),
-                fetch=False,
-            )
-
-            if fast_mode:
+                # Archive current summary before updating (Evolution Log)
                 db.execute(
-                    """INSERT INTO cluster_summaries (cluster_id, summary, generated_article, synthetic_headline, synthetic_standfirst, created_at, citation_sources, key_facts, analyst_entities, pulse_score, pluralism_score, narrative_diversity)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                       ON CONFLICT (cluster_id) DO UPDATE SET
-                           summary = EXCLUDED.summary,
-                           generated_article = EXCLUDED.generated_article,
-                           synthetic_headline = EXCLUDED.synthetic_headline,
-                           synthetic_standfirst = EXCLUDED.synthetic_standfirst,
-                           created_at = EXCLUDED.created_at,
-                           citation_sources = EXCLUDED.citation_sources,
-                           key_facts = EXCLUDED.key_facts,
-                           analyst_entities = EXCLUDED.analyst_entities,
-                           pulse_score = EXCLUDED.pulse_score,
-                           pluralism_score = EXCLUDED.pluralism_score,
-                           narrative_diversity = EXCLUDED.narrative_diversity""",
-                    (
-                        cluster_id,
-                        summary,
-                        generated_article,
-                        synthetic_headline,
-                        synthetic_standfirst,
-                        datetime.datetime.now(),
-                        json.dumps(citation_sources),
-                        json.dumps(key_facts),
-                        json.dumps(analyst_entities),
-                        pulse_score,
-                        pluralism_score,
-                        json.dumps(pluralism_data),
-                    ),
+                    """INSERT INTO cluster_summary_history (cluster_id, lang, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, citation_sources, tone_analysis, created_at, key_facts, analyst_entities)
+                       SELECT cluster_id, lang, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, citation_sources, tone_analysis, created_at, key_facts, analyst_entities
+                       FROM cluster_summaries WHERE cluster_id = %s AND lang = %s""",
+                    (cluster_id, lang),
                     fetch=False,
                 )
-            else:
-                db.execute(
-                    """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, tone_analysis, verification_report, quote, centroid, citation_sources, key_facts, analyst_entities, pulse_score, pluralism_score, narrative_diversity, storyline_narrative)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                       ON CONFLICT (cluster_id) DO UPDATE SET
-                           summary = EXCLUDED.summary,
-                           perspectives = EXCLUDED.perspectives,
-                           generated_article = EXCLUDED.generated_article,
-                           synthetic_headline = EXCLUDED.synthetic_headline,
-                           synthetic_standfirst = EXCLUDED.synthetic_standfirst,
-                           created_at = EXCLUDED.created_at,
-                           sentiment = EXCLUDED.sentiment,
-                           tone_analysis = EXCLUDED.tone_analysis,
-                           verification_report = EXCLUDED.verification_report,
-                           quote = EXCLUDED.quote,
-                           centroid = EXCLUDED.centroid,
-                           citation_sources = EXCLUDED.citation_sources,
-                           key_facts = EXCLUDED.key_facts,
-                           analyst_entities = EXCLUDED.analyst_entities,
-                           pulse_score = EXCLUDED.pulse_score,
-                           pluralism_score = EXCLUDED.pluralism_score,
-                           narrative_diversity = EXCLUDED.narrative_diversity,
-                           storyline_narrative = EXCLUDED.storyline_narrative""",
-                    (
-                        cluster_id,
-                        summary,
-                        json.dumps(perspectives),
-                        generated_article,
-                        synthetic_headline,
-                        synthetic_standfirst,
-                        datetime.datetime.now(),
-                        json.dumps(sentiment_data),
-                        json.dumps(res_data.get("tone_analysis", {})),
+
+                if fast_mode:
+                    db.execute(
+                        """INSERT INTO cluster_summaries (cluster_id, lang, summary, generated_article, synthetic_headline, synthetic_standfirst, created_at, citation_sources, key_facts, analyst_entities, pulse_score, pluralism_score, narrative_diversity)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                           ON CONFLICT (cluster_id, lang) DO UPDATE SET
+                               summary = EXCLUDED.summary,
+                               generated_article = EXCLUDED.generated_article,
+                               synthetic_headline = EXCLUDED.synthetic_headline,
+                               synthetic_standfirst = EXCLUDED.synthetic_standfirst,
+                               created_at = EXCLUDED.created_at,
+                               citation_sources = EXCLUDED.citation_sources,
+                               key_facts = EXCLUDED.key_facts,
+                               analyst_entities = EXCLUDED.analyst_entities,
+                               pulse_score = EXCLUDED.pulse_score,
+                               pluralism_score = EXCLUDED.pluralism_score,
+                               narrative_diversity = EXCLUDED.narrative_diversity""",
                         (
-                            json.dumps(verification_report)
-                            if verification_report
-                            else None
+                            cluster_id,
+                            lang,
+                            summary,
+                            generated_article,
+                            synthetic_headline,
+                            synthetic_standfirst,
+                            datetime.datetime.now(),
+                            json.dumps(shared_metrics["citation_sources"]),
+                            json.dumps(key_facts),
+                            json.dumps(shared_metrics["analyst_entities"]),
+                            pulse_score,
+                            pluralism_score,
+                            json.dumps(pluralism_data),
                         ),
-                        quote,
-                        centroid_str,
-                        json.dumps(citation_sources),
-                        json.dumps(key_facts),
-                        json.dumps(analyst_entities),
-                        pulse_score,
-                        pluralism_score,
-                        json.dumps(pluralism_data),
-                        story_so_far,
-                    ),
-                    fetch=False,
-                )
+                        fetch=False,
+                    )
+                else:
+                    db.execute(
+                        """INSERT INTO cluster_summaries (cluster_id, lang, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, tone_analysis, verification_report, quote, centroid, citation_sources, key_facts, analyst_entities, pulse_score, pluralism_score, narrative_diversity, storyline_narrative)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                           ON CONFLICT (cluster_id, lang) DO UPDATE SET
+                               summary = EXCLUDED.summary,
+                               perspectives = EXCLUDED.perspectives,
+                               generated_article = EXCLUDED.generated_article,
+                               synthetic_headline = EXCLUDED.synthetic_headline,
+                               synthetic_standfirst = EXCLUDED.synthetic_standfirst,
+                               created_at = EXCLUDED.created_at,
+                               sentiment = EXCLUDED.sentiment,
+                               tone_analysis = EXCLUDED.tone_analysis,
+                               verification_report = EXCLUDED.verification_report,
+                               quote = EXCLUDED.quote,
+                               centroid = EXCLUDED.centroid,
+                               citation_sources = EXCLUDED.citation_sources,
+                               key_facts = EXCLUDED.key_facts,
+                               analyst_entities = EXCLUDED.analyst_entities,
+                               pulse_score = EXCLUDED.pulse_score,
+                               pluralism_score = EXCLUDED.pluralism_score,
+                               narrative_diversity = EXCLUDED.narrative_diversity,
+                               storyline_narrative = EXCLUDED.storyline_narrative""",
+                        (
+                            cluster_id,
+                            lang,
+                            summary,
+                            json.dumps(perspectives),
+                            generated_article,
+                            synthetic_headline,
+                            synthetic_standfirst,
+                            datetime.datetime.now(),
+                            json.dumps(shared_metrics["sentiment_data"]),
+                            json.dumps(res_data.get("tone_analysis", {})),
+                            (
+                                json.dumps(verification_report)
+                                if verification_report
+                                else None
+                            ),
+                            quote,
+                            shared_metrics["centroid_str"],
+                            json.dumps(shared_metrics["citation_sources"]),
+                            json.dumps(key_facts),
+                            json.dumps(shared_metrics["analyst_entities"]),
+                            pulse_score,
+                            pluralism_score,
+                            json.dumps(pluralism_data),
+                            shared_metrics["story_so_far"],
+                        ),
+                        fetch=False,
+                    )
+                log.info(f"Successfully synthesized cluster {cluster_id} for {lang}")
+                
+        except Exception as e:
+            log.error(f"Synthesis failed for cluster {cluster_id} in {lang}: {e}", exc_info=True)
+            continue
 
-            # Update Metadata with Impact Score
-            db.execute(
-                """
-                UPDATE cluster_metadata
-                SET impact_score = %s, impact_explanation = %s
-                WHERE cluster_id = %s
-            """,
-                (impact_score, impact_reasoning, cluster_id),
-                fetch=False,
+    # --- [Final Steps] Cluster-wide updates and events ---
+    if shared_computed:
+        # Update Metadata with Impact Score
+        db.execute(
+            """
+            UPDATE cluster_metadata
+            SET impact_score = %s, impact_explanation = %s
+            WHERE cluster_id = %s
+        """,
+            (shared_metrics["impact_score"], shared_metrics["impact_reasoning"], cluster_id),
+            fetch=False,
+        )
+        
+        # Publish SSE event
+        try:
+            from utils import publish_event
+            is_breaking = False
+            if article_rows:
+                from utils import score_cluster
+                from config import BREAKING_SCORE_THRESHOLD
+                is_breaking = score_cluster(article_rows) >= BREAKING_SCORE_THRESHOLD
+
+            publish_event(
+                "updates",
+                {
+                    "type": "cluster_synthesis_updated",
+                    "cluster_id": cluster_id,
+                    "is_breaking": is_breaking,
+                    "impact_score": shared_metrics["impact_score"],
+                    "headline": article_rows[0].get("title", ""),
+                    "time": datetime.datetime.now().isoformat(),
+                },
             )
-            # Publish SSE event for Real-Time UI updates
-            try:
-                from utils import publish_event
+        except Exception as pub_err:
+            log.warning(f"[tasks] Failed to publish SSE event for {cluster_id}: {pub_err}")
 
-                # Determine if breaking
-                is_breaking = False
-                if article_rows:
-                    from utils import score_cluster
+        # Real-time Sports Score Alert (once)
+        try:
+            from nlp.categories import detect_topic
+            all_titles = " ".join([a.get("title") or "" for a in article_rows])
+            if detect_topic(all_titles) == "Sport":
+                from nlp.generation import _extract_sports_scores
+                from notifier import BreakingNewsNotifier
+                from config import NTFY_TOPIC
+                latest_scores = _extract_sports_scores(article_rows[0].get("title") or "") + _extract_sports_scores(article_rows[0].get("description") or "")
+                if latest_scores:
+                    latest_score = latest_scores[0]
+                    notifier = BreakingNewsNotifier(NTFY_TOPIC)
+                    notifier.notify_score_change(article_rows[0].get("title"), latest_score, cluster_id)
+        except Exception as e:
+            log.warning(f"[tasks/sports] Score alert failed: {e}")
 
-                    cluster_score = score_cluster(article_rows)
-                    from config import BREAKING_SCORE_THRESHOLD
-
-                    is_breaking = cluster_score >= BREAKING_SCORE_THRESHOLD
-
-                snippet = summary.split("\n")[0] if summary else ""
-                snippet = snippet.replace("•", "").strip()[:150]
-                publish_event(
-                    "updates",
-                    {
-                        "type": "cluster_synthesis_updated",
-                        "cluster_id": cluster_id,
-                        "is_breaking": is_breaking,
-                        "impact_score": impact_score,
-                        "headline": synthetic_headline
-                        or article_rows[0].get("title", ""),
-                        "snippet": snippet,
-                        "time": datetime.datetime.now().isoformat(),
-                    },
-                )
-            except Exception as pub_err:
-                log.warning(
-                    f"[tasks] Failed to publish SSE event for {cluster_id}: {pub_err}"
-                )
-
-            # Real-time Sports Score Alert
-            try:
-                from nlp.categories import detect_topic
-
-                all_titles = " ".join([a.get("title") or "" for a in article_rows])
-                if detect_topic(all_titles) == "Sport":
-                    from nlp.generation import _extract_sports_scores
-                    from notifier import BreakingNewsNotifier
-                    from config import NTFY_TOPIC
-
-                    # Use articles sorted by date
-                    latest_scores = _extract_sports_scores(
-                        article_rows[0].get("title") or ""
-                    ) + _extract_sports_scores(article_rows[0].get("description") or "")
-                    if latest_scores:
-                        latest_score = latest_scores[0]
-                        # BreakingNewsNotifier handles deduplication internally
-                        notifier = BreakingNewsNotifier(NTFY_TOPIC)
-                        notifier.notify_score_change(
-                            article_rows[0].get("title"), latest_score, cluster_id
-                        )
-            except Exception as e:
-                log.warning(f"[tasks/sports] Score alert failed: {e}")
-
-            # Improved image logic: if no image or ONLY weak visuals exist, generate art
-            strong_img = db.execute_one(
-                """
-                SELECT 1 FROM articles
-                WHERE cluster_id = %s
-                  AND image_url IS NOT NULL
-                  AND image_url NOT LIKE '%%placeholder%%'
-                  AND image_url NOT LIKE '%%logo%%'
-                  AND image_url NOT LIKE '%%default%%'
-                  AND image_url NOT LIKE '%%.svg'
-                LIMIT 1
-            """,
-                (cluster_id,),
-            )
-
-            if not strong_img:
-                # Trigger cover art generation
-                svg_content = generate_local_placeholder(cluster_id, summary)
+        # Improved image logic: if no image or ONLY weak visuals exist, generate art
+        strong_img = db.execute_one(
+            "SELECT 1 FROM articles WHERE cluster_id = %s AND image_url IS NOT NULL AND image_url NOT LIKE '%%placeholder%%' LIMIT 1",
+            (cluster_id,),
+        )
+        if not strong_img:
+            # We use first summary for placeholder generation (usually Serbian)
+            summary_row = db.execute_one("SELECT summary FROM cluster_summaries WHERE cluster_id = %s LIMIT 1", (cluster_id,))
+            if summary_row:
+                svg_content = generate_local_placeholder(cluster_id, summary_row["summary"])
                 img_url = generate_cover_art(cluster_id, svg_content)
                 if img_url:
-                    # Update all articles without images to use this generated one
                     db.execute(
                         "UPDATE articles SET image_url = %s WHERE cluster_id = %s AND (image_url IS NULL OR image_url LIKE '%%placeholder%%')",
                         (img_url, cluster_id),
                         fetch=False,
                     )
-            try:
-                invalidate_cluster_caches(cluster_id)
-            except Exception as cache_err:
-                log.warning(
-                    f"[tasks] Failed to invalidate caches for {cluster_id}: {cache_err}"
-                )
-            try:
-                if os.environ.get("REDIS_URL"):
-                    generate_cluster_metadata_task.delay()
-            except Exception as queue_err:
-                log.warning(
-                    f"[tasks] Failed to queue metadata refresh for {
-                            cluster_id}: {queue_err}"
-                )
-            try:
-                from tasks import utils
 
-                utils.record_task_event(
-                    "synthesize_cluster", "ok", f"cluster:{cluster_id}"
-                )
-            except Exception as event_err:
-                log.warning(
-                    f"[tasks] Failed to record synthesis success for {
-                            cluster_id}: {event_err}"
-                )
-            log.info(f"Successfully synthesized cluster {cluster_id}")
-        else:
-            from tasks import utils
-
-            utils.record_task_event(
-                "synthesize_cluster", "empty", f"cluster:{cluster_id}"
-            )
-            log.warning(f"No synthesis generated for cluster {cluster_id}")
-    except Exception as e:
-        record_runtime_event("synthesis_path", mode="local_exception_fallback")
-        fallback = synthesize_cluster_fallback(article_rows)
-        sentiment_data = {
-            "sentiment": {"score": 0, "tone": "neutralen"},
-            "tone_analysis": {},
-        }
-        summary, perspectives = _normalize_cluster_synthesis(
-            fallback.get("summary", ""),
-            fallback.get("perspectives", []),
-            article_rows,
-        )
-        if summary or perspectives:
-            key_facts = _fallback_key_facts(article_rows, summary)
-            pluralism_data = {
-                "score": 50,
-                "verdict": "Avtomatska procenka od dostapnite izvori.",
-            }
-            db.execute(
-                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, tone_analysis, verification_report, citation_sources, key_facts, analyst_entities, pulse_score, pluralism_score, narrative_diversity)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NULL, %s, %s, %s, %s, %s, %s)
-                   ON CONFLICT (cluster_id) DO UPDATE
-                   SET summary = EXCLUDED.summary,
-                       perspectives = EXCLUDED.perspectives,
-                       generated_article = EXCLUDED.generated_article,
-                       synthetic_headline = EXCLUDED.synthetic_headline,
-                       synthetic_standfirst = EXCLUDED.synthetic_standfirst,
-                       created_at = EXCLUDED.created_at,
-                       sentiment = EXCLUDED.sentiment,
-                       tone_analysis = EXCLUDED.tone_analysis,
-                       citation_sources = EXCLUDED.citation_sources,
-                       key_facts = EXCLUDED.key_facts,
-                       analyst_entities = EXCLUDED.analyst_entities,
-                       pulse_score = EXCLUDED.pulse_score,
-                       pluralism_score = EXCLUDED.pluralism_score,
-                       narrative_diversity = EXCLUDED.narrative_diversity""",
-                (
-                    cluster_id,
-                    summary,
-                    json.dumps(perspectives),
-                    "",
-                    deShout(article_rows[0]["title"]) if article_rows else "",
-                    "",
-                    datetime.datetime.now(),
-                    json.dumps(sentiment_data),
-                    json.dumps(sentiment_data.get("tone_analysis", {})),
-                    json.dumps(citation_sources),
-                    json.dumps(key_facts),
-                    json.dumps([]),
-                    50,
-                    50,
-                    json.dumps(pluralism_data),
-                ),
-                fetch=False,
-            )
+        try:
             invalidate_cluster_caches(cluster_id)
-            from tasks import utils
-
-            utils.record_task_event(
-                "synthesize_cluster", "fallback", f"cluster:{cluster_id}"
-            )
-            log.warning(
-                f"[tasks] Synthesis failed for {cluster_id}; stored local fallback"
-            )
-            if retry_attempt < 2:
-                synthesize_cluster_task.apply_async(
-                    args=(cluster_id, content, retry_attempt + 1), countdown=1800
-                )
-        log.error(f"[tasks] Synthesis failed for {cluster_id}: {e}")
+            if os.environ.get("REDIS_URL"):
+                generate_cluster_metadata_task.delay()
+        except Exception as err:
+            log.warning(f"[tasks] Finalization error for {cluster_id}: {err}")
+    else:
+        # Fallback if all languages failed
+        log.error(f"All synthesis attempts failed for cluster {cluster_id}")
 
 
 @celery_app.task

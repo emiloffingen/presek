@@ -626,7 +626,7 @@ async def get_source_pulse(category: Optional[str] = None):
 
 
 @router.get("/intelligence/entity/{name}")
-async def get_entity_profile(name: str):
+async def get_entity_profile(name: str, lang: Optional[str] = "sr"):
     # Validate name parameter
     name = validate_string_param(name, "name", max_length=200, allow_empty=False)
 
@@ -670,12 +670,12 @@ async def get_entity_profile(name: str):
         (name,),
     )
     sentiment_history = await db.async_execute(
-        f"SELECT DATE(COALESCE(a.ingested_at, a.created_at)) as day, AVG(CAST(s.sentiment->'sentiment'->>'score' AS FLOAT)) as avg_sentiment, COUNT(DISTINCT a.cluster_id) as volume FROM articles a JOIN cluster_metadata m ON a.cluster_id = m.cluster_id JOIN cluster_summaries s ON a.cluster_id = s.cluster_id WHERE {_CASE_INSENSITIVE_TAG_EXISTS} AND COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '14 days' AND s.sentiment IS NOT NULL GROUP BY day ORDER BY day ASC",
-        (name,),
+        f"SELECT DATE(COALESCE(a.ingested_at, a.created_at)) as day, AVG(CAST(s.sentiment->'sentiment'->>'score' AS FLOAT)) as avg_sentiment, COUNT(DISTINCT a.cluster_id) as volume FROM articles a JOIN cluster_metadata m ON a.cluster_id = m.cluster_id JOIN cluster_summaries s ON a.cluster_id = s.cluster_id WHERE {_CASE_INSENSITIVE_TAG_EXISTS} AND COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '14 days' AND s.sentiment IS NOT NULL AND s.lang = %s GROUP BY day ORDER BY day ASC",
+        (name, lang),
     )
     recent = await db.async_execute(
-        "SELECT c.cluster_id, (SELECT title FROM articles WHERE cluster_id = c.cluster_id ORDER BY COALESCE(ingested_at, created_at) DESC LIMIT 1) as title, c.updated_at as created_at, s.summary, s.sentiment FROM cluster_metadata c LEFT JOIN cluster_summaries s ON c.cluster_id = s.cluster_id WHERE EXISTS (SELECT 1 FROM unnest(COALESCE(c.tags, '{}')) AS tag WHERE LOWER(tag) = LOWER(%s)) ORDER BY c.updated_at DESC LIMIT 10",
-        (name,),
+        f"SELECT c.cluster_id, (SELECT title FROM articles WHERE cluster_id = c.cluster_id ORDER BY COALESCE(ingested_at, created_at) DESC LIMIT 1) as title, c.updated_at as created_at, s.summary, s.sentiment FROM cluster_metadata c LEFT JOIN cluster_summaries s ON c.cluster_id = s.cluster_id AND s.lang = %s WHERE {_CASE_INSENSITIVE_TAG_EXISTS} ORDER BY c.updated_at DESC LIMIT 10",
+        (lang, name),
     )
 
     processed = []
@@ -715,9 +715,9 @@ async def get_entity_profile(name: str):
 
 
 @router.get("/intelligence/global-pulse", response_model=GlobalPulseResponse)
-async def get_global_pulse(category: Optional[str] = None):
+async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] = "sr"):
     """Public high-level intelligence stats for the Pulse page."""
-    cat_id = f"cat-{category}" if category else "all"
+    cat_id = f"cat-{category}-{lang}" if category else f"all-{lang}"
     cache_key = f"api:intelligence:global-pulse:{cat_id}:v4"
     cached = cached_response(cache_key)
     if cached:
@@ -784,10 +784,11 @@ async def get_global_pulse(category: Optional[str] = None):
             UNNEST(m.topics) t
             WHERE s.sentiment IS NOT NULL AND s.created_at >= NOW() - INTERVAL '24 hours'
               AND m.topics IS NOT NULL AND array_length(m.topics, 1) > 0
+              AND s.lang = %s
               {cat_filter.replace('a.category', 'm.category')}
             GROUP BY t ORDER BY n DESC
         """,
-            tuple(params),
+            tuple([lang] + params),
         )
 
     velocity, by_category, by_topic_sentiment, count_row = await asyncio.gather(
