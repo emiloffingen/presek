@@ -4,7 +4,7 @@ import RedditLayout from '../../layouts/RedditLayout.astro';
 import RedditPostCard from '../../components/reddit/RedditPostCard.astro';
 import { apiBaseUrl } from '@/lib/apiBase';
 import type { NewsCluster } from '@/types';
-import { TrendingUp, Fire, Clock, Globe } from 'lucide-react';
+import { TrendingUp, Flame, Clock, Globe2 } from 'lucide-react';
 
 const API_URL = apiBaseUrl();
 
@@ -132,10 +132,10 @@ const pageDescription = getPageDescription();
             <span class="font-medium flex items-center gap-1"><Clock class="w-4 h-4" /> Poslednjih 24h</span>
         </a>
         <a href="/r/?topic=Politika" class:list={['reddit-nav-link', 'px-4 py-2 rounded-t-md', topic === 'Politika' ? 'bg-[var(--card)] border-b-2 border-[var(--primary)] text-[var(--foreground)]' : '']}>
-            <span class="font-medium flex items-center gap-1"><Fire class="w-4 h-4" /> Popularno</span>
+            <span class="font-medium flex items-center gap-1"><Flame class="w-4 h-4" /> Popularno</span>
         </a>
         <a href="/r/?category=Globalna" class:list={['reddit-nav-link', 'px-4 py-2 rounded-t-md', category === 'Globalna' ? 'bg-[var(--card)] border-b-2 border-[var(--primary)] text-[var(--foreground)]' : '']}>
-            <span class="font-medium flex items-center gap-1"><Globe class="w-4 h-4" /> Globalno</span>
+            <span class="font-medium flex items-center gap-1"><Globe2 class="w-4 h-4" /> Globalno</span>
         </a>
     </div>
 
