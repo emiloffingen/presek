@@ -192,12 +192,14 @@ async def get_archive(
 
         # 2. Main content query
         if q:
+            # Escape LIKE special characters in search query
+            escaped_q = (q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_"))
             base_sql = """
                 SELECT * FROM articles 
                 WHERE created_at >= %s AND created_at < %s AND country = %s
-                  AND (title ILIKE %s OR summary ILIKE %s OR description ILIKE %s)
+                  AND (title ILIKE %s ESCAPE '\\' OR summary ILIKE %s ESCAPE '\\' OR description ILIKE %s ESCAPE '\\')
             """
-            params = [d_start, d_end, country, f"%{q}%", f"%{q}%", f"%{q}%"]
+            params = [d_start, d_end, country, f"%{escaped_q}%", f"%{escaped_q}%", f"%{escaped_q}%"]
         else:
             base_sql = (
                 "SELECT * FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"
@@ -218,8 +220,8 @@ async def get_archive(
         metrics_sql = "SELECT COUNT(*) as total, COUNT(DISTINCT source) as source_count FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"
         metrics_params = [d_start, d_end, country]
         if q:
-            metrics_sql += " AND (title ILIKE %s OR summary ILIKE %s)"
-            metrics_params.extend([f"%{q}%", f"%{q}%"])
+            metrics_sql += " AND (title ILIKE %s ESCAPE '\\' OR summary ILIKE %s ESCAPE '\\')"
+            metrics_params.extend([f"%{escaped_q}%", f"%{escaped_q}%"])
         if source:
             metrics_sql += " AND source = %s"
             metrics_params.append(source)

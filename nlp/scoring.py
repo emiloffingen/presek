@@ -118,7 +118,7 @@ def score_cluster_for_homepage(arts):
             get_source_effective_weight(str(article.get("source") or ""))
             for article in ranked[:3]
         ]
-        avg_top_weight = sum(weights) / len(weights)
+        avg_top_weight = sum(weights) / len(weights) if weights else 0.0
     trust_bonus = 1 + max(0.0, min(0.22, (avg_top_weight - 1.0) * 0.16))
     corroborated = sum(1 for signal in signals if signal.get("corroborated_by", 0) >= 1)
     corroboration_bonus = 1 + min(0.24, corroborated * 0.07)

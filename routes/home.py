@@ -65,7 +65,8 @@ _FEATURE_PATTERNS = [
 
 
 def _primary_article(cluster):
-    return (cluster or {}).get("articles", [{}])[0] or {}
+    articles = (cluster or {}).get("articles", [{}])
+    return articles[0] if articles else {}
 
 
 def _title_looks_like_feature(title):

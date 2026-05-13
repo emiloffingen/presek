@@ -550,8 +550,9 @@ def _dedupe_briefing_candidates(candidates, limit=4):
                 and len(
                     set(title.lower().split()) & set(str(other_title).lower().split())
                 )
-                / len(
-                    set(title.lower().split()) | set(str(other_title).lower().split())
+                / max(
+                    1,
+                    len(set(title.lower().split()) | set(str(other_title).lower().split()))
                 )
                 >= 0.72
             )

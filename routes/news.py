@@ -425,6 +425,8 @@ async def get_news(
                 else []
             )
         elif entity:
+            # Escape LIKE special characters in entity search
+            escaped_entity = (entity.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_"))
             query = """
                 WITH entity_clusters AS (
                     SELECT ce.cluster_id
@@ -433,9 +435,9 @@ async def get_news(
                     UNION
                     SELECT a.cluster_id
                     FROM articles a
-                    WHERE a.title ILIKE %s
-                       OR a.summary ILIKE %s
-                       OR a.description ILIKE %s
+                    WHERE a.title ILIKE %s ESCAPE '\\'
+                       OR a.summary ILIKE %s ESCAPE '\\'
+                       OR a.description ILIKE %s ESCAPE '\\'
                 )
                 SELECT a.cluster_id, MAX(COALESCE(a.ingested_at, a.created_at)) as last_article
                 FROM articles a
@@ -444,9 +446,9 @@ async def get_news(
             """
             params = [
                 entity,
-                f"%{entity}%",
-                f"%{entity}%",
-                f"%{entity}%",
+                f"%{escaped_entity}%",
+                f"%{escaped_entity}%",
+                f"%{escaped_entity}%",
             ]
             if country:
                 query += " AND a.country = %s"
