@@ -1,0 +1,3 @@
+[submodule "web-mk"]
+	path = web-mk
+	url = https://github.com/emiloffingen/presek-mk.git
