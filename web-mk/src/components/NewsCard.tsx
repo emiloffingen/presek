@@ -24,12 +24,12 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   const showSignificanceLabel = cluster.is_breaking || sourceCount >= 3;
   const significanceLabel =
     sourceCount >= 6
-      ? 'Siroko pokrieno'
+      ? 'Широко покриено'
       : sourceCount >= 4
-      ? 'Sledena tema'
+      ? 'Следена тема'
       : cluster.is_breaking
-      ? 'Iten razvoj'
-      : 'Vo tek';
+      ? 'Итен развој'
+      : 'Во тек';
 
   const selectedImage = chooseClusterImage(cluster, isLead ? 'hero' : 'card');
   const thumbSrc = selectedImage.proxiedUrl;
@@ -51,21 +51,21 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
   const getWhyItMatters = () => {
     if (sourceSignal.role_label && sourceCount >= 4) {
-      return `${sourceSignal.role_label}. Temata vece se potvrduva i se prosiruva niz povece redakcii.`;
+      return `${sourceSignal.role_label}. Темата веќе се потврдува и се проширува низ повеќе редакции.`;
     }
     if (sourceSignal.role_label && sourceCount >= 2) {
-      return `${sourceSignal.role_label}. Sledete me za novi potvrdi i reakcije.`;
+      return `${sourceSignal.role_label}. Следете нè за нови потврди и реакции.`;
     }
     if (sourceCount >= 6) {
-      return `razvoj so siroko mediumsko pokrivanje od ${sourceCount} ${sourceCount === 1 ? 'izvor' : 'izvori'}.`;
+      return `развој со широко медиумско покривање од ${sourceCount} ${sourceCount === 1 ? 'извор' : 'извори'}.`;
     }
     if (sourceCount >= 4) {
-      return 'Povece redakcii vece dodavaat novi detali.';
+      return 'Повеќе редакции веќе додаваат нови детали.';
     }
     if (sourceCount >= 2) {
-      return 'prica sto pocnuva da dobiva potvrdi i siri kontekst.';
+      return 'приказна што почнува да добива потврди и широк контекст.';
     }
-    return 'Prv signal. Vredi da se sledi dali ce dobie posiroka potvrda.';
+    return 'Прв сигнал. Вреди да се следи дали ќе добие поширока потврда.';
   };
 
   const whyItMatters = getWhyItMatters();
@@ -73,7 +73,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   const getTimeStr = (dateStr: string) => {
     try {
       const date = new Date(dateStr);
-      return date.toLocaleTimeString('mk-RS', { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleTimeString('mk-MK', { hour: '2-digit', minute: '2-digit' });
     } catch {
       return '';
     }
@@ -94,7 +94,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
           {main.is_global && (
             <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-500">
-              <Globe size={11} /> SVETSKA vest
+              <Globe size={11} /> СВЕТСКА вест
             </span>
           )}
 
@@ -105,13 +105,13 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
               </span>
-              VO ZIVO
+              ВО ЖИВО
             </span>
           )}
 
           {anyFactCheck(cluster.articles) && (
             <span className="bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 px-1.5 py-0.5 rounded text-[10px] font-bold border border-amber-200/50 flex items-center gap-1">
-              FAKT-CEK
+              ФАКТ-ЧЕК
             </span>
           )}
         </div>
@@ -129,7 +129,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         {cluster.has_synthesis && (
             <span className="editorial-byline">
                 <Sparkles size={11} className="inline-block mr-1 text-nyt-accent" />
-                Sistemska sinteza na Presek
+                Системска синтеза на Пресек
             </span>
         )}
 
@@ -143,7 +143,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         </div>
 
         {isLead && cluster.articles.length > 1 && (
-          <ul className="sub-headlines">
+          <ul className="className">
             {cluster.articles.slice(1, 4).map((sub: Article, idx: number) => (
               <li key={idx}>
                 <a
@@ -158,7 +158,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         <div className="footer-meta">
           <span>{getTimeStr(main.ingested_at || main.created_at)}</span>
           <span className="dot">·</span>
-          <span>{cluster.articles.length} {cluster.articles.length === 1 ? 'izvor' : 'izvori'}</span>
+          <span>{cluster.articles.length} {cluster.articles.length === 1 ? 'извор' : 'извори'}</span>
         </div>
       </div>
 
@@ -169,17 +169,17 @@ export const NewsCard: React.FC<NewsCardProps> = ({
               <div className="article-image-placeholder design-card">
                 <div className="design-card-pattern"></div>
                 <div className="design-card-ribbon">
-                    <span>PRESEK PREGLED</span>
+                    <span>ПРЕСЕК ПРЕГЛЕД</span>
                 </div>
                 <div className="design-card-main">
                     <div className="design-card-icon-wrap">
                         <Activity size={24} className="text-white/90" />
                     </div>
-                    <h3>{main.category || 'vesti'}</h3>
-                    <p className="design-card-sub">{cluster.articles.length} {cluster.articles.length === 1 ? 'izvor' : 'izvori'}</p>
+                    <h3>{main.category || 'вести'}</h3>
+                    <p className="design-card-sub">{cluster.articles.length} {cluster.articles.length === 1 ? 'извор' : 'извори'}</p>
                 </div>
                 <div className="design-card-footer">
-                    <span className="design-card-cta">ODI DO STATIJATA</span>
+                    <span className="design-card-cta">ОДИ ДО СТАТИЈАТА</span>
                 </div>
               </div>
             ) : (

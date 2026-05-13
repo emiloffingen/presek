@@ -130,16 +130,22 @@ async def get_categories():
 
 
 @router.get("/weather")
-async def get_weather():
-    cached = cached_response("weather:skopje", ttl=900)
+async def get_weather(lang: Optional[str] = "sr"):
+    city = "skopje" if lang == "mk" else "beograd"
+    cache_key = f"weather:{city}"
+    cached = cached_response(cache_key, ttl=900)
     if cached:
         return cached
     try:
         import httpx
 
+        # Lat/Lon: Skopje (41.99, 21.43), Belgrade (44.78, 20.44)
+        lat = 41.9965 if lang == "mk" else 44.7866
+        lon = 21.4314 if lang == "mk" else 20.4489
+
         async with httpx.AsyncClient(timeout=3.0) as client:
             response = await client.get(
-                "https://api.open-meteo.com/v1/forecast?latitude=41.9965&longitude=21.4314&current_weather=true"
+                f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true"
             )
         r = response.json()
         curr = r.get("current_weather", {})
@@ -147,12 +153,13 @@ async def get_weather():
         res = {
             "temp": round(temp) if temp is not None else None,
             "icon": _WMO_ICON.get(curr.get("weathercode"), "🌡️"),
+            "city": "Skopje" if lang == "mk" else "Beograd",
         }
-        set_cache("weather:skopje", res, ttl=900)
+        set_cache(cache_key, res, ttl=900)
         return res
     except Exception as e:
-        log.debug(f"Failed to fetch weather: {e}")
-        return {"temp": None, "icon": "🌡️"}
+        log.debug(f"Failed to fetch weather for {city}: {e}")
+        return {"temp": None, "icon": "🌡️", "city": "Skopje" if lang == "mk" else "Beograd"}
 
 
 @router.get("/trending")
@@ -168,9 +175,9 @@ async def get_trending_route():
 
 
 @router.get("/navigation")
-async def get_navigation():
+async def get_navigation(lang: Optional[str] = "sr"):
     """Returns high-intelligence dynamic navigation with activity thresholds."""
-    cache_key = "api:navigation:v5"
+    cache_key = f"api:navigation:v6:{lang}"
     cached = cached_response(cache_key)
     if cached:
         return cached
@@ -178,6 +185,71 @@ async def get_navigation():
     from config import BREAKING_SCORE_THRESHOLD
     from utils import score_cluster
     from .intelligence import get_top_entities
+
+    # Localized Labels Mapping
+    L = {
+        "mk": {
+            "geography": "Географија",
+            "balkan": "Балкан",
+            "evropa": "Европа",
+            "svet": "Свет",
+            "news": "Вести",
+            "politika": "Политика",
+            "ekonomija": "Економија",
+            "sport": "Спорт",
+            "kriminal": "Криминал",
+            "local_city": "Скопје",
+            "local_sub": "Skopje",
+            "magazine": "Магазин",
+            "kultura": "Култура",
+            "zivot": "Живот",
+            "tehnologija": "Технологија",
+            "zdravje": "Здравје",
+            "zabava": "Забава",
+            "fokus": "Во Фокус",
+        },
+        "sr": {
+            "geography": "Geografija",
+            "balkan": "Balkan",
+            "evropa": "Evropa",
+            "svet": "Svet",
+            "news": "Vesti",
+            "politika": "Politika",
+            "ekonomija": "Ekonomija",
+            "sport": "Sport",
+            "kriminal": "Kriminal",
+            "local_city": "Beograd",
+            "local_sub": "Beograd",
+            "magazine": "Magazin",
+            "kultura": "Kultura",
+            "zivot": "Život",
+            "tehnologija": "Tehnologija",
+            "zdravje": "Zdravlje",
+            "zabava": "Zabava",
+            "fokus": "U Fokusu",
+        },
+    }.get(lang, "sr")
+    if isinstance(L, str):  # Default fallback
+        L = {
+            "geography": "Geografija",
+            "balkan": "Balkan",
+            "evropa": "Evropa",
+            "svet": "Svet",
+            "news": "Vesti",
+            "politika": "Politika",
+            "ekonomija": "Ekonomija",
+            "sport": "Sport",
+            "kriminal": "Kriminal",
+            "local_city": "Beograd",
+            "local_sub": "Beograd",
+            "magazine": "Magazin",
+            "kultura": "Kultura",
+            "zivot": "Život",
+            "tehnologija": "Tehnologija",
+            "zdravje": "Zdravlje",
+            "zabava": "Zabava",
+            "fokus": "U Fokusu",
+        }
 
     # 1. LIVE / BREAKING (Last 24h)
     breaking_items = []
@@ -213,8 +285,6 @@ async def get_navigation():
                 break
 
     # 2. Dynamic Activity (24h lookback)
-    # Count article-level classifications so navigation does not inherit stale
-    # mixed-topic/category arrays from cluster metadata.
     activity = await db.async_execute(
         f"""
         SELECT category, topic, COUNT(DISTINCT cluster_id) as n
@@ -226,7 +296,6 @@ async def get_navigation():
     """
     )
 
-    # Subcategory still needs articles table but it's narrow
     sub_activity = await db.async_execute(
         f"""
         SELECT subcategory, COUNT(DISTINCT cluster_id) as n
@@ -247,71 +316,72 @@ async def get_navigation():
 
     sub_act = {r["subcategory"]: r["n"] for r in sub_activity}
 
-    # 3. GEOGRAPHY (Excluding Srbija as it's the home default)
-    # The header "Geografija" is defined by the section label in the final payload structure
+    # 3. GEOGRAPHY
     geo_items = []
     for label, display in [
-        ("Balkan", "Balkan"),
-        ("Evropa", "Evropa"),
-        ("Svet", "Svet"),
+        ("Balkan", L["balkan"]),
+        ("Evropa", L["evropa"]),
+        ("Svet", L["svet"]),
     ]:
         count = cat_act.get(label, 0)
         geo_items.append(
             {
                 "label": display,
-                "href": f"/?category={urllib.parse.quote(display)}",
+                "href": f"/?category={urllib.parse.quote(label)}",
                 "count": count,
             }
         )
 
-    # 4. CORE NEWS (The Pillars + Skopje)
+    # 4. CORE NEWS
     news_items = []
-    core_news = ["Politika", "Ekonomija", "Sport", "Kriminal"]
-    for label in core_news:
+    core_news = [
+        ("Politika", L["politika"]),
+        ("Ekonomija", L["ekonomija"]),
+        ("Sport", L["sport"]),
+        ("Kriminal", L["kriminal"]),
+    ]
+    for label, display in core_news:
         count = top_act.get(label, 0)
         news_items.append(
             {
-                "label": label,
+                "label": display,
                 "href": f"/?topic={urllib.parse.quote(label)}",
                 "count": count,
             }
         )
 
-    # Add Skopje as the local anchor
-    skopje_count = sub_act.get("Beograd", 0)
+    # Add Local Anchor
+    local_label = L["local_city"]
+    local_sub = L["local_sub"]
+    local_count = sub_act.get(local_sub, 0)
     news_items.append(
-        {"label": "Beograd", "href": "/?subcategory=Beograd", "count": skopje_count}
+        {
+            "label": local_label,
+            "href": f"/?subcategory={urllib.parse.quote(local_sub)}",
+            "count": local_count,
+        }
     )
 
-    # 5. MAGAZINE (Lifestyle & Culture)
+    # 5. MAGAZINE
     magazine_items = []
-    magazine_topics = ["Kultura", "Zivot"]
-    for label in magazine_topics:
+    magazine_topics = [
+        ("Kultura", L["kultura"]),
+        ("Zivot", L["zivot"]),
+        ("Tehnologija", L["tehnologija"]),
+        ("Zdravje", L["zdravje"]),
+        ("Zabava", L["zabava"]),
+    ]
+    for label, display in magazine_topics:
         count = top_act.get(label, 0)
         magazine_items.append(
             {
-                "label": label,
+                "label": display,
                 "href": f"/?topic={urllib.parse.quote(label)}",
                 "count": count,
             }
         )
 
-    tech_count = top_act.get("Tehnologija", 0)
-    magazine_items.append(
-        {"label": "Tehnologija", "href": "/?topic=Tehnologija", "count": tech_count}
-    )
-
-    health_count = top_act.get("Zdravje", 0)
-    magazine_items.append(
-        {"label": "Zdravje", "href": "/?topic=Zdravje", "count": health_count}
-    )
-
-    entertainment_count = top_act.get("Zabava", 0)
-    magazine_items.append(
-        {"label": "Zabava", "href": "/?topic=Zabava", "count": entertainment_count}
-    )
-
-    # 6. TRENDING STORIES (Top Entities)
+    # 6. TRENDING STORIES
     trending_entities = await get_top_entities(limit=8)
     entities = [
         {
@@ -326,10 +396,10 @@ async def get_navigation():
     res = {
         "breaking": breaking_items,
         "sections": [
-            {"label": "Geografija", "items": geo_items, "type": "core"},
-            {"label": "vesti", "items": news_items, "type": "dynamic"},
-            {"label": "Magazin", "items": magazine_items, "type": "magazine"},
-            {"label": "Vo Fokus", "items": entities[:5], "type": "trending"},
+            {"label": L["geography"], "items": geo_items, "type": "core"},
+            {"label": L["news"], "items": news_items, "type": "dynamic"},
+            {"label": L["magazine"], "items": magazine_items, "type": "magazine"},
+            {"label": L["fokus"], "items": entities[:5], "type": "trending"},
         ],
     }
     set_cache(cache_key, res, ttl=300)

@@ -76,25 +76,25 @@ const hasSynthesis = cluster.has_synthesis;
 
 function getWhyItMatters() {
 	if (cluster.articles.some(a => a.is_fact_check)) {
-		return 'prica so aktivna sistemska verifikacija i detalna dekonstrukcija na navodite.';
+		return 'priča sa aktivnom sistemskom verifikacijom i detaljnom dekonstrukcijom navoda.';
 	}
 	if (cluster.is_breaking && totalSources >= 4) {
-		return 'Iten razvoj so visok intenzitet koj vece dobiva seopfatno mediumsko vnimanie.';
+		return 'Hitan razvoj visokog intenziteta koji već dobija seobuhvatnu medijsku pažnju.';
 	}
 	if (sourceSignal.role_label && totalSources >= 4) {
-		return `${sourceSignal.role_label}. Prikaznata se zacvrstuva niz povece nezavisni linii na izvestuvanje.`;
+		return `${sourceSignal.role_label}. Priča se učvršćuje kroz više nezavisnih linija izveštavanja.`;
 	}
 	if (sourceSignal.role_label && totalSources >= 2) {
-		return `${sourceSignal.role_label}. Tema se širi novim potvrama i zvaničnim reakcijama.`;
+		return `${sourceSignal.role_label}. Tema se širi novim potvrdama i zvaničnim reakcijama.`;
 	}
 	if (totalSources >= 6) {
-		return `razvoj sa izražénom medijskom težinom podržan od ${totalSources} različiti izvori.`;
+		return `razvoj sa izraženom medijskom težinom podržan od ${totalSources} različita izvora.`;
 	}
 	if (totalSources >= 4) {
 		return 'Više redakcija dodaje nove slojeve informacija i specifičan kontekst.';
 	}
 	if (totalSources >= 2) {
-		return 'priča koja brzo dobija sistemske potvrde i širi javni odjek.';
+		return 'priča koja brzo dobija sistemske potvrde i širok javni odjek.';
 	}
 	return 'razvoj sa potencijalom za dopunsku tematsku evoluciju.';
 }
@@ -111,7 +111,7 @@ function getTimeStr(dateStr: string) {
         const diffMs = now.getTime() - date.getTime();
         const diffMins = Math.floor(diffMs / (1000 * 60));
 
-        if (diffMins < 1) return 'JUST NOW';
+        if (diffMins < 1) return 'SADA';
         if (diffMins < 60) return `PRE ${diffMins} MIN`;
 
         return date.toLocaleTimeString('sr-RS', { 
@@ -156,7 +156,7 @@ function getTimeStr(dateStr: string) {
 		{hasSynthesis && (
 			<span class="editorial-byline">
                 <Sparkles size={11} className="inline-block mr-1 text-nyt-accent" />
-				Sistemska sinteza na Presek
+				Sistemska sinteza Preseka
 			</span>
 		)}
 
@@ -189,7 +189,7 @@ function getTimeStr(dateStr: string) {
 		</span>
 			<span class="flex items-center gap-1">
 		<Layers size={11} className="opacity-70" />
-		{uniqueSources} {uniqueSources === 1 ? 'izvor' : 'izvori'}
+		{uniqueSources} {uniqueSources === 1 ? 'izvor' : 'izvora'}
 		{totalSources > uniqueSources && <span class="text-muted-foreground ml-0.5">({totalSources})</span>}
 		</span>
 		</div>
@@ -213,7 +213,7 @@ function getTimeStr(dateStr: string) {
                             <p class="design-card-sub">{cardContext.sub}</p>
                         </div>
                         <div class="design-card-footer">
-                            <span class="design-card-cta">ODI DO STATIJATA <ArrowRight size={12} className="ml-1" /></span>
+                            <span class="design-card-cta">ODI DO STATIJE <ArrowRight size={12} className="ml-1" /></span>
                         </div>
 					</div>
 				) : (

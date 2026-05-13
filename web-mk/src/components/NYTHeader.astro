@@ -18,11 +18,11 @@ interface Props {
 
 const { category, topic, entity, subcategory, q, stats: propStats } = Astro.props;
 
-const currentDate = new Intl.DateTimeFormat('sr-RS', {
+const currentDate = new Intl.DateTimeFormat('mk-MK', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
-    timeZone: 'Europe/Belgrade'
+    timeZone: 'Europe/Skopje'
 }).format(new Date());
 
 const currentEdition = getEditionStr(new Date());
@@ -39,7 +39,7 @@ let stats = propStats;
 let latestTickerItems: any[] = [];
 
 try {
-    const requests = [fetch(`${API_URL}/navigation`)];
+    const requests = [fetch(`${API_URL}/navigation?lang=mk`)];
     const shouldFetchStats = !stats || typeof stats.last_1h !== 'number' || typeof stats.total_feeds === 'undefined';
     if (shouldFetchStats) {
         requests.push(fetch(`${API_URL}/stats/summary`));
@@ -60,7 +60,7 @@ try {
             latestTickerItems = (latestData?.clusters || []).map((cluster: any) => {
                 const lead = Array.isArray(cluster?.articles) ? cluster.articles[0] : null;
                 return {
-                    label: cluster?.synthetic_headline || lead?.title || 'Najnova vest',
+                    label: cluster?.synthetic_headline || lead?.title || 'Најнова вест',
                     href: `/cluster/${cluster?.cluster_id}`,
                     type: cluster?.is_breaking ? 'breaking' : 'latest',
                     created_at: lead?.ingested_at || lead?.created_at || null,
@@ -96,10 +96,10 @@ function getRelativeTimeStr(dateStr?: string) {
         const diffMs = now.getTime() - date.getTime();
         const diffMins = Math.floor(diffMs / (1000 * 60));
 
-        if (diffMins < 1) return 'JUST NOW';
-        if (diffMins < 60) return `${diffMins} MIN`;
+        if (diffMins < 1) return 'СЕГА';
+        if (diffMins < 60) return `${diffMins} МИН`;
         
-        return date.toLocaleTimeString('mk-RS', { 
+        return date.toLocaleTimeString('mk-MK', { 
             hour: '2-digit', 
             minute: '2-digit',
             timeZone: 'Europe/Skopje' 
@@ -119,7 +119,7 @@ function getRelativeTimeStr(dateStr?: string) {
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                     <span class="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
                 </span>
-                <span class="ticker-label">VO ZIVO</span>
+                <span class="ticker-label">ВО ЖИВО</span>
             </div>
             <div class="unified-ticker-track-wrap">
                 <div class="unified-ticker-track">
@@ -170,18 +170,18 @@ function getRelativeTimeStr(dateStr?: string) {
             <div class="topbar-actions">
                 <div class="topbar-modes-rail">
                     <a href="/briefing" class={`mode-link ${Astro.url.pathname === '/briefing' ? 'is-active' : ''}`}>
-                        <Radio size={11} strokeWidth={3} /> <span>Brifing</span>
+                        <Radio size={11} strokeWidth={3} /> <span>Брифинг</span>
                     </a>
                     <a href="/archive" class={`mode-link ${Astro.url.pathname === '/archive' ? 'is-active' : ''}`}>
-                        <Sparkles size={11} strokeWidth={3} /> <span>Arhiva</span>
+                        <Sparkles size={11} strokeWidth={3} /> <span>Архива</span>
                     </a>
                     <a href="/pulse" class={`mode-link ${Astro.url.pathname === '/pulse' ? 'is-active' : ''}`}>
-                        <BarChart3 size={11} strokeWidth={3} /> <span>Puls</span>
+                        <BarChart3 size={11} strokeWidth={3} /> <span>Пулс</span>
                     </a>
                 </div>
                 <div class="topbar-util">
                     {stats?.last_1h && stats.last_1h > 0 && (
-                        <div class="activity-chip" title="nove vesti u poslednjih sat vremena">
+                        <div class="activity-chip" title="нови вести во последниот час">
                             <span class="activity-dot"></span>
                             +{stats.last_1h}
                         </div>
