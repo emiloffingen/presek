@@ -287,7 +287,7 @@ def _display_entity_name(name):
 
 
 @router.get("/home", response_model=HomeResponse)
-async def get_home(lang: Optional[str] = None):
+async def get_home(lang: Optional[str] = "sr"):
     cache_key = f"api:home:v3:{lang}"
     cached = cached_response(cache_key, ttl=3600)
     if cached:
@@ -414,13 +414,13 @@ async def get_home(lang: Optional[str] = None):
 
 
 @router.get("/home/live-now")
-async def get_home_live_now(exclude: str = ""):
-    cache_key = f"api:home:live-now:v1:{exclude}"
+async def get_home_live_now(exclude: str = "", lang: Optional[str] = "sr"):
+    cache_key = f"api:home:live-now:v2:{exclude}:{lang}"
     cached = cached_response(cache_key, ttl=60)
     if cached:
         return cached
     try:
-        recent_result = await get_news(sort="recent", page_size=24)
+        recent_result = await get_news(sort="recent", page_size=24, lang=lang)
         exclude_cluster_ids = [
             token.strip()
             for token in str(exclude or "").split(",")
@@ -443,14 +443,14 @@ async def get_home_live_now(exclude: str = ""):
 
 
 @router.get("/home/latest-wire")
-async def get_home_latest_wire(limit: int = 15):
+async def get_home_latest_wire(limit: int = 15, lang: Optional[str] = "sr"):
     bounded_limit = max(1, min(int(limit or 15), 30))
-    cache_key = f"api:home:latest-wire:v1:{bounded_limit}"
+    cache_key = f"api:home:latest-wire:v2:{bounded_limit}:{lang}"
     cached = cached_response(cache_key, ttl=120)
     if cached:
         return cached
     try:
-        recent_result = await get_news(sort="recent", page_size=24)
+        recent_result = await get_news(sort="recent", page_size=24, lang=lang)
         recent_clusters = (
             recent_result.get("clusters") if isinstance(recent_result, dict) else []
         )

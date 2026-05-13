@@ -62,7 +62,7 @@ export default function HomeLiveUpdatesIsland({ excludeClusterIds = [], initialC
     const loadLatest = async () => {
       try {
         const exclude = encodeURIComponent(excludeClusterIds.join(','));
-        const res = await fetch(`${API_URL}/home/live-now?exclude=${exclude}&t=${Date.now()}`);
+        const res = await fetch(`${API_URL}/home/live-now?exclude=${exclude}&lang=sr&t=${Date.now()}`);
         if (!res.ok) return;
         const data = await res.json();
         if (cancelled) return;

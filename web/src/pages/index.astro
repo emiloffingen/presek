@@ -9,7 +9,7 @@ let clusters: NewsCluster[] = [];
 let wireArticles: any[] = [];
 
 try {
-    const homeResult = await fetch(`${API_URL}/home`);
+    const homeResult = await fetch(`${API_URL}/home?lang=sr`);
     const home = await homeResult.json();
     clusters = home?.lead ? [home.lead, ...home.supporting] : [];
     wireArticles = Array.isArray(home?.latest_wire) ? home.latest_wire : [];

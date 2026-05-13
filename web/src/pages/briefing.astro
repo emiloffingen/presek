@@ -27,7 +27,7 @@ try {
 
     const [briefRes, homeRes, statsRes] = await Promise.all([
         fetch(briefingUrl),
-        fetch(`${API_URL}/home`),
+        fetch(`${API_URL}/home?lang=sr`),
         fetch(`${API_URL}/stats/summary`)
     ]);
 
