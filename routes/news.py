@@ -334,13 +334,14 @@ async def get_news(
     topic: Optional[str] = None,
     entity: Optional[str] = None,
     subcategory: Optional[str] = None,
+    country: Optional[str] = None,
     lang: Optional[str] = "sr",
     sort: str = "recent",
     timespan: Optional[str] = None,  # '24h', '7d', '30d', 'all'
     page: int = 0,
     page_size: int = 24,
 ):
-    cache_key = f"api:news:v2:{q}:{category}:{topic}:{entity}:{subcategory}:{lang}:{sort}:{timespan}:{page}:{page_size}"
+    cache_key = f"api:news:v2:{q}:{category}:{topic}:{entity}:{subcategory}:{country}:{lang}:{sort}:{timespan}:{page}:{page_size}"
     cached = cached_response(cache_key)
     if cached:
         return cached
@@ -356,6 +357,10 @@ async def get_news(
         # If no specific filter, default to the language's primary category
         if not q and not category and not topic and not entity and not subcategory:
             category = "Makedonija" if lang == "mk" else "Srbija"
+
+        # Map country to MK/RS if not provided but lang is
+        if not country and lang:
+            country = "MK" if lang == "mk" else "RS"
 
         entity_info = None
         if q and page == 0:
@@ -386,24 +391,33 @@ async def get_news(
             sort_by = "recent" if sort == "recent" else "hybrid"
             rows = (
                 await db.async_hybrid_search(
-                    q, query_vec, limit=row_limit, sort_by=sort_by, timespan=timespan
+                    q,
+                    query_vec,
+                    limit=row_limit,
+                    sort_by=sort_by,
+                    timespan=timespan,
+                    country=country,
                 )
                 if query_vec
                 else await db.async_search_articles(
-                    q, limit=row_limit, timespan=timespan
+                    q, limit=row_limit, timespan=timespan, country=country
                 )
             )
         elif subcategory:
-            rows = await db.async_execute(
-                """
+            query = """
                 SELECT cluster_id, MAX(created_at) as last_article
                 FROM articles
                 WHERE subcategory = %s
-                GROUP BY cluster_id
-                ORDER BY last_article DESC LIMIT %s
-            """,
-                (subcategory, page_size * (page + 1)),
-            )
+            """
+            params = [subcategory]
+            if country:
+                query += " AND country = %s"
+                params.append(country)
+            
+            query += " GROUP BY cluster_id ORDER BY last_article DESC LIMIT %s"
+            params.append(page_size * (page + 1))
+            
+            rows = await db.async_execute(query, tuple(params))
             cids = [
                 r["cluster_id"] for r in rows[page * page_size : (page + 1) * page_size]
             ]
@@ -416,8 +430,7 @@ async def get_news(
                 else []
             )
         elif entity:
-            rows = await db.async_execute(
-                """
+            query = """
                 WITH entity_clusters AS (
                     SELECT ce.cluster_id
                     FROM cluster_entities ce
@@ -432,17 +445,22 @@ async def get_news(
                 SELECT a.cluster_id, MAX(COALESCE(a.ingested_at, a.created_at)) as last_article
                 FROM articles a
                 JOIN entity_clusters ec ON ec.cluster_id = a.cluster_id
-                GROUP BY a.cluster_id
-                ORDER BY last_article DESC LIMIT %s
-            """,
-                (
-                    entity,
-                    f"%{entity}%",
-                    f"%{entity}%",
-                    f"%{entity}%",
-                    page_size * (page + 1),
-                ),
-            )
+                WHERE 1=1
+            """
+            params = [
+                entity,
+                f"%{entity}%",
+                f"%{entity}%",
+                f"%{entity}%",
+            ]
+            if country:
+                query += " AND a.country = %s"
+                params.append(country)
+            
+            query += " GROUP BY a.cluster_id ORDER BY last_article DESC LIMIT %s"
+            params.append(page_size * (page + 1))
+
+            rows = await db.async_execute(query, tuple(params))
             cids = [r["cluster_id"] for r in rows]
 
             rows = (
@@ -454,8 +472,7 @@ async def get_news(
                 else []
             )
         elif topic:
-            rows = await db.async_execute(
-                """
+            query = """
                 WITH topic_clusters AS (
                     SELECT m.cluster_id
                     FROM cluster_metadata m
@@ -468,11 +485,17 @@ async def get_news(
                 SELECT a.cluster_id, MAX(COALESCE(a.ingested_at, a.created_at)) as last_article
                 FROM articles a
                 JOIN topic_clusters tc ON tc.cluster_id = a.cluster_id
-                GROUP BY a.cluster_id
-                ORDER BY last_article DESC LIMIT %s
-            """,
-                (topic, topic, topic, page_size * (page + 1)),
-            )
+                WHERE 1=1
+            """
+            params = [topic, topic, topic]
+            if country:
+                query += " AND a.country = %s"
+                params.append(country)
+            
+            query += " GROUP BY a.cluster_id ORDER BY last_article DESC LIMIT %s"
+            params.append(page_size * (page + 1))
+
+            rows = await db.async_execute(query, tuple(params))
             cids = [r["cluster_id"] for r in rows]
 
             rows = (
@@ -484,15 +507,21 @@ async def get_news(
                 else []
             )
         elif category:
-            rows = await db.async_execute(
-                """
-                SELECT cluster_id, updated_at as last_article 
+            query = """
+                SELECT m.cluster_id, m.updated_at as last_article 
                 FROM cluster_metadata m
-                WHERE category = %s
-                ORDER BY updated_at DESC LIMIT %s
-            """,
-                (category, page_size * (page + 1)),
-            )
+                JOIN articles a ON a.cluster_id = m.cluster_id
+                WHERE m.category = %s
+            """
+            params = [category]
+            if country:
+                query += " AND a.country = %s"
+                params.append(country)
+            
+            query += " GROUP BY m.cluster_id, m.updated_at ORDER BY m.updated_at DESC LIMIT %s"
+            params.append(page_size * (page + 1))
+            
+            rows = await db.async_execute(query, tuple(params))
             cids = [
                 r["cluster_id"] for r in rows[page * page_size : (page + 1) * page_size]
             ]
@@ -505,15 +534,22 @@ async def get_news(
                 else []
             )
         else:
-            # Fallback (should be covered by the category assignment above, but for safety)
-            rows = await db.async_execute(
-                f"""
+            # Fallback
+            query = """
                 SELECT m.cluster_id, m.updated_at as last_article 
                 FROM cluster_metadata m
-                ORDER BY m.updated_at DESC LIMIT %s
-            """,
-                (page_size * (page + 1),),
-            )
+                JOIN articles a ON a.cluster_id = m.cluster_id
+                WHERE 1=1
+            """
+            params = []
+            if country:
+                query += " AND a.country = %s"
+                params.append(country)
+            
+            query += " GROUP BY m.cluster_id, m.updated_at ORDER BY m.updated_at DESC LIMIT %s"
+            params.append(page_size * (page + 1))
+
+            rows = await db.async_execute(query, tuple(params))
             cids = [
                 r["cluster_id"] for r in rows[page * page_size : (page + 1) * page_size]
             ]

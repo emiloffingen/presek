@@ -369,9 +369,12 @@ class DatabaseManager:
         limit: int = 50,
         sort_by: str = "hybrid",
         timespan: str | None = None,
+        country: str | None = None,
     ):
         # Validate inputs to prevent SQL injection
         time_filter = _validate_timespan(timespan)
+        if country:
+            time_filter += f" AND country = '{country}'"
         validated_sort_by = _validate_sort_by(sort_by)
 
         vec_str = "[" + ",".join(map(str, query_embedding)) + "]"
@@ -379,11 +382,18 @@ class DatabaseManager:
         return await self.async_execute(sql, (query_text, query_text, vec_str, limit))
 
     async def async_search_articles(
-        self, query: str, limit: int = 50, timespan: str | None = None
+        self,
+        query: str,
+        limit: int = 50,
+        timespan: str | None = None,
+        country: str | None = None,
     ):
         # Validate timespan to prevent SQL injection
         time_filter = _validate_timespan(timespan)
-        # Remove leading "AND " for this query format
+        if country:
+            time_filter += f" AND country = '{country}'"
+
+        # Remove leading "AND " for this query format if it's the only filter
         if time_filter.startswith("AND "):
             time_filter = time_filter[4:]
 

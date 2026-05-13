@@ -1046,7 +1046,7 @@ def test_news_category_response_filters_mixed_cluster_articles(mock_all):
     import routes.news as news
 
     async def execute_side_effect(query, params=None, fetch=True):
-        if "FROM cluster_metadata m" in query and "WHERE category = %s" in query:
+        if "FROM cluster_metadata m" in query and "WHERE m.category = %s" in query:
             return [{"cluster_id": "mixed-geo", "last_article": "2026-04-22T20:00:00Z"}]
         if "SELECT * FROM articles WHERE cluster_id = ANY" in query:
             return [
@@ -1058,6 +1058,7 @@ def test_news_category_response_filters_mixed_cluster_articles(mock_all):
                     "description": "",
                     "topic": "Politika",
                     "category": "Srbija",
+                    "country": "RS",
                     "created_at": "2026-04-22T20:00:00Z",
                 },
                 {
@@ -1068,6 +1069,7 @@ def test_news_category_response_filters_mixed_cluster_articles(mock_all):
                     "description": "",
                     "topic": "Politika",
                     "category": "Evropa",
+                    "country": "RS",
                     "created_at": "2026-04-22T19:55:00Z",
                 },
             ]
