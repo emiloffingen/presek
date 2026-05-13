@@ -1,0 +1,10 @@
+# SITE IDENTIFIER - DO NOT DELETE
+SITE_NAME=Presek Serbian
+SITE_DOMAIN=presek.live
+SITE_LANGUAGE=Serbian (Latin)
+SITE_BRAND=PRESEK.live
+FRONTEND_DIR=web/
+BACKEND_SHARED=true
+
+# WARNING: This is the SERBIAN site
+# For Macedonian site, go to ../web-mk/
