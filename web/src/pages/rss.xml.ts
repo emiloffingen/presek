@@ -25,7 +25,7 @@ export const GET: APIRoute = async () => {
 
     try {
         // Fetch Serbian news
-        const res = await fetch(`${API_URL}/news?country=RS&page_size=50&page=0`);
+        const res = await fetch(`${API_URL}/news?page_size=50&page=0`);
         if (res.ok) {
             const data = await res.json();
             if (data && Array.isArray(data.clusters)) {
@@ -36,15 +36,17 @@ export const GET: APIRoute = async () => {
         console.error("RSS fetch error:", e);
     }
 
-    // Build RSS feed items
+    // Build RSS feed items - filter to only RS articles
     const items = clusters
         .filter(c => c.articles && c.articles.length > 0)
-        .map(cluster => {
-            const article = cluster.articles[0];
+        .flatMap(cluster => cluster.articles.filter((a: any) => a.country === 'RS'))
+        .filter(a => a)
+        .map(article => {
+            const cluster = clusters.find(c => c.cluster_id === article.cluster_id) || {};
             const title = cluster.synthetic_headline || cluster.title || article.title || 'Untitled';
             const description = cluster.synthetic_standfirst || article.description || cluster.summary || '';
-            const link = `${SITE_URL}/cluster/${cluster.cluster_id}`;
-            const pubDate = formatDate(cluster.articles[0]?.created_at || cluster.articles[0]?.ingested_at);
+            const link = `${SITE_URL}/cluster/${article.cluster_id}`;
+            const pubDate = formatDate(article.created_at || article.ingested_at);
             const source = article.source || 'Presek';
             
             return `
