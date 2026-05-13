@@ -596,40 +596,39 @@ restart_and_smoke() {
   sudo systemctl reload "$NGINX_SERVICE" || return 1
 
   cleanup_orphaned_runtime_listeners
-wait_for_services() {
-  info "Waiting for application services to be ready"
-  local max_attempts=10
-  local attempt=1
-  while [ $attempt -le $max_attempts ]; do
-    local all_ready=1
-    for service in "${APP_SERVICES[@]}"; do
-      if ! systemctl is-active --quiet "$service"; then
-        all_ready=0
-        break
+
+  wait_for_services() {
+    info "Waiting for application services to be ready"
+    local max_attempts=10
+    local attempt=1
+    while [ $attempt -le $max_attempts ]; do
+      local all_ready=1
+      for service in "${APP_SERVICES[@]}"; do
+        if ! systemctl is-active --quiet "$service"; then
+          all_ready=0
+          break
+        fi
+      done
+
+      if [ $all_ready -eq 1 ]; then
+        ok "All services are active"
+        return 0
       fi
+
+      warn "Services not ready (attempt $attempt/$max_attempts), waiting..."
+      sleep 3
+      attempt=$((attempt + 1))
     done
 
-    if [ $all_ready -eq 1 ]; then
-      ok "All services are active"
-      return 0
-    fi
+    fail "Services failed to become active after restart"
+  }
 
-    warn "Services not ready (attempt $attempt/$max_attempts), waiting..."
-    sleep 3
-    attempt=$((attempt + 1))
-  done
-
-  fail "Services failed to become active after restart"
-}
-
-# ... (in restart_and_smoke)
   info "Restarting application services"
   sudo systemctl restart "${APP_SERVICES[@]}" || return 1
   sudo systemctl start "$SYSTEMD_TARGET" || return 1
   wait_for_services || return 1
 
   info "Running smoke checks"
-# ...
   ENABLE_PUBLIC_CHECK="$ENABLE_PUBLIC_CHECK" ENABLE_ADMIN_CHECK="$ENABLE_ADMIN_CHECK" APP_ROOT="$APP_ROOT" bash "$SMOKE_SCRIPT" || return 1
 }
 
