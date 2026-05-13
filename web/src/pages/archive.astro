@@ -25,6 +25,7 @@ let error = null;
 try {
   const archiveUrl = new URL(`${API_URL}/archive`);
   archiveUrl.searchParams.set('date', date);
+  archiveUrl.searchParams.set('lang', 'sr');
   archiveUrl.searchParams.set('page', String(page));
   archiveUrl.searchParams.set('page_size', '50');
   if (q) archiveUrl.searchParams.set('q', q);
@@ -33,8 +34,8 @@ try {
   
   const [res, briefRes, otdRes] = await Promise.all([
     fetch(archiveUrl),
-    fetch(`${API_URL}/archive/daily-briefing?date=${date}`),
-    fetch(`${API_URL}/archive/on-this-day?date=${date}`)
+    fetch(`${API_URL}/archive/daily-briefing?date=${date}&lang=sr`),
+    fetch(`${API_URL}/archive/on-this-day?date=${date}&lang=sr`)
   ]);
 
   if (res.ok) archive = await res.json();

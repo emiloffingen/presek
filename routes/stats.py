@@ -157,6 +157,7 @@ async def get_archive(
     q: str = "",
     source: str = "",
     topic: str = "",
+    lang: str = "sr",
     page: int = 0,
     page_size: int = 50,
 ):
@@ -177,7 +178,7 @@ async def get_archive(
             )
 
         # 1. Caching - Only for historical dates (older than today)
-        cache_key = f"api:archive:v3:{date}:{q}:{source}:{topic}:{page}:{page_size}"
+        cache_key = f"api:archive:v4:{date}:{q}:{source}:{topic}:{lang}:{page}:{page_size}"
         today_str = datetime.now().strftime("%Y-%m-%d")
         is_today = date == today_str
 
@@ -187,20 +188,21 @@ async def get_archive(
                 return cached
 
         d_start, d_end = get_date_range(date)
+        country = "MK" if lang == "mk" else "RS"
 
         # 2. Main content query
         if q:
             base_sql = """
                 SELECT * FROM articles 
-                WHERE created_at >= %s AND created_at < %s 
+                WHERE created_at >= %s AND created_at < %s AND country = %s
                   AND (title ILIKE %s OR summary ILIKE %s OR description ILIKE %s)
             """
-            params = [d_start, d_end, f"%{q}%", f"%{q}%", f"%{q}%"]
+            params = [d_start, d_end, country, f"%{q}%", f"%{q}%", f"%{q}%"]
         else:
             base_sql = (
-                "SELECT * FROM articles WHERE created_at >= %s AND created_at < %s"
+                "SELECT * FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"
             )
-            params = [d_start, d_end]
+            params = [d_start, d_end, country]
 
         if source:
             base_sql += " AND source = %s"
@@ -213,8 +215,8 @@ async def get_archive(
 
         # 3. Optimized metrics queries (combined where possible)
         # Combined count and unique sources
-        metrics_sql = "SELECT COUNT(*) as total, COUNT(DISTINCT source) as source_count FROM articles WHERE created_at >= %s AND created_at < %s"
-        metrics_params = [d_start, d_end]
+        metrics_sql = "SELECT COUNT(*) as total, COUNT(DISTINCT source) as source_count FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"
+        metrics_params = [d_start, d_end, country]
         if q:
             metrics_sql += " AND (title ILIKE %s OR summary ILIKE %s)"
             metrics_params.extend([f"%{q}%", f"%{q}%"])
@@ -226,8 +228,8 @@ async def get_archive(
             metrics_params.append(topic)
 
         # Groupings
-        group_source_sql = "SELECT source, COUNT(*) AS n FROM articles WHERE created_at >= %s AND created_at < %s"
-        group_source_params = [d_start, d_end]
+        group_source_sql = "SELECT source, COUNT(*) AS n FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"
+        group_source_params = [d_start, d_end, country]
         if source:
             group_source_sql += " AND source = %s"
             group_source_params.append(source)
@@ -236,8 +238,8 @@ async def get_archive(
             group_source_params.append(topic)
         group_source_sql += " GROUP BY source ORDER BY n DESC LIMIT 8"
 
-        group_topic_sql = "SELECT topic, COUNT(*) AS n FROM articles WHERE created_at >= %s AND created_at < %s"
-        group_topic_params = [d_start, d_end]
+        group_topic_sql = "SELECT topic, COUNT(*) AS n FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"
+        group_topic_params = [d_start, d_end, country]
         if source:
             group_topic_sql += " AND source = %s"
             group_topic_params.append(source)
@@ -400,10 +402,11 @@ async def get_archive_daily_briefing(date: str = Query(...)):
 
 
 @router.get("/archive/on-this-day")
-async def get_archive_on_this_day(date: str = Query(...)):
+async def get_archive_on_this_day(date: str = Query(...), lang: str = "sr"):
     """Finds a significant cluster from exactly 1 or 2 years ago."""
     validate_date(date)
     dt = datetime.strptime(date, "%Y-%m-%d")
+    country = "MK" if lang == "mk" else "RS"
 
     for years in [1, 2]:
         past_date = (dt - timedelta(days=365 * years)).strftime("%Y-%m-%d")
@@ -415,12 +418,12 @@ async def get_archive_on_this_day(date: str = Query(...)):
             FROM cluster_summaries s
             JOIN articles a ON s.cluster_id = a.cluster_id
             JOIN cluster_metadata m ON s.cluster_id = m.cluster_id
-            WHERE a.created_at >= %s AND a.created_at <= %s
+            WHERE a.created_at >= %s AND a.created_at <= %s AND a.country = %s
             GROUP BY s.cluster_id, s.summary, s.synthetic_headline, m.representative_image, s.pluralism_score
             ORDER BY s.pluralism_score DESC, COUNT(a.id) DESC
             LIMIT 1
         """,
-            (d_start, d_end),
+            (d_start, d_end, country),
         )
 
         if past_cluster:
