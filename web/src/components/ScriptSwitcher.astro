@@ -3,6 +3,8 @@
 </button>
 
 <script>
+    import { cyrToLat, latToCyr } from '../utils/textUtils';
+    
     document.addEventListener('astro:page-load', () => {
         const toggle = document.getElementById('script-toggle');
         if (!toggle) return;
