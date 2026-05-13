@@ -353,11 +353,6 @@ async def get_news(
         if q:
             q = q.strip()[:API_MAX_Q_LEN]
 
-        # Base filter for language/region
-        # If no specific filter, default to the language's primary category
-        if not q and not category and not topic and not entity and not subcategory:
-            category = "Makedonija" if lang == "mk" else "Srbija"
-
         # Map country to MK/RS if not provided but lang is
         if not country and lang:
             country = "MK" if lang == "mk" else "RS"
