@@ -108,9 +108,15 @@ discover_app_services() {
   done < <(find "$SYSTEMD_DIR" -maxdepth 1 -type f \( -name "*.service" -o -name "*.target" -o -name "*.timer" \) -print0 2>/dev/null || true)
   
   # Filter to only service files (exclude targets and timers for service management)
+  # Also exclude oneshot services that shouldn't be part of the 'active' check
   local services=()
   for unit in "${all_units[@]}"; do
     if [[ "$unit" == *.service ]]; then
+      # Exclude oneshot/timer-only services
+      if [[ "$unit" == "cloudflare-realip-update.service" ]]; then
+        info "Skipping oneshot service: $unit"
+        continue
+      fi
       services+=("$unit")
     fi
   done
