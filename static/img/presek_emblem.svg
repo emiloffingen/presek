@@ -1,7 +1,0 @@
-<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="4" y="4" width="92" height="92" stroke="#0f172a" stroke-width="8" fill="white" />
-    <path d="M50 4 L50 96" stroke="#0f172a" stroke-width="1.5" opacity="0.15" />
-    <path d="M4 50 L96 50" stroke="#0f172a" stroke-width="1.5" opacity="0.15" />
-    <rect x="26" y="26" width="48" height="48" fill="#1e40af" />
-    <text x="50" y="70" font-family="Georgia, serif" font-weight="900" font-size="58" text-anchor="middle" fill="white">П</text>
-</svg>
