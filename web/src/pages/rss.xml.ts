@@ -25,7 +25,7 @@ export const GET: APIRoute = async () => {
 
     try {
         // Fetch Serbian news
-        const res = await fetch(`${API_URL}/news?lang=sr&page_size=50&page=0`);
+        const res = await fetch(`${API_URL}/news?country=RS&page_size=50&page=0`);
         if (res.ok) {
             const data = await res.json();
             if (data && Array.isArray(data.clusters)) {
