@@ -1,6 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
+SOURCE_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 APP_ROOT="${APP_ROOT:-$HOME/presek-runtime}"
 CURRENT_LINK="$APP_ROOT/current"
 PREVIOUS_LINK="$APP_ROOT/previous"
@@ -12,6 +13,21 @@ ok()   { echo -e "${GREEN}✓${RESET}  $*"; }
 warn() { echo -e "${YELLOW}!${RESET}  $*"; }
 fail() { echo -e "${RED}x${RESET}  $*"; }
 info() { echo -e "${BLUE}>${RESET}  $*"; }
+
+# Discover service units dynamically
+discover_service_units() {
+    local SYSTEMD_DIR="$SOURCE_ROOT/deploy/systemd"
+    local services=()
+    while IFS= read -r -d '' file; do
+        local unit="$(basename "$file")"
+        if [[ "$unit" == *.service ]]; then
+            services+=("$unit")
+        fi
+    done < <(find "$SYSTEMD_DIR" -maxdepth 1 -type f -name "*.service" -print0 2>/dev/null || true)
+    echo "${services[@]}"
+}
+
+SERVICE_UNITS=($(discover_service_units))
 
 show_path_state() {
   local label="$1"
@@ -69,12 +85,10 @@ main() {
     show_path_state "current release web node_modules" "$current_root/web/node_modules"
   fi
 
-  show_service_state "presek-fastapi.service"
-  show_service_state "presek-astro.service"
-  show_service_state "presek-worker.service"
-  show_service_state "presek-worker-ingestion.service"
-  show_service_state "presek-worker-delivery.service"
-  show_service_state "presek-beat.service"
+  # Show state for all discovered services
+  for unit in "${SERVICE_UNITS[@]}"; do
+    show_service_state "$unit"
+  done
 }
 
 main "$@"

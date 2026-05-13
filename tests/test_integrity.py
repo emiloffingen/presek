@@ -336,8 +336,12 @@ class TestDeploymentIntegrity:
         assert 'add_header Cache-Control "no-transform"' in nginx_conf
         assert "presek-security-headers.conf" in nginx_conf
         assert "add_header Strict-Transport-Security" in headers_snippet
-        assert "add_header Content-Security-Policy" in headers_snippet
-        assert "default-src 'self'" in headers_snippet
+        # CSP is now handled by FastAPI middleware with per-request nonces
+        # nginx should NOT set CSP to avoid conflicts
+        assert "add_header Content-Security-Policy" not in headers_snippet
+        # But other security headers should still be present
+        assert "add_header X-Content-Type-Options" in headers_snippet
+        assert "add_header X-Frame-Options" in headers_snippet
 
     def test_release_flow_reloads_nginx_before_smoke_checks(self):
         deploy_script = _read("deploy/deploy_release.sh")

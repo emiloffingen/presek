@@ -291,3 +291,42 @@ def test_different_category_does_not_merge():
     )
     assert cid != "c1"
 
+
+# =============================================================================
+# Gold Standard Test Cases for Clustering Quality
+# =============================================================================
+
+
+@patch(_DB_PATCH, _mock_db)
+def test_gold_standard_exact_title_match():
+    """Gold standard: Exact title match should cluster together."""
+    recent_articles = [
+        {"cluster_id": "c1", "title": "Premierka održala sobranje", "created_at": datetime.datetime.now()},
+    ]
+    cid = find_or_create_cluster(MagicMock(), "Premierka održala sobranje", recent_articles)
+    assert cid == "c1"
+
+
+@patch(_DB_PATCH, _mock_db)
+def test_gold_standard_very_similar_titles_cluster():
+    """Gold standard: Very similar titles should cluster together."""
+    recent_articles = [
+        {
+            "cluster_id": "c1",
+            "title": "Vlada donela nov paket mera za ekonomija",
+            "created_at": datetime.datetime.now(),
+        },
+    ]
+    cid = find_or_create_cluster(MagicMock(), "Vlada donela paket mera za ekonomija", recent_articles)
+    assert cid == "c1"
+
+
+@patch(_DB_PATCH, _mock_db)
+def test_gold_standard_different_topics_dont_cluster():
+    """Gold standard: Different topics should NOT cluster together."""
+    recent_articles = [
+        {"cluster_id": "c1", "title": "Potres pogodil Skopje", "created_at": datetime.datetime.now()},
+    ]
+    cid = find_or_create_cluster(MagicMock(), "Nogometen meč Makedonija Albanija", recent_articles)
+    assert cid != "c1"
+

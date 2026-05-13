@@ -1,5 +1,6 @@
 {
-  "name": "web",
+  "name": "presek-web-macedonian",
+  "description": "Macedonian frontend for Presek (пресек.мк)",
   "type": "module",
   "version": "5.48.0",
   "engines": {

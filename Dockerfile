@@ -11,7 +11,8 @@ RUN npm run build
 
 # --- Stage 2: Build Python environment ---
 FROM python:3.12-slim AS python-builder
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+# Pin uv version for reproducibility (check https://github.com/astral-sh/uv/releases for latest)
+COPY --from=ghcr.io/astral-sh/uv:v0.4.24 /uv /uvx /bin/
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc g++ make cmake git python3-dev libpq-dev && \

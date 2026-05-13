@@ -614,3 +614,59 @@ class TestLocalBriefingFallback:
 
         assert "Dinamika na denot" in result
         assert "Bugarija" in result or "izbori" in result
+
+
+# =============================================================================
+# Gold Standard Test Cases for NLP Quality
+# These test cases establish expected behavior for NLP operations
+# =============================================================================
+
+
+class TestGoldStandardTagFiltering:
+    """Gold standard tests for tag filtering quality."""
+
+    def test_filter_rejects_time_markers(self):
+        """Gold standard: Time markers should be filtered out."""
+        tags = ["15:30", "dnes", "Makedonija"]
+        filtered = filter_cluster_tags(tags)
+        assert "15:30" not in filtered
+        assert "dnes" not in filtered
+        assert "Makedonija" in filtered
+
+    def test_filter_preserves_entities(self):
+        """Gold standard: Real entities should survive filtering."""
+        tags = ["Poveće", "Kako", "Makedonija", "Evropa"]
+        filtered = filter_cluster_tags(tags)
+        assert "Makedonija" in filtered
+        assert "Evropa" in filtered
+
+
+class TestGoldStandardEntityRecognition:
+    """Gold standard tests for entity recognition in clustering."""
+
+    def test_entities_prioritized_over_generic_terms(self):
+        """Gold standard: Proper nouns and entities should rank higher than generic terms."""
+        titles = [
+            "Pretsedatelot na Makedonija se sastal so pretsedatelot na Albanska",
+        ]
+        entities = [
+            {"entity_name": "Makedonija", "entity_type": "country"},
+            {"entity_name": "Albanska", "entity_type": "country"},
+        ]
+
+        tags = extract_cluster_tags_locally(titles, entity_names=entities, top_n=5)
+        assert "Makedonija" in tags
+        assert "Albanska" in tags
+
+
+class TestGoldStandardKeyphraseExtraction:
+    """Gold standard tests for keyphrase extraction quality."""
+
+    def test_extract_keyphrases_ignores_agency_attribution(self):
+        """Gold standard: Agency names should not be keyphrases."""
+        text = "MIA soopštava deka Vladata usvoi nov paket mera. Reuters pisuva deka merkite ke pocnat."
+        phrases = extract_keyphrases_locally(text, top_n=10)
+        phrase_text = " ".join(phrases).lower()
+        assert "mia" not in phrase_text
+        assert "reuters" not in phrase_text
+        assert "paket" in phrase_text or "mera" in phrase_text or "vlada" in phrase_text

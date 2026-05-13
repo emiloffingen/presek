@@ -13,23 +13,32 @@ ENABLE_PUBLIC_CHECK="${ENABLE_PUBLIC_CHECK:-1}"
 SKIP_RESTART="${SKIP_RESTART:-0}"
 SMOKE_SCRIPT="$SOURCE_ROOT/deploy/smoke_check.sh"
 
-# Discover services dynamically
-APP_SERVICES=()
-while IFS= read -r line; do
-    [ -n "$line" ] && APP_SERVICES+=("$line")
-done < <(systemctl list-dependencies "$SYSTEMD_TARGET" --plain --all | grep '^presek-' | sed 's/^[ \t]*//' || true)
+# Discover services dynamically from source directory (same as install_server.sh)
+discover_app_services() {
+    local SYSTEMD_DIR="$SOURCE_ROOT/deploy/systemd"
+    
+    # Discover all unit files from the source directory
+    local all_units=()
+    while IFS= read -r -d '' file; do
+        all_units+=("$(basename "$file")")
+    done < <(find "$SYSTEMD_DIR" -maxdepth 1 -type f \( -name "*.service" -o -name "*.target" -o -name "*.timer" \) -print0 2>/dev/null || true)
+    
+    # Filter to only service files
+    local services=()
+    for unit in "${all_units[@]}"; do
+        if [[ "$unit" == *.service ]]; then
+            services+=("$unit")
+        fi
+    done
+    
+    if [ "${#services[@]}" -eq 0 ]; then
+        fail "No application services found in $SYSTEMD_DIR"
+    fi
+    
+    echo "${services[@]}"
+}
 
-if [ "${#APP_SERVICES[@]}" -eq 0 ]; then
-    # Fallback if discovery fails or target is empty
-    APP_SERVICES=(
-      presek-fastapi.service
-      presek-astro.service
-      presek-worker.service
-      presek-worker-ingestion.service
-      presek-worker-delivery.service
-      presek-beat.service
-    )
-fi
+APP_SERVICES=($(discover_app_services))
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; BLUE='\033[0;34m'; RESET='\033[0m'
 ok()   { echo -e "${GREEN}✓${RESET}  $*"; }

@@ -99,39 +99,28 @@ assert_disk_space() {
 discover_app_services() {
   info "Discovering Presek systemd services"
   
-  # Validate systemd target exists
-  if ! systemctl list-unit-files "$SYSTEMD_TARGET" >/dev/null 2>&1; then
-    fail "systemd target not found: $SYSTEMD_TARGET"
-  fi
+  local SYSTEMD_DIR="$SOURCE_ROOT/deploy/systemd"
   
-  # Find all services starting with presek- that are part of the target or known to be part of the app
+  # Discover all unit files from the source directory (same as install_server.sh)
+  local all_units=()
+  while IFS= read -r -d '' file; do
+    all_units+=("$(basename "$file")")
+  done < <(find "$SYSTEMD_DIR" -maxdepth 1 -type f \( -name "*.service" -o -name "*.target" -o -name "*.timer" \) -print0 2>/dev/null || true)
+  
+  # Filter to only service files (exclude targets and timers for service management)
   local services=()
-  while IFS= read -r line; do
-    [ -n "$line" ] && services+=("$line")
-  done < <(systemctl list-dependencies "$SYSTEMD_TARGET" --plain --all | grep '^presek-' | sed 's/^[ \t]*//' || true)
+  for unit in "${all_units[@]}"; do
+    if [[ "$unit" == *.service ]]; then
+      services+=("$unit")
+    fi
+  done
   
   if [ "${#services[@]}" -eq 0 ]; then
-    # Fallback to a set of default services if discovery fails or target is empty
-    warn "No services found via systemctl dependencies; using defaults"
-    APP_SERVICES=(
-      presek-fastapi.service
-      presek-astro.service
-      presek-mk.service
-      presek-worker.service
-      presek-worker-ingestion.service
-      presek-worker-fasttrack.service
-      presek-worker-delivery.service
-      presek-beat.service
-    )
-  else
-    APP_SERVICES=("${services[@]}")
-    info "Discovered ${#APP_SERVICES[@]} services: ${APP_SERVICES[*]}"
+    fail "No application services found in $SYSTEMD_DIR"
   fi
   
-  # Validate we have at least one service
-  if [ "${#APP_SERVICES[@]}" -eq 0 ]; then
-    fail "No application services discovered or configured"
-  fi
+  APP_SERVICES=("${services[@]}")
+  info "Discovered ${#APP_SERVICES[@]} services: ${APP_SERVICES[*]}"
 }
 
 cleanup_listener_port() {

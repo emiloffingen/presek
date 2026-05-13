@@ -1,5 +1,6 @@
 {
-  "name": "web",
+  "name": "presek-web-serbian",
+  "description": "Serbian frontend for Presek (presek.live)",
   "type": "module",
   "version": "5.48.0",
   "engines": {

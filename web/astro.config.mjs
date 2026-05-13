@@ -7,6 +7,7 @@ import tailwindcss from '@tailwindcss/vite';
 import node from '@astrojs/node';
 import partytown from '@astrojs/partytown';
 
+// ⚠️ SERBIAN SITE - presek.live - DO NOT EDIT for Macedonian
 // https://astro.build/config
 export default defineConfig({
   site: 'https://presek.live',

@@ -7,9 +7,10 @@ import tailwindcss from '@tailwindcss/vite';
 import node from '@astrojs/node';
 import partytown from '@astrojs/partytown';
 
+// ⚠️ MACEDONIAN SITE - пресек.мк - DO NOT EDIT for Serbian
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://presek.live',
+  site: 'https://presek.mk',  // ASCII domain (Cyrillic display: пресек.мк)
   trailingSlash: 'never',
   output: 'server',
   prefetch: {

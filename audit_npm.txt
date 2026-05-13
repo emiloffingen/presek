@@ -1,1 +1,4 @@
-found 0 vulnerabilities
+# npm audit results as of 2026-05-13
+# web/: 0 vulnerabilities
+# web-mk/: 0 vulnerabilities
+# Last checked: npm audit
