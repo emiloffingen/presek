@@ -237,7 +237,7 @@ const IzvoriPage: React.FC = () => {
             <ul className="space-y-4">
               <li className="flex flex-col gap-1">
                 <span className="font-sans text-[9px] font-black uppercase tracking-widest text-foreground">Doverba</span>
-                <span className="text-xs text-muted-foreground leading-snug">Ponderisan uđe na osnovu istorijske tačnosti i stabilnosti izveštavanja.</span>
+                <span className="text-xs text-muted-foreground leading-snug">Пондериран удел на основа на историска точност и стабилност на известување.</span>
               </li>
               <li className="flex flex-col gap-1">
                 <span className="font-sans text-[9px] font-black uppercase tracking-widest text-foreground">Vodstvo</span>

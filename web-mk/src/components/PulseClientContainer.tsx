@@ -417,7 +417,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                                             <span>OBJEKTIVNOST</span>
                                             <Info size={10} className="opacity-40 group-hover:opacity-100" />
                                             <div className="absolute hidden group-hover:block bg-foreground text-background text-[10px] p-2 rounded shadow-xl mt-12 z-50 w-48 font-sans normal-case tracking-normal">
-                                                Faktičko izveštavanje bez subjektivnih komentara.
+                                                Фактичко известување без субјективни коментари.
                                             </div>
                                         </div>
                                     </th>

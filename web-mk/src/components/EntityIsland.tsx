@@ -198,7 +198,7 @@ export default function EntityIsland({
             <span className="entity-type">{profile.type === 'ORG' ? 'Organizacija' : 'Subjekt'}</span>
             <h1 className="entity-name">{profile.name}</h1>
             <p className="entity-summary-copy">
-              Sistemske profile koji prati medijsko prisustvo, mreža povezanosti i ton izveštavanja za {profile.name}.
+              Системски профили кои следат медиумско присуство, мрежа на поврзаност и тон на известување за {profile.name}.
             </p>
           </div>
         </div>
