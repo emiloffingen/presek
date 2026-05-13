@@ -1,0 +1,139 @@
+---
+/* Hacker News-style homepage for presek.mk */
+import HNLayout from '../../layouts/HNLayout.astro';
+import HNPostRow from '../../components/hn/HNPostRow.astro';
+import { apiBaseUrl } from '@/lib/apiBase';
+import type { NewsCluster } from '@/types';
+
+const API_URL = apiBaseUrl();
+
+const { searchParams } = Astro.url;
+const category = searchParams.get('category') || null;
+const topic = searchParams.get('topic') || null;
+const entity = searchParams.get('entity') || null;
+const q = searchParams.get('q') || null;
+
+let clusters: NewsCluster[] = [];
+let trending = [];
+let focusEntities = [];
+let stats = null;
+let error = null;
+
+async function fetchJson(url: string) {
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`Request failed: ${response.status} ${url}`);
+    }
+    return response.json();
+}
+
+try {
+    const [homeResult, trendResult, entityResult, statsResult] = await Promise.allSettled([
+        fetchJson(`${API_URL}/home?lang=mk`),
+        fetchJson(`${API_URL}/trending`),
+        fetchJson(`${API_URL}/intelligence/top-entities?limit=12`),
+        fetchJson(`${API_URL}/stats/summary`),
+    ]);
+
+    if (homeResult.status === 'fulfilled') {
+        const home = homeResult.value;
+        clusters = home?.lead ? [home.lead, ...(home.supporting || []), ...(home.developing || []), ...(home.wire || [])] : [];
+    }
+
+    if (trendResult.status === 'fulfilled') {
+        trending = Array.isArray(trendResult.value) ? trendResult.value : [];
+    }
+
+    if (entityResult.status === 'fulfilled') {
+        focusEntities = Array.isArray(entityResult.value) ? entityResult.value : [];
+    }
+
+    if (statsResult.status === 'fulfilled') {
+        stats = statsResult.value;
+    }
+} catch (err) {
+    console.error('Error fetching data:', err);
+    error = 'Error loading data';
+}
+
+// Filter clusters based on search params if present
+if (q || category || topic || entity) {
+    clusters = clusters.filter(cluster => {
+        if (q) {
+            const query = q.toLowerCase();
+            const title = (cluster.articles?.[0]?.title || '').toLowerCase();
+            const summary = (cluster.articles?.[0]?.summary || '').toLowerCase();
+            return title.includes(query) || summary.includes(query);
+        }
+        if (category) {
+            return cluster.articles?.[0]?.category?.toLowerCase() === category.toLowerCase();
+        }
+        if (topic) {
+            return cluster.topics?.some(t => t.toLowerCase() === topic.toLowerCase());
+        }
+        if (entity) {
+            return cluster.tags?.some(t => t.toLowerCase() === entity.toLowerCase());
+        }
+        return true;
+    });
+}
+
+// Sort by score (source count) descending
+clusters.sort((a, b) => (b.articles?.length || 0) - (a.articles?.length || 0));
+
+function getPageTitle() {
+    if (q) return `Search: "${q}" - Presek.mk`;
+    if (category) return `Category: ${category} - Presek.mk`;
+    if (topic) return `Topic: ${topic} - Presek.mk`;
+    if (entity) return `Entity: ${entity} - Presek.mk`;
+    return 'Presek.mk - Hacker News Style';
+}
+
+const pageTitle = getPageTitle();
+---
+
+<HNLayout
+    title={pageTitle}
+    description="Presek.mk in Hacker News style - News aggregator for Macedonian audience"
+    trending={trending}
+    focusEntities={focusEntities}
+    stats={stats}
+>
+    <!-- Top bar with user info -->
+    <div class="hn-topbar">
+        <span>Macedonian news aggregator | </span>
+        <a href="/hn/">home</a> | 
+        <a href="/hn/new">new</a> | 
+        <a href="/hn/popular">popular</a>
+    </div>
+
+    <!-- Main table -->
+    <table class="hn-table">
+        <tbody>
+            {error && (
+                <tr>
+                    <td colspan="3" style="color: var(--hn-orange); text-align: center; padding: 20px;">
+                        {error}
+                    </td>
+                </tr>
+            )}
+
+            {clusters.length === 0 && !error && (
+                <tr>
+                    <td colspan="3" style="color: var(--hn-secondary); text-align: center; padding: 20px;">
+                        No stories found.
+                    </td>
+                </tr>
+            )}
+
+            {clusters.map((cluster, idx) => (
+                <HNPostRow cluster={cluster} index={idx} />
+            ))}
+        </tbody>
+    </table>
+
+    <!-- More link -->
+    <div class="hn-more">
+        <a href="#">More</a>
+    </div>
+</HNLayout>
