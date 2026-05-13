@@ -1,10 +1,614 @@
 ---
+/* Cache-bust marker for homepage stylesheet hashing. */
 import Layout from '../layouts/Layout.astro';
+import NewsCard from '../components/NewsCard.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+
+import ForYouIsland from '../components/ForYouIsland.tsx';
+import HomeRailSuggestionsIsland from '../components/HomeRailSuggestionsIsland.tsx';
+import NationalMoodIsland from '../components/NationalMoodIsland.tsx';
+import NewsletterIsland from '../components/NewsletterIsland.tsx';
+import LeadHero from '../components/home/LeadHero.astro';
+import SupportingBand from '../components/home/SupportingBand.astro';
+import DevelopmentsSection from '../components/home/DevelopmentsSection.astro';
+import FilterHeader from '../components/home/FilterHeader.astro';
+import HomeRail from '../components/home/HomeRail.astro';
+import EmptyState from '../components/home/EmptyState.astro';
+import { chooseClusterImage } from '../utils/imageSelection';
+import { cleanAndDecode, extractCleanSummaryText, getDisplayTitle, highlightScores, isMostlyCyrillic } from '../utils/textUtils';
+import { sanitizeHtml } from '../lib/sanitize';
+import { apiBaseUrl } from '../lib/apiBase';
+import { TrendingUp, Zap, ChevronRight, Activity } from 'lucide-react';
+import type { NewsCluster } from '../types';
+
+const API_URL = apiBaseUrl();
+
+// Get search params for SSR filtering
+const { searchParams } = Astro.url;
+function cleanFilterParam(value: string | null) {
+    if (!value) return null;
+    const cleaned = value
+        .trim()
+        .replace(/^[#\s]+/, '')
+        .replace(/(?:\.{2,}|…)+$/u, '')
+        .trim();
+    return cleaned || null;
+}
+
+const category = cleanFilterParam(searchParams.get('category'));
+const topic = cleanFilterParam(searchParams.get('topic'));
+const entity = cleanFilterParam(searchParams.get('entity'));
+const subcategory = cleanFilterParam(searchParams.get('subcategory'));
+const q = searchParams.get('q')?.trim() || null;
+const timespan = searchParams.get('timespan')?.trim() || null;
+
+let clusters: NewsCluster[] = [];
+let globalClusters: NewsCluster[] = [];
+let trending = [];
+let topEntities = [];
+let stats = null;
+let briefing = null;
+let error = null;
+let supportingClusters: NewsCluster[] = [];
+let forYouClusters = [];
+let feedClusters: NewsCluster[] = [];
+let wireClusters: NewsCluster[] = [];
+let wireArticles = [];
+let excludedClusterIds: string[] = [];
+let homepageLeadDisplay: { title?: string; summary?: string; signal?: string } | null = null;
+
+async function fetchJson(url: string) {
+    const response = await fetch(url);
+    if (!response.ok) {
+        const err: any = new Error(`Request failed: ${response.status} ${url}`);
+        err.status = response.status;
+        throw err;
+    }
+    return response.json();
+}
+
+const isHomepage = !(category || topic || entity || subcategory || q);
+
+if (isHomepage) {
+    const homeResult = await Promise.allSettled([
+        fetchJson(`${API_URL}/home`),
+    ]);
+    const homePayload = homeResult[0];
+
+    if (homePayload.status === 'fulfilled' && homePayload.value?.status === 'success') {
+        const home = homePayload.value;
+        const lead = home?.lead ? [home.lead] : [];
+        supportingClusters = Array.isArray(home?.supporting) ? home.supporting : [];
+        forYouClusters = Array.isArray(home?.for_you_pool) ? home.for_you_pool.map((c: any) => {
+            const a = c.articles?.[0] || {};
+            return {
+                cluster_id: c.cluster_id,
+                is_breaking: c.is_breaking,
+                topics: c.topics,
+                tags: c.tags,
+                homepage_score: c.homepage_score,
+                articles: [{
+                    title: a.title,
+                    source: a.source,
+                    summary: a.summary,
+                    description: a.description,
+                    category: a.category,
+                }],
+                sources_count: c.articles?.length || 0,
+            };
+        }) : [];
+        const developingClusters = Array.isArray(home?.developing) ? home.developing : [];
+        wireClusters = Array.isArray(home?.wire) ? home.wire : [];
+        wireArticles = Array.isArray(home?.latest_wire) ? home.latest_wire : [];
+        globalClusters = Array.isArray(home?.global) ? home.global : [];
+        trending = Array.isArray(home?.trending) ? home.trending : [];
+        topEntities = Array.isArray(home?.focus_entities) ? home.focus_entities : [];
+        stats = home?.stats || null;
+        briefing = home?.briefing || null;
+        homepageLeadDisplay = home?.lead_display && typeof home.lead_display === 'object' ? home.lead_display : null;
+        excludedClusterIds = Array.isArray(home?.excluded_cluster_ids) ? home.excluded_cluster_ids : [];
+        feedClusters = [...developingClusters, ...wireClusters];
+        clusters = [...lead, ...supportingClusters, ...(Array.isArray(home?.for_you_pool) ? home.for_you_pool : []), ...feedClusters];
+    } else {
+        console.error('Home fetch error:', homePayload.status === 'rejected' ? homePayload.reason : homePayload.value);
+        error = 'Greška pri učitavanju vesti.';
+        Astro.response.status = 500;
+    }
+} else {
+    const newsUrl = new URL(`${API_URL}/news`);
+    newsUrl.searchParams.set('page_size', '48');
+    if (category) newsUrl.searchParams.set('category', category);
+    if (topic) newsUrl.searchParams.set('topic', topic);
+    if (entity) newsUrl.searchParams.set('entity', entity);
+    if (subcategory) newsUrl.searchParams.set('subcategory', subcategory);
+    if (q) newsUrl.searchParams.set('q', q);
+    if (timespan) newsUrl.searchParams.set('timespan', timespan);
+
+    const [newsResult, trendResult, entityResult, statsResult, briefingResult, wireResult] = await Promise.allSettled([
+        fetchJson(newsUrl.toString()),
+        fetchJson(`${API_URL}/trending`),
+        fetchJson(`${API_URL}/intelligence/top-entities?limit=12`),
+        fetchJson(`${API_URL}/stats/summary`),
+        fetchJson(`${API_URL}/briefing`),
+        fetchJson(`${API_URL}/home/latest-wire?limit=15`),
+    ]);
+
+    if (wireResult.status === 'fulfilled') {
+        wireArticles = Array.isArray(wireResult.value?.articles) ? wireResult.value.articles : [];
+    }
+
+    if (newsResult.status === 'fulfilled') {
+        clusters = newsResult.value?.clusters || [];
+        globalClusters = newsResult.value?.global_clusters || [];
+    } else {
+        console.error('News fetch error:', newsResult.reason);
+        error = 'Greška pri učitavanju vesti.';
+        Astro.response.status = 500;
+    }
+
+    trending = trendResult.status === 'fulfilled' && Array.isArray(trendResult.value)
+        ? trendResult.value
+        : [];
+    topEntities = entityResult.status === 'fulfilled' && Array.isArray(entityResult.value)
+        ? entityResult.value
+        : [];
+    stats = statsResult.status === 'fulfilled' ? statsResult.value : null;
+    briefing = briefingResult.status === 'fulfilled' ? briefingResult.value : null;
+}
+
+const focusEntities = topEntities
+    .map((ent: { name: string; display_name?: string; total_mentions: number }) => ({
+        ...ent,
+        name: String(ent?.name || '').trim(),
+        display_name: String(ent?.display_name || ent?.name || '').trim(),
+    }))
+    .filter((ent: { name: string }) => ent.name && ent.name.length >= 3)
+    .slice(0, 10);
+
+const leadCluster = clusters[0] ?? null;
+if (!isHomepage) {
+    supportingClusters = clusters.slice(1, 5);
+}
+
+function getLeadSignal(cluster: NewsCluster) {
+	const count = cluster?.articles?.length || 0;
+	if (cluster?.is_breaking) return 'Najbrži razvoj dana';
+	if (count >= 6) return 'Priča koja pokreće domaću agendu';
+	if (count >= 4) return 'Tema koja se brzo širi kroz redakcije';
+	return 'razvoj koji vredi pratiti';
+}
+
+function getLeadSummary(cluster: NewsCluster) {
+	const article = cluster?.articles?.[0];
+	return extractCleanSummaryText(article?.summary || article?.description || '');
+}
+
+const leadSignal = leadCluster ? getLeadSignal(leadCluster) : '';
+const leadSummary = isHomepage
+    ? String(homepageLeadDisplay?.summary || '')
+    : (leadCluster ? getLeadSummary(leadCluster) : '');
+const leadTitle = highlightScores(isHomepage
+    ? String(homepageLeadDisplay?.title || '')
+    : (leadCluster?.articles?.[0] ? cleanAndDecode(leadCluster.articles[0].title) : ''));
+const effectiveLeadSignal = isHomepage
+    ? String(homepageLeadDisplay?.signal || leadSignal)
+    : leadSignal;
+
+// Remove the verbose development signal if it matches the default
+const finalLeadSignal = effectiveLeadSignal === 'razvoj sto vredi da se sledi' ? '' : effectiveLeadSignal;
+const leadTitleIsCyrillic = isMostlyCyrillic(leadTitle);
+const leadSummaryIsCyrillic = isMostlyCyrillic(leadSummary);
+const leadVisual = leadCluster ? chooseClusterImage(leadCluster, 'hero') : null;
+const activeFilterLabel = subcategory || entity || category || topic || q || null;
+
+// --- DEDUPLICATION LOGIC ---
+const usedIds = new Set<string>();
+if (leadCluster) usedIds.add(leadCluster.cluster_id);
+
+const filteredSupporting = supportingClusters.filter(c => !usedIds.has(c.cluster_id));
+const supportingFeatured = filteredSupporting.slice(0, 2);
+supportingFeatured.forEach(c => usedIds.add(c.cluster_id));
+
+const supportingCompact = filteredSupporting.slice(2).filter(c => !usedIds.has(c.cluster_id));
+supportingCompact.forEach(c => usedIds.add(c.cluster_id));
+
+// Identify High Consensus Clusters (5+ sources) - Filtered for duplicates
+const consensusClusters = clusters
+    .filter((c: NewsCluster) => (c.articles?.length || 0) >= 5 && !usedIds.has(c.cluster_id))
+    .slice(0, 3);
+consensusClusters.forEach(c => usedIds.add(c.cluster_id));
+
+if (!isHomepage) {
+    const FOR_YOU_START = 5;
+    const FOR_YOU_END = 11;
+    forYouClusters = clusters.slice(FOR_YOU_START, FOR_YOU_END).map((c: any) => {
+        const a = c.articles?.[0] || {};
+        return {
+            cluster_id: c.cluster_id,
+            is_breaking: c.is_breaking,
+            topics: c.topics,
+            tags: c.tags,
+            homepage_score: c.homepage_score,
+            articles: [{
+                title: a.title,
+                source: a.source,
+                summary: a.summary,
+                description: a.description,
+                category: a.category,
+            }],
+            sources_count: c.articles?.length || 0,
+        };
+    });
+    feedClusters = clusters.slice(FOR_YOU_END);
+    wireClusters = feedClusters.filter((cluster: NewsCluster) => (cluster?.articles?.length || 0) < 2).slice(0, 12);
+}
+
+const continuingClusters = feedClusters.filter((cluster: NewsCluster) => (cluster?.articles?.length || 0) >= 2 && !usedIds.has(cluster.cluster_id));
+const developmentsFeatured = continuingClusters.slice(0, 6);
+developmentsFeatured.forEach(c => usedIds.add(c.cluster_id));
+
+const developmentsCompact = continuingClusters.slice(6, 18).filter(c => !usedIds.has(c.cluster_id));
+developmentsCompact.forEach(c => usedIds.add(c.cluster_id));
+
+const railWireArticles = [...wireArticles].sort((a: any, b: any) => {
+    const aTime = (a?.ingested_at || a?.created_at) ? new Date(a.ingested_at || a.created_at).getTime() : 0;
+    const bTime = (b?.ingested_at || b?.created_at) ? new Date(b.ingested_at || b.created_at).getTime() : 0;
+    return bTime - aTime;
+});
+
+const consensusIds = new Set(consensusClusters.map(c => c.cluster_id));
+
+if (!isHomepage) {
+    excludedClusterIds = [
+      leadCluster?.cluster_id,
+      ...supportingClusters.map((c: any) => c.cluster_id)
+    ].filter(Boolean);
+}
+
+function getTimeStr(dateStr: string) {
+    try {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffMins = Math.floor(diffMs / (1000 * 60));
+
+        if (diffMins < 1) return 'UPRAVO SADA';
+        if (diffMins < 60) return `PRE ${diffMins} MIN`;
+
+        return date.toLocaleTimeString('sr-RS', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            timeZone: 'Europe/Belgrade'
+        });
+    } catch {
+        return '';
+    }
+}
+
+function getBriefingSnippet(content: string) {
+    if (!content) return '';
+    const match = content.match(/## Šta pokreće dan\n+([^#]+)/) || content.match(/^([^#]+)/);
+    if (match && match[1]) {
+        const text = match[1].trim().split('\n')[0];
+        return text.length > 150 ? text.substring(0, 147) + '...' : text;
+    }
+    return '';
+}
 ---
 
-<Layout title="Presek" description="Početna strana">
-    <main class="p-8">
-        <h1 class="text-2xl font-serif">Dobrodošli u Presek</h1>
-        <p class="text-muted-foreground mt-4">Sadržaj će biti uskoro ažuriran.</p>
-    </main>
+<Layout
+	title={q || entity || subcategory || category || topic || "Presek | Medijska transparentnost i javni uvid"}
+	description={q || entity || subcategory || category || topic
+		? "Presek grupiše povezane vesti, upoređuje izvore i omogućava vam brži pregled konteksta."
+		: "Presek je srpski informativni agregator koji sakuplja vesti iz svih medija, grupiše ih po temi i pokazuje kako različiti izvori izveštavaju o istom događaju."}
+>
+    <NYTHeader q={q} category={category} topic={topic} entity={entity} subcategory={subcategory} stats={stats} />
+
+	<main class="site-layout broadsheet-layout py-[var(--page-py)] overflow-x-hidden max-w-full">
+		{/* Filtering Status */}
+		{(q || category || topic || entity || subcategory) && (
+			<FilterHeader q={q} category={category} topic={topic} entity={entity} subcategory={subcategory} />
+		)}
+
+		<div class="broadsheet-grid">
+			<div class="broadsheet-main">
+                {error && (
+                    <div class="error-panel">
+                        <p>{error}</p>
+                    </div>
+                )}
+
+                {/* THEMATIC QUICK PILLS */}
+                {isHomepage && !error && (
+                    <div class="max-w-full overflow-hidden mb-10">
+                        <div class="quick-pills-container overflow-x-auto hide-scrollbar -mx-4 px-4 pb-2">
+                            <div class="flex items-center gap-3">
+                                <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mr-2 shrink-0">Istraži:</span>
+                                {[
+                                    { id: 'rs', label: 'Srbija', href: '/?category=' + encodeURIComponent('Srbija') },
+                                    { id: 'pol', label: 'Politika', href: '/?topic=' + encodeURIComponent('Politika') },
+                                    { id: 'eco', label: 'Ekonomija', href: '/?topic=' + encodeURIComponent('Ekonomija') },
+                                    { id: 'spo', label: 'Sport', href: '/?topic=' + encodeURIComponent('Sport') },
+                                    { id: 'cul', label: 'Kultura', href: '/?topic=' + encodeURIComponent('Kultura') },
+                                    { id: 'tech', label: 'Tehnologija', href: '/?topic=' + encodeURIComponent('Tehnologija') },
+                                    { id: 'bg', label: 'Beograd', href: '/?subcategory=' + encodeURIComponent('Beograd') }
+                                ].map(pill => (
+                                    <a href={pill.href} class="quick-pill shrink-0" data-track-pill={pill.id}>
+                                        {pill.label}
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    <script is:inline>
+                        document.addEventListener('astro:page-load', () => {
+                            document.querySelectorAll('.quick-pill').forEach(pill => {
+                                pill.addEventListener('click', (e) => {
+                                    const id = e.currentTarget.getAttribute('data-track-pill');
+                                    if (window.dataLayer) {
+                                        window.dataLayer.push({ event: 'pill_click', pill_id: id });
+                                    }
+                                });
+                            });
+                        });
+                    </script>
+                )}
+
+                {!error && clusters.length === 0 && (
+                    <EmptyState trending={trending} />
+                )}
+
+				{leadCluster && (
+					<div class="section-wrapper lead-wrapper">
+						<LeadHero
+							leadCluster={leadCluster}
+							leadTitle={leadTitle}
+							leadTitleIsCyrillic={leadTitleIsCyrillic}
+							leadSignal={finalLeadSignal}
+							leadSummary={leadSummary}
+							leadSummaryIsCyrillic={leadSummaryIsCyrillic}
+							leadVisual={leadVisual}
+							dominantColor={leadCluster.dominant_color}
+							getTimeStr={getTimeStr}
+							filtered={!isHomepage}
+							filterLabel={activeFilterLabel}
+						/>
+					</div>
+				)}
+
+				{leadCluster && supportingClusters.length > 0 && (
+					<div class="section-wrapper">
+						<SupportingBand 
+							supportingFeatured={supportingFeatured}
+							supportingCompact={supportingCompact}
+						/>
+					</div>
+				)}
+
+                {/* THE BIG PICTURE (HIGH CONSENSUS) */}
+                {isHomepage && consensusClusters.length > 0 && (
+                    <div class="section-wrapper consensus-section bg-secondary/10 p-8 border-y border-border/40">
+                        <div class="section-heading-row mb-8">
+                            <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent block mb-2">SISTEMSKI KONSENZUS</span>
+                            <h2 class="font-serif text-3xl font-black italic">Šira Slika</h2>
+                            <p class="text-sm text-muted-foreground mt-2">Događaji o kojima izveštava veliki broj medija sa visokim stepenom slaganja.</p>
+                        </div>
+                        <div class="news-feed-grid news-feed-grid-compact">
+                            {consensusClusters.map((cluster: NewsCluster) => (
+                                <NewsCard cluster={cluster} variant="compact" />
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+				{feedClusters.length > 0 && (
+					<div class="section-wrapper">
+						<DevelopmentsSection
+							title="Teme u razvoju"
+							note="Aktuelni narativi sa izraženom medijskom dinamikom i aktivnom uredničkom sintezom."
+							developmentsFeatured={developmentsFeatured}
+							developmentsCompact={developmentsCompact}
+                            tone="developing"
+						/>
+					</div>
+				)}
+
+                {clusters.length > 4 && (
+					<div class="section-wrapper for-you-wrapper">
+					    <ForYouIsland client:visible clusters={forYouClusters} excludeClusterIds={excludedClusterIds} />
+                    </div>
+				)}
+
+				{globalClusters.length > 0 && (
+					<div class="section-wrapper">
+						<DevelopmentsSection
+							title="Globalna Scena"
+							note="Sistemski pregled međunarodnih dešavanja od vodećih novinskih agencija."
+							developmentsFeatured={globalClusters.slice(0, 2)}
+							developmentsCompact={globalClusters.slice(2)}
+                            tone="global"
+						/>
+					</div>
+				)}
+
+				{wireClusters.length > 0 && (
+					<div class="section-wrapper">
+						<DevelopmentsSection
+							title="Poslednje na traci"
+							note="Izveštaji u realnom vremenu: pojedinačne objave sa terena."
+							developmentsFeatured={wireClusters}
+							developmentsCompact={[]}
+							variant="wire"
+                            tone="wire"
+						/>
+					</div>
+				)}
+
+			</div>
+
+			<HomeRail 
+				railWireArticles={railWireArticles}
+				briefing={briefing}
+				stats={stats}
+				focusEntities={focusEntities}
+				getTimeStr={getTimeStr}
+				getBriefingSnippet={getBriefingSnippet}
+			/>
+		</div>
+	</main>
+
+	<Footer />
 </Layout>
+
+<style>
+    /* ── Broadsheet Layout ───────────────────────────── */
+    .broadsheet-layout { background: var(--background); }
+    .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: var(--grid-gap); }
+    
+    @media (min-width: 1024px) {
+        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; gap: calc(var(--grid-gap) * 1.5); }
+        .broadsheet-main { border-right: 1px solid var(--border); padding-right: calc(var(--grid-gap) * 1); }
+    }
+
+    @media (min-width: 1440px) {
+        :global(.site-layout) { max-width: 1600px; }
+        .broadsheet-grid { gap: calc(var(--grid-gap) * 2); }
+    }
+
+    /* ── Section Dividers ────────────────────────────── */
+    .section-wrapper { border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1rem; }
+    .section-wrapper:last-child { border-bottom: none; }
+    .lead-wrapper { padding-bottom: 1rem; margin-bottom: 1rem; }
+
+    @media (max-width: 768px) {
+        .section-wrapper { padding-bottom: 0.75rem; margin-bottom: 0.75rem; }
+        .lead-wrapper { padding-bottom: 0.75rem; margin-bottom: 0.75rem; }
+    }
+    
+    /* ── Supporting Band & Developments Grids ────────── */
+    .supporting-featured-grid, 
+    .news-feed-grid-featured {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+        align-items: start;
+    }
+
+    .supporting-compact-grid,
+    .news-feed-grid-compact {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1.25rem;
+        align-items: start;
+    }
+
+    /* ── Consensus Carousel (Mobile) ─────────────────── */
+    .consensus-carousel-wrap {
+        position: relative;
+    }
+
+    .consensus-grid {
+        display: flex;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        gap: 1.25rem;
+        padding-bottom: 0.5rem;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .consensus-item {
+        scroll-snap-align: start;
+    }
+
+    .carousel-fade-hint.right {
+        position: absolute;
+        top: 0;
+        right: -1rem;
+        bottom: 0;
+        width: 3rem;
+        background: linear-gradient(to left, color-mix(in srgb, var(--background) 50%, var(--secondary)), transparent);
+        pointer-events: none;
+        z-index: 5;
+    }
+
+    @media (min-width: 640px) {
+        .consensus-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            overflow-x: visible;
+            scroll-snap-type: none;
+            padding-bottom: 0;
+        }
+        .consensus-item {
+            width: auto;
+        }
+    }
+
+    @media (min-width: 768px) {
+        .supporting-featured-grid, 
+        .news-feed-grid-featured {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1rem;
+        }
+
+        .supporting-compact-grid,
+        .news-feed-grid-compact {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.75rem; 
+        }
+
+        /* Remove orphaned items spanning two columns for a denser look */
+        .supporting-compact-grid > :last-child:nth-of-type(odd),
+        .news-feed-grid-compact > :last-child:nth-of-type(odd) {
+            grid-column: span 1;
+        }
+    }
+
+    .for-you-wrapper {
+        background: color-mix(in srgb, var(--nyt-accent) 4%, transparent);
+        padding: 2.5rem 1rem;
+        border-y: 1px solid color-mix(in srgb, var(--nyt-accent) 15%, transparent);
+    }
+
+    @media (max-width: 768px) {
+        .consensus-section {
+            padding: 1.5rem 1rem !important;
+        }
+        .for-you-wrapper {
+            padding: 1.5rem 1rem;
+        }
+    }
+    .editorial-briefing-wrap { padding-bottom: 2.25rem; }
+
+    /* ── Quick Pills ─────────────────────────────────── */
+    .quick-pill {
+        display: inline-block;
+        padding: 0.4rem 0.8rem;
+        background: var(--secondary);
+        border: 1px solid var(--border);
+        font-family: var(--font-sans);
+        font-size: 0.65rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        text-decoration: none;
+        color: var(--foreground);
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        white-space: nowrap;
+    }
+    .quick-pill:hover {
+        background: var(--nyt-accent);
+        color: white;
+        border-color: var(--nyt-accent);
+        transform: translateY(-1px);
+    }
+    .dark .quick-pill {
+        background: var(--card);
+    }
+
+    @media (max-width: 768px) {
+        .broadsheet-main { border-right: none; padding-right: 0; }
+    }
+</style>
