@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchNews, fetchTrending, fetchStatsFull } from '@/api/client';
+import { fetchNews, fetchTrending, fetchStatsFull } from './api/client';
 import { Cluster, TrendingItem } from '@/types';
 
 export const FrontendV2: React.FC = () => {
@@ -41,7 +41,7 @@ export const FrontendV2: React.FC = () => {
         const news = await fetchNews(0, topic, submittedQuery, false);
         setClusters(news.data);
       } catch (e) {
-        setError('Ne uspeavme da vcitame vesti. Obidi se povtorno.');
+        setError('Не успеавме да вчитаме вести. Обидете се повторно.');
       } finally {
         setIsLoading(false);
       }
@@ -63,8 +63,8 @@ export const FrontendV2: React.FC = () => {
       <header className="v2-hero">
         <div>
           <p className="rail-label">PRESEK NEXT</p>
-          <h1>nova frontend kontrolna tabla za tvojot backend</h1>
-          <p className="v2-subtitle">Brz pregled na klasteri, trendovi i metriki od API-to.</p>
+          <h1>нова фронтенд контролна табла за вашиот бекенд</h1>
+          <p className="v2-subtitle">Брз преглед на кластери, трендови и метрики од API-то.</p>
         </div>
 
         <form className="v2-search" onSubmit={onSearch}>
@@ -72,20 +72,20 @@ export const FrontendV2: React.FC = () => {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Prebaraj tema ili zbor..."
-            aria-label="Prebaraj"
+            placeholder="Пребарај тема или збор..."
+            aria-label="Пребарај"
           />
-          <button type="submit" className="cat-btn">Prebaraj</button>
+          <button type="submit" className="cat-btn">Пребарај</button>
         </form>
 
         <div className="v2-topics">
-          {['', 'Politics', 'Sport', 'Tech', 'Economy'].map((item) => (
+          {['', 'Политика', 'Спорт', 'Технологија', 'Економија'].map((item) => (
             <button
               key={item || 'all'}
               className={`cat-btn ${topic === item ? 'active' : ''}`}
               onClick={() => setTopic(item)}
             >
-              {item || 'Site'}
+              {item || 'Сите'}
             </button>
           ))}
         </div>
@@ -93,9 +93,9 @@ export const FrontendV2: React.FC = () => {
 
       {stats && (
         <section className="v2-stats">
-          <div className="glass-card"><strong>{stats.total_articles.toLocaleString()}</strong><span>vkupno clanci</span></div>
-          <div className="glass-card"><strong>{stats.last_24h.toLocaleString()}</strong><span>posledni 24 casa</span></div>
-          <div className="glass-card"><strong>{Math.round(stats.summarized_pct)}%</strong><span>so AI rezime</span></div>
+          <div className="glass-card"><strong>{stats.total_articles.toLocaleString()}</strong><span>вкупно статии</span></div>
+          <div className="glass-card"><strong>{stats.last_24h.toLocaleString()}</strong><span>последни 24 часа</span></div>
+          <div className="glass-card"><strong>{Math.round(stats.summarized_pct)}%</strong><span>со AI резиме</span></div>
         </section>
       )}
 
@@ -111,10 +111,10 @@ export const FrontendV2: React.FC = () => {
                 <img src={topCluster.representative_image} alt={topCluster.articles[0]?.title || 'lead'} />
               )}
               <div>
-                <p className="src-badge">VODECKA prica</p>
+                <p className="src-badge">ВОДЕЧКА приказна</p>
                 <h2>{topCluster.articles[0]?.title}</h2>
-                <p>{topCluster.articles[0]?.description || 'Nema opis za ova clanak.'}</p>
-                <Link to={`/cluster/${topCluster.cluster_id}`} className="cat-btn">Otvori klaster</Link>
+                <p>{topCluster.articles[0]?.description || 'Нема опис за оваа статија.'}</p>
+                <Link to={`/cluster/${topCluster.cluster_id}`} className="cat-btn">Отвори кластер</Link>
               </div>
             </article>
           )}
@@ -123,7 +123,7 @@ export const FrontendV2: React.FC = () => {
             {secondaryClusters.map((cluster) => (
               <Link key={cluster.cluster_id} to={`/cluster/${cluster.cluster_id}`} className="v2-card">
                 <h3>{cluster.articles[0]?.title}</h3>
-                <p>{cluster.articles[0]?.source} • {cluster.articles.length} izvori</p>
+                <p>{cluster.articles[0]?.source} • {cluster.articles.length} извори</p>
               </Link>
             ))}
           </div>
@@ -131,7 +131,7 @@ export const FrontendV2: React.FC = () => {
       )}
 
       <aside className="v2-trending">
-        <h3>Trending</h3>
+        <h3>Тренд теми</h3>
         <div className="ribbon-scroll">
           {trending.slice(0, 12).map((item) => (
             <button key={item.word} className="ribbon-item" onClick={() => { setQuery(item.word); setSubmittedQuery(item.word); }}>
