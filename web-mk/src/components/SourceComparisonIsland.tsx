@@ -188,3 +188,4 @@ export default function SourceComparisonIsland({ allSources }: { allSources: str
       )}
     </section>
   );
+}
