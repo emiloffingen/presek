@@ -29,6 +29,7 @@
     "@fontsource/noto-serif": "^5.2.9",
     "@fontsource/source-serif-4": "^5.2.9",
     "@nanostores/react": "^1.1.0",
+    "@popperjs/core": "^2.11.8",
     "@tailwindcss/vite": "^4.2.4",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
