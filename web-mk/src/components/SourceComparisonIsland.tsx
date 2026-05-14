@@ -49,9 +49,9 @@ export default function SourceComparisonIsland({ allSources }: { allSources: str
     const p1 = Math.max(0, Math.min(100, Math.round((Number(val1) || 0) * 100)));
     const p2 = Math.max(0, Math.min(100, Math.round((Number(val2) || 0) * 100)));
 
-    const tooltip = label === "Indeks na Objektivnost"
-      ? "Merka za nepristrasnost i prisustvo na fakticki verifikuvani izjavi."
-      : "Nivo na emotiven naboj i upotreba na retorika za privlekuvanje vnimanie.";
+    const tooltip = label === "Индекс на објективност"
+      ? "Мерка за непристрасност и присуство на фактички верификувани изјави."
+      : "Ниво на емотивен набој и употреба на реторика за привлекување внимание.";
 
     const isWinner1 = inverse ? p1 < p2 : p1 > p2;
     const isWinner2 = inverse ? p2 < p1 : p2 > p1;
@@ -82,7 +82,7 @@ export default function SourceComparisonIsland({ allSources }: { allSources: str
   return (
     <section className="rail-module border border-zinc-200 dark:border-zinc-800 p-8 md:p-10 rounded-xl bg-background shadow-sm">
       <div className="flex items-center justify-between mb-10">
-        <h2 className="font-serif text-2xl font-black tracking-tight italic border-b-4 border-nyt-accent pb-1">Sporedba na redakcii</h2>
+        <h2 className="font-serif text-2xl font-black tracking-tight italic border-b-4 border-nyt-accent pb-1">Споредба на редакции</h2>
         <div className="p-2 bg-secondary/50 rounded-full">
             <ArrowLeftRight size={20} className="text-nyt-accent" />
         </div>
@@ -90,7 +90,7 @@ export default function SourceComparisonIsland({ allSources }: { allSources: str
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
         <div className="space-y-2">
-            <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">Prv izvor</label>
+            <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">Прв извор</label>
             <select 
             value={s1} 
             onChange={e => setS1(e.target.value)}
@@ -101,7 +101,7 @@ export default function SourceComparisonIsland({ allSources }: { allSources: str
             </select>
         </div>
         <div className="space-y-2">
-            <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">Vtor izvor</label>
+            <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">Втор извор</label>
             <select 
             value={s2} 
             onChange={e => setS2(e.target.value)}
@@ -116,16 +116,16 @@ export default function SourceComparisonIsland({ allSources }: { allSources: str
       {loading ? (
         <div className="py-20 flex flex-col items-center gap-4">
             <Loader2 className="animate-spin text-nyt-accent" size={32} />
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Kalkuliranje na metriki...</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Калкулирање на метрики...</p>
         </div>
       ) : m1 && m2 ? (
         <div className="space-y-12">
-          {renderMetric("Indeks na Objektivnost", m1.avg_objectivity, m2.avg_objectivity)}
-          {renderMetric("Senzacionalizam", m1.avg_sensationalism, m2.avg_sensationalism, true)}
+          {renderMetric("Индекс на објективност", m1.avg_objectivity, m2.avg_objectivity)}
+          {renderMetric("Сензационализам", m1.avg_sensationalism, m2.avg_sensationalism, true)}
           
           {overlap && (
             <div className="space-y-5 pt-6 border-t border-zinc-100 dark:border-zinc-800">
-              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground text-center">Tematsko Preklopuvanje</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground text-center">Тематско преклопување</p>
               
               <div className="flex w-full h-10 rounded-xl overflow-hidden border-2 border-zinc-100 dark:border-zinc-800 shadow-sm p-1 gap-1">
                 {(() => {
@@ -143,7 +143,7 @@ export default function SourceComparisonIsland({ allSources }: { allSources: str
                         style={{ width: `${Math.max((overlap.shared_clusters / totalOverlap) * 100, 20)}%` }}
                       >
                         <span className="text-[11px] font-black leading-none">{overlap.shared_clusters}</span>
-                        <span className="text-[7px] font-black uppercase mt-0.5">zajednicki</span>
+                        <span className="text-[7px] font-black uppercase mt-0.5">заеднички</span>
                       </div>
                       <div
                         className="h-full bg-nyt-red rounded-r-lg flex flex-col items-center justify-center text-white transition-all hover:brightness-110"
@@ -157,9 +157,9 @@ export default function SourceComparisonIsland({ allSources }: { allSources: str
               </div>
               
               <div className="flex justify-between text-[10px] font-black uppercase tracking-tighter text-zinc-500 px-1">
-                  <span className="w-1/3 truncate" title={s1}>{s1} sam</span>
-                  <span className="w-1/3 text-center">Spodelen interes</span>
-                  <span className="w-1/3 text-right truncate" title={s2}>{s2} sam</span>
+                  <span className="w-1/3 truncate" title={s1}>{s1} сам</span>
+                  <span className="w-1/3 text-center">Споделен интерес</span>
+                  <span className="w-1/3 text-right truncate" title={s2}>{s2} сам</span>
               </div>
             </div>
           )}
@@ -169,23 +169,22 @@ export default function SourceComparisonIsland({ allSources }: { allSources: str
                 <p className="text-[10px] font-black uppercase tracking-widest text-nyt-accent mb-2">{s1}</p>
                 <div className="flex items-baseline justify-center gap-1">
                     <span className="text-2xl font-black tabular-nums">{m1.cluster_count}</span>
-                    <span className="text-[10px] font-bold text-muted-foreground">vesti</span>
+                    <span className="text-[10px] font-bold text-muted-foreground">вести</span>
                 </div>
             </div>
             <div className="text-center flex-1 p-4 bg-zinc-50 dark:bg-zinc-900 rounded-lg border border-zinc-100 dark:border-zinc-800">
                 <p className="text-[10px] font-black uppercase tracking-widest text-nyt-red mb-2">{s2}</p>
                 <div className="flex items-baseline justify-center gap-1">
                     <span className="text-2xl font-black tabular-nums">{m2.cluster_count}</span>
-                    <span className="text-[10px] font-bold text-muted-foreground">vesti</span>
+                    <span className="text-[10px] font-bold text-muted-foreground">вести</span>
                 </div>
             </div>
           </div>
         </div>
       ) : (
         <div className="py-20 text-center text-muted-foreground italic font-serif opacity-60">
-          Izberete dve redakcii za detalna analiza na nivniot urednicki pristap.
+          Изберете две редакции за детална анализа на нивниот уреднички пристап.
         </div>
       )}
     </section>
   );
-}
