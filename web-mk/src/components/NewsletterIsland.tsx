@@ -17,7 +17,7 @@ export default function NewsletterIsland() {
       const res = await fetch(`${API_URL}/newsletter/subscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, locale: 'mk' }),
       });
       const data = await res.json();
       if (data.status === 'success') {

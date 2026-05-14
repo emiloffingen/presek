@@ -280,14 +280,16 @@ async def save_profile_delivery(request: Request):
     ):
         raise HTTPException(status_code=400, detail="Nevaliden kluc za sinhronizacija")
     sub = _normalize_server_delivery_subscription(payload.get("subscription") or {})
+    locale = str(payload.get("locale") or "sr").strip().lower()[:5]
     await db.async_execute(
         """INSERT INTO synced_delivery_subscriptions
-           (sync_token, channel, target, morning_briefing, weekly_digest, breaking_topics, breaking_sources, is_active, updated_at)
-           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW())
+           (sync_token, channel, target, morning_briefing, weekly_digest, breaking_topics, breaking_sources, is_active, locale, updated_at)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
            ON CONFLICT (sync_token) DO UPDATE SET
              channel=EXCLUDED.channel, target=EXCLUDED.target, morning_briefing=EXCLUDED.morning_briefing,
              weekly_digest=EXCLUDED.weekly_digest, breaking_topics=EXCLUDED.breaking_topics,
-             breaking_sources=EXCLUDED.breaking_sources, is_active=EXCLUDED.is_active, updated_at=NOW()""",
+             breaking_sources=EXCLUDED.breaking_sources, is_active=EXCLUDED.is_active,
+             locale=EXCLUDED.locale, updated_at=NOW()""",
         (
             token,
             sub["channel"],
@@ -297,6 +299,7 @@ async def save_profile_delivery(request: Request):
             sub["breakingTopics"],
             sub["breakingSources"],
             sub["isActive"],
+            locale,
         ),
         fetch=False,
     )

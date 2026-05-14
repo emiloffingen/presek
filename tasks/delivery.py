@@ -193,11 +193,13 @@ def _briefing_title_penalty(
     return penalty
 
 
-def _load_daily_brief_clusters(limit=5):
+def _load_daily_brief_clusters(limit=5, lang="sr"):
     # Fetch articles in one query
+    country_filter = "RS" if lang == "sr" else "MK"
     rows = db.execute(
         "SELECT cluster_id, title, description, summary, source, category, topic, created_at FROM articles "
-        "WHERE created_at >= NOW() - INTERVAL '24 hours' ORDER BY created_at DESC LIMIT 180"
+        "WHERE created_at >= NOW() - INTERVAL '24 hours' AND country = %s ORDER BY created_at DESC LIMIT 180",
+        (country_filter,)
     )
     clusters = {}
     for row in rows:
@@ -487,32 +489,62 @@ def _cluster_delivery_match(
     )
 
 
-def _build_profile_briefing_message(profile, clusters):
+_LOCALIZED_DELIVERY = {
+    "sr": {
+        "title": "Presek personalizovani brifing",
+        "followed_topics": "Pracene teme",
+        "followed_sources": "Praceni izvori",
+        "sources": "izvori",
+        "reason_default": "važna razvojna linija",
+        "important_story": "Važna priča",
+        "difference": "Razlika",
+        "open": "Otvoreno",
+        "read_briefing": "Otvori brifing",
+        "ntfy_title": "Presek · Jutarnji brifing",
+    },
+    "mk": {
+        "title": "Пресек персонализиран брифинг",
+        "followed_topics": "Следени теми",
+        "followed_sources": "Следени извори",
+        "sources": "извори",
+        "reason_default": "важна развојна линија",
+        "important_story": "Важна приказна",
+        "difference": "Разлика",
+        "open": "Отворено",
+        "read_briefing": "Отвори го целосниот брифинг",
+        "ntfy_title": "Пресек · Утрински брифинг",
+    },
+}
+
+
+def _build_profile_briefing_message(profile, clusters, locale="sr"):
     profile = _normalize_synced_profile_for_delivery(profile)
     followed_topics = profile["followedTopics"][:3]
     followed_sources = profile["followedSources"][:3]
-    lines = ["Presek personaliziran brifing"]
+    conf = _LOCALIZED_DELIVERY.get(locale, _LOCALIZED_DELIVERY["sr"])
+
+    lines = [conf["title"]]
 
     if followed_topics:
-        lines.append(f"Sledeni temi: {', '.join(followed_topics)}")
+        lines.append(f"{conf['followed_topics']}: {', '.join(followed_topics)}")
     if followed_sources:
-        lines.append(f"Praceni izvori: {', '.join(followed_sources)}")
+        lines.append(f"{conf['followed_sources']}: {', '.join(followed_sources)}")
 
     for cluster in clusters[:4]:
-        reason_text = cluster.get("match_reason") or "vazna razvojna linija"
+        reason_text = cluster.get("match_reason") or conf["reason_default"]
         lines.append("")
-        lines.append(f"• {cluster.get('title') or 'Vazna prica'}")
+        lines.append(f"• {cluster.get('title') or conf['important_story']}")
         lines.append(
-            f"  {cluster.get('source') or 'izvor'} · {cluster.get('source_count') or 1} izvori · {reason_text}"
+            f"  {cluster.get('source') or 'izvor'} · {cluster.get('source_count') or 1} {conf['sources']} · {reason_text}"
         )
         if cluster.get("cluster_summary"):
             lines.append(f"  {str(cluster['cluster_summary']).splitlines()[0][:220]}")
         elif cluster.get("description"):
             lines.append(f"  {str(cluster['description'])[:220]}")
         if cluster.get("difference_point"):
-            lines.append(f"  Razlika: {str(cluster['difference_point'])[:180]}")
+            lines.append(f"  {conf['difference']}: {str(cluster['difference_point'])[:180]}")
         elif cluster.get("open_point"):
-            lines.append(f"  otvoreno: {str(cluster['open_point'])[:180]}")
+            lines.append(f"  {conf['open']}: {str(cluster['open_point'])[:180]}")
 
     return "\n".join(line for line in lines if line is not None).strip()
 
@@ -1685,14 +1717,14 @@ def _select_breaking_cluster_for_profile(
 
 
 @celery_app.task
-def generate_daily_brief_task(retry_attempt=0):
+def generate_daily_brief_task(retry_attempt=0, lang="sr"):
     """Generate the flagship morning briefing with intelligence signals."""
     now = datetime.datetime.now()
-    lock_key = f"lock:daily_brief:{now.date()}:{now.hour // 6}"
+    lock_key = f"lock:daily_brief:{lang}:{now.date()}:{now.hour // 6}"
     try:
         if not redis_client.set(lock_key, "1", nx=True, ex=3600):
             log.info(
-                "Daily brief generation already in progress or completed for today."
+                f"Daily brief ({lang}) generation already in progress or completed for today."
             )
             return
     except Exception as e:
@@ -1702,19 +1734,22 @@ def generate_daily_brief_task(retry_attempt=0):
         from tasks.utils import record_task_event
 
         # 1. Gather Intelligence Stats
+        country_filter = "RS" if lang == "sr" else "MK"
         total_24h = (
             db.execute_one(
-                "SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours'"
+                "SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' AND country = %s",
+                (country_filter,)
             )["count"]
             or 1
         )
         intl_24h = (
             db.execute_one(
-                "SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' AND is_global = TRUE"
+                "SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' AND is_global = TRUE AND country = %s",
+                (country_filter,)
             )["count"]
             or 0
         )
-        intl_pct = round((intl_24h / total_24h) * 100)
+        intl_pct = round((intl_24h / total_24h) * 100) if total_24h > 0 else 0
 
         # Pluralism check
         balance_stats = db.execute_one(
@@ -1728,12 +1763,13 @@ def generate_daily_brief_task(retry_attempt=0):
                     END) as group_count
                 FROM articles a
                 JOIN sources s ON a.source = s.name
-                WHERE a.created_at >= NOW() - INTERVAL '24 hours'
+                WHERE a.created_at >= NOW() - INTERVAL '24 hours' AND a.country = %s
                 GROUP BY cluster_id
             )
             SELECT COUNT(*) FILTER (WHERE group_count >= 2) as diverse
             FROM cluster_tiers
-        """
+        """,
+            (country_filter,)
         )
         diverse_pct = (
             round((balance_stats["diverse"] / total_24h) * 100) if total_24h > 0 else 0
@@ -1742,39 +1778,28 @@ def generate_daily_brief_task(retry_attempt=0):
         # Top Subjects and Locations
         subjects_rows = db.execute(
             """
-            SELECT name, total_mentions
-            FROM knowledge_entities
-            WHERE type = 'PERSON' AND last_seen >= NOW() - INTERVAL '24 hours'
-            ORDER BY total_mentions DESC LIMIT 5
-        """
+            SELECT topic, COUNT(*) as c 
+            FROM articles 
+            WHERE created_at >= NOW() - INTERVAL '24 hours' AND country = %s AND topic IS NOT NULL 
+            GROUP BY topic ORDER BY c DESC LIMIT 3
+        """,
+            (country_filter,)
         )
-        top_subjects = ", ".join(
-            f"{r['name']} ({r['total_mentions']})" for r in subjects_rows
-        )
+        top_subjects = ", ".join([r["topic"] for r in subjects_rows])
 
-        locations_rows = db.execute(
-            """
-            SELECT name, total_mentions
-            FROM knowledge_entities
-            WHERE type = 'GPE' AND last_seen >= NOW() - INTERVAL '24 hours'
-            ORDER BY total_mentions DESC LIMIT 5
-        """
-        )
-        top_locations = ", ".join(
-            f"{r['name']} ({r['total_mentions']})" for r in locations_rows
-        )
+        top_locations = "Balkan" # default
 
         # 2. Prep Dispatch Name
         hour = datetime.datetime.now().hour
         if 5 <= hour < 12:
-            dispatch_name = "Jutarnji brifing"
+            dispatch_name = "Jutarnji brifing" if lang == "sr" else "Утрински брифинг"
         elif 12 <= hour < 18:
-            dispatch_name = "Podnevni pregled"
+            dispatch_name = "Podnevni pregled" if lang == "sr" else "Пладневен преглед"
         else:
-            dispatch_name = "Vecernji pregled"
+            dispatch_name = "Vecernji pregled" if lang == "sr" else "Вечерен преглед"
 
         # 3. Build AI Context
-        clusters = _load_daily_brief_clusters(limit=10)
+        clusters = _load_daily_brief_clusters(limit=10, lang=lang)
         content_context = _build_daily_brief_context(clusters)
 
         system_insight = (
@@ -1789,26 +1814,27 @@ def generate_daily_brief_task(retry_attempt=0):
 
         full_context = f"<briefing_context>\n{content_context}\n{system_insight}\n</briefing_context>"
 
+        prompt = DAILY_BRIEF_SYSTEM_PROMPT if lang == "sr" else DAILY_BRIEF_SYSTEM_PROMPT_MK
         brief, _ = _call_ai(
             full_context,
-            DAILY_BRIEF_SYSTEM_PROMPT,
+            prompt,
             task_type="daily_brief",
             max_tokens=4000,
         )
         if brief and not _has_valid_daily_brief_structure(brief):
             log.warning(
-                f"[tasks] Daily brief rejected for invalid structure; using local fallback. Text start: {brief[:400]}"
+                f"[tasks] Daily brief ({lang}) rejected for invalid structure; using local fallback."
             )
             brief = ""
         if brief and not _is_grounded_daily_brief(brief, full_context):
             log.warning(
-                f"[tasks] Daily brief rejected as ungrounded; using local fallback. Text start: {brief[:400]}"
+                f"[tasks] Daily brief ({lang}) rejected as ungrounded; using local fallback."
             )
             brief = ""
 
         if brief and not _is_high_quality_briefing(brief):
             log.warning(
-                f"[tasks] Daily brief rejected by editorial quality gate; using local fallback. Text start: {brief[:400]}"
+                f"[tasks] Daily brief ({lang}) rejected by editorial quality gate; using local fallback."
             )
             brief = ""
 
@@ -1819,41 +1845,41 @@ def generate_daily_brief_task(retry_attempt=0):
                 final_brief = f"# {dispatch_name}\n\n" + final_brief
 
             db.execute(
-                "INSERT INTO daily_briefings (date, content) VALUES (CURRENT_DATE, %s) ON CONFLICT (date) DO UPDATE SET content = EXCLUDED.content",
-                (final_brief,),
+                "INSERT INTO daily_briefings (date, content, lang) VALUES (CURRENT_DATE, %s, %s) ON CONFLICT (date, lang) DO UPDATE SET content = EXCLUDED.content",
+                (final_brief, lang),
                 fetch=False,
             )
-            delete_cache("daily_brief:latest")
+            delete_cache(f"daily_brief:latest:{lang}")
             record_task_event(
-                "daily_brief", "ok" if brief else "fallback", "date:current"
+                "daily_brief", "ok" if brief else "fallback", f"lang:{lang}"
             )
             if not brief and retry_attempt < 2:
                 generate_daily_brief_task.apply_async(
-                    args=(retry_attempt + 1,), countdown=1800
+                    kwargs={"retry_attempt": retry_attempt + 1, "lang": lang}, countdown=1800
                 )
     except Exception as e:
-        clusters = _load_daily_brief_clusters(limit=6)
+        clusters = _load_daily_brief_clusters(limit=6, lang=lang)
         fallback = generate_daily_brief_fallback(clusters)
         if fallback:
             db.execute(
-                "INSERT INTO daily_briefings (date, content) VALUES (CURRENT_DATE, %s) ON CONFLICT (date) DO UPDATE SET content = EXCLUDED.content",
-                (fallback,),
+                "INSERT INTO daily_briefings (date, content, lang) VALUES (CURRENT_DATE, %s, %s) ON CONFLICT (date, lang) DO UPDATE SET content = EXCLUDED.content",
+                (fallback, lang),
                 fetch=False,
             )
-            delete_cache("daily_brief:latest")
+            delete_cache(f"daily_brief:latest:{lang}")
             from tasks.utils import record_task_event
 
-            record_task_event("daily_brief", "fallback", "date:current")
-            log.warning("[tasks] Daily brief failed; stored local fallback briefing")
+            record_task_event("daily_brief", "fallback", f"lang:{lang}")
+            log.warning(f"[tasks] Daily brief ({lang}) failed; stored local fallback briefing")
             if retry_attempt < 2:
                 generate_daily_brief_task.apply_async(
-                    args=(retry_attempt + 1,), countdown=1800
+                    kwargs={"retry_attempt": retry_attempt + 1, "lang": lang}, countdown=1800
                 )
         else:
             from tasks.utils import record_task_event
 
-            record_task_event("daily_brief", "error", "date:current")
-            log.error(f"[tasks] Daily brief failed: {e}")
+            record_task_event("daily_brief", "error", f"lang:{lang}")
+            log.error(f"[tasks] Daily brief ({lang}) failed: {e}")
 
 
 @celery_app.task
@@ -1875,9 +1901,12 @@ def send_profile_briefings_task():
 
     try:
         rows = _load_active_delivery_rows()
-        # Cache daily brief clusters to avoid N+1 queries (one per subscriber)
-        all_daily_clusters = _load_daily_brief_clusters(limit=18)
-        
+        # Cache per locale
+        cached_clusters = {
+            "sr": _load_daily_brief_clusters(limit=18, lang="sr"),
+            "mk": _load_daily_brief_clusters(limit=18, lang="mk"),
+        }
+
         for row in rows:
             if not row.get("morning_briefing"):
                 continue
@@ -1887,15 +1916,18 @@ def send_profile_briefings_task():
                 continue
 
             target = str(row.get("target") or NTFY_TOPIC).strip()
+            locale = row.get("locale") or "sr"
+            conf = _LOCALIZED_DELIVERY.get(locale, _LOCALIZED_DELIVERY["sr"])
+
             profile = _normalize_synced_profile_for_delivery(
                 row.get("profile_data") or {}
             )
-            # Use cached clusters instead of re-fetching for each profile
-            clusters = _select_profile_brief_clusters(profile, _cached_clusters=all_daily_clusters)
+            # Use cached clusters for the appropriate locale
+            clusters = _select_profile_brief_clusters(profile, _cached_clusters=cached_clusters.get(locale, cached_clusters["sr"]))
             if not clusters:
                 continue
 
-            message = _build_profile_briefing_message(profile, clusters)
+            message = _build_profile_briefing_message(profile, clusters, locale=locale)
             if not message:
                 continue
 
@@ -1929,16 +1961,15 @@ def send_profile_briefings_task():
             message_with_link = (
                 message
                 if not click_track_url
-                else f"{message}\n\nOtvori brifing: {click_track_url}"
+                else f"{message}\n\n{conf['read_briefing']}: {click_track_url}"
             )
             if _send_ntfy_message(
                 target,
-                "Presek · Jutarnji brifing",
+                conf["ntfy_title"],
                 message_with_link,
                 tags="newspaper,sunrise",
                 click_url=click_url,
-            ):
-                db.execute(
+            ):                db.execute(
                     "UPDATE synced_delivery_subscriptions SET last_morning_sent_at = NOW(), updated_at = NOW() WHERE sync_token = %s",
                     (row["sync_token"],),
                     fetch=False,

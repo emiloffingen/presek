@@ -536,19 +536,23 @@ async def subscribe_newsletter(request: Request):
     except Exception:
         raise HTTPException(status_code=400, detail="Nevaliden JSON")
     email = validate_email(body.get("email", ""), "email")
+    locale = str(body.get("locale") or "sr").strip().lower()[:5]
     try:
         await db.async_execute(
-            "INSERT INTO subscribers (email) VALUES (%s) ON CONFLICT (email) DO UPDATE SET is_active = TRUE",
-            (email,),
+            "INSERT INTO subscribers (email, locale) VALUES (%s, %s) ON CONFLICT (email) DO UPDATE SET is_active = TRUE, locale = EXCLUDED.locale",
+            (email, locale),
             fetch=False,
         )
     except Exception as e:
         log.warning(f"[subscribe] DB error: {e}")
         return {
             "status": "error",
-            "message": "Greska pri zacuvuvanje. Obidete se podocna.",
+            "message": "Greska pri zacuvuvanje. Obidete se podocna." if locale == "mk" else "Greška pri čuvanju. Pokušajte kasnije.",
         }
-    return {"status": "success", "message": "Uspesno se prijavivte!"}
+    return {
+        "status": "success",
+        "message": "Uspesno se prijavivte!" if locale == "mk" else "Uspešno ste se prijavili!",
+    }
 
 
 @router.get("/newsletter/unsubscribe")

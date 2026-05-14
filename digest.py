@@ -1,16 +1,7 @@
 """
 digest.py — Weekly HTML digest generator for Presek
-Generates a styled HTML email digest of the top stories.
+Generates a localized styled HTML email digest of the top stories.
 Can send via Gmail SMTP or save to file.
-
-Usage:
-    python3 digest.py --save                           # saves digest.html
-    python3 digest.py --email you@gmail.com --to recipient@email.com
-
-Note: Email password must be provided via SMTP_PASS environment variable.
-
-Cron (every Monday 08:00):
-    0 8 * * 1 cd /path/to/presek && python3 digest.py --save >> digest.log 2>&1
 """
 
 import database
@@ -22,172 +13,117 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from datetime import datetime, timedelta
 from collections import defaultdict
+import os
 
 log = logging.getLogger(__name__)
 
+# ── Localization Configuration ────────────────────────────────────────────────
 
-def send_newsletter_to_all_subscribers(days: int = 1) -> int:
-    """Sends the daily HTML digest to all active newsletter subscribers."""
-    import os
-
-    smtp_user = os.environ.get("SMTP_USER", "")
-    smtp_pass = os.environ.get("SMTP_PASS", "")
-    if not smtp_user or not smtp_pass:
-        log.warning("Newsletter skipped: SMTP credentials not set.")
-        return 0
-
-    stories = fetch_top_stories(days=days)
-    if not stories:
-        log.info("Newsletter skipped: No stories found.")
-        return 0
-
-    now = datetime.now()
-    start = now - timedelta(days=days)
-    html = render_html(stories, start, now)
-    subject = f"Presek — Jutarnji Brifing ({sr_date(now)})"
-
-    try:
-        from database import db_manager as db
-
-        subscribers = db.execute("SELECT email FROM subscribers WHERE is_active = TRUE")
-        if not subscribers:
-            log.info("Newsletter skipped: No active subscribers.")
-            return 0
-
-        sent_count = 0
-        for sub in subscribers:
-            user_email = sub["email"]
-            unsubscribe_url = (
-                f"https://presek.live/api/newsletter/unsubscribe?email={user_email}"
-            )
-            personalized_html = html.replace("{{UNSUBSCRIBE_URL}}", unsubscribe_url)
-
-            if send_email(personalized_html, subject, smtp_user, smtp_pass, user_email):
-                sent_count += 1
-
-        return sent_count
-    except Exception as e:
-        log.error(f"Newsletter distribution error: {e}")
-        return 0
-
-
-def send_ntfy_digest(stories_by_cat: dict, topic: str, period_days: int = 1) -> bool:
-    """Send a compact daily digest to ntfy.sh."""
-    if not topic:
-        return False
-
-    total = sum(len(v) for v in stories_by_cat.values())
-    lines = [f"📰 PRESEK — Dnevni pregled ({total} priče)\n"]
-
-    CAT_ORDER = [
-        "Srbija",
-        "Politika",
-        "Sport",
-        "Hronika",
-        "Ekonomija",
-        "Balkan",
-        "Svet",
-        "Dijaspora",
-    ]
-    cats = [c for c in CAT_ORDER if c in stories_by_cat] + [
-        c for c in stories_by_cat if c not in CAT_ORDER
-    ]
-
-    for cat in cats[:6]:  # max 6 categories in notification
-        articles = stories_by_cat[cat]
-        lines.append(f"▌ {cat}")
-        for a in articles[:2]:  # max 2 per category
-            src_count = a.get("source_count", 1)
-            badge = f" [{format_sources(src_count)}]" if src_count > 1 else ""
-            lines.append(f"  • {a['title'][:80]}{badge}")
-        lines.append("")
-
-    body = "\n".join(lines).strip()
-
-    try:
-        import httpx
-
-        with httpx.Client(timeout=10.0) as client:
-            resp = client.post(
-                f"https://ntfy.sh/{topic}",
-                content=body.encode("utf-8"),
-                headers={
-                    "Title": "Presek — Dnevni pregled",
-                    "Priority": "default",
-                    "Tags": "newspaper,serbia",
-                    "Content-Type": "text/plain; charset=utf-8",
-                },
-            )
-            ok = resp.status_code == 200
-        log.info(f"ntfy {'sent' if ok else 'failed'} to topic '{topic}'")
-        return ok
-    except Exception as e:
-        log.warning(f"ntfy error: {e}")
-        return False
+LOCALES = {
+    "sr": {
+        "months": ["januar", "februar", "mart", "april", "maj", "jun", "jul", "avgust", "septembar", "oktobar", "novembar", "decembar"],
+        "days": ["Ponedeljak", "Utorak", "Sreda", "Cetvrtak", "Petak", "Subota", "Nedelja"],
+        "default_cat": "Srbija",
+        "subject": "Presek — Jutarnji Brifing",
+        "masthead": "PRESEK",
+        "tagline": "Mediumska transparentnost i javen uvid",
+        "pulse": "MEDIUMSKI PULS",
+        "temi": "temi vo fokus",
+        "izvori": "izvori analizirani",
+        "cta": "Otvori ga celosnoto izdanie",
+        "footer_tagline": "Presek · Mediumska transparentnost · Sistemska sinteza",
+        "footer_disclaimer": "Ovoj pregled e sistemski sintetiziran preku nasiot redakciski algoritam.",
+        "unsubscribe": "Dokolku sakate da se odjavite, kliknete",
+        "here": "ovde",
+        "rights": "Site prava se zadrzani",
+        "url": "https://presek.live",
+        "lang_code": "sr",
+        "country_code": "RS",
+        "read_more": "Procitaj me vesta →",
+        "format_source": lambda c: "1 izvor" if c == 1 else f"{c} izvori"
+    },
+    "mk": {
+        "months": ["јануари", "февруари", "март", "април", "мај", "јуни", "јули", "август", "септември", "октомври", "ноември", "декември"],
+        "days": ["Понеделник", "Вторник", "Среда", "Четврток", "Петок", "Сабота", "Недела"],
+        "default_cat": "Македонија",
+        "subject": "Пресек — Утрински брифинг",
+        "masthead": "ПРЕСЕК",
+        "tagline": "Медиумска транспарентност и јавен увид",
+        "pulse": "МЕДИУМСКИ ПУЛС",
+        "temi": "теми во фокус",
+        "izvori": "извори анализирани",
+        "cta": "Отвори го целосното издание",
+        "footer_tagline": "Пресек · Медиумска транспарентност · Системска синтеза",
+        "footer_disclaimer": "Овој преглед е системски синтетизиран преку нашиот редакциски алгоритам.",
+        "unsubscribe": "Доколку сакате да се одјавите, кликнете",
+        "here": "овде",
+        "rights": "Сите права се задржани",
+        "url": "https://presek.mk",
+        "lang_code": "mk",
+        "country_code": "MK",
+        "read_more": "Прочитај ја веста →",
+        "format_source": lambda c: "1 извор" if c == 1 else f"{c} извори"
+    }
+}
 
 
-SR_MONTHS = [
-    "januar",
-    "februar",
-    "mart",
-    "april",
-    "maj",
-    "jun",
-    "jul",
-    "avgust",
-    "septembar",
-    "oktobar",
-    "novembar",
-    "decembar",
-]
-
-SR_DAYS = ["Ponedeljak", "Utorak", "Sreda", "Cetvrtak", "Petak", "Subota", "Nedelja"]
-
-
-def format_sources(count: int) -> str:
-    if count == 1:
-        return "1 izvor"
-    return f"{count} izvori"
+def format_date(dt: datetime, locale: str = "sr") -> str:
+    conf = LOCALES.get(locale, LOCALES["sr"])
+    return f"{conf['days'][dt.weekday()]}, {dt.day} {conf['months'][dt.month-1]} {dt.year}"
 
 
 def sr_date(dt: datetime) -> str:
-    return f"{SR_DAYS[dt.weekday()]}, {dt.day} {SR_MONTHS[dt.month-1]} {dt.year}"
+    return format_date(dt, "sr")
 
 
-def fetch_top_stories(days: int = 7, per_category: int = 3) -> dict[str, list[dict]]:
+def mk_date(dt: datetime) -> str:
+    return format_date(dt, "mk")
+
+
+def format_sources(count: int, locale: str = "sr") -> str:
+    conf = LOCALES.get(locale, LOCALES["sr"])
+    return conf["format_source"](count)
+
+
+# ── Logic ───────────────────────────────────────────────────────────────────
+
+def fetch_top_stories(days: int = 7, per_category: int = 3, locale: str = "sr") -> dict[str, list[dict]]:
     """
     Fetch top articles from the last N days, grouped by category.
-    Selects the earliest article per cluster (= most-sourced story).
+    Filtered by locale (country).
     """
+    conf = LOCALES.get(locale, LOCALES["sr"])
+    country = conf["country_code"]
+    
     try:
         with database.get_db() as conn:
-            # In PostgreSQL, we can use INTERVAL 'N days' or (interval '1 day' * N)
             rows = conn.execute(
                 """
-                SELECT id, title, link, source, category, summary, cluster_id, created_at
+                SELECT id, title, link, source, category, summary, cluster_id, created_at, country, is_global
                 FROM articles
                 WHERE created_at >= NOW() - (INTERVAL '1 day' * %s)
+                  AND (country = %s OR is_global = TRUE)
                 ORDER BY created_at DESC
             """,
-                (days,),
+                (days, country),
             ).fetchall()
     except Exception as e:
-        log.error(f"DB error: {e}")
+        log.error(f"DB error in fetch_top_stories: {e}")
         return {}
 
-    # Group by cluster, pick representative (first/most-cited)
+    # Group by cluster, pick representative
     clusters: dict[str, list] = defaultdict(list)
     for row in rows:
         clusters[row["cluster_id"]].append(dict(row))
 
-    # Sort clusters by size desc (most-covered stories first)
+    # Sort clusters by size desc
     sorted_clusters = sorted(clusters.values(), key=len, reverse=True)
 
     # Group top clusters by category
     by_cat: dict[str, list[dict]] = defaultdict(list)
     for cluster in sorted_clusters:
         main = cluster[0]
-        cat = main.get("category") or "Srbija"
+        cat = main.get("category") or conf["default_cat"]
         if len(by_cat[cat]) < per_category:
             main["source_count"] = len(cluster)
             by_cat[cat].append(main)
@@ -196,11 +132,11 @@ def fetch_top_stories(days: int = 7, per_category: int = 3) -> dict[str, list[di
 
 
 def render_html(
-    stories_by_cat: dict[str, list[dict]], period_start: datetime, period_end: datetime
+    stories_by_cat: dict[str, list[dict]], period_start: datetime, period_end: datetime, locale: str = "sr"
 ) -> str:
-    """Render the full HTML digest email with a premium editorial design."""
-
-    # 1. Calculate Pulse Stats for the header
+    """Render the full HTML digest email with localized strings."""
+    conf = LOCALES.get(locale, LOCALES["sr"])
+    
     total_stories = sum(len(v) for v in stories_by_cat.values())
     total_sources = len(
         {
@@ -217,7 +153,6 @@ def render_html(
         for a in articles:
             summary_html = ""
             if a.get("summary"):
-                # Clean up summary: remove emoji markers and truncate
                 clean = " ".join(
                     line
                     for line in a["summary"].split("\n")
@@ -227,7 +162,7 @@ def render_html(
 
             sources_badge = ""
             if a.get("source_count", 1) > 1:
-                sources_badge = f'<span style="background:#b91c1c;color:#ffffff;font-family:sans-serif;font-size:10px;font-weight:bold;padding:2px 6px;text-transform:uppercase;letter-spacing:0.05em;border-radius:2px;margin-left:8px;vertical-align:middle">{format_sources(a["source_count"])}</span>'
+                sources_badge = f'<span style="background:#b91c1c;color:#ffffff;font-family:sans-serif;font-size:10px;font-weight:bold;padding:2px 6px;text-transform:uppercase;letter-spacing:0.05em;border-radius:2px;margin-left:8px;vertical-align:middle">{format_sources(a["source_count"], locale)}</span>'
 
             items += f"""
             <tr>
@@ -238,7 +173,7 @@ def render_html(
                 </a>
                 {summary_html}
                 <div style="margin-top:12px">
-                    <a href="{a['link']}" style="font-family:sans-serif;font-size:11px;font-weight:bold;color:#6b7280;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em">Procitaj me vesta →</a>
+                    <a href="{a['link']}" style="font-family:sans-serif;font-size:11px;font-weight:bold;color:#6b7280;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em">{conf['read_more']}</a>
                     {sources_badge}
                 </div>
               </td>
@@ -259,14 +194,14 @@ def render_html(
         </tr>
         {items}"""
 
-    period_str = f"{sr_date(period_start)} — {sr_date(period_end)}"
+    period_str = f"{format_date(period_start, locale)} — {format_date(period_end, locale)}"
 
     html = f"""<!DOCTYPE html>
-<html lang="sr">
+<html lang="{conf['lang_code']}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Presek — Dnevni pregled</title>
+  <title>{conf['masthead']} — {conf['subject']}</title>
 </head>
 <body style="margin:0;padding:0;background-color:#f9fafb;font-family:Georgia,serif;-webkit-font-smoothing:antialiased">
 
@@ -278,10 +213,10 @@ def render_html(
         <tr>
           <td style="padding:40px 40px 30px;text-align:center;border-bottom:4px double #111827">
             <h1 style="margin:0;font-family:Georgia,\'Times New Roman\',serif;font-size:42px;font-weight:900;color:#111827;letter-spacing:-1.5px;text-transform:uppercase">
-              PRESEK
+              {conf['masthead']}
             </h1>
             <p style="margin:10px 0 0;font-family:sans-serif;font-size:11px;font-weight:bold;letter-spacing:0.3em;text-transform:uppercase;color:#6b7280">
-              Mediumska transparentnost i javen uvid
+              {conf['tagline']}
             </p>
           </td>
         </tr>
@@ -290,7 +225,7 @@ def render_html(
         <tr>
           <td style="background-color:#111827;padding:12px 40px;text-align:center">
             <p style="margin:0;font-family:sans-serif;font-size:10px;font-weight:bold;color:#9ca3af;letter-spacing:0.1em;text-transform:uppercase">
-              <span style="color:#ffffff">MEDIUMSKI PULS:</span> &nbsp; {total_stories} temi vo fokus &nbsp; • &nbsp; {total_sources} izvori analizirani
+              <span style="color:#ffffff">{conf['pulse']}:</span> &nbsp; {total_stories} {conf['temi']} &nbsp; • &nbsp; {total_sources} {conf['izvori']}
             </p>
           </td>
         </tr>
@@ -316,8 +251,8 @@ def render_html(
         <!-- Bottom CTA -->
         <tr>
             <td style="padding:0 40px 40px;text-align:center">
-                <a href="https://presek.live" style="display:inline-block;padding:14px 28px;background-color:#111827;color:#ffffff;font-family:sans-serif;font-size:12px;font-weight:bold;text-decoration:none;text-transform:uppercase;letter-spacing:0.15em;border-radius:2px">
-                    Otvori ga celosnoto izdanie
+                <a href="{conf['url']}" style="display:inline-block;padding:14px 28px;background-color:#111827;color:#ffffff;font-family:sans-serif;font-size:12px;font-weight:bold;text-decoration:none;text-transform:uppercase;letter-spacing:0.15em;border-radius:2px">
+                    {conf['cta']}
                 </a>
             </td>
         </tr>
@@ -326,11 +261,11 @@ def render_html(
         <tr>
           <td style="padding:30px 40px;text-align:center;background-color:#f3f4f6;border-top:1px solid #e5e7eb">
             <p style="margin:0;font-family:sans-serif;font-size:10px;font-weight:bold;color:#9ca3af;letter-spacing:0.1em;text-transform:uppercase">
-              Presek · Mediumska transparentnost · Sistemska sinteza
+              {conf['footer_tagline']}
             </p>
             <p style="margin:8px 0 0;font-family:sans-serif;font-size:10px;color:#9ca3af;line-height:1.5">
-              Ovoj pregled e sistemski sintetiziran preku nasiot redakciski algoritam.<br>
-              Dokolku sakate da se odjavite, kliknete <a href="{{UNSUBSCRIBE_URL}}" style="color:#6b7280;text-decoration:underline">ovde</a>.
+              {conf['footer_disclaimer']}<br>
+              {conf['unsubscribe']} <a href="{{UNSUBSCRIBE_URL}}" style="color:#6b7280;text-decoration:underline">{conf['here']}</a>.
             </p>
           </td>
         </tr>
@@ -341,7 +276,7 @@ def render_html(
         <tr>
             <td style="padding:20px 0;text-align:center">
                 <p style="margin:0;font-family:sans-serif;font-size:10px;color:#9ca3af">
-                    © {datetime.now().year} Presek. Site prava se zadrzani.
+                    © {datetime.now().year} Presek. {conf['rights']}.
                 </p>
             </td>
         </tr>
@@ -352,7 +287,56 @@ def render_html(
 </body>
 </html>"""
 
-    return html.replace("{{UNSUBSCRIBE_URL}}", "https://presek.live/settings")
+    return html.replace("{{UNSUBSCRIBE_URL}}", f"{conf['url']}/settings")
+
+
+def send_newsletter_to_all_subscribers(days: int = 1) -> int:
+    """Sends localized daily HTML digests to all active newsletter subscribers."""
+    smtp_user = os.environ.get("SMTP_USER", "")
+    smtp_pass = os.environ.get("SMTP_PASS", "")
+    if not smtp_user or not smtp_pass:
+        log.warning("Newsletter skipped: SMTP credentials not set.")
+        return 0
+
+    from database import db_manager as db
+    
+    # Pre-generate digests for each locale to avoid redundant DB calls and rendering
+    digests = {}
+    now = datetime.now()
+    start = now - timedelta(days=days)
+    
+    for loc in LOCALES:
+        stories = fetch_top_stories(days=days, locale=loc)
+        if stories:
+            digests[loc] = {
+                "html": render_html(stories, start, now, locale=loc),
+                "subject": f"{LOCALES[loc]['subject']} ({format_date(now, loc)})"
+            }
+
+    try:
+        subscribers = db.execute("SELECT email, locale FROM subscribers WHERE is_active = TRUE")
+        if not subscribers:
+            log.info("Newsletter skipped: No active subscribers.")
+            return 0
+
+        sent_count = 0
+        for sub in subscribers:
+            user_email = sub["email"]
+            loc = sub.get("locale") or "sr" # fallback
+            if loc not in digests:
+                continue # Skip if no stories for this locale
+                
+            digest = digests[loc]
+            unsubscribe_url = f"{LOCALES[loc]['url']}/api/newsletter/unsubscribe?email={user_email}"
+            personalized_html = digest["html"].replace("{{UNSUBSCRIBE_URL}}", unsubscribe_url)
+
+            if send_email(personalized_html, digest["subject"], smtp_user, smtp_pass, user_email):
+                sent_count += 1
+
+        return sent_count
+    except Exception as e:
+        log.error(f"Newsletter distribution error: {e}")
+        return 0
 
 
 def send_email(
@@ -365,8 +349,6 @@ def send_email(
     smtp_port: int = None,
 ) -> bool:
     """Send HTML email via SMTP."""
-    import os
-
     host = smtp_host or os.environ.get("SMTP_HOST", "smtp.gmail.com")
     port = int(smtp_port or os.environ.get("SMTP_PORT", 587))
     from_addr = os.environ.get("EMAIL_FROM", smtp_user)
@@ -386,103 +368,59 @@ def send_email(
             server.sendmail(from_addr, to_address, msg.as_string())
         log.info(f"Email sent to {to_address} via {host}")
         return True
-    except smtplib.SMTPAuthenticationError as e:
-        log.error(f"SMTP auth failure on {host} (permanent): {e}")
-        return False
-    except smtplib.SMTPRecipientsRefused as e:
-        log.error(f"SMTP recipient refused {to_address} (permanent): {e}")
-        return False
-    except (smtplib.SMTPServerDisconnected, smtplib.SMTPConnectError, OSError) as e:
-        log.warning(f"SMTP transient error on {host} (retryable): {e}")
-        return False
     except Exception as e:
-        log.warning(f"SMTP error on {host}: {e}")
+        log.warning(f"SMTP error on {host} to {to_address}: {e}")
         return False
-
-
-def generate_digest(
-    days: int = 1,
-    save_path: str | None = None,
-    smtp_user: str | None = None,
-    smtp_pass: str | None = None,
-    to_address: str | None = None,
-    ntfy_topic: str | None = None,
-) -> str:
-    """Main entry point. Returns the rendered HTML."""
-    now = datetime.now()
-    start = now - timedelta(days=days)
-
-    stories = fetch_top_stories(days=days)
-    html = render_html(stories, start, now)
-
-    if save_path:
-        with open(save_path, "w", encoding="utf-8") as f:
-            f.write(html)
-        log.info(f"Saved to {save_path}")
-
-    if smtp_user and smtp_pass and to_address:
-        subject = f"Presek — Dneven pregled {mk_date(start)} — {mk_date(now)}"
-        send_email(html, subject, smtp_user, smtp_pass, to_address)
-
-    return html
 
 
 def send_digest(days: int = 1) -> bool:
     """
-    Entry point called by send_daily_digest_task in tasks.py.
-    Sends digest via ntfy and optionally email if SMTP env vars are set.
-    Returns True if at least one delivery succeeded.
+    Entry point for automated daily tasks.
     """
-    import os
-
-    ntfy_topic = os.environ.get("NTFY_TOPIC", "")
     smtp_user = os.environ.get("SMTP_USER", "")
     smtp_pass = os.environ.get("SMTP_PASS", "")
-    to_address = os.environ.get("DIGEST_TO", "")
-
-    stories = fetch_top_stories(days=days)
-    if not stories:
-        log.info("No stories found, skipping digest.")
-        return False
+    to_address = os.environ.get("DIGEST_TO", "") # Admin recipient
 
     ok = False
-
-    if ntfy_topic:
-        ok = send_ntfy_digest(stories, ntfy_topic, period_days=days) or ok
-
+    
     if smtp_user and smtp_pass and to_address:
-        now = datetime.now()
-        start = now - timedelta(days=days)
-        html = render_html(stories, start, now)
-        subject = f"Presek — Dneven pregled {mk_date(start)} — {mk_date(now)}"
-        ok = send_email(html, subject, smtp_user, smtp_pass, to_address) or ok
+        # Send admin digests
+        for loc in ["mk", "sr"]:
+            stories = fetch_top_stories(days=days, locale=loc)
+            if stories:
+                now = datetime.now()
+                start = now - timedelta(days=days)
+                html = render_html(stories, start, now, locale=loc)
+                subject = f"Presek [{loc.upper()}] — Dneven pregled {format_date(start, loc)}"
+                ok = send_email(html, subject, smtp_user, smtp_pass, to_address) or ok
 
     return ok
 
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Presek digest generator")
-    parser.add_argument("--days", default=7, type=int, help="Days to look back")
-    parser.add_argument("--save", default="digest.html", help="Save HTML to file")
-    parser.add_argument(
-        "--email", default=None, help="Sender email (overrides SMTP_USER env var)"
-    )
+    parser.add_argument("--days", default=1, type=int, help="Days to look back")
+    parser.add_argument("--save", default=None, help="Save HTML to file")
     parser.add_argument("--to", default=None, help="Recipient email")
-    parser.add_argument("--ntfy", default=None, help="ntfy.sh topic for push digest")
+    parser.add_argument("--locale", default="sr", choices=["sr", "mk"], help="Locale")
     args = parser.parse_args()
 
-    # Password must come from SMTP_PASS environment variable, never CLI
-    import os
-
-    smtp_user = args.email or os.environ.get("SMTP_USER", "")
+    smtp_user = os.environ.get("SMTP_USER", "")
     smtp_pass = os.environ.get("SMTP_PASS", "")
 
-    generate_digest(
-        days=args.days,
-        save_path=args.save,
-        smtp_user=smtp_user,
-        smtp_pass=smtp_pass,
-        to_address=args.to,
-        ntfy_topic=args.ntfy,
-    )
+    now = datetime.now()
+    start = now - timedelta(days=args.days)
+    stories = fetch_top_stories(days=args.days, locale=args.locale)
+    html = render_html(stories, start, now, locale=args.locale)
+
+    if args.save:
+        with open(args.save, "w", encoding="utf-8") as f:
+            f.write(html)
+        print(f"Saved to {args.save}")
+
+    if smtp_user and smtp_pass and args.to:
+        subject = f"Presek — Dneven pregled {format_date(start, args.locale)}"
+        send_email(html, subject, smtp_user, smtp_pass, args.to)
+        print(f"Sent to {args.to}")

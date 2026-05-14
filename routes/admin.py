@@ -80,6 +80,31 @@ async def get_admin_dashboard(authorized: bool = Depends(verify_admin)):
 
 @router.post("/admin/tasks/retry-failed")
 async def retry_failed_tasks(authorized: bool = Depends(verify_admin)):
-    """Clear failed task records after the operator has handled them."""
-    deleted = db.execute("DELETE FROM failed_tasks", fetch=False)
-    return {"status": "success", "message": "Failed tasks cleared", "deleted": deleted}
+    """Re-dispatch failed tasks to Celery and clear records."""
+    from celery_app import celery_app
+
+    failed = db.execute("SELECT id, task_name, args, kwargs FROM failed_tasks")
+    if not failed:
+        return {"status": "success", "message": "Nema neuspešnih zadataka."}
+
+    retry_count = 0
+    for task_row in failed:
+        try:
+            # Re-dispatch by name using send_task to avoid direct imports
+            celery_app.send_task(
+                task_row["task_name"],
+                args=task_row["args"] or [],
+                kwargs=task_row["kwargs"] or {},
+            )
+            db.execute(
+                "DELETE FROM failed_tasks WHERE id = %s", (task_row["id"],), fetch=False
+            )
+            retry_count += 1
+        except Exception as e:
+            log.error(f"Failed to retry task {task_row['id']}: {e}")
+
+    return {
+        "status": "success",
+        "message": f"Pokrenuto ponovno izvršavanje {retry_count} zadataka.",
+        "retried": retry_count,
+    }

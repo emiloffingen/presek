@@ -136,7 +136,7 @@ export default function BriefingDeliveryIsland({
                     await fetch('/api/profile/delivery', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ token: syncToken, subscription: payload })
+                        body: JSON.stringify({ token: syncToken, subscription: payload, locale: 'mk' })
                     });
                 }
             }
@@ -183,6 +183,7 @@ export default function BriefingDeliveryIsland({
         body: JSON.stringify({
           token: syncToken,
           subscription: payload,
+          locale: 'mk'
         }),
       });
       if (!res.ok) throw new Error('save failed');
