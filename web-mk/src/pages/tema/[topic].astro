@@ -89,6 +89,7 @@ function countValues(values: string[]) {
 function buildNewsUrl(params: Record<string, string>) {
 	const url = new URL(`${API_URL}/news`);
 	url.searchParams.set('page_size', '24');
+	url.searchParams.set('lang', 'mk');  // Ensure Macedonian language filtering
 	for (const [key, value] of Object.entries(params)) {
 		url.searchParams.set(key, value);
 	}
@@ -108,7 +109,7 @@ try {
 	if (clusters.length > 0) {
 		const ids = clusters.slice(0, 6).map((cluster: any) => cluster.cluster_id);
 		const detailResults = await Promise.allSettled(
-			ids.map((id: string) => fetchJson(`${API_URL}/cluster/${id}`))
+			ids.map((id: string) => fetchJson(`${API_URL}/cluster/${id}?lang=mk`))
 		);
 
 		detailResults.forEach((result, index) => {

@@ -25,7 +25,7 @@ let error = null;
 try {
   const archiveUrl = new URL(`${API_URL}/archive`);
   archiveUrl.searchParams.set('date', date);
-  archiveUrl.searchParams.set('lang', 'sr');
+  archiveUrl.searchParams.set('lang', 'mk');
   archiveUrl.searchParams.set('page', String(page));
   archiveUrl.searchParams.set('page_size', '50');
   if (q) archiveUrl.searchParams.set('q', q);

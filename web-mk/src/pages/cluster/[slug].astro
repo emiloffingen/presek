@@ -61,7 +61,7 @@ let cluster: ClusterDetail | null = null;
 let error = null;
 
 try {
-    const res = await fetch(`${API_URL}/cluster/${id}`);
+    const res = await fetch(`${API_URL}/cluster/${id}?lang=mk`);
     if (!res.ok) {
         if (res.status === 404) {
             error = 'Klaster nije pronađen.';

@@ -130,8 +130,8 @@ if (isHomepage) {
         fetchJson(`${API_URL}/trending`),
         fetchJson(`${API_URL}/intelligence/top-entities?limit=12`),
         fetchJson(`${API_URL}/stats/summary`),
-        fetchJson(`${API_URL}/briefing`),
-        fetchJson(`${API_URL}/home/latest-wire?limit=15`),
+        fetchJson(`${API_URL}/briefing?lang=mk`),
+        fetchJson(`${API_URL}/home/latest-wire?limit=15&lang=mk`),
     ]);
 
     if (wireResult.status === 'fulfilled') {

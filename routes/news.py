@@ -796,9 +796,11 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
         return cached
 
     try:
+        # Map language to country for article filtering
+        country_filter = "MK" if lang == "mk" else "RS"
         rows = await db.async_execute(
-            "SELECT * FROM articles WHERE cluster_id = %s ORDER BY created_at DESC",
-            (cluster_id,),
+            "SELECT * FROM articles WHERE cluster_id = %s AND country = %s ORDER BY created_at DESC",
+            (cluster_id, country_filter),
         )
         if not rows:
             raise HTTPException(status_code=404, detail="klaster nije pronadjen")

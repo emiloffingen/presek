@@ -190,10 +190,10 @@ def detect_language(text: str) -> str:
         return _script_heuristic(cleaned)
 
     try:
-        labels, _probs = model.predict(cleaned, k=1)
-        if labels:
-            # Labels look like '__label__mk'
-            return labels[0].replace("__label__", "")
+        labels, _probs = model.predict([cleaned], k=1)
+        if labels and labels[0]:
+            # Labels look like [['__label__mk']]
+            return labels[0][0].replace("__label__", "")
     except Exception as e:
         log.warning(f"[language] fastText predict failed: {e}")
     return _script_heuristic(cleaned)
@@ -204,6 +204,6 @@ def is_macedonian(text: str) -> bool:
 
 
 def is_cyrillic_south_slavic(text: str) -> bool:
-    """True for Macedonian/Bulgarian/Serbian (Cyrillic) — scripts that render
-    naturally on Presek without translation."""
-    return detect_language(text) in {"mk", "bg", "sr"}
+    """True for Macedonian/Bulgarian/Serbian/Croatian/Bosnian — languages that
+    render naturally on Presek without translation."""
+    return detect_language(text) in {"mk", "bg", "sr", "hr", "bs"}
