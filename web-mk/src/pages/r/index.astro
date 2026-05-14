@@ -32,9 +32,9 @@ async function fetchJson(url: string) {
 try {
     const [homeResult, trendResult, entityResult, statsResult] = await Promise.allSettled([
         fetchJson(`${API_URL}/home?lang=mk`),
-        fetchJson(`${API_URL}/trending`),
-        fetchJson(`${API_URL}/intelligence/top-entities?limit=12`),
-        fetchJson(`${API_URL}/stats/summary`),
+        fetchJson(`${API_URL}/trending?lang=mk`),
+        fetchJson(`${API_URL}/intelligence/top-entities?limit=12&lang=mk`),
+        fetchJson(`${API_URL}/stats/summary?lang=mk`),
     ]);
 
     if (homeResult.status === 'fulfilled') {

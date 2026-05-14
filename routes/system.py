@@ -183,14 +183,16 @@ async def get_weather(lang: Optional[str] = "sr"):
 
 
 @router.get("/trending")
-async def get_trending_route():
-    cached = cached_response("api:trending")
+async def get_trending_route(lang: Optional[str] = "sr"):
+    cache_key = f"api:trending:{lang}"
+    cached = cached_response(cache_key)
     if cached:
         return cached
     from trending import get_trending
 
-    words = get_trending(limit=20)
-    set_cache("api:trending", words, ttl=300)
+    target_country = "MK" if lang == "mk" else "RS"
+    words = get_trending(limit=20, country=target_country)
+    set_cache(cache_key, words, ttl=300)
     return words
 
 
@@ -273,15 +275,18 @@ async def get_navigation(lang: Optional[str] = "sr"):
 
     # 1. LIVE / BREAKING (Last 24h)
     breaking_items = []
+    target_country = "MK" if lang == "mk" else "RS"
+
     recent_clusters = await db.async_execute(
-        """
+        f"""
         SELECT m.cluster_id, 
-               (SELECT title FROM articles WHERE cluster_id = m.cluster_id ORDER BY created_at DESC LIMIT 1) as title,
-               (SELECT COALESCE(ingested_at, created_at) FROM articles WHERE cluster_id = m.cluster_id ORDER BY COALESCE(ingested_at, created_at) DESC LIMIT 1) as created_at
+               (SELECT title FROM articles WHERE cluster_id = m.cluster_id AND country = %s ORDER BY created_at DESC LIMIT 1) as title,
+               (SELECT COALESCE(ingested_at, created_at) FROM articles WHERE cluster_id = m.cluster_id AND country = %s ORDER BY COALESCE(ingested_at, created_at) DESC LIMIT 1) as created_at
         FROM cluster_metadata m
-        WHERE m.updated_at >= NOW() - INTERVAL '24 hours'
+        WHERE EXISTS (SELECT 1 FROM articles a WHERE a.cluster_id = m.cluster_id AND a.country = %s)
+          AND m.updated_at >= NOW() - INTERVAL '24 hours'
         ORDER BY m.updated_at DESC LIMIT 15
-    """
+    """, (target_country, target_country, target_country)
     )
 
     for c in recent_clusters:
@@ -310,10 +315,11 @@ async def get_navigation(lang: Optional[str] = "sr"):
         SELECT category, topic, COUNT(DISTINCT cluster_id) as n
         FROM articles
         WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours'
+          AND country = %s
           AND category IS NOT NULL AND category != ''
           AND topic IS NOT NULL AND topic != ''
         GROUP BY category, topic
-    """
+    """, (target_country,)
     )
 
     sub_activity = await db.async_execute(
@@ -321,9 +327,10 @@ async def get_navigation(lang: Optional[str] = "sr"):
         SELECT subcategory, COUNT(DISTINCT cluster_id) as n
         FROM articles 
         WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours'
+          AND country = %s
           AND subcategory IS NOT NULL AND subcategory != ''
         GROUP BY subcategory
-    """
+    """, (target_country,)
     )
 
     cat_act = defaultdict(int)
@@ -402,7 +409,7 @@ async def get_navigation(lang: Optional[str] = "sr"):
         )
 
     # 6. TRENDING STORIES
-    trending_entities = await get_top_entities(limit=8)
+    trending_entities = await get_top_entities(limit=8, lang=lang)
     entities = [
         {
             "label": f"#{e['name']}",

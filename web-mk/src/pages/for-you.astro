@@ -13,7 +13,7 @@ const API_URL = apiBaseUrl();
 let initialClusters = [];
 let initialError: string | null = null;
 try {
-    const res = await fetch(`${API_URL}/news?page_size=100`);
+    const res = await fetch(`${API_URL}/news?page_size=100&lang=mk`);
     if (res.ok) {
         const data = await res.json();
         initialClusters = data.clusters || [];

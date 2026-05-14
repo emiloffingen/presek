@@ -118,6 +118,7 @@ if (isHomepage) {
 } else {
     const newsUrl = new URL(`${API_URL}/news`);
     newsUrl.searchParams.set('page_size', '48');
+    newsUrl.searchParams.set('lang', 'mk');
     if (category) newsUrl.searchParams.set('category', category);
     if (topic) newsUrl.searchParams.set('topic', topic);
     if (entity) newsUrl.searchParams.set('entity', entity);
@@ -127,9 +128,9 @@ if (isHomepage) {
 
     const [newsResult, trendResult, entityResult, statsResult, briefingResult, wireResult] = await Promise.allSettled([
         fetchJson(newsUrl.toString()),
-        fetchJson(`${API_URL}/trending`),
-        fetchJson(`${API_URL}/intelligence/top-entities?limit=12`),
-        fetchJson(`${API_URL}/stats/summary`),
+        fetchJson(`${API_URL}/trending?lang=mk`),
+        fetchJson(`${API_URL}/intelligence/top-entities?limit=12&lang=mk`),
+        fetchJson(`${API_URL}/stats/summary?lang=mk`),
         fetchJson(`${API_URL}/briefing?lang=mk`),
         fetchJson(`${API_URL}/home/latest-wire?limit=15&lang=mk`),
     ]);

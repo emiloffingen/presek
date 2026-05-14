@@ -6,7 +6,7 @@ const API_URL = apiBaseUrl();
 
 export const GET: APIRoute = async () => {
 	try {
-		const res = await fetch(`${API_URL}/news`);
+		const res = await fetch(`${API_URL}/news?lang=mk`);
 		const data = res.ok ? await res.json() : null;
 		const count = Array.isArray(data?.clusters) ? data.clusters.length : 0;
 		const subtitle = count > 0

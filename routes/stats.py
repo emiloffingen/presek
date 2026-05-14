@@ -348,15 +348,16 @@ async def get_archive(
 
 
 @router.get("/archive/daily-briefing")
-async def get_archive_daily_briefing(date: str = Query(...)):
+async def get_archive_daily_briefing(date: str = Query(...), lang: str = "sr"):
     """Provides an AI-generated briefing for a specific historical date."""
     validate_date(date)
-    cache_key = f"archive:briefing:{date}:v1"
+    cache_key = f"archive:briefing:{date}:{lang}:v1"
     cached = cached_response(cache_key, ttl=86400)
     if cached:
         return cached
 
     d_start, d_end = get_date_range(date)
+    target_country = "MK" if lang == "mk" else "RS"
 
     # Find the top 3 clusters for that day and their summaries
     top_clusters = await db.async_execute(
@@ -364,12 +365,12 @@ async def get_archive_daily_briefing(date: str = Query(...)):
         SELECT s.cluster_id, s.summary, s.synthetic_headline
         FROM cluster_summaries s
         JOIN articles a ON s.cluster_id = a.cluster_id
-        WHERE a.created_at >= %s AND a.created_at <= %s
+        WHERE a.created_at >= %s AND a.created_at <= %s AND a.country = %s
         GROUP BY s.cluster_id, s.summary, s.synthetic_headline, s.pluralism_score
         ORDER BY s.pluralism_score DESC, COUNT(a.id) DESC
         LIMIT 3
     """,
-        (d_start, d_end),
+        (d_start, d_end, target_country),
     )
 
     if not top_clusters:
@@ -447,32 +448,41 @@ async def get_stats_route():
 
 
 @router.get("/stats/summary", response_model=StatsSummaryResponse)
-async def get_stats_summary():
-    cache_key = "api:stats:summary:v4"
+async def get_stats_summary(lang: Optional[str] = "sr"):
+    cache_key = f"api:stats:summary:v4:{lang}"
     cached = cached_response(cache_key)
     if cached:
         return cached
 
+    target_country = "MK" if lang == "mk" else "RS"
+
     last_24h_res = await db.async_execute_one(
-        f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours'"
+        f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' AND country = %s",
+        (target_country,)
     )
     last_24h = last_24h_res["count"] if last_24h_res else 0
 
     last_1h_res = await db.async_execute_one(
-        f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '1 hour'"
+        f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '1 hour' AND country = %s",
+        (target_country,)
     )
     last_1h = last_1h_res["count"] if last_1h_res else 0
+
     total_feeds = (
         await db.async_execute_one(
-            "SELECT COUNT(*) FROM sources WHERE is_active = TRUE"
+            "SELECT COUNT(*) FROM sources WHERE is_active = TRUE AND country = %s",
+            (target_country,)
         )
     )["count"] or 0
+
     quote_row = await db.async_execute_one(
-        """
+        f"""
         SELECT s.quote, s.summary, s.generated_article, s.cluster_id,
-               (SELECT title FROM articles WHERE cluster_id = s.cluster_id ORDER BY created_at DESC LIMIT 1) as title
+               (SELECT title FROM articles WHERE cluster_id = s.cluster_id AND country = %s ORDER BY created_at DESC LIMIT 1) as title
         FROM cluster_summaries s
+        JOIN articles a ON a.cluster_id = s.cluster_id
         WHERE s.created_at >= NOW() - INTERVAL '72 hours'
+          AND a.country = %s
           AND (
               COALESCE(s.quote, '') != ''
               OR COALESCE(s.summary, '') != ''
@@ -480,15 +490,16 @@ async def get_stats_summary():
           )
           -- Priority to objective content if sentiment data exists
           AND (
-              s.sentiment->'tone_analysis'->>'objectivity' IS NULL 
+              s.sentiment->'tone_analysis'->>'objectivity' IS NULL
               OR (s.sentiment->'tone_analysis'->>'objectivity')::float >= 0.4
           )
+        GROUP BY s.quote, s.summary, s.generated_article, s.cluster_id, s.created_at, s.sentiment
         ORDER BY
             CASE WHEN COALESCE(s.quote, '') != '' THEN 0 ELSE 1 END,
             COALESCE((s.sentiment->'tone_analysis'->>'objectivity')::float, 0.5) DESC,
             s.created_at DESC
         LIMIT 1
-    """
+    """, (target_country, target_country)
     )
     quote = _pick_quote_of_the_day(quote_row)
 

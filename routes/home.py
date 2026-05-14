@@ -300,9 +300,9 @@ async def get_home(lang: Optional[str] = "sr"):
         results = await asyncio.gather(
             get_news(page_size=48, lang=lang),
             get_news(sort="recent", page_size=24, lang=lang),
-            get_trending_route(),
-            get_top_entities(limit=12),
-            get_stats_summary(),
+            get_trending_route(lang=lang),
+            get_top_entities(limit=12, lang=lang),
+            get_stats_summary(lang=lang),
             return_exceptions=True,
         )
 

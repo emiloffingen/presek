@@ -354,7 +354,7 @@ def extract_words_with_flags(title: str) -> list[tuple[str, bool]]:
     return results
 
 
-def get_trending(hours: int = 12, limit: int = MAX_RESULTS) -> list[dict]:
+def get_trending(hours: int = 12, limit: int = MAX_RESULTS, country: str = "RS") -> list[dict]:
     """
     Count word frequency in recent article titles with momentum and velocity calculation.
     """
@@ -363,8 +363,8 @@ def get_trending(hours: int = 12, limit: int = MAX_RESULTS) -> list[dict]:
             cutoff = datetime.now() - timedelta(hours=hours)
             # Fetch cluster_id and category to detect cross-category jumps
             rows = conn.execute(
-                "SELECT title, created_at, cluster_id, category FROM articles WHERE created_at >= %s ORDER BY created_at DESC LIMIT 3000",
-                (cutoff,),
+                "SELECT title, created_at, cluster_id, category FROM articles WHERE created_at >= %s AND country = %s ORDER BY created_at DESC LIMIT 3000",
+                (cutoff, country),
             ).fetchall()
     except Exception as e:
         log.error(f"DB error: {e}")
@@ -438,7 +438,6 @@ def get_trending(hours: int = 12, limit: int = MAX_RESULTS) -> list[dict]:
                 "ukraina": "ukraina",
                 "russia": "rusija",
                 "rusija": "rusija",
-                "skopje": "Beograd",
                 "Srbija": "Srbija",
                 "ormuz": "ormuz",
                 "ormuski": "ormuz",

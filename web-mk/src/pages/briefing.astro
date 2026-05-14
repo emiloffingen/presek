@@ -21,14 +21,13 @@ let stats: any = null;
 let error = null;
 
 try {
-    const briefingUrl = dateParam 
-        ? `${API_URL}/intelligence/briefing?date=${dateParam}` 
-        : `${API_URL}/intelligence/briefing`;
-
+    const briefingUrl = dateParam
+            ? `${API_URL}/intelligence/briefing?date=${dateParam}&lang=mk`
+            : `${API_URL}/intelligence/briefing?lang=mk`;
     const [briefRes, homeRes, statsRes] = await Promise.all([
         fetch(briefingUrl),
         fetch(`${API_URL}/home?lang=mk`),
-        fetch(`${API_URL}/stats/summary`)
+        fetch(`${API_URL}/stats/summary?lang=mk`)
     ]);
 
     if (briefRes.ok) briefingData = await briefRes.json();

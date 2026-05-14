@@ -42,7 +42,7 @@ try {
     const requests = [fetch(`${API_URL}/navigation?lang=mk`)];
     const shouldFetchStats = !stats || typeof stats.last_1h !== 'number' || typeof stats.total_feeds === 'undefined';
     if (shouldFetchStats) {
-        requests.push(fetch(`${API_URL}/stats/summary`));
+        requests.push(fetch(`${API_URL}/stats/summary?lang=mk`));
     }
 
     const results = await Promise.allSettled(requests);
@@ -54,7 +54,7 @@ try {
     }
 
     if (!navigationData.breaking.length) {
-        const latestRes = await fetch(`${API_URL}/news?page_size=8&sort=recent`);
+        const latestRes = await fetch(`${API_URL}/news?page_size=8&sort=recent&lang=mk`);
         if (latestRes.ok) {
             const latestData = await latestRes.json();
             latestTickerItems = (latestData?.clusters || []).map((cluster: any) => {

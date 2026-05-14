@@ -939,15 +939,29 @@ async def cluster_research(request: Request, cluster_id: str, q: str):
 
 
 @router.get("/intelligence/top-entities")
-async def get_top_entities(limit: int = 10):
-    cache_key = f"api:top-entities:{limit}"
+async def get_top_entities(limit: int = 10, lang: Optional[str] = "sr"):
+    cache_key = f"api:top-entities:{limit}:{lang}"
     cached = cached_response(cache_key)
     if cached:
         return cached
     fetch_limit = max(limit * 6, 40)
+    target_country = "MK" if lang == "mk" else "RS"
     rows = await db.async_execute(
-        f"SELECT tag AS name, COUNT(*) AS total_mentions FROM (SELECT cm.cluster_id, UNNEST(cm.tags) AS tag FROM cluster_metadata cm JOIN articles a ON a.cluster_id = cm.cluster_id WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '48 hours' AND cm.tags IS NOT NULL GROUP BY cm.cluster_id, tag) t GROUP BY tag ORDER BY total_mentions DESC LIMIT %s",
-        (fetch_limit,),
+        f"""
+        SELECT tag AS name, COUNT(*) AS total_mentions 
+        FROM (
+            SELECT cm.cluster_id, UNNEST(cm.tags) AS tag 
+            FROM cluster_metadata cm 
+            JOIN articles a ON a.cluster_id = cm.cluster_id 
+            WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '48 hours' 
+              AND a.country = %s
+              AND cm.tags IS NOT NULL 
+            GROUP BY cm.cluster_id, tag
+        ) t 
+        GROUP BY tag 
+        ORDER BY total_mentions DESC LIMIT %s
+        """,
+        (target_country, fetch_limit,),
     )
     aggregated = {}
     for row in rows:
@@ -1108,18 +1122,18 @@ async def get_personalized_recommendations(request: Request):
 
 
 @router.get("/intelligence/briefing")
-async def get_latest_briefing(date: Optional[str] = None):
+async def get_latest_briefing(date: Optional[str] = None, lang: str = "sr"):
     """Fetch the latest or specific AI-generated daily briefing."""
     if date:
         from .security import validate_date
 
         validate_date(date)
         row = await db.async_execute_one(
-            "SELECT * FROM daily_briefings WHERE date = %s", (date,)
+            "SELECT * FROM daily_briefings WHERE date = %s AND lang = %s", (date, lang)
         )
     else:
         row = await db.async_execute_one(
-            "SELECT * FROM daily_briefings ORDER BY date DESC LIMIT 1"
+            "SELECT * FROM daily_briefings WHERE lang = %s ORDER BY date DESC LIMIT 1", (lang,)
         )
 
     if not row:

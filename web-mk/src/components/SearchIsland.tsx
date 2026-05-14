@@ -215,7 +215,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
       setIsLoading(true);
       setError(null);
       try {
-        const url = `/api/news?q=${encodeURIComponent(trimmed)}&page_size=12`;
+        const url = `/api/news?q=${encodeURIComponent(trimmed)}&page_size=12&lang=mk`;
         const timespanPart = timespan !== 'all' ? `&timespan=${timespan}` : '';
         const categoryPart = categoryFilter !== 'all' ? `&category=${encodeURIComponent(categoryFilter)}` : '';
         const res = await fetch(url + timespanPart + categoryPart);
