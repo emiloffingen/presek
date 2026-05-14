@@ -24,12 +24,17 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   const showSignificanceLabel = cluster.is_breaking || sourceCount >= 3;
   const significanceLabel =
     sourceCount >= 6
-      ? 'Siroko pokrieno'
+      ? 'Široko pokriveno'
       : sourceCount >= 4
-      ? 'Sledena tema'
+      ? 'Praćena tema'
       : cluster.is_breaking
-      ? 'Iten razvoj'
-      : 'Vo tek';
+      ? 'Hitan razvoj'
+      : 'U toku';
+
+  const getIzvorLabel = (count: number) => {
+    if (count % 10 === 1 && count % 100 !== 11) return 'izvor';
+    return 'izvora';
+  };
 
   const selectedImage = chooseClusterImage(cluster, isLead ? 'hero' : 'card');
   const thumbSrc = selectedImage.proxiedUrl;
@@ -51,21 +56,21 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
   const getWhyItMatters = () => {
     if (sourceSignal.role_label && sourceCount >= 4) {
-      return `${sourceSignal.role_label}. Temata vece se potvrduva i se prosiruva niz povece redakcii.`;
+      return `${sourceSignal.role_label}. Tema se već potvrđuje i proširuje kroz više redakcija.`;
     }
     if (sourceSignal.role_label && sourceCount >= 2) {
-      return `${sourceSignal.role_label}. Sledete me za novi potvrdi i reakcije.`;
+      return `${sourceSignal.role_label}. Pratite za nove potvrde i reakcije.`;
     }
     if (sourceCount >= 6) {
-      return `razvoj so siroko mediumsko pokrivanje od ${sourceCount} ${sourceCount === 1 ? 'izvor' : 'izvori'}.`;
+      return `razvoj sa širokim medijskim pokrivanjem od ${sourceCount} ${sourceCount === 1 ? 'izvor' : 'izvora'}.`;
     }
     if (sourceCount >= 4) {
-      return 'Povece redakcii vece dodavaat novi detali.';
+      return 'Više redakcija već dodaje nove detalje.';
     }
     if (sourceCount >= 2) {
-      return 'prica sto pocnuva da dobiva potvrdi i siri kontekst.';
+      return 'priča koja počinje da dobija potvrde i širi kontekst.';
     }
-    return 'Prv signal. Vredi da se sledi dali ce dobie posiroka potvrda.';
+    return 'Prvi signal. Vredi pratiti da li će dobiti širu potvrdu.';
   };
 
   const whyItMatters = getWhyItMatters();
@@ -73,7 +78,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   const getTimeStr = (dateStr: string) => {
     try {
       const date = new Date(dateStr);
-      return date.toLocaleTimeString('mk-RS', { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleTimeString('sr-RS', { hour: '2-digit', minute: '2-digit' });
     } catch {
       return '';
     }
@@ -105,13 +110,13 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
               </span>
-              VO ZIVO
+              UŽIVO
             </span>
           )}
 
           {anyFactCheck(cluster.articles) && (
             <span className="bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 px-1.5 py-0.5 rounded text-[10px] font-bold border border-amber-200/50 flex items-center gap-1">
-              FAKT-CEK
+              FAKT-ČEK
             </span>
           )}
         </div>
@@ -129,7 +134,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         {cluster.has_synthesis && (
             <span className="editorial-byline">
                 <Sparkles size={11} className="inline-block mr-1 text-nyt-accent" />
-                Sistemska sinteza na Presek
+                Sistemska sinteza Preseka
             </span>
         )}
 
@@ -158,7 +163,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         <div className="footer-meta">
           <span>{getTimeStr(main.ingested_at || main.created_at)}</span>
           <span className="dot">·</span>
-          <span>{cluster.articles.length} {cluster.articles.length === 1 ? 'izvor' : 'izvori'}</span>
+          <span>{cluster.articles.length} {cluster.articles.length === 1 ? 'izvor' : 'izvora'}</span>
         </div>
       </div>
 
@@ -176,10 +181,10 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                         <Activity size={24} className="text-white/90" />
                     </div>
                     <h3>{main.category || 'vesti'}</h3>
-                    <p className="design-card-sub">{cluster.articles.length} {cluster.articles.length === 1 ? 'izvor' : 'izvori'}</p>
+                    <p className="design-card-sub">{cluster.articles.length} {cluster.articles.length === 1 ? 'izvor' : 'izvora'}</p>
                 </div>
                 <div className="design-card-footer">
-                    <span className="design-card-cta">ODI DO STATIJATA</span>
+                    <span className="design-card-cta">IDI NA ČLANAK</span>
                 </div>
               </div>
             ) : (

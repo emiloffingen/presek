@@ -617,6 +617,18 @@ async def proxy_image(
 
     if not re.match(r"^https?://", url):
         raise HTTPException(status_code=400, detail="Nevalidna URL sema")
+    
+    # Additional URL validation for common issues
+    try:
+        parsed_url = urllib.parse.urlparse(url)
+        if not parsed_url.netloc:
+            raise HTTPException(status_code=400, detail=f"Invalid URL - missing domain: {url}")
+        if parsed_url.netloc.endswith(('.localhost', 'localhost', '127.0.0.1', '0.0.0.0')):
+            raise HTTPException(status_code=400, detail=f"Localhost URLs not allowed: {url}")
+        if len(url) > 2048:
+            raise HTTPException(status_code=400, detail="URL too long")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid URL format: {e}")
 
     target_w = int(w) if w and w.isdigit() else 600
     target_w = max(20, min(1200, target_w))
@@ -636,13 +648,25 @@ async def proxy_image(
     def serve_fallback(reason="error"):
         svg = generate_local_placeholder(cid or "px", t or "vest", cat or "vesti")
         log.warning(f"[proxy] Serving fallback for {url or 'unknown'}: {reason}")
+        
+        # Add diagnostic information to the SVG for debugging
+        diagnostic_svg = svg.replace("</svg>", f"
+    <text x="40" y="430" font-family="sans-serif" font-size="12" fill="white" opacity="0.7">
+        Proxy Fallback: {reason}
+    </text>
+    <text x="40" y="445" font-family="sans-serif" font-size="10" fill="white" opacity="0.7">
+        URL: {url[:50] if url else 'unknown'}...
+    </text>
+</svg>")
+        
         return Response(
-            svg,
+            diagnostic_svg,
             media_type="image/svg+xml",
             headers={
                 "Cache-Control": "public, max-age=3600",
                 "X-Proxy-Fallback": reason,
                 "X-Debug-Reason": reason,
+                "X-Diagnostic-Info": f"Fallback served for {url or 'unknown'}: {reason}",
             },
         )
 
@@ -684,7 +708,10 @@ async def proxy_image(
         # 2. Slow path: fetch from remote if no local version exists
         if not img_data:
             headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Referer": url,
+                "Accept": "image/webp,image/apng,image/*,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
             }
 
             # Security: Resolve IPs to prevent SSRF
@@ -704,7 +731,18 @@ async def proxy_image(
                         if not p_ip or p_ip not in safe_ips:
                             return serve_fallback("security_ip_block")
 
-                        if resp.status_code != 200:
+                        if resp.status_code == 403:
+                            log.warning(f"[proxy] Hotlinking blocked for {url} - trying with referer")
+                            # Try again with different headers to bypass hotlinking protection
+                            headers["Referer"] = f"https://{parsed_url.netloc}/"
+                            async with client.stream("GET", url, headers=headers) as resp2:
+                                if resp2.status_code == 200:
+                                    resp = resp2
+                                else:
+                                    return serve_fallback(f"hotlink_blocked_{resp2.status_code}")
+                        elif resp.status_code == 404:
+                            return serve_fallback("not_found")
+                        elif resp.status_code != 200:
                             return serve_fallback(f"http_{resp.status_code}")
 
                         ctype = (
@@ -757,4 +795,11 @@ async def proxy_image(
         )
     except Exception as e:
         log.error(f"[proxy] Error for {url}: {e}", exc_info=True)
+        # Add more specific error logging for common issues
+        if "Connection refused" in str(e):
+            log.error(f"[proxy] Connection refused for {url} - service may be down")
+        elif "timeout" in str(e).lower():
+            log.error(f"[proxy] Timeout fetching {url} - slow response")
+        elif "403" in str(e) or "404" in str(e):
+            log.error(f"[proxy] Access denied for {url} - hotlinking blocked or invalid URL")
         return serve_fallback("exception")

@@ -119,7 +119,7 @@ try {
 	}
 } catch (e: any) {
 	console.error(e);
-	error = 'Temata momentalno ne e dostapna.';
+	error = 'Tema trenutno nije dostupna.';
 	Astro.response.status = e.status || 500;
 }
 
@@ -159,7 +159,7 @@ const canonicalUrl = new URL(Astro.url.pathname, Astro.site || 'https://presek.l
 
 const leadSummary =
 	getDisplaySummary(leadCluster?.articles?.[0] || {}) ||
-	'Najsilnite klasteri vo ova tema se podredeni spored tezina, doverba i razvoj.';
+	'Najsnažniji klasteri u ovoj temi su poređani po težini, poverenju i razvoju.';
 
 const keyAngles = normalizePerspectives(leadDetail?.perspectives || []).slice(0, 3);
 const synthesisLines = parseSynthesis(leadDetail?.synthesis || '').slice(0, 3);
@@ -168,25 +168,25 @@ const relatedClusters = Array.isArray(leadDetail?.related) ? leadDetail.related.
 function topicIntro() {
 	if (!clusters.length) return '';
 	if (breakingCount >= 2) {
-		return `Temata ${topic} danas se razviva brzo, so ${clusters.length} aktivni klasteri i ${uniqueSources.size} izvori sto dodavaat novi detali.`;
+		return `Tema ${topic} se danas razvija brzo, sa ${clusters.length} aktivnih klastera i ${uniqueSources.size} izvora koji dodaju nove detalje.`;
 	}
 	if (clusters.length >= 6) {
-		return `Temata ${topic} e siroko prisutna niz denesniot ciklus, so ${clusters.length} klasteri i ${totalReports} izvestai sto se nadovrzuvaat eden na drug.`;
+		return `Tema ${topic} je široko prisutna kroz današnji ciklus, sa ${clusters.length} klastera i ${totalReports} izveštaja koji se nadovezuju jedan na drugi.`;
 	}
-	return `Temata ${topic} ostaje relevantna danas, so ${clusters.length} klasteri i povece redakcii sto me sledat od razliciti agli.`;
+	return `Tema ${topic} ostaje relevantna danas, sa ${clusters.length} klastera i više redakcija koje je prate iz različitih uglova.`;
 }
 ---
 
 <Layout 
 	title={topic ? `${topic} | Tema` : 'Tema'} 
-	description={`jos sto e aktivno za temata ${topic} — klasteri, izvori, perspektivi i razvoj.`}
+	description={`još što je aktivno za temu ${topic} — klasteri, izvori, perspektive i razvoj.`}
 	canonical={canonicalUrl}
 >
 	<NYTHeader topic={topic} />
 
 	<main class="site-layout py-[var(--page-py)]">
 		{(error || !clusters.length) && (
-			<Breadcrumbs items={[{ label: "Temi", href: "/" }, { label: topic || "Tema" }]} />
+			<Breadcrumbs items={[{ label: "Teme", href: "/" }, { label: topic || "Tema" }]} />
 		)}
 
 		{error && (
@@ -196,8 +196,8 @@ function topicIntro() {
 					<h1 class="topic-empty-title">{topic || 'Tema'}</h1>
 					<p>{error}</p>
 					<div class="topic-empty-actions">
-						<a href="/" class="topic-empty-link">Nazad na pocetok</a>
-						<a href="/archive" class="topic-empty-link topic-empty-link-secondary">Otvori arhiva</a>
+						<a href="/" class="topic-empty-link">Nazad na početak</a>
+						<a href="/archive" class="topic-empty-link topic-empty-link-secondary">Otvori arhivu</a>
 					</div>
 				</div>
 			</div>
@@ -210,8 +210,8 @@ function topicIntro() {
 					<h1 class="topic-empty-title">{topic}</h1>
 					<p>Nema dovoljno aktivnih klastera za ovu temu u ovom trenutku.</p>
 					<div class="topic-empty-actions">
-						<a href="/" class="topic-empty-link">Pocetna</a>
-						<a href="/archive" class="topic-empty-link topic-empty-link-secondary">Pobaraj vo arhiva</a>
+						<a href="/" class="topic-empty-link">Početna</a>
+						<a href="/archive" class="topic-empty-link topic-empty-link-secondary">Potraži u arhivi</a>
 					</div>
 				</div>
 			</div>
@@ -252,7 +252,7 @@ function topicIntro() {
 
 					<div class="topic-hero-side">
 						<div class="topic-note-card">
-							<p class="topic-note-label">Sto ga dvizi ovoj prostor</p>
+							<p class="topic-note-label">Šta pokreće ovaj prostor</p>
 							<ul class="topic-note-list">
 								{(synthesisLines.length > 0 ? synthesisLines : [leadSummary]).map((line: string) => (
 									<li>{line}</li>
@@ -273,7 +273,7 @@ function topicIntro() {
 						{leadCluster && (
 							<section class="topic-lead">
 								<div class="section-heading-row">
-									<h2 class="section-title">Vodecka prica</h2>
+									<h2 class="section-title">Vodeća priča</h2>
 									<p class="section-note">klaster koji najviše nosi temu napred u ovom trenutku.</p>
 								</div>
 								<NewsCard cluster={leadCluster} isLead={true} />
@@ -283,8 +283,8 @@ function topicIntro() {
 						{keyAngles.length > 0 && (
 							<section class="topic-angles">
 								<div class="section-heading-row">
-									<h2 class="section-title">Kade Se Razlikuva Pokrivanjeto</h2>
-									<p class="section-note">Glavnite agli sto izleguvaat od vodeckiot klaster vo temata.</p>
+									<h2 class="section-title">Gde se razlikuje pokrivanje</h2>
+									<p class="section-note">Glavni uglovi koji proizlaze iz vodećeg klastera u temi.</p>
 								</div>
 								<div class="topic-angle-grid">
 									{keyAngles.map((item: any) => (
@@ -300,8 +300,8 @@ function topicIntro() {
 						{supportingClusters.length > 0 && (
 							<section class="topic-supporting">
 								<div class="section-heading-row">
-									<h2 class="section-title">Sto Se Razviva dalje</h2>
-									<p class="section-note">Pridruzni i sledni klasteri sto me prosiruvaat temata.</p>
+									<h2 class="section-title">Šta se razvija dalje</h2>
+									<p class="section-note">Pridruženi i sledeći klasteri koji proširuju temu.</p>
 								</div>
 								<div class="topic-supporting-grid">
 									{supportingClusters.map((cluster: any, index: number) => (
@@ -314,8 +314,8 @@ function topicIntro() {
 						{feedClusters.length > 0 && (
 							<section class="topic-feed">
 								<div class="section-heading-row">
-									<h2 class="section-title">Povece Od ova Tema</h2>
-									<p class="section-note">Ostanati aktivni klasteri sto vredi da ostanat vo vidnoto pole.</p>
+									<h2 class="section-title">Više od ove teme</h2>
+									<p class="section-note">Ostali aktivni klasteri koje vredi zadržati u vidnom polju.</p>
 								</div>
 								{featuredFeedClusters.length > 0 && (
 									<div class="topic-feed-grid topic-feed-grid-featured">
@@ -338,7 +338,7 @@ function topicIntro() {
 					<aside class="topic-rail">
 						{tagRows.length > 0 && (
 							<section class="rail-card">
-								<h3 class="rail-card-title">Iminja I Agli</h3>
+								<h3 class="rail-card-title">Imena i uglovi</h3>
 								<div class="topic-chip-list">
 									{tagRows.map(([name, count]) => (
 										<a href={`/?q=${encodeURIComponent(name)}`} class="topic-chip">
@@ -351,7 +351,7 @@ function topicIntro() {
 
 						{topicConnections.length > 0 && (
 							<section class="rail-card">
-								<h3 class="rail-card-title">Kade Da Odite dalje</h3>
+								<h3 class="rail-card-title">Gde ići dalje</h3>
 								<div class="topic-connection-list">
 									{topicConnections.map((item: any) => (
 										<a href={`/tema/${encodeURIComponent(item.topic)}`} class="topic-connection-card">
@@ -369,14 +369,14 @@ function topicIntro() {
 
 						{sourceRows.length > 0 && (
 							<section class="rail-card">
-								<h3 class="rail-card-title">izvori Sto me Vodat Temata</h3>
+								<h3 class="rail-card-title">Izvori koji vode temu</h3>
 								<div class="topic-source-list">
 									{sourceRows.map(([name, count], index) => (
 										<div class="topic-source-row">
 											<span class="topic-source-rank">{String(index + 1).padStart(2, '0')}</span>
 											<div>
 												<p>{name}</p>
-												<span>{count} pojavuvanja vo klasteri</span>
+												<span>{count} pojavljivanja u klasterima</span>
 											</div>
 										</div>
 									))}
@@ -386,7 +386,7 @@ function topicIntro() {
 
 						{relatedClusters.length > 0 && (
 							<section class="rail-card">
-								<h3 class="rail-card-title">Sto Da Citate dalje</h3>
+								<h3 class="rail-card-title">Šta čitati dalje</h3>
 								<div class="topic-related-list">
 									{relatedClusters.map((item: any) => (
 										<a href={`/cluster/${item.cluster_id}`} class="topic-related-link">

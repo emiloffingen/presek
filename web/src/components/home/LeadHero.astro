@@ -34,9 +34,9 @@ const {
 
 const tintColor = dominantColor || '#1e40af';
 const primaryArticle = leadCluster.articles?.[0] || {};
-const primaryDisplayTitle = getDisplayTitle(primaryArticle, 'Vodecka prica');
+const primaryDisplayTitle = getDisplayTitle(primaryArticle, 'Vodeća priča');
 const relatedArticles = leadCluster.articles.slice(1, 4);
-const mediaLabel = filterLabel || primaryArticle.topic || primaryArticle.category || 'Vodecka tema';
+const mediaLabel = filterLabel || primaryArticle.topic || primaryArticle.category || 'Vodeća tema';
 
 const cardContext = getDesignCardContext(leadCluster);
 const IconComponent = 
@@ -95,7 +95,7 @@ const IconComponent =
                     </div>
 
                     <div class="design-card-footer">
-                        <span class="design-card-cta">ODI DO STATIJATA <ArrowRight size={14} class="ml-1" /></span>
+                        <span class="design-card-cta">IDI NA ČLANAK <ArrowRight size={14} class="ml-1" /></span>
                     </div>
                 </div>
             )}
@@ -103,8 +103,8 @@ const IconComponent =
     </a>
     <div class="lead-copy">
         <div class="lead-edition-bar">
-            <span class="lead-edition-label">VODECKI NARATIV</span>
-            <span class="lead-edition-note">Konsenzus pomedju {leadCluster.articles.length} {leadCluster.articles.length === 1 ? 'redakcija' : 'redakcii'}</span>
+            <span class="lead-edition-label">VODEĆI NARATIV</span>
+            <span class="lead-edition-note">Konsenzus između {leadCluster.articles.length} {leadCluster.articles.length === 1 ? 'redakcija' : (leadCluster.articles.length >= 2 && leadCluster.articles.length <= 4) ? 'redakcije' : 'redakcija'}</span>
         </div>
         <div class="lead-kicker-v2 mb-4">
             <span class="source-badge">{leadCluster.articles?.[0].source}</span>

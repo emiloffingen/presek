@@ -54,7 +54,7 @@ interface EntityPayload {
 function formatDate(value?: string) {
   if (!value) return 'Nepoznato';
   try {
-    return new Date(value).toLocaleDateString('mk-RS', {
+    return new Date(value).toLocaleDateString('sr-RS', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
@@ -65,21 +65,21 @@ function formatDate(value?: string) {
 }
 
 function formatRelative(value?: string) {
-  if (!value) return 'neodamna';
+  if (!value) return 'nedavno';
   const now = new Date();
   const date = new Date(value);
   const diff = now.getTime() - date.getTime();
   const days = Math.max(0, Math.floor(diff / 86400000));
   if (days === 0) return 'danas';
-  if (days === 1) return 'juce';
-  if (days < 7) return `pred ${days} dena`;
+  if (days === 1) return 'juče';
+  if (days < 7) return `pre ${days} dana`;
   return formatDate(value);
 }
 
 function sentimentLabel(score: number) {
-  if (score >= 0.2) return 'Pretezno pozitiven';
-  if (score <= -0.2) return 'Pretezno kriticen';
-  return 'glavno neutralen';
+  if (score >= 0.2) return 'Pretežno pozitivan';
+  if (score <= -0.2) return 'Pretežno kritičan';
+  return 'uglavnom neutralan';
 }
 
 function buildTimeline(history: SentimentPoint[]) {
@@ -89,7 +89,7 @@ function buildTimeline(history: SentimentPoint[]) {
     const date = new Date(item.day);
     return {
       key: item.day,
-      label: date.toLocaleDateString('mk-RS', { day: 'numeric', month: 'short' }),
+      label: date.toLocaleDateString('sr-RS', { day: 'numeric', month: 'short' }),
       count: item.volume,
       percent: Math.max(8, Math.round((item.volume / max) * 100)),
       sentiment: item.avg_sentiment,
@@ -124,12 +124,12 @@ function splitRelated(related: Relationship[]) {
 function buildWhyItMatters(profile: EntityProfile, clusters: NewsCluster[], related: Relationship[]) {
   const recentCount = clusters.length;
   if (recentCount >= 5) {
-    return `${profile.name} e vo silen fokus so ${recentCount} aktivni temi vo posledniot period, sto ukazuva na visok javen i mediumski interes.`;
+    return `${profile.name} je u snažnom fokusu sa ${recentCount} aktivnih tema u poslednjem periodu, što ukazuje na visok javni i medijski interes.`;
   }
   if (related.length >= 5) {
     return `${profile.name} se pojavljuje u kontekstu ${related.length} drugih ključnih subjekata, gradeći kompleksnu mrežu povezanosti u vestima.`;
   }
-  return `Prisustvo ${profile.name} u medijima se prati putem analize tona i frekvencije pomenja u realnom vremenu.`;
+  return `Prisustvo ${profile.name} u medijima se prati putem analize tona i frekvencije pominjanja u realnom vremenu.`;
 }
 
 function coMentionedEntities(clusters: NewsCluster[], currentName: string) {
@@ -172,7 +172,7 @@ export default function EntityIsland({
     return (
       <div className="flex flex-col items-center py-20">
         <Loader2 className="animate-spin text-nyt-accent mb-4" size={32} />
-        <p className="nyt-section-label text-muted-foreground">Gi podgotvuvam podatocite...</p>
+        <p className="nyt-section-label text-muted-foreground">Pripremam podatke...</p>
       </div>
     );
   }
@@ -198,35 +198,35 @@ export default function EntityIsland({
             <span className="entity-type">{profile.type === 'ORG' ? 'Organizacija' : 'Subjekt'}</span>
             <h1 className="entity-name">{profile.name}</h1>
             <p className="entity-summary-copy">
-              Sistemske profile koji prati medijsko prisustvo, mreža povezanosti i ton izveštavanja za {profile.name}.
+              Sistemski profil koji prati medijsko prisustvo, mrežu povezanosti i ton izveštavanja za {profile.name}.
             </p>
           </div>
         </div>
 
         <div className="entity-metrics">
           <div className="entity-metric">
-            <p>Vkupno spomenuvanja</p>
+            <p>Ukupno pominjanja</p>
             <strong>{profile.total_mentions || clusters.length}</strong>
           </div>
           <div className="entity-metric">
-            <p>Posledno viden</p>
+            <p>Poslednji put viđen</p>
             <strong>{formatRelative(profile.last_seen || (clusters[0] as any)?.created_at)}</strong>
           </div>
           <div className="entity-metric">
-            <p>Mediumski ton</p>
+            <p>Medijski ton</p>
             <div className="flex flex-col">
                 <strong className={profile.sentiment_score > 0.2 ? 'text-green-600' : profile.sentiment_score < -0.2 ? 'text-nyt-red' : 'text-nyt-accent'}>
                 {sentimentLabel(profile.sentiment_score)}
                 </strong>
                 {trend !== 'stable' && (
                     <span className={`text-[9px] font-black uppercase tracking-tighter ${trend === 'improving' ? 'text-green-600' : 'text-nyt-red'}`}>
-                        {trend === 'improving' ? '↑ Pozitiven trend' : '↓ Kriticki trend'}
+                        {trend === 'improving' ? '↑ Pozitivan trend' : '↓ Kritičan trend'}
                     </span>
                 )}
             </div>
           </div>
           <div className="entity-metric">
-            <p>Povrzani subjekti</p>
+            <p>Povezani subjekti</p>
             <strong>{related.length}</strong>
           </div>
         </div>
@@ -235,11 +235,11 @@ export default function EntityIsland({
       <div className="entity-grid">
         <div className="sources-main">
           <section className="entity-summary entity-featured">
-            <h2 className="entity-section-title flex items-center gap-2"><Sparkles size={14} /> Mediumski Presek</h2>
+            <h2 className="entity-section-title flex items-center gap-2"><Sparkles size={14} /> Medijski Presek</h2>
             <p className="entity-summary-copy">{whyItMatters}</p>
             <div className="entity-chip-list">
-              <span className="entity-chip">{clusters.length} aktivni temi</span>
-              <span className="entity-chip">{media.length} vodecki mediumi</span>
+              <span className="entity-chip">{clusters.length} aktivnih tema</span>
+              <span className="entity-chip">{media.length} vodećih medija</span>
               {categories && categories.length > 0 && (
                   <span className="entity-chip">Fokus: {categories[0].category}</span>
               )}
@@ -250,7 +250,7 @@ export default function EntityIsland({
             <section className="entity-summary">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="entity-section-title flex items-center gap-2 m-0"><TrendingUp size={14} /> Dinamika</h2>
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Posledni 14 dena</span>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Poslednjih 14 dana</span>
               </div>
               <div className="entity-pulse h-32 flex items-end gap-1 px-2">
                 {timeline.map((item) => (
@@ -260,7 +260,7 @@ export default function EntityIsland({
                         style={{ height: `${item.percent}%`, opacity: 0.7 }} 
                     />
                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-foreground text-background text-[9px] font-bold py-1 px-2 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity z-10">
-                        {item.count} objavi • {item.label}
+                        {item.count} objave • {item.label}
                     </div>
                   </div>
                 ))}
@@ -273,7 +273,7 @@ export default function EntityIsland({
             </section>
 
             <section className="entity-summary">
-              <h2 className="entity-section-title flex items-center gap-2"><Newspaper size={14} /> Tematski Profil</h2>
+              <h2 className="entity-section-title flex items-center gap-2"><Newspaper size={14} /> Tematski profil</h2>
               <div className="space-y-3 mt-4">
                 {leadingCategories.map((c) => (
                   <div key={c.category} className="flex items-center justify-between">
@@ -289,10 +289,10 @@ export default function EntityIsland({
                     </div>
                   </div>
                 ))}
-                {leadingCategories.length === 0 && <p className="text-xs text-muted italic">Nema dovolno podatoci za temi.</p>}
+                {leadingCategories.length === 0 && <p className="text-xs text-muted italic">Nema dovoljno podataka za teme.</p>}
                 {categories && categories.length > leadingCategories.length && (
                   <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pt-1">
-                    Prikazani se vodeckite {leadingCategories.length} tematski nasoki.
+                    Prikazani su vodeći {leadingCategories.length} tematski pravci.
                   </p>
                 )}
               </div>
@@ -300,9 +300,9 @@ export default function EntityIsland({
           </div>
 
           <section className="entity-summary">
-            <h2 className="entity-section-title flex items-center gap-2"><Link2 size={14} /> Istiot kontekst</h2>
+            <h2 className="entity-section-title flex items-center gap-2"><Link2 size={14} /> Isti kontekst</h2>
             <p className="entity-summary-copy">
-              Ovie iminja najcesto se pojavuvaat zaedno so {profile.name} vo isti klasteri i pomagaat da se vidi posirokata mreza okolu prikaznata.
+              Ova imena se najčešće pojavljuju zajedno sa {profile.name} u istim klasterima i pomažu da se vidi šira mreža oko priče.
             </p>
             <div className="entity-chip-list">
               {contextEntities.map(([entity, count]) => (
@@ -325,16 +325,16 @@ export default function EntityIsland({
 
         <aside className="sources-rail">
           <div className="rail-card">
-            <h3 className="rail-card-title flex items-center gap-2"><Link2 size={14} /> Najtesno Povrzani</h3>
+            <h3 className="rail-card-title flex items-center gap-2"><Link2 size={14} /> Najbliže povezani</h3>
             <p className="rail-copy">
-              Ovde se prikazani subjektite sto najcesto vleguvaat vo ist kontekst so {profile.name}, so najsilnite vrski najgore.
+              Ovde su prikazani subjekti koji najčešće ulaze u isti kontekst sa {profile.name}, sa najjačim vezama na vrhu.
             </p>
             <div className="space-y-4">
               {relationBands.strongest.map((rel) => (
                 <a key={rel.related_entity} href={`/subjekt/${encodeURIComponent(rel.related_entity)}`} className="entity-related-link">
                   <div>
                     <span className="entity-related-name">{rel.related_entity}</span>
-                    <p className="entity-related-band">Tesna vrska</p>
+                    <p className="entity-related-band">Tesna veza</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="entity-related-track">
@@ -344,23 +344,23 @@ export default function EntityIsland({
                   </div>
                 </a>
               ))}
-              {relationBands.strongest.length === 0 && <p className="text-xs text-muted italic">Nema pronajdeni silni vrski.</p>}
+              {relationBands.strongest.length === 0 && <p className="text-xs text-muted italic">Nema pronađenih snažnih veza.</p>}
             </div>
           </div>
 
           <div className="rail-card rail-card-accent">
-            <h3 className="rail-card-title">Kako Da Se Cita</h3>
+            <h3 className="rail-card-title">Kako se čita</h3>
             <p className="rail-copy">
-              Tonot pokazuva kako se menuva mediumskata ramka, a povrzanite subjekti pokazuvaat so kogo najcesto se vrzuva prikaznata okolu {profile.name}.
+              Ton pokazuje kako se menja medijski okvir, a povezani subjekti pokazuju sa kim se najčešće vezuje priča oko {profile.name}.
             </p>
           </div>
 
           <div className="rail-card">
             <h3 className="rail-card-title">dalje</h3>
             <div className="flex flex-col gap-3">
-              <a href="/archive" className="entity-related-jump">Pogledni me arhivata</a>
-              <a href="/izvori" className="entity-related-jump">Otvori izvori</a>
-              <a href="/pulse" className="entity-related-jump">Sporedi mediumi</a>
+              <a href="/archive" className="entity-related-jump">Otvori arhivu</a>
+              <a href="/izvori" className="entity-related-jump">Otvori izvore</a>
+              <a href="/pulse" className="entity-related-jump">Uporedi medije</a>
             </div>
           </div>
         </aside>

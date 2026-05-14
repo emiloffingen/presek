@@ -125,8 +125,8 @@ export default function OnboardingIsland({ compact = false }: { compact?: boolea
       {compact && (recommendations.topics.length > 0 || recommendations.sources.length > 0) && (
         <div className="onboarding-starters">
           <div>
-            <p className="onboarding-starters-title">Brz pocetok</p>
-            <p className="onboarding-starters-copy">Izberete 1 do 2 signali za prviot personaliziran pregled.</p>
+            <p className="onboarding-starters-title">Brzi početak</p>
+            <p className="onboarding-starters-copy">Izaberite 1 do 2 signala za prvi personalizovani pregled.</p>
           </div>
 
           {recommendations.topics.length > 0 && (
@@ -164,8 +164,8 @@ export default function OnboardingIsland({ compact = false }: { compact?: boolea
       )}
 
       <div className="onboarding-actions">
-        <a href="/settings" className="onboarding-action">Otvori postavki</a>
-        <button type="button" className="onboarding-action secondary" onClick={markDone}>Skrij ga vodicot</button>
+        <a href="/settings" className="onboarding-action">Otvori podešavanja</a>
+        <button type="button" className="onboarding-action secondary" onClick={markDone}>Sakrij vodič</button>
       </div>
     </section>
   );
