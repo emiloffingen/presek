@@ -296,14 +296,3 @@ function OnboardingIslandCompact({ profile, recommendations }: any) {
     </div>
   );
 }
-/div>
-        ))}
-      </div>
-    </div>
-  );
-}
-    ))}
-      </div>
-    </div>
-  );
-}
