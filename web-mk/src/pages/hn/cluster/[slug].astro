@@ -32,8 +32,10 @@ const sourceCount = cluster?.articles?.length || 1;
 
 function formatTime(dateStr: string) {
     try {
+        if (!dateStr) return 'сега';
+        
         const date = new Date(dateStr);
-        return date.toLocaleString('en-US', {
+        return date.toLocaleString('mk-MK', {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
@@ -42,7 +44,7 @@ function formatTime(dateStr: string) {
             timeZone: 'Europe/Skopje'
         });
     } catch {
-        return '';
+        return 'сега';
     }
 }
 
