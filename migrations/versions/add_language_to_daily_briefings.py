@@ -3,7 +3,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'add_language_to_daily_briefings'
-down_revision = 'c095399af315'
+down_revision = 'b7ba54d8a217'
 branch_labels = None
 depends_on = None
 
