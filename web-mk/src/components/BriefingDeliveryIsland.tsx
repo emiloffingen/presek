@@ -15,9 +15,9 @@ import {
 } from '../lib/personalization.js';
 
 function permissionLabel(status: string) {
-  if (status === 'granted') return 'Izvestai vo prebaruvacot se ovozmozeni';
-  if (status === 'denied') return 'Izvestai vo prebaruvacot se blokirani';
-  return 'Izvestai vo prebaruvacot ne se ovozmozeni';
+  if (status === 'granted') return 'Извештаи во пребарувачот се овозможени';
+  if (status === 'denied') return 'Извештаи во пребарувачот се блокирани';
+  return 'Извештаи во пребарувачот не се овозможени';
 }
 
 function decodeVapidPublicKey(key: string) {
@@ -79,14 +79,13 @@ export default function BriefingDeliveryIsland({
           setServerStatus('idle');
         }
       } catch {
-        if (!cancelled) {
-          setServerDelivery(createDefaultServerDeliverySettings());
-          setServerStatus('error');
-          setServerMessage('Ne mozam da gi procitam zakazanite podesuvanja za dostava za ovoj kluc za sinhronizacija.');
-        }
+      if (!cancelled) {
+        setServerDelivery(createDefaultServerDeliverySettings());
+        setServerStatus('error');
+        setServerMessage('Не можам да ги прочитам закажаните подесувања за достава за овој клуч за синхронизација.');
       }
-    }
-
+      }
+      }
     loadRemoteDelivery();
     return () => {
       cancelled = true;
@@ -194,15 +193,15 @@ export default function BriefingDeliveryIsland({
       setServerMessage(next.isActive ? 'Zakazanata dostava e zacuvana vo vashiot sinhroniziran profil.' : 'Zakazanata dostava e zacuvana, no e neaktivna dodeka ne postavite tema.');
     } catch {
       setServerStatus('error');
-      setServerMessage('Ne mozam da ja zacuvam zakazanata dostava vo ovoj moment.');
+      setServerMessage('Не можам да ја зачувам закажаната достава во овој момент.');
     }
   };
 
   const summaryLabel = syncToken
     ? serverDelivery.isActive
-      ? 'Sinhroniziranata dostava e aktivna'
-      : 'Profilot e sinhroniziran, no izvestai se iskluceni'
-    : 'Kreirajte kluc za sinhronizacija za da dobivate izvestai na site vashi uredi';
+      ? 'Синхронизираната достава е активна'
+      : 'Профилот е синхронизиран, но извештаи се исклучени'
+    : 'Креирајте клуч за синхронизација за да добивате извештаи на сите ваши уреди';
 
   if (variant === 'summary') {
     return (
@@ -217,16 +216,16 @@ export default function BriefingDeliveryIsland({
 
         <div className="delivery-toggle-list">
           <div className={`delivery-toggle ${serverDelivery.morningBriefing ? 'is-active' : ''}`}>
-            <span>Utrinski brifing</span>
-            <strong>{serverDelivery.morningBriefing ? 'Ovozmozeno' : 'Onemovozmozeno'}</strong>
+            <span>Утрински брифинг</span>
+            <strong>{serverDelivery.morningBriefing ? 'Овозможено' : 'Оневозможено'}</strong>
           </div>
           <div className={`delivery-toggle ${serverDelivery.weeklyDigest ? 'is-active' : ''}`}>
-            <span>Nedelen pregled</span>
-            <strong>{serverDelivery.weeklyDigest ? 'Ovozmozeno' : 'Onemovozmozeno'}</strong>
+            <span>Неделен преглед</span>
+            <strong>{serverDelivery.weeklyDigest ? 'Овозможено' : 'Оневозможено'}</strong>
           </div>
           <div className={`delivery-toggle ${serverDelivery.breakingTopics || serverDelivery.breakingSources ? 'is-active' : ''}`}>
-            <span> Udarni vesti</span>
-            <strong>{serverDelivery.breakingTopics || serverDelivery.breakingSources ? 'Ovozmozeno' : 'Onemovozmozeno'}</strong>
+            <span> Ударни вести</span>
+            <strong>{serverDelivery.breakingTopics || serverDelivery.breakingSources ? 'Овозможено' : 'Оневозможено'}</strong>
           </div>
         </div>
 
@@ -234,13 +233,13 @@ export default function BriefingDeliveryIsland({
           <a href="/settings" className="delivery-action">
             <Radio size={14} />
             <span className="delivery-action-content">
-              <span className="delivery-action-label">Otvorete gi podesuvanjata</span>
+              <span className="delivery-action-label">Отворете ги подесувањата</span>
             </span>
           </a>
           <button type="button" className="delivery-action" onClick={copyDigest}>
             <Copy size={14} />
             <span className="delivery-action-content">
-              <span className="delivery-action-label">{copyState === 'done' ? 'Kopirano' : copyState === 'error' ? 'Kopiranjeto ne uspea' : 'Kopiraj tekstualna verzija'}</span>
+              <span className="delivery-action-label">{copyState === 'done' ? 'Копирано' : copyState === 'error' ? 'Копирањето не успеа' : 'Копирај текстуална верзија'}</span>
             </span>
           </button>
         </div>
@@ -256,24 +255,24 @@ export default function BriefingDeliveryIsland({
           <span>{permissionLabel(prefs.browserPermission)}</span>
         </p>
         <p className="delivery-status-copy">
-          Dostavata e povrzana so temite i izvorite koi gi sledite vo ovoj prebaruvac. Zapocnete so lokalni izvestai i verzija za spodeluvanje, a potoa dodajte sinhronizirana dostava pomegju uredite.
+          Доставата е поврзана со темеите и изворите кои ги следите во овој пребарувач. Започнете со локални извештаи и верзија за споделување, а потоа додајте синхронизирана достава помеѓу уредите.
         </p>
       </div>
 
       <div className="delivery-toggle-list space-y-4">
         <button type="button" className={`flex w-full items-center justify-between p-4 rounded-xl border transition ${prefs.morningBriefing ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => togglePref('morningBriefing')}>
           <span className="text-left">
-            <span className="block font-sans font-bold text-sm">Utrinski brifing</span>
-            <span className="block text-[11px] text-muted-foreground mt-0.5">Lokalniot pregled na denot vo ovoj prebaruvac.</span>
+            <span className="block font-sans font-bold text-sm">Утрински брифинг</span>
+            <span className="block text-[11px] text-muted-foreground mt-0.5">Локалниот преглед на денот во овој пребарувач.</span>
           </span>
-          <strong className={`text-[10px] font-black uppercase tracking-widest ${prefs.morningBriefing ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{prefs.morningBriefing ? 'Ovozmozeno' : 'Onemovozmozeno'}</strong>
+          <strong className={`text-[10px] font-black uppercase tracking-widest ${prefs.morningBriefing ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{prefs.morningBriefing ? 'Овозможено' : 'Оневозможено'}</strong>
         </button>
         <button type="button" className={`flex w-full items-center justify-between p-4 rounded-xl border transition ${prefs.breakingAlerts ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => togglePref('breakingAlerts')}>
           <span className="text-left">
-            <span className="block font-sans font-bold text-sm">Udarni izvestai</span>
-            <span className="block text-[11px] text-muted-foreground mt-0.5">Brzi signali koga sledenata prikazna ke zabrza.</span>
+            <span className="block font-sans font-bold text-sm">Ударни извештаи</span>
+            <span className="block text-[11px] text-muted-foreground mt-0.5">Брзи сигнали кога следената приказна ќе забрза.</span>
           </span>
-          <strong className={`text-[10px] font-black uppercase tracking-widest ${prefs.breakingAlerts ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{prefs.breakingAlerts ? 'Ovozmozeno' : 'Onemovozmozeno'}</strong>
+          <strong className={`text-[10px] font-black uppercase tracking-widest ${prefs.breakingAlerts ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{prefs.breakingAlerts ? 'Овозможено' : 'Оневозможено'}</strong>
         </button>
       </div>
 
@@ -281,97 +280,96 @@ export default function BriefingDeliveryIsland({
         <button type="button" className="delivery-action" onClick={requestNotifications}>
           <Bell size={14} />
           <span className="delivery-action-content">
-            <span className="delivery-action-label">Ovozmozi izvestai vo prebaruvacot</span>
-            <span className="delivery-action-note">Aktiviraj lokalni push poraki za ovoj ured.</span>
+            <span className="delivery-action-label">Овозможи извештаи во пребарувачот</span>
+            <span className="delivery-action-note">Активирај локални push пораки за овој уред.</span>
           </span>
         </button>
         <button type="button" className="delivery-action" onClick={copyDigest}>
           <Copy size={14} />
           <span className="delivery-action-content">
-            <span className="delivery-action-label">{copyState === 'done' ? 'Kopirano' : copyState === 'error' ? 'Kopiranjeto ne uspea' : 'Kopiraj verzija za dostava'}</span>
-            <span className="delivery-action-note">Kratka tekstualna verzija za spodeluvanje.</span>
+            <span className="delivery-action-label">{copyState === 'done' ? 'Копирано' : copyState === 'error' ? 'Копирањето не успеа' : 'Копирај верзија за достава'}</span>
+            <span className="delivery-action-note">Кратка текстуална верзија за споделување.</span>
           </span>
         </button>
         <a href={mailHref} className="delivery-action">
           <Mail size={14} />
           <span className="delivery-action-content">
-            <span className="delivery-action-label">Spodeluvajte preku e-poshta</span>
-            <span className="delivery-action-note">Go otvara vashiot e-mail klient so podgotven pregled.</span>
+            <span className="delivery-action-label">Споделувајте преку е-пошта</span>
+            <span className="delivery-action-note">Го отвора вашиот e-mail клиент со подготвен преглед.</span>
           </span>
         </a>
       </div>
 
       <div className="delivery-digest">
-        <p className="delivery-digest-kicker">Pregled na dostavata</p>
-        <pre>{digest || 'Pregledot na dostavata ke se pojavi ovde koga ke bide dostapen brifing.'}</pre>
+        <p className="delivery-digest-kicker">Преглед на доставата</p>
+        <pre>{digest || 'Прегледот на доставата ќе се појави овде кога ќе биде достапен брифинг.'}</pre>
       </div>
 
       <div className="scheduled-delivery-panel">
-        <p className="scheduled-delivery-kicker">
-          <Radio size={14} />
-          <span>Zakazana dostava</span>
-        </p>
-        <p className="scheduled-delivery-copy">
-          Zacuvajte `ntfy` tema so vashiot kluc za sinhronizacija za da dobivate serverski utrinski brifinzi, nedelni rezimea i izvestai za sledenite temi ili izvori.
-        </p>
+      <p className="scheduled-delivery-kicker">
+        <Radio size={14} />
+        <span>Закажана достава</span>
+      </p>
+      <p className="scheduled-delivery-copy">
+        Зачувајте `ntfy` тема со вашиот клуч за синхронизација за да добивате серверски утрински брифинзи, неделни резимеа и извештаи за следените теми или извори.
+      </p>
 
-        <label className="scheduled-delivery-label">
-          <span>Ntfy tema</span>
-          <input
-            type="text"
-            className="account-sync-input"
-            value={serverDelivery.target}
-            onChange={(e) => updateServerDelivery({ target: e.target.value })}
-            placeholder="moja-presek-tema"
-          />
-        </label>
+      <label className="scheduled-delivery-label">
+        <span>Ntfy тема</span>
+        <input
+          type="text"
+          className="account-sync-input"
+          value={serverDelivery.target}
+          onChange={(e) => updateServerDelivery({ target: e.target.value })}
+          placeholder="moja-presek-tema"
+        />
+      </label>
 
-        <div className="delivery-toggle-list space-y-4">
-          <button type="button" className={`flex w-full items-center justify-between p-4 rounded-xl border transition ${serverDelivery.morningBriefing ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => updateServerDelivery({ morningBriefing: !serverDelivery.morningBriefing })}>
-            <span className="text-left">
-              <span className="block font-sans font-bold text-sm">Utrinski ntfy brifing</span>
-              <span className="block text-[11px] text-muted-foreground mt-0.5">Serverski isporucen pregled vo vashata `ntfy` tema.</span>
-            </span>
-            <strong className={`text-[10px] font-black uppercase tracking-widest ${serverDelivery.morningBriefing ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{serverDelivery.morningBriefing ? 'Ovozmozeno' : 'Onemovozmozeno'}</strong>
-          </button>
-          <button type="button" className={`flex w-full items-center justify-between p-4 rounded-xl border transition ${serverDelivery.weeklyDigest ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => updateServerDelivery({ weeklyDigest: !serverDelivery.weeklyDigest })}>
-            <span className="text-left">
-              <span className="block font-sans font-bold text-sm">Nedelen rezime</span>
-              <span className="block text-[11px] text-muted-foreground mt-0.5">Podobren rezime-pregled na temite koi ste gi sledele.</span>
-            </span>
-            <strong className={`text-[10px] font-black uppercase tracking-widest ${serverDelivery.weeklyDigest ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{serverDelivery.weeklyDigest ? 'Ovozmozeno' : 'Onemovozmozeno'}</strong>
-          </button>
-          <button type="button" className={`flex w-full items-center justify-between p-4 rounded-xl border transition ${serverDelivery.breakingTopics ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => updateServerDelivery({ breakingTopics: !serverDelivery.breakingTopics })}>
-            <span className="text-left">
-              <span className="block font-sans font-bold text-sm">Izvestai za sledenite temi</span>
-              <span className="block text-[11px] text-muted-foreground mt-0.5">Se aktivira koga vashite temi ke dobijat nov silen klaster.</span>
-            </span>
-            <strong className={`text-[10px] font-black uppercase tracking-widest ${serverDelivery.breakingTopics ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{serverDelivery.breakingTopics ? 'Ovozmozeno' : 'Onemovozmozeno'}</strong>
-          </button>
-          <button type="button" className={`flex w-full items-center justify-between p-4 rounded-xl border transition ${serverDelivery.breakingSources ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => updateServerDelivery({ breakingSources: !serverDelivery.breakingSources })}>
-            <span className="text-left">
-              <span className="block font-sans font-bold text-sm">Izvestai za sledenite izvori</span>
-              <span className="block text-[11px] text-muted-foreground mt-0.5">Sledi koga izbraniot izvor prvo ke otvori Vazna prikazna.</span>
-            </span>
-            <strong className={`text-[10px] font-black uppercase tracking-widest ${serverDelivery.breakingSources ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{serverDelivery.breakingSources ? 'Ovozmozeno' : 'Onemovozmozeno'}</strong>
-          </button>
-          <button type="button" className={`flex w-full items-center justify-between p-4 rounded-xl border transition ${serverDelivery.isActive ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => updateServerDelivery({ isActive: !serverDelivery.isActive })}>
-            <span className="text-left">
-              <span className="block font-sans font-bold text-sm">Zakazanata dostava e aktivna</span>
-              <span className="block text-[11px] text-muted-foreground mt-0.5">glaven prekinuvac za serverska dostava na ovoj profil.</span>
-            </span>
-            <strong className={`text-[10px] font-black uppercase tracking-widest ${serverDelivery.isActive ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{serverDelivery.isActive ? 'Ovozmozeno' : 'Onemovozmozeno'}</strong>
-          </button>
-        </div>
-
-        <button type="button" className="delivery-action" onClick={saveScheduledDelivery}>
-          <Save size={14} />
-          <span className="delivery-action-content">
-            <span className="delivery-action-label">Zacuvaj ja zakazanata dostava</span>
-            <span className="delivery-action-note">Gi snima ntfy postavkite vo sinhroniziraniot profil.</span>
+      <div className="delivery-toggle-list space-y-4">
+        <button type="button" className={`flex w-full items-center justify-between p-4 rounded-xl border transition ${serverDelivery.morningBriefing ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => updateServerDelivery({ morningBriefing: !serverDelivery.morningBriefing })}>
+          <span className="text-left">
+            <span className="block font-sans font-bold text-sm">Утрински ntfy брифинг</span>
+            <span className="block text-[11px] text-muted-foreground mt-0.5">Серверски испорачен преглед во вашата `ntfy` тема.</span>
           </span>
+          <strong className={`text-[10px] font-black uppercase tracking-widest ${serverDelivery.morningBriefing ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{serverDelivery.morningBriefing ? 'Овозможено' : 'Оневозможено'}</strong>
         </button>
+        <button type="button" className={`flex w-full items-center justify-between p-4 rounded-xl border transition ${serverDelivery.weeklyDigest ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => updateServerDelivery({ weeklyDigest: !serverDelivery.weeklyDigest })}>
+          <span className="text-left">
+            <span className="block font-sans font-bold text-sm">Неделен резиме</span>
+            <span className="block text-[11px] text-muted-foreground mt-0.5">Подобрен резиме-преглед на темите кои сте ги следеле.</span>
+          </span>
+          <strong className={`text-[10px] font-black uppercase tracking-widest ${serverDelivery.weeklyDigest ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{serverDelivery.weeklyDigest ? 'Овозможено' : 'Оневозможено'}</strong>
+        </button>
+        <button type="button" className={`flex w-full items-center justify-between p-4 rounded-xl border transition ${serverDelivery.breakingTopics ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => updateServerDelivery({ breakingTopics: !serverDelivery.breakingTopics })}>
+          <span className="text-left">
+            <span className="block font-sans font-bold text-sm">Извештаи за следените теми</span>
+            <span className="block text-[11px] text-muted-foreground mt-0.5">Се активира кога вашите теми ќе добијат нов силен кластер.</span>
+          </span>
+          <strong className={`text-[10px] font-black uppercase tracking-widest ${serverDelivery.breakingTopics ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{serverDelivery.breakingTopics ? 'Овозможено' : 'Оневозможено'}</strong>
+        </button>
+        <button type="button" className={`flex w-full items-center justify-between p-4 rounded-xl border transition ${serverDelivery.breakingSources ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => updateServerDelivery({ breakingSources: !serverDelivery.breakingSources })}>
+          <span className="text-left">
+            <span className="block font-sans font-bold text-sm">Извештаи за следените извори</span>
+            <span className="block text-[11px] text-muted-foreground mt-0.5">Следи кога избраниот извор прво ќе отвори Важна приказна.</span>
+          </span>
+          <strong className={`text-[10px] font-black uppercase tracking-widest ${serverDelivery.breakingSources ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{serverDelivery.breakingSources ? 'Овозможено' : 'Оневозможено'}</strong>
+        </button>
+        <button type="button" className={`flex w-full items-center justify-between p-4 rounded-xl border transition ${serverDelivery.isActive ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => updateServerDelivery({ isActive: !serverDelivery.isActive })}>
+          <span className="text-left">
+            <span className="block font-sans font-bold text-sm">Закажаната достава е активна</span>
+            <span className="block text-[11px] text-muted-foreground mt-0.5">главен прекинувач за серверска достава на овој профил.</span>
+          </span>
+          <strong className={`text-[10px] font-black uppercase tracking-widest ${serverDelivery.isActive ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{serverDelivery.isActive ? 'Овозможено' : 'Оневозможено'}</strong>
+        </button>
+      </div>
 
+      <button type="button" className="delivery-action" onClick={saveScheduledDelivery}>
+        <Save size={14} />
+        <span className="delivery-action-content">
+          <span className="delivery-action-label">Зачувај ја закажаната достава</span>
+          <span className="delivery-action-note">Ги снима ntfy поставките во синхронизираниот профил.</span>
+        </span>
+      </button>
         {serverMessage && <p className={`account-sync-message is-${serverStatus}`}>{serverMessage}</p>}
       </div>
     </div>
