@@ -72,7 +72,6 @@ Key metrics to watch:
 - Temporal coherence (cluster articles should be close in time)
 
 """
-=======
 
 import math
 import uuid
