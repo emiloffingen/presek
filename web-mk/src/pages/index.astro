@@ -173,10 +173,10 @@ if (!isHomepage) {
 
 function getLeadSignal(cluster: NewsCluster) {
 	const count = cluster?.articles?.length || 0;
-	if (cluster?.is_breaking) return 'Najbrži razvoj dana';
-	if (count >= 6) return 'Priča koja pokreće domaću agendu';
-	if (count >= 4) return 'Tema koja se brzo širi kroz redakcije';
-	return 'razvoj koji vredi pratiti';
+	if (cluster?.is_breaking) return 'Најбрз развој денес';
+	if (count >= 6) return 'Приказна што ја придвижува домашната агенда';
+	if (count >= 4) return 'Тема што брзо се шири низ редакциите';
+	return 'развој што вреди да се следи';
 }
 
 function getLeadSummary(cluster: NewsCluster) {
