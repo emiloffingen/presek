@@ -12,6 +12,7 @@ const category = searchParams.get('category') || null;
 const topic = searchParams.get('topic') || null;
 const entity = searchParams.get('entity') || null;
 const q = searchParams.get('q') || null;
+const view = searchParams.get('view') || 'home';
 
 let clusters: NewsCluster[] = [];
 let trending = [];
@@ -78,8 +79,27 @@ if (q || category || topic || entity) {
     });
 }
 
-// Sort by score (source count) descending
-clusters.sort((a, b) => (b.articles?.length || 0) - (a.articles?.length || 0));
+// Sort by view
+if (view === 'new') {
+    clusters.sort((a, b) => {
+        const timeA = new Date(a.articles?.[0]?.created_at || 0).getTime();
+        const timeB = new Date(b.articles?.[0]?.created_at || 0).getTime();
+        return timeB - timeA;
+    });
+} else if (view === 'popular') {
+    clusters.sort((a, b) => (b.articles?.length || 0) - (a.articles?.length || 0));
+} else {
+    // Default Hacker News-style score (Hacker News uses (p-1) / (t+2)^1.8, but we'll use a simpler one)
+    // Points (sources) / hours^1.8
+    const now = new Date().getTime();
+    const getScore = (c: NewsCluster) => {
+        const points = (c.articles?.length || 0) - 1;
+        const createdAt = new Date(c.articles?.[0]?.created_at || 0).getTime();
+        const hours = (now - createdAt) / (1000 * 60 * 60);
+        return points / Math.pow(hours + 2, 1.8);
+    };
+    clusters.sort((a, b) => getScore(b) - getScore(a));
+}
 
 function getPageTitle() {
     if (q) return `Пребарување: "${q}" - Пресек.мк`;
@@ -99,13 +119,13 @@ const pageTitle = getPageTitle();
     focusEntities={focusEntities}
     stats={stats}
 >
-    <!-- Top bar with user info -->
-    <div class="hn-topbar">
-        <span>Македонски агрегатор на вести | </span>
-        <a href="/hn/">home</a> | 
-        <a href="/hn/new">new</a> | 
-        <a href="/hn/popular">popular</a>
-    </div>
+    <div class="hn-main">
+        <div class="hn-topbar">
+            <span>Македонски агрегатор на вести | </span>
+            <a href="/hn/">home</a> | 
+            <a href="/hn/?view=new">new</a> | 
+            <a href="/hn/?view=popular">popular</a>
+        </div>
 
     <!-- Main table -->
     <table class="hn-table">
