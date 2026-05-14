@@ -10,12 +10,32 @@ from typing import Optional
 from fastapi import APIRouter, Request, Query, HTTPException
 from fastapi.responses import Response, FileResponse
 from pathlib import Path
+from prometheus_client import Counter
 
 import redis as _redis_lib
 from database import db_manager as db
 from utils import cached_response, set_cache
 
 log = logging.getLogger("presek.routes.system")
+
+# Prometheus metrics
+PROXY_REQUESTS = Counter(
+    "proxy_requests_total",
+    "Total number of proxy requests",
+    ["status", "reason"],
+)
+PROXY_BYTES = Counter(
+    "proxy_bytes_total",
+    "Total bytes transferred through proxy",
+)
+PROXY_CACHE_HITS = Counter(
+    "proxy_cache_hits_total",
+    "Total number of proxy cache hits",
+)
+PROXY_CACHE_MISSES = Counter(
+    "proxy_cache_misses_total",
+    "Total number of proxy cache misses",
+)
 
 # Use a separate client for binary data to avoid UnicodeDecodeError from utils.redis_client
 _redis_url = os.environ.get("REDIS_URL") or "redis://localhost:6379/0"
@@ -574,7 +594,24 @@ async def proxy_image(
     t: Optional[str] = None,
     cat: Optional[str] = None,
 ):
+    """
+    Proxy images to avoid CORS and mixed content issues.
+    
+    Args:
+        url: The URL of the image to proxy.
+        w: The width of the image (optional).
+        cid: The cluster ID (optional).
+        t: The title of the image (optional).
+        cat: The category of the image (optional).
+    
+    Returns:
+        The proxied image as a Response.
+    
+    Raises:
+        HTTPException: If the URL is invalid or missing.
+    """
     if not url:
+        PROXY_REQUESTS.labels(status="400", reason="missing_url").inc()
         raise HTTPException(status_code=400, detail="Nedostasuva URL adresa")
 
     if url.startswith("/static/"):
@@ -607,6 +644,8 @@ async def proxy_image(
                 raise HTTPException(status_code=403)
 
             if not candidate.exists() or not candidate.is_file():
+                log.warning(f"[proxy/static] File not found: {candidate}")
+                PROXY_REQUESTS.labels(status="404", reason="file_not_found").inc()
                 raise HTTPException(status_code=404)
             return FileResponse(candidate)
         except HTTPException:
@@ -616,6 +655,7 @@ async def proxy_image(
             raise HTTPException(status_code=403)
 
     if not re.match(r"^https?://", url):
+        PROXY_REQUESTS.labels(status="400", reason="invalid_scheme").inc()
         raise HTTPException(status_code=400, detail="Nevalidna URL sema")
     
     # Additional URL validation for common issues
@@ -637,6 +677,8 @@ async def proxy_image(
     try:
         cached_bin = binary_redis_client.get(cache_key)
         if cached_bin:
+            PROXY_CACHE_HITS.inc()
+            PROXY_REQUESTS.labels(status="200", reason="cache_hit").inc()
             return Response(
                 cached_bin,
                 media_type="image/webp",
@@ -644,6 +686,7 @@ async def proxy_image(
             )
     except Exception as e:
         log.debug(f"Binary Redis cache lookup failed: {e}")
+        PROXY_REQUESTS.labels(status="500", reason="cache_error").inc()
 
     def serve_fallback(reason="error"):
         svg = generate_local_placeholder(cid or "px", t or "vest", cat or "vesti")
@@ -758,9 +801,12 @@ async def proxy_image(
                         async for chunk in resp.aiter_bytes(chunk_size=16384):
                             img_data += chunk
                             if len(img_data) > _PROXY_MAX_BYTES:
+                                log.warning(f"[proxy] Image too large: {url}")
+                                PROXY_REQUESTS.labels(status="400", reason="too_large").inc()
                                 return serve_fallback("too_large")
                 except Exception as e:
                     log.error(f"[proxy] Fetch failed for {url}: {e}", exc_info=True)
+                    PROXY_REQUESTS.labels(status="500", reason="fetch_failed").inc()
                     return serve_fallback("fetch_failed")
 
         if not img_data:
@@ -785,9 +831,14 @@ async def proxy_image(
 
         try:
             binary_redis_client.setex(cache_key, 86400, optimized)
+            log.info(f"[proxy] Cached image: {url}")
         except Exception as e:
-            log.debug(f"Failed to cache binary image: {e}")
+            log.warning(f"[proxy] Failed to cache binary image: {e}")
 
+        log.info(f"[proxy] Successfully proxied image: {url}")
+        PROXY_CACHE_MISSES.inc()
+        PROXY_BYTES.inc(len(optimized))
+        PROXY_REQUESTS.labels(status="200", reason="cache_miss").inc()
         return Response(
             optimized,
             media_type="image/webp",
