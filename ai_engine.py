@@ -630,8 +630,8 @@ def clean_json_response(text: str) -> dict | str | None:
                 if isinstance(val, str) and (len(val) > 20 or " " in val):
                     return {"answer": val, "suggestions": []}
         return data
-    except Exception:
-        pass
+    except Exception as e:
+        log.warning(f"Direct JSON parse failed in _unwrapped_answer: {e}")
 
     # 3. Aggressive Regex Extraction (if JSON parse failed)
     # This handles cases where the model returns broken JSON or text with JSON inside
@@ -657,8 +657,8 @@ def clean_json_response(text: str) -> dict | str | None:
                     return data
                 if "report" in data:
                     return {"answer": data["report"], "suggestions": data.get("suggestions", [])}
-    except Exception:
-        pass
+    except Exception as e:
+        log.warning(f"Brute-force JSON parse failed in _unwrapped_answer: {e}")
 
     # 5. Final Fallback: Return the raw text but strip common JSON artifacts
     # if it obviously leaked (e.g. starts with { "answer": )

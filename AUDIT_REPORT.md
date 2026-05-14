@@ -1,93 +1,60 @@
 # Presek Application Audit Report
-
-**Date:** May 13, 2026
-**Status:** Complete
-**Overall Rating:** Healthy / High Quality
-
----
+Date: Thursday, May 14, 2026
 
 ## 1. Executive Summary
-Presek is a robust, well-architected news aggregation and analysis platform. The codebase demonstrates strong adherence to security best practices, modern engineering standards, and a sophisticated deployment strategy. The integration of NLP and LLM technologies is handled with careful consideration for performance and data integrity.
+The Presek application is overall healthy and operational. Core services (API, Frontend, Database, Background Workers) are running as expected. However, critical disk space issues and a high failure rate in news source ingestion require immediate attention.
 
----
+## 2. Infrastructure & Health
+### System Status
+- **Disk Usage:** **CRITICAL** (92% used, 4.7GB free on `/`).
+- **Memory:** 4.2Gi used of 7.8Gi.
+- **Uptime:** 8 days, 15 hours.
+- **Services:**
+  - `postgresql@16-main`: Running
+  - `redis-server`: Running
+  - `presek.target` (App stack): All 11 units active.
 
-## 2. Architecture & Design
-*   **Backend:** FastAPI provides a performant and well-structured API. Background tasks are efficiently managed by Celery with a multi-queue setup (ingestion, fast-track, intel-heavy, etc.).
-*   **Data Tier:** PostgreSQL with `pgvector` allows for advanced semantic search and clustering. Redis is effectively used for caching, rate limiting, and as a task broker.
-*   **Frontend:** The Astro-based frontend (in `web/`) follows a modern, content-first design system optimized for Cyrillic typography.
-*   **Intelligence:** A sophisticated NLP pipeline covers ingestion, clustering, summarization, and topic discovery using a mix of local models (spaCy, fasttext) and LLM APIs.
+### Databases
+- **PostgreSQL:** Healthy, 4687 articles indexed.
+- **Redis:** Healthy, used for caching and Celery broker.
 
----
+## 3. Security Audit
+### Python (Bandit)
+- **Status:** PASS with minor warnings.
+- **Findings:**
+  - `B110 (try_except_pass)`: Detected in `ai_engine.py`. Recommended to add logging to exceptions.
+  - `B608 (SQL Injection)`: Flagged in `clustering.py`. Manual review confirms it uses placeholders and is safe, but code style triggers the linter.
+  - `B104 (Bind all interfaces)`: Flagged in `api_helpers.py`, verified as part of a blocklist for SSRF protection, not a vulnerability.
 
-## 3. Security Analysis
-*   **SSRF Protection:** Excellent implementation. The project uses DNS resolution verification and peer IP checking to prevent SSRF and DNS rebinding attacks.
-*   **Input Validation:** Centralized and rigorous validation for query parameters, request bodies, and common types (UUIDs, emails, dates).
-*   **Security Headers:** Comprehensive CSP (with nonces), HSTS, and other critical headers are implemented via dedicated FastAPI middleware. nginx no longer sets conflicting CSP headers.
-*   **Access Control:** Admin-only routes are protected by token verification with timing-attack resistant comparisons.
-*   **Secrets Management:** No hardcoded secrets found in the codebase. Uses environment variables and automated secret detection.
+### Node.js (npm audit)
+- **Status:** **CLEAN**
+- No vulnerabilities found in `web` or `web-mk` dependencies.
 
----
+### Configuration
+- Security headers (HSTS, CSP, etc.) are correctly implemented via Nginx snippets.
+- Environment variables are managed via `.env` files with `.env.example` as a template.
 
-## 4. Code Quality & Testing
-*   **Health:** The test suite is healthy, with all 350 tests passing.
-*   **Tooling:** Standardized use of `ruff`, `mypy`, `black`, and `isort` ensures consistent code style and type safety.
-*   **Dependencies:** Managed with `uv` for fast, reproducible builds.
-*   **Audit Script:** The project includes a custom `security_audit.py` which provides a good baseline for regular checks.
+## 4. Ingestion & Data Health
+- **Source Health:** **WARNING**
+- High failure rate for Macedonian sources (`.mk` domains).
+- **Common Issues:**
+  - `Temporary failure in name resolution` (DNS issues).
+  - `404 Not Found` (Feed URLs likely changed).
+  - `Cloudflare challenge blocked` (Requires better anti-bot headers or proxy).
+  - `SSL Certificate Expired` (e.g., `sky.mk`, `gol.mk`).
 
----
+## 5. Recommendations
+### High Priority
+1. **Free Disk Space:** Run `sudo journalctl --vacuum-time=1d` to clear old system logs.
+2. **Fix Ingestion:** Update RSS feed URLs for 404ing sources and investigate DNS resolution issues for `.mk` domains.
+3. **Database Maintenance:** Schedule periodic `VACUUM ANALYZE` if not already handled by autovacuum.
 
-## 5. Infrastructure & Deployment
-*   **Containerization:** Multi-stage `Dockerfile` ensures small, secure production images running as non-root users. uv version pinned to v0.4.24 for reproducibility.
-*   **Deployment Pipeline:** Highly sophisticated shell-based deployment system. Features include:
-    *   Atomic releases with symlink switching.
-    *   Automatic rollbacks on smoke check failure.
-    *   Versioned environments (Venv and Node modules) to prevent collisions.
-    *   Pre-migration database backups.
+### Medium Priority
+1. **Improve Logging:** Replace `pass` in `try-except` blocks with proper logging to catch silent failures in the AI engine.
+2. **Update Dependencies:** Some Python packages are significantly outdated (e.g., `cryptography`, `requests`, `pip`).
 
----
-
-## 6. Findings & Recommendations
-
-### [FIXED] Outdated Dependencies
-All Python dependencies updated via `uv lock --upgrade`. All npm dependencies have 0 vulnerabilities.
-*   **Status:** ✅ Resolved
-
-### [FIXED] Docker uv Pinning
-Dockerfile now pins uv to v0.4.24 instead of using `latest` tag for reproducibility.
-*   **Status:** ✅ Resolved
-
-### [FIXED] CSP Configuration
-Removed conflicting CSP from nginx security-headers.conf. CSP is now solely handled by FastAPI middleware with per-request nonces, eliminating `unsafe-inline` usage.
-*   **Status:** ✅ Resolved
-
-### [FIXED] CI/CD Pipeline Failures
-Resolved multiple issues causing pipeline #125 to fail:
-*   **Backend:** Added `pytest-timeout` to dev dependencies to support the `--timeout` argument in CI.
-*   **Frontend:** Resolved TypeScript `baseUrl` deprecation warning and fixed several type errors in `SearchIsland.tsx` using discriminated unions (`as const`). Fixed React `class` vs `className` errors in `IzvoriPage.tsx`.
-*   **Security:** Upgraded `black` to v26.3.1 to resolve CVE-2026-32274. Aligned `uv` version in `Dockerfile` with CI (v0.11.11).
-*   **Cypress:** Fixed TypeScript type mismatches in Cypress custom commands.
-*   **Status:** ✅ Resolved
-
-### [OBSERVATION] Hardcoded Service Lists
-Some deployment scripts (e.g., `install_server.sh`) have hardcoded lists of systemd services.
-*   **Recommendation:** The `deploy_release.sh` already has a discovery mechanism; consider unifying this to reduce maintenance overhead.
-
-### [OBSERVATION] NLP Testing
-While core logic is tested, NLP "quality" is harder to pin down.
-*   **Recommendation:** Continue expanding "gold standard" datasets for clustering and summarization to ensure model changes don't degrade the user experience.
-
----
-
-## 7. Changes Made
-
-| Change | File | Impact |
-|--------|------|--------|
-| Pinned uv version | Dockerfile | Reproducible builds |
-| Updated verification date | deploy/nginx/cloudflare-realip.conf | Documentation |
-| Removed conflicting CSP | deploy/nginx/security-headers.conf | Security improvement |
-| Updated test assertions | tests/test_integrity.py | Test accuracy |
-| Updated dependencies | uv.lock, requirements.txt | Security patches |
-| Updated audit files | audit_npm.txt, audit_pip_outdated.txt | Documentation |
-
----
-*Audit performed and fixes applied by Mistral Vibe*
+## 6. Audit Log Files
+- `audit_bandit_new.txt`: Bandit findings.
+- `audit_npm_web_new.json`: Frontend audit.
+- `audit_pip_outdated_new.txt`: List of outdated Python packages.
+- `check_source_health.py` output: Detailed source status.
