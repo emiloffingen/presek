@@ -726,7 +726,6 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                     fetch=False,
                 )
 
-                if fast_mode:
                     db.execute(
                         """INSERT INTO cluster_summaries (cluster_id, lang, summary, generated_article, synthetic_headline, synthetic_standfirst, created_at, citation_sources, key_facts, analyst_entities, pulse_score, pluralism_score, narrative_diversity)
                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
@@ -753,8 +752,8 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                             json.dumps(shared_metrics["citation_sources"]),
                             json.dumps(key_facts),
                             json.dumps(shared_metrics["analyst_entities"]),
-                            pulse_score,
-                            pluralism_score,
+                            float(pulse_score),
+                            float(pluralism_score),
                             json.dumps(pluralism_data),
                         ),
                         fetch=False,
@@ -803,8 +802,8 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                             json.dumps(shared_metrics["citation_sources"]),
                             json.dumps(key_facts),
                             json.dumps(shared_metrics["analyst_entities"]),
-                            pulse_score,
-                            pluralism_score,
+                            float(pulse_score),
+                            float(pluralism_score),
                             json.dumps(pluralism_data),
                             shared_metrics["story_so_far"],
                         ),

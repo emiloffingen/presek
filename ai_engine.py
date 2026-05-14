@@ -723,7 +723,7 @@ def auto_summarize_top_clusters(target_cluster_ids: list[str] = None):
 
         for cid, arts, src_count, dt in top:
             # Aggregate article content for the synthesizer
-            content = "\n\n".join([a.get("title", "") + ": " + a.get("summary", "") for a in arts])
+            content = "\n\n".join([(a.get("title") or "") + ": " + (a.get("summary") or "") for a in arts])
             synthesize_cluster_task.delay(cid, content=content)
 
     except Exception as e:
