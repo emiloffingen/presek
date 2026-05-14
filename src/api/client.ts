@@ -30,9 +30,14 @@ export async function fetchNews(page: number, topic: string, query: string, forc
   if (query) params.append('q', query);
   if (forceRefresh) params.append('force_refresh', 'true');
   
+  // Add cache busting timestamp for fresh content
+  params.append('t', Date.now().toString());
+  
   url.search = params.toString();
   
-  const response = await fetch(url.toString());
+  const response = await fetch(url.toString(), {
+    cache: forceRefresh ? 'no-store' : 'default'
+  });
   if (!response.ok) {
     throw new Error('Failed to fetch news');
   }

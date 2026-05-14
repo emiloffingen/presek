@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchNews, fetchTrending, fetchStatsFull } from './api/client';
 import { Cluster, TrendingItem } from '@/types';
@@ -12,6 +12,9 @@ export const FrontendV2: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<{ total_articles: number; last_24h: number; summarized_pct: number } | null>(null);
+  const [liveUpdates, setLiveUpdates] = useState<number>(0);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
+  const sseRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
     const loadMeta = async () => {
@@ -38,8 +41,10 @@ export const FrontendV2: React.FC = () => {
       setIsLoading(true);
       setError(null);
       try {
-        const news = await fetchNews(0, topic, submittedQuery, false);
+        // Use forceRefresh=true and cache busting for fresh content
+        const news = await fetchNews(0, topic, submittedQuery, true);
         setClusters(news.data);
+        setLastUpdated(new Date().toISOString());
       } catch (e) {
         setError('Не успеавме да вчитаме вести. Обидете се повторно.');
       } finally {
@@ -49,6 +54,42 @@ export const FrontendV2: React.FC = () => {
 
     loadNews();
   }, [topic, submittedQuery]);
+
+  // Set up Server-Sent Events for live updates
+  useEffect(() => {
+    const setupSSE = () => {
+      if (sseRef.current) {
+        sseRef.current.close();
+      }
+
+      sseRef.current = new EventSource('/api/live');
+
+      sseRef.current.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (payload?.type === 'new_article' || payload?.type === 'new_articles' || payload?.type === 'new_articles_batch') {
+            setLiveUpdates(prev => prev + (payload.count || 1));
+            setLastUpdated(payload.time || new Date().toISOString());
+          }
+        } catch (err) {
+          console.error('Failed to parse SSE payload:', err);
+        }
+      };
+
+      sseRef.current.onerror = () => {
+        sseRef.current?.close();
+        // Try to reconnect after 5 seconds
+        setTimeout(setupSSE, 5000);
+      };
+
+      return () => {
+        sseRef.current?.close();
+      };
+    };
+
+    const cleanup = setupSSE();
+    return cleanup;
+  }, []);
 
   const topCluster = clusters[0];
   const secondaryClusters = useMemo(() => clusters.slice(1, 7), [clusters]);
@@ -89,6 +130,11 @@ export const FrontendV2: React.FC = () => {
             </button>
           ))}
         </div>
+        {liveUpdates > 0 && (
+          <div className="live-updates-badge">
+            🔴 {liveUpdates} нови вести - последно ажурирано: {new Date(lastUpdated).toLocaleTimeString('mk-MK')}
+          </div>
+        )}
       </header>
 
       {stats && (
@@ -131,7 +177,22 @@ export const FrontendV2: React.FC = () => {
       )}
 
       <aside className="v2-trending">
-        <h3>Тренд теми</h3>
+        <div className="trending-header">
+          <h3>Тренд теми</h3>
+          <button 
+            className="refresh-btn"
+            onClick={() => {
+              // Force refresh trending data
+              fetchTrending().then(newTrending => {
+                setTrending(newTrending);
+                setLastUpdated(new Date().toISOString());
+              }).catch(console.error);
+            }}
+            title="Освежи трендови"
+          >
+            🔄 Освежи
+          </button>
+        </div>
         <div className="ribbon-scroll">
           {trending.slice(0, 12).map((item) => (
             <button key={item.word} className="ribbon-item" onClick={() => { setQuery(item.word); setSubmittedQuery(item.word); }}>
@@ -141,5 +202,51 @@ export const FrontendV2: React.FC = () => {
         </div>
       </aside>
     </div>
+    
+    {/* Inline styles for live update elements */}
+    <style jsx="true">{
+      `
+      .live-updates-badge {
+        background: rgba(255, 0, 0, 0.1);
+        border: 1px solid rgba(255, 0, 0, 0.3);
+        color: #ff0000;
+        padding: 8px 12px;
+        border-radius: 8px;
+        margin: 10px 0;
+        font-size: 14px;
+        font-weight: bold;
+        text-align: center;
+        animation: pulse 2s infinite;
+      }
+      
+      .trending-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      
+      .refresh-btn {
+        background: rgba(30, 144, 255, 0.1);
+        border: 1px solid rgba(30, 144, 255, 0.3);
+        color: #1e90ff;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      
+      .refresh-btn:hover {
+        background: rgba(30, 144, 255, 0.2);
+      }
+      
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+      }
+      `
+    }
+    </style>
   );
 };
