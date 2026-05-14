@@ -1670,6 +1670,27 @@ button:active,
 }
 
 /* News Feed Grid */
+@keyframes fadeInUpStagger {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.news-feed-grid > *, .for-you-grid > * {
+    animation: fadeInUpStagger 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.news-feed-grid > *:nth-child(1), .for-you-grid > *:nth-child(1) { animation-delay: 0ms; }
+.news-feed-grid > *:nth-child(2), .for-you-grid > *:nth-child(2) { animation-delay: 40ms; }
+.news-feed-grid > *:nth-child(3), .for-you-grid > *:nth-child(3) { animation-delay: 80ms; }
+.news-feed-grid > *:nth-child(4), .for-you-grid > *:nth-child(4) { animation-delay: 120ms; }
+.news-feed-grid > *:nth-child(5), .for-you-grid > *:nth-child(5) { animation-delay: 160ms; }
+.news-feed-grid > *:nth-child(6), .for-you-grid > *:nth-child(6) { animation-delay: 200ms; }
+.news-feed-grid > *:nth-child(7), .for-you-grid > *:nth-child(7) { animation-delay: 240ms; }
+.news-feed-grid > *:nth-child(8), .for-you-grid > *:nth-child(8) { animation-delay: 280ms; }
+.news-feed-grid > *:nth-child(9), .for-you-grid > *:nth-child(9) { animation-delay: 320ms; }
+.news-feed-grid > *:nth-child(10), .for-you-grid > *:nth-child(10) { animation-delay: 360ms; }
+.news-feed-grid > *:nth-child(n+11), .for-you-grid > *:nth-child(n+11) { animation-delay: 400ms; }
+
 .news-feed-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -3965,3 +3986,39 @@ button:active,
     }
 }
 
+
+/* Interactive Spotlight Effect */
+.premium-spotlight {
+    position: relative;
+    overflow: hidden;
+}
+
+.premium-spotlight::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(
+        600px circle at var(--mouse-x, 0) var(--mouse-y, 0),
+        rgba(0, 0, 0, 0.04),
+        transparent 40%
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.dark .premium-spotlight::after {
+    background: radial-gradient(
+        600px circle at var(--mouse-x, 0) var(--mouse-y, 0),
+        rgba(255, 255, 255, 0.06),
+        transparent 40%
+    );
+}
+
+.premium-spotlight:hover::after {
+    opacity: 1;
+}

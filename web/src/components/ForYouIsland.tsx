@@ -116,6 +116,46 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
     }
   }, [recommendations]);
 
+  if (hasSignals && semanticLoading && displayItems.length === 0) {
+    return (
+      <section className="for-you-module" aria-labelledby="for-you-title">
+        <div className="for-you-head">
+          <div>
+            <p className="for-you-kicker"><Sparkles size={14} /> Za Vas</p>
+            <h2 id="for-you-title">Personalizovan izbor</h2>
+          </div>
+          <p className="for-you-note">Pripremanje preporuka...</p>
+        </div>
+        <div className="for-you-grid">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="for-you-card border border-border bg-secondary/5 opacity-70">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-3 h-3 rounded-full bg-secondary/40 animate-pulse"></div>
+                <div className="h-2 w-20 bg-secondary/40 rounded animate-pulse"></div>
+              </div>
+              <div className="space-y-2 mb-4">
+                <div className="h-3.5 w-full bg-secondary/30 rounded animate-pulse"></div>
+                <div className="h-3.5 w-4/5 bg-secondary/30 rounded animate-pulse"></div>
+              </div>
+              <div className="space-y-1.5 mb-5">
+                <div className="h-2 w-full bg-secondary/20 rounded animate-pulse delay-75"></div>
+                <div className="h-2 w-5/6 bg-secondary/20 rounded animate-pulse delay-75"></div>
+                <div className="h-2 w-4/6 bg-secondary/20 rounded animate-pulse delay-75"></div>
+              </div>
+              <div className="flex justify-between items-center mt-auto">
+                <div className="flex gap-2">
+                  <div className="h-2 w-12 bg-secondary/40 rounded animate-pulse delay-150"></div>
+                  <div className="h-2 w-10 bg-secondary/40 rounded animate-pulse delay-150"></div>
+                </div>
+                <div className="h-2 w-10 bg-secondary/40 rounded animate-pulse delay-150"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
   // Case 1: Has signals and found personalized content
   if (hasSignals && displayItems.length > 0) {
     return (
@@ -139,7 +179,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
             const isSemantic = Boolean(item.similarity);
 
             return (
-              <a key={cluster.cluster_id} href={`/cluster/${cluster.cluster_id}`} className="for-you-card" aria-label={`Otvori klaster: ${title}`}>
+              <a key={cluster.cluster_id} href={`/cluster/${cluster.cluster_id}`} className={`for-you-card ${isSemantic ? 'premium-spotlight' : ''}`} aria-label={`Otvori klaster: ${title}`}>
                 <p className={`for-you-card-kicker ${isSemantic ? 'text-nyt-accent' : ''}`}>
                   {isSemantic ? <BrainCircuit size={12} /> : <Compass size={12} />}
                   <span>{isSemantic ? 'Semanticka preporaka' : (item.reason || 'Srodna tema')}</span>
@@ -187,7 +227,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
               <a key={cluster.cluster_id} href={`/cluster/${cluster.cluster_id}`} className="for-you-card" aria-label={`Otvori klaster: ${title}`}>
                 <p className="for-you-card-kicker">
                   <Clock3 size={12} />
-                  <span>Aktuelno vo momentot</span>
+                  <span>Aktuelno u trenutku</span>
                 </p>
                 <h3 dangerouslySetInnerHTML={{ __html: sanitizeHtml(highlightScores(title)) }}></h3>
                 {summary && <p className="for-you-card-copy">{summary}</p>}

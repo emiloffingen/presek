@@ -45,7 +45,49 @@ export default function NationalMoodIsland() {
         fetchData();
     }, []);
 
-    if (loading) return <div className="h-32 animate-pulse bg-muted rounded-xl" />;
+    if (loading) {
+        return (
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm opacity-70">
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded-full bg-muted animate-pulse"></div>
+                        <div className="h-3 w-24 bg-muted rounded animate-pulse"></div>
+                    </div>
+                </div>
+                <div className="space-y-6">
+                    <div>
+                        <div className="flex justify-between mb-2">
+                            <div className="h-2 w-12 bg-muted rounded animate-pulse"></div>
+                            <div className="h-2 w-12 bg-muted rounded animate-pulse"></div>
+                            <div className="h-2 w-12 bg-muted rounded animate-pulse"></div>
+                        </div>
+                        <div className="h-2 w-full bg-muted rounded-full animate-pulse"></div>
+                        <div className="mt-3 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className="w-5 h-5 rounded-full bg-muted animate-pulse"></div>
+                                <div className="h-3 w-16 bg-muted rounded animate-pulse"></div>
+                            </div>
+                            <div className="h-2 w-16 bg-muted rounded animate-pulse"></div>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                        <div>
+                            <div className="h-2 w-16 bg-muted rounded animate-pulse mb-2"></div>
+                            <div className="h-6 w-12 bg-muted rounded animate-pulse"></div>
+                        </div>
+                        <div className="flex flex-col items-end">
+                            <div className="h-2 w-20 bg-muted rounded animate-pulse mb-2"></div>
+                            <div className="flex gap-1.5 h-12 items-end">
+                                {[1,2,3,4,5,6,7].map(i => (
+                                    <div key={i} className="w-2.5 bg-muted rounded-t-sm animate-pulse" style={{ height: `${20 + (i * 10 % 50)}%` }}></div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
     if (!mood) return null;
 
     const getMoodIcon = (score: number) => {
