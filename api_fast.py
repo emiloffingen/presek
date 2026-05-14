@@ -50,18 +50,18 @@ from api_helpers import (
 # Security: Restrict CORS to configured origins. In production, never use "*" with allow_credentials=True
 cors_origins = os.environ.get("CORS_ORIGINS", "")
 if cors_origins == "*" and os.environ.get("ENV") == "production":
-    cors_origins = ["https://presek.live", "https://www.presek.live"]
+    cors_origins = ["https://presek.live", "https://www.presek.live", "https://presek.mk", "https://www.presek.mk"]
     log.warning(
-        "CORS_ORIGINS was '*', defaulting to presek.live for production security"
+        "CORS_ORIGINS was '*', defaulting to presek.live and presek.mk for production security"
     )
 elif cors_origins == "*":
     # In development, still avoid wildcard - use explicit localhost origins
-    cors_origins = ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5001", "http://127.0.0.1:5001"]
+    cors_origins = ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5001", "http://127.0.0.1:5001", "http://localhost:3001", "http://127.0.0.1:3001"]
     log.warning(
         "CORS_ORIGINS set to '*' in development - using explicit localhost origins instead"
     )
 else:
-    cors_origins = cors_origins.split(",") if cors_origins else ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5001", "http://127.0.0.1:5001"]
+    cors_origins = cors_origins.split(",") if cors_origins else ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5001", "http://127.0.0.1:5001", "http://localhost:3001", "http://127.0.0.1:3001"]
 
 app.add_middleware(
     CORSMiddleware,
