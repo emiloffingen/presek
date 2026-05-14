@@ -62,7 +62,7 @@ const currentDate = new Date().toLocaleDateString('mk-MK', {
     <main class="site-layout broadsheet-layout pt-32 pb-[var(--page-py)]">
         <header class="editorial-masthead motion-rise masthead-double-rule">
             <div class="masthead-top">
-                <span class="masthead-kicker">EDITORIJALNO IZDANIE</span>
+                <span class="masthead-kicker">ЕДИТОРИЈАЛНО ИЗДАНИЕ</span>
                 <div class="masthead-meta">
                     <span class="meta-item">
                         <svg class="live-heartbeat mr-1" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -70,9 +70,9 @@ const currentDate = new Date().toLocaleDateString('mk-MK', {
                                 <animate attributeName="stroke-dasharray" from="0, 50" to="50, 0" dur="2s" repeatCount="indefinite" />
                             </path>
                         </svg>
-                        <Timer size={11} /> <span id="last-updated">VO ZIVO</span>
+                        <Timer size={11} /> <span id="last-updated">ВО ЖИВО</span>
                     </span>
-                    <span class="meta-item"><Activity size={11} /> VERZIJA 5.48</span>
+                    <span class="meta-item"><Activity size={11} /> ВЕРЗИЈА 5.48</span>
                 </div>
             </div>
             
@@ -83,7 +83,7 @@ const currentDate = new Date().toLocaleDateString('mk-MK', {
                 function updateTicker() {
                     const now = new Date();
                     const diffMins = Math.floor((now - startTime) / 60000);
-                    lastUpdatedEl.textContent = diffMins === 0 ? 'VO ZIVO (SEGA)' : `PRED ${diffMins} ${diffMins === 1 ? 'MIN.' : 'MIN.'}`;
+                    lastUpdatedEl.textContent = diffMins === 0 ? 'ВО ЖИВО (СЕГА)' : `ПРЕД ${diffMins} ${diffMins === 1 ? 'МИН.' : 'МИН.'}`;
                 }
                 
                 updateTicker();
@@ -93,7 +93,7 @@ const currentDate = new Date().toLocaleDateString('mk-MK', {
             <div class="masthead-main">
                 <div class="masthead-branding">
                     <Zap size={32} className="text-nyt-accent pulse-zap-icon" fill="currentColor" />
-                    <h1 class="masthead-title">Mediumski <span class="italic-serif">Puls</span></h1>
+                    <h1 class="masthead-title">Медиумски <span class="italic-serif">Пулс</span></h1>
                 </div>
                 <div class="masthead-date">
                     <p>{currentDate}</p>
@@ -101,22 +101,22 @@ const currentDate = new Date().toLocaleDateString('mk-MK', {
             </div>
 
             <div class="masthead-standfirst mt-6">
-                <p>Dnevnata slika na mediumskata scena: obem, ritam, diverzitet i sistemska transparentnost. Analizirano preku sistem za dlaboka analiza za objektivnost i pluralizam.</p>
+                <p>Дневната слика на медиумската сцена: обем, ритам, диверзитет и системска транспарентност. Анализирано преку систем за длабока анализа за објективност и плурализам.</p>
             </div>
 
             <div class="masthead-deck mt-8">
-                <span class="deck-item"><strong class="mr-1.5">{categories.length || '–'}</strong> Kategorii</span>
-                <span class="deck-item"><strong class="mr-1.5">{globalPulse?.intelligence?.pluralism?.pluralism_pct > 0 ? globalPulse?.intelligence?.pluralism?.pluralism_pct + '%' : '–'}</strong> Diverzitet</span>
-                <span class="deck-item"><strong class="mr-1.5">{globalPulse?.last_24h?.toLocaleString('mk-MK') || '–'}</strong> Objavi denes</span>
+                <span class="deck-item"><strong class="mr-1.5">{categories.length || '–'}</strong> Категории</span>
+                <span class="deck-item"><strong class="mr-1.5">{globalPulse?.intelligence?.pluralism?.pluralism_pct > 0 ? globalPulse?.intelligence?.pluralism?.pluralism_pct + '%' : '–'}</strong> Диверзитет</span>
+                <span class="deck-item"><strong class="mr-1.5">{globalPulse?.last_24h?.toLocaleString('mk-MK') || '–'}</strong> Објави денес</span>
             </div>
         </header>
 
         <div class="pulse-intro-lede mt-16 mb-24">
             <div class="intro-lede">
-                <h2 class="intro-greeting">Sistemski monitoring.</h2>
+                <h2 class="intro-greeting">Системски мониторинг.</h2>
                 <p class="intro-copy">
-                    Mediumskiot Puls e vo realno vreme: sekoja objava se dekonstruira preku jazicni modeli za da se izmeri objektivnosta,
-                    tonot i originalnosta. Izberete kategorija za da me analizirate specificnata mediumska dinamika.
+                    Медиумскиот Пулс е во реално време: секоја објава се деконструира преку јазични модели за да се измери објективноста,
+                    тонот и оригиналноста. Изберете категорија за да ја анализирате специфичната медиумска динамика.
                 </p>
             </div>
         </div>

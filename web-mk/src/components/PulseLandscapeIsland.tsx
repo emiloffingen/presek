@@ -22,7 +22,7 @@ const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, onSo
                      <div className="absolute left-1/2 top-0 bottom-0 w-px bg-border/20 dashed"></div>
                      <div className="absolute top-1/2 left-0 right-0 h-px bg-border/20 dashed"></div>
                      <div className="w-full h-full flex items-center justify-center">
-                        <span className="font-serif italic text-muted-foreground opacity-50">Desifriranje na mediumskiot pejzaz...</span>
+                        <span className="font-serif italic text-muted-foreground opacity-50">Дешифрирање на медиумскиот пејзаж...</span>
                      </div>
                      {/* Random Ghost Points */}
                      {[...Array(12)].map((_, i) => (
@@ -77,18 +77,18 @@ const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, onSo
         <section className="mb-12 border border-border rounded-[1.25rem] bg-card p-6 md:p-8 overflow-hidden shadow-sm">
             <div className="relative w-full aspect-square md:aspect-[16/9] border-2 border-border/50 bg-secondary/10 rounded-lg p-4 md:p-8">
                 {/* Quadrant Labels */}
-                <div className="absolute top-4 left-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-nyt-red/80 bg-background/95 px-2.5 py-1.5 rounded border border-nyt-red/10 shadow-sm z-10">Subjektivni & Senzacionalni</div>
-                <div className="absolute top-4 right-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-nyt-accent/80 bg-background/95 px-2.5 py-1.5 rounded border border-nyt-accent/10 shadow-sm z-10">Objektivni & Dinamicni</div>
-                <div className="absolute bottom-4 left-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-muted-foreground/80 bg-background/95 px-2.5 py-1.5 rounded border border-border/40 shadow-sm z-10">Tradicionalni & Staticni</div>
-                <div className="absolute bottom-4 right-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-emerald-600/80 bg-background/95 px-2.5 py-1.5 rounded border border-emerald-600/10 shadow-sm z-10">Precizni & Analiticki</div>
+                <div className="absolute top-4 left-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-nyt-red/80 bg-background/95 px-2.5 py-1.5 rounded border border-nyt-red/10 shadow-sm z-10">Субјективни и Сензационални</div>
+                <div className="absolute top-4 right-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-nyt-accent/80 bg-background/95 px-2.5 py-1.5 rounded border border-nyt-accent/10 shadow-sm z-10">Објективни и Динамични</div>
+                <div className="absolute bottom-4 left-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-muted-foreground/80 bg-background/95 px-2.5 py-1.5 rounded border border-border/40 shadow-sm z-10">Традиционални и Статични</div>
+                <div className="absolute bottom-4 right-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-emerald-600/80 bg-background/95 px-2.5 py-1.5 rounded border border-emerald-600/10 shadow-sm z-10">Прецизни и Аналитички</div>
 
                 {/* Axes */}
                 <div className="absolute left-1/2 top-0 bottom-0 w-px bg-foreground/10 dashed"></div>
                 <div className="absolute top-1/2 left-0 right-0 h-px bg-foreground/10 dashed"></div>
 
                 {/* Axis Labels */}
-                <div className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Objektivnost →</div>
-                <div className="absolute left-[-45px] top-1/2 -rotate-90 -translate-y-1/2 text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Senzacija →</div>
+                <div className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Објективност →</div>
+                <div className="absolute left-[-45px] top-1/2 -rotate-90 -translate-y-1/2 text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Сензација →</div>
 
                 {/* Plot Area */}
                 <div className="relative w-full h-full">
@@ -134,11 +134,11 @@ const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, onSo
 
                                 <div className="space-y-2 mb-4">
                                     <div className="flex justify-between text-[11px]">
-                                        <span className="opacity-70">Objektivnost:</span>
+                                        <span className="opacity-70">Објективност:</span>
                                         <span className="font-black">{(source.avg_objectivity * 100).toFixed(0)}%</span>
                                     </div>
                                     <div className="flex justify-between text-[11px]">
-                                        <span className="opacity-70">Senzacionalizam:</span>
+                                        <span className="opacity-70">Сензационализам:</span>
                                         <span className="font-black">{(source.avg_sensationalism * 100).toFixed(0)}%</span>
                                     </div>
                                 </div>
@@ -146,7 +146,7 @@ const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, onSo
                                 {source.latest_headline && (
                                     <div className="pt-3 border-t border-background/10">
                                         <p className="text-[9px] font-black uppercase tracking-widest opacity-40 mb-1 flex items-center gap-1">
-                                            <Newspaper size={8} /> POSLEDNO OBJAVENO
+                                            <Newspaper size={8} /> ПОСЛЕДНО ОБЈАВЕНО
                                         </p>
                                         <p className="font-serif italic text-xs leading-snug line-clamp-2 opacity-90">
                                             "{source.latest_headline}"
@@ -162,14 +162,14 @@ const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, onSo
             <div className="mt-12 flex flex-wrap gap-8 items-center justify-center md:justify-start border-t border-border pt-6">
                 <div className="flex items-center gap-2">
                     <div className="w-3.5 h-3.5 rounded-full bg-nyt-accent shadow-sm border border-blue-300"></div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Visoko poverenje</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Високо поверење</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 rounded-full bg-background border-2 border-border shadow-sm"></div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">sledeci izvor</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">следен извор</span>
                 </div>
                 <div className="hidden md:block ml-auto text-[9px] font-bold italic opacity-40 uppercase tracking-tighter">
-                    Podatocite se za izminatite 48 casa
+                    Податоците се за изминатите 48 часа
                 </div>
             </div>
         </section>

@@ -62,23 +62,24 @@ export default function NationalMoodIsland() {
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                     <Activity size={18} className="text-nyt-accent" />
-                    <h3 className="font-bold text-sm uppercase tracking-tighter">Nacionalen Puls</h3>
+                    <h3 className="font-bold text-sm uppercase tracking-tighter">Национален Пулс</h3>
                 </div>
                 <div className="group relative">
                     <Info size={14} className="text-muted-foreground cursor-help" />
                     <div className="absolute right-0 bottom-full mb-2 w-48 p-2 bg-black text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
-                        Sistemska analiza na emotivniot ton i objektivnosta vo mediumskiot prostor za poslednite 24 casa.
+                        Системска анализа на емотивниот тон и објективноста во медиумскиот простор за последните 24 часа.
                     </div>
                 </div>
+
             </div>
 
             <div className="space-y-6">
                 {/* Mood Meter */}
                 <div>
                     <div className="flex justify-between text-[11px] font-bold uppercase mb-2">
-                        <span className="text-red-600">Negativen</span>
-                        <span className="text-muted-foreground">Neutralen</span>
-                        <span className="text-emerald-600">Pozitiven</span>
+                        <span className="text-red-600">Негативен</span>
+                        <span className="text-muted-foreground">Неутрален</span>
+                        <span className="text-emerald-600">Позитивен</span>
                     </div>
                     <div className="relative h-2 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                         <div 
@@ -93,7 +94,7 @@ export default function NationalMoodIsland() {
                             <span className="text-sm font-serif italic capitalize">{mood.mood}</span>
                         </div>
                         <span className="text-[10px] font-mono text-muted-foreground">
-                            N={mood.sample_size} nastani
+                            N={mood.sample_size} настани
                         </span>
                     </div>
                 </div>
@@ -101,13 +102,13 @@ export default function NationalMoodIsland() {
                 {/* Sub-metrics */}
                 <div className="grid grid-cols-2 gap-4 pt-2 border-t border-zinc-100 dark:border-zinc-800">
                     <div>
-                        <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Objektivnost</p>
+                        <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Објективност</p>
                         <div className="flex items-end gap-1">
                             <span className="text-xl font-black tabular-nums">{(mood.objectivity * 100).toFixed(0)}%</span>
                         </div>
                     </div>
                     <div className="flex flex-col items-end">
-                        <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1 text-right">Trendovi (7d)</p>
+                        <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1 text-right">Трендови (7д)</p>
                         <div className="flex gap-1.5 h-12 items-end">
                             {trends.map((t, i) => (
                                 <div 
