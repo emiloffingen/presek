@@ -31,7 +31,7 @@ const { title, note, developmentsFeatured, developmentsCompact, variant = "compa
             </div>
         )
     ) : (
-        <>
+        <Fragment>
             {developmentsFeatured.length > 0 && (
                 <div class="news-feed-grid news-feed-grid-featured">
                     {developmentsFeatured.map((cluster: NewsCluster) => (
@@ -46,7 +46,7 @@ const { title, note, developmentsFeatured, developmentsCompact, variant = "compa
                     ))}
                 </div>
             )}
-        </>
+        </Fragment>
     )}
 </section>
 

@@ -190,7 +190,7 @@ const IconComponent =
     <a href={`/cluster/${leadCluster.cluster_id}`} class="lead-media lead-media-desktop" aria-hidden="true" tabindex="-1">
         <div class:list={["lead-media-frame shadow-editorial", { "lead-media-frame-fallback": leadVisual?.isWeak }]}>
             {leadVisual?.proxiedUrl && !leadVisual.isWeak ? (
-                <>
+                                <Fragment>
                     <img
                         src={leadVisual.proxiedUrl}
                         srcset={`${leadVisual.proxiedUrl.replace('w=1200', 'w=600')} 600w, ${leadVisual.proxiedUrl} 1200w`}
@@ -216,7 +216,7 @@ const IconComponent =
                             <Newspaper size={48} class="text-white/10" />
                         </div>
                     </div>
-                </>
+                </Fragment>
             ) : (
                 <div class="lead-media-placeholder" style={`--placeholder-bg: ${tintColor};`}>
                     <div class="lead-media-placeholder-bg-text" set:html={sanitizeHtml(leadTitle)}></div>
