@@ -650,14 +650,14 @@ async def proxy_image(
         log.warning(f"[proxy] Serving fallback for {url or 'unknown'}: {reason}")
         
         # Add diagnostic information to the SVG for debugging
-        diagnostic_svg = svg.replace("</svg>", f"
+        diagnostic_svg = svg.replace("</svg>", f"""
     <text x="40" y="430" font-family="sans-serif" font-size="12" fill="white" opacity="0.7">
         Proxy Fallback: {reason}
     </text>
     <text x="40" y="445" font-family="sans-serif" font-size="10" fill="white" opacity="0.7">
         URL: {url[:50] if url else 'unknown'}...
     </text>
-</svg>")
+</svg>""")
         
         return Response(
             diagnostic_svg,
