@@ -93,7 +93,7 @@ celery_app.conf.update(
     task_default_queue="celery",
     # Memory protection: restart workers after processing N tasks or M memory
     worker_max_memory_per_child=2_000_000,  # 2GB memory limit per worker process
-    worker_max_tasks_per_child=100,  # Restart worker after 100 tasks to prevent memory leaks
+    worker_max_tasks_per_child=1000,  # Increased from 100 to 1000 to minimize model reload overhead
     task_default_rate_limit="100/m",  # Global rate limit: 100 tasks per minute
     task_queues=(
         Queue("celery"),
@@ -117,15 +117,15 @@ celery_app.conf.update(
     beat_schedule={
         "ingest-regular-feeds": {
             "task": "tasks.ingestion_task.run_ingestion",
-            "schedule": 120.0,  # Every 2 minutes
+            "schedule": 600.0,  # Increased from 2m to 10m
         },
         "auto-summarize-clusters": {
             "task": "tasks.intelligence.auto_summarize_task",
-            "schedule": 180.0,  # Every 3 minutes
+            "schedule": 900.0,  # Increased from 3m to 15m
         },
         "recluster-recent-articles": {
             "task": "tasks.intelligence.recluster_recent_articles_task",
-            "schedule": 300.0,  # Every 5 minutes
+            "schedule": 1800.0,  # Increased from 5m to 30m
         },
         "prune-database": {
             "task": "tasks.maintenance.run_prune_db",
@@ -159,11 +159,11 @@ celery_app.conf.update(
         },
         "send-profile-breaking-alerts": {
             "task": "tasks.delivery.send_profile_breaking_alerts_task",
-            "schedule": 180.0,
+            "schedule": 600.0, # Increased from 3m to 10m
         },
         "backfill-cover-art": {
             "task": "tasks.intelligence.backfill_cover_art_task",
-            "schedule": 1800.0,  # Every 30 minutes
+            "schedule": 3600.0,  # Increased from 30m to 1h
         },
         "auto-repair-sources": {
             "task": "tasks.ingestion_task.auto_repair_sources_task",
@@ -192,7 +192,7 @@ celery_app.conf.update(
     # Disable result persistence for tasks that don't need it (reduces memory/RPC overhead)
     result_expires=3600,  # Results expire after 1 hour
     # Concurrent task execution limits per worker
-    worker_concurrency=4,  # Increased from 2 to allow more parallel processing
+    worker_concurrency=2,  # Reduced from 4 to 2 to minimize CPU contention on 2-core system
 )
 
 # Setup logging for Celery workers
