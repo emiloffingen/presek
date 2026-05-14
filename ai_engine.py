@@ -184,13 +184,15 @@ class AIProvider(ABC):
         topic: str = None,
         task_type: str = "default",
     ) -> str | None:
-        pass
+        log.debug(f"Abstract method call() not implemented for {self.__class__.__name__}")
+        return None
 
     @abstractmethod
     async def stream_call(
         self, prompt: str, system: str, max_tokens: int
     ) -> AsyncGenerator[str, None]:
-        pass
+        log.debug(f"Abstract method stream_call() not implemented for {self.__class__.__name__}")
+        yield ""
 
 
 # --- Provider Registry ---
