@@ -78,6 +78,16 @@ async def get_admin_dashboard(authorized: bool = Depends(verify_admin)):
     }
 
 
+@router.post("/admin/tasks/trigger-newsletter")
+async def trigger_newsletter(authorized: bool = Depends(verify_admin)):
+    """Manually trigger the newsletter delivery task."""
+    from tasks.delivery import send_newsletter_task
+
+    # We use delay() to run it in background via Celery
+    send_newsletter_task.delay()
+    return {"status": "success", "message": "Newsletter delivery triggered in background."}
+
+
 @router.post("/admin/tasks/retry-failed")
 async def retry_failed_tasks(authorized: bool = Depends(verify_admin)):
     """Re-dispatch failed tasks to Celery and clear records."""

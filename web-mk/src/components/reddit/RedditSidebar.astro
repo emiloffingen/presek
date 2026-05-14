@@ -19,19 +19,19 @@ function formatNumber(num: number): string {
 
 // Popular "subreddits" (topics) based on focus entities
 const popularSubreddits = [
-    { name: 'r/Srbija', members: '2.5M', online: '8.2k', description: 'Nova i diskusije o Srbiji' },
-    { name: 'r/Politika', members: '1.8M', online: '5.1k', description: 'Politički događaji i analize' },
-    { name: 'r/Ekonomija', members: '1.2M', online: '3.4k', description: 'Ekonomska kreta i vesti' },
-    { name: 'r/Sport', members: '2.1M', online: '6.8k', description: 'Sportski događaji i rezultati' },
-    { name: 'r/Kultura', members: '980k', online: '2.3k', description: 'Kultura, umetnost i društvo' },
-    { name: 'r/Tehnologija', members: '1.5M', online: '4.2k', description: 'Tehnološki napredak i inovacije' },
+    { name: 'r/Makedonija', members: '2.5M', online: '8.2k', description: 'Новини и дискусии за Македонија' },
+    { name: 'r/Politika', members: '1.8M', online: '5.1k', description: 'Политички настани и анализи' },
+    { name: 'r/Ekonomija', members: '1.2M', online: '3.4k', description: 'Економски движења и вести' },
+    { name: 'r/Sport', members: '2.1M', online: '6.8k', description: 'Спортски настани и резултати' },
+    { name: 'r/Kultura', members: '980k', online: '2.3k', description: 'Култура, уметност и општество' },
+    { name: 'r/Tehnologija', members: '1.5M', online: '4.2k', description: 'Технолошки напредок и иновации' },
 ];
 
 const rules = [
-    'Budi priiključan i poštuj druge',
-    'Nemoj objavljuju lažne vesti',
-    'Nemoj spamovati',
-    'Samo relevantan sadržaj',
+    'Биди вклучен и почитувай други',
+    'Не објавувай лажни вести',
+    'Не спамирај',
+    'Само релевантна содржина',
 ];
 
 const subredditInfo = {
@@ -47,13 +47,13 @@ const subredditInfo = {
     <!-- Create Post Button (placeholder) -->
     <div class="mb-6">
         <button class="w-full reddit-auth-button bg-[var(--surface-soft)] text-foreground hover:bg-[var(--secondary)]">
-            + Kreiraj objavu
+            + Креирај објава
         </button>
     </div>
 
     <!-- About Community -->
     <div class="reddit-sidebar-section">
-        <h3 class="reddit-sidebar-title">About Community</h3>
+        <h3 class="reddit-sidebar-title">За заедницата</h3>
         <div class="space-y-3">
             <div class="flex items-start gap-3">
                 <div class="w-10 h-10 bg-[var(--primary)] rounded-full flex items-center justify-center shrink-0">

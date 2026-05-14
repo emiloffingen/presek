@@ -326,13 +326,13 @@ function getBriefingSnippet(content: string) {
                             <div class="flex items-center gap-3">
                                 <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mr-2 shrink-0">Истражи:</span>
                                 {[
-                                    { id: 'rs', label: 'Србија', href: '/?category=' + encodeURIComponent('Srbija') },
+                                    { id: 'mk', label: 'Македонија', href: '/?category=' + encodeURIComponent('Makedonija') },
                                     { id: 'pol', label: 'Политика', href: '/?topic=' + encodeURIComponent('Politika') },
                                     { id: 'eco', label: 'Економија', href: '/?topic=' + encodeURIComponent('Ekonomija') },
                                     { id: 'spo', label: 'Спорт', href: '/?topic=' + encodeURIComponent('Sport') },
                                     { id: 'cul', label: 'Култура', href: '/?topic=' + encodeURIComponent('Kultura') },
                                     { id: 'tech', label: 'Технологија', href: '/?topic=' + encodeURIComponent('Tehnologija') },
-                                    { id: 'bg', label: 'Белград', href: '/?subcategory=' + encodeURIComponent('Beograd') }
+                                    { id: 'sk', label: 'Скопје', href: '/?subcategory=' + encodeURIComponent('Скопје') }
                                 ].map(pill => (
                                     <a href={pill.href} class="quick-pill shrink-0" data-track-pill={pill.id}>
                                         {pill.label}

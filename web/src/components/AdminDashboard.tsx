@@ -10,7 +10,8 @@ import {
   Zap, 
   CheckCircle2, 
   Terminal,
-  ChevronRight
+  ChevronRight,
+  Mail
 } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
 
@@ -45,6 +46,22 @@ export default function AdminDashboard() {
       setError('Greska pri povrzuvanje so API-to.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const triggerNewsletter = async () => {
+    setActionLoading(true);
+    try {
+      const res = await fetch(`${apiBaseUrl()}/admin/tasks/trigger-newsletter`, {
+        method: 'POST',
+        headers: { 'X-Admin-Token': token }
+      });
+      const data = await res.json();
+      alert(data.message || 'Newsletter triggered.');
+    } catch (e) {
+      alert('Greska pri aktiviranje na biltenot.');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -242,6 +259,32 @@ export default function AdminDashboard() {
                 <p className="text-[10px] font-bold uppercase tracking-widest">No Active Failures</p>
               </div>
             )}
+          </div>
+
+          <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-6">
+            <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 mb-6">
+              <RefreshCcw size={14} className="text-zinc-500" /> MAINTENANCE
+            </h3>
+            <div className="space-y-4">
+              <button 
+                onClick={triggerNewsletter}
+                disabled={actionLoading}
+                className="w-full flex items-center justify-center gap-2 bg-nyt-accent hover:bg-nyt-accent/80 text-black text-[10px] font-black py-3 rounded-lg transition-all"
+              >
+                <Mail size={12} className={actionLoading ? 'animate-spin' : ''} />
+                TRIGGER NEWSLETTER
+              </button>
+              {data.tasks.failed_recent.length > 0 && (
+                <button 
+                  onClick={clearFailedTasks}
+                  disabled={actionLoading}
+                  className="w-full flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white text-[10px] font-bold py-3 rounded-lg transition-all"
+                >
+                  <RefreshCcw size={12} className={actionLoading ? 'animate-spin' : ''} />
+                  RETRY FAILED TASKS
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="bg-nyt-accent/5 border border-nyt-accent/20 rounded-2xl p-6">

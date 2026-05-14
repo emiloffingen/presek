@@ -1894,6 +1894,15 @@ def send_daily_digest_task():
 
 
 @celery_app.task
+def generate_all_daily_briefs_task():
+    """Generate daily briefings for all supported languages."""
+    # Generate Serbian briefing
+    generate_daily_brief_task.apply_async(args=(0, "sr"))
+    # Generate Macedonian briefing
+    generate_daily_brief_task.apply_async(args=(0, "mk"))
+
+
+@celery_app.task
 def send_profile_briefings_task():
     """Send scheduled morning briefings for synced delivery subscriptions."""
     now = datetime.datetime.now(datetime.timezone.utc)
@@ -1969,7 +1978,8 @@ def send_profile_briefings_task():
                 message_with_link,
                 tags="newspaper,sunrise",
                 click_url=click_url,
-            ):                db.execute(
+            ):
+                db.execute(
                     "UPDATE synced_delivery_subscriptions SET last_morning_sent_at = NOW(), updated_at = NOW() WHERE sync_token = %s",
                     (row["sync_token"],),
                     fetch=False,

@@ -56,7 +56,7 @@ const SEARCH_ACTIONS: SearchAction[] = [
 
 const CATEGORIES = [
   { id: 'all', label: 'СИТЕ ТЕМИ', color: 'bg-nyt-accent' },
-  { id: 'Srbija', label: 'Србија', color: 'bg-nyt-red' },
+  { id: 'Makedonija', label: 'Македонија', color: 'bg-nyt-red' },
   { id: 'Politika', label: 'Политика', color: 'bg-blue-600' },
   { id: 'Ekonomija', label: 'Економија', color: 'bg-emerald-600' },
   { id: 'Sport', label: 'Спорт', color: 'bg-orange-500' },

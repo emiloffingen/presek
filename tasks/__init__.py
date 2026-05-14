@@ -21,6 +21,7 @@ from tasks.intelligence import (
 )
 from tasks.delivery import (
     generate_daily_brief_task,
+    generate_all_daily_briefs_task,
     send_daily_digest_task,
     send_profile_briefings_task,
     send_profile_weekly_digests_task,

@@ -157,7 +157,7 @@ const articleRows = (cluster?.articles || []).map((a: Article, idx: number, arr:
 const relatedClusters = cluster?.related || [];
 const filteredRelated = relatedClusters.filter((c: { cluster_id: string }) => c.cluster_id !== id).slice(0, 5);
 
-const adjacentTopic = cluster?.topics?.find((t: string) => t !== 'Srbija') || cluster?.topics?.[0];
+const adjacentTopic = cluster?.topics?.find((t: string) => t !== 'Makedonija') || cluster?.topics?.[0];
 
 const canonicalUrl = `https://presek.live/cluster/${id}`;
 const shareDescription = synthesisItems[0]?.content || mainArticle?.description || '';
