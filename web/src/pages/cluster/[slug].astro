@@ -287,7 +287,7 @@ const articleSchema = cluster ? {
 
 				{/* 2. HERO GRID (Visual) */}
 				<div class="hero-full mb-16">
-					<HeroVisual 
+					<HeroVisual
 						leadVisual={leadVisual}
 						dominantColor={cluster.dominant_color || undefined}
 						displayHeadline={displayHeadline}
@@ -296,8 +296,13 @@ const articleSchema = cluster ? {
 						sourcePreview={sourcePreview}
 						articlesCount={cluster.articles?.length || 0}
 					/>
+				{mainArticle?.text && (
+				<div class="mt-6 p-6 bg-secondary/10 border border-border/40 rounded-lg">
+				<h4 class="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">Izvorni tekst ({mainArticle.source})</h4>
+				<p class="font-nyt-body text-sm text-foreground/80 leading-relaxed italic">{mainArticle.text.slice(0, 500)}...</p>
 				</div>
-<div class="editorial-grid">
+				)}
+				</div><div class="editorial-grid">
 	{/* 3. MAIN COLUMN */}
 	<div class="editorial-main-col">
 {/* EXECUTIVE SUMMARY / BRIFING - Hidden when we have a full narrative centerpiece */}
