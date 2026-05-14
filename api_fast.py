@@ -244,12 +244,6 @@ async def image_proxy(
 
     return await proxy_image(url=url, w=w, cid=cid, t=t, cat=cat)
 
-# Apply rate limiting to the proxy endpoint
-if _rate_limiter_enabled:
-    from slowapi import Limiter
-    limiter = Limiter(key_func=lambda r: r.client.host if r.client else None)
-    image_proxy = limiter.limit("100/minute")(image_proxy)
-
 
 # Legacy/Helper endpoints
 @app.get("/favicon.ico")
