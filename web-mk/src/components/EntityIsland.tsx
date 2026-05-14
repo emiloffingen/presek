@@ -54,7 +54,7 @@ interface EntityPayload {
 function formatDate(value?: string) {
   if (!value) return 'Nepoznato';
   try {
-    return new Date(value).toLocaleDateString('mk-RS', {
+    return new Date(value).toLocaleDateString('mk-MK', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
@@ -70,8 +70,8 @@ function formatRelative(value?: string) {
   const date = new Date(value);
   const diff = now.getTime() - date.getTime();
   const days = Math.max(0, Math.floor(diff / 86400000));
-  if (days === 0) return 'danas';
-  if (days === 1) return 'juce';
+  if (days === 0) return 'denes';
+  if (days === 1) return 'vchera';
   if (days < 7) return `pred ${days} dena`;
   return formatDate(value);
 }
@@ -89,7 +89,7 @@ function buildTimeline(history: SentimentPoint[]) {
     const date = new Date(item.day);
     return {
       key: item.day,
-      label: date.toLocaleDateString('mk-RS', { day: 'numeric', month: 'short' }),
+      label: date.toLocaleDateString('mk-MK', { day: 'numeric', month: 'short' }),
       count: item.volume,
       percent: Math.max(8, Math.round((item.volume / max) * 100)),
       sentiment: item.avg_sentiment,

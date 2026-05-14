@@ -256,7 +256,7 @@ export default function BriefingDeliveryIsland({
           <span>{permissionLabel(prefs.browserPermission)}</span>
         </p>
         <p className="delivery-status-copy">
-          Dostavata e povrzana so temite i izvorite koi gi sledite vo ovoj prebaruvac. Zapocnete so lokalni izvestai i verzija za spodeluvanje, a potoa dodajte sinhronizirana dostava pomegu uredite.
+          Dostavata e povrzana so temite i izvorite koi gi sledite vo ovoj prebaruvac. Zapocnete so lokalni izvestai i verzija za spodeluvanje, a potoa dodajte sinhronizirana dostava pomegju uredite.
         </p>
       </div>
 

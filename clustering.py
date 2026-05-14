@@ -1,7 +1,78 @@
 """
 clustering.py — Advanced Hybrid News Clustering for Presek
-Combines Title Fingerprinting, Semantic (Vector) Search, and Weighted TF-IDF.
+
+OVERVIEW:
+---------
+Combines Title Fingerprinting, Semantic (Vector) Search, and Weighted TF-IDF
+to group related news articles while maintaining topic separation.
+
+KEY DESIGN DECISIONS:
+--------------------
+
+1. HYBRID APPROACH:
+   - Uses both semantic similarity (cosine distance) and structural similarity
+   - Balances precision (avoiding false merges) with recall (capturing follow-ups)
+   - Semantic vectors capture meaning, while TF-IDF preserves keyword importance
+
+2. TIME-SENSITIVE CLUSTERING:
+   - Recent articles (0-6h) cluster more aggressively to capture breaking news
+   - Older articles (6-24h) require higher similarity to prevent over-merging
+   - Very old articles (>24h) rarely merge to avoid topic drift
+
+3. TOPIC BOUNDARIES:
+   - Different categories (Sport vs Politics) never cluster, even with similar titles
+   - Topic bridging allows related subtopics (e.g., "Economy" and "Politics") to cluster
+   - Shared entities (people, organizations) help bridge related topics
+
+4. SIZE LIMITS:
+   - Maximum 40 articles per cluster to prevent "mega-clusters"
+   - New articles prefer smaller, more recent clusters over large, old ones
+   - Prevents performance degradation and maintains topic focus
+
+5. FOLLOW-UP DETECTION:
+   - Same source + similar title + recent timestamp = likely follow-up
+   - Different source + similar title + recent timestamp = independent coverage
+   - Uses phrase overlap to detect story evolution vs. new stories
+
+6. LANGUAGE HANDLING:
+   - Serbian stemmer handles morphological variations
+   - Stopword removal focuses on meaningful terms
+   - Mixed script (Cyrillic/Latin) handled via transliteration
+
+ALGORITHM FLOW:
+--------------
+1. Preprocess titles (stemming, stopword removal, normalization)
+2. Convert to TF-IDF vectors with semantic weighting
+3. Calculate cosine similarity between new article and recent clusters
+4. Apply time-based decay to similarity scores
+5. Check category/topic compatibility
+6. Apply size limits and source rules
+7. Assign to best matching cluster or create new one
+
+PERFORMANCE CONSIDERATIONS:
+--------------------------
+- O(n) complexity where n = number of recent articles (typically <100)
+- Vector operations optimized with Counter and math functions
+- Database queries minimized through caching and batch operations
+- Stemming cache prevents redundant computations
+
+ERROR HANDLING:
+---------------
+- Empty/malformed titles create new clusters (fail-safe)
+- Database errors logged but don't crash clustering
+- Invalid timestamps treated as "old" (conservative merging)
+- Unicode/encoding issues handled gracefully
+
+METRICS & MONITORING:
+--------------------
+Key metrics to watch:
+- Cluster size distribution (should be normally distributed, max ~40)
+- Merge rate (percentage of articles that join existing clusters)
+- Category purity (articles in same cluster should have same category)
+- Temporal coherence (cluster articles should be close in time)
+
 """
+=======
 
 import math
 import uuid

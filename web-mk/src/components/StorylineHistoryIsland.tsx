@@ -42,7 +42,7 @@ const StorylineHistoryIsland: React.FC<{ clusterId: string; apiUrl: string }> = 
                             <div className="md:w-32 flex-shrink-0 pt-1">
                                 <span className="font-sans text-[10px] font-black uppercase text-muted-foreground flex items-center gap-1">
                                     <Calendar size={10} />
-                                    {new Date(item.first_seen).toLocaleDateString('mk-RS', { day: 'numeric', month: 'short' })}
+                                    {new Date(item.first_seen).toLocaleDateString('mk-MK', { day: 'numeric', month: 'short' })}
                                 </span>
                             </div>
                             

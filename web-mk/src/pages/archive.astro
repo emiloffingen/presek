@@ -59,7 +59,7 @@ const buildFilterHref = (kind: 'source' | 'topic' | 'q', value: string) => {
   return `/archive?${params.toString()}`;
 };
 
-const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-RS', { day: 'numeric', month: 'long', year: 'numeric' });
+const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', { day: 'numeric', month: 'long', year: 'numeric' });
 
 // More robust splitting to handle different bullet characters or spacing
 const briefingItems = briefingData.briefing ? briefingData.briefing.split(/\s*[•·]\s*/) : [];
@@ -96,7 +96,7 @@ function formatBriefingItem(item: string) {
             </div>
             <div class="masthead-data-deck grid grid-cols-3 gap-0 border border-border/60 bg-secondary/10 overflow-hidden rounded-sm w-full md:w-auto min-w-[320px]">
                 <div class="deck-stat p-6 border-r border-border/60 text-center">
-                    <span class="block text-2xl font-black tabular-nums">{archive.total.toLocaleString('mk-RS')}</span>
+                    <span class="block text-2xl font-black tabular-nums">{archive.total.toLocaleString('mk-MK')}</span>
                     <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Objavi</span>
                 </div>
                 <div class="deck-stat p-6 border-r border-border/60 text-center">
@@ -228,7 +228,7 @@ function formatBriefingItem(item: string) {
                     <div class="py-32 text-center border-2 border-dashed border-border rounded-2xl">
                         <h2 class="font-serif text-3xl font-black italic mb-4">Nema pronajdeni izdanija.</h2>
                         <p class="font-nyt-body text-muted-foreground">Probajte so drug datum ili prilagodete im filtrite za prebaruvanje.</p>
-                        <a href="/archive" class="mt-8 inline-block px-8 py-3 bg-foreground text-background font-sans text-[10px] font-black uppercase tracking-widest hover:bg-nyt-accent transition-all">Vrati se danas</a>
+                        <a href="/archive" class="mt-8 inline-block px-8 py-3 bg-foreground text-background font-sans text-[10px] font-black uppercase tracking-widest hover:bg-nyt-accent transition-all">Vrati se denes</a>
                     </div>
                 )}
             </div>
@@ -237,7 +237,7 @@ function formatBriefingItem(item: string) {
         <aside class="broadsheet-rail pl-4">
             <div class="rail-nav-block mb-12">
                 <a href="/archive" class="group flex items-center justify-between p-4 bg-foreground text-background rounded-sm transition-all hover:bg-nyt-accent shadow-lg shadow-black/5 hover:-translate-y-1">
-                    <span class="font-sans text-[11px] font-black uppercase tracking-widest">VRATI SE danas</span>
+                    <span class="font-sans text-[11px] font-black uppercase tracking-widest">VRATI SE denes</span>
                     <ChevronRight size={16} />
                 </a>
             </div>

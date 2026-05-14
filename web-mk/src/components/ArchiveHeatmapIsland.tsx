@@ -86,7 +86,7 @@ export default function ArchiveHeatmapIsland({ selectedDate }: Props) {
 
   const getLabel = (dateStr: string) => {
     const d = new Date(dateStr);
-    return d.toLocaleDateString('mk-RS', { month: 'short', day: 'numeric' });
+    return d.toLocaleDateString('mk-MK', { month: 'short', day: 'numeric' });
   };
 
   return (

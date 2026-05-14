@@ -74,7 +74,7 @@ export default function ClusterHistoryIsland({ clusterId }: { clusterId: string 
                     <div className="flex items-center gap-4">
                         <Clock size={12} className="text-muted-foreground/60" />
                         <span className="text-[11px] font-black tabular-nums text-foreground">
-                            {new Date(item.created_at).toLocaleString('mk-RS', { 
+                            {new Date(item.created_at).toLocaleString('mk-MK', { 
                                 day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' 
                             })}
                         </span>

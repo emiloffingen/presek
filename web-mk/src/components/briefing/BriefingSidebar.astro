@@ -23,9 +23,9 @@ function getTimeStr(dateStr: string) {
 
         if (diffMins < 1) return 'JUST NOW';
         if (diffMins < 60) return `PRE ${diffMins} MIN`;
-        if (diffHours < 24) return `PRE ${diffHours} ČASA`;
+        if (diffHours < 24) return `PRE ${diffHours} CASA`;
         
-        return date.toLocaleDateString('sr-RS', { day: 'numeric', month: 'short' }).toUpperCase();
+        return date.toLocaleDateString('mk-MK', { day: 'numeric', month: 'short' }).toUpperCase();
     } catch {
         return '';
     }
@@ -49,7 +49,7 @@ function getTimeStr(dateStr: string) {
 							href={`/briefing?date=${d.day}`} 
 							class={`text-xs font-bold hover:text-nyt-accent transition-colors block py-1 ${briefing?.date === d.day ? 'text-nyt-accent' : 'text-muted-foreground'}`}
 						>
-							● {new Date(d.day).toLocaleDateString('mk-RS', { day: 'numeric', month: 'short' })}
+							● {new Date(d.day).toLocaleDateString('mk-MK', { day: 'numeric', month: 'short' })}
 						</a>
 					))}
 				</div>
@@ -60,12 +60,12 @@ function getTimeStr(dateStr: string) {
 			<section class="sidebar-module">
 				<div class="flex items-center gap-2 mb-4 pb-2 border-b border-border">
 					<Activity size={14} className="text-emerald-600" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">SISTEMSKA RAVNOTEŽA</h4>
+					<h4 class="text-[10px] font-black uppercase tracking-widest">SISTEMSKA RAMNOTEZA</h4>
 				</div>
 				<div class="space-y-6">
 					<div>
 						<div class="flex justify-between text-[10px] font-bold uppercase mb-2">
-							<span>Medijski pluralizam</span>
+							<span>Mediumski pluralizam</span>
 							<span>{stats.intelligence.pluralism.pluralism_pct}%</span>
 						</div>
 						<div class="h-1 bg-secondary rounded-full overflow-hidden">
@@ -89,7 +89,7 @@ function getTimeStr(dateStr: string) {
 			<section class="sidebar-module">
 				<div class="flex items-center gap-2 mb-4 pb-2 border-b border-border">
 					<Users size={14} className="text-foreground" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">KLJUČNI AKTERI danas</h4>
+					<h4 class="text-[10px] font-black uppercase tracking-widest">KLJUCNI AKTERI denes</h4>
 				</div>
 				<div class="flex flex-col gap-3">
 					{briefing.subjects.map((subject: any) => (
@@ -122,7 +122,7 @@ function getTimeStr(dateStr: string) {
 			<section class="sidebar-module">
 				<div class="flex items-center gap-2 mb-4 pb-2 border-b border-border">
 					<Zap size={14} className="text-nyt-accent" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">AKTUELNO SAD</h4>
+					<h4 class="text-[10px] font-black uppercase tracking-widest">AKTUELNO SEGA</h4>
 				</div>
 				<a href={`/cluster/${leadCluster.cluster_id}`} class="group block">
 					<p class="font-serif font-bold text-sm leading-snug group-hover:text-nyt-accent transition-colors">

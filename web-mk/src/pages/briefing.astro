@@ -45,13 +45,13 @@ try {
 const formattedBriefing = briefingData?.content ? formatBriefing(briefingData.content) : "";
 
 const displayDate = briefingData?.date 
-    ? new Date(briefingData.date).toLocaleDateString('sr-RS', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
+    ? new Date(briefingData.date).toLocaleDateString('mk-MK', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
     })
-    : "";
+    : 'Денешно издание';
 ---
 
 <Layout title="Urednički brifing — Presek">

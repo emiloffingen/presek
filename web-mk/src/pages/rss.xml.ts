@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { apiBaseUrl } from '../lib/apiBase';
 
-const SITE_URL = (import.meta.env.PUBLIC_SITE_URL || 'https://presek.live').replace(/\/+$/, '');
+const SITE_URL = (import.meta.env.PUBLIC_SITE_URL || 'https://presek.mk').replace(/\/+$/, '');
 const API_URL = apiBaseUrl();
 
 function escapeXml(str: string): string {
@@ -24,8 +24,8 @@ export const GET: APIRoute = async () => {
     const now = new Date().toUTCString();
 
     try {
-        // Fetch Serbian news
-        const res = await fetch(`${API_URL}/news?page_size=50&page=0`);
+        // Fetch Macedonian news
+        const res = await fetch(`${API_URL}/news?page_size=50&page=0&country=MK`);
         if (res.ok) {
             const data = await res.json();
             if (data && Array.isArray(data.clusters)) {
@@ -36,10 +36,10 @@ export const GET: APIRoute = async () => {
         console.error("RSS fetch error:", e);
     }
 
-    // Build RSS feed items - filter to only RS articles
+    // Build RSS feed items - filter to only MK articles
     const items = clusters
         .filter(c => c.articles && c.articles.length > 0)
-        .flatMap(cluster => cluster.articles.filter((a: any) => a.country === 'RS'))
+        .flatMap(cluster => cluster.articles.filter((a: any) => a.country === 'MK'))
         .filter(a => a)
         .map(article => {
             const cluster = clusters.find(c => c.cluster_id === article.cluster_id) || {};
@@ -66,14 +66,14 @@ export const GET: APIRoute = async () => {
      xmlns:dc="http://purl.org/dc/elements/1.1/"
      xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title><![CDATA[Presek - Srbija]]></title>
+    <title><![CDATA[Presek - Makedonija]]></title>
     <link>${escapeXml(SITE_URL)}</link>
-    <description><![CDATA[Presek: Najnovije vesti iz Srbije i regiona. Nezavisno, balansirano, dubinsko.]]></description>
-    <language>sr-RS</language>
+    <description><![CDATA[Presek: Najnovite vesti od Makedonija. Nezavisno, balansirano, dlabinsko.]]></description>
+    <language>mk-MK</language>
     <pubDate>${now}</pubDate>
     <lastBuildDate>${now}</lastBuildDate>
-    <managingEditor>editor@presek.live</managingEditor>
-    <webMaster>webmaster@presek.live</webMaster>
+    <managingEditor>editor@presek.mk</managingEditor>
+    <webMaster>webmaster@presek.mk</webMaster>
     <atom:link href="${escapeXml(SITE_URL)}/rss.xml" rel="self" type="application/rss+xml" />
 ${items}
   </channel>

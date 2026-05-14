@@ -25,7 +25,7 @@ try {
     cluster = result;
 } catch (err) {
     console.error('Error fetching cluster:', err);
-    error = 'Greška pri učitavanju vest';
+    error = 'Greska pri ucituvaweto na vesta';
     Astro.response.status = 500;
 }
 
@@ -72,7 +72,7 @@ const subredditName = cluster ? getSubredditName(cluster) : 'r/PRESEK';
 
 <RedditLayout
     title={`${article.title || 'Vest'} | ${subredditName} - PRESEK`}
-    description={article.summary || article.description || 'Pregledaj vest na PRESEK-u'}
+    description={article.summary || article.description || 'Pregledaj ja vesta na PRESEK'}
 >
     <!-- Breadcrumb -->
     <nav class="flex items-center gap-2 text-sm text-[var(--muted-foreground)] mb-4">
@@ -86,9 +86,9 @@ const subredditName = cluster ? getSubredditName(cluster) : 'r/PRESEK';
     <!-- Post Detail -->
     {error && (
         <div class="bg-[var(--surface-soft)] border border-[var(--border)] rounded-md p-8 text-center">
-            <h2 class="text-xl font-bold mb-4">Greška</h2>
+            <h2 class="text-xl font-bold mb-4">Greska</h2>
             <p>{error}</p>
-            <a href="/" class="reddit-auth-button mt-4 inline-block">Vrati se na početnu</a>
+            <a href="/" class="reddit-auth-button mt-4 inline-block">Vrati se na pocetnata</a>
         </div>
     )}
 
@@ -271,7 +271,7 @@ const subredditName = cluster ? getSubredditName(cluster) : 'r/PRESEK';
                                 <span class="reddit-username text-sm">u/presek_user</span>
                                 <span class="text-[var(--muted-foreground)] text-xs">• 2 hours ago</span>
                             </div>
-                            <p class="text-sm text-[var(--foreground)]">Ovo je veoma zanimljiva vest. Hvala na deljenju!</p>
+                            <p class="text-sm text-[var(--foreground)]">Ova e mnogu zanimliva vest. Fala za spodeluvanjeto!</p>
                             <div class="flex items-center gap-3 mt-1 text-xs">
                                 <button class="reddit-action-button px-2 py-0.5 text-xs">Reply</button>
                                 <button class="reddit-action-button px-2 py-0.5 text-xs">Share</button>
@@ -292,7 +292,7 @@ const subredditName = cluster ? getSubredditName(cluster) : 'r/PRESEK';
                                 <span class="reddit-username text-sm">u/news_reader</span>
                                 <span class="text-[var(--muted-foreground)] text-xs">• 1 hour ago</span>
                             </div>
-                            <p class="text-sm text-[var(--foreground)]">Slažem se. Važno je biti informisan.</p>
+                            <p class="text-sm text-[var(--foreground)]">Se soglasuvam. Vazno e da se bide informiran.</p>
                             <div class="flex items-center gap-3 mt-1 text-xs">
                                 <button class="reddit-action-button px-2 py-0.5 text-xs">Reply</button>
                                 <button class="reddit-action-button px-2 py-0.5 text-xs">Share</button>

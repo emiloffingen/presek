@@ -39,10 +39,10 @@ function getTimeStr(dateStr?: string) {
 
     if (diffMins < 1) return 'JUST NOW';
     if (diffMins < 60) return `PRE ${diffMins} MIN`;
-    
-    return date.toLocaleTimeString('sr-RS', { 
-      hour: '2-digit', 
-      minute: '2-digit',
+    return date.toLocaleTimeString('mk-MK', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
       timeZone: 'Europe/Belgrade' 
     });
   } catch {

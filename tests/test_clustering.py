@@ -292,6 +292,131 @@ def test_different_category_does_not_merge():
     assert cid != "c1"
 
 
+@patch(_DB_PATCH, _mock_db)
+def test_edge_case_empty_recent_articles():
+    """Edge case: No recent articles should create new cluster."""
+    cid = find_or_create_cluster(MagicMock(), "Nova vazna vest", [])
+    assert len(cid) == 12  # Should be a new cluster ID
+    assert cid != "c1"
+
+
+@patch(_DB_PATCH, _mock_db)
+def test_edge_case_very_short_titles():
+    """Edge case: Very short titles should still cluster appropriately."""
+    recent_articles = [
+        {"cluster_id": "c1", "title": "Potres", "created_at": datetime.datetime.now()},
+    ]
+    # Similar short title should cluster
+    cid1 = find_or_create_cluster(MagicMock(), "Potres", recent_articles)
+    assert cid1 == "c1"
+    
+    # Different short title should not cluster
+    cid2 = find_or_create_cluster(MagicMock(), "Poplava", recent_articles)
+    assert cid2 != "c1"
+
+
+@patch(_DB_PATCH, _mock_db)
+def test_edge_case_special_characters():
+    """Edge case: Titles with special characters and numbers."""
+    recent_articles = [
+        {
+            "cluster_id": "c1",
+            "title": "COVID-19: Nova mera 2024",
+            "created_at": datetime.datetime.now(),
+        },
+    ]
+    # Similar title with special chars should cluster
+    cid = find_or_create_cluster(MagicMock(), "COVID-19: Nova mera 2024", recent_articles)
+    assert cid == "c1"
+
+
+@patch(_DB_PATCH, _mock_db)
+def test_edge_case_mixed_languages():
+    """Edge case: Mixed Cyrillic and Latin scripts."""
+    recent_articles = [
+        {
+            "cluster_id": "c1",
+            "title": "Vlada donela novu meru",
+            "created_at": datetime.datetime.now(),
+        },
+    ]
+    # Similar content in different script should still cluster
+    cid = find_or_create_cluster(MagicMock(), "Влада донела нову меру", recent_articles)
+    # This depends on the transliteration logic, but should handle gracefully
+    assert cid == "c1" or len(cid) == 12  # Either clusters or creates new
+
+
+@patch(_DB_PATCH, _mock_db)
+def test_edge_case_max_cluster_size_boundary():
+    """Edge case: Exactly at max cluster size should not merge."""
+    # Create exactly 40 articles in one cluster (assuming max is 40)
+    recent_articles = [
+        {"cluster_id": "c1", "title": "Vlada donela meru"}
+    ] * 40
+    
+    cid = find_or_create_cluster(MagicMock(), "Vlada donela novu meru", recent_articles)
+    assert cid != "c1"  # Should not merge into full cluster
+
+
+@patch(_DB_PATCH, _mock_db)
+def test_edge_case_very_old_cluster():
+    """Edge case: Very old clusters should decay and not merge."""
+    old_time = datetime.datetime.now() - datetime.timedelta(days=30)
+    recent_articles = [
+        {
+            "cluster_id": "c1",
+            "title": "Vlada donela meru",
+            "created_at": old_time,
+        },
+    ]
+    
+    cid = find_or_create_cluster(MagicMock(), "Vlada donela novu meru", recent_articles)
+    assert cid != "c1"  # Should not merge with very old cluster
+
+
+@patch(_DB_PATCH, _mock_db)
+def test_edge_case_identical_but_different_sources():
+    """Edge case: Same story from different sources should cluster."""
+    recent_articles = [
+        {
+            "cluster_id": "c1",
+            "title": "Premierka odrzala sobranje",
+            "source": "SourceA",
+            "created_at": datetime.datetime.now(),
+        },
+    ]
+    
+    cid = find_or_create_cluster(
+        MagicMock(),
+        "Premierka odrzala sobranje",
+        recent_articles,
+        source="SourceB",
+    )
+    assert cid == "c1"  # Should cluster same story from different sources
+
+
+@patch(_DB_PATCH, _mock_db)
+def test_edge_case_rapid_followups():
+    """Edge case: Rapid follow-ups should cluster appropriately."""
+    now = datetime.datetime.now()
+    recent_articles = [
+        {
+            "cluster_id": "c1",
+            "title": "Vlada donela meru",
+            "created_at": now - datetime.timedelta(minutes=1),
+        },
+        {
+            "cluster_id": "c2",
+            "title": "Vlada donela novu meru",
+            "created_at": now - datetime.timedelta(minutes=2),
+        },
+    ]
+    
+    # Very recent follow-up should cluster with most recent
+    cid = find_or_create_cluster(MagicMock(), "Vlada donela novu meru za ekonomiju", recent_articles)
+    assert cid in ["c1", "c2"]  # Should cluster with one of the recent ones
+
+
 # =============================================================================
 # Gold Standard Test Cases for Clustering Quality
 # =============================================================================

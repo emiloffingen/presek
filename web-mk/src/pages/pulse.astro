@@ -45,7 +45,7 @@ try {
 const safePulseVolume = Math.max(1, Number(globalPulse?.last_24h || 0));
 // const cleanCategoryData = (categoryData || []).filter - Added for integrity test
 
-const currentDate = new Date().toLocaleDateString('mk-RS', { 
+const currentDate = new Date().toLocaleDateString('mk-MK', { 
     weekday: 'long', 
     year: 'numeric', 
     month: 'long', 
@@ -107,7 +107,7 @@ const currentDate = new Date().toLocaleDateString('mk-RS', {
             <div class="masthead-deck mt-8">
                 <span class="deck-item"><strong class="mr-1.5">{categories.length || '–'}</strong> Kategorii</span>
                 <span class="deck-item"><strong class="mr-1.5">{globalPulse?.intelligence?.pluralism?.pluralism_pct > 0 ? globalPulse?.intelligence?.pluralism?.pluralism_pct + '%' : '–'}</strong> Diverzitet</span>
-                <span class="deck-item"><strong class="mr-1.5">{globalPulse?.last_24h?.toLocaleString('mk-RS') || '–'}</strong> Objavi danas</span>
+                <span class="deck-item"><strong class="mr-1.5">{globalPulse?.last_24h?.toLocaleString('mk-MK') || '–'}</strong> Objavi denes</span>
             </div>
         </header>
 

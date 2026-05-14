@@ -66,7 +66,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
         console.error('Semantic fetch failed', e);
         if (!cancelled) {
           setSemanticResults([]);
-          setSemanticError('Ne možemo da pročitamo personalizovane preporuke u ovom trenutku.');
+          setSemanticError('Ne mozeme da gi procitame personaliziranite preporaki vo ovoj moment.');
         }
       } finally {
         if (!cancelled) {
@@ -102,7 +102,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
     if (combined.length === 0 && hasPersonalizationSignal(profile)) {
         return initialClusters.slice(0, 10).map(c => ({
             ...c,
-            reason: 'Aktuelno danas'
+            reason: 'Aktuelno denes'
         }));
     }
 
@@ -123,7 +123,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
     return (
       <div className="flex flex-col items-center justify-center py-40">
         <Loader2 className="animate-spin text-nyt-accent mb-4" size={32} />
-        <p className="font-serif italic text-muted-foreground">Generišemo vaš personalizovan pregled...</p>
+        <p className="font-serif italic text-muted-foreground">Generirame vas personaliziran pregled...</p>
       </div>
     );
   }
@@ -135,9 +135,9 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
             <div className="inline-flex items-center justify-center p-3 bg-nyt-accent/10 rounded-full mb-4">
                 <Compass className="text-nyt-accent" size={24} />
             </div>
-            <h1 className="font-serif text-4xl md:text-5xl font-black mb-4 tracking-tight">Vaš lični prostor</h1>
+            <h1 className="font-serif text-4xl md:text-5xl font-black mb-4 tracking-tight">Vasiot licen prostor</h1>
             <p className="text-lg md:text-xl text-secondary-foreground max-w-xl mx-auto italic font-serif">
-                ova stranica je mesto gdje Presek prilagođava vaš ritam. Izaberite teme koje vas interesuju da biste započeli.
+                ovaa stranica e mesto kade sto Presek go prilagoduva vasiot ritam. Izberete temi koi ve interesiraat za da zapocnete.
             </p>
         </header>
         <div className="bg-secondary/5 border border-border p-8 md:p-12 rounded-3xl shadow-inner">
@@ -155,15 +155,15 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
             <Sparkles className="text-nyt-accent" size={16} />
             <span className="font-sans text-[10px] font-black uppercase tracking-[0.25em] text-nyt-accent">UREDNIČKA SINTEZA</span>
           </div>
-          <h1 className="font-serif text-[clamp(2rem,6vw,4rem)] font-black leading-[0.9] mb-6 italic">Lični <span className="serif-display font-light not-italic">Presek</span></h1>
+          <h1 className="font-serif text-[clamp(2rem,6vw,4rem)] font-black leading-[0.9] mb-6 italic">Licen <span className="serif-display font-light not-italic">Presek</span></h1>
           <p className="mt-4 font-nyt-body text-[clamp(1rem,2vw,1.25rem)] text-secondary-foreground leading-relaxed italic max-w-2xl">
-             Vaš dnevni pregled, sintetisan prema temama, ličnostima i izvorima koje pratite.
+             Vasiot dneven pregled, sintetiziran spored temite, licnostite i izvorite koi gi pratite.
           </p>
         </header>
 
         {pageError && mergedClusters.length === 0 && (
           <div className="py-12 text-center border border-dashed border-border rounded-xl bg-secondary/5">
-            <p className="font-serif text-2xl font-bold mb-3">Ne možemo da učitamo „Za Vas“</p>
+            <p className="font-serif text-2xl font-bold mb-3">Ne mozeme da ucitame „Za Vas“</p>
             <p className="text-muted-foreground">{pageError}</p>
           </div>
         )}
@@ -190,7 +190,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
         ) : (
           <div className="py-20 text-center border border-dashed border-border rounded-xl">
              <p className="font-serif italic text-muted-foreground text-xl">
-               {pageError || 'Nemamo novih vest za vaše specifične interese u ovom trenutku.'}
+               {pageError || 'Nemame novi vesti za vasite specificni interesi vo ovoj moment.'}
              </p>
           </div>
         )}
@@ -225,7 +225,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
             )}
             
             <a href="/settings" className="block text-center py-3 bg-secondary/50 rounded-lg text-[10px] font-black uppercase tracking-widest text-nyt-accent hover:bg-nyt-accent hover:text-white transition-all">
-                Uredite sva svoje interese →
+                Uredete gi site vasi interesi →
             </a>
           </div>
         </section>

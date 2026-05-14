@@ -33,7 +33,7 @@ function formatLastFetched(value?: string) {
   if (!value) return 'Nema svez signal';
   try {
     const date = new Date(value);
-    return date.toLocaleString('mk-RS', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleString('mk-MK', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
   } catch {
     return 'Nema svez signal';
   }
@@ -198,7 +198,7 @@ const IzvoriPage: React.FC = () => {
           ) : (
             <div className="space-y-24">
               <section>
-                <h2 className="font-serif text-3xl font-black italic mb-10 pb-3 border-b-4 border-foreground">Srpski Mediji</h2>
+                <h2 className="font-serif text-3xl font-black italic mb-10 pb-3 border-b-4 border-foreground">Makedonski Mediumi</h2>
                 <div className="flex flex-col">
                   {mkSources.map(renderSourceRow)}
                 </div>
@@ -221,7 +221,7 @@ const IzvoriPage: React.FC = () => {
           </section>
 
           <section className="rail-module mb-12">
-            <h3 className="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-foreground mb-6 pb-2 border-b-2 border-foreground">NAJBRZI danas</h3>
+            <h3 className="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-foreground mb-6 pb-2 border-b-2 border-foreground">NAJBRZI denes</h3>
             <div className="flex flex-col gap-1">
               {fastMovers.map(s => (
                 <div key={s.source} className="flex items-center justify-between py-2.5 border-b border-border/40 hover:bg-secondary/10 px-1 transition-all">

@@ -129,7 +129,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
             <div className={`pulse-stats-grid mb-12 transition-opacity duration-300 ${loading ? 'opacity-50' : 'opacity-100'}`}>
                 <div className="pulse-card" title="Vkupen broj na obraboteni objavi vo poslednite 24 casa.">
                     <p className="card-label"><Activity size={12}/> INFORMATIVEN RITAM</p>
-                    <p className="card-value">{globalPulse?.last_24h?.toLocaleString('mk-RS') || '–'}</p>
+                    <p className="card-value">{globalPulse?.last_24h?.toLocaleString('mk-MK') || '–'}</p>
                     <div className="card-sparkline group">
                         {velocityData.length > 0 ? (() => {
                             const maxVelocity = Math.max(1, ...velocityData.map((d: any) => d.n || 0));
@@ -191,7 +191,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                     </div>
                     <p className="font-serif italic text-lg md:text-xl leading-snug">
                         {intelligence.pluralism?.pluralism_pct > 50 
-                            ? "Zabelezan e visok stepen na mediumski konsenzus kaj vodeckite storii danas."
+                            ? "Zabelezan e visok stepen na mediumski konsenzus kaj vodeckite storii denes."
                             : intelligence.pluralism?.pluralism_pct > 0
                                 ? "Nizok pluralizam: temite se obrabotuvaat so specificni, divergentni agli."
                                 : "Sistemot analizira..."
@@ -333,7 +333,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                         <p className="rail-kicker">Metodologija</p>
                         <h3 className="rail-title italic font-serif text-lg">Urednicki Algoritam</h3>
                         <p className="rail-text">
-                            Informacije u ovom indeksu generišu se putem automatske obrade prirodnog jezika (NLP) na svim uključenim srpskim izvorima za proteklih 24 časa.
+                            Informaciite vo ovoj indeks se generiraat preku avtomatska obrabotka na prirodniot jazik (NLP) na site vkluceni makedonski izvori za poslednite 24 casa.
                         </p>
                     </section>
 

@@ -147,7 +147,7 @@ const articleRows = (cluster?.articles || []).map((a: Article, idx: number, arr:
         ...a,
         title: deShout(cleanAndDecode(a.title)),
         description: cleanAndDecode(a.description || a.summary || ''),
-        exactTime: d.toLocaleTimeString('mk-RS', { hour: '2-digit', minute: '2-digit' }),
+        exactTime: d.toLocaleTimeString('mk-MK', { hour: '2-digit', minute: '2-digit' }),
         relativeTime: getRelativeTimeStr(a.created_at),
         relationship: { tone: relTone, label: relLabel },
         quality: { isObjective, isSensational }

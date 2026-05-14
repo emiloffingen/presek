@@ -1,34 +1,63 @@
-[
-  {
-    "title_a": "danas se praznuva Sveti Nikita Ispovednik",
-    "title_b": "danas se praznuva Sveti Nikita Ispovednik",
-    "should_cluster": true,
-    "entities": ["Nikita", "Ispovednik"],
-    "reason": "Exact story duplicate"
+{
+  "version": "1.0",
+  "description": "Gold standard test cases for Presek clustering algorithm",
+  "purpose": "Used to validate clustering quality and prevent regressions in NLP pipeline",
+  "language": "Macedonian (mk)",
+  "domains": ["news", "politics", "sports", "religion", "economy"],
+  "test_cases": [
+    {
+      "title_a": "danas se praznuva Sveti Nikita Ispovednik",
+      "title_b": "danas se praznuva Sveti Nikita Ispovednik",
+      "should_cluster": true,
+      "entities": ["Nikita", "Ispovednik"],
+      "reason": "Exact story duplicate",
+      "category": "religion",
+      "expected_behavior": "Identical titles should always cluster together"
+    },
+    {
+      "title_a": "Ivica Dzeparoski stana dopisen clen na MANU",
+      "title_b": "TRENER NA KOLOTO: Borce Hristov (Tikves)",
+      "should_cluster": false,
+      "reason": "Unrelated news (Politics vs Sport)",
+      "category": "mixed",
+      "expected_behavior": "Different domains should not cluster even with similar structure"
+    },
+    {
+      "title_a": "Strav od prirodata – nova fobija na urbaniot covek",
+      "title_b": "danas se praznuva Sveti Nikita Ispovednik",
+      "should_cluster": false,
+      "reason": "Unrelated news (Health/Lifestyle vs Religion)",
+      "category": "mixed",
+      "expected_behavior": "Completely different topics should not cluster"
+    },
+    {
+      "title_a": "Vladata usvoi nov paket merki za pomos na stopanstvoto",
+      "title_b": "Ministerstvoto za Ekonomija najavi poddrska za firmite",
+      "should_cluster": true,
+      "entities": ["Vlada", "Ekonomija", "Stopanstvo"],
+      "reason": "Same economic policy event",
+      "category": "economy",
+      "expected_behavior": "Related economic news should cluster together"
+    },
+    {
+      "title_a": "Vardar pobedi vo derbito protiv Pelister",
+      "title_b": "Skupi remizirase so Sileks vo Kratovo",
+      "should_cluster": false,
+      "reason": "Different sports matches",
+      "category": "sports",
+      "expected_behavior": "Different sporting events should not cluster"
+    }
+  ],
+  "usage": {
+    "how_to_add": "Add new test cases by following the existing format. Include title_a, title_b, should_cluster, reason, category, and expected_behavior.",
+    "testing": "Run with: pytest tests/test_clustering.py::test_gold_standard_* -v",
+    "validation": "All gold standard tests should pass. If any fail, it indicates a regression in the clustering algorithm.",
+    "maintenance": "Update this file when adding new edge cases or when algorithm behavior changes intentionally."
   },
-  {
-    "title_a": "Ivica Dzeparoski stana dopisen clen na MANU",
-    "title_b": "TRENER NA KOLOTO: Borce Hristov (Tikves)",
-    "should_cluster": false,
-    "reason": "Unrelated news (Politics vs Sport)"
-  },
-  {
-    "title_a": "Strav od prirodata – nova fobija na urbaniot covek",
-    "title_b": "danas se praznuva Sveti Nikita Ispovednik",
-    "should_cluster": false,
-    "reason": "Unrelated news (Health/Lifestyle vs Religion)"
-  },
-  {
-    "title_a": "Vladata usvoi nov paket merki za pomos na stopanstvoto",
-    "title_b": "Ministerstvoto za Ekonomija najavi poddrska za firmite",
-    "should_cluster": true,
-    "entities": ["Vlada", "Ekonomija", "Stopanstvo"],
-    "reason": "Same economic policy event"
-  },
-  {
-    "title_a": "Vardar pobedi vo derbito protiv Pelister",
-    "title_b": "Skupi remizirase so Sileks vo Kratovo",
-    "should_cluster": false,
-    "reason": "Different sports matches"
+  "metadata": {
+    "created": "2024-05-14",
+    "last_updated": "2024-05-14",
+    "maintainer": "Presek Development Team",
+    "coverage": "Core clustering scenarios including exact matches, related stories, and unrelated content"
   }
-]
+}

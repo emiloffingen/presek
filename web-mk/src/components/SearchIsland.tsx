@@ -145,7 +145,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
     const recognition = new SpeechRecognition();
     recognition.continuous = false;
     recognition.interimResults = false;
-    recognition.lang = 'mk-RS';
+    recognition.lang = 'mk-MK';
     recognition.onstart = () => setIsListening(true);
     recognition.onend = () => setIsListening(false);
     recognition.onerror = () => setIsListening(false);

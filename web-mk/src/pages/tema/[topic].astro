@@ -168,12 +168,12 @@ const relatedClusters = Array.isArray(leadDetail?.related) ? leadDetail.related.
 function topicIntro() {
 	if (!clusters.length) return '';
 	if (breakingCount >= 2) {
-		return `Temata ${topic} danas se razviva brzo, so ${clusters.length} aktivni klasteri i ${uniqueSources.size} izvori sto dodavaat novi detali.`;
+		return `Temata ${topic} denes se razviva brzo, so ${clusters.length} aktivni klasteri i ${uniqueSources.size} izvori sto dodavaat novi detali.`;
 	}
 	if (clusters.length >= 6) {
 		return `Temata ${topic} e siroko prisutna niz denesniot ciklus, so ${clusters.length} klasteri i ${totalReports} izvestai sto se nadovrzuvaat eden na drug.`;
 	}
-	return `Temata ${topic} ostaje relevantna danas, so ${clusters.length} klasteri i povece redakcii sto me sledat od razliciti agli.`;
+	return `Temata ${topic} ostanuva relevantna denes, so ${clusters.length} klasteri i povece redakcii sto me sledat od razliciti agli.`;
 }
 ---
 
@@ -240,7 +240,7 @@ function topicIntro() {
 								<strong>{uniqueSources.size}</strong>
 							</div>
 							<div>
-								<span class="micro-label">Izveštaji</span>
+								<span class="micro-label">Izvestai</span>
 								<strong>{totalReports}</strong>
 							</div>
 							<div>
@@ -252,7 +252,7 @@ function topicIntro() {
 
 					<div class="topic-hero-side">
 						<div class="topic-note-card">
-							<p class="topic-note-label">Sto ga dvizi ovoj prostor</p>
+							<p class="topic-note-label">Sto go dvizi ovoj prostor</p>
 							<ul class="topic-note-list">
 								{(synthesisLines.length > 0 ? synthesisLines : [leadSummary]).map((line: string) => (
 									<li>{line}</li>
@@ -274,7 +274,7 @@ function topicIntro() {
 							<section class="topic-lead">
 								<div class="section-heading-row">
 									<h2 class="section-title">Vodecka prica</h2>
-									<p class="section-note">klaster koji najviše nosi temu napred u ovom trenutku.</p>
+									<p class="section-note">klaster koj najviše nosi temu napred u ovom trenutku.</p>
 								</div>
 								<NewsCard cluster={leadCluster} isLead={true} />
 							</section>
