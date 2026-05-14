@@ -12,6 +12,13 @@ interface Props {
 }
 
 const { title, note, developmentsFeatured, developmentsCompact, variant = "compact", tone = "default" } = Astro.props;
+
+function getBentoSpan(cluster: NewsCluster) {
+    const count = cluster.articles?.length || 0;
+    if (count >= 6 || cluster.importance_score > 0.85) return '2x2';
+    if (count >= 4 || cluster.importance_score > 0.65) return '2x1';
+    return '1x1';
+}
 ---
 
 <section class:list={["feed-section motion-rise motion-delay-3", `feed-tone-${tone}`]}>
@@ -33,14 +40,14 @@ const { title, note, developmentsFeatured, developmentsCompact, variant = "compa
     ) : (
         <>
             {developmentsFeatured.length > 0 && (
-                <div class="news-feed-grid news-feed-grid-featured">
+                <div class="bento-box-grid">
                     {developmentsFeatured.map((cluster: NewsCluster) => (
-                        <NewsCard cluster={cluster} variant="featured" />
+                        <NewsCard cluster={cluster} variant="featured" bentoSpan={getBentoSpan(cluster)} />
                     ))}
                 </div>
             )}
             {developmentsCompact.length > 0 && (
-                <div class="news-feed-grid news-feed-grid-compact">
+                <div class="news-feed-grid news-feed-grid-compact mt-8">
                     {developmentsCompact.map((cluster: NewsCluster) => (
                         <NewsCard cluster={cluster} variant="compact" />
                     ))}

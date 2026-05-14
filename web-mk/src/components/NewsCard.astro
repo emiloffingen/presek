@@ -10,9 +10,10 @@ interface Props {
 	cluster: NewsCluster;
 	isLead?: boolean;
 	variant?: 'standard' | 'featured' | 'compact' | 'wire';
+    bentoSpan?: '1x1' | '2x1' | '2x2';
 }
 
-const { cluster, isLead = false, variant = 'standard' } = Astro.props;
+const { cluster, isLead = false, variant = 'standard', bentoSpan } = Astro.props;
 const main = cluster.articles?.[0];
 if (!main) return;
 const sourceSignal = main?.source_signal || {};
@@ -125,7 +126,7 @@ function getTimeStr(dateStr: string) {
 }
 ---
 
-<article class:list={["nyt-article", `variant-${variant}`, { "lead-story": isLead, "premium-spotlight": showTrustBadge }]} data-cluster={JSON.stringify(slimCluster)}>
+<article class:list={["nyt-article", `variant-${variant}`, { "lead-story": isLead, "premium-spotlight": showTrustBadge }, bentoSpan ? `bento-${bentoSpan}` : ""]} data-cluster={JSON.stringify(slimCluster)}>
 	<div class="article-body">
 		<div class="article-meta-v2">
 			<div class="kicker-group">
