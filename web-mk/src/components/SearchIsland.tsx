@@ -3,8 +3,8 @@ import { createPortal } from 'react-dom';
 import { navigate } from 'astro:transitions/client';
 import { 
   Search, X, Zap, ArrowUpRight, LoaderCircle, Newspaper, 
-  Mic, Filter, Clock, TrendingUp, User, Layout, 
-  Settings, HelpCircle, Archive, Sparkles, ChevronRight,
+  Mic, Clock, TrendingUp, User, Layout, 
+  HelpCircle, Archive, Sparkles, ChevronRight,
   Globe, ShieldCheck, Activity, BookOpen, ExternalLink,
   History
 } from 'lucide-react';

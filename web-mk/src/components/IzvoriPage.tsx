@@ -233,7 +233,7 @@ const IzvoriPage: React.FC = () => {
           </section>
 
           <div className="rail-methodology-module p-6 bg-secondary/10 border border-border/40 rounded-sm">
-            <h4 className="font-sans text-[10px] font-black uppercase tracking-widest border-b border-border pb-3 mb-4">METODOLOGIJA</h4>
+            <h4 className="font-sans text-[10px] font-black uppercase tracking-widest border-b border-border pb-3 mb-4">МЕТОДОЛОГИЈА</h4>
             <ul className="space-y-4">
               <li className="flex flex-col gap-1">
                 <span className="font-sans text-[9px] font-black uppercase tracking-widest text-foreground">Doverba</span>
