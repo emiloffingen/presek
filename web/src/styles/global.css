@@ -4095,3 +4095,42 @@ button:active,
     font-weight: 900;
     color: var(--nyt-accent);
 }
+
+/* Premium Reading Experience (Zen Mode) */
+body.zen-mode .site-header,
+body.zen-mode .site-footer,
+body.zen-mode .broadsheet-rail,
+body.zen-mode .editorial-lede,
+body.zen-mode .hero-full,
+body.zen-mode .executive-summary,
+body.zen-mode .citation-sources-box,
+body.zen-mode .cluster-articles-grid,
+body.zen-mode .editorial-section:not(.narrative-section) {
+    display: none !important;
+}
+
+body.zen-mode .site-layout {
+    padding-top: 4rem;
+}
+
+body.zen-mode .editorial-main-col {
+    max-width: 680px;
+    margin: 0 auto;
+    width: 100%;
+    border-right: none;
+    padding-right: 0;
+}
+
+body.zen-mode .narrative-p {
+    font-size: 1.35rem;
+    line-height: 2;
+    color: var(--foreground);
+}
+
+body.zen-mode .editorial-grid {
+    display: block;
+}
+
+body.zen-mode .section-eyebrow {
+    display: none;
+}

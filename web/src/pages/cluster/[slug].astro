@@ -346,13 +346,13 @@ const articleSchema = cluster ? {
 								<div class="section-divider"></div>
 							</div>
 
-							<EditorialNarrative 
+							<EditorialNarrative
 								hasStrongLeadNarrative={hasStrongLeadNarrative}
 								generatedArticle={generatedArticle}
 								synthesisItems={synthesisItems}
 								hasCitationSources={hasCitationSources}
+							entities={cluster.entities}
 							/>
-
                             {/* DATA RECAP / KEY POINTS (Moved to bottom of narrative) */}
                             {hasGeneratedNarrative && (headerBriefItems.length > 0 || (cluster.key_facts && cluster.key_facts.length > 0)) && (
                                 <div class="narrative-recap mt-12 p-8 bg-secondary/10 border-t border-border/40">

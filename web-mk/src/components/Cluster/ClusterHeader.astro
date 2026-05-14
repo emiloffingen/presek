@@ -65,8 +65,29 @@ const {
 			value={topics?.[0] || category}
 			client:idle
 		/>
+        <button id="zen-mode-toggle" class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors ml-auto">
+            Зен Режим
+        </button>
 	</div>
 </header>
+
+<script>
+    document.addEventListener('astro:page-load', () => {
+        const toggle = document.getElementById('zen-mode-toggle');
+        if (toggle) {
+            toggle.addEventListener('click', () => {
+                document.body.classList.toggle('zen-mode');
+                if (document.body.classList.contains('zen-mode')) {
+                    toggle.innerText = 'Затвори Зен';
+                    toggle.classList.add('text-nyt-accent');
+                } else {
+                    toggle.innerText = 'Зен Режим';
+                    toggle.classList.remove('text-nyt-accent');
+                }
+            });
+        }
+    });
+</script>
 
 <style>
 	.editorial-headline {

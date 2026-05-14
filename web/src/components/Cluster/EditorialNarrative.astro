@@ -7,11 +7,20 @@ interface Props {
 	synthesisItems: any[];
 	hasCitationSources: boolean;
     keyFacts?: string[];
+    entities?: string[];
 }
 
-const { hasStrongLeadNarrative, generatedArticle, synthesisItems, hasCitationSources, keyFacts } = Astro.props;
+const { hasStrongLeadNarrative, generatedArticle, synthesisItems, hasCitationSources, keyFacts, entities = [] } = Astro.props;
 
-const renderSynthesisHtml = (text: string) => sharedRenderSynthesisHtml(text, hasCitationSources);
+const renderSynthesisHtml = (text: string) => {
+    let html = sharedRenderSynthesisHtml(text, hasCitationSources);
+    // Wrap identified entities in a span
+    entities.forEach(entity => {
+        const regex = new RegExp(`\\b${entity}\\b`, 'g');
+        html = html.replace(regex, `<span class="inline-entity" data-entity="${entity}">$&</span>`);
+    });
+    return html;
+};
 ---
 
 <div class="editorial-narrative prose-editorial">
@@ -29,12 +38,68 @@ const renderSynthesisHtml = (text: string) => sharedRenderSynthesisHtml(text, ha
 	)}
 </div>
 
-<style>
-	.editorial-narrative {
-		margin-bottom: 4rem;
-        position: relative;
-	}
+<script>
+    import { createPopper } from '@popperjs/core';
 
+    document.addEventListener('astro:page-load', () => {
+        const entities = document.querySelectorAll('.inline-entity');
+        entities.forEach(entity => {
+            const name = entity.getAttribute('data-entity');
+            if (!name) return;
+
+            let popperInstance = null;
+            let tooltip = null;
+
+            entity.addEventListener('mouseenter', async () => {
+                // Create tooltip element
+                tooltip = document.createElement('div');
+                tooltip.className = 'entity-tooltip';
+                tooltip.innerHTML = `<div class="p-4 bg-background border border-border shadow-xl rounded-lg w-64 text-sm"><div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-nyt-accent animate-pulse"></div> Ucitavam kontekst za ${name}...</div></div>`;
+                document.body.appendChild(tooltip);
+
+                popperInstance = createPopper(entity, tooltip, {
+                    placement: 'top',
+                    modifiers: [{ name: 'offset', options: { offset: [0, 8] } }]
+                });
+
+                // Fetch real data
+                const res = await fetch(`/api/entity-graph/${encodeURIComponent(name)}`);
+                const json = await res.json();
+                if (json.status === 'success') {
+                    tooltip.innerHTML = `<div class="p-4 bg-background border border-border shadow-xl rounded-lg w-64 text-sm font-sans">
+                        <h4 class="font-bold text-base mb-1">${name}</h4>
+                        <p class="text-[11px] text-muted-foreground">${json.data.summary || 'Nema dostapni detalji.'}</p>
+                    </div>`;
+                }
+            });
+
+            entity.addEventListener('mouseleave', () => {
+                if (popperInstance) {
+                    popperInstance.destroy();
+                    popperInstance = null;
+                }
+                if (tooltip) {
+                    tooltip.remove();
+                    tooltip = null;
+                }
+            });
+        });
+    });
+</script>
+
+<style>
+    .inline-entity {
+        text-decoration: underline;
+        text-decoration-style: dotted;
+        text-underline-offset: 4px;
+        cursor: help;
+        color: var(--nyt-accent);
+    }
+
+    .entity-tooltip {
+        z-index: 1000;
+    }
+...
     .narrative-body.is-collapsible {
         max-height: 1000px;
         overflow: hidden;
