@@ -185,7 +185,35 @@ export function extractCleanSummaryText(input: any): string {
         break;
     }
 
-    return cleanAndDecode(text);
+    // Enhanced markdown cleanup - strip common markdown syntax that shouldn't be rendered as HTML
+    let cleaned = cleanAndDecode(text);
+    
+    // Remove markdown bold/italic syntax but preserve the content
+    cleaned = cleaned.replace(/\*\*(.*?)\*\*/g, '$1'); // **bold**
+    cleaned = cleaned.replace(/__(.*?)__/g, '$1');       // __bold__
+    cleaned = cleaned.replace(/\*(.*?)\*/g, '$1');     // *italic*
+    cleaned = cleaned.replace(/_(.*?)_/g, '$1');        // _italic_
+    
+    // Remove markdown links but keep the link text
+    cleaned = cleaned.replace(/\\[(.*?)\\]\\(.*?\\)/g, '$1');
+    
+    // Remove markdown headers
+    cleaned = cleaned.replace(/^#+\s+/gm, '');
+    
+    // Remove markdown code blocks
+    cleaned = cleaned.replace(/`{1,3}(.*?)`{1,3}/g, '$1');
+    
+    // Remove markdown horizontal rules
+    cleaned = cleaned.replace(/^[-*_]{3,}\s*$/gm, '');
+    
+    // Remove markdown blockquotes
+    cleaned = cleaned.replace(/^>\s+/gm, '');
+    
+    // Remove markdown list markers
+    cleaned = cleaned.replace(/^\s*[-*+]\s+/gm, '');
+    cleaned = cleaned.replace(/^\s*\d+\.\s+/gm, '');
+    
+    return cleaned.trim();
 }
 
 function normalizeDisplayTitle(text: string): string {
