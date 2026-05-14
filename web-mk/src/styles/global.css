@@ -4100,12 +4100,13 @@ button:active,
 /* Premium Reading Experience (Zen Mode) */
 body.zen-mode .site-header,
 body.zen-mode .site-footer,
-body.zen-mode .broadsheet-rail,
 body.zen-mode .editorial-lede,
 body.zen-mode .hero-full,
 body.zen-mode .executive-summary,
 body.zen-mode .citation-sources-box,
 body.zen-mode .cluster-articles-grid,
+body.zen-mode .editorial-sidebar-col,
+body.zen-mode .advanced-tools,
 body.zen-mode .editorial-section:not(.narrative-section):not(.related-section) {
     display: none !important;
 }
