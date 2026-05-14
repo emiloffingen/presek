@@ -4,7 +4,7 @@ import re
 from typing import Dict, Any
 
 from database import db_manager as db
-from local_nlp import extract_cluster_tags_locally
+from nlp.keywords import extract_cluster_tags_locally
 
 log = logging.getLogger("presek.topic_discovery")
 
