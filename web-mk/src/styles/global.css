@@ -4106,7 +4106,7 @@ body.zen-mode .hero-full,
 body.zen-mode .executive-summary,
 body.zen-mode .citation-sources-box,
 body.zen-mode .cluster-articles-grid,
-body.zen-mode .editorial-section:not(.narrative-section) {
+body.zen-mode .editorial-section:not(.narrative-section):not(.related-section) {
     display: none !important;
 }
 
