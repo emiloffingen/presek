@@ -324,15 +324,15 @@ function getBriefingSnippet(content: string) {
                     <div class="max-w-full overflow-hidden mb-10">
                         <div class="quick-pills-container overflow-x-auto hide-scrollbar -mx-4 px-4 pb-2">
                             <div class="flex items-center gap-3">
-                                <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mr-2 shrink-0">Istraži:</span>
+                                <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mr-2 shrink-0">Истражи:</span>
                                 {[
-                                    { id: 'rs', label: 'Srbija', href: '/?category=' + encodeURIComponent('Srbija') },
-                                    { id: 'pol', label: 'Politika', href: '/?topic=' + encodeURIComponent('Politika') },
-                                    { id: 'eco', label: 'Ekonomija', href: '/?topic=' + encodeURIComponent('Ekonomija') },
-                                    { id: 'spo', label: 'Sport', href: '/?topic=' + encodeURIComponent('Sport') },
-                                    { id: 'cul', label: 'Kultura', href: '/?topic=' + encodeURIComponent('Kultura') },
-                                    { id: 'tech', label: 'Tehnologija', href: '/?topic=' + encodeURIComponent('Tehnologija') },
-                                    { id: 'bg', label: 'Beograd', href: '/?subcategory=' + encodeURIComponent('Beograd') }
+                                    { id: 'rs', label: 'Србија', href: '/?category=' + encodeURIComponent('Srbija') },
+                                    { id: 'pol', label: 'Политика', href: '/?topic=' + encodeURIComponent('Politika') },
+                                    { id: 'eco', label: 'Економија', href: '/?topic=' + encodeURIComponent('Ekonomija') },
+                                    { id: 'spo', label: 'Спорт', href: '/?topic=' + encodeURIComponent('Sport') },
+                                    { id: 'cul', label: 'Култура', href: '/?topic=' + encodeURIComponent('Kultura') },
+                                    { id: 'tech', label: 'Технологија', href: '/?topic=' + encodeURIComponent('Tehnologija') },
+                                    { id: 'bg', label: 'Белград', href: '/?subcategory=' + encodeURIComponent('Beograd') }
                                 ].map(pill => (
                                     <a href={pill.href} class="quick-pill shrink-0" data-track-pill={pill.id}>
                                         {pill.label}
@@ -390,7 +390,7 @@ function getBriefingSnippet(content: string) {
                 {isHomepage && consensusClusters.length > 0 && (
                     <div class="section-wrapper consensus-section bg-secondary/10 p-8 border-y border-border/40">
                         <div class="section-heading-row mb-8">
-                            <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent block mb-2">SISTEMSKI KONSENZUS</span>
+                            <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent block mb-2">СИСТЕМСКИ КОНЗЕНЗУС</span>
                             <h2 class="font-serif text-3xl font-black italic">Поширока слика</h2>
                             <p class="text-sm text-muted-foreground mt-2">Настани за кои известува голем број на медиуми со висок степен на согласност.</p>
                         </div>
@@ -405,8 +405,8 @@ function getBriefingSnippet(content: string) {
 				{feedClusters.length > 0 && (
 					<div class="section-wrapper">
 						<DevelopmentsSection
-							title="Teme u razvoju"
-							note="Aktuelni narativi sa izraženom medijskom dinamikom i aktivnom uredničkom sintezom."
+							title="Теми во развој"
+							note="Актуелни наративи со изразена медиумска динамика и активна уредничка синтеза."
 							developmentsFeatured={developmentsFeatured}
 							developmentsCompact={developmentsCompact}
                             tone="developing"
@@ -423,8 +423,8 @@ function getBriefingSnippet(content: string) {
 				{globalClusters.length > 0 && (
 					<div class="section-wrapper">
 						<DevelopmentsSection
-							title="Globalna Scena"
-							note="Sistemski pregled međunarodnih dešavanja od vodećih novinskih agencija."
+							title="Глобална сцена"
+							note="Системски преглед на меѓународни случувања од водечки новински агенции."
 							developmentsFeatured={globalClusters.slice(0, 2)}
 							developmentsCompact={globalClusters.slice(2)}
                             tone="global"
@@ -435,8 +435,8 @@ function getBriefingSnippet(content: string) {
 				{wireClusters.length > 0 && (
 					<div class="section-wrapper">
 						<DevelopmentsSection
-							title="Poslednje na traci"
-							note="Izveštaji u realnom vremenu: pojedinačne objave sa terena."
+							title="Последно на траката"
+							note="Извештаи во реално време: поединечни објави од терен."
 							developmentsFeatured={wireClusters}
 							developmentsCompact={[]}
 							variant="wire"
