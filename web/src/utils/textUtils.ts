@@ -154,7 +154,10 @@ export function extractCleanSummaryText(input: any): string {
     // AI summary extraction with recursive protection against double-stringification
     let attempts = 0;
     while (attempts < 3) {
-        const trimmed = text.trim();
+        let trimmed = text.trim();
+        // Remove markdown JSON formatting if present
+        trimmed = trimmed.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+
         if (
             trimmed.startsWith('{') ||
             trimmed.startsWith('&lt;%') ||
@@ -179,10 +182,19 @@ export function extractCleanSummaryText(input: any): string {
                     }
                 }
             } catch {
+                // If parsing fails, fall through to regex cleanup
                 break;
             }
         }
         break;
+    }
+
+    // Fallback: If it still looks like JSON after failing to parse, try to extract just the summary value
+    if (text.includes('"summary":') || text.includes('&quot;summary&quot;')) {
+        const match = text.match(/"summary"\s*:\s*"([^"]+)"/);
+        if (match && match[1]) {
+            text = match[1];
+        }
     }
 
     // Enhanced markdown cleanup - strip common markdown syntax that shouldn't be rendered as HTML

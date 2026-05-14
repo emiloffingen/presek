@@ -187,7 +187,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
               <a key={cluster.cluster_id} href={`/cluster/${cluster.cluster_id}`} className="for-you-card" aria-label={`Otvori klaster: ${title}`}>
                 <p className="for-you-card-kicker">
                   <Clock3 size={12} />
-                  <span>Aktuelno vo momentot</span>
+                  <span>Актуелно во моментот</span>
                 </p>
                 <h3 dangerouslySetInnerHTML={{ __html: sanitizeHtml(highlightScores(title)) }}></h3>
                 {summary && <p className="for-you-card-copy">{summary}</p>}
@@ -241,7 +241,7 @@ function OnboardingIslandCompact({ profile, recommendations }: any) {
         {recommendations.sources.slice(0, 1).map((item: any) => (
           <div key={`source:${item.value}`} className="for-you-follow-card">
             <div>
-              <p className="for-you-follow-kicker">izvor</p>
+              <p className="for-you-follow-kicker">извор</p>
               <strong>{item.value}</strong>
               {item.reason && <p className="text-[10px] text-muted-foreground mt-1 opacity-80">{item.reason}</p>}
             </div>
@@ -252,6 +252,17 @@ function OnboardingIslandCompact({ profile, recommendations }: any) {
             />
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+/div>
+        ))}
+      </div>
+    </div>
+  );
+}
+    ))}
       </div>
     </div>
   );

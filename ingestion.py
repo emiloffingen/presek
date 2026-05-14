@@ -144,6 +144,10 @@ def is_junk(title: str, desc: str) -> bool:
         if len(clean_title) > 20 and clean_title.isupper():
             return True
 
+    # Filter out agency metadata labels acting as headlines (e.g. "МИА Најави - свет", "МИА Најави - внатрешна политика")
+    if re.match(r"^(МИА Најави|MIA Najavi)\s*-", clean_title, re.IGNORECASE):
+        return True
+
     # Filter out minor police bulletin style news
     if any(
         phrase in text

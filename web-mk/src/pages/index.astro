@@ -252,7 +252,18 @@ developmentsFeatured.forEach(c => usedIds.add(c.cluster_id));
 const developmentsCompact = continuingClusters.slice(6, 18).filter(c => !usedIds.has(c.cluster_id));
 developmentsCompact.forEach(c => usedIds.add(c.cluster_id));
 
-const railWireArticles = [...wireArticles].sort((a: any, b: any) => {
+const uniqueRailIds = new Set();
+const dedupedRailArticles = [];
+for (const art of wireArticles) {
+    if (art.cluster_id && !uniqueRailIds.has(art.cluster_id)) {
+        uniqueRailIds.add(art.cluster_id);
+        dedupedRailArticles.push(art);
+    } else if (!art.cluster_id) {
+        dedupedRailArticles.push(art);
+    }
+}
+
+const railWireArticles = [...dedupedRailArticles].sort((a: any, b: any) => {
     const aTime = (a?.ingested_at || a?.created_at) ? new Date(a.ingested_at || a.created_at).getTime() : 0;
     const bTime = (b?.ingested_at || b?.created_at) ? new Date(b.ingested_at || b.created_at).getTime() : 0;
     return bTime - aTime;
