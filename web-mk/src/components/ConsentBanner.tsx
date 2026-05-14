@@ -96,38 +96,38 @@ export const ConsentBanner: React.FC = () => {
         <div className="flex items-center gap-2 md:items-center md:justify-between">
           <div className="min-w-0 flex-1">
             <div className="mb-0.5 flex items-center gap-2">
-              <h3 className="font-sans text-[11px] font-black uppercase tracking-[0.14em] text-foreground">Kolacinja i privatnost</h3>
+              <h3 className="font-sans text-[11px] font-black uppercase tracking-[0.14em] text-foreground">Колачиња и приватност</h3>
               <span className="hidden md:inline text-[11px] text-muted-foreground">•</span>
-              <span className="hidden md:inline text-xs text-muted-foreground">Kratko izvestuvanje</span>
+              <span className="hidden md:inline text-xs text-muted-foreground">Кратко известување</span>
             </div>
             <p className="text-[10px] text-secondary-foreground leading-snug md:hidden">
-              Personalizacija i analiza.
+              Персонализација и анализа.
               {' '}
               <button
                 type="button"
                 onClick={() => setExpanded((value) => !value)}
                 className="underline underline-offset-2 hover:text-nyt-accent"
               >
-                {expanded ? 'Skrij detali' : 'Povece'}
+                {expanded ? 'Скриј детали' : 'Повеќе'}
               </button>
             </p>
             {expanded && (
               <p className="mt-1 text-[11px] text-secondary-foreground leading-snug md:hidden">
-                Koristime kolacinja za personalizacija, oglasi i analiza na soobracajot.
+                Користиме колачиња за персонализација, огласи и анализа на сообраќајот.
                 {' '}
-                <a href="/privacy" className="underline underline-offset-2 hover:text-nyt-accent">Politika za privatnost</a>.
+                <a href="/privacy" className="underline underline-offset-2 hover:text-nyt-accent">Политика за приватност</a>.
               </p>
             )}
             <p className="hidden text-[13px] text-secondary-foreground leading-relaxed md:block">
-              Koristime kolacinja za personalizacija, oglasi i analiza na soobracajot.
+              Користиме колачиња за персонализација, огласи и анализа на сообраќајот.
               {' '}
-              <a href="/privacy" className="underline underline-offset-2 hover:text-nyt-accent">Politika za privatnost</a>.
+              <a href="/privacy" className="underline underline-offset-2 hover:text-nyt-accent">Политика за приватност</a>.
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-1 self-auto">
             <button
               onClick={dismiss}
-              aria-label="Zatvori"
+              aria-label="Затвори"
               className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-border/80 text-muted-foreground transition-colors hover:text-foreground md:h-9 md:w-9"
             >
               <X size={12} />
@@ -136,7 +136,7 @@ export const ConsentBanner: React.FC = () => {
               onClick={accept}
               className="rounded-full bg-foreground px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-background transition-colors hover:bg-nyt-accent hover:text-white md:px-4 md:py-2 md:text-[11px]"
             >
-              Prifacam
+              Прифаќам
             </button>
           </div>
         </div>
