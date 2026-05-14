@@ -53,7 +53,7 @@ const IconComponent =
     <a href={`/cluster/${leadCluster.cluster_id}`} class="lead-media lead-media-mobile" aria-hidden="true" tabindex="-1">
         <div class:list={["lead-media-frame shadow-editorial", { "lead-media-frame-fallback": leadVisual?.isWeak }]}>
             {leadVisual?.proxiedUrl && !leadVisual.isWeak ? (
-                <>
+                <Fragment>
                     <img
                         src={leadVisual.proxiedUrl}
                         alt={primaryDisplayTitle || leadTitle}
@@ -78,7 +78,7 @@ const IconComponent =
                             <Newspaper size={48} class="text-white/10" />
                         </div>
                     </div>
-                </>
+                </Fragment>
             ) : (
                 <div class="lead-media-placeholder design-card" style={`--placeholder-bg: ${tintColor};`}>
                     <div class="design-card-pattern"></div>
