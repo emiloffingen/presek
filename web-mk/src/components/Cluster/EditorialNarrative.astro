@@ -21,10 +21,10 @@ const renderSynthesisHtml = (text: string) => sharedRenderSynthesisHtml(text, ha
 				<p class:list={["narrative-p", idx === 0 ? "drop-cap" : ""]} set:html={renderSynthesisHtml(paragraph)}></p>
 			))}
 		</div>
-        <button class="narrative-toggle" id="narrative-toggle" onclick="document.getElementById('narrative-body').classList.remove('is-collapsed'); this.style.display='none';">Procitaj povece</button>
+        <button class="narrative-toggle" id="narrative-toggle" onclick="document.getElementById('narrative-body').classList.remove('is-collapsed'); this.style.display='none';">Прочитај повеќе</button>
 	) : (
 		<div class="empty-narrative-fallback italic text-muted-foreground font-serif">
-            Detalnata sinteza za ovoj razvoj e vo proces na konsolidacija. Ve molime poglednete ga kratkiot pregled pogore.
+            Деталната синтеза за овој развој е во процес на консолидација. Ве молиме погледнете го краткиот преглед погоре.
         </div>
 	)}
 </div>
