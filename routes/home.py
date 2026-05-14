@@ -42,6 +42,7 @@ _SOFT_EXCLUDE_TOPICS = {"Zivot", "Zabava", "Zdravje"}
 _HARD_NEWS_TOPICS = {"Politika", "Ekonomija", "Kriminal", "Sport", "Tehnologija"}
 _HARD_NEWS_CATEGORIES = {
     "Srbija",
+    "Makedonija",
     "Balkan",
     "Evropa",
     "Germanija",

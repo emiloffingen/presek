@@ -306,8 +306,6 @@ SOURCE_NOISE_WORDS = {
     "ap",
     "afp",
     "mia",
-    "mia",
-    "mia",
     "bbc",
     "cnn",
     "dw",
@@ -336,6 +334,116 @@ SOURCE_NOISE_WORDS = {
     "brif",
     "a1on",
     "libertas",
+    "sloboden pecat",
+    "netpress",
+    "vecer",
+    "skopjeinfo",
+    "ekipa",
+    "denesen",
+    "fokus",
+    "lider",
+    "rts",
+    "sport1",
+    "nova makedonija",
+    "alsat",
+    "denar",
+    "kapital",
+    "espreso",
+    "cooltura",
+    "it.mk",
+    "smartportal",
+    "gsm.mk",
+    "mkd",
+    "sputnjik",
+    "infokg",
+    "gol.mk",
+    "sportmedia",
+    "24sport",
+    "okno",
+    "radio mof",
+    "ohridnews",
+    "bitola news",
+    "gostivarpress",
+    "sky.mk",
+    "reporter",
+    "time.mk",
+    "centar.mk",
+    "expres",
+    "kurir.mk",
+    "vecer.press",
+    "nezavisen",
+    "civilmedia",
+    "frontline",
+    "portalb",
+    "strugaonline",
+    "makedonskisport",
+    "topsport",
+    "rukomet",
+    "kumanovskimuabeti",
+    "inpress",
+    "zase",
+    "e-magazin",
+    "faktor",
+    "biznisvesti",
+    "birn",
+    "kosovo online",
+    "zdravje.mk",
+    "medicinskivesti",
+    "analitika",
+    "nacionalnarevue",
+    "finansiskivesti",
+    "inovacija",
+    "itvesti",
+    "filmskivesti",
+    "filmskipregled",
+    "muzika.rs",
+    "crnobelo",
+    "sakamdakazam",
+    "kumanovonews",
+    "tocka",
+    "basket.mk",
+    "prilep.mk",
+    "fudbal.mk",
+    "pres24",
+    "strumicanet",
+    "dnevnik",
+    "mkdnews",
+    "mkdsport",
+    "belimuabeti",
+    "utrinski",
+    "balkansport",
+    "informer",
+    "telegraf",
+    "BLIC",
+    "mondo",
+    "srbijadanas",
+    "novosti",
+    "objektiv",
+    "n1",
+    "n1 info",
+    "nova.rs",
+    "b92",
+    "politika.rs",
+    "vreme",
+    "nin",
+    "nedeljnik",
+    "insajder",
+    "krik",
+    "cins",
+    "euronews",
+    "tanjug",
+    "pescanik",
+    "istinomer",
+    "juzne vesti",
+    "rtv",
+    "benchmark",
+    "pc press",
+    "netokracija",
+    "mozzart sport",
+    "hotsport",
+    "maxbet",
+    "zurnal",
+    "sputnik",
 }
 
 TAG_GENERIC_STARTERS = {
@@ -504,17 +612,23 @@ def normalize_tag_name(name):
 def is_valid_focus_entity(name, entity_type=None):
     clean = normalize_tag_name(name)
     lowered = clean.lower()
+    
+    # Strip common news domain extensions for checking noise
+    noise_check = re.sub(r"\.(mk|rs|com|net|info|org|press|live)$", "", lowered)
+    
     words = [word for word in re.split(r"\s+", lowered) if word]
+    # Also check individual words without extensions
+    noise_words = [re.sub(r"\.(mk|rs|com|net|info|org|press|live)$", "", w) for w in words]
 
     if not clean or len(clean) < 3:
         return False
     if lowered in TAG_NOISE_WORDS or lowered in ENTITY_NOISE_WORDS:
         return False
-    if lowered in SOURCE_NOISE_WORDS:
+    if noise_check in SOURCE_NOISE_WORDS or lowered in SOURCE_NOISE_WORDS:
         return False
     if any(word in TAG_NOISE_WORDS or word in ENTITY_NOISE_WORDS for word in words):
         return False
-    if any(word in SOURCE_NOISE_WORDS for word in words):
+    if any(w in SOURCE_NOISE_WORDS for w in noise_words) or any(w in SOURCE_NOISE_WORDS for w in words):
         return False
     if words and words[0] in TAG_GENERIC_STARTERS:
         return False
