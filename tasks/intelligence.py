@@ -726,6 +726,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                     fetch=False,
                 )
 
+                if res_data.get("full_article_draft") and len(res_data["full_article_draft"]) > 100:
                     db.execute(
                         """INSERT INTO cluster_summaries (cluster_id, lang, summary, generated_article, synthetic_headline, synthetic_standfirst, created_at, citation_sources, key_facts, analyst_entities, pulse_score, pluralism_score, narrative_diversity)
                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
