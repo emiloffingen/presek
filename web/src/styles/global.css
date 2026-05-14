@@ -1675,6 +1675,7 @@ button:active,
     grid-template-columns: minmax(0, 1fr);
     column-gap: 2rem;
     row-gap: 1.25rem;
+    align-items: start;
 }
 
 .news-feed-grid-compact {

@@ -103,8 +103,8 @@ export function slugify(text: string): string {
 export function deShout(text: string): string {
     if (!text) return '';
     // If text doesn't have many lowercase letters, it's probably shouting
-    const lowerCount = (text.match(/[a-za-s]/g) || []).length;
-    const totalAlpha = (text.match(/[a-zA-Za-sA-S]/g) || []).length;
+    const lowerCount = (text.match(/\p{Ll}/gu) || []).length;
+    const totalAlpha = (text.match(/\p{L}/gu) || []).length;
     
     if (totalAlpha > 5 && lowerCount < totalAlpha * 0.2) {
         const lower = text.toLowerCase();
@@ -225,7 +225,7 @@ function normalizeDisplayTitle(text: string): string {
 }
 
 export function getDisplayTitle(article: any, fallback = ''): string {
-    return normalizeDisplayTitle(article?.display_title || cleanAndDecode(article?.title || fallback));
+    return normalizeDisplayTitle(deShout(article?.display_title || cleanAndDecode(article?.title || fallback)));
 }
 
 export function getDisplaySummary(article: any): string {

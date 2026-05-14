@@ -221,7 +221,7 @@ function OnboardingIslandCompact({ profile, recommendations }: any) {
   return (
     <div className="for-you-follow-block">
       <div className="for-you-follow-head">
-          <p className="for-you-kicker"><Sparkles size={14} /> Sledete dalje</p>
+          <p className="for-you-kicker"><Sparkles size={14} /> Pratite dalje</p>
       </div>
       <div className="for-you-follow-grid">
         {recommendations.topics.slice(0, 2).map((item: any) => (
@@ -256,3 +256,5 @@ function OnboardingIslandCompact({ profile, recommendations }: any) {
     </div>
   );
 }
+
+
