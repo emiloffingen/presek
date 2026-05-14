@@ -82,7 +82,7 @@ export default function SourceComparisonIsland({ allSources }: { allSources: str
   return (
     <section className="rail-module border border-zinc-200 dark:border-zinc-800 p-8 md:p-10 rounded-xl bg-background shadow-sm">
       <div className="flex items-center justify-between mb-10">
-        <h2 className="font-serif text-2xl font-black tracking-tight italic border-b-4 border-nyt-accent pb-1">Sporedba na redakcii</h2>
+        <h2 className="font-serif text-2xl font-black tracking-tight italic border-b-4 border-nyt-accent pb-1">Poređenje redakcija</h2>
         <div className="p-2 bg-secondary/50 rounded-full">
             <ArrowLeftRight size={20} className="text-nyt-accent" />
         </div>
@@ -90,7 +90,7 @@ export default function SourceComparisonIsland({ allSources }: { allSources: str
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
         <div className="space-y-2">
-            <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">Prv izvor</label>
+            <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">Prvi izvor</label>
             <select 
             value={s1} 
             onChange={e => setS1(e.target.value)}
@@ -101,7 +101,7 @@ export default function SourceComparisonIsland({ allSources }: { allSources: str
             </select>
         </div>
         <div className="space-y-2">
-            <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">Vtor izvor</label>
+            <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">Drugi izvor</label>
             <select 
             value={s2} 
             onChange={e => setS2(e.target.value)}
