@@ -104,7 +104,13 @@ const IconComponent =
     <div class="lead-copy">
         <div class="lead-edition-bar">
             <span class="lead-edition-label">VODEĆI NARATIV</span>
-            <div class="lead-edition-note">Konsenzus između {leadCluster.articles.length} {leadCluster.articles.length === 1 ? 'redakcija' : (leadCluster.articles.length >= 2 && leadCluster.articles.length <= 4) ? 'redakcije' : 'redakcija'}</div>
+            {leadCluster.articles.length === 1 ? (
+                <span class="lead-edition-note">Konsenzus između 1 redakcije</span>
+            ) : (leadCluster.articles.length >= 2 && leadCluster.articles.length <= 4) ? (
+                <span class="lead-edition-note">Konsenzus između {leadCluster.articles.length} redakcije</span>
+            ) : (
+                <span class="lead-edition-note">Konsenzus između {leadCluster.articles.length} redakcija</span>
+            )}
         </div>
         <div class="lead-kicker-v2 mb-4">
             <span class="source-badge">{leadCluster.articles?.[0].source}</span>
