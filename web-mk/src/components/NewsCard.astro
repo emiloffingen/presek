@@ -229,7 +229,7 @@ function getTimeStr(dateStr: string) {
 							decoding="async"
 							fetchpriority={isLead ? "high" : "auto"}
 							onload="this.classList.add('is-loaded')"
-							onerror="this.style.opacity='0'; this.nextElementSibling.style.display='grid';"
+							onerror="console.warn('Image failed to load: ' + encodeURIComponent('{thumbSrc}')); this.style.opacity='0'; this.nextElementSibling.style.display='grid';"
 						/>
 						<div class="article-image-placeholder design-card is-error-fallback absolute inset-0" style="display: none; --placeholder-bg: #27272a;">
 							<div class="design-card-pattern opacity-5"></div>
