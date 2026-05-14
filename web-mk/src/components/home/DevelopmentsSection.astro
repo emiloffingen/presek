@@ -26,7 +26,10 @@ function getBentoSpan(cluster: NewsCluster) {
         <p class="section-kicker">
             {tone === 'global' ? 'Međunarodni izbor' : tone === 'wire' ? 'Brza traka' : tone === 'developing' ? 'Domaća agenda' : 'Urednički izbor'}
         </p>
-        <h2 class="section-title">{title}</h2>
+        <h2 class="section-title">
+            {variant === 'wire' && <span class="inline-block w-2.5 h-2.5 bg-nyt-red rounded-full mr-2 mb-0.5 animate-pulse" title="Ажурирања во реално време"></span>}
+            {title}
+        </h2>
         <p class="section-note">{note}</p>
     </div>
     {variant === "wire" ? (

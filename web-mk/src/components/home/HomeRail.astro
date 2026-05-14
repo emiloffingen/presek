@@ -24,7 +24,10 @@ const { railWireArticles, briefing, stats, focusEntities, getTimeStr, getBriefin
 		<p class="rail-kicker">Редакциски деск</p>
 		<div class="rail-head-red">
 			<Activity size={12} strokeWidth={3} />
-			<h3>ПОСЛЕДНО НА ЛЕНТАТА</h3>
+			<h3 class="flex items-center gap-1.5">
+				ПОСЛЕДНО НА ЛЕНТАТА
+				<span class="w-1.5 h-1.5 bg-white rounded-full animate-pulse shadow-[0_0_8px_rgba(255,255,255,0.8)]"></span>
+			</h3>
 		</div>
 		<div class="rail-wire-list">
 			{railWireArticles.slice(0, 10).map((art: any) => (

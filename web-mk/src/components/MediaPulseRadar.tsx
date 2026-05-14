@@ -21,6 +21,7 @@ interface Props {
 export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
   const { tone_analysis, sentiment } = data;
   const [isMounted, setIsMounted] = React.useState(false);
+  const [activeTooltip, setActiveTooltip] = React.useState<{x: number, y: number, label: string, value: string} | null>(null);
 
   React.useEffect(() => {
     const timer = setTimeout(() => setIsMounted(true), 50);
@@ -66,7 +67,7 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
       <div className="flex flex-col gap-10 md:gap-12 items-center">
         {/* Radar Visualization */}
         <div className="relative w-64 h-64 flex-shrink-0 mx-auto">
-          <svg viewBox="0 0 200 200" className="w-full h-full overflow-visible drop-shadow-md">
+          <svg viewBox="0 0 200 200" className="w-full h-full overflow-visible drop-shadow-md relative z-10">
             {/* Background circles */}
             {[1, 0.75, 0.5, 0.25].map((lvl) => (
                 <circle 
@@ -88,7 +89,7 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
             {/* Labels */}
             <text x="100" y={cy - radius - 15} textAnchor="middle" className="text-[11px] font-black fill-muted-foreground uppercase tracking-[0.2em]">Objektivnost</text>
             <text x={cx + radius * Math.sin(120 * Math.PI / 180) + 18} y={cy - radius * Math.cos(120 * Math.PI / 180) + 18} textAnchor="middle" className="text-[11px] font-black fill-muted-foreground uppercase tracking-[0.2em]">Senzacionalizam</text>
-            <text x={cx + radius * Math.sin(240 * Math.PI / 180) - 18} y={cy - radius * Math.cos(240 * Math.PI / 180) + 18} textAnchor="middle" className="text-[11px] font-black fill-muted-foreground uppercase tracking-[0.2em]">Emocii</text>
+            <text x={cx + radius * Math.sin(240 * Math.PI / 180) - 18} y={cy - radius * Math.cos(240 * Math.PI / 180) + 18} textAnchor="middle" className="text-[11px] font-black fill-muted-foreground uppercase tracking-[0.2em]">Емоции</text>
 
             {/* Data shape */}
             <polygon 
@@ -101,11 +102,29 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
               className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1)"
             />
             
-            {/* Points */}
-            <circle cx={x1} cy={y1} r="6" fill="var(--nyt-accent)" className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) stroke-[4px] stroke-background" />
-            <circle cx={x2} cy={y2} r="6" fill="var(--nyt-accent)" className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) stroke-[4px] stroke-background" />
-            <circle cx={x3} cy={y3} r="6" fill="var(--nyt-accent)" className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) stroke-[4px] stroke-background" />
+            {/* Interactive Points */}
+            <g className="cursor-crosshair">
+                <circle cx={x1} cy={y1} r="6" fill="var(--nyt-accent)" className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) stroke-[4px] stroke-background hover:scale-150 hover:stroke-[2px]" 
+                  onMouseEnter={() => setActiveTooltip({x: x1, y: y1, label: 'Објективност', value: `${objectivity.toFixed(1)}%`})} onMouseLeave={() => setActiveTooltip(null)} />
+                <circle cx={x2} cy={y2} r="6" fill="var(--nyt-accent)" className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) stroke-[4px] stroke-background hover:scale-150 hover:stroke-[2px]" 
+                  onMouseEnter={() => setActiveTooltip({x: x2, y: y2, label: 'Сензационализам', value: `${sensationalism.toFixed(1)}%`})} onMouseLeave={() => setActiveTooltip(null)} />
+                <circle cx={x3} cy={y3} r="6" fill="var(--nyt-accent)" className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) stroke-[4px] stroke-background hover:scale-150 hover:stroke-[2px]" 
+                  onMouseEnter={() => setActiveTooltip({x: x3, y: y3, label: 'Емоции', value: `${emotionalCharge.toFixed(1)}%`})} onMouseLeave={() => setActiveTooltip(null)} />
+            </g>
           </svg>
+
+          {/* HTML Tooltip Overlay */}
+          <div 
+            className={`absolute z-20 pointer-events-none bg-zinc-900 text-white dark:bg-white dark:text-black px-3 py-2 rounded shadow-xl text-xs font-bold transition-all duration-200 whitespace-nowrap flex flex-col items-center ${activeTooltip ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+            style={{ 
+              left: activeTooltip ? `${(activeTooltip.x / 200) * 100}%` : '50%', 
+              top: activeTooltip ? `${(activeTooltip.y / 200) * 100}%` : '50%',
+              transform: 'translate(-50%, -120%)'
+            }}
+          >
+            <span className="uppercase text-[9px] tracking-widest opacity-80">{activeTooltip?.label}</span>
+            <span className="text-sm">{activeTooltip?.value}</span>
+          </div>
         </div>
 
         {/* Text Metrics */}

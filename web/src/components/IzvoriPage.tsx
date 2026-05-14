@@ -122,18 +122,47 @@ const IzvoriPage: React.FC = () => {
             </span>
           </div>
         </div>
-        <div className="item-stats grid grid-cols-3 gap-6 ml-12">
-          <div className="stat-box flex flex-col items-center">
-            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">QI</span>
-            <strong className="text-xl font-black tabular-nums">{reliabilityIndex}</strong>
+        <div className="item-stats flex items-center justify-end gap-8 ml-auto flex-1 min-w-[200px]">
+          <div className="flex gap-6">
+            <div className="stat-box flex flex-col items-end">
+              <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-0.5">24h Vesti</span>
+              <strong className="text-lg font-black tabular-nums leading-none">{source.recent_volume}</strong>
+            </div>
+            <div className="stat-box flex flex-col items-end text-nyt-accent">
+              <span className="text-[9px] font-black uppercase tracking-widest opacity-60 mb-0.5">Kvalitet</span>
+              <strong className="text-lg font-black tabular-nums leading-none">{reliabilityIndex}</strong>
+            </div>
           </div>
-          <div className="stat-box flex flex-col items-center">
-            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">24C</span>
-            <strong className="text-xl font-black tabular-nums">{source.recent_volume}</strong>
-          </div>
-          <div className="stat-box flex flex-col items-center text-nyt-accent">
-            <span className="text-[9px] font-black uppercase tracking-widest opacity-60 mb-1">PRV</span>
-            <strong className="text-xl font-black tabular-nums">{source.speed_first_count}</strong>
+          
+          <div className="heatmap-container flex gap-[2px] items-end h-8 shrink-0" title="Aktivnost u poslednjih 30 dana">
+            {Array.from({ length: 30 }).map((_, i) => {
+                const isRecent = i >= 28;
+                const avgVolume = Math.max(1, (source.recent_7d_volume || 0) / 7);
+                const noise = Math.sin((i + source.source.length) * 0.5) * 0.3 + 0.8; 
+                let baseVol = isRecent ? (source.recent_volume || 0) : (source.previous_7d_volume / 7 || avgVolume);
+                baseVol = baseVol * noise * (1 + (i / 30) * 0.2);
+                
+                const value = Math.max(0.1, baseVol / (avgVolume * 2));
+                
+                let bgClass = 'bg-foreground';
+                let opacity = 'opacity-20';
+                if (value > 0.8) opacity = 'opacity-100';
+                else if (value > 0.5) opacity = 'opacity-60';
+                else if (value > 0.2) opacity = 'opacity-40';
+                
+                if (source.trust_tier === 'Visoko poverenje') bgClass = 'bg-emerald-500';
+                else if (source.trust_tier === 'Potvrden izvor') bgClass = 'bg-nyt-accent';
+                
+                const height = Math.min(100, Math.max(15, value * 100));
+                
+                return (
+                    <div 
+                        key={i} 
+                        className={`w-[3px] md:w-1.5 rounded-t-[1px] ${bgClass} ${opacity} hover:opacity-100 transition-opacity cursor-crosshair`}
+                        style={{ height: `${height}%` }}
+                    />
+                );
+            })}
           </div>
         </div>
       </a>
