@@ -312,6 +312,105 @@ async def track_delivery_event(
 # For new development, use /api/v1. Legacy /api routes are maintained for backward compatibility.
 API_VERSION = "v1"
 
+# Clustering Control Endpoints - Manual triggers for debugging/emergency use
+@app.post("/api/admin/trigger-reclustering")
+@exempt_from_rate_limit
+def trigger_reclustering(hours: int = 6, limit: int = 500):
+    """
+    Manually trigger reclustering of recent articles.
+    Used when automatic clustering fails or for emergency recovery.
+    """
+    try:
+        from celery_app import celery_app
+        
+        task = celery_app.send_task(
+            'tasks.intelligence.recluster_recent_articles_task',
+            args=[hours, limit]
+        )
+        
+        return {
+            "status": "success",
+            "task_id": str(task.id),
+            "message": f"Triggered reclustering for last {hours} hours, limit {limit} articles"
+        }
+    except Exception as e:
+        log.error(f"Failed to trigger reclustering: {e}")
+        return {"status": "error", "error": str(e)}
+
+
+@app.post("/api/admin/trigger-storyline-discovery")
+@exempt_from_rate_limit
+def trigger_storyline_discovery():
+    """
+    Manually trigger storyline discovery.
+    Used when storylines aren't being created automatically.
+    """
+    try:
+        from celery_app import celery_app
+        
+        task = celery_app.send_task(
+            'tasks.intelligence.discover_storylines_task'
+        )
+        
+        return {
+            "status": "success",
+            "task_id": str(task.id),
+            "message": "Triggered storyline discovery"
+        }
+    except Exception as e:
+        log.error(f"Failed to trigger storyline discovery: {e}")
+        return {"status": "error", "error": str(e)}
+
+
+@app.get("/api/admin/clustering-status")
+@exempt_from_rate_limit
+def get_clustering_status():
+    """
+    Get current clustering system status.
+    """
+    try:
+        # Check recent articles
+        recent_articles = db.execute(
+            "SELECT COUNT(*) as count FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours'"
+        )[0]["count"]
+        
+        # Check articles with cluster IDs
+        clustered_articles = db.execute(
+            "SELECT COUNT(*) as count FROM articles WHERE cluster_id IS NOT NULL AND created_at >= NOW() - INTERVAL '24 hours'"
+        )[0]["count"]
+        
+        # Check storylines
+        storylines = db.execute(
+            "SELECT COUNT(*) as count FROM storylines_v2 WHERE created_at >= NOW() - INTERVAL '24 hours'"
+        )[0]["count"]
+        
+        # Check clusters in storylines
+        clusters_in_storylines = db.execute(
+            "SELECT COUNT(*) as count FROM storyline_clusters_v2"
+        )[0]["count"]
+        
+        return {
+            "status": "success",
+            "stats": {
+                "recent_articles_24h": recent_articles,
+                "clustered_articles_24h": clustered_articles,
+                "storylines_24h": storylines,
+                "clusters_in_storylines_total": clusters_in_storylines,
+                "clustering_rate": round(clustered_articles / max(recent_articles, 1) * 100, 1) if recent_articles > 0 else 0
+            },
+            "health": {
+                "articles_ingested": recent_articles > 0,
+                "articles_clustered": clustered_articles > 0,
+                "storylines_created": storylines > 0,
+                "clusters_available": clusters_in_storylines > 0,
+                "overall_healthy": storylines > 0 and clusters_in_storylines > 0
+            }
+        }
+    except Exception as e:
+        log.error(f"Failed to get clustering status: {e}")
+        return {"status": "error", "error": str(e)}
+
+
 # Include routers with /api prefix (for Nginx/Public, legacy support)
 app.include_router(news.router, prefix="/api")
 app.include_router(home.router, prefix="/api")
