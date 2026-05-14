@@ -34,9 +34,9 @@ const {
 
 const tintColor = dominantColor || '#1e40af';
 const primaryArticle = leadCluster.articles?.[0] || {};
-const primaryDisplayTitle = getDisplayTitle(primaryArticle, 'Vodecka prica');
+const primaryDisplayTitle = getDisplayTitle(primaryArticle, 'Водечка приказна');
 const relatedArticles = leadCluster.articles.slice(1, 4);
-const mediaLabel = filterLabel || primaryArticle.topic || primaryArticle.category || 'Vodecka tema';
+const mediaLabel = filterLabel || primaryArticle.topic || primaryArticle.category || 'Водечка тема';
 
 const cardContext = getDesignCardContext(leadCluster);
 const IconComponent = 
