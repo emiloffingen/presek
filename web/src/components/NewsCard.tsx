@@ -194,6 +194,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                   onLoad={(e) => (e.currentTarget as HTMLImageElement).classList.add('is-loaded')}
                   onError={(e) => {
                     const img = e.currentTarget as HTMLImageElement;
+                    console.warn(`Image failed to load: ${thumbSrc}`, e);
                     img.style.display = 'none';
                     if (img.nextElementSibling) {
                       (img.nextElementSibling as HTMLElement).style.display = 'flex';

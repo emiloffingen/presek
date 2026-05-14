@@ -635,12 +635,14 @@ async def proxy_image(
 
     def serve_fallback(reason="error"):
         svg = generate_local_placeholder(cid or "px", t or "vest", cat or "vesti")
+        log.warning(f"[proxy] Serving fallback for {url or 'unknown'}: {reason}")
         return Response(
             svg,
             media_type="image/svg+xml",
             headers={
                 "Cache-Control": "public, max-age=3600",
                 "X-Proxy-Fallback": reason,
+                "X-Debug-Reason": reason,
             },
         )
 
@@ -720,7 +722,7 @@ async def proxy_image(
                             if len(img_data) > _PROXY_MAX_BYTES:
                                 return serve_fallback("too_large")
                 except Exception as e:
-                    log.error(f"[proxy] Fetch failed for {url}: {e}")
+                    log.error(f"[proxy] Fetch failed for {url}: {e}", exc_info=True)
                     return serve_fallback("fetch_failed")
 
         if not img_data:
@@ -754,5 +756,5 @@ async def proxy_image(
             headers={"Cache-Control": "public, max-age=86400", "X-Cache": "MISS"},
         )
     except Exception as e:
-        log.warning(f"[proxy] Error for {url}: {e}")
+        log.error(f"[proxy] Error for {url}: {e}", exc_info=True)
         return serve_fallback("exception")
