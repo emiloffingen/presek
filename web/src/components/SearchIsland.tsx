@@ -42,10 +42,9 @@ type SearchAction = {
   label: string;
   icon: any;
   href: string;
-  { id: 'act-pulse', label: 'Informativen Ritam', icon: Activity, href: '/pulse', category: 'NAVIGATION', desc: 'Sledete im trendovite i mediumskiot pluralizam.' },
-  { id: 'act-archive', label: 'Arhiva na vesti', icon: Archive, href: '/archive', category: 'NAVIGATION', desc: 'Prebarajte im site dosegasni objavi.' },
-  { id: 'act-about', label: 'Za Proektot', icon: HelpCircle, href: '/about', category: 'HELP', desc: 'Doznajte povece za Presek i tehnologijata zad nego.' },
-];
+  category: 'NAVIGATION' | 'SETTINGS' | 'HELP';
+  desc: string;
+};
 
 const CATEGORIES = [
   { id: 'all', label: 'SITE TEMI', color: 'bg-nyt-accent' },
