@@ -18,8 +18,13 @@ interface Props {
 	robots?: string;
 }
 
+// Debug: Check if Astro.request is available and what it contains
 const requestUrl = Astro.request ? new URL(Astro.request.url) : Astro.url;
+console.log('DEBUG: Astro.request available:', !!Astro.request);
+console.log('DEBUG: requestUrl.hostname:', requestUrl.hostname);
+console.log('DEBUG: Astro.url.hostname:', Astro.url.hostname);
 const lang = getLangFromUrl(requestUrl);
+console.log('DEBUG: Detected lang:', lang);
 const t = useTranslations(lang);
 
 const {
