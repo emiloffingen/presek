@@ -728,6 +728,11 @@ def auto_summarize_top_clusters(target_cluster_ids: list[str] = None):
             content = "\n\n".join([(a.get("title") or "") + ": " + (a.get("summary") or "") for a in arts])
             synthesize_cluster_task.delay(cid, content=content)
 
+        # Also trigger backfill for older clusters that might have been missed
+        from tasks.intelligence import backfill_cluster_summaries_task
+        backfill_cluster_summaries_task.delay(days=7, lang="sr")  # Backfill last 7 days for Serbian
+        backfill_cluster_summaries_task.delay(days=7, lang="mk")  # Backfill last 7 days for Macedonian
+
     except Exception as e:
         log.error(f"[ai/auto_summarize] Orchestration failed: {e}")
 

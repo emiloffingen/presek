@@ -127,6 +127,16 @@ celery_app.conf.update(
             "task": "tasks.intelligence.recluster_recent_articles_task",
             "schedule": 1800.0,  # Increased from 5m to 30m
         },
+        "backfill-cluster-summaries-sr": {
+            "task": "tasks.intelligence.backfill_cluster_summaries_task",
+            "kwargs": {"lang": "sr"},
+            "schedule": crontab(hour="*/6"),  # Every 6 hours for Serbian
+        },
+        "backfill-cluster-summaries-mk": {
+            "task": "tasks.intelligence.backfill_cluster_summaries_task",
+            "kwargs": {"lang": "mk"},
+            "schedule": crontab(hour="*/6"),  # Every 6 hours for Macedonian
+        },
         "prune-database": {
             "task": "tasks.maintenance.run_prune_db",
             "schedule": crontab(hour=3, minute=0),  # Daily maintenance

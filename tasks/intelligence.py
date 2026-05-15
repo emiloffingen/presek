@@ -1458,6 +1458,105 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
 
     from tasks.delivery import _extract_capitalized_phrases
 
+
+@celery_app.task
+def backfill_cluster_summaries_task(days=30, lang="sr"):
+    """Generate cluster summaries for all existing clusters that don't have them yet."""
+    try:
+        from config import AUTO_SUMMARIZE_MIN_SRC
+        from database import db_manager as db
+        
+        # Get all clusters with articles but no summaries
+        rows = db.execute(
+            """
+            SELECT DISTINCT a.cluster_id
+            FROM articles a
+            WHERE a.cluster_id IS NOT NULL
+            AND a.created_at >= NOW() - make_interval(days => %s)
+            AND NOT EXISTS (
+                SELECT 1 FROM cluster_summaries cs 
+                WHERE cs.cluster_id = a.cluster_id AND cs.lang = %s
+            )
+            """,
+            (days, lang),
+        )
+        
+        if not rows:
+            log.info(f"[tasks] No clusters found for backfill (lang={lang})")
+            return
+        
+        cluster_ids = [row["cluster_id"] for row in rows]
+        log.info(f"[tasks] Backfilling summaries for {len(cluster_ids)} clusters (lang={lang})")
+        
+        for cluster_id in cluster_ids:
+            try:
+                # Check if this cluster has enough sources
+                src_rows = db.execute(
+                    "SELECT DISTINCT source FROM articles WHERE cluster_id = %s",
+                    (cluster_id,),
+                )
+                
+                if len(src_rows) < AUTO_SUMMARIZE_MIN_SRC:
+                    log.debug(f"[tasks] Skipping cluster {cluster_id} - only {len(src_rows)} source(s)")
+                    continue
+                
+                # Load articles for this cluster
+                article_rows = db.execute(
+                    "SELECT * FROM articles WHERE cluster_id = %s ORDER BY created_at ASC",
+                    (cluster_id,),
+                )
+                
+                if not article_rows:
+                    continue
+                
+                # Generate summary using fallback (local) synthesis
+                from nlp.generation import synthesize_cluster_fallback
+                
+                fallback_result = synthesize_cluster_fallback(article_rows)
+                
+                if fallback_result["summary"] or fallback_result["generated_article"]:
+                    # Store the summary in database
+                    db.execute(
+                        """
+                        INSERT INTO cluster_summaries 
+                        (cluster_id, lang, summary, generated_article, synthetic_headline, 
+                         synthetic_standfirst, created_at, perspectives, key_facts, analyst_entities)
+                        VALUES (%s, %s, %s, %s, %s, %s, NOW(), %s, %s, %s)
+                        ON CONFLICT (cluster_id, lang) DO UPDATE SET
+                        summary = EXCLUDED.summary,
+                        generated_article = EXCLUDED.generated_article,
+                        synthetic_headline = EXCLUDED.synthetic_headline,
+                        synthetic_standfirst = EXCLUDED.synthetic_standfirst,
+                        created_at = NOW(),
+                        perspectives = EXCLUDED.perspectives,
+                        key_facts = EXCLUDED.key_facts,
+                        analyst_entities = EXCLUDED.analyst_entities
+                        """,
+                        (
+                            cluster_id,
+                            lang,
+                            fallback_result["summary"][:4000] if fallback_result["summary"] else "",
+                            fallback_result["generated_article"][:8000] if fallback_result["generated_article"] else "",
+                            fallback_result["synthetic_headline"][:200] if fallback_result["synthetic_headline"] else "",
+                            fallback_result["synthetic_standfirst"][:500] if fallback_result["synthetic_standfirst"] else "",
+                            fallback_result["perspectives"][:2000] if fallback_result["perspectives"] else [],
+                            fallback_result["key_facts"][:1000] if fallback_result["key_facts"] else [],
+                            fallback_result["analyst_entities"][:1000] if fallback_result["analyst_entities"] else [],
+                        ),
+                    )
+                    log.info(f"[tasks] Generated summary for cluster {cluster_id} (lang={lang})")
+                else:
+                    log.debug(f"[tasks] No summary generated for cluster {cluster_id}")
+                    
+            except Exception as e:
+                log.warning(f"[tasks] Failed to generate summary for cluster {cluster_id}: {e}")
+                
+        log.info(f"[tasks] Completed backfill for {lang} language clusters")
+        
+    except Exception as e:
+        log.error(f"[tasks] Backfill cluster summaries failed: {e}")
+        raise
+
     source_lower = source_context.casefold()
     context_entities = {
         phrase.casefold()
