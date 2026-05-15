@@ -404,7 +404,7 @@ class GeminiProvider(AIProvider):
                 data = resp.json()
                 return data["candidates"][0]["content"]["parts"][0]["text"]
         except Exception as e:
-            log.warning(f"[ai/gemini] Call failed: {e}")
+            log.error(f"[ai/gemini] Call failed: {e}. Request data might be malformed or API unreachable.")
         return None
 
     async def stream_call(
