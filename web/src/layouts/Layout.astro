@@ -20,10 +20,18 @@ interface Props {
 
 // Debug: Check if Astro.request is available and what it contains
 const requestUrl = Astro.request ? new URL(Astro.request.url) : Astro.url;
+const hostHeader = Astro.request?.headers.get('host') || requestUrl.hostname;
 console.log('DEBUG: Astro.request available:', !!Astro.request);
 console.log('DEBUG: requestUrl.hostname:', requestUrl.hostname);
+console.log('DEBUG: Host header:', hostHeader);
 console.log('DEBUG: Astro.url.hostname:', Astro.url.hostname);
-const lang = getLangFromUrl(requestUrl);
+
+// Use the Host header to determine the correct URL
+const effectiveUrl = new URL(requestUrl);
+effectiveUrl.hostname = hostHeader;
+console.log('DEBUG: Effective URL hostname:', effectiveUrl.hostname);
+
+const lang = getLangFromUrl(effectiveUrl);
 console.log('DEBUG: Detected lang:', lang);
 const t = useTranslations(lang);
 
