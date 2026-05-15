@@ -18,7 +18,8 @@ interface Props {
 	robots?: string;
 }
 
-const lang = getLangFromUrl(Astro.url);
+const requestUrl = Astro.request ? new URL(Astro.request.url) : Astro.url;
+const lang = getLangFromUrl(requestUrl);
 const t = useTranslations(lang);
 
 const {
@@ -50,7 +51,7 @@ function buildCanonicalUrl(pathname: string): string {
 	return clean;
 }
 
-const canonicalUrl = canonical || buildCanonicalUrl(Astro.url.pathname);
+const canonicalUrl = canonical || buildCanonicalUrl(requestUrl.pathname);
 const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.startsWith("/") ? image : `/${image}`}`;
 ---
 
