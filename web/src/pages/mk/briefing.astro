@@ -1,14 +1,14 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import NYTHeader from '../components/NYTHeader.astro';
-import Footer from '../components/Footer.astro';
-import BriefingHeader from '../components/briefing/BriefingHeader.astro';
-import BriefingContent from '../components/briefing/BriefingContent.astro';
-import BriefingSidebar from '../components/briefing/BriefingSidebar.astro';
-import BriefingDigest from '../components/briefing/BriefingDigest.astro';
+import Layout from '../../layouts/Layout.astro';
+import NYTHeader from '../../components/NYTHeader.astro';
+import Footer from '../../components/Footer.astro';
+import BriefingHeader from '../../components/briefing/BriefingHeader.astro';
+import BriefingContent from '../../components/briefing/BriefingContent.astro';
+import BriefingSidebar from '../../components/briefing/BriefingSidebar.astro';
+import BriefingDigest from '../../components/briefing/BriefingDigest.astro';
 
-import { apiBaseUrl } from '../lib/apiBase';
-import { formatBriefing } from '../utils/briefingFormatter';
+import { apiBaseUrl } from '../../lib/apiBase';
+import { formatBriefing } from '../../utils/briefingFormatter';
 import { Newspaper } from 'lucide-react';
 
 const API_URL = apiBaseUrl();

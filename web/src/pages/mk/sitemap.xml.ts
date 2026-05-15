@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { apiBaseUrl } from '../lib/apiBase';
+import { apiBaseUrl } from '../../lib/apiBase';
 
 const SITE_URL = (import.meta.env.PUBLIC_SITE_URL || 'https://presek.live').replace(/\/+$/, '');
 const API_URL = apiBaseUrl();
@@ -11,7 +11,8 @@ export const GET: APIRoute = async () => {
         let page = 0;
         let hasMore = true;
         while (hasMore && page < 10) {
-            const res = await fetch(`${API_URL}/news?page_size=50&page=${page}&lang=mk`);            if (res.ok) {
+            const res = await fetch(`${API_URL}/news?page_size=50&page=${page}`);
+            if (res.ok) {
                 const data = await res.json();
                 if (data && Array.isArray(data.clusters)) {
                     clusterIds.push(...data.clusters.map((c: any) => c.cluster_id));

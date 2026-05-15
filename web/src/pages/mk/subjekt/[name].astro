@@ -1,16 +1,16 @@
 ---
-import Layout from '../../layouts/Layout.astro';
-import NYTHeader from '../../components/NYTHeader.astro';
-import NewsCard from '../../components/NewsCard.astro';
-import EntityIsland from '../../components/EntityIsland';
+import Layout from '../../../layouts/Layout.astro';
+import NYTHeader from '../../../components/NYTHeader.astro';
+import NewsCard from '../../../components/NewsCard.astro';
+import EntityIsland from '../../../components/EntityIsland';
 
-import Breadcrumbs from '../../components/Breadcrumbs.astro';
-import Footer from '../../components/Footer.astro';
-import { apiBaseUrl } from '../../lib/apiBase';
-import { cleanAndDecode, isMostlyCyrillic } from '../../utils/textUtils';
-import { sanitizeHtml } from '../../lib/sanitize';
+import Breadcrumbs from '../../../components/Breadcrumbs.astro';
+import Footer from '../../../components/Footer.astro';
+import { apiBaseUrl } from '../../../lib/apiBase';
+import { cleanAndDecode, isMostlyCyrillic } from '../../../utils/textUtils';
+import { sanitizeHtml } from '../../../lib/sanitize';
 
-import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+import { getLangFromUrl, useTranslations } from '../../../i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);

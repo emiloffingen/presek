@@ -1,27 +1,27 @@
 ---
 /* Cache-bust marker for homepage stylesheet hashing. */
-import Layout from '../layouts/Layout.astro';
-import NewsCard from '../components/NewsCard.astro';
-import NYTHeader from '../components/NYTHeader.astro';
-import Footer from '../components/Footer.astro';
+import Layout from '../../layouts/Layout.astro';
+import NewsCard from '../../components/NewsCard.astro';
+import NYTHeader from '../../components/NYTHeader.astro';
+import Footer from '../../components/Footer.astro';
 
-import ForYouIsland from '../components/ForYouIsland.tsx';
-import HomeRailSuggestionsIsland from '../components/HomeRailSuggestionsIsland.tsx';
-import NationalMoodIsland from '../components/NationalMoodIsland.tsx';
-import NewsletterIsland from '../components/NewsletterIsland.tsx';
-import LeadHero from '../components/home/LeadHero.astro';
-import SupportingBand from '../components/home/SupportingBand.astro';
-import DevelopmentsSection from '../components/home/DevelopmentsSection.astro';
-import FilterHeader from '../components/home/FilterHeader.astro';
-import HomeRail from '../components/home/HomeRail.astro';
-import EmptyState from '../components/home/EmptyState.astro';
-import { chooseClusterImage } from '../utils/imageSelection';
-import { cleanAndDecode, extractCleanSummaryText, getDisplayTitle, highlightScores, isMostlyCyrillic } from '../utils/textUtils';
-import { sanitizeHtml } from '../lib/sanitize';
-import { apiBaseUrl } from '../lib/apiBase';
+import ForYouIsland from '../../components/ForYouIsland.tsx';
+import HomeRailSuggestionsIsland from '../../components/HomeRailSuggestionsIsland.tsx';
+import NationalMoodIsland from '../../components/NationalMoodIsland.tsx';
+import NewsletterIsland from '../../components/NewsletterIsland.tsx';
+import LeadHero from '../../components/home/LeadHero.astro';
+import SupportingBand from '../../components/home/SupportingBand.astro';
+import DevelopmentsSection from '../../components/home/DevelopmentsSection.astro';
+import FilterHeader from '../../components/home/FilterHeader.astro';
+import HomeRail from '../../components/home/HomeRail.astro';
+import EmptyState from '../../components/home/EmptyState.astro';
+import { chooseClusterImage } from '../../utils/imageSelection';
+import { cleanAndDecode, extractCleanSummaryText, getDisplayTitle, highlightScores, isMostlyCyrillic } from '../../utils/textUtils';
+import { sanitizeHtml } from '../../lib/sanitize';
+import { apiBaseUrl } from '../../lib/apiBase';
 import { TrendingUp, Zap, ChevronRight, Activity } from 'lucide-react';
-import type { NewsCluster } from '../types';
-import { getLangFromUrl, useTranslations } from '../i18n/utils';
+import type { NewsCluster } from '../../types';
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);

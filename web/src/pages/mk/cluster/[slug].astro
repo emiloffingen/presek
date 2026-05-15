@@ -1,23 +1,23 @@
 ---
-import Layout from '../../layouts/Layout.astro';
-import NYTHeader from '../../components/NYTHeader.astro';
-import Footer from '../../components/Footer.astro';
-import Breadcrumbs from '../../components/Breadcrumbs.astro';
-import ShareIsland from '../../components/ShareIsland.tsx';
-import ReaderTracker from '../../components/ReaderTracker.tsx';
-import PreferenceToggle from '../../components/PreferenceToggle.tsx';
-import { MediaPulseRadar } from '../../components/MediaPulseRadar.tsx';
-import ResearchIsland from '../../components/ResearchIsland.tsx';
-import StorylineHistoryIsland from '../../components/StorylineHistoryIsland.tsx';
-import ClusterHistoryIsland from '../../components/ClusterHistoryIsland.tsx';
-import { SourceSpectrum } from '../../components/SourceSpectrum.tsx';
-import SourceComparisonIsland from '../../components/SourceComparisonIsland.tsx';
-import ClusterFollowSuggestionsIsland from '../../components/ClusterFollowSuggestionsIsland.tsx';
-import NewsletterIsland from '../../components/NewsletterIsland.tsx';
-import { apiBaseUrl } from '../../lib/apiBase';
-import { cleanAndDecode, isMostlyCyrillic, getEditionStr, parseFootnotes, deShout, slugify } from '../../utils/textUtils';
+import Layout from '../../../layouts/Layout.astro';
+import NYTHeader from '../../../components/NYTHeader.astro';
+import Footer from '../../../components/Footer.astro';
+import Breadcrumbs from '../../../components/Breadcrumbs.astro';
+import ShareIsland from '../../../components/ShareIsland.tsx';
+import ReaderTracker from '../../../components/ReaderTracker.tsx';
+import PreferenceToggle from '../../../components/PreferenceToggle.tsx';
+import { MediaPulseRadar } from '../../../components/MediaPulseRadar.tsx';
+import ResearchIsland from '../../../components/ResearchIsland.tsx';
+import StorylineHistoryIsland from '../../../components/StorylineHistoryIsland.tsx';
+import ClusterHistoryIsland from '../../../components/ClusterHistoryIsland.tsx';
+import { SourceSpectrum } from '../../../components/SourceSpectrum.tsx';
+import SourceComparisonIsland from '../../../components/SourceComparisonIsland.tsx';
+import ClusterFollowSuggestionsIsland from '../../../components/ClusterFollowSuggestionsIsland.tsx';
+import NewsletterIsland from '../../../components/NewsletterIsland.tsx';
+import { apiBaseUrl } from '../../../lib/apiBase';
+import { cleanAndDecode, isMostlyCyrillic, getEditionStr, parseFootnotes, deShout, slugify } from '../../../utils/textUtils';
 
-import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+import { getLangFromUrl, useTranslations } from '../../../i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
@@ -50,17 +50,17 @@ function getRelativeTimeStr(dateStr: string) {
     }
 }
 
-import { sanitizeHtml } from '../../lib/sanitize';
+import { sanitizeHtml } from '../../../lib/sanitize';
 import { Newspaper, Clock, Link2, Zap, Sparkles, ShieldCheck, TriangleAlert, BarChart3, Radio, Search } from 'lucide-react';
-import EntityContextCard from '../../components/EntityContextCard.tsx';
-import ClusterHeader from '../../components/Cluster/ClusterHeader.astro';
-import HeroVisual from '../../components/Cluster/HeroVisual.astro';
+import EntityContextCard from '../../../components/EntityContextCard.tsx';
+import ClusterHeader from '../../../components/Cluster/ClusterHeader.astro';
+import HeroVisual from '../../../components/Cluster/HeroVisual.astro';
 
-import CitationSources from '../../components/CitationSources.astro';
-import CredibilityAnalysis from '../../components/Cluster/CredibilityAnalysis.astro';
-import ArticleItem from '../../components/Cluster/ArticleItem.astro';
-import EditorialNarrative from '../../components/Cluster/EditorialNarrative.astro';
-import type { Article, ClusterDetail } from '../../types';
+import CitationSources from '../../../components/CitationSources.astro';
+import CredibilityAnalysis from '../../../components/Cluster/CredibilityAnalysis.astro';
+import ArticleItem from '../../../components/Cluster/ArticleItem.astro';
+import EditorialNarrative from '../../../components/Cluster/EditorialNarrative.astro';
+import type { Article, ClusterDetail } from '../../../types';
 
 const { slug } = Astro.params;
 const API_URL = apiBaseUrl();

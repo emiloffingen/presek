@@ -1,15 +1,15 @@
 ---
-import Layout from '../../layouts/Layout.astro';
-import NYTHeader from '../../components/NYTHeader.astro';
-import Footer from '../../components/Footer.astro';
-import NewsCard from '../../components/NewsCard.astro';
-import Breadcrumbs from '../../components/Breadcrumbs.astro';
-import PreferenceToggle from '../../components/PreferenceToggle.tsx';
-import TopicFollowSuggestionsIsland from '../../components/TopicFollowSuggestionsIsland.tsx';
+import Layout from '../../../layouts/Layout.astro';
+import NYTHeader from '../../../components/NYTHeader.astro';
+import Footer from '../../../components/Footer.astro';
+import NewsCard from '../../../components/NewsCard.astro';
+import Breadcrumbs from '../../../components/Breadcrumbs.astro';
+import PreferenceToggle from '../../../components/PreferenceToggle.tsx';
+import TopicFollowSuggestionsIsland from '../../../components/TopicFollowSuggestionsIsland.tsx';
 
-import { buildTopicConnections } from '../../lib/topicDiscovery.js';
-import { apiBaseUrl } from '../../lib/apiBase';
-import { cleanAndDecode, getDisplaySummary } from '../../utils/textUtils';
+import { buildTopicConnections } from '../../../lib/topicDiscovery.js';
+import { apiBaseUrl } from '../../../lib/apiBase';
+import { cleanAndDecode, getDisplaySummary } from '../../../utils/textUtils';
 import { ArrowRight, Clock3, Newspaper, Sparkles } from 'lucide-react';
 
 const rawTopicParam = Astro.params.topic || '';
