@@ -7,7 +7,8 @@ interface Props {
 }
 
 const { mode = 'full', class: className } = Astro.props;
-const lang = getLangFromUrl(Astro.url);
+const hostHeader = Astro.request?.headers.get('host');
+const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
 ---
 

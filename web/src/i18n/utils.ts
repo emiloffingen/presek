@@ -1,10 +1,12 @@
 import { ui, defaultLang } from './ui';
 
-export function getLangFromUrl(url: URL) {
+export function getLangFromUrl(url: URL, hostname?: string | null) {
   const [, lang] = url.pathname.split('/');
   
+  const effectiveHost = hostname || url.hostname;
+  
   // Check domain first for Macedonian site
-  if (url.hostname === 'presek.mk' || url.hostname === 'www.presek.mk') {
+  if (effectiveHost === 'presek.mk' || effectiveHost === 'www.presek.mk') {
     return 'mk' as keyof typeof ui;
   }
   

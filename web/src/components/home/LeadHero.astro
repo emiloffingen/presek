@@ -33,7 +33,8 @@ const {
     filterLabel = null
 } = Astro.props;
 
-const lang = getLangFromUrl(Astro.url);
+const hostHeader = Astro.request?.headers.get('host');
+const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
 
 const tintColor = dominantColor || '#1e40af';

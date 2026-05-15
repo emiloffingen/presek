@@ -1,5 +1,6 @@
 ---
 import { ChevronRight, Home } from 'lucide-react';
+import { getLangFromUrl } from '../i18n/utils';
 
 interface Crumb {
   label: string;
@@ -13,7 +14,8 @@ interface Props {
 const { items } = Astro.props;
 
 // For SEO schema
-const lang = getLangFromUrl(Astro.url);
+const hostHeader = Astro.request?.headers.get('host');
+const lang = getLangFromUrl(Astro.url, hostHeader);
 const siteUrl = lang === 'sr' ? 'https://presek.live' : 'https://presek.mk';
 const breadcrumbSchema = {
   "@context": "https://schema.org",
