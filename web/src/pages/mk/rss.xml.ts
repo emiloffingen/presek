@@ -36,10 +36,10 @@ export const GET: APIRoute = async () => {
         console.error("RSS fetch error:", e);
     }
 
-    // Build RSS feed items - filter to only RS articles
+    // Build RSS feed items - filter to only MK articles
     const items = clusters
         .filter(c => c.articles && c.articles.length > 0)
-        .flatMap(cluster => cluster.articles.filter((a: any) => a.country === 'RS'))
+        .flatMap(cluster => cluster.articles.filter((a: any) => a.country === 'MK'))
         .filter(a => a)
         .map(article => {
             const cluster = clusters.find(c => c.cluster_id === article.cluster_id) || {};
@@ -66,15 +66,15 @@ export const GET: APIRoute = async () => {
      xmlns:dc="http://purl.org/dc/elements/1.1/"
      xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title><![CDATA[Presek - Srbija]]></title>
+    <title><![CDATA[Пресек - Македонија]]></title>
     <link>${escapeXml(SITE_URL)}</link>
-    <description><![CDATA[Presek: Najnovije vesti iz Srbije i regiona. Nezavisno, balansirano, dubinsko.]]></description>
-    <language>sr-RS</language>
+    <description><![CDATA[Пресек: Најнови вести од Македонија и регионот. Независно, балансирано, длабоко.]]></description>
+    <language>mk-MK</language>
     <pubDate>${now}</pubDate>
     <lastBuildDate>${now}</lastBuildDate>
     <managingEditor>editor@presek.live</managingEditor>
     <webMaster>webmaster@presek.live</webMaster>
-    <atom:link href="${escapeXml(SITE_URL)}/rss.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="${escapeXml(SITE_URL)}/mk/rss.xml" rel="self" type="application/rss+xml" />
 ${items}
   </channel>
 </rss>`;
