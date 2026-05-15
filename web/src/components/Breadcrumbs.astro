@@ -13,7 +13,8 @@ interface Props {
 const { items } = Astro.props;
 
 // For SEO schema
-const siteUrl = (Astro.site?.origin || import.meta.env.PUBLIC_SITE_URL || "https://presek.live").replace(/\/+$/, "");
+const lang = getLangFromUrl(Astro.url);
+const siteUrl = lang === 'sr' ? 'https://presek.live' : 'https://presek.mk';
 const breadcrumbSchema = {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
