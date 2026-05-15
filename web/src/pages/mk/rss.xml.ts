@@ -24,8 +24,8 @@ export const GET: APIRoute = async () => {
     const now = new Date().toUTCString();
 
     try {
-        // Fetch Serbian news
-        const res = await fetch(`${API_URL}/news?page_size=50&page=0`);
+        // Fetch Macedonian news
+        const res = await fetch(`${API_URL}/news?page_size=50&page=0&lang=mk`);
         if (res.ok) {
             const data = await res.json();
             if (data && Array.isArray(data.clusters)) {
@@ -36,10 +36,10 @@ export const GET: APIRoute = async () => {
         console.error("RSS fetch error:", e);
     }
 
-    // Build RSS feed items - filter to only MK articles
+    // Build RSS feed items
     const items = clusters
         .filter(c => c.articles && c.articles.length > 0)
-        .flatMap(cluster => cluster.articles.filter((a: any) => a.country === 'MK'))
+        .flatMap(cluster => cluster.articles)
         .filter(a => a)
         .map(article => {
             const cluster = clusters.find(c => c.cluster_id === article.cluster_id) || {};
