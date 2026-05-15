@@ -7,10 +7,10 @@ import tailwindcss from '@tailwindcss/vite';
 import node from '@astrojs/node';
 import partytown from '@astrojs/partytown';
 
-// ⚠️ SERBIAN SITE - presek.live - DO NOT EDIT for Macedonian
+// Site URL is determined dynamically in Layout.astro based on language
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://presek.live',
+  site: import.meta.env.PUBLIC_SITE_URL || 'https://presek.live',
   trailingSlash: 'never',
   output: 'server',
   i18n: {
