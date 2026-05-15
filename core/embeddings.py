@@ -52,10 +52,13 @@ def _get_model():
             log.error(f"[embeddings] sentence-transformers import failed: {e}")
             return None
         try:
-            log.info(f"[embeddings] Loading local model '{EMBEDDING_MODEL}' on CPU")
-            _model = SentenceTransformer(EMBEDDING_MODEL, device="cpu")
+            # Check for GPU availability and use if available
+            import torch
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            log.info(f"[embeddings] Loading local model '{EMBEDDING_MODEL}' on {device}")
+            _model = SentenceTransformer(EMBEDDING_MODEL, device=device)
             log.info(
-                f"[embeddings] Model loaded, dim={_model.get_embedding_dimension()}"
+                f"[embeddings] Model loaded on {device}, dim={_model.get_embedding_dimension()}"
             )
         except Exception as e:
             log.error(f"[embeddings] Failed to load model: {e}")

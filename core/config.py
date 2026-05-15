@@ -22,7 +22,7 @@ REQUIRED_RUNTIME_ENV_KEYS = ("DATABASE_URL", "SECRET_KEY")
 # Optional but recommended for production
 RECOMMENDED_ENV_KEYS = (
     "REDIS_URL",
-    "PRESEK_ADMIN_TOKEN",
+    "JWT_SECRET",
     "NTFY_TOPIC",
     "NTFY_TOKEN",
     "VAPID_PRIVATE_KEY",
@@ -36,7 +36,7 @@ SENSITIVE_ENV_KEYS = (
     "DATABASE_URL",
     "REDIS_URL",
     "SECRET_KEY",
-    "PRESEK_ADMIN_TOKEN",
+    "JWT_SECRET",
     "SMTP_PASS",
     "CLOUDFLARE_API_TOKEN",
     "R2_SECRET_ACCESS_KEY",
@@ -310,6 +310,13 @@ LOCAL_TRANSLATION_ENABLED = (
 ENABLE_EXPENSIVE_STYLE_TASKS = (
     os.environ.get("ENABLE_EXPENSIVE_STYLE_TASKS", "false").lower() == "true"
 )
+
+# GPU acceleration for embeddings
+ENABLE_GPU_ACCELERATION = os.environ.get("ENABLE_GPU_ACCELERATION", "false").lower() == "true"
+
+# Database read replica configuration
+DATABASE_READ_REPLICA_URL = os.environ.get("DATABASE_READ_REPLICA_URL", "")
+USE_READ_REPLICA = bool(DATABASE_READ_REPLICA_URL)
 
 # ── AI Routing Configuration ────────────────────────────────────
 # Use Mistral large (free) first, then small (paid)

@@ -1,146 +1,263 @@
-# Presek deploy
+# Presek Production Deployment
 
-The supported production path is:
+This directory contains scripts and configuration for deploying Presek to production environments.
 
-- `systemd` for app processes
-- `nginx` for the public reverse proxy
-- Cloudflare in front of nginx
-- a release root with `releases/`, `current`, and `shared/`
+## Deployment Options
 
-`start.sh` is not the intended production runtime. Keep it for local/manual fallback only.
+### 1. Full Production Deployment (Recommended)
 
-If you do not want to install the nginx and systemd files manually, use:
-
-```sh
-sudo bash deploy/install_server.sh
+```bash
+# On a fresh Ubuntu 22.04 server:
+sudo bash deploy/production_deploy.sh
 ```
 
-The installer now expects a release-based runtime layout and always installs the systemd units. nginx installation is optional:
+This script will:
+- Install all dependencies (Python, PostgreSQL, Redis, Nginx)
+- Set up system users and permissions
+- Configure database and Redis
+- Build the frontend
+- Set up systemd services
+- Configure SSL certificates
+- Set up monitoring and logging
 
-- `INSTALL_NGINX=1`: require cert files and update nginx
-- `INSTALL_NGINX=0`: leave nginx untouched and update only systemd/services
-- `INSTALL_NGINX=auto` (default): update nginx only if the configured cert files exist
+### 2. Manual Deployment Steps
 
-It refuses to continue if the Python venv, shared env file, or current release are missing, verifies the systemd units, optionally reloads nginx, and runs local smoke checks against:
+If you prefer manual control:
 
-- `http://127.0.0.1:5001/api/health`
-- `http://127.0.0.1:3000`
+```bash
+# 1. Install dependencies
+sudo apt update
+sudo apt install -y python3 python3-venv python3-pip nginx postgresql redis-server
 
-You can override defaults with environment variables:
+# 2. Create user and directories
+sudo useradd --system presek
+sudo mkdir -p /opt/presek /var/log/presek /etc/presek
+sudo chown -R presek:presek /opt/presek /var/log/presek
 
-```sh
-sudo DOMAIN=presek.live \
-  SERVER_USER=emiloffingen \
-  APP_ROOT=/home/emiloffingen/presek-runtime \
-  INSTALL_NGINX=0 \
-  CERT_FULLCHAIN=/etc/ssl/cloudflare/presek.live/fullchain.pem \
-  CERT_PRIVKEY=/etc/ssl/cloudflare/presek.live/privkey.pem \
-  bash deploy/install_server.sh
+# 3. Copy application files
+# (Copy your Presek code to /opt/presek)
+
+# 4. Set up configuration
+sudo cp deploy/production_config.example /etc/presek/environment
+sudo chmod 640 /etc/presek/environment
+sudo chown root:presek /etc/presek/environment
+
+# 5. Edit configuration
+sudo nano /etc/presek/environment
+
+# 6. Set up Python environment
+python3 -m venv /opt/presek/venv
+source /opt/presek/venv/bin/activate
+pip install -r requirements.txt
+
+# 7. Build frontend
+cd /opt/presek/web
+npm install
+npm run build
+
+# 8. Set up services
+sudo cp deploy/systemd/presek.service /etc/systemd/system/
+sudo cp deploy/systemd/presek-worker.service /etc/systemd/system/
+sudo cp deploy/systemd/presek-beat.service /etc/systemd/system/
+
+# 9. Set up Nginx
+sudo cp deploy/nginx/presek.conf /etc/nginx/sites-available/
+sudo ln -s /etc/nginx/sites-available/presek.conf /etc/nginx/sites-enabled/
+
+# 10. Start services
+sudo systemctl daemon-reload
+sudo systemctl enable presek presek-worker presek-beat nginx postgresql redis
+sudo systemctl start presek presek-worker presek-beat nginx postgresql redis
 ```
 
-Before running it on the server, make sure:
+## Configuration Files
 
-- nginx is installed
-- the Python virtualenv exists at `APP_ROOT/venv`
-- the shared env exists at `APP_ROOT/shared/.env`
-- the shared Astro dependencies exist at `APP_ROOT/shared/web-node_modules`
-- a built release exists at `APP_ROOT/current`
-- if `INSTALL_NGINX=1`, your TLS certificate files are already on disk
+### Main Configuration
+- `/etc/presek/environment` - Main environment variables
+- `/etc/presek/jwt_secret` - JWT secret key
+- `/etc/presek/db_password` - Database password
+- `/etc/presek/redis_password` - Redis password
 
-## Bootstrap a runtime root
+### Service Configuration
+- `/etc/systemd/system/presek.service` - Main API service
+- `/etc/systemd/system/presek-worker.service` - Celery worker
+- `/etc/systemd/system/presek-beat.service` - Celery beat (scheduled tasks)
+- `/etc/nginx/sites-available/presek.conf` - Nginx configuration
 
-For a first-time server setup, bootstrap the runtime root before the first release:
+## Security Configuration
 
-```sh
-APP_ROOT=/home/emiloffingen/presek-runtime bash deploy/bootstrap_runtime_root.sh
+### CSP (Content Security Policy)
+The production deployment uses a strict CSP:
+```
+default-src 'self'; 
+script-src 'self' 'nonce-{csp_nonce}'; 
+style-src 'self' 'nonce-{csp_nonce}'; 
+font-src 'self'; 
+img-src 'self' data: blob:; 
+connect-src 'self' wss:; 
+frame-src 'none'; 
+frame-ancestors 'none'; 
+base-uri 'self'; 
+form-action 'self'; 
+object-src 'none'; 
+media-src 'self' data:; 
+worker-src 'self' blob:
 ```
 
-That script creates:
-- `APP_ROOT/shared/.env`
-- `APP_ROOT/venv`
-- `APP_ROOT/shared/web-deps/node_modules`
-- `APP_ROOT/shared/web-node_modules`
+### Security Headers
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `X-XSS-Protection: 1; mode=block`
+- `Referrer-Policy: no-referrer-when-downgrade`
+- `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`
 
-## Runtime layout
+## Monitoring and Maintenance
 
-Production should not run from the mutable repo checkout. Use a separate runtime root such as:
+### Logs
+- `/var/log/presek/presek.out.log` - API output
+- `/var/log/presek/presek.err.log` - API errors
+- `/var/log/presek/celery.out.log` - Celery worker output
+- `/var/log/presek/celery.err.log` - Celery worker errors
+- `/var/log/nginx/access.log` - Web access logs
+- `/var/log/nginx/error.log` - Web server errors
 
-```text
-/home/emiloffingen/presek-runtime/
-  current -> releases/20260412T112310Z
-  previous -> releases/20260411T230005Z
-  releases/
-  shared/
-    .env
-    celerybeat-schedule
-    web-deps/
-      package.json
-      package-lock.json
-      node_modules/
-    web-node_modules -> web-deps/node_modules
-    backups/
-    logs/
-  venv/
+### Backup and Restore
+
+**Backup:**
+```bash
+sudo presek-backup
 ```
 
-The repo checkout remains the build/source root. Services run from `current`.
-Astro runtime dependencies are exposed through `shared/web-node_modules`, so each release can symlink `web/node_modules` without per-release installs or repo-checkout dependency.
-
-## Operational helpers
-
-Local post-deploy smoke check:
-
-```sh
-bash deploy/smoke_check.sh
+**Restore:**
+```bash
+sudo presek-restore /var/backups/presek/db_backup_20240101_120000.dump
 ```
 
-Runtime layout and service status:
+### Monitoring Commands
 
-```sh
-APP_ROOT=/home/emiloffingen/presek-runtime bash deploy/runtime_status.sh
+**Check service status:**
+```bash
+sudo systemctl status presek presek-worker presek-beat nginx postgresql redis
 ```
 
-Database backup:
-
-```sh
-bash deploy/backup_postgres.sh
+**View logs:**
+```bash
+tail -f /var/log/presek/presek.out.log
+tail -f /var/log/presek/presek.err.log
 ```
 
-This loads `.env`, uses `DATABASE_URL`, writes compressed dumps into `backups/`, and prunes older backups automatically.
-
-Release deploy:
-
-```sh
-APP_ROOT=/home/emiloffingen/presek-runtime bash deploy/deploy_release.sh
+**Check API health:**
+```bash
+curl -s http://localhost:8000/api/health | jq .
 ```
 
-If the release includes changes under `deploy/systemd/` or changes to `deploy/install_server.sh`, install the updated units first:
+## Scaling Options
 
-```sh
-sudo APP_ROOT=/home/emiloffingen/presek-runtime INSTALL_NGINX=0 bash deploy/install_server.sh
-APP_ROOT=/home/emiloffingen/presek-runtime bash deploy/deploy_release.sh
+### Database Read Replicas
+Edit `/etc/presek/environment`:
+```
+USE_READ_REPLICA=true
+DATABASE_READ_REPLICA_URL=postgresql://user:pass@replica-host:5432/presek
 ```
 
-Rollback to the previous release symlink:
+### Horizontal Scaling
+For multiple API instances:
+1. Set up a load balancer (Nginx, HAProxy)
+2. Configure Redis session storage
+3. Use shared storage for uploads
+4. Configure database connection pooling
 
-```sh
-APP_ROOT=/home/emiloffingen/presek-runtime bash deploy/rollback_release.sh
+### GPU Acceleration
+Edit `/etc/presek/environment`:
+```
+ENABLE_GPU_ACCELERATION=true
+```
+Requires CUDA and compatible GPU.
+
+## Troubleshooting
+
+### Common Issues
+
+**API not starting:**
+```bash
+journalctl -u presek.service -f
 ```
 
-Inspect release retention without deleting anything:
-
-```sh
-APP_ROOT=/home/emiloffingen/presek-runtime KEEP_EXTRA=2 DRY_RUN=1 bash deploy/prune_releases.sh
+**Database connection issues:**
+```bash
+sudo -u postgres psql -c "\l"
+sudo -u postgres psql -d presek -c "\dt"
 ```
 
-Prune old releases while always keeping `current`, `previous`, and the newest extra releases:
-
-```sh
-APP_ROOT=/home/emiloffingen/presek-runtime KEEP_EXTRA=2 DRY_RUN=0 bash deploy/prune_releases.sh
+**Redis connection issues:**
+```bash
+redis-cli ping
+redis-cli -a your_password ping
 ```
 
-Step-by-step operator flow:
-
-```sh
-cat deploy/RELEASE_CHECKLIST.md
+**Frontend not loading:**
+```bash
+ls -la /opt/presek/web/dist
+sudo systemctl restart nginx
 ```
+
+### Debugging Tips
+
+1. **Check all service logs**
+2. **Verify configuration files**
+3. **Test database connections manually**
+4. **Check network/firewall settings**
+5. **Verify file permissions**
+
+## Upgrade Process
+
+1. **Backup current installation:**
+   ```bash
+   sudo presek-backup
+   ```
+
+2. **Stop services:**
+   ```bash
+   sudo systemctl stop presek presek-worker presek-beat
+   ```
+
+3. **Update code:**
+   ```bash
+   cd /opt/presek
+   git pull origin main
+   ```
+
+4. **Update dependencies:**
+   ```bash
+   source venv/bin/activate
+   pip install -r requirements.txt
+   cd web && npm install && npm run build
+   ```
+
+5. **Restart services:**
+   ```bash
+   sudo systemctl start presek presek-worker presek-beat
+   ```
+
+6. **Verify:**
+   ```bash
+   curl -s http://localhost:8000/api/health
+   ```
+
+## Security Best Practices
+
+1. **Keep secrets secure** - Never commit configuration files to version control
+2. **Regular updates** - Update dependencies monthly
+3. **Monitor logs** - Set up log monitoring and alerts
+4. **Backup regularly** - Automate daily backups
+5. **Security patches** - Apply OS and software updates promptly
+6. **Rate limiting** - Monitor and adjust as needed
+7. **SSL certificates** - Renew automatically with certbot
+
+## Support
+
+For issues with production deployment:
+1. Check logs first
+2. Review configuration files
+3. Test individual components
+4. Consult the main README.md for application-specific details

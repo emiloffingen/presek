@@ -11,6 +11,23 @@ services:
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
     networks:
       - presek-net
+  
+  db-replica:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: presek
+      POSTGRES_USER: presek
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    command: |
+      bash -c '
+      echo "primary_host=db" >> /var/lib/postgresql/data/postgresql.conf
+      echo "primary_port=5432" >> /var/lib/postgresql/data/postgresql.conf
+      echo "hot_standby=on" >> /var/lib/postgresql/data/postgresql.conf
+      '
+    depends_on:
+      - db
+    networks:
+      - presek-net
 
   redis:
     image: redis:7-alpine

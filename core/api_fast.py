@@ -28,8 +28,11 @@ from core.version import APP_VERSION, APP_VERSION_LABEL, get_full_version_info
 
 # Initialize logging early (before other imports)
 from core.logging_config import get_logger
+from core.error_tracking import configure_error_tracking
 
 # early_setup() already called by logging_config import
+# Initialize error tracking
+configure_error_tracking()
 
 # Initialize Logging - use centralized config
 # logging_config.early_setup() already called by import

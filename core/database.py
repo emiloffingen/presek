@@ -247,6 +247,7 @@ class DatabaseManager:
         if cls._instance is None:
             cls._instance = super(DatabaseManager, cls).__new__(cls)
             cls._instance._init_pool()
+            cls._instance._init_read_pool()
         return cls._instance
 
     def _init_pool(self, retries=3, backoff_base=2):
@@ -282,6 +283,45 @@ class DatabaseManager:
                     )
                     self._pool = None
 
+    def _init_read_pool(self, retries=3, backoff_base=2):
+        """Initialize read replica connection pool if configured."""
+        from core.config import DATABASE_READ_REPLICA_URL, USE_READ_REPLICA
+        
+        if not USE_READ_REPLICA or not DATABASE_READ_REPLICA_URL:
+            self._read_pool = None
+            return
+            
+        for attempt in range(retries):
+            try:
+                self._read_pool = ConnectionPool(
+                    conninfo=DATABASE_READ_REPLICA_URL,
+                    min_size=DB_POOL_MINCONN,
+                    max_size=DB_POOL_MAXCONN,
+                    open=True,
+                    kwargs={
+                        "row_factory": dict_row,
+                        "connect_timeout": 5,
+                        "options": DB_SESSION_OPTIONS,
+                    },
+                )
+                log.info(
+                    f"Presek {APP_VERSION_LABEL}: Database read replica pool initialized "
+                    f"(min={DB_POOL_MINCONN}, max={DB_POOL_MAXCONN}, connect_timeout=5s)."
+                )
+                return
+            except Exception as e:
+                if attempt < retries - 1:
+                    wait_time = backoff_base**attempt
+                    log.warning(
+                        f"Database read replica connection failed (attempt {attempt + 1}/{retries}): {e}. Retrying in {wait_time}s..."
+                    )
+                    time.sleep(wait_time)
+                else:
+                    log.error(
+                        f"Failed to initialize database read replica pool after {retries} attempts: {e}"
+                    )
+                    self._read_pool = None
+
     def _reset_pool(self):
         """Force re-initialization of the pool. Crucial after process forking."""
         if self._pool:
@@ -306,11 +346,21 @@ class DatabaseManager:
         else:
             conn.close()
 
-    def execute(self, sql, params=None, fetch=True):
-        """Standardized query execution with automatic connection release."""
+    def execute(self, sql, params=None, fetch=True, read_only=False):
+        """Standardized query execution with automatic connection release.
+        
+        Args:
+            sql: SQL query string
+            params: Parameters for the query
+            fetch: Whether to fetch results (default True)
+            read_only: Hint that this is a read-only query for routing to replica
+        """
         conn = None
         try:
-            conn = self.get_conn()
+            # Route read-only queries to replica if available
+            pool = self._read_pool if read_only and self._read_pool else self._pool
+            conn = pool.getconn() if pool else self.get_conn()
+            
             with conn.cursor() as cur:
                 cur.execute(sql, params)
                 results = None
@@ -324,7 +374,9 @@ class DatabaseManager:
             log.error(f"Presek {APP_VERSION_LABEL} DB Error: {e}")
             raise
         finally:
-            if conn:
+            if conn and pool:
+                pool.putconn(conn)
+            elif conn:
                 self.put_conn(conn)
 
     def execute_one(self, sql, params=None):

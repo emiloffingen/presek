@@ -1,0 +1,137 @@
+# Prometheus alerting rules for Presek
+# Save this as /etc/prometheus/rules/presek.yml
+
+groups:
+  - name: presek-api.rules
+    rules:
+      # API Health Alerts
+      - alert: APIDown
+        expr: up{job="presek-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Presek API is down"
+          description: "Presek API instance {{ $labels.instance }} has been down for more than 1 minute"
+
+      - alert: HighAPILatency
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job="presek-api"}[5m])) by (le)) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High API latency detected"
+          description: "95th percentile API latency is {{ $value }}s (threshold: 2s)"
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{job="presek-api", status=~"5.."}[5m]) / rate(http_requests_total{job="presek-api"}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value }} (threshold: 10%)"
+
+      # Database Alerts
+      - alert: DatabaseConnectionIssues
+        expr: pg_up{job="postgresql"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database connection issues"
+          description: "PostgreSQL database is not responding"
+
+      - alert: HighDatabaseLoad
+        expr: pg_database_size_bytes{datname="presek"} / 1024 / 1024 / 1024 > 50
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High database size"
+          description: "Database size is {{ $value }} GB (threshold: 50GB)"
+
+      # Redis Alerts
+      - alert: RedisDown
+        expr: redis_up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis is down"
+          description: "Redis instance is not responding"
+
+      - alert: HighRedisMemory
+        expr: redis_memory_used_bytes{job="redis"} / redis_memory_max_bytes{job="redis"} > 0.9
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Redis memory usage"
+          description: "Redis memory usage is {{ $value }} (threshold: 90%)"
+
+      # Celery Alerts
+      - alert: CeleryQueueBacklog
+        expr: celery_queue_length{job="celery"} > 100
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Celery queue backlog"
+          description: "Celery queue has {{ $value }} pending tasks (threshold: 100)"
+
+      - alert: CeleryWorkerDown
+        expr: celery_workers{job="celery"} < 1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Celery worker down"
+          description: "No active Celery workers detected"
+
+      # Server Alerts
+      - alert: HighCPULoad
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 90
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU load"
+          description: "CPU load is {{ $value }}% (threshold: 90%)"
+
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.9
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value }} (threshold: 90%)"
+
+      - alert: LowDiskSpace
+        expr: node_filesystem_free_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} < 0.2
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low disk space"
+          description: "Disk space is {{ $value }} (threshold: 20% free)"
+
+      # Nginx Alerts
+      - alert: HighNginxLatency
+        expr: nginx_http_request_duration_seconds{quantile="0.95"} > 1
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Nginx latency"
+          description: "95th percentile Nginx latency is {{ $value }}s (threshold: 1s)"
+
+      - alert: HighNginxErrorRate
+        expr: rate(nginx_http_requests_total{status=~"5.."}[5m]) / rate(nginx_http_requests_total[5m]) > 0.05
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Nginx error rate"
+          description: "Nginx error rate is {{ $value }} (threshold: 5%)"

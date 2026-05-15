@@ -13,13 +13,20 @@ router = APIRouter()
 
 
 async def verify_admin(request: Request):
-    token = (request.headers.get("X-Admin-Token") or "").strip()
-    if (
-        not PRESEK_ADMIN_TOKEN
-        or not token
-        or not secrets.compare_digest(token, PRESEK_ADMIN_TOKEN)
-    ):
+    """Verify admin access using JWT token."""
+    from core.auth import verify_admin_jwt
+    
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
         raise HTTPException(status_code=403, detail="Neovlasten pristap")
+    
+    try:
+        token = auth_header.split("Bearer ")[1]
+        if not verify_admin_jwt(token):
+            raise HTTPException(status_code=403, detail="Neovlasten pristap")
+    except Exception:
+        raise HTTPException(status_code=403, detail="Neovlasten pristap")
+    
     return True
 
 
