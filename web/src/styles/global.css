@@ -90,7 +90,7 @@
         --secondary-foreground: #2f3b4c;
         --border: #e5e7eb;
         --muted: #f9fafb;
-        --muted-foreground: #454e5e;
+        --muted-foreground: #4b5563; /* Improved contrast for light mode */
         --surface-soft: #f3f4f2;
         --surface-strong: #e7e9e4;
 
@@ -105,7 +105,7 @@
         --nyt-gray-100: #f3f4f6;
         --nyt-gray-200: #e5e7eb;
         --nyt-gray-300: #d1d5db;
-        --nyt-gray-500: #9ca3af;
+        --nyt-gray-500: #6b7280; /* Improved contrast */
         --nyt-gray-600: #4b5563;
 
         /* ... rest of variables unchanged ... */
@@ -131,32 +131,32 @@
     }
 
     .dark {
-        /* Core Palette (Dark - Rich OLED Navy) */
-        --background: #05070a;
+        /* Core Palette (Dark - Softer Navy Charcoal) */
+        --background: #0b0e14;
         --foreground: #f4f4f5;
-        --card: #0a0c12;
+        --card: #11141b;
         --card-foreground: #f4f4f5;
         --primary: #f4f4f5;
         --primary-foreground: #000000;
-        --secondary: #11141d;
+        --secondary: #161b22;
         --secondary-foreground: #e4e4e7;
-        --muted: #0a0c12;
-        --muted-foreground: #94a3b8;
+        --muted: #11141b;
+        --muted-foreground: #a1a1aa; /* Improved contrast for accessibility */
         --accent: #f4f4f5;
         --accent-foreground: #000000;
-        --border: #1e293b;
-        --input: #1e293b;
+        --border: #27272a;
+        --input: #27272a;
         --ring: #3b82f6;
-        --surface-soft: #080a0f;
-        --surface-strong: #0f172a;
+        --surface-soft: #0d1117;
+        --surface-strong: #161b22;
 
         /* NYT Smart Colors (Dark Mode - Automated Inversion) */
         --nyt-black: #f4f4f5;
         --nyt-gray-100: #0a0a0a;
         --nyt-gray-200: #141414;
         --nyt-gray-300: #1a1a1a;
-        --nyt-gray-500: #71717a;
-        --nyt-gray-600: #a1a1aa;
+        --nyt-gray-500: #94a3b8;
+        --nyt-gray-600: #cbd5e1;
         --nyt-accent: #3b82f6;
         --nyt-red: #ef4444;
         --link: #3b82f6;
@@ -214,10 +214,33 @@ h1, h2, h3, h4, h5, h6, .headline, .editorial-headline {
     transition: color 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.headline-cyrillic {
-    letter-spacing: -0.015em; /* Cyrillic needs slightly more space than Latin */
-    line-height: 1.18;
-    word-spacing: 0.05em;
+.headline-cyrillic, 
+.editorial-headline-cyrillic,
+.cluster-headline-cyrillic {
+    line-height: 1.15; /* Consistently balanced for Cyrillic heights */
+    letter-spacing: 0.01em; /* Cyrillic requires slightly more air */
+    word-spacing: 0.02em;
+    text-wrap: pretty;
+}
+
+/* Ticker Animation Control */
+.unified-ticker-track:hover {
+    animation-play-state: paused !important;
+}
+
+/* Accessibility: Enhanced Focus Rings */
+a:focus-visible,
+button:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2px solid var(--nyt-accent) !important;
+    outline-offset: 4px !important;
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--background), transparent 20%) !important;
+}
+
+.dark a:focus-visible,
+.dark button:focus-visible,
+.dark [tabindex]:focus-visible {
+    outline-color: var(--nyt-accent) !important;
 }
 
 .headline-lead {
@@ -458,11 +481,7 @@ h1, h2, h3, h4, h5, h6, .headline, .editorial-headline {
         letter-spacing: -0.02em;
 	}
 
-	.headline-cyrillic {
-		line-height: 1.08;
-		text-wrap: balance;
-        letter-spacing: 0;
-	}
+
 
 	.headline-standard {
 		font-size: var(--text-xl);
@@ -1083,12 +1102,7 @@ button:active,
     font-feature-settings: "kern" 1, "liga" 1, "pnum" 1, "onum" 1;
 }
 
-.headline-cyrillic, 
-.editorial-headline-cyrillic {
-    line-height: 1.12; /* Slightly more air for Cyrillic heights */
-    letter-spacing: 0;
-    text-wrap: pretty;
-}
+
 /* ── Editorial Imagery ───────────────────────────── */
 .image-wrap {
     aspect-ratio: 3 / 2; /* Editorial standard */

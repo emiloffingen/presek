@@ -115,23 +115,25 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 		<script is:inline>
 			/**
 			 * Immediate theme sync to prevent flicker. 
-			 * We encapsulate in a function so it can be re-run on 'astro:after-swap'.
 			 */
 			function applyTheme() {
 				const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('theme') : null;
-				const isDark = stored ? stored === 'dark' : true;
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+				const isDark = stored ? stored === 'dark' : (stored === null ? prefersDark : false);
 				
 				if (isDark) {
 					document.documentElement.classList.add('dark');
+                    document.documentElement.style.colorScheme = 'dark';
 				} else {
 					document.documentElement.classList.remove('dark');
+                    document.documentElement.style.colorScheme = 'light';
 				}
 
 				// Update theme-color meta tags
 				const lightMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: light)"]');
 				const darkMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: dark)"]');
-				if (lightMeta) lightMeta.setAttribute('content', isDark ? '#000000' : '#fafafb');
-				if (darkMeta) darkMeta.setAttribute('content', isDark ? '#000000' : '#1a1715');
+				if (lightMeta) lightMeta.setAttribute('content', isDark ? '#0b0e14' : '#fafafb');
+				if (darkMeta) darkMeta.setAttribute('content', isDark ? '#0b0e14' : '#fafafb');
 			}
 
 			applyTheme();
@@ -144,23 +146,23 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
         inset: 0;
         z-index: 9998;
         pointer-events: none;
-        opacity: 0.015;
+        opacity: 0.012;
         background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
     }
     
     .dark .noise-overlay {
-        opacity: 0.025;
+        opacity: 0.02;
     }
 
     #loading-bar {
-        box-shadow: 0 0 12px var(--nyt-accent);
-        background: linear-gradient(to right, var(--nyt-accent), #3b82f6);
+        background: var(--nyt-accent);
+        height: 2px;
     }
 </style>
 
 	<body id="top" class="antialiased min-h-screen bg-background text-foreground transition-colors duration-300 overflow-x-hidden w-full">
-		<div class="noise-overlay"></div>
-		<div id="loading-bar" class="fixed top-0 left-0 h-[3px] bg-nyt-accent z-[9999] transition-all duration-300 opacity-0 w-0"></div>
+		<div class="noise-overlay" aria-hidden="true"></div>
+		<div id="loading-bar" class="fixed top-0 left-0 z-[9999] transition-all duration-300 opacity-0 w-0"></div>
 		<slot />
 		<ConsentBanner client:idle />
 		<script>

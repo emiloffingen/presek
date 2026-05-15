@@ -108,19 +108,19 @@ function getTimeStr(dateStr: string) {
 			<div class="kicker-group">
                 <span class="kicker">{main.source}</span>
                 {showTrustBadge && sourceSignal.trust_label === 'Visoko poverenje' && (
-                    <ShieldCheck size={10} className="text-blue-500" />
+                    <ShieldCheck size={10} className="text-blue-500" title="Proveren izvor" />
                 )}
                 {main.is_global && (
-                    <Globe size={10} className="text-emerald-500" />
+                    <Globe size={10} className="text-emerald-500" title="Globalna vest" />
                 )}
             </div>
             <div class="meta-right">
                 {showSignificanceLabel && (
-                    <span class:list={["significance-badge", { "is-breaking": cluster.is_breaking }]}>
+                    <span class:list={["significance-badge", { "is-breaking": cluster.is_breaking }]} aria-label={`Status: ${significanceLabel}`}>
                         {significanceLabel}
                     </span>
                 )}
-                <span class="time-stamp">{getTimeStr(main.ingested_at || main.created_at)}</span>
+                <span class="time-stamp" aria-label="Vreme objave">{getTimeStr(main.ingested_at || main.created_at)}</span>
             </div>
 		</div>
 
@@ -131,8 +131,8 @@ function getTimeStr(dateStr: string) {
 		</a>
 
 		{hasSynthesis && (
-			<span class="editorial-byline">
-                <Sparkles size={11} className="inline-block mr-1 text-nyt-accent" />
+			<span class="editorial-byline" aria-label="Sinteza vesti">
+                <Sparkles size={11} className="inline-block mr-1 text-nyt-accent" aria-hidden="true" />
 				{t('news.synthesis')}
 			</span>
 		)}
@@ -140,7 +140,7 @@ function getTimeStr(dateStr: string) {
 		{!isLead && variant === 'compact' ? null : (
 			<div class="card-content-stack">
 				{displaySummary && (
-					<div class="summary-container">
+					<div class="summary-container" tabindex="0" role="button" aria-expanded="false" aria-label="Klikni za prikaz celog rezimea">
 						<p class:list={["summary", { "summary-cyrillic": summaryIsCyrillic }]} set:html={sanitizeHtml(displaySummary)}></p>
 					</div>
 				)}
@@ -148,7 +148,7 @@ function getTimeStr(dateStr: string) {
 		)}
 
         {isLead && cluster.articles.length > 1 && (
-            <ul class="sub-headlines">
+            <ul class="sub-headlines" aria-label="Povezane vesti">
                 {cluster.articles.slice(1).filter(a => !a.is_redundant).slice(0, 3).map((sub: Article) => (
                     <li>
                         <a href={clusterUrl} set:html={sanitizeHtml(getDisplayTitle(sub))}>
@@ -160,14 +160,14 @@ function getTimeStr(dateStr: string) {
 
 
 		<div class="footer-meta flex items-center gap-3">
-			<span class="flex items-center gap-1">
-		<Clock size={11} className="opacity-70" />
+			<span class="flex items-center gap-1" aria-label="Vreme">
+		<Clock size={11} className="opacity-70" aria-hidden="true" />
 		{getTimeStr(main.ingested_at || main.created_at)}
 		</span>
-			<span class="flex items-center gap-1">
-		<Layers size={11} className="opacity-70" />
+			<span class="flex items-center gap-1" aria-label="Broj izvora">
+		<Layers size={11} className="opacity-70" aria-hidden="true" />
 		{uniqueSources} {uniqueSources === 1 ? t('news.source') : t('news.sources')}
-		{totalSources > uniqueSources && <span class="text-muted-foreground ml-0.5">({totalSources})</span>}
+		{totalSources > uniqueSources && <span class="text-muted-foreground ml-0.5" aria-label="Ukupno članaka">({totalSources})</span>}
 		</span>
 		</div>
 
@@ -197,6 +197,8 @@ function getTimeStr(dateStr: string) {
 					<div class="relative w-full h-full">
 						<img
 							src={thumbSrc}
+                            srcset={`${thumbSrc.replace('w=720', 'w=360')} 360w, ${thumbSrc} 720w, ${thumbSrc.replace('w=720', 'w=1200')} 1200w`}
+                            sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
 							alt={displayTitle}
 							width="700"
 							height="500"
@@ -243,16 +245,18 @@ function getTimeStr(dateStr: string) {
 	    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 	}
 
-	.headline-link:hover {
-	    transform: translateX(4px);
-	}
+	@media (hover: hover) {
+        .headline-link:hover {
+            transform: translateX(4px);
+        }
 
-	.headline-link:hover .headline {
-	    color: var(--nyt-accent);
-	}
+        .headline-link:hover .headline {
+            color: var(--nyt-accent);
+        }
+    }
 
     .nyt-article:active {
-        transform: scale(0.98);
+        transform: scale(0.99);
         transition: transform 0.1s ease;
     }
 
@@ -403,9 +407,11 @@ function getTimeStr(dateStr: string) {
         overflow: hidden;
         transition: max-height 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
         position: relative;
+        cursor: pointer;
     }
-    .article-body:hover .summary-container {
-        max-height: 24em; /* Expand to show full summary */
+    .article-body:hover .summary-container,
+    .summary-container:focus-within {
+        max-height: 32em; /* Expand to show full summary */
     }
 
     /* --- World-Class Design Card (Fallback) --- */
@@ -597,14 +603,14 @@ function getTimeStr(dateStr: string) {
 		.nyt-article:not(.lead-story) .summary {
 			font-size: 0.92rem;
 			line-height: 1.52;
-			-webkit-line-clamp: 2; /* Reduced from 3 to save space */
+			-webkit-line-clamp: 2;
 			margin-bottom: 0.6rem;
 		}
 
         .nyt-article.variant-standard .summary,
         .nyt-article.variant-compact .summary,
         .nyt-article.variant-wire .summary {
-            display: none; /* Hide summary for non-featured cards on mobile */
+            display: -webkit-box;
         }
 
 		.nyt-article:not(.lead-story) .footer-meta {
