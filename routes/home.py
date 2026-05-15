@@ -210,10 +210,9 @@ def _rank_latest_wire_articles(items, limit=15):
 
     candidates.sort(
         key=lambda article: (
-            1 if cleanAndDecode(article.get("topic") or "") in _HARD_NEWS_TOPICS else 0,
-            _parse_time(_article_freshness_time(article)),
+            -1 if cleanAndDecode(article.get("topic") or "") in _HARD_NEWS_TOPICS else 0,  # Negative for reverse sort
+            -_parse_time(_article_freshness_time(article)),  # Negative for reverse sort
         ),
-        reverse=True,
     )
 
     selected = []

@@ -299,9 +299,9 @@ const articleSchema = cluster ? {
 				{mainArticle?.text && (
 				<div class="mt-6 p-6 bg-secondary/10 border border-border/40 rounded-lg">
 				<h4 class="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">Изворен текст ({mainArticle.source})</h4>
-				<div class="font-nyt-body text-sm text-foreground/80 leading-relaxed italic prose-editorial">{mainArticle.text.split('\n').map((paragraph: string, idx: number) => (
+				<p class="font-nyt-body text-sm text-foreground/80 leading-relaxed italic">{mainArticle.text.split('\n').map((paragraph: string, idx: number) => (
 								<p class="mb-4">{paragraph}</p>
-))}</div>
+))}</p>
 				</div>
 				)}
 				</div><div class="editorial-grid">

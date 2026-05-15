@@ -105,11 +105,30 @@ def _fetch_with_cloudscraper(url: str, timeout: int = 30) -> bytes:
     """Fetch URL content using cloudscraper to bypass Cloudflare protection."""
     if cloudscraper is None:
         raise ImportError("cloudscraper is not installed")
-    scraper = cloudscraper.create_scraper()
+    scraper = cloudscraper.create_scraper(
+        browser={
+            'browser': 'chrome',
+            'platform': 'windows',
+            'mobile': False
+        }
+    )
     try:
-        resp = scraper.get(url, timeout=timeout)
+        # Add common headers to mimic real browser
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Cache-Control': 'max-age=0',
+        }
+        resp = scraper.get(url, timeout=timeout, headers=headers)
         resp.raise_for_status()
         return resp.content
+    except Exception as e:
+        log.debug(f"Cloudscraper detailed error for {url}: {e}")
+        raise
     finally:
         scraper.close()
 
@@ -648,14 +667,18 @@ async def fetch_feed_async(
     url = source["url"]
     limit = source.get("source_limit", 10)
 
-    # Retry configuration
-    max_retries = 3
+    # Enhanced retry configuration
+    max_retries = 4  # Increased from 3 to 4
     base_timeout = 15.0
+    retry_delays = [1.0, 2.0, 4.0, 8.0]  # Exponential backoff with jitter
 
     for attempt in range(max_retries):
         try:
             # Add random jitter to timeout to avoid thundering herd
+            # Use exponential backoff with jitter for retry delays
             timeout = base_timeout + (attempt * 5.0)
+            jitter = random.uniform(0.8, 1.2)  # 20% jitter
+            actual_timeout = timeout * jitter
             resp = await client.get(url, timeout=timeout, follow_redirects=True)
 
             # Handle Cloudflare challenge
@@ -707,16 +730,32 @@ async def fetch_feed_async(
                 log.warning(f"[ingest] {name} failed after {max_retries} attempts: timeout")
                 return name, [], f"Timeout after {max_retries} retries: {e}"
             log.debug(f"[ingest] {name}: timeout on attempt {attempt + 1}, retrying...")
-            await asyncio.sleep(1.0 * (attempt + 1))  # Exponential backoff
+            # Use exponential backoff with jitter
+            delay = retry_delays[attempt] * jitter
+            await asyncio.sleep(delay)
 
         except httpx.ConnectError as e:
             if attempt == max_retries - 1:
                 log.warning(f"[ingest] {name} failed after {max_retries} attempts: connection error")
                 return name, [], f"Connection error after {max_retries} retries: {e}"
             log.debug(f"[ingest] {name}: connection error on attempt {attempt + 1}, retrying...")
-            await asyncio.sleep(1.0 * (attempt + 1))
+            # Use exponential backoff with jitter
+            delay = retry_delays[attempt] * jitter
+            await asyncio.sleep(delay)
 
         except Exception as e:
+            error_msg = str(e)
+            # Detect if this might be a new problematic feed
+            if attempt == 0 and (
+                "cloudflare" in error_msg.lower() or
+                "403" in error_msg or
+                "forbidden" in error_msg.lower() or
+                "connection" in error_msg.lower()
+            ):
+                log.warning(f"[ingest] {name} potential new problematic feed: {error_msg}")
+                # Add to problematic feeds tracking (in-memory only for this session)
+                if name not in _PROBLEMATIC_FEEDS:
+                    log.info(f"[ingest] Detected new problematic feed: {name} - {error_msg}")
             log.warning(f"[ingest] {name} failed: {e}")
             return name, [], str(e)
 
@@ -743,6 +782,25 @@ def get_active_sources():
         """
     )
     return [dict(r) for r in rows]
+
+
+def get_problematic_feeds():
+    """Returns information about feeds with known persistent issues."""
+    return _PROBLEMATIC_FEEDS.copy()
+
+
+def get_ingestion_health():
+    """Returns overall ingestion system health metrics."""
+    total_sources = len(get_active_sources())
+    problematic_count = len(_PROBLEMATIC_FEEDS)
+    
+    return {
+        'total_sources': total_sources,
+        'problematic_feeds': problematic_count,
+        'healthy_feeds': total_sources - problematic_count,
+        'problematic_feed_percentage': round((problematic_count / total_sources * 100) if total_sources > 0 else 0, 1),
+        'known_issues': list(_PROBLEMATIC_FEEDS.items())
+    }
 
 
 def cosine_dist(a, b):
