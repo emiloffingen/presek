@@ -103,11 +103,6 @@ sync_systemd_units() {
 }
 
 discover_app_services() {
-
-  info "Syncing systemd unit files"
-  sudo cp "$RELEASE_DIR/deploy/systemd/"*.{service,target,timer} /etc/systemd/system/ 2>/dev/null || true
-  sudo systemctl daemon-reload
-}
   info "Discovering Presek systemd services"
   
   local SYSTEMD_DIR="$SOURCE_ROOT/deploy/systemd"
@@ -203,7 +198,6 @@ pid_belongs_to_runtime() {
   return 1
 }
 
-  sync_systemd_units
 cleanup_orphaned_runtime_listeners() {
   info "Clearing any orphaned runtime listeners before restart"
   cleanup_listener_port 5001 "FastAPI"
@@ -602,8 +596,9 @@ restart_and_smoke() {
   info "Reloading $NGINX_SERVICE"
   sudo systemctl reload "$NGINX_SERVICE" || return 1
 
-  sync_systemd_units
   cleanup_orphaned_runtime_listeners
+
+  sync_systemd_units
 
   wait_for_services() {
     info "Waiting for application services to be ready"
@@ -686,7 +681,6 @@ rollback_release() {
     sudo rm -f /tmp/presek-mk.conf.bak
   fi
   
-  sync_systemd_units
   cleanup_orphaned_runtime_listeners
   sudo systemctl restart "${APP_SERVICES[@]}" || return 1
   sudo systemctl start "$SYSTEMD_TARGET" || return 1
@@ -750,11 +744,6 @@ main() {
   ensure_layout
   normalize_legacy_runtime_links
   discover_app_services
-
-  info "Syncing systemd unit files"
-  sudo cp "$RELEASE_DIR/deploy/systemd/"*.{service,target,timer} /etc/systemd/system/ 2>/dev/null || true
-  sudo systemctl daemon-reload
-}
 
   # Acquire exclusive deploy lock to prevent concurrent deploys
   LOCK_FILE="$APP_ROOT/.deploy.lock"
