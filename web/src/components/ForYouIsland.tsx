@@ -21,6 +21,8 @@ function getSummary(cluster: any) {
 function getTitle(cluster: any) {
   const article = cluster?.articles?.[0];
   return getDisplayTitle(article);
+}
+
 interface ForYouIslandProps {
   clusters?: any[];
   excludeClusterIds?: string[];
@@ -47,11 +49,9 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             token: syncToken,
-            lang: lang
-          }),
-        });
+            lang: lang,
             profile: profile
-          })
+          }),
         });
         const data = await response.json();
         if (data.status === 'success' && data.results) {

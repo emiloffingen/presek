@@ -42,13 +42,6 @@ type SearchAction = {
   label: string;
   icon: any;
   href: string;
-  category: 'NAVIGATION' | 'SETTINGS' | 'HELP';
-  desc: string;
-};
-
-const SEARCH_ACTIONS: SearchAction[] = [
-  { id: 'act-home', label: 'Pocetna Stranica', icon: Layout, href: '/', category: 'NAVIGATION', desc: 'Vrati se na glavnata stranica so vesti.' },
-  { id: 'act-briefing', label: 'Dneven Brifing', icon: Zap, href: '/briefing', category: 'NAVIGATION', desc: 'Pregled na najvaznite vesti vo forma na brifing.' },
   { id: 'act-pulse', label: 'Informativen Ritam', icon: Activity, href: '/pulse', category: 'NAVIGATION', desc: 'Sledete im trendovite i mediumskiot pluralizam.' },
   { id: 'act-archive', label: 'Arhiva na vesti', icon: Archive, href: '/archive', category: 'NAVIGATION', desc: 'Prebarajte im site dosegasni objavi.' },
   { id: 'act-about', label: 'Za Proektot', icon: HelpCircle, href: '/about', category: 'HELP', desc: 'Doznajte povece za Presek i tehnologijata zad nego.' },
