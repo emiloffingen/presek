@@ -546,12 +546,18 @@ restart_and_smoke() {
     # Backup existing snippets for potential rollback
     [ -f /etc/nginx/snippets/presek-security-headers.conf ] && sudo cp /etc/nginx/snippets/presek-security-headers.conf /etc/nginx/snippets/presek-security-headers.conf.bak
     [ -f /etc/nginx/snippets/presek-routes.conf ] && sudo cp /etc/nginx/snippets/presek-routes.conf /etc/nginx/snippets/presek-routes.conf.bak
+    [ -f /etc/nginx/snippets/presek-routes-mk.conf ] && sudo cp /etc/nginx/snippets/presek-routes-mk.conf /etc/nginx/snippets/presek-routes-mk.conf.bak
+    [ -f /etc/nginx/snippets/rate-limit-zones.conf ] && sudo cp /etc/nginx/snippets/rate-limit-zones.conf /etc/nginx/snippets/rate-limit-zones.conf.bak
 
     if ! sudo cp "$RELEASE_DIR/deploy/nginx/security-headers.conf" /etc/nginx/snippets/presek-security-headers.conf || \
-       ! sudo cp "$RELEASE_DIR/deploy/nginx/presek-routes.conf" /etc/nginx/snippets/presek-routes.conf; then
+       ! sudo cp "$RELEASE_DIR/deploy/nginx/presek-routes.conf" /etc/nginx/snippets/presek-routes.conf || \
+       ! sudo cp "$RELEASE_DIR/deploy/nginx/presek-routes-mk.conf" /etc/nginx/snippets/presek-routes-mk.conf || \
+       ! sudo cp "$RELEASE_DIR/deploy/nginx/rate-limit-zones.conf" /etc/nginx/snippets/rate-limit-zones.conf; then
       warn "Failed to copy nginx snippets; restoring backups"
       [ -f /etc/nginx/snippets/presek-security-headers.conf.bak ] && sudo mv /etc/nginx/snippets/presek-security-headers.conf.bak /etc/nginx/snippets/presek-security-headers.conf
       [ -f /etc/nginx/snippets/presek-routes.conf.bak ] && sudo mv /etc/nginx/snippets/presek-routes.conf.bak /etc/nginx/snippets/presek-routes.conf
+      [ -f /etc/nginx/snippets/presek-routes-mk.conf.bak ] && sudo mv /etc/nginx/snippets/presek-routes-mk.conf.bak /etc/nginx/snippets/presek-routes-mk.conf
+      [ -f /etc/nginx/snippets/rate-limit-zones.conf.bak ] && sudo mv /etc/nginx/snippets/rate-limit-zones.conf.bak /etc/nginx/snippets/rate-limit-zones.conf
       return 1
     fi
     
@@ -592,6 +598,8 @@ restart_and_smoke() {
   # Cleanup backups on success
   [ -f /etc/nginx/snippets/presek-security-headers.conf.bak ] && sudo rm /etc/nginx/snippets/presek-security-headers.conf.bak
   [ -f /etc/nginx/snippets/presek-routes.conf.bak ] && sudo rm /etc/nginx/snippets/presek-routes.conf.bak
+  [ -f /etc/nginx/snippets/presek-routes-mk.conf.bak ] && sudo rm /etc/nginx/snippets/presek-routes-mk.conf.bak
+  [ -f /etc/nginx/snippets/rate-limit-zones.conf.bak ] && sudo rm /etc/nginx/snippets/rate-limit-zones.conf.bak
 
   info "Reloading $NGINX_SERVICE"
   sudo systemctl reload "$NGINX_SERVICE" || return 1
@@ -661,6 +669,14 @@ rollback_release() {
   if [ -f /etc/nginx/snippets/presek-routes.conf.bak ]; then
     info "Restoring nginx routes from backup"
     sudo mv /etc/nginx/snippets/presek-routes.conf.bak /etc/nginx/snippets/presek-routes.conf || warn "Failed to restore nginx routes"
+  fi
+  if [ -f /etc/nginx/snippets/presek-routes-mk.conf.bak ]; then
+    info "Restoring nginx Macedonian routes from backup"
+    sudo mv /etc/nginx/snippets/presek-routes-mk.conf.bak /etc/nginx/snippets/presek-routes-mk.conf || warn "Failed to restore nginx Macedonian routes"
+  fi
+  if [ -f /etc/nginx/snippets/rate-limit-zones.conf.bak ]; then
+    info "Restoring nginx rate limit zones from backup"
+    sudo mv /etc/nginx/snippets/rate-limit-zones.conf.bak /etc/nginx/snippets/rate-limit-zones.conf || warn "Failed to restore nginx rate limit zones"
   fi
   
   # Restore nginx site configurations if backups exist
