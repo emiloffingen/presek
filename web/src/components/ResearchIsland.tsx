@@ -140,7 +140,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
           const cleanItem = trimmed.replace(/^([-•*]|\d+\.)\s+/, '');
           return (
             <div key={i} className={`flex gap-4 md:gap-5 mb-5 items-start pl-1 md:pl-2 text-left ${animClass}`} style={animStyle}>
-              <span className="text-nyt-accent mt-1.5 flex-shrink-0"><CheckCircle2 size={16} strokeWidth={3} /></span>
+              <span className="text-nyt-accent mt-1.5 flex-shrink-0"><CheckCircle2 size={16} strokeWidth={1.5} /></span>
               <span className="text-lg md:text-2xl text-foreground font-nyt-body leading-relaxed">{parseBoldText(cleanItem)}</span>
             </div>
           );
@@ -278,7 +278,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
                 {data.mode === 'custom' && data.suggestions && data.suggestions.length > 0 && (
                   <div className="mt-12 pt-8 border-t border-border/40">
                     <p className="font-sans text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent mb-6 flex items-center gap-2">
-                      <ChevronRight size={12} strokeWidth={3} /> sledece ISTRAZUVANjE
+                      <ChevronRight size={12} strokeWidth={1.5} /> sledece ISTRAZUVANjE
                     </p>
                     <div className="flex flex-col gap-3">
                       {data.suggestions.map((s: string, idx: number) => (

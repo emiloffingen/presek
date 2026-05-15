@@ -100,6 +100,10 @@
         --nyt-black: #111827;
         --link: #1e3a8a;
         --link-hover: #1d4ed8;
+
+        /* Transitions & Motion */
+        --ease-editorial: cubic-bezier(0.16, 1, 0.3, 1);
+        --transition-base: 0.4s var(--ease-editorial);
         
         /* NYT Smart Colors */
         --nyt-gray-100: #f3f4f6;
@@ -141,7 +145,7 @@
         --secondary: #161b22;
         --secondary-foreground: #e4e4e7;
         --muted: #11141b;
-        --muted-foreground: #a1a1aa; /* Improved contrast for accessibility */
+        --muted-foreground: #cbd5e1; /* Significantly lightened for better dark mode readability (AA/AAA) */
         --accent: #f4f4f5;
         --accent-foreground: #000000;
         --border: #27272a;
@@ -172,7 +176,7 @@
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
     border-bottom: 1px solid var(--border);
-    transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+    transition: background-color 0.3s var(--ease-editorial), backdrop-filter 0.3s var(--ease-editorial);
 }
 
 /* --- Premium Typography Core --- */
@@ -180,11 +184,20 @@
     --font-feature-settings: "kern", "liga", "clig", "calt", "onum";
 }
 
+html, body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+p, .lead-summary {
+    hyphens: auto;
+    text-wrap: pretty;
+}
+
 h1, h2, h3, h4, h5, h6, .headline, .editorial-headline {
     font-variant-ligatures: common-ligatures;
     font-feature-settings: var(--font-feature-settings);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
 }
 
 .kicker {
@@ -211,7 +224,7 @@ h1, h2, h3, h4, h5, h6, .headline, .editorial-headline {
     letter-spacing: -0.025em; /* Tighter for display */
     color: var(--foreground);
     text-wrap: balance;
-    transition: color 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: color 0.3s var(--ease-editorial), transform 0.3s var(--ease-editorial);
 }
 
 .headline-cyrillic, 
@@ -338,12 +351,13 @@ button:focus-visible,
 }
 
 .shadow-editorial {
-    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1),
-                0 4px 10px -5px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.12),
+                0 4px 12px -6px rgba(0, 0, 0, 0.06);
 }
 
 .dark .shadow-editorial {
-    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 20px 48px -12px rgba(0, 0, 0, 0.6),
+                0 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 @layer components {

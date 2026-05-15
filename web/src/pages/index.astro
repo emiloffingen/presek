@@ -341,21 +341,25 @@ function getBriefingSnippet(content: string) {
                 )}
 
                 {/* THEMATIC QUICK PILLS */}
-                {isHomepage && !error && (
+                {!error && (
                     <div class="max-w-full overflow-hidden mb-10">
                         <div class="quick-pills-container overflow-x-auto hide-scrollbar -mx-4 px-4 pb-2">
                             <div class="flex items-center gap-3">
                                 <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mr-2 shrink-0">Istraži:</span>
                                 {[
-                                    { id: 'rs', label: 'Srbija', href: '/?category=' + encodeURIComponent('Srbija') },
-                                    { id: 'pol', label: 'Politika', href: '/?topic=' + encodeURIComponent('Politika') },
-                                    { id: 'eco', label: 'Ekonomija', href: '/?topic=' + encodeURIComponent('Ekonomija') },
-                                    { id: 'spo', label: 'Sport', href: '/?topic=' + encodeURIComponent('Sport') },
-                                    { id: 'cul', label: 'Kultura', href: '/?topic=' + encodeURIComponent('Kultura') },
-                                    { id: 'tech', label: 'Tehnologija', href: '/?topic=' + encodeURIComponent('Tehnologija') },
-                                    { id: 'bg', label: 'Beograd', href: '/?subcategory=' + encodeURIComponent('Beograd') }
+                                    { id: 'rs', label: lang === 'mk' ? 'Makedonija' : 'Srbija', href: '/?category=' + encodeURIComponent(lang === 'mk' ? 'Makedonija' : 'Srbija'), active: category === (lang === 'mk' ? 'Makedonija' : 'Srbija') },
+                                    { id: 'pol', label: 'Politika', href: '/?topic=' + encodeURIComponent('Politika'), active: topic === 'Politika' },
+                                    { id: 'eco', label: 'Ekonomija', href: '/?topic=' + encodeURIComponent('Ekonomija'), active: topic === 'Ekonomija' },
+                                    { id: 'spo', label: 'Sport', href: '/?topic=' + encodeURIComponent('Sport'), active: topic === 'Sport' },
+                                    { id: 'cul', label: 'Kultura', href: '/?topic=' + encodeURIComponent('Kultura'), active: topic === 'Kultura' },
+                                    { id: 'tech', label: 'Tehnologija', href: '/?topic=' + encodeURIComponent('Tehnologija'), active: topic === 'Tehnologija' },
+                                    { id: 'bg', label: lang === 'mk' ? 'Skopje' : 'Beograd', href: '/?subcategory=' + encodeURIComponent(lang === 'mk' ? 'Skopje' : 'Beograd'), active: subcategory === (lang === 'mk' ? 'Skopje' : 'Beograd') }
                                 ].map(pill => (
-                                    <a href={pill.href} class="quick-pill shrink-0" data-track-pill={pill.id}>
+                                    <a 
+                                        href={pill.href} 
+                                        class:list={["quick-pill shrink-0", { "is-active": pill.active }]} 
+                                        data-track-pill={pill.id}
+                                    >
                                         {pill.label}
                                     </a>
                                 ))}
@@ -486,6 +490,11 @@ function getBriefingSnippet(content: string) {
     /* ── Broadsheet Layout ───────────────────────────── */
     .broadsheet-layout { background: var(--background); }
     .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: var(--grid-gap); }
+
+    @media (min-width: 768px) {
+        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 260px; gap: calc(var(--grid-gap) * 1.25); }
+        .broadsheet-main { border-right: 1px solid var(--border); padding-right: calc(var(--grid-gap) * 0.85); }
+    }
     
     @media (min-width: 1024px) {
         .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; gap: calc(var(--grid-gap) * 1.5); }
@@ -625,8 +634,17 @@ function getBriefingSnippet(content: string) {
         border-color: var(--nyt-accent);
         transform: translateY(-1px);
     }
+    .quick-pill.is-active {
+        background: var(--nyt-accent);
+        color: white;
+        border-color: var(--nyt-accent);
+        box-shadow: 0 4px 12px color-mix(in srgb, var(--nyt-accent) 25%, transparent);
+    }
     .dark .quick-pill {
         background: var(--card);
+    }
+    .dark .quick-pill.is-active {
+        background: var(--nyt-accent);
     }
 
     @media (max-width: 768px) {

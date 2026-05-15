@@ -211,17 +211,17 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
     }
 
     @media (max-width: 768px) {
-        .editorial-footer { padding-top: 3rem; margin-top: 3rem; }
+        .editorial-footer { padding-top: 3rem; margin-top: 3rem; padding-bottom: 3rem; }
         .footer-top-border { margin-bottom: 3rem; }
         .footer-main { gap: 3rem; }
         .brand-link { margin-bottom: 1.5rem !important; }
         .brand-ethos { font-size: 1.1rem; margin-bottom: 2rem; line-height: 1.5; }
         .footer-system-pulse { padding: 1.25rem; }
         
-        .footer-directory { grid-template-columns: repeat(2, 1fr); gap: 2rem; }
+        .footer-directory { grid-template-columns: repeat(2, 1fr); gap: 2.5rem; }
         .dir-group:last-child { grid-column: span 2; border-top: 1px solid var(--border); padding-top: 1.5rem; margin-top: 0.5rem; }
         .dir-title { margin-bottom: 0.75rem; padding-bottom: 0.5rem; }
-        .dir-links-stack { gap: 0.7rem; }
+        .dir-links-stack { gap: 0.8rem; }
 
         .footer-legal { margin-top: 4rem; padding-top: 2rem; flex-direction: column; gap: 2rem; align-items: flex-start; }
         .legal-right { width: 100%; display: flex; justify-content: center; margin-top: 1rem; }
