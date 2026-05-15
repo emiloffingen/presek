@@ -308,10 +308,9 @@ copy_release_tree() {
     "$SOURCE_ROOT/" "$RELEASE_DIR/" || fail "rsync failed to copy source tree"
   
   # Validate key files were copied
-  [ -f "$RELEASE_DIR/api_fast.py" ] || fail "api_fast.py missing after copy"
-  [ -f "$RELEASE_DIR/celery_app.py" ] || fail "celery_app.py missing after copy"
+  [ -f "$RELEASE_DIR/core/api_fast.py" ] || fail "core/api_fast.py missing after copy"
+  [ -f "$RELEASE_DIR/core/celery_app.py" ] || fail "core/celery_app.py missing after copy"
   [ -f "$RELEASE_DIR/web/package.json" ] || fail "web/package.json missing after copy"
-  [ -f "$RELEASE_DIR/web-mk/package.json" ] || fail "web-mk/package.json missing after copy"
 }
 
 prepare_release_runtime_links() {
@@ -442,15 +441,11 @@ update_active_runtime_links() {
 
 build_release() {
   ln -sfn "$RELEASE_WEB_NODE_MODULES_TARGET" "$RELEASE_DIR/web/node_modules"
-  ln -sfn "$RELEASE_WEB_NODE_MODULES_TARGET" "$RELEASE_DIR/web-mk/node_modules"
   mkdir -p "$RELEASE_DIR/web/.astro/collections"
-  mkdir -p "$RELEASE_DIR/web-mk/.astro/collections"
 
-  info "Building Astro releases"
+  info "Building Astro release"
   (cd "$RELEASE_DIR/web" && npm run build)
   [ -f "$RELEASE_DIR/web/dist/server/entry.mjs" ] || fail "Release build failed for 'web'"
-  (cd "$RELEASE_DIR/web-mk" && npm run build)
-  [ -f "$RELEASE_DIR/web-mk/dist/server/entry.mjs" ] || fail "Release build failed for 'web-mk'"
 }
 
 invalidate_public_api_caches() {

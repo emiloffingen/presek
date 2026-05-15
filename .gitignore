@@ -86,7 +86,6 @@ static/generated/
 static/uploads/
 package-lock.json
 !web/package-lock.json
-!web-mk/package-lock.json
 screenshots/
 static/dist/
 web/dist/

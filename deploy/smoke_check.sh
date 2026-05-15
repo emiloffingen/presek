@@ -153,8 +153,8 @@ main() {
 
   wait_health_ready "API health" "$HEALTH_URL" 1 1
   wait_http_ok "Astro frontend" "$ASTRO_URL" 200
-  wait_http_ok "Astro MK frontend" "http://127.0.0.1:3001" 200
-  wait_http_ok "MK proxy endpoint" "http://127.0.0.1:5001/proxy?url=https://example.com/image.jpg&w=100" 200
+  wait_http_ok "Astro MK frontend" "$ASTRO_URL/mk" 200
+  wait_http_ok "Image proxy" "http://127.0.0.1:5001/proxy?url=https://example.com/image.jpg&w=100" 200
 
   if [ "$ENABLE_FASTAPI_CHECK" = "1" ]; then
     wait_health_ready "FastAPI health" "$FASTAPI_URL" 1 1

@@ -26,28 +26,15 @@ echo "Source: $SOURCE_ROOT"
 echo "This script validates deployment without affecting production"
 echo ""
 
-# 1. Verify site separation
+# 1. Check required files exist
 echo "---"
-echo "1. Verifying site separation..."
-echo ""
-
-if [ -f "$SCRIPT_DIR/verify_site_separation.sh" ]; then
-    bash "$SCRIPT_DIR/verify_site_separation.sh" || fail "Site separation check failed"
-    echo ""
-else
-    warn "verify_site_separation.sh not found, skipping"
-fi
-
-# 2. Check required files exist
-echo "---"
-echo "2. Checking required files..."
+echo "1. Checking required files..."
 echo ""
 
 REQUIRED_FILES=(
-    "api_fast.py"
-    "celery_app.py"
+    "core/api_fast.py"
+    "core/celery_app.py"
     "web/package.json"
-    "web-mk/package.json"
     "deploy/deploy_release.sh"
     "deploy/nginx/presek.live.conf"
     "deploy/nginx/presek-mk.conf"
@@ -63,23 +50,23 @@ done
 
 echo ""
 
-# 3. Validate web/ and web-mk/ can be built
+# 2. Checking build prerequisites
 echo "---"
-echo "3. Checking build prerequisites..."
+echo "2. Checking build prerequisites..."
 echo ""
 
 # Check npm is available
 if command -v npm &>/dev/null; then
     ok "npm is available"
 else
-    fail "npm is required for building frontends"
+    fail "npm is required for building frontend"
 fi
 
 # Check node is available
 if command -v node &>/dev/null; then
     ok "node is available"
 else
-    fail "node is required for building frontends"
+    fail "node is required for building frontend"
 fi
 
 # Check web/package.json is valid JSON
@@ -89,34 +76,25 @@ else
     fail "web/package.json is invalid"
 fi
 
-# Check web-mk/package.json is valid JSON
-if node -e "const p = require('$SOURCE_ROOT/web-mk/package.json'); JSON.stringify(p);" 2>/dev/null; then
-    ok "web-mk/package.json is valid"
+echo ""
+
+# 3. Check for syntax errors in config files
+echo "---"
+echo "3. Checking configuration files..."
+echo ""
+
+# Check astro.config.mjs syntax
+if node --check "$SOURCE_ROOT/web/astro.config.mjs" 2>/dev/null; then
+    ok "web/astro.config.mjs syntax OK"
 else
-    fail "web-mk/package.json is invalid"
+    fail "web/astro.config.mjs has syntax errors"
 fi
 
 echo ""
 
-# 4. Check for syntax errors in config files
+# 4. Simulate copy and validation
 echo "---"
-echo "4. Checking configuration files..."
-echo ""
-
-# Check astro.config.mjs syntax
-for config in "$SOURCE_ROOT/web/astro.config.mjs" "$SOURCE_ROOT/web-mk/astro.config.mjs"; do
-    if node --check "$config" 2>/dev/null; then
-        ok "$(basename $config) syntax OK"
-    else
-        fail "$(basename $config) has syntax errors"
-    fi
-done
-
-echo ""
-
-# 5. Simulate copy and validation
-echo "---"
-echo "5. Simulating release tree copy..."
+echo "4. Simulating release tree copy..."
 echo ""
 
 TMP_RELEASE_DIR="$(mktemp -d)"
@@ -137,7 +115,7 @@ rsync -a \
     "$SOURCE_ROOT/" "$TMP_RELEASE_DIR/" || fail "Failed to copy source tree"
 
 # Validate copied structure
-for file in api_fast.py celery_app.py web/package.json web-mk/package.json; do
+for file in core/api_fast.py core/celery_app.py web/package.json; do
     if [ -f "$TMP_RELEASE_DIR/$file" ]; then
         ok "$file copied successfully"
     else
@@ -147,39 +125,28 @@ done
 
 echo ""
 
-# 6. Check Macedonian site has Cyrillic
+# 5. Check i18n routing in Layout.astro
 echo "---"
-echo "6. Verifying Macedonian Cyrillic conversion..."
+echo "5. Verifying i18n support in Layout.astro..."
 echo ""
 
-if grep -q "пресек\|ПРЕСЕК\|пресек.мк\|ПРЕСЕК.мк" "$TMP_RELEASE_DIR/web-mk/src/layouts/Layout.astro"; then
-    ok "web-mk Layout.astro contains Macedonian Cyrillic"
+if grep -q "getLangFromUrl" "$TMP_RELEASE_DIR/web/src/layouts/Layout.astro" && \
+   grep -q "useTranslations" "$TMP_RELEASE_DIR/web/src/layouts/Layout.astro"; then
+    ok "web/src/layouts/Layout.astro supports i18n"
 else
-    fail "web-mk Layout.astro missing Cyrillic text"
+    fail "web/src/layouts/Layout.astro missing i18n imports"
 fi
 
-if grep -q "ПРЕСЕК.мк" "$TMP_RELEASE_DIR/web-mk/src/layouts/Layout.astro"; then
-    ok "web-mk uses ПРЕСЕК.мк branding"
+if [ -d "$TMP_RELEASE_DIR/web/src/pages/mk" ]; then
+    ok "Macedonian localized pages exist in web/src/pages/mk/"
 else
-    warn "web-mk missing ПРЕСЕК.мк branding"
+    fail "Macedonian localized pages are missing"
 fi
 
-# 7. Check Serbian site does NOT have Cyrillic
+# 6. Check nginx configs exist
 echo ""
 echo "---"
-echo "7. Verifying Serbian site doesn't use Cyrillic..."
-echo ""
-
-if ! grep -q "пресек\|ПРЕСЕК" "$TMP_RELEASE_DIR/web/src/layouts/Layout.astro"; then
-    ok "web (Serbian) doesn't contain Cyrillic"
-else
-    fail "web (Serbian) incorrectly contains Cyrillic text"
-fi
-
-# 8. Check nginx configs exist
-echo ""
-echo "---"
-echo "8. Checking nginx configurations..."
+echo "6. Checking nginx configurations..."
 echo ""
 
 for config in presek.live.conf presek-mk.conf; do
@@ -190,7 +157,7 @@ for config in presek.live.conf presek-mk.conf; do
     fi
 done
 
-# 9. Display summary
+# 7. Display summary
 echo ""
 echo "=========================================="
 echo "DRY-RUN VALIDATION COMPLETE"
