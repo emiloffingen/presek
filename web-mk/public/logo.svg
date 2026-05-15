@@ -1,8 +1,0 @@
-<svg width="500" height="120" viewBox="0 0 500 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <g fill="#000000">
-    <text x="250" y="70" font-family="'Georgia', serif" font-weight="950" font-size="82" letter-spacing="-2" text-anchor="middle" fill="#000000">ПРЕСЕК.мк</text>
-    <line x1="50" y1="92" x2="450" y2="92" stroke="#000000" stroke-width="3" />
-    <line x1="50" y1="98" x2="450" y2="98" stroke="#000000" stroke-width="1.5" />
-    <text x="250" y="116" font-family="'Arial', sans-serif" font-weight="900" font-size="12" letter-spacing="6" text-anchor="middle" fill="#000000" opacity="0.8">ИНФОРМАТИВЕН ДИГИТАЛЕН АГРЕГАТОР</text>
-  </g>
-</svg>

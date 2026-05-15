@@ -1,17 +1,23 @@
 ---
 import Branding from './Branding.astro';
 import { Activity, Globe, ShieldCheck, Mail, ArrowUpRight, Zap } from 'lucide-react';
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
 ---
 <footer class="editorial-footer site-layout">
     <div class="footer-top-border"></div>
     
     <div class="footer-main">
         <div class="footer-branding">
-            <a href="/" class="brand-link mb-8">
+            <a href={l('/')} class="brand-link mb-8">
                 <Branding mode="full" class="footer-logo-premium" />
             </a>
             <p class="brand-ethos font-serif italic text-xl md:text-2xl leading-relaxed text-muted-foreground/90 mb-10">
-                "Presek je digitalni servis za medijsku transparentnost i javni uvid. Naša misija je da vratimo jasnoću u informativni prostor kroz mapiranje perspektiva, sa ciljem da omogućimo objektivnu sliku kroz objektiv pluralizma."
+                {t('footer.ethos')}
             </p>
             
             <div class="footer-system-pulse p-5 bg-secondary/10 border border-border/40 rounded-xl max-w-md">
@@ -21,18 +27,18 @@ import { Activity, Globe, ShieldCheck, Mail, ArrowUpRight, Zap } from 'lucide-re
                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                         </div>
-                        <span class="font-sans text-[10px] font-black uppercase tracking-[0.2em] text-foreground">SISTEMSKI SIGNAL</span>
+                        <span class="font-sans text-[10px] font-black uppercase tracking-[0.2em] text-foreground">{t('footer.system_signal')}</span>
                     </div>
-                    <span class="font-sans text-[9px] font-black text-emerald-500 uppercase tracking-widest">AKTIVAN</span>
+                    <span class="font-sans text-[9px] font-black text-emerald-500 uppercase tracking-widest">{t('footer.active')}</span>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div class="flex items-center gap-2">
                         <Zap size={14} className="text-nyt-accent" />
-                        <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">SISTEMSKA SINTEZA: OK</span>
+                        <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('footer.synthesis_ok')}</span>
                     </div>
                     <div class="flex items-center gap-2">
                         <Globe size={14} className="text-nyt-accent" />
-                        <span class="text-[10px] font-bold text-muted-foreground">INGESTIJA: 24/7</span>
+                        <span class="text-[10px] font-bold text-muted-foreground">{t('footer.ingestion')}</span>
                     </div>
                 </div>
             </div>
@@ -40,29 +46,29 @@ import { Activity, Globe, ShieldCheck, Mail, ArrowUpRight, Zap } from 'lucide-re
 
         <nav class="footer-directory">
             <div class="dir-group">
-                <h4 class="dir-title">Editorijal</h4>
+                <h4 class="dir-title">{t('nav.editorial')}</h4>
                 <div class="dir-links-stack">
-                    <a href="/about">Misija <ArrowUpRight size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" /></a>
-                    <a href="/editorial">Standardi</a>
-                    <a href="/pulse">Medijski puls</a>
-                    <a href="/izvori">Medijski izvori</a>
+                    <a href={l('/about')}>{t('nav.mission')} <ArrowUpRight size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" /></a>
+                    <a href={l('/editorial')}>{t('nav.standards')}</a>
+                    <a href={l('/pulse')}>{t('nav.pulse')}</a>
+                    <a href={l('/izvori')}>{t('nav.sources')}</a>
                 </div>
             </div>
             <div class="dir-group">
-                <h4 class="dir-title">Resursi</h4>
+                <h4 class="dir-title">{t('nav.resources')}</h4>
                 <div class="dir-links-stack">
-                    <a href="/archive">Arhiva izdanja</a>
-                    <a href="/briefing">Dnevni brifing</a>
-                    <a href="/settings">Personalizacija</a>
-                    <a href="/support" class="font-black text-nyt-accent">Podrži Presek</a>
+                    <a href={l('/archive')}>{t('nav.archive')}</a>
+                    <a href={l('/briefing')}>{t('nav.briefing')}</a>
+                    <a href={l('/settings')}>{t('nav.personalization')}</a>
+                    <a href={l('/support')} class="font-black text-nyt-accent">{t('nav.support')}</a>
                 </div>
             </div>
             <div class="dir-group">
-                <h4 class="dir-title">Kontakt</h4>
+                <h4 class="dir-title">{t('nav.contact')}</h4>
                 <div class="dir-links-stack">
-                    <a href="/contact" class="flex items-center gap-2"><Mail size={12} /> Korespondencija</a>
-                    <a href="/privacy">Privatnost</a>
-                    <a href="/terms">Uslovi korišćenja</a>
+                    <a href={l('/contact')} class="flex items-center gap-2"><Mail size={12} /> {t('nav.contact')}</a>
+                    <a href={l('/privacy')}>{t('nav.privacy')}</a>
+                    <a href={l('/terms')}>{t('nav.terms')}</a>
                 </div>
             </div>
         </nav>
@@ -70,14 +76,14 @@ import { Activity, Globe, ShieldCheck, Mail, ArrowUpRight, Zap } from 'lucide-re
 
     <div class="footer-legal">
         <div class="legal-left">
-            <p class="copyright mb-2">© {new Date().getFullYear()} PRESEK.RS · PRVI DIGITALNI AGREGATOR VESTI ZA SINTEZU</p>
+            <p class="copyright mb-2">© {new Date().getFullYear()} PRESEK.{lang === 'mk' ? 'MK' : 'RS'} · {t('footer.copyright_suffix')}</p>
             <p class="legal-note font-sans text-[9px] text-muted-foreground uppercase tracking-widest opacity-60">
-                PODACI SU GENERISANI PUTEM JAVNO DOSTUPNIH izvora. SISTEM KORISTI SISTEMSKU ANALIZU ZA OBRADU PODATAKA.
+                {t('footer.legal_note')}
             </p>
         </div>
         <div class="legal-right">
             <a href="#top" class="scroll-top-premium">
-                <span class="font-black">NA VRH</span>
+                <span class="font-black">{t('nav.top')}</span>
                 <div class="p-2 bg-foreground text-background rounded-full">
                     <ArrowUpRight size={14} className="-rotate-45" />
                 </div>

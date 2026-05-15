@@ -1,0 +1,55 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+
+Astro.response.status = 404;
+---
+
+<Layout title="404 — Страница није пронађена" robots="noindex, nofollow">
+	<NYTHeader />
+	<main class="site-layout py-[var(--page-py)]">
+		<Breadcrumbs items={[{ label: "Страница није пронађена" }]} />
+
+		<section class="not-found-shell">
+			<div class="not-found-main">
+				<span class="page-kicker">404</span>
+				<h1 class="not-found-headline">Страница није пронађена</h1>
+				<p class="not-found-intro">
+					Линк који сте отворили не постоји, премештен је или више није доступан. Најчешће се ово дешава када је кластер стар, адреса непотпуна или линк погрешно копиран.
+				</p>
+
+				<div class="not-found-actions">
+					<a href="/" class="not-found-link not-found-link-primary">Почетна</a>
+					<a href="/archive" class="not-found-link">Архива</a>
+					<a href="/briefing" class="not-found-link">Брифинг</a>
+				</div>
+			</div>
+
+			<aside class="not-found-rail">
+				<div class="rail-card rail-card-accent">
+					<h2 class="rail-card-title">Где даље</h2>
+					<p class="rail-copy">
+						Ако сте тражили конкретну вест или кластер, најбоље је да почнете од архиве. Ако само желите брз преглед дана, вратите се на почетну или отворите брифинг.
+					</p>
+				</div>
+
+				<div class="rail-card">
+					<h2 class="rail-card-title">Брзе путање</h2>
+					<div class="not-found-list">
+						<a href="/archive">Прелистај дан по дан</a>
+						<a href="/izvori">Погледај изворе</a>
+						<a href="/pulse">Упореди медије</a>
+						<a href="/contact">Пријави неисправан линк</a>
+					</div>
+				</div>
+			</aside>
+		</section>
+	</main>
+	<Footer />
+</Layout>
+
+<style>
+... [KEEP ORIGINAL STYLES]
+</style>

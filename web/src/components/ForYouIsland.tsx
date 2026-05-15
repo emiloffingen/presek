@@ -21,17 +21,16 @@ function getSummary(cluster: any) {
 function getTitle(cluster: any) {
   const article = cluster?.articles?.[0];
   return getDisplayTitle(article);
-}
-
 interface ForYouIslandProps {
   clusters?: any[];
   excludeClusterIds?: string[];
+  lang?: string;
 }
 
-export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: ForYouIslandProps) {
+export default function ForYouIsland({ clusters = [], excludeClusterIds = [], lang = 'sr' }: ForYouIslandProps) {
   const profile = useStore($profile);
   const syncToken = useStore($syncToken);
-  
+
   const [semanticResults, setSemanticResults] = useState<any[]>([]);
   const [semanticLoading, setSemanticLoading] = useState(false);
 
@@ -48,6 +47,9 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             token: syncToken,
+            lang: lang
+          }),
+        });
             profile: profile
           })
         });

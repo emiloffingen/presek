@@ -6,6 +6,7 @@ import { Sparkles, BarChart3, Radio, ShieldCheck } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
 import { getEditionStr } from '../utils/textUtils';
 import Branding from './Branding.astro';
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
 
 interface Props {
     category?: string | null;
@@ -18,7 +19,11 @@ interface Props {
 
 const { category, topic, entity, subcategory, q, stats: propStats } = Astro.props;
 
-const currentDate = new Intl.DateTimeFormat('sr-RS', {
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
+
+const currentDate = new Intl.DateTimeFormat(lang === 'sr' ? 'sr-RS' : 'mk-MK', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -39,10 +44,10 @@ let stats = propStats;
 let latestTickerItems: any[] = [];
 
 try {
-    const requests = [fetch(`${API_URL}/navigation?lang=sr`)];
+    const requests = [fetch(`${API_URL}/navigation?lang=${lang}`)];
     const shouldFetchStats = !stats || typeof stats.last_1h !== 'number' || typeof stats.total_feeds === 'undefined';
     if (shouldFetchStats) {
-        requests.push(fetch(`${API_URL}/stats/summary`));
+        requests.push(fetch(`${API_URL}/stats/summary?lang=${lang}`));
     }
 
     const results = await Promise.allSettled(requests);
@@ -54,14 +59,14 @@ try {
     }
 
     if (!navigationData.breaking.length) {
-        const latestRes = await fetch(`${API_URL}/news?page_size=8&sort=recent&lang=sr`);
+        const latestRes = await fetch(`${API_URL}/news?page_size=8&sort=recent&lang=${lang}`);
         if (latestRes.ok) {
             const latestData = await latestRes.json();
             latestTickerItems = (latestData?.clusters || []).map((cluster: any) => {
                 const lead = Array.isArray(cluster?.articles) ? cluster.articles[0] : null;
                 return {
-                    label: cluster?.synthetic_headline || lead?.title || 'Najnovija vest',
-                    href: `/cluster/${cluster?.cluster_id}`,
+                    label: cluster?.synthetic_headline || lead?.title || t('header.latest'),
+                    href: `${l('/cluster/')}${cluster?.cluster_id}`,
                     type: cluster?.is_breaking ? 'breaking' : 'latest',
                     created_at: lead?.ingested_at || lead?.created_at || null,
                 };
@@ -96,10 +101,10 @@ function getRelativeTimeStr(dateStr?: string) {
         const diffMs = now.getTime() - date.getTime();
         const diffMins = Math.floor(diffMs / (1000 * 60));
 
-        if (diffMins < 1) return 'SADA';
-        if (diffMins < 60) return `PRE ${diffMins} MIN`;
+        if (diffMins < 1) return t('news.now');
+        if (diffMins < 60) return `${t('news.ago')} ${diffMins} ${t('news.min_short')}`;
         
-        return date.toLocaleTimeString('sr-RS', { 
+        return date.toLocaleTimeString(lang === 'sr' ? 'sr-RS' : 'mk-MK', { 
             hour: '2-digit', 
             minute: '2-digit',
             timeZone: 'Europe/Belgrade' 
@@ -119,7 +124,7 @@ function getRelativeTimeStr(dateStr?: string) {
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                     <span class="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
                 </span>
-                <span class="ticker-label">UŽIVO</span>
+                <span class="ticker-label">{t('header.live')}</span>
             </div>
             <div class="unified-ticker-track-wrap">
                 <div class="unified-ticker-track">
@@ -156,32 +161,32 @@ function getRelativeTimeStr(dateStr?: string) {
         <div class="topbar-main">
             <div class="topbar-left-stack">
                 <div class="search-entry">
-                    <SearchIsland initialQuery={q} client:load />
+                    <SearchIsland initialQuery={q} client:load lang={lang} />
                 </div>
                 <time class="topbar-date-display">{currentDate}</time>
             </div>
 
             <div class="topbar-branding">
-                <a href="/" class="brand-link">
+                <a href={l('/')} class="brand-link">
                     <Branding mode="full" />
                 </a>
             </div>
 
             <div class="topbar-actions">
                 <div class="topbar-modes-rail">
-                    <a href="/briefing" class={`mode-link ${Astro.url.pathname === '/briefing' ? 'is-active' : ''}`}>
-                        <Radio size={11} strokeWidth={3} /> <span>Brifing</span>
+                    <a href={l('/briefing')} class={`mode-link ${Astro.url.pathname === l('/briefing') ? 'is-active' : ''}`}>
+                        <Radio size={11} strokeWidth={3} /> <span>{t('nav.briefing')}</span>
                     </a>
-                    <a href="/archive" class={`mode-link ${Astro.url.pathname === '/archive' ? 'is-active' : ''}`}>
-                        <Sparkles size={11} strokeWidth={3} /> <span>Arhiva</span>
+                    <a href={l('/archive')} class={`mode-link ${Astro.url.pathname === l('/archive') ? 'is-active' : ''}`}>
+                        <Sparkles size={11} strokeWidth={3} /> <span>{t('nav.archive')}</span>
                     </a>
-                    <a href="/pulse" class={`mode-link ${Astro.url.pathname === '/pulse' ? 'is-active' : ''}`}>
-                        <BarChart3 size={11} strokeWidth={3} /> <span>Puls</span>
+                    <a href={l('/pulse')} class={`mode-link ${Astro.url.pathname === l('/pulse') ? 'is-active' : ''}`}>
+                        <BarChart3 size={11} strokeWidth={3} /> <span>{t('nav.pulse')}</span>
                     </a>
                 </div>
                 <div class="topbar-util">
                     {stats?.last_1h && stats.last_1h > 0 && (
-                        <div class="activity-chip" title="nove vesti u poslednjih sat vremena">
+                        <div class="activity-chip" title={t('header.new_news')}>
                             <span class="activity-dot"></span>
                             +{stats.last_1h}
                         </div>
@@ -193,7 +198,7 @@ function getRelativeTimeStr(dateStr?: string) {
         </div>
     </header>
 
-    <nav class="site-layout discovery-nav-v2" aria-label="Brza navigacija">
+    <nav class="site-layout discovery-nav-v2" aria-label={t('header.quick_nav')}>
         <div class="nav-rail-wrapper">
             <div class="nav-rail-scroll hide-scrollbar">
                 <div class="nav-rail-content">

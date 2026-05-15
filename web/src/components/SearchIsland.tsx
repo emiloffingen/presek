@@ -66,7 +66,7 @@ const CATEGORIES = [
 
 const FOCUSABLE_SELECTOR = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
-export default function SearchIsland({ initialQuery = '' }: { initialQuery?: string | null }) {
+export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initialQuery?: string | null, lang?: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState(initialQuery || '');
   const [timespan, setTimespan] = useState('all');
@@ -82,12 +82,36 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
   const [activeSection, setActiveSection] = useState<'NEWS' | 'ENTITIES' | 'ACTIONS' | 'RECENT'>('NEWS');
 
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
-  const placeholders = [
+  const placeholders = lang === 'sr' ? [
+    "Istraži medijsku arhivu...",
+    "Analiziraj protivurečne stavove...",
+    "Dekonstruiši činjenice i brojke...",
+    "Mapiraj reakcije i posledice...",
+    "Šta se dešava u Srbiji?"
+  ] : [
     "Istrazi me mediumskata arhiva...",
     "Analiziraj im protivrecnite stavovi...",
     "Dekonstruiraj im faktite i brojkite...",
     "Mapiraj im reakciite i posledicite...",
-    "Sto se slucuva vo Srbija?"
+    "Sto se slucuva vo Makedonija?"
+  ];
+
+  const SEARCH_ACTIONS: SearchAction[] = [
+    { id: 'act-home', label: lang === 'sr' ? 'Početna Stranica' : 'Pocetna Stranica', icon: Layout, href: lang === 'sr' ? '/' : '/mk', category: 'NAVIGATION', desc: lang === 'sr' ? 'Vrati se na glavnu stranicu sa vestima.' : 'Vrati se na glavnata stranica so vesti.' },
+    { id: 'act-briefing', label: lang === 'sr' ? 'Dnevni Brifing' : 'Dneven Brifing', icon: Zap, href: lang === 'sr' ? '/briefing' : '/mk/briefing', category: 'NAVIGATION', desc: lang === 'sr' ? 'Pregled najvažnijih vesti u formi brifinga.' : 'Pregled na najvaznite vesti vo forma na brifing.' },
+    { id: 'act-pulse', label: lang === 'sr' ? 'Informativni Ritam' : 'Informativen Ritam', icon: Activity, href: lang === 'sr' ? '/pulse' : '/mk/pulse', category: 'NAVIGATION', desc: lang === 'sr' ? 'Pratite trendove i medijski pluralizam.' : 'Sledete im trendovite i mediumskiot pluralizam.' },
+    { id: 'act-archive', label: lang === 'sr' ? 'Arhiva vesti' : 'Arhiva na vesti', icon: Archive, href: lang === 'sr' ? '/archive' : '/mk/archive', category: 'NAVIGATION', desc: lang === 'sr' ? 'Pretražite sve dosadašnje objave.' : 'Prebarajte im site dosegasni objavi.' },
+    { id: 'act-about', label: lang === 'sr' ? 'O Projektu' : 'Za Proektot', icon: HelpCircle, href: lang === 'sr' ? '/about' : '/mk/about', category: 'HELP', desc: lang === 'sr' ? 'Saznajte više o Preseku i tehnologiji iza njega.' : 'Doznajte povece za Presek i tehnologijata zad nego.' },
+  ];
+
+  const CATEGORIES = [
+    { id: 'all', label: lang === 'sr' ? 'SVE TEME' : 'SITE TEMI', color: 'bg-nyt-accent' },
+    { id: 'Srbija', label: lang === 'sr' ? 'Srbija' : 'Makedonija', color: 'bg-nyt-red' },
+    { id: 'Politika', label: lang === 'sr' ? 'Politika' : 'Politika', color: 'bg-blue-600' },
+    { id: 'Ekonomija', label: lang === 'sr' ? 'Ekonomija' : 'Ekonomija', color: 'bg-emerald-600' },
+    { id: 'Sport', label: lang === 'sr' ? 'Sport' : 'Sport', color: 'bg-orange-500' },
+    { id: 'Kultura', label: lang === 'sr' ? 'Kultura' : 'Kultura', color: 'bg-purple-600' },
+    { id: 'Tehnologija', label: lang === 'sr' ? 'Tehnologija' : 'Tehnologija', color: 'bg-cyan-600' },
   ];
 
   useEffect(() => {
@@ -145,7 +169,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
     const recognition = new SpeechRecognition();
     recognition.continuous = false;
     recognition.interimResults = false;
-    recognition.lang = 'mk-RS';
+    recognition.lang = lang === 'sr' ? 'sr-RS' : 'mk-MK';
     recognition.onstart = () => setIsListening(true);
     recognition.onend = () => setIsListening(false);
     recognition.onerror = () => setIsListening(false);
@@ -157,7 +181,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
       }
     };
     recognition.start();
-  }, []);
+  }, [lang]);
 
   const [error, setError] = useState<string | null>(null);
 
@@ -186,7 +210,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
     let cancelled = false;
     const loadTrending = async () => {
       try {
-        const res = await fetch('/api/trending');
+        const res = await fetch(`/api/trending?lang=${lang}`);
         if (!res.ok) return;
         const data = await res.json();
         if (!cancelled && Array.isArray(data)) {
@@ -198,7 +222,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
     };
     loadTrending();
     return () => { cancelled = true; };
-  }, [isOpen]);
+  }, [isOpen, lang]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -215,18 +239,18 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
       setIsLoading(true);
       setError(null);
       try {
-        const url = `/api/news?q=${encodeURIComponent(trimmed)}&page_size=12`;
+        const url = `/api/news?q=${encodeURIComponent(trimmed)}&page_size=12&lang=${lang}`;
         const timespanPart = timespan !== 'all' ? `&timespan=${timespan}` : '';
         const categoryPart = categoryFilter !== 'all' ? `&category=${encodeURIComponent(categoryFilter)}` : '';
         const res = await fetch(url + timespanPart + categoryPart);
-        if (!res.ok) throw new Error('Greska pri prebaruvanjeto.');
+        if (!res.ok) throw new Error(lang === 'sr' ? 'Greška pri pretraživanju.' : 'Greska pri prebaruvanjeto.');
         const data = await res.json();
         const nextSuggestions = Array.isArray(data?.clusters)
           ? data.clusters.map((cluster: any) => {
               const article = cluster.articles?.[0] || {};
               return {
                 cluster_id: cluster.cluster_id,
-                title: getDisplayTitle(article, 'Naslov'),
+                title: getDisplayTitle(article, lang === 'sr' ? 'Naslov' : 'Naslov'),
                 image_url: cluster.representative_image || article.image_url || null,
                 source: article.source || '',
                 category: article.category || '',
@@ -234,7 +258,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                 sourceCount: cluster.articles?.length || 0,
                 pulse_score: cluster.pulse_score,
                 has_synthesis: cluster.has_synthesis,
-                matchLabel: cluster.is_breaking ? 'ITNO' : 'vest',
+                matchLabel: cluster.is_breaking ? (lang === 'sr' ? 'HITNO' : 'ITNO') : 'vest',
               };
             })
           : [];
@@ -248,7 +272,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
         if (!cancelled) {
           setSuggestions([]);
           setEntityResult(null);
-          setError(err instanceof Error ? err.message : 'Greska');
+          setError(err instanceof Error ? err.message : (lang === 'sr' ? 'Greška' : 'Greska'));
         }
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -259,7 +283,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
       cancelled = true;
       if (typeof window !== 'undefined') window.clearTimeout(timer);
     };
-  }, [query, isOpen, timespan, categoryFilter]);
+  }, [query, isOpen, timespan, categoryFilter, lang]);
 
   const closeSearch = () => setIsOpen(false);
 
@@ -278,13 +302,15 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
     closeSearch();
     const tsPart = timespan !== 'all' ? `&timespan=${timespan}` : '';
     const catPart = categoryFilter !== 'all' ? `&category=${encodeURIComponent(categoryFilter)}` : '';
-    navigate(`/?q=${encodeURIComponent(cleanQuery)}${tsPart}${catPart}`);
+    const prefix = lang === 'sr' ? '' : '/mk';
+    navigate(`${prefix}/?q=${encodeURIComponent(cleanQuery)}${tsPart}${catPart}`);
   };
 
   const navigateToCluster = (clusterId: string) => {
     if (!clusterId) return;
     closeSearch();
-    navigate(`/cluster/${clusterId}`);
+    const prefix = lang === 'sr' ? '' : '/mk';
+    navigate(`${prefix}/cluster/${clusterId}`);
   };
 
   const onDialogKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -350,7 +376,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Prebarajte vesti, temi ili subjekti..."
+              placeholder={lang === 'sr' ? "Pretražite vesti, teme ili subjekte..." : "Prebarajte vesti, temi ili subjekti..."}
               className="w-full bg-transparent py-4 text-2xl md:text-3xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground/40 border-b-2 border-transparent focus:border-nyt-accent transition-colors"
               autoComplete="off"
               spellCheck="false"
@@ -382,7 +408,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                 {recentSearches.length > 0 && (
                   <section>
                     <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4 flex items-center gap-2">
-                       <History size={12} /> POSLEDNI PREBARUVANjA
+                       <History size={12} /> {lang === 'sr' ? 'POSLEDNJE PRETRAGE' : 'POSLEDNI PREBARUVANjA'}
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {recentSearches.map((s, i) => (
@@ -396,7 +422,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
 
                 <section>
                   <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4 flex items-center gap-2">
-                     <TrendingUp size={12} /> TREND TEMI
+                     <TrendingUp size={12} /> {lang === 'sr' ? 'TREND TEME' : 'TREND TEMI'}
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {trendingItems.length > 0 ? trendingItems.map((item, i) => (
@@ -410,7 +436,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
 
                 <section>
                   <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4 flex items-center gap-2">
-                     <Zap size={12} /> BRZI AKCII
+                     <Zap size={12} /> {lang === 'sr' ? 'BRZE AKCIJE' : 'BRZI AKCII'}
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {SEARCH_ACTIONS.map(action => (
@@ -434,7 +460,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
               <div className="space-y-8">
                 {entityResult && (
                   <section>
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">SUBJEKTI</h3>
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">{lang === 'sr' ? 'SUBJEKTI' : 'SUBJEKTI'}</h3>
                     <button
                       onClick={() => navigateToQuery(entityResult.name)}
                       className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left ${activeIndex === 0 ? 'bg-nyt-accent/5 border-nyt-accent/30 ring-1 ring-nyt-accent/20' : 'bg-transparent border-transparent hover:bg-secondary/30'}`}
@@ -448,7 +474,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                       </div>
                       <div>
                         <p className="font-serif font-black text-xl">{entityResult.name}</p>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{entityResult.type} · {entityResult.total_mentions} spomenuvanja</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{entityResult.type} · {entityResult.total_mentions} {lang === 'sr' ? 'pominjanja' : 'spomenuvanja'}</p>
                       </div>
                       <ArrowUpRight size={16} className="ml-auto text-muted-foreground" />
                     </button>
@@ -457,7 +483,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
 
                 {suggestions.length > 0 && (
                   <section>
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">vesti I price</h3>
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">{lang === 'sr' ? 'VESTI I PRIČE' : 'VESTI I PRICE'}</h3>
                     <div className="space-y-2">
                       {suggestions.map((item, idx) => {
                         const globalIdx = entityResult ? idx + 1 : idx;
@@ -478,7 +504,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                               <p className="font-serif font-black text-lg leading-tight line-clamp-2 group-hover:text-nyt-accent transition-colors">{item.title}</p>
                               <div className="flex items-center gap-3 mt-2 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
                                 <span>{item.source}</span>
-                                <span>{item.sourceCount} {item.sourceCount === 1 ? 'izvor' : 'izvori'}</span>
+                                <span>{item.sourceCount} {item.sourceCount === 1 ? (lang === 'sr' ? 'izvor' : 'izvor') : (lang === 'sr' ? 'izvora' : 'izvori')}</span>
                               </div>
                             </div>
                           </button>
@@ -490,7 +516,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
 
                 {filteredActions.length > 0 && (
                   <section>
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">AKCII</h3>
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">{lang === 'sr' ? 'AKCIJE' : 'AKCII'}</h3>
                     <div className="grid grid-cols-1 gap-2">
                       {filteredActions.map((action, idx) => {
                         const globalIdx = (entityResult ? 1 : 0) + suggestions.length + idx;
@@ -517,8 +543,8 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                     <div className="w-16 h-16 bg-secondary/50 rounded-full flex items-center justify-center mb-6">
                        <Search size={32} className="text-muted-foreground/30" />
                     </div>
-                    <h4 className="font-serif font-black text-2xl mb-2">Nema rezultati za "{query}"</h4>
-                    <p className="text-muted-foreground text-sm max-w-xs">Obidete se so pokonkretni klucni zborovi ili prelistajte im aktuelnite trendovi.</p>
+                    <h4 className="font-serif font-black text-2xl mb-2">{lang === 'sr' ? `Nema rezultata za "${query}"` : `Nema rezultati za "${query}"`}</h4>
+                    <p className="text-muted-foreground text-sm max-w-xs">{lang === 'sr' ? 'Pokušajte sa konkretnijim ključnim rečima ili prelistajte aktuelne trendove.' : 'Obidete se so pokonkretni klucni zborovi ili prelistajte im aktuelnite trendovi.'}</p>
                   </div>
                 )}
               </div>

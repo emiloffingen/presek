@@ -1,0 +1,112 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import { Cookie, ShieldCheck, Lock } from 'lucide-react';
+---
+
+<Layout 
+    title="Политика колачића — Пресек" 
+    description="Информације о томе како користимо колачиће како бисмо унапредили ваше корисничко искуство."
+>
+    <NYTHeader />
+    <main class="site-layout broadsheet-layout py-[var(--page-py)]">
+        <header class="editorial-masthead mb-12">
+            <div class="masthead-top">
+                <span class="masthead-kicker">ПРАВНО И ПРИВАТНОСТ</span>
+            </div>
+            <div class="masthead-main">
+                <h1 class="masthead-title">Политика <span>Колачића</span></h1>
+            </div>
+            <p class="masthead-intro">
+                Транспарентност у дигиталној обради: Објашњење како Пресек.ливе користи колачиће за функционалност и перформансе.
+            </p>
+        </header>
+
+        <div class="broadsheet-grid">
+            <div class="broadsheet-main">
+                <article class="prose-editorial">
+                    <p class="first-paragraph">
+                        Колачићи су мале текстуалне датотеке које се чувају на вашем уређају приликом посете веб-страници. Пресек користи минималан број колачића искључиво како би омогућио техничку функционалност и заштиту сервиса.
+                    </p>
+
+                    <h2>Шта користимо?</h2>
+                    <p>Наш систем користи колачиће за следеће сврхе:</p>
+                    
+                    <div class="cookie-types space-y-8 my-10">
+                        <div class="type-item flex gap-6 p-6 border border-border bg-secondary/10">
+                            <ShieldCheck className="text-nyt-accent shrink-0" size={24} />
+                            <div>
+                                <h4 class="font-sans font-black text-[10px] uppercase tracking-widest mb-2">Неопходни колачићи</h4>
+                                <p class="text-sm leading-relaxed">Ови колачићи су критични за безбедност и основне функције сајта (нпр. заштита од CSRF напада). Без њих, сервис не може исправно да функционише.</p>
+                            </div>
+                        </div>
+
+                        <div class="type-item flex gap-6 p-6 border border-border">
+                            <Cookie className="text-nyt-accent shrink-0" size={24} />
+                            <div>
+                                <h4 class="font-sans font-black text-[10px] uppercase tracking-widest mb-2">Преференције корисника</h4>
+                                <p class="text-sm leading-relaxed">Чувамо ваше опције за тамну/светлу тему или подешавања језика на локалном нивоу како не бисте морали поново да бирате приликом сваке посете.</p>
+                            </div>
+                        </div>
+
+                        <div class="type-item flex gap-6 p-6 border border-border">
+                            <Lock className="text-nyt-accent shrink-0" size={24} />
+                            <div>
+                                <h4 class="font-sans font-black text-[10px] uppercase tracking-widest mb-2">Аналитика сесија</h4>
+                                <p class="text-sm leading-relaxed">Користимо анонимне податке како бисмо разумели како се корисници крећу кроз категорије, са циљем да унапредимо брзину учитавања најпосећенијих тема.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h2>Ваш избор</h2>
+                    <p>
+                        Већина прегледача вам омогућава да контролишете или бришете колачиће кроз своја подешавања. Имајте на уму да онемогућавање одређених колачића може утицати на корисничко искуство на Пресеку.
+                    </p>
+                    <p>
+                        Уколико имате питања у вези са нашом употребом колачића, молимо вас контактирајте нас на <a href="mailto:contact@presek.live" class="text-nyt-accent underline">contact@presek.live</a>.
+                    </p>
+                </article>
+            </div>
+
+            <aside class="broadsheet-rail">
+                <section class="rail-block">
+                    <p class="rail-kicker">Повезано</p>
+                    <h3 class="rail-title">ПРИВАТНОСТ</h3>
+                    <a href="/privacy" class="block p-4 border border-border hover:bg-secondary transition-colors text-sm font-bold uppercase tracking-tight">Политика приватности →</a>
+                </section>
+
+                <div class="rail-meta-box">
+                    <p class="text-[10px] font-black uppercase tracking-widest mb-4 opacity-50">АЖУРИРАНО</p>
+                    <p class="text-xs">Последња измена: 25. април 2026.</p>
+                </div>
+            </aside>
+        </div>
+    </main>
+    <Footer />
+</Layout>
+
+<style>
+    .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 2rem; margin-bottom: 3rem; }
+    .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
+    .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; margin: 1.5rem 0; letter-spacing: -0.02em; }
+    .masthead-title span { font-weight: 400; font-style: italic; }
+    .masthead-intro { font-family: var(--font-nyt-body); font-size: 1.15rem; line-height: 1.6; color: var(--secondary-foreground); max-width: 42rem; }
+
+    .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
+    @media (min-width: 1024px) {
+        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; }
+        .broadsheet-main { border-right: 1px solid var(--border); padding-right: 3rem; }
+        .broadsheet-rail { position: sticky; top: 8rem; align-self: start; }
+    }
+
+    .prose-editorial { font-family: var(--font-nyt-body); font-size: 1.1rem; line-height: 1.75; color: var(--secondary-foreground); }
+    .prose-editorial h2 { font-family: var(--font-serif); font-size: 2rem; font-weight: 900; margin: 3rem 0 1.5rem; color: var(--foreground); }
+    .first-paragraph::first-letter { float: left; font-family: var(--font-serif); font-size: 5rem; font-weight: 900; line-height: 0.8; padding-top: 0.5rem; padding-right: 0.75rem; color: var(--foreground); }
+
+    .rail-block { margin-bottom: 2.5rem; }
+    .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
+    .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+    .rail-meta-box { padding: 1.5rem; border: 1px solid var(--border); }
+</style>

@@ -1,0 +1,91 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import BriefingDeliveryIsland from '../components/BriefingDeliveryIsland.tsx';
+import SettingsProfileIsland from '../components/SettingsProfileIsland.tsx';
+import AccountSyncIsland from '../components/AccountSyncIsland.tsx';
+import OnboardingIsland from '../components/OnboardingIsland.tsx';
+import { KeyRound, Radio, ShieldCheck, UserCircle2, Sparkles, ArrowUpRight } from 'lucide-react';
+---
+
+<Layout title="Подешавања — Пресек" description="Управљајте синхронизацијом, праћењем и доставом брифинга у Пресеку.">
+  <NYTHeader />
+
+  <main class="site-layout py-[var(--page-py)]">
+    <Breadcrumbs items={[{ label: "Подешавања" }]} />
+    
+    <div class="settings-shell editorial-shell mt-12">
+      <header class="settings-header editorial-header mb-[clamp(2rem, 5vw, 4rem)] motion-rise">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-[1px] bg-nyt-accent"></div>
+            <span class="page-kicker !mb-0 text-[var(--text-xs)]">КОНТРОЛНИ ЦЕНТАР</span>
+        </div>
+        <h1 class="settings-headline editorial-headline italic text-[clamp(2rem, 4vw, 3.5rem)] font-serif">Ваш <span>Дигитални</span> Профил</h1>
+        <p class="settings-lede editorial-intro max-w-3xl mt-6 text-[var(--text-lg)] text-muted-foreground">
+          Пресек ради без лозинки. Ваш профил је анониман, али синхронизован. Овде контролишете теме које пратите и начин на који добијате вести.
+        </p>
+      </header>
+
+      <div class="settings-page-grid grid grid-cols-1 lg:grid-cols-3 gap-[var(--grid-gap)]">
+        <div class="lg:col-span-2 space-y-[clamp(2rem, 4vw, 4rem)] motion-rise">
+            {/* 1. INTERESTS SECTION */}
+            <section class="settings-section">
+                <div class="section-eyebrow mb-8 flex items-center gap-2">
+                    <ShieldCheck size={18} className="text-nyt-accent" />
+                    <h2 class="section-label font-sans text-[var(--text-sm)] font-black uppercase tracking-widest text-foreground">ВАША ИНТЕРЕСОВАЊА</h2>
+                    <div class="section-divider flex-1 h-[1px] bg-border ml-4"></div>
+                </div>
+                <SettingsProfileIsland client:visible />
+            </section>
+
+            {/* 2. ONBOARDING / DISCOVERY */}
+            <section class="settings-section border-t border-border pt-16">
+                <div class="section-eyebrow mb-8 flex items-center gap-2">
+                    <Sparkles size={18} className="text-nyt-accent" />
+                    <h2 class="section-label font-sans text-[var(--text-sm)] font-black uppercase tracking-widest text-foreground">ОТКРИЈТЕ ВИШЕ</h2>
+                    <div class="section-divider flex-1 h-[1px] bg-border ml-4"></div>
+                </div>
+                <div class="bg-secondary/20 p-8 rounded-sm border border-border">
+                    <OnboardingIsland client:visible />
+                </div>
+            </section>
+        </div>
+
+        <aside class="settings-rail space-y-12 motion-rise">
+          {/* DIGITAL PASSPORT - SYNC */}
+          <div class="sidebar-module">
+            <h3 class="sidebar-label flex items-center gap-2 font-sans text-[var(--text-xs)] font-black uppercase tracking-widest text-muted-foreground"><KeyRound size={14} /> ДИГИТАЛНИ ПАСОШ</h3>
+            <div class="mt-6">
+                <AccountSyncIsland client:visible />
+            </div>
+          </div>
+
+          {/* SUBSCRIPTIONS */}
+          <div class="sidebar-module border-t border-border pt-12">
+            <h3 class="sidebar-label flex items-center gap-2 font-sans text-[var(--text-xs)] font-black uppercase tracking-widest text-muted-foreground"><Radio size={14} /> ДОСТАВА</h3>
+            <div class="mt-6 bg-secondary/20 border border-border p-6 rounded-sm">
+                <BriefingDeliveryIsland client:visible variant="full" />
+            </div>
+          </div>
+
+          <div class="sidebar-module border-t border-border pt-12">
+            <h4 class="sidebar-label font-sans text-[var(--text-xs)] font-black uppercase tracking-widest text-muted-foreground">ПОМОЋ И ПОДРШКА</h4>
+            <div class="settings-rail-links mt-6 flex flex-col gap-4 text-[var(--text-sm)] font-medium text-foreground">
+              <a href="/briefing" class="flex justify-between items-center group">Отворите брифинг <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-all" /></a>
+              <a href="/izvori" class="flex justify-between items-center group">Уредите изворе <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-all" /></a>
+              <a href="/contact" class="flex justify-between items-center group">Кореспонденција <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-all" /></a>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+</Layout>
+
+<style>
+... [KEEP ORIGINAL STYLES]
+</style>

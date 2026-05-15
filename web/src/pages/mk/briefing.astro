@@ -1,0 +1,186 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+import BriefingHeader from '../components/briefing/BriefingHeader.astro';
+import BriefingContent from '../components/briefing/BriefingContent.astro';
+import BriefingSidebar from '../components/briefing/BriefingSidebar.astro';
+import BriefingDigest from '../components/briefing/BriefingDigest.astro';
+
+import { apiBaseUrl } from '../lib/apiBase';
+import { formatBriefing } from '../utils/briefingFormatter';
+import { Newspaper } from 'lucide-react';
+
+const API_URL = apiBaseUrl();
+const url = new URL(Astro.request.url);
+const dateParam = url.searchParams.get('date');
+
+let briefingData: any = null;
+let homeData: any = null;
+let stats: any = null;
+let error = null;
+
+try {
+    const briefingUrl = dateParam
+            ? `${API_URL}/intelligence/briefing?date=${dateParam}&lang=sr`
+            : `${API_URL}/intelligence/briefing?lang=sr`;
+    const [briefRes, homeRes, statsRes] = await Promise.all([
+        fetch(briefingUrl),
+        fetch(`${API_URL}/home?lang=sr`),
+        fetch(`${API_URL}/stats/summary?lang=sr`)
+    ]);
+
+    if (briefRes.ok) briefingData = await briefRes.json();
+    if (homeRes.ok) homeData = await homeRes.json();
+    if (statsRes.ok) stats = await statsRes.json();
+
+    if (!briefingData || briefingData.status === 'error') {
+        error = briefingData?.message || "Брифинг тренутно није доступан.";
+    }
+} catch (e) {
+    error = "Грешка при учитавању података.";
+}
+
+const formattedBriefing = briefingData?.content ? formatBriefing(briefingData.content) : "";
+
+const displayDate = briefingData?.date 
+    ? new Date(briefingData.date).toLocaleDateString('sr-RS', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+    })
+    : 'Данашње издање';
+---
+
+<Layout title="Уреднички брифинг — Пресек">
+    <NYTHeader stats={stats} />
+    
+    <main class="site-layout broadsheet-layout py-[var(--page-py)]">
+        <div class="briefing-page-container">
+            {error ? (
+                <div class="py-20 text-center">
+                    <h2 class="font-serif text-3xl mb-6 font-black italic">{error}</h2>
+                    <a href="/briefing" class="inline-flex items-center gap-2 px-6 py-3 bg-foreground text-background font-sans font-black text-xs uppercase tracking-widest hover:bg-nyt-accent transition-colors">Врати се на последње издање</a>
+                </div>
+            ) : briefingData ? (
+                <div class="briefing-layout-grid relative">
+                    <div class="briefing-main-col">
+                        <BriefingHeader 
+                            currentDate={displayDate}
+                            dispatchIcon={Newspaper}
+                            stats={{
+                                total_feeds: briefingData.day_stats?.total_sources || stats?.total_feeds || 0,
+                                last_24h: briefingData.day_stats?.total_articles || stats?.last_24h || 0,
+                                intelligence: stats?.intelligence
+                            }}
+                        />
+
+                        <div class="editorial-divider mb-12"></div>
+
+                        <BriefingContent formattedBriefing={formattedBriefing} />
+
+
+                        {homeData && (
+                            <div class="mt-32 pt-16 border-t-4 border-foreground">
+                                <div class="flex items-center gap-4 mb-12">
+                                    <div class="h-px flex-1 bg-border"></div>
+                                    <h2 class="font-serif text-3xl font-black italic px-4">Наставите са читањем</h2>
+                                    <div class="h-px flex-1 bg-border"></div>
+                                </div>
+                                <BriefingDigest homeData={homeData} />
+                            </div>
+                        )}
+                    </div>
+
+                    <div class="briefing-sidebar-col">
+                        <div class="sidebar-inner sticky top-32">
+                            <BriefingSidebar 
+                                stats={stats}
+                                health={{}} 
+                                leadCluster={briefingData.lead_cluster}
+                                briefing={{
+                                    date: briefingData.date,
+                                    subjects: briefingData.subjects,
+                                    locations: briefingData.locations
+                                }}
+                                historicalDates={briefingData.historical_dates}
+                            />
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div class="py-40 text-center flex flex-col items-center gap-6">
+                    <div class="w-12 h-12 border-4 border-nyt-accent border-t-transparent rounded-full animate-spin"></div>
+                    <p class="font-serif text-xl italic text-muted-foreground">Припремамо дневни преглед...</p>
+                </div>
+            )}
+        </div>
+    </main>
+
+    <Footer />
+</Layout>
+
+<style>
+    .briefing-page-container {
+        max-width: 1300px;
+        margin: 0 auto;
+        padding: 0 1.5rem;
+    }
+
+    .briefing-layout-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 6rem;
+    }
+
+    @media (min-width: 1100px) {
+        .briefing-layout-grid {
+            grid-template-columns: minmax(0, 1fr) 320px;
+        }
+    }
+
+    .briefing-main-col {
+        min-width: 0;
+    }
+
+    .editorial-divider {
+        height: 1px;
+        background: var(--border);
+        position: relative;
+        overflow: visible;
+    }
+
+    .editorial-divider::after {
+        content: "✦ ✦ ✦";
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        background: var(--background);
+        padding: 0 2rem;
+        font-family: serif;
+        font-size: 0.8rem;
+        color: var(--muted-foreground);
+        letter-spacing: 0.5em;
+    }
+
+    /* Fix potential overlay collisions */
+    :global(#main-header) {
+        z-index: 1000 !important;
+    }
+
+    .sidebar-inner {
+        z-index: 10;
+    }
+
+    @media (max-width: 1099.98px) {
+        .briefing-sidebar-col {
+            border-top: 1px solid var(--border);
+            padding-top: 4rem;
+        }
+        .sidebar-inner {
+            position: static;
+        }
+    }
+</style>

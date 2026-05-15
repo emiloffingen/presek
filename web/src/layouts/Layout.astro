@@ -7,6 +7,7 @@ import '../styles/global.css';
 import '../lib/transliterationInit.js';
 import ConsentBanner from '../components/ConsentBanner';
 import { ClientRouter } from 'astro:transitions';
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
 
 interface Props {
 	title: string;
@@ -18,9 +19,14 @@ interface Props {
 	robots?: string;
 }
 
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
 const {
 	title,
-	description = "Presek je moderni srpski agregator vesti koji koristi naprednu jezičku obradu (NLP) za grupisanje i sumiranje najvažnijih događaja iz svih medija.",
+	description = lang === 'sr' 
+        ? "Presek je moderni srpski agregator vesti koji koristi naprednu jezičku obradu (NLP) za grupisanje i sumiranje najvažnijih događaja iz svih medija."
+        : "Пресек е модерен македонски агрегатор на вести кој користи напредна јазична обработка (NLP) за групирање и сумирање на најважните настани од сите медиуми.",
 	image = "/static/img/presek_emblem.png",
 	canonical,
 	type = "website",
@@ -28,33 +34,26 @@ const {
 	robots,
 } = Astro.props;
 
-const siteUrl = (Astro.site?.origin || import.meta.env.PUBLIC_SITE_URL || "https://presek.live").replace(/\/+$/, "");
-const pageTitle = title.includes("Presek") ? title.replace("Presek", "PRESEK.live") : `${title} | PRESEK.live`;
+const siteUrl = lang === 'sr' ? "https://presek.live" : "https://presek.mk";
+const siteName = lang === 'sr' ? "PRESEK.live" : "пресек.мк";
+const pageTitle = title.includes("Presek") || title.includes("Пресек") 
+    ? title.replace(/Presek|Пресек/, siteName) 
+    : `${title} | ${siteName}`;
 
-/**
- * Build a strict canonical URL:
- * - Always absolute via new URL(pathname, Astro.site)
- * - Strip trailing slashes (trailingSlash: 'never' policy)
- * - Strip query parameters and hash fragments
- * - Home page resolves to bare origin (no trailing slash)
- */
 function buildCanonicalUrl(pathname: string): string {
-	const base = Astro.site || new URL("https://presek.live");
+	const base = new URL(siteUrl);
 	const url = new URL(pathname, base);
-	// Strip trailing slash for all paths except root
 	let clean = url.origin + url.pathname.replace(/\/+$/, "");
-	// Ensure root is just the origin
 	if (clean === url.origin || clean === url.origin + "") return url.origin;
 	return clean;
 }
 
 const canonicalUrl = canonical || buildCanonicalUrl(Astro.url.pathname);
-
 const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.startsWith("/") ? image : `/${image}`}`;
 ---
 
 <!doctype html>
-<html lang="sr-Latn">
+<html lang={lang === 'sr' ? "sr-Latn" : "mk"}>
 	<head>
 		<script async src="https://www.googletagmanager.com/gtag/js?id=G-SV2R3LZJ5C"></script>
 		<script is:inline>
@@ -74,13 +73,13 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 		<meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
 		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-		<meta name="apple-mobile-web-app-title" content="PRESEK.live" />
+		<meta name="apple-mobile-web-app-title" content={siteName} />
 		<meta name="generator" content={Astro.generator} />
 		<meta name="description" content={description} />
 		{robots && <meta name="robots" content={robots} />}
 		<link rel="canonical" href={canonicalUrl} />
-		<meta property="og:site_name" content="PRESEK.live" />
-		<meta property="og:locale" content="sr_RS" />
+		<meta property="og:site_name" content={siteName} />
+		<meta property="og:locale" content={lang === 'sr' ? "sr_RS" : "mk_MK"} />
 		<meta property="og:type" content={type} />
 		<meta property="og:title" content={pageTitle} />
 		<meta property="og:description" content={description} />

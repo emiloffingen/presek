@@ -5,6 +5,7 @@ import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, 
 import { sanitizeHtml } from '../lib/sanitize';
 import { Clock, Layers, ShieldCheck, Globe, Sparkles, Zap, AlertCircle, Palette, Building2, TrendingUp, Award, Cpu, Newspaper, ArrowRight } from 'lucide-react';
 import type { NewsCluster, Article } from '../types';
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
 
 interface Props {
 	cluster: NewsCluster;
@@ -14,6 +15,10 @@ interface Props {
 }
 
 const { cluster, isLead = false, variant = 'standard', bentoSpan } = Astro.props;
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
+
 const main = cluster.articles?.[0];
 if (!main) return;
 const sourceSignal = main?.source_signal || {};
@@ -21,10 +26,10 @@ const totalSources = cluster.articles.length;
 const showTrustBadge = totalSources >= 2 && Boolean(sourceSignal.trust_label);
 const showSignificanceLabel = cluster.is_breaking || totalSources >= 3;
 const significanceLabel =
-	totalSources >= 6 ? 'Udarna' :
-	totalSources >= 4 ? 'Praćena' :
-	cluster.is_breaking ? 'Hitan razvoj' :
-	'U toku';
+	totalSources >= 6 ? t('news.breaking') :
+	totalSources >= 4 ? t('news.tracked') :
+	cluster.is_breaking ? t('news.urgent') :
+	t('news.ongoing');
 
 const selectedImage = chooseClusterImage(cluster, isLead ? 'hero' : 'card');
 const thumbSrc = selectedImage.proxiedUrl;
@@ -36,7 +41,7 @@ const displayTitle = highlightScores(cluster.synthetic_headline || getDisplayTit
 const titleIsCyrillic = isMostlyCyrillic(displayTitle);
 
 const clusterSlug = slugify(cluster.synthetic_headline || getDisplayTitle(main));
-const clusterUrl = `/cluster/${cluster.cluster_id}-${clusterSlug}`;
+const clusterUrl = `${l('/cluster/')}${cluster.cluster_id}-${clusterSlug}`;
 
 const uniqueSources = new Set(cluster.articles.map(a => a.source)).size;
 
@@ -75,35 +80,6 @@ const summaryIsCyrillic = isMostlyCyrillic(displaySummary);
 
 const hasSynthesis = cluster.has_synthesis;
 
-function getWhyItMatters() {
-	if (cluster.articles.some(a => a.is_fact_check)) {
-		return 'priča sa aktivnom sistemskom verifikacijom i detaljnom dekonstrukcijom navoda.';
-	}
-	if (cluster.is_breaking && totalSources >= 4) {
-		return 'Hitan razvoj visokog intenziteta koji već dobija seobuhvatnu medijsku pažnju.';
-	}
-	if (sourceSignal.role_label && totalSources >= 4) {
-		return `${sourceSignal.role_label}. Priča se učvršćuje kroz više nezavisnih linija izveštavanja.`;
-	}
-	if (sourceSignal.role_label && totalSources >= 2) {
-		return `${sourceSignal.role_label}. Tema se širi novim potvrdama i zvaničnim reakcijama.`;
-	}
-	if (totalSources >= 6) {
-		return `razvoj sa izraženom medijskom težinom podržan od ${totalSources} različita izvora.`;
-	}
-	if (totalSources >= 4) {
-		return 'Više redakcija dodaje nove slojeve informacija i specifičan kontekst.';
-	}
-	if (totalSources >= 2) {
-		return 'priča koja brzo dobija sistemske potvrde i širok javni odjek.';
-	}
-	return 'razvoj sa potencijalom za dopunsku tematsku evoluciju.';
-}
-
-
-
-const whyItMatters = getWhyItMatters();
-
 // Relative time format
 function getTimeStr(dateStr: string) {
     try {
@@ -112,10 +88,10 @@ function getTimeStr(dateStr: string) {
         const diffMs = now.getTime() - date.getTime();
         const diffMins = Math.floor(diffMs / (1000 * 60));
 
-        if (diffMins < 1) return 'SADA';
-        if (diffMins < 60) return `PRE ${diffMins} MIN`;
+        if (diffMins < 1) return t('news.now');
+        if (diffMins < 60) return `${t('news.ago')} ${diffMins} ${t('news.min_short')}`;
 
-        return date.toLocaleTimeString('sr-RS', { 
+        return date.toLocaleTimeString(lang === 'sr' ? 'sr-RS' : 'mk-MK', { 
             hour: '2-digit', 
             minute: '2-digit',
             timeZone: 'Europe/Belgrade'
@@ -157,7 +133,7 @@ function getTimeStr(dateStr: string) {
 		{hasSynthesis && (
 			<span class="editorial-byline">
                 <Sparkles size={11} className="inline-block mr-1 text-nyt-accent" />
-				Sistemska sinteza Preseka
+				{t('news.synthesis')}
 			</span>
 		)}
 
@@ -190,7 +166,7 @@ function getTimeStr(dateStr: string) {
 		</span>
 			<span class="flex items-center gap-1">
 		<Layers size={11} className="opacity-70" />
-		{uniqueSources} {uniqueSources === 1 ? 'izvor' : 'izvora'}
+		{uniqueSources} {uniqueSources === 1 ? t('news.source') : t('news.sources')}
 		{totalSources > uniqueSources && <span class="text-muted-foreground ml-0.5">({totalSources})</span>}
 		</span>
 		</div>
@@ -214,7 +190,7 @@ function getTimeStr(dateStr: string) {
                             <p class="design-card-sub">{cardContext.sub}</p>
                         </div>
                         <div class="design-card-footer">
-                            <span class="design-card-cta">ODI DO STATIJE <ArrowRight size={12} className="ml-1" /></span>
+                            <span class="design-card-cta">{t('news.go_to_article')} <ArrowRight size={12} className="ml-1" /></span>
                         </div>
 					</div>
 				) : (

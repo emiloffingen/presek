@@ -1,8 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /api/
-Disallow: /settings
-Disallow: /status
-
-Sitemap: https://presek.live/sitemap.xml
-Sitemap: https://presek.live/rss.xml

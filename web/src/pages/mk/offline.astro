@@ -1,0 +1,53 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+import { WifiOff, BookOpen, Clock } from 'lucide-react';
+---
+
+<Layout title="Веза је изгубљена — Пресек" robots="noindex">
+    <NYTHeader />
+
+    <main class="site-layout broadsheet-layout py-[var(--page-py)] min-h-[60vh] flex flex-col items-center justify-center text-center">
+        <div class="offline-hero mb-12">
+            <div class="relative inline-block">
+                <WifiOff size={80} className="text-muted-foreground/20" strokeWidth={1} />
+                <div class="absolute inset-0 flex items-center justify-center animate-pulse">
+                     <WifiOff size={80} className="text-nyt-accent/40" strokeWidth={1} />
+                </div>
+            </div>
+        </div>
+
+        <h1 class="font-serif text-3xl md:text-5xl font-black mb-6 tracking-tight">Веза је прекинута</h1>
+        <p class="max-w-xl font-nyt-body text-xl text-secondary-foreground leading-relaxed mb-10">
+            Тренутно немате активну интернет везу. Ипак, можете приступити садржају који ваш уређај већ има сачуван у својој меморији.
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
+            <a href="/" class="offline-action-card">
+                <Clock size={24} className="text-nyt-accent" />
+                <div class="text-left">
+                    <h3 class="font-black text-xs uppercase tracking-widest mb-1">Отвори почетну</h3>
+                    <p class="text-[11px] text-muted-foreground">Прикажи последње учитане вести</p>
+                </div>
+            </a>
+            <a href="/briefing" class="offline-action-card">
+                <BookOpen size={24} className="text-nyt-accent" />
+                <div class="text-left">
+                    <h3 class="font-black text-xs uppercase tracking-widest mb-1">Дневни брифинг</h3>
+                    <p class="text-[11px] text-muted-foreground">Прочитај последњи сублимат</p>
+                </div>
+            </a>
+        </div>
+
+        <button onclick="window.location.reload()" class="mt-12 px-8 py-3 bg-foreground text-background font-black uppercase text-[10px] tracking-[0.2em] hover:bg-nyt-accent transition-colors">
+            ОБНОВИ ВЕЗУ
+        </button>
+    </main>
+
+    <Footer />
+</Layout>
+
+<style>
+... [KEEP ORIGINAL STYLES]
+</style>

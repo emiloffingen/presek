@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { apiBaseUrl } from '../lib/apiBase';
 import { Mail, CheckCircle2, Loader2 } from 'lucide-react';
 
-export default function NewsletterIsland() {
+export default function NewsletterIsland({ lang = 'sr' }: { lang?: string }) {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
@@ -17,7 +17,7 @@ export default function NewsletterIsland() {
       const res = await fetch(`${API_URL}/newsletter/subscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, locale: 'sr' }),
+        body: JSON.stringify({ email, locale: lang }),
       });
       const data = await res.json();
       if (data.status === 'success') {
@@ -29,7 +29,7 @@ export default function NewsletterIsland() {
       }
     } catch (err) {
       setStatus('error');
-      setMessage('Greska pri povrzuvanje.');
+      setMessage(lang === 'sr' ? 'Greška pri povezivanju.' : 'Грешка при поврзување.');
     }
   };
 
@@ -38,9 +38,13 @@ export default function NewsletterIsland() {
       <section className="bg-secondary/30 p-6 border border-border/60 relative overflow-hidden animate-in fade-in duration-500">
         <div className="flex flex-col items-center text-center relative z-10">
           <CheckCircle2 className="text-nyt-accent mb-4" size={28} />
-          <h3 className="font-serif font-black text-lg mb-3 tracking-tight">Uspesno se prijavivte!</h3>
+          <h3 className="font-serif font-black text-lg mb-3 tracking-tight">
+            {lang === 'sr' ? 'Uspešno ste se prijavili!' : 'Успешно се пријавивте!'}
+          </h3>
           <p className="font-serif italic text-sm text-secondary-foreground leading-relaxed">
-            Sekoe utro vo 08:00 casot ce ga dobivate najvazniji presek na vestite direktno vo vaseto sandace.
+            {lang === 'sr' 
+              ? 'Svako jutro u 08:00 časova ćete dobijati najvažniji presek vesti direktno u vaše sanduče.'
+              : 'Секое утро во 08:00 часот ќе го добивате најважниот пресек на вестите директно во вашето сандаче.'}
           </p>
         </div>
         <div className="absolute -right-4 -bottom-4 opacity-5">
@@ -54,12 +58,20 @@ export default function NewsletterIsland() {
     <section className="bg-secondary/30 p-6 border border-border/60 relative overflow-hidden group">
       <div className="relative z-10">
         <header className="mb-5 pb-4 border-b border-border/40">
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent block mb-2">DNEVEN PREGLED</span>
-          <h3 className="font-serif text-xl font-black leading-tight tracking-tight">Ureden pregled na denot niz objektivot na pluralizmot.</h3>
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent block mb-2">
+            {lang === 'sr' ? 'DNEVNI PREGLED' : 'ДНЕВЕН ПРЕГЛЕД'}
+          </span>
+          <h3 className="font-serif text-xl font-black leading-tight tracking-tight">
+            {lang === 'sr' 
+              ? 'Uređen pregled dana kroz objektiv pluralizma.'
+              : 'Уреден преглед на денот низ објективот на плурализмот.'}
+          </h3>
         </header>
 
         <p className="font-serif italic text-sm text-secondary-foreground leading-relaxed mb-6">
-          Sekoe utro dobivajte distiliran sublimat na nastanite sto me oblikuvaat javnata debata.
+          {lang === 'sr'
+            ? 'Svako jutro dobijajte destilovan sublimat događaja koji oblikuju javnu debatu.'
+            : 'Секое утро добивајте дестилиран сублимат на настаните што ја обликуваат јавната дебата.'}
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
@@ -68,7 +80,7 @@ export default function NewsletterIsland() {
             <input
               type="email"
               required
-              placeholder="Vasata e-posta"
+              placeholder={lang === 'sr' ? 'Vaša e-pošta' : 'Вашата е-пошта'}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full pl-9 pr-4 py-2.5 bg-background border border-border focus:border-nyt-accent outline-none font-sans text-sm transition-all"
@@ -87,13 +99,15 @@ export default function NewsletterIsland() {
             {status === 'loading' ? (
               <Loader2 size={14} className="animate-spin" />
             ) : (
-              "PRIJAVI SE"
+              lang === 'sr' ? "PRIJAVI SE" : "ПРИЈАВИ СЕ"
             )}
           </button>
         </form>
 
         <p className="text-[9px] text-muted-foreground mt-4 leading-relaxed opacity-60">
-          * So prijavuvanjeto se soglasuvate so nasite uslovi. Mozete da se odjavite vo sekoe vreme.
+          {lang === 'sr'
+            ? '* Prijavljivanjem se slažete sa našim uslovima. Možete se odjaviti u bilo kom trenutku.'
+            : '* Со пријавувањето се согласувате со нашите услови. Можете да се одјавите во секое време.'}
         </p>
       </div>
       

@@ -13,6 +13,13 @@ export default defineConfig({
   site: 'https://presek.live',
   trailingSlash: 'never',
   output: 'server',
+  i18n: {
+    defaultLocale: 'sr',
+    locales: ['sr', 'mk'],
+    routing: {
+      prefixDefaultLocale: false
+    }
+  },
   prefetch: {
     prefetchAll: false,
     defaultStrategy: 'viewport',
