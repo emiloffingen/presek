@@ -101,7 +101,7 @@ export const ui = {
     'lead.pluralism': 'PLURALIZAM',
     'lead.full_synthesis': 'Celokupna sinteza →',
     'lead.key_perspectives': 'KLJUČNE PERSPEKTIVE',
-    'lead.site_preview': 'PRESEK.rs Pregled',
+    'lead.site_preview': 'PRESEK.live Pregled',
     'edition.morning': 'JUTARNJE IZDANJE',
     'edition.afternoon': 'POPODNEVNO IZDANJE',
     'edition.evening': 'VEČERNJE IZDANJE',
