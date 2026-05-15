@@ -1,6 +1,7 @@
 ---
 import NewsCard from '../NewsCard.astro';
 import type { NewsCluster } from '../../types';
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 
 interface Props {
     title: string;
@@ -12,6 +13,8 @@ interface Props {
 }
 
 const { title, note, developmentsFeatured, developmentsCompact, variant = "compact", tone = "default" } = Astro.props;
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
 
 function getBentoSpan(cluster: NewsCluster) {
     const count = cluster.articles?.length || 0;
@@ -24,10 +27,10 @@ function getBentoSpan(cluster: NewsCluster) {
 <section class:list={["feed-section motion-rise motion-delay-3", `feed-tone-${tone}`]}>
     <div class="section-heading-row masthead-double-rule">
         <p class="section-kicker">
-            {tone === 'global' ? 'Međunarodni izbor' : tone === 'wire' ? 'Brza traka' : tone === 'developing' ? 'Domaća agenda' : 'Urednički izbor'}
+            {tone === 'global' ? t('home.tone_global') : tone === 'wire' ? t('home.tone_wire') : tone === 'developing' ? t('home.tone_developing') : t('home.tone_default')}
         </p>
         <h2 class="section-title">
-            {variant === 'wire' && <span class="inline-block w-2.5 h-2.5 bg-nyt-red rounded-full mr-2 mb-0.5 animate-pulse" title="Ažuriranja u realnom vremenu"></span>}
+            {variant === 'wire' && <span class="inline-block w-2.5 h-2.5 bg-nyt-red rounded-full mr-2 mb-0.5 animate-pulse" title={t('home.wire_live_updates')}></span>}
             {title}
         </h2>
         <p class="section-note">{note}</p>

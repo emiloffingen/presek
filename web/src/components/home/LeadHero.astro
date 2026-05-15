@@ -3,6 +3,7 @@ import { sanitizeHtml } from '../../lib/sanitize';
 import { getDisplayTitle, highlightScores, getDesignCardContext } from '../../utils/textUtils';
 import type { NewsCluster } from '../../types';
 import { Zap, Palette, Building2, TrendingUp, Award, Cpu, Newspaper, ArrowRight } from 'lucide-react';
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 
 interface Props {
     leadCluster: NewsCluster;
@@ -32,13 +33,19 @@ const {
     filterLabel = null
 } = Astro.props;
 
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
 const tintColor = dominantColor || '#1e40af';
 const primaryArticle = leadCluster.articles?.[0] || {};
-const primaryDisplayTitle = getDisplayTitle(primaryArticle, 'Vodeća priča');
+const primaryDisplayTitle = getDisplayTitle(primaryArticle, t('lead.title_prefix'));
 const relatedArticles = leadCluster.articles.slice(1, 4);
-const mediaLabel = filterLabel || primaryArticle.topic || primaryArticle.category || 'Vodeća tema';
+const mediaLabel = filterLabel || primaryArticle.topic || primaryArticle.category || t('lead.theme_fallback');
 
 const cardContext = getDesignCardContext(leadCluster);
+const cardLabel = cardContext.labelKey ? t(cardContext.labelKey as any) : '';
+const cardSub = cardContext.subKey ? t(cardContext.subKey as any) : '';
+
 const IconComponent = 
     cardContext.icon === 'palette' ? Palette :
     cardContext.icon === 'building-2' ? Building2 :
@@ -83,7 +90,7 @@ const IconComponent =
                 <div class="lead-media-placeholder design-card" style={`--placeholder-bg: ${tintColor};`}>
                     <div class="design-card-pattern"></div>
                     <div class="design-card-ribbon">
-                        <span>{cardContext.label}</span>
+                        <span>{cardLabel}</span>
                     </div>
                     
                     <div class="design-card-main">
@@ -91,34 +98,34 @@ const IconComponent =
                             <IconComponent size={48} strokeWidth={1.2} class="text-white/90" />
                         </div>
                         <h2 class:list={[{ "headline-cyrillic": leadTitleIsCyrillic }]}>{leadTitle}</h2>
-                        <p class="design-card-sub">{cardContext.sub}</p>
+                        <p class="design-card-sub">{cardSub}</p>
                     </div>
 
                     <div class="design-card-footer">
-                        <span class="design-card-cta">IDI NA ČLANAK <ArrowRight size={14} class="ml-1" /></span>
+                        <span class="design-card-cta">{t('news.go_to_article')} <ArrowRight size={14} class="ml-1" /></span>
                     </div>
                 </div>
             )}
         </div>
     </a>
     <div class="lead-copy">
-        <div class="lead-edition-bar" role="note" aria-label="Informacije o narativu">
-            <span class="lead-edition-label">VODEĆI NARATIV</span>
-            {leadCluster.articles.length === 1 && <span class="lead-edition-note">Konsenzus između 1 redakcije</span>}
-            {leadCluster.articles.length >= 2 && leadCluster.articles.length <= 4 && <span class="lead-edition-note">Konsenzus između {leadCluster.articles.length} redakcije</span>}
-            {leadCluster.articles.length > 4 && <span class="lead-edition-note">Konsenzus između {leadCluster.articles.length} redakcija</span>}
+        <div class="lead-edition-bar" role="note" aria-label={t('lead.narrative_kicker')}>
+            <span class="lead-edition-label">{t('lead.narrative_kicker')}</span>
+            {leadCluster.articles.length === 1 && <span class="lead-edition-note">{lang === 'mk' ? 'Консензус помеѓу 1 редакција' : 'Konsenzus između 1 redakcije'}</span>}
+            {leadCluster.articles.length >= 2 && leadCluster.articles.length <= 4 && <span class="lead-edition-note">{lang === 'mk' ? `Консензус помеѓу ${leadCluster.articles.length} редакции` : `Konsenzus između ${leadCluster.articles.length} redakcije`}</span>}
+            {leadCluster.articles.length > 4 && <span class="lead-edition-note">{lang === 'mk' ? `Консензус помеѓу ${leadCluster.articles.length} редакции` : `Konsenzus između ${leadCluster.articles.length} redakcija`}</span>}
         </div>
         <div class="lead-kicker-v2 mb-4">
-            <span class="source-badge" aria-label="Primarni izvor">{leadCluster.articles?.[0].source}</span>
+            <span class="source-badge" aria-label={t('lead.title_prefix')}>{leadCluster.articles?.[0].source}</span>
             <div class="flex items-center gap-2">
-                {leadCluster.is_breaking && <span class="significance-badge is-breaking" aria-label="Status: Udarna vest">UDARNA</span>}
+                {leadCluster.is_breaking && <span class="significance-badge is-breaking" aria-label={`${t('header.breaking')}: ${t('news.breaking')}`}>{t('news.breaking').toUpperCase()}</span>}
                 {leadSignal && (
                     <span class="lead-status-badge" aria-label={`Signal: ${leadSignal}`}>
                         <span class="status-dot"></span>
                         <span>{leadSignal.toUpperCase()}</span>
                     </span>
                 )}
-                <span class="time-stamp-v2" aria-label="Vreme objave">{getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)}</span>
+                <span class="time-stamp-v2" aria-label={t('header.latest')}>{getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)}</span>
             </div>
         </div>
         <a href={`/cluster/${leadCluster.cluster_id}`} class="no-underline group">
@@ -129,24 +136,24 @@ const IconComponent =
         )}
 
         {leadCluster.key_facts && leadCluster.key_facts.length > 0 && (
-            <div class="lead-analyst-box" aria-label="Sistemski uvid">
+            <div class="lead-analyst-box" aria-label={t('lead.system_insight')}>
                 <div class="analyst-header">
                     <div class="flex items-center gap-2">
                         <Zap size={14} class="text-nyt-accent fill-nyt-accent/20" aria-hidden="true" />
-                        <span class="analyst-label">SISTEMSKI UVID</span>
+                        <span class="analyst-label">{t('lead.system_insight')}</span>
                     </div>
                     <div class="flex items-center gap-3">
                         {leadCluster.pulse_score && (
-                            <div class="pulse-indicator" aria-label={`Puls: ${leadCluster.pulse_score}%`}>
-                                <span class="pulse-text">PULS</span>
+                            <div class="pulse-indicator" aria-label={`${t('nav.pulse')}: ${leadCluster.pulse_score}%`}>
+                                <span class="pulse-text">{t('nav.pulse').toUpperCase()}</span>
                                 <div class="pulse-bar-bg">
                                     <div class="pulse-bar-fill" style={`width: ${leadCluster.pulse_score}%`}></div>
                                 </div>
                             </div>
                         )}
                         {leadCluster.pluralism_score !== undefined && (
-                            <div class="pluralism-indicator hidden sm:flex" aria-label={`Pluralizam: ${leadCluster.pluralism_score}%`}>
-                                <span class="pulse-text">PLURALIZAM</span>
+                            <div class="pluralism-indicator hidden sm:flex" aria-label={`${t('lead.pluralism')}: ${leadCluster.pluralism_score}%`}>
+                                <span class="pulse-text">{t('lead.pluralism')}</span>
                                 <div class="pulse-bar-bg">
                                     <div class="pulse-bar-fill bg-emerald-500" style={`width: ${leadCluster.pluralism_score}%`}></div>
                                 </div>
@@ -165,14 +172,14 @@ const IconComponent =
             <div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-tight text-muted-foreground">
                 <span>{getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)}</span>
                 <span class="opacity-30">·</span>
-                <span>{leadCluster.articles.length} {leadCluster.articles.length === 1 ? 'izvor' : 'izvori'}</span>
+                <span>{leadCluster.articles.length} {leadCluster.articles.length === 1 ? t('news.source') : t('news.sources')}</span>
             </div>
-            <a href={`/cluster/${leadCluster.cluster_id}`} class="text-[10px] font-black uppercase tracking-widest text-nyt-accent hover:underline decoration-2 underline-offset-4">Celosna sinteza →</a>
+            <a href={`/cluster/${leadCluster.cluster_id}`} class="text-[10px] font-black uppercase tracking-widest text-nyt-accent hover:underline decoration-2 underline-offset-4">{t('lead.full_synthesis')}</a>
         </div>
 
         {relatedArticles.length > 0 && (
             <div class="lead-follow-strip">
-                <p class="lead-follow-kicker">KLUCNI PERSPEKTIVI</p>
+                <p class="lead-follow-kicker">{t('lead.key_perspectives')}</p>
                 <ul class="lead-related">
                     {relatedArticles.map((article: any) => (
                         <li>
@@ -223,10 +230,10 @@ const IconComponent =
                 <div class="lead-media-placeholder" style={`--placeholder-bg: ${tintColor};`}>
                     <div class="lead-media-placeholder-bg-text" set:html={sanitizeHtml(leadTitle)}></div>
                     <div class="lead-media-topline">
-                        <p class="lead-media-kicker">PRESEK.rs Pregled</p>
+                        <p class="lead-media-kicker">{t('lead.site_preview')}</p>
                         <div class="lead-media-status">
                            {leadCluster.is_breaking && <Zap size={10} fill="currentColor" />}
-                           <p class="lead-media-chip">{leadCluster.articles.length} {leadCluster.articles.length === 1 ? 'izvor' : 'izvori'}</p>
+                           <p class="lead-media-chip">{leadCluster.articles.length} {leadCluster.articles.length === 1 ? t('news.source') : t('news.sources')}</p>
                         </div>
                     </div>
                     <div class="lead-media-content">

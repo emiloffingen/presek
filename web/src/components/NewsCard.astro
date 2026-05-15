@@ -46,6 +46,9 @@ const clusterUrl = `${l('/cluster/')}${cluster.cluster_id}-${clusterSlug}`;
 const uniqueSources = new Set(cluster.articles.map(a => a.source)).size;
 
 const cardContext = getDesignCardContext(cluster);
+const cardLabel = cardContext.labelKey ? t(cardContext.labelKey as any) : '';
+const cardSub = cardContext.subKey ? t(cardContext.subKey as any) : '';
+
 const IconComponent = 
     cardContext.icon === 'palette' ? Palette :
     cardContext.icon === 'building-2' ? Building2 :
@@ -180,14 +183,14 @@ function getTimeStr(dateStr: string) {
 					<div class="article-image-placeholder design-card" style={`--placeholder-bg: ${tintColor};`}>
                         <div class="design-card-pattern"></div>
                         <div class="design-card-ribbon">
-                            <span>{cardContext.label}</span>
+                            <span>{cardLabel}</span>
                         </div>
                         <div class="design-card-main">
                             <div class="design-card-icon-wrap">
                                 <IconComponent size={32} strokeWidth={1.5} className="text-white/90" />
                             </div>
                             <h3 class:list={[{ "headline-cyrillic": titleIsCyrillic }]}>{rawLeadTitle}</h3>
-                            <p class="design-card-sub">{cardContext.sub}</p>
+                            <p class="design-card-sub">{cardSub}</p>
                         </div>
                         <div class="design-card-footer">
                             <span class="design-card-cta">{t('news.go_to_article')} <ArrowRight size={12} className="ml-1" /></span>

@@ -298,14 +298,11 @@ export function highlightScores(text: string): string {
 }
 
 /**
- * Returns a formal edition label based on the time of day.
+ * Returns a formal edition translation key based on the time of day.
  */
 export function getEditionStr(dateInput: any): string {
     const date = new Date(dateInput);
     if (isNaN(date.getTime())) return '';
-    
-    const now = new Date();
-    const diffMins = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
     
     const hour = Number(new Intl.DateTimeFormat('en-US', {
         hour: 'numeric',
@@ -313,35 +310,35 @@ export function getEditionStr(dateInput: any): string {
         timeZone: 'Europe/Skopje',
     }).format(date));
     
-    if (hour >= 5 && hour < 12) return 'ЈУТАРЊЕ ИЗДАЊЕ';
-    if (hour >= 12 && hour < 18) return 'ПОПОДНЕВНО ИЗДАЊЕ';
-    return 'ВЕЧЕРЊЕ ИЗДАЊЕ';
+    if (hour >= 5 && hour < 12) return 'edition.morning';
+    if (hour >= 12 && hour < 18) return 'edition.afternoon';
+    return 'edition.evening';
 }
 
 /**
- * Returns context for designed fallback cards.
+ * Returns context keys for designed fallback cards.
  */
 export function getDesignCardContext(cluster: any) {
     const topic = (cluster.topics?.[0] || cluster.articles?.[0]?.topic || '').toLowerCase();
     const category = (cluster.articles?.[0]?.category || '').toLowerCase();
     
-    if (topic.includes('Kultura') || category.includes('Kultura') || topic.includes('umetnost')) {
-        return { label: 'КУЛТУРНА ПРЕПОРУКА', icon: 'palette', sub: 'Преглед најзначајнијих дешавања из света културе и уметности.' };
+    if (topic.includes('kultura') || category.includes('kultura') || topic.includes('umetnost')) {
+        return { labelKey: 'card.culture', icon: 'palette', subKey: 'card.culture_desc' };
     }
-    if (topic.includes('Politika') || category.includes('Politika')) {
-        return { label: 'ПОЛИТИЧКИ ФОКУС', icon: 'building-2', sub: 'Дубинска анализа кључних политичких процеса и одлука.' };
+    if (topic.includes('politika') || category.includes('politika')) {
+        return { labelKey: 'card.politics', icon: 'building-2', subKey: 'card.politics_desc' };
     }
-    if (topic.includes('Ekonomija') || category.includes('Ekonomija') || topic.includes('biznis')) {
-        return { label: 'ЕКОНОМСКИ БРИФИНГ', icon: 'trending-up', sub: 'Преглед економских трендова и финансијских тржишта.' };
+    if (topic.includes('ekonomija') || category.includes('ekonomija') || topic.includes('biznis')) {
+        return { labelKey: 'card.economy', icon: 'trending-up', subKey: 'card.economy_desc' };
     }
-    if (topic.includes('Sport') || category.includes('Sport')) {
-        return { label: 'СПОРТСКИ ПУЛС', icon: 'award', sub: 'Најважнији догађаји и резултати из света спорта.' };
+    if (topic.includes('sport') || category.includes('sport')) {
+        return { labelKey: 'card.sport', icon: 'award', subKey: 'card.sport_desc' };
     }
-    if (topic.includes('Tehnologija') || category.includes('Tehnologija') || topic.includes('nauka')) {
-        return { label: 'ТЕХНОЛОШКИ ПРЕСЕК', icon: 'cpu', sub: 'Иновације и открића која обликују нашу будућност.' };
+    if (topic.includes('tehnologija') || category.includes('tehnologija') || topic.includes('nauka')) {
+        return { labelKey: 'card.tech', icon: 'cpu', subKey: 'card.tech_desc' };
     }
     
-    return { label: 'СИСТЕМСКИ ПРЕГЛЕД', icon: 'newspaper', sub: 'Алгоритамска синтеза водећих информација из домаћих медија.' };
+    return { labelKey: 'card.general', icon: 'newspaper', subKey: 'card.general_desc' };
 }
 
 /**

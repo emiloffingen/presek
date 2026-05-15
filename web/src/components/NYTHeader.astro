@@ -27,10 +27,11 @@ const currentDate = new Intl.DateTimeFormat(lang === 'sr' ? 'sr-RS' : 'mk-MK', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
-    timeZone: 'Europe/Belgrade'
+    timeZone: 'Europe/Skopje'
 }).format(new Date());
 
-const currentEdition = getEditionStr(new Date());
+const currentEditionKey = getEditionStr(new Date());
+const currentEdition = currentEditionKey ? t(currentEditionKey as any) : '';
 
 const API_URL = apiBaseUrl();
 

@@ -1,15 +1,19 @@
 ---
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+
 interface Props {
 	trending: any[];
 }
 
 const { trending } = Astro.props;
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
 ---
 
 <div class="empty-state">
-	<p class="empty-kicker">TIHO NA TRACI</p>
-	<h2>Nema novih vesti za ovu temu.</h2>
-	<p class="empty-copy">Pokušajte sa opštijim pojmom ili pretražite nešto aktuelno:</p>
+	<p class="empty-kicker">{t('home.empty_kicker')}</p>
+	<h2>{t('home.empty_title')}</h2>
+	<p class="empty-copy">{t('home.empty_desc')}</p>
 	<div class="trend-links">
 		{trending.slice(0, 8).map((t: any) => (
 			<a href={`/?q=${encodeURIComponent(t.word)}`}>{t.word}</a>
