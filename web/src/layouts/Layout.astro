@@ -26,7 +26,7 @@ const {
 	description = lang === 'sr' 
         ? "Presek je moderni srpski agregator vesti koji koristi naprednu jezičku obradu (NLP) za grupisanje i sumiranje najvažnijih događaja iz svih medija."
         : "Пресек е модерен македонски агрегатор на вести кој користи напредна јазична обработка (NLP) за групирање и сумирање на најважните настани од сите медиуми.",
-	image = "/static/img/presek_emblem.png",
+	image = "/img/presek_emblem.png",
 	canonical,
 	type = "website",
 	schema,
@@ -41,7 +41,10 @@ const pageTitle = title.includes("Presek") || title.includes("Пресек")
 
 function buildCanonicalUrl(pathname: string): string {
 	const base = new URL(siteUrl);
-	const url = new URL(pathname, base);
+    // If we are on the Macedonian domain, we don't want the /mk prefix in the canonical URL
+    // as it's already served at the root of that domain.
+    const cleanPath = lang === 'mk' ? pathname.replace(/^\/mk/, '') : pathname;
+	const url = new URL(cleanPath, base);
 	let clean = url.origin + url.pathname.replace(/\/+$/, "");
 	if (clean === url.origin || clean === url.origin + "") return url.origin;
 	return clean;
