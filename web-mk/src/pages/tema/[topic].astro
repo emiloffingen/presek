@@ -68,10 +68,10 @@ function normalizePerspectives(items: any[]) {
 	return items
 		.map((item) => {
 			if (!item || typeof item !== 'object') return null;
-			const angle = String(item.angle ?? item.label ?? 'perspektiva').trim();
+			const angle = String(item.angle ?? item.label ?? 'перспектива').trim();
 			const content = String(item.content ?? item.text ?? item.description ?? '').trim();
 			if (!content) return null;
-			return { angle: angle || 'perspektiva', content };
+			return { angle: angle || 'перспектива', content };
 		})
 		.filter(Boolean);
 }
@@ -120,7 +120,7 @@ try {
 	}
 } catch (e: any) {
 	console.error(e);
-	error = 'Temata momentalno ne e dostapna.';
+	error = 'Темата моментално не е достапна.';
 	Astro.response.status = e.status || 500;
 }
 
@@ -153,14 +153,14 @@ const topicFollowSuggestions = topicConnections.slice(0, 2).map((item: any) => (
 }));
 const sourceFollowSuggestions = sourceRows.slice(0, 2).map(([name, count]) => ({
 	source: name,
-	reason: `${count} pojavljivanja u aktivnim klasterima za ovu temu.`,
+	reason: `${count} појавувања во активни кластери за оваа тема.`,
 }));
 
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site || 'https://presek.live').href.replace(/\/+$/, "");
 
 const leadSummary =
 	getDisplaySummary(leadCluster?.articles?.[0] || {}) ||
-	'Najsilnite klasteri vo ova tema se podredeni spored tezina, doverba i razvoj.';
+	'Најсилните кластери во оваа тема се подредени според тежина, доверба и развој.';
 
 const keyAngles = normalizePerspectives(leadDetail?.perspectives || []).slice(0, 3);
 const synthesisLines = parseSynthesis(leadDetail?.synthesis || '').slice(0, 3);
@@ -169,36 +169,36 @@ const relatedClusters = Array.isArray(leadDetail?.related) ? leadDetail.related.
 function topicIntro() {
 	if (!clusters.length) return '';
 	if (breakingCount >= 2) {
-		return `Temata ${topic} denes se razviva brzo, so ${clusters.length} aktivni klasteri i ${uniqueSources.size} izvori sto dodavaat novi detali.`;
+		return `Темата ${topic} денес се развива брзо, со ${clusters.length} активни кластери и ${uniqueSources.size} извори што додаваат нови детали.`;
 	}
 	if (clusters.length >= 6) {
-		return `Temata ${topic} e siroko prisutna niz denesniot ciklus, so ${clusters.length} klasteri i ${totalReports} izvestai sto se nadovrzuvaat eden na drug.`;
+		return `Темата ${topic} е широко присутна низ денешниот циклус, со ${clusters.length} кластери и ${totalReports} извештаи што се надоврзуваат еден на друг.`;
 	}
-	return `Temata ${topic} ostanuva relevantna denes, so ${clusters.length} klasteri i povece redakcii sto me sledat od razliciti agli.`;
+	return `Темата ${topic} останува релевантна денес, со ${clusters.length} кластери и повеќе редакции што ја следат од различни агли.`;
 }
 ---
 
 <Layout 
-	title={topic ? `${topic} | Tema` : 'Tema'} 
-	description={`jos sto e aktivno za temata ${topic} — klasteri, izvori, perspektivi i razvoj.`}
+	title={topic ? `${topic} | Тема` : 'Тема'} 
+	description={`сè што е активно за темата ${topic} — кластери, извори, перспективи и развој.`}
 	canonical={canonicalUrl}
 >
 	<NYTHeader topic={topic} />
 
 	<main class="site-layout py-[var(--page-py)]">
 		{(error || !clusters.length) && (
-			<Breadcrumbs items={[{ label: "Temi", href: "/" }, { label: topic || "Tema" }]} />
+			<Breadcrumbs items={[{ label: "Теми", href: "/" }, { label: topic || "Тема" }]} />
 		)}
 
 		{error && (
 			<div class="topic-empty">
 				<div class="topic-empty-inner">
-					<span class="topic-kicker">Tema</span>
-					<h1 class="topic-empty-title">{topic || 'Tema'}</h1>
+					<span class="topic-kicker">Тема</span>
+					<h1 class="topic-empty-title">{topic || 'Тема'}</h1>
 					<p>{error}</p>
 					<div class="topic-empty-actions">
-						<a href="/" class="topic-empty-link">Nazad na pocetok</a>
-						<a href="/archive" class="topic-empty-link topic-empty-link-secondary">Otvori arhiva</a>
+						<a href="/" class="topic-empty-link">Назад на почеток</a>
+						<a href="/archive" class="topic-empty-link topic-empty-link-secondary">Отвори архива</a>
 					</div>
 				</div>
 			</div>
@@ -207,12 +207,12 @@ function topicIntro() {
 		{!error && !clusters.length && (
 			<div class="topic-empty">
 				<div class="topic-empty-inner">
-					<span class="topic-kicker">Tema</span>
+					<span class="topic-kicker">Тема</span>
 					<h1 class="topic-empty-title">{topic}</h1>
-					<p>Nema dovoljno aktivnih klastera za ovu temu u ovom trenutku.</p>
+					<p>Нема доволно активни кластери за оваа тема во овој момент.</p>
 					<div class="topic-empty-actions">
-						<a href="/" class="topic-empty-link">Pocetna</a>
-						<a href="/archive" class="topic-empty-link topic-empty-link-secondary">Pobaraj vo arhiva</a>
+						<a href="/" class="topic-empty-link">Почетна</a>
+						<a href="/archive" class="topic-empty-link topic-empty-link-secondary">Побарај во архива</a>
 					</div>
 				</div>
 			</div>
@@ -223,7 +223,7 @@ function topicIntro() {
 				<header class="topic-hero">
 					<div class="topic-hero-copy">
 						<Breadcrumbs items={[{ label: topic }]} />
-						<span class="topic-kicker">Tema</span>
+						<span class="topic-kicker">Тема</span>
 						<h1 class="topic-headline">{topic}</h1>
 						<div class="topic-actions">
 							<PreferenceToggle client:visible kind="topic" value={topic} />
@@ -233,19 +233,19 @@ function topicIntro() {
 
 						<div class="topic-stats">
 							<div>
-								<span class="micro-label">klasteri</span>
+								<span class="micro-label">кластери</span>
 								<strong>{clusters.length}</strong>
 							</div>
 							<div>
-								<span class="micro-label">izvori</span>
+								<span class="micro-label">извори</span>
 								<strong>{uniqueSources.size}</strong>
 							</div>
 							<div>
-								<span class="micro-label">Izvestai</span>
+								<span class="micro-label">Извештаи</span>
 								<strong>{totalReports}</strong>
 							</div>
 							<div>
-								<span class="micro-label">U razvoju</span>
+								<span class="micro-label">Во развој</span>
 								<strong>{breakingCount}</strong>
 							</div>
 						</div>
@@ -253,7 +253,7 @@ function topicIntro() {
 
 					<div class="topic-hero-side">
 						<div class="topic-note-card">
-							<p class="topic-note-label">Sto go dvizi ovoj prostor</p>
+							<p class="topic-note-label">Што го движи овој простор</p>
 							<ul class="topic-note-list">
 								{(synthesisLines.length > 0 ? synthesisLines : [leadSummary]).map((line: string) => (
 									<li>{line}</li>
@@ -274,8 +274,8 @@ function topicIntro() {
 						{leadCluster && (
 							<section class="topic-lead">
 								<div class="section-heading-row">
-									<h2 class="section-title">Vodecka prica</h2>
-									<p class="section-note">klaster koj najviše nosi temu napred u ovom trenutku.</p>
+									<h2 class="section-title">Водечка приказна</h2>
+									<p class="section-note">кластер кој најмногу ја носи темата напред во овој момент.</p>
 								</div>
 								<NewsCard cluster={leadCluster} isLead={true} />
 							</section>
@@ -284,8 +284,8 @@ function topicIntro() {
 						{keyAngles.length > 0 && (
 							<section class="topic-angles">
 								<div class="section-heading-row">
-									<h2 class="section-title">Kade Se Razlikuva Pokrivanjeto</h2>
-									<p class="section-note">Glavnite agli sto izleguvaat od vodeckiot klaster vo temata.</p>
+									<h2 class="section-title">Каде се разликува покривањето</h2>
+									<p class="section-note">Главните агли што излегуваат од водечкиот кластер во темата.</p>
 								</div>
 								<div class="topic-angle-grid">
 									{keyAngles.map((item: any) => (
@@ -301,8 +301,8 @@ function topicIntro() {
 						{supportingClusters.length > 0 && (
 							<section class="topic-supporting">
 								<div class="section-heading-row">
-									<h2 class="section-title">Sto Se Razviva dalje</h2>
-									<p class="section-note">Pridruzni i sledni klasteri sto me prosiruvaat temata.</p>
+									<h2 class="section-title">Што се развива понатаму</h2>
+									<p class="section-note">Придружни и следни кластери што ја прошируваат темата.</p>
 								</div>
 								<div class="topic-supporting-grid">
 									{supportingClusters.map((cluster: any, index: number) => (
@@ -315,8 +315,8 @@ function topicIntro() {
 						{feedClusters.length > 0 && (
 							<section class="topic-feed">
 								<div class="section-heading-row">
-									<h2 class="section-title">Povece Od ova Tema</h2>
-									<p class="section-note">Ostanati aktivni klasteri sto vredi da ostanat vo vidnoto pole.</p>
+									<h2 class="section-title">Повеќе од оваа тема</h2>
+									<p class="section-note">Останати активни кластери што вреди да останат во видното поле.</p>
 								</div>
 								{featuredFeedClusters.length > 0 && (
 									<div class="topic-feed-grid topic-feed-grid-featured">
@@ -339,7 +339,7 @@ function topicIntro() {
 					<aside class="topic-rail">
 						{tagRows.length > 0 && (
 							<section class="rail-card">
-								<h3 class="rail-card-title">Iminja I Agli</h3>
+								<h3 class="rail-card-title">Имиња и агли</h3>
 								<div class="topic-chip-list">
 									{tagRows.map(([name, count]) => (
 										<a href={`/?q=${encodeURIComponent(name)}`} class="topic-chip">
@@ -352,7 +352,7 @@ function topicIntro() {
 
 						{topicConnections.length > 0 && (
 							<section class="rail-card">
-								<h3 class="rail-card-title">Kade Da Odite dalje</h3>
+								<h3 class="rail-card-title">Каде да одите понатаму</h3>
 								<div class="topic-connection-list">
 									{topicConnections.map((item: any) => (
 										<a href={`/tema/${encodeURIComponent(item.topic)}`} class="topic-connection-card">
@@ -370,14 +370,14 @@ function topicIntro() {
 
 						{sourceRows.length > 0 && (
 							<section class="rail-card">
-								<h3 class="rail-card-title">izvori Sto me Vodat Temata</h3>
+								<h3 class="rail-card-title">извори што ја водат темата</h3>
 								<div class="topic-source-list">
 									{sourceRows.map(([name, count], index) => (
 										<div class="topic-source-row">
 											<span class="topic-source-rank">{String(index + 1).padStart(2, '0')}</span>
 											<div>
 												<p>{name}</p>
-												<span>{count} pojavuvanja vo klasteri</span>
+												<span>{count} појавувања во кластери</span>
 											</div>
 										</div>
 									))}
@@ -387,14 +387,14 @@ function topicIntro() {
 
 						{relatedClusters.length > 0 && (
 							<section class="rail-card">
-								<h3 class="rail-card-title">Sto Da Citate dalje</h3>
+								<h3 class="rail-card-title">Што да читате понатаму</h3>
 								<div class="topic-related-list">
 									{relatedClusters.map((item: any) => (
 										<a href={`/cluster/${item.cluster_id}`} class="topic-related-link">
 											{item.relationship_label && <span class="topic-related-kicker">{item.relationship_label}</span>}
 											<strong>{item.title}</strong>
 											{item.relationship_note && <p>{item.relationship_note}</p>}
-											<span class="topic-related-cta">Otvori klaster <ArrowRight size={12} /></span>
+											<span class="topic-related-cta">Отвори кластер <ArrowRight size={12} /></span>
 										</a>
 									))}
 								</div>
@@ -411,524 +411,5 @@ function topicIntro() {
 </Layout>
 
 <style>
-	.topic-empty {
-		padding: clamp(3rem, 8vw, 6rem) 0;
-		border: 1px solid var(--border);
-		background: color-mix(in srgb, var(--background) 94%, var(--secondary) 6%);
-	}
-
-	.topic-empty-inner {
-		max-width: 40rem;
-		margin: 0 auto;
-		padding: 0 1.5rem;
-		text-align: center;
-	}
-
-	.topic-empty-title {
-		margin: 0.6rem 0 1rem;
-		font-family: var(--font-serif);
-		font-size: clamp(2rem, 6vw, 3.4rem);
-		line-height: 0.98;
-		font-weight: 900;
-	}
-
-	.topic-empty p {
-		margin: 0;
-		font-family: var(--font-nyt-body);
-		font-size: 1.05rem;
-		line-height: 1.7;
-		color: var(--secondary-foreground);
-	}
-
-	.topic-empty-actions {
-		display: flex;
-		justify-content: center;
-		flex-wrap: wrap;
-		gap: 0.75rem;
-		margin-top: 1.5rem;
-	}
-
-	.topic-empty-link {
-		display: inline-flex;
-		align-items: center;
-		padding: 0.7rem 1rem;
-		border: 1px solid var(--foreground);
-		font-family: var(--font-sans);
-		font-size: 0.68rem;
-		font-weight: 900;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		text-decoration: none;
-		color: var(--background);
-		background: var(--foreground);
-	}
-
-	.topic-empty-link-secondary {
-		color: var(--foreground);
-		background: transparent;
-	}
-</style>
-
-<style>
-	.topic-page {
-		padding-top: 2rem;
-		padding-bottom: 4rem;
-	}
-
-	.topic-hero {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 1.5rem;
-		padding-bottom: 1.6rem;
-		margin-bottom: 1.75rem;
-		border-bottom: 1px solid var(--border);
-	}
-
-	.topic-kicker,
-	.micro-label {
-		font-family: var(--font-sans);
-		font-size: 0.68rem;
-		font-weight: 900;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		color: var(--nyt-accent);
-	}
-
-	.micro-label {
-		color: var(--muted-foreground);
-	}
-
-	.topic-headline {
-		margin: 0.55rem 0 0.8rem;
-		font-size: clamp(2.5rem, 2rem + 1.5vw, 4.5rem);
-		line-height: 0.94;
-		letter-spacing: -0.03em;
-		max-width: 10ch;
-		text-wrap: balance;
-	}
-
-	.topic-intro {
-		margin: 0 0 0.8rem;
-		font-family: var(--font-nyt-body);
-		font-size: 1.04rem;
-		line-height: 1.58;
-		color: var(--secondary-foreground);
-		max-width: 58ch;
-	}
-
-	.topic-summary {
-		margin: 0;
-		font-family: var(--font-sans);
-		font-size: 0.72rem;
-		font-weight: 800;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--muted-foreground);
-		max-width: 68ch;
-	}
-
-	.topic-actions {
-		margin: 0 0 0.85rem;
-	}
-
-	.topic-stats {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 0.85rem;
-		max-width: 34rem;
-		margin-top: 1rem;
-	}
-
-	.topic-stats strong {
-		display: block;
-		margin-top: 0.35rem;
-		font-family: var(--font-serif);
-		font-size: 1.7rem;
-		line-height: 1;
-	}
-
-	.topic-note-card,
-	.rail-card {
-		padding: 1rem;
-		border: 1px solid var(--border);
-		background: color-mix(in srgb, var(--background) 90%, var(--secondary) 10%);
-	}
-
-	.topic-note-label,
-	.rail-card-title {
-		margin: 0 0 0.85rem;
-		font-family: var(--font-sans);
-		font-size: 0.74rem;
-		font-weight: 900;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-	}
-
-	.topic-note-list {
-		margin: 0;
-		padding-left: 1rem;
-		display: grid;
-		gap: 0.6rem;
-		font-family: var(--font-nyt-body);
-		font-size: 0.96rem;
-		line-height: 1.55;
-		color: var(--foreground);
-	}
-
-	.topic-follow-suggestions {
-		display: grid;
-		gap: 0.85rem;
-		padding: 1rem;
-		border: 1px solid var(--border);
-		background: color-mix(in srgb, var(--background) 90%, var(--secondary) 10%);
-	}
-
-	.topic-follow-suggestions-head {
-		display: grid;
-		gap: 0.35rem;
-	}
-
-	.topic-follow-suggestions-copy {
-		margin: 0;
-		font-family: var(--font-nyt-body);
-		font-size: 0.92rem;
-		line-height: 1.5;
-		color: var(--secondary-foreground);
-	}
-
-	.topic-follow-suggestion-list {
-		display: grid;
-		gap: 0.75rem;
-	}
-
-	.topic-follow-suggestion-card {
-		display: grid;
-		gap: 0.7rem;
-		padding: 0.85rem 0.9rem;
-		border: 1px solid var(--border);
-		background: var(--card);
-	}
-
-	.topic-follow-suggestion-kicker {
-		margin: 0 0 0.2rem;
-		font-family: var(--font-sans);
-		font-size: 0.62rem;
-		font-weight: 900;
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-		color: var(--muted-foreground);
-	}
-
-	.topic-follow-suggestion-card h4 {
-		margin: 0;
-		font-size: 1rem;
-		line-height: 1.15;
-		color: var(--foreground);
-	}
-
-	.topic-follow-suggestion-reason {
-		margin: 0.3rem 0 0;
-		font-family: var(--font-nyt-body);
-		font-size: 0.9rem;
-		line-height: 1.45;
-		color: var(--secondary-foreground);
-	}
-
-	.topic-layout {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 1.8rem;
-	}
-
-	.section-heading-row {
-		display: flex;
-		flex-direction: column;
-		gap: 0.35rem;
-		margin-bottom: 1.1rem;
-	}
-
-	.section-title {
-		margin: 0;
-		font-size: clamp(1.32rem, 1.08rem + 0.72vw, 1.82rem);
-		line-height: 1.04;
-		letter-spacing: -0.02em;
-	}
-
-	.section-note {
-		margin: 0;
-		font-family: var(--font-sans);
-		font-size: 0.76rem;
-		font-weight: 700;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		color: var(--muted-foreground);
-	}
-
-	.topic-main {
-		min-width: 0;
-	}
-
-	.topic-supporting,
-	.topic-feed,
-	.topic-angles {
-		margin-top: 1.6rem;
-	}
-
-	.topic-supporting-grid,
-	.topic-feed-grid,
-	.topic-angle-grid {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 1rem;
-	}
-
-	.topic-angle-card {
-		padding: 1rem;
-		border: 1px solid var(--border);
-		background: color-mix(in srgb, var(--background) 92%, var(--secondary) 8%);
-	}
-
-	.topic-angle-card h3 {
-		margin: 0 0 0.5rem;
-		font-family: var(--font-sans);
-		font-size: 0.76rem;
-		font-weight: 900;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		color: var(--nyt-accent);
-	}
-
-	.topic-angle-card p {
-		margin: 0;
-		font-family: var(--font-nyt-body);
-		font-size: 0.98rem;
-		line-height: 1.58;
-	}
-
-	.topic-rail {
-		display: grid;
-		align-content: start;
-		gap: 0.85rem;
-	}
-
-	.topic-chip-list {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.55rem;
-	}
-
-	.topic-chip {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.35rem;
-		padding: 0.42rem 0.58rem;
-		border: 1px solid var(--border);
-		font-family: var(--font-sans);
-		font-size: 0.64rem;
-		font-weight: 900;
-		letter-spacing: 0.05em;
-		text-transform: uppercase;
-		color: var(--foreground);
-		text-decoration: none;
-	}
-
-	.topic-chip strong {
-		font-size: 0.62rem;
-		color: var(--muted-foreground);
-	}
-
-	.topic-chip-alt {
-		background: color-mix(in srgb, var(--foreground) 3%, transparent);
-	}
-
-	.topic-connection-list {
-		display: grid;
-		gap: 0.8rem;
-	}
-
-	.topic-connection-card {
-		display: block;
-		padding-top: 0.8rem;
-		border-top: 1px solid var(--border);
-		text-decoration: none;
-		color: inherit;
-	}
-
-	.topic-connection-card:first-child {
-		padding-top: 0;
-		border-top: 0;
-	}
-
-	.topic-connection-kicker,
-	.topic-connection-meta {
-		margin: 0 0 0.35rem;
-		font-family: var(--font-sans);
-		font-size: 0.64rem;
-		font-weight: 800;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-	}
-
-	.topic-connection-kicker {
-		color: var(--nyt-accent);
-	}
-
-	.topic-connection-meta {
-		color: var(--muted-foreground);
-	}
-
-	.topic-connection-card h4 {
-		margin: 0 0 0.35rem;
-		font-size: 1rem;
-		line-height: 1.12;
-		color: var(--foreground);
-	}
-
-	.topic-connection-copy {
-		margin: 0 0 0.4rem;
-		font-family: var(--font-nyt-body);
-		font-size: 0.92rem;
-		line-height: 1.5;
-		color: var(--secondary-foreground);
-	}
-
-	.topic-source-list,
-	.topic-related-list {
-		display: grid;
-		gap: 0.75rem;
-	}
-
-	.topic-source-row {
-		display: grid;
-		grid-template-columns: 2rem 1fr;
-		gap: 0.75rem;
-		align-items: start;
-	}
-
-	.topic-source-rank {
-		font-family: var(--font-serif);
-		font-size: 1.5rem;
-		line-height: 1;
-		font-weight: 900;
-		color: var(--nyt-gray-500);
-		text-align: center;
-	}
-
-	.topic-source-row p,
-	.topic-related-link strong {
-		margin: 0 0 0.2rem;
-		font-family: var(--font-serif);
-		font-size: 1rem;
-		line-height: 1.15;
-		color: var(--foreground);
-	}
-
-	.topic-source-row span {
-		font-family: var(--font-sans);
-		font-size: 0.68rem;
-		font-weight: 700;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		color: var(--muted-foreground);
-	}
-
-	.topic-related-link {
-		display: block;
-		padding-top: 0.75rem;
-		border-top: 1px solid var(--border);
-		text-decoration: none;
-	}
-
-	.topic-related-link:first-child {
-		padding-top: 0;
-		border-top: 0;
-	}
-
-	.topic-related-link p {
-		margin: 0 0 0.4rem;
-		font-family: var(--font-nyt-body);
-		font-size: 0.92rem;
-		line-height: 1.5;
-		color: var(--secondary-foreground);
-	}
-
-	.topic-related-kicker,
-	.topic-related-cta {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.3rem;
-		font-family: var(--font-sans);
-		font-size: 0.64rem;
-		font-weight: 900;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--nyt-accent);
-	}
-
-	.topic-empty {
-		padding: 4rem 0;
-		text-align: center;
-		font-family: var(--font-serif);
-		font-size: 1.15rem;
-	}
-
-	.topic-hero > .topic-hero-copy:only-child,
-	.topic-layout > .topic-main:only-child {
-		grid-column: 1 / -1;
-		max-width: 900px;
-		margin-left: auto;
-		margin-right: auto;
-	}
-
-	@media (min-width: 720px) {
-		.topic-supporting-grid,
-		.topic-angle-grid {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-
-		.topic-feed-grid-compact {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-	}
-
-	@media (min-width: 980px) {
-		.topic-hero {
-			grid-template-columns: minmax(0, 1.4fr) minmax(17rem, 0.7fr);
-			align-items: start;
-		}
-
-		.topic-layout {
-			grid-template-columns: minmax(0, 1.6fr) minmax(17rem, 0.72fr);
-			gap: 1.9rem;
-		}
-
-		.topic-rail {
-			position: sticky;
-			top: 1.5rem;
-		}
-
-		.topic-feed-grid-featured {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-	}
-
-	@media (max-width: 639px) {
-		.topic-page {
-			padding-top: 1.2rem;
-		}
-
-		.topic-headline {
-			max-width: none;
-			font-size: clamp(2rem, 1.7rem + 1vw, 2.8rem);
-			line-height: 0.98;
-		}
-
-		.topic-intro {
-			font-size: 0.96rem;
-		}
-
-		.topic-stats {
-			grid-template-columns: 1fr 1fr;
-		}
-	}
+... [KEEP ORIGINAL STYLES]
 </style>

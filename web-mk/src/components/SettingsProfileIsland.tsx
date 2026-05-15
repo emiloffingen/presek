@@ -114,25 +114,25 @@ export default function SettingsProfileIsland() {
       <section className="settings-module">
         <div className="settings-module-head">
           <div>
-            <p className="settings-kicker"><Sparkles size={14} /> Vaš profil čitanja</p>
-            <h2>Šta Presek pami na ovom uređaju</h2>
+            <p className="settings-kicker"><Sparkles size={14} /> Вашиот профил на читање</p>
+            <h2>Што Пресек памети на овој уред</h2>
           </div>
           <p className="settings-copy">
-            Ovi signali oblikuju vaš „Za Vas“ modul, izbor izveštaja i nedeljnju dostavu još pre sinhronizacije.
+            Овие сигнали го обликуваат вашиот „За Вас“ модул, изборот на извештаи и неделната достава уште пред синхронизацијата.
           </p>
         </div>
 
         <div className="settings-stat-grid">
           <div className="settings-stat-card">
-            <span>Praćene teme</span>
+            <span>Следени теми</span>
             <strong>{followedTopics.length}</strong>
           </div>
           <div className="settings-stat-card">
-            <span>Praćeni izvori</span>
+            <span>Следени извори</span>
             <strong>{followedSources.length}</strong>
           </div>
           <div className="settings-stat-card">
-            <span>Nedavni klasteri</span>
+            <span>Неодамнешни кластери</span>
             <strong>{(profile?.recentClusters || []).length}</strong>
           </div>
         </div>
@@ -140,11 +140,11 @@ export default function SettingsProfileIsland() {
         {topFocusTopic && (
             <div className="mt-8 p-4 bg-nyt-accent/5 border border-nyt-accent/20 rounded-lg flex items-center justify-between">
                 <div>
-                    <p className="text-[10px] font-black uppercase text-nyt-accent tracking-widest mb-1">Vaša primarna fokus tema</p>
+                    <p className="text-[10px] font-black uppercase text-nyt-accent tracking-widest mb-1">Ваша примарна фокус тема</p>
                     <h4 className="font-serif font-black text-xl italic">{topFocusTopic}</h4>
                 </div>
                 <div className="text-right">
-                    <p className="text-[10px] font-bold text-muted-foreground leading-tight">Na osnovu poslednjeg čitanja.<br/>Koristimo ga za „Za Vas“.</p>
+                    <p className="text-[10px] font-bold text-muted-foreground leading-tight">Врз основа на последното читање.<br/>Го користиме за „За Вас“.</p>
                 </div>
             </div>
         )}
@@ -154,8 +154,8 @@ export default function SettingsProfileIsland() {
         <div className="settings-module">
           <div className="settings-module-head">
             <div>
-              <p className="settings-kicker"><Newspaper size={14} /> Praćene teme</p>
-              <h3>Teme koje želite da se pojavljuju brže</h3>
+              <p className="settings-kicker"><Newspaper size={14} /> Следени теми</p>
+              <h3>Теми кои сакате да се појавуваат побрзо</h3>
             </div>
           </div>
           {followedTopics.length > 0 ? (
@@ -173,15 +173,15 @@ export default function SettingsProfileIsland() {
               ))}
             </div>
           ) : (
-            <p className="settings-empty">još uvek nemate praćene teme. Pratite temu sa strane za teme da biste dobili personalizovanu dostavu i rangiranje.</p>
+            <p className="settings-empty">сè уште немате следени теми. Следете некоја тема за да добиете персонализирана достава и рангирање.</p>
           )}
         </div>
 
         <div className="settings-module">
           <div className="settings-module-head">
             <div>
-              <p className="settings-kicker"><Newspaper size={14} /> Praćeni izvori</p>
-              <h3>izvori koje želite pažljivije da pratite</h3>
+              <p className="settings-kicker"><Newspaper size={14} /> Следени извори</p>
+              <h3>Извори кои сакате повнимателно да ги следите</h3>
             </div>
           </div>
           {followedSources.length > 0 ? (
@@ -199,7 +199,7 @@ export default function SettingsProfileIsland() {
               ))}
             </div>
           ) : (
-            <p className="settings-empty">još uvek nemate praćene izvore. Pratite vodeći izvor sa stranice klastera da biste dobijali ažuriranja specifična za izvor.</p>
+            <p className="settings-empty">сè уште немате следени извори. Следете некој водечки извор од страницата на кластерот за да добивате ажурирања специфични за изворот.</p>
           )}
         </div>
       </section>
@@ -208,8 +208,8 @@ export default function SettingsProfileIsland() {
         <div className="settings-module">
           <div className="settings-module-head">
             <div>
-              <p className="settings-kicker"><Sparkles size={14} /> Predlozi za teme</p>
-              <h3>Šta vredno sledeće pratite</h3>
+              <p className="settings-kicker"><Sparkles size={14} /> Предлози за теми</p>
+              <h3>Што вреди следно да следите</h3>
             </div>
           </div>
           {recommendations.topics.length > 0 ? (
@@ -227,15 +227,15 @@ export default function SettingsProfileIsland() {
               ))}
             </div>
           ) : (
-            <p className="settings-empty">Kad pročitate još nekoliko klastera, ovde će se pojaviti teme koje ima smisla da pratite.</p>
+            <p className="settings-empty">Кога ќе прочитате уште неколку кластери, овде ќе се појават теми кои има смисла да ги следите.</p>
           )}
         </div>
 
         <div className="settings-module">
           <div className="settings-module-head">
             <div>
-              <p className="settings-kicker"><Sparkles size={14} /> Predlozi za izvore</p>
-              <h3>izvori koji se već uklapaju u vaše čitanje</h3>
+              <p className="settings-kicker"><Sparkles size={14} /> Предлози за извори</p>
+              <h3>Извори кои веќе се вклопуваат во вашето читање</h3>
             </div>
           </div>
           {recommendations.sources.length > 0 ? (
@@ -253,7 +253,7 @@ export default function SettingsProfileIsland() {
               ))}
             </div>
           ) : (
-            <p className="settings-empty">Kad se pojave ponavljajući izvori u vašem čitanju, ovde ćete dobiti brze predloge za praćenje.</p>
+            <p className="settings-empty">Кога ќе се појават повторувачки извори во вашето читање, овде ќе добиете брзи предлози за следење.</p>
           )}
         </div>
       </section>
@@ -261,8 +261,8 @@ export default function SettingsProfileIsland() {
       <section className="settings-module">
         <div className="settings-module-head">
           <div>
-            <p className="settings-kicker"><Clock3 size={14} /> Nedavno čitanje</p>
-            <h3>klasteri koji oblikuju vaš trenutni profil</h3>
+            <p className="settings-kicker"><Clock3 size={14} /> Неодамнешно читање</p>
+            <h3>Кластери кои го обликуваат вашиот моментален профил</h3>
           </div>
         </div>
         {recentItems.length > 0 ? (
@@ -270,16 +270,16 @@ export default function SettingsProfileIsland() {
             {recentItems.map((item: any) => (
               <a key={item.clusterId} href={`/cluster/${item.clusterId}`} className="settings-recent-item">
                 <div>
-                  <p className="settings-recent-topic">{item.topic || 'klaster'}</p>
+                  <p className="settings-recent-topic">{item.topic || 'кластер'}</p>
                   <h4>{item.title}</h4>
-                  <p className="settings-recent-source">{item.source || 'izvor'}</p>
+                  <p className="settings-recent-source">{item.source || 'извор'}</p>
                 </div>
                 <ArrowUpRight size={14} />
               </a>
             ))}
           </div>
         ) : (
-          <p className="settings-empty">Otvorite nekoliko klastera i ova stranica će početi da objašnjava što pokreće vašu personalizaciju i dostavu.</p>
+          <p className="settings-empty">Отворете неколку кластери и оваа страница ќе започне да објаснува што ја придвижува вашата персонализација и достава.</p>
         )}
       </section>
     </div>

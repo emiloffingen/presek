@@ -66,7 +66,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
         console.error('Semantic fetch failed', e);
         if (!cancelled) {
           setSemanticResults([]);
-          setSemanticError('Ne mozeme da gi procitame personaliziranite preporaki vo ovoj moment.');
+          setSemanticError('Не можеме да ги прочитаме персонализираните препораки во овој момент.');
         }
       } finally {
         if (!cancelled) {
@@ -102,7 +102,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
     if (combined.length === 0 && hasPersonalizationSignal(profile)) {
         return initialClusters.slice(0, 10).map(c => ({
             ...c,
-            reason: 'Aktuelno denes'
+            reason: 'Актуелно денес'
         }));
     }
 
@@ -123,7 +123,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
     return (
       <div className="flex flex-col items-center justify-center py-40">
         <Loader2 className="animate-spin text-nyt-accent mb-4" size={32} />
-        <p className="font-serif italic text-muted-foreground">Generirame vas personaliziran pregled...</p>
+        <p className="font-serif italic text-muted-foreground">Генерираме ваш персонализиран преглед...</p>
       </div>
     );
   }
@@ -135,9 +135,9 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
             <div className="inline-flex items-center justify-center p-3 bg-nyt-accent/10 rounded-full mb-4">
                 <Compass className="text-nyt-accent" size={24} />
             </div>
-            <h1 className="font-serif text-4xl md:text-5xl font-black mb-4 tracking-tight">Vasiot licen prostor</h1>
+            <h1 className="font-serif text-4xl md:text-5xl font-black mb-4 tracking-tight">Вашиот личен простор</h1>
             <p className="text-lg md:text-xl text-secondary-foreground max-w-xl mx-auto italic font-serif">
-                ovaa stranica e mesto kade sto Presek go prilagoduva vasiot ritam. Izberete temi koi ve interesiraat za da zapocnete.
+                Оваа страница е место каде што Пресек го прилагодува вашиот ритам. Изберете теми кои ве интересираат за да започнете.
             </p>
         </header>
         <div className="bg-secondary/5 border border-border p-8 md:p-12 rounded-3xl shadow-inner">
@@ -153,17 +153,17 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
         <header className="pb-10 border-b border-border">
           <div className="flex items-center gap-2 mb-3">
             <Sparkles className="text-nyt-accent" size={16} />
-            <span className="font-sans text-[10px] font-black uppercase tracking-[0.25em] text-nyt-accent">UREDNIČKA SINTEZA</span>
+            <span className="font-sans text-[10px] font-black uppercase tracking-[0.25em] text-nyt-accent">УРЕДНИЧКА СИНТЕЗА</span>
           </div>
-          <h1 className="font-serif text-[clamp(2rem,6vw,4rem)] font-black leading-[0.9] mb-6 italic">Licen <span className="serif-display font-light not-italic">Presek</span></h1>
+          <h1 className="font-serif text-[clamp(2rem,6vw,4rem)] font-black leading-[0.9] mb-6 italic">Личен <span className="serif-display font-light not-italic">Пресек</span></h1>
           <p className="mt-4 font-nyt-body text-[clamp(1rem,2vw,1.25rem)] text-secondary-foreground leading-relaxed italic max-w-2xl">
-             Vasiot dneven pregled, sintetiziran spored temite, licnostite i izvorite koi gi pratite.
+             Вашиот дневен преглед, синтезиран според темите, личностите и изворите кои ги следите.
           </p>
         </header>
 
         {pageError && mergedClusters.length === 0 && (
           <div className="py-12 text-center border border-dashed border-border rounded-xl bg-secondary/5">
-            <p className="font-serif text-2xl font-bold mb-3">Ne mozeme da ucitame „Za Vas“</p>
+            <p className="font-serif text-2xl font-bold mb-3">Не можеме да вчитаме „За Вас“</p>
             <p className="text-muted-foreground">{pageError}</p>
           </div>
         )}
@@ -176,7 +176,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
                     <div className="w-8 h-[1px] bg-nyt-accent/30"></div>
                     <BrainCircuit size={13} className="text-nyt-accent" />
                     <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground group-hover:text-nyt-accent transition-colors">
-                        {cluster.reason || 'Za Vas'}
+                        {cluster.reason || 'За Вас'}
                     </span>
                 </div>
                 <NewsCard 
@@ -190,7 +190,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
         ) : (
           <div className="py-20 text-center border border-dashed border-border rounded-xl">
              <p className="font-serif italic text-muted-foreground text-xl">
-               {pageError || 'Nemame novi vesti za vasite specificni interesi vo ovoj moment.'}
+               {pageError || 'Немаме нови вести за вашите специфични интереси во овој момент.'}
              </p>
           </div>
         )}
@@ -199,12 +199,12 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
       <aside className="space-y-12">
         {/* Following Section */}
         <section className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-6 lg:p-8 shadow-sm">
-          <h3 className="font-sans text-[10px] font-black uppercase tracking-widest text-foreground mb-8 pb-3 border-b border-zinc-100 dark:border-zinc-800">Vaši interesi</h3>
+          <h3 className="font-sans text-[10px] font-black uppercase tracking-widest text-foreground mb-8 pb-3 border-b border-zinc-100 dark:border-zinc-800">Ваши интереси</h3>
           
           <div className="space-y-10">
             {profile.followedTopics.length > 0 && (
                 <div>
-                    <p className="text-[9px] font-black uppercase text-muted-foreground mb-4 tracking-widest">Temi</p>
+                    <p className="text-[9px] font-black uppercase text-muted-foreground mb-4 tracking-widest">Теми</p>
                     <div className="flex flex-wrap gap-2">
                         {profile.followedTopics.map((t: string) => (
                             <PreferenceToggle key={t} kind="topic" value={t} analyticsSurface="for_you_page" />
@@ -215,7 +215,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
 
             {profile.followedSources.length > 0 && (
                 <div>
-                    <p className="text-[9px] font-black uppercase text-muted-foreground mb-4 tracking-widest">izvori</p>
+                    <p className="text-[9px] font-black uppercase text-muted-foreground mb-4 tracking-widest">извори</p>
                     <div className="flex flex-wrap gap-2">
                         {profile.followedSources.map((s: string) => (
                             <PreferenceToggle key={s} kind="source" value={s} analyticsSurface="for_you_page" />
@@ -225,7 +225,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
             )}
             
             <a href="/settings" className="block text-center py-3 bg-secondary/50 rounded-lg text-[10px] font-black uppercase tracking-widest text-nyt-accent hover:bg-nyt-accent hover:text-white transition-all">
-                Uredete gi site vasi interesi →
+                Уредете ги сите ваши интереси →
             </a>
           </div>
         </section>
@@ -233,13 +233,13 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
         {/* Discovery Suggestions */}
         {followSuggestions.length > 0 && (
             <section className="bg-secondary/10 border border-border rounded-lg p-6 lg:p-8">
-                <h3 className="font-sans text-[10px] font-black uppercase tracking-widest text-nyt-accent mb-8">Otkrijte više</h3>
+                <h3 className="font-sans text-[10px] font-black uppercase tracking-widest text-nyt-accent mb-8">Откријте повеќе</h3>
                 <div className="space-y-4">
                     {followSuggestions.map(item => (
                         <div key={item.value} className="flex items-center justify-between gap-4 p-3 bg-background border border-border rounded-lg group hover:border-nyt-accent/30 transition-all">
                             <div className="min-w-0">
                                 <p className="text-[10px] font-black truncate uppercase tracking-tighter">{item.value}</p>
-                                <p className="text-[8px] text-muted-foreground uppercase font-bold">{item.kind === 'topic' ? 'Tema' : 'izvor'}</p>
+                                <p className="text-[8px] text-muted-foreground uppercase font-bold">{item.kind === 'topic' ? 'Тема' : 'извор'}</p>
                             </div>
                             <PreferenceToggle 
                                 kind={item.kind as any} 

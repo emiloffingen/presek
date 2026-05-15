@@ -129,7 +129,7 @@ const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, onSo
                                         {source.source}
                                         {source.trust_label === 'Visoko poverenje' && <ShieldCheck size={11} className="text-blue-400" />}
                                     </p>
-                                    <span className="text-[9px] font-bold opacity-60 flex items-center gap-1">FOKUS <ArrowUpRight size={10}/></span>
+                                    <span className="text-[9px] font-bold opacity-60 flex items-center gap-1">ФОКУС <ArrowUpRight size={10}/></span>
                                 </div>
 
                                 <div className="space-y-2 mb-4">
@@ -162,7 +162,7 @@ const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, onSo
             <div className="mt-12 flex flex-wrap gap-8 items-center justify-center md:justify-start border-t border-border pt-6">
                 <div className="flex items-center gap-2">
                     <div className="w-3.5 h-3.5 rounded-full bg-nyt-accent shadow-sm border border-blue-300"></div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Високо поверење</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Висока доверба</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 rounded-full bg-background border-2 border-border shadow-sm"></div>

@@ -36,7 +36,7 @@ export default function ArchiveHeatmapIsland({ selectedDate }: Props) {
     return (
       <div className="flex justify-center items-center h-24 border border-dashed border-border rounded-lg">
         <Loader2 className="animate-spin text-nyt-accent mr-2" size={16} />
-        <span className="text-xs text-muted-foreground uppercase font-black tracking-widest">Vcituvanje na masina na vremeto...</span>
+        <span className="text-xs text-muted-foreground uppercase font-black tracking-widest">Вчитување на машината на времето...</span>
       </div>
     );
   }
@@ -65,7 +65,7 @@ export default function ArchiveHeatmapIsland({ selectedDate }: Props) {
   if (data.length === 0) {
     return (
       <div className="flex justify-center items-center h-24 border border-dashed border-border rounded-lg bg-secondary/5">
-        <span className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em]">Nema podatoci za ovoj period</span>
+        <span className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em]">Нема податоци за овој период</span>
       </div>
     );
   }
@@ -94,13 +94,13 @@ export default function ArchiveHeatmapIsland({ selectedDate }: Props) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h2 className="font-serif text-xl font-black italic flex items-center gap-2">
-            <CalendarRange size={18} className="text-nyt-accent" /> Masina na Vremeto
+            <CalendarRange size={18} className="text-nyt-accent" /> Машина на времето
           </h2>
-          <p className="text-[11px] text-muted-foreground uppercase font-black tracking-widest mt-1">Intenzitet na vesti: Posledni 180 dena</p>
+          <p className="text-[11px] text-muted-foreground uppercase font-black tracking-widest mt-1">Интензитет на вести: Последни 180 дена</p>
         </div>
         <div className="flex gap-4 text-xs font-bold font-sans">
-          <div className="flex items-center gap-2"><span className="w-3 h-3 bg-nyt-accent/60 rounded-sm"></span> Volumen</div>
-          <div className="flex items-center gap-2"><span className="w-3 h-3 bg-nyt-red/60 rounded-sm"></span> Itni razvoi</div>
+          <div className="flex items-center gap-2"><span className="w-3 h-3 bg-nyt-accent/60 rounded-sm"></span> Волумен</div>
+          <div className="flex items-center gap-2"><span className="w-3 h-3 bg-nyt-red/60 rounded-sm"></span> Итни развои</div>
         </div>
       </div>
 
@@ -125,7 +125,7 @@ export default function ArchiveHeatmapIsland({ selectedDate }: Props) {
                 key={dayData.day} 
                 href={`/archive?date=${dayData.day}`}
                 className={`group flex flex-col items-center justify-end h-full gap-1 ${isActive ? 'scale-110 z-20' : ''}`}
-                title={`${getLabel(dayData.day)}: ${dayData.total_clusters} vesti, ${dayData.breaking_clusters} itni`}
+                title={`${getLabel(dayData.day)}: ${dayData.total_clusters} вести, ${dayData.breaking_clusters} итни`}
               >
                 <div 
                   className={`w-3 sm:w-4 rounded-sm transition-all hover:opacity-80 relative ${intensity} ${isActive ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background' : ''}`}
@@ -133,7 +133,7 @@ export default function ArchiveHeatmapIsland({ selectedDate }: Props) {
                 >
                   {/* Tooltip on hover */}
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-foreground text-background text-[10px] font-bold py-1 px-2 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity z-10">
-                    {getLabel(dayData.day)} • {dayData.total_clusters} objavi
+                    {getLabel(dayData.day)} • {dayData.total_clusters} објави
                   </div>
                 </div>
                 {/* Date marker below the bar */}

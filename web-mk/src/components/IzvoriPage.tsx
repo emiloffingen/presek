@@ -30,12 +30,12 @@ interface SourceRow {
 }
 
 function formatLastFetched(value?: string) {
-  if (!value) return 'Nema svez signal';
+  if (!value) return 'Нема свеж сигнал';
   try {
     const date = new Date(value);
     return date.toLocaleString('mk-MK', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
   } catch {
-    return 'Nema svez signal';
+    return 'Нема свеж сигнал';
   }
 }
 
@@ -68,13 +68,13 @@ const IzvoriPage: React.FC = () => {
       try {
         const res = await fetch(`${apiBaseUrl()}/sources?t=${Date.now()}`);
         if (!res.ok) {
-          setError('Neuspesno povrzuvanje.');
+          setError('Неуспешно поврзување.');
           return;
         }
         const allRes = await res.json();
         setSources(allRes);
       } catch {
-        setError('Neuspesno povrzuvanje.');
+        setError('Неуспешно поврзување.');
       } finally {
         setLoading(false);
       }
@@ -86,13 +86,13 @@ const IzvoriPage: React.FC = () => {
     let results = sources;
     const q = searchTerm.trim().toLowerCase();
     if (q) results = results.filter((s) => s.source?.toLowerCase().includes(q));
-    if (filterTier === 'high') results = results.filter(s => s.trust_tier === 'Visoko poverenje');
-    else if (filterTier === 'verified') results = results.filter(s => s.trust_tier === 'Potvrden izvor');
+    if (filterTier === 'high') results = results.filter(s => s.trust_tier === 'Висока доверба' || s.trust_tier === 'Visoko poverenje');
+    else if (filterTier === 'verified') results = results.filter(s => s.trust_tier === 'Потврден извор' || s.trust_tier === 'Potvrden izvor');
     return results;
   }, [sources, searchTerm, filterTier]);
 
-  const mkSources = filtered.filter((s) => s.country === 'RS' || !s.country);
-  const intSources = filtered.filter((s) => s.country && s.country !== 'RS');
+  const mkSources = filtered.filter((s) => s.country === 'MK' || s.country === 'RS' || !s.country);
+  const intSources = filtered.filter((s) => s.country && s.country !== 'MK' && s.country !== 'RS');
   const fastMovers = [...filtered].sort((a, b) => b.speed_first_count - a.speed_first_count).slice(0, 10);
 
   const renderSourceRow = (source: SourceRow) => {
@@ -103,15 +103,15 @@ const IzvoriPage: React.FC = () => {
       <a key={source.source} href={`/?source=${encodeURIComponent(source.source)}`} className="editorial-source-item group no-underline">
         <div className="item-main">
           <div className="item-head mb-2">
-            <div className={`health-dot ${health}`} title={health === 'active' ? 'Azurirano neodamna' : health === 'stale' ? 'Postojat docnenja' : 'Nema svez signal'}></div>
+            <div className={`health-dot ${health}`} title={health === 'active' ? 'Ажурирано неодамна' : health === 'stale' ? 'Постојат доцнења' : 'Нема свеж сигнал'}></div>
             <h3 className="item-title font-serif text-2xl font-black group-hover:text-nyt-accent transition-colors">{source.source}</h3>
-            {source.trust_tier === 'Visoko poverenje' && (
+            {(source.trust_tier === 'Висока доверба' || source.trust_tier === 'Visoko poverenje') && (
                 <ShieldCheck size={14} className="text-nyt-accent" />
             )}
           </div>
           <p className="item-tendency font-nyt-body text-sm text-muted-foreground line-clamp-1 mb-3">{source.tendency}</p>
           <div className="item-meta flex items-center gap-3">
-            <span className="px-2 py-0.5 bg-foreground text-background font-sans text-[9px] font-black uppercase tracking-widest">{source.country || 'RS'}</span>
+            <span className="px-2 py-0.5 bg-foreground text-background font-sans text-[9px] font-black uppercase tracking-widest">{source.country || 'MK'}</span>
             <div className="flex gap-1.5">
                 {source.top_categories?.slice(0, 2).map(cat => (
                     <span key={cat} className="px-2 py-0.5 border border-border rounded-sm font-sans text-[9px] font-black uppercase tracking-widest text-muted-foreground/80">{cat}</span>
@@ -150,8 +150,8 @@ const IzvoriPage: React.FC = () => {
                 else if (value > 0.5) opacity = 'opacity-60';
                 else if (value > 0.2) opacity = 'opacity-40';
                 
-                if (source.trust_tier === 'Visoko poverenje') bgClass = 'bg-emerald-500';
-                else if (source.trust_tier === 'Potvrden izvor') bgClass = 'bg-nyt-accent';
+                if (source.trust_tier === 'Висока доверба' || source.trust_tier === 'Visoko poverenje') bgClass = 'bg-emerald-500';
+                else if (source.trust_tier === 'Потврден извор' || source.trust_tier === 'Potvrden izvor') bgClass = 'bg-nyt-accent';
                 
                 const height = Math.min(100, Math.max(15, value * 100));
                 
@@ -173,11 +173,11 @@ const IzvoriPage: React.FC = () => {
     <div className="broadsheet-sources pt-12">
       <header className="editorial-masthead mb-16 border-t border-foreground pt-4">
         <div class="masthead-top mb-8">
-          <span className="masthead-kicker font-sans text-[10px] font-black uppercase tracking-[0.25em] text-nyt-accent">MEDIUMSKA REPUTACIJA</span>
+          <span className="masthead-kicker font-sans text-[10px] font-black uppercase tracking-[0.25em] text-nyt-accent">МЕДИУМСКА РЕПУТАЦИЈА</span>
         </div>
         <div className="masthead-main mb-12">
-          <h1 className="masthead-title font-serif text-5xl md:text-7xl font-black leading-[0.9] tracking-tighter">Mediumski <span className="text-nyt-accent italic font-light">izvori</span></h1>
-          <p className="mt-6 font-serif text-xl italic text-muted-foreground leading-snug max-w-2xl">Rangiranje i detalna statistika na site mediumi sto Presek im sledi — po aktivnost, brzina i doverlivost.</p>
+          <h1 className="masthead-title font-serif text-5xl md:text-7xl font-black leading-[0.9] tracking-tighter">Медиумски <span className="text-nyt-accent italic font-light">извори</span></h1>
+          <p className="mt-6 font-serif text-xl italic text-muted-foreground leading-snug max-w-2xl">Рангирање и детална статистика на сите медиуми што ги следи Пресек — по активност, брзина и доверливост.</p>
         </div>
         
         <div className="masthead-controls sticky top-[72px] z-30 bg-background/80 backdrop-blur-xl border-y border-border py-4 flex flex-col md:flex-row justify-between items-center gap-6">
@@ -186,7 +186,7 @@ const IzvoriPage: React.FC = () => {
                 type="text" 
                 value={searchTerm} 
                 onChange={(e) => setSearchTerm(e.target.value)} 
-                placeholder="Prebaraj redakcii..." 
+                placeholder="Пребарај редакции..." 
                 className="w-full bg-secondary/20 border-b-2 border-border py-2 pl-2 pr-10 font-serif font-bold text-lg outline-none focus:border-nyt-accent placeholder:italic placeholder:font-normal placeholder:opacity-40 transition-all"
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none opacity-40">
@@ -196,9 +196,9 @@ const IzvoriPage: React.FC = () => {
           
           <div className="filter-group flex p-1 bg-secondary/30 rounded-lg border border-border shadow-sm">
             {[
-                { id: 'all', label: 'SITE' },
-                { id: 'high', label: 'Visoko poverenje' },
-                { id: 'verified', label: 'potvrdeni' }
+                { id: 'all', label: 'СИТЕ' },
+                { id: 'high', label: 'Висока доверба' },
+                { id: 'verified', label: 'потврдени' }
             ].map(t => (
               <button 
                 key={t.id} 
@@ -227,13 +227,13 @@ const IzvoriPage: React.FC = () => {
           ) : (
             <div className="space-y-24">
               <section>
-                <h2 className="font-serif text-3xl font-black italic mb-10 pb-3 border-b-4 border-foreground">Makedonski Mediumi</h2>
+                <h2 className="font-serif text-3xl font-black italic mb-10 pb-3 border-b-4 border-foreground">Македонски медиуми</h2>
                 <div className="flex flex-col">
                   {mkSources.map(renderSourceRow)}
                 </div>
               </section>
               <section>
-                <h2 className="font-serif text-3xl font-black italic mb-10 pb-3 border-b-4 border-foreground">Medjunarodni Signali</h2>
+                <h2 className="font-serif text-3xl font-black italic mb-10 pb-3 border-b-4 border-foreground">Меѓународни сигнали</h2>
                 <div className="flex flex-col">
                   {intSources.map(renderSourceRow)}
                 </div>
@@ -242,15 +242,15 @@ const IzvoriPage: React.FC = () => {
           )}
         </div>
 
-        <aside className="broadsheet-rail pl-4">
+        <aside class="broadsheet-rail pl-4">
           <section className="rail-module mb-12 p-8 bg-nyt-accent/5 border border-nyt-accent/10 rounded-xl">
-            <span className="block font-sans text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent mb-4">SISTEMSKI UVID</span>
-            <h3 className="font-serif text-2xl font-black leading-tight mb-4 tracking-tight">KVALITETEN INDEKS (QI)</h3>
-            <p className="font-nyt-body text-sm leading-relaxed text-muted-foreground">QI im spojuva brzinata, tocnosta i pluralizmot. Presmetano preku nasiot <strong>sistem za dlaboka analiza</strong>. Ocenkata 1.00 pretstavuva optimalen balans na pazarot.</p>
+            <span className="block font-sans text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent mb-4">СИСТЕМСКИ УВИД</span>
+            <h3 className="font-serif text-2xl font-black leading-tight mb-4 tracking-tight">КВАЛИТЕТЕН ИНДЕКС (QI)</h3>
+            <p className="font-nyt-body text-sm leading-relaxed text-muted-foreground">QI ги спојува брзината, точноста и плурализмот. Пресметано преку нашиот <strong>систем за длабока анализа</strong>. Оценката 1.00 претставува оптимален баланс на пазарот.</p>
           </section>
 
           <section className="rail-module mb-12">
-            <h3 className="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-foreground mb-6 pb-2 border-b-2 border-foreground">NAJBRZI denes</h3>
+            <h3 className="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-foreground mb-6 pb-2 border-b-2 border-foreground">НАЈБРЗИ денес</h3>
             <div className="flex flex-col gap-1">
               {fastMovers.map(s => (
                 <div key={s.source} className="flex items-center justify-between py-2.5 border-b border-border/40 hover:bg-secondary/10 px-1 transition-all">
@@ -265,16 +265,16 @@ const IzvoriPage: React.FC = () => {
             <h4 className="font-sans text-[10px] font-black uppercase tracking-widest border-b border-border pb-3 mb-4">МЕТОДОЛОГИЈА</h4>
             <ul className="space-y-4">
               <li className="flex flex-col gap-1">
-                <span className="font-sans text-[9px] font-black uppercase tracking-widest text-foreground">Doverba</span>
+                <span className="font-sans text-[9px] font-black uppercase tracking-widest text-foreground">Доверба</span>
                 <span className="text-xs text-muted-foreground leading-snug">Пондериран удел на основа на историска точност и стабилност на известување.</span>
               </li>
               <li className="flex flex-col gap-1">
-                <span className="font-sans text-[9px] font-black uppercase tracking-widest text-foreground">Vodstvo</span>
-                <span className="text-xs text-muted-foreground leading-snug">Kolku cesto mediumot prv otvora tema sto podocna stanuva dominantna.</span>
+                <span className="font-sans text-[9px] font-black uppercase tracking-widest text-foreground">Водство</span>
+                <span className="text-xs text-muted-foreground leading-snug">Колку често медиумот прв отвора тема што подоцна станува доминантна.</span>
               </li>
               <li className="flex flex-col gap-1">
-                <span className="font-sans text-[9px] font-black uppercase tracking-widest text-foreground">Potvrda</span>
-                <span className="text-xs text-muted-foreground leading-snug">Stapka na prifacanje i potvrda na vesta od drugi nezavisni izvori.</span>
+                <span className="font-sans text-[9px] font-black uppercase tracking-widest text-foreground">Потврда</span>
+                <span className="text-xs text-muted-foreground leading-snug">Стапка на прифаќање и потврда на веста од други независни извори.</span>
               </li>
             </ul>
           </div>

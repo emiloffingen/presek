@@ -313,9 +313,9 @@ export function getEditionStr(dateInput: any): string {
         timeZone: 'Europe/Skopje',
     }).format(date));
     
-    if (hour >= 5 && hour < 12) return 'UTRINSKO IZDANIE';
-    if (hour >= 12 && hour < 18) return 'PLADNEVNO IZDANIE';
-    return 'VECERNO IZDANIE';
+    if (hour >= 5 && hour < 12) return 'ЈУТАРЊЕ ИЗДАЊЕ';
+    if (hour >= 12 && hour < 18) return 'ПОПОДНЕВНО ИЗДАЊЕ';
+    return 'ВЕЧЕРЊЕ ИЗДАЊЕ';
 }
 
 /**
@@ -326,22 +326,22 @@ export function getDesignCardContext(cluster: any) {
     const category = (cluster.articles?.[0]?.category || '').toLowerCase();
     
     if (topic.includes('Kultura') || category.includes('Kultura') || topic.includes('umetnost')) {
-        return { label: 'KULTURNA PREPORAKA', icon: 'palette', sub: 'Pregled na najznacajnite dela od istorijata na makedonskata umetnost.' };
+        return { label: 'КУЛТУРНА ПРЕПОРУКА', icon: 'palette', sub: 'Преглед најзначајнијих дешавања из света културе и уметности.' };
     }
     if (topic.includes('Politika') || category.includes('Politika')) {
-        return { label: 'POLITICKI FOKUS', icon: 'building-2', sub: 'Dlabinska analiza na klucnite politicki procesi i odluki.' };
+        return { label: 'ПОЛИТИЧКИ ФОКУС', icon: 'building-2', sub: 'Дубинска анализа кључних политичких процеса и одлука.' };
     }
     if (topic.includes('Ekonomija') || category.includes('Ekonomija') || topic.includes('biznis')) {
-        return { label: 'EKONOMSKI BRIFING', icon: 'trending-up', sub: 'Pregled na ekonomskite trendovi i finansiskite pazari.' };
+        return { label: 'ЕКОНОМСКИ БРИФИНГ', icon: 'trending-up', sub: 'Преглед економских трендова и финансијских тржишта.' };
     }
     if (topic.includes('Sport') || category.includes('Sport')) {
-        return { label: 'SPORTSKI PULS', icon: 'award', sub: 'Najvaznite nastani i rezultati od svetot na sportot.' };
+        return { label: 'СПОРТСКИ ПУЛС', icon: 'award', sub: 'Најважнији догађаји и резултати из света спорта.' };
     }
     if (topic.includes('Tehnologija') || category.includes('Tehnologija') || topic.includes('nauka')) {
-        return { label: 'TEHNOLOSKI PRESEK', icon: 'cpu', sub: 'Inovacii i otkritija koi me oblikuvaat nasata idnina.' };
+        return { label: 'ТЕХНОЛОШКИ ПРЕСЕК', icon: 'cpu', sub: 'Иновације и открића која обликују нашу будућност.' };
     }
     
-    return { label: 'SISTEMSKI PREGLED', icon: 'newspaper', sub: 'Algoritamska sinteza na vodeckite informacii od domasnite mediumi.' };
+    return { label: 'СИСТЕМСКИ ПРЕГЛЕД', icon: 'newspaper', sub: 'Алгоритамска синтеза водећих информација из домаћих медија.' };
 }
 
 /**

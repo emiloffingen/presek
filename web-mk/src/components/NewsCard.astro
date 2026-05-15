@@ -131,7 +131,7 @@ function getTimeStr(dateStr: string) {
 		<div class="article-meta-v2">
 			<div class="kicker-group">
                 <span class="kicker">{main.source}</span>
-                {showTrustBadge && sourceSignal.trust_label === 'Visoko poverenje' && (
+                {showTrustBadge && (sourceSignal.trust_label === 'Visoko poverenje' || sourceSignal.trust_label === 'Висока доверба') && (
                     <ShieldCheck size={10} className="text-blue-500" />
                 )}
                 {main.is_global && (

@@ -85,8 +85,8 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         <div className="article-meta">
           <span className="source-label">
             {main.source}
-            {showTrustBadge && sourceSignal.trust_label === 'Visoko poverenje' && (
-              <span title="Visoko poverenje">
+            {showTrustBadge && (sourceSignal.trust_label === 'Visoko poverenje' || sourceSignal.trust_label === 'Висока доверба') && (
+              <span title="Висока доверба">
                 <ShieldCheck size={12} className="inline-block ml-1 text-blue-600 dark:text-blue-400" />
               </span>
             )}

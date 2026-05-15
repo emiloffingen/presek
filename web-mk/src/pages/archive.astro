@@ -43,11 +43,11 @@ try {
   if (otdRes.ok) onThisDay = await otdRes.json();
 
   if (!res.ok) {
-    error = 'Arhiva trenutno nije dostupna.';
+    error = 'Архивата моментално не е достапна.';
     Astro.response.status = 500;
   }
 } catch (err) {
-  error = 'Greška pri učitavanju arhive.';
+  error = 'Грешка при вчитување на архивата.';
   Astro.response.status = 500;
 }
 
@@ -73,39 +73,39 @@ function formatBriefingItem(item: string) {
 }
 ---
 
-<Layout title="Arhiva — Presek" description="Prebaruvajte niz istorijata na makedonskite mediumi.">
+<Layout title="Архива — Пресек" description="Пребарувајте низ историјата на македонските медиуми.">
   <NYTHeader />
   
   <main class="site-layout broadsheet-layout pt-32 pb-[var(--page-py)]">
     <header class="editorial-masthead mb-16 border-t border-foreground pt-4">
         <div class="masthead-top mb-8 flex justify-between items-center">
-            <span class="masthead-kicker font-sans text-[10px] font-black uppercase tracking-[0.25em] text-nyt-accent">MEDIUMSKA MEMORIJA</span>
+            <span class="masthead-kicker font-sans text-[10px] font-black uppercase tracking-[0.25em] text-nyt-accent">МЕДИУМСКА МЕМОРИЈА</span>
             <div class="masthead-meta-compact hidden md:flex items-center gap-6 font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
                 <span class="flex items-center gap-2"><CalendarDays size={12} /> {formattedDisplayDate}</span>
                 <span class="w-1 h-1 rounded-full bg-border"></span>
-                <span>{archive.total_clusters} temi</span>
+                <span>{archive.total_clusters} теми</span>
                 <span class="w-1 h-1 rounded-full bg-border"></span>
-                <span>{archive.sources} mediumi</span>
+                <span>{archive.sources} медиуми</span>
             </div>
         </div>
 
         <div class="masthead-main flex flex-col md:flex-row justify-between items-start md:items-end gap-12 mb-12">
             <div class="max-w-3xl">
-                <h1 class="masthead-title font-serif text-5xl md:text-7xl font-black leading-[0.9] tracking-tighter mb-4">Arhiva na <span class="text-nyt-accent italic font-light">Izdanija</span></h1>
-                <p class="font-serif text-xl italic text-muted-foreground leading-snug max-w-2xl">Pregled na mediumskiot ciklus i istoriskiot narativ niz konsolidiranite izvestai na Presek.</p>
+                <h1 class="masthead-title font-serif text-5xl md:text-7xl font-black leading-[0.9] tracking-tighter mb-4">Архива на <span class="text-nyt-accent italic font-light">Изданија</span></h1>
+                <p class="font-serif text-xl italic text-muted-foreground leading-snug max-w-2xl">Преглед на медиумскиот циклус и историскиот наратив низ консолидираните извештаи на Пресек.</p>
             </div>
             <div class="masthead-data-deck grid grid-cols-3 gap-0 border border-border/60 bg-secondary/10 overflow-hidden rounded-sm w-full md:w-auto min-w-[320px]">
                 <div class="deck-stat p-6 border-r border-border/60 text-center">
                     <span class="block text-2xl font-black tabular-nums">{archive.total.toLocaleString('mk-MK')}</span>
-                    <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Objavi</span>
+                    <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Објави</span>
                 </div>
                 <div class="deck-stat p-6 border-r border-border/60 text-center">
                     <span class="block text-2xl font-black tabular-nums">{archive.sources}</span>
-                    <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Redakcije</span>
+                    <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Редакции</span>
                 </div>
                 <div class="deck-stat p-6 bg-nyt-accent/5 text-center">
                     <span class="block text-2xl font-black tabular-nums text-nyt-accent">{archive.total_clusters}</span>
-                    <span class="text-[9px] font-black uppercase tracking-widest text-nyt-accent/70">Temi</span>
+                    <span class="text-[9px] font-black uppercase tracking-widest text-nyt-accent/70">Теми</span>
                 </div>
             </div>
         </div>
@@ -114,7 +114,7 @@ function formatBriefingItem(item: string) {
             <div class="daily-briefing-highlight mb-16 p-8 bg-background border-l-4 border-nyt-accent shadow-editorial">
                 <div class="flex items-center gap-2 mb-6">
                     <Sparkles size={14} className="text-nyt-accent" />
-                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent">KRATOK BRIFING ZA DENOT</span>
+                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent">КРАТОК БРИФИНГ ЗА ДЕНОТ</span>
                 </div>
                 <ul class="space-y-4">
                     {briefingItems.map(item => (
@@ -150,14 +150,14 @@ function formatBriefingItem(item: string) {
                             href={`/archive?date=${new Date(new Date(date).getTime() - 86400000).toISOString().split('T')[0]}`} 
                             class="px-4 py-2 bg-secondary/50 border border-border/60 rounded font-sans text-[10px] font-black uppercase tracking-widest hover:bg-foreground hover:text-background transition-all"
                         >
-                            ← PRETHODEN
+                            ← ПРЕТХОДЕН
                         </a>
                         {new Date(date) < new Date(new Date().toISOString().split('T')[0]) && (
                             <a 
                                 href={`/archive?date=${new Date(new Date(date).getTime() + 86400000).toISOString().split('T')[0]}`} 
                                 class="px-4 py-2 bg-secondary/50 border border-border/60 rounded font-sans text-[10px] font-black uppercase tracking-widest hover:bg-foreground hover:text-background transition-all"
                             >
-                                SLEDEN →
+                                СЛЕДЕН →
                             </a>
                         )}
                     </div>
@@ -170,7 +170,7 @@ function formatBriefingItem(item: string) {
                             type="text" 
                             name="q" 
                             value={q} 
-                            placeholder="Prebaraj vo ovoj den..." 
+                            placeholder="Пребарај во овој ден..." 
                             class="w-full bg-secondary/20 border-b-2 border-border py-2 pl-2 pr-10 font-serif font-bold text-lg outline-none focus:border-nyt-accent placeholder:italic placeholder:font-normal placeholder:opacity-40 transition-all"
                         />
                         <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none opacity-40">
@@ -189,13 +189,13 @@ function formatBriefingItem(item: string) {
                     <Activity size={18} />
                 </div>
                 <div>
-                    <span class="block font-sans text-[11px] font-black uppercase tracking-widest">Mediumski Puls</span>
-                    <span class="text-xs text-muted-foreground">Intenzitet na izvestuvanje i tematski ciklusi</span>
+                    <span class="block font-sans text-[11px] font-black uppercase tracking-widest">Медиумски Пулс</span>
+                    <span class="text-xs text-muted-foreground">Интензитет на известување и тематски циклуси</span>
                 </div>
             </div>
             <div class="flex items-center gap-3 font-sans text-[10px] font-black uppercase tracking-widest text-nyt-accent">
-                <span class="group-open:hidden">OTVORI PREGLED ↓</span>
-                <span class="hidden group-open:inline">ZATVORI PREGLED ↑</span>
+                <span class="group-open:hidden">ОТВОРИ ПРЕГЛЕД ↓</span>
+                <span class="hidden group-open:inline">ЗАТВОРИ ПРЕГЛЕД ↑</span>
             </div>
         </summary>
         <div class="p-8 border-t border-border bg-white dark:bg-zinc-950/50">
@@ -207,13 +207,13 @@ function formatBriefingItem(item: string) {
         <section class="broadsheet-main pr-12 border-r border-border/40">
             {q || source || topic ? (
                 <div class="active-filters mb-12 flex items-center gap-4 p-4 bg-nyt-accent/[0.03] border border-nyt-accent/10 rounded-lg">
-                    <span class="font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground">AKTIVEN FILTER:</span>
+                    <span class="font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground">АКТИВЕН ФИЛТЕР:</span>
                     <div class="flex flex-wrap gap-2">
                         {q && <span class="px-3 py-1 bg-foreground text-background rounded-full font-sans text-[10px] font-black uppercase tracking-widest flex items-center gap-2">🔍 {q} <a href={buildFilterHref('q', '')} class="ml-1 opacity-60 hover:opacity-100">×</a></span>}
                         {source && <span class="px-3 py-1 bg-foreground text-background rounded-full font-sans text-[10px] font-black uppercase tracking-widest flex items-center gap-2">🏢 {source} <a href={buildFilterHref('source', '')} class="ml-1 opacity-60 hover:opacity-100">×</a></span>}
                         {topic && <span class="px-3 py-1 bg-foreground text-background rounded-full font-sans text-[10px] font-black uppercase tracking-widest flex items-center gap-2"># {topic} <a href={buildFilterHref('topic', '')} class="ml-1 opacity-60 hover:opacity-100">×</a></span>}
                     </div>
-                    <a href={`/archive?date=${date}`} class="ml-auto font-sans text-[10px] font-black uppercase tracking-widest text-nyt-accent underline decoration-2 underline-offset-4">ISCISTI jos</a>
+                    <a href={`/archive?date=${date}`} class="ml-auto font-sans text-[10px] font-black uppercase tracking-widest text-nyt-accent underline decoration-2 underline-offset-4">ИСЧИСТИ</a>
                 </div>
             ) : null}
 
@@ -226,9 +226,9 @@ function formatBriefingItem(item: string) {
                     <ArchiveFeedIsland client:visible initialClusters={archive.clusters} initialHasMore={archive.has_more} pageSize={archive.page_size || 50} date={date} q={q} source={source} topic={topic} />
                 ) : (
                     <div class="py-32 text-center border-2 border-dashed border-border rounded-2xl">
-                        <h2 class="font-serif text-3xl font-black italic mb-4">Nema pronajdeni izdanija.</h2>
-                        <p class="font-nyt-body text-muted-foreground">Probajte so drug datum ili prilagodete im filtrite za prebaruvanje.</p>
-                        <a href="/archive" class="mt-8 inline-block px-8 py-3 bg-foreground text-background font-sans text-[10px] font-black uppercase tracking-widest hover:bg-nyt-accent transition-all">Vrati se denes</a>
+                        <h2 class="font-serif text-3xl font-black italic mb-4">Нема пронајдени изданија.</h2>
+                        <p class="font-nyt-body text-muted-foreground">Пробајте со друг датум или прилагодете ги филтрите за пребарување.</p>
+                        <a href="/archive" class="mt-8 inline-block px-8 py-3 bg-foreground text-background font-sans text-[10px] font-black uppercase tracking-widest hover:bg-nyt-accent transition-all">Врати се денес</a>
                     </div>
                 )}
             </div>
@@ -237,7 +237,7 @@ function formatBriefingItem(item: string) {
         <aside class="broadsheet-rail pl-4">
             <div class="rail-nav-block mb-12">
                 <a href="/archive" class="group flex items-center justify-between p-4 bg-foreground text-background rounded-sm transition-all hover:bg-nyt-accent shadow-lg shadow-black/5 hover:-translate-y-1">
-                    <span class="font-sans text-[11px] font-black uppercase tracking-widest">VRATI SE denes</span>
+                    <span class="font-sans text-[11px] font-black uppercase tracking-widest">ВРАТИ СЕ ДЕНЕС</span>
                     <ChevronRight size={16} />
                 </a>
             </div>
@@ -247,8 +247,8 @@ function formatBriefingItem(item: string) {
                     <div class="absolute top-0 right-0 p-4 opacity-10">
                         <CalendarDays size={64} />
                     </div>
-                    <span class="block font-sans text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent mb-4">NA OVOJ DEN</span>
-                    <h3 class="font-serif text-2xl font-black leading-tight mb-4 tracking-tight">PRED {onThisDay.years_ago} {onThisDay.years_ago === 1 ? 'GODINA' : 'GODINI'}</h3>
+                    <span class="block font-sans text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent mb-4">НА ОВОЈ ДЕН</span>
+                    <h3 class="font-serif text-2xl font-black leading-tight mb-4 tracking-tight">ПРЕД {onThisDay.years_ago} {onThisDay.years_ago === 1 ? 'ГОДИНА' : 'ГОДИНИ'}</h3>
                     <div class="otd-content group">
                         {onThisDay.image && (
                             <div class="mb-4 overflow-hidden rounded-lg shadow-sm">
@@ -264,7 +264,7 @@ function formatBriefingItem(item: string) {
             )}
 
             <div class="rail-directory-module mb-12">
-                <h3 class="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-foreground mb-6 pb-2 border-b-2 border-foreground">TEMI VO FOKUS</h3>
+                <h3 class="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-foreground mb-6 pb-2 border-b-2 border-foreground">ТЕМИ ВО ФОКУС</h3>
                 <div class="flex flex-col gap-1">
                     {archive.top_topics?.slice(0, 15).map((item: any) => (
                         <a href={buildFilterHref('topic', item.topic)} class="group flex items-center justify-between py-2 border-b border-border/40 hover:bg-secondary/20 transition-all px-1">
@@ -276,7 +276,7 @@ function formatBriefingItem(item: string) {
             </div>
 
             <div class="rail-directory-module">
-                <h3 class="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-foreground mb-6 pb-2 border-b-2 border-foreground">VODECKI KANALI</h3>
+                <h3 class="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-foreground mb-6 pb-2 border-b-2 border-foreground">ВОДЕЧКИ КАНАЛИ</h3>
                 <div class="flex flex-col gap-1">
                     {archive.top_sources?.slice(0, 15).map((item: any) => (
                         <a href={buildFilterHref('source', item.source)} class="group flex items-center justify-between py-2 border-b border-border/40 hover:bg-secondary/20 transition-all px-1">

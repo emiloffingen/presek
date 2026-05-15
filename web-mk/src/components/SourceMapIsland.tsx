@@ -33,9 +33,9 @@ export default function SourceMapIsland() {
   return (
     <section className="rail-module motion-rise-fast">
       <h3 className="rail-title flex items-center gap-2">
-        <Zap size={14} className="text-nyt-accent fill-nyt-accent" /> POKRIENOST VO ZIVO
+        <Zap size={14} className="text-nyt-accent fill-nyt-accent" /> ПОКРИЕНОСТ ВО ЖИВО
       </h3>
-      <p className="rail-note mb-4">60+ izvori se skeniraat na sekoi 5 minuti.</p>
+      <p className="rail-note mb-4">60+ извори се скенираат на секои 5 минути.</p>
       
       <div className="flex flex-wrap gap-1.5 opacity-80">
         {displaySources.map((s, idx) => {
@@ -59,10 +59,10 @@ export default function SourceMapIsland() {
       </div>
       
       <div className="mt-4 pt-3 border-t border-border flex justify-between items-center">
-        <span className="text-[10px] font-bold text-muted-foreground uppercase">Sistemski status</span>
+        <span className="text-[10px] font-bold text-muted-foreground uppercase">Системски статус</span>
         <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
-            <span className="text-[10px] font-black text-green-500 uppercase">Aktiven</span>
+            <span className="text-[10px] font-black text-green-500 uppercase">Активен</span>
         </div>
       </div>
     </section>

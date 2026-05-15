@@ -84,9 +84,9 @@ const ArchiveFeedIsland: React.FC<ArchiveFeedIslandProps> = ({
             <div className="flex flex-col md:flex-row gap-6">
               <div className="archive-cluster-index-col w-full md:w-20 pt-2 flex-shrink-0">
                 <div className="sticky top-24 flex md:block items-baseline gap-2">
-                  <span className="font-sans text-[10px] font-black uppercase tracking-widest text-nyt-accent block mb-1 hidden md:block">Izdanie</span>
+                  <span className="font-sans text-[10px] font-black uppercase tracking-widest text-nyt-accent block mb-1 hidden md:block">Издание</span>
                   <strong className="font-serif text-lg md:text-3xl font-black block leading-none opacity-20 md:opacity-40">{String(index + 1).padStart(2, '0')}</strong>
-                  <span className="font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground md:hidden opacity-40">Poz</span>
+                  <span className="font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground md:hidden opacity-40">Поз</span>
                 </div>
               </div>
               <div className="flex-1 min-w-0">
@@ -116,14 +116,14 @@ const ArchiveFeedIsland: React.FC<ArchiveFeedIslandProps> = ({
             onClick={loadMore}
             className="archive-page-link editorial-action px-12 py-4 border border-foreground font-sans text-xs font-black uppercase tracking-widest hover:bg-foreground hover:text-background transition-colors"
           >
-            Vcitaj jos temi
+            Вчитај уште теми
           </button>
         </div>
       )}
 
       {!hasMore && clusters.length > 0 && (
         <p className="archive-end-note mt-12 text-center font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
-          Kraj na arhivata za ovoj den
+          Крај на архивата за овој ден
         </p>
       )}
     </div>
