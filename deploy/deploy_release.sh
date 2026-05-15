@@ -96,9 +96,14 @@ assert_disk_space() {
   ok "Disk space check passed (${free_gb}GB free)"
 }
 
+sync_systemd_units() {
+  info "Syncing systemd unit files"
+  sudo cp "$RELEASE_DIR/deploy/systemd/"*.{service,target,timer} /etc/systemd/system/ 2>/dev/null || true
+  sudo systemctl daemon-reload
+}
+
 discover_app_services() {
 
-sync_systemd_units() {
   info "Syncing systemd unit files"
   sudo cp "$RELEASE_DIR/deploy/systemd/"*.{service,target,timer} /etc/systemd/system/ 2>/dev/null || true
   sudo systemctl daemon-reload
@@ -746,7 +751,6 @@ main() {
   normalize_legacy_runtime_links
   discover_app_services
 
-sync_systemd_units() {
   info "Syncing systemd unit files"
   sudo cp "$RELEASE_DIR/deploy/systemd/"*.{service,target,timer} /etc/systemd/system/ 2>/dev/null || true
   sudo systemctl daemon-reload
