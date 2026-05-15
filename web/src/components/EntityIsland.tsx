@@ -195,10 +195,10 @@ export default function EntityIsland({
             {profile.type === 'PERSON' ? <User size={32} className="text-nyt-accent" /> : <Building2 size={32} className="text-nyt-accent" />}
           </div>
           <div className="entity-copy">
-            <span className="entity-type">{profile.type === 'ORG' ? 'Organizacija' : 'Subjekt'}</span>
+            <span className="entity-type">{profile.type === 'ORG' ? 'Организација' : 'Субјект'}</span>
             <h1 className="entity-name">{profile.name}</h1>
             <p className="entity-summary-copy">
-              Sistemski profil koji prati medijsko prisustvo, mrežu povezanosti i ton izveštavanja za {profile.name}.
+              Системски профил који прати медијско присуство, мрежу повезаности и тон извештавања за {profile.name}.
             </p>
           </div>
         </div>
@@ -359,8 +359,8 @@ export default function EntityIsland({
             <h3 className="rail-card-title">dalje</h3>
             <div className="flex flex-col gap-3">
               <a href="/archive" className="entity-related-jump">Otvori arhivu</a>
-              <a href="/izvori" className="entity-related-jump">Otvori izvore</a>
-              <a href="/pulse" className="entity-related-jump">Uporedi medije</a>
+              <a href="/izvori" className="entity-related-jump">Отвори изворе</a>
+              <a href="/pulse" className="entity-related-jump">Упореди медије</a>
             </div>
           </div>
         </aside>

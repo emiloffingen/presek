@@ -21,14 +21,13 @@ let stats: any = null;
 let error = null;
 
 try {
-    const briefingUrl = dateParam 
-        ? `${API_URL}/intelligence/briefing?date=${dateParam}` 
-        : `${API_URL}/intelligence/briefing`;
-
+    const briefingUrl = dateParam
+            ? `${API_URL}/intelligence/briefing?date=${dateParam}&lang=sr`
+            : `${API_URL}/intelligence/briefing?lang=sr`;
     const [briefRes, homeRes, statsRes] = await Promise.all([
         fetch(briefingUrl),
         fetch(`${API_URL}/home?lang=sr`),
-        fetch(`${API_URL}/stats/summary`)
+        fetch(`${API_URL}/stats/summary?lang=sr`)
     ]);
 
     if (briefRes.ok) briefingData = await briefRes.json();
@@ -36,25 +35,25 @@ try {
     if (statsRes.ok) stats = await statsRes.json();
 
     if (!briefingData || briefingData.status === 'error') {
-        error = briefingData?.message || "Brifing trenutno nije dostupan.";
+        error = briefingData?.message || "Брифинг тренутно није доступан.";
     }
 } catch (e) {
-    error = "Greška pri učitavanju podataka.";
+    error = "Грешка при учитавању података.";
 }
 
 const formattedBriefing = briefingData?.content ? formatBriefing(briefingData.content) : "";
 
 const displayDate = briefingData?.date 
-    ? new Date(briefingData.date).toLocaleDateString('sr-RS', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
+    ? new Date(briefingData.date).toLocaleDateString('sr-RS', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
     })
-    : "";
+    : 'Данашње издање';
 ---
 
-<Layout title="Urednički brifing — Presek">
+<Layout title="Уреднички брифинг — Пресек">
     <NYTHeader stats={stats} />
     
     <main class="site-layout broadsheet-layout py-[var(--page-py)]">
@@ -62,7 +61,7 @@ const displayDate = briefingData?.date
             {error ? (
                 <div class="py-20 text-center">
                     <h2 class="font-serif text-3xl mb-6 font-black italic">{error}</h2>
-                    <a href="/briefing" class="inline-flex items-center gap-2 px-6 py-3 bg-foreground text-background font-sans font-black text-xs uppercase tracking-widest hover:bg-nyt-accent transition-colors">Vrati se na poslednje izdanje</a>
+                    <a href="/briefing" class="inline-flex items-center gap-2 px-6 py-3 bg-foreground text-background font-sans font-black text-xs uppercase tracking-widest hover:bg-nyt-accent transition-colors">Врати се на последње издање</a>
                 </div>
             ) : briefingData ? (
                 <div class="briefing-layout-grid relative">
@@ -86,7 +85,7 @@ const displayDate = briefingData?.date
                             <div class="mt-32 pt-16 border-t-4 border-foreground">
                                 <div class="flex items-center gap-4 mb-12">
                                     <div class="h-px flex-1 bg-border"></div>
-                                    <h2 class="font-serif text-3xl font-black italic px-4">Nastavi sa čitanjem</h2>
+                                    <h2 class="font-serif text-3xl font-black italic px-4">Наставите са читањем</h2>
                                     <div class="h-px flex-1 bg-border"></div>
                                 </div>
                                 <BriefingDigest homeData={homeData} />
@@ -113,7 +112,7 @@ const displayDate = briefingData?.date
             ) : (
                 <div class="py-40 text-center flex flex-col items-center gap-6">
                     <div class="w-12 h-12 border-4 border-nyt-accent border-t-transparent rounded-full animate-spin"></div>
-                    <p class="font-serif text-xl italic text-muted-foreground">Pripremamo dnevni pregled...</p>
+                    <p class="font-serif text-xl italic text-muted-foreground">Припремамо дневни преглед...</p>
                 </div>
             )}
         </div>

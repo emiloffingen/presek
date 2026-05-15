@@ -183,7 +183,7 @@ export default function SourceComparisonIsland({ allSources }: { allSources: str
         </div>
       ) : (
         <div className="py-20 text-center text-muted-foreground italic font-serif opacity-60">
-          Izberete dve redakcii za detalna analiza na nivniot urednicki pristap.
+          Изаберите две редакције за детаљну анализу њиховог уредничког приступа.
         </div>
       )}
     </section>

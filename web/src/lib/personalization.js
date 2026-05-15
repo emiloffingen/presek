@@ -21,17 +21,17 @@ const SECONDARY_SOURCE_MIN_SIGNAL = 1.25;
 const SURFACE_TOPIC_FALLBACK_MIN_SIGNAL = 0.65;
 
 const SUGGESTION_SURFACE_LABELS = {
-  onboarding: 'Poceten vodic',
-  home_rail: 'Pocetna desna kolona',
-  cluster: 'klaster stranica',
-  topic: 'Tema stranica',
-  for_you: 'Za Vas',
-  settings: 'Postavki',
+  onboarding: 'Почетни водич',
+  home_rail: 'Почетна десна колона',
+  cluster: 'страница кластера',
+  topic: 'страница теме',
+  for_you: 'За Вас',
+  settings: 'Подешавања',
 };
 
 const SUGGESTION_KIND_LABELS = {
-  topic: 'Temi',
-  source: 'izvori',
+  topic: 'Теме',
+  source: 'извори',
 };
 
 function normalizeValue(value) {
@@ -869,7 +869,7 @@ export function buildFollowRecommendations(profile, limit = 4) {
     .map(([topic, count]) => ({
       value: topic,
       count,
-      reason: count >= 3 ? `Cesto citate temi povrzani so ${topic}` : `ova tema se povtoruva vo vaseto citanje`,
+      reason: count >= 3 ? `Често читате теме повезане са ${topic}` : `Ова тема се понавља у вашем читању`,
     })),
     limit
   );
@@ -884,7 +884,7 @@ export function buildFollowRecommendations(profile, limit = 4) {
     .map(([source, count]) => ({
       value: source,
       count,
-      reason: count >= 3 ? `${source} postojano se pojavuva vo vaseto citanje` : `Ovoj izvor se povtoruva niz klasterite sto im otvorate`,
+      reason: count >= 3 ? `${source} се стално појављује у вашем читању` : `Овај извор се понавља кроз кластере које отварате`,
     })),
     limit
   );
