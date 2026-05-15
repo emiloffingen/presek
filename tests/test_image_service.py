@@ -1,6 +1,6 @@
 import asyncio
 
-import image_service
+import core.image_service as image_service
 
 
 class _FakeResponse:

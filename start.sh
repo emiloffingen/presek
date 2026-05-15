@@ -284,7 +284,7 @@ stop_session() {
 
 cleanup_stale_processes() {
   info "Cleaning up stale app processes..."
-  stop_matching_processes "uvicorn.*api_fast:app"
+  stop_matching_processes "uvicorn.*core.api_fast:app"
   stop_matching_processes "entry.mjs"
   [ "$ENABLE_FASTAPI" = "1" ] && force_free_port 5001
   [ "$ENABLE_ASTRO" = "1" ] && force_free_port 3000
@@ -355,7 +355,7 @@ require_cmd curl
 require_cmd ss
 [ -x "$PYTHON" ] || fail "Python not found at $PYTHON"
 [ -x "$CELERY" ] || fail "Celery not found at $CELERY"
-[ -f "$APP_DIR/celery_app.py" ] || fail "Missing Celery entrypoint: $APP_DIR/celery_app.py"
+[ -f "$APP_DIR/core/celery_app.py" ] || fail "Missing Celery entrypoint: $APP_DIR/core/celery_app.py"
 
 [ -n "${SECRET_KEY:-}" ] || fail "SECRET_KEY is not set"
 [ -n "${DATABASE_URL:-}" ] || fail "DATABASE_URL is not set"
@@ -383,7 +383,7 @@ fi
 
 if [ "$ENABLE_FASTAPI" = "1" ]; then
   [ -x "$UVICORN" ] || fail "Uvicorn not found at $UVICORN"
-  [ -f "$APP_DIR/api_fast.py" ] || fail "Missing FastAPI entrypoint: $APP_DIR/api_fast.py"
+  [ -f "$APP_DIR/core/api_fast.py" ] || fail "Missing FastAPI entrypoint: $APP_DIR/core/api_fast.py"
   touch "$FASTAPI_LOG"
 fi
 
@@ -412,7 +412,7 @@ fi
 [ "$ENABLE_ASTRO" = "1" ] && ensure_port_free 3000
 
 info "Verifying database schema..."
-if (cd "$APP_DIR" && "$PYTHON" -c "from database import init_db; init_db()"); then
+if (cd "$APP_DIR" && "$PYTHON" -c "from core.database import init_db; init_db()"); then
   ok "Schema OK"
 else
   fail "Database schema verification failed"
@@ -420,14 +420,14 @@ fi
 
 info "Starting services in screen session '$SESSION'..."
 
-start_window "worker" "cd '$APP_DIR' && export PYTHONPATH='$APP_DIR' && exec '$CELERY' -A celery_app worker --loglevel=info --concurrency=4 --logfile='$WORKER_LOG'"
+start_window "worker" "cd '$APP_DIR' && export PYTHONPATH='$APP_DIR' && exec '$CELERY' -A core.celery_app worker --loglevel=info --concurrency=4 --logfile='$WORKER_LOG'"
 sleep 1
 
-start_window "beat" "cd '$APP_DIR' && export PYTHONPATH='$APP_DIR' && exec '$CELERY' -A celery_app beat --loglevel=info --logfile='$BEAT_LOG'"
+start_window "beat" "cd '$APP_DIR' && export PYTHONPATH='$APP_DIR' && exec '$CELERY' -A core.celery_app beat --loglevel=info --logfile='$BEAT_LOG'"
 sleep 1
 
 if [ "$ENABLE_FASTAPI" = "1" ]; then
-  start_window "fastapi" "cd '$APP_DIR' && exec '$UVICORN' api_fast:app --host '$FASTAPI_BIND_HOST' --port 5001 --workers 1 >> '$FASTAPI_LOG' 2>&1"
+  start_window "fastapi" "cd '$APP_DIR' && exec '$UVICORN' core.api_fast:app --host '$FASTAPI_BIND_HOST' --port 5001 --workers 1 >> '$FASTAPI_LOG' 2>&1"
   sleep 1
 fi
 

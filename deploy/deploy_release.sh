@@ -493,8 +493,8 @@ run_release_checks() {
 
   info "Checking FastAPI import in release runtime"
   (cd "$RELEASE_DIR" && "$RELEASE_VENV_TARGET/bin/python3" - <<'PY'
-import api_fast
-import celery_app
+from core import api_fast
+from core import celery_app
 import tasks
 PY
   )
@@ -520,7 +520,7 @@ run_migrations() {
   if [ -f "$RELEASE_DIR/alembic.ini" ]; then
     (cd "$RELEASE_DIR" && "$RELEASE_VENV_TARGET/bin/alembic" upgrade head) || fail "Alembic migrations failed"
   else
-    (cd "$RELEASE_DIR" && "$RELEASE_VENV_TARGET/bin/python3" -c "import config; from database import init_db; init_db()") || fail "Legacy schema init failed"
+    (cd "$RELEASE_DIR" && "$RELEASE_VENV_TARGET/bin/python3" -c "from core import config; from core.database import init_db; init_db()") || fail "Legacy schema init failed"
   fi
   SCHEMA_UPDATED=1
 }

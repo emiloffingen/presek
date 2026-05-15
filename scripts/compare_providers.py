@@ -8,7 +8,7 @@ import sys
 
 sys.path.append(os.getcwd())
 
-from ai_engine import PROVIDERS
+from core.ai_engine import PROVIDERS
 
 load_dotenv()
 

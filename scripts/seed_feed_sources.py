@@ -1,4 +1,4 @@
-from database import db_manager as db
+from core.database import db_manager as db
 
 # Serbian News Catalog (80 Sources)
 SERBIAN_FEED_CATALOG = [

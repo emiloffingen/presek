@@ -1,6 +1,6 @@
 import os
 
-import hf_cache
+import core.hf_cache as hf_cache
 
 
 def test_configure_model_cache_uses_app_owned_paths(monkeypatch, tmp_path):

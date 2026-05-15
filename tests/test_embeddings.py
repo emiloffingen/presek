@@ -1,4 +1,4 @@
-from embeddings import average_embeddings, parse_embedding_value
+from core.embeddings import average_embeddings, parse_embedding_value
 
 
 def test_parse_embedding_value_handles_wrapped_json_payload():

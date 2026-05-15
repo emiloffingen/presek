@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import argparse
-from database import db_manager as db
+from core.database import db_manager as db
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)s | %(message)s')

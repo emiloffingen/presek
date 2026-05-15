@@ -5,7 +5,7 @@ import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from utils import delete_cache, delete_cache_prefix, redis_client  # noqa: F401
-from logging_config import get_logger
+from core.logging_config import get_logger
 
 log = get_logger("presek_celery")
 
@@ -116,6 +116,6 @@ _TASK_REDIS_KEY = "presek:task_statuses"
 
 
 def record_task_event(task_name: str, status: str, detail: str | None = None):
-    from health import record_task_event as _record
+    from core.health import record_task_event as _record
 
     return _record(task_name, status, detail)

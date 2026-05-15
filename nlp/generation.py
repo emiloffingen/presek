@@ -2,7 +2,7 @@ import re
 import math
 import logging
 from collections import Counter
-from trending import STOPWORDS
+from core.trending import STOPWORDS
 
 log = logging.getLogger(__name__)
 from nlp.utils import (

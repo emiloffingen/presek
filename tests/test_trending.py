@@ -1,4 +1,4 @@
-from trending import extract_words_with_flags
+from core.trending import extract_words_with_flags
 
 
 class TestExtractWordsWithFlags:

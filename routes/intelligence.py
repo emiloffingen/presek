@@ -8,16 +8,16 @@ from pydantic import BaseModel
 from typing import Optional, List, Any, Dict
 from fastapi import APIRouter, Request, HTTPException
 
-from database import db_manager as db
-from embeddings import generate_query_embedding
+from core.database import db_manager as db
+from core.embeddings import generate_query_embedding
 from utils import cached_response, set_cache, score_cluster
 from nlp import normalize_tag_name
-from entities import normalize_entity_name, normalize_person_surface_name
+from core.entities import normalize_entity_name, normalize_person_surface_name
 from .common import cleanAndDecode, _is_valid_focus_entity
 from .security import validate_cluster_id, validate_list_param, validate_string_param
-from limiter import custom_rate_limit
-from ai_engine import sync_call_ai, clean_json_response
-from prompts import RESEARCH_SYSTEM_PROMPT
+from core.limiter import custom_rate_limit
+from core.ai_engine import sync_call_ai, clean_json_response
+from core.prompts import RESEARCH_SYSTEM_PROMPT
 
 log = logging.getLogger("presek")
 router = APIRouter()
@@ -479,7 +479,7 @@ async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts"):
         return cached
 
     try:
-        from local_analyst import analyst
+        from nlp.local_analyst import analyst
 
         log.info(
             f"[analyst] Generating Gemma report for {cluster_id} (mode={clean_mode})"
@@ -498,7 +498,7 @@ async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts"):
             return {"status": "error", "message": "Analiticarot e zafaten."}
 
         # Apply final name validation on the report
-        from entities import validate_person_names
+        from core.entities import validate_person_names
 
         report = validate_person_names(report)
 
@@ -914,7 +914,7 @@ async def entity_graph_lookup(request: Request, entity_name: str):
 @custom_rate_limit("10/minute")
 async def cluster_research(request: Request, cluster_id: str, q: str):
     """Researches a cluster based on a user query using Gemma 2."""
-    from local_analyst import analyst
+    from nlp.local_analyst import analyst
 
     # Get cluster context
     row = await db.async_execute_one(

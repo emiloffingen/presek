@@ -8,7 +8,7 @@ class TestDBWrapper:
     """Tests for the DBWrapper connection wrapper."""
 
     def test_cursor_uses_dict_cursor(self):
-        from database import DBWrapper
+        from core.database import DBWrapper
 
         mock_manager = MagicMock()
         mock_conn = MagicMock()
@@ -19,7 +19,7 @@ class TestDBWrapper:
         mock_conn.cursor.assert_called_with()
 
     def test_close_returns_to_manager(self):
-        from database import DBWrapper
+        from core.database import DBWrapper
 
         mock_manager = MagicMock()
         mock_conn = MagicMock()
@@ -30,7 +30,7 @@ class TestDBWrapper:
         mock_manager.put_conn.assert_called_once_with(mock_conn)
 
     def test_commit_delegates(self):
-        from database import DBWrapper
+        from core.database import DBWrapper
 
         mock_manager = MagicMock()
         mock_conn = MagicMock()
@@ -41,7 +41,7 @@ class TestDBWrapper:
         mock_conn.commit.assert_called_once()
 
     def test_rollback_delegates(self):
-        from database import DBWrapper
+        from core.database import DBWrapper
 
         mock_manager = MagicMock()
         mock_conn = MagicMock()
@@ -52,7 +52,7 @@ class TestDBWrapper:
         mock_conn.rollback.assert_called_once()
 
     def test_context_manager(self):
-        from database import DBWrapper
+        from core.database import DBWrapper
 
         mock_manager = MagicMock()
         mock_conn = MagicMock()
@@ -67,7 +67,7 @@ class TestDatabaseManagerExecute:
     """Tests for DatabaseManager.execute method."""
 
     def test_execute_fetch_returns_dicts(self):
-        from database import DatabaseManager
+        from core.database import DatabaseManager
 
         mock_pool = MagicMock()
         mock_conn = MagicMock()
@@ -83,7 +83,7 @@ class TestDatabaseManagerExecute:
         assert isinstance(result, list)
 
     def test_execute_no_fetch_commits(self):
-        from database import DatabaseManager
+        from core.database import DatabaseManager
 
         mock_pool = MagicMock()
         mock_conn = MagicMock()
@@ -99,7 +99,7 @@ class TestDatabaseManagerExecute:
         mock_conn.commit.assert_called_once()
 
     def test_execute_rolls_back_on_error(self):
-        from database import DatabaseManager
+        from core.database import DatabaseManager
 
         mock_pool = MagicMock()
         mock_conn = MagicMock()
@@ -118,7 +118,7 @@ class TestDatabaseManagerExecute:
 
 class TestGetDb:
     def test_get_db_returns_wrapper(self):
-        from database import get_db, DBWrapper
+        from core.database import get_db, DBWrapper
 
         with patch("database.db_manager") as mock_manager:
             mock_manager.get_conn.return_value = MagicMock()
@@ -127,7 +127,7 @@ class TestGetDb:
 
     def test_search_articles_empty_query(self):
         """search_articles returns [] for empty/too-long queries."""
-        from database import DatabaseManager
+        from core.database import DatabaseManager
 
         manager = DatabaseManager.__new__(DatabaseManager)
         manager._pool = MagicMock()
@@ -137,7 +137,7 @@ class TestGetDb:
 
 class TestSchemaMigrations:
     def test_init_schema_calls_alembic_upgrade(self):
-        from database import DatabaseManager
+        from core.database import DatabaseManager
         from unittest.mock import patch
 
         manager = DatabaseManager.__new__(DatabaseManager)

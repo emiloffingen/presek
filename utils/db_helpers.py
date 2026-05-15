@@ -1,7 +1,7 @@
 import time
 import logging
 from typing import Dict, Any
-from config import SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY, SOURCE_CATEGORIES
+from core.config import SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY, SOURCE_CATEGORIES
 
 log = logging.getLogger("presek")
 
@@ -30,7 +30,7 @@ def get_source_registry(ttl_seconds: int = 300) -> Dict[str, Dict[str, Any]]:
         }
 
     try:
-        from database import db_manager as db
+        from core.database import db_manager as db
 
         rows = db.execute("SELECT name, credibility, category FROM sources WHERE is_active = TRUE")
         for row in rows:

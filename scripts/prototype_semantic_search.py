@@ -1,8 +1,8 @@
 import asyncio
 import logging
 import sys
-from database import db_manager as db
-from embeddings import generate_query_embedding
+from core.database import db_manager as db
+from core.embeddings import generate_query_embedding
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("presek.semantic_prototype")

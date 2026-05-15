@@ -1,7 +1,7 @@
 import re
 import threading
 from collections import Counter
-from trending import STOPWORDS
+from core.trending import STOPWORDS
 from nlp.utils import log
 
 _keybert_model = None
@@ -21,7 +21,7 @@ def _get_keybert():
             return _keybert_model
         try:
             from keybert import KeyBERT
-            from embeddings import get_shared_model
+            from core.embeddings import get_shared_model
 
             st_model = get_shared_model()
             if st_model is None:
@@ -710,7 +710,7 @@ def _extract_capitalized_phrases(text):
 
 def extract_cluster_tags_locally(titles, entity_names=None, sources=None, top_n=8):
     from nlp.text_processing import lemmatize_sr
-    from entities import normalize_entity_name
+    from core.entities import normalize_entity_name
 
     candidates = []
     prioritized_entities = []

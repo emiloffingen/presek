@@ -8,7 +8,7 @@ from typing import Optional
 from fastapi import Request, HTTPException
 from fastapi.responses import JSONResponse
 
-from database import db_manager as db
+from core.database import db_manager as db
 from nlp.utils import cleanAndDecode
 
 log = logging.getLogger("presek")

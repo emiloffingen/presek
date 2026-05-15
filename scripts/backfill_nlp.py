@@ -1,7 +1,7 @@
 import logging
 
-from database import db_manager as db
-from embeddings import generate_embedding
+from core.database import db_manager as db
+from core.embeddings import generate_embedding
 from tasks import synthesize_cluster_task
 from tasks.intelligence import (
     _build_cluster_synthesis_content,

@@ -3,7 +3,7 @@ Test the proxy endpoint to ensure it handles valid and invalid URLs correctly.
 """
 import pytest
 from fastapi.testclient import TestClient
-from api_fast import app
+from core.api_fast import app
 
 client = TestClient(app)
 

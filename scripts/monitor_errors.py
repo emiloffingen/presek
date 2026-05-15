@@ -1,5 +1,5 @@
-from database import db_manager as db
-from logging_config import get_logger
+from core.database import db_manager as db
+from core.logging_config import get_logger
 
 log = get_logger("presek_monitor")
 

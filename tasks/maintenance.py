@@ -7,9 +7,9 @@ _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-from celery_app import celery_app
-from database import db_manager as db, prune_db
-from image_service import image_service
+from core.celery_app import celery_app
+from core.database import db_manager as db, prune_db
+from core.image_service import image_service
 from tasks.utils import log, invalidate_public_data_caches
 
 
@@ -23,7 +23,7 @@ def run_prune_db():
     try:
         valid_rows = db.execute("SELECT DISTINCT cluster_id FROM articles")
         valid_ids = {str(r["cluster_id"]) for r in valid_rows if r["cluster_id"]}
-        from ai_engine import cleanup_cover_art
+        from core.ai_engine import cleanup_cover_art
 
         cleanup_cover_art(valid_ids)
     except Exception as e:
@@ -138,7 +138,7 @@ def validate_cluster_images_task():
 @celery_app.task
 def repair_knowledge_graph_task():
     """Merges fragmented entities and cleans up noise in the knowledge graph."""
-    from entities import normalize_entity_name
+    from core.entities import normalize_entity_name
 
     try:
         log.info("[maintenance] Starting knowledge graph repair...")
@@ -274,7 +274,7 @@ def refresh_global_headlines_task():
     import feedparser
     import httpx
     import json
-    from embeddings import generate_query_embedding
+    from core.embeddings import generate_query_embedding
     from utils import redis_client
 
     FEEDS = [

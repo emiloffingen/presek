@@ -6,7 +6,7 @@ import logging
 sys.path.insert(0, os.getcwd())
 
 logging.basicConfig(level=logging.INFO)
-from entities import extract_entities
+from core.entities import extract_entities
 from nlp.sentiment import analyze_sentiment_locally
 
 

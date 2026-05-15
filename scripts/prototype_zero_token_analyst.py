@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import re
-from database import db_manager as db
+from core.database import db_manager as db
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("presek.analyst")

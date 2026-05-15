@@ -352,7 +352,7 @@ def test_fastapi_public_health_omits_internal_connection_details(mock_all):
     ):
         data = asyncio.run(system_routes.health(_FakeRequest()))
     assert "url" not in data["redis"]
-    from version import APP_VERSION, APP_VERSION_LABEL
+    from core.version import APP_VERSION, APP_VERSION_LABEL
 
     assert data["version"] == APP_VERSION
     assert data["version_label"] == APP_VERSION_LABEL

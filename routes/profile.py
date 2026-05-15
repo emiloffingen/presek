@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing import List
 from fastapi import APIRouter, Request, HTTPException
 
-from database import db_manager as db
+from core.database import db_manager as db
 from utils import (
     delete_cache,
     score_cluster,
@@ -13,8 +13,8 @@ from utils import (
     score_cluster_for_homepage,
     annotate_cluster_articles,
 )
-from config import BREAKING_SCORE_THRESHOLD
-from api_helpers import (
+from core.config import BREAKING_SCORE_THRESHOLD
+from core.api_helpers import (
     normalize_server_delivery_subscription as _normalize_server_delivery_subscription,
 )
 from .common import (
@@ -248,7 +248,7 @@ async def save_profile_sync(request: Request):
 
 @router.get("/profile/vapid-key")
 async def get_vapid_key():
-    from config import VAPID_PUBLIC_KEY
+    from core.config import VAPID_PUBLIC_KEY
 
     if not VAPID_PUBLIC_KEY:
         raise HTTPException(status_code=404, detail="Web Push nije konfigurisan")

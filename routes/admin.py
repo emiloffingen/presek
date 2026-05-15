@@ -2,11 +2,11 @@ import datetime
 import secrets
 import logging
 from fastapi import APIRouter, Request, HTTPException, Depends
-from database import db_manager as db
-from config import PRESEK_ADMIN_TOKEN, PROVIDER_FALLBACK_ORDER
-from health import get_source_statuses, _probe_database, _probe_redis
+from core.database import db_manager as db
+from core.config import PRESEK_ADMIN_TOKEN, PROVIDER_FALLBACK_ORDER
+from core.health import get_source_statuses, _probe_database, _probe_redis
 from utils import redis_client
-from version import version_payload
+from core.version import version_payload
 
 log = logging.getLogger("presek.api.admin")
 router = APIRouter()
@@ -91,7 +91,7 @@ async def trigger_newsletter(authorized: bool = Depends(verify_admin)):
 @router.post("/admin/tasks/retry-failed")
 async def retry_failed_tasks(authorized: bool = Depends(verify_admin)):
     """Re-dispatch failed tasks to Celery and clear records."""
-    from celery_app import celery_app
+    from core.celery_app import celery_app
 
     failed = db.execute("SELECT id, task_name, args, kwargs FROM failed_tasks")
     if not failed:

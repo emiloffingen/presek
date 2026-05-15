@@ -1,4 +1,4 @@
-from local_analyst import analyst
+from nlp.local_analyst import analyst
 from tasks.utils import (
     invalidate_public_data_caches,
     invalidate_cluster_caches,
@@ -8,7 +8,7 @@ from tasks.utils import (
     get_celery_queue_depth,
 )
 from utils import get_dominant_color
-from api_helpers import (
+from core.api_helpers import (
     normalize_summary_text,
     normalize_perspectives,
     normalize_citation_sources,
@@ -21,9 +21,9 @@ from nlp import (
     deShout,
     generate_local_placeholder,
 )
-from entities import extract_entities, validate_person_names
+from core.entities import extract_entities, validate_person_names
 from nlp.categories import detect_topic, detect_category
-from prompts import (
+from core.prompts import (
     SUMMARY_SYSTEM_PROMPT_SR,
     SYNTHESIS_SYSTEM_PROMPT_SR,
     SUMMARY_SYSTEM_PROMPT_MK,
@@ -31,11 +31,11 @@ from prompts import (
 )
 
 SUPPORTED_LANGS = ["sr", "mk"]
-from embeddings import average_embeddings, parse_embedding_value
-from ai_engine import sync_call_ai as _call_ai, clean_json_response, generate_cover_art
-from config import CLUSTER_LOOKBACK
-from database import db_manager as db
-from celery_app import celery_app
+from core.embeddings import average_embeddings, parse_embedding_value
+from core.ai_engine import sync_call_ai as _call_ai, clean_json_response, generate_cover_art
+from core.config import CLUSTER_LOOKBACK
+from core.database import db_manager as db
+from core.celery_app import celery_app
 import datetime
 import json
 import os
@@ -109,7 +109,7 @@ def summarize_article_task(article_id, final_title=None):
     # Determine which prompt to use based on existing category or topic if possible, 
     # but default to Serbian as the primary processing language for now.
     # In a full multi-lang setup, we'd summarize in the language of the source.
-    from language import detect_language
+    from core.language import detect_language
     lang = detect_language(title + " " + (description or ""))
     system_prompt = SUMMARY_SYSTEM_PROMPT_MK if lang == "mk" else SUMMARY_SYSTEM_PROMPT_SR
 
@@ -272,7 +272,7 @@ def _cosine_dist(a, b):
 )
 def standardize_article_style_task(article_id):
     """Refines article linguistic style using Gemma 2 2B (Literary Normalization)."""
-    from config import ENABLE_EXPENSIVE_STYLE_TASKS
+    from core.config import ENABLE_EXPENSIVE_STYLE_TASKS
 
     if not ENABLE_EXPENSIVE_STYLE_TASKS:
         return
@@ -328,7 +328,7 @@ def standardize_article_style_task(article_id):
 )
 def detect_global_story_task(article_id):
     """Detects if a Macedonian article is a translation of a foreign global report."""
-    from config import LOCAL_TRANSLATION_ENABLED
+    from core.config import LOCAL_TRANSLATION_ENABLED
 
     if not LOCAL_TRANSLATION_ENABLED:
         return
@@ -338,7 +338,7 @@ def detect_global_story_task(article_id):
         return
 
     try:
-        from embeddings import generate_query_embedding
+        from core.embeddings import generate_query_embedding
         from utils import redis_client
         import numpy as np
 
@@ -408,7 +408,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
     # We'll fetch this once for the primary language (sr) to use as context for all syntheses
     history_context = ""
     try:
-        from embeddings import get_cluster_embedding
+        from core.embeddings import get_cluster_embedding
 
         current_vec = get_cluster_embedding(cluster_id)
         if current_vec:
@@ -835,7 +835,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             is_breaking = False
             if article_rows:
                 from utils import score_cluster
-                from config import BREAKING_SCORE_THRESHOLD
+                from core.config import BREAKING_SCORE_THRESHOLD
                 is_breaking = score_cluster(article_rows) >= BREAKING_SCORE_THRESHOLD
 
             publish_event(
@@ -859,7 +859,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             if detect_topic(all_titles) == "Sport":
                 from nlp.generation import _extract_sports_scores
                 from notifier import BreakingNewsNotifier
-                from config import NTFY_TOPIC
+                from core.config import NTFY_TOPIC
                 latest_scores = _extract_sports_scores(article_rows[0].get("title") or "") + _extract_sports_scores(article_rows[0].get("description") or "")
                 if latest_scores:
                     latest_score = latest_scores[0]
@@ -900,7 +900,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
 @celery_app.task
 def auto_summarize_task(cluster_ids: list[str] = None):
     """Dispatch summarization/synthesis tasks for top clusters or targeted clusters."""
-    from ai_engine import auto_summarize_top_clusters
+    from core.ai_engine import auto_summarize_top_clusters
 
     auto_summarize_top_clusters(target_cluster_ids=cluster_ids)
 
@@ -910,8 +910,8 @@ def refresh_cluster_centroid_task(cluster_id):
     """
     Recalculates and updates the semantic centroid for a cluster.
     """
-    from embeddings import get_cluster_embedding
-    from database import db_manager as db
+    from core.embeddings import get_cluster_embedding
+    from core.database import db_manager as db
 
     new_centroid = get_cluster_embedding(cluster_id)
     if new_centroid:
@@ -956,7 +956,7 @@ def extract_entities_task(*args, hours=24, target_clusters=None, **kwargs):
             entities = extract_entities(text, max_entities=8)
 
             if entities:
-                from entities import update_knowledge_graph
+                from core.entities import update_knowledge_graph
 
                 # update_knowledge_graph calculates local sentiment automatically
                 update_knowledge_graph(entities, context_text=text)
@@ -1181,7 +1181,7 @@ def generate_cluster_metadata_task(hours=24, target_clusters=None):
 def recluster_recent_articles_task(hours=24, limit=800):
     """Re-assign cluster IDs for recent articles using the current clustering logic."""
     try:
-        import clustering
+        import core.clustering as clustering
 
         hours = max(1, int(hours or 24))
         limit = max(1, int(limit or 800))
@@ -1433,7 +1433,7 @@ def backfill_cover_art_task():
 def generate_embeddings_task():
     """Generate pgvector embeddings for articles that don't have one yet."""
     try:
-        from embeddings import embed_recent_articles
+        from core.embeddings import embed_recent_articles
 
         embed_recent_articles()
     except Exception as e:
@@ -1444,7 +1444,7 @@ def generate_embeddings_task():
 def discover_storylines_task():
     """Discover evolving storylines from news clusters."""
     try:
-        from topic_discovery import discovery_engine
+        from core.topic_discovery import discovery_engine
 
         discovery_engine.run_discovery(lookback_hours=48)
         discovery_engine.refresh_storyline_metadata()
@@ -1456,15 +1456,15 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
     if not synthesis_text or not source_context:
         return True
 
-    from tasks.delivery import _extract_capitalized_phrases
+    from nlp.keywords import _extract_capitalized_phrases
 
 
 @celery_app.task
 def backfill_cluster_summaries_task(days=30, lang="sr"):
     """Generate cluster summaries for all existing clusters that don't have them yet."""
     try:
-        from config import AUTO_SUMMARIZE_MIN_SRC
-        from database import db_manager as db
+        from core.config import AUTO_SUMMARIZE_MIN_SRC
+        from core.database import db_manager as db
         
         # Get all clusters with articles but no summaries
         rows = db.execute(

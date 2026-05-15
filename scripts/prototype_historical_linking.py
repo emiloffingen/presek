@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from database import db_manager as db
+from core.database import db_manager as db
 import numpy as np
 
 logging.basicConfig(level=logging.INFO)

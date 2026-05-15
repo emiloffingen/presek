@@ -9,7 +9,7 @@ from collections import defaultdict
 from fastapi import APIRouter, Request, Query, HTTPException
 from fastapi.responses import JSONResponse, HTMLResponse
 
-from database import db_manager as db
+from core.database import db_manager as db
 from utils import (
     cached_response,
     set_cache,
@@ -21,8 +21,8 @@ from utils import (
     redis_client,
     build_source_reputation_rows,
 )
-from health import get_source_statuses, reset_source_policy
-from config import (
+from core.health import get_source_statuses, reset_source_policy
+from core.config import (
     BREAKING_SCORE_THRESHOLD,
     SOURCE_CREDIBILITY,
     DEFAULT_CREDIBILITY,
@@ -266,7 +266,7 @@ async def get_archive(
         ranked = [rank_articles_in_cluster(arts) for arts in clusters.values()]
 
         if q:
-            from embeddings import generate_query_embedding, parse_embedding_value
+            from core.embeddings import generate_query_embedding, parse_embedding_value
             import numpy as np
 
             query_vec = generate_query_embedding(q)

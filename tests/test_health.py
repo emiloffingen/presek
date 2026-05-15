@@ -1,6 +1,6 @@
 import json
 from unittest.mock import patch, MagicMock
-from health import (
+from core.health import (
     record_refresh,
     record_task_event,
     record_source_fetch,

@@ -5,7 +5,7 @@ import json
 import time
 from typing import List, Dict, Any
 import logging
-from config import BALANCED_COVERAGE_THRESHOLD, DEFAULT_CREDIBILITY
+from core.config import BALANCED_COVERAGE_THRESHOLD, DEFAULT_CREDIBILITY
 from utils.cache import redis_client
 from utils.db_helpers import get_source_registry
 from utils.time import _coerce_datetime

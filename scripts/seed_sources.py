@@ -1,6 +1,6 @@
-from database import db_manager as db
-from source_catalog import DEFAULT_SOURCE_CATALOG
-from config import (
+from core.database import db_manager as db
+from core.source_catalog import DEFAULT_SOURCE_CATALOG
+from core.config import (
     SOURCE_CREDIBILITY,
     SOURCE_CATEGORIES,
     SOURCE_LIMITS,

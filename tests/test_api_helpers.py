@@ -1,5 +1,5 @@
 import json
-from api_helpers import normalize_perspectives, build_citation_snippet
+from core.api_helpers import normalize_perspectives, build_citation_snippet
 from utils import get_source_trust_label
 
 

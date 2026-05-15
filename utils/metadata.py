@@ -1,5 +1,5 @@
 import json
-from database import db_manager
+from core.database import db_manager
 
 def get_metadata(key: str, default=None):
     res = db_manager.execute('SELECT value FROM system_metadata WHERE key = %s', (key,))

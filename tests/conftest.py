@@ -11,8 +11,11 @@ os.environ.setdefault("DATABASE_URL", "postgresql://localhost/presek_test")
 
 
 def _install_httpx_stub():
-    if "httpx" in sys.modules:
+    try:
+        import httpx
         return
+    except ImportError:
+        pass
 
     httpx = types.ModuleType("httpx")
 
@@ -74,7 +77,12 @@ def _install_httpx_stub():
 
     httpx.RequestError = RequestError
     httpx.HTTPStatusError = HTTPStatusError
+    httpx.HTTPError = RequestError
+    httpx.TimeoutException = RequestError
+    httpx.NetworkError = RequestError
+    httpx.__version__ = "0.28.1"
     httpx.Client = Client
+    httpx.Request = MagicMock
     httpx.AsyncClient = AsyncClient
     httpx.Response = MagicMock
     httpx.BaseTransport = MagicMock
@@ -85,13 +93,31 @@ def _install_httpx_stub():
 
 
 def _install_pil_stub():
-    if "PIL" in sys.modules:
+    try:
+        import PIL.Image
         return
+    except ImportError:
+        pass
 
     pil = types.ModuleType("PIL")
     image = types.ModuleType("PIL.Image")
     image_draw = types.ModuleType("PIL.ImageDraw")
     image_font = types.ModuleType("PIL.ImageFont")
+
+    class _Image:
+        def __init__(self, *args, **kwargs):
+            self.size = (100, 100)
+
+        def resize(self, *args, **kwargs):
+            return self
+
+        def convert(self, *args, **kwargs):
+            return self
+
+        def save(self, *args, **kwargs):
+            pass
+
+    image.Image = _Image
 
     class _Resampling:
         LANCZOS = "LANCZOS"
@@ -208,7 +234,7 @@ _install_starlette_stub()
 _install_trafilatura_stub()
 _install_playwright_stub()
 
-_REAL_DATABASE_MODULE = importlib.import_module("database")
+_REAL_DATABASE_MODULE = importlib.import_module("core.database")
 _MODULES_TO_RELOAD = (
     "api_fast",
     "routes.news",

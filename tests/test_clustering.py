@@ -1,6 +1,6 @@
 import datetime
 from unittest.mock import patch, MagicMock
-from clustering import (
+from core.clustering import (
     sr_stem,
     text_to_vector,
     get_cosine,

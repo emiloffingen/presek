@@ -33,32 +33,6 @@ from tasks.maintenance import (
     refresh_global_headlines_task,
 )
 
-# Explicitly import private delivery functions for test accessibility
-from tasks.delivery import (
-    _load_daily_brief_clusters,
-    _load_weekly_topic_engagement,
-    _load_weekly_source_engagement,
-    _load_weekly_cluster_engagement,
-    _load_active_delivery_rows,
-    _load_cluster_alert_material,
-    _load_delivery_kind_performance,
-    _load_breaking_target_performance,
-    _classify_alert_candidate,
-    _select_breaking_cluster_for_profile,
-    _record_delivery_tracking_event,
-    _send_ntfy_message,
-    _build_weekly_digest_sections,
-    _normalize_synced_profile_for_delivery,
-    _call_ai,
-    _build_daily_brief_context,
-    _select_profile_brief_clusters,
-    _select_profile_weekly_clusters,
-    _build_profile_briefing_message,
-    _build_profile_weekly_digest_message,
-    _load_weekly_digest_clusters,
-    _load_recent_breaking_clusters,
-)
-
 # Explicitly re-export for clarity and auto-discovery
 __all__ = [
     "crawl_article_task",
@@ -85,27 +59,4 @@ __all__ = [
     "send_profile_breaking_alerts_task",
     "send_newsletter_task",
     "run_prune_db",
-    # Private functions for test accessibility
-    "_load_daily_brief_clusters",
-    "_load_weekly_topic_engagement",
-    "_load_weekly_source_engagement",
-    "_load_weekly_cluster_engagement",
-    "_load_active_delivery_rows",
-    "_load_cluster_alert_material",
-    "_load_delivery_kind_performance",
-    "_load_breaking_target_performance",
-    "_classify_alert_candidate",
-    "_select_breaking_cluster_for_profile",
-    "_record_delivery_tracking_event",
-    "_send_ntfy_message",
-    "_build_weekly_digest_sections",
-    "_normalize_synced_profile_for_delivery",
-    "_call_ai",
-    "_build_daily_brief_context",
-    "_select_profile_brief_clusters",
-    "_select_profile_weekly_clusters",
-    "_build_profile_briefing_message",
-    "_build_profile_weekly_digest_message",
-    "_load_weekly_digest_clusters",
-    "_load_recent_breaking_clusters",
 ]

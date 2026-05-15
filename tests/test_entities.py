@@ -1,4 +1,4 @@
-import entities
+import core.entities as entities
 
 
 def test_extract_entities_prefers_full_known_name_over_fragment(monkeypatch):

@@ -8,14 +8,14 @@ if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
 from celery import chain, group
-from celery_app import celery_app
-from database import db_manager as db
-from crawler import crawler
-from image_service import image_service
-from health import record_refresh, record_task_event
+from core.celery_app import celery_app
+from core.database import db_manager as db
+from core.crawler import crawler
+from core.image_service import image_service
+from core.health import record_refresh, record_task_event
 from tasks.utils import invalidate_public_data_caches, redis_client, log, safe_async_run
-from tasks.notifier import Notifier
-from version import APP_VERSION_LABEL
+from core.services.notifier import SystemNotifier as Notifier
+from core.version import APP_VERSION_LABEL
 
 # Whitelist of allowed columns for dynamic UPDATE to prevent SQL injection
 _ALLOWED_ARTICLE_COLUMNS = {"full_content", "image_url"}
@@ -137,7 +137,7 @@ def run_ingestion():
         )
         return
     try:
-        from ingestion import ingest_feeds
+        from core.ingestion import ingest_feeds
 
         log.info(f"Presek {APP_VERSION_LABEL}: Starting unified ingestion cycle...")
         new_count, inserted_ids, errors = ingest_feeds()
@@ -247,7 +247,7 @@ def repair_single_source_task(name):
                                 (feed_url, name),
                                 fetch=False,
                             )
-                            from health import reset_source_policy
+                            from core.health import reset_source_policy
 
                             reset_source_policy(name)
                             return

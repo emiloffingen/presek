@@ -1,5 +1,5 @@
 from unittest.mock import patch
-from api_helpers import is_safe_url
+from core.api_helpers import is_safe_url
 
 
 @patch("socket.getaddrinfo")

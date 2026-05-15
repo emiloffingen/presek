@@ -1,6 +1,6 @@
 import numpy as np
 import json
-from database import db_manager as db
+from core.database import db_manager as db
 import datetime
 
 

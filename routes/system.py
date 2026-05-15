@@ -13,7 +13,7 @@ from pathlib import Path
 from prometheus_client import Counter
 
 import redis as _redis_lib
-from database import db_manager as db
+from core.database import db_manager as db
 from utils import cached_response, set_cache
 
 log = logging.getLogger("presek.routes.system")
@@ -47,9 +47,9 @@ except Exception as e:
     binary_redis_client = _redis_lib.from_url(
         "redis://localhost:6379/0", decode_responses=False
     )
-from health import _probe_database, _probe_redis
+from core.health import _probe_database, _probe_redis
 from nlp import generate_local_placeholder
-from version import version_payload
+from core.version import version_payload
 from utils import _resolve_public_ips, _peer_ip
 from .common import cleanAndDecode, _PROXY_ALLOWED_TYPES, _PROXY_MAX_BYTES
 from .security import validate_cluster_id
@@ -188,7 +188,7 @@ async def get_trending_route(lang: Optional[str] = "sr"):
     cached = cached_response(cache_key)
     if cached:
         return cached
-    from trending import get_trending
+    from core.trending import get_trending
 
     target_country = "MK" if lang == "mk" else "RS"
     words = get_trending(limit=20, country=target_country)
@@ -204,7 +204,7 @@ async def get_navigation(lang: Optional[str] = "sr"):
     if cached:
         return cached
 
-    from config import BREAKING_SCORE_THRESHOLD
+    from core.config import BREAKING_SCORE_THRESHOLD
     from utils import score_cluster
     from .intelligence import get_top_entities
 

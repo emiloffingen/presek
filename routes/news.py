@@ -9,7 +9,7 @@ from collections import defaultdict
 from fastapi import APIRouter, Request, Query, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse
 
-from database import db_manager as db
+from core.database import db_manager as db
 from utils import (
     score_cluster,
     calculate_reading_time,
@@ -24,7 +24,7 @@ from utils import (
     get_source_effective_weight,
     _coerce_datetime,
 )
-from config import (
+from core.config import (
     BREAKING_SCORE_THRESHOLD,
     API_MAX_PAGE,
     API_MAX_Q_LEN,
@@ -32,7 +32,7 @@ from config import (
 from nlp import (
     filter_cluster_tags,
 )
-from language import is_cyrillic_south_slavic
+from core.language import is_cyrillic_south_slavic
 from .common import cleanAndDecode, _news_row_limit
 
 from .security import validate_cluster_id
@@ -381,7 +381,7 @@ async def get_news(
             category = None
 
         if q:
-            from embeddings import generate_query_embedding
+            from core.embeddings import generate_query_embedding
 
             query_vec = generate_query_embedding(q)
             sort_by = "recent" if sort == "recent" else "hybrid"
@@ -732,7 +732,7 @@ async def semantic_search(
         return cached
 
     try:
-        from embeddings import generate_query_embedding
+        from core.embeddings import generate_query_embedding
 
         query_vec = generate_query_embedding(q)
         if not query_vec:

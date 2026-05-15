@@ -1,4 +1,4 @@
-from prompts import (
+from core.prompts import (
     SUMMARY_SYSTEM_PROMPT,
     SYNTHESIS_SYSTEM_PROMPT,
     DAILY_BRIEF_SYSTEM_PROMPT,

@@ -3,7 +3,7 @@ import time
 import asyncio
 import types
 from unittest.mock import patch, MagicMock
-from ingestion import (
+from core.ingestion import (
     normalize_headline,
     clean_rss_footer,
     normalize_feed_link,
@@ -77,7 +77,7 @@ def test_supported_display_language_rejects_albanian_rss_items():
 
 def test_normalize_headline_multiple_prefixes():
     """Only the first matching prefix should be stripped."""
-    from ingestion import normalize_headline
+    from core.ingestion import normalize_headline
 
     assert normalize_headline("FOTO: Galerija od nastanot") == "Galerija od nastanot"
     assert normalize_headline("GALERIJA: Sliki od Beograd") == "Sliki od Beograd"
@@ -88,7 +88,7 @@ def test_normalize_headline_multiple_prefixes():
 
 
 def test_normalize_headline_html_tags():
-    from ingestion import normalize_headline
+    from core.ingestion import normalize_headline
 
     assert normalize_headline("<p>Tekst</p>") == "Tekst"
     assert normalize_headline("<b>Vazno</b> <i>rezime</i>") == "Vazno rezime"
@@ -184,7 +184,7 @@ def test_extract_image_url_rejects_non_http_candidates():
 
 
 def test_ingest_updates_last_fetched_even_when_all_entries_are_filtered_out():
-    import ingestion
+    import core.ingestion as ingestion
 
     recent_rows = [
         {"link": "https://example.com/story", "source": "N1 Info", "title": "vest"},

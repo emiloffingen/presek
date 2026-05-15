@@ -1,4 +1,4 @@
-from ai_engine import clean_json_response
+from core.ai_engine import clean_json_response
 
 
 def test_clean_json_response_raw_text():

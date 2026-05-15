@@ -4,8 +4,8 @@ import sys
 
 sys.path.insert(0, os.getcwd())
 
-from database import db_manager as db
-from entities import ENTITY_ALIASES, KNOWN_ENTITIES
+from core.database import db_manager as db
+from core.entities import ENTITY_ALIASES, KNOWN_ENTITIES
 
 
 def merge_knowledge_entity(alias: str, canonical: str) -> None:

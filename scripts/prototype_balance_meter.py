@@ -1,7 +1,7 @@
 import asyncio
 import logging
-from database import db_manager as db
-from config import SOURCE_CATEGORIES
+from core.database import db_manager as db
+from core.config import SOURCE_CATEGORIES
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("presek.balance_prototype")
