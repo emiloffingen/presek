@@ -18,21 +18,12 @@ interface Props {
 	robots?: string;
 }
 
-// Debug: Check if Astro.request is available and what it contains
+// Use Host header to determine the correct domain for multi-site support
 const requestUrl = Astro.request ? new URL(Astro.request.url) : Astro.url;
 const hostHeader = Astro.request?.headers.get('host') || requestUrl.hostname;
-console.log('DEBUG: Astro.request available:', !!Astro.request);
-console.log('DEBUG: requestUrl.hostname:', requestUrl.hostname);
-console.log('DEBUG: Host header:', hostHeader);
-console.log('DEBUG: Astro.url.hostname:', Astro.url.hostname);
-
-// Use the Host header to determine the correct URL
 const effectiveUrl = new URL(requestUrl);
 effectiveUrl.hostname = hostHeader;
-console.log('DEBUG: Effective URL hostname:', effectiveUrl.hostname);
-
 const lang = getLangFromUrl(effectiveUrl);
-console.log('DEBUG: Detected lang:', lang);
 const t = useTranslations(lang);
 
 const {
@@ -46,6 +37,11 @@ const {
 	schema,
 	robots,
 } = Astro.props;
+
+// Also update the default description for Macedonian site
+const defaultDescription = lang === 'sr' 
+    ? "Presek je srpski informativni agregator koji sakuplja vesti iz svih medija, grupiše ih po temi i pokazuje kako različiti izvori izveštavaju o istom događaju."
+    : "Пресек е македонски информативен агрегатор кој собира вести од сите медиуми, ги групира по тема и покажува како различни извори известуваат за истиот настан.";
 
 const siteUrl = lang === 'sr' ? "https://presek.live" : "https://presek.mk";
 const siteName = lang === 'sr' ? "PRESEK.live" : "пресек.мк";
@@ -91,21 +87,21 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 		<meta name="apple-mobile-web-app-title" content={siteName} />
 		<meta name="generator" content={Astro.generator} />
-		<meta name="description" content={description} />
+		<meta name="description" content={description || defaultDescription} />
 		{robots && <meta name="robots" content={robots} />}
 		<link rel="canonical" href={canonicalUrl} />
 		<meta property="og:site_name" content={siteName} />
 		<meta property="og:locale" content={lang === 'sr' ? "sr_RS" : "mk_MK"} />
 		<meta property="og:type" content={type} />
 		<meta property="og:title" content={pageTitle} />
-		<meta property="og:description" content={description} />
+		<meta property="og:description" content={description || defaultDescription} />
 		<meta property="og:url" content={canonicalUrl} />
 		<meta property="og:image" content={imageUrl} />
 		<meta property="og:image:width" content="1200" />
 		<meta property="og:image:height" content="630" />
 		<meta name="twitter:card" content="summary_large_image" />
 		<meta name="twitter:title" content={pageTitle} />
-		<meta name="twitter:description" content={description} />
+		<meta name="twitter:description" content={description || defaultDescription} />
 		<meta name="twitter:image" content={imageUrl} />
 		
 		<title>{pageTitle}</title>
