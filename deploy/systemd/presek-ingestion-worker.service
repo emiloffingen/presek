@@ -11,7 +11,7 @@ Type=simple
 User=emiloffingen
 Environment=PYTHONPATH=/home/emiloffingen/presek-runtime/current
 WorkingDirectory=/home/emiloffingen/presek-runtime/current
-ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && set -a && source /home/emiloffingen/presek-runtime/shared/.env && set +a && exec /home/emiloffingen/presek-runtime/venv/bin/celery -A celery_app worker --loglevel=info --concurrency=1 --queues ingestion --max-memory-per-child=300000'
+ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && set -a && source /home/emiloffingen/presek-runtime/shared/.env && set +a && exec /home/emiloffingen/presek-runtime/venv/bin/celery -A core.celery_app worker --loglevel=info --concurrency=1 --queues ingestion --max-memory-per-child=300000'
 Restart=always
 RestartSec=5
 TimeoutStartSec=90
