@@ -140,7 +140,7 @@ const articleRows = (cluster?.articles || []).map((a: Article, idx: number, arr:
     }
 
     // 2. Individual Quality Signals
-    const isObjective = (a.credibility || 0) >= 1.4 || signal.trust_label === 'Visoko poverenje';
+    const isObjective = (a.credibility || 0) >= 1.4 || signal.trust_label === 'Visoko poverenje' || signal.trust_label === 'Висока доверба';
     const isSensational = (a.credibility || 0) < 0.8 && !isObjective;
 
     return {
@@ -360,7 +360,7 @@ const articleSchema = cluster ? {
 							/>
 
                             {/* FULL ARTICLE FROM FIRST SOURCE */}
-                            {mainArticle && mainArticle.summary && (
+                            {mainArticle && (mainArticle.full_content || mainArticle.summary) && (
                                 <div class="lead-article-full mt-12 p-8 bg-background border border-border/40 rounded-lg">
                                     <div class="flex items-center gap-3 mb-6 border-b border-border/40 pb-4">
                                         <Newspaper size={16} className="text-nyt-accent" />
@@ -370,12 +370,12 @@ const articleSchema = cluster ? {
                                         </span>
                                     </div>
                                     <div class="prose-editorial lead-article-content font-serif">
-                                        {mainArticle.summary.split('\n').filter((p: string) => p.trim()).map((paragraph: string, idx: number) => (
+                                        {(mainArticle.full_content || mainArticle.summary).split('\n').filter((p: string) => p.trim()).map((paragraph: string, idx: number) => (
                                             <p class:list={["lead-article-p", idx === 0 ? "drop-cap" : ""]} set:html={sanitizeHtml(paragraph)}></p>
                                         ))}
                                     </div>
                                     <div class="mt-8 pt-6 border-t border-border/40 text-right">
-                                        <a href={mainArticle.link} target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-nyt-accent hover:underline">
+                                        <a href={mainArticle.link} target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-nyt-accent hover:underline">
                                             Прочитај оригинал на {mainArticle.source} <Link2 size={12} />
                                         </a>
                                     </div>
