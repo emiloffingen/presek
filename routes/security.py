@@ -25,6 +25,159 @@ def _raise_http_error(status_code: int, detail: str):
     raise exc_cls(status_code=status_code, detail=detail)
 
 
+# Security Headers Middleware
+# =============================================================================
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Middleware to add security headers to all responses."""
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        # Generate a unique nonce for this request for CSP
+        csp_nonce = secrets.token_hex(16) 
+        
+        response = await call_next(request)
+
+        # Add security headers
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "no-referrer-when-downgrade"
+        # HSTS: Only enable preload in production with HTTPS
+        # In development, use shorter max-age without preload to avoid breaking local dev
+        if os.environ.get("ENV") == "production":
+            response.headers["Strict-Transport-Security"] = (
+                "max-age=63072000; includeSubDomains; preload"
+            )
+        else:
+            response.headers["Strict-Transport-Security"] = "max-age=300; includeSubDomains"
+
+        # Content Security Policy with nonce-based approach
+        # Nonce allows inline scripts/styles that include the nonce attribute
+        # External domains must be carefully reviewed - third-party scripts require
+        # either nonce support or explicit trust
+        # See: https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
+        csp = (
+            "default-src 'self'; "
+            f"script-src 'self' 'nonce-{csp_nonce}' https://cdn.jsdelivr.net; "
+            f"style-src 'self' 'nonce-{csp_nonce}' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
+            "font-src 'self' https://fonts.gstatic.com; "
+            "img-src 'self' data: https: blob: https://www.google-analytics.com https://www.googletagmanager.com; "
+            "connect-src 'self' https: https://www.google-analytics.com https://analytics.google.com wss:; "
+            "frame-src 'self'; "
+            "frame-ancestors 'none'; "
+            "base-uri 'self'; "
+            "form-action 'self'; "
+            "object-src 'none'; "
+            "media-src 'self' data: https:; "
+            "worker-src 'self' blob:"
+        )
+        response.headers["Content-Security-Policy"] = csp 
+        
+        # Set nonce in a cookie so frontend can access it for inline styles/scripts
+        # In production with HTTPS, secure=True prevents MITM attacks
+        # In development without HTTPS, secure=False is required
+        is_production = os.environ.get("ENV") == "production"
+        response.set_cookie(
+            key="csp-nonce",
+            value=csp_nonce,
+            httponly=True,
+            secure=is_production,
+            samesite="lax",
+            max_age=300  # 5 minutes - match typical page load time
+        )
+
+        # Permissions Policy
+        response.headers["Permissions-Policy"] = (
+            "accelerometer=(), camera=(), geolocation=(), gyroscope=(), "
+            "magnetometer=(), microphone=(), payment=(), usb=()"
+        )
+
+        # Cross-Origin policies
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+        response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
+        response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
+
+        # Additional security headers
+        response.headers["X-DNS-Prefetch-Control"] = "off"
+
+        return response
+
+# =============================================================================
+# Security Headers Middleware
+# =============================================================================
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Middleware to add security headers to all responses."""
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        # Generate a unique nonce for this request for CSP
+        csp_nonce = secrets.token_hex(16) 
+        
+        response = await call_next(request)
+
+        # Add security headers
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "no-referrer-when-downgrade"
+        # HSTS: Only enable preload in production with HTTPS
+        # In development, use shorter max-age without preload to avoid breaking local dev
+        if os.environ.get("ENV") == "production":
+            response.headers["Strict-Transport-Security"] = (
+                "max-age=63072000; includeSubDomains; preload"
+            )
+        else:
+            response.headers["Strict-Transport-Security"] = "max-age=300; includeSubDomains"
+
+        # Content Security Policy with nonce-based approach
+        # Nonce allows inline scripts/styles that include the nonce attribute
+        # External domains must be carefully reviewed - third-party scripts require
+        # either nonce support or explicit trust
+        # See: https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
+        csp = (
+            "default-src 'self'; "
+            f"script-src 'self' 'nonce-{csp_nonce}'; "
+            f"style-src 'self' 'nonce-{csp_nonce}'; "
+            "font-src 'self'; "
+            "img-src 'self' data: blob:; "
+            "connect-src 'self' wss:; "
+            "frame-src 'none'; "
+            "frame-ancestors 'none'; "
+            "base-uri 'self'; "
+            "form-action 'self'; "
+            "object-src 'none'; "
+            "media-src 'self' data:; "
+            "worker-src 'self' blob:"
+        )
+        response.headers["Content-Security-Policy"] = csp 
+        
+        # Set nonce in a cookie so frontend can access it for inline styles/scripts
+        # In production with HTTPS, secure=True prevents MITM attacks
+        # In development without HTTPS, secure=False is required
+        is_production = os.environ.get("ENV") == "production"
+        response.set_cookie(
+            key="csp-nonce",
+            value=csp_nonce,
+            httponly=True,
+            secure=is_production,
+            samesite="lax",
+            max_age=300  # 5 minutes - match typical page load time
+        )
+
+        # Permissions Policy
+        response.headers["Permissions-Policy"] = (
+            "accelerometer=(), camera=(), geolocation=(), gyroscope=(), "
+            "magnetometer=(), microphone=(), payment=(), usb=()"
+        )
+
+        # Cross-Origin policies
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+        response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
+        response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
+
+        # Additional security headers
+        response.headers["X-DNS-Prefetch-Control"] = "off"
+
+        return response
+
 # =============================================================================
 # Input Validation Helpers
 # =============================================================================
