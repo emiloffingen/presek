@@ -13,33 +13,32 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
     <div class="footer-top-border"></div>
     
     <div class="footer-main">
-        <div class="footer-branding">
-            <a href={l('/')} class="brand-link mb-8">
-                <Branding mode="full" class="footer-logo-premium" />
-            </a>
-            <p class="brand-ethos font-serif italic text-xl md:text-2xl leading-relaxed text-muted-foreground/90 mb-10">
-                {t('footer.ethos')}
-            </p>
+        <div class="footer-left-col">
+            <div class="footer-brand-wrap mb-6">
+                <a href={l('/')} class="brand-link">
+                    <Branding mode="full" class="footer-logo-premium" />
+                </a>
+                <p class="brand-ethos font-serif italic text-base md:text-lg leading-relaxed text-muted-foreground/90 mt-4 max-w-xl">
+                    {t('footer.ethos')}
+                </p>
+            </div>
             
-            <div class="footer-system-pulse p-5 bg-secondary/10 border border-border/40 rounded-xl max-w-md">
-                <div class="flex items-center justify-between mb-4">
+            <div class="footer-system-pulse p-4 bg-secondary/5 border border-border/30 rounded-lg max-w-sm">
+                <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center gap-2">
-                        <div class="relative flex h-2 w-2">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                        </div>
-                        <span class="font-sans text-[10px] font-black uppercase tracking-[0.2em] text-foreground">{t('footer.system_signal')}</span>
+                        <div class="status-indicator pulse-emerald"></div>
+                        <span class="font-sans text-[9px] font-black uppercase tracking-[0.2em] text-foreground">{t('footer.system_signal')}</span>
                     </div>
-                    <span class="font-sans text-[9px] font-black text-emerald-500 uppercase tracking-widest">{t('footer.active')}</span>
+                    <span class="font-sans text-[8px] font-black text-emerald-500 uppercase tracking-widest">{t('footer.active')}</span>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="flex items-center gap-2">
-                        <Zap size={14} className="text-nyt-accent" />
-                        <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('footer.synthesis_ok')}</span>
+                <div class="flex gap-4">
+                    <div class="flex items-center gap-1.5">
+                        <Zap size={10} className="text-nyt-accent" />
+                        <span class="text-[9px] font-bold text-muted-foreground uppercase">{t('footer.synthesis_ok')}</span>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <Globe size={14} className="text-nyt-accent" />
-                        <span class="text-[10px] font-bold text-muted-foreground">{t('footer.ingestion')}</span>
+                    <div class="flex items-center gap-1.5">
+                        <Globe size={10} className="text-nyt-accent" />
+                        <span class="text-[9px] font-bold text-muted-foreground uppercase">{t('footer.ingestion')}</span>
                     </div>
                 </div>
             </div>
@@ -49,7 +48,7 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
             <div class="dir-group">
                 <h4 class="dir-title">{t('nav.editorial')}</h4>
                 <div class="dir-links-stack">
-                    <a href={l('/about')}>{t('nav.mission')} <ArrowUpRight size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" /></a>
+                    <a href={l('/about')}>{t('nav.mission')}</a>
                     <a href={l('/editorial')}>{t('nav.standards')}</a>
                     <a href={l('/pulse')}>{t('nav.pulse')}</a>
                     <a href={l('/izvori')}>{t('nav.sources')}</a>
@@ -67,7 +66,7 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
             <div class="dir-group">
                 <h4 class="dir-title">{t('nav.contact')}</h4>
                 <div class="dir-links-stack">
-                    <a href={l('/contact')} class="flex items-center gap-2"><Mail size={12} /> {t('nav.contact')}</a>
+                    <a href={l('/contact')}>{t('nav.contact')}</a>
                     <a href={l('/privacy')}>{t('nav.privacy')}</a>
                     <a href={l('/terms')}>{t('nav.terms')}</a>
                 </div>
@@ -78,7 +77,7 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
     <div class="footer-legal">
         <div class="legal-left">
             <p class="copyright mb-2">© {new Date().getFullYear()} PRESEK.{lang === 'mk' ? 'MK' : 'RS'} · {t('footer.copyright_suffix')}</p>
-            <p class="legal-note font-sans text-[9px] text-muted-foreground uppercase tracking-widest opacity-60">
+            <p class="legal-note font-sans text-[8px] text-muted-foreground uppercase tracking-widest opacity-60 max-w-3xl">
                 {t('footer.legal_note')}
             </p>
         </div>
@@ -86,7 +85,7 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
             <a href="#top" class="scroll-top-premium">
                 <span class="font-black">{t('nav.top')}</span>
                 <div class="p-2 bg-foreground text-background rounded-full">
-                    <ArrowUpRight size={14} className="-rotate-45" />
+                    <ArrowUpRight size={12} className="-rotate-45" />
                 </div>
             </a>
         </div>
@@ -95,37 +94,32 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
 
 <style>
     .editorial-footer {
-        padding-top: 6rem;
+        padding-top: 4rem;
         padding-bottom: 2rem;
-        margin-top: 6rem;
+        margin-top: 4rem;
         border-top: 1px solid var(--border);
     }
 
     .footer-top-border {
-        height: 6px;
+        height: 4px;
         border-top: 1px solid var(--foreground);
-        border-bottom: 3px solid var(--foreground);
-        margin-bottom: 6rem;
+        border-bottom: 2px solid var(--foreground);
+        margin-bottom: 4rem;
     }
 
     .footer-main {
         display: grid;
-        grid-template-columns: 1.2fr 1fr;
-        gap: 8rem;
+        grid-template-columns: 1fr 1fr;
+        gap: 4rem;
         align-items: start;
     }
 
     .brand-link { display: block; width: fit-content; }
 
-    .brand-ethos {
-        max-width: 42rem;
-        text-wrap: balance;
-    }
-
     .footer-directory {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 4rem;
+        gap: 2rem;
     }
 
     .dir-group {
@@ -135,96 +129,91 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
 
     .dir-title {
         font-family: var(--font-sans);
-        font-size: 0.65rem;
+        font-size: 0.6rem;
         font-weight: 950;
         text-transform: uppercase;
-        letter-spacing: 0.2em;
+        letter-spacing: 0.15em;
         color: var(--foreground);
-        margin-bottom: 2rem;
-        padding-bottom: 1rem;
-        border-bottom: 2px solid var(--foreground);
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--border);
     }
 
     .dir-links-stack {
         display: flex;
         flex-direction: column;
-        gap: 1.2rem;
+        gap: 0.75rem;
     }
 
     .dir-group a {
         font-family: var(--font-sans);
-        font-size: 0.85rem;
+        font-size: 0.75rem;
         font-weight: 850;
         color: var(--muted-foreground);
         text-decoration: none;
-        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        transition: all 0.2s ease;
         width: fit-content;
-        letter-spacing: 0.02em;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
+        letter-spacing: 0.01em;
     }
 
     .dir-group a:hover {
         color: var(--foreground);
-        transform: translateX(6px);
+        transform: translateX(4px);
     }
 
     .footer-legal {
-        margin-top: 8rem;
-        padding-top: 3rem;
+        margin-top: 4rem;
+        padding-top: 2rem;
         border-top: 1px solid var(--border);
         display: flex;
         justify-content: space-between;
-        align-items: center;
+        align-items: flex-end;
     }
 
     .copyright {
         font-family: var(--font-sans);
-        font-size: 0.7rem;
+        font-size: 0.65rem;
         font-weight: 950;
         color: var(--foreground);
         text-transform: uppercase;
-        letter-spacing: 0.1em;
+        letter-spacing: 0.05em;
+    }
+
+    .status-indicator { width: 6px; height: 6px; border-radius: 50%; }
+    .pulse-emerald { background: #10b981; box-shadow: 0 0 6px #10b981; animation: footer-pulse 2s infinite; }
+    
+    @keyframes footer-pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(1.1); }
     }
 
     .scroll-top-premium {
         display: flex;
         align-items: center;
-        gap: 1rem;
+        gap: 0.75rem;
         text-decoration: none;
         color: var(--foreground);
         font-family: var(--font-sans);
-        font-size: 0.6rem;
-        letter-spacing: 0.2em;
+        font-size: 0.55rem;
+        letter-spacing: 0.15em;
         transition: all 0.3s ease;
     }
 
     .scroll-top-premium:hover {
         opacity: 0.7;
-        transform: translateY(-4px);
+        transform: translateY(-2px);
     }
 
-    @media (max-width: 1200px) {
-        .footer-main { grid-template-columns: 1fr; gap: 5rem; }
-        .brand-ethos { max-width: 100%; }
+    @media (max-width: 1024px) {
+        .footer-main { grid-template-columns: 1fr; gap: 3rem; }
+        .footer-directory { gap: 1.5rem; }
     }
 
-    @media (max-width: 768px) {
-        .editorial-footer { padding-top: 3rem; margin-top: 3rem; padding-bottom: 3rem; }
-        .footer-top-border { margin-bottom: 3rem; }
-        .footer-main { gap: 3rem; }
-        .brand-link { margin-bottom: 1.5rem !important; }
-        .brand-ethos { font-size: 1.1rem; margin-bottom: 2rem; line-height: 1.5; }
-        .footer-system-pulse { padding: 1.25rem; }
-        
-        .footer-directory { grid-template-columns: repeat(2, 1fr); gap: 2.5rem; }
-        .dir-group:last-child { grid-column: span 2; border-top: 1px solid var(--border); padding-top: 1.5rem; margin-top: 0.5rem; }
-        .dir-title { margin-bottom: 0.75rem; padding-bottom: 0.5rem; }
-        .dir-links-stack { gap: 0.8rem; }
-
-        .footer-legal { margin-top: 4rem; padding-top: 2rem; flex-direction: column; gap: 2rem; align-items: flex-start; }
-        .legal-right { width: 100%; display: flex; justify-content: center; margin-top: 1rem; }
-        .copyright { font-size: 0.65rem; }
+    @media (max-width: 640px) {
+        .editorial-footer { padding-top: 2.5rem; margin-top: 2.5rem; }
+        .footer-top-border { margin-bottom: 2.5rem; }
+        .footer-directory { grid-template-columns: repeat(2, 1fr); }
+        .dir-group:last-child { grid-column: span 2; }
+        .footer-legal { flex-direction: column; align-items: flex-start; gap: 1.5rem; }
     }
 </style>
