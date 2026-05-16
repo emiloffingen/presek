@@ -5,7 +5,7 @@ import Footer from '../../components/Footer.astro';
 import { WifiOff, BookOpen, Clock } from 'lucide-react';
 ---
 
-<Layout title="Веза је изгубљена — Пресек" robots="noindex">
+<Layout title="Врската е прекината — Пресек" robots="noindex">
     <NYTHeader />
 
     <main class="site-layout broadsheet-layout py-[var(--page-py)] min-h-[60vh] flex flex-col items-center justify-center text-center">
@@ -18,30 +18,30 @@ import { WifiOff, BookOpen, Clock } from 'lucide-react';
             </div>
         </div>
 
-        <h1 class="font-serif text-3xl md:text-5xl font-black mb-6 tracking-tight">Веза је прекинута</h1>
+        <h1 class="font-serif text-3xl md:text-5xl font-black mb-6 tracking-tight">Врската е прекината</h1>
         <p class="max-w-xl font-nyt-body text-xl text-secondary-foreground leading-relaxed mb-10">
-            Тренутно немате активну интернет везу. Ипак, можете приступити садржају који ваш уређај већ има сачуван у својој меморији.
+            Во моментот немате активна интернет врска. Сепак, можете да пристапите до содржината што вашиот уред веќе ја има зачувано во својата меморија.
         </p>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
-            <a href="/" class="offline-action-card">
+            <a href="/mk" class="offline-action-card">
                 <Clock size={24} className="text-nyt-accent" />
                 <div class="text-left">
-                    <h3 class="font-black text-xs uppercase tracking-widest mb-1">Отвори почетну</h3>
-                    <p class="text-[11px] text-muted-foreground">Прикажи последње учитане вести</p>
+                    <h3 class="font-black text-xs uppercase tracking-widest mb-1">Отвори почетна</h3>
+                    <p class="text-[11px] text-muted-foreground">Прикажи ги последно вчитаните вести</p>
                 </div>
             </a>
-            <a href="/briefing" class="offline-action-card">
+            <a href="/mk/briefing" class="offline-action-card">
                 <BookOpen size={24} className="text-nyt-accent" />
                 <div class="text-left">
-                    <h3 class="font-black text-xs uppercase tracking-widest mb-1">Дневни брифинг</h3>
-                    <p class="text-[11px] text-muted-foreground">Прочитај последњи сублимат</p>
+                    <h3 class="font-black text-xs uppercase tracking-widest mb-1">Дневен брифинг</h3>
+                    <p class="text-[11px] text-muted-foreground">Прочитај го последниот сублимат</p>
                 </div>
             </a>
         </div>
 
         <button onclick="window.location.reload()" class="mt-12 px-8 py-3 bg-foreground text-background font-black uppercase text-[10px] tracking-[0.2em] hover:bg-nyt-accent transition-colors">
-            ОБНОВИ ВЕЗУ
+            ОБНОВИ ВРСКА
         </button>
     </main>
 
@@ -49,5 +49,22 @@ import { WifiOff, BookOpen, Clock } from 'lucide-react';
 </Layout>
 
 <style>
-... [KEEP ORIGINAL STYLES]
+    .offline-action-card {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        padding: 1.5rem;
+        background: var(--secondary);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        text-decoration: none;
+        color: inherit;
+        transition: all 0.2s;
+    }
+
+    .offline-action-card:hover {
+        transform: translateY(-4px);
+        border-color: var(--nyt-accent);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    }
 </style>

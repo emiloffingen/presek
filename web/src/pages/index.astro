@@ -415,9 +415,9 @@ function getBriefingSnippet(content: string) {
                 {isHomepage && consensusClusters.length > 0 && (
                     <div class="section-wrapper consensus-section bg-secondary/10 p-8 border-y border-border/40">
                         <div class="section-heading-row mb-8">
-                            <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent block mb-2">SISTEMSKI KONSENZUS</span>
-                            <h2 class="font-serif text-3xl font-black italic">Šira Slika</h2>
-                            <p class="text-sm text-muted-foreground mt-2">Događaji o kojima izveštava veliki broj medija sa visokim stepenom slaganja.</p>
+                            <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent block mb-2">{t('home.consensus_title')}</span>
+                            <h2 class="font-serif text-3xl font-black italic">{t('home.consensus_subtitle')}</h2>
+                            <p class="text-sm text-muted-foreground mt-2">{t('home.consensus_desc')}</p>
                         </div>
                         <div class="news-feed-grid news-feed-grid-compact">
                             {consensusClusters.map((cluster: NewsCluster) => (
@@ -430,8 +430,8 @@ function getBriefingSnippet(content: string) {
 				{feedClusters.length > 0 && (
 					<div class="section-wrapper">
 						<DevelopmentsSection
-							title="Teme u razvoju"
-							note="Aktuelni narativi sa izraženom medijskom dinamikom i aktivnom uredničkom sintezom."
+							title={t('home.developing_title')}
+							note={t('home.developing_desc')}
 							developmentsFeatured={developmentsFeatured}
 							developmentsCompact={developmentsCompact}
                             tone="developing"
@@ -448,8 +448,8 @@ function getBriefingSnippet(content: string) {
 				{globalClusters.length > 0 && (
 					<div class="section-wrapper">
 						<DevelopmentsSection
-							title="Globalna Scena"
-							note="Sistemski pregled međunarodnih dešavanja od vodećih novinskih agencija."
+							title={t('home.global_title')}
+							note={t('home.global_desc')}
 							developmentsFeatured={globalClusters.slice(0, 2)}
 							developmentsCompact={globalClusters.slice(2)}
                             tone="global"
@@ -460,8 +460,8 @@ function getBriefingSnippet(content: string) {
 				{wireClusters.length > 0 && (
 					<div class="section-wrapper">
 						<DevelopmentsSection
-							title="Poslednje na traci"
-							note="Izveštaji u realnom vremenu: pojedinačne objave sa terena."
+							title={t('home.wire_title')}
+							note={t('home.wire_desc')}
 							developmentsFeatured={wireClusters}
 							developmentsCompact={[]}
 							variant="wire"

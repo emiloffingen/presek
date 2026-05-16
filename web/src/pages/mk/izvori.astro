@@ -6,11 +6,11 @@ import IzvoriPage from '../../components/IzvoriPage';
 import Footer from '../../components/Footer.astro';
 ---
 
-<Layout title="izvori" description="Kompleten pregled na site mediumski izvori sto Presek im sledi — rangirani po aktivnost i doverlivost.">
+<Layout title="Медиумски извори — Пресек" description="Комплетен преглед на сите медиумски извори што Пресек ги следи — рангирани по активност и доверливост.">
     <NYTHeader />
 
 	<main class="site-layout broadsheet-layout py-[var(--page-py)]">
-		<Breadcrumbs items={[{ label: "izvori" }]} />
+		<Breadcrumbs items={[{ label: "извори" }]} />
 		<IzvoriPage client:load />
 	</main>
 	<Footer />

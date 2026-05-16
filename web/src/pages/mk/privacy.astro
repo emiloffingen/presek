@@ -7,8 +7,8 @@ import { Shield, Lock, EyeOff, Globe } from 'lucide-react';
 ---
 
 <Layout 
-    title="Политика приватности — Пресек" 
-    description="Транспарентност у обради података: Како Пресек штити ваше информације."
+    title="Политика на приватност — Пресек" 
+    description="Транспарентност во обработката на податоците: Како Пресек ги штити вашите информации."
 >
     <NYTHeader />
     <main class="site-layout broadsheet-layout py-[var(--page-py)]">
@@ -17,10 +17,10 @@ import { Shield, Lock, EyeOff, Globe } from 'lucide-react';
                 <span class="masthead-kicker">ПРАВНО И ПРИВАТНОСТ</span>
             </div>
             <div class="masthead-main">
-                <h1 class="masthead-title">Политика <span>Приватности</span></h1>
+                <h1 class="masthead-title">Политика на <span>Приватност</span></h1>
             </div>
             <p class="masthead-intro">
-                Ваша приватност је у основи наше архитектуре. Ова страница објашњава како третирамо техничке сигнале и везе ка спољним изворима.
+                Вашата приватност е во основата на нашата архитектура. Оваа страница објаснува како ги третираме техничките сигнали и врските кон надворешни извори.
             </p>
         </header>
 
@@ -28,46 +28,44 @@ import { Shield, Lock, EyeOff, Globe } from 'lucide-react';
             <div class="broadsheet-main">
                 <article class="prose-editorial">
                     <p class="first-paragraph">
-                        Пресек је сервис за агрегирање и контекстуализацију вести који ради на принципима максималне анонимности за све кориснике. За разлику од друштвених мрежа, ми не градимо личне профиле и не пратимо вашу активност ван оквира платформе.
+                        Пресек е сервис за агрегирање и контекстуализација на вести кој работи на принципите на максимална анонимност за сите корисници. За разлика од социјалните мрежи, ние не градиме лични профили и не ја следиме вашата активност надвор од рамките на платформата.
                     </p>
 
-                    <h2 class="section-title-italic">1. Прикупљање информација</h2>
+                    <h2 class="section-title-italic">1. Прибирање информации</h2>
                     <p>
-                        Пресек не захтева регистрацију, име, презиме или имејл за основну употребу сервиса. Већина података који омогућавају персонализацију (као што су избор омиљених тема или тамна тема) чувају се локално на вашем уређају (LocalStorage) и никада не напуштају ваше окружење.
+                        Пресек не бара регистрација, име, презиме или е-пошта за основна употреба на сервисот. Повеќето податоци кои овозможуваат персонализација (како што се изборот на омилени теми или темната тема) се чуваат локално на вашиот уред (LocalStorage) и никогаш не ја напуштаат вашата околина.
                     </p>
 
-                    <h2 class="section-title-italic">2. Оглашавање и колачићи</h2>
+                    <h2 class="section-title-italic">2. Огласување и колачиња</h2>
                     <p>
-                        За финансијску одрживост пројекта, Пресек може користити спољне рекламне партнере. Ти партнери могу користити колачиће или сличне технологије за приказивање и мерење огласа.
+                        За финансиска одржливост на проектот, Пресек може да користи надворешни рекламни партнери. Тие партнери можат да користат колачиња или слични технологии за прикажување и мерење на огласи.
                     </p>
                     <ul class="editorial-list">
-                        <li><strong>Персонализација:</strong> Коришћење колачића може омогућити приказивање релевантнијих огласа.</li>
-                        <li><strong>Контрола:</strong> Можете ограничити персонализоване огласе кроз подешавања приватности у вашем прегледачу.</li>
+                        <li><strong>Персонализација:</strong> Користењето колачиња може да овозможи прикажување на порелевантни огласи.</li>
+                        <li><strong>Контрола:</strong> Можете да ги ограничите персонализираните огласи преку подесувањата за приватност во вашиот прелистувач.</li>
                     </ul>
 
-                    <h2 class="section-title-italic">3. Спољни извори</h2>
+                    <h2 class="section-title-italic">3. Надворешни извори</h2>
                     <p>
-                        Пресек садржи везе до спољних медија. Када кликнете на „Оригинална објава“, ви напуштате нашу платформу и улазите у домен одговарајућег медија, чија Политика приватности је ван наше контроле.
-                    </p>
-
-                    <h2 class="section-title-italic">4. Аналитика</h2>
-                    <p>
-                        Користимо анонимне, агрегиране податке како бисмо идентификовали најпосећеније категорије и оптимизовали перформансе сервера. Ови подаци се користе искључиво у техничке сврхе.
+                        Пресек содржи врски до надворешни медиуми. Кога ќе кликнете на „Оригинална објава“, вие ја напуштате нашата платформа и влегувате во доменот на соодветниот медиум, чија Политика на приватност е надвор од наша контрола.
                     </p>
                 </article>
             </div>
 
             <aside class="broadsheet-rail">
                 <section class="rail-block rail-block-alt">
-                    <p class="rail-kicker">Безбедност</p>
-                    <h3 class="rail-title">НАША ЗАЛОЖБА</h3>
-                    <p class="rail-text">Нема профила. Нема праћења по мрежи. Само чисте информације организоване за јасан преглед.</p>
+                    <div class="flex items-center gap-2 mb-4">
+                        <Lock size={16} className="text-nyt-accent" />
+                        <span class="font-sans text-[10px] font-black uppercase tracking-widest">БЕЗБЕДНОСТ</span>
+                    </div>
+                    <p class="rail-text">Користиме SSL енкрипција за сите врски кон нашиот сервер.</p>
                 </section>
-
-                <div class="rail-meta-box">
-                    <p class="text-[10px] font-black uppercase tracking-widest mb-4 opacity-50">АЖУРИРАНО</p>
-                    <p class="text-xs">Последња измена: 25. април 2026.</p>
-                </div>
+                
+                <section class="rail-block border border-border p-6">
+                    <p class="rail-kicker">контакт</p>
+                    <h3 class="rail-title">ПРАШАЊА</h3>
+                    <p class="rail-text">Доколку имате прашања во врска со приватноста, пишете ни на <a href="mailto:privacy@presek.live" class="text-nyt-accent font-bold">privacy@presek.live</a></p>
+                </section>
             </aside>
         </div>
     </main>
@@ -90,16 +88,17 @@ import { Shield, Lock, EyeOff, Globe } from 'lucide-react';
 
     .prose-editorial { font-family: var(--font-nyt-body); font-size: 1.1rem; line-height: 1.75; color: var(--secondary-foreground); }
     .first-paragraph::first-letter { float: left; font-family: var(--font-serif); font-size: 5rem; font-weight: 900; line-height: 0.8; padding-top: 0.5rem; padding-right: 0.75rem; color: var(--foreground); }
-    .section-title-italic { font-family: var(--font-serif); font-size: 1.8rem; font-weight: 900; font-style: italic; margin-top: 3rem; margin-bottom: 1.5rem; color: var(--foreground); }
 
-    .editorial-list { list-style: none; padding: 0; margin-top: 1.5rem; }
-    .editorial-list li { margin-bottom: 1rem; padding-left: 1.5rem; position: relative; }
-    .editorial-list li::before { content: "—"; position: absolute; left: 0; color: var(--nyt-accent); font-weight: 900; }
+    .editorial-divider { height: 1px; background: var(--border); margin: 3rem 0; }
+    .section-title-italic { font-family: var(--font-serif); font-size: 1.75rem; font-weight: 900; font-style: italic; margin-bottom: 1.5rem; }
+
+    .editorial-list { list-style: none; padding: 0; margin-bottom: 2.5rem; }
+    .editorial-list li { margin-bottom: 1rem; position: relative; padding-left: 1.5rem; }
+    .editorial-list li::before { content: "—"; position: absolute; left: 0; color: var(--nyt-accent); }
 
     .rail-block { margin-bottom: 2.5rem; }
     .rail-block-alt { padding: 1.25rem; background: var(--secondary); border-radius: 4px; }
     .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
     .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
     .rail-text { font-family: var(--font-nyt-body); font-size: 0.9rem; line-height: 1.5; color: var(--secondary-foreground); }
-    .rail-meta-box { padding: 1.5rem; border: 1px solid var(--border); }
 </style>

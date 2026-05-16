@@ -3,24 +3,24 @@ import Layout from '../../layouts/Layout.astro';
 import NYTHeader from '../../components/NYTHeader.astro';
 import Footer from '../../components/Footer.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
-import { Scale, FileText, AlertCircle } from 'lucide-react';
+import { Scale, FileText, AlertTriangle } from 'lucide-react';
 ---
 
 <Layout 
-    title="Услови коришћења — Пресек" 
-    description="Правни оквири за коришћење платформе Пресек.ливе и заштита садржаја."
+    title="Услови на користење — Пресек" 
+    description="Правни рамки и правила за користење на платформата Пресек."
 >
     <NYTHeader />
     <main class="site-layout broadsheet-layout py-[var(--page-py)]">
         <header class="editorial-masthead mb-12">
             <div class="masthead-top">
-                <span class="masthead-kicker">ПРАВНО И РЕГУЛАТИВА</span>
+                <span class="masthead-kicker">ПРАВНИ НОРМИ</span>
             </div>
             <div class="masthead-main">
-                <h1 class="masthead-title">Услови <span>Коришћења</span></h1>
+                <h1 class="masthead-title">Услови на <span>Користење</span></h1>
             </div>
             <p class="masthead-intro">
-                Упутства за коришћење нашег сервиса и дефинисање одговорности између платформе, издавача и читалаца.
+                Користењето на Пресек подлежи на одредени правила кои обезбедуваат интегритет на сервисот и заштита на правата на изворите на информации.
             </p>
         </header>
 
@@ -28,41 +28,43 @@ import { Scale, FileText, AlertCircle } from 'lucide-react';
             <div class="broadsheet-main">
                 <article class="prose-editorial">
                     <p class="first-paragraph">
-                        Пресек је информативни агрегатор који прикупља јавно доступне садржаје из српских и међународних медија. Коришћењем наше платформе, прихватате услове наведене испод који регулишу употребу аутоматски генерисаних података и приступ спољним изворима.
+                        Добредојдовте на Пресек. Со пристапувањето до нашиот сервис, вие се согласувате со овие Услови на користење. Ве молиме внимателно прочитајте ги правилата кои ја дефинираат нашата платформа како дигитален агрегатор за синтеза.
                     </p>
 
-                    <h2 class="section-title-italic">1. Ауторска права</h2>
+                    <h2 class="section-title-italic">1. Природа на сервисот</h2>
                     <p>
-                        Сви новинарски текстови, фотографије и мултимедијални садржаји приказани на Пресеку су власништво њихових оригиналних издавача. Пресек приказује само наслове, кратке изводе и везе ка оригиналним страницама. Дизајн, код и аутоматски генерисани сублимати су власништво Пресека.
+                        Пресек е технолошка алатка која автоматски собира, групира и контекстуализира јавно достапни вести. Пресек не е сопственик на авторските права на оригиналните статии и секогаш упатува на изворниот медиум за целосен увид во содржината.
                     </p>
 
-                    <h2 class="section-title-italic">2. Аутоматизовани садржаји</h2>
+                    <h2 class="section-title-italic">2. Интелектуална сопственост</h2>
                     <p>
-                        Сублимати и анализе на Пресеку генерисани су путем напредних алгоритама за језичку обраду. Иако тежимо максималној тачности, ови садржаји могу садржати грешке и не представљају уредничко мишљење тима. За верификацију чињеница, увек користите оригиналне изворе.
+                        Сите трговски марки, наслови и содржини на вестите им припаѓаат на нивните соодветни сопственици (медиумските куќи). Пресек прикажува само наслови и кратки извадоци (snippets) во согласност со принципите на фер употреба и медиумско известување.
                     </p>
 
-                    <h2 class="section-title-italic">3. Ограничења</h2>
+                    <h2 class="section-title-italic">3. Одговорност за содржината</h2>
                     <p>
-                        Забрањено је свако аутоматско преузимање (scraping) садржаја са Пресека без претходне дозволе. Платформа је намењена за личну, некомерцијалну употребу и информисање шире јавности.
+                        Бидејќи содржината се собира автоматски, Пресек не може да гарантира за точноста на информациите објавени од изворните медиуми. Нашата улога е да мапираме како различни медиуми известуваат, а не да ја верификуваме апсолутната вистина на секој поединечен навод.
                     </p>
 
-                    <h2 class="section-title-italic">4. Одговорност</h2>
+                    <h2 class="section-title-italic">4. Забранета употреба</h2>
                     <p>
-                        Пресек не сноси одговорност за тачност информација објављених од стране трећих лица (медија) нити за евентуалне штете настале коришћењем аутоматских анализа. Наша улога је искључиво агрегаторска и технолошка.
+                        Забрането е секое автоматско извлекување податоци (scraping) од Пресек без изречна писмена дозвола. Користењето на сервисот е дозволено само за лични и информативни цели.
                     </p>
                 </article>
             </div>
 
             <aside class="broadsheet-rail">
                 <section class="rail-block rail-block-alt">
-                    <p class="rail-kicker">Напомена</p>
-                    <h3 class="rail-title">ПРАВНИ СТАТУС</h3>
-                    <p class="rail-text">Пресек није медијски издавач, већ технолошки алат за транспарентност и организацију података.</p>
+                    <div class="flex items-center gap-2 mb-4">
+                        <Scale size={16} className="text-nyt-accent" />
+                        <span class="font-sans text-[10px] font-black uppercase tracking-widest">ПРАВНА РАМКА</span>
+                    </div>
+                    <p class="rail-text">Овие услови се предмет на промена со цел усогласување со новите технолошки стандарди.</p>
                 </section>
 
-                <div class="rail-meta-box">
-                    <p class="text-[10px] font-black uppercase tracking-widest mb-4 opacity-50">АЖУРИРАНО</p>
-                    <p class="text-xs">Последња измена: 25. април 2026.</p>
+                <div class="rail-meta-box p-6 border border-border">
+                    <p class="text-[10px] font-black uppercase tracking-widest mb-4 opacity-50">АЖУРИРАЊЕ</p>
+                    <p class="text-xs leading-relaxed italic">Последна промена: Мај 2026 година.</p>
                 </div>
             </aside>
         </div>
@@ -86,12 +88,11 @@ import { Scale, FileText, AlertCircle } from 'lucide-react';
 
     .prose-editorial { font-family: var(--font-nyt-body); font-size: 1.1rem; line-height: 1.75; color: var(--secondary-foreground); }
     .first-paragraph::first-letter { float: left; font-family: var(--font-serif); font-size: 5rem; font-weight: 900; line-height: 0.8; padding-top: 0.5rem; padding-right: 0.75rem; color: var(--foreground); }
-    .section-title-italic { font-family: var(--font-serif); font-size: 1.8rem; font-weight: 900; font-style: italic; margin-top: 3rem; margin-bottom: 1.5rem; color: var(--foreground); }
+
+    .editorial-divider { height: 1px; background: var(--border); margin: 3rem 0; }
+    .section-title-italic { font-family: var(--font-serif); font-size: 1.75rem; font-weight: 900; font-style: italic; margin-bottom: 1.5rem; }
 
     .rail-block { margin-bottom: 2.5rem; }
     .rail-block-alt { padding: 1.25rem; background: var(--secondary); border-radius: 4px; }
-    .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
-    .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
     .rail-text { font-family: var(--font-nyt-body); font-size: 0.9rem; line-height: 1.5; color: var(--secondary-foreground); }
-    .rail-meta-box { padding: 1.5rem; border: 1px solid var(--border); }
 </style>

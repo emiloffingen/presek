@@ -3,11 +3,16 @@ import Layout from '../../layouts/Layout.astro';
 import NYTHeader from '../../components/NYTHeader.astro';
 import Footer from '../../components/Footer.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+
+const hostHeader = Astro.request?.headers.get('host');
+const lang = getLangFromUrl(Astro.url, hostHeader);
+const t = useTranslations(lang);
 ---
 
 <Layout
-    title="О Пројекту — Пресек"
-    description="Пресек је српски информативни агрегатор који вам омогућава да видите целокупну слику."
+    title="За проектот — Пресек"
+    description="Пресек е македонски информативен агрегатор кој ви овозможува да ја видите целосната слика."
 >
     <NYTHeader />
     <main class="site-layout broadsheet-layout py-[var(--page-py)]">
@@ -16,10 +21,10 @@ import Breadcrumbs from '../../components/Breadcrumbs.astro';
                 <span class="masthead-kicker">МИСИЈА И ВИЗИЈА</span>
             </div>
             <div class="masthead-main">
-                <h1 class="masthead-title">Јаснији преглед <span>дана</span></h1>
+                <h1 class="masthead-title">Појасен преглед на <span>денот</span></h1>
             </div>
             <p class="masthead-intro">
-                Пресек је дигитални сервис за медијску транспарентност и јавни увид. Наша мисија је да вратимо јасноћу у информативни простор кроз мапирање плурализма.
+                Пресек е дигитален сервис за медиумска транспарентност и јавен увид. Нашата мисија е да ја вратиме јасноста во информативниот простор преку мапирање на плурализмот.
             </p>
         </header>
 
@@ -27,24 +32,24 @@ import Breadcrumbs from '../../components/Breadcrumbs.astro';
             <div class="broadsheet-main">
                 <article class="prose-editorial">
                     <p class="first-paragraph">
-                        У данима препуним понављања, претеривања и брзих наслова, Пресек служи као дисциплинован преглед онога што се заправо дешава. Сличне објаве групише у „кластере“ да бисте једну причу могли видети кроз више извора, уместо да ловите комадић по комадић.
+                        Во деновите преполни со повторувања, претерувања и брзи наслови, Пресек служи како дисциплиниран преглед на она што навистина се случува. Сличните објави ги групира во „кластери“ за да можете една приказна да ја видите преку повеќе извори, наместо да го ловите секој дел посебно.
                     </p>
 
                     <p>
-                        Уместо да тврди да замењује редакције, Пресек ради нешто корисно: даје вам структуру. Из те структуре проистичу неколико кључних слојева који обликују вашу информисаност.
+                        Наместо да тврди дека ги заменува редакциите, Пресек прави нешто корисно: ви дава структура. Од таа структура произлегуваат неколку кључни слоеви кои ја обликуваат вашата информираност.
                     </p>
 
                     <div class="editorial-divider"></div>
 
-                    <h2 class="section-title-italic">Кључни стубови</h2>
+                    <h2 class="section-title-italic">Клучни столбови</h2>
                     <ul class="editorial-list">
-                        <li><strong>Системске синтезе:</strong> Аутоматизовани уреднички преглед дана који уједињује чињенице са свих доступних извора у једну кохерентну причу.</li>
-                        <li><strong>Медијски плурализам:</strong> Прецизно мапирање различитих углова извештавања, идентификовање информативних празнина и тоналних разлика између редакција.</li>
-                        <li><strong>Дневни брифинг:</strong> Дестиловано јутарње издање тема које носе највећу тежину јавног интереса.</li>
+                        <li><strong>Системски синтези:</strong> Автоматизиран уреднички преглед на денот кој ги обединува фактите од сите достапни извори во една кохерентна приказна.</li>
+                        <li><strong>Медиумски плурализам:</strong> Прецизно мапирање на различни агли на известување, идентификување на информативни празнини и тонални разлики меѓу редакциите.</li>
+                        <li><strong>Дневен брифинг:</strong> Дестилирано утринско издание на теми кои имаат најголема тежина за јавниот интерес.</li>
                     </ul>
 
                     <p>
-                        Намера је једноставна: мање шума, више контекста. Пресек вам не каже шта да мислите; помаже вам да брже видите шта се дешава, ко како извештава и шта још увек остаје нејасно.
+                        Намерата е едноставна: помалку шум, повеќе контекст. Пресек не ви кажува што да мислите; ви помага побрзо да видите што се случува, кој како известува и што сè уште останува нејасно.
                     </p>
 
                     <div class="editorial-divider"></div>
@@ -53,11 +58,11 @@ import Breadcrumbs from '../../components/Breadcrumbs.astro';
                     <div class="two-col-grid">
                         <div class="grid-item">
                             <h3>Архитектура</h3>
-                            <p>Пресек 5.48 развијен је од стране тима инжењера посвећених обради српског језика. Систем користи напредни систем дубоке обраде како би гарантовао вишу прецизност и независну уредничку синтезу вести.</p>
+                            <p>Пресек 5.48 е развиен од страна на тим инженери посветени на обработка на македонскиот јазик. Системот користи напреден систем за длабока обработка со цел да гарантира повисока прецизност и независна уредничка синтеза на вестите.</p>
                         </div>
                         <div class="grid-item">
                             <h3>Визија</h3>
-                            <p>Наш циљ је да изградимо дигитални простор у којем се вести вреднују по својој садржини и подршци више извора, промовишући информисано грађанство.</p>
+                            <p>Нашата цел е да изградиме дигитален простор во кој вестите ќе се вреднуваат според нивната содржина и поддршката од повеќе извори, промовирајќи информирано граѓанство.</p>
                         </div>
                     </div>
                 </article>
@@ -65,17 +70,17 @@ import Breadcrumbs from '../../components/Breadcrumbs.astro';
 
             <aside class="broadsheet-rail">
                 <section class="rail-block rail-block-alt">
-                    <p class="rail-kicker">Укратко</p>
+                    <p class="rail-kicker">Накратко</p>
                     <h3 class="rail-title">ГЛАВНА НАМЕРА</h3>
-                    <p class="rail-text">Мање шума, више контекста. Мање распршених наслова, више јасности за оно што заиста обликује дан.</p>
+                    <p class="rail-text">Помалку шум, повеќе контекст. Помалку распрснати наслови, повеќе јасност за она што навистина го обликува денот.</p>
                 </section>
 
                 <section class="rail-block">
-                    <p class="rail-kicker">даље</p>
+                    <p class="rail-kicker">понатаму</p>
                     <div class="rail-directory">
-                        <a href="/editorial" class="dir-link"><span class="name">Стандарди</span></a>
-                        <a href="/briefing" class="dir-link"><span class="name">Брифинг</span></a>
-                        <a href="/izvori" class="dir-link"><span class="name">Извори</span></a>
+                        <a href="/mk/editorial" class="dir-link"><span class="name">Стандарди</span></a>
+                        <a href="/mk/briefing" class="dir-link"><span class="name">Брифинг</span></a>
+                        <a href="/mk/izvori" class="dir-link"><span class="name">Извори</span></a>
                     </div>
                 </section>
             </aside>
@@ -90,7 +95,7 @@ import Breadcrumbs from '../../components/Breadcrumbs.astro';
     .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 2rem; margin-bottom: 3rem; }
     .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
     .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; margin: 1.5rem 0; letter-spacing: -0.02em; }
-    .masthead-title span { font-weight: 400; italic: true; }
+    .masthead-title span { font-weight: 400; font-style: italic; }
     .masthead-intro { font-family: var(--font-nyt-body); font-size: 1.15rem; line-height: 1.6; color: var(--secondary-foreground); max-width: 42rem; }
 
     /* ── Broadstreet Layout ───────────────────────────── */
@@ -101,21 +106,18 @@ import Breadcrumbs from '../../components/Breadcrumbs.astro';
         .broadsheet-rail { position: sticky; top: 8rem; align-self: start; }
     }
 
-    /* ── Prose ───────────────────────────────────────── */
     .prose-editorial { font-family: var(--font-nyt-body); font-size: 1.1rem; line-height: 1.75; color: var(--secondary-foreground); }
     .first-paragraph::first-letter { float: left; font-family: var(--font-serif); font-size: 5rem; font-weight: 900; line-height: 0.8; padding-top: 0.5rem; padding-right: 0.75rem; color: var(--foreground); }
-    .prose-editorial p { margin-bottom: 1.5rem; text-wrap: pretty; }
-    
-    .section-title-italic { font-family: var(--font-serif); font-size: 1.8rem; font-weight: 900; italic: true; margin-bottom: 1.5rem; }
+
     .editorial-divider { height: 1px; background: var(--border); margin: 3rem 0; }
+    .section-title-italic { font-family: var(--font-serif); font-size: 1.75rem; font-weight: 900; font-style: italic; margin-bottom: 1.5rem; }
 
-    .editorial-list { list-style: none; padding: 0; margin-bottom: 2rem; }
-    .editorial-list li { margin-bottom: 1rem; padding-left: 1.5rem; position: relative; }
-    .editorial-list li::before { content: "—"; position: absolute; left: 0; color: var(--nyt-accent); font-weight: 900; }
+    .editorial-list { list-style: none; padding: 0; margin-bottom: 2.5rem; }
+    .editorial-list li { margin-bottom: 1rem; position: relative; padding-left: 1.5rem; }
+    .editorial-list li::before { content: "—"; position: absolute; left: 0; color: var(--nyt-accent); }
 
-    .two-col-grid { display: grid; grid-template-columns: 1fr; gap: 2rem; margin-top: 2rem; }
-    @media (min-width: 640px) { .two-col-grid { grid-template-columns: 1fr 1fr; } }
-    .grid-item h3 { font-family: var(--font-serif); font-size: 1.25rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .two-col-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 2.5rem; margin-top: 2rem; }
+    .grid-item h3 { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--foreground); }
     .grid-item p { font-size: 0.95rem; line-height: 1.6; }
 
     /* ── Rail ────────────────────────────────────────── */
@@ -124,9 +126,9 @@ import Breadcrumbs from '../../components/Breadcrumbs.astro';
     .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
     .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
     .rail-text { font-family: var(--font-nyt-body); font-size: 0.9rem; line-height: 1.5; color: var(--secondary-foreground); }
-    
-    .rail-directory { display: flex; flex-direction: column; }
-    .dir-link { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid var(--border); text-decoration: none; color: inherit; }
-    .dir-link .name { font-family: var(--font-serif); font-size: 1rem; font-weight: 700; }
-    .dir-link:hover .name { color: var(--nyt-accent); text-decoration: underline; }
+
+    .rail-directory { display: flex; flex-direction: column; gap: 0.75rem; }
+    .dir-link { display: flex; align-items: center; justify-content: space-between; text-decoration: none; padding: 0.5rem 0; border-bottom: 1px solid var(--border); transition: all 0.2s; }
+    .dir-link .name { font-family: var(--font-sans); font-size: 0.85rem; font-weight: 700; color: var(--foreground); }
+    .dir-link:hover { padding-left: 0.5rem; border-color: var(--foreground); }
 </style>

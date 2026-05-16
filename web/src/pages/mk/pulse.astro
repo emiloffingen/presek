@@ -15,8 +15,8 @@ let ssrFailed = false;
 
 try {
     const [pulseRes, globalRes, catRes] = await Promise.all([
-        fetch(`${API_URL}/intelligence/source-pulse`),
-        fetch(`${API_URL}/intelligence/global-pulse`),
+        fetch(`${API_URL}/intelligence/source-pulse?lang=mk`),
+        fetch(`${API_URL}/intelligence/global-pulse?lang=mk`),
         fetch(`${API_URL}/categories`)
     ]);
     
@@ -43,228 +43,76 @@ try {
 }
 
 const safePulseVolume = Math.max(1, Number(globalPulse?.last_24h || 0));
-// const cleanCategoryData = (categoryData || []).filter - Added for integrity test
 
-const currentDate = new Date().toLocaleDateString('sr-RS', { 
+const currentDate = new Date().toLocaleDateString('mk-MK', { 
     weekday: 'long', 
     year: 'numeric', 
     month: 'long', 
-    day: 'numeric',
-    timeZone: 'Europe/Belgrade'
+    day: 'numeric' 
 });
 ---
 
 <Layout 
-    title="Medijski Puls — Presek"
-    description="Analiza medijskog pejzaža u Srbiji kroz podatke i algoritamsku obradu u realnom vremenu."
+    title="Медиумски Пулс — Пресек"
+    description="Следење на медиумската активност и интензитетот на известување во реално време."
 >
     <NYTHeader />
-    <main class="site-layout broadsheet-layout pt-32 pb-[var(--page-py)]">
-        <header class="editorial-masthead motion-rise masthead-double-rule">
-            <div class="masthead-top">
-                <span class="masthead-kicker">EDITORIJALNO IZDANIE</span>
-                <div class="masthead-meta">
-                    <span class="meta-item">
-                        <svg class="live-heartbeat mr-1" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M2 12H5L9 4L15 20L19 12H22" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <animate attributeName="stroke-dasharray" from="0, 50" to="50, 0" dur="2s" repeatCount="indefinite" />
-                            </path>
-                        </svg>
-                        <Timer size={11} /> <span id="last-updated">UŽIVO</span>
-                    </span>
-                    <span class="meta-item"><Activity size={11} /> VERZIJA 5.48</span>
-                </div>
-            </div>
-            
-            <script is:inline>
-                const lastUpdatedEl = document.getElementById('last-updated');
-                const startTime = new Date();
-                
-                function updateTicker() {
-                    const now = new Date();
-                    const diffMins = Math.floor((now - startTime) / 60000);
-                    lastUpdatedEl.textContent = diffMins === 0 ? 'UŽIVO (SADA)' : `PRE ${diffMins} ${diffMins === 1 ? 'MIN.' : 'MIN.'}`;
-                }
-                
-                updateTicker();
-                setInterval(updateTicker, 60000);
-            </script>
 
-            <div class="masthead-main">
-                <div class="masthead-branding">
-                    <Zap size={32} className="text-nyt-accent pulse-zap-icon" fill="currentColor" />
-                    <h1 class="masthead-title">Medijski <span class="italic-serif">Puls</span></h1>
+    <main class="site-layout broadsheet-layout py-[var(--page-py)]">
+        <header class="pulse-masthead mb-12 border-b-4 border-foreground pb-8">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+                <div class="max-w-3xl">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="relative flex h-3 w-3">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                        </div>
+                        <span class="font-sans text-[11px] font-black uppercase tracking-[0.3em] text-nyt-accent">СИСТЕМСКИ СИГНАЛ ВО ЖИВО</span>
+                    </div>
+                    <h1 class="font-serif text-5xl md:text-7xl font-black leading-[0.85] tracking-tighter mb-4">Медиумски <span class="italic font-light">Пулс</span></h1>
+                    <p class="font-serif text-xl italic text-muted-foreground">{currentDate}</p>
                 </div>
-                <div class="masthead-date">
-                    <p>{currentDate}</p>
+
+                <div class="pulse-summary-deck grid grid-cols-2 gap-4 w-full md:w-auto">
+                    <div class="stat-card p-6 bg-secondary/10 border border-border rounded-sm">
+                        <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">24Ч ВОЛУМЕН</span>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-3xl font-black tabular-nums">{safePulseVolume.toLocaleString('mk-MK')}</span>
+                            <Zap size={14} className="text-nyt-accent" />
+                        </div>
+                    </div>
+                    <div class="stat-card p-6 bg-secondary/10 border border-border rounded-sm">
+                        <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">ИНТЕНЗИТЕТ</span>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-3xl font-black tabular-nums">{globalPulse?.intensity_score || '0.0'}</span>
+                            <Activity size={14} className="text-nyt-accent" />
+                        </div>
+                    </div>
                 </div>
-            </div>
-
-            <div class="masthead-standfirst mt-6">
-                <p>Dnevna slika medijskog pejzaža: obim, ritam, diverzitet i sistemska transparentnost. Analizirano kroz sistem duboke analize za objektivnost i pluralizam.</p>
-            </div>
-
-            <div class="masthead-deck mt-8">
-                <span class="deck-item"><strong class="mr-1.5">{categories.length || '–'}</strong> Kategorije</span>
-                <span class="deck-item"><strong class="mr-1.5">{globalPulse?.intelligence?.pluralism?.pluralism_pct > 0 ? globalPulse?.intelligence?.pluralism?.pluralism_pct + '%' : '–'}</strong> Diverzitet</span>
-                <span class="deck-item"><strong class="mr-1.5">{globalPulse?.last_24h?.toLocaleString('sr-RS') || '–'}</strong> Objava danas</span>
             </div>
         </header>
 
-        <div class="pulse-intro-lede mt-16 mb-24">
-            <div class="intro-lede">
-                <h2 class="intro-greeting">Sistemsko praćenje.</h2>
-                <p class="intro-copy">
-                    Medijski puls u realnom vremenu: svaka objava se dekonstruiše kroz jezičke modele da bi se izmerila objektivnost,
-                    ton i originalnost. Izaberite kategoriju da biste analizirali specifičnu medijsku dinamiku.
-                </p>
+        {ssrFailed ? (
+            <div class="pulse-error py-24 text-center">
+                <p class="font-serif text-2xl italic text-muted-foreground">Системот за анализа на пулсот моментално е недостапен. Ве молиме обидете се подоцна.</p>
             </div>
-        </div>
-
-
-        <PulseClientContainer 
-            client:load 
-            initialGlobalPulse={globalPulse} 
-            initialPulseData={initialPulseData || []}
-            categories={categories}
-            ssrFailed={ssrFailed}
-        />
-
+        ) : (
+            <PulseClientContainer 
+                client:load 
+                initialData={initialPulseData} 
+                globalPulse={globalPulse}
+                categories={categories}
+            />
+        )}
     </main>
+
     <Footer />
 </Layout>
 
 <style>
-    /* ── Editorial Masthead ──────────────────────────── */
-    .editorial-masthead {
-        height: auto;
-        padding: 1rem 0;
-        margin-bottom: 0;
-        border-top: 1px solid var(--foreground);
-        border-bottom: 4px solid var(--foreground);
-    }
-    .live-heartbeat {
-        color: var(--nyt-red);
-    }
-    .italic-serif {
-        font-style: italic;
-        font-weight: 400;
-        color: var(--nyt-accent);
-    }
-    .pulse-zap-icon {
-        animation: pulse-icon 2.5s infinite;
-    }
-    @keyframes pulse-icon {
-        0%, 100% { transform: scale(1); opacity: 1; }
-        50% { transform: scale(1.1); opacity: 0.8; }
-    }
-
-    :global(.animate-rise) {
-        animation: rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
-    }
-    @keyframes rise {
-        from { transform: translateY(100%); opacity: 0; }
-        to { transform: translateY(0); opacity: 1; }
-    }
-
-    .masthead-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-    .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
-    .masthead-meta { display: flex; gap: 1.25rem; }
-    .meta-item { display: flex; align-items: center; gap: 0.35rem; font-family: var(--font-sans); font-size: 0.58rem; font-weight: 900; color: var(--muted-foreground); letter-spacing: 0.05em; }
-
-    .masthead-main { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.9rem; flex-wrap: wrap; gap: 1rem; }
-    .masthead-branding { display: flex; align-items: center; gap: 1rem; }
-    .masthead-title { font-family: var(--font-serif); font-size: clamp(2rem, 5vw, 4rem); font-weight: 900; line-height: 0.92; letter-spacing: -0.02em; }
-    .masthead-title span { font-style: italic; font-weight: 400; font-family: var(--font-serif); }
-    .masthead-date { font-family: var(--font-sans); font-size: 0.8rem; font-weight: 850; text-transform: uppercase; color: var(--foreground); text-align: right; }
-    .masthead-standfirst { max-width: 46rem; margin-bottom: 1rem; }
-    .masthead-standfirst p { font-family: var(--font-nyt-body); font-size: clamp(0.95rem, 1.5vw, 1.1rem); line-height: 1.58; color: var(--secondary-foreground); text-wrap: pretty; }
-    .masthead-deck { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem; }
-    .masthead-deck span { display: inline-flex; align-items: center; min-height: 1.8rem; padding: 0.25rem 0.75rem; border: 1px solid color-mix(in srgb, var(--border) 88%, transparent); background: color-mix(in srgb, var(--background) 92%, #efe5d6 8%); font-family: var(--font-sans); font-size: 0.55rem; font-weight: 950; letter-spacing: 0.08em; text-transform: uppercase; color: var(--foreground); }
-
-    /* ── Pulse Intro ─────────────────────────────────── */
-    .pulse-intro-lede { 
-        display: flex; 
-        flex-direction: column; 
-        gap: 2rem; 
-        margin-bottom: 3rem;
-        position: relative;
-        z-index: 1;
-    }
+    .pulse-masthead h1 span { color: var(--nyt-accent); }
     
-    .intro-lede {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .intro-greeting { 
-        font-family: var(--font-serif); 
-        font-size: clamp(1.8rem, 3.5vw, 3rem); 
-        font-weight: 900; 
-        font-style: italic; 
-        line-height: 1.1;
-        margin: 0;
-    }
-    
-    .intro-copy {
-        font-family: var(--font-nyt-body);
-        font-size: clamp(1rem, 1.5vw, 1.15rem);
-        line-height: 1.6;
-        color: var(--secondary-foreground);
-        max-width: 44rem;
-        margin: 0;
-    }
-
-    :global(.pulse-stats-grid) { display: grid; grid-template-columns: repeat(1, 1fr); gap: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 2rem; }
-    @media (min-width: 768px) { :global(.pulse-stats-grid) { grid-template-columns: repeat(4, 1fr); gap: 1.5rem; } }
-    :global(.pulse-card) { display: flex; flex-direction: column; gap: 0.5rem; padding: 1.25rem; border: 1px solid var(--border); background: var(--background); }
-    :global(.card-label) { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; text-transform: uppercase; color: var(--muted-foreground); display: flex; align-items: center; gap: 0.35rem; }
-    :global(.card-value) { font-family: var(--font-serif); font-size: clamp(1.8rem, 3vw, 2.2rem); font-weight: 900; line-height: 1; }
-    :global(.card-note) { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 850; text-transform: uppercase; color: var(--muted-foreground); }
-    :global(.card-sparkline) { display: flex; align-items: end; gap: 2px; height: 2rem; margin-top: 0.5rem; }
-    :global(.card-sparkline .bar) { flex: 1; background: var(--nyt-accent); opacity: 0.2; }
-    :global(.card-list) { display: flex; flex-direction: column; gap: 0.4rem; }
-    :global(.list-item) { display: flex; justify-content: space-between; font-size: 0.75rem; font-family: var(--font-serif); font-weight: 700; border-bottom: 1px solid var(--border); padding-bottom: 0.2rem; }
-
-    :global(.broadsheet-grid) { display: grid; grid-template-columns: 1fr; gap: 2rem; }
-    @media (min-width: 1024px) {
-        :global(.broadsheet-grid) { grid-template-columns: minmax(0, 1fr) 300px; gap: 3rem; }
-        :global(.broadsheet-main) { border-right: 1px solid var(--border); padding-right: 2rem; min-width: 0; }
-        :global(.broadsheet-rail) { position: sticky; top: 7rem; align-self: start; min-width: 0; }
-    }
-
-    :global(.section-title-italic) { font-family: var(--font-serif); font-size: clamp(1.5rem, 3vw, 1.8rem); font-weight: 900; font-style: italic; margin-bottom: 1.25rem; }
-
-    :global(.rail-block) { margin-bottom: 2rem; }
-    :global(.rail-kicker) { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.4rem; }
-    :global(.rail-title) { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; margin-bottom: 0.8rem; }
-    :global(.rail-text) { font-family: var(--font-nyt-body); font-size: 0.9rem; line-height: 1.5; color: var(--secondary-foreground); }
-
-    :global(.broadsheet-table-wrapper) { overflow-x: auto; border-top: 2px solid var(--foreground); }
-    :global(.broadsheet-table) { width: 100%; border-collapse: collapse; min-width: 600px; }
-    :global(.broadsheet-table th) { text-align: left; padding: 0.75rem; font-family: var(--font-sans); font-size: 0.55rem; font-weight: 950; border-bottom: 1px solid var(--border); color: var(--muted-foreground); text-transform: uppercase; }
-    :global(.broadsheet-table td) { padding: 1.25rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
-    
-    :global(.broadsheet-table th:nth-child(1)) { width: 35%; }
-    :global(.broadsheet-table th:nth-child(2)) { width: 10%; }
-    :global(.broadsheet-table th:nth-child(3)) { width: 27.5%; }
-    :global(.broadsheet-table th:nth-child(4)) { width: 27.5%; }
-
-    :global(.table-source strong) { font-family: var(--font-serif); font-size: 1.15rem; font-weight: 800; display: block; line-height: 1.1; margin-bottom: 0.25rem; }
-    :global(.table-source span) { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 850; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.05em; }
-    :global(.tone-label) { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 900; text-transform: uppercase; }
-    :global(.stat-row) { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; }
-    :global(.stat-bar) { height: 6px; width: 80px; background: var(--secondary); overflow: hidden; border-radius: 999px; }
-    :global(.stat-bar div) { height: 100%; background: var(--nyt-accent); }
-    :global(.stat-bar.bar-red div) { background: var(--nyt-red); }
-    :global(.stat-num) { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 800; width: 2.75rem; tabular-nums: true; }
-
-    @media (max-width: 640px) {
-        .editorial-masthead { padding-bottom: 0.5rem; }
-        .masthead-title { font-size: clamp(1.75rem, 8vw, 2.5rem); }
-        .masthead-deck span { padding: 0.2rem 0.4rem; font-size: 0.48rem; }
-        .intro-greeting { font-size: 1.5rem; }
-        .intro-copy { font-size: 0.92rem; }
+    @media (max-width: 768px) {
+        .pulse-masthead h1 { font-size: 3.5rem; }
     }
 </style>
