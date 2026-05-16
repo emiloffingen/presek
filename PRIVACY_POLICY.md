@@ -48,7 +48,7 @@ We use the information we collect for the following purposes:
 We may share information with trusted third-party service providers who assist us in:
 - Hosting and infrastructure (Cloudflare, AWS, etc.)
 - Analytics and performance monitoring (Google Analytics)
-- AI and machine learning services (Mistral AI, Google Gemini)
+- AI and machine learning services (Mistral AI)
 
 These providers are contractually obligated to protect your information.
 

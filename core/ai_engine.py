@@ -13,8 +13,6 @@ from core.config import (
     PROVIDER_FALLBACK_ORDER,
     PROVIDER_FALLBACK_ORDER_RESEARCH,
     PROVIDER_FALLBACK_ORDER_SUMMARY,
-    GEMINI_API_KEY,
-    GEMINI_MODEL,
 )
 
 
@@ -361,76 +359,6 @@ class NvidiaProvider(AIProvider):
             yield res
 
 
-class GeminiProvider(AIProvider):
-    def __init__(self, api_key: str, model: str):
-        self.api_key = api_key
-        self.model = model
-        self.api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-
-    def _get_headers(self) -> dict:
-        """Get headers with proper API key header for Google AI Studio."""
-        return {
-            "Content-Type": "application/json",
-            "x-goog-api-key": self.api_key,
-        }
-
-    def call(
-        self,
-        prompt: str,
-        system: str,
-        max_tokens: int,
-        json_mode: bool,
-        topic: str = None,
-        task_type: str = "default",
-    ) -> str | None:
-        if not self.api_key:
-            return None
-
-        # Clean prompt and system for Gemini constraints
-        clean_prompt = prompt.strip()
-        clean_system = system.strip()
-
-        payload = {
-            "contents": [
-                {
-                    "role": "user",
-                    "parts": [{"text": clean_prompt}]
-                }
-            ],
-            "system_instruction": {"parts": [{"text": clean_system}]},
-            "generationConfig": {
-                "maxOutputTokens": max_tokens,
-                "temperature": 0.2,
-                "topP": 0.8,
-            },
-        }
-        if json_mode:
-            payload["generationConfig"]["responseMimeType"] = "application/json"
-
-        try:
-            with httpx.Client(timeout=60.0) as client:
-                resp = client.post(self.api_url, json=payload, headers=self._get_headers())
-                if resp.status_code != 200:
-                    log.error(f"[ai/gemini] HTTP {resp.status_code} Error: {resp.text}")
-                    return None
-                
-                data = resp.json()
-                if "candidates" in data and data["candidates"]:
-                    return data["candidates"][0]["content"]["parts"][0]["text"]
-                else:
-                    log.warning(f"[ai/gemini] No candidates in response: {data}")
-        except Exception as e:
-            log.error(f"[ai/gemini] Call failed: {e}")
-        return None
-
-    async def stream_call(
-        self, prompt: str, system: str, max_tokens: int
-    ) -> AsyncGenerator[str, None]:
-        res = self.call(prompt, system, max_tokens, False)
-        if res:
-            yield res
-
-
 PROVIDERS = {
     "nvidia": NvidiaProvider(
         api_key=None,
@@ -439,7 +367,6 @@ PROVIDERS = {
         ),
         model=os.environ.get("NVIDIA_MODEL", "nvidia/llama-3.1-nemotron-70b-instruct"),
     ),
-    "gemini": GeminiProvider(api_key=GEMINI_API_KEY, model=GEMINI_MODEL),
     "mistral_large": MistralProvider(
         api_key=os.environ.get("MISTRAL_API_KEY", ""),
         api_url=os.environ.get(

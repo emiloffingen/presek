@@ -33,9 +33,8 @@ async def verify_admin(request: Request):
 async def get_admin_dashboard(authorized: bool = Depends(verify_admin)):
     """Aggregates all operational health metrics for the Presek Cockpit."""
 
-    # 1. AI Usage (Gemini Budget)
-    today = datetime.date.today().isoformat()
-    gemini_usage = int(redis_client.get(f"ai:gemini:usage:{today}") or 0)
+    # 1. AI Status
+    current_provider = PROVIDER_FALLBACK_ORDER[0] if PROVIDER_FALLBACK_ORDER else "unknown"
 
     # 2. Scraper Health
     source_statuses = get_source_statuses()
@@ -65,11 +64,8 @@ async def get_admin_dashboard(authorized: bool = Depends(verify_admin)):
         "status": "success",
         "timestamp": datetime.datetime.now().isoformat(),
         "ai": {
-            "gemini_usage_today": gemini_usage,
-            "gemini_daily_limit": 2000000,  # Hand-synced with ai_engine.py for now
-            "current_provider": (
-                PROVIDER_FALLBACK_ORDER[0] if PROVIDER_FALLBACK_ORDER else "unknown"
-            ),
+            "current_provider": current_provider,
+            "status": "operational" if current_provider != "unknown" else "offline"
         },
         "scrapers": {
             "total_sources": total_sources,

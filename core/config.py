@@ -123,18 +123,6 @@ VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
 VAPID_CLAIMS = {"sub": "mailto:admin@presek.live"}
 PRESEK_ADMIN_TOKEN = os.environ.get("PRESEK_ADMIN_TOKEN", "")
 
-# ── Additional AI Providers (Gemini) ───────────────────────────
-GEMINI_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
-GEMINI_FALLBACK_MODELS = [
-    model.strip()
-    for model in os.environ.get(
-        "GEMINI_FALLBACK_MODELS",
-        "gemini-2.5-flash,gemini-2.5-pro",
-    ).split(",")
-    if model.strip()
-]
-
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
 OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4.1-mini")
@@ -320,12 +308,11 @@ USE_READ_REPLICA = bool(DATABASE_READ_REPLICA_URL)
 
 # ── AI Routing Configuration ────────────────────────────────────
 # Use Mistral large (free) first, then small (paid)
-PROVIDER_FALLBACK_ORDER_RESEARCH = ["mistral_large", "mistral_small", "gemini"]
-PROVIDER_FALLBACK_ORDER_SUMMARY = ["mistral_large", "mistral_small", "gemini"]
+PROVIDER_FALLBACK_ORDER_RESEARCH = ["mistral_large", "mistral_small"]
+PROVIDER_FALLBACK_ORDER_SUMMARY = ["mistral_large", "mistral_small"]
 PROVIDER_FALLBACK_ORDER = [
     "mistral_large",
     "mistral_small",
-    "gemini",
 ]  # default
 
 # ── Clustering Parameters ───────────────────────────────────────

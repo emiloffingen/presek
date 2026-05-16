@@ -105,8 +105,6 @@ models/
 
 # Test results
 .test-results/
-list_gemini_models.py
-test_gemini_key.py
 
 # Keys and certificates
 private_key.pem

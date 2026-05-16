@@ -36,9 +36,6 @@ async def main():
     # 1. Test Nvidia
     await test_provider("nvidia", PROVIDERS["nvidia"], test_prompt, test_system)
 
-    # 2. Test Gemini
-    await test_provider("gemini", PROVIDERS["gemini"], test_prompt, test_system)
-
 
 if __name__ == "__main__":
     asyncio.run(main())

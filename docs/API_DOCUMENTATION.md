@@ -211,7 +211,7 @@ GET /api/intelligence/analysis/{topic}
       }
     ],
     "generated_at": "2024-01-15T12:05:00Z",
-    "model_used": "gemini-2.5-flash"
+    "model_used": "mistral-large-latest"
   }
 }
 ```
@@ -233,9 +233,8 @@ GET /admin/dashboard
   "status": "success",
   "timestamp": "2024-01-15T12:10:00Z",
   "ai": {
-    "gemini_usage_today": 42000,
-    "gemini_daily_limit": 2000000,
-    "current_provider": "gemini"
+    "current_provider": "mistral_large",
+    "status": "operational"
   },
   "scrapers": {
     "total_sources": 25,
@@ -299,7 +298,7 @@ GET /api/health
       "response_time_ms": 8
     },
     "ai_providers": {
-      "gemini": "available",
+      "mistral_large": "available",
       "openai": "available"
     }
   },
