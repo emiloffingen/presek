@@ -342,7 +342,7 @@ class NvidiaProvider(AIProvider):
             "Authorization": f"Bearer {self.api_key}",
         }
         try:
-            with httpx.Client(timeout=60.0) as client:
+            with httpx.Client(timeout=120.0) as client:
                 resp = client.post(self.api_url, json=payload, headers=headers)
                 resp.raise_for_status()
                 data = resp.json()
@@ -361,7 +361,7 @@ class NvidiaProvider(AIProvider):
 
 PROVIDERS = {
     "nvidia": NvidiaProvider(
-        api_key=None,
+        api_key=os.environ.get("NVIDIA_API_KEY", ""),
         api_url=os.environ.get(
             "NVIDIA_API_URL", "https://integrate.api.nvidia.com/v1/chat/completions"
         ),

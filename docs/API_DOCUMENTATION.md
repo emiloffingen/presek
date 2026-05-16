@@ -299,6 +299,7 @@ GET /api/health
     },
     "ai_providers": {
       "mistral_large": "available",
+      "nvidia": "available",
       "openai": "available"
     }
   },
