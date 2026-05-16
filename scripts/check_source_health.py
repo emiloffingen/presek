@@ -1,4 +1,3 @@
-import json
 from core.health import get_source_statuses
 
 def check_health():

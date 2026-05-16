@@ -32,7 +32,7 @@ const API_URL = apiBaseUrl();
 function getTimeStr(dateStr?: string) {
   if (!dateStr) return '';
   try {
-    const date = new Date(dateStr);
+    const date = new Date(dateStr.replace("Z", ""));
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / (1000 * 60));

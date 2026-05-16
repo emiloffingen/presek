@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Activity, Zap, ShieldCheck, Globe, Timer, Loader2, BarChart3, TrendingUp, Users, Info, ChevronRight } from 'lucide-react';
+import { Activity, Zap, ShieldCheck, Globe, Timer, Loader2, BarChart3, TrendingUp, Users, Info, ChevronRight, Target, LayoutGrid } from 'lucide-react';
 import PulseLandscapeIsland from './PulseLandscapeIsland';
 import SourceComparisonIsland from './SourceComparisonIsland';
+import PulseHeatmapIsland from './pulse/PulseHeatmapIsland';
+import DivergenceGaugeIsland from './pulse/DivergenceGaugeIsland';
+import SentimentRadarIsland from './pulse/SentimentRadarIsland';
 import { apiBaseUrl } from '../lib/apiBase';
 
 interface PulseRow {
@@ -21,9 +24,12 @@ interface PulseClientContainerProps {
     initialPulseData: PulseRow[];
     categories: string[];
     ssrFailed?: boolean;
+    lang?: string;
 }
 
-export default function PulseClientContainer({ initialGlobalPulse, initialPulseData, categories, ssrFailed }: PulseClientContainerProps) {
+export default function PulseClientContainer({ initialGlobalPulse, initialPulseData, categories, ssrFailed, lang = 'sr' }: PulseClientContainerProps) {
+    const isMK = lang === 'mk';
+    
     // URL-aware category state
     const [category, setCategory] = useState<string | null>(() => {
         if (typeof window !== 'undefined') {
@@ -53,10 +59,13 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
         const fetchData = async () => {
             setLoading(true);
             try {
-                const catParam = category ? `?category=${encodeURIComponent(category)}` : '';
+                const catParam = category ? `category=${encodeURIComponent(category)}` : '';
+                const langParam = `lang=${lang}`;
+                const query = [catParam, langParam].filter(Boolean).join('&');
+                
                 const [pulseRes, globalRes] = await Promise.all([
-                    fetch(`${API_URL}/intelligence/source-pulse${catParam}`),
-                    fetch(`${API_URL}/intelligence/global-pulse${catParam}`)
+                    fetch(`${API_URL}/intelligence/source-pulse?${query}`),
+                    fetch(`${API_URL}/intelligence/global-pulse?${query}`)
                 ]);
                 
                 if (pulseRes.ok) {
@@ -75,7 +84,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
         };
 
         fetchData();
-    }, [category]);
+    }, [category, lang]);
 
     const intelligence = globalPulse?.intelligence ?? {};
     const velocityData = globalPulse?.velocity ?? [];
@@ -84,9 +93,9 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
     const pulseLeaders = pulseData.slice(0, 15);
 
     function getSentimentIcon(score: number) {
-        if (score > 0.2) return { icon: <Activity size={14} />, color: 'text-green-600', title: 'Pozitivan' };
-        if (score < -0.2) return { icon: <Activity size={14} />, color: 'text-nyt-red', title: 'Kritičan' };
-        return { icon: <Activity size={14} />, color: 'text-muted-foreground', title: 'Neutralan' };
+        if (score > 0.2) return { icon: <Activity size={14} />, color: 'text-green-600', title: isMK ? 'Позитивен' : 'Pozitivan' };
+        if (score < -0.2) return { icon: <Activity size={14} />, color: 'text-nyt-red', title: isMK ? 'Критичен' : 'Kritičan' };
+        return { icon: <Activity size={14} />, color: 'text-muted-foreground', title: isMK ? 'Неутрален' : 'Neutralan' };
     }
 
     function formatStat(val: number) {
@@ -96,12 +105,12 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
 
     function getTypeLabel(type: string) {
         const map: Record<string, string> = {
-            'PER': 'Ličnost',
-            'ORG': 'Organizacija',
-            'LOC': 'Lokacija',
-            'ENTITY': 'Subjekt'
+            'PER': isMK ? 'Личност' : 'Ličnost',
+            'ORG': isMK ? 'Организација' : 'Organizacija',
+            'LOC': isMK ? 'Локација' : 'Lokacija',
+            'ENTITY': isMK ? 'Субјект' : 'Subjekt'
         };
-        return map[type] || 'Subjekt';
+        return map[type] || (isMK ? 'Субјект' : 'Subjekt');
     }
 
     return (
@@ -112,7 +121,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                     onClick={() => setCategory(null)}
                     className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${category === null ? 'bg-nyt-accent text-white' : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'}`}
                 >
-                    SVE KATEGORIJE
+                    {isMK ? 'СИТЕ КАТЕГОРИИ' : 'SVE KATEGORIJE'}
                 </button>
                 {categories.map(cat => (
                     <button 
@@ -126,10 +135,25 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                 {loading && <Loader2 size={14} className="animate-spin text-nyt-accent ml-2" />}
             </nav>
 
+            {/* NEW: COMMAND CENTER GRID */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-16">
+                <div className="lg:col-span-2">
+                    <PulseHeatmapIsland lang={lang} />
+                </div>
+                <div className="grid grid-cols-1 gap-6">
+                    <DivergenceGaugeIsland 
+                        pluralism_pct={intelligence.pluralism?.pluralism_pct} 
+                        high_consensus_pct={intelligence.pluralism?.high_consensus_pct}
+                        lang={lang}
+                    />
+                    <SentimentRadarIsland data={topicPulse} lang={lang} />
+                </div>
+            </div>
+
             <div className={`pulse-stats-grid mb-12 transition-opacity duration-300 ${loading ? 'opacity-50' : 'opacity-100'}`}>
-                <div className="pulse-card" title="Ukupan broj obrađenih objava u poslednja 24 časa.">
-                    <p className="card-label"><Activity size={12}/> INFORMATIVNI RITAM</p>
-                    <p className="card-value">{globalPulse?.last_24h?.toLocaleString('sr-RS') || '–'}</p>
+                <div className="pulse-card" title={isMK ? "Вкупен број на обработени објави во последните 24 часа." : "Ukupan broj obrađenih objava u poslednja 24 časa."}>
+                    <p className="card-label"><Activity size={12}/> {isMK ? 'ИНФОРМАТИВЕН РИТАМ' : 'INFORMATIVNI RITAM'}</p>
+                    <p className="card-value">{globalPulse?.last_24h?.toLocaleString(isMK ? 'mk-MK' : 'sr-RS') || '–'}</p>
                     <div className="card-sparkline group">
                         {velocityData.length > 0 ? (() => {
                             const maxVelocity = Math.max(1, ...velocityData.map((d: any) => d.n || 0));
@@ -152,20 +176,20 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                     </div>
                 </div>
 
-                <div className="pulse-card border-t-4 border-t-nyt-accent" title="Procenat tema koje su pokrivene od strane više različitih izvora (pokazuje medijski fokus).">
-                    <p className="card-label !text-nyt-accent"><ShieldCheck size={12}/> PLURALIZAM</p>
+                <div className="pulse-card border-t-4 border-t-nyt-accent" title={isMK ? "Процент на теми покриени од повеќе извори." : "Procenat tema koje su pokrivene od strane više različitih izvora."}>
+                    <p className="card-label !text-nyt-accent"><ShieldCheck size={12}/> {isMK ? 'ПЛУРАЛИЗАМ' : 'PLURALIZAM'}</p>
                     <p className="card-value">{intelligence.pluralism?.pluralism_pct > 0 ? `${intelligence.pluralism?.pluralism_pct}%` : '–'}</p>
-                    <p className="card-note">{intelligence.pluralism?.pluralism_pct > 0 ? `${intelligence.pluralism?.high_consensus_pct}% medijski konsenzus` : 'Sistem analizira nove klastere'}</p>
+                    <p className="card-note">{intelligence.pluralism?.pluralism_pct > 0 ? `${intelligence.pluralism?.high_consensus_pct}% ${isMK ? 'медиумски консензус' : 'medijski konsenzus'}` : (isMK ? 'Системот анализира...' : 'Sistem analizira...')}</p>
                 </div>
 
-                <div className="pulse-card" title="Procenat međunarodnih izvora koji izveštavaju.">
-                    <p className="card-label"><Globe size={12}/> SVET KOD NAS</p>
+                <div className="pulse-card" title={isMK ? "Процент на меѓународни извори." : "Procenat međunarodnih izvora koji izveštavaju."}>
+                    <p className="card-label"><Globe size={12}/> {isMK ? 'СВЕТОТ КАЈ НАС' : 'SVET KOD NAS'}</p>
                     <p className="card-value">{intelligence.international_share_pct > 0 ? `${intelligence.international_share_pct}%` : '–'}</p>
-                    <p className="card-note">vesti iz međunarodnih izvora</p>
+                    <p className="card-note">{isMK ? 'вести од меѓународни извори' : 'vesti iz međunarodnih izvora'}</p>
                 </div>
 
-                <div className="pulse-card" title="Subjekti koji su trenutno najzastupljeniji u vestima.">
-                    <p className="card-label"><Zap size={12}/> TRENDING {category && <span className="text-[8px] opacity-60">U {category}</span>}</p>
+                <div className="pulse-card" title={isMK ? "Субјекти кои се моментално најзастапени." : "Subjekti koji su trenutno najzastupljeniji u vestima."}>
+                    <p className="card-label"><Zap size={12}/> TRENDING {category && <span className="text-[8px] opacity-60">{isMK ? `ВО ${category}` : `U ${category}`}</span>}</p>
                     <div className="card-list">
                         {topEntities.length > 0 ? topEntities.slice(0, 3).map((e: any, i: number) => (
                             <a key={i} href={`/subjekt/${encodeURIComponent(e.name)}`} className="list-item group/item">
@@ -176,7 +200,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                                 </strong>
                             </a>
                         )) : (
-                            <p className="text-[10px] text-muted-foreground italic py-2">Nema dovoljno podataka za trendove</p>
+                            <p className="text-[10px] text-muted-foreground italic py-2">{isMK ? 'Нема доволно податоци' : 'Nema dovoljno podataka'}</p>
                         )}
                     </div>
                 </div>
@@ -186,33 +210,33 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
             <div className="bg-secondary/10 border border-border p-6 rounded-lg mb-20 flex flex-col md:flex-row gap-6 md:gap-8 items-start md:items-center border-l-4 border-l-nyt-accent shadow-sm">
                 <div className="flex-1 w-full">
                     <div className="flex items-center gap-2 mb-2">
-                         <h3 className="text-[11px] font-black uppercase tracking-widest text-nyt-accent">Ključni uvidi</h3>
+                         <h3 className="text-[11px] font-black uppercase tracking-widest text-nyt-accent">{isMK ? 'Клучни увиди' : 'Ključni uvidi'}</h3>
                          <span className="h-px flex-1 bg-nyt-accent/10"></span>
                     </div>
                     <p className="font-serif italic text-lg md:text-xl leading-snug">
                         {intelligence.pluralism?.pluralism_pct > 50 
-                            ? "Zabeležen je visok stepen medijskog konsenzusa kod vodećih priča danas."
+                            ? (isMK ? "Забележан е висок степен на медиумски консензус кај водечките приказни денес." : "Zabeležen je visok stepen medijskog konsenzusa kod vodećih priča danas.")
                             : intelligence.pluralism?.pluralism_pct > 0
-                                ? "Nizak pluralizam: teme se obrađuju sa specifičnim, divergentnim uglovima."
-                                : "Sistem analizira..."
+                                ? (isMK ? "Низок плурализам: темите се обработуваат со специфични, дивергентни агли." : "Nizak pluralizam: teme se obrađuju sa specifičnim, divergentnim uglovima.")
+                                : (isMK ? "Системот анализира..." : "Sistem analizira...")
                         }
                     </p>
                 </div>
                 <div className="flex-1 w-full grid grid-cols-2 gap-6 md:gap-8 border-t md:border-t-0 md:border-l border-border pt-6 md:pt-0 md:pl-8">
                     <div className="group cursor-help relative">
                         <div className="flex items-center gap-1.5 mb-1">
-                            <span className="block text-[9px] font-black uppercase text-muted-foreground">Transparentnost</span>
+                            <span className="block text-[9px] font-black uppercase text-muted-foreground">{isMK ? 'Транспарентност' : 'Transparentnost'}</span>
                             <Info size={8} className="opacity-40 group-hover:opacity-100" />
                         </div>
                         <span className="text-xl font-black">{intelligence.synthesis_transparency?.systemic_ratio > 0 ? `${intelligence.synthesis_transparency?.systemic_ratio}%` : '–'}</span>
                         <div className="absolute hidden group-hover:block bg-foreground text-background text-[10px] p-2 rounded shadow-xl mt-1 z-50 w-48 font-sans left-0 md:left-auto">
-                            Procenat objava čija je sadržina potvrđena kroz sistem.
+                            {isMK ? 'Процент на објави чија содржина е потврдена преку системот.' : 'Procenat objava čija je sadržina potvrđena kroz sistem.'}
                         </div>
                     </div>
                     <div>
-                        <span className="block text-[9px] font-black uppercase text-muted-foreground mb-1">Stabilnost</span>
+                        <span className="block text-[9px] font-black uppercase text-muted-foreground mb-1">{isMK ? 'Стабилност' : 'Stabilnost'}</span>
                         <div className="flex items-center gap-2">
-                             <span className="text-xl font-black text-emerald-600">Optimalna</span>
+                             <span className="text-xl font-black text-emerald-600">{isMK ? 'Оптимална' : 'Optimalna'}</span>
                              <div className="flex gap-0.5">
                                  <div className="w-1 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
                                  <div className="w-1 h-3 bg-emerald-500/60 rounded-full animate-pulse delay-75"></div>
@@ -228,60 +252,23 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                     {/* 1. HORIZON ANALYSIS */}
                     <section className="mb-16">
                         <div className="flex items-center justify-between mb-8 border-b border-border pb-4">
-                            <h2 className="section-title-italic !mb-0 text-3xl">Redakcijski Horizont</h2>
+                            <h2 className="section-title-italic !mb-0 text-3xl">{isMK ? 'Редакциски Хоризонт' : 'Redakcijski Horizont'}</h2>
                             <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                                <BarChart3 size={12} /> Analitika po temama
+                                <BarChart3 size={12} /> {isMK ? 'Аналитика по теми' : 'Analitika po temama'}
                             </div>
                         </div>
-                        <PulseLandscapeIsland data={pulseData} loading={loading} onSourceClick={(s) => {
-                            // Focus Mode Logic: Maybe show a specific modal or filter?
-                            // For now, let's scroll to the table and highlight or search?
-                            // Let's implement a simple scroll to table for now.
+                        <PulseLandscapeIsland data={pulseData} loading={loading} lang={lang} onSourceClick={(s) => {
                             const el = document.getElementById('leaderboard');
                             if (el) el.scrollIntoView({ behavior: 'smooth' });
                         }} />
                     </section>
 
-                    {/* 1b. TOPIC PULSE */}
-                    {topicPulse.length > 0 && (
-                        <section className="mb-16">
-                            <div className="flex items-center justify-between mb-8 border-b border-border pb-4">
-                                <h2 className="section-title-italic !mb-0 text-3xl">Tematski Puls</h2>
-                                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                                    <Zap size={12} /> u poslednjih 24h
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {topicPulse.slice(0, 6).map((tp: any) => (
-                                    <div key={tp.topic} className="p-4 border border-border bg-secondary/5 hover:bg-secondary/10 transition-colors border-l-2 border-l-nyt-accent flex items-center justify-between">
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] font-black uppercase text-nyt-accent mb-1">{tp.topic}</span>
-                                            <span className="text-xs font-serif italic text-muted-foreground">{tp.n > 0 ? tp.n + ' priča analizirano' : '–'}</span>
-                                        </div>
-                                        <div className="flex gap-6 items-center">
-                                            <div className="flex flex-col items-end">
-                                                <span className="text-[8px] font-black uppercase opacity-50">Objektivnost</span>
-                                                <span className="text-sm font-black">{tp.avg_objectivity > 0 ? (tp.avg_objectivity * 100).toFixed(0) + '%' : '–'}</span>
-                                            </div>
-                                            <div className="flex flex-col items-end">
-                                                <span className="text-[8px] font-black uppercase opacity-50">Senzacionalizam</span>
-                                                <span className={`text-sm font-black ${tp.avg_sensationalism > 0.4 ? 'text-nyt-red' : 'text-emerald-600'}`}>
-                                                    {tp.avg_sensationalism > 0 ? (tp.avg_sensationalism * 100).toFixed(0) + '%' : '–'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </section>
-                    )}
-
                     {/* 2. KEY ACTORS GRID */}
                     <section className="mb-20">
                         <div className="flex items-center justify-between mb-8 border-b border-border pb-4">
-                            <h2 className="section-title-italic !mb-0 text-3xl">Ključni akteri</h2>
+                            <h2 className="section-title-italic !mb-0 text-3xl">{isMK ? 'Клучни актери' : 'Ključni akteri'}</h2>
                             <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                                <Users size={12} /> u fokusu
+                                <Users size={12} /> {isMK ? 'во фокус' : 'u fokusu'}
                             </div>
                         </div>
                         
@@ -309,11 +296,11 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                                         <h3 className="font-serif font-black text-xl leading-tight group-hover:text-nyt-accent mb-6">{ent.name}</h3>
                                         <div className="mt-auto pt-4 border-t border-border/40 flex items-center justify-between">
                                             <div className="flex flex-col">
-                                                <span className="text-[10px] font-bold text-muted-foreground uppercase">Pominjanja</span>
+                                                <span className="text-[10px] font-bold text-muted-foreground uppercase">{isMK ? 'Споменувања' : 'Pominjanja'}</span>
                                                 <span className="text-xl font-black tabular-nums">{ent.total_mentions > 0 ? ent.total_mentions : '–'}</span>
                                             </div>
                                             <div className={`text-[10px] font-black uppercase tracking-tighter ${ent.sentiment_score > 0.1 ? 'text-green-600' : ent.sentiment_score < -0.1 ? 'text-red-600' : 'text-muted-foreground'}`}>
-                                                {ent.sentiment_score > 0.1 ? 'Pozitivan' : ent.sentiment_score < -0.1 ? 'Kritičan' : 'Neutralan'}
+                                                {ent.sentiment_score > 0.1 ? (isMK ? 'Позитивен' : 'Pozitivan') : ent.sentiment_score < -0.1 ? (isMK ? 'Критичен' : 'Kritičan') : (isMK ? 'Неутрален' : 'Neutralan')}
                                             </div>
                                         </div>
                                     </a>
@@ -322,7 +309,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                         ) : (
                             <div className="py-20 text-center border border-dashed border-border rounded-2xl bg-secondary/5">
                                 <Users className="mx-auto mb-4 opacity-10" size={48} />
-                                <p className="font-serif italic text-muted-foreground text-lg">Sistem analizira nove aktere u ovoj kategoriji...</p>
+                                <p className="font-serif italic text-muted-foreground text-lg">{isMK ? 'Системот анализира нови актери во оваа категорија...' : 'Sistem analizira nove aktere u ovoj kategoriji...'}</p>
                             </div>
                         )}
                     </section>
@@ -330,39 +317,17 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
 
                 <aside className="broadsheet-rail">
                     <section className="rail-block">
-                        <p className="rail-kicker">Metodologija</p>
-                        <h3 className="rail-title italic font-serif text-lg">Urednički Algoritam</h3>
+                        <p className="rail-kicker">{isMK ? 'Методологија' : 'Metodologija'}</p>
+                        <h3 className="rail-title italic font-serif text-lg">{isMK ? 'Уреднички Алгоритам' : 'Urednički Algoritam'}</h3>
                         <p className="rail-text">
-                            Informacije u ovom indeksu generišu se putem automatske obrade prirodnog jezika (NLP) na svim uključenim srpskim izvorima za protekla 24 časa.
+                            {isMK 
+                              ? 'Информациите во овој индекс се генерираат преку автоматска обработка на природен јазик (NLP) на сите вклучени извори за изминатите 24 часа.' 
+                              : 'Informacije u ovom indeksu generišu se putem automatske obrade prirodnog jezika (NLP) na svim uključenim srpskim izvorima za protekla 24 časa.'}
                         </p>
                     </section>
 
-                    <section className="rail-block mt-12">
-                         <p className="rail-kicker">Tematska Tenzija</p>
-                         <h3 className="rail-title italic font-serif text-lg">Emocionalni Pejzaž</h3>
-                         <div className="flex flex-col gap-3 mt-4">
-                             {topicPulse.slice(0, 5).map((tp: any) => {
-                                 const tension = (1 - tp.avg_objectivity) * 100;
-                                 return (
-                                     <div key={tp.topic} className="space-y-1">
-                                         <div className="flex justify-between text-[10px] font-bold uppercase tracking-tighter">
-                                             <span>{tp.topic}</span>
-                                             <span className={tension > 60 ? 'text-nyt-red' : 'text-muted-foreground'}>{tension > 0 ? tension.toFixed(0) + '%' : '–'}</span>
-                                         </div>
-                                         <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
-                                             <div 
-                                                className={`h-full transition-all duration-1000 ${tension > 60 ? 'bg-nyt-red' : 'bg-nyt-accent'}`} 
-                                                style={{ width: `${tension}%` }}
-                                            ></div>
-                                         </div>
-                                     </div>
-                                 );
-                             })}
-                         </div>
-                    </section>
-
                     <div className="sidebar-module mt-12">
-                        <h4 className="sidebar-label">POREĐENJE IZVORA</h4>
+                        <h4 className="sidebar-label">{isMK ? 'СПОРЕДБА НА ИЗВОРИ' : 'POREĐENJE IZVORA'}</h4>
                         <div className="mt-4">
                             <SourceComparisonIsland allSources={pulseData.map((r: PulseRow) => r.source)} />
                         </div>
@@ -373,27 +338,27 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
             {/* Transparency Scoreboard */}
             <section className="mt-20">
                 <div className="section-heading-row masthead-double-rule mb-8">
-                    <h2 className="section-title-italic !mb-0">Indeks Transparentnosti</h2>
+                    <h2 className="section-title-italic !mb-0">{isMK ? 'Индекс на Транспарентност' : 'Indeks Transparentnosti'}</h2>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="border border-border p-6 bg-emerald-50/50 dark:bg-emerald-950/10 border-l-4 border-l-emerald-500">
-                        <h4 className="sidebar-label !border-emerald-500 !text-emerald-700 dark:!text-emerald-400 mb-6">Najobjektivniji izvori (24h)</h4>
+                        <h4 className="sidebar-label !border-emerald-500 !text-emerald-700 dark:!text-emerald-400 mb-6">{isMK ? 'Најобјективни извори (24ч)' : 'Najobjektivniji izvori (24h)'}</h4>
                         <div className="flex flex-col gap-4">
                             {[...pulseLeaders].sort((a,b) => b.avg_objectivity - a.avg_objectivity).slice(0, 3).map(s => (
                                 <div key={s.source} className="flex justify-between items-center group">
                                     <span className="font-bold text-sm group-hover:text-emerald-600 transition-colors">{s.source}</span>
-                                    <span className="text-xs font-black text-emerald-600">{s.avg_objectivity > 0 ? (s.avg_objectivity * 100).toFixed(0) + '% Objektivnost' : '–'}</span>
+                                    <span className="text-xs font-black text-emerald-600">{s.avg_objectivity > 0 ? (s.avg_objectivity * 100).toFixed(0) + (isMK ? '% Објективност' : '% Objektivnost') : '–'}</span>
                                 </div>
                             ))}
                         </div>
                     </div>
                     <div className="border border-border p-6 bg-red-50/50 dark:bg-red-950/10 border-l-4 border-l-red-500">
-                        <h4 className="sidebar-label !border-red-500 !text-red-700 dark:!text-red-400 mb-6">Najniži senzacionalizam</h4>
+                        <h4 className="sidebar-label !border-red-500 !text-red-700 dark:!text-red-400 mb-6">{isMK ? 'Најнизок сензационализам' : 'Najniži senzacionalizam'}</h4>
                         <div className="flex flex-col gap-4">
                             {[...pulseLeaders].sort((a,b) => a.avg_sensationalism - b.avg_sensationalism).slice(0, 3).map(s => (
                                 <div key={s.source} className="flex justify-between items-center group">
                                     <span className="font-bold text-sm group-hover:text-red-600 transition-colors">{s.source}</span>
-                                    <span className="text-xs font-black text-red-600">{s.avg_sensationalism > 0 ? (s.avg_sensationalism * 100).toFixed(0) + '% Senzacija' : '–'}</span>
+                                    <span className="text-xs font-black text-red-600">{s.avg_sensationalism > 0 ? (s.avg_sensationalism * 100).toFixed(0) + (isMK ? '% Сензација' : '% Senzacija') : '–'}</span>
                                 </div>
                             ))}
                         </div>
@@ -404,29 +369,29 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
             {(!loading || pulseLeaders.length > 0) && (
                 <section id="leaderboard" className={`mt-24 transition-opacity duration-300 ${loading ? 'opacity-50' : 'opacity-100'}`}>
                     <div className="section-heading-row masthead-double-rule mb-8">
-                        <h2 className="section-title-italic !mb-0">Rang lista redakcija (24h)</h2>
+                        <h2 className="section-title-italic !mb-0">{isMK ? 'Ранг листа на редакции (24ч)' : 'Rang lista redakcija (24h)'}</h2>
                     </div>
                     <div className="broadsheet-table-wrapper">
                         <table className="broadsheet-table">
                             <thead>
                                 <tr>
-                                    <th title="Medij ili izvor informacija">REDAKCIJA</th>
-                                    <th title="Prosečan sentiment (pozitivan, negativan, neutralan)">TON</th>
+                                    <th title={isMK ? "Медиум или извор на информации" : "Medij ili izvor informacija"}>{isMK ? 'РЕДАКЦИЈА' : 'REDAKCIJA'}</th>
+                                    <th title={isMK ? "Просечен тон" : "Prosečan sentiment (pozitivan, negativan, neutralan)"}>{isMK ? 'ТОН' : 'TON'}</th>
                                     <th className="text-right">
                                         <div className="flex items-center justify-end gap-1 group cursor-help">
-                                            <span>OBJEKTIVNOST</span>
+                                            <span>{isMK ? 'ОБЈЕКТИВНОСТ' : 'OBJEKTIVNOST'}</span>
                                             <Info size={10} className="opacity-40 group-hover:opacity-100" />
-                                            <div className="absolute hidden group-hover:block bg-foreground text-background text-[10px] p-2 rounded shadow-xl mt-12 z-50 w-48 font-sans normal-case tracking-normal">
-                                                Faktičko izveštavanje bez subjektivnih komentara.
+                                            <div className="absolute hidden group-hover:block bg-foreground text-background text-[10px] p-2 rounded shadow-xl mt-12 z-50 w-48 font-sans normal-case tracking-normal text-left">
+                                                {isMK ? 'Фактичко известување без субјективни коментари.' : 'Faktičko izveštavanje bez subjektivnih komentara.'}
                                             </div>
                                         </div>
                                     </th>
                                     <th className="text-right">
                                         <div className="flex items-center justify-end gap-1 group cursor-help">
-                                            <span>SENZACIONALIZAM</span>
+                                            <span>{isMK ? 'СЕНЗАЦИОНАЛИЗАМ' : 'SENZACIONALIZAM'}</span>
                                             <Info size={10} className="opacity-40 group-hover:opacity-100" />
-                                            <div className="absolute hidden group-hover:block bg-foreground text-background text-[10px] p-2 rounded shadow-xl mt-12 z-50 w-48 font-sans normal-case tracking-normal">
-                                                Upotreba emotivno nabijenog ili preuveličanog rečnika.
+                                            <div className="absolute hidden group-hover:block bg-foreground text-background text-[10px] p-2 rounded shadow-xl mt-12 z-50 w-48 font-sans normal-case tracking-normal text-left">
+                                                {isMK ? 'Употреба на емотивно набиен или преувеличен речник.' : 'Upotreba emotivno nabijenog ili preuveličanog rečnika.'}
                                             </div>
                                         </div>
                                     </th>
@@ -438,7 +403,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                                         <td>
                                             <div className="table-source">
                                                 <strong>{row.source}</strong>
-                                                <span>{row.cluster_count} tema</span>
+                                                <span>{row.cluster_count} {isMK ? 'теми' : 'tema'}</span>
                                             </div>
                                         </td>
                                         <td><span className={`tone-label ${getSentimentIcon(row.avg_sentiment).color}`} title={getSentimentIcon(row.avg_sentiment).title}>{getSentimentIcon(row.avg_sentiment).icon}</span></td>
@@ -450,7 +415,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                                                     {row.objectivity_delta !== undefined && row.objectivity_delta !== 0 && (
                                                         <span 
                                                             className={`text-[8px] font-black ${row.objectivity_delta > 0 ? 'text-emerald-500' : 'text-nyt-red'}`}
-                                                            title={`Promena u odnosu na 7-dnevni prosek: ${(row.objectivity_delta * 100).toFixed(1)}%`}
+                                                            title={isMK ? `Промена во однос на 7-дневен просек: ${(row.objectivity_delta * 100).toFixed(1)}%` : `Promena u odnosu na 7-dnevni prosek: ${(row.objectivity_delta * 100).toFixed(1)}%`}
                                                         >
                                                             {row.objectivity_delta > 0 ? '▲' : '▼'}
                                                         </span>

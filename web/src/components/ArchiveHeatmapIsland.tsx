@@ -85,7 +85,7 @@ export default function ArchiveHeatmapIsland({ selectedDate }: Props) {
   };
 
   const getLabel = (dateStr: string) => {
-    const d = new Date(dateStr);
+    const d = new Date(dateStr.replace("Z", ""));
     return d.toLocaleDateString('mk-RS', { month: 'short', day: 'numeric' });
   };
 

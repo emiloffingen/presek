@@ -14,7 +14,9 @@ interface PulseRow {
     latest_cluster_id?: string;
 }
 
-const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, onSourceClick?: (s: string) => void }> = ({ data, loading = false, onSourceClick }) => {
+const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, lang?: string, onSourceClick?: (s: string) => void }> = ({ data, loading = false, lang = 'sr', onSourceClick }) => {
+    const isMK = lang === 'mk';
+    
     if (loading) {
         return (
             <div className="mb-12 border border-border rounded-[1.25rem] bg-card p-6 md:p-8 animate-pulse overflow-hidden">
@@ -22,15 +24,10 @@ const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, onSo
                      <div className="absolute left-1/2 top-0 bottom-0 w-px bg-border/20 dashed"></div>
                      <div className="absolute top-1/2 left-0 right-0 h-px bg-border/20 dashed"></div>
                      <div className="w-full h-full flex items-center justify-center">
-                        <span className="font-serif italic text-muted-foreground opacity-50">Desifriranje na mediumskiot pejzaz...</span>
+                        <span className="font-serif italic text-muted-foreground opacity-50">
+                            {isMK ? 'Дешифрирање на медиумскиот пејзаж...' : 'Dešifrovanje medijskog pejzaža...'}
+                        </span>
                      </div>
-                     {/* Random Ghost Points */}
-                     {[...Array(12)].map((_, i) => (
-                         <div key={i} className="absolute w-2 h-2 rounded-full bg-border/20" style={{ 
-                             left: `${Math.random() * 80 + 10}%`, 
-                             bottom: `${Math.random() * 80 + 10}%` 
-                         }}></div>
-                     ))}
                 </div>
             </div>
         );
@@ -56,8 +53,6 @@ const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, onSo
         const rangeSens = (maxSens - minSens) || 1;
 
         return topData.map((item, idx) => {
-            // Normalized positions (0-100)
-            // We use a bit of padding (15% to 85%) to avoid edge clipping
             const xNorm = 15 + ((item.avg_objectivity - minObj) / rangeObj) * 70;
             const yNorm = 15 + ((item.avg_sensationalism - minSens) / rangeSens) * 70;
 
@@ -77,18 +72,30 @@ const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, onSo
         <section className="mb-12 border border-border rounded-[1.25rem] bg-card p-6 md:p-8 overflow-hidden shadow-sm">
             <div className="relative w-full aspect-square md:aspect-[16/9] border-2 border-border/50 bg-secondary/10 rounded-lg p-4 md:p-8">
                 {/* Quadrant Labels */}
-                <div className="absolute top-4 left-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-nyt-red/80 bg-background/95 px-2.5 py-1.5 rounded border border-nyt-red/10 shadow-sm z-10">Subjektivni & Senzacionalni</div>
-                <div className="absolute top-4 right-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-nyt-accent/80 bg-background/95 px-2.5 py-1.5 rounded border border-nyt-accent/10 shadow-sm z-10">Objektivni & Dinamicni</div>
-                <div className="absolute bottom-4 left-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-muted-foreground/80 bg-background/95 px-2.5 py-1.5 rounded border border-border/40 shadow-sm z-10">Tradicionalni & Staticni</div>
-                <div className="absolute bottom-4 right-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-emerald-600/80 bg-background/95 px-2.5 py-1.5 rounded border border-emerald-600/10 shadow-sm z-10">Precizni & Analiticki</div>
+                <div className="absolute top-4 left-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-nyt-red/80 bg-background/95 px-2.5 py-1.5 rounded border border-nyt-red/10 shadow-sm z-10">
+                    {isMK ? 'Субјективни & Сензационални' : 'Subjektivni & Senzacionalni'}
+                </div>
+                <div className="absolute top-4 right-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-nyt-accent/80 bg-background/95 px-2.5 py-1.5 rounded border border-nyt-accent/10 shadow-sm z-10">
+                    {isMK ? 'Објективни & Динамични' : 'Objektivni & Dinamični'}
+                </div>
+                <div className="absolute bottom-4 left-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-muted-foreground/80 bg-background/95 px-2.5 py-1.5 rounded border border-border/40 shadow-sm z-10">
+                    {isMK ? 'Традиционални & Статични' : 'Tradicionalni & Statični'}
+                </div>
+                <div className="absolute bottom-4 right-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-emerald-600/80 bg-background/95 px-2.5 py-1.5 rounded border border-emerald-600/10 shadow-sm z-10">
+                    {isMK ? 'Прецизни & Аналитички' : 'Precizni & Analitički'}
+                </div>
 
                 {/* Axes */}
                 <div className="absolute left-1/2 top-0 bottom-0 w-px bg-foreground/10 dashed"></div>
                 <div className="absolute top-1/2 left-0 right-0 h-px bg-foreground/10 dashed"></div>
 
                 {/* Axis Labels */}
-                <div className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Objektivnost →</div>
-                <div className="absolute left-[-45px] top-1/2 -rotate-90 -translate-y-1/2 text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Senzacija →</div>
+                <div className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
+                    {isMK ? 'Објективност' : 'Objektivnost'} →
+                </div>
+                <div className="absolute left-[-45px] top-1/2 -rotate-90 -translate-y-1/2 text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
+                    {isMK ? 'Сензација' : 'Senzacija'} →
+                </div>
 
                 {/* Plot Area */}
                 <div className="relative w-full h-full">
@@ -106,18 +113,18 @@ const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, onSo
                             <div className={`
                                 flex items-center justify-center
                                 rounded-full border-2 shadow-md transition-all group-hover:scale-150 group-hover:shadow-lg
-                                ${source.trust_label === 'Visoko poverenje' ? 'bg-nyt-accent border-blue-200' : 'bg-background border-border'}
+                                ${source.trust_label === (isMK ? 'Висока доверба' : 'Visoko poverenje') ? 'bg-nyt-accent border-blue-200' : 'bg-background border-border'}
                             `}
                             style={{
-                                width: source.trust_label === 'Visoko poverenje' ? '14px' : '10px',
-                                height: source.trust_label === 'Visoko poverenje' ? '14px' : '10px',
+                                width: source.trust_label === (isMK ? 'Висока доверба' : 'Visoko poverenje') ? '14px' : '10px',
+                                height: source.trust_label === (isMK ? 'Висока доверба' : 'Visoko poverenje') ? '14px' : '10px',
                             }}>
-                                {source.trust_label === 'Visoko poverenje' && <div className="w-1 h-1 bg-white rounded-full"></div>}
+                                {source.trust_label === (isMK ? 'Висока доверба' : 'Visoko poverenje') && <div className="w-1 h-1 bg-white rounded-full"></div>}
                             </div>
 
                             {/* Label */}
                             <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-0.5 bg-background/95 border border-border/50 rounded shadow-sm whitespace-nowrap opacity-40 group-hover:opacity-100 group-hover:border-nyt-accent/50 transition-all z-20">
-                                <span className={`text-[9px] font-black uppercase tracking-tight ${source.trust_label === 'Visoko poverenje' ? 'text-nyt-accent' : 'text-foreground'}`}>
+                                <span className={`text-[9px] font-black uppercase tracking-tight ${source.trust_label === (isMK ? 'Висока доверба' : 'Visoko poverenje') ? 'text-nyt-accent' : 'text-foreground'}`}>
                                     {source.source}
                                 </span>
                             </div>
@@ -125,30 +132,30 @@ const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, onSo
                             {/* Tooltip */}
                             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 bg-foreground text-background p-4 rounded-xl shadow-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-all z-50 scale-95 group-hover:scale-100">
                                 <div className="flex items-center justify-between border-b border-background/20 pb-2 mb-3">
-                                    <p className="text-[12px] font-black uppercase tracking-widest flex items-center gap-2">
+                                    <p className="text-[12px] font-black uppercase tracking-widest flex items-center gap-2 text-background">
                                         {source.source}
-                                        {source.trust_label === 'Visoko poverenje' && <ShieldCheck size={11} className="text-blue-400" />}
+                                        {source.trust_label === (isMK ? 'Висока доверба' : 'Visoko poverenje') && <ShieldCheck size={11} className="text-blue-400" />}
                                     </p>
-                                    <span className="text-[9px] font-bold opacity-60 flex items-center gap-1">FOKUS <ArrowUpRight size={10}/></span>
+                                    <span className="text-[9px] font-bold opacity-60 flex items-center gap-1 text-background">{isMK ? 'ФОКУС' : 'FOKUS'} <ArrowUpRight size={10}/></span>
                                 </div>
 
                                 <div className="space-y-2 mb-4">
                                     <div className="flex justify-between text-[11px]">
-                                        <span className="opacity-70">Objektivnost:</span>
-                                        <span className="font-black">{(source.avg_objectivity * 100).toFixed(0)}%</span>
+                                        <span className="opacity-70 text-background">{isMK ? 'Објективност' : 'Objektivnost'}:</span>
+                                        <span className="font-black text-background">{(source.avg_objectivity * 100).toFixed(0)}%</span>
                                     </div>
                                     <div className="flex justify-between text-[11px]">
-                                        <span className="opacity-70">Senzacionalizam:</span>
-                                        <span className="font-black">{(source.avg_sensationalism * 100).toFixed(0)}%</span>
+                                        <span className="opacity-70 text-background">{isMK ? 'Сензационализам' : 'Senzacionalizam'}:</span>
+                                        <span className="font-black text-background">{(source.avg_sensationalism * 100).toFixed(0)}%</span>
                                     </div>
                                 </div>
 
                                 {source.latest_headline && (
                                     <div className="pt-3 border-t border-background/10">
-                                        <p className="text-[9px] font-black uppercase tracking-widest opacity-40 mb-1 flex items-center gap-1">
-                                            <Newspaper size={8} /> POSLEDNO OBJAVENO
+                                        <p className="text-[9px] font-black uppercase tracking-widest opacity-40 mb-1 flex items-center gap-1 text-background">
+                                            <Newspaper size={8} /> {isMK ? 'ПОСЛЕДНО ОБЈАВЕНО' : 'POSLEDNJE OBJAVLJENO'}
                                         </p>
-                                        <p className="font-serif italic text-xs leading-snug line-clamp-2 opacity-90">
+                                        <p className="font-serif italic text-xs leading-snug line-clamp-2 opacity-90 text-background">
                                             "{source.latest_headline}"
                                         </p>
                                     </div>
@@ -162,14 +169,14 @@ const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, onSo
             <div className="mt-12 flex flex-wrap gap-8 items-center justify-center md:justify-start border-t border-border pt-6">
                 <div className="flex items-center gap-2">
                     <div className="w-3.5 h-3.5 rounded-full bg-nyt-accent shadow-sm border border-blue-300"></div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Visoko poverenje</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{isMK ? 'Висока доверба' : 'Visoko poverenje'}</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 rounded-full bg-background border-2 border-border shadow-sm"></div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">sledeci izvor</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{isMK ? 'следни извори' : 'sledeći izvori'}</span>
                 </div>
                 <div className="hidden md:block ml-auto text-[9px] font-bold italic opacity-40 uppercase tracking-tighter">
-                    Podatocite se za izminatite 48 casa
+                    {isMK ? 'Податоците се за изминатите 48 часа' : 'Podaci su za poslednjih 48 časova'}
                 </div>
             </div>
         </section>

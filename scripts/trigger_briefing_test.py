@@ -27,8 +27,8 @@ def test_direct_briefing_generation():
     except Exception as e:
         print(f"   ❌ Macedonian task failed: {e}")
     
-    print(f"\n💡 Both tasks have been queued for Celery workers.")
-    print(f"🔄 Use 'python verify_briefings.py' to check progress.")
+    print("\n💡 Both tasks have been queued for Celery workers.")
+    print("🔄 Use 'python verify_briefings.py' to check progress.")
 
 if __name__ == "__main__":
     test_direct_briefing_generation()

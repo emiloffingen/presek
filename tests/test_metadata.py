@@ -1,6 +1,5 @@
 from utils.metadata import get_metadata
 from unittest.mock import patch
-import pytest
 
 def test_get_metadata():
     mock_data = [{'value': '["keyword1", "keyword2"]'}]

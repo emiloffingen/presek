@@ -17,7 +17,7 @@ interface TrendDay {
     count: number;
 }
 
-export default function NationalMoodIsland() {
+export default function NationalMoodIsland({ lang = 'sr' }: { lang?: string }) {
     const [mood, setMood] = useState<MoodData | null>(null);
     const [trends, setTrends] = useState<TrendDay[]>([]);
     const [loading, setLoading] = useState(true);
@@ -27,8 +27,8 @@ export default function NationalMoodIsland() {
             try {
                 const base = apiBaseUrl();
                 const [moodRes, trendsRes] = await Promise.all([
-                    fetch(`${base}/stats/mood`),
-                    fetch(`${base}/stats/sentiment-trends`)
+                    fetch(`${base}/stats/mood?lang=${lang}`),
+                    fetch(`${base}/stats/sentiment-trends?lang=${lang}`)
                 ]);
                 
                 const moodJson = await moodRes.json();
@@ -88,7 +88,27 @@ export default function NationalMoodIsland() {
             </div>
         );
     }
-    if (!mood) return null;
+    if (!mood) {
+        return (
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm opacity-80">
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                        <Activity size={18} className="text-muted-foreground" />
+                        <h3 className="font-bold text-sm uppercase tracking-tighter">Nacionalen Puls</h3>
+                    </div>
+                </div>
+                <div className="py-8 flex flex-col items-center justify-center text-center">
+                    <Meh size={32} className="text-muted-foreground/30 mb-3" />
+                    <p className="text-sm font-serif italic text-muted-foreground">
+                        Sistemska kalibracija vo tek...
+                    </p>
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground/50 mt-2">
+                        Nedostasuvaat dovolno podatoci za analiza
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     const getMoodIcon = (score: number) => {
         if (score > 0.2) return <Smile className="text-emerald-500" size={20} />;

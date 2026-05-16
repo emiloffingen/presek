@@ -112,6 +112,7 @@ _PUBLIC_ARTICLE_FIELDS = {
     "original_title",
     "description",
     "summary",
+    "full_content",
     "category",
     "subcategory",
     "topic",
@@ -910,17 +911,21 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
             vec_str = "[" + ",".join(map(str, centroid_vec)) + "]"
 
             # Use pgvector directly on cluster_metadata for lightning-fast related cluster discovery
+            # Filter by country to ensure related content matches the current market
             related_query = """
-                SELECT cluster_id, (1 - (centroid <=> %s::vector)) as similarity
-                FROM cluster_metadata
-                WHERE cluster_id != %s
-                  AND centroid IS NOT NULL
-                  AND updated_at >= NOW() - INTERVAL '14 days'
-                ORDER BY centroid <=> %s::vector
+                SELECT m.cluster_id, (1 - (m.centroid <=> %s::vector)) as similarity
+                FROM cluster_metadata m
+                JOIN articles a ON a.cluster_id = m.cluster_id
+                WHERE m.cluster_id != %s
+                  AND m.centroid IS NOT NULL
+                  AND m.updated_at >= NOW() - INTERVAL '14 days'
+                  AND a.country = %s
+                GROUP BY m.cluster_id, m.centroid
+                ORDER BY m.centroid <=> %s::vector
                 LIMIT 15
             """
             related_results = await db.async_execute(
-                related_query, (vec_str, cluster_id, vec_str)
+                related_query, (vec_str, cluster_id, country_filter, vec_str)
             )
 
             related_cids = []
@@ -982,8 +987,8 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                     if str(article.get("category") or "").strip()
                 }
             )
-            match_clauses = []
-            fallback_params = [cluster_id]
+            match_clauses = ["a.country = %s"]
+            fallback_params = [country_filter, cluster_id]
             if fallback_topics:
                 match_clauses.append(
                     "(a.topic = ANY(%s) OR EXISTS (SELECT 1 FROM unnest(COALESCE(m.topics, '{}')) AS topic WHERE topic = ANY(%s)))"
@@ -998,7 +1003,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                 )
                 fallback_params.append(sorted(current_tags))
 
-            if match_clauses:
+            if len(match_clauses) > 1:
                 fallback_rows = await db.async_execute(
                     f"""
                     SELECT a.*, COALESCE(m.tags, '{{}}') as cluster_tags
@@ -1006,7 +1011,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                     LEFT JOIN cluster_metadata m ON a.cluster_id = m.cluster_id
                     WHERE a.cluster_id != %s
                       AND COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '14 days'
-                      AND ({' OR '.join(match_clauses)})
+                      AND ({' AND '.join(match_clauses[:1])} AND ({' OR '.join(match_clauses[1:])}))
                     ORDER BY COALESCE(a.ingested_at, a.created_at) DESC
                     LIMIT 200
                 """,

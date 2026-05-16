@@ -476,7 +476,7 @@ async def get_stats_summary(lang: Optional[str] = "sr"):
     )["count"] or 0
 
     quote_row = await db.async_execute_one(
-        f"""
+        """
         SELECT s.quote, s.summary, s.generated_article, s.cluster_id,
                (SELECT title FROM articles WHERE cluster_id = s.cluster_id AND country = %s ORDER BY created_at DESC LIMIT 1) as title
         FROM cluster_summaries s
@@ -549,17 +549,35 @@ async def subscribe_newsletter(request: Request):
     email = validate_email(body.get("email", ""), "email")
     locale = str(body.get("locale") or "sr").strip().lower()[:5]
     try:
+        # Try inserting with locale first (modern schema)
         await db.async_execute(
             "INSERT INTO subscribers (email, locale) VALUES (%s, %s) ON CONFLICT (email) DO UPDATE SET is_active = TRUE, locale = EXCLUDED.locale",
             (email, locale),
             fetch=False,
         )
     except Exception as e:
-        log.warning(f"[subscribe] DB error: {e}")
-        return {
-            "status": "error",
-            "message": "Greska pri zacuvuvanje. Obidete se podocna." if locale == "mk" else "Greška pri čuvanju. Pokušajte kasnije.",
-        }
+        err_msg = str(e).lower()
+        if "column \"locale\" does not exist" in err_msg:
+            log.warning(f"[subscribe] Legacy schema detected: locale column missing. Falling back. Error: {e}")
+            try:
+                # Fallback to legacy schema (without locale)
+                await db.async_execute(
+                    "INSERT INTO subscribers (email) VALUES (%s) ON CONFLICT (email) DO UPDATE SET is_active = TRUE",
+                    (email,),
+                    fetch=False,
+                )
+            except Exception as e2:
+                log.error(f"[subscribe] Final fallback failed: {e2}")
+                return {
+                    "status": "error",
+                    "message": "Greska pri zacuvuvanje. Obidete se podocna." if locale == "mk" else "Greška pri čuvanju. Pokušajte kasnije.",
+                }
+        else:
+            log.warning(f"[subscribe] DB error during subscription: {e}")
+            return {
+                "status": "error",
+                "message": "Greska pri zacuvuvanje. Obidete se podocna." if locale == "mk" else "Greška pri čuvanju. Pokušajte kasnije.",
+            }
     return {
         "status": "success",
         "message": "Uspesno se prijavivte!" if locale == "mk" else "Uspešno ste se prijavili!",
@@ -852,9 +870,9 @@ async def control_source_route(name: str, request: Request):
 
 
 @router.get("/stats/sentiment-trends")
-async def get_sentiment_trends():
-    """Returns average sentiment and tone analysis for the last 7 days."""
-    cache_key = "api:stats:sentiment:trends:v1"
+async def get_sentiment_trends(lang: Optional[str] = "sr"):
+    """Returns average sentiment and tone analysis for the last 7 days, filtered by language."""
+    cache_key = f"api:stats:sentiment:trends:v2:{lang}"
     cached = cached_response(cache_key, ttl=1800)
     if cached:
         return cached
@@ -869,11 +887,12 @@ async def get_sentiment_trends():
         FROM cluster_summaries
         WHERE created_at >= NOW() - INTERVAL '7 days'
           AND sentiment IS NOT NULL
+          AND lang = %s
         GROUP BY day
         ORDER BY day ASC
     """
     try:
-        rows = await db.async_execute(sql)
+        rows = await db.async_execute(sql, (lang,))
         data = []
         for r in rows:
             score = float(r["avg_score"] or 0)
@@ -912,9 +931,9 @@ async def get_sentiment_trends():
 
 
 @router.get("/stats/mood")
-async def get_current_mood():
-    """Returns a real-time 'National Mood' based on today's coverage."""
-    cache_key = "api:stats:mood:v1"
+async def get_current_mood(lang: Optional[str] = "sr"):
+    """Returns a real-time 'National Mood' based on today's coverage, filtered by language."""
+    cache_key = f"api:stats:mood:v2:{lang}"
     cached = cached_response(cache_key, ttl=600)
     if cached:
         return cached
@@ -927,15 +946,17 @@ async def get_current_mood():
         FROM cluster_summaries
         WHERE created_at >= NOW() - INTERVAL '24 hours'
           AND sentiment IS NOT NULL
+          AND lang = %s
     """
     try:
-        rows = await db.async_execute(sql)
+        rows = await db.async_execute(sql, (lang,))
         if not rows:
             return {
                 "status": "success",
                 "mood": "neutralen",
                 "score": 0,
                 "objectivity": 1.0,
+                "sample_size": 0,
             }
 
         valid_scores = [r["score"] for r in rows if r["score"] is not None]

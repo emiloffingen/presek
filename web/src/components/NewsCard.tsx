@@ -77,7 +77,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
   const getTimeStr = (dateStr: string) => {
     try {
-      const date = new Date(dateStr);
+      const date = new Date(dateStr.replace("Z", ""));
       return date.toLocaleTimeString('sr-RS', { hour: '2-digit', minute: '2-digit' });
     } catch {
       return '';

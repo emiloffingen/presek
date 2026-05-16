@@ -12,20 +12,50 @@ cleanup_lock() {
 trap cleanup_lock EXIT
 
 SOURCE_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-APP_ROOT="/opt/presek"
+APP_ROOT="${APP_ROOT:-$HOME/presek-runtime}"
 RELEASES_DIR="$APP_ROOT/releases"
 CURRENT_LINK="$APP_ROOT/current"
-VENV_DIR="$APP_ROOT/venv"
+SHARED_DIR="$APP_ROOT/shared"
+VENV_DIR="${VENV_DIR:-$APP_ROOT/venv}"
+SHARED_WEB_NODE_MODULES="${SHARED_WEB_NODE_MODULES:-$SHARED_DIR/web-node_modules}"
 
 # Logging helpers
 info() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] $*"; }
 error() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $*" >&2; }
 ok() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] [OK]   $*"; }
+fail() { echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $*" >&2; exit 1; }
+
+# Discover services dynamically from source directory
+discover_app_services() {
+    local SYSTEMD_DIR="$SOURCE_ROOT/deploy/systemd"
+    
+    # Discover all unit files from the source directory
+    local all_units=()
+    while IFS= read -r -d '' file; do
+        all_units+=("$(basename "$file")")
+    done < <(find "$SYSTEMD_DIR" -maxdepth 1 -type f \( -name "*.service" -o -name "*.target" -o -name "*.timer" \) -print0 2>/dev/null || true)
+    
+    # Filter to only service files
+    local services=()
+    for unit in "${all_units[@]}"; do
+        if [[ "$unit" == *.service ]]; then
+            services+=("$unit")
+        fi
+    done
+    
+    if [ "${#services[@]}" -eq 0 ]; then
+        fail "No application services found in $SYSTEMD_DIR"
+    fi
+    
+    echo "${services[@]}"
+}
+
+APP_SERVICES=($(discover_app_services))
 
 # 1. Environment Validation
 info "Validating deployment environment..."
-[ -d "$APP_ROOT" ] || { error "APP_ROOT $APP_ROOT does not exist"; exit 1; }
-[ -d "$VENV_DIR" ] || { error "VENV_DIR $VENV_DIR does not exist"; exit 1; }
+[ -d "$APP_ROOT" ] || fail "APP_ROOT $APP_ROOT does not exist"
+[ -d "$VENV_DIR" ] || fail "VENV_DIR $VENV_DIR does not exist"
 
 # 2. Release Management
 RELEASE_ID=$(date -u +%Y%m%dT%H%M%SZ)
@@ -49,13 +79,21 @@ rsync -a \
 # 3. Build Frontend
 info "Building frontend..."
 cd "$RELEASE_DIR/web"
-npm install --silent
+if [ -d "$SHARED_WEB_NODE_MODULES" ]; then
+    ln -sfn "$SHARED_WEB_NODE_MODULES" "node_modules"
+else
+    npm install --silent
+fi
 npm run build --silent
 
-# 4. Update Backend dependencies & migrations
-info "Updating backend and running migrations..."
+# 4. Update Backend migrations
+info "Running migrations..."
 cd "$RELEASE_DIR"
-"$VENV_DIR/bin/pip" install -r requirements.txt --quiet
+if [ -f "$SHARED_DIR/.env" ]; then
+    set -a
+    source "$SHARED_DIR/.env"
+    set +a
+fi
 "$VENV_DIR/bin/alembic" upgrade head || info "Alembic migrations failed or not configured, skipping..."
 
 # 5. Switch Release
@@ -64,7 +102,11 @@ ln -sfn "$RELEASE_DIR" "$CURRENT_LINK"
 
 # 6. Restart Services
 info "Restarting services..."
-systemctl restart presek.service presek-worker.service
-systemctl reload nginx
+if [ -n "${SKIP_RESTART:-}" ] && [ "$SKIP_RESTART" = "1" ]; then
+    info "SKIP_RESTART is set, skipping systemctl restart"
+else
+    sudo systemctl restart "${APP_SERVICES[@]}"
+    sudo systemctl reload nginx || true
+fi
 
 ok "Deployment $RELEASE_ID successful!"

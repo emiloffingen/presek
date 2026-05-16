@@ -29,7 +29,7 @@ def test_language_filtering():
     mk_cluster_ids = set(cluster["cluster_id"] for cluster in mk_clusters)
     overlap = sr_cluster_ids.intersection(mk_cluster_ids)
     
-    print(f"\n3. Verification:")
+    print("\n3. Verification:")
     print(f"   Serbian cluster IDs: {list(sr_cluster_ids)[:5]}...")  # Show first 5
     print(f"   Macedonian cluster IDs: {list(mk_cluster_ids)[:5]}...")  # Show first 5
     print(f"   Overlapping clusters: {len(overlap)} (should be 0)")
@@ -41,7 +41,7 @@ def test_language_filtering():
         return False
     
     # Test country filtering in database
-    print(f"\n4. Testing direct database filtering...")
+    print("\n4. Testing direct database filtering...")
     sr_count = db.execute_one(
         "SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' AND country = 'RS'"
     )["count"]

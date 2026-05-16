@@ -251,14 +251,15 @@ def _rate_limit_error_payload() -> dict:
 
 
 async def build_intelligence_summary_payload(
-    last_24h: int, category: Optional[str] = None, runtime_events: Optional[dict] = None
+    last_24h: int, category: Optional[str] = None, runtime_events: Optional[dict] = None, lang: Optional[str] = "sr"
 ) -> dict:
-    """Calculates synthesis transparency, pluralism and international share metrics with optional category filter."""
+    """Calculates synthesis transparency, pluralism and international share metrics with optional category and language filter."""
     from utils import cached_response, set_cache, redis_client
     import asyncio
 
-    cat_id = f"cat-{category}" if category else "all"
-    cache_key = f"stats:intel_summary:{last_24h}:{cat_id}:v3"
+    country_filter = "MK" if lang == "mk" else "RS"
+    cat_id = f"cat-{category}-{lang}" if category else f"all-{lang}"
+    cache_key = f"stats:intel_summary:{last_24h}:{cat_id}:v4"
     use_redis = bool(
         os.environ.get("REDIS_URL")
         and not os.environ.get("CODEX_SANDBOX_NETWORK_DISABLED")
@@ -270,7 +271,7 @@ async def build_intelligence_summary_payload(
     # Count articles and international share in one query
     freshness_expr = "COALESCE(a.ingested_at, a.created_at)"
     cat_filter = ""
-    params = []
+    params = [country_filter]
     if category:
         cat_filter = "AND a.category = %s"
         params.append(category)
@@ -281,7 +282,7 @@ async def build_intelligence_summary_payload(
             COUNT(*) as total,
             COUNT(*) FILTER (WHERE a.category IN ('Svet', 'Evropa', 'Balkan', 'Region', 'Amerika', 'SAD') OR a.is_global = TRUE) as intl
         FROM articles a
-        WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours' {cat_filter}
+        WHERE a.country = %s AND {freshness_expr} >= NOW() - INTERVAL '24 hours' {cat_filter}
     """,
         tuple(params),
     )

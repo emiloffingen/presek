@@ -42,7 +42,7 @@ const briefingData = parseBriefing(content);
 
 function formatDate(dateStr: string) {
     try {
-        const d = new Date(dateStr);
+        const d = new Date(dateStr.replace("Z", ""));
         return d.toLocaleDateString('sr-RS', { 
             weekday: 'long', 
             year: 'numeric', 

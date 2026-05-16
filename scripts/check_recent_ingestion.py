@@ -1,5 +1,4 @@
 from core.database import db_manager as db
-from datetime import datetime, timedelta
 
 def check_recent_ingestion():
     rows = db.execute("""

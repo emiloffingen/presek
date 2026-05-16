@@ -37,6 +37,7 @@ class GlobalPulseResponse(BaseModel):
     status: str
     timestamp: datetime.datetime
     last_24h: int
+    ingestion_rate: float = 0.0  # items per minute
     velocity: List[PulseVelocity]
     by_category: List[PulseCategory]
     by_topic_sentiment: List[Dict[str, Any]] = []
@@ -519,7 +520,7 @@ async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts"):
 
 
 @router.get("/intelligence/source-pulse")
-async def get_source_pulse(category: Optional[str] = None):
+async def get_source_pulse(category: Optional[str] = None, lang: Optional[str] = "sr"):
     from utils import (
         get_source_trust_label,
         get_source_effective_weight,
@@ -527,14 +528,15 @@ async def get_source_pulse(category: Optional[str] = None):
         set_cache,
     )
 
-    cat_id = f"cat-{category}" if category else "all"
-    cache_key = f"api:intelligence:source-pulse:{cat_id}:v3"
+    cat_id = f"cat-{category}-{lang}" if category else f"all-{lang}"
+    cache_key = f"api:intelligence:source-pulse:{cat_id}:v4"
     cached = cached_response(cache_key)
     if cached:
         return cached
 
     cat_filter = ""
-    params = []
+    country_filter = "MK" if lang == "mk" else "RS"
+    params = [lang, country_filter]
     if category:
         cat_filter = "AND a.category = %s"
         params.append(category)
@@ -551,7 +553,7 @@ async def get_source_pulse(category: Optional[str] = None):
                 COUNT(DISTINCT a.cluster_id) as cluster_count
             FROM cluster_summaries s
             JOIN articles a ON s.cluster_id = a.cluster_id
-            WHERE s.sentiment IS NOT NULL AND s.created_at >= NOW() - INTERVAL '48 hours'
+            WHERE s.lang = %s AND a.country = %s AND s.sentiment IS NOT NULL AND s.created_at >= NOW() - INTERVAL '48 hours'
             {cat_filter}
             GROUP BY a.source
         ),
@@ -561,7 +563,7 @@ async def get_source_pulse(category: Optional[str] = None):
                 COALESCE(AVG(CAST(s.sentiment->'tone_analysis'->>'objectivity' AS REAL)), 0) as historical_objectivity
             FROM cluster_summaries s
             JOIN articles a ON s.cluster_id = a.cluster_id
-            WHERE s.sentiment IS NOT NULL 
+            WHERE s.lang = %s AND a.country = %s AND s.sentiment IS NOT NULL 
               AND s.created_at >= NOW() - INTERVAL '14 days'
               AND s.created_at < NOW() - INTERVAL '48 hours'
             {cat_filter}
@@ -570,13 +572,13 @@ async def get_source_pulse(category: Optional[str] = None):
         latest_headlines AS (
             SELECT DISTINCT ON (source) source, title, cluster_id
             FROM articles
-            WHERE created_at >= NOW() - INTERVAL '48 hours'
+            WHERE country = %s AND created_at >= NOW() - INTERVAL '48 hours'
             ORDER BY source, created_at DESC
         ),
         first_reporters_base AS (
             SELECT DISTINCT ON (cluster_id) source, cluster_id
             FROM articles
-            WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '10 days'
+            WHERE country = %s AND COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '10 days'
             ORDER BY cluster_id, COALESCE(ingested_at, created_at) ASC, created_at ASC
         ),
         first_report_counts AS (
@@ -584,7 +586,7 @@ async def get_source_pulse(category: Optional[str] = None):
             FROM first_reporters_base fr
             WHERE fr.cluster_id IN (
                 SELECT cluster_id FROM articles 
-                WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '7 days' 
+                WHERE country = %s AND COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '7 days' 
                   {cat_filter.replace('a.category', 'category')}
             )
             GROUP BY fr.source
@@ -603,8 +605,29 @@ async def get_source_pulse(category: Optional[str] = None):
         ORDER BY curr.cluster_count DESC
     """
 
-    # We pass params 3 times because cat_filter is used 3 times in the CTEs
-    rows = await db.async_execute(sql, tuple(params * 3))
+    # We need to construct the params tuple based on the CTEs usage
+    # source_stats: lang, country, [category]
+    # historical_baseline: lang, country, [category]
+    # latest_headlines: country
+    # first_reporters_base: country
+    # first_report_counts: country, [category]
+    
+    final_params = []
+    # source_stats
+    final_params.extend([lang, country_filter])
+    if category: final_params.append(category)
+    # historical_baseline
+    final_params.extend([lang, country_filter])
+    if category: final_params.append(category)
+    # latest_headlines
+    final_params.append(country_filter)
+    # first_reporters_base
+    final_params.append(country_filter)
+    # first_report_counts
+    final_params.append(country_filter)
+    if category: final_params.append(category)
+
+    rows = await db.async_execute(sql, tuple(final_params))
 
     for r in rows:
         r["trust_label"] = get_source_trust_label(r["source"])
@@ -718,13 +741,14 @@ async def get_entity_profile(name: str, lang: Optional[str] = "sr"):
 async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] = "sr"):
     """Public high-level intelligence stats for the Pulse page."""
     cat_id = f"cat-{category}-{lang}" if category else f"all-{lang}"
-    cache_key = f"api:intelligence:global-pulse:{cat_id}:v4"
+    cache_key = f"api:intelligence:global-pulse:{cat_id}:v5"
     cached = cached_response(cache_key)
     if cached:
         return cached
 
     cat_filter = ""
-    params = []
+    country_filter = "MK" if lang == "mk" else "RS"
+    params = [country_filter]
     if category:
         cat_filter = "AND a.category = %s"
         params.append(category)
@@ -735,7 +759,7 @@ async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] =
             f"""
             SELECT date_trunc('hour', COALESCE(a.ingested_at, a.created_at)) AS t, COUNT(*) AS n 
             FROM articles a
-            WHERE COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '24 hours' {cat_filter}
+            WHERE a.country = %s AND COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '24 hours' {cat_filter}
             GROUP BY t ORDER BY t
         """,
             tuple(params),
@@ -743,17 +767,34 @@ async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] =
 
     async def get_last_24h_count():
         count_filter = ""
-        count_params = []
+        count_params = [country_filter]
         if category:
             count_filter = "AND category = %s"
             count_params.append(category)
         return await db.async_execute_one(
             f"""
             SELECT COUNT(*) FROM articles
-            WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '24 hours' {count_filter}
+            WHERE country = %s AND COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '24 hours' {count_filter}
         """,
             tuple(count_params),
         )
+
+    async def get_ingestion_rate():
+        # Last 3 hours ingestion rate
+        rate_params = [country_filter]
+        if category:
+            rate_params.append(category)
+            
+        row = await db.async_execute_one(
+            f"""
+            SELECT COUNT(*) as n 
+            FROM articles a
+            WHERE a.country = %s AND COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '3 hours' {cat_filter}
+        """,
+            tuple(rate_params),
+        )
+        count = (row or {}).get("n", 0)
+        return round(float(count) / 180.0, 2)  # items per minute
 
     async def get_by_category():
         # Only needed if not filtering by category
@@ -763,14 +804,18 @@ async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] =
             """
             SELECT a.category, COUNT(*) AS n 
             FROM articles a
-            WHERE COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '24 hours'
+            WHERE a.country = %s AND COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '24 hours'
               AND a.category IS NOT NULL
               AND a.category != ''
             GROUP BY a.category ORDER BY n DESC
-        """
+            """,
+            (country_filter,),
         )
 
     async def get_topic_sentiment():
+        ts_params = [lang, country_filter]
+        if category:
+            ts_params.append(category)
         return await db.async_execute(
             f"""
             SELECT 
@@ -784,15 +829,15 @@ async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] =
             UNNEST(m.topics) t
             WHERE s.sentiment IS NOT NULL AND s.created_at >= NOW() - INTERVAL '24 hours'
               AND m.topics IS NOT NULL AND array_length(m.topics, 1) > 0
-              AND s.lang = %s
+              AND s.lang = %s AND m.category IN (SELECT category FROM articles WHERE country = %s)
               {cat_filter.replace('a.category', 'm.category')}
             GROUP BY t ORDER BY n DESC
         """,
-            tuple([lang] + params),
+            tuple(ts_params),
         )
 
-    velocity, by_category, by_topic_sentiment, count_row = await asyncio.gather(
-        get_velocity(), get_by_category(), get_topic_sentiment(), get_last_24h_count()
+    velocity, by_category, by_topic_sentiment, count_row, ingestion_rate = await asyncio.gather(
+        get_velocity(), get_by_category(), get_topic_sentiment(), get_last_24h_count(), get_ingestion_rate()
     )
 
     velocity_total = sum(row["n"] for row in velocity)
@@ -801,7 +846,7 @@ async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] =
     # 3. Pluralism & AI Metrics (Aggregated)
     from .common import build_intelligence_summary_payload
 
-    intel = await build_intelligence_summary_payload(last_24h, category=category)
+    intel = await build_intelligence_summary_payload(last_24h, category=category, lang=lang)
 
     # 4. Top Trending Entities (with 48h fallback)
     async def fetch_top_entities(interval_str):
@@ -812,7 +857,7 @@ async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] =
                     SELECT UNNEST(cm.tags) as name, cm.cluster_id
                     FROM cluster_metadata cm
                     JOIN articles a ON cm.cluster_id = a.cluster_id
-                    WHERE a.category = %s AND COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL {interval_str}
+                    WHERE a.country = %s AND a.category = %s AND COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL {interval_str}
                 ) t
                 LEFT JOIN knowledge_entities ke ON t.name = ke.name
                 WHERE t.name IS NOT NULL AND length(t.name) >= 3
@@ -820,7 +865,7 @@ async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] =
                 ORDER BY total_mentions DESC
                 LIMIT 12
             """
-            rows = await db.async_execute(sql, (category,))
+            rows = await db.async_execute(sql, (country_filter, category,))
         else:
             sql = f"""
                 SELECT t.name, COUNT(DISTINCT t.cluster_id) as total_mentions, ke.sentiment_score, ke.type
@@ -828,7 +873,7 @@ async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] =
                     SELECT UNNEST(cm.tags) as name, cm.cluster_id
                     FROM cluster_metadata cm
                     JOIN articles a ON cm.cluster_id = a.cluster_id
-                    WHERE COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL {interval_str}
+                    WHERE a.country = %s AND COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL {interval_str}
                 ) t
                 LEFT JOIN knowledge_entities ke ON t.name = ke.name
                 WHERE t.name IS NOT NULL AND length(t.name) >= 3
@@ -836,7 +881,7 @@ async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] =
                 ORDER BY total_mentions DESC
                 LIMIT 12
             """
-            rows = await db.async_execute(sql)
+            rows = await db.async_execute(sql, (country_filter,))
             
         # Post-process: clean names and filter out common generic tags
         from .common import _is_valid_focus_entity
@@ -869,6 +914,7 @@ async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] =
         "status": "success",
         "timestamp": datetime.datetime.now(),
         "last_24h": last_24h,
+        "ingestion_rate": ingestion_rate,
         "velocity": velocity,
         "by_category": by_category,
         "by_topic_sentiment": by_topic_sentiment,
@@ -996,11 +1042,13 @@ async def get_entity_topics(name: str):
 
 
 @router.get("/intelligence/live-map")
-async def get_live_map():
+async def get_live_map(lang: Optional[str] = "sr"):
+    country_filter = "MK" if lang == "mk" else "RS"
     return {
         "status": "success",
         "data": await db.async_execute(
-            f"SELECT a.source, COUNT(*) as activity_score FROM articles a WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY a.source ORDER BY activity_score DESC"
+            f"SELECT a.source, COUNT(*) as activity_score FROM articles a WHERE a.country = %s AND {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY a.source ORDER BY activity_score DESC",
+            (country_filter,)
         ),
     }
 

@@ -6,9 +6,7 @@ performance testing the Presek application.
 """
 
 from locust import HttpUser, task, between, events
-from locust.exception import LocustError
 import random
-import time
 
 
 class PresekUser(HttpUser):

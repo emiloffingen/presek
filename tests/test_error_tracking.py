@@ -1,6 +1,5 @@
 """Test error tracking functionality."""
 
-import pytest
 from core.error_tracking import capture_exception, capture_message, log_error, set_user_context
 
 
@@ -91,7 +90,6 @@ def test_message_capture_without_sentry():
 def test_error_tracking_initialization():
     """Test error tracking initialization."""
     # Import should initialize error tracking
-    import core.error_tracking
     
     # Should not raise an exception
     assert True

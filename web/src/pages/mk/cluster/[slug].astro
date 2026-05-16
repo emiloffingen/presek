@@ -310,13 +310,12 @@ const articleSchema = cluster ? {
 						sourcePreview={sourcePreview}
 						articlesCount={cluster.articles?.length || 0}
 					/>
-				{mainArticle?.text && (
+				{mainArticle?.full_content && (
 				<div class="mt-6 p-6 bg-secondary/10 border border-border/40 rounded-lg">
-				<h4 class="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">Izvorni tekst ({mainArticle.source})</h4>
-				<p class="font-nyt-body text-sm text-foreground/80 leading-relaxed italic">{mainArticle.text.slice(0, 500)}...</p>
+				<h4 class="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">Изворен текст ({mainArticle.source})</h4>
+				<p class="font-nyt-body text-sm text-foreground/80 leading-relaxed">{mainArticle.full_content}</p>
 				</div>
-				)}
-				</div><div class="editorial-grid">
+				)}				</div><div class="editorial-grid">
 	{/* 3. MAIN COLUMN */}
 	<div class="editorial-main-col">
 {/* EXECUTIVE SUMMARY / BRIFING - Hidden when we have a full narrative centerpiece */}

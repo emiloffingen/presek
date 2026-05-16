@@ -1,9 +1,8 @@
 import datetime
-import secrets
 import logging
 from fastapi import APIRouter, Request, HTTPException, Depends
 from core.database import db_manager as db
-from core.config import PRESEK_ADMIN_TOKEN, PROVIDER_FALLBACK_ORDER
+from core.config import PROVIDER_FALLBACK_ORDER
 from core.health import get_source_statuses, _probe_database, _probe_redis
 from utils import redis_client
 from core.version import version_payload

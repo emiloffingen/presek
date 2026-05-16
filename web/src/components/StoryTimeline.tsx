@@ -59,7 +59,7 @@ const StoryTimeline: React.FC<StoryTimelineProps> = ({ timeline, clusterId, apiU
 
   const getTimeStr = (dateStr: string) => {
     try {
-      const date = new Date(dateStr);
+      const date = new Date(dateStr.replace("Z", ""));
       return date.toLocaleTimeString('mk-RS', { hour: '2-digit', minute: '2-digit' });
     } catch {
       return '';
@@ -68,7 +68,7 @@ const StoryTimeline: React.FC<StoryTimelineProps> = ({ timeline, clusterId, apiU
 
   const getDateStr = (dateStr: string) => {
     try {
-      const date = new Date(dateStr);
+      const date = new Date(dateStr.replace("Z", ""));
       return date.toLocaleDateString('mk-RS', { day: 'numeric', month: 'short' });
     } catch {
       return '';

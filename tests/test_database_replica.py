@@ -3,7 +3,6 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from core.database import db_manager
-from core.config import DATABASE_READ_REPLICA_URL, USE_READ_REPLICA
 
 
 def test_read_replica_configuration():

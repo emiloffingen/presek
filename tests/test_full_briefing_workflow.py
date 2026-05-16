@@ -7,7 +7,6 @@ sys.path.insert(0, '/home/emiloffingen/presek')
 # Set up environment
 os.environ['VIBE_HOME'] = '/home/emiloffingen/presek'
 
-from tasks.delivery import generate_daily_brief_task
 from core.database import db_manager as db
 
 def test_briefing_storage():

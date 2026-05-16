@@ -55,7 +55,7 @@ class SecurityAudit:
 
         try:
             result = subprocess.run(
-                ["pip-audit", "--desc", "--format", "json"],
+                [sys.executable, "-m", "pip_audit", "--desc", "--format", "json"],
                 capture_output=True,
                 text=True,
                 timeout=60,
@@ -65,7 +65,13 @@ class SecurityAudit:
             # pip-audit returns 1 when vulnerabilities are found, 0 when none found
             if result.returncode in (0, 1):
                 try:
-                    data = json.loads(result.stdout)
+                    stdout_str = result.stdout.strip()
+                    if stdout_str and not stdout_str.startswith('{'):
+                        idx = stdout_str.find('{')
+                        if idx != -1:
+                            stdout_str = stdout_str[idx:]
+                    
+                    data = json.loads(stdout_str)
                     if data.get("dependencies"):
                         vuln_count = 0
                         for dep in data["dependencies"]:
@@ -95,9 +101,9 @@ class SecurityAudit:
                             "message": "No Python dependency vulnerabilities found",
                             "category": "Dependencies"
                         })
-                except json.JSONDecodeError:
+                except json.JSONDecodeError as e:
                     self.warnings.append({
-                        "message": "pip-audit output not in expected JSON format",
+                        "message": f"pip-audit output not in expected JSON format: {e}. Output was: {stdout_str[:100]}...",
                         "category": "Dependencies"
                     })
             else:
@@ -128,22 +134,29 @@ class SecurityAudit:
                 timeout=120
             )
 
-            if result.returncode == 0:
-                data = json.loads(result.stdout)
-                vulnerabilities = data.get("vulnerabilities", {})
+            if result.returncode in (0, 1) and result.stdout.strip():
+                try:
+                    data = json.loads(result.stdout)
+                    vulnerabilities = data.get("vulnerabilities", {})
 
-                if vulnerabilities:
-                    for pkg, vulns in vulnerabilities.items():
-                        for vuln in vulns.get("via", []):
-                            # Report Node.js dependency vulnerabilities as info
-                            # This allows the audit to pass cleanly while still surfacing vulnerabilities
-                            self.info.append({
-                                "message": f"{pkg}: {vuln.get('description', 'Vulnerability found')}",
-                                "category": "Node.js Dependencies"
-                            })
-                else:
-                    self.info.append({
-                        "message": "No Node.js dependency vulnerabilities found",
+                    if vulnerabilities:
+                        for pkg, vuln_info in vulnerabilities.items():
+                            for via in vuln_info.get("via", []):
+                                desc = via.get('title', 'Vulnerability found') if isinstance(via, dict) else str(via)
+                                # Report Node.js dependency vulnerabilities as info
+                                # This allows the audit to pass cleanly while still surfacing vulnerabilities
+                                self.info.append({
+                                    "message": f"{pkg}: {desc}",
+                                    "category": "Node.js Dependencies"
+                                })
+                    else:
+                        self.info.append({
+                            "message": "No Node.js dependency vulnerabilities found",
+                            "category": "Dependencies"
+                        })
+                except json.JSONDecodeError:
+                    self.warnings.append({
+                        "message": "npm audit output not in expected JSON format",
                         "category": "Dependencies"
                     })
             else:
@@ -399,7 +412,7 @@ class SecurityAudit:
 
         python_files = list(self.project_root.rglob("*.py"))
         # Exclude venv, this script itself, and scripts directory
-        exclude_paths = [".venv", "scripts/security_audit.py", ".git"]
+        exclude_paths = [".venv", "venv", "scripts/security_audit.py", ".git"]
         python_files = [
             f for f in python_files 
             if not any(excl in str(f) for excl in exclude_paths)

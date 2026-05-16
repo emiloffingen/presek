@@ -81,11 +81,11 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
     "Mapiraj reakcije i posledice...",
     "Šta se dešava u Srbiji?"
   ] : [
-    "Istrazi me mediumskata arhiva...",
-    "Analiziraj im protivrecnite stavovi...",
-    "Dekonstruiraj im faktite i brojkite...",
-    "Mapiraj im reakciite i posledicite...",
-    "Sto se slucuva vo Makedonija?"
+    "Истражи ја медиумската архива...",
+    "Анализирај противречни ставови...",
+    "Деконструирај ги фактите и бројките...",
+    "Мапирај реакции и последици...",
+    "Што се случува во Македонија?"
   ];
 
   const SEARCH_ACTIONS: SearchAction[] = [
@@ -368,7 +368,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={lang === 'sr' ? "Pretražite vesti, teme ili subjekte..." : "Prebarajte vesti, temi ili subjekti..."}
+              placeholder={lang === 'sr' ? "Pretražite vesti, teme ili subjekte..." : "Пребарај вести, теми или субјекти..."}
               className="w-full bg-transparent py-4 text-2xl md:text-3xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground/40 border-b-2 border-transparent focus:border-nyt-accent transition-colors"
               autoComplete="off"
               spellCheck="false"
@@ -564,11 +564,11 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
 
                     <div className="grid grid-cols-2 gap-4 py-6 border-y border-border/40">
                       <div>
-                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">izvori</p>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">{lang === 'sr' ? 'izvori' : 'извори'}</p>
                         <p className="text-xl font-black">{selectedItem.data.sourceCount}</p>
                       </div>
                       <div>
-                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">SKOR</p>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">{lang === 'sr' ? 'SKOR' : 'СКОР'}</p>
                         <p className="text-xl font-black text-nyt-accent">{selectedItem.data.pulse_score || '8.2'}</p>
                       </div>
                     </div>
@@ -577,7 +577,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                       onClick={() => navigateToCluster(selectedItem.data.cluster_id)}
                       className="w-full py-4 bg-nyt-accent text-white rounded-xl font-black uppercase tracking-[0.2em] text-xs shadow-lg shadow-nyt-accent/20 hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
                     >
-                      OTVORI prica <ChevronRight size={16} />
+                      {lang === 'sr' ? 'OTVORI PRIČU' : 'ОТВОРИ ПРИКАЗНА'} <ChevronRight size={16} />
                     </button>
                   </div>
                 )}
@@ -598,7 +598,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
 
                     <div className="space-y-4">
                        <div className="p-4 bg-background border border-border rounded-xl">
-                          <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">MEDIUMSKI PRISUSTVO</p>
+                          <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">{lang === 'sr' ? 'MEDIJSKO PRISUSTVO' : 'МЕДИУМСКО ПРИСУСТВО'}</p>
                           <div className="flex items-end gap-1 h-12 mb-2">
                             {[30, 50, 40, 80, 60, 90, 75, 85].map((h, i) => (
                               <div key={i} className="flex-1 bg-nyt-accent/20 rounded-t-sm group relative" style={{ height: `${h}%` }}>
@@ -606,13 +606,13 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                               </div>
                             ))}
                           </div>
-                          <p className="text-xs font-bold">{selectedItem.data.total_mentions} spomenuvanja vo arhivata</p>
+                          <p className="text-xs font-bold">{selectedItem.data.total_mentions} {lang === 'sr' ? 'pominjanja u arhivi' : 'споменувања во архивата'}</p>
                        </div>
 
                        <div className="p-4 bg-background border border-border rounded-xl flex items-center justify-between">
                           <div>
                             <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">SENTIMENT</p>
-                            <p className="font-serif font-black text-lg text-emerald-600">POZITIVEN</p>
+                            <p className="font-serif font-black text-lg text-emerald-600">{lang === 'sr' ? 'POZITIVAN' : 'ПОЗИТИВЕН'}</p>
                           </div>
                           <Activity size={24} className="text-emerald-500" />
                        </div>
@@ -622,7 +622,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                       onClick={() => navigateToQuery(selectedItem.data.name)}
                       className="w-full py-4 bg-foreground text-background rounded-xl font-black uppercase tracking-[0.2em] text-xs hover:bg-nyt-accent hover:text-white transition-all flex items-center justify-center gap-2"
                     >
-                      VIDI SITE vesti <ExternalLink size={16} />
+                      {lang === 'sr' ? 'VIDI SVE VESTI' : 'ВИДИ СИТЕ ВЕСТИ'} <ExternalLink size={16} />
                     </button>
                   </div>
                 )}
@@ -640,7 +640,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                       onClick={() => { closeSearch(); navigate(selectedItem.data.href); }}
                       className="px-10 py-4 bg-foreground text-background rounded-xl font-black uppercase tracking-[0.2em] text-xs hover:bg-nyt-accent transition-all"
                     >
-                      IZVRSI AKCIJA
+                      {lang === 'sr' ? 'IZVRŠI AKCIJU' : 'ИЗВРШИ АКЦИЈА'}
                     </button>
                   </div>
                 )}
@@ -650,8 +650,8 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                 <div className="w-20 h-20 border-2 border-dashed border-muted-foreground rounded-full flex items-center justify-center mb-6">
                    <Layout size={32} />
                 </div>
-                <p className="font-serif font-black text-xl mb-1">Pregled</p>
-                <p className="text-[10px] font-black uppercase tracking-widest">Izberete stavka za detali</p>
+                <p className="font-serif font-black text-xl mb-1">{lang === 'sr' ? 'Pregled' : 'Преглед'}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest">{lang === 'sr' ? 'Izaberite stavku za detalje' : 'Изберете ставка за детали'}</p>
               </div>
             )}
           </div>
@@ -660,14 +660,14 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
         {/* Command Footer */}
         <div className="px-6 py-3 border-t border-border/40 bg-secondary/5 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
            <div className="flex items-center gap-6">
-              <span className="flex items-center gap-2"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">ENTER</kbd> IZBERI</span>
-              <span className="flex items-center gap-2"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">↑</kbd><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">↓</kbd> NAVIGACIJA</span>
-              <span className="flex items-center gap-2"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">ESC</kbd> ZATVORI</span>
+              <span className="flex items-center gap-2"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">ENTER</kbd> {lang === 'sr' ? 'IZABERI' : 'ИЗБЕРИ'}</span>
+              <span className="flex items-center gap-2"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">↑</kbd><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">↓</kbd> {lang === 'sr' ? 'NAVIGACIJA' : 'НАВИГАЦИЈА'}</span>
+              <span className="flex items-center gap-2"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">ESC</kbd> {lang === 'sr' ? 'ZATVORI' : 'ЗАТВОРИ'}</span>
            </div>
            <div className="flex items-center gap-4">
-              <span className="flex items-center gap-1.5"><Globe size={12} /> GLOBALNA PRETRAGA</span>
+              <span className="flex items-center gap-1.5"><Globe size={12} /> {lang === 'sr' ? 'GLOBALNA PRETRAGA' : 'ГЛОБАЛНО ПРЕБАРУВАЊЕ'}</span>
               <span className="w-1 h-1 rounded-full bg-border" />
-              <span className="flex items-center gap-1.5"><Sparkles size={12} /> AI ASISTENCIJA</span>
+              <span className="flex items-center gap-1.5"><Sparkles size={12} /> AI {lang === 'sr' ? 'ASISTENCIJA' : 'АСИСТЕНЦИЈА'}</span>
            </div>
         </div>
       </div>

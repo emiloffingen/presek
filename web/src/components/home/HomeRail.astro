@@ -20,6 +20,7 @@ const { railWireArticles, briefing, stats, focusEntities, getTimeStr, getBriefin
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
+const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
 ---
 
 <aside class="broadsheet-rail">
@@ -35,13 +36,13 @@ const t = useTranslations(lang);
 		</div>
 		<div class="rail-wire-list">
 			{railWireArticles.slice(0, 10).map((art: any) => (
-				<a href={`/cluster/${art.cluster_id}`} class="rail-wire-item">
+				<a href={l(`/cluster/${art.cluster_id}`)} class="rail-wire-item">
 					<p>{getDisplayTitle(art)}</p>
 					<div class="rail-wire-meta">{art.source} <span>·</span> {getTimeStr(art.ingested_at || art.created_at)}</div>
 				</a>
 			))}
 		</div>
-		<a href="/pulse" class="rail-cta-plain">{t('rail.all_news')}</a>
+		<a href={l('/pulse')} class="rail-cta-plain">{t('rail.all_news')}</a>
 	</section>
 
 	{briefing && briefing.content && (
@@ -51,15 +52,15 @@ const t = useTranslations(lang);
 			<p class="rail-brief-text">
 				{getBriefingSnippet(briefing.content)}
 			</p>
-			<a href="/briefing" class="rail-cta">{t('rail.full_overview')} <TrendingUp size={10} /></a>
+			<a href={l('/briefing')} class="rail-cta">{t('rail.full_overview')} <TrendingUp size={10} /></a>
 		</section>
 	)}
 
-	<NationalMoodIsland client:visible />
+	<NationalMoodIsland lang={lang} client:visible />
 
-	<HomeRailSuggestionsIsland client:visible />
+	<HomeRailSuggestionsIsland lang={lang} client:visible />
 
-	<NewsletterIsland client:visible />
+	<NewsletterIsland lang={lang} client:visible />
 
 	{stats?.quote_of_the_day && (
 		<section class="rail-block">
@@ -68,7 +69,7 @@ const t = useTranslations(lang);
 				<p>„{stats.quote_of_the_day.quote}“</p>
 				<cite>
 					<span>{t('rail.related_story')}</span>
-					<a href={`/cluster/${stats.quote_of_the_day.cluster_id}`}>
+					<a href={l(`/cluster/${stats.quote_of_the_day.cluster_id}`)}>
 						{stats.quote_of_the_day.title}
 					</a>
 				</cite>
@@ -80,7 +81,7 @@ const t = useTranslations(lang);
 		<p class="rail-kicker">{t('rail.focus_topics')}</p>
 		<div class="rail-tag-cloud">
 			{focusEntities.map((ent: any) => (
-				<a href={`/subjekt/${encodeURIComponent(ent.name)}`}>
+				<a href={l(`/subjekt/${encodeURIComponent(ent.name)}`)}>
 					{ent.display_name || ent.name}
 				</a>
 			))}

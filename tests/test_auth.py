@@ -52,8 +52,6 @@ def test_invalid_jwt_verification():
 
 def test_jwt_expiration():
     """Test JWT token expiration."""
-    import time
-    from core.config import JWT_EXPIRE_MINUTES
     
     # Create a token
     token = create_jwt_token("test_user")

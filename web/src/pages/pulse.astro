@@ -5,9 +5,12 @@ import Footer from '../components/Footer.astro';
 import PulseClientContainer from '../components/PulseClientContainer';
 
 import { apiBaseUrl } from '../lib/apiBase';
-import { Activity, Timer, Zap } from 'lucide-react';
+import { getLangFromUrl } from '../i18n/utils';
+import { Activity, Timer, Zap, Cpu, database } from 'lucide-react';
 
 const API_URL = apiBaseUrl();
+const lang = getLangFromUrl(Astro.url);
+
 let initialPulseData = null;
 let globalPulse: any = null;
 let categories: string[] = [];
@@ -15,9 +18,9 @@ let ssrFailed = false;
 
 try {
     const [pulseRes, globalRes, catRes] = await Promise.all([
-        fetch(`${API_URL}/intelligence/source-pulse`),
-        fetch(`${API_URL}/intelligence/global-pulse`),
-        fetch(`${API_URL}/categories`)
+        fetch(`${API_URL}/intelligence/source-pulse?lang=${lang}`),
+        fetch(`${API_URL}/intelligence/global-pulse?lang=${lang}`),
+        fetch(`${API_URL}/categories?lang=${lang}`)
     ]);
     
     if (pulseRes.ok) {
@@ -43,26 +46,54 @@ try {
 }
 
 const safePulseVolume = Math.max(1, Number(globalPulse?.last_24h || 0));
-// const cleanCategoryData = (categoryData || []).filter - Added for integrity test
 
-const currentDate = new Date().toLocaleDateString('sr-RS', { 
+const currentDate = new Date().toLocaleDateString(lang === 'mk' ? 'mk-MK' : 'sr-RS', { 
     weekday: 'long', 
     year: 'numeric', 
     month: 'long', 
     day: 'numeric',
     timeZone: 'Europe/Belgrade'
 });
+
+const isMK = lang === 'mk';
+const siteTitle = isMK ? 'Медиумски Пулс' : 'Medijski Puls';
 ---
 
 <Layout 
-    title="Medijski Puls — Presek"
-    description="Analiza medijskog pejzaža u Srbiji kroz podatke i algoritamsku obradu u realnom vremenu."
+    title={`${siteTitle} — Presek`}
+    description={isMK ? "Анализа на медиумскиот пејзаж преку податоци и алгоритми." : "Analiza medijskog pejzaža kroz podatke i algoritamsku obradu."}
 >
     <NYTHeader />
-    <main class="site-layout broadsheet-layout pt-32 pb-[var(--page-py)]">
+    <main class="site-layout broadsheet-layout pt-24 pb-[var(--page-py)] overflow-x-hidden">
+        
+        {/* 1. SYSTEM STATUS BAR (REAL-TIME COMMAND CENTER) */}
+        <div class="system-status-bar mb-12">
+            <div class="status-inner">
+                <div class="status-group group-glow">
+                    <div class="pulse-indicator pulse-emerald"></div>
+                    <span class="status-label">{isMK ? 'СИСТЕМСКИ СИГНАЛ' : 'SISTEMSKI SIGNAL'}</span>
+                    <span class="status-value">{isMK ? 'АКТИВЕН' : 'AKTIVAN'}</span>
+                </div>
+                <div class="status-group divider-left">
+                    <Cpu size={10} className="text-muted-foreground" />
+                    <span class="status-label">{isMK ? 'AI МОДЕЛИ' : 'AI MODELI'}</span>
+                    <span class="status-value">Gemma 2 / Mistral</span>
+                </div>
+                <div class="status-group divider-left hide-mobile">
+                    <Zap size={10} className="text-nyt-accent" />
+                    <span class="status-label">{isMK ? 'ИНГЕСТИЈА' : 'INGESTIJA'}</span>
+                    <span class="status-value">{globalPulse?.ingestion_rate || '0.0'} {isMK ? 'арт/мин' : 'art/min'}</span>
+                </div>
+                <div class="status-group divider-left ml-auto">
+                    <Timer size={10} className="text-muted-foreground" />
+                    <span class="status-value tabular-nums" id="system-time">00:00:00</span>
+                </div>
+            </div>
+        </div>
+
         <header class="editorial-masthead motion-rise masthead-double-rule">
             <div class="masthead-top">
-                <span class="masthead-kicker">EDITORIJALNO IZDANIE</span>
+                <span class="masthead-kicker">{isMK ? 'ЕДИТОРИЈАЛНО ИЗДАНИЕ' : 'EDITORIJALNO IZDANJE'}</span>
                 <div class="masthead-meta">
                     <span class="meta-item">
                         <svg class="live-heartbeat mr-1" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -72,28 +103,31 @@ const currentDate = new Date().toLocaleDateString('sr-RS', {
                         </svg>
                         <Timer size={11} /> <span id="last-updated">UŽIVO</span>
                     </span>
-                    <span class="meta-item"><Activity size={11} /> VERZIJA 5.48</span>
+                    <span class="meta-item"><Activity size={11} /> V.2.1-CC</span>
                 </div>
             </div>
             
             <script is:inline>
                 const lastUpdatedEl = document.getElementById('last-updated');
+                const timeEl = document.getElementById('system-time');
                 const startTime = new Date();
                 
-                function updateTicker() {
+                function updateClock() {
                     const now = new Date();
+                    timeEl.textContent = now.toLocaleTimeString('en-GB', { hour12: false });
+                    
                     const diffMins = Math.floor((now - startTime) / 60000);
-                    lastUpdatedEl.textContent = diffMins === 0 ? 'UŽIVO (SADA)' : `PRE ${diffMins} ${diffMins === 1 ? 'MIN.' : 'MIN.'}`;
+                    lastUpdatedEl.textContent = diffMins === 0 ? 'UŽIVO' : `PRE ${diffMins} MIN.`;
                 }
                 
-                updateTicker();
-                setInterval(updateTicker, 60000);
+                updateClock();
+                setInterval(updateClock, 1000);
             </script>
 
             <div class="masthead-main">
                 <div class="masthead-branding">
                     <Zap size={32} className="text-nyt-accent pulse-zap-icon" fill="currentColor" />
-                    <h1 class="masthead-title">Medijski <span class="italic-serif">Puls</span></h1>
+                    <h1 class="masthead-title">{isMK ? 'Медиумски' : 'Medijski'} <span class="italic-serif">Puls</span></h1>
                 </div>
                 <div class="masthead-date">
                     <p>{currentDate}</p>
@@ -101,26 +135,15 @@ const currentDate = new Date().toLocaleDateString('sr-RS', {
             </div>
 
             <div class="masthead-standfirst mt-6">
-                <p>Dnevna slika medijskog pejzaža: obim, ritam, diverzitet i sistemska transparentnost. Analizirano kroz sistem duboke analize za objektivnost i pluralizam.</p>
+                <p>{isMK ? 'Дневна слика на медиумскиот пејзаж: обем, ритам, диверзитет и системска транспарентност. Анализирано преку систем за длабока анализа за објективност и плурализам.' : 'Dnevna slika medijskog pejzaža: obim, ritam, diverzitet i sistemska transparentnost. Analizirano kroz sistem duboke analize za objektivnost i pluralizam.'}</p>
             </div>
 
             <div class="masthead-deck mt-8">
-                <span class="deck-item"><strong class="mr-1.5">{categories.length || '–'}</strong> Kategorije</span>
-                <span class="deck-item"><strong class="mr-1.5">{globalPulse?.intelligence?.pluralism?.pluralism_pct > 0 ? globalPulse?.intelligence?.pluralism?.pluralism_pct + '%' : '–'}</strong> Diverzitet</span>
-                <span class="deck-item"><strong class="mr-1.5">{globalPulse?.last_24h?.toLocaleString('sr-RS') || '–'}</strong> Objava danas</span>
+                <span class="deck-item"><strong class="mr-1.5">{categories.length || '–'}</strong> {isMK ? 'Категории' : 'Kategorije'}</span>
+                <span class="deck-item"><strong class="mr-1.5">{globalPulse?.intelligence?.pluralism?.pluralism_pct > 0 ? globalPulse?.intelligence?.pluralism?.pluralism_pct + '%' : '–'}</strong> {isMK ? 'Диверзитет' : 'Diverzitet'}</span>
+                <span class="deck-item"><strong class="mr-1.5">{globalPulse?.last_24h?.toLocaleString(isMK ? 'mk-MK' : 'sr-RS') || '–'}</strong> {isMK ? 'Објави денес' : 'Objava danas'}</span>
             </div>
         </header>
-
-        <div class="pulse-intro-lede mt-16 mb-24">
-            <div class="intro-lede">
-                <h2 class="intro-greeting">Sistemsko praćenje.</h2>
-                <p class="intro-copy">
-                    Medijski puls u realnom vremenu: svaka objava se dekonstruiše kroz jezičke modele da bi se izmerila objektivnost,
-                    ton i originalnost. Izaberite kategoriju da biste analizirali specifičnu medijsku dinamiku.
-                </p>
-            </div>
-        </div>
-
 
         <PulseClientContainer 
             client:load 
@@ -128,6 +151,7 @@ const currentDate = new Date().toLocaleDateString('sr-RS', {
             initialPulseData={initialPulseData || []}
             categories={categories}
             ssrFailed={ssrFailed}
+            lang={lang}
         />
 
     </main>
@@ -135,12 +159,66 @@ const currentDate = new Date().toLocaleDateString('sr-RS', {
 </Layout>
 
 <style>
+    /* ── System Status Bar ──────────────────────────── */
+    .system-status-bar {
+        background: var(--foreground);
+        color: var(--background);
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        font-family: var(--font-sans);
+    }
+    .status-inner {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+    }
+    .status-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .divider-left {
+        border-left: 1px solid rgba(255,255,255,0.1);
+        padding-left: 1.5rem;
+    }
+    .status-label {
+        font-size: 0.5rem;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        opacity: 0.5;
+    }
+    .status-value {
+        font-size: 0.6rem;
+        font-weight: 850;
+        letter-spacing: 0.05em;
+    }
+    .pulse-indicator {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+    }
+    .pulse-emerald {
+        background: #10b981;
+        box-shadow: 0 0 8px #10b981;
+        animation: pulse-glow 2s infinite;
+    }
+    @keyframes pulse-glow {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(1.2); }
+    }
+    
+    @media (max-width: 640px) {
+        .hide-mobile { display: none; }
+        .status-inner { gap: 0.75rem; }
+        .divider-left { padding-left: 0.75rem; }
+    }
+
     /* ── Editorial Masthead ──────────────────────────── */
     .editorial-masthead {
         height: auto;
-        padding: 1rem 0;
-        margin-bottom: 0;
-        border-top: 1px solid var(--foreground);
+        padding: 1.5rem 0;
+        margin-bottom: 3rem;
+        border-top: 1px solid var(--border);
         border-bottom: 4px solid var(--foreground);
     }
     .live-heartbeat {

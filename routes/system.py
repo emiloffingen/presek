@@ -278,7 +278,7 @@ async def get_navigation(lang: Optional[str] = "sr"):
     target_country = "MK" if lang == "mk" else "RS"
 
     recent_clusters = await db.async_execute(
-        f"""
+        """
         SELECT m.cluster_id, 
                (SELECT title FROM articles WHERE cluster_id = m.cluster_id AND country = %s ORDER BY created_at DESC LIMIT 1) as title,
                (SELECT COALESCE(ingested_at, created_at) FROM articles WHERE cluster_id = m.cluster_id AND country = %s ORDER BY COALESCE(ingested_at, created_at) DESC LIMIT 1) as created_at
@@ -603,261 +603,191 @@ async def proxy_image(
 ):
     """
     Proxy images to avoid CORS and mixed content issues.
-    
-    Args:
-        url: The URL of the image to proxy.
-        w: The width of the image (optional).
-        cid: The cluster ID (optional).
-        t: The title of the image (optional).
-        cat: The category of the image (optional).
-    
-    Returns:
-        The proxied image as a Response.
-    
-    Raises:
-        HTTPException: If the URL is invalid or missing.
+    Highly resilient implementation that ensures a fallback is always served.
     """
-    if not url:
-        PROXY_REQUESTS.labels(status="400", reason="missing_url").inc()
-        raise HTTPException(status_code=400, detail="Nedostasuva URL adresa")
-
-    if url.startswith("/static/"):
-        relative = url[len("/static/") :].lstrip("/")
-        try:
-            # Important: In production, static/generated and static/uploads are symlinks
-            # to a shared directory outside the release tree. We must allow both.
-            candidate = (_STATIC_ROOT / relative).resolve()
-
-            allowed_roots = [
-                _STATIC_ROOT.resolve(),
-                (
-                    _APP_ROOT.parent.parent / "shared" / "static"
-                ).resolve(),  # Production shared root
-            ]
-
-            is_safe = False
-            for root in allowed_roots:
-                try:
-                    candidate.relative_to(root)
-                    is_safe = True
-                    break
-                except ValueError:
-                    continue
-
-            if not is_safe:
-                log.warning(
-                    f"[proxy/static] Path traversal attempt or invalid root for {url}: {candidate}"
-                )
-                raise HTTPException(status_code=403)
-
-            if not candidate.exists() or not candidate.is_file():
-                log.warning(f"[proxy/static] File not found: {candidate}")
-                PROXY_REQUESTS.labels(status="404", reason="file_not_found").inc()
-                raise HTTPException(status_code=404)
-            return FileResponse(candidate)
-        except HTTPException:
-            raise
-        except Exception as e:
-            log.warning(f"[proxy/static] Access denied for {url}: {e}")
-            raise HTTPException(status_code=403)
-
-    if not re.match(r"^https?://", url):
-        PROXY_REQUESTS.labels(status="400", reason="invalid_scheme").inc()
-        raise HTTPException(status_code=400, detail="Nevalidna URL sema")
-    
-    # Additional URL validation for common issues
-    try:
-        parsed_url = urllib.parse.urlparse(url)
-        if not parsed_url.netloc:
-            raise HTTPException(status_code=400, detail=f"Invalid URL - missing domain: {url}")
-        if parsed_url.netloc.endswith(('.localhost', 'localhost', '127.0.0.1', '0.0.0.0')):
-            raise HTTPException(status_code=400, detail=f"Localhost URLs not allowed: {url}")
-        if len(url) > 2048:
-            raise HTTPException(status_code=400, detail="URL too long")
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=f"Invalid URL format: {e}")
-
-    target_w = int(w) if w and w.isdigit() else 600
-    target_w = max(20, min(1200, target_w))
-
-    cache_key = f"proxy:bin:v3:{target_w}:{url}"
-    try:
-        cached_bin = binary_redis_client.get(cache_key)
-        if cached_bin:
-            PROXY_CACHE_HITS.inc()
-            PROXY_REQUESTS.labels(status="200", reason="cache_hit").inc()
-            return Response(
-                cached_bin,
-                media_type="image/webp",
-                headers={"Cache-Control": "public, max-age=86400", "X-Cache": "HIT"},
-            )
-    except Exception as e:
-        log.debug(f"Binary Redis cache lookup failed: {e}")
-        PROXY_REQUESTS.labels(status="500", reason="cache_error").inc()
-
     def serve_fallback(reason="error"):
-        svg = generate_local_placeholder(cid or "px", t or "vest", cat or "vesti")
-        log.warning(f"[proxy] Serving fallback for {url or 'unknown'}: {reason}")
-        
-        # Add diagnostic information to the SVG for debugging
-        diagnostic_svg = svg.replace("</svg>", f"""
-    <text x="40" y="430" font-family="sans-serif" font-size="12" fill="white" opacity="0.7">
-        Proxy Fallback: {reason}
-    </text>
-    <text x="40" y="445" font-family="sans-serif" font-size="10" fill="white" opacity="0.7">
-        URL: {url[:50] if url else 'unknown'}...
-    </text>
-</svg>""")
-        
-        return Response(
-            diagnostic_svg,
-            media_type="image/svg+xml",
-            headers={
-                "Cache-Control": "public, max-age=3600",
-                "X-Proxy-Fallback": reason,
-                "X-Debug-Reason": reason,
-                "X-Diagnostic-Info": f"Fallback served for {url or 'unknown'}: {reason}",
-            },
-        )
+        try:
+            from nlp.generation import generate_local_placeholder
+            svg = generate_local_placeholder(cid or "px", t or "vest", cat or "vesti")
+            log.warning(f"[proxy] Serving fallback for {url or 'unknown'}: {reason}")
+            
+            # Add diagnostic information to the SVG for debugging
+            diagnostic_svg = svg.replace("</svg>", f"""
+        <text x="40" y="430" font-family="sans-serif" font-size="12" fill="white" opacity="0.7">
+            Proxy Fallback: {reason}
+        </text>
+        <text x="40" y="445" font-family="sans-serif" font-size="10" fill="white" opacity="0.7">
+            URL: {url[:50] if url else 'unknown'}...
+        </text>
+    </svg>""")
+            
+            return Response(
+                diagnostic_svg,
+                media_type="image/svg+xml",
+                headers={
+                    "Cache-Control": "public, max-age=3600",
+                    "X-Proxy-Fallback": reason,
+                    "X-Debug-Reason": reason,
+                },
+            )
+        except Exception as fe:
+            log.error(f"[proxy] Critical failure in fallback generator: {fe}")
+            # Ultra-minimal fallback SVG if even the generator fails
+            minimal_svg = '<svg width="800" height="450" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="#27272a"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="white" font-family="serif" font-size="24">PRESEK</text></svg>'
+            return Response(minimal_svg, media_type="image/svg+xml")
 
     try:
-        # 1. Fast path: check if we have a locally saved version in the DB
-        local_img_row = await db.async_execute_one(
-            "SELECT local_image_path FROM articles WHERE image_url = %s AND local_image_path IS NOT NULL LIMIT 1",
-            (url,),
-        )
-        img_data = None
-        if local_img_row:
-            local_rel = local_img_row["local_image_path"].lstrip("/")
-            if local_rel.startswith("static/"):
-                local_rel = local_rel[len("static/") :].lstrip("/")
+        if not url:
+            return serve_fallback("missing_url")
 
-            local_full = (_STATIC_ROOT / local_rel).resolve()
-            allowed_roots = [
-                _STATIC_ROOT.resolve(),
-                (_APP_ROOT.parent.parent / "shared" / "static").resolve(),
-            ]
-            is_safe_local = False
-            for root in allowed_roots:
-                try:
-                    local_full.relative_to(root)
-                    is_safe_local = True
-                    break
-                except ValueError:
-                    continue
+        if url.startswith("/static/"):
+            relative = url[len("/static/") :].lstrip("/")
+            try:
+                candidate = (_STATIC_ROOT / relative).resolve()
+                allowed_roots = [
+                    _STATIC_ROOT.resolve(),
+                    (_APP_ROOT.parent.parent / "shared" / "static").resolve(),
+                ]
 
-            if not is_safe_local:
-                log.warning(
-                    f"[proxy] Blocked unsafe local image path for {url}: {local_full}"
+                is_safe = False
+                for root in allowed_roots:
+                    try:
+                        candidate.relative_to(root)
+                        is_safe = True
+                        break
+                    except ValueError:
+                        continue
+
+                if not is_safe:
+                    log.warning(f"[proxy/static] Path traversal attempt or invalid root for {url}: {candidate}")
+                    return serve_fallback("security_block")
+
+                if not candidate.exists() or not candidate.is_file():
+                    return serve_fallback("file_not_found")
+                return FileResponse(candidate)
+            except Exception as e:
+                log.warning(f"[proxy/static] Access denied for {url}: {e}")
+                return serve_fallback("static_access_error")
+
+        if not re.match(r"^https?://", url):
+            return serve_fallback("invalid_scheme")
+        
+        try:
+            parsed_url = urllib.parse.urlparse(url)
+            if not parsed_url.netloc:
+                return serve_fallback("invalid_domain")
+            if parsed_url.netloc.endswith(('.localhost', 'localhost', '127.0.0.1', '0.0.0.0')):
+                return serve_fallback("security_localhost_block")
+        except Exception:
+            return serve_fallback("parse_error")
+
+        target_w = int(w) if w and w.isdigit() else 600
+        target_w = max(20, min(1200, target_w))
+
+        cache_key = f"proxy:bin:v4:{target_w}:{url}"
+        try:
+            cached_bin = binary_redis_client.get(cache_key)
+            if cached_bin:
+                return Response(
+                    cached_bin,
+                    media_type="image/webp",
+                    headers={"Cache-Control": "public, max-age=86400", "X-Cache": "HIT"},
                 )
-            elif local_full.exists() and local_full.is_file():
-                with open(local_full, "rb") as f:
-                    img_data = f.read()
-                log.info(f"[proxy] Using local master for {url}")
+        except Exception as e:
+            log.debug(f"Binary Redis cache lookup failed: {e}")
 
-        # 2. Slow path: fetch from remote if no local version exists
+        # Core fetch and process logic
+        img_data = None
+        
+        # Check local DB cache
+        try:
+            local_img_row = await db.async_execute_one(
+                "SELECT local_image_path FROM articles WHERE image_url = %s AND local_image_path IS NOT NULL LIMIT 1",
+                (url,),
+            )
+            if local_img_row:
+                local_rel = local_img_row["local_image_path"].lstrip("/")
+                if local_rel.startswith("static/"):
+                    local_rel = local_rel[len("static/") :].lstrip("/")
+
+                local_full = (_STATIC_ROOT / local_rel).resolve()
+                if local_full.exists() and local_full.is_file():
+                    with open(local_full, "rb") as f:
+                        img_data = f.read()
+                    log.info(f"[proxy] Using local master for {url}")
+        except Exception as e:
+            log.warning(f"[proxy] DB lookup failed: {e}")
+
+        # Fetch from remote
         if not img_data:
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 "Referer": url,
                 "Accept": "image/webp,image/apng,image/*,*/*;q=0.8",
-                "Accept-Language": "en-US,en;q=0.9",
             }
 
-            # Security: Resolve IPs to prevent SSRF
             try:
+                from utils.network import _resolve_public_ips, _peer_ip
                 safe_ips = _resolve_public_ips(url)
-            except Exception as e:
-                log.debug(f"SSRF: Failed to resolve IPs for {url}: {e}")
-                return serve_fallback("security_block")
-
-            import httpx
-
-            async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
-                try:
+                
+                import httpx
+                async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
                     async with client.stream("GET", url, headers=headers) as resp:
-                        # Check peer IP after connection
                         p_ip = _peer_ip(resp)
                         if not p_ip or p_ip not in safe_ips:
-                            return serve_fallback("security_ip_block")
+                            return serve_fallback("security_ssrf_block")
 
-                        if resp.status_code == 403:
-                            log.warning(f"[proxy] Hotlinking blocked for {url} - trying with referer")
-                            # Try again with different headers to bypass hotlinking protection
-                            headers["Referer"] = f"https://{parsed_url.netloc}/"
-                            async with client.stream("GET", url, headers=headers) as resp2:
-                                if resp2.status_code == 200:
-                                    resp = resp2
-                                else:
-                                    return serve_fallback(f"hotlink_blocked_{resp2.status_code}")
-                        elif resp.status_code == 404:
-                            return serve_fallback("not_found")
-                        elif resp.status_code != 200:
+                        if resp.status_code != 200:
                             return serve_fallback(f"http_{resp.status_code}")
 
-                        ctype = (
-                            str(resp.headers.get("Content-Type", ""))
-                            .split(";")[0]
-                            .strip()
-                        )
+                        ctype = str(resp.headers.get("Content-Type", "")).split(";")[0].strip()
                         if ctype not in _PROXY_ALLOWED_TYPES:
-                            return serve_fallback("invalid_type")
+                            return serve_fallback("invalid_content_type")
 
-                        # Read content safely
                         img_data = b""
                         async for chunk in resp.aiter_bytes(chunk_size=16384):
                             img_data += chunk
                             if len(img_data) > _PROXY_MAX_BYTES:
-                                log.warning(f"[proxy] Image too large: {url}")
-                                PROXY_REQUESTS.labels(status="400", reason="too_large").inc()
                                 return serve_fallback("too_large")
-                except Exception as e:
-                    log.error(f"[proxy] Fetch failed for {url}: {e}", exc_info=True)
-                    PROXY_REQUESTS.labels(status="500", reason="fetch_failed").inc()
-                    return serve_fallback("fetch_failed")
+            except Exception as e:
+                log.error(f"[proxy] Fetch failed for {url}: {e}")
+                return serve_fallback("fetch_failed")
 
         if not img_data:
             return serve_fallback("no_data")
 
-        from PIL import Image
-
-        img = Image.open(BytesIO(img_data))
-        if img.mode in ("RGBA", "P"):
-            img = img.convert("RGB")
-
-        if img.width > target_w:
-            ratio = target_w / float(img.width)
-            img = img.resize(
-                (target_w, int(float(img.height) * ratio)), Image.Resampling.LANCZOS
-            )
-
-        out = BytesIO()
-        quality = 30 if target_w <= 80 else 75
-        img.save(out, "WEBP", quality=quality, method=4)
-        optimized = out.getvalue()
-
+        # Process image
         try:
-            binary_redis_client.setex(cache_key, 86400, optimized)
-            log.info(f"[proxy] Cached image: {url}")
-        except Exception as e:
-            log.warning(f"[proxy] Failed to cache binary image: {e}")
+            from PIL import Image
+            img = Image.open(BytesIO(img_data))
+            if img.mode in ("RGBA", "P"):
+                img = img.convert("RGB")
 
-        log.info(f"[proxy] Successfully proxied image: {url}")
-        PROXY_CACHE_MISSES.inc()
-        PROXY_BYTES.inc(len(optimized))
-        PROXY_REQUESTS.labels(status="200", reason="cache_miss").inc()
-        return Response(
-            optimized,
-            media_type="image/webp",
-            headers={"Cache-Control": "public, max-age=86400", "X-Cache": "MISS"},
-        )
-    except Exception as e:
-        log.error(f"[proxy] Error for {url}: {e}", exc_info=True)
-        # Add more specific error logging for common issues
-        if "Connection refused" in str(e):
-            log.error(f"[proxy] Connection refused for {url} - service may be down")
-        elif "timeout" in str(e).lower():
-            log.error(f"[proxy] Timeout fetching {url} - slow response")
-        elif "403" in str(e) or "404" in str(e):
-            log.error(f"[proxy] Access denied for {url} - hotlinking blocked or invalid URL")
-        return serve_fallback("exception")
+            if img.width > target_w:
+                ratio = target_w / float(img.width)
+                img = img.resize(
+                    (target_w, int(float(img.height) * ratio)), Image.Resampling.LANCZOS
+                )
+
+            out = BytesIO()
+            quality = 30 if target_w <= 80 else 75
+            img.save(out, "WEBP", quality=quality, method=4)
+            optimized = out.getvalue()
+
+            try:
+                binary_redis_client.setex(cache_key, 86400, optimized)
+            except Exception:
+                pass
+
+            return Response(
+                optimized,
+                media_type="image/webp",
+                headers={"Cache-Control": "public, max-age=86400", "X-Cache": "MISS"},
+            )
+        except Exception as e:
+            log.error(f"[proxy] Image processing failed for {url}: {e}")
+            return serve_fallback("processing_error")
+
+    except Exception as ge:
+        log.error(f"[proxy] Global failure for {url}: {ge}", exc_info=True)
+        return serve_fallback("global_exception")

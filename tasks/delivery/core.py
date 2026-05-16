@@ -2,11 +2,9 @@ import datetime
 import json
 import urllib.parse
 import httpx
-import os
-import sys
 
 from core.database import db_manager as db
-from core.config import NTFY_TOPIC, NTFY_TOKEN
+from core.config import NTFY_TOKEN
 from tasks.utils import log, _PUBLIC_SITE_URL
 
 _BREAKING_ALERT_QUEUE_DEPTH_LIMIT = 100

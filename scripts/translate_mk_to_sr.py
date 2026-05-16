@@ -18,9 +18,7 @@ Usage:
     python3 scripts/translate_mk_to_sr.py --all --apply
 """
 
-import os
 import re
-import sys
 import argparse
 from pathlib import Path
 from typing import Dict, List, Tuple
@@ -336,7 +334,7 @@ def main():
     
     # Process files
     print(f"\n{'='*70}")
-    print(f"TRANSLATION: Macedonian → Serbian Latin")
+    print("TRANSLATION: Macedonian → Serbian Latin")
     print(f"Mode: {'DRY RUN' if dry_run else 'APPLY CHANGES'}")
     print(f"{'='*70}\n")
     
@@ -352,7 +350,7 @@ def main():
     if dry_run:
         print(f"DRY RUN: Would modify {len(files_with_issues)} files")
     else:
-        print(f"Done!")
+        print("Done!")
     print(f"{'='*70}")
 
 
