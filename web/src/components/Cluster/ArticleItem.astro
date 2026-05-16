@@ -1,12 +1,28 @@
 ---
-import { Link2, ShieldCheck, TriangleAlert } from 'lucide-react';
+import { Link2, ShieldCheck, ExternalLink } from 'lucide-react';
 import { sanitizeHtml } from '../../lib/sanitize';
+import { deShout, cleanAndDecode } from '../../utils/textUtils';
 
 interface Props {
 	article: any;
 }
 
 const { article: a } = Astro.props;
+
+// Clean text function to strip HTML tags and unwanted artifacts
+function cleanText(text: string) {
+    if (!text) return '';
+    // Strip HTML tags
+    let clean = text.replace(/<[^>]*>?/gm, '');
+    // Clean and decode entities
+    clean = cleanAndDecode(clean);
+    // De-shout
+    clean = deShout(clean);
+    return clean;
+}
+
+const displayTitle = cleanText(a.title);
+const displaySnippet = cleanText(a.description || a.summary);
 ---
 
 <div class={`article-editorial-row tone-${a.relationship.tone} timeline-item`} data-article-link={encodeURIComponent(a.link || '')}>
@@ -23,43 +39,54 @@ const { article: a } = Astro.props;
             )}
 		</div>
 		<div class="row-time">
-			<span class="exact">{a.exactTime}</span>
 			<span class="relative">{a.relativeTime}</span>
 		</div>
 	</div>
 	<a href={a.link} target="_blank" rel="noopener noreferrer" class="row-title-link">
-		<h3 class="row-title" set:html={sanitizeHtml(a.title)}></h3>
+		<h3 class="row-title">{displayTitle}</h3>
 	</a>
-	<p class="row-snippet" set:html={sanitizeHtml(a.description)}></p>
+	{displaySnippet && (
+        <p class="row-snippet">{displaySnippet}</p>
+    )}
 	<div class="row-footer">
 		<a href={a.link} target="_blank" rel="noopener noreferrer" class="read-original">
-			Originalna objava <Link2 size={12} />
+			PROČITAJ NA {a.source} <ExternalLink size={10} />
 		</a>
 	</div>
 </div>
 
 <style>
 	.article-editorial-row {
-		padding: 1.5rem 0 1.5rem 3rem;
+		padding: 1.75rem 0 1.75rem 3rem;
 		border-bottom: 1px solid var(--border);
-		transition: background-color 0.2s ease;
+		transition: all 0.2s ease;
         position: relative;
 	}
 
+    .article-editorial-row:hover {
+        background-color: var(--secondary)/5;
+    }
+
     .timeline-dot {
         position: absolute;
-        left: 0.45rem;
-        top: 2rem;
-        width: 12px;
-        height: 12px;
+        left: 0.5rem;
+        top: 2.1rem;
+        width: 10px;
+        height: 10px;
         border-radius: 50%;
         background: var(--border);
         border: 2px solid var(--background);
         z-index: 1;
+        transition: transform 0.2s ease;
+    }
+
+    .article-editorial-row:hover .timeline-dot {
+        transform: scale(1.2);
+        background: var(--nyt-accent);
     }
 
     .article-editorial-row.tone-latest .timeline-dot { background: #10b981; }
-    .article-editorial-row.tone-origin .timeline-dot { background: var(--nyt-accent); }
+    .article-editorial-row.tone-origin .timeline-dot { background: #64748b; }
     .article-editorial-row.tone-deep .timeline-dot { background: #6366f1; }
 
 	.article-editorial-row:last-child {
@@ -70,7 +97,7 @@ const { article: a } = Astro.props;
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		margin-bottom: 0.75rem;
+		margin-bottom: 0.85rem;
 	}
 
 	.row-source-info {
@@ -82,104 +109,98 @@ const { article: a } = Astro.props;
 
 	.source-name {
 		font-family: var(--font-sans);
-		font-size: 0.65rem;
-		font-weight: 950;
+		font-size: 0.6rem;
+		font-weight: 900;
 		text-transform: uppercase;
-		letter-spacing: 0.05em;
+		letter-spacing: 0.1em;
+        color: var(--foreground);
 	}
 
 	.tone-badge {
 		font-family: var(--font-sans);
 		font-size: 0.55rem;
-		font-weight: 900;
-		padding: 1px 6px;
+		font-weight: 800;
+		padding: 2px 6px;
 		border-radius: 2px;
 		text-transform: uppercase;
+        letter-spacing: 0.05em;
 	}
 
     .tone-badge.tone-latest { background: #dcfce7; color: #166534; }
 	.tone-badge.tone-origin { background: #f1f5f9; color: #475569; }
     .tone-badge.tone-deep { background: #e0e7ff; color: #3730a3; }
-    .tone-badge.tone-neutral { background: #f8fafc; color: #64748b; }
+    .tone-badge.tone-neutral { background: var(--secondary); color: var(--secondary-foreground); }
 
     /* Quality Badges */
     .quality-badge {
-        font-family: var(--font-sans);
-        font-size: 0.5rem;
-        font-weight: 950;
         display: flex;
         align-items: center;
-        gap: 3px;
-        padding: 1px 5px;
-        border-radius: 2px;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
+        color: #10b981;
+        opacity: 0.8;
     }
 
-    .badge-obj { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
-    .badge-sens { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
-
 	.row-time {
-		display: flex;
-		gap: 0.5rem;
 		font-family: var(--font-sans);
 		font-size: 0.6rem;
-		font-weight: 800;
+		font-weight: 700;
 		color: var(--muted-foreground);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
 	}
 
 	.row-title-link {
 		text-decoration: none;
 		color: inherit;
 		display: block;
-		margin-bottom: 0.5rem;
+		margin-bottom: 0.75rem;
 	}
 
 	.row-title {
 		font-family: var(--font-serif);
-		font-size: 1.35rem;
+		font-size: 1.25rem;
 		font-weight: 800;
-		line-height: 1.25;
+		line-height: 1.3;
 		color: var(--foreground);
+        letter-spacing: -0.01em;
 	}
 
 	.row-title-link:hover .row-title {
 		color: var(--nyt-accent);
-		text-decoration: underline;
-		text-decoration-thickness: 1px;
-		text-underline-offset: 4px;
 	}
 
 	.row-snippet {
 		font-family: var(--font-nyt-body);
-		font-size: 1.05rem;
-		line-height: 1.5;
+		font-size: 0.95rem;
+		line-height: 1.6;
 		color: var(--secondary-foreground);
-		margin-bottom: 1rem;
+		margin-bottom: 1.25rem;
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
+        opacity: 0.85;
 	}
 
 	.row-footer {
 		display: flex;
-		justify-content: flex-end;
+		justify-content: flex-start;
 	}
 
 	.read-original {
 		display: flex;
 		align-items: center;
-		gap: 0.35rem;
+		gap: 0.4rem;
 		font-family: var(--font-sans);
-		font-size: 0.65rem;
-		font-weight: 950;
-		color: var(--nyt-accent);
+		font-size: 0.6rem;
+		font-weight: 900;
+		color: var(--muted-foreground);
 		text-transform: uppercase;
 		text-decoration: none;
+        letter-spacing: 0.1em;
+        transition: color 0.2s ease;
 	}
 
 	.read-original:hover {
-		text-decoration: underline;
+		color: var(--nyt-accent);
 	}
 </style>
