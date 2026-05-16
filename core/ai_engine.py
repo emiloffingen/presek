@@ -181,6 +181,7 @@ class AIProvider(ABC):
         json_mode: bool,
         topic: str = None,
         task_type: str = "default",
+        lang: str = "sr",
     ) -> str | None:
         log.debug(f"Abstract method call() not implemented for {self.__class__.__name__}")
         return None
@@ -211,6 +212,7 @@ class OpenAICompatibleProvider(AIProvider):
         json_mode: bool,
         topic: str = None,
         task_type: str = "default",
+        lang: str = "sr",
     ) -> str | None:
         if not self.api_key or not self.api_url:
             return None
@@ -267,6 +269,7 @@ class LocalProvider(AIProvider):
         json_mode: bool,
         topic: str = None,
         task_type: str = "default",
+        lang: str = "sr",
     ) -> str | None:
         from nlp.local_analyst import analyst
 
@@ -277,22 +280,22 @@ class LocalProvider(AIProvider):
             or "sintez" in lowered_system
             or task_type == "synthesis"
         ):
-            res = analyst.analyze(prompt, system, max_tokens=max_tokens)
+            res = analyst.analyze(prompt, system, max_tokens=max_tokens, lang=lang)
             if res:
                 return res
             return synthesize_locally([], topic=topic)
 
         if "summarize" in lowered_system or task_type == "summarize":
-            res = analyst.analyze(prompt, system, max_tokens=max_tokens)
+            res = analyst.analyze(prompt, system, max_tokens=max_tokens, lang=lang)
             if res:
                 return res
 
         if task_type == "research":
-            res = analyst.research_query(prompt, system)
+            res = analyst.research_query(prompt, system, lang=lang)
             if res:
                 return json.dumps(res) if isinstance(res, dict) else res
 
-        res = analyst.analyze(prompt, system, max_tokens=max_tokens)
+        res = analyst.analyze(prompt, system, max_tokens=max_tokens, lang=lang)
         if res:
             if json_mode:
                 return json.dumps(
@@ -320,6 +323,7 @@ class NvidiaProvider(AIProvider):
         json_mode: bool,
         topic: str = None,
         task_type: str = "default",
+        lang: str = "sr",
     ) -> str | None:
         if not self.api_key or not self.api_url:
             return None
@@ -403,6 +407,7 @@ async def _call_ai_async(
     json_mode: bool = False,
     stream: bool = False,
     topic: str = None,
+    lang: str = "sr",
 ):
     """Entrypoint with cascading failover."""
     # Sanitize prompts to prevent injection attacks
@@ -454,6 +459,7 @@ async def _call_ai_async(
                 json_mode,
                 topic=topic,
                 task_type=task_type,
+                lang=lang,
             )
             if res:
                 AI_LATENCY.labels(provider=provider_name, task_type=task_type).observe(
@@ -484,6 +490,7 @@ def _call_ai(
     max_tokens: int = 2000,
     json_mode: bool = False,
     topic: str = None,
+    lang: str = "sr",
 ):
     """Synchronous AI entrypoint with cascading failover."""
     # Sanitize prompts to prevent injection attacks
@@ -506,7 +513,7 @@ def _call_ai(
         start_time = time.time()
         try:
             res = provider.call(
-                prompt, system, max_tokens, json_mode, topic=topic, task_type=task_type
+                prompt, system, max_tokens, json_mode, topic=topic, task_type=task_type, lang=lang
             )
             if res:
                 AI_LATENCY.labels(provider=provider_name, task_type=task_type).observe(
@@ -543,9 +550,10 @@ def sync_call_ai(
     max_tokens: int = 2000,
     json_mode: bool = False,
     topic: str = None,
+    lang: str = "sr",
 ):
     """Backwards-compatible alias for synchronous callers."""
-    return _call_ai(prompt, system, task_type, max_tokens, json_mode, topic=topic)
+    return _call_ai(prompt, system, task_type, max_tokens, json_mode, topic=topic, lang=lang)
 
 
 def clean_json_response(text: str) -> dict | str | None:

@@ -17,7 +17,7 @@ from .common import cleanAndDecode, _is_valid_focus_entity
 from .security import validate_cluster_id, validate_list_param, validate_string_param
 from core.limiter import custom_rate_limit
 from core.ai_engine import sync_call_ai, clean_json_response
-from core.prompts import RESEARCH_SYSTEM_PROMPT
+from core.prompts import RESEARCH_SYSTEM_PROMPT, RESEARCH_SYSTEM_PROMPT_MK
 
 log = logging.getLogger("presek")
 router = APIRouter()
@@ -400,9 +400,7 @@ async def get_deep_research(
         )
         
         # Adjust research prompt based on language
-        research_system_prompt = RESEARCH_SYSTEM_PROMPT
-        if lang == "sr":
-            research_system_prompt = "Ti si Presek Istraživač. Odgovori na pitanje koristeći isključivo dati kontekst. Zboruvaj na srpskom jeziku."
+        research_system_prompt = RESEARCH_SYSTEM_PROMPT_MK if lang == "mk" else RESEARCH_SYSTEM_PROMPT
         
         prompt = f"PITANJE: {query}\n\nKONTEKST ZA ANALIZU:\n{context}" if lang == "sr" else f"PRASANjE: {query}\n\nKONTEKST ZA ANALIZA:\n{context}"
 
@@ -413,10 +411,11 @@ async def get_deep_research(
             task_type="research",
             json_mode=True,
             max_tokens=800,
+            lang=lang,
         )
 
         if not raw:
-            return {"status": "error", "message": "Sistem trenutno nije dostupan."}
+            return {"status": "error", "message": "Sistemot momentalno ne e dostapen." if lang == "mk" else "Sistem trenutno nije dostupan."}
 
         # Parse structured response
         response = clean_json_response(raw)
@@ -1191,7 +1190,7 @@ async def get_latest_briefing(date: Optional[str] = None, lang: str = "sr"):
         )
 
     if not row:
-        return {"status": "error", "message": "Brifing nije pronadjen"}
+        return {"status": "error", "message": "Брифингот не е пронајден" if lang == "mk" else "Brifing nije pronađen"}
 
     target_date = row["date"]
 

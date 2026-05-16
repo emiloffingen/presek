@@ -119,6 +119,7 @@ def summarize_article_task(article_id, final_title=None):
         task_type="summarize",
         topic=topic,
         json_mode=False,
+        lang=lang,
     )
 
     final_text = None
@@ -484,6 +485,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 json_mode=True,
                 task_type="synthesis",
                 max_tokens=max_tokens,
+                lang=lang,
             )
             res_data = {}
 
