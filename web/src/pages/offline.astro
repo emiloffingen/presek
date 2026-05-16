@@ -49,5 +49,22 @@ import { WifiOff, BookOpen, Clock } from 'lucide-react';
 </Layout>
 
 <style>
-... [KEEP ORIGINAL STYLES]
+    .offline-action-card {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        padding: 1.5rem;
+        background: var(--secondary);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        text-decoration: none;
+        color: inherit;
+        transition: all 0.2s;
+    }
+
+    .offline-action-card:hover {
+        transform: translateY(-4px);
+        border-color: var(--nyt-accent);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    }
 </style>

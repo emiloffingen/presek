@@ -87,5 +87,30 @@ import { KeyRound, Radio, ShieldCheck, UserCircle2, Sparkles, ArrowUpRight } fro
 </Layout>
 
 <style>
-... [KEEP ORIGINAL STYLES]
+    .editorial-shell { max-width: 1200px; margin-left: auto; margin-right: auto; }
+    .page-kicker { font-family: var(--font-sans); font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 1rem; display: block; }
+    .editorial-headline span { font-weight: 400; }
+    
+    .sidebar-label { letter-spacing: 0.15em; }
+    
+    .settings-rail-links a {
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border);
+    }
+    
+    .settings-rail-links a:hover {
+        color: var(--nyt-accent);
+        border-color: var(--nyt-accent);
+        padding-left: 4px;
+    }
+
+    .motion-rise {
+        animation: rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes rise {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
 </style>

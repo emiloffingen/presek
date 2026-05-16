@@ -51,5 +51,13 @@ Astro.response.status = 404;
 </Layout>
 
 <style>
-... [KEEP ORIGINAL STYLES]
+	.not-found-grid { display: grid; grid-template-columns: 1fr; gap: 4rem; }
+	@media (min-width: 1024px) {
+		.not-found-grid { grid-template-columns: 1fr 300px; }
+		.not-found-main { border-right: 1px solid var(--border); padding-right: 4rem; }
+	}
+
+	.not-found-links { display: flex; flex-direction: column; gap: 0.75rem; }
+	.not-found-link { display: flex; align-items: center; justify-content: space-between; text-decoration: none; padding: 0.5rem 0; border-bottom: 1px solid var(--border); transition: all 0.2s; }
+	.not-found-link:hover { padding-left: 0.5rem; border-color: var(--foreground); }
 </style>

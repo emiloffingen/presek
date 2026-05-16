@@ -297,5 +297,33 @@ function formatBriefingItem(item: string) {
 </Layout>
 
 <style>
-... [KEEP ORIGINAL STYLES]
+    .broadsheet-layout { background: var(--background); }
+    .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 4rem; }
+    
+    @media (min-width: 1024px) {
+        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 320px; }
+        .broadsheet-main { border-right: 1px solid var(--border); padding-right: 4rem; }
+        .broadsheet-rail { position: sticky; top: 8rem; align-self: start; }
+    }
+
+    .masthead-title span { font-style: italic; font-weight: 300; }
+    
+    .archive-feed-list { position: relative; }
+    .archive-feed-list::before {
+        content: '';
+        position: absolute;
+        left: -4rem;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: linear-gradient(to bottom, var(--border), transparent);
+    }
+
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        opacity: 0;
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+    }
 </style>
