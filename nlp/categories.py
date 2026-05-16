@@ -13,6 +13,23 @@ Allowed categories (exactly 6, geographic):
 import re
 import html
 
+_CYR_TO_LAT_MAP = {
+    "а": "a", "б": "b", "в": "v", "г": "g", "д": "d", "ђ": "dj", "е": "e", "ж": "zh",
+    "з": "z", "ѕ": "dz", "и": "i", "ј": "j", "к": "k", "л": "l", "љ": "lj", "м": "m",
+    "н": "n", "њ": "nj", "о": "o", "п": "p", "р": "r", "с": "s", "т": "t", "ћ": "c",
+    "у": "u", "ф": "f", "х": "h", "ц": "c", "ч": "ch", "џ": "dzh", "ш": "sh",
+    "ѓ": "gj", "ќ": "kj", "я": "ja", "ю": "ju", "щ": "sht", "ъ": "a",
+}
+
+def _transliterate_to_latin(text: str) -> str:
+    """Simple transliteration for keyword matching."""
+    if not text:
+        return ""
+    res = []
+    for char in text.lower():
+        res.append(_CYR_TO_LAT_MAP.get(char, char))
+    return "".join(res)
+
 ALLOWED_CATEGORIES = {
     "Srbija",
     "Makedonija",
@@ -501,7 +518,8 @@ def detect_category(
     if forced_category and forced_category in ALLOWED_CATEGORIES:
         return forced_category
 
-    text = (title + " " + description).lower()
+    raw_text = (title + " " + description).lower()
+    text = _transliterate_to_latin(raw_text)
     best_category = None
     best_score = 0.0
     for cat_name, keywords in CATEGORIES:
@@ -590,7 +608,8 @@ SUB_CATEGORIES = [
 
 def detect_subcategory(title: str, description: str = "") -> str | None:
     """Detect optional sub-category (regional). Returns None if no match."""
-    text = (title + " " + description).lower()
+    raw_text = (title + " " + description).lower()
+    text = _transliterate_to_latin(raw_text)
     for sub_name, keywords in SUB_CATEGORIES:
         if any(_keyword_matches(text, kw) for kw in keywords):
             return sub_name
@@ -996,7 +1015,8 @@ logger = logging.getLogger(__name__)
 
 def detect_topic(title: str, description: str = "") -> str:
     """Detect thematic topic (Sport, Tech, Economy, etc.). Defaults to 'vesti'."""
-    text = (title + " " + description).lower()
+    raw_text = (title + " " + description).lower()
+    text = _transliterate_to_latin(raw_text)
     best_topic = None
     best_score = 0.0
     for topic_name, keywords in TOPICS:
