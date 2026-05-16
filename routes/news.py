@@ -499,8 +499,8 @@ async def get_news(
 
             rows = (
                 await db.async_execute(
-                    "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
-                    (cids,),
+                    "SELECT a.*, s.synthetic_headline, s.synthetic_standfirst FROM articles a LEFT JOIN cluster_summaries s ON a.cluster_id = s.cluster_id AND s.lang = %s WHERE a.cluster_id = ANY(%s) ORDER BY a.created_at DESC",
+                    (lang, cids),
                 )
                 if cids
                 else []

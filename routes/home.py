@@ -289,8 +289,8 @@ def _display_entity_name(name):
 
 @router.get("/home", response_model=HomeResponse)
 async def get_home(lang: Optional[str] = "sr"):
-    cache_key = f"api:home:v3:{lang}"
-    cached = cached_response(cache_key, ttl=3600)
+    cache_key = f"api:home:v5:{lang}"
+    cached = cached_response(cache_key, ttl=300)
     if cached:
         return cached
 
@@ -407,7 +407,7 @@ async def get_home(lang: Optional[str] = "sr"):
             "focus_entities": focus_entities[:10],
             "excluded_cluster_ids": excluded_cluster_ids,
         }
-        set_cache(cache_key, response, ttl=3600)
+        set_cache(cache_key, response, ttl=300)
         return response
     except Exception as exc:
         log.error(f"Home Route Error: {exc}", exc_info=True)
@@ -416,7 +416,7 @@ async def get_home(lang: Optional[str] = "sr"):
 
 @router.get("/home/live-now")
 async def get_home_live_now(exclude: str = "", lang: Optional[str] = "sr"):
-    cache_key = f"api:home:live-now:v2:{exclude}:{lang}"
+    cache_key = f"api:home:live-now:v3:{exclude}:{lang}"
     cached = cached_response(cache_key, ttl=60)
     if cached:
         return cached
@@ -446,7 +446,7 @@ async def get_home_live_now(exclude: str = "", lang: Optional[str] = "sr"):
 @router.get("/home/latest-wire")
 async def get_home_latest_wire(limit: int = 15, lang: Optional[str] = "sr"):
     bounded_limit = max(1, min(int(limit or 15), 30))
-    cache_key = f"api:home:latest-wire:v2:{bounded_limit}:{lang}"
+    cache_key = f"api:home:latest-wire:v3:{bounded_limit}:{lang}"
     cached = cached_response(cache_key, ttl=120)
     if cached:
         return cached

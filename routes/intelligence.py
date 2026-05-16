@@ -365,7 +365,7 @@ async def get_cluster_storyline_history(cluster_id: str):
 @router.get("/intelligence/cluster/{cluster_id}/research")
 @custom_rate_limit("5/minute")
 async def get_deep_research(
-    request: Request, cluster_id: str, mode: str = "facts", q: str = ""
+    request: Request, cluster_id: str, mode: str = "facts", q: str = "", lang: str = "sr"
 ):
     """
     Performs on-demand cluster research with the best available AI provider.
@@ -380,7 +380,7 @@ async def get_deep_research(
     if clean_mode == "custom" and not clean_query:
         return {
             "status": "error",
-            "message": "Vnesete konkretno prasanje za istrazuvanje.",
+            "message": "Vnesete konkretno prasanje za istrazuvanje." if lang == "mk" else "Unesite konkretno pitanje za istraživanje.",
         }
 
     query = (
@@ -388,7 +388,7 @@ async def get_deep_research(
     )
     query_hash = hashlib.sha1(query.encode("utf-8")).hexdigest()[:12]
     cache_key = (
-        f"api:intelligence:research:cascade:{cluster_id}:{clean_mode}:{query_hash}:v1"
+        f"api:intelligence:research:cascade:{cluster_id}:{clean_mode}:{query_hash}:{lang}:v1"
     )
     cached = cached_response(cache_key)
     if cached:
@@ -398,12 +398,18 @@ async def get_deep_research(
         context, sources = await _build_gemma_research_context(
             cluster_id, clean_mode, clean_query
         )
-        prompt = f"PRASANjE: {query}\n\nKONTEKST ZA ANALIZA:\n{context}"
+        
+        # Adjust research prompt based on language
+        research_system_prompt = RESEARCH_SYSTEM_PROMPT
+        if lang == "sr":
+            research_system_prompt = "Ti si Presek Istraživač. Odgovori na pitanje koristeći isključivo dati kontekst. Zboruvaj na srpskom jeziku."
+        
+        prompt = f"PITANJE: {query}\n\nKONTEKST ZA ANALIZU:\n{context}" if lang == "sr" else f"PRASANjE: {query}\n\nKONTEKST ZA ANALIZA:\n{context}"
 
         # Use cascading AI engine (will route to mistral -> local based on task_type="research")
         raw, provider = sync_call_ai(
             prompt,
-            RESEARCH_SYSTEM_PROMPT,
+            research_system_prompt,
             task_type="research",
             json_mode=True,
             max_tokens=800,
@@ -437,11 +443,11 @@ async def get_deep_research(
             else:
                 return {
                     "status": "error",
-                    "message": "Sistemot vrati nevaliden format. Obidete se so drugo prasanje.",
+                    "message": "Sistemot vrati nevaliden format." if lang == "mk" else "Sistem je vratio nevalidan format.",
                 }
 
         if not answer:
-            return {"status": "error", "message": "Ne uspeav da generiram odgovor."}
+            return {"status": "error", "message": "Ne uspeav da generiram odgovor." if lang == "mk" else "Neuspeh pri generisanju odgovora."}
 
         result = {
             "status": "success",
@@ -460,11 +466,11 @@ async def get_deep_research(
 
     except Exception as e:
         log.error(f"Deep research error: {e}", exc_info=True)
-        return {"status": "error", "message": "Greska pri prebaruvanjeto."}
+        return {"status": "error", "message": "Greska pri prebaruvanjeto." if lang == "mk" else "Greška pri pretraživanju."}
 
 
 @router.get("/intelligence/cluster/{cluster_id}/analyst")
-async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts"):
+async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts", lang: str = "sr"):
     """
     Internal 'Deep Intel' Analyst.
     Compatibility wrapper for the Gemma-only research endpoint.
@@ -474,7 +480,7 @@ async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts"):
     clean_mode = (mode or "facts").strip().lower()
     if clean_mode not in _RESEARCH_MODE_QUERIES:
         clean_mode = "facts"
-    cache_key = f"api:intelligence:analyst:gemma:{cluster_id}:{clean_mode}:v1"
+    cache_key = f"api:intelligence:analyst:gemma:{cluster_id}:{clean_mode}:{lang}:v1"
     cached = cached_response(cache_key)
     if cached:
         return cached
@@ -483,11 +489,11 @@ async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts"):
         from nlp.local_analyst import analyst
 
         log.info(
-            f"[analyst] Generating Gemma report for {cluster_id} (mode={clean_mode})"
+            f"[analyst] Generating Gemma report for {cluster_id} (mode={clean_mode}, lang={lang})"
         )
         context, sources = await _build_gemma_research_context(cluster_id, clean_mode)
         response = await asyncio.to_thread(
-            analyst.research_query, _RESEARCH_MODE_QUERIES[clean_mode], context
+            analyst.research_query, _RESEARCH_MODE_QUERIES[clean_mode], context, lang=lang
         )
         report = (
             response.get("answer")
@@ -496,7 +502,7 @@ async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts"):
         )
 
         if not report:
-            return {"status": "error", "message": "Analiticarot e zafaten."}
+            return {"status": "error", "message": "Analiticarot e zafaten." if lang == "mk" else "Analitičar je zauzet."}
 
         # Apply final name validation on the report
         from core.entities import validate_person_names
@@ -516,7 +522,7 @@ async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts"):
 
     except Exception as e:
         log.error(f"[analyst] Unexpected error for {cluster_id}: {e}", exc_info=True)
-        return {"status": "error", "message": "Greska pri analizata."}
+        return {"status": "error", "message": "Greska pri analizata." if lang == "mk" else "Greška pri analizi."}
 
 
 @router.get("/intelligence/source-pulse")

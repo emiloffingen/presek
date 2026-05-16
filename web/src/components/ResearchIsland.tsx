@@ -1,15 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, BarChart3, Users, BookOpen, Loader2, X, CheckCircle2, ChevronRight, Search } from 'lucide-react';
+import { useTranslations } from '../i18n/utils';
 
 interface ResearchIslandProps {
   clusterId: string;
   initialHeadline: string;
   sources?: string[];
+  lang?: 'sr' | 'mk';
 }
 
 type ResearchMode = 'facts' | 'perspectives' | 'context';
 
-export default function ResearchIsland({ clusterId, initialHeadline, sources = [] }: ResearchIslandProps) {
+export default function ResearchIsland({ clusterId, initialHeadline, sources = [], lang = 'sr' }: ResearchIslandProps) {
+  const t = useTranslations(lang);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState<ResearchMode | 'custom' | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -18,20 +21,14 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
   const resultsRef = useRef<HTMLDivElement>(null);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const placeholders = [
-      "Sto sakate da doznaete za ova prica?",
-      "Koj e glavni konflikt?",
-      "Sto velat brojkite?",
-      "Kakvi se reakciite?"
+      t('cluster.researcher_placeholder'),
+      lang === 'sr' ? "Koji je glavni konflikt?" : "Кој е главниот конфликт?",
+      lang === 'sr' ? "Šta kažu brojke?" : "Што велат бројките?",
+      lang === 'sr' ? "Kakve su reakcije?" : "Какви се реакциите?"
   ];
 
   useEffect(() => {
-      const interval = setInterval(() => {
-          setPlaceholderIdx((prev) => (prev + 1) % placeholders.length);
-      }, 4000);
-      return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
+// ... (rest of useEffects)
       if (data && resultsRef.current) {
           // Delay slightly to allow DOM to render
           setTimeout(() => {
@@ -44,25 +41,18 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
     setLoading(mode);
     setError(null);
     try {
-      const params = new URLSearchParams({ mode });
+      const params = new URLSearchParams({ mode, lang });
       if (mode === 'custom') params.set('q', query || '');
       const url = `/api/intelligence/cluster/${clusterId}/research?${params.toString()}`;
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 120000); // 120s limit
-
+// ...
       const resp = await fetch(url, { signal: controller.signal });
       clearTimeout(timeoutId);
 
       const result = await resp.json();
       if (!resp.ok) {
-        setError(result?.message || result?.detail || 'Istrazuvanjeto momentalno ne e dostapno.');
+        setError(result?.message || result?.detail || (lang === 'sr' ? 'Istraživanje trenutno nije dostupno.' : 'Истражувањето моментално не е достапно.'));
       } else if (result.status === 'success') {
-        // Robust result mapping: handle 'answer' (research API), 'report' (analyst API), or raw string
-        const report = result.report || result.answer || (typeof result === 'string' ? result : null);
-        const suggestions = result.suggestions || [];
-        const mode_actual = result.mode || mode;
-        
+// ...
         setData({ 
             report, 
             suggestions, 
@@ -71,13 +61,13 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
             sources: result.sources || sources,
         });
       } else {
-        setError(result.message || 'Greska pri analizata.');
+        setError(result.message || (lang === 'sr' ? 'Greška pri analizi.' : 'Грешка при анализата.'));
       }
     } catch (e: any) {
       if (e.name === 'AbortError') {
-          setError('Baranjeto traese predolgo. Obidete se povtorno za nekolku sekundi.');
+          setError(lang === 'sr' ? 'Zahtev je trajao predugo. Pokušajte ponovo.' : 'Барањето траеше предолго. Обидете се повторно.');
       } else {
-          setError('Analitickiot centar e privremeno nedostapen.');
+          setError(lang === 'sr' ? 'Analitički centar je privremeno nedostupan.' : 'Аналитичкиот центар е привремено недостапен.');
       }
     } finally {
       setLoading(null);
@@ -85,23 +75,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
   };
 
   const parseBoldText = (text: string) => {
-    if (!text) return null;
-    
-    const cleanText = text.replace(/\\n/g, '\n');
-    const boldRegex = /\*\*(.*?)\*\*/g;
-    
-    const parts = [];
-    let lastIndex = 0;
-    let match;
-
-    while ((match = boldRegex.exec(cleanText)) !== null) {
-      if (match.index > lastIndex) {
-        parts.push(cleanText.substring(lastIndex, match.index));
-      }
-      parts.push(<strong key={match.index} className="font-black text-foreground">{match[1]}</strong>);
-      lastIndex = boldRegex.lastIndex;
-    }
-
+// ...
     if (lastIndex < cleanText.length) {
       parts.push(cleanText.substring(lastIndex));
     }
@@ -150,7 +124,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
       if (i === 0) {
           return (
             <div key={i} className={`mb-8 md:mb-10 text-left ${animClass}`} style={animStyle}>
-                <span className="editorial-byline">Od urednickiot tim na Presek</span>
+                <span className="editorial-byline">{lang === 'sr' ? 'Od uredničkog tima Preseka' : 'Од уредничкиот тим на Пресек'}</span>
                 <p className="mb-6 md:mb-8 text-lg md:text-2xl leading-relaxed text-foreground font-serif italic border-l-4 border-nyt-accent pl-4 md:pl-6 py-2 bg-secondary/5 rounded-r-lg drop-cap">
                     {parseBoldText(trimmed)}
                 </p>
@@ -164,9 +138,9 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
   };
 
   const modes = [
-    { id: 'facts' as const, label: 'Fakti', icon: BarChart3, desc: 'Brojki i podatoci.' },
-    { id: 'perspectives' as const, label: 'Perspektivi', icon: Users, desc: 'Izjavi i agli.' },
-    { id: 'context' as const, label: 'kontekst', icon: BookOpen, desc: 'pozadina i posledice.' },
+    { id: 'facts' as const, label: t('cluster.research_modes.facts'), icon: BarChart3, desc: t('cluster.research_modes.facts_desc') },
+    { id: 'perspectives' as const, label: t('cluster.research_modes.perspectives'), icon: Users, desc: t('cluster.research_modes.perspectives_desc') },
+    { id: 'context' as const, label: t('cluster.research_modes.context'), icon: BookOpen, desc: t('cluster.research_modes.context_desc') },
   ];
   const displayedSources = [...new Set<string>(Array.isArray(data?.sources) ? data.sources : sources)];
 
@@ -176,11 +150,11 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
         <div className="max-w-full md:max-w-3xl">
           <p className="mb-2 flex items-center gap-2 font-sans text-[9px] font-black uppercase tracking-[0.2em] text-nyt-accent">
             <div className="w-4 h-[2px] bg-nyt-accent"></div>
-            PRESEK ISTRAZUVAC
+            {t('cluster.researcher')}
           </p>
-          <h2 className="font-serif text-xl md:text-2xl font-black text-foreground mb-2 leading-tight tracking-tight">Postavi prasanje ili pobaraj analiza</h2>
+          <h2 className="font-serif text-xl md:text-2xl font-black text-foreground mb-2 leading-tight tracking-tight">{t('cluster.researcher_desc')}</h2>
           <p className="font-serif text-sm md:text-base leading-relaxed text-secondary-foreground italic opacity-90">
-            Izberete sto vi nedostiga: brojki, stavovi na akteri ili siri kontekst.
+            {lang === 'sr' ? 'Izaberite šta vam nedostaje: brojke, stavovi aktera ili širi kontekst.' : 'Изберете што ви недостига: бројки, ставови на актери или поширок контекст.'}
           </p>
         </div>
       </div>
@@ -205,7 +179,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
                 aria-busy={loading === m.id}
                 className="w-full py-2 bg-secondary/50 group-hover:bg-nyt-accent group-hover:text-white transition-all text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-1 border border-border/50 group-hover:border-transparent disabled:cursor-wait disabled:opacity-70"
             >
-                {loading === m.id ? 'Analizira...' : 'Istrazi'}
+                {loading === m.id ? (lang === 'sr' ? 'Analizira...' : 'Анализира...') : t('cluster.researcher_cta')}
                 {!loading && <ChevronRight size={10} />}
             </button>
           </div>
@@ -233,9 +207,9 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
                 className="w-full md:w-auto px-12 py-5 bg-foreground text-background font-black uppercase tracking-[0.2em] text-[11px] hover:bg-nyt-accent transition-all disabled:opacity-30 flex items-center justify-center gap-2"
             >
                 {loading === 'custom' ? (
-                    <><Loader2 className="animate-spin" size={18} /> Se analizira</>
+                    <><Loader2 className="animate-spin" size={18} /> {lang === 'sr' ? 'Analizira se' : 'Се анализира'}</>
                 ) : (
-                    <>Istrazi <ChevronRight size={14} /></>
+                    <>{t('cluster.researcher_cta')} <ChevronRight size={14} /></>
                 )}
             </button>
         </div>
@@ -247,7 +221,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
              <X size={18} className="flex-shrink-0" />
              <span>{error}</span>
           </div>
-          <button onClick={() => setError(null)} className="uppercase text-[10px] tracking-widest underline whitespace-nowrap">Zatvori</button>
+          <button onClick={() => setError(null)} className="uppercase text-[10px] tracking-widest underline whitespace-nowrap">{lang === 'sr' ? 'Zatvori' : 'Затвори'}</button>
         </div>
       )}
 
@@ -257,12 +231,12 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
             <div className="flex items-center gap-3">
               <Sparkles size={16} className="text-nyt-accent" fill="currentColor" />
               <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.18em] text-foreground">
-                {data.mode === 'custom' ? 'odgovor na istrazuvanjeto' : modes.find(m => m.id === data.mode)?.label}
+                {data.mode === 'custom' ? (lang === 'sr' ? 'odgovor na istraživanje' : 'одговор на истражувањето') : modes.find(m => m.id === data.mode)?.label}
               </span>
             </div>
 
             <span className="text-[9px] font-black uppercase tracking-[0.18em] text-muted-foreground hidden sm:block">
-              Presek Istrazuvac
+              {t('cluster.researcher')}
             </span>
 
             <button onClick={() => setData(null)} className="p-1 hover:bg-foreground/5 rounded-lg transition-colors ml-auto">
@@ -278,7 +252,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
                 {data.mode === 'custom' && data.suggestions && data.suggestions.length > 0 && (
                   <div className="mt-12 pt-8 border-t border-border/40">
                     <p className="font-sans text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent mb-6 flex items-center gap-2">
-                      <ChevronRight size={12} strokeWidth={1.5} /> sledece ISTRAZUVANjE
+                      <ChevronRight size={12} strokeWidth={1.5} /> {lang === 'sr' ? 'SLEDEĆE ISTRAŽIVANJE' : 'СЛЕДНО ИСТРАЖУВАЊЕ'}
                     </p>
                     <div className="flex flex-col gap-3">
                       {data.suggestions.map((s: string, idx: number) => (
@@ -303,7 +277,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
              <div className="mt-8 pt-6 border-t border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 opacity-40">
                 <div className="flex items-center gap-3 text-[9px] font-bold uppercase tracking-widest text-left">
                    <div className="w-2 h-2 rounded-full bg-nyt-accent animate-pulse flex-shrink-0"></div>
-                   odgovor generiran od klasterskite izvori
+                   {lang === 'sr' ? 'odgovor generisan od klasterskih izvora' : 'одговор генериран од кластерските извори'}
                 </div>
              </div>
           </div>
