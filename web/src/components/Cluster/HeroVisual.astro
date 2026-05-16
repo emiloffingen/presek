@@ -1,5 +1,6 @@
 ---
 import { Newspaper } from 'lucide-react';
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 
 interface Props {
 	leadVisual: any;
@@ -12,6 +13,9 @@ interface Props {
 }
 
 const { leadVisual, dominantColor, displayHeadline, id, category, sourcePreview, articlesCount } = Astro.props;
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
 ---
 
 <div class="hero-visual-area">
@@ -23,9 +27,9 @@ const { leadVisual, dominantColor, displayHeadline, id, category, sourcePreview,
 			
 			{leadVisual.isWeak ? (
 				<div class="hero-fallback">
-					<p class="hero-fallback-kicker">PRESEK.rs Pregled</p>
-					<h2 class="font-serif font-black">{category || 'glavna priča'}</h2>
-					<p class="hero-fallback-meta">{articlesCount} {articlesCount === 1 ? 'izvor' : 'izvora'} · {sourcePreview.slice(0, 2).join(' · ')}</p>
+					<p class="hero-fallback-kicker">{lang === 'sr' ? 'PRESEK.rs' : 'PRESEK.mk'} {lang === 'sr' ? 'PREGLED' : 'ПРЕГЛЕД'}</p>
+					<h2 class="font-serif font-black">{category || (lang === 'sr' ? 'glavna priča' : 'главна приказна')}</h2>
+					<p class="hero-fallback-meta">{articlesCount} {lang === 'sr' ? (articlesCount === 1 ? 'izvor' : 'izvora') : (articlesCount === 1 ? 'извор' : 'извори')} · {sourcePreview.slice(0, 2).join(' · ')}</p>
 				</div>
 			) : (
 				<img
@@ -38,13 +42,13 @@ const { leadVisual, dominantColor, displayHeadline, id, category, sourcePreview,
 				/>
 			)}
 			<div class="hero-caption py-3 px-4 bg-background/80 backdrop-blur-sm border-t border-border/40 text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
-				Ilustracija iz vodećih izveštaja · {articlesCount} {articlesCount === 1 ? 'redakcija' : 'redakcije'} analizirano
+				{t('cluster.hero_caption')} · {articlesCount} {t('cluster.newsrooms_analyzed')}
 			</div>
 		</div>
 	) : (
 		<div class="hero-fallback-plain p-12 bg-secondary/20 border border-border/40 text-center">
 			<Newspaper size={48} className="mx-auto mb-4 opacity-20" />
-			<p class="font-serif italic text-muted-foreground">Nema dostupne ilustracije za ovaj razvoj.</p>
+			<p class="font-serif italic text-muted-foreground">{t('cluster.no_image')}</p>
 		</div>
 	)}
 </div>

@@ -1,5 +1,6 @@
 ---
 import { renderSynthesisHtml as sharedRenderSynthesisHtml } from '../../utils/renderSynthesisHtml';
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 
 interface Props {
 	hasStrongLeadNarrative: boolean;
@@ -11,6 +12,9 @@ interface Props {
 }
 
 const { hasStrongLeadNarrative, generatedArticle, synthesisItems, hasCitationSources, keyFacts, entities = [] } = Astro.props;
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
 
 const renderSynthesisHtml = (text: string) => {
     let html = sharedRenderSynthesisHtml(text, hasCitationSources);
@@ -30,10 +34,13 @@ const renderSynthesisHtml = (text: string) => {
 				<p class:list={["narrative-p", idx === 0 ? "drop-cap" : ""]} set:html={renderSynthesisHtml(paragraph)}></p>
 			))}
 		</div>
-        <button class="narrative-toggle" id="narrative-toggle" onclick="document.getElementById('narrative-body').classList.remove('is-collapsed'); this.style.display='none';">Procitaj povece</button>
+        <button class="narrative-toggle" id="narrative-toggle" onclick="document.getElementById('narrative-body').classList.remove('is-collapsed'); this.style.display='none';">{t('cluster.read_more')}</button>
 	) : (
 		<div class="empty-narrative-fallback italic text-muted-foreground font-serif">
-            Detalnata sinteza za ovoj razvoj e vo proces na konsolidacija. Ve molime poglednete ga kratkiot pregled pogore.
+            {lang === 'sr' 
+                ? 'Detaljna sinteza za ovaj razvoj je u procesu konsolidacije. Molimo pogledajte kratak pregled iznad.'
+                : 'Деталната синтеза за овој развој е во процес на консолидација. Ве молиме погледнете го краткиот преглед погоре.'
+            }
         </div>
 	)}
 </div>
@@ -112,21 +119,21 @@ const renderSynthesisHtml = (text: string) => {
 
 	.narrative-p {
 		font-family: var(--font-nyt-body);
-		font-size: clamp(1.1rem, 4.5vw, 1.25rem);
-		line-height: 1.8;
+		font-size: clamp(1.15rem, 4.5vw, 1.3rem);
+		line-height: 1.85;
 		color: var(--foreground);
-		margin-bottom: 1.75rem;
+		margin-bottom: 2rem;
 		text-align: left;
-        letter-spacing: -0.01em;
+        letter-spacing: -0.012em;
 	}
 
 	.narrative-p.drop-cap::first-letter {
 		float: left;
 		font-family: var(--font-serif);
-		font-size: clamp(4rem, 15vw, 5.5rem);
-		line-height: 0.8;
-		padding-top: 6px;
-		padding-right: 14px;
+		font-size: clamp(4.5rem, 15vw, 6rem);
+		line-height: 0.75;
+		padding-top: 10px;
+		padding-right: 16px;
 		padding-left: 4px;
 		font-weight: 950;
 		color: var(--foreground);

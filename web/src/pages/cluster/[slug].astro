@@ -52,7 +52,7 @@ function getRelativeTimeStr(dateStr: string) {
 }
 
 import { sanitizeHtml } from '../../lib/sanitize';
-import { Newspaper, Clock, Link2, Zap, Sparkles, ShieldCheck, TriangleAlert, BarChart3, Radio, Search } from 'lucide-react';
+import { Newspaper, Clock, Link2, Zap, Sparkles, ShieldCheck, TriangleAlert, BarChart3, Radio, Search, ExternalLink } from 'lucide-react';
 import EntityContextCard from '../../components/EntityContextCard.tsx';
 import ClusterHeader from '../../components/Cluster/ClusterHeader.astro';
 import HeroVisual from '../../components/Cluster/HeroVisual.astro';
@@ -273,10 +273,15 @@ const articleSchema = cluster ? {
         client:idle 
     />
 
-	<main class="site-layout py-[var(--page-py)]">
+	<main class="site-layout py-0">
+		<div class="scroll-progress-container">
+			<div class="scroll-progress-bar" id="reading-progress"></div>
+		</div>
+
+		<div class="editorial-container max-w-[1440px] mx-auto px-4 md:px-10">
 		<Breadcrumbs items={[
 			{ label: cluster?.articles?.[0]?.category || 'vesti', href: cluster?.articles?.[0]?.category ? `/?category=${cluster.articles[0].category}` : '/' },
-			{ label: adjacentTopic || 'Detali' }
+			{ label: adjacentTopic || 'Detalji' }
 		]} />
 
 		{error ? (
@@ -287,79 +292,110 @@ const articleSchema = cluster ? {
 		) : cluster && (
 			<article class="cluster-article-container">
 				{/* 1. THE LEDE */}
-				<ClusterHeader 
-					momentumKicker={momentumKicker}
-					category={cluster.articles?.[0].category || 'vesti'}
-					createdAt={cluster.articles?.[0].created_at}
-					displayHeadline={displayHeadline}
-					headlineIsCyrillic={headlineIsCyrillic}
-					syntheticStandfirst={cluster.synthetic_standfirst || undefined}
-					canonicalUrl={canonicalUrl}
-					topics={cluster.topics || []}
-					getRelativeTimeStr={getRelativeTimeStr}
-				/>
-
-				{/* 2. HERO GRID (Visual) */}
-				<div class="hero-full mb-16">
-					<HeroVisual
-						leadVisual={leadVisual}
-						dominantColor={cluster.dominant_color || undefined}
-						displayHeadline={displayHeadline}
-						id={id || ''}
-						category={cluster.articles?.[0].category || ''}
-						sourcePreview={sourcePreview}
-						articlesCount={cluster.articles?.length || 0}
-					/>
-				{mainArticle?.full_content && (
-				<div class="mt-6 p-6 bg-secondary/10 border border-border/40 rounded-lg">
-				<h4 class="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">Izvorni tekst ({mainArticle.source})</h4>
-				<p class="font-nyt-body text-sm text-foreground/80 leading-relaxed">{mainArticle.full_content}</p>
+			<header class="editorial-header-v2 py-12 border-y-4 border-double border-foreground/10 mb-24">
+				<div class="flex flex-col md:flex-row md:items-end justify-between gap-8">
+					<div class="header-main-info flex-grow">
+						<div class="edition-kicker flex items-center gap-4 mb-6">
+							<span class="edition-badge bg-foreground text-background px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em]">
+								{getEditionStr(cluster.articles?.[0].created_at).split('.').pop()?.toUpperCase()} IZDANJE
+							</span>
+							<span class="header-date text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground border-l border-border pl-4">
+								{new Date(cluster.articles?.[0].created_at || '').toLocaleDateString('sr-RS', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+							</span>
+						</div>
+						<h1 class="headline font-serif text-5xl md:text-7xl font-black leading-[1.05] tracking-tight text-foreground mb-6">
+							{displayHeadline}
+						</h1>
+						<div class="header-meta flex flex-wrap items-center gap-x-8 gap-y-3 text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+							<div class="flex items-center gap-2">
+								<div class="w-3 h-3 rounded-full bg-nyt-accent"></div>
+								<span class="text-foreground">{cluster.articles?.[0].category || 'GENERALNO'}</span>
+							</div>
+							<span class="border-l border-border pl-8">{cluster.articles?.length || 0} IZVORA ANALIZIRANO</span>
+							<span class="hidden md:inline border-l border-border pl-8">SISTEMSKI VERIFIKOVANO</span>
+						</div>
+					</div>
+					<div class="header-actions flex gap-4 pb-1">
+						<ShareIsland client:load title={displayHeadline} url={Astro.url.toString()} />
+					</div>
 				</div>
-				)}
-				</div><div class="editorial-grid">
+			</header>
+
+					{/* 2. HERO GRID (Visual) */}
+					<div class="hero-full mb-24">
+						<HeroVisual
+							leadVisual={leadVisual}
+							dominantColor={cluster.dominant_color || undefined}
+							displayHeadline={displayHeadline}
+							id={id || ''}
+							category={cluster.articles?.[0].category || ''}
+							sourcePreview={sourcePreview}
+							articlesCount={cluster.articles?.length || 0}
+						/>
+						{mainArticle?.full_content && (
+							<div class="mt-12 p-12 bg-secondary/5 border border-border/40 rounded-sm relative overflow-hidden group">
+								<div class="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+									<Newspaper size={64} strokeWidth={0.5} />
+								</div>
+								<h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-16 flex items-center gap-2">
+									<div class="w-2 h-[2px] bg-nyt-accent"></div>
+									{t('cluster.source_docs')} ({mainArticle.source})
+								</h4>
+								<div class="prose-editorial">
+									<p class="font-nyt-body text-xl md:text-2xl text-foreground/80 leading-[1.8] line-clamp-6 italic border-l-2 border-border/60 pl-10">
+										{mainArticle.full_content.replace(/<[^>]*>?/gm, '').trim()}
+									</p>
+								</div>
+								<div class="mt-10 flex justify-end">
+									<a href={mainArticle.link} target="_blank" rel="noopener noreferrer" class="text-[11px] font-black uppercase tracking-[0.2em] text-nyt-accent hover:underline flex items-center gap-2 bg-background px-5 py-2.5 rounded-full border border-nyt-accent/20 shadow-sm transition-all hover:shadow-md">
+										Pročitaj ceo zapis na {mainArticle.source} <ExternalLink size={14} />
+									</a>
+								</div>
+							</div>
+						)}
+					</div><div class="editorial-grid">
 	{/* 3. MAIN COLUMN */}
 	<div class="editorial-main-col">
-{/* EXECUTIVE SUMMARY / BRIFING - Hidden when we have a full narrative centerpiece */}
-		{(!hasGeneratedNarrative && (headerBriefItems.length > 0 || (cluster.key_facts && cluster.key_facts.length > 0))) && (
-<div class="executive-summary mb-12 p-8 bg-secondary/15 border-l-4 border-nyt-accent">
-...
-                                <div class="flex items-center gap-2 mb-6">
-                                    <Sparkles size={14} className="text-nyt-accent" />
-                                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent">{t('cluster.brief_overview')}</span>
-                                </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div>
-                                        <h4 class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">{t('cluster.key_points')}</h4>
-                                        <ul class="space-y-3">
-                                            {headerBriefItems.map(item => (
-                                                <li class="font-serif text-base md:text-lg leading-snug italic text-foreground/90 relative pl-5">
-                                                    <span class="absolute left-0 top-2.5 w-1 h-1 rounded-full bg-nyt-accent/60"></span>
-                                                    {item}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                    {cluster.key_facts && cluster.key_facts.length > 0 && (
-                                        <div class="border-t md:border-t-0 md:border-l border-border/40 pt-6 md:pt-0 md:pl-8">
-                                            <h4 class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">{t('cluster.system_data')}</h4>
-                                            <ul class="space-y-3">
-                                                {cluster.key_facts.map((fact: string) => (
-                                                    <li class="font-sans text-[13px] font-bold leading-tight text-foreground/80 flex items-start gap-2">
-                                                        <span class="text-nyt-accent">›</span>
-                                                        {fact}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
+						{/* EXECUTIVE SUMMARY / BRIFING */}
+						{(!hasGeneratedNarrative && (headerBriefItems.length > 0 || (cluster.key_facts && cluster.key_facts.length > 0))) && (
+							<div class="executive-summary mb-24 p-12 bg-secondary/10 border-l-4 border-nyt-accent shadow-sm">
+								<div class="flex items-center gap-3 mb-14">
+									<Sparkles size={20} className="text-nyt-accent" />
+									<span class="text-[12px] font-black uppercase tracking-[0.3em] text-nyt-accent">{t('cluster.brief_overview')}</span>
+								</div>
+								<div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+									<div>
+										<h4 class="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground mb-16">{t('cluster.key_points')}</h4>
+										<ul class="space-y-5">
+											{headerBriefItems.map(item => (
+												<li class="font-serif text-xl md:text-2xl leading-snug italic text-foreground/90 relative pl-8">
+													<span class="absolute left-0 top-3.5 w-2 h-2 rounded-full bg-nyt-accent/60"></span>
+													{item}
+												</li>
+											))}
+										</ul>
+									</div>
+									{cluster.key_facts && cluster.key_facts.length > 0 && (
+										<div class="border-t md:border-t-0 md:border-l border-border/40 pt-12 md:pt-0 md:pl-12">
+											<h4 class="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground mb-16">{t('cluster.system_data')}</h4>
+											<ul class="space-y-5">
+												{cluster.key_facts.map((fact: string) => (
+													<li class="font-sans text-base md:text-lg font-bold leading-tight text-foreground/70 flex items-start gap-4">
+														<span class="text-nyt-accent text-xl mt-0.5">›</span>
+														{fact}
+													</li>
+												))}
+											</ul>
+										</div>
+									)}
+								</div>
+							</div>
 						)}
 
 						{/* NARRATIVE SECTION */}
 						{(hasGeneratedNarrative || synthesisItems.length > 0) && (
-						<section class="editorial-section narrative-section mb-16">
-							<div class="section-eyebrow mb-8">
+						<section class="editorial-section narrative-section mb-24">
+							<div class="section-eyebrow mb-16">
 								<Newspaper size={16} className="text-muted-foreground" />
 								<h2 class="section-label">{primaryNarrativeLabel}</h2>
 								<div class="section-divider"></div>
@@ -420,8 +456,8 @@ const articleSchema = cluster ? {
 						)}
 
 						{/* ALL SOURCES LIST */}
-						<section class="editorial-section sources-section mb-16 border-t border-border/40 pt-12">
-							<div class="section-eyebrow mb-8">
+						<section class="editorial-section sources-section mb-24 border-t border-border/40 pt-12">
+							<div class="section-eyebrow mb-16">
 								<Newspaper size={18} className="text-muted-foreground" />
 								<h2 class="section-label">{t('cluster.source_docs')}</h2>
 								<div class="section-divider"></div>
@@ -437,46 +473,48 @@ const articleSchema = cluster ? {
 
 						{/* RELATED SECTION */}
 						{filteredRelated.length > 0 && (
-							<section class="editorial-section related-section mb-16 border-t border-border/40 pt-12">
-								<div class="section-eyebrow mb-10">
-									<Zap size={18} className="text-nyt-red" />
+							<section class="editorial-section related-section mb-24 border-t border-border/40 pt-16">
+								<div class="section-eyebrow mb-16">
+									<Zap size={20} className="text-nyt-red" />
 									<h2 class="section-label">{t('cluster.related_content')}</h2>
 									<div class="section-divider"></div>
 								</div>
 								<div class="related-editorial-grid">
 									{filteredRelated.map((rel: any) => {
-                                        const relSlug = slugify(rel.title);
-                                        const relUrl = `/cluster/${rel.cluster_id}-${relSlug}`;
-                                        return (
-                                            <a href={relUrl} class="related-editorial-card group">
-                                                {rel.image_url && (
-                                                    <div class="card-thumb">
-                                                        <img src={`/proxy?url=${encodeURIComponent(rel.image_url)}&w=480`} alt="" loading="lazy" />
-                                                    </div>
-                                                )}
-                                                <div class="card-body">
-                                                    <span class="card-kicker">{rel.relationship_label || 'Srodna tema'}</span>
-                                                    <h3 class="card-title">{deShout(cleanAndDecode(rel.title))}</h3>
-                                                </div>
-                                                </a>
-                                                );
-                                                })}
-                                                </div>
-                                                </section>
-                                                )}
-
-                                                {/* ADVANCED ANALYTICS */}
-                                                    <section class="editorial-section advanced-tools mb-12 md:mb-16 bg-secondary/5 p-4 md:p-10 border-y border-border/40">							<div class="section-eyebrow mb-8 md:mb-10">
-                                                <Radio size={18} className="text-muted-foreground" />
-                                                <h2 class="section-label">{t('cluster.deep_synthesis')}</h2>
-                                                <div class="section-divider"></div>
-                                                </div>
-                                                <div class="space-y-12">
-                                                <ResearchIsland client:visible clusterId={id || ''} initialHeadline={displayHeadline || ''} sources={allSourcesNames} lang={lang} />
-                                                <StorylineHistoryIsland client:visible clusterId={id || ''} apiUrl={API_URL} />
-                                                <ClusterHistoryIsland client:visible clusterId={id || ''} />
-                                                </div>
-                                                </section>
+						const relSlug = slugify(rel.title);
+						const relUrl = `/cluster/${rel.cluster_id}-${relSlug}`;
+						return (
+											<a href={relUrl} class="related-card group">
+												<div class="related-card-content">
+													<div class="flex justify-between items-center mb-4">
+														<span class="related-source text-[9px] font-black uppercase tracking-[0.15em] text-nyt-red">
+															Povezana tema
+														</span>
+														<span class="text-[9px] font-bold text-muted-foreground uppercase">{getRelativeTimeStr(rel.created_at)}</span>
+													</div>
+													<h3 class="related-title font-serif text-lg md:text-xl font-bold leading-tight group-hover:text-nyt-red transition-colors">
+														{deShout(cleanAndDecode(rel.title))}
+													</h3>
+												</div>
+											</a>
+										);
+									})}
+								</div>
+							</section>
+						)}
+                        {/* ADVANCED ANALYTICS */}
+                        <section class="editorial-section advanced-tools mb-24 bg-secondary/5 p-12 md:p-16 border-y border-border/40 shadow-inner">							
+                            <div class="section-eyebrow mb-16">
+                                <Radio size={24} className="text-muted-foreground" />
+                                <h2 class="section-label">{t('cluster.deep_synthesis')}</h2>
+                                <div class="section-divider"></div>
+                            </div>
+                            <div class="space-y-20">
+                                <ResearchIsland client:visible clusterId={id || ''} initialHeadline={displayHeadline || ''} sources={allSourcesNames} lang={lang} />
+                                <StorylineHistoryIsland client:visible clusterId={id || ''} apiUrl={API_URL} />
+                                <ClusterHistoryIsland client:visible clusterId={id || ''} />
+                            </div>
+                        </section>
 
 					</div>
 
@@ -556,6 +594,31 @@ const articleSchema = cluster ? {
 </Layout>
 
 <style>
+	.page-container {
+		display: flex;
+		flex-direction: column;
+		min-height: 100vh;
+	}
+
+    .scroll-progress-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: transparent;
+        z-index: 10001;
+        pointer-events: none;
+    }
+
+    .scroll-progress-bar {
+        height: 100%;
+        background: var(--nyt-accent);
+        width: 0%;
+        transition: width 0.1s ease-out;
+        box-shadow: 0 0 15px var(--nyt-accent);
+    }
+
 	.cluster-article-container {
 		max-width: 1280px;
 		margin: 0 auto;
@@ -564,768 +627,124 @@ const articleSchema = cluster ? {
         box-sizing: border-box;
 	}
 
-    @media (max-width: 640px) {
-        .cluster-article-container {
-            padding: 0 0.75rem;
-        }
-    }
-
-	/* --- 1. THE LEDE --- */
-	.editorial-lede {
-		text-align: center;
-		padding: 2rem 0.5rem 3.5rem;
-	}
-
-	.editorial-headline {
-		font-family: var(--font-serif);
-		font-size: clamp(1.75rem, 6.5vw, 4.2rem);
-		font-weight: 950;
-		line-height: 1.0;
+	/* --- 1. EDITORIAL HEADER V2 --- */
+	.editorial-header-v2 .headline {
 		letter-spacing: -0.04em;
-		color: var(--foreground);
-		text-wrap: balance;
-		max-width: 1000px;
-		margin: 0 auto;
-        word-wrap: break-word;
-        overflow-wrap: break-word;
-	}
-
-	.editorial-headline.is-cyrillic {
-		line-height: 1.05;
-		letter-spacing: -0.02em;
-	}
-
-	.editorial-standfirst {
-		margin-left: auto;
-		margin-right: auto;
-		text-align: left;
-	}
-
-	/* --- 2. HERO GRID --- */
-	.hero-grid {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr);
-		gap: 2rem;
-		align-items: stretch;
-	}
-
-	@media (min-width: 1024px) {
-		.hero-grid {
-			grid-template-columns: minmax(0, 1fr) 340px;
-		}
-	}
-
-	.hero-visual-card {
-		width: 100%;
-		height: 100%;
-		background: var(--card);
-		border: 1px solid var(--border);
-		position: relative;
-		overflow: hidden;
-		display: flex;
-		flex-direction: column;
-	}
-
-	.hero-visual-aura {
-		position: absolute;
-		inset: -20%;
-		filter: blur(80px);
-		opacity: 0.12;
-		z-index: 0;
-		pointer-events: none;
-	}
-
-	.hero-main-image {
-		width: 100%;
-		height: 100%;
-		min-height: 400px;
-		object-fit: cover;
-		display: block;
-		opacity: 0;
-		transition: opacity 0.8s ease;
-		position: relative;
-		z-index: 1;
-	}
-
-	.hero-main-image.is-loaded {
-		opacity: 1;
-	}
-
-	.hero-fallback {
-		flex: 1;
-		min-height: 400px;
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		padding: 3rem;
-		background: linear-gradient(135deg, #121212, #2a2a2a);
-		color: white;
-	}
-
-	.hero-fallback-kicker {
-		font-family: var(--font-sans);
-		font-size: 0.75rem;
-		font-weight: 900;
-		text-transform: uppercase;
-		letter-spacing: 0.3em;
-		color: var(--nyt-accent);
-		margin-bottom: 1.5rem;
-	}
-
-	.hero-fallback-meta {
-		font-family: var(--font-sans);
-		font-size: 0.8rem;
-		opacity: 0.6;
-		margin-top: 1rem;
-	}
-
-	.briefing-box {
-		height: 100%;
-		padding: 2rem;
-		background: color-mix(in srgb, var(--secondary) 15%, var(--background));
-		border: 1px solid var(--border);
-		display: flex;
-		flex-direction: column;
-	}
-
-	.briefing-kicker {
-		font-family: var(--font-sans);
-		font-size: 0.6rem;
-		font-weight: 900;
-		letter-spacing: 0.15em;
-		color: var(--nyt-accent);
-		display: block;
-		margin-bottom: 0.5rem;
-	}
-
-	.briefing-title {
-		font-family: var(--font-serif);
-		font-size: 1.4rem;
-		font-weight: 900;
-		line-height: 1.1;
-	}
-
-	.briefing-point {
-		font-family: var(--font-serif);
-		font-size: 1.05rem;
-		line-height: 1.45;
-		color: var(--foreground);
-		position: relative;
-		padding-left: 1.25rem;
-	}
-
-	.briefing-point::before {
-		content: "—";
-		position: absolute;
-		left: 0;
-		color: var(--nyt-accent);
-		font-weight: 900;
+        text-wrap: balance;
 	}
 
 	/* --- 3. EDITORIAL GRID --- */
 	.editorial-grid {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
-		gap: 3rem;
+		gap: 4rem;
 	}
 
 	@media (min-width: 1024px) {
 		.editorial-grid {
-			grid-template-columns: minmax(0, 1fr) 300px;
-            gap: 4rem;
+			grid-template-columns: minmax(0, 1fr) 340px;
+            gap: 5rem;
 		}
 	}
 
-    .editorial-main-col {
-    min-width: 0;
-    width: 100%;
-    }
-
-    .editorial-sidebar-col {
-    min-width: 0;
-    }
-	.section-eyebrow {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-	}
+    .editorial-main-col { min-width: 0; width: 100%; }
 
 	.section-label {
 		font-family: var(--font-sans);
-		font-size: 0.75rem;
-		font-weight: 900;
-		letter-spacing: 0.25em;
+		font-size: 0.85rem;
+		font-weight: 950;
+		letter-spacing: 0.2em;
 		text-transform: uppercase;
-		white-space: nowrap;
 	}
 
 	.section-divider {
 		flex: 1;
 		height: 1px;
 		background: var(--border);
-		opacity: 0.6;
+		opacity: 0.4;
 	}
 
-	.section-subtitle {
-		font-family: var(--font-sans);
-		font-size: 0.75rem;
-		font-weight: 600;
-		color: var(--muted-foreground);
-		max-width: 300px;
-		text-align: right;
-	}
-
-	.narrative-p {
-		font-family: var(--font-serif);
-		font-size: 1.25rem;
-		line-height: 1.65;
-		margin-bottom: 2rem;
-		color: var(--foreground);
-		text-align: left;
-        overflow-wrap: break-word;
-	}
-
-	.narrative-p.drop-cap::first-letter {
-		float: left;
-		font-size: clamp(3.5rem, 12vw, 5.2rem);
-		line-height: 0.85;
-		padding-top: 4px;
-		padding-right: 12px;
-		padding-left: 3px;
-		font-weight: 900;
-		color: var(--foreground);
-	}
-
-	.synthesis-list {
-		display: flex;
-		flex-direction: column;
-		gap: 2rem;
-	}
-
-	.synthesis-item {
-		font-family: var(--font-serif);
-		font-size: 1.25rem;
-		line-height: 1.6;
-		display: flex;
-		gap: 1rem;
-		align-items: start;
-	}
-
-	.source-tag {
-		font-family: var(--font-sans);
-		font-size: 0.65rem;
-		font-weight: 900;
-		text-transform: uppercase;
-		color: var(--nyt-accent);
-		background: var(--secondary);
-		padding: 2px 6px;
-		border-radius: 3px;
-		flex-shrink: 0;
-		margin-top: 4px;
-	}
-
-	/* --- CITATIONS --- */
-	.citation-card {
-		display: flex;
-		gap: 1rem;
-		align-items: start;
-	}
-
-	.citation-idx {
-		font-family: var(--font-sans);
-		font-size: 0.65rem;
-		font-weight: 950;
-		color: var(--nyt-accent);
-		margin-top: 2px;
-	}
-
-	.citation-source {
-		font-family: var(--font-sans);
-		font-size: 0.6rem;
-		font-weight: 900;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		color: var(--muted-foreground);
-		margin-bottom: 0.25rem;
-	}
-
-	.citation-link {
-		font-family: var(--font-serif);
-		font-size: 0.85rem;
-		font-weight: 700;
-		line-height: 1.3;
-		color: var(--foreground);
-		text-decoration: none;
-		display: block;
-		transition: color 0.2s;
-	}
-
-	.citation-link:hover {
-		color: var(--nyt-accent);
-		text-decoration: underline;
-	}
-
-	/* --- FACT CHECK --- */
-	.factcheck-grid-v2 {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 2.5rem;
-	}
-
-	@media (min-width: 768px) {
-		.factcheck-grid-v2 {
-			grid-template-columns: 1fr 1fr;
-		}
-	}
-
-	.factcheck-col {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.col-header {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		margin-bottom: 1.5rem;
-		padding-bottom: 1rem;
-		border-bottom: 2px solid var(--border);
-	}
-
-	.col-header h3 {
-		font-family: var(--font-serif);
-		font-size: 1.1rem;
-		font-weight: 900;
-	}
-
-	.fact-list {
-		list-style: none;
-		padding: 0;
-		margin: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 1.25rem;
-	}
-
-	.fact-item {
-		font-family: var(--font-sans);
-		font-size: 0.95rem;
-		font-weight: 500;
-		line-height: 1.5;
-		padding-left: 1.5rem;
-		position: relative;
-	}
-
-	.fact-item::before {
-		content: "";
-		position: absolute;
-		left: 0;
-		top: 0.4rem;
-		width: 8px;
-		height: 8px;
-		border-radius: 50%;
-	}
-
-	.fact-item.green::before { background: #10b981; }
-	.fact-item.red::before { background: var(--nyt-red); }
-
-	/* --- PERSPECTIVES --- */
-	.perspective-grid-v2 {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-		gap: 1.5rem;
-	}
-
-	.editorial-angle-card {
-		padding: 2rem;
-		background: var(--card);
-		border: 1px solid var(--border);
-		border-top: 4px solid var(--nyt-accent);
-		transition: transform 0.3s ease;
-	}
-
-	.editorial-angle-card:hover {
-		transform: translateY(-4px);
-	}
-
-	.angle-title {
-		font-family: var(--font-sans);
-		font-size: 0.75rem;
-		font-weight: 900;
-		text-transform: uppercase;
-		letter-spacing: 0.1em;
-		margin-bottom: 1rem;
-		color: var(--nyt-accent);
-	}
-
-	.angle-content {
-		font-family: var(--font-serif);
-		font-size: 1rem;
-		line-height: 1.6;
-		color: var(--foreground);
-	}
-
-	/* --- ANALYTICAL TOOLS --- */
-	.data-tools-grid {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 2rem;
-	}
-
-	@media (min-width: 900px) {
-		.data-tools-grid {
-			grid-template-columns: 400px 1fr;
-		}
-	}
-
-	.data-card {
-		background: var(--card);
-		border: 1px solid var(--border);
-		padding: 2rem;
-		border-radius: 12px;
-	}
-
-	.card-header h4 {
-		font-family: var(--font-serif);
-		font-size: 1.2rem;
-		font-weight: 900;
-		margin-bottom: 0.5rem;
-	}
-
-	.card-header p {
-		font-family: var(--font-sans);
-		font-size: 0.75rem;
-		color: var(--muted-foreground);
-		margin-bottom: 1.5rem;
-	}
-
-	/* --- ARTICLE LIST --- */
-	.editorial-article-list {
-		display: flex;
-		flex-direction: column;
-		gap: 1.5rem;
-        position: relative;
-	}
-
-    .timeline-v-line {
-        position: absolute;
-        left: 0.75rem;
-        top: 0;
-        bottom: 0;
-        width: 2px;
-        background: var(--border);
-        opacity: 0.5;
-        z-index: 0;
-    }
-
-	.article-editorial-row {
-		padding: 1.5rem;
-		background: var(--card);
-		border: 1px solid var(--border);
-		border-left: 4px solid var(--border);
-		transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-	}
-
-	.article-editorial-row:hover {
-		border-color: var(--nyt-accent);
-		background: color-mix(in srgb, var(--card) 96%, var(--nyt-accent) 4%);
-		transform: translateX(4px);
-	}
-
-	.article-editorial-row.tone-latest { border-left-color: #10b981; }
-	.article-editorial-row.tone-origin { border-left-color: #64748b; }
-	.article-editorial-row.tone-deep { border-left-color: #6366f1; }
-	.article-editorial-row.tone-neutral { border-left-color: #cbd5e1; }
-
-	.row-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 1rem;
-	}
-
-	.row-source-info {
-		display: flex;
-		gap: 0.75rem;
-		align-items: center;
-	}
-
-	.source-name {
-		font-family: var(--font-sans);
-		font-size: 0.7rem;
-		font-weight: 950;
-		color: var(--foreground);
-		text-transform: uppercase;
-        letter-spacing: 0.05em;
-	}
-
-	.tone-badge {
-		font-family: var(--font-sans);
-		font-size: 0.55rem;
-		font-weight: 900;
-		text-transform: uppercase;
-		padding: 2px 8px;
-		border-radius: 2px;
-		background: var(--secondary);
-        letter-spacing: 0.04em;
-	}
-
-	.tone-badge.tone-latest { background: #dcfce7; color: #166534; }
-	.tone-badge.tone-origin { background: #f1f5f9; color: #475569; }
-    .tone-badge.tone-deep { background: #e0e7ff; color: #3730a3; }
-    .tone-badge.tone-neutral { background: #f8fafc; color: #64748b; }
-
-	.trust-badge {
-		font-family: var(--font-sans);
-		font-size: 0.55rem;
-		font-weight: 800;
-		padding: 1px 5px;
-		border: 1px solid currentColor;
+	/* Sidebar Module Premium Glassmorphism */
+	.sidebar-module {
+		padding: 2.5rem;
+		background: color-mix(in srgb, var(--card) 40%, transparent);
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
+		border: 0.5px solid color-mix(in srgb, var(--border) 30%, transparent);
 		border-radius: 4px;
+		transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
 	}
 
-	.trust-high { color: #10b981; }
-	.trust-medium { color: var(--nyt-accent); }
-
-	.row-time {
-		display: flex;
-		gap: 0.5rem;
-		font-family: var(--font-sans);
-		font-size: 0.65rem;
-		font-weight: 700;
+	.sidebar-module:hover {
+		border-color: var(--nyt-accent);
+		background: color-mix(in srgb, var(--card) 70%, transparent);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.06);
+        transform: translateY(-2px);
 	}
 
-	.row-time .exact { color: var(--muted-foreground); }
-
-	.row-title {
-		font-family: var(--font-serif);
-		font-size: 1.4rem;
-		font-weight: 850;
-		line-height: 1.2;
-		margin-bottom: 0.75rem;
-		color: var(--foreground);
-	}
-
-	.row-snippet {
-		font-family: var(--font-serif);
-		font-size: 1rem;
-		line-height: 1.5;
-		color: var(--secondary-foreground);
-		margin-bottom: 1.5rem;
-	}
-
-	.row-footer {
-		display: flex;
-		justify-content: flex-end;
-	}
-
-	.read-original {
-		font-family: var(--font-sans);
-		font-size: 0.7rem;
-		font-weight: 900;
-		text-transform: uppercase;
-		color: var(--muted-foreground);
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		text-decoration: none;
-	}
-
-	.read-original:hover {
-		color: var(--nyt-accent);
-	}
-
-	/* --- RELATED --- */
-	.related-editorial-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-		gap: 2rem;
-	}
-
-	.related-editorial-card {
-		display: flex;
-		flex-direction: column;
-		text-decoration: none;
-		color: inherit;
-	}
-
-	.card-thumb {
-		aspect-ratio: 16 / 9;
-		overflow: hidden;
-		margin-bottom: 1rem;
-		border: 1px solid var(--border);
-	}
-
-	.card-thumb img {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		transition: transform 0.5s ease;
-	}
-
-	.related-editorial-card:hover .card-thumb img {
-		transform: scale(1.05);
-	}
-
-	.card-kicker {
-		font-family: var(--font-sans);
-		font-size: 0.65rem;
-		font-weight: 900;
-		text-transform: uppercase;
-		color: var(--nyt-red);
-		margin-bottom: 0.5rem;
-	}
-
-	.card-title {
-		font-family: var(--font-serif);
-		font-size: 1.1rem;
-		font-weight: 900;
-		line-height: 1.25;
-	}
-
-	/* --- SIDEBAR --- */
 	.sidebar-label {
 		font-family: var(--font-sans);
-		font-size: 0.7rem;
+		font-size: 0.65rem;
 		font-weight: 950;
-		letter-spacing: 0.15em;
 		text-transform: uppercase;
-		color: var(--foreground);
+		letter-spacing: 0.15em;
 		padding-bottom: 0.75rem;
-		border-bottom: 3px solid var(--foreground);
+		border-bottom: 1px solid var(--border);
+		margin-bottom: 1.5rem;
+		color: var(--foreground);
 		display: block;
 	}
 
-	.tag-chip {
-		font-family: var(--font-sans);
-		font-size: 0.62rem;
-		font-weight: 850;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		background: color-mix(in srgb, var(--background) 92%, var(--secondary) 8%);
-		border: 1px solid var(--border);
-		padding: 0.4rem 0.75rem;
-		border-radius: 2px;
-		color: var(--secondary-foreground);
+    .advanced-tools {
+        border-radius: 8px;
+        box-shadow: inset 0 0 60px rgba(0,0,0,0.02);
+    }
+
+	/* --- RELATED CARDS --- */
+	.related-card {
 		text-decoration: none;
-		transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-        white-space: normal;
-        display: inline-block;
-        word-break: break-word;
-        }
-	.tag-chip:hover {
-		border-color: var(--nyt-accent);
-		background: color-mix(in srgb, var(--background) 88%, var(--nyt-accent) 12%);
-		color: var(--nyt-accent);
-		transform: translateY(-1px);
-	}
-
-	/* --- DEEP LOCAL ANALYST --- */
-	.analyst-pulse-badge {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		background: var(--background);
-		padding: 0.4rem 0.8rem;
+		color: inherit;
+		display: block;
+		padding: 1.5rem;
 		border: 1px solid var(--border);
-		border-radius: 999px;
-		font-family: var(--font-sans);
-		font-size: 11px;
-		font-weight: 900;
+		transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+		background: var(--card);
 	}
 
-	.pulse-ring {
-		width: 8px;
-		height: 16px;
-		background: var(--border);
-		border-radius: 4px;
-		overflow: hidden;
-		position: relative;
+	.related-card:hover {
+		border-color: var(--nyt-red);
+		transform: translateX(4px);
+		box-shadow: 0 4px 20px rgba(0,0,0,0.05);
 	}
 
-	.pulse-ring-fill {
-		position: absolute;
-		bottom: 0;
-		width: 100%;
-		background: var(--nyt-accent);
-		transition: height 1s ease-out;
-	}
-
-	.fact-card {
-		position: relative;
-		padding-top: 1.5rem;
-		border-top: 1px solid var(--border);
-	}
-
-	.fact-number {
-		position: absolute;
-		top: -0.6rem;
-		left: 0;
-		background: var(--background);
-		padding-right: 0.5rem;
-		font-family: var(--font-sans);
-		font-size: 10px;
-		font-weight: 900;
-		color: var(--nyt-accent);
-		letter-spacing: 0.1em;
-	}
-
-	.analyst-section {
-		transition: transform 0.3s ease;
-	}
-
-	.analyst-section:hover {
-		transform: translateY(-2px);
-	}
-
-	.shadow-editorial {
-		box-shadow: 0 12px 40px rgba(0,0,0,0.1);
-	}
-
-	/* --- CITATION BADGES --- */
-	.citation-badge {
-		display: inline-flex;
-		align-items: center;
-		padding: 0.15rem 0.45rem;
-		margin: 0 0.2rem;
-		background: color-mix(in srgb, var(--secondary) 80%, transparent);
-		border: 1px solid var(--border);
-		border-radius: 3px;
-		font-family: var(--font-sans);
-		font-size: 9px;
-		font-weight: 900;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		color: var(--nyt-accent);
-		line-height: 1;
-		vertical-align: middle;
+	.related-editorial-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+		gap: 1.5rem;
 	}
 
 	@media (max-width: 768px) {
         .cluster-article-container { padding: 0 0.75rem; }
-		.editorial-headline { font-size: clamp(1.6rem, 8.5vw, 2.4rem); line-height: 1.1; }
-		.hero-fallback { min-height: 220px; padding: 1.5rem; }
-		.hero-main-image { min-height: 220px; }
-		.narrative-p { font-size: 1.05rem; }
-		.row-title { font-size: 1.2rem; }
-
-        .editorial-section {
-            padding: 1.5rem 0 !important;
-            margin-bottom: 2.5rem !important;
-        }
-
-        .analyst-section {
-            padding: 1.25rem !important;
+		.headline { font-size: 2.5rem; line-height: 1.1; }
+        
+        .editorial-header-v2 {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+            margin-bottom: 3rem;
         }
 
         .sidebar-module {
-            padding: 1.25rem !important;
+            padding: 1.75rem !important;
+            background: var(--card);
+            backdrop-filter: none;
         }
 
         .advanced-tools {
-            padding: 1rem 0 !important;
-            border-left: none;
-            border-right: none;
+            padding: 3rem 1rem !important;
+            margin-left: -1rem;
+            margin-right: -1rem;
+            border-radius: 0;
         }
 	}
 </style>
