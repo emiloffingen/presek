@@ -234,7 +234,7 @@ class OpenAICompatibleProvider(AIProvider):
             "Authorization": f"Bearer {self.api_key}",
         }
         try:
-            with httpx.Client(timeout=60.0) as client:
+            with httpx.Client(timeout=120.0) as client:
                 resp = client.post(self.api_url, json=payload, headers=headers)
                 resp.raise_for_status()
                 data = resp.json()
@@ -368,10 +368,10 @@ class GeminiProvider(AIProvider):
         self.api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
     def _get_headers(self) -> dict:
-        """Get headers with API key in Authorization header (Bearer token)."""
+        """Get headers with proper API key header for Google AI Studio."""
         return {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}",
+            "x-goog-api-key": self.api_key,
         }
 
     def call(
@@ -386,12 +386,22 @@ class GeminiProvider(AIProvider):
         if not self.api_key:
             return None
 
+        # Clean prompt and system for Gemini constraints
+        clean_prompt = prompt.strip()
+        clean_system = system.strip()
+
         payload = {
-            "contents": [{"parts": [{"text": prompt}]}],
-            "system_instruction": {"parts": [{"text": system}]},
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [{"text": clean_prompt}]
+                }
+            ],
+            "system_instruction": {"parts": [{"text": clean_system}]},
             "generationConfig": {
                 "maxOutputTokens": max_tokens,
                 "temperature": 0.2,
+                "topP": 0.8,
             },
         }
         if json_mode:
@@ -400,11 +410,17 @@ class GeminiProvider(AIProvider):
         try:
             with httpx.Client(timeout=60.0) as client:
                 resp = client.post(self.api_url, json=payload, headers=self._get_headers())
-                resp.raise_for_status()
+                if resp.status_code != 200:
+                    log.error(f"[ai/gemini] HTTP {resp.status_code} Error: {resp.text}")
+                    return None
+                
                 data = resp.json()
-                return data["candidates"][0]["content"]["parts"][0]["text"]
+                if "candidates" in data and data["candidates"]:
+                    return data["candidates"][0]["content"]["parts"][0]["text"]
+                else:
+                    log.warning(f"[ai/gemini] No candidates in response: {data}")
         except Exception as e:
-            log.error(f"[ai/gemini] Call failed: {e}. Request data might be malformed or API unreachable.")
+            log.error(f"[ai/gemini] Call failed: {e}")
         return None
 
     async def stream_call(

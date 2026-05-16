@@ -320,12 +320,12 @@ USE_READ_REPLICA = bool(DATABASE_READ_REPLICA_URL)
 
 # ── AI Routing Configuration ────────────────────────────────────
 # Use Mistral large (free) first, then small (paid)
-PROVIDER_FALLBACK_ORDER_RESEARCH = ["mistral_large", "gemini", "mistral_small"]
-PROVIDER_FALLBACK_ORDER_SUMMARY = ["mistral_large", "gemini", "mistral_small"]
+PROVIDER_FALLBACK_ORDER_RESEARCH = ["mistral_large", "mistral_small", "gemini"]
+PROVIDER_FALLBACK_ORDER_SUMMARY = ["mistral_large", "mistral_small", "gemini"]
 PROVIDER_FALLBACK_ORDER = [
     "mistral_large",
-    "gemini",
     "mistral_small",
+    "gemini",
 ]  # default
 
 # ── Clustering Parameters ───────────────────────────────────────

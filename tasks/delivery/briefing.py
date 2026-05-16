@@ -338,23 +338,43 @@ def _build_daily_brief_context(clusters):
 def _is_grounded_daily_brief(brief: str, context: str) -> bool:
     return True  # Temporarily disabled to allow Mistral's global analysis
 
-def _has_valid_daily_brief_structure(brief: str) -> bool:
+def _has_valid_daily_brief_structure(brief: str, lang: str = "sr") -> bool:
     text = str(brief or "").strip()
     if not text:
         return False
-    required_phrases = [
-        "Golemata Slika",
-        "Globalni i Lokalni Oski",
-        "Mediumski Radar",
-        "Sto da se sledi",
-    ]
+    
+    # Language-aware section markers
+    if lang == "sr":
+        required_phrases = [
+            "Velika Slika",
+            "Globalne i Lokalne Ose",
+            "Medijski Radar",
+            "Šta pratiti",
+        ]
+    else:  # mk
+        required_phrases = [
+            "Големата Слика",
+            "Глобални и Локални Оски",
+            "Медиумски Радар",
+            "Што да се следи",
+            # Fallback to Latin just in case
+            "Golemata Slika",
+            "Globalni i Lokalni Oski",
+        ]
+        
     found_count = 0
+    lower_text = text.lower()
     for phrase in required_phrases:
-        if phrase.lower() in text.lower():
+        if phrase.lower() in lower_text:
             found_count += 1
-    if found_count < 3:
+            
+    # For MK, we have more fallbacks, so found_count might be higher than 4
+    # We just need at least 3 distinct semantic sections
+    min_required = 3
+    
+    if found_count < min_required:
         log.warning(
-            f"[briefing-debug] Required sections missing. Found {found_count}/4. Text: {text[:200]}..."
+            f"[briefing-debug] Required sections missing for {lang}. Found {found_count}/{min_required}+. Text: {text[:200]}..."
         )
         return False
     return True
@@ -585,7 +605,7 @@ def generate_daily_brief_task(retry_attempt=0, lang="sr"):
         full_context = f"<briefing_context>\n{content_context}\n{system_insight}\n</briefing_context>"
         prompt = DAILY_BRIEF_SYSTEM_PROMPT if lang == "sr" else DAILY_BRIEF_SYSTEM_PROMPT_MK
         brief, _ = _call_ai(full_context, prompt, task_type="daily_brief", max_tokens=4000)
-        if brief and (not _has_valid_daily_brief_structure(brief) or not _is_grounded_daily_brief(brief, full_context) or not _is_high_quality_briefing(brief)):
+        if brief and (not _has_valid_daily_brief_structure(brief, lang=lang) or not _is_grounded_daily_brief(brief, full_context) or not _is_high_quality_briefing(brief)):
             log.warning(f"[tasks] Daily brief ({lang}) rejected; using local fallback."); brief = ""
         final_brief = brief or generate_daily_brief_fallback(clusters)
         if final_brief:
