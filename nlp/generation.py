@@ -993,47 +993,106 @@ def _build_minimum_cluster_summary(articles, comparison=None):
 
 
 def generate_local_placeholder(cluster_id, title, category="vesti"):
-    colors = {
-        "Srbija": "#a63d40",
-        "Balkan": "#3d6b63",
-        "Evropa": "#3f7d8a",
-        "Amerika": "#3e6282",
-        "Svet": "#5f556f",
-        "Sport": "#b36b24",
-        "Tehnologija": "#3e4954",
-        "Ekonomija": "#456a4f",
-        "default": "#5f6470",
+    import hashlib
+    
+    # 1. Deterministic seed from cluster_id
+    seed = int(hashlib.md5(str(cluster_id).encode()).hexdigest(), 16)
+    
+    # 2. Professional Category Palettes (Primary, Deep, Accent)
+    palettes = {
+        "Srbija":      ["#8b1e22", "#4a0e10", "#c42a2e"], # Editorial Crimson
+        "Makedonija":  ["#d62828", "#8c1c1c", "#f77f00"], # Macedonian Sun tones
+        "Balkan":      ["#2d4a3e", "#1a2e25", "#4d806a"], # Deep Forest
+        "Evropa":      ["#1b3a5a", "#0d1e33", "#3d6db2"], # Diplomatic Blue
+        "Amerika":     ["#1a365d", "#102a43", "#2b6cb0"], # Atlantic Blue
+        "Svet":        ["#4a3f5a", "#2d2638", "#7a6a96"], # Global Dusk
+        "Sport":       ["#9c4221", "#5c2a12", "#e85d04"], # Clay/Dynamic
+        "Tehnologija": ["#1a202c", "#0f172a", "#4a5568"], # Slate/Midnight
+        "Ekonomija":   ["#2c5282", "#1a365d", "#4299e1"], # Corporate Blue
+        "Hronika":     ["#2d3748", "#1a202c", "#4a5568"], # Industrial Grey
+        "Zabava":      ["#702459", "#4a0e3a", "#b83280"], # Artsy Magenta
+        "default":     ["#2d3748", "#1a202c", "#718096"],
     }
-    bg = colors.get(category, colors["default"])
+    
+    colors = palettes.get(category, palettes["default"])
+    c1, c2, c3 = colors
+    
+    # 3. Deterministic Geometric Shifts
+    shift_x = (seed % 100)
+    shift_y = (seed % 80)
+    angle = (seed % 360)
+    
+    # 4. Text Wrapping Logic
+    def wrap_text(text, max_chars=35):
+        words = text.split()
+        lines = []
+        cur = []
+        for w in words:
+            if len(" ".join(cur + [w])) > max_chars:
+                lines.append(" ".join(cur))
+                cur = [w]
+            else:
+                cur.append(w)
+        if cur: lines.append(" ".join(cur))
+        return lines[:4] # Max 4 lines
 
-    # Simple word-based wrapping for the SVG text
-    words = title.split()
-    lines = []
-    current_line = []
-    for w in words:
-        current_line.append(w)
-        if len(" ".join(current_line)) > 30:
-            lines.append(" ".join(current_line))
-            current_line = []
-    if current_line:
-        lines.append(" ".join(current_line))
-
-    # Limit to top 3 lines
-    display_lines = lines[:3]
-    text_y_start = 225 - (len(display_lines) - 1) * 25
-
+    display_lines = wrap_text(title)
+    text_y_start = 220 - (len(display_lines) - 1) * 25
+    
     tspans = ""
     for i, line in enumerate(display_lines):
-        y = text_y_start + i * 50
-        tspans += f'<tspan x="400" y="{y}">{line}</tspan>'
+        y = text_y_start + i * 52
+        # Clean line for XML
+        line_clean = line.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        tspans += f'<tspan x="400" y="{y}">{line_clean}</tspan>'
 
-    return (
-        f'<svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">'
-        f'<rect width="100%" height="100%" fill="{bg}" />'
-        f'<rect width="100%" height="100%" fill="black" opacity="0.1" />'
-        f'<text font-family="serif" text-anchor="middle" font-size="40" font-weight="bold" fill="white">'
-        f"{tspans}"
-        f"</text>"
-        f'<text x="40" y="410" font-family="sans-serif" font-size="20" font-weight="black" fill="white" opacity="0.5" letter-spacing="2">PRESEK</text>'
+    # 5. Generative SVG Construction
+    svg = [
+        f'<svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">',
+        f'<defs>',
+        # Main Linear Gradient
+        f'  <linearGradient id="grad_{cluster_id}" x1="0%" y1="0%" x2="100%" y2="100%" gradientTransform="rotate({angle})">',
+        f'    <stop offset="0%" style="stop-color:{c1};stop-opacity:1" />',
+        f'    <stop offset="100%" style="stop-color:{c2};stop-opacity:1" />',
+        f'  </linearGradient>',
+        # Radial Accent (The "Mesh" feel)
+        f'  <radialGradient id="mesh_{cluster_id}" cx="{20 + (seed%60)}%" cy="{20 + (seed%60)}%" r="80%">',
+        f'    <stop offset="0%" style="stop-color:{c3};stop-opacity:0.4" />',
+        f'    <stop offset="100%" style="stop-color:{c2};stop-opacity:0" />',
+        f'  </radialGradient>',
+        # Filter for subtle noise/texture
+        f'  <filter id="noise" x="0" y="0" width="100%" height="100%">',
+        f'    <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" />',
+        f'    <feColorMatrix type="saturate" values="0" />',
+        f'    <feComponentTransfer><feFuncA type="linear" slope="0.03" /></feComponentTransfer>',
+        f'    <feComposite operator="in" in2="SourceGraphic" />',
+        f'  </filter>',
+        f'</defs>',
+        # Background Layers
+        f'<rect width="100%" height="100%" fill="url(#grad_{cluster_id})" />',
+        f'<rect width="100%" height="100%" fill="url(#mesh_{cluster_id})" />',
+        # Subtle Geometric Overlay (Dots or Lines)
+        f'<rect width="100%" height="100%" fill="white" opacity="0.03" filter="url(#noise)" />',
+    ]
+    
+    # Optional Geometric Detail based on ID
+    if seed % 2 == 0:
+        # Grid Pattern
+        svg.append(f'<path d="M 0 {shift_y} L 800 {shift_y} M {shift_x} 0 L {shift_x} 450" stroke="white" stroke-width="0.5" opacity="0.1" />')
+    else:
+        # Subtle circle
+        svg.append(f'<circle cx="{800-shift_x}" cy="{shift_y}" r="150" fill="white" opacity="0.05" />')
+
+    # Typography
+    svg.extend([
+        f'<text font-family="serif" text-anchor="middle" font-size="38" font-weight="800" fill="white" style="text-shadow: 0 4px 12px rgba(0,0,0,0.3)">',
+        f"{tspans}",
+        f"</text>",
+        # Branding
+        f'<rect x="40" y="385" width="120" height="2" fill="white" opacity="0.3" />',
+        f'<text x="40" y="415" font-family="sans-serif" font-size="16" font-weight="900" fill="white" opacity="0.6" letter-spacing="4">PRESEK</text>',
+        f'<text x="760" y="415" text-anchor="end" font-family="sans-serif" font-size="12" font-weight="700" fill="white" opacity="0.4" letter-spacing="1">{category.upper()}</text>',
         f"</svg>"
-    )
+    ])
+    
+    return "".join(svg)
