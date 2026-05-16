@@ -326,13 +326,30 @@ function getBriefingSnippet(content: string) {
 >
     <NYTHeader q={q} category={category} topic={topic} entity={entity} subcategory={subcategory} stats={stats} />
 
-	<main class="site-layout broadsheet-layout py-[var(--page-py)] overflow-x-hidden max-w-full">
+	<main class="site-layout broadsheet-layout py-0 overflow-x-hidden max-w-full">
+        
+        <header class="editorial-header-v2 py-16 border-b border-border/40 mb-24 bg-secondary/5">
+            <div class="max-w-[1440px] mx-auto px-4 md:px-10">
+                <div class="flex flex-col gap-6">
+                    <span class="text-[10px] font-black uppercase tracking-[0.3em] text-nyt-accent">
+                        {lang === 'sr' ? 'PRESEK.live · Glavna Stranica' : 'ПРЕСЕК.мк · Почетна страница'}
+                    </span>
+                    <h1 class="font-serif text-5xl md:text-8xl font-black tracking-tighter text-foreground leading-[0.9]">
+                        {lang === 'sr' ? 'DNEVNI PRESEK' : 'ДНЕВЕН ПРЕСЕК'}
+                    </h1>
+                    <p class="max-w-2xl text-lg md:text-xl font-serif italic text-muted-foreground">
+                        {t('layout.home_description')}
+                    </p>
+                </div>
+            </div>
+        </header>
+
 		{/* Filtering Status */}
 		{(q || category || topic || entity || subcategory) && (
 			<FilterHeader q={q} category={category} topic={topic} entity={entity} subcategory={subcategory} />
 		)}
 
-		<div class="broadsheet-grid">
+		<div class="broadsheet-grid max-w-[1440px] mx-auto px-4 md:px-10">
 			<div class="broadsheet-main">
                 {error && (
                     <div class="error-panel">
@@ -342,10 +359,10 @@ function getBriefingSnippet(content: string) {
 
                 {/* THEMATIC QUICK PILLS */}
                 {!error && (
-                    <div class="max-w-full overflow-hidden mb-10">
+                    <div class="max-w-full overflow-hidden mb-24">
                         <div class="quick-pills-container overflow-x-auto hide-scrollbar -mx-4 px-4 pb-2">
                             <div class="flex items-center gap-3">
-                                <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mr-2 shrink-0">Istraži:</span>
+                                <span class="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground mr-4 shrink-0">Istraži:</span>
                                 {[
                                     { id: 'rs', label: lang === 'mk' ? 'Makedonija' : 'Srbija', href: '/?category=' + encodeURIComponent(lang === 'mk' ? 'Makedonija' : 'Srbija'), active: category === (lang === 'mk' ? 'Makedonija' : 'Srbija') },
                                     { id: 'pol', label: 'Politika', href: '/?topic=' + encodeURIComponent('Politika'), active: topic === 'Politika' },
@@ -413,7 +430,7 @@ function getBriefingSnippet(content: string) {
 
                 {/* THE BIG PICTURE (HIGH CONSENSUS) */}
                 {isHomepage && consensusClusters.length > 0 && (
-                    <div class="section-wrapper consensus-section bg-secondary/10 p-8 border-y border-border/40">
+                    <div class="section-wrapper consensus-section bg-secondary/10 p-12 border-y border-border/40">
                         <div class="section-heading-row mb-8">
                             <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent block mb-2">{t('home.consensus_title')}</span>
                             <h2 class="font-serif text-3xl font-black italic">{t('home.consensus_subtitle')}</h2>
