@@ -1248,6 +1248,7 @@ async def get_latest_briefing(date: Optional[str] = None, lang: str = "sr"):
         "status": "success",
         "date": target_date,
         "content": row["content"],
+        "metadata": row.get("metadata") or {},
         "subjects": subjects,
         "locations": locations,
         "historical_dates": historical,

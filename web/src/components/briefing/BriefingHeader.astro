@@ -1,74 +1,134 @@
 ---
-import { Timer, Activity } from 'lucide-react';
+import { Timer, Activity, ShieldCheck, Cpu } from 'lucide-react';
 
 interface Props {
 	currentDate: string;
 	dispatchIcon: any;
 	stats: any;
 	readingTime?: number;
+    metadata?: any;
+    lang?: string;
 }
 
-const { currentDate, dispatchIcon: DispatchIcon, stats, readingTime = 5 } = Astro.props;
+const { currentDate, dispatchIcon: DispatchIcon, stats, readingTime = 5, metadata, lang = 'sr' } = Astro.props;
+const isMK = lang === 'mk';
+
+const systemSignature = metadata?.system_signature || 'Presek v2.1-CC';
+const modelName = metadata?.model || 'Gemma 2 / Mistral';
 ---
 
 <header class="briefing-masthead motion-rise">
-	<div class="masthead-top pb-6 mb-8 border-b border-border/40">
-		<span class="masthead-kicker text-nyt-accent">UREDNIČKO IZDANJE</span>
-		<div class="masthead-meta">
-			<span class="meta-item"><Timer size={12} className="text-nyt-accent" /> {readingTime} MIN. ČITANJE</span>
-			<span class="meta-item"><Activity size={12} className="text-nyt-accent" /> VERZIJA 5.48</span>
-		</div>
-	</div>
+    {/* 1. REPORT STATUS BAR */}
+    <div class="report-status-bar mb-8">
+        <div class="status-inner">
+            <div class="status-item">
+                <div class="status-indicator pulse-emerald"></div>
+                <span class="status-label">{isMK ? 'СИСТЕМСКИ СИГНАЛ' : 'SISTEMSKI SIGNAL'}</span>
+                <span class="status-value">{isMK ? 'АКТИВЕН' : 'AKTIVAN'}</span>
+            </div>
+            <div class="status-item divider-left">
+                <Cpu size={10} className="text-muted-foreground" />
+                <span class="status-label">{isMK ? 'AI МОДЕЛ' : 'AI MODEL'}</span>
+                <span class="status-value">{modelName}</span>
+            </div>
+            <div class="status-item divider-left hide-mobile">
+                <ShieldCheck size={10} className="text-emerald-500" />
+                <span class="status-label">{isMK ? 'ВЕРИФИКАЦИЈА' : 'VERIFIKACIJA'}</span>
+                <span class="status-value text-emerald-500">{isMK ? 'ПОТВРДЕНО' : 'POTVRĐENO'}</span>
+            </div>
+            <div class="status-item ml-auto signature-tag">
+                <span class="status-value tabular-nums opacity-60 font-mono">{systemSignature}</span>
+            </div>
+        </div>
+    </div>
 
 	<div class="masthead-main mb-12">
-		<div class="masthead-branding mb-6">
-			<div class="p-3 bg-nyt-accent/10 rounded-xl mb-4">
-                <DispatchIcon size={40} className="text-nyt-accent" fill="currentColor" />
+		<div class="masthead-branding mb-8">
+			<h1 class="masthead-title uppercase tracking-tighter">
+                {isMK ? 'Интелигенција' : 'Obaveštajni'} <span class="text-nyt-accent italic-serif lowercase">Izveštaj</span>
+            </h1>
+            <div class="masthead-subline mt-2 flex items-center justify-center gap-4">
+                <div class="h-px w-12 bg-border"></div>
+                <span class="font-sans text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground">
+                    {isMK ? 'ДНЕВНА СИНТЕЗА ЗА МАКЕДОНИЈА' : 'DNEVNA SINTEZA ZA SRBIJU'}
+                </span>
+                <div class="h-px w-12 bg-border"></div>
             </div>
-			<h1 class="masthead-title">Jutarnji <span class="text-nyt-accent italic font-light">Brifing</span></h1>
 		</div>
-		<div class="masthead-date-bar py-3 border-y-2 border-foreground">
-			<p class="font-serif font-black text-lg md:text-2xl uppercase tracking-tighter">{currentDate}</p>
+		<div class="masthead-date-bar py-4 border-y border-foreground/10">
+			<p class="font-serif font-black text-2xl md:text-3xl tracking-tight italic">{currentDate}</p>
 		</div>
 	</div>
 
-	<div class="masthead-standfirst mb-12">
-		<p class="font-serif text-xl md:text-3xl leading-snug text-foreground/80 italic text-balance">
-            "Vaš sistemski generisan dnevni pregled: sinteza najvažnijih srpskih i svetskih vesti kroz naprednu uredničku obradu."
-        </p>
-	</div>
-
-	<div class="masthead-deck grid grid-cols-3 gap-0 border border-border/60 rounded-sm bg-secondary/10 overflow-hidden">
-		<div class="deck-item flex flex-col items-center justify-center p-6 border-r border-border/60">
-            <span class="text-3xl font-black mb-1 tabular-nums">{stats?.total_feeds || 0}</span>
-            <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Redakcije</span>
+	<div class="masthead-deck grid grid-cols-2 md:grid-cols-4 gap-0 border border-border/60 rounded-xl bg-card shadow-sm overflow-hidden mb-16">
+		<div class="deck-item flex flex-col p-6 border-r border-border/60">
+            <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-3">{isMK ? 'РЕДАКЦИИ' : 'REDAKCIJE'}</span>
+            <div class="flex items-baseline gap-2">
+                <span class="text-3xl font-black tabular-nums">{stats?.total_feeds || 0}</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-nyt-accent"></span>
+            </div>
         </div>
-		<div class="deck-item flex flex-col items-center justify-center p-6 border-r border-border/60">
-            <span class="text-3xl font-black mb-1 tabular-nums">{stats?.last_24h || 0}</span>
-            <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Izveštaji</span>
+		<div class="deck-item flex flex-col p-6 border-r border-border/60">
+            <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-3">{isMK ? 'ИЗВЕШТАИ' : 'IZVEŠTAJI'}</span>
+            <div class="flex items-baseline gap-2">
+                <span class="text-3xl font-black tabular-nums">{stats?.last_24h || 0}</span>
+                <span class="text-[10px] font-bold text-muted-foreground">/ 24h</span>
+            </div>
         </div>
-		<div class="deck-item flex flex-col items-center justify-center p-6 bg-nyt-accent/5">
-            <span class="text-3xl font-black mb-1 tabular-nums text-nyt-accent">{stats?.intelligence?.pluralism?.pluralism_pct || 0}%</span>
-            <span class="text-[10px] font-black uppercase tracking-widest text-nyt-accent/70">Raznovrsnost</span>
+		<div class="deck-item flex flex-col p-6 border-r border-border/60 bg-emerald-50/10">
+            <span class="text-[9px] font-black uppercase tracking-widest text-emerald-600 mb-3">{isMK ? 'ПЛУРАЛИЗАМ' : 'PLURALIZAM'}</span>
+            <div class="flex items-baseline gap-2">
+                <span class="text-3xl font-black tabular-nums text-emerald-600">{metadata?.stats?.pluralism_score || stats?.intelligence?.pluralism?.pluralism_pct || 0}%</span>
+                <Activity size={14} className="text-emerald-500" />
+            </div>
+        </div>
+        <div class="deck-item flex flex-col p-6 bg-nyt-accent/5">
+            <span class="text-[9px] font-black uppercase tracking-widest text-nyt-accent mb-3">{isMK ? 'ИНТЕРН. УДЕЛ' : 'INTERN. UDEO'}</span>
+            <div class="flex items-baseline gap-2">
+                <span class="text-3xl font-black tabular-nums text-nyt-accent">{metadata?.stats?.intl_share || stats?.intelligence?.international_share_pct || 0}%</span>
+                <Timer size={14} className="text-nyt-accent" />
+            </div>
         </div>
 	</div>
 </header>
 
 <style>
-    .briefing-masthead { margin-bottom: 4rem; }
-    .masthead-top { display: flex; justify-content: space-between; align-items: center; }
-    .masthead-kicker { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 950; letter-spacing: 0.25em; }
-    .masthead-meta { display: flex; gap: 2rem; }
-    .meta-item { display: flex; align-items: center; gap: 0.6rem; font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--muted-foreground); text-transform: uppercase; letter-spacing: 0.05em; }
-    .masthead-main { display: flex; flex-direction: column; align-items: center; text-align: center; }
-    .masthead-branding { display: flex; flex-direction: column; align-items: center; }
-    .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 8vw, 5.5rem); font-weight: 950; line-height: 0.85; letter-spacing: -0.04em; margin: 0; }
-    .masthead-date-bar { width: 100%; text-align: center; }
-    .masthead-standfirst { max-width: 900px; margin-left: auto; margin-right: auto; text-align: center; }
+    .briefing-masthead { margin-bottom: 3rem; }
+    
+    /* ── Report Status Bar ──────────────────────────── */
+    .report-status-bar {
+        background: var(--card);
+        border: 1px solid var(--border);
+        padding: 0.6rem 1.25rem;
+        border-radius: 99px;
+    }
+    .status-inner { display: flex; align-items: center; gap: 1.5rem; }
+    .status-item { display: flex; align-items: center; gap: 0.5rem; }
+    .divider-left { border-left: 1px solid var(--border); padding-left: 1.5rem; }
+    .status-label { font-size: 0.55rem; font-weight: 900; letter-spacing: 0.1em; color: var(--muted-foreground); text-transform: uppercase; }
+    .status-value { font-size: 0.6rem; font-weight: 850; letter-spacing: 0.05em; color: var(--foreground); }
+    
+    .pulse-indicator { width: 6px; height: 6px; border-radius: 50%; }
+    .pulse-emerald { background: #10b981; box-shadow: 0 0 8px #10b981; animation: pulse-glow 2s infinite; }
+    
+    @keyframes pulse-glow {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(1.2); }
+    }
 
-    @media (max-width: 640px) {
-        .masthead-meta { display: none; }
-        .masthead-title { line-height: 0.9; }
-        .deck-item span:first-child { font-size: 1.5rem; }
+    .masthead-main { display: flex; flex-direction: column; align-items: center; text-align: center; }
+    .masthead-title { font-family: var(--font-serif); font-size: clamp(2rem, 6vw, 4.5rem); font-weight: 950; line-height: 0.9; letter-spacing: -0.04em; margin: 0; }
+    .italic-serif { font-style: italic; font-weight: 400; color: var(--nyt-accent); }
+    .masthead-date-bar { width: 100%; text-align: center; margin-top: 1rem; }
+
+    .signature-tag { font-family: var(--font-mono); }
+
+    @media (max-width: 768px) {
+        .report-status-bar { border-radius: 8px; }
+        .status-inner { flex-wrap: wrap; gap: 0.75rem; }
+        .divider-left { border: none; padding-left: 0; }
+        .hide-mobile { display: none; }
+        .signature-tag { width: 100%; border-top: 1px solid var(--border); pt-2; margin-top: 0.25rem; }
     }
 </style>
+

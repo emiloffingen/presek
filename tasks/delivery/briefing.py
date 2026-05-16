@@ -590,14 +590,59 @@ def generate_daily_brief_task(retry_attempt=0, lang="sr"):
         final_brief = brief or generate_daily_brief_fallback(clusters)
         if final_brief:
             if brief and not final_brief.startswith("#"): final_brief = f"# {dispatch_name}\n\n" + final_brief
-            db.execute("INSERT INTO daily_briefings (date, content, lang) VALUES (CURRENT_DATE, %s, %s) ON CONFLICT (date, lang) DO UPDATE SET content = EXCLUDED.content", (final_brief, lang), fetch=False)
+            
+            # Phase 1: Extract structured metadata for Intelligence Report 2.0
+            metadata = {
+                "system_signature": "Presek v2.1-CC",
+                "model": "Gemma 2 / Mistral-Nemo",
+                "stats": {
+                    "total_articles": total_24h,
+                    "intl_share": intl_pct,
+                    "pluralism_score": diverse_pct
+                },
+                "key_narratives": []
+            }
+            
+            # Use AI to extract 3 key narratives from the final brief
+            try:
+                narrative_prompt = (
+                    "Izvuci 3 najvaznija narativa iz ovog brifinga. "
+                    "Za svaki narativ napisi kratku recenicu i dodeli sentiment (POZITIVAN, NEUTRALAN, KRITIČAN). "
+                    "Vrati ISKLJUČIVO validan JSON niz objekata:\n"
+                    '[{"text": "...", "sentiment": "POZITIVAN"}, ...]'
+                ) if lang == "sr" else (
+                    "Извлечи 3 најважни наративи од овој брифинг. "
+                    "За секој наратив напиши кратка реченица и додели сентимент (ПОЗИТИВЕН, НЕУТРАЛЕН, КРИТИЧЕН). "
+                    "Врати ИСКЛУЧИВО валидна JSON низа од објекти:\n"
+                    '[{"text": "...", "sentiment": "ПОЗИТИВЕН"}, ...]'
+                )
+                
+                nar_raw, _ = _call_ai(f"<briefing>\n{final_brief}\n</briefing>", narrative_prompt, task_type="extraction", max_tokens=1000)
+                import json
+                if nar_raw:
+                    # Clean potential markdown
+                    nar_clean = nar_raw.strip().replace("```json", "").replace("```", "")
+                    metadata["key_narratives"] = json.loads(nar_clean)
+            except Exception as e:
+                log.warning(f"[tasks] Narrative extraction failed: {e}")
+
+            db.execute(
+                "INSERT INTO daily_briefings (date, content, lang, metadata) VALUES (CURRENT_DATE, %s, %s, %s) "
+                "ON CONFLICT (date, lang) DO UPDATE SET content = EXCLUDED.content, metadata = EXCLUDED.metadata", 
+                (final_brief, lang, json.dumps(metadata)), 
+                fetch=False
+            )
             delete_cache(f"daily_brief:latest:{lang}"); record_task_event("daily_brief", "ok" if brief else "fallback", f"lang:{lang}")
             if not brief and retry_attempt < 2: generate_daily_brief_task.apply_async(kwargs={"retry_attempt": retry_attempt + 1, "lang": lang}, countdown=1800)
     except Exception as e:
         clusters = _load_daily_brief_clusters(limit=6, lang="sr"); fallback = generate_daily_brief_fallback(clusters)
         if fallback:
-            db.execute("INSERT INTO daily_briefings (date, content, lang) VALUES (CURRENT_DATE, %s, %s) ON CONFLICT (date, lang) DO UPDATE SET content = EXCLUDED.content", (fallback, lang), fetch=False)
-            delete_cache(f"daily_brief:latest:{lang}"); from tasks.utils import record_task_event; record_task_event("daily_brief", "fallback", f"lang:{lang}")
+            db.execute(
+                "INSERT INTO daily_briefings (date, content, lang, metadata) VALUES (CURRENT_DATE, %s, %s, %s) "
+                "ON CONFLICT (date, lang) DO UPDATE SET content = EXCLUDED.content, metadata = EXCLUDED.metadata", 
+                (fallback, lang, json.dumps({"is_fallback": True})), 
+                fetch=False
+            )
             if retry_attempt < 2: generate_daily_brief_task.apply_async(kwargs={"retry_attempt": retry_attempt + 1, "lang": lang}, countdown=1800)
         else: from tasks.utils import record_task_event; record_task_event("daily_brief", "error", f"lang:{lang}"); log.error(f"[tasks] Daily brief ({lang}) failed: {e}")
 

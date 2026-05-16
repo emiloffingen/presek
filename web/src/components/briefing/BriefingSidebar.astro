@@ -1,6 +1,7 @@
 ---
-import { Zap, Activity, Users, MapPin } from 'lucide-react';
+import { Zap, Activity, Users, MapPin, Calendar } from 'lucide-react';
 import NewsletterIsland from '../NewsletterIsland.tsx';
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 
 interface Props {
 	stats: any;
@@ -11,6 +12,9 @@ interface Props {
 }
 
 const { stats, health, leadCluster, briefing, historicalDates = [] } = Astro.props;
+const lang = getLangFromUrl(Astro.url);
+const isMK = lang === 'mk';
+const t = useTranslations(lang);
 
 function getTimeStr(dateStr: string) {
     if (!dateStr) return '';
@@ -21,35 +25,37 @@ function getTimeStr(dateStr: string) {
         const diffMins = Math.floor(diffMs / (1000 * 60));
         const diffHours = Math.floor(diffMins / 60);
 
-        if (diffMins < 1) return 'SADA';
-        if (diffMins < 60) return `PRE ${diffMins} MIN`;
-        if (diffHours < 24) return `PRE ${diffHours} SATA`;
+        if (diffMins < 1) return isMK ? 'СЕГА' : 'SADA';
+        if (diffMins < 60) return isMK ? `ПРЕД ${diffMins} МИН` : `PRE ${diffMins} MIN`;
+        if (diffHours < 24) return isMK ? `ПРЕД ${diffHours} ЧАСА` : `PRE ${diffHours} SATA`;
         
-        return date.toLocaleDateString('sr-RS', { day: 'numeric', month: 'short' }).toUpperCase();
+        return date.toLocaleDateString(isMK ? 'mk-MK' : 'sr-RS', { day: 'numeric', month: 'short' }).toUpperCase();
     } catch {
         return '';
     }
 }
+
+const l = (path: string) => isMK ? `/mk${path}` : path;
 ---
 
 <aside class="briefing-sidebar">
-	<section class="sidebar-module p-6 bg-secondary/30 border border-border rounded-sm mb-6">
-			<NewsletterIsland client:visible />
+	<section class="sidebar-module p-6 bg-secondary/10 border border-border rounded-xl mb-6 shadow-sm">
+			<NewsletterIsland lang={lang} client:visible />
 		</section>
 
 		{historicalDates.length > 0 && (
 			<section class="sidebar-module">
-				<div class="flex items-center gap-2 mb-4 pb-2 border-b border-border">
-					<Activity size={14} className="text-foreground" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">PRETHODNA IZDANJA</h4>
+				<div class="flex items-center gap-2 mb-6 pb-2 border-b border-border">
+					<Calendar size={14} className="text-foreground" />
+					<h4 class="text-[10px] font-black uppercase tracking-widest">{isMK ? 'ПРЕТХОДНИ ИЗДАНИЈА' : 'PRETHODNA IZDANJA'}</h4>
 				</div>
-				<div class="flex flex-col gap-2">
+				<div class="grid grid-cols-2 gap-2">
 					{historicalDates.map((d: any) => (
 						<a 
-							href={`/briefing?date=${d.day}`} 
-							class={`text-xs font-bold hover:text-nyt-accent transition-colors block py-1 ${briefing?.date === d.day ? 'text-nyt-accent' : 'text-muted-foreground'}`}
+							href={`${l('/briefing')}?date=${d.day}`} 
+							class={`text-[10px] font-black uppercase tracking-tighter hover:bg-secondary transition-all px-3 py-2 border border-border rounded flex items-center justify-center text-center ${briefing?.date === d.day ? 'bg-nyt-accent text-white border-nyt-accent' : 'text-muted-foreground bg-card'}`}
 						>
-							● {new Date(d.day).toLocaleDateString('sr-RS', { day: 'numeric', month: 'short' })}
+							{new Date(d.day).toLocaleDateString(isMK ? 'mk-MK' : 'sr-RS', { day: 'numeric', month: 'short' })}
 						</a>
 					))}
 				</div>
@@ -58,24 +64,24 @@ function getTimeStr(dateStr: string) {
 
 		{stats?.intelligence?.pluralism && (
 			<section class="sidebar-module">
-				<div class="flex items-center gap-2 mb-4 pb-2 border-b border-border">
+				<div class="flex items-center gap-2 mb-6 pb-2 border-b border-border">
 					<Activity size={14} className="text-emerald-600" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">SISTEMSKA RAVNOTEŽA</h4>
+					<h4 class="text-[10px] font-black uppercase tracking-widest">{isMK ? 'СИСТЕМСКА РАМНОТЕЖА' : 'SISTEMSKA RAVNOTEŽA'}</h4>
 				</div>
 				<div class="space-y-6">
 					<div>
-						<div class="flex justify-between text-[10px] font-bold uppercase mb-2">
-							<span>Medijski pluralizam</span>
-							<span>{stats.intelligence.pluralism.pluralism_pct}%</span>
+						<div class="flex justify-between text-[9px] font-black uppercase mb-2 opacity-60">
+							<span>{isMK ? 'Медиумски плурализам' : 'Medijski pluralizam'}</span>
+							<span class="text-emerald-600">{stats.intelligence.pluralism.pluralism_pct}%</span>
 						</div>
 						<div class="h-1 bg-secondary rounded-full overflow-hidden">
 							<div class="h-full bg-emerald-500" style={`width: ${stats.intelligence.pluralism.pluralism_pct}%`}></div>
 						</div>
 					</div>
 					<div>
-						<div class="flex justify-between text-[10px] font-bold uppercase mb-2">
-							<span>Visok konsenzus</span>
-							<span>{stats.intelligence.pluralism.high_consensus_pct}%</span>
+						<div class="flex justify-between text-[9px] font-black uppercase mb-2 opacity-60">
+							<span>{isMK ? 'Висок консензус' : 'Visok konsenzus'}</span>
+							<span class="text-blue-600">{stats.intelligence.pluralism.high_consensus_pct}%</span>
 						</div>
 						<div class="h-1 bg-secondary rounded-full overflow-hidden">
 							<div class="h-full bg-blue-500" style={`width: ${stats.intelligence.pluralism.high_consensus_pct}%`}></div>
@@ -87,16 +93,16 @@ function getTimeStr(dateStr: string) {
 
 		{briefing?.subjects?.length > 0 && (
 			<section class="sidebar-module">
-				<div class="flex items-center gap-2 mb-4 pb-2 border-b border-border">
+				<div class="flex items-center gap-2 mb-6 pb-2 border-b border-border">
 					<Users size={14} className="text-foreground" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">KLJUČNI AKTERI danas</h4>
+					<h4 class="text-[10px] font-black uppercase tracking-widest">{isMK ? 'КЛУЧНИ АКТЕРИ ДЕНЕС' : 'KLJUČNI AKTERI DANAS'}</h4>
 				</div>
 				<div class="flex flex-col gap-3">
 					{briefing.subjects.map((subject: any) => (
-						<div class="flex justify-between items-center text-sm font-serif">
-							<span>{subject.name}</span>
-							<span class="text-xs font-sans font-black text-muted-foreground">+{subject.total_mentions}</span>
-						</div>
+						<a href={l(`/subjekt/${encodeURIComponent(subject.name)}`)} class="flex justify-between items-center text-sm font-serif group">
+							<span class="group-hover:text-nyt-accent transition-colors">{subject.name}</span>
+							<span class="text-[10px] font-sans font-black text-muted-foreground opacity-40">+{subject.total_mentions}</span>
+						</a>
 					))}
 				</div>
 			</section>
@@ -104,14 +110,14 @@ function getTimeStr(dateStr: string) {
 
 		{briefing?.locations?.length > 0 && (
 			<section class="sidebar-module">
-				<div class="flex items-center gap-2 mb-4 pb-2 border-b border-border">
+				<div class="flex items-center gap-2 mb-6 pb-2 border-b border-border">
 					<MapPin size={14} className="text-foreground" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">FOKUS LOKACIJE</h4>
+					<h4 class="text-[10px] font-black uppercase tracking-widest">{isMK ? 'ФОКУС ЛОКАЦИИ' : 'FOKUS LOKACIJE'}</h4>
 				</div>
 				<div class="flex flex-wrap gap-2">
 					{briefing.locations.map((loc: any) => (
-						<span class="px-2 py-1 bg-secondary text-secondary-foreground text-xs font-sans font-bold uppercase tracking-wider">
-							{loc.name} <span class="opacity-50 ml-1">{loc.total_mentions}</span>
+						<span class="px-2 py-1 bg-secondary border border-border text-secondary-foreground text-[10px] font-sans font-black uppercase tracking-wider">
+							{loc.name}
 						</span>
 					))}
 				</div>
@@ -120,15 +126,15 @@ function getTimeStr(dateStr: string) {
 
 		{leadCluster && (
 			<section class="sidebar-module">
-				<div class="flex items-center gap-2 mb-4 pb-2 border-b border-border">
+				<div class="flex items-center gap-2 mb-6 pb-2 border-b border-border">
 					<Zap size={14} className="text-nyt-accent" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">AKTUELNO SAD</h4>
+					<h4 class="text-[10px] font-black uppercase tracking-widest">{isMK ? 'АКТУЕЛНО СЕГА' : 'AKTUELNO SAD'}</h4>
 				</div>
-				<a href={`/cluster/${leadCluster.cluster_id}`} class="group block">
+				<a href={l(`/cluster/${leadCluster.cluster_id}`)} class="group block">
 					<p class="font-serif font-bold text-sm leading-snug group-hover:text-nyt-accent transition-colors">
 						{leadCluster.articles?.[0]?.title}
 					</p>
-					<span class="block mt-2 text-[9px] font-black uppercase text-muted-foreground">
+					<span class="block mt-3 text-[9px] font-black uppercase text-muted-foreground opacity-60">
 						{leadCluster.articles?.[0]?.source} · {getTimeStr(leadCluster.articles?.[0]?.created_at || leadCluster.articles?.[0]?.ingested_at)}
 					</span>
 				</a>

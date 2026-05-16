@@ -6,12 +6,17 @@ import BriefingHeader from '../../components/briefing/BriefingHeader.astro';
 import BriefingContent from '../../components/briefing/BriefingContent.astro';
 import BriefingSidebar from '../../components/briefing/BriefingSidebar.astro';
 import BriefingDigest from '../../components/briefing/BriefingDigest.astro';
+import NarrativeList from '../../components/briefing/NarrativeList';
 
 import { apiBaseUrl } from '../../lib/apiBase';
 import { formatBriefing } from '../../utils/briefingFormatter';
-import { Newspaper } from 'lucide-react';
+import { Newspaper, Timer, ChevronRight } from 'lucide-react';
+import { getLangFromUrl } from '../../i18n/utils';
 
 const API_URL = apiBaseUrl();
+const lang = getLangFromUrl(Astro.url);
+const isMK = lang === 'mk';
+
 const url = new URL(Astro.request.url);
 const dateParam = url.searchParams.get('date');
 
@@ -22,12 +27,12 @@ let error = null;
 
 try {
     const briefingUrl = dateParam
-            ? `${API_URL}/intelligence/briefing?date=${dateParam}&lang=sr`
-            : `${API_URL}/intelligence/briefing?lang=sr`;
+            ? `${API_URL}/intelligence/briefing?date=${dateParam}&lang=${lang}`
+            : `${API_URL}/intelligence/briefing?lang=${lang}`;
     const [briefRes, homeRes, statsRes] = await Promise.all([
         fetch(briefingUrl),
-        fetch(`${API_URL}/home?lang=sr`),
-        fetch(`${API_URL}/stats/summary?lang=sr`)
+        fetch(`${API_URL}/home?lang=${lang}`),
+        fetch(`${API_URL}/stats/summary?lang=${lang}`)
     ]);
 
     if (briefRes.ok) briefingData = await briefRes.json();
@@ -35,33 +40,35 @@ try {
     if (statsRes.ok) stats = await statsRes.json();
 
     if (!briefingData || briefingData.status === 'error') {
-        error = briefingData?.message || "Брифинг тренутно није доступан.";
+        error = briefingData?.message || (isMK ? "Брифингот моментално не е достапен." : "Brifing trenutno nije dostupan.");
     }
 } catch (e) {
-    error = "Грешка при учитавању података.";
+    error = isMK ? "Грешка при вчитување на податоците." : "Greška pri učitavanju podataka.";
 }
 
-const formattedBriefing = briefingData?.content ? formatBriefing(briefingData.content) : "";
+const formattedBriefing = briefingData?.content ? formatBriefing(briefingData.content, lang) : "";
 
 const displayDate = briefingData?.date 
-    ? new Date(briefingData.date).toLocaleDateString('sr-RS', {
+    ? new Date(briefingData.date).toLocaleDateString(isMK ? 'mk-MK' : 'sr-RS', {
         weekday: 'long',
         day: 'numeric',
         month: 'long',
         year: 'numeric'
     })
-    : 'Данашње издање';
+    : (isMK ? 'Денешно издание' : 'Današnje izdanje');
 ---
 
-<Layout title="Уреднички брифинг — Пресек">
+<Layout title={`${isMK ? 'Уреднички брифинг' : 'Urednički brifing'} — Presek`}>
     <NYTHeader stats={stats} />
     
-    <main class="site-layout broadsheet-layout py-[var(--page-py)]">
+    <main class="site-layout broadsheet-layout pt-24 pb-[var(--page-py)] overflow-x-hidden">
         <div class="briefing-page-container">
             {error ? (
-                <div class="py-20 text-center">
+                <div class="py-20 text-center animate-rise">
                     <h2 class="font-serif text-3xl mb-6 font-black italic">{error}</h2>
-                    <a href="/briefing" class="inline-flex items-center gap-2 px-6 py-3 bg-foreground text-background font-sans font-black text-xs uppercase tracking-widest hover:bg-nyt-accent transition-colors">Врати се на последње издање</a>
+                    <a href={isMK ? '/mk/briefing' : '/briefing'} class="inline-flex items-center gap-2 px-6 py-3 bg-foreground text-background font-sans font-black text-xs uppercase tracking-widest hover:bg-nyt-accent transition-colors">
+                        {isMK ? 'Врати се на последното издание' : 'Vrati se na poslednje izdanje'}
+                    </a>
                 </div>
             ) : briefingData ? (
                 <div class="briefing-layout-grid relative">
@@ -69,6 +76,8 @@ const displayDate = briefingData?.date
                         <BriefingHeader 
                             currentDate={displayDate}
                             dispatchIcon={Newspaper}
+                            lang={lang}
+                            metadata={briefingData.metadata}
                             stats={{
                                 total_feeds: briefingData.day_stats?.total_sources || stats?.total_feeds || 0,
                                 last_24h: briefingData.day_stats?.total_articles || stats?.last_24h || 0,
@@ -76,17 +85,24 @@ const displayDate = briefingData?.date
                             }}
                         />
 
-                        <div class="editorial-divider mb-12"></div>
+                        {briefingData.metadata?.key_narratives && (
+                            <NarrativeList narratives={briefingData.metadata.key_narratives} lang={lang} client:load />
+                        )}
 
-                        <BriefingContent formattedBriefing={formattedBriefing} />
+                        <div class="editorial-divider mb-16"></div>
+
+                        <div class="briefing-editorial-wrapper max-w-[800px] mx-auto">
+                            <BriefingContent formattedBriefing={formattedBriefing} />
+                        </div>
 
 
                         {homeData && (
-                            <div class="mt-32 pt-16 border-t-4 border-foreground">
-                                <div class="flex items-center gap-4 mb-12">
-                                    <div class="h-px flex-1 bg-border"></div>
-                                    <h2 class="font-serif text-3xl font-black italic px-4">Наставите са читањем</h2>
-                                    <div class="h-px flex-1 bg-border"></div>
+                            <div class="mt-40 pt-16 border-t-4 border-foreground">
+                                <div class="flex items-center justify-between mb-12">
+                                    <h2 class="font-serif text-4xl font-black italic">{isMK ? 'Продолжете со читање' : 'Nastavite sa čitanjem'}</h2>
+                                    <a href={isMK ? '/mk' : '/'} class="flex items-center gap-2 font-black text-[10px] uppercase tracking-widest text-nyt-accent hover:underline">
+                                        {isMK ? 'НАСЛОВНА' : 'NASLOVNA'} <ChevronRight size={14} />
+                                    </a>
                                 </div>
                                 <BriefingDigest homeData={homeData} />
                             </div>
@@ -112,7 +128,7 @@ const displayDate = briefingData?.date
             ) : (
                 <div class="py-40 text-center flex flex-col items-center gap-6">
                     <div class="w-12 h-12 border-4 border-nyt-accent border-t-transparent rounded-full animate-spin"></div>
-                    <p class="font-serif text-xl italic text-muted-foreground">Припремамо дневни преглед...</p>
+                    <p class="font-serif text-xl italic text-muted-foreground">{isMK ? 'Подготвуваме дневен преглед...' : 'Pripremamo dnevni pregled...'}</p>
                 </div>
             )}
         </div>
