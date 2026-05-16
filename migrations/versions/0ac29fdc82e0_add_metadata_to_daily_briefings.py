@@ -21,7 +21,27 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """Upgrade schema."""
     from sqlalchemy.dialects import postgresql
-    op.add_column('daily_briefings', sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=True, server_default='{}'))
+    
+    # Ensure daily_briefings table exists (it seems to be missing in some environments)
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS daily_briefings (
+            date DATE NOT NULL,
+            content TEXT,
+            lang VARCHAR(5) NOT NULL DEFAULT 'sr',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (date, lang)
+        )
+    """)
+    
+    # Add metadata column if it doesn't exist
+    op.execute("""
+        DO $$ 
+        BEGIN 
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='daily_briefings' AND column_name='metadata') THEN
+                ALTER TABLE daily_briefings ADD COLUMN metadata JSONB DEFAULT '{}';
+            END IF;
+        END $$;
+    """)
 
 
 def downgrade() -> None:
