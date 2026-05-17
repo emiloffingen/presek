@@ -309,11 +309,12 @@ class MistralProvider(OpenAICompatibleProvider):
         super().__init__("mistral", api_key, api_url, model)
 
 
-class NvidiaProvider(AIProvider):
-    def __init__(self, api_key: str, api_url: str, model: str):
-        self.api_key = api_key
-        self.api_url = api_url
-        self.model = model
+class GeminiProvider(AIProvider):
+    def __init__(self, api_key: str, model: str):
+        import google.generativeai as genai
+        genai.configure(api_key=api_key)
+        self.model_name = model
+        self.model = genai.GenerativeModel(model)
 
     def call(
         self,
@@ -325,11 +326,16 @@ class NvidiaProvider(AIProvider):
         task_type: str = "default",
         lang: str = "sr",
     ) -> str | None:
-        if not self.api_key or not self.api_url:
+        try:
+            # Gemini models take system instruction in the initialization or as a separate role,
+            # but for simplicity, we prepend it.
+            full_prompt = f"{system}\n\n{prompt}"
+            response = self.model.generate_content(full_prompt)
+            return response.text
+        except Exception as e:
+            log.error(f"[ai/gemini] GeminiProvider failed: {e}")
             return None
 
-        payload = {
-            "model": self.model,
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": prompt},
@@ -377,7 +383,6 @@ PROVIDERS = {
             "MISTRAL_API_URL", "https://api.mistral.ai/v1/chat/completions"
         ),
         model=os.environ.get("MISTRAL_MODEL", "mistral-large-latest"),
-    ),
     "mistral_small": MistralProvider(
         api_key=os.environ.get("MISTRAL_SMALL_API_KEY", ""),
         api_url=os.environ.get(
@@ -385,6 +390,11 @@ PROVIDERS = {
         ),
         model=os.environ.get("MISTRAL_SMALL_MODEL", "mistral-small-latest"),
     ),
+    "gemini": GeminiProvider(
+        api_key=os.environ.get("GEMINI_API_KEY", ""),
+        model=os.environ.get("GEMINI_MODEL", "gemini-flash-latest"),
+    ),
+    }
     "local": LocalProvider(),
 }
 
