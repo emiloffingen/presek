@@ -1765,10 +1765,7 @@ button:active,
     .news-feed-grid {
         grid-template-columns: repeat(2, 1fr);
         row-gap: 2rem;
-    }
-    /* Handle orphans in 2-column grid */
-    .news-feed-grid > *:last-child:nth-child(odd) {
-        grid-column: span 2;
+        justify-content: center;
     }
     .news-feed-grid > * {
         grid-row: span 4;
@@ -1785,19 +1782,8 @@ button:active,
 @media (min-width: 1280px) {
     .news-feed-grid {
         grid-template-columns: repeat(3, 1fr);
+        justify-content: center;
     }
-    /* Reset 2nd column orphan span */
-    .news-feed-grid > *:last-child:nth-child(odd) {
-        grid-column: span 1;
-    }
-    /* Handle orphans in 3-column grid */
-    .news-feed-grid > *:last-child:nth-child(3n+1) {
-        grid-column: span 3;
-    }
-    /* If 2 orphans, let them stay as is or handle? 
-       Actually, 2 orphans in a 3rd col grid look okay-ish 
-       compared to 1 orphan. But let's span them both if possible? 
-       No, 3n+2 is harder to handle without flex. */
 }
 
 /* Editorial Enhancements */

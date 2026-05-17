@@ -115,65 +115,66 @@ function getTimeStr(dateStr: string) {
 ---
 
 <article class:list={["nyt-article", `variant-${variant}`, { "lead-story": isLead, "premium-spotlight": showTrustBadge, "has-image": !!thumbSrc }, bentoSpan ? `bento-${bentoSpan}` : ""]} data-cluster={JSON.stringify(slimCluster)}>
-	<div class="article-body">
-		<div class="article-meta-v2">
-			<div class="kicker-group">
-                <span class="kicker">{main.source}</span>
-                {showTrustBadge && sourceSignal.trust_label === 'Visoko poverenje' && (
-                    <ShieldCheck size={10} className="text-blue-500" title="Proveren izvor" />
-                )}
-                {main.is_global && (
-                    <Globe size={10} className="text-emerald-500" title="Globalna vest" />
-                )}
-            </div>
-            <div class="meta-right">
-                {showSignificanceLabel && (
-                    <span class:list={["significance-badge", { "is-breaking": cluster.is_breaking }]} aria-label={`Status: ${significanceLabel}`}>
-                        {significanceLabel}
-                    </span>
-                )}
-                <span class="time-stamp" aria-label="Vreme objave">{getTimeStr(main.ingested_at || main.created_at)}</span>
-            </div>
-		</div>
-
-
-		<a href={clusterUrl} class="headline-link group" onmouseenter={`fetch('${clusterUrl}', { priority: 'low' })`}>
-			<h2 class:list={["headline", isLead ? "headline-lead" : (variant === 'compact' || variant === 'wire' ? "headline-compact" : "headline-standard"), { "headline-cyrillic": titleIsCyrillic }]} set:html={sanitizeHtml(displayTitle)}>
-			</h2>
-		</a>
-
-        <div class="middle-content-wrap">
-            {hasSynthesis && (
-                <span class="editorial-byline" aria-label="Sinteza vesti">
-                    <Sparkles size={11} className="inline-block mr-1 text-nyt-accent" aria-hidden="true" />
-                    {t('news.synthesis')}
-                </span>
-            )}
-
-            {!isLead && variant === 'compact' ? null : (
-                <div class="card-content-stack">
-                    {displaySummary && (
-                        <div class="summary-container" tabindex="0" role="button" aria-expanded="false" aria-label="Klikni za prikaz celog rezimea">
-                            <p class:list={["summary", { "summary-cyrillic": summaryIsCyrillic }]} set:html={sanitizeHtml(displaySummary)}></p>
-                        </div>
+	<div class="article-body flex flex-col justify-between h-full">
+        <div class="flex-grow">
+            <div class="article-meta-v2">
+                <div class="kicker-group">
+                    <span class="kicker">{main.source}</span>
+                    {showTrustBadge && sourceSignal.trust_label === 'Visoko poverenje' && (
+                        <ShieldCheck size={10} className="text-blue-500" title="Proveren izvor" />
+                    )}
+                    {main.is_global && (
+                        <Globe size={10} className="text-emerald-500" title="Globalna vest" />
                     )}
                 </div>
-            )}
+                <div class="meta-right">
+                    {showSignificanceLabel && (
+                        <span class:list={["significance-badge", { "is-breaking": cluster.is_breaking }]} aria-label={`Status: ${significanceLabel}`}>
+                            {significanceLabel}
+                        </span>
+                    )}
+                    <span class="time-stamp" aria-label="Vreme objave">{getTimeStr(main.ingested_at || main.created_at)}</span>
+                </div>
+            </div>
 
-            {isLead && cluster.articles.length > 1 && (
-                <ul class="sub-headlines" aria-label="Povezane vesti">
-                    {cluster.articles.slice(1).filter(a => !a.is_redundant).slice(0, 3).map((sub: Article) => (
-                        <li>
-                            <a href={clusterUrl} set:html={sanitizeHtml(getDisplayTitle(sub, '', lang))}>
-                            </a>
-                        </li>
-                    ))}
-                </ul>
-            )}
+
+            <a href={clusterUrl} class="headline-link group" onmouseenter={`fetch('${clusterUrl}', { priority: 'low' })`}>
+                <h2 class:list={["headline", isLead ? "headline-lead" : (variant === 'compact' || variant === 'wire' ? "headline-compact" : "headline-standard"), { "headline-cyrillic": titleIsCyrillic }]} set:html={sanitizeHtml(displayTitle)}>
+                </h2>
+            </a>
+
+            <div class="middle-content-wrap">
+                {hasSynthesis && (
+                    <span class="editorial-byline" aria-label="Sinteza vesti">
+                        <Sparkles size={11} className="inline-block mr-1 text-nyt-accent" aria-hidden="true" />
+                        {t('news.synthesis')}
+                    </span>
+                )}
+
+                {!isLead && variant === 'compact' ? null : (
+                    <div class="card-content-stack">
+                        {displaySummary && (
+                            <div class="summary-container" tabindex="0" role="button" aria-expanded="false" aria-label="Klikni za prikaz celog rezimea">
+                                <p class:list={["summary", { "summary-cyrillic": summaryIsCyrillic }]} set:html={sanitizeHtml(displaySummary)}></p>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {isLead && cluster.articles.length > 1 && (
+                    <ul class="sub-headlines" aria-label="Povezane vesti">
+                        {cluster.articles.slice(1).filter(a => !a.is_redundant).slice(0, 3).map((sub: Article) => (
+                            <li>
+                                <a href={clusterUrl} set:html={sanitizeHtml(getDisplayTitle(sub, '', lang))}>
+                                </a>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
         </div>
 
-
-		<div class="footer-meta flex items-center gap-3">
+		<div class="footer-meta mt-auto pt-2 flex items-center gap-4">
 			<span class="flex items-center gap-1" aria-label="Vreme">
 		<Clock size={11} className="opacity-70" aria-hidden="true" />
 		{getTimeStr(main.ingested_at || main.created_at)}
@@ -627,8 +628,10 @@ function getTimeStr(dateStr: string) {
 		.nyt-article:not(.lead-story) .headline-compact,
 		.nyt-article:not(.lead-story) .headline-wire {
 			font-size: 1.1rem;
-			line-height: 1.1;
+			line-height: 1.35;
 			margin-bottom: 0.4rem;
+            letter-spacing: 0.025em;
+            padding-bottom: 0.25rem;
 		}
 
 		.nyt-article:not(.lead-story) .article-meta {

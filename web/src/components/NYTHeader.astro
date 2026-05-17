@@ -262,7 +262,7 @@ function getRelativeTimeStr(dateStr?: string) {
     }
     .ticker-label { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-red); }
 
-    .unified-ticker-track-wrap { flex: 1; overflow: hidden; position: relative; }
+    .unified-ticker-track-wrap { flex: 1; overflow: hidden; position: relative; padding-left: 1rem; padding-right: 1rem; }
     .unified-ticker-track { display: flex; width: max-content; animation: unified-ticker-scroll 80s linear infinite; }
     @keyframes unified-ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
     .unified-ticker-track:hover { animation-play-state: paused; }
