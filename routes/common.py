@@ -326,6 +326,11 @@ async def build_intelligence_summary_payload(
             else:
                 systemic_summaries += val
 
+    # Parameters for balance_stats must match the cat_filter
+    balance_params = [country_filter]
+    if category:
+        balance_params.append(category)
+
     balance_stats = (
         await db.async_execute_one(
             f"""
@@ -338,7 +343,7 @@ async def build_intelligence_summary_payload(
                 END) as group_count
             FROM articles a
             JOIN sources s ON a.source = s.name
-            WHERE COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '24 hours' {cat_filter}
+            WHERE a.country = %s AND COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '24 hours' {cat_filter}
             GROUP BY cluster_id
         )
         SELECT
