@@ -331,24 +331,32 @@ const articleSchema = cluster ? {
 							articlesCount={cluster.articles?.length || 0}
 						/>
 						{mainArticle?.full_content && (
-							<div class="mt-12 p-12 bg-secondary/5 border border-border/40 rounded-sm relative overflow-hidden group">
-								<div class="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-									<Newspaper size={64} strokeWidth={0.5} />
-								</div>
-								<h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-16 flex items-center gap-2">
-									<div class="w-2 h-[2px] bg-nyt-accent"></div>
-									{t('cluster.source_docs')} ({mainArticle.source})
-								</h4>
-								<div class="prose-editorial">
-									<p class="font-nyt-body text-xl md:text-2xl text-foreground/80 leading-[1.8] line-clamp-6 italic border-l-2 border-border/60 pl-10">
-										{mainArticle.full_content.replace(/<[^>]*>?/gm, '').trim()}
-									</p>
-								</div>
-								<div class="mt-10 flex justify-end">
-									<a href={mainArticle.link} target="_blank" rel="noopener noreferrer" class="text-[11px] font-black uppercase tracking-[0.2em] text-nyt-accent hover:underline flex items-center gap-2 bg-background px-5 py-2.5 rounded-full border border-nyt-accent/20 shadow-sm transition-all hover:shadow-md">
-										Прочитај го целиот запис на {mainArticle.source} <ExternalLink size={14} />
-									</a>
-								</div>
+							<div class="mt-12 border border-border/40 rounded-sm overflow-hidden bg-secondary/5">
+									<details class="group source-details">
+											<summary class="flex items-center justify-between p-12 cursor-pointer hover:bg-secondary/10 transition-colors list-none">
+													<div class="flex items-center gap-4">
+															<div class="w-2 h-8 bg-nyt-accent"></div>
+															<h4 class="text-[11px] font-black uppercase tracking-[0.2em] text-foreground">
+																	{t('cluster.source_docs')} ({mainArticle.source})
+															</h4>
+													</div>
+													<div class="text-muted-foreground group-open:rotate-180 transition-transform">
+															<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+													</div>
+											</summary>
+											<div class="px-12 pb-12">
+													<div class="prose-editorial max-w-none pt-6 border-t border-border/20">
+															<div class="font-nyt-body text-lg md:text-xl text-foreground/80 leading-[1.8] whitespace-pre-wrap">
+																	{mainArticle.full_content.replace(/<[^>]*>?/gm, '').trim()}
+															</div>
+													</div>
+													<div class="mt-10 flex justify-end">
+															<a href={mainArticle.link} target="_blank" rel="noopener noreferrer" class="text-[11px] font-black uppercase tracking-[0.2em] text-nyt-accent hover:underline flex items-center gap-2 bg-background px-5 py-2.5 rounded-full border border-nyt-accent/20 shadow-sm transition-all hover:shadow-md">
+																	{lang === 'mk' ? `Прочитај го целиот запис на ${mainArticle.source}` : `Pročitaj ceo zapis na ${mainArticle.source}`} <ExternalLink size={14} />
+															</a>
+													</div>
+											</div>
+									</details>
 							</div>
 						)}
 					</div><div class="editorial-grid">
