@@ -175,7 +175,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
             {isFallbackArt ? (
               <div className="article-image-placeholder design-card" style={{ '--placeholder-bg': tintColor } as any}>
                 <div className="design-card-pattern"></div>
-                <div className="design-card-ribbon">
+                <div className="design-card-ribbon flex items-center justify-center text-center px-5 py-2 min-w-max">
                     <span>{cardLabel}</span>
                 </div>
                 <div className="design-card-main">

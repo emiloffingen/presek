@@ -72,6 +72,14 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
                     <a href={l('/terms')}>{t('nav.terms')}</a>
                 </div>
             </div>
+            <div class="dir-group">
+                <h4 class="dir-title">{lang === 'sr' ? 'Pratite nas' : 'Следете нѐ'}</h4>
+                <div class="dir-links-stack">
+                    <a href="https://twitter.com/presek_rs" target="_blank" rel="noopener noreferrer">Twitter / X</a>
+                    <a href="https://instagram.com/presek.rs" target="_blank" rel="noopener noreferrer">Instagram</a>
+                    <a href="https://facebook.com/presek.rs" target="_blank" rel="noopener noreferrer">Facebook</a>
+                </div>
+            </div>
         </nav>
     </div>
 
@@ -110,18 +118,33 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
 
     .footer-main {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 4rem;
+        grid-template-columns: 1fr;
+        gap: 3rem;
         align-items: start;
     }
 
-    .brand-link { display: block; width: fit-content; }
-
     .footer-directory {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(2, 1fr);
         gap: 2rem;
     }
+
+    @media (min-width: 1024px) {
+        .footer-main {
+            grid-template-columns: repeat(6, 1fr);
+            gap: 4rem;
+        }
+        .footer-left-col {
+            grid-column: span 2;
+        }
+        .footer-directory {
+            grid-column: span 4;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+        }
+    }
+
+    .brand-link { display: block; width: fit-content; }
 
     .dir-group {
         display: flex;

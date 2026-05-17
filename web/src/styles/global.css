@@ -181,17 +181,15 @@ body.script-cyrillic .significance-badge {
     font-family: var(--font-sans) !important;
 }
 
-/* Ticker Overflow Buffer */
+/* Ticker Overflow Mask */
+.unified-ticker-track-wrap {
+    mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+
+/* Remove old pseudo-element if present */
 .unified-ticker-track-wrap::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: 80px;
-    background: linear-gradient(to left, var(--background), transparent);
-    z-index: 5;
-    pointer-events: none;
+    display: none;
 }
 
 .header-sticky-wrapper {
@@ -1776,6 +1774,8 @@ button:active,
         grid-row: span 4;
         display: grid;
         grid-template-rows: subgrid;
+        height: 100%;
+        align-content: start;
     }
     .lead-story {
         grid-column: span 2;

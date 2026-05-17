@@ -114,7 +114,7 @@ function getTimeStr(dateStr: string) {
 }
 ---
 
-<article class:list={["nyt-article", `variant-${variant}`, { "lead-story": isLead, "premium-spotlight": showTrustBadge }, bentoSpan ? `bento-${bentoSpan}` : ""]} data-cluster={JSON.stringify(slimCluster)}>
+<article class:list={["nyt-article", `variant-${variant}`, { "lead-story": isLead, "premium-spotlight": showTrustBadge, "has-image": !!thumbSrc }, bentoSpan ? `bento-${bentoSpan}` : ""]} data-cluster={JSON.stringify(slimCluster)}>
 	<div class="article-body">
 		<div class="article-meta-v2">
 			<div class="kicker-group">
@@ -142,33 +142,35 @@ function getTimeStr(dateStr: string) {
 			</h2>
 		</a>
 
-		{hasSynthesis && (
-			<span class="editorial-byline" aria-label="Sinteza vesti">
-                <Sparkles size={11} className="inline-block mr-1 text-nyt-accent" aria-hidden="true" />
-				{t('news.synthesis')}
-			</span>
-		)}
+        <div class="middle-content-wrap">
+            {hasSynthesis && (
+                <span class="editorial-byline" aria-label="Sinteza vesti">
+                    <Sparkles size={11} className="inline-block mr-1 text-nyt-accent" aria-hidden="true" />
+                    {t('news.synthesis')}
+                </span>
+            )}
 
-		{!isLead && variant === 'compact' ? null : (
-			<div class="card-content-stack">
-				{displaySummary && (
-					<div class="summary-container" tabindex="0" role="button" aria-expanded="false" aria-label="Klikni za prikaz celog rezimea">
-						<p class:list={["summary", { "summary-cyrillic": summaryIsCyrillic }]} set:html={sanitizeHtml(displaySummary)}></p>
-					</div>
-				)}
-			</div>
-		)}
+            {!isLead && variant === 'compact' ? null : (
+                <div class="card-content-stack">
+                    {displaySummary && (
+                        <div class="summary-container" tabindex="0" role="button" aria-expanded="false" aria-label="Klikni za prikaz celog rezimea">
+                            <p class:list={["summary", { "summary-cyrillic": summaryIsCyrillic }]} set:html={sanitizeHtml(displaySummary)}></p>
+                        </div>
+                    )}
+                </div>
+            )}
 
-        {isLead && cluster.articles.length > 1 && (
-            <ul class="sub-headlines" aria-label="Povezane vesti">
-                {cluster.articles.slice(1).filter(a => !a.is_redundant).slice(0, 3).map((sub: Article) => (
-                    <li>
-                        <a href={clusterUrl} set:html={sanitizeHtml(getDisplayTitle(sub, '', lang))}>
-                        </a>
-                    </li>
-                ))}
-            </ul>
-        )}
+            {isLead && cluster.articles.length > 1 && (
+                <ul class="sub-headlines" aria-label="Povezane vesti">
+                    {cluster.articles.slice(1).filter(a => !a.is_redundant).slice(0, 3).map((sub: Article) => (
+                        <li>
+                            <a href={clusterUrl} set:html={sanitizeHtml(getDisplayTitle(sub, '', lang))}>
+                            </a>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </div>
 
 
 		<div class="footer-meta flex items-center gap-3">
@@ -220,7 +222,7 @@ function getTimeStr(dateStr: string) {
 							decoding="async"
 							fetchpriority={isLead ? "high" : "auto"}
 							onload="this.classList.add('is-loaded')"
-							onerror="this.style.opacity='0'; this.nextElementSibling.style.display='grid';"
+							onerror="this.style.opacity='0'; this.nextElementSibling.style.display='grid'; this.closest('.nyt-article').classList.remove('has-image');"
 						/>
 						<div class="article-image-placeholder design-card is-error-fallback absolute inset-0" style="display: none; --placeholder-bg: #27272a;">
 							<div class="design-card-pattern opacity-5"></div>
@@ -475,14 +477,19 @@ function getTimeStr(dateStr: string) {
         left: 0;
         background: var(--nyt-accent);
         color: white;
-        padding: 0.35rem 0.8rem;
+        padding: 0.45rem 1.25rem;
         font-family: var(--font-sans);
-        font-size: 0.55rem;
+        font-size: 0.65rem;
         font-weight: 950;
         letter-spacing: 0.15em;
         text-transform: uppercase;
         z-index: 3;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        min-width: max-content;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
     }
 
     .design-card-main {
@@ -586,16 +593,27 @@ function getTimeStr(dateStr: string) {
 			padding-bottom: 1.1rem;
 		}
 
+		.nyt-article:not(.has-image) {
+			grid-template-columns: 1fr !important;
+		}
+
+		.nyt-article:not(.has-image) .image-wrap {
+			display: none !important;
+		}
+
 		.nyt-article:not(.lead-story) .article-body {
 			grid-column: 1;
-			grid-row: 1;
+			grid-row: 1 / span 4;
 			min-width: 0;
 			max-width: 100%;
+            display: grid;
+            grid-template-rows: subgrid;
 		}
 
 		.nyt-article:not(.lead-story) .image-wrap {
 			grid-column: 2;
-			grid-row: 1;
+			grid-row: 1 / span 4;
+            height: 100%;
 		}
 
 		.nyt-article:not(.lead-story) .article-image,

@@ -133,7 +133,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
         <div className="for-you-grid">
           {[1, 2, 3, 4].map(i => (
             <div key={i} className="for-you-card border border-border bg-secondary/5 opacity-70">
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2 mb-4 px-3 py-1 bg-secondary/20 rounded-full w-fit">
                 <div className="w-3 h-3 rounded-full bg-secondary/40 animate-pulse"></div>
                 <div className="h-2 w-20 bg-secondary/40 rounded animate-pulse"></div>
               </div>
@@ -184,9 +184,9 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
 
             return (
               <a key={cluster.cluster_id} href={lang === 'sr' ? `/cluster/${cluster.cluster_id}` : `/mk/cluster/${cluster.cluster_id}`} className={`for-you-card ${isSemantic ? 'premium-spotlight' : ''}`} aria-label={`Otvori: ${title}`}>
-                <p className={`for-you-card-kicker ${isSemantic ? 'text-nyt-accent' : ''}`}>
+                <p className={`for-you-card-kicker ${isSemantic ? 'text-nyt-accent' : ''} flex items-center gap-2 px-3 py-1 bg-secondary/10 rounded-full w-fit mb-4 min-w-max`}>
                   {isSemantic ? <BrainCircuit size={12} /> : <Compass size={12} />}
-                  <span>{isSemantic ? (lang === 'sr' ? 'Semantička preporuka' : 'Семантичка препорака') : (item.reason || (lang === 'sr' ? 'Srodna tema' : 'Сродна тема'))}</span>
+                  <span className="leading-none">{isSemantic ? (lang === 'sr' ? 'Semantička preporuka' : 'Семантичка препорака') : (item.reason || (lang === 'sr' ? 'Srodna tema' : 'Сродна тема'))}</span>
                 </p>
                 <h3 dangerouslySetInnerHTML={{ __html: sanitizeHtml(highlightScores(title)) }}></h3>
                 {summary && <p className="for-you-card-copy">{summary}</p>}
@@ -229,9 +229,9 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
             const title = getTitle(cluster, lang);
             return (
               <a key={cluster.cluster_id} href={lang === 'sr' ? `/cluster/${cluster.cluster_id}` : `/mk/cluster/${cluster.cluster_id}`} className="for-you-card" aria-label={`Otvori: ${title}`}>
-                <p className="for-you-card-kicker">
+                <p className="for-you-card-kicker flex items-center gap-2 px-3 py-1 bg-secondary/10 rounded-full w-fit mb-4 min-w-max">
                   <Clock3 size={12} />
-                  <span>{lang === 'sr' ? 'Aktuelno u trenutku' : 'Актуелно во моментот'}</span>
+                  <span className="leading-none">{lang === 'sr' ? 'Aktuelno u trenutku' : 'Актуелно во моментот'}</span>
                 </p>
                 <h3 dangerouslySetInnerHTML={{ __html: sanitizeHtml(highlightScores(title)) }}></h3>
                 {summary && <p className="for-you-card-copy">{summary}</p>}
