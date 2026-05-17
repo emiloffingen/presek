@@ -319,10 +319,10 @@ function getBriefingSnippet(content: string) {
 ---
 
 <Layout
-	title={q || entity || subcategory || category || topic || (lang === 'sr' ? "Presek | Medijska transparentnost i javni uvid" : "Пресек | Медиумска транспарентност и јавен увид")}
+	title={q || entity || subcategory || category || topic || t('layout.title')}
 	description={q || entity || subcategory || category || topic
-		? (lang === 'sr' ? "Presek grupiše povezane vesti, upoređuje izvore i omogućava vam brži pregled konteksta." : "Пресек ги групира поврзаните вести, ги споредува изворите и ви овозможува побрз преглед на контекстот.")
-		: (lang === 'sr' ? "Presek je srpski informativni agregator koji sakuplja vesti iz svih medija, grupiše ih po temi i pokazuje kako različiti izvori izveštavaju o istom događaju." : "Пресек е македонски информативен агрегатор кој собира вести од сите медиуми, ги групира по тема и покажува како различни извори известуваат за истиот настан.")}
+		? t('layout.filtered_description')
+		: t('layout.home_description')}
 >
     <NYTHeader q={q} category={category} topic={topic} entity={entity} subcategory={subcategory} stats={stats} />
 
@@ -345,15 +345,15 @@ function getBriefingSnippet(content: string) {
                     <div class="max-w-full overflow-hidden mb-10">
                         <div class="quick-pills-container overflow-x-auto hide-scrollbar -mx-4 px-4 pb-2">
                             <div class="flex items-center gap-3">
-                                <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mr-2 shrink-0">Istraži:</span>
+                                <span class="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground mr-4 shrink-0">{t('home.explore')}</span>
                                 {[
-                                    { id: 'rs', label: lang === 'mk' ? 'Makedonija' : 'Srbija', href: '/?category=' + encodeURIComponent(lang === 'mk' ? 'Makedonija' : 'Srbija'), active: category === (lang === 'mk' ? 'Makedonija' : 'Srbija') },
-                                    { id: 'pol', label: 'Politika', href: '/?topic=' + encodeURIComponent('Politika'), active: topic === 'Politika' },
-                                    { id: 'eco', label: 'Ekonomija', href: '/?topic=' + encodeURIComponent('Ekonomija'), active: topic === 'Ekonomija' },
-                                    { id: 'spo', label: 'Sport', href: '/?topic=' + encodeURIComponent('Sport'), active: topic === 'Sport' },
-                                    { id: 'cul', label: 'Kultura', href: '/?topic=' + encodeURIComponent('Kultura'), active: topic === 'Kultura' },
-                                    { id: 'tech', label: 'Tehnologija', href: '/?topic=' + encodeURIComponent('Tehnologija'), active: topic === 'Tehnologija' },
-                                    { id: 'bg', label: lang === 'mk' ? 'Skopje' : 'Beograd', href: '/?subcategory=' + encodeURIComponent(lang === 'mk' ? 'Skopje' : 'Beograd'), active: subcategory === (lang === 'mk' ? 'Skopje' : 'Beograd') }
+                                    { id: 'rs', label: lang === 'mk' ? 'Makedonija' : 'Srbija', href: l('/?category=') + encodeURIComponent(lang === 'mk' ? 'Makedonija' : 'Srbija'), active: category === (lang === 'mk' ? 'Makedonija' : 'Srbija') },
+                                    { id: 'pol', label: 'Politika', href: l('/?topic=') + encodeURIComponent('Politika'), active: topic === 'Politika' },
+                                    { id: 'eco', label: 'Ekonomija', href: l('/?topic=') + encodeURIComponent('Ekonomija'), active: topic === 'Ekonomija' },
+                                    { id: 'spo', label: 'Sport', href: l('/?topic=') + encodeURIComponent('Sport'), active: topic === 'Sport' },
+                                    { id: 'cul', label: 'Kultura', href: l('/?topic=') + encodeURIComponent('Kultura'), active: topic === 'Kultura' },
+                                    { id: 'tech', label: 'Tehnologija', href: l('/?topic=') + encodeURIComponent('Tehnologija'), active: topic === 'Tehnologija' },
+                                    { id: 'bg', label: lang === 'mk' ? 'Skopje' : 'Beograd', href: l('/?subcategory=') + encodeURIComponent(lang === 'mk' ? 'Skopje' : 'Beograd'), active: subcategory === (lang === 'mk' ? 'Skopje' : 'Beograd') }
                                 ].map(pill => (
                                     <a 
                                         href={pill.href} 
@@ -421,10 +421,15 @@ function getBriefingSnippet(content: string) {
                             <h2 class="font-serif text-3xl font-black italic">{t('home.consensus_subtitle')}</h2>
                             <p class="text-sm text-muted-foreground mt-2">{t('home.consensus_desc')}</p>
                         </div>
-                        <div class="news-feed-grid news-feed-grid-compact">
-                            {consensusClusters.map((cluster: NewsCluster) => (
-                                <NewsCard cluster={cluster} variant="compact" lang={lang} />
-                            ))}
+                        <div class="consensus-carousel-wrap">
+                            <div class="consensus-grid hide-scrollbar">
+                                {consensusClusters.map((cluster: NewsCluster) => (
+                                    <div class="consensus-item">
+                                        <NewsCard cluster={cluster} variant="compact" lang={lang} />
+                                    </div>
+                                ))}
+                            </div>
+                            <div class="carousel-fade-hint right md:hidden"></div>
                         </div>
                     </div>
                 )}
