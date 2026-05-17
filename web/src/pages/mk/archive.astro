@@ -51,10 +51,10 @@ try {
     error = 'Архивата моментално не е достапна.';
     Astro.response.status = 500;
   }
-} catch (err) {
+  } catch (err) {
   error = 'Грешка при вчитување на архивата.';
   Astro.response.status = 500;
-}
+  }
 
 const buildFilterHref = (kind: 'source' | 'topic' | 'q', value: string) => {
   const params = new URLSearchParams({ date });
