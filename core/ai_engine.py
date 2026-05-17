@@ -575,6 +575,43 @@ def clean_json_response(text: str) -> dict | str | None:
     text = re.sub(r'"\s*,\s*"suggestions".*\}\s*$', "", text, flags=re.DOTALL)
     text = re.sub(r'"\s*\}\s*$', "", text)
 
+    # 6. Additional cleanup for system prompt leakage and commands
+    # Remove common system prompt patterns that might leak through
+    
+    # First, try to remove complete system prompt blocks
+    system_prompt_patterns = [
+        r'^PITANJE:\s*.*?\n\nKONTEKST ZA ANALIZU:\s*.*?\n\n',
+        r'^PRASANjE:\s*.*?\n\nKONTEKST ZA ANALIZA:\s*.*?\n\n',
+        r'^\*\*\*\s*Presek.*?\*\*\*\s*\n\n',
+        r'^\*\*\*\s*Пресек.*?\*\*\*\s*\n\n',
+        r'^PRASANjE:\s*.*?\n\n',  # Fallback for partial matches
+        r'^PITANJE:\s*.*?\n\n'     # Fallback for partial matches
+    ]
+    
+    for pattern in system_prompt_patterns:
+        match = re.match(pattern, text, flags=re.IGNORECASE | re.DOTALL)
+        if match:
+            text = text[match.end():].strip()
+            break
+    
+    # Remove individual command patterns from the beginning (after system prompt removal)
+    text = re.sub(r'^(?:PITANJE|PRASANjE|KONTEKST|ODGOVOR|ANSWER|REPORT):\s*', '', text, flags=re.IGNORECASE)
+    
+    # Remove JSON-like structures that might have leaked
+    text = re.sub(r'\{\s*"[^"]+"\s*:\s*"[^"]*"\s*\}\s*', '', text)
+    
+    # Remove any remaining asterisk-delimited patterns
+    text = re.sub(r'^\*\*\*\s*[^\*]+\*\*\*\s*', '', text, flags=re.DOTALL)
+    
+    # Clean up any remaining command-like patterns at the start
+    text = re.sub(r'^[A-Z\s]+:\s*', '', text)
+    
+    # Also remove common answer prefixes in both languages
+    text = re.sub(r'^(?:ODGOVOR|ANSWER):\s*', '', text, flags=re.IGNORECASE)
+    
+    # Final cleanup: remove empty lines and trim
+    text = '\n'.join(line for line in text.split('\n') if line.strip())
+    
     return text.replace("\\n", "\n").replace('\\"', '"').strip()
 
 

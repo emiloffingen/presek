@@ -1,23 +1,25 @@
-import datetime
-import json
 import asyncio
+import datetime
+import hashlib
+import json
 import logging
 import re
-import hashlib
-from pydantic import BaseModel
-from typing import Optional, List, Any, Dict
-from fastapi import APIRouter, Request, HTTPException
+from typing import Any, Dict, List, Optional
 
+from fastapi import APIRouter, HTTPException, Request
+from pydantic import BaseModel
+
+from core.ai_engine import clean_json_response, sync_call_ai
 from core.database import db_manager as db
 from core.embeddings import generate_query_embedding
-from utils import cached_response, set_cache, score_cluster
-from nlp import normalize_tag_name
 from core.entities import normalize_entity_name, normalize_person_surface_name
-from .common import cleanAndDecode, _is_valid_focus_entity
-from .security import validate_cluster_id, validate_list_param, validate_string_param
 from core.limiter import custom_rate_limit
-from core.ai_engine import sync_call_ai, clean_json_response
 from core.prompts import RESEARCH_SYSTEM_PROMPT, RESEARCH_SYSTEM_PROMPT_MK
+from nlp import normalize_tag_name
+from utils import cached_response, score_cluster, set_cache
+
+from .common import _is_valid_focus_entity, cleanAndDecode
+from .security import validate_cluster_id, validate_list_param, validate_string_param
 
 log = logging.getLogger("presek")
 router = APIRouter()
@@ -46,7 +48,9 @@ class GlobalPulseResponse(BaseModel):
 
 
 _FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"
-_CASE_INSENSITIVE_TAG_EXISTS = "EXISTS (SELECT 1 FROM unnest(COALESCE(m.tags, '{}')) AS tag WHERE LOWER(tag) = LOWER(%s))"
+_CASE_INSENSITIVE_TAG_EXISTS = (
+    "EXISTS (SELECT 1 FROM unnest(COALESCE(m.tags, '{}')) AS tag WHERE LOWER(tag) = LOWER(%s))"
+)
 
 _RESEARCH_MODE_QUERIES = {
     "facts": (
@@ -133,9 +137,7 @@ async def _build_gemma_research_context(
                     if isinstance(summary_row["verification_report"], str)
                     else summary_row["verification_report"]
                 )
-                parts.append(
-                    f"PROVERKA NA FAKTI (Sistemska analiza):\n{json.dumps(vr, ensure_ascii=False, indent=2)}"
-                )
+                parts.append(f"PROVERKA NA FAKTI (Sistemska analiza):\n{json.dumps(vr, ensure_ascii=False, indent=2)}")
             except Exception as e:
                 log.debug(f"Failed to parse verification_report JSON: {e}")
         if summary_row.get("perspectives"):
@@ -157,20 +159,14 @@ async def _build_gemma_research_context(
         if source and source not in sources:
             sources.append(source)
         text = article.get("full_content") or article.get("title") or ""
-        parts.append(
-            f"--- izvor: {source} ({article['created_at'].strftime('%H:%M %d.%m.%Y')}) ---\n{text}"
-        )
+        parts.append(f"--- izvor: {source} ({article['created_at'].strftime('%H:%M %d.%m.%Y')}) ---\n{text}")
 
     if mode == "context":
         try:
             import numpy as np
 
             vecs = [
-                (
-                    json.loads(a["embedding"])
-                    if isinstance(a.get("embedding"), str)
-                    else list(a["embedding"])
-                )
+                (json.loads(a["embedding"]) if isinstance(a.get("embedding"), str) else list(a["embedding"]))
                 for a in articles
                 if a.get("embedding")
             ]
@@ -190,14 +186,9 @@ async def _build_gemma_research_context(
                 )
                 if past_events:
                     history_list = "\n".join(
-                        [
-                            f"- {p['title']} ({p['created_at'].strftime('%d.%m.%Y')})"
-                            for p in past_events
-                        ]
+                        [f"- {p['title']} ({p['created_at'].strftime('%d.%m.%Y')})" for p in past_events]
                     )
-                    parts.append(
-                        f"POVRZANI PRETHODNI NASTANI OD BAZATA:\n{history_list}"
-                    )
+                    parts.append(f"POVRZANI PRETHODNI NASTANI OD BAZATA:\n{history_list}")
         except Exception as e:
             log.warning(f"Failed to fetch Gemma research history context: {e}")
 
@@ -206,9 +197,7 @@ async def _build_gemma_research_context(
 
 def _compact_focus_entities(items: list[dict], limit: int) -> list[dict]:
     by_key = {
-        str(item.get("name") or "").casefold(): dict(item)
-        for item in items
-        if str(item.get("name") or "").strip()
+        str(item.get("name") or "").casefold(): dict(item) for item in items if str(item.get("name") or "").strip()
     }
 
     # Merge common fragmented geopolitics phrase into one canonical entity.
@@ -294,11 +283,7 @@ async def get_pulse_overview():
         "trending": trending,
         "sentiment": {"positives": positives, "negatives": negatives},
         "relationships": relationships,
-        "updated_at": (
-            await db.async_execute_one(
-                "SELECT MAX(last_seen) as last FROM knowledge_entities"
-            )
-        )["last"],
+        "updated_at": (await db.async_execute_one("SELECT MAX(last_seen) as last FROM knowledge_entities"))["last"],
     }
 
     set_cache(cache_key, result, ttl=600)
@@ -318,16 +303,13 @@ async def get_cluster_storyline_history(cluster_id: str):
     if not rows:
         return {"history": []}
 
-    import numpy as np
     import json
+
+    import numpy as np
 
     vecs = []
     for r in rows:
-        vecs.append(
-            json.loads(r["embedding"])
-            if isinstance(r["embedding"], str)
-            else list(r["embedding"])
-        )
+        vecs.append(json.loads(r["embedding"]) if isinstance(r["embedding"], str) else list(r["embedding"]))
 
     if not vecs:
         return {"history": []}
@@ -364,9 +346,7 @@ async def get_cluster_storyline_history(cluster_id: str):
 
 @router.get("/intelligence/cluster/{cluster_id}/research")
 @custom_rate_limit("5/minute")
-async def get_deep_research(
-    request: Request, cluster_id: str, mode: str = "facts", q: str = "", lang: str = "sr"
-):
+async def get_deep_research(request: Request, cluster_id: str, mode: str = "facts", q: str = "", lang: str = "sr"):
     """
     Performs on-demand cluster research with the best available AI provider.
     """
@@ -374,35 +354,35 @@ async def get_deep_research(
     clean_mode = (mode or "facts").strip().lower()
     if clean_mode not in {"facts", "perspectives", "context", "custom"}:
         clean_mode = "facts"
-    clean_query = validate_string_param(
-        q, "q", max_length=300, allow_empty=True
-    ).strip()
+    clean_query = validate_string_param(q, "q", max_length=300, allow_empty=True).strip()
     if clean_mode == "custom" and not clean_query:
         return {
             "status": "error",
-            "message": "Vnesete konkretno prasanje za istrazuvanje." if lang == "mk" else "Unesite konkretno pitanje za istraživanje.",
+            "message": (
+                "Vnesete konkretno prasanje za istrazuvanje."
+                if lang == "mk"
+                else "Unesite konkretno pitanje za istraživanje."
+            ),
         }
 
-    query = (
-        clean_query if clean_mode == "custom" else _RESEARCH_MODE_QUERIES[clean_mode]
-    )
+    query = clean_query if clean_mode == "custom" else _RESEARCH_MODE_QUERIES[clean_mode]
     query_hash = hashlib.sha1(query.encode("utf-8")).hexdigest()[:12]
-    cache_key = (
-        f"api:intelligence:research:cascade:{cluster_id}:{clean_mode}:{query_hash}:{lang}:v1"
-    )
+    cache_key = f"api:intelligence:research:cascade:{cluster_id}:{clean_mode}:{query_hash}:{lang}:v1"
     cached = cached_response(cache_key)
     if cached:
         return cached
 
     try:
-        context, sources = await _build_gemma_research_context(
-            cluster_id, clean_mode, clean_query
-        )
-        
+        context, sources = await _build_gemma_research_context(cluster_id, clean_mode, clean_query)
+
         # Adjust research prompt based on language
         research_system_prompt = RESEARCH_SYSTEM_PROMPT_MK if lang == "mk" else RESEARCH_SYSTEM_PROMPT
-        
-        prompt = f"PITANJE: {query}\n\nKONTEKST ZA ANALIZU:\n{context}" if lang == "sr" else f"PRASANjE: {query}\n\nKONTEKST ZA ANALIZA:\n{context}"
+
+        prompt = (
+            f"PITANJE: {query}\n\nKONTEKST ZA ANALIZU:\n{context}"
+            if lang == "sr"
+            else f"PRASANjE: {query}\n\nKONTEKST ZA ANALIZA:\n{context}"
+        )
 
         # Use cascading AI engine
         raw, provider = sync_call_ai(
@@ -417,27 +397,23 @@ async def get_deep_research(
         if not raw:
             # Handle rate-limiting or provider failure explicitly
             return {
-                "status": "error", 
-                "message": "Sistemot e preoptereten, obidete se povtorno za nekolku minuti." if lang == "mk" else "Sistem je trenutno preopterećen, pokušajte ponovo za nekoliko minuta."
+                "status": "error",
+                "message": (
+                    "Sistemot e preoptereten, obidete se povtorno za nekolku minuti."
+                    if lang == "mk"
+                    else "Sistem je trenutno preopterećen, pokušajte ponovo za nekoliko minuta."
+                ),
             }
 
         # Parse structured response
         response = clean_json_response(raw)
-        answer = (
-            response.get("answer")
-            if isinstance(response, dict)
-            else str(response or "")
-        )
-        suggestions = (
-            response.get("suggestions", []) if isinstance(response, dict) else []
-        )
+        answer = response.get("answer") if isinstance(response, dict) else str(response or "")
+        suggestions = response.get("suggestions", []) if isinstance(response, dict) else []
 
         # Emergency cleanup: If we still have raw JSON string as answer, strip it
         if isinstance(answer, str) and answer.strip().startswith("{"):
             # If it failed all parsing but is clearly JSON, don't show it to user
-            log.warning(
-                f"[research] Model returned raw JSON string that failed all cleaning: {answer[:100]}..."
-            )
+            log.warning(f"[research] Model returned raw JSON string that failed all cleaning: {answer[:100]}...")
             if '"answer":' in answer:
                 # One last attempt to grab the text inside answer key
                 m = re.search(r'"answer":\s*"(.*?)"', answer, re.DOTALL)
@@ -446,11 +422,70 @@ async def get_deep_research(
             else:
                 return {
                     "status": "error",
-                    "message": "Sistemot vrati nevaliden format." if lang == "mk" else "Sistem je vratio nevalidan format.",
+                    "message": (
+                        "Sistemot vrati nevaliden format." if lang == "mk" else "Sistem je vratio nevalidan format."
+                    ),
                 }
 
+        # Additional cleanup for system prompt leakage and commands
+        if isinstance(answer, str):
+            # Remove common system prompt patterns that might leak through
+            answer = re.sub(r'^PITANJE:.*?\n\nKONTEKST ZA ANALIZU:\s*', '', answer, flags=re.IGNORECASE | re.DOTALL)
+            answer = re.sub(r'^PRASANjE:.*?\n\nKONTEKST ZA ANALIZA:\s*', '', answer, flags=re.IGNORECASE | re.DOTALL)
+            answer = re.sub(r'^\*\*\*\s*Presek.*?\*\*\*\s*', '', answer, flags=re.IGNORECASE | re.DOTALL)
+            answer = re.sub(r'^\*\*\*\s*Пресек.*?\*\*\*\s*', '', answer, flags=re.IGNORECASE | re.DOTALL)
+            
+            # Remove common command patterns - but only if they appear at the beginning or after newlines
+            answer = re.sub(r'(^|\n)\s*(?:PITANJE|PRASANjE|KONTEKST|ODGOVOR|ANSWER|REPORT):\s*', r'\1', answer, flags=re.IGNORECASE)
+            
+            # Remove JSON-like structures that might have leaked
+            answer = re.sub(r'\{\s*"[^"]+"\s*:\s*"[^"]*"\s*\}\s*', '', answer)
+            
+            # Remove any remaining system prompt artifacts
+            answer = re.sub(r'^\*\*\*\s*[^\*]+\*\*\*\s*', '', answer, flags=re.DOTALL)
+            
+            # Additional cleanup for system prompt leakage and commands
+            # Remove common system prompt patterns that might leak through
+            
+            # First, try to remove complete system prompt blocks
+            system_prompt_patterns = [
+                r'^PITANJE:\s*.*?\n\nKONTEKST ZA ANALIZU:\s*.*?\n\n',
+                r'^PRASANjE:\s*.*?\n\nKONTEKST ZA ANALIZA:\s*.*?\n\n',
+                r'^\*\*\*\s*Presek.*?\*\*\*\s*\n\n',
+                r'^\*\*\*\s*Пресек.*?\*\*\*\s*\n\n'
+            ]
+            
+            for pattern in system_prompt_patterns:
+                match = re.match(pattern, answer, flags=re.IGNORECASE | re.DOTALL)
+                if match:
+                    answer = answer[match.end():].strip()
+                    break
+            
+            # Remove individual command patterns from the beginning (after system prompt removal)
+            answer = re.sub(r'^(?:PITANJE|PRASANjE|KONTEKST|ODGOVOR|ANSWER|REPORT):\s*', '', answer, flags=re.IGNORECASE)
+            
+            # Remove JSON-like structures that might have leaked
+            answer = re.sub(r'\{\s*"[^"]+"\s*:\s*"[^"]*"\s*\}\s*', '', answer)
+            
+            # Remove any remaining asterisk-delimited patterns
+            answer = re.sub(r'^\*\*\*\s*[^\*]+\*\*\*\s*', '', answer, flags=re.DOTALL)
+            
+            # Clean up any remaining command-like patterns at the start
+            answer = re.sub(r'^[A-Z\s]+:\s*', '', answer)
+            
+            # Also remove common answer prefixes in both languages
+            answer = re.sub(r'^(?:ODGOVOR|ANSWER):\s*', '', answer, flags=re.IGNORECASE)
+            
+            # Final cleanup: remove empty lines and trim
+            answer = '\n'.join(line for line in answer.split('\n') if line.strip())
+            
+            answer = answer.strip()
+
         if not answer:
-            return {"status": "error", "message": "Ne uspeav da generiram odgovor." if lang == "mk" else "Neuspeh pri generisanju odgovora."}
+            return {
+                "status": "error",
+                "message": "Ne uspeav da generiram odgovor." if lang == "mk" else "Neuspeh pri generisanju odgovora.",
+            }
 
         result = {
             "status": "success",
@@ -469,7 +504,10 @@ async def get_deep_research(
 
     except Exception as e:
         log.error(f"Deep research error: {e}", exc_info=True)
-        return {"status": "error", "message": "Greska pri prebaruvanjeto." if lang == "mk" else "Greška pri pretraživanju."}
+        return {
+            "status": "error",
+            "message": "Greska pri prebaruvanjeto." if lang == "mk" else "Greška pri pretraživanju.",
+        }
 
 
 @router.get("/intelligence/cluster/{cluster_id}/analyst")
@@ -491,21 +529,18 @@ async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts", lang:
     try:
         from nlp.local_analyst import analyst
 
-        log.info(
-            f"[analyst] Generating Gemma report for {cluster_id} (mode={clean_mode}, lang={lang})"
-        )
+        log.info(f"[analyst] Generating Gemma report for {cluster_id} (mode={clean_mode}, lang={lang})")
         context, sources = await _build_gemma_research_context(cluster_id, clean_mode)
         response = await asyncio.to_thread(
             analyst.research_query, _RESEARCH_MODE_QUERIES[clean_mode], context, lang=lang
         )
-        report = (
-            response.get("answer")
-            if isinstance(response, dict)
-            else str(response or "")
-        )
+        report = response.get("answer") if isinstance(response, dict) else str(response or "")
 
         if not report:
-            return {"status": "error", "message": "Analiticarot e zafaten." if lang == "mk" else "Analitičar je zauzet."}
+            return {
+                "status": "error",
+                "message": "Analiticarot e zafaten." if lang == "mk" else "Analitičar je zauzet.",
+            }
 
         # Apply final name validation on the report
         from core.entities import validate_person_names
@@ -530,12 +565,7 @@ async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts", lang:
 
 @router.get("/intelligence/source-pulse")
 async def get_source_pulse(category: Optional[str] = None, lang: Optional[str] = "sr"):
-    from utils import (
-        get_source_trust_label,
-        get_source_effective_weight,
-        cached_response,
-        set_cache,
-    )
+    from utils import cached_response, get_source_effective_weight, get_source_trust_label, set_cache
 
     cat_id = f"cat-{category}-{lang}" if category else f"all-{lang}"
     cache_key = f"api:intelligence:source-pulse:{cat_id}:v4"
@@ -572,7 +602,7 @@ async def get_source_pulse(category: Optional[str] = None, lang: Optional[str] =
                 COALESCE(AVG(CAST(s.sentiment->'tone_analysis'->>'objectivity' AS REAL)), 0) as historical_objectivity
             FROM cluster_summaries s
             JOIN articles a ON s.cluster_id = a.cluster_id
-            WHERE s.lang = %s AND a.country = %s AND s.sentiment IS NOT NULL 
+            WHERE s.lang = %s AND a.country = %s AND s.sentiment IS NOT NULL
               AND s.created_at >= NOW() - INTERVAL '14 days'
               AND s.created_at < NOW() - INTERVAL '48 hours'
             {cat_filter}
@@ -594,8 +624,8 @@ async def get_source_pulse(category: Optional[str] = None, lang: Optional[str] =
             SELECT fr.source, COUNT(*) as first_report_count
             FROM first_reporters_base fr
             WHERE fr.cluster_id IN (
-                SELECT cluster_id FROM articles 
-                WHERE country = %s AND COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '7 days' 
+                SELECT cluster_id FROM articles
+                WHERE country = %s AND COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '7 days'
                   {cat_filter.replace('a.category', 'category')}
             )
             GROUP BY fr.source
@@ -620,21 +650,24 @@ async def get_source_pulse(category: Optional[str] = None, lang: Optional[str] =
     # latest_headlines: country
     # first_reporters_base: country
     # first_report_counts: country, [category]
-    
+
     final_params = []
     # source_stats
     final_params.extend([lang, country_filter])
-    if category: final_params.append(category)
+    if category:
+        final_params.append(category)
     # historical_baseline
     final_params.extend([lang, country_filter])
-    if category: final_params.append(category)
+    if category:
+        final_params.append(category)
     # latest_headlines
     final_params.append(country_filter)
     # first_reporters_base
     final_params.append(country_filter)
     # first_report_counts
     final_params.append(country_filter)
-    if category: final_params.append(category)
+    if category:
+        final_params.append(category)
 
     rows = await db.async_execute(sql, tuple(final_params))
 
@@ -642,13 +675,8 @@ async def get_source_pulse(category: Optional[str] = None, lang: Optional[str] =
         r["trust_label"] = get_source_trust_label(r["source"])
         r["effective_weight"] = round(get_source_effective_weight(r["source"]), 2)
         # Calculate delta defensively
-        if (
-            r.get("avg_objectivity") is not None
-            and r.get("baseline_objectivity") is not None
-        ):
-            r["objectivity_delta"] = round(
-                r["avg_objectivity"] - r["baseline_objectivity"], 3
-            )
+        if r.get("avg_objectivity") is not None and r.get("baseline_objectivity") is not None:
+            r["objectivity_delta"] = round(r["avg_objectivity"] - r["baseline_objectivity"], 3)
         else:
             r["objectivity_delta"] = 0
 
@@ -719,11 +747,7 @@ async def get_entity_profile(name: str, lang: Optional[str] = "sr"):
         ]
         sent = None
         try:
-            sent = (
-                json.loads(c["sentiment"])
-                if isinstance(c["sentiment"], str)
-                else c["sentiment"]
-            )
+            sent = json.loads(c["sentiment"]) if isinstance(c["sentiment"], str) else c["sentiment"]
         except Exception:
             sent = {"sentiment": {"score": 0, "tone": "neutralno"}}
         processed.append(
@@ -766,7 +790,7 @@ async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] =
     async def get_velocity():
         return await db.async_execute(
             f"""
-            SELECT date_trunc('hour', COALESCE(a.ingested_at, a.created_at)) AS t, COUNT(*) AS n 
+            SELECT date_trunc('hour', COALESCE(a.ingested_at, a.created_at)) AS t, COUNT(*) AS n
             FROM articles a
             WHERE a.country = %s AND COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '24 hours' {cat_filter}
             GROUP BY t ORDER BY t
@@ -793,10 +817,10 @@ async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] =
         rate_params = [country_filter]
         if category:
             rate_params.append(category)
-            
+
         row = await db.async_execute_one(
             f"""
-            SELECT COUNT(*) as n 
+            SELECT COUNT(*) as n
             FROM articles a
             WHERE a.country = %s AND COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '3 hours' {cat_filter}
         """,
@@ -811,7 +835,7 @@ async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] =
             return []
         return await db.async_execute(
             """
-            SELECT a.category, COUNT(*) AS n 
+            SELECT a.category, COUNT(*) AS n
             FROM articles a
             WHERE a.country = %s AND COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '24 hours'
               AND a.category IS NOT NULL
@@ -827,7 +851,7 @@ async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] =
             ts_params.append(category)
         return await db.async_execute(
             f"""
-            SELECT 
+            SELECT
                 t as topic,
                 COALESCE(AVG(CAST(s.sentiment->'sentiment'->>'score' AS REAL)), 0) as avg_sentiment,
                 COALESCE(AVG(CAST(s.tone_analysis->>'objectivity' AS REAL)), 0) as avg_objectivity,
@@ -874,7 +898,13 @@ async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] =
                 ORDER BY total_mentions DESC
                 LIMIT 12
             """
-            rows = await db.async_execute(sql, (country_filter, category,))
+            rows = await db.async_execute(
+                sql,
+                (
+                    country_filter,
+                    category,
+                ),
+            )
         else:
             sql = f"""
                 SELECT t.name, COUNT(DISTINCT t.cluster_id) as total_mentions, ke.sentiment_score, ke.type
@@ -891,11 +921,12 @@ async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] =
                 LIMIT 12
             """
             rows = await db.async_execute(sql, (country_filter,))
-            
+
         # Post-process: clean names and filter out common generic tags
-        from .common import _is_valid_focus_entity
         from nlp import normalize_tag_name
-        
+
+        from .common import _is_valid_focus_entity
+
         processed = []
         seen = set()
         for r in rows:
@@ -905,12 +936,14 @@ async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] =
             if name.casefold() in seen:
                 continue
             seen.add(name.casefold())
-            processed.append({
-                "name": name,
-                "total_mentions": r["total_mentions"],
-                "sentiment_score": r["sentiment_score"] or 0,
-                "type": r["type"] or "ENTITY"
-            })
+            processed.append(
+                {
+                    "name": name,
+                    "total_mentions": r["total_mentions"],
+                    "sentiment_score": r["sentiment_score"] or 0,
+                    "type": r["type"] or "ENTITY",
+                }
+            )
             if len(processed) >= 8:
                 break
         return processed
@@ -940,7 +973,7 @@ async def entity_graph_lookup(request: Request, entity_name: str):
     """Fetches persistent knowledge about an entity from the local graph."""
     row = await db.async_execute_one(
         """
-        SELECT bio_summary, importance_score, last_seen, category 
+        SELECT bio_summary, importance_score, last_seen, category
         FROM entity_knowledge WHERE entity_name = %s
     """,
         (entity_name,),
@@ -974,7 +1007,7 @@ async def cluster_research(request: Request, cluster_id: str, q: str):
     # Get cluster context
     row = await db.async_execute_one(
         """
-        SELECT summary, generated_article 
+        SELECT summary, generated_article
         FROM cluster_summaries WHERE cluster_id = %s
     """,
         (cluster_id,),
@@ -1003,26 +1036,27 @@ async def get_top_entities(limit: int = 10, lang: Optional[str] = "sr"):
     target_country = "MK" if lang == "mk" else "RS"
     rows = await db.async_execute(
         f"""
-        SELECT tag AS name, COUNT(*) AS total_mentions 
+        SELECT tag AS name, COUNT(*) AS total_mentions
         FROM (
-            SELECT cm.cluster_id, UNNEST(cm.tags) AS tag 
-            FROM cluster_metadata cm 
-            JOIN articles a ON a.cluster_id = cm.cluster_id 
-            WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '48 hours' 
+            SELECT cm.cluster_id, UNNEST(cm.tags) AS tag
+            FROM cluster_metadata cm
+            JOIN articles a ON a.cluster_id = cm.cluster_id
+            WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '48 hours'
               AND a.country = %s
-              AND cm.tags IS NOT NULL 
+              AND cm.tags IS NOT NULL
             GROUP BY cm.cluster_id, tag
-        ) t 
-        GROUP BY tag 
+        ) t
+        GROUP BY tag
         ORDER BY total_mentions DESC LIMIT %s
         """,
-        (target_country, fetch_limit,),
+        (
+            target_country,
+            fetch_limit,
+        ),
     )
     aggregated = {}
     for row in rows:
-        norm = normalize_person_surface_name(
-            normalize_tag_name(normalize_entity_name(row["name"]))
-        )
+        norm = normalize_person_surface_name(normalize_tag_name(normalize_entity_name(row["name"])))
         if not _is_valid_focus_entity(norm, None):
             continue
         key = norm.casefold()
@@ -1057,7 +1091,7 @@ async def get_live_map(lang: Optional[str] = "sr"):
         "status": "success",
         "data": await db.async_execute(
             f"SELECT a.source, COUNT(*) as activity_score FROM articles a WHERE a.country = %s AND {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY a.source ORDER BY activity_score DESC",
-            (country_filter,)
+            (country_filter,),
         ),
     }
 
@@ -1103,11 +1137,7 @@ async def get_personalized_recommendations(request: Request):
         return {"status": "success", "clusters": []}
     user_vectors = []
 
-    if (
-        interest_vector
-        and isinstance(interest_vector, list)
-        and len(interest_vector) == 384
-    ):
+    if interest_vector and isinstance(interest_vector, list) and len(interest_vector) == 384:
         user_vectors.append(interest_vector)
 
     if recent_ids:
@@ -1118,9 +1148,7 @@ async def get_personalized_recommendations(request: Request):
         for r in rows:
             if r["embedding"]:
                 user_vectors.append(
-                    json.loads(r["embedding"])
-                    if isinstance(r["embedding"], str)
-                    else list(r["embedding"])
+                    json.loads(r["embedding"]) if isinstance(r["embedding"], str) else list(r["embedding"])
                 )
     for t in followed:
         vec = generate_query_embedding(t)
@@ -1155,9 +1183,7 @@ async def get_personalized_recommendations(request: Request):
         arts = cmap.get(cid, [])
         if not arts:
             continue
-        s_row = await db.async_execute_one(
-            "SELECT summary FROM cluster_summaries WHERE cluster_id = %s", (cid,)
-        )
+        s_row = await db.async_execute_one("SELECT summary FROM cluster_summaries WHERE cluster_id = %s", (cid,))
         m_row = await db.async_execute_one(
             "SELECT representative_image FROM cluster_metadata WHERE cluster_id = %s",
             (cid,),
@@ -1166,9 +1192,7 @@ async def get_personalized_recommendations(request: Request):
             {
                 "cluster_id": cid,
                 "articles": arts,
-                "representative_image": (
-                    m_row["representative_image"] if m_row else None
-                ),
+                "representative_image": (m_row["representative_image"] if m_row else None),
                 "score": score_cluster(arts),
                 "has_synthesis": bool(s_row and s_row["summary"]),
                 "is_breaking": any(a.get("is_breaking") for a in arts),
@@ -1185,9 +1209,7 @@ async def get_latest_briefing(date: Optional[str] = None, lang: str = "sr"):
         from .security import validate_date
 
         validate_date(date)
-        row = await db.async_execute_one(
-            "SELECT * FROM daily_briefings WHERE date = %s AND lang = %s", (date, lang)
-        )
+        row = await db.async_execute_one("SELECT * FROM daily_briefings WHERE date = %s AND lang = %s", (date, lang))
     else:
         row = await db.async_execute_one(
             "SELECT * FROM daily_briefings WHERE lang = %s ORDER BY date DESC LIMIT 1", (lang,)
@@ -1201,9 +1223,9 @@ async def get_latest_briefing(date: Optional[str] = None, lang: str = "sr"):
     # 1. Fetch metadata for the sidebar
     subjects = await db.async_execute(
         """
-        SELECT name, total_mentions 
-        FROM knowledge_entities 
-        WHERE type = 'PERSON' AND last_seen >= %s::date - INTERVAL '24 hours' 
+        SELECT name, total_mentions
+        FROM knowledge_entities
+        WHERE type = 'PERSON' AND last_seen >= %s::date - INTERVAL '24 hours'
           AND last_seen <= %s::date + INTERVAL '23 hours 59 minutes'
         ORDER BY total_mentions DESC LIMIT 6
     """,
@@ -1212,8 +1234,8 @@ async def get_latest_briefing(date: Optional[str] = None, lang: str = "sr"):
 
     locations = await db.async_execute(
         """
-        SELECT name, total_mentions 
-        FROM knowledge_entities 
+        SELECT name, total_mentions
+        FROM knowledge_entities
         WHERE type = 'GPE' AND last_seen >= %s::date - INTERVAL '24 hours'
           AND last_seen <= %s::date + INTERVAL '23 hours 59 minutes'
         ORDER BY total_mentions DESC LIMIT 8
@@ -1222,9 +1244,7 @@ async def get_latest_briefing(date: Optional[str] = None, lang: str = "sr"):
     )
 
     # 2. Historical dates for navigation
-    historical = await db.async_execute(
-        "SELECT date::text as day FROM daily_briefings ORDER BY date DESC LIMIT 14"
-    )
+    historical = await db.async_execute("SELECT date::text as day FROM daily_briefings ORDER BY date DESC LIMIT 14")
 
     # 3. Lead cluster for the day
     lead_cluster = await db.async_execute_one(
@@ -1244,10 +1264,10 @@ async def get_latest_briefing(date: Optional[str] = None, lang: str = "sr"):
     # Fetch stats for that day
     stats_res = await db.async_execute_one(
         """
-        SELECT 
+        SELECT
             COUNT(*) as total_articles,
             COUNT(DISTINCT source) as total_sources
-        FROM articles 
+        FROM articles
         WHERE created_at >= %s::date AND created_at < %s::date + INTERVAL '1 day'
     """,
         (target_date, target_date),
