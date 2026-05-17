@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiBaseUrl } from '../lib/apiBase';
 import { 
-  Shield, Key, Layout, Activity, Zap, 
+  Shield, Layout, Activity, Zap, 
   Settings, Terminal, AlertTriangle, CheckCircle2,
   RefreshCw, BarChart3, Database, Globe
 } from 'lucide-react';
