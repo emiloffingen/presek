@@ -67,6 +67,7 @@ python-venv/
 
 # Database
 *.db
+*.sqlite
 *.db.bak
 *.db-shm
 *.db-wal
@@ -105,6 +106,16 @@ models/
 
 # Test results
 .test-results/
+
+# Local scratch artifacts
+/mk_*.png
+/tmp_*.png
+/core/ai_engine_production.py
+/test_*.py
+/scripts/list_models.py
+/scripts/take_mk_*.py
+/scripts/test_ai_*.py
+/scripts/test_gemini_*.py
 
 # Keys and certificates
 private_key.pem
