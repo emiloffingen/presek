@@ -1,25 +1,28 @@
-import os
 import logging
+import os
 import time
-import httpx
 from io import BytesIO
-from PIL import Image
 from typing import Optional
+
+import httpx
+from PIL import Image
 
 try:
     import pillow_avif  # noqa: F401
+
     _ = pillow_avif  # Reference to suppress unused import warning
     HAS_AVIF = True
 except ImportError:
     HAS_AVIF = False
 
-from utils import _resolve_public_ips, _peer_ip
+from utils import _peer_ip, _resolve_public_ips
 
 log = logging.getLogger("presek.image_service")
 
 # Use absolute path linked to shared storage to persist across releases
 _PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-_UPLOAD_ROOT = os.path.join(_PROJECT_ROOT, "static", "uploads")
+# Use shared directory for uploads since release directory is read-only
+_UPLOAD_ROOT = os.path.join("/home/emiloffingen/presek-runtime", "shared", "static", "uploads")
 
 _MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB
 _MIN_DIMENSION = 200  # Skip tiny logos/icons
@@ -53,9 +56,7 @@ class ImageService:
 
         try:
             safe_ips = _resolve_public_ips(url)
-            async with httpx.AsyncClient(
-                headers=self.headers, follow_redirects=True, timeout=10.0
-            ) as client:
+            async with httpx.AsyncClient(headers=self.headers, follow_redirects=True, timeout=10.0) as client:
                 async with client.stream("GET", url) as resp:
                     p_ip = _peer_ip(resp)
                     if not p_ip or p_ip not in safe_ips:
@@ -90,16 +91,12 @@ class ImageService:
 
                 if img.width > _TARGET_WIDTH:
                     new_height = int(img.height * (_TARGET_WIDTH / img.width))
-                    img = img.resize(
-                        (_TARGET_WIDTH, new_height), Image.Resampling.LANCZOS
-                    )
+                    img = img.resize((_TARGET_WIDTH, new_height), Image.Resampling.LANCZOS)
 
                 # Save as optimized WebP
                 img.save(local_path, "WEBP", quality=80, method=4)
 
-                log.info(
-                    f"Saved optimized image for article {article_id} to {local_path}"
-                )
+                log.info(f"Saved optimized image for article {article_id} to {local_path}")
                 return f"/static/uploads/{filename}"
 
         except Exception as e:
@@ -129,9 +126,7 @@ class ImageService:
                                 continue
 
                             # Check if still in DB
-                            art_id = int(
-                                filename.replace("art_", "").replace(".webp", "")
-                            )
+                            art_id = int(filename.replace("art_", "").replace(".webp", ""))
                             if art_id not in valid_article_ids:
                                 os.remove(file_path)
                                 log.info(f"Removed orphaned image: {filename}")
@@ -143,10 +138,7 @@ class ImageService:
             if os.path.exists(log_dir):
                 for log_file in os.listdir(log_dir):
                     path = os.path.join(log_dir, log_file)
-                    if (
-                        os.path.isfile(path)
-                        and os.path.getsize(path) > 10 * 1024 * 1024
-                    ):
+                    if os.path.isfile(path) and os.path.getsize(path) > 10 * 1024 * 1024:
                         # Simple truncate: keep last 1MB
                         try:
                             with open(path, "rb+") as f:
