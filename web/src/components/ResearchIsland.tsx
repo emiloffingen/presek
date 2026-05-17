@@ -176,7 +176,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
       <div className="relative z-10 mb-6 flex flex-col gap-2">
         <div className="max-w-full md:max-w-3xl">
           <p className="mb-2 flex items-center gap-2 font-sans text-[9px] font-black uppercase tracking-[0.2em] text-nyt-accent">
-            <div className="w-4 h-[2px] bg-nyt-accent"></div>
+            <span className="w-4 h-[2px] bg-nyt-accent"></span>
             {t('cluster.researcher')}
           </p>
           <h2 className="font-serif text-xl md:text-2xl font-black text-foreground mb-2 leading-tight tracking-tight">{t('cluster.researcher_desc')}</h2>
