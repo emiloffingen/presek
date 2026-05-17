@@ -160,7 +160,7 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
     }
 </style>
 
-	<body id="top" class="antialiased min-h-screen bg-background text-foreground transition-colors duration-300 overflow-x-hidden w-full">
+	<body id="top" class:list={["antialiased min-h-screen bg-background text-foreground transition-colors duration-300 overflow-x-hidden w-full", { "script-cyrillic": lang === 'mk' }]}>
 		<div class="noise-overlay" aria-hidden="true"></div>
 		<div id="loading-bar" class="fixed top-0 left-0 z-[9999] transition-all duration-300 opacity-0 w-0"></div>
 		<slot />

@@ -2576,7 +2576,8 @@ button:active,
 .for-you-card h3 {
     margin: 0.45rem 0;
     font-size: 1.08rem;
-    line-height: 1.14;
+    line-height: 1.35;
+    letter-spacing: 0.025em;
 }
 
 .for-you-card-copy {
@@ -3508,7 +3509,8 @@ button:active,
 .for-you-card h3 {
     margin: 0.45rem 0;
     font-size: 1.08rem;
-    line-height: 1.14;
+    line-height: 1.35;
+    letter-spacing: 0.025em;
 }
 
 .for-you-card-copy {
