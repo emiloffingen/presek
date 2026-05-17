@@ -25,13 +25,13 @@ const displayTitle = cleanText(a.title);
 const displaySnippet = cleanText(a.description || a.summary);
 ---
 
-<div class={`article-editorial-row tone-${a.relationship.tone} timeline-item`} data-article-link={encodeURIComponent(a.link || '')}>
+<div class={`article-editorial-row tone-${a.relationship.tone} timeline-item min-w-0`} data-article-link={encodeURIComponent(a.link || '')}>
 	<div class="timeline-dot"></div>
     <div class="row-header">
 		<div class="row-source-info">
 			<span class="source-name">{a.source}</span>
 			<span class={`tone-badge tone-${a.relationship.tone}`}>{a.relationship.label}</span>
-			
+
             {a.quality.isObjective && (
                 <span class="quality-badge badge-obj" title="Visok stepen na fakticko izvestuvanje">
                     <ShieldCheck size={10} />
@@ -43,10 +43,10 @@ const displaySnippet = cleanText(a.description || a.summary);
 		</div>
 	</div>
 	<a href={a.link} target="_blank" rel="noopener noreferrer" class="row-title-link">
-		<h3 class="row-title">{displayTitle}</h3>
+		<h3 class="row-title min-w-0 break-words whitespace-normal">{displayTitle}</h3>
 	</a>
 	{displaySnippet && (
-        <p class="row-snippet">{displaySnippet}</p>
+        <p class="row-snippet min-w-0 break-words whitespace-normal">{displaySnippet}</p>
     )}
 	<div class="row-footer">
 		<a href={a.link} target="_blank" rel="noopener noreferrer" class="read-original">
