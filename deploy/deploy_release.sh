@@ -6,18 +6,21 @@ set -euo pipefail
 
 # Cleanup lock file on exit
 cleanup_lock() {
+  [ -n "${STAGED_SOURCE_DIR:-}" ] && rm -rf "$STAGED_SOURCE_DIR"
   [ -n "${LOCK_FILE:-}" ] && rm -f "$LOCK_FILE"
   exec 9>&- 2>/dev/null || true
 }
 trap cleanup_lock EXIT
 
 SOURCE_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+COPY_ROOT="$SOURCE_ROOT"
 APP_ROOT="${APP_ROOT:-$HOME/presek-runtime}"
 RELEASES_DIR="$APP_ROOT/releases"
 CURRENT_LINK="$APP_ROOT/current"
 SHARED_DIR="$APP_ROOT/shared"
 VENV_DIR="${VENV_DIR:-$APP_ROOT/venv}"
 SHARED_WEB_NODE_MODULES="${SHARED_WEB_NODE_MODULES:-$SHARED_DIR/web-node_modules}"
+STAGED_SOURCE_DIR=""
 
 # Logging helpers
 info() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] $*"; }
@@ -28,34 +31,53 @@ fail() { echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $*" >&2; exit 1; }
 # Discover services dynamically from source directory
 discover_app_services() {
     local SYSTEMD_DIR="$SOURCE_ROOT/deploy/systemd"
-    
-    # Discover all unit files from the source directory
-    local all_units=()
-    while IFS= read -r -d '' file; do
-        all_units+=("$(basename "$file")")
-    done < <(find "$SYSTEMD_DIR" -maxdepth 1 -type f \( -name "*.service" -o -name "*.target" -o -name "*.timer" \) -print0 2>/dev/null || true)
-    
-    # Filter to only service files
+
+    # Discover only service units from the source directory.
     local services=()
-    for unit in "${all_units[@]}"; do
-        if [[ "$unit" == *.service ]]; then
-            services+=("$unit")
-        fi
-    done
-    
+    while IFS= read -r -d '' file; do
+        services+=("$(basename "$file")")
+    done < <(find "$SYSTEMD_DIR" -maxdepth 1 -type f -name "*.service" -print0 2>/dev/null || true)
+
     if [ "${#services[@]}" -eq 0 ]; then
         fail "No application services found in $SYSTEMD_DIR"
     fi
-    
+
     echo "${services[@]}"
 }
 
 APP_SERVICES=($(discover_app_services))
 
+stage_clean_git_source_if_needed() {
+    if [ ! -d "$SOURCE_ROOT/.git" ]; then
+        info "Source is not a git checkout; deploying working tree from $SOURCE_ROOT"
+        return
+    fi
+
+    cd "$SOURCE_ROOT"
+    local head_ref
+    head_ref="$(git rev-parse --short HEAD)"
+
+    if [ -z "$(git status --porcelain)" ]; then
+        info "Source tree is clean at $head_ref"
+        return
+    fi
+
+    if [ "${ALLOW_DIRTY_DEPLOY:-0}" = "1" ]; then
+        info "ALLOW_DIRTY_DEPLOY=1 set; deploying dirty working tree from $SOURCE_ROOT at $head_ref"
+        return
+    fi
+
+    STAGED_SOURCE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/presek-release-src.XXXXXX")"
+    info "Source tree is dirty; staging clean git archive of $head_ref at $STAGED_SOURCE_DIR"
+    git archive HEAD | tar -x -C "$STAGED_SOURCE_DIR"
+    COPY_ROOT="$STAGED_SOURCE_DIR"
+}
+
 # 1. Environment Validation
 info "Validating deployment environment..."
 [ -d "$APP_ROOT" ] || fail "APP_ROOT $APP_ROOT does not exist"
 [ -d "$VENV_DIR" ] || fail "VENV_DIR $VENV_DIR does not exist"
+stage_clean_git_source_if_needed
 
 # 2. Release Management
 RELEASE_ID=$(date -u +%Y%m%dT%H%M%SZ)
@@ -74,7 +96,7 @@ rsync -a \
     --exclude 'shared/' \
     --exclude 'releases/' \
     --exclude 'current' \
-    "$SOURCE_ROOT/" "$RELEASE_DIR/"
+    "$COPY_ROOT/" "$RELEASE_DIR/"
 
 # 3. Build Frontend
 info "Building frontend..."
