@@ -276,6 +276,9 @@ async def build_intelligence_summary_payload(
         cat_filter = "AND a.category = %s"
         params.append(category)
 
+    # Need a separate params list for balance_stats that includes the category filter if present
+    balance_params = [category] if category else []
+
     counts_res = await db.async_execute_one(
         f"""
         SELECT 
@@ -344,7 +347,7 @@ async def build_intelligence_summary_payload(
             COUNT(*) FILTER (WHERE group_count = 2) as diverse_sources
         FROM cluster_tiers
     """,
-            tuple(params),
+            tuple(balance_params),
         )
         or {"total_clusters": 0, "high_consensus": 0, "diverse_sources": 0}
     )
