@@ -1,28 +1,22 @@
-import json
-import time
-import httpx
-import re
-import logging
 import asyncio
+import json
+import logging
 import os
+import re
+import time
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from typing import AsyncGenerator
 
-from core.config import (
-    PROVIDER_FALLBACK_ORDER,
-    PROVIDER_FALLBACK_ORDER_RESEARCH,
-    PROVIDER_FALLBACK_ORDER_SUMMARY,
-)
+import httpx
+from prometheus_client import REGISTRY, Counter, Histogram
 
-
-from prometheus_client import Histogram, Counter, REGISTRY
+from core.config import PROVIDER_FALLBACK_ORDER, PROVIDER_FALLBACK_ORDER_RESEARCH, PROVIDER_FALLBACK_ORDER_SUMMARY
 
 log = logging.getLogger("presek")
 
 
 from nlp import synthesize_locally
-
 
 # =============================================================================
 # Prompt Injection Protection
@@ -73,36 +67,36 @@ MAX_PROMPT_LENGTH = 32000
 def sanitize_ai_prompt(prompt: str, context: str = "user") -> str:
     """
     Sanitize AI prompts to prevent prompt injection attacks.
-    
+
     This function:
     1. Validates prompt length
     2. Checks for known injection patterns
     3. Logs suspicious attempts
     4. Returns sanitized prompt or raises ValueError if injection detected
-    
+
     Args:
         prompt: The prompt text to sanitize
         context: Context for logging (e.g., "user", "system", "article")
-    
+
     Returns:
         The sanitized prompt string
-        
+
     Raises:
         ValueError: If prompt injection is detected
     """
     if not prompt:
         return prompt
-    
+
     if not isinstance(prompt, str):
         raise ValueError(f"Prompt must be a string, got {type(prompt).__name__}")
-    
+
     # Check length
     if len(prompt) > MAX_PROMPT_LENGTH:
         raise ValueError(
             f"Prompt exceeds maximum length of {MAX_PROMPT_LENGTH} characters "
             f"(got {len(prompt)} characters) from context: {context}"
         )
-    
+
     # Check for injection patterns (case-insensitive)
     lower_prompt = prompt.lower()
     for pattern in _PROMPT_INJECTION_PATTERNS:
@@ -113,18 +107,16 @@ def sanitize_ai_prompt(prompt: str, context: str = "user") -> str:
                 f"from context '{context}'. "
                 f"Pattern matched: {pattern[:50]}..."
             )
-            raise ValueError(
-                f"Prompt contains disallowed content pattern from context: {context}"
-            )
-    
+            raise ValueError(f"Prompt contains disallowed content pattern from context: {context}")
+
     # Remove or escape problematic characters
     # Replace null bytes and control characters
     prompt = prompt.replace("\x00", "")
-    
+
     # Normalize whitespace to prevent encoding-based attacks
     # But preserve intentional newlines and formatting
     prompt = " ".join(prompt.split())
-    
+
     return prompt
 
 
@@ -187,9 +179,7 @@ class AIProvider(ABC):
         return None
 
     @abstractmethod
-    async def stream_call(
-        self, prompt: str, system: str, max_tokens: int
-    ) -> AsyncGenerator[str, None]:
+    async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
         log.debug(f"Abstract method stream_call() not implemented for {self.__class__.__name__}")
         yield ""
 
@@ -243,18 +233,14 @@ class OpenAICompatibleProvider(AIProvider):
             log.warning(f"[ai/{self.provider_name}] Call failed: {e}")
         return None
 
-    async def stream_call(
-        self, prompt: str, system: str, max_tokens: int
-    ) -> AsyncGenerator[str, None]:
+    async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
         res = self.call(prompt, system, max_tokens, False)
         if res:
             yield res
 
 
 class LocalProvider(AIProvider):
-    async def stream_call(
-        self, prompt: str, system: str, max_tokens: int
-    ) -> AsyncGenerator[str, None]:
+    async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
         res = self.call(prompt, system, max_tokens, False)
         if res:
             for word in res.split(" "):
@@ -275,11 +261,7 @@ class LocalProvider(AIProvider):
 
         lowered_system = (system or "").lower()
 
-        if (
-            "synthesis" in lowered_system
-            or "sintez" in lowered_system
-            or task_type == "synthesis"
-        ):
+        if "synthesis" in lowered_system or "sintez" in lowered_system or task_type == "synthesis":
             res = analyst.analyze(prompt, system, max_tokens=max_tokens, lang=lang)
             if res:
                 return res
@@ -298,9 +280,7 @@ class LocalProvider(AIProvider):
         res = analyst.analyze(prompt, system, max_tokens=max_tokens, lang=lang)
         if res:
             if json_mode:
-                return json.dumps(
-                    {"report": res, "status": "success", "mode": "local_fallback"}
-                )
+                return json.dumps({"report": res, "status": "success", "mode": "local_fallback"})
         return res
 
 
@@ -309,11 +289,24 @@ class MistralProvider(OpenAICompatibleProvider):
         super().__init__("mistral", api_key, api_url, model)
 
 
+class NvidiaProvider(OpenAICompatibleProvider):
+    def __init__(self, api_key: str, api_url: str, model: str):
+        super().__init__("nvidia", api_key, api_url, model)
+
+
 class GeminiProvider(AIProvider):
     def __init__(self, api_key: str, model: str):
-        import google.generativeai as genai
-        genai.configure(api_key=api_key)
+        self.model = None
         self.model_name = model
+        if not api_key:
+            return
+        try:
+            import google.generativeai as genai
+        except ModuleNotFoundError:
+            log.warning("[ai/gemini] google-generativeai package is not installed; provider disabled")
+            return
+
+        genai.configure(api_key=api_key)
         self.model = genai.GenerativeModel(model)
 
     def call(
@@ -326,6 +319,8 @@ class GeminiProvider(AIProvider):
         task_type: str = "default",
         lang: str = "sr",
     ) -> str | None:
+        if self.model is None:
+            return None
         try:
             # Gemini models take system instruction in the initialization or as a separate role,
             # but for simplicity, we prepend it.
@@ -335,35 +330,10 @@ class GeminiProvider(AIProvider):
         except Exception as e:
             log.error(f"[ai/gemini] GeminiProvider failed: {e}")
             return None
-
-            "messages": [
-                {"role": "system", "content": system},
-                {"role": "user", "content": prompt},
-            ],
-            "max_tokens": max_tokens,
-            "temperature": 0.2,
-            "top_p": 0.7,
-        }
-        if json_mode:
-            payload["response_format"] = {"type": "json_object"}
-
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}",
-        }
-        try:
-            with httpx.Client(timeout=120.0) as client:
-                resp = client.post(self.api_url, json=payload, headers=headers)
-                resp.raise_for_status()
-                data = resp.json()
-                return data["choices"][0]["message"]["content"]
-        except (httpx.RequestError, httpx.HTTPStatusError) as e:
             log.warning(f"[ai/nvidia] Call failed: {e}")
         return None
 
-    async def stream_call(
-        self, prompt: str, system: str, max_tokens: int
-    ) -> AsyncGenerator[str, None]:
+    async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
         res = self.call(prompt, system, max_tokens, False)
         if res:
             yield res
@@ -372,29 +342,23 @@ class GeminiProvider(AIProvider):
 PROVIDERS = {
     "nvidia": NvidiaProvider(
         api_key=os.environ.get("NVIDIA_API_KEY", ""),
-        api_url=os.environ.get(
-            "NVIDIA_API_URL", "https://integrate.api.nvidia.com/v1/chat/completions"
-        ),
+        api_url=os.environ.get("NVIDIA_API_URL", "https://integrate.api.nvidia.com/v1/chat/completions"),
         model=os.environ.get("NVIDIA_MODEL", "nvidia/llama-3.1-nemotron-70b-instruct"),
     ),
     "mistral_large": MistralProvider(
         api_key=os.environ.get("MISTRAL_API_KEY", ""),
-        api_url=os.environ.get(
-            "MISTRAL_API_URL", "https://api.mistral.ai/v1/chat/completions"
-        ),
+        api_url=os.environ.get("MISTRAL_API_URL", "https://api.mistral.ai/v1/chat/completions"),
         model=os.environ.get("MISTRAL_MODEL", "mistral-large-latest"),
+    ),
     "mistral_small": MistralProvider(
         api_key=os.environ.get("MISTRAL_SMALL_API_KEY", ""),
-        api_url=os.environ.get(
-            "MISTRAL_API_URL", "https://api.mistral.ai/v1/chat/completions"
-        ),
+        api_url=os.environ.get("MISTRAL_API_URL", "https://api.mistral.ai/v1/chat/completions"),
         model=os.environ.get("MISTRAL_SMALL_MODEL", "mistral-small-latest"),
     ),
     "gemini": GeminiProvider(
         api_key=os.environ.get("GEMINI_API_KEY", ""),
         model=os.environ.get("GEMINI_MODEL", "gemini-flash-latest"),
     ),
-    }
     "local": LocalProvider(),
 }
 
@@ -428,7 +392,7 @@ async def _call_ai_async(
         log.error(f"[ai/cascade] Prompt sanitization failed: {e}")
         AI_CALLS.labels(provider="sanitization", task_type=task_type, status="blocked").inc()
         return None, None
-    
+
     fallback_order = PROVIDER_FALLBACK_ORDER
     if task_type == "research":
         fallback_order = PROVIDER_FALLBACK_ORDER_RESEARCH
@@ -444,17 +408,11 @@ async def _call_ai_async(
                 try:
                     first_chunk = await anext(generator)
                 except StopAsyncIteration:
-                    AI_CALLS.labels(
-                        provider=provider_name, task_type=task_type, status="empty"
-                    ).inc()
+                    AI_CALLS.labels(provider=provider_name, task_type=task_type, status="empty").inc()
                     continue
                 if first_chunk:
-                    AI_LATENCY.labels(
-                        provider=provider_name, task_type=task_type
-                    ).observe(time.time() - start_time)
-                    AI_CALLS.labels(
-                        provider=provider_name, task_type=task_type, status="success"
-                    ).inc()
+                    AI_LATENCY.labels(provider=provider_name, task_type=task_type).observe(time.time() - start_time)
+                    AI_CALLS.labels(provider=provider_name, task_type=task_type, status="success").inc()
                     return (
                         _stream_with_initial_chunk(generator, first_chunk),
                         provider_name,
@@ -472,28 +430,20 @@ async def _call_ai_async(
                 lang=lang,
             )
             if res:
-                AI_LATENCY.labels(provider=provider_name, task_type=task_type).observe(
-                    time.time() - start_time
-                )
-                AI_CALLS.labels(
-                    provider=provider_name, task_type=task_type, status="success"
-                ).inc()
+                AI_LATENCY.labels(provider=provider_name, task_type=task_type).observe(time.time() - start_time)
+                AI_CALLS.labels(provider=provider_name, task_type=task_type, status="success").inc()
                 return res, provider_name
             else:
-                AI_CALLS.labels(
-                    provider=provider_name, task_type=task_type, status="failure"
-                ).inc()
+                AI_CALLS.labels(provider=provider_name, task_type=task_type, status="failure").inc()
         except Exception as e:
-            AI_CALLS.labels(
-                provider=provider_name, task_type=task_type, status="error"
-            ).inc()
+            AI_CALLS.labels(provider=provider_name, task_type=task_type, status="error").inc()
             log.error(f"[ai/cascade] Provider {provider_name} failed: {e}")
-            
+
             # If rate limited, wait a bit before trying the next fallback
             if "429" in str(e):
                 log.info(f"[ai/cascade] Rate limit hit for {provider_name}, sleeping 2s...")
                 time.sleep(2)
-            
+
             continue
 
     return None, None
@@ -517,7 +467,7 @@ def _call_ai(
         log.error(f"[ai/cascade] Prompt sanitization failed: {e}")
         AI_CALLS.labels(provider="sanitization", task_type=task_type, status="blocked").inc()
         return None, None
-    
+
     fallback_order = PROVIDER_FALLBACK_ORDER
     if task_type == "research":
         fallback_order = PROVIDER_FALLBACK_ORDER_RESEARCH
@@ -528,40 +478,26 @@ def _call_ai(
         provider = PROVIDERS[provider_name]
         start_time = time.time()
         try:
-            res = provider.call(
-                prompt, system, max_tokens, json_mode, topic=topic, task_type=task_type, lang=lang
-            )
+            res = provider.call(prompt, system, max_tokens, json_mode, topic=topic, task_type=task_type, lang=lang)
             if res:
-                AI_LATENCY.labels(provider=provider_name, task_type=task_type).observe(
-                    time.time() - start_time
-                )
-                AI_CALLS.labels(
-                    provider=provider_name, task_type=task_type, status="success"
-                ).inc()
+                AI_LATENCY.labels(provider=provider_name, task_type=task_type).observe(time.time() - start_time)
+                AI_CALLS.labels(provider=provider_name, task_type=task_type, status="success").inc()
                 return res, provider_name
             else:
-                AI_CALLS.labels(
-                    provider=provider_name, task_type=task_type, status="failure"
-                ).inc()
-                log.warning(
-                    f"[ai/cascade] Provider {provider_name} returned empty response for task {task_type}"
-                )
+                AI_CALLS.labels(provider=provider_name, task_type=task_type, status="failure").inc()
+                log.warning(f"[ai/cascade] Provider {provider_name} returned empty response for task {task_type}")
         except Exception as e:
-            AI_CALLS.labels(
-                provider=provider_name, task_type=task_type, status="error"
-            ).inc()
+            AI_CALLS.labels(provider=provider_name, task_type=task_type, status="error").inc()
             log.error(f"[ai/cascade] Provider {provider_name} failed: {e}")
-            
+
             # If rate limited, wait a bit before trying the next fallback
             if "429" in str(e):
                 log.info(f"[ai/cascade] Rate limit hit for {provider_name}, sleeping 2s...")
                 time.sleep(2)
-            
+
             continue
 
-    log.error(
-        f"[ai/cascade] All providers in {fallback_order} failed for task {task_type}"
-    )
+    log.error(f"[ai/cascade] All providers in {fallback_order} failed for task {task_type}")
     return None, None
 
 
@@ -586,8 +522,8 @@ def clean_json_response(text: str) -> dict | str | None:
         return ""
 
     # 1. Strip markdown fences if present
-    text = re.sub(r'^```(?:json)?\s*', '', text)
-    text = re.sub(r'\s*```$', '', text)
+    text = re.sub(r"^```(?:json)?\s*", "", text)
+    text = re.sub(r"\s*```$", "", text)
     text = text.strip()
 
     # 2. Try direct JSON parse
@@ -615,9 +551,7 @@ def clean_json_response(text: str) -> dict | str | None:
         pattern = rf'"{key}"\s*:\s*"(.*?)"(?=\s*[,}}])'
         match = re.search(pattern, text, re.DOTALL)
         if match:
-            clean_text = (
-                match.group(1).replace("\\n", "\n").replace('\\"', '"').replace("\\'", "'")
-            )
+            clean_text = match.group(1).replace("\\n", "\n").replace('\\"', '"').replace("\\'", "'")
             return {"answer": clean_text, "suggestions": []}
 
     # 4. Brute force: find the first { and last } and try parsing that
@@ -637,9 +571,9 @@ def clean_json_response(text: str) -> dict | str | None:
 
     # 5. Final Fallback: Return the raw text but strip common JSON artifacts
     # if it obviously leaked (e.g. starts with { "answer": )
-    text = re.sub(r'^\{\s*"answer"\s*:\s*"', '', text)
-    text = re.sub(r'"\s*,\s*"suggestions".*\}\s*$', '', text, flags=re.DOTALL)
-    text = re.sub(r'"\s*\}\s*$', '', text)
+    text = re.sub(r'^\{\s*"answer"\s*:\s*"', "", text)
+    text = re.sub(r'"\s*,\s*"suggestions".*\}\s*$', "", text, flags=re.DOTALL)
+    text = re.sub(r'"\s*\}\s*$', "", text)
 
     return text.replace("\\n", "\n").replace('\\"', '"').strip()
 
@@ -659,7 +593,7 @@ def generate_cover_art(safe_id: str, svg_content: str) -> str | None:
 def auto_summarize_top_clusters(target_cluster_ids: list[str] = None):
     """Dispatch synthesis tasks for the top recent clusters or specific target clusters."""
     try:
-        from core.config import AUTO_SUMMARIZE_TOP_N, AUTO_SUMMARIZE_MIN_SRC
+        from core.config import AUTO_SUMMARIZE_MIN_SRC, AUTO_SUMMARIZE_TOP_N
         from core.database import db_manager as db
 
         if target_cluster_ids:
@@ -703,6 +637,7 @@ def auto_summarize_top_clusters(target_cluster_ids: list[str] = None):
 
         # Also trigger backfill for older clusters that might have been missed
         from tasks.intelligence import backfill_cluster_summaries_task
+
         backfill_cluster_summaries_task.delay(days=7, lang="sr")  # Backfill last 7 days for Serbian
         backfill_cluster_summaries_task.delay(days=7, lang="mk")  # Backfill last 7 days for Macedonian
 
