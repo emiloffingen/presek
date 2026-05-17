@@ -25,6 +25,11 @@
 
         toggle.addEventListener('click', () => {
             isCyrillic = !isCyrillic;
+            if (isCyrillic) {
+                document.body.classList.add('script-cyrillic');
+            } else {
+                document.body.classList.remove('script-cyrillic');
+            }
             traverse(document.body);
         });
     });

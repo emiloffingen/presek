@@ -11,16 +11,18 @@ import {
   sendSuggestionEvents,
 } from '../lib/personalization.js';
 import { sanitizeHtml } from '../lib/sanitize';
-import { getDisplaySummary, getDisplayTitle, highlightScores } from '../utils/textUtils';
+import { getDisplaySummary, getDisplayTitle, highlightScores, getPersonalizedText } from '../utils/textUtils';
 
-function getSummary(cluster: any) {
+function getSummary(cluster: any, lang: string) {
   const article = cluster?.articles?.[0];
-  return getDisplaySummary(article);
+  const text = cluster.synthetic_standfirst || getDisplaySummary(article, lang);
+  return getPersonalizedText(text, lang);
 }
 
-function getTitle(cluster: any) {
+function getTitle(cluster: any, lang: string) {
   const article = cluster?.articles?.[0];
-  return getDisplayTitle(article);
+  const text = cluster.synthetic_headline || getDisplayTitle(article, '', lang);
+  return getPersonalizedText(text, lang);
 }
 
 interface ForYouIslandProps {
@@ -176,8 +178,8 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
           {displayItems.map((item) => {
             const cluster = item.cluster || item; // Handle both Local (item.cluster) and Semantic (item itself) formats
             const article = cluster.articles?.[0] || {};
-            const summary = getSummary(cluster);
-            const title = getTitle(cluster);
+            const summary = getSummary(cluster, lang);
+            const title = getTitle(cluster, lang);
             const isSemantic = Boolean(item.similarity);
 
             return (
@@ -223,8 +225,8 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
         <div className="for-you-grid">
           {fallbackItems.map((cluster) => {
             const article = cluster.articles?.[0] || {};
-            const summary = getSummary(cluster);
-            const title = getTitle(cluster);
+            const summary = getSummary(cluster, lang);
+            const title = getTitle(cluster, lang);
             return (
               <a key={cluster.cluster_id} href={lang === 'sr' ? `/cluster/${cluster.cluster_id}` : `/mk/cluster/${cluster.cluster_id}`} className="for-you-card" aria-label={`Otvori: ${title}`}>
                 <p className="for-you-card-kicker">

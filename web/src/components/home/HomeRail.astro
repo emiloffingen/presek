@@ -105,7 +105,18 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
     
     .rail-wire-item { display: block; padding: 1rem 0; border-bottom: 1px solid var(--border); text-decoration: none; color: var(--foreground); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
     .rail-wire-item:last-child { border-bottom: none; }
-    .rail-wire-item p { font-family: var(--font-serif); font-size: 0.92rem; font-weight: 800; line-height: 1.35; margin-bottom: 0.4rem; transition: color 0.2s ease; }
+    .rail-wire-item p { 
+        font-family: var(--font-serif); 
+        font-size: 0.92rem; 
+        font-weight: 800; 
+        line-height: 1.35; 
+        margin-bottom: 0.4rem; 
+        transition: color 0.2s ease;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
     .rail-wire-meta { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.04em; }
     .rail-wire-meta span { opacity: 0.5; margin: 0 0.3rem; }
     .rail-wire-item:hover { transform: translateX(4px); }

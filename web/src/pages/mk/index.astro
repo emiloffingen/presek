@@ -514,13 +514,13 @@ function getBriefingSnippet(content: string) {
     }
 
     /* ── Section Dividers ────────────────────────────── */
-    .section-wrapper { border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1rem; }
+    .section-wrapper { border-bottom: 1px solid var(--border); padding-bottom: 1.5rem; margin-bottom: 1.5rem; }
     .section-wrapper:last-child { border-bottom: none; }
-    .lead-wrapper { padding-bottom: 1rem; margin-bottom: 1rem; }
+    .lead-wrapper { padding-bottom: 1.5rem; margin-bottom: 1.5rem; }
 
     @media (max-width: 768px) {
-        .section-wrapper { padding-bottom: 0.75rem; margin-bottom: 0.75rem; }
-        .lead-wrapper { padding-bottom: 0.75rem; margin-bottom: 0.75rem; }
+        .section-wrapper { padding-bottom: 1.25rem; margin-bottom: 1.25rem; }
+        .lead-wrapper { padding-bottom: 1.25rem; margin-bottom: 1.25rem; }
     }
     
     /* ── Supporting Band & Developments Grids ────────── */
@@ -605,8 +605,9 @@ function getBriefingSnippet(content: string) {
 
     .for-you-wrapper {
         background: color-mix(in srgb, var(--nyt-accent) 4%, transparent);
-        padding: 2.5rem 1rem;
+        padding: 1.5rem 1rem;
         border-y: 1px solid color-mix(in srgb, var(--nyt-accent) 15%, transparent);
+        margin-bottom: 1.5rem;
     }
 
     @media (max-width: 768px) {

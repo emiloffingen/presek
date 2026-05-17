@@ -245,9 +245,9 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
                 <div className="space-y-4">
                     {followSuggestions.map(item => (
                         <div key={item.value} className="flex items-center justify-between gap-4 p-3 bg-background border border-border rounded-lg group hover:border-nyt-accent/30 transition-all">
-                            <div className="min-w-0">
-                                <p className="text-[10px] font-black truncate uppercase tracking-tighter">{item.value}</p>
-                                <p className="text-[8px] text-muted-foreground uppercase font-bold">{item.kind === 'topic' ? (isMK ? 'Тема' : 'Tema') : (isMK ? 'извор' : 'izvor')}</p>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-[10px] font-black uppercase tracking-tighter leading-tight line-clamp-2">{item.value}</p>
+                                <p className="text-[8px] text-muted-foreground uppercase font-bold mt-0.5">{item.kind === 'topic' ? (isMK ? 'Тема' : 'Tema') : (isMK ? 'извор' : 'izvor')}</p>
                             </div>
                             <PreferenceToggle 
                                 kind={item.kind as any} 

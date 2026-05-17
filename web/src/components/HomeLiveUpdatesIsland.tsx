@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Radio, RefreshCcw } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
-import { getDisplayTitle } from '../utils/textUtils';
+import { getDisplayTitle, getPersonalizedText } from '../utils/textUtils';
 
 interface ArticleLike {
   source?: string;
@@ -144,7 +144,7 @@ export default function HomeLiveUpdatesIsland({ excludeClusterIds = [], initialC
       <div className="live-now-grid">
         {clusters.map((cluster) => {
           const article = cluster.articles?.[0] || {};
-          const title = getDisplayTitle(article);
+          const title = getPersonalizedText(getDisplayTitle(article, '', lang), lang);
           return (
             <a key={cluster.cluster_id} href={isMK ? `/mk/cluster/${cluster.cluster_id}` : `/cluster/${cluster.cluster_id}`} className="live-now-card group">
               <div className="live-now-meta flex items-center justify-between gap-2 mb-2">

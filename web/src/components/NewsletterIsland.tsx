@@ -35,7 +35,7 @@ export default function NewsletterIsland({ lang = 'sr' }: { lang?: string }) {
 
   if (status === 'success') {
     return (
-      <section className="bg-secondary/30 p-6 border border-border/60 relative overflow-hidden animate-in fade-in duration-500">
+      <section className="bg-secondary/30 p-6 border border-border/60 rounded-xl relative overflow-hidden animate-in fade-in duration-500">
         <div className="flex flex-col items-center text-center relative z-10">
           <CheckCircle2 className="text-nyt-accent mb-4" size={28} />
           <h3 className="font-serif font-black text-lg mb-3 tracking-tight">
@@ -55,7 +55,7 @@ export default function NewsletterIsland({ lang = 'sr' }: { lang?: string }) {
   }
 
   return (
-    <section className="bg-secondary/30 p-6 border border-border/60 relative overflow-hidden group">
+    <section className="bg-secondary/30 p-6 border border-border/60 rounded-xl relative overflow-hidden group">
       <div className="relative z-10">
         <header className="mb-5 pb-4 border-b border-border/40">
           <span className="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent block mb-2">

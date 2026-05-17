@@ -1093,7 +1093,7 @@ def normalize_headline(title: str) -> str:
     t = re.sub(prefix_pattern, "", t, count=1, flags=re.IGNORECASE)
 
     # Strip any remaining all-caps prefix followed by colon (e.g. "Beograd: ...")
-    t = re.sub(r"^[A-Za-z\s\-]{3,}:", "", t).strip()
+    t = re.sub(r"^[A-ZА-Я\s\-]{3,}:", "", t).strip()
 
     # 3. Suffix / Source Attribution Cleanup
     sources = [
@@ -1145,21 +1145,13 @@ def normalize_headline(title: str) -> str:
     alpha_count = len(alpha_chars)
 
     # Prefix check like "Srbija: Naslov..."
-    long_upper_prefix = re.match(r"^([A-Za-z\s]{6,}):", t)
+    long_upper_prefix = re.match(r"^([A-ZА-Я\s]{6,}):", t)
 
     if (alpha_count >= 6 and (upper_count / alpha_count) > 0.65) or long_upper_prefix:
         # Before lower-casing, protect common Serbian/International acronyms
         acronyms = {
-            "EU",
-            "NATO",
-            "SAD",
-            "MVR",
-            "SZO",
-            "SNS",
-            "DS",
-            "UJP",
-            "OJO",
-            "VMRO",
+            "EU", "NATO", "SAD", "MVR", "SZO", "SNS", "DS", "UJP", "OJO", "VMRO",
+            "ЕУ", "НАТО", "САД", "МВР", "СЗО", "СНС", "ДС", "УЈП", "ОЈО", "ВМРО"
         }
 
         # Lowercase and capitalize only first letter

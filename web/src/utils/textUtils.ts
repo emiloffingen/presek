@@ -236,12 +236,29 @@ function normalizeDisplayTitle(text: string): string {
     return value;
 }
 
-export function getDisplayTitle(article: any, fallback = ''): string {
-    return normalizeDisplayTitle(deShout(article?.display_title || cleanAndDecode(article?.title || fallback)));
+export function getDisplayTitle(article: any, fallback = '', lang?: string): string {
+    let title = normalizeDisplayTitle(deShout(article?.display_title || cleanAndDecode(article?.title || fallback)));
+    if (lang === 'sr' && isMostlyCyrillic(title)) {
+        title = transliterate(title);
+    }
+    return title;
 }
 
-export function getDisplaySummary(article: any): string {
-    return article?.display_summary || extractCleanSummaryText(article?.summary || article?.description || '');
+export function getDisplaySummary(article: any, lang?: string): string {
+    let summary = article?.display_summary || extractCleanSummaryText(article?.summary || article?.description || '');
+    if (lang === 'sr' && isMostlyCyrillic(summary)) {
+        summary = transliterate(summary);
+    }
+    return summary;
+}
+
+export function getPersonalizedText(text: string, lang: string): string {
+    if (!text) return '';
+    let result = deShout(text);
+    if (lang === 'sr' && isMostlyCyrillic(result)) {
+        result = transliterate(result);
+    }
+    return result;
 }
 
 export function isMostlyCyrillic(text: any): boolean {

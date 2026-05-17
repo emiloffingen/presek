@@ -168,6 +168,32 @@
     }
 }
 
+/* Serbian Cyrillic Optimization */
+body.script-cyrillic,
+body.script-cyrillic blockquote,
+body.script-cyrillic .rail-quote-block p,
+body.script-cyrillic .lead-summary,
+body.script-cyrillic .narrative-p,
+body.script-cyrillic .headline,
+body.script-cyrillic .editorial-headline,
+body.script-cyrillic .kicker,
+body.script-cyrillic .significance-badge {
+    font-family: var(--font-sans) !important;
+}
+
+/* Ticker Overflow Buffer */
+.unified-ticker-track-wrap::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 80px;
+    background: linear-gradient(to left, var(--background), transparent);
+    z-index: 5;
+    pointer-events: none;
+}
+
 .header-sticky-wrapper {
     position: sticky;
     top: 0;
@@ -205,11 +231,13 @@ h1, h2, h3, h4, h5, h6, .headline, .editorial-headline {
     font-size: 0.62rem;
     font-weight: 950;
     text-transform: uppercase;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.15em;
     color: var(--nyt-accent);
     display: block;
     margin-bottom: 0.5rem;
-    line-height: 1;
+    line-height: 1.25;
+    white-space: normal;
+    word-break: break-word;
 }
 
 .kicker-secondary {
@@ -221,10 +249,14 @@ h1, h2, h3, h4, h5, h6, .headline, .editorial-headline {
     font-family: var(--font-serif);
     font-weight: 700;
     line-height: 1.15;
-    letter-spacing: -0.025em; /* Tighter for display */
+    letter-spacing: -0.02em; 
     color: var(--foreground);
     text-wrap: balance;
     transition: color 0.3s var(--ease-editorial), transform 0.3s var(--ease-editorial);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .headline-cyrillic, 
@@ -1736,6 +1768,10 @@ button:active,
         grid-template-columns: repeat(2, 1fr);
         row-gap: 2rem;
     }
+    /* Handle orphans in 2-column grid */
+    .news-feed-grid > *:last-child:nth-child(odd) {
+        grid-column: span 2;
+    }
     .news-feed-grid > * {
         grid-row: span 4;
         display: grid;
@@ -1750,10 +1786,22 @@ button:active,
     .news-feed-grid {
         grid-template-columns: repeat(3, 1fr);
     }
+    /* Reset 2nd column orphan span */
+    .news-feed-grid > *:last-child:nth-child(odd) {
+        grid-column: span 1;
+    }
+    /* Handle orphans in 3-column grid */
+    .news-feed-grid > *:last-child:nth-child(3n+1) {
+        grid-column: span 3;
+    }
+    /* If 2 orphans, let them stay as is or handle? 
+       Actually, 2 orphans in a 3rd col grid look okay-ish 
+       compared to 1 orphan. But let's span them both if possible? 
+       No, 3n+2 is harder to handle without flex. */
 }
 
 /* Editorial Enhancements */
-.drop-cap::first-letter {
+.briefing-paragraph.drop-cap::first-letter {
     font-family: var(--font-serif);
     float: left;
     font-size: clamp(3.5rem, 8vw, 4.8rem);
@@ -4111,17 +4159,6 @@ button:active,
 .bento-2x2 .summary {
     font-size: 1.05rem;
     line-height: 1.6;
-}
-
-/* Add drop cap to the summary of 2x2 cards */
-.bento-2x2 .summary::first-letter {
-    float: left;
-    font-size: 3.2em;
-    line-height: 0.8;
-    margin-right: 0.1em;
-    margin-top: 0.1em;
-    font-weight: 900;
-    color: var(--nyt-accent);
 }
 
 /* Premium Reading Experience (Zen Mode) */

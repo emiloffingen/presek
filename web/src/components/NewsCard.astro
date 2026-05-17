@@ -40,7 +40,10 @@ const isFallbackArt = selectedImage.isWeak;
 const tintColor = cluster.dominant_color || '#1e40af';
 const rawLeadTitle = cluster.synthetic_headline || getDisplayTitle(main);
 
-const displayTitle = highlightScores(cluster.synthetic_headline || getDisplayTitle(main));
+let displayTitle = highlightScores(cluster.synthetic_headline || getDisplayTitle(main));
+if (lang === 'sr' && isMostlyCyrillic(displayTitle)) {
+    displayTitle = highlightScores(transliterate(cluster.synthetic_headline || getDisplayTitle(main)));
+}
 const titleIsCyrillic = isMostlyCyrillic(displayTitle);
 
 const clusterSlug = slugify(cluster.synthetic_headline || getDisplayTitle(main));
@@ -81,7 +84,10 @@ function getCardSummary(article: Article, lead = false) {
 	return highlightScores(truncated);
 }
 
-const displaySummary = cluster.synthetic_standfirst || getCardSummary(main, isLead);
+let displaySummary = cluster.synthetic_standfirst || getCardSummary(main, isLead);
+if (lang === 'sr' && isMostlyCyrillic(displaySummary)) {
+    displaySummary = highlightScores(transliterate(cleanAndDecode(cluster.synthetic_standfirst || getCardSummary(main, isLead))));
+}
 const summaryIsCyrillic = isMostlyCyrillic(displaySummary);
 
 const hasSynthesis = cluster.has_synthesis;
@@ -157,7 +163,7 @@ function getTimeStr(dateStr: string) {
             <ul class="sub-headlines" aria-label="Povezane vesti">
                 {cluster.articles.slice(1).filter(a => !a.is_redundant).slice(0, 3).map((sub: Article) => (
                     <li>
-                        <a href={clusterUrl} set:html={sanitizeHtml(getDisplayTitle(sub))}>
+                        <a href={clusterUrl} set:html={sanitizeHtml(getDisplayTitle(sub, '', lang))}>
                         </a>
                     </li>
                 ))}
@@ -270,13 +276,16 @@ function getTimeStr(dateStr: string) {
     .article-meta-v2 {
         display: flex;
         justify-content: space-between;
-        align-items: center;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 0.5rem;
         margin-bottom: 0.65rem;
     }
 
     .kicker-group {
         display: flex;
         align-items: center;
+        flex-wrap: wrap;
         gap: 0.4rem;
     }
 
@@ -284,6 +293,7 @@ function getTimeStr(dateStr: string) {
         display: flex;
         align-items: center;
         gap: 0.75rem;
+        margin-left: auto;
     }
 
     .significance-badge {
@@ -297,7 +307,9 @@ function getTimeStr(dateStr: string) {
         background: var(--secondary);
         border-radius: 2px;
         opacity: 0.8;
-        white-space: nowrap;
+        white-space: normal;
+        word-break: break-word;
+        line-height: 1.2;
     }
 
     .significance-badge.is-breaking {
@@ -418,6 +430,10 @@ function getTimeStr(dateStr: string) {
     .article-body:hover .summary-container,
     .summary-container:focus-within {
         max-height: 32em; /* Expand to show full summary */
+        z-index: 10;
+    }
+    .summary-container:not(:hover):not(:focus-within) {
+        max-height: 4.5em;
     }
 
     /* --- World-Class Design Card (Fallback) --- */
