@@ -12,7 +12,7 @@ interface ResearchIslandProps {
 type ResearchMode = 'facts' | 'perspectives' | 'context';
 
 export default function ResearchIsland({ clusterId, initialHeadline, sources = [], lang = 'sr' }: ResearchIslandProps) {
-  const t = useTranslations(lang);
+  const t = useTranslations(lang || 'sr');
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState<ResearchMode | 'custom' | null>(null);
   const [error, setError] = useState<string | null>(null);
