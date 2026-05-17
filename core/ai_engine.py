@@ -478,6 +478,12 @@ async def _call_ai_async(
                 provider=provider_name, task_type=task_type, status="error"
             ).inc()
             log.error(f"[ai/cascade] Provider {provider_name} failed: {e}")
+            
+            # If rate limited, wait a bit before trying the next fallback
+            if "429" in str(e):
+                log.info(f"[ai/cascade] Rate limit hit for {provider_name}, sleeping 2s...")
+                time.sleep(2)
+            
             continue
 
     return None, None
@@ -535,6 +541,12 @@ def _call_ai(
                 provider=provider_name, task_type=task_type, status="error"
             ).inc()
             log.error(f"[ai/cascade] Provider {provider_name} failed: {e}")
+            
+            # If rate limited, wait a bit before trying the next fallback
+            if "429" in str(e):
+                log.info(f"[ai/cascade] Rate limit hit for {provider_name}, sleeping 2s...")
+                time.sleep(2)
+            
             continue
 
     log.error(
