@@ -135,7 +135,51 @@ BREAKING_SCORE_THRESHOLD = 4.5
 DB_RETAIN_DAYS = 180  # articles older than this are pruned daily
 DB_RETAIN_FAILED_TASKS_DAYS = 360  # failed tasks older than this are pruned daily
 
-# ── Auto-summarization settings ──────────────────────────────────
+# ── Language Configuration ──────────────────────────────────
+LANGUAGE_CONFIG = {
+    "sr": {
+        "stemmer_suffixes": [
+            "ovanje", "anje", "enje", "isti", "istot", "ista", "ski", "skih", "skog",
+            "skom", "ska", "sko", "ovski", "ovska", "ovsko", "evski", "evska",
+            "evsko", "nji", "njeg", "njoj", "njim", "njih", "ni", "ti", "te",
+            "tu", "at", "et", "it", "ov", "ev", "iv", "an", "en", "on",
+        ],
+        "stopwords": {
+            "i", "na", "u", "od", "sa", "za", "se", "e", "ne", "da", "po", "do",
+            "pri", "no", "ili", "ako", "sto", "ko", "koji", "koja", "koje", "iz",
+            "o", "je", "su", "a", "pred", "pod", "nad", "zad", "medju", "ovaj",
+            "ova", "ovo", "ovi", "taj", "ta", "to", "ti", "jedan", "jedna",
+            "jedno", "nema", "novi", "nov", "nova", "samo", "jos", "preko",
+            "buduci", "zbog", "gde", "kako", "kad", "tok", "pak", "ipak", "zato",
+            "ovakav", "ovakva", "ovakvi", "prema", "saopstenja", "informisu",
+            "izjave", "veli", "izjavili", "rece", "porucuje", "kazu", "prenose",
+            "objavi", "pise", "danas", "juce", "sutra", "Srbija", "severna",
+            "sad", "kina", "eu", "nato", "the", "and", "for", "from", "that",
+            "this", "with", "has",
+        },
+    },
+    "mk": {
+        "stemmer_suffixes": [
+            "ovanje", "anje", "enje", "isti", "istot", "ista", "ski", "skih", "skog",
+            "skom", "ska", "sko", "ovski", "ovska", "ovsko", "evski", "evska",
+            "evsko", "nji", "njeg", "njoj", "njim", "njih", "ni", "ti", "te",
+            "tu", "at", "et", "it", "ov", "ev", "iv", "an", "en", "on",
+        ],
+        "stopwords": {
+            "и", "на", "во", "од", "со", "за", "се", "е", "не", "да", "по", "до",
+            "при", "но", "или", "ако", "што", "ко", "кој", "која", "кое", "из",
+            "о", "е", "се", "а", "пред", "под", "над", "зад", "меѓу", "овој",
+            "ова", "оваа", "овие", "тој", "таа", "тоа", "тие", "еден", "една",
+            "едно", "нема", "нови", "нов", "нова", "само", "уште", "преку",
+            "бидејќи", "поради", "каде", "како", "кога", "тек", "пак", "сепак",
+            "затоа", "ваков", "ваква", "вакви", "према", "соопштенија",
+            "информираат", "изјави", "вели", "изјавија", "рече", "порачува",
+            "кажуваат", "пренесуваат", "објави", "пишува", "денес", "вчера",
+            "утре", "Македонија", "северна", "сад", "кина", "еу", "нато",
+        },
+    },
+}
+
 AUTO_SUMMARIZE_TOP_N = 15  # summarize the top N clusters each cycle
 AUTO_SUMMARIZE_MIN_SRC = 2  # only clusters with 2+ sources get synthesis
 AUTO_SUMMARIZE_DELAY = 1.5  # seconds between API calls (rate limit protection)

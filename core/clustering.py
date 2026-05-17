@@ -79,57 +79,25 @@ import re
 import datetime
 import logging
 import os
+import re
+import math
+import datetime
+import uuid
 from collections import Counter
-from core.config import CLUSTERING_THRESHOLDS
+from core.config import CLUSTERING_THRESHOLDS, LANGUAGE_CONFIG
 
 log = logging.getLogger("presek")
 
-# ── Serbian stemmer ────────────────────────────────────────────
-SR_SUFFIXES = [
-    "ovanje",
-    "ovanje",
-    "anje",
-    "enje",
-    "anje",
-    "enje",
-    "isti",
-    "istot",
-    "ista",
-    "isti",
-    "ski",
-    "skih",
-    "skog",
-    "skom",
-    "ska",
-    "sko",
-    "ovski",
-    "ovska",
-    "ovsko",
-    "evski",
-    "evska",
-    "evsko",
-    "nji",
-    "njeg",
-    "njoj",
-    "njim",
-    "njih",
-    "ni",
-    "ti",
-    "te",
-    "tu",
-    "at",
-    "et",
-    "it",
-    "ov",
-    "ev",
-    "iv",
-    "an",
-    "en",
-    "on",
-]
+
+def get_stemmer_suffixes(lang: str) -> list[str]:
+    return LANGUAGE_CONFIG.get(lang, LANGUAGE_CONFIG["sr"])["stemmer_suffixes"]
 
 
-def sr_stem(word: str) -> str:
+def get_stopwords(lang: str) -> set[str]:
+    return LANGUAGE_CONFIG.get(lang, LANGUAGE_CONFIG["sr"])["stopwords"]
+
+
+def stem(word: str, lang: str = "sr") -> str:
     if len(word) < 4:
         return word
     # Don't stem proper nouns (starts with capital) unless it's the very start of a sentence
@@ -143,7 +111,7 @@ def sr_stem(word: str) -> str:
     elif word.startswith("po") and len(word) > 5:
         word = word[2:]
 
-    for suffix in SR_SUFFIXES:
+    for suffix in get_stemmer_suffixes(lang):
         if word.endswith(suffix) and len(word) - len(suffix) >= 3:
             return word[: -len(suffix)]
     return word
@@ -258,12 +226,13 @@ def _normalize_cluster_title(title: str) -> str:
     return text
 
 
-def _get_fingerprint(title: str) -> str:
+def _get_fingerprint(title: str, lang: str = "sr") -> str:
     """Create a minimal fingerprint for exact/near-exact title matches."""
     normalized = _normalize_cluster_title(title)
     words = re.findall(r"[A-Za-z\w]+", normalized)
+    stopwords = get_stopwords(lang)
     # Sort words to catch permutated titles
-    return "".join(sorted([w for w in words if w not in SR_STOPWORDS]))
+    return "".join(sorted([w for w in words if w not in stopwords]))
 
 
 # ── Synonym Mapping ──────────────────────────────────────────────
@@ -292,16 +261,17 @@ def _apply_synonyms(terms: list[str]) -> list[str]:
     return [NEWS_SYNONYMS.get(t, t) for t in terms]
 
 
-def _title_terms(title: str) -> list[str]:
+def _title_terms(title: str, lang: str = "sr") -> list[str]:
     normalized = _normalize_cluster_title(title)
     words = re.findall(r"[A-Za-z\w]{3,}", normalized)
-    stems = [sr_stem(word) for word in words if word not in SR_STOPWORDS]
+    stopwords = get_stopwords(lang)
+    stems = [stem(word, lang=lang) for word in words if word not in stopwords]
     return _apply_synonyms(stems)
 
 
-def _title_phrase_overlap(left: str, right: str) -> float:
-    left_terms = _title_terms(left)
-    right_terms = _title_terms(right)
+def _title_phrase_overlap(left: str, right: str, lang: str = "sr") -> float:
+    left_terms = _title_terms(left, lang=lang)
+    right_terms = _title_terms(right, lang=lang)
     if not left_terms or not right_terms:
         return 0.0
 
@@ -345,9 +315,10 @@ def _temporal_decay(created_at) -> float:
     return math.exp(-0.05 * age_hours)
 
 
-def text_to_vector(text: str) -> Counter:
+def text_to_vector(text: str, lang: str = "sr") -> Counter:
     words = re.findall(r"[A-Za-z\w]{3,}", text.lower())
-    stems = [sr_stem(w) for w in words if w not in SR_STOPWORDS]
+    stopwords = get_stopwords(lang)
+    stems = [stem(w, lang=lang) for w in words if w not in stopwords]
     return Counter(_apply_synonyms(stems))
 
 
@@ -385,18 +356,18 @@ def _extract_title_entities(title: str) -> set[str]:
 
 
 def _entity_token_overlap(
-    left_entities: set[str], right_entities: set[str]
+    left_entities: set[str], right_entities: set[str], lang: str = "sr"
 ) -> set[str]:
     # Use lowercase stemmed tokens and apply synonyms to improve overlap detection
     # (e.g., "Vlada" and "Ministarstvo" -> "vlad")
     left_tokens = {
-        _apply_synonyms([sr_stem(token.strip().lower())])[0]
+        _apply_synonyms([stem(token.strip().lower(), lang=lang)])[0]
         for entity in (left_entities or set())
         for token in str(entity).split()
         if len(token.strip()) >= 4
     }
     right_tokens = {
-        _apply_synonyms([sr_stem(token.strip().lower())])[0]
+        _apply_synonyms([stem(token.strip().lower(), lang=lang)])[0]
         for entity in (right_entities or set())
         for token in str(entity).split()
         if len(token.strip()) >= 4
@@ -603,6 +574,7 @@ def find_or_create_cluster(
     category: str | None = None,
     source: str | None = None,
     topic: str | None = None,
+    lang: str = "sr",
 ) -> str:
     """
     Unified clustering pipeline:
@@ -619,10 +591,10 @@ def find_or_create_cluster(
             return cid
 
     # 2. Title Fingerprinting (Fallback for same-story duplicates)
-    input_fp = _get_fingerprint(title)
+    input_fp = _get_fingerprint(title, lang=lang)
 
     # 3. TF-IDF Hybrid Fallback
-    vec1 = text_to_vector(title)
+    vec1 = text_to_vector(title, lang=lang)
     if not vec1:
         return uuid.uuid4().hex[:12]
 
@@ -650,7 +622,7 @@ def find_or_create_cluster(
         # Keep up to 3 diverse representatives for matching
         if len(cluster_docs[cid]) < 3:
             # Quick Fingerprint match check
-            if input_fp and _get_fingerprint(article["title"]) == input_fp:
+            if input_fp and _get_fingerprint(article["title"], lang=lang) == input_fp:
                 return cid
             cluster_docs[cid].append(article)
 
@@ -684,18 +656,18 @@ def find_or_create_cluster(
             else set()
         )
         if not shared_entities and potential_entities and rep_entities:
-            shared_entities = _entity_token_overlap(potential_entities, rep_entities)
+            shared_entities = _entity_token_overlap(potential_entities, rep_entities, lang=lang)
         topic_bridge = _topic_bridge_allowed(
             incoming_topic,
             rep_topic,
             category,
             rep_category,
             max(
-                (_title_phrase_overlap(normalized_input, rep["title"]) for rep in reps),
+                (_title_phrase_overlap(normalized_input, rep["title"], lang=lang) for rep in reps),
                 default=0.0,
             ),
             max(
-                (get_cosine(vec1, text_to_vector(rep["title"])) for rep in reps),
+                (get_cosine(vec1, text_to_vector(rep["title"], lang=lang)) for rep in reps),
                 default=0.0,
             ),
             shared_entities,
@@ -760,9 +732,9 @@ def find_or_create_cluster(
         current_best_rep_score = 0.0
         for rep in reps:
             rep_title = rep["title"]
-            vec2 = text_to_vector(rep_title)
+            vec2 = text_to_vector(rep_title, lang=lang)
             lexical_score = get_cosine(vec1, vec2)
-            phrase_score = _title_phrase_overlap(normalized_input, rep_title)
+            phrase_score = _title_phrase_overlap(normalized_input, rep_title, lang=lang)
 
             # Short title penalty: be stricter with very short headlines (under 30 chars)
             # as they are prone to false positives.
@@ -775,7 +747,7 @@ def find_or_create_cluster(
 
             # Same-source follow-ups should only merge when the titles still
             # look like the same story, or when they share concrete entities.
-            if same_source_cluster and input_fp != _get_fingerprint(rep_title):
+            if same_source_cluster and input_fp != _get_fingerprint(rep_title, lang=lang):
                 if (
                     phrase_score < 0.26
                     and lexical_score < 0.58
