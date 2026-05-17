@@ -227,7 +227,7 @@ const IzvoriPage: React.FC = () => {
           ) : (
             <div className="space-y-24">
               <section>
-                <h2 className="font-serif text-3xl font-black italic mb-10 pb-3 border-b-4 border-foreground">Srpski Mediji</h2>
+                <h2 className="font-serif text-3xl font-black italic mb-10 pb-3 border-b-4 border-foreground">{lang === 'mk' ? 'Македонски медиуми' : 'Srpski mediji'}</h2>
                 <div className="flex flex-col">
                   {mkSources.map(renderSourceRow)}
                 </div>
