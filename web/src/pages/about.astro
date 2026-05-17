@@ -3,23 +3,28 @@ import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
+
+const hostHeader = Astro.request?.headers.get('host');
+const lang = getLangFromUrl(Astro.url, hostHeader);
+const t = useTranslations(lang);
 ---
 
 <Layout
-    title="О Пројекту — Пресек"
-    description="Пресек је српски информативни агрегатор који вам омогућава да видите целокупну слику."
+    title={`${t('nav.about')} — Presek`}
+    description={t('layout.home_description')}
 >
     <NYTHeader />
     <main class="site-layout broadsheet-layout py-[var(--page-py)]">
         <header class="editorial-masthead mb-12">
             <div class="masthead-top">
-                <span class="masthead-kicker">МИСИЈА И ВИЗИЈА</span>
+                <span class="masthead-kicker">{lang === 'sr' ? 'MISIJA I VIZIJA' : 'МИСИЈА И ВИЗИЈА'}</span>
             </div>
             <div class="masthead-main">
-                <h1 class="masthead-title">Јаснији преглед <span>дана</span></h1>
+                <h1 class="masthead-title">{lang === 'sr' ? 'Jasniji pregled' : 'Јаснији преглед'} <span>{lang === 'sr' ? 'dana' : 'дана'}</span></h1>
             </div>
             <p class="masthead-intro">
-                Пресек је дигитални сервис за медијску транспарентност и јавни увид. Наша мисија је да вратимо јасноћу у информативни простор кроз мапирање плурализма.
+                {t('footer.ethos')}
             </p>
         </header>
 
@@ -27,37 +32,43 @@ import Breadcrumbs from '../components/Breadcrumbs.astro';
             <div class="broadsheet-main">
                 <article class="prose-editorial">
                     <p class="first-paragraph">
-                        У данима препуним понављања, претеривања и брзих наслова, Пресек служи као дисциплинован преглед онога што се заправо дешава. Сличне објаве групише у „кластере“ да бисте једну причу могли видети кроз више извора, уместо да ловите комадић по комадић.
+                        {lang === 'sr' 
+                          ? 'U danima prepunim ponavljanja, preterivanja i brzih naslova, Presek služi kao disciplinovan pregled onoga što se zapravo dešava. Slične objave grupiše u „klastere“ da biste jednu priču mogli videti kroz više izvora, umesto da lovite komadić po komadić.' 
+                          : 'Во деновите преполни со повторувања, претерувања и брзи наслови, Пресек служи како дисциплиниран преглед на она што навистина се случува. Сличните објави ги групира во „кластери“ за да можете една приказна да ја видите преку повеќе извори, наместо да го ловите секој дел посебно.'}
                     </p>
 
                     <p>
-                        Уместо да тврди да замењује редакције, Пресек ради нешто корисно: даје вам структуру. Из те структуре проистичу неколико кључних слојева који обликују вашу информисаност.
+                        {lang === 'sr' 
+                          ? 'Umesto da tvrdi da zamenjuje redakcije, Presek radi nešto korisno: daje vam strukturu. Iz te strukture proističu nekoliko ključnih slojeva koji oblikuju vašu informisanost.' 
+                          : 'Наместо да тврди дека ги заменува редакциите, Пресек прави нешто корисно: ви дава структура. Од таа структура произлегуваат неколку кључни слоеви кои ја обликуваат вашата информираност.'}
                     </p>
 
                     <div class="editorial-divider"></div>
 
-                    <h2 class="section-title-italic">Кључни стубови</h2>
+                    <h2 class="section-title-italic">{lang === 'sr' ? 'Ključni stubovi' : 'Клучни столбови'}</h2>
                     <ul class="editorial-list">
-                        <li><strong>Системске синтезе:</strong> Аутоматизовани уреднички преглед дана који уједињује чињенице са свих доступних извора у једну кохерентну причу.</li>
-                        <li><strong>Медијски плурализам:</strong> Прецизно мапирање различитих углова извештавања, идентификовање информативних празнина и тоналних разлика између редакција.</li>
-                        <li><strong>Дневни брифинг:</strong> Дестиловано јутарње издање тема које носе највећу тежину јавног интереса.</li>
+                        <li><strong>{lang === 'sr' ? 'Sistemske sinteze:' : 'Системски синтези:'}</strong> {lang === 'sr' ? 'Automatski urednički pregled dana koji ujedinjuje činjenice sa svih dostupnih izvora u jednu koherentnu priču.' : 'Автоматизиран уреднички преглед на денот кој ги обединува фактите од сите достапни извори во една кохерентна приказна.'}</li>
+                        <li><strong>{lang === 'sr' ? 'Medijski pluralizam:' : 'Медиумски плурализам:'}</strong> {lang === 'sr' ? 'Precizno mapiranje različitih uglova izveštavanja, identifikovanje informativnih praznina i tonalnih razlika između redakcija.' : 'Прецизно мапирање на различни агли на известување, идентификување на информативни празнини и тонални разлики меѓу редакциите.'}</li>
+                        <li><strong>{lang === 'sr' ? 'Dnevni brifing:' : 'Дневен брифинг:'}</strong> {lang === 'sr' ? 'Destilovano jutarnje izdanje tema koje nose najveću težinu javnog interesa.' : 'Дестилирано утринско издание на теми кои имаат најголема тежина за јавниот интерес.'}</li>
                     </ul>
 
                     <p>
-                        Намера је једноставна: мање шума, више контекста. Пресек вам не каже шта да мислите; помаже вам да брже видите шта се дешава, ко како извештава и шта још увек остаје нејасно.
+                        {lang === 'sr' 
+                          ? 'Namera je jednostavna: manje šuma, više konteksta. Presek vam ne kaže šta da mislite; pomaže vam da brže vidite šta se dešava, ko kako izveštava i šta još uvek ostaje nejasno.' 
+                          : 'Намерата е едноставна: помалку шум, повеќе контекст. Пресек не ви кажува што да мислите; ви помага побрзо да видите што се случува, кој како известува и што сè уште останува нејасно.'}
                     </p>
 
                     <div class="editorial-divider"></div>
 
-                    <h2 class="section-title-italic">Тим и Мисија</h2>
+                    <h2 class="section-title-italic">{lang === 'sr' ? 'Tim i Misija' : 'Тим и Мисија'}</h2>
                     <div class="two-col-grid">
                         <div class="grid-item">
-                            <h3>Архитектура</h3>
-                            <p>Пресек 5.48 развијен је од стране тима инжењера посвећених обради српског језика. Систем користи напредни систем дубоке обраде како би гарантовао вишу прецизност и независну уредничку синтезу вести.</p>
+                            <h3>{lang === 'sr' ? 'Arhitektura' : 'Архитектура'}</h3>
+                            <p>{lang === 'sr' ? 'Presek 5.48 razvijen je od strane tima inženjera posvećenih obradi srpskog jezika. Sistem koristi napredni sistem duboke obrade kako bi garantovao višu preciznost i nezavisnu uredničku sintezu vesti.' : 'Пресек 5.48 е развиен од страна на тим инженери посветени на обработка на македонскиот јазик. Системот користи напреден систем за длабока обработка со цел да гарантира повисока прецизност и независна уредничка синтеза на вестите.'}</p>
                         </div>
                         <div class="grid-item">
-                            <h3>Визија</h3>
-                            <p>Наш циљ је да изградимо дигитални простор у којем се вести вреднују по својој садржини и подршци више извора, промовишући информисано грађанство.</p>
+                            <h3>{lang === 'sr' ? 'Vizija' : 'Визија'}</h3>
+                            <p>{lang === 'sr' ? 'Naš cilj je da izgradimo digitalni prostor u kojem se vesti vrednuju po svojoj sadržini i podršci više izvora, promovišući informisano građanstvo.' : 'Нашата цел е да изградиме дигитален простор во кој вестите ќе се вреднуваат според нивната содржина и поддршката од повеќе извори, промовирајќи информирано граѓанство.'}</p>
                         </div>
                     </div>
                 </article>
@@ -65,17 +76,18 @@ import Breadcrumbs from '../components/Breadcrumbs.astro';
 
             <aside class="broadsheet-rail">
                 <section class="rail-block rail-block-alt">
-                    <p class="rail-kicker">Укратко</p>
-                    <h3 class="rail-title">ГЛАВНА НАМЕРА</h3>
-                    <p class="rail-text">Мање шума, више контекста. Мање распршених наслова, више јасности за оно што заиста обликује дан.</p>
+                    <p class="rail-kicker">{lang === 'sr' ? 'Ukratko' : 'Накратко'}</p>
+                    <h3 class="rail-title">{lang === 'sr' ? 'GLAVNA NAMERA' : 'ГЛАВНА НАМЕРА'}</h3>
+                    <p class="rail-text">{lang === 'sr' ? 'Manje šuma, više konteksta. Manje raspršenih naslova, više jasnosti za ono što zaista oblikuje dan.' : 'Помалку шум, повеќе контекст. Помалку распрснати наслови, повеќе јасност за она што навистина го обликува денот.'}</p>
                 </section>
 
                 <section class="rail-block">
-                    <p class="rail-kicker">даље</p>
+                    <p class="rail-kicker">{lang === 'sr' ? 'dalje' : 'понатаму'}</p>
                     <div class="rail-directory">
-                        <a href="/editorial" class="dir-link"><span class="name">Стандарди</span></a>
-                        <a href="/briefing" class="dir-link"><span class="name">Брифинг</span></a>
-                        <a href="/izvori" class="dir-link"><span class="name">Извори</span></a>
+                        <a href={l('/editorial')} class="dir-link"><span class="name">{lang === 'sr' ? 'Standardi' : 'Стандарди'}</span></a>
+                        <a href={l('/briefing')} class="dir-link"><span class="name">{lang === 'sr' ? 'Brifing' : 'Брифинг'}</span></a>
+                        <a href={l('/for-you')} class="dir-link"><span class="name">{lang === 'sr' ? 'Za Vas' : 'За Вас'}</span></a>
+                        <a href={l('/izvori')} class="dir-link"><span class="name">{lang === 'sr' ? 'Izvori' : 'Извори'}</span></a>
                     </div>
                 </section>
             </aside>
@@ -90,7 +102,7 @@ import Breadcrumbs from '../components/Breadcrumbs.astro';
     .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 2rem; margin-bottom: 3rem; }
     .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
     .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; margin: 1.5rem 0; letter-spacing: -0.02em; }
-    .masthead-title span { font-weight: 400; italic: true; }
+    .masthead-title span { font-weight: 400; font-style: italic; }
     .masthead-intro { font-family: var(--font-nyt-body); font-size: 1.15rem; line-height: 1.6; color: var(--secondary-foreground); max-width: 42rem; }
 
     /* ── Broadstreet Layout ───────────────────────────── */
@@ -106,7 +118,7 @@ import Breadcrumbs from '../components/Breadcrumbs.astro';
     .first-paragraph::first-letter { float: left; font-family: var(--font-serif); font-size: 5rem; font-weight: 900; line-height: 0.8; padding-top: 0.5rem; padding-right: 0.75rem; color: var(--foreground); }
     .prose-editorial p { margin-bottom: 1.5rem; text-wrap: pretty; }
     
-    .section-title-italic { font-family: var(--font-serif); font-size: 1.8rem; font-weight: 900; italic: true; margin-bottom: 1.5rem; }
+    .section-title-italic { font-family: var(--font-serif); font-size: 1.8rem; font-weight: 900; font-style: italic; margin-bottom: 1.5rem; }
     .editorial-divider { height: 1px; background: var(--border); margin: 3rem 0; }
 
     .editorial-list { list-style: none; padding: 0; margin-bottom: 2rem; }

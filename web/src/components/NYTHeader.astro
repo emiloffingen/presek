@@ -179,6 +179,9 @@ function getRelativeTimeStr(dateStr?: string) {
                     <a href={l('/briefing')} class={`mode-link ${Astro.url.pathname === l('/briefing') ? 'is-active' : ''}`} aria-current={Astro.url.pathname === l('/briefing') ? 'page' : undefined}>
                         <Radio size={11} strokeWidth={1.5} aria-hidden="true" /> <span>{t('nav.briefing')}</span>
                     </a>
+                    <a href={l('/for-you')} class={`mode-link ${Astro.url.pathname === l('/for-you') ? 'is-active' : ''}`} aria-current={Astro.url.pathname === l('/for-you') ? 'page' : undefined}>
+                        <Compass size={11} strokeWidth={1.5} aria-hidden="true" /> <span>{t('nav.for_you')}</span>
+                    </a>
                     <a href={l('/archive')} class={`mode-link ${Astro.url.pathname === l('/archive') ? 'is-active' : ''}`} aria-current={Astro.url.pathname === l('/archive') ? 'page' : undefined}>
                         <Sparkles size={11} strokeWidth={1.5} aria-hidden="true" /> <span>{t('nav.archive')}</span>
                     </a>

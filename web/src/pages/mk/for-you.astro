@@ -6,37 +6,41 @@ import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import ForYouPageIsland from '../../components/ForYouPageIsland.tsx';
 import { ErrorBoundary } from '../../components/ui/ErrorBoundary.tsx';
 import { apiBaseUrl } from '../../lib/apiBase';
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 
+const hostHeader = Astro.request?.headers.get('host');
+const lang = getLangFromUrl(Astro.url, hostHeader);
+const t = useTranslations(lang);
 const API_URL = apiBaseUrl();
 
 // Fetch latest clusters to provide as potential local matches
 let initialClusters = [];
 let initialError: string | null = null;
 try {
-    const res = await fetch(`${API_URL}/news?page_size=100`);
+    const res = await fetch(`${API_URL}/news?page_size=100&lang=${lang}`);
     if (res.ok) {
         const data = await res.json();
         initialClusters = data.clusters || [];
     } else {
-        initialError = "Ne možemo da učitamo početne preporuke u ovom trenutku.";
+        initialError = lang === 'sr' ? "Ne možemo da učitamo početne preporuke u ovom trenutku." : "Не можеме да ги вчитаме почетните препораки во овој момент.";
         Astro.response.status = 500;
     }
 } catch (e) {
     console.error("ForYou page fetch error:", e);
-    initialError = "Ne možemo da učitamo početne preporuke u ovom trenutku.";
+    initialError = lang === 'sr' ? "Ne možemo da učitamo početne preporuke u ovom trenutku." : "Не можеме да ги вчитаме почетните препораки во овој момент.";
     Astro.response.status = 500;
 }
 ---
 
 <Layout 
-    title="Za Vas" 
-    description="Vaš lični pregled vest, prilagođen prema temama i izvorima koje pratite."
+    title={`${t('nav.for_you')} — Presek`} 
+    description={t('layout.filtered_description')}
 >
     <NYTHeader />
     <main class="site-layout py-[var(--page-py)]">
-        <Breadcrumbs items={[{ label: "Za Vas" }]} />
-        <ErrorBoundary client:load>
-            <ForYouPageIsland client:load initialClusters={initialClusters} initialError={initialError} />
+        <Breadcrumbs items={[{ label: t('nav.for_you') }]} />
+        <ErrorBoundary client:load lang={lang}>
+            <ForYouPageIsland client:load initialClusters={initialClusters} initialError={initialError} lang={lang} />
         </ErrorBoundary>
     </main>
     <Footer />
