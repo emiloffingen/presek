@@ -36,7 +36,7 @@ try {
   if (q) archiveUrl.searchParams.set('q', q);
   if (source) archiveUrl.searchParams.set('source', source);
   if (topic) archiveUrl.searchParams.set('topic', topic);
-  
+
   const [res, briefRes, otdRes] = await Promise.all([
     fetch(archiveUrl),
     fetch(`${API_URL}/archive/daily-briefing?date=${date}&lang=${lang}`),
@@ -77,7 +77,7 @@ function formatBriefingItem(item: string) {
 
 <Layout title={`${t('nav.archive')} — Presek`} description={t('archive.description')}>
   <NYTHeader />
-  
+
   <main class="site-layout broadsheet-layout pt-32 pb-[var(--page-py)]">
     <header class="editorial-masthead mb-16 border-t border-foreground pt-4">
         <div class="masthead-top mb-8 flex justify-between items-center">
@@ -98,7 +98,7 @@ function formatBriefingItem(item: string) {
                     {t('archive.masthead_desc')}
                 </p>
             </div>
-            <div class="masthead-data-deck grid grid-cols-3 gap-0 border border-border/60 bg-secondary/10 overflow-hidden rounded-sm w-full md:w-auto min-w-[320px]">
+            <div class="masthead-data-deck grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 border border-border/60 bg-secondary/10 overflow-hidden rounded-sm w-full md:w-auto">
                 <div class="deck-stat p-6 border-r border-border/60 text-center">
                     <span class="block text-2xl font-black tabular-nums">{archive.total.toLocaleString(isMK ? 'mk-MK' : 'sr-RS')}</span>
                     <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{t('archive.objava')}</span>
@@ -136,11 +136,11 @@ function formatBriefingItem(item: string) {
                 <div class="flex items-center gap-4 flex-wrap">
                     <form method="get" class="date-select-form">
                         <div class="relative group">
-                            <input 
-                                type="date" 
-                                name="date" 
-                                value={date} 
-                                onchange="this.form.submit()" 
+                            <input
+                                type="date"
+                                name="date"
+                                value={date}
+                                onchange="this.form.submit()"
                                 class="bg-secondary/40 border border-border px-4 py-2 rounded font-sans text-xs font-black uppercase tracking-widest outline-none focus:border-nyt-accent transition-all cursor-pointer"
                             />
                             <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none opacity-40 group-hover:opacity-100 transition-opacity">
@@ -150,15 +150,15 @@ function formatBriefingItem(item: string) {
                     </form>
 
                     <div class="flex items-center gap-1">
-                        <a 
-                            href={`/mk/archive?date=${new Date(new Date(date).getTime() - 86400000).toISOString().split('T')[0]}`} 
+                        <a
+                            href={`/mk/archive?date=${new Date(new Date(date).getTime() - 86400000).toISOString().split('T')[0]}`}
                             class="px-4 py-2 bg-secondary/50 border border-border/60 rounded font-sans text-[10px] font-black uppercase tracking-widest hover:bg-foreground hover:text-background transition-all"
                         >
                             ← {isMK ? 'ПРЕТХОДЕН' : 'PRETHODNI'}
                         </a>
                         {new Date(date) < new Date(new Date().toISOString().split('T')[0]) && (
-                            <a 
-                                href={`/mk/archive?date=${new Date(new Date(date).getTime() + 86400000).toISOString().split('T')[0]}`} 
+                            <a
+                                href={`/mk/archive?date=${new Date(new Date(date).getTime() + 86400000).toISOString().split('T')[0]}`}
                                 class="px-4 py-2 bg-secondary/50 border border-border/60 rounded font-sans text-[10px] font-black uppercase tracking-widest hover:bg-foreground hover:text-background transition-all"
                             >
                                 {isMK ? 'СЛЕДЕН' : 'SLEDEĆI'} →
@@ -170,11 +170,11 @@ function formatBriefingItem(item: string) {
                 <form method="get" class="w-full md:w-80">
                     <input type="hidden" name="date" value={date} />
                     <div class="relative">
-                        <input 
-                            type="text" 
-                            name="q" 
-                            value={q} 
-                            placeholder={isMK ? "Пребарај го овој ден..." : "Pretraži ovaj dan..."} 
+                        <input
+                            type="text"
+                            name="q"
+                            value={q}
+                            placeholder={isMK ? "Пребарај го овој ден..." : "Pretraži ovaj dan..."}
                             class="w-full bg-secondary/20 border-b-2 border-border py-2 pl-2 pr-10 font-serif font-bold text-lg outline-none focus:border-nyt-accent placeholder:italic placeholder:font-normal placeholder:opacity-40 transition-all"
                         />
                         <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none opacity-40">
@@ -210,7 +210,7 @@ function formatBriefingItem(item: string) {
     <div class="broadsheet-grid">
       <div class="broadsheet-main pr-12 border-r border-border/40">
         {error && <div class="bg-destructive/10 text-destructive p-4 rounded-sm border border-destructive/20 mb-8 font-black uppercase text-[10px] tracking-widest">{error}</div>}
-        
+
         {q || source || topic ? (
                 <div class="active-filters mb-12 flex items-center gap-4 p-4 bg-nyt-accent/[0.03] border border-nyt-accent/10 rounded-lg">
                     <span class="font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('archive.active_filter')}</span>
@@ -297,14 +297,14 @@ function formatBriefingItem(item: string) {
       </aside>
     </div>
   </main>
-  
+
   <Footer />
 </Layout>
 
 <style>
     .broadsheet-layout { background: var(--background); }
     .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 4rem; }
-    
+
     @media (min-width: 1024px) {
         .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 320px; }
         .broadsheet-main { border-right: 1px solid var(--border); padding-right: 4rem; }
@@ -312,7 +312,7 @@ function formatBriefingItem(item: string) {
     }
 
     .masthead-title span { font-style: italic; font-weight: 300; }
-    
+
     .archive-feed-list { position: relative; }
     .archive-feed-list::before {
         content: '';
