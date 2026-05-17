@@ -699,9 +699,9 @@ def _extract_capitalized_phrases(text):
     if not text:
         return []
     # Explicitly list Cyrillic characters to avoid range errors in some environments
-    # Serbian Latin character ranges
-    upper = r"[A-Z]"
-    lower = r"[a-z0-9]"
+    # Supports both Latin and Cyrillic (Macedonian/Serbian)
+    upper = r"[A-Z\u0400-\u042F]"
+    lower = r"[a-z0-9\u0430-\u044F\u0450-\u045F]"
     pattern = re.compile(
         rf"(?:\b{upper}{lower}+\b(?:[\s-]+\b{upper}{lower}+\b){{0,2}})"
     )

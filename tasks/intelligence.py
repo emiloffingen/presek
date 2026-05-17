@@ -1459,18 +1459,19 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
         return True
 
     from nlp.keywords import _extract_capitalized_phrases
+    from nlp.utils import transliterate
 
-    source_lower = source_context.casefold()
+    source_latin = transliterate(source_context).casefold()
     context_entities = {
-        phrase.casefold()
+        transliterate(phrase).casefold()
         for phrase in _extract_capitalized_phrases(source_context)
         if len(str(phrase or "").strip()) >= 4
     }
 
     allowed_singletons = {
-        "Srbija",
-        "Beograd",
-        "albanija",
+        "srbij",
+        "beograd",
+        "albanij",
         "eu",
         "vmro-dpmne",
         "iran",
@@ -1481,14 +1482,14 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
         "nato",
         "obedinetite nacii",
         "on",
-        "ukraina",
-        "rusija",
+        "ukrain",
+        "rusij",
         "sdsm",
         "vasington",
         "teheran",
         "bliskiot istok",
         "persiskiot zaliv",
-        "zapadniot Balkan",
+        "zapadniot balkan",
         "evropskata unija",
         "brisel",
         "moskva",
@@ -1497,23 +1498,32 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
         "gaza",
         "liban",
         "crna gora",
-        "Srbija",
-        "grcija",
-        "bugarija",
-        "ahmeti",
-        "mickoski",
-        "siljanovska",
-        "pendarovski",
-        "kovacevski",
-        "filipce",
-        "gruevski",
+        "grcij",
+        "bugarij",
+        "makedon",
+        "republik",
+        "severn",
+        "ahmet",
+        "mickosk",
+        "siljanovsk",
+        "pendarovsk",
+        "kovacevsk",
+        "filipc",
+        "gruevsk",
         "zaev",
         "presek",
-        "bitola",
+        "bitol",
         "ohrid",
         "tetovo",
         "kumanovo",
         "gostivar",
+        "skopj",
+        "beograd",
+        "vinic",
+        "veles",
+        "stip",
+        "strumic",
+        "prilep",
         "sri lanka",
         "kiribati",
         "si dzinping",
@@ -1525,8 +1535,7 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
         "erdogan",
         "vucic",
         "rama",
-        "mickoski",
-        "osmani",
+        "osman",
         "maricic",
         "kostadinovska-stojcevska",
         "biserka",
@@ -1556,10 +1565,10 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
 
     hallucinated_count = 0
     for phrase in _extract_capitalized_phrases(synthesis_text):
-        clean = str(phrase or "").strip()
+        clean = str(phrase or "").strip().replace("\n", " ")
         if len(clean) < 4:
             continue
-        if clean.split()[0].lower() in {"od", "vo", "na", "so", "za", "niz"}:
+        if clean.split()[0].lower() in {"od", "vo", "na", "so", "za", "niz", "u", "iz"}:
             clean_parts = clean.split()[1:]
             if not clean_parts:
                 continue
@@ -1575,22 +1584,50 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
         if len(words) < 2 and not is_acronym:
             continue
 
-        folded = clean.casefold()
-        if folded in context_entities or folded in allowed_singletons:
+        folded = transliterate(clean).casefold()
+        if folded in context_entities:
             continue
-        if folded in source_lower:
+        
+        # Check allowed_singletons with word boundary awareness or as substrings for longer phrases
+        is_allowed = False
+        for allowed in allowed_singletons:
+            if allowed == folded:
+                is_allowed = True
+                break
+            if len(allowed) > 5 and allowed in folded:
+                is_allowed = True
+                break
+        
+        if is_allowed:
             continue
+            
+        if folded in source_latin:
+            continue
+            
+        # Fuzzy/partial matching for linguistic variations (e.g., Premijer vs Premierot)
         meaningful_words = [
             word.casefold()
-            for word in re.findall(r"[A-Za-zA-Za-z0-9-]{4,}", clean)
+            for word in re.findall(r"[A-Za-zA-Za-z\u0400-\u04FF0-9-]{4,}", folded)
             if word.casefold()
-            not in {"ministerkata", "ministerot", "pretsedatelot", "vladata"}
+            not in {"ministerkata", "ministerot", "pretsedatelot", "vladata", "premierot", "premijer"}
         ]
-        if meaningful_words and all(word in source_lower for word in meaningful_words):
-            continue
+        
+        # If it's a multi-word entity, check if the "core" (longest words) are in the source
+        if meaningful_words:
+            # Check if all long meaningful words are present (even as substrings)
+            match_count = 0
+            for mw in meaningful_words:
+                # Basic substring check for grammatical cases (e.g., Mickoskog -> Mickoski)
+                # We check first 6 chars for longer words
+                mw_stem = mw[:6] if len(mw) > 7 else mw
+                if mw_stem in source_latin or any(mw_stem in s_ent for s_ent in context_entities):
+                    match_count += 1
+            
+            if match_count >= len(meaningful_words):
+                continue
 
         log.warning(
-            f"[ai/hallucination] Hallucinated entity detected in synthesis: {clean}"
+            f"[ai/hallucination] Hallucinated entity detected in synthesis: {clean} (folded: {folded})"
         )
         hallucinated_count += 1
 

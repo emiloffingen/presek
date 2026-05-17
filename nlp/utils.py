@@ -29,6 +29,34 @@ def cleanAndDecode(text: str) -> str:
     return cleaned.strip()
 
 
+_CYR_TO_LAT_MAP = {
+    "а": "a", "б": "b", "в": "v", "г": "g", "д": "d", "ѓ": "gj", "е": "e",
+    "ж": "zh", "з": "z", "ѕ": "dz", "и": "i", "ј": "j", "к": "k", "л": "l",
+    "љ": "lj", "м": "m", "н": "n", "њ": "nj", "о": "o", "п": "p", "р": "r",
+    "с": "s", "т": "t", "ќ": "kj", "у": "u", "ф": "f", "х": "h", "ц": "c",
+    "ч": "ch", "џ": "dzh", "ш": "sh", "а": "a", "б": "b", "в": "v", "г": "g",
+    "д": "d", "е": "e", "ж": "zh", "з": "z", "и": "i", "ј": "j", "к": "k",
+    "л": "l", "м": "m", "н": "n", "о": "o", "п": "p", "р": "r", "с": "s",
+    "т": "t", "у": "u", "ф": "f", "х": "h", "ц": "c", "ч": "ch", "ш": "sh",
+    "ћ": "c", "ђ": "dj", "я": "ja", "ю": "ju", "щ": "sht", "ъ": "a",
+}
+
+
+def transliterate(text: str) -> str:
+    """Transliterate Cyrillic to Latin for cross-script comparison."""
+    if not text:
+        return ""
+    res = []
+    for char in text:
+        lower_char = char.lower()
+        if lower_char in _CYR_TO_LAT_MAP:
+            lat = _CYR_TO_LAT_MAP[lower_char]
+            res.append(lat.upper() if char.isupper() else lat)
+        else:
+            res.append(char)
+    return "".join(res)
+
+
 def deShout(text: str) -> str:
     """Converts ALL CAPS text into Sentence case, preserving acronyms."""
     if not text:
