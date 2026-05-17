@@ -484,6 +484,7 @@ async def get_stats_summary(lang: Optional[str] = "sr"):
         JOIN articles a ON a.cluster_id = s.cluster_id
         WHERE s.created_at >= NOW() - INTERVAL '72 hours'
           AND a.country = %s
+          AND s.lang = %s
           AND (
               COALESCE(s.quote, '') != ''
               OR COALESCE(s.summary, '') != ''
@@ -500,7 +501,7 @@ async def get_stats_summary(lang: Optional[str] = "sr"):
             COALESCE((s.sentiment->'tone_analysis'->>'objectivity')::float, 0.5) DESC,
             s.created_at DESC
         LIMIT 1
-    """, (target_country, target_country)
+    """, (target_country, target_country, lang)
     )
     quote = _pick_quote_of_the_day(quote_row)
 

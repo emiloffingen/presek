@@ -22,6 +22,59 @@ const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
 const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
+
+const STOP_WORDS = new Set([
+    'evo', 'ovo', 'kako', 'sada', 'zato', 'kada', 'šta', 'sve', 'još', 'ako', 'ili', 'ali',
+    'samo', 'zbog', 'koji', 'koja', 'koje', 'kroz', 'prema', 'koga', 'kome', 'čemu', 'čiji',
+    'te', 'uz', 'bi', 'biće', 'bio', 'bila', 'bilo', 'bili', 'bile', 'sam', 'smo', 'ste', 'su'
+]);
+
+const NORMALIZATIONS: Record<string, string> = {
+    'srbije': 'srbija',
+    'srbiji': 'srbija',
+    'evrovizije': 'evrovizija',
+    'evroviziji': 'evrovizija',
+    'srbijom': 'srbija',
+    'beogradu': 'beograd',
+    'beograda': 'beograd',
+    'policije': 'policija',
+    'policiji': 'policija',
+    'partizana': 'partizan',
+    'partizanu': 'partizan',
+    'zvezde': 'crvena zvezda',
+    'zvezdi': 'crvena zvezda',
+    'zvezda': 'crvena zvezda'
+};
+
+// Deduplicate and normalize entities to declutter the tag cloud
+const uniqueEntitiesMap = new Map();
+
+for (const ent of focusEntities) {
+    let name = (ent.display_name || ent.name).trim();
+    let lowerName = name.toLowerCase();
+
+    // Skip short words or stop words
+    if (lowerName.length <= 3 || STOP_WORDS.has(lowerName)) {
+        continue;
+    }
+
+    // Apply manual normalizations
+    if (NORMALIZATIONS[lowerName]) {
+        lowerName = NORMALIZATIONS[lowerName];
+        name = lowerName.charAt(0).toUpperCase() + lowerName.slice(1);
+    }
+
+    if (!uniqueEntitiesMap.has(lowerName)) {
+        uniqueEntitiesMap.set(lowerName, { ...ent, display_name: name, _count: 1 });
+    } else {
+        uniqueEntitiesMap.get(lowerName)._count++;
+    }
+}
+
+// Convert back to array, sort by frequency if needed, take top 12
+const uniqueEntities = Array.from(uniqueEntitiesMap.values())
+    .sort((a, b) => b._count - a._count)
+    .slice(0, 12);
 ---
 
 <aside class="broadsheet-rail">
@@ -83,9 +136,9 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
 	<section class="rail-block rail-block-quiet">
 		<p class="rail-kicker">{t('rail.focus_topics')}</p>
 		<div class="rail-tag-cloud">
-			{focusEntities.map((ent: any) => (
+			{uniqueEntities.map((ent: any) => (
 				<a href={l(`/subjekt/${encodeURIComponent(ent.name)}`)}>
-					{ent.display_name || ent.name}
+					{ent.display_name}
 				</a>
 			))}
 		</div>
@@ -135,7 +188,7 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
     .rail-quote-block cite a { font-family: var(--font-serif); font-size: 0.72rem; font-weight: 800; color: var(--foreground); text-decoration: none; line-height: 1.2; display: block; }
     .rail-quote-block cite a:hover { color: var(--nyt-accent); }
 
-    .rail-tag-cloud { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-    .rail-tag-cloud a { padding: 0.35rem 0.55rem; border: 1px solid var(--border); font-family: var(--font-sans); font-size: 0.6rem; font-weight: 850; text-transform: uppercase; color: var(--foreground); text-decoration: none; transition: all 0.2s; white-space: nowrap; }
+    .rail-tag-cloud { display: flex; flex-wrap: wrap; gap: 0.5rem; line-height: 1.8; }
+    .rail-tag-cloud a { padding: 0.4rem 0.65rem; border: 1px solid var(--border); font-family: var(--font-sans); font-size: 0.6rem; font-weight: 850; text-transform: uppercase; color: var(--foreground); text-decoration: none; transition: all 0.2s; white-space: nowrap; border-radius: 2px; }
     .rail-tag-cloud a:hover { background: var(--foreground); color: var(--background); }
 </style>
