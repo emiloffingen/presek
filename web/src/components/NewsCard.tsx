@@ -84,9 +84,8 @@ export const NewsCard: React.FC<NewsCardProps> = ({
       const diffMs = now.getTime() - date.getTime();
       const diffMins = Math.floor(diffMs / (1000 * 60));
 
-      if (diffMins < 1) return t('news.now');
+      if (diffMins < 1) return t('news.just_now');
       if (diffMins < 60) return `${t('news.ago')} ${diffMins} ${t('news.min_short')}`;
-
       return date.toLocaleTimeString(lang === 'sr' ? 'sr-RS' : 'mk-MK', { 
           hour: '2-digit', 
           minute: '2-digit'

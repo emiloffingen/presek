@@ -40,7 +40,7 @@ function getBentoSpan(cluster: NewsCluster) {
         developmentsFeatured.length > 0 && (
             <div class="news-feed-grid wire-stack">
                 {developmentsFeatured.map((cluster: NewsCluster) => (
-                    <NewsCard cluster={cluster} variant="wire" />
+                    <NewsCard cluster={cluster} variant="wire" lang={lang} />
                 ))}
             </div>
         )
@@ -49,14 +49,14 @@ function getBentoSpan(cluster: NewsCluster) {
             {developmentsFeatured.length > 0 && (
                 <div class="bento-box-grid">
                     {developmentsFeatured.map((cluster: NewsCluster) => (
-                        <NewsCard cluster={cluster} variant="featured" bentoSpan={getBentoSpan(cluster)} />
+                        <NewsCard cluster={cluster} variant="featured" bentoSpan={getBentoSpan(cluster)} lang={lang} />
                     ))}
                 </div>
             )}
             {developmentsCompact.length > 0 && (
                 <div class="news-feed-grid news-feed-grid-compact mt-8">
                     {developmentsCompact.map((cluster: NewsCluster) => (
-                        <NewsCard cluster={cluster} variant="compact" />
+                        <NewsCard cluster={cluster} variant="compact" lang={lang} />
                     ))}
                 </div>
             )}

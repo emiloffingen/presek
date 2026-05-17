@@ -101,7 +101,7 @@ const siteTitle = isMK ? 'Медиумски Пулс' : 'Medijski Puls';
                                 <animate attributeName="stroke-dasharray" from="0, 50" to="50, 0" dur="2s" repeatCount="indefinite" />
                             </path>
                         </svg>
-                        <Timer size={11} /> <span id="last-updated">UŽIVO</span>
+                        <Timer size={11} /> <span id="last-updated" data-is-mk={isMK ? "true" : "false"}>{isMK ? 'ВО ЖИВО' : 'UŽIVO'}</span>
                     </span>
                     <span class="meta-item"><Activity size={11} /> V.2.1-CC</span>
                 </div>
@@ -109,19 +109,21 @@ const siteTitle = isMK ? 'Медиумски Пулс' : 'Medijski Puls';
             
             <script is:inline>
                 const lastUpdatedEl = document.getElementById('last-updated');
-                const timeEl = document.getElementById('system-time');
+                const isMK = lastUpdatedEl?.getAttribute('data-is-mk') === 'true';
                 const startTime = new Date();
                 
                 function updateClock() {
                     const now = new Date();
-                    timeEl.textContent = now.toLocaleTimeString('en-GB', { hour12: false });
-                    
                     const diffMins = Math.floor((now - startTime) / 60000);
-                    lastUpdatedEl.textContent = diffMins === 0 ? 'UŽIVO' : `PRE ${diffMins} MIN.`;
+                    if (diffMins === 0) {
+                        lastUpdatedEl.textContent = isMK ? 'ВО ЖИВО' : 'UŽIVO';
+                    } else {
+                        lastUpdatedEl.textContent = isMK ? `ПРЕД ${diffMins} МИН.` : `PRE ${diffMins} MIN.`;
+                    }
                 }
                 
                 updateClock();
-                setInterval(updateClock, 1000);
+                setInterval(updateClock, 60000);
             </script>
 
             <div class="masthead-main">

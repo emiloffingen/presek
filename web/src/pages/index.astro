@@ -294,10 +294,10 @@ function getTimeStr(dateStr: string) {
         const diffMs = now.getTime() - date.getTime();
         const diffMins = Math.floor(diffMs / (1000 * 60));
 
-        if (diffMins < 1) return 'UPRAVO SADA';
-        if (diffMins < 60) return `PRE ${diffMins} MIN`;
+        if (diffMins < 1) return t('news.just_now');
+        if (diffMins < 60) return `${t('news.ago')} ${diffMins} ${t('news.min_short')}`;
 
-        return date.toLocaleTimeString('sr-RS', { 
+        return date.toLocaleTimeString(lang === 'sr' ? 'sr-RS' : 'mk-MK', { 
             hour: '2-digit', 
             minute: '2-digit',
             timeZone: 'Europe/Belgrade'
@@ -415,6 +415,7 @@ function getBriefingSnippet(content: string) {
 							getTimeStr={getTimeStr}
 							filtered={!isHomepage}
 							filterLabel={activeFilterLabel}
+                            lang={lang}
 						/>
 					</div>
 				)}
@@ -424,6 +425,7 @@ function getBriefingSnippet(content: string) {
 						<SupportingBand 
 							supportingFeatured={supportingFeatured}
 							supportingCompact={supportingCompact}
+                            lang={lang}
 						/>
 					</div>
 				)}
@@ -438,7 +440,7 @@ function getBriefingSnippet(content: string) {
                         </div>
                         <div class="news-feed-grid news-feed-grid-compact">
                             {consensusClusters.map((cluster: NewsCluster) => (
-                                <NewsCard cluster={cluster} variant="compact" />
+                                <NewsCard cluster={cluster} variant="compact" lang={lang} />
                             ))}
                         </div>
                     </div>

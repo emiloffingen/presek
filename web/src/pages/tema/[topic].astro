@@ -267,6 +267,7 @@ function topicIntro() {
 							currentTopic={topic}
 							relatedTopics={topicFollowSuggestions}
 							strongSources={sourceFollowSuggestions}
+                            lang={lang}
 						/>
 					</div>
 				</header>
@@ -276,18 +277,18 @@ function topicIntro() {
 						{leadCluster && (
 							<section class="topic-lead">
 								<div class="section-heading-row">
-									<h2 class="section-title">Vodeća priča</h2>
-									<p class="section-note">klaster koji najviše nosi temu napred u ovom trenutku.</p>
+									<h2 class="section-title">{lang === 'sr' ? 'Vodeća priča' : 'Водечка приказна'}</h2>
+									<p class="section-note">{lang === 'sr' ? 'klaster koji najviše nosi temu napred u ovom trenutku.' : 'кластер кој најмногу ја носи темата напред во овој момент.'}</p>
 								</div>
-								<NewsCard cluster={leadCluster} isLead={true} />
+								<NewsCard cluster={leadCluster} isLead={true} lang={lang} />
 							</section>
 						)}
 
 						{keyAngles.length > 0 && (
 							<section class="topic-angles">
 								<div class="section-heading-row">
-									<h2 class="section-title">Gde se razlikuje pokrivanje</h2>
-									<p class="section-note">Glavni uglovi koji proizlaze iz vodećeg klastera u temi.</p>
+									<h2 class="section-title">{lang === 'sr' ? 'Gde se razlikuje pokrivanje' : 'Каде се разликува покривањето'}</h2>
+									<p class="section-note">{lang === 'sr' ? 'Glavni uglovi koji proizlaze iz vodećeg klastera u temi.' : 'Главните агли кои произлегуваат од водечкиот кластер во темата.'}</p>
 								</div>
 								<div class="topic-angle-grid">
 									{keyAngles.map((item: any) => (
@@ -303,12 +304,12 @@ function topicIntro() {
 						{supportingClusters.length > 0 && (
 							<section class="topic-supporting">
 								<div class="section-heading-row">
-									<h2 class="section-title">Šta se razvija dalje</h2>
-									<p class="section-note">Pridruženi i sledeći klasteri koji proširuju temu.</p>
+									<h2 class="section-title">{lang === 'sr' ? 'Šta se razvija dalje' : 'Што се развива понатаму'}</h2>
+									<p class="section-note">{lang === 'sr' ? 'Pridruženi i sledeći klasteri koji proširuju temu.' : 'Придружени и следни кластери кои ја прошируваат темата.'}</p>
 								</div>
 								<div class="topic-supporting-grid">
 									{supportingClusters.map((cluster: any, index: number) => (
-										<NewsCard cluster={cluster} variant={index === 0 ? 'featured' : 'compact'} />
+										<NewsCard cluster={cluster} variant={index === 0 ? 'featured' : 'compact'} lang={lang} />
 									))}
 								</div>
 							</section>
@@ -317,20 +318,20 @@ function topicIntro() {
 						{feedClusters.length > 0 && (
 							<section class="topic-feed">
 								<div class="section-heading-row">
-									<h2 class="section-title">Više od ove teme</h2>
-									<p class="section-note">Ostali aktivni klasteri koje vredi zadržati u vidnom polju.</p>
+									<h2 class="section-title">{lang === 'sr' ? 'Više od ove teme' : 'Повеќе од оваа тема'}</h2>
+									<p class="section-note">{lang === 'sr' ? 'Ostali aktivni klasteri koje vredi zadržati u vidnom polju.' : 'Останати активни кластери кои вреди да се задржат во видното поле.'}</p>
 								</div>
 								{featuredFeedClusters.length > 0 && (
 									<div class="topic-feed-grid topic-feed-grid-featured">
 										{featuredFeedClusters.map((cluster: any) => (
-											<NewsCard cluster={cluster} variant="featured" />
+											<NewsCard cluster={cluster} variant="featured" lang={lang} />
 										))}
 									</div>
 								)}
 								{compactFeedClusters.length > 0 && (
 									<div class="topic-feed-grid topic-feed-grid-compact">
 										{compactFeedClusters.map((cluster: any) => (
-											<NewsCard cluster={cluster} variant="compact" />
+											<NewsCard cluster={cluster} variant="compact" lang={lang} />
 										))}
 									</div>
 								)}

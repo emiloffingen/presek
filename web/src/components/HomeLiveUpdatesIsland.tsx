@@ -20,6 +20,7 @@ interface ClusterLike {
 interface HomeLiveUpdatesIslandProps {
   excludeClusterIds?: string[];
   initialClusters?: ClusterLike[];
+  lang?: string;
 }
 
 interface LiveState {
@@ -29,7 +30,7 @@ interface LiveState {
 
 const API_URL = apiBaseUrl();
 
-function getTimeStr(dateStr?: string) {
+function getTimeStr(dateStr?: string, lang = 'sr') {
   if (!dateStr) return '';
   try {
     const date = new Date(dateStr.replace("Z", ""));
@@ -37,10 +38,10 @@ function getTimeStr(dateStr?: string) {
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / (1000 * 60));
 
-    if (diffMins < 1) return 'JUST NOW';
-    if (diffMins < 60) return `PRE ${diffMins} MIN`;
+    if (diffMins < 1) return lang === 'sr' ? 'UPRAVO SADA' : 'ТУКУШТО';
+    if (diffMins < 60) return lang === 'sr' ? `PRE ${diffMins} MIN` : `ПРЕД ${diffMins} МИН`;
     
-    return date.toLocaleTimeString('sr-RS', { 
+    return date.toLocaleTimeString(lang === 'sr' ? 'sr-RS' : 'mk-MK', { 
       hour: '2-digit', 
       minute: '2-digit',
       timeZone: 'Europe/Belgrade' 
@@ -50,10 +51,11 @@ function getTimeStr(dateStr?: string) {
   }
 }
 
-export default function HomeLiveUpdatesIsland({ excludeClusterIds = [], initialClusters = [] }: HomeLiveUpdatesIslandProps) {
+export default function HomeLiveUpdatesIsland({ excludeClusterIds = [], initialClusters = [], lang = 'sr' }: HomeLiveUpdatesIslandProps) {
   const [clusters, setClusters] = useState<ClusterLike[]>(initialClusters);
   const [liveState, setLiveState] = useState<LiveState | null>(null);
   const [loading, setLoading] = useState(initialClusters.length === 0);
+  const isMK = lang === 'mk';
 
   useEffect(() => {
     let cancelled = false;
@@ -62,7 +64,7 @@ export default function HomeLiveUpdatesIsland({ excludeClusterIds = [], initialC
     const loadLatest = async () => {
       try {
         const exclude = encodeURIComponent(excludeClusterIds.join(','));
-        const res = await fetch(`${API_URL}/home/live-now?exclude=${exclude}&lang=sr&t=${Date.now()}`);
+        const res = await fetch(`${API_URL}/home/live-now?exclude=${exclude}&lang=${lang}&t=${Date.now()}`);
         if (!res.ok) return;
         const data = await res.json();
         if (cancelled) return;
@@ -112,7 +114,7 @@ export default function HomeLiveUpdatesIsland({ excludeClusterIds = [], initialC
       if (refreshTimer) clearTimeout(refreshTimer);
       source.close();
     };
-  }, [excludeClusterIds]);
+  }, [excludeClusterIds, lang]);
 
   if (!loading && clusters.length === 0) {
     return null;
@@ -123,18 +125,18 @@ export default function HomeLiveUpdatesIsland({ excludeClusterIds = [], initialC
       <div className="live-now-head">
         <div>
           <p className="live-now-kicker">
-            <Radio size={13} /> Vo zivo
+            <Radio size={13} /> {isMK ? 'Во живо' : 'Uživo'}
           </p>
-          <h2 id="live-now-title">Sto pristignuva tokmu sega</h2>
+          <h2 id="live-now-title">{isMK ? 'Што пристигнува токму сега' : 'Što pristiže upravo sada'}</h2>
         </div>
         <div className="live-now-status">
           {liveState ? (
             <>
-              <span className="live-now-badge">+{liveState.count} novi objavi</span>
-              <span className="live-now-time">{getTimeStr(liveState.time)}</span>
+              <span className="live-now-badge">+{liveState.count} {isMK ? 'нови објави' : 'nove objave'}</span>
+              <span className="live-now-time">{getTimeStr(liveState.time, lang)}</span>
             </>
           ) : (
-            <span className="live-now-time">Sledenje vo realno vreme</span>
+            <span className="live-now-time">{isMK ? 'Следење во реално време' : 'Praćenje u realnom vremenu'}</span>
           )}
         </div>
       </div>
@@ -144,10 +146,10 @@ export default function HomeLiveUpdatesIsland({ excludeClusterIds = [], initialC
           const article = cluster.articles?.[0] || {};
           const title = getDisplayTitle(article);
           return (
-            <a key={cluster.cluster_id} href={`/cluster/${cluster.cluster_id}`} className="live-now-card group">
+            <a key={cluster.cluster_id} href={isMK ? `/mk/cluster/${cluster.cluster_id}` : `/cluster/${cluster.cluster_id}`} className="live-now-card group">
               <div className="live-now-meta flex items-center justify-between gap-2 mb-2">
                 <span className="live-now-source text-[10px] font-black uppercase tracking-widest text-nyt-accent group-hover:text-foreground transition-colors">{article.source || 'izvor'}</span>
-                <span className="text-[10px] font-bold text-muted-foreground tabular-nums">{getTimeStr(article.ingested_at || article.created_at)}</span>
+                <span className="text-[10px] font-bold text-muted-foreground tabular-nums">{getTimeStr(article.ingested_at || article.created_at, lang)}</span>
               </div>
               <h3 className="text-sm font-bold leading-snug group-hover:text-nyt-accent transition-colors line-clamp-3">{title}</h3>
               <div className="mt-3 flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity">

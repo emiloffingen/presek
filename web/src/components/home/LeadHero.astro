@@ -17,6 +17,7 @@ interface Props {
     getTimeStr: (date: string) => string;
     filtered?: boolean;
     filterLabel?: string | null;
+    lang?: string;
 }
 
 const { 
@@ -30,11 +31,13 @@ const {
     dominantColor,
     getTimeStr,
     filtered = false,
-    filterLabel = null
+    filterLabel = null,
+    lang: propLang
 } = Astro.props;
 
 const hostHeader = Astro.request?.headers.get('host');
-const lang = getLangFromUrl(Astro.url, hostHeader);
+const urlLang = getLangFromUrl(Astro.url, hostHeader);
+const lang = propLang || urlLang;
 const t = useTranslations(lang);
 
 const tintColor = dominantColor || '#1e40af';
@@ -54,11 +57,13 @@ const IconComponent =
     cardContext.icon === 'award' ? Award :
     cardContext.icon === 'cpu' ? Cpu :
     Newspaper;
+
+const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
 ---
 
 <section class:list={["lead-hero motion-rise", { "lead-hero-filtered": filtered }]}>
     <div class="lead-hero-tint" style={`--tint-color: ${tintColor};`}></div>
-    <a href={`/cluster/${leadCluster.cluster_id}`} class="lead-media lead-media-mobile" aria-hidden="true" tabindex="-1">
+    <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="lead-media lead-media-mobile" aria-hidden="true" tabindex="-1">
         <div class:list={["lead-media-frame shadow-editorial", { "lead-media-frame-fallback": leadVisual?.isWeak }]}>
             {leadVisual?.proxiedUrl && !leadVisual.isWeak ? (
                 <Fragment>
@@ -129,7 +134,7 @@ const IconComponent =
                 <span class="time-stamp-v2" aria-label={t('header.latest')}>{getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)}</span>
             </div>
         </div>
-        <a href={`/cluster/${leadCluster.cluster_id}`} class="no-underline group">
+        <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="no-underline group">
             <h1 class:list={["headline headline-lead transition-transform duration-500 group-hover:translate-x-1", { "headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(leadTitle)}></h1>
         </a>
         {leadSummary && (
@@ -175,7 +180,7 @@ const IconComponent =
                 <span class="opacity-30">·</span>
                 <span>{leadCluster.articles.length} {leadCluster.articles.length === 1 ? t('news.source') : t('news.sources')}</span>
             </div>
-            <a href={`/cluster/${leadCluster.cluster_id}`} class="text-[10px] font-black uppercase tracking-widest text-nyt-accent hover:underline decoration-2 underline-offset-4">{t('lead.full_synthesis')}</a>
+            <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="text-[10px] font-black uppercase tracking-widest text-nyt-accent hover:underline decoration-2 underline-offset-4">{t('lead.full_synthesis')}</a>
         </div>
 
         {relatedArticles.length > 0 && (
@@ -185,7 +190,7 @@ const IconComponent =
                     {relatedArticles.map((article: any) => (
                         <li>
                             <a 
-                                href={`/cluster/${leadCluster.cluster_id}`}
+                                href={l(`/cluster/${leadCluster.cluster_id}`)}
                                 set:html={sanitizeHtml(highlightScores(getDisplayTitle(article)))}
                             >
                             </a>
@@ -197,7 +202,7 @@ const IconComponent =
         )}
     </div>
 
-    <a href={`/cluster/${leadCluster.cluster_id}`} class="lead-media lead-media-desktop" aria-hidden="true" tabindex="-1">
+    <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="lead-media lead-media-desktop" aria-hidden="true" tabindex="-1">
         <div class:list={["lead-media-frame shadow-editorial", { "lead-media-frame-fallback": leadVisual?.isWeak }]}>
             {leadVisual?.proxiedUrl && !leadVisual.isWeak ? (
                                 <Fragment>

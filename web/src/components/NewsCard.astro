@@ -12,11 +12,13 @@ interface Props {
 	isLead?: boolean;
 	variant?: 'standard' | 'featured' | 'compact' | 'wire';
     bentoSpan?: '1x1' | '2x1' | '2x2';
+    lang?: string;
 }
 
-const { cluster, isLead = false, variant = 'standard', bentoSpan } = Astro.props;
+const { cluster, isLead = false, variant = 'standard', bentoSpan, lang: propLang } = Astro.props;
 const hostHeader = Astro.request?.headers.get('host');
-const lang = getLangFromUrl(Astro.url, hostHeader);
+const urlLang = getLangFromUrl(Astro.url, hostHeader);
+const lang = propLang || urlLang;
 const t = useTranslations(lang);
 const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
 
@@ -92,7 +94,7 @@ function getTimeStr(dateStr: string) {
         const diffMs = now.getTime() - date.getTime();
         const diffMins = Math.floor(diffMs / (1000 * 60));
 
-        if (diffMins < 1) return t('news.now');
+        if (diffMins < 1) return t('news.just_now');
         if (diffMins < 60) return `${t('news.ago')} ${diffMins} ${t('news.min_short')}`;
 
         return date.toLocaleTimeString(lang === 'sr' ? 'sr-RS' : 'mk-MK', { 

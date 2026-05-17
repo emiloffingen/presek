@@ -2,6 +2,7 @@
 import { Activity, TrendingUp } from 'lucide-react';
 import NationalMoodIsland from '../NationalMoodIsland.tsx';
 import HomeRailSuggestionsIsland from '../HomeRailSuggestionsIsland.tsx';
+import SourceMapIsland from '../SourceMapIsland.tsx';
 import NewsletterIsland from '../NewsletterIsland.tsx';
 import { getDisplayTitle } from '../../utils/textUtils';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
@@ -57,6 +58,8 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
 	)}
 
 	<NationalMoodIsland lang={lang} client:visible />
+
+	<SourceMapIsland lang={lang} client:visible />
 
 	<HomeRailSuggestionsIsland lang={lang} client:visible />
 

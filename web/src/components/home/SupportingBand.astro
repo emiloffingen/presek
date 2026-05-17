@@ -6,11 +6,13 @@ import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 interface Props {
     supportingFeatured: NewsCluster[];
     supportingCompact: NewsCluster[];
+    lang?: string;
 }
 
-const { supportingFeatured, supportingCompact } = Astro.props;
+const { supportingFeatured, supportingCompact, lang: propLang } = Astro.props;
 const hostHeader = Astro.request?.headers.get('host');
-const lang = getLangFromUrl(Astro.url, hostHeader);
+const urlLang = getLangFromUrl(Astro.url, hostHeader);
+const lang = propLang || urlLang;
 const t = useTranslations(lang);
 ---
 
@@ -21,13 +23,13 @@ const t = useTranslations(lang);
     </div>
     <div class="supporting-featured-grid">
         {supportingFeatured.map((cluster: NewsCluster) => (
-            <NewsCard cluster={cluster} variant="featured" />
+            <NewsCard cluster={cluster} variant="featured" lang={lang} />
         ))}
     </div>
     {supportingCompact.length > 0 && (
         <div class="supporting-compact-grid">
             {supportingCompact.map((cluster: NewsCluster) => (
-                <NewsCard cluster={cluster} variant="compact" />
+                <NewsCard cluster={cluster} variant="compact" lang={lang} />
             ))}
         </div>
     )}

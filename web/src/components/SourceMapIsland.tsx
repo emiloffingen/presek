@@ -7,13 +7,14 @@ interface SourceActivity {
   activity_score: number;
 }
 
-export default function SourceMapIsland() {
+export default function SourceMapIsland({ lang = 'sr' }: { lang?: string }) {
   const [sources, setSources] = useState<SourceActivity[]>([]);
   const [loading, setLoading] = useState(true);
+  const isMK = lang === 'mk';
 
   useEffect(() => {
     const API_URL = apiBaseUrl();
-    fetch(`${API_URL}/intelligence/live-map`)
+    fetch(`${API_URL}/intelligence/live-map?lang=${lang}`)
       .then(res => res.json())
       .then(json => {
         if (json.status === 'success') {
@@ -22,7 +23,7 @@ export default function SourceMapIsland() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, []);
+  }, [lang]);
 
   if (loading || sources.length === 0) return null;
 
@@ -33,9 +34,11 @@ export default function SourceMapIsland() {
   return (
     <section className="rail-module motion-rise-fast">
       <h3 className="rail-title flex items-center gap-2">
-        <Zap size={14} className="text-nyt-accent fill-nyt-accent" /> POKRIENOST VO ZIVO
+        <Zap size={14} className="text-nyt-accent fill-nyt-accent" /> {isMK ? 'ПОКРИЕНОСТ ВО ЖИВО' : 'POKRIVENOST UŽIVO'}
       </h3>
-      <p className="rail-note mb-4">60+ izvori se skeniraat na sekoi 5 minuti.</p>
+      <p className="rail-note mb-4">
+        {isMK ? '60+ извори се скенираат на секои 5 минути.' : '60+ izvora se skenira na svakih 5 minuta.'}
+      </p>
       
       <div className="flex flex-wrap gap-1.5 opacity-80">
         {displaySources.map((s, idx) => {
@@ -59,10 +62,10 @@ export default function SourceMapIsland() {
       </div>
       
       <div className="mt-4 pt-3 border-t border-border flex justify-between items-center">
-        <span className="text-[10px] font-bold text-muted-foreground uppercase">Sistemski status</span>
+        <span className="text-[10px] font-bold text-muted-foreground uppercase">{isMK ? 'Системски статус' : 'Sistemski status'}</span>
         <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
-            <span className="text-[10px] font-black text-green-500 uppercase">Aktiven</span>
+            <span className="text-[10px] font-black text-green-500 uppercase">{isMK ? 'Активен' : 'Aktivan'}</span>
         </div>
       </div>
     </section>

@@ -31,21 +31,18 @@ function getRelativeTimeStr(dateStr: string) {
         const diffMs = now.getTime() - date.getTime();
         const diffMins = Math.floor(diffMs / (1000 * 60));
 
-        if (lang === 'sr') {
-            if (diffMins < 1) return 'UPRAVO SADA';
-            if (diffMins < 60) return `PRE ${diffMins} MIN`;
-            const diffHours = Math.floor(diffMins / 60);
-            if (diffHours < 24) return `PRE ${diffHours} ${diffHours === 1 ? 'ČAS' : 'ČASA'}`;
-            const diffDays = Math.floor(diffHours / 24);
-            return `PRE ${diffDays} ${diffDays === 1 ? 'DAN' : 'DANA'}`;
-        } else {
-            if (diffMins < 1) return 'ТУКУШТО';
-            if (diffMins < 60) return `ПРЕД ${diffMins} МИН`;
-            const diffHours = Math.floor(diffMins / 60);
-            if (diffHours < 24) return `ПРЕД ${diffHours} ${diffHours === 1 ? 'ЧАС' : 'ЧАСА'}`;
-            const diffDays = Math.floor(diffHours / 24);
-            return `ПРЕД ${diffDays} ${diffDays === 1 ? 'ДЕН' : 'ДЕНА'}`;
+        if (diffMins < 1) return t('news.just_now');
+        if (diffMins < 60) return `${t('news.ago')} ${diffMins} ${t('news.min_short')}`;
+        
+        const diffHours = Math.floor(diffMins / 60);
+        if (diffHours < 24) {
+            const label = diffHours === 1 ? t('news.hour') : t('news.hours');
+            return `${t('news.ago')} ${diffHours} ${label}`;
         }
+        
+        const diffDays = Math.floor(diffHours / 24);
+        const label = diffDays === 1 ? t('news.day') : t('news.days');
+        return `${t('news.ago')} ${diffDays} ${label}`;
     } catch (e) {
         return '';
     }

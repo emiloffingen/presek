@@ -25,11 +25,14 @@ function getTimeStr(dateStr: string) {
         const diffMins = Math.floor(diffMs / (1000 * 60));
         const diffHours = Math.floor(diffMins / 60);
 
-        if (diffMins < 1) return isMK ? 'СЕГА' : 'SADA';
-        if (diffMins < 60) return isMK ? `ПРЕД ${diffMins} МИН` : `PRE ${diffMins} MIN`;
-        if (diffHours < 24) return isMK ? `ПРЕД ${diffHours} ЧАСА` : `PRE ${diffHours} SATA`;
+        if (diffMins < 1) return t('news.just_now');
+        if (diffMins < 60) return `${t('news.ago')} ${diffMins} ${t('news.min_short')}`;
+        if (diffHours < 24) {
+            const label = diffHours === 1 ? t('news.hour') : t('news.hours');
+            return `${t('news.ago')} ${diffHours} ${label}`;
+        }
         
-        return date.toLocaleDateString(isMK ? 'mk-MK' : 'sr-RS', { day: 'numeric', month: 'short' }).toUpperCase();
+        return date.toLocaleDateString(lang === 'sr' ? 'sr-RS' : 'mk-MK', { day: 'numeric', month: 'short' }).toUpperCase();
     } catch {
         return '';
     }

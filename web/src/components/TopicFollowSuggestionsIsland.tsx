@@ -23,12 +23,15 @@ export default function TopicFollowSuggestionsIsland({
   currentTopic = '',
   relatedTopics = [],
   strongSources = [],
+  lang = 'sr'
 }: {
   currentTopic?: string;
   relatedTopics?: TopicSuggestion[];
   strongSources?: SourceSuggestion[];
+  lang?: string;
 }) {
   const profile = useStore($profile);
+  const isMK = lang === 'mk';
 
   const suggestions = useMemo(() => {
     const followedTopics = new Set(profile?.followedTopics || []);
@@ -38,7 +41,7 @@ export default function TopicFollowSuggestionsIsland({
     const topicItems = [
       {
         topic: String(currentTopic || '').trim(),
-        reason: 'ova e temata sto vece me citate vo dlabocina.',
+        reason: isMK ? 'ова е темата што веќе ја читате во длабочина.' : 'ovo je tema koju već čitate u dubini.',
       },
       ...relatedTopics,
       ...base.topics.map((item) => ({ topic: item.value, reason: item.reason })),
@@ -56,7 +59,7 @@ export default function TopicFollowSuggestionsIsland({
       topics: topicItems,
       sources: sourceItems,
     };
-  }, [profile, currentTopic, relatedTopics, strongSources]);
+  }, [profile, currentTopic, relatedTopics, strongSources, isMK]);
 
   useEffect(() => {
     const result = recordSuggestionImpressions('topic', [
@@ -81,10 +84,12 @@ export default function TopicFollowSuggestionsIsland({
     <section className="topic-follow-suggestions">
       <div className="topic-follow-suggestions-head">
         <p className="nyt-section-label flex items-center gap-1 text-muted-foreground">
-          <Sparkles size={12} /> Sledete dalje
+          <Sparkles size={12} /> {isMK ? 'Следете понатаму' : 'Pratite dalje'}
         </p>
         <p className="topic-follow-suggestions-copy">
-          Zacuvajte me temata ili vodeckite izvori za sledniot pregled da bide poprecizen.
+          {isMK 
+            ? 'Зачувајте ја темата или водечките извори за следниот преглед да биде попрецизен.' 
+            : 'Sačuvajte temu ili vodeće izvore da bi sledeći pregled bio precizniji.'}
         </p>
       </div>
 
@@ -92,14 +97,14 @@ export default function TopicFollowSuggestionsIsland({
         {suggestions.topics.map((item) => (
           <div key={`topic:${item.topic}`} className="topic-follow-suggestion-card">
             <div>
-              <p className="topic-follow-suggestion-kicker">Predlog tema</p>
+              <p className="topic-follow-suggestion-kicker">{isMK ? 'Предлог тема' : 'Predlog tema'}</p>
               <h4>{item.topic}</h4>
               <p className="topic-follow-suggestion-reason">{item.reason}</p>
             </div>
             <PreferenceToggle
               kind="topic"
               value={item.topic}
-              label={`tema: ${item.topic}`}
+              label={isMK ? `тема: ${item.topic}` : `tema: ${item.topic}`}
               analyticsSurface="topic"
             />
           </div>
@@ -108,14 +113,14 @@ export default function TopicFollowSuggestionsIsland({
         {suggestions.sources.map((item) => (
           <div key={`source:${item.source}`} className="topic-follow-suggestion-card">
             <div>
-              <p className="topic-follow-suggestion-kicker">Predlog izvor</p>
+              <p className="topic-follow-suggestion-kicker">{isMK ? 'Предлог извор' : 'Predlog izvor'}</p>
               <h4>{item.source}</h4>
               <p className="topic-follow-suggestion-reason">{item.reason}</p>
             </div>
             <PreferenceToggle
               kind="source"
               value={item.source}
-              label={`izvor: ${item.source}`}
+              label={isMK ? `извор: ${item.source}` : `izvor: ${item.source}`}
               analyticsSurface="topic"
             />
           </div>

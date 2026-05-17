@@ -81,7 +81,7 @@ const nameIsCyrillic = isMostlyCyrillic(decodedName);
                         <div class="broadsheet-feed">
                             {featuredClusters.map((cluster: any) => (
                                 <div class="feed-item-wrap">
-                                    <NewsCard cluster={cluster} variant="featured" />
+                                    <NewsCard cluster={cluster} variant="featured" lang={lang} />
                                 </div>
                             ))}
                         </div>
@@ -90,7 +90,7 @@ const nameIsCyrillic = isMostlyCyrillic(decodedName);
                             <div class="broadsheet-feed mt-8">
                                 {compactClusters.map((cluster: any) => (
                                     <div class="feed-item-wrap">
-                                        <NewsCard cluster={cluster} variant="compact" />
+                                        <NewsCard cluster={cluster} variant="compact" lang={lang} />
                                     </div>
                                 ))}
                             </div>
