@@ -6,7 +6,7 @@ import {
   Mic, Clock, TrendingUp, User, Layout, 
   HelpCircle, Archive, Sparkles, ChevronRight,
   Globe, ShieldCheck, Activity, BookOpen, ExternalLink,
-  History
+  History, Compass
 } from 'lucide-react';
 import { getDisplaySummary, getDisplayTitle } from '../utils/textUtils';
 
