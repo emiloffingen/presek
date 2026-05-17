@@ -17,16 +17,24 @@ COPY_ROOT="$SOURCE_ROOT"
 APP_ROOT="${APP_ROOT:-$HOME/presek-runtime}"
 RELEASES_DIR="$APP_ROOT/releases"
 CURRENT_LINK="$APP_ROOT/current"
+PREVIOUS_LINK="$APP_ROOT/previous"
 SHARED_DIR="$APP_ROOT/shared"
 VENV_DIR="${VENV_DIR:-$APP_ROOT/venv}"
 SHARED_WEB_NODE_MODULES="${SHARED_WEB_NODE_MODULES:-$SHARED_DIR/web-node_modules}"
 STAGED_SOURCE_DIR=""
+SYSTEMD_TARGET="${SYSTEMD_TARGET:-presek.target}"
+SKIP_RESTART="${SKIP_RESTART:-0}"
+HEALTH_TIMEOUT_SECONDS="${HEALTH_TIMEOUT_SECONDS:-60}"
 
 # Logging helpers
 info() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] $*"; }
 error() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $*" >&2; }
 ok() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] [OK]   $*"; }
 fail() { echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $*" >&2; exit 1; }
+
+need_cmd() {
+    command -v "$1" >/dev/null 2>&1 || fail "Missing required command: $1"
+}
 
 # Discover services dynamically from source directory
 discover_app_services() {
@@ -73,10 +81,110 @@ stage_clean_git_source_if_needed() {
     COPY_ROOT="$STAGED_SOURCE_DIR"
 }
 
+has_service() {
+    local wanted="$1"
+    local service
+    for service in "${APP_SERVICES[@]}"; do
+        [ "$service" = "$wanted" ] && return 0
+    done
+    return 1
+}
+
+wait_http_status() {
+    local name="$1"
+    local url="$2"
+    local expected="${3:-200}"
+    local deadline=$((SECONDS + HEALTH_TIMEOUT_SECONDS))
+    local code=""
+
+    info "Waiting for $name at $url"
+    while [ "$SECONDS" -lt "$deadline" ]; do
+        code="$(curl -sS -o /dev/null -w "%{http_code}" "$url" 2>/dev/null || true)"
+        if [ "$code" = "$expected" ]; then
+            ok "$name responded with HTTP $code"
+            return 0
+        fi
+        sleep 2
+    done
+
+    fail "$name did not become ready (last HTTP code: ${code:-none})"
+}
+
+restart_services_in_order() {
+    if [ "$SKIP_RESTART" = "1" ]; then
+        info "SKIP_RESTART is set, skipping systemctl restart"
+        return
+    fi
+
+    local remaining_services=()
+    local service
+
+    info "Restarting FastAPI services first"
+    if has_service "presek-fastapi.service"; then
+        sudo systemctl restart presek-fastapi.service
+        wait_http_status "FastAPI" "http://127.0.0.1:5001/api/health"
+    fi
+    if has_service "presek-fastapi-mk.service"; then
+        sudo systemctl restart presek-fastapi-mk.service
+        wait_http_status "FastAPI MK" "http://127.0.0.1:5002/api/health"
+    fi
+
+    if has_service "presek-astro.service"; then
+        info "Restarting Astro after FastAPI is ready"
+        sudo systemctl restart presek-astro.service
+        wait_http_status "Astro" "http://127.0.0.1:3000"
+        wait_http_status "Astro MK" "http://127.0.0.1:3000/mk"
+    fi
+
+    for service in "${APP_SERVICES[@]}"; do
+        case "$service" in
+            presek-fastapi.service|presek-fastapi-mk.service|presek-astro.service)
+                ;;
+            *)
+                remaining_services+=("$service")
+                ;;
+        esac
+    done
+
+    if [ "${#remaining_services[@]}" -gt 0 ]; then
+        info "Restarting background/support services: ${remaining_services[*]}"
+        sudo systemctl restart "${remaining_services[@]}"
+    fi
+
+    sudo systemctl start "$SYSTEMD_TARGET" || true
+    sudo systemctl reload nginx || true
+}
+
+switch_current_release() {
+    local current_target=""
+    if [ -L "$CURRENT_LINK" ]; then
+        current_target="$(readlink -f "$CURRENT_LINK")"
+    fi
+
+    info "Switching to new release..."
+    ln -sfn "$RELEASE_DIR" "$CURRENT_LINK"
+
+    if [ -n "$current_target" ] && [ "$current_target" != "$RELEASE_DIR" ] && [ -d "$current_target" ]; then
+        ln -sfn "$current_target" "$PREVIOUS_LINK"
+    fi
+}
+
 # 1. Environment Validation
 info "Validating deployment environment..."
+need_cmd git
+need_cmd rsync
+need_cmd tar
+need_cmd npm
+need_cmd curl
+need_cmd sudo
+need_cmd flock
 [ -d "$APP_ROOT" ] || fail "APP_ROOT $APP_ROOT does not exist"
 [ -d "$VENV_DIR" ] || fail "VENV_DIR $VENV_DIR does not exist"
+
+LOCK_FILE="$APP_ROOT/.deploy.lock"
+exec 9>"$LOCK_FILE"
+flock -n 9 || fail "Another deploy or rollback is already in progress (lock: $LOCK_FILE)"
+
 stage_clean_git_source_if_needed
 
 # 2. Release Management
@@ -119,16 +227,10 @@ fi
 "$VENV_DIR/bin/alembic" upgrade head || info "Alembic migrations failed or not configured, skipping..."
 
 # 5. Switch Release
-info "Switching to new release..."
-ln -sfn "$RELEASE_DIR" "$CURRENT_LINK"
+switch_current_release
 
 # 6. Restart Services
 info "Restarting services..."
-if [ -n "${SKIP_RESTART:-}" ] && [ "$SKIP_RESTART" = "1" ]; then
-    info "SKIP_RESTART is set, skipping systemctl restart"
-else
-    sudo systemctl restart "${APP_SERVICES[@]}"
-    sudo systemctl reload nginx || true
-fi
+restart_services_in_order
 
 ok "Deployment $RELEASE_ID successful!"
