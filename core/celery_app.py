@@ -144,12 +144,12 @@ celery_app.conf.update(
         "generate-daily-briefing-sr": {
             "task": "tasks.delivery.generate_daily_brief_task",
             "kwargs": {"lang": "sr"},
-            "schedule": crontab(hour="6,12,18", minute=0),
+            "schedule": crontab(hour=6, minute=0),
         },
         "generate-daily-briefing-mk": {
             "task": "tasks.delivery.generate_daily_brief_task",
             "kwargs": {"lang": "mk"},
-            "schedule": crontab(hour="6,12,18", minute=5),
+            "schedule": crontab(hour=6, minute=5),
         },
         "send-daily-digest": {
             "task": "tasks.delivery.send_daily_digest_task",

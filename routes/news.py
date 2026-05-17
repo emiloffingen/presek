@@ -722,12 +722,13 @@ async def get_news(
 async def semantic_search(
     q: str = Query(..., min_length=3, max_length=API_MAX_Q_LEN),
     limit: int = Query(24, ge=1, le=50),
+    lang: str = "sr",
 ):
     """
     Explicit Semantic Search endpoint.
     Uses MiniLM embeddings to find relevant clusters across languages.
     """
-    cache_key = f"api:search:semantic:{q}:{limit}"
+    cache_key = f"api:search:semantic:{q}:{limit}:{lang}"
     cached = cached_response(cache_key)
     if cached:
         return cached
@@ -737,8 +738,9 @@ async def semantic_search(
 
         query_vec = generate_query_embedding(q)
         if not query_vec:
+            detail = "Neuspešno generisanje vektora za pretraživanje" if lang == "sr" else "Неуспешно генерирање на вектор за пребарување"
             raise HTTPException(
-                status_code=500, detail="Neuspesno generiranje na vektor za prebaruvanje"
+                status_code=500, detail=detail
             )
 
         # Fetch articles using vector distance
@@ -1110,7 +1112,8 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
         raise
     except Exception as e:
         log.error(f"Cluster Detail Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Vnatresna serverska greska")
+        detail = "Unutrašnja serverska greška" if lang == "sr" else "Внатрешна серверска грешка"
+        raise HTTPException(status_code=500, detail=detail)
 
 
 @router.get("/cluster/{cluster_id}/history")

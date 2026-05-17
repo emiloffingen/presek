@@ -109,8 +109,9 @@ def _pick_quote_of_the_day(row) -> dict | None:
 
 
 @router.get("/archive/heatmap")
-async def get_archive_heatmap():
-    cache_key = "archive:heatmap:v2"
+async def get_archive_heatmap(lang: str = "sr"):
+    country_filter = "RS" if lang == "sr" else "MK"
+    cache_key = f"archive:heatmap:v3:{lang}"
     cached = cached_response(cache_key, ttl=3600)
     if cached:
         return {"status": "success", "data": cached}
@@ -118,15 +119,15 @@ async def get_archive_heatmap():
     # Use articles table as source of truth for historical presence
     sql = """
         WITH daily_stats AS (
-            SELECT 
+            SELECT
                 DATE(created_at) as day,
                 cluster_id,
                 COUNT(*) as source_count
             FROM articles
-            WHERE created_at >= NOW() - INTERVAL '180 days'
+            WHERE created_at >= NOW() - INTERVAL '180 days' AND country = %s
             GROUP BY day, cluster_id
         )
-        SELECT 
+        SELECT
             day,
             COUNT(DISTINCT cluster_id) as total_clusters,
             COUNT(DISTINCT cluster_id) FILTER (WHERE source_count >= 5) as breaking_clusters
@@ -134,7 +135,7 @@ async def get_archive_heatmap():
         GROUP BY day
         ORDER BY day ASC
     """
-    rows = await db.async_execute(sql)
+    rows = await db.async_execute(sql, (country_filter,))
     fmt = [
         {
             "day": (
@@ -570,22 +571,22 @@ async def subscribe_newsletter(request: Request):
                 log.error(f"[subscribe] Final fallback failed: {e2}")
                 return {
                     "status": "error",
-                    "message": "Greska pri zacuvuvanje. Obidete se podocna." if locale == "mk" else "Greška pri čuvanju. Pokušajte kasnije.",
+                    "message": "Грешка при зачувување. Обидете се подоцна." if locale == "mk" else "Greška pri čuvanju. Pokušajte kasnije.",
                 }
         else:
             log.warning(f"[subscribe] DB error during subscription: {e}")
             return {
                 "status": "error",
-                "message": "Greska pri zacuvuvanje. Obidete se podocna." if locale == "mk" else "Greška pri čuvanju. Pokušajte kasnije.",
+                "message": "Грешка при зачувување. Обидете се подоцна." if locale == "mk" else "Greška pri čuvanju. Pokušajte kasnije.",
             }
     return {
         "status": "success",
-        "message": "Uspesno se prijavivte!" if locale == "mk" else "Uspešno ste se prijavili!",
+        "message": "Успешно се пријавивте!" if locale == "mk" else "Uspešno ste se prijavili!",
     }
 
-
 @router.get("/newsletter/unsubscribe")
-async def unsubscribe_newsletter(email: str):
+async def unsubscribe_newsletter(email: str, lang: str = "sr"):
+    """Deactivate a newsletter subscription."""
     try:
         await db.async_execute(
             "UPDATE subscribers SET is_active = FALSE WHERE email = %s",
@@ -594,8 +595,11 @@ async def unsubscribe_newsletter(email: str):
         )
     except Exception as e:
         log.warning(f"[unsubscribe] DB error: {e}")
-        return HTMLResponse(content="<h1>Greska pri odjavuvanje.</h1>", status_code=500)
-    return HTMLResponse(content="<h1>Uspesno se odjavivte od biltenot na Presek.</h1>")
+        content = "<h1>Greška pri odjavljivanju.</h1>" if lang == "sr" else "<h1>Грешка при одјавување.</h1>"
+        return HTMLResponse(content=content, status_code=500)
+
+    content = "<h1>Uspešno ste se odjavili sa biltena Preseka.</h1>" if lang == "sr" else "<h1>Успешно се одјавивте од билтенот на Пресек.</h1>"
+    return HTMLResponse(content=content)
 
 
 async def _fetch_stats_parallel():
@@ -638,20 +642,22 @@ async def _fetch_stats_parallel():
 
 
 @router.get("/stats/full")
-async def get_stats_full(request: Request):
+async def get_stats_full(request: Request, lang: str = "sr"):
     if not _source_admin_authorized(request):
-        raise HTTPException(status_code=403, detail="Zabraneto")
-    cached = cached_response("stats:full", ttl=120)
+        detail = "Zabranjeno" if lang == "sr" else "Забрането"
+        raise HTTPException(status_code=403, detail=detail)
+    cached = cached_response(f"stats:full:{lang}", ttl=120)
     if cached:
         return cached
 
     lock_key = "lock:stats_full_generation"
     try:
         if not redis_client.set(lock_key, "1", nx=True, ex=30):
+            message = "Statistika se generiše, pokušajte ponovo uskoro." if lang == "sr" else "Статистиката се генерира, обидете се повторно за кратко."
             return JSONResponse(
                 status_code=429,
                 content={
-                    "message": "Statistikata se generira, obidete se povtorno za kratko."
+                    "message": message
                 },
             )
     except Exception as e:
@@ -785,8 +791,9 @@ async def get_stats_full(request: Request):
         return res
     except Exception as e:
         log.error(f"Full Stats Error: {e}")
+        detail = "Neuspešno generisanje statistika" if lang == "sr" else "Неуспешно генерирање на статистики"
         raise HTTPException(
-            status_code=500, detail="Neuspesno generiranje na statistiki"
+            status_code=500, detail=detail
         )
     finally:
         try:

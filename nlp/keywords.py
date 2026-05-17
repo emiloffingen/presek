@@ -792,16 +792,23 @@ def extract_cluster_tags_locally(titles, entity_names=None, sources=None, top_n=
     return filter_cluster_tags(sources or [], limit=min(top_n, 4))
 
 
-def _format_common_line_from_phrases(phrases):
+def _format_common_line_from_phrases(phrases, lang="mk"):
     if not phrases:
         return ""
     # Filter out empty or extremely short phrases
     clean = [str(p).strip() for p in phrases if len(str(p).strip()) > 3]
     if not clean:
         return ""
+    
+    if lang == "sr":
+        if len(clean) == 1:
+            return f"Većina izvora se slaže oko {clean[0]} kao teme u fokusu."
+        return f"Većina izvora se slaže oko {', '.join(clean[:-1])} i {clean[-1]} kao tema u fokusu."
+
+    # Default to Macedonian (mk) in Cyrillic
     if len(clean) == 1:
-        return f"Poveceto izvori se soglasuvaat okolu {clean[0]} kako tema vo fokus."
-    return f"Poveceto izvori se soglasuvaat okolu {', '.join(clean[:-1])} i {clean[-1]} kako temi vo fokus."
+        return f"Повеќето извори се согласуваат околу {clean[0]} како тема во фокус."
+    return f"Повеќето извори се согласуваат околу {', '.join(clean[:-1])} i {clean[-1]} како теми во фокус."
 
 
 def extract_keyphrases_locally(text, top_n=5):

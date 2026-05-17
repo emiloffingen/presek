@@ -51,45 +51,45 @@ interface EntityPayload {
   clusters: NewsCluster[];
 }
 
-function formatDate(value?: string) {
-  if (!value) return 'Nepoznato';
+function formatDate(value?: string, lang = 'sr') {
+  if (!value) return lang === 'sr' ? 'Nepoznato' : 'Непознато';
   try {
-    return new Date(value).toLocaleDateString('sr-RS', {
+    return new Date(value).toLocaleDateString(lang === 'sr' ? 'sr-RS' : 'mk-MK', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
     });
   } catch {
-    return 'Nepoznato';
+    return lang === 'sr' ? 'Nepoznato' : 'Непознато';
   }
 }
 
-function formatRelative(value?: string) {
-  if (!value) return 'nedavno';
+function formatRelative(value?: string, lang = 'sr') {
+  if (!value) return lang === 'sr' ? 'nedavno' : 'неодамна';
   const now = new Date();
   const date = new Date(value);
   const diff = now.getTime() - date.getTime();
   const days = Math.max(0, Math.floor(diff / 86400000));
-  if (days === 0) return 'danas';
-  if (days === 1) return 'juče';
-  if (days < 7) return `pre ${days} dana`;
-  return formatDate(value);
+  if (days === 0) return lang === 'sr' ? 'danas' : 'денес';
+  if (days === 1) return lang === 'sr' ? 'juče' : 'вчера';
+  if (days < 7) return lang === 'sr' ? `pre ${days} dana` : `пред ${days} дена`;
+  return formatDate(value, lang);
 }
 
-function sentimentLabel(score: number) {
-  if (score >= 0.2) return 'Pretežno pozitivan';
-  if (score <= -0.2) return 'Pretežno kritičan';
-  return 'uglavnom neutralan';
+function sentimentLabel(score: number, lang = 'sr') {
+  if (score >= 0.2) return lang === 'sr' ? 'Pretežno pozitivan' : 'Претежно позитивен';
+  if (score <= -0.2) return lang === 'sr' ? 'Pretežno kritičan' : 'Претежно критичен';
+  return lang === 'sr' ? 'uglavnom neutralan' : 'главно неутрален';
 }
 
-function buildTimeline(history: SentimentPoint[]) {
+function buildTimeline(history: SentimentPoint[], lang = 'sr') {
   if (!history || !history.length) return [];
   const max = Math.max(1, ...history.map((item) => item.volume || 0));
   return history.map((item) => {
     const date = new Date(item.day);
     return {
       key: item.day,
-      label: date.toLocaleDateString('sr-RS', { day: 'numeric', month: 'short' }),
+      label: date.toLocaleDateString(lang === 'sr' ? 'sr-RS' : 'mk-MK', { day: 'numeric', month: 'short' }),
       count: item.volume,
       percent: Math.max(8, Math.round((item.volume / max) * 100)),
       sentiment: item.avg_sentiment,
@@ -121,15 +121,25 @@ function splitRelated(related: Relationship[]) {
   return { strongest, broader };
 }
 
-function buildWhyItMatters(profile: EntityProfile, clusters: NewsCluster[], related: Relationship[]) {
+function buildWhyItMatters(profile: EntityProfile, clusters: NewsCluster[], related: Relationship[], lang = 'sr') {
   const recentCount = clusters.length;
-  if (recentCount >= 5) {
-    return `${profile.name} je u snažnom fokusu sa ${recentCount} aktivnih tema u poslednjem periodu, što ukazuje na visok javni i medijski interes.`;
+  if (lang === 'sr') {
+    if (recentCount >= 5) {
+      return `${profile.name} je u snažnom fokusu sa ${recentCount} aktivnih tema u poslednjem periodu, što ukazuje na visok javni i medijski interes.`;
+    }
+    if (related.length >= 5) {
+      return `${profile.name} se pojavljuje u kontekstu ${related.length} drugih ključnih subjekata, gradeći kompleksnu mrežu povezanosti u vestima.`;
+    }
+    return `Prisustvo ${profile.name} u medijima se prati putem analize tona i frekvencije pominjanja u realnom vremenu.`;
+  } else {
+    if (recentCount >= 5) {
+      return `${profile.name} е во силен фокус со ${recentCount} активни теми во последниот период, што укажува на висок јавен и медиумски интерес.`;
+    }
+    if (related.length >= 5) {
+      return `${profile.name} се појавува во контекст на ${related.length} други клучни субјекти, градејќи комплексна мрежа на поврзаност во вестите.`;
+    }
+    return `Присуството на ${profile.name} во медиумите се следи преку анализа на тонот и фреквенцијата на споменувања во реално време.`;
   }
-  if (related.length >= 5) {
-    return `${profile.name} se pojavljuje u kontekstu ${related.length} drugih ključnih subjekata, gradeći kompleksnu mrežu povezanosti u vestima.`;
-  }
-  return `Prisustvo ${profile.name} u medijima se prati putem analize tona i frekvencije pominjanja u realnom vremenu.`;
 }
 
 function coMentionedEntities(clusters: NewsCluster[], currentName: string) {
@@ -151,9 +161,11 @@ function coMentionedEntities(clusters: NewsCluster[], currentName: string) {
 export default function EntityIsland({
   name,
   initialData = null,
+  lang = 'sr'
 }: {
   name: string;
   initialData?: EntityPayload | null;
+  lang?: string;
 }) {
   const [data, setData] = useState<EntityPayload | null>(initialData);
   const [loading, setLoading] = useState(!initialData);
@@ -161,18 +173,18 @@ export default function EntityIsland({
   useEffect(() => {
     if (initialData) return;
     const API_URL = apiBaseUrl();
-    fetch(`${API_URL}/intelligence/entity/${encodeURIComponent(name)}`)
+    fetch(`${API_URL}/intelligence/entity/${encodeURIComponent(name)}?lang=${lang}`)
       .then((res) => res.json())
       .then(setData)
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [name, initialData]);
+  }, [name, initialData, lang]);
 
   if (loading) {
     return (
       <div className="flex flex-col items-center py-20">
         <Loader2 className="animate-spin text-nyt-accent mb-4" size={32} />
-        <p className="nyt-section-label text-muted-foreground">Pripremam podatke...</p>
+        <p className="nyt-section-label text-muted-foreground">{lang === 'sr' ? 'Pripremam podatke...' : 'Подготовка на податоци...'}</p>
       </div>
     );
   }
@@ -180,10 +192,10 @@ export default function EntityIsland({
   if (!data) return null;
 
   const { profile, related, media, categories, sentiment_history, clusters } = data;
-  const timeline = buildTimeline(sentiment_history);
+  const timeline = buildTimeline(sentiment_history, lang);
   const trend = getSentimentTrend(sentiment_history);
   const relationBands = splitRelated(related);
-  const whyItMatters = buildWhyItMatters(profile, clusters, related);
+  const whyItMatters = buildWhyItMatters(profile, clusters, related, lang);
   const contextEntities = coMentionedEntities(clusters, profile.name);
   const leadingCategories = (categories || []).slice(0, 4);
 
@@ -195,38 +207,42 @@ export default function EntityIsland({
             {profile.type === 'PERSON' ? <User size={32} className="text-nyt-accent" /> : <Building2 size={32} className="text-nyt-accent" />}
           </div>
           <div className="entity-copy">
-            <span className="entity-type">{profile.type === 'ORG' ? 'Организација' : 'Субјект'}</span>
+            <span className="entity-type">{profile.type === 'ORG' ? (lang === 'sr' ? 'Organizacija' : 'Организација') : (lang === 'sr' ? 'Subjekt' : 'Субјект')}</span>
             <h1 className="entity-name">{profile.name}</h1>
             <p className="entity-summary-copy">
-              Системски профил који прати медијско присуство, мрежу повезаности и тон извештавања за {profile.name}.
+              {lang === 'sr' 
+                ? `Sistemski profil koji prati medijsko prisustvo, mrežu povezanosti i ton izveštavanja za ${profile.name}.`
+                : `Системски профил кој го следи медиумското присуство, мрежата на поврзаност и тонот на известување за ${profile.name}.`}
             </p>
           </div>
         </div>
 
         <div className="entity-metrics">
           <div className="entity-metric">
-            <p>Ukupno pominjanja</p>
+            <p>{lang === 'sr' ? 'Ukupno pominjanja' : 'Вкупно споменувања'}</p>
             <strong>{profile.total_mentions || clusters.length}</strong>
           </div>
           <div className="entity-metric">
-            <p>Poslednji put viđen</p>
-            <strong>{formatRelative(profile.last_seen || (clusters[0] as any)?.created_at)}</strong>
+            <p>{lang === 'sr' ? 'Poslednji put viđen' : 'Последен пат виден'}</p>
+            <strong>{formatRelative(profile.last_seen || (clusters[0] as any)?.created_at, lang)}</strong>
           </div>
           <div className="entity-metric">
-            <p>Medijski ton</p>
+            <p>{lang === 'sr' ? 'Medijski ton' : 'Медиумски тон'}</p>
             <div className="flex flex-col">
                 <strong className={profile.sentiment_score > 0.2 ? 'text-green-600' : profile.sentiment_score < -0.2 ? 'text-nyt-red' : 'text-nyt-accent'}>
-                {sentimentLabel(profile.sentiment_score)}
+                {sentimentLabel(profile.sentiment_score, lang)}
                 </strong>
                 {trend !== 'stable' && (
                     <span className={`text-[9px] font-black uppercase tracking-tighter ${trend === 'improving' ? 'text-green-600' : 'text-nyt-red'}`}>
-                        {trend === 'improving' ? '↑ Pozitivan trend' : '↓ Kritičan trend'}
+                        {trend === 'improving' 
+                          ? (lang === 'sr' ? '↑ Pozitivan trend' : '↑ Позитивен тренд') 
+                          : (lang === 'sr' ? '↓ Kritičan trend' : '↓ Критичен тренд')}
                     </span>
                 )}
             </div>
           </div>
           <div className="entity-metric">
-            <p>Povezani subjekti</p>
+            <p>{lang === 'sr' ? 'Povezani subjekti' : 'Поврзани субјекти'}</p>
             <strong>{related.length}</strong>
           </div>
         </div>
@@ -235,13 +251,13 @@ export default function EntityIsland({
       <div className="entity-grid">
         <div className="sources-main">
           <section className="entity-summary entity-featured">
-            <h2 className="entity-section-title flex items-center gap-2"><Sparkles size={14} /> Medijski Presek</h2>
+            <h2 className="entity-section-title flex items-center gap-2"><Sparkles size={14} /> {lang === 'sr' ? 'Medijski Presek' : 'Медиумски Пресек'}</h2>
             <p className="entity-summary-copy">{whyItMatters}</p>
             <div className="entity-chip-list">
-              <span className="entity-chip">{clusters.length} aktivnih tema</span>
-              <span className="entity-chip">{media.length} vodećih medija</span>
+              <span className="entity-chip">{clusters.length} {lang === 'sr' ? 'aktivnih tema' : 'активни теми'}</span>
+              <span className="entity-chip">{media.length} {lang === 'sr' ? 'vodećih medija' : 'водечки медиуми'}</span>
               {categories && categories.length > 0 && (
-                  <span className="entity-chip">Fokus: {categories[0].category}</span>
+                  <span className="entity-chip">{lang === 'sr' ? 'Fokus' : 'Фокус'}: {categories[0].category}</span>
               )}
             </div>
           </section>
@@ -249,8 +265,8 @@ export default function EntityIsland({
           <div className="entity-insight-grid">
             <section className="entity-summary">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="entity-section-title flex items-center gap-2 m-0"><TrendingUp size={14} /> Dinamika</h2>
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Poslednjih 14 dana</span>
+                <h2 className="entity-section-title flex items-center gap-2 m-0"><TrendingUp size={14} /> {lang === 'sr' ? 'Dinamika' : 'Динамика'}</h2>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{lang === 'sr' ? 'Poslednjih 14 dana' : 'Последните 14 дена'}</span>
               </div>
               <div className="entity-pulse h-32 flex items-end gap-1 px-2">
                 {timeline.map((item) => (
@@ -260,7 +276,7 @@ export default function EntityIsland({
                         style={{ height: `${item.percent}%`, opacity: 0.7 }} 
                     />
                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-foreground text-background text-[9px] font-bold py-1 px-2 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity z-10">
-                        {item.count} objave • {item.label}
+                        {item.count} {lang === 'sr' ? 'objave' : 'објави'} • {item.label}
                     </div>
                   </div>
                 ))}
@@ -273,7 +289,7 @@ export default function EntityIsland({
             </section>
 
             <section className="entity-summary">
-              <h2 className="entity-section-title flex items-center gap-2"><Newspaper size={14} /> Tematski profil</h2>
+              <h2 className="entity-section-title flex items-center gap-2"><Newspaper size={14} /> {lang === 'sr' ? 'Tematski profil' : 'Тематски профил'}</h2>
               <div className="space-y-3 mt-4">
                 {leadingCategories.map((c) => (
                   <div key={c.category} className="flex items-center justify-between">
@@ -289,10 +305,12 @@ export default function EntityIsland({
                     </div>
                   </div>
                 ))}
-                {leadingCategories.length === 0 && <p className="text-xs text-muted italic">Nema dovoljno podataka za teme.</p>}
+                {leadingCategories.length === 0 && <p className="text-xs text-muted italic">{lang === 'sr' ? 'Nema dovoljno podataka za teme.' : 'Нема доволно податоци за теми.'}</p>}
                 {categories && categories.length > leadingCategories.length && (
                   <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pt-1">
-                    Prikazani su vodeći {leadingCategories.length} tematski pravci.
+                    {lang === 'sr' 
+                      ? `Prikazani su vodeći ${leadingCategories.length} tematski pravci.`
+                      : `Прикажани се водечките ${leadingCategories.length} тематски правци.`}
                   </p>
                 )}
               </div>
@@ -300,20 +318,22 @@ export default function EntityIsland({
           </div>
 
           <section className="entity-summary">
-            <h2 className="entity-section-title flex items-center gap-2"><Link2 size={14} /> Isti kontekst</h2>
+            <h2 className="entity-section-title flex items-center gap-2"><Link2 size={14} /> {lang === 'sr' ? 'Isti kontekst' : 'Ист контекст'}</h2>
             <p className="entity-summary-copy">
-              Ova imena se najčešće pojavljuju zajedno sa {profile.name} u istim klasterima i pomažu da se vidi šira mreža oko priče.
+              {lang === 'sr'
+                ? `Ova imena se najčešće pojavljuju zajedno sa ${profile.name} u istim klasterima i pomažu da se vidi šira mreža oko priče.`
+                : `Овие имиња најчесто се појавуваат заедно со ${profile.name} во исти кластери и помагаат да се види пошироката мрежа околу приказната.`}
             </p>
             <div className="entity-chip-list">
               {contextEntities.map(([entity, count]) => (
-                <a key={entity} href={`/subjekt/${encodeURIComponent(entity)}`} className="entity-chip entity-chip-link">
+                <a key={entity} href={lang === 'sr' ? `/subjekt/${encodeURIComponent(entity)}` : `/mk/subjekt/${encodeURIComponent(entity)}`} className="entity-chip entity-chip-link">
                   {entity} · {count}
                 </a>
               ))}
               {contextEntities.length === 0 && (
                 <div className="flex flex-wrap gap-2">
                   {related.map(r => (
-                    <a key={r.related_entity} href={`/subjekt/${encodeURIComponent(r.related_entity)}`} className="entity-chip entity-chip-link">
+                    <a key={r.related_entity} href={lang === 'sr' ? `/subjekt/${encodeURIComponent(r.related_entity)}` : `/mk/subjekt/${encodeURIComponent(r.related_entity)}`} className="entity-chip entity-chip-link">
                       {r.related_entity}
                     </a>
                   ))}
@@ -325,16 +345,18 @@ export default function EntityIsland({
 
         <aside className="sources-rail">
           <div className="rail-card">
-            <h3 className="rail-card-title flex items-center gap-2"><Link2 size={14} /> Najbliže povezani</h3>
+            <h3 className="rail-card-title flex items-center gap-2"><Link2 size={14} /> {lang === 'sr' ? 'Najbliže povezani' : 'Најблиску поврзани'}</h3>
             <p className="rail-copy">
-              Ovde su prikazani subjekti koji najčešće ulaze u isti kontekst sa {profile.name}, sa najjačim vezama na vrhu.
+              {lang === 'sr'
+                ? `Ovde su prikazani subjekti koji najčešće ulaze u isti kontekst sa ${profile.name}, sa najjačim vezama na vrhu.`
+                : `Овде се прикажани субјектите кои најчесто влегуваат во ист контекст со ${profile.name}, со најсилните врски на врвот.`}
             </p>
             <div className="space-y-4">
               {relationBands.strongest.map((rel) => (
-                <a key={rel.related_entity} href={`/subjekt/${encodeURIComponent(rel.related_entity)}`} className="entity-related-link">
+                <a key={rel.related_entity} href={lang === 'sr' ? `/subjekt/${encodeURIComponent(rel.related_entity)}` : `/mk/subjekt/${encodeURIComponent(rel.related_entity)}`} className="entity-related-link">
                   <div>
                     <span className="entity-related-name">{rel.related_entity}</span>
-                    <p className="entity-related-band">Tesna veza</p>
+                    <p className="entity-related-band">{lang === 'sr' ? 'Tesna veza' : 'Тисна врска'}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="entity-related-track">
@@ -344,23 +366,25 @@ export default function EntityIsland({
                   </div>
                 </a>
               ))}
-              {relationBands.strongest.length === 0 && <p className="text-xs text-muted italic">Nema pronađenih snažnih veza.</p>}
+              {relationBands.strongest.length === 0 && <p className="text-xs text-muted italic">{lang === 'sr' ? 'Nema pronađenih snažnih veza.' : 'Нема пронајдени силни врски.'}</p>}
             </div>
           </div>
 
           <div className="rail-card rail-card-accent">
-            <h3 className="rail-card-title">Kako se čita</h3>
+            <h3 className="rail-card-title">{lang === 'sr' ? 'Kako se čita' : 'Како се чита'}</h3>
             <p className="rail-copy">
-              Ton pokazuje kako se menja medijski okvir, a povezani subjekti pokazuju sa kim se najčešće vezuje priča oko {profile.name}.
+              {lang === 'sr'
+                ? `Ton pokazuje kako se menja medijski okvir, a povezani subjekti pokazuju sa kim se najčešće vezuje priča oko ${profile.name}.`
+                : `Тонот покажува како се менува медиумската рамка, а поврзаните субјекти покажуваат со кого најчесто се поврзува приказната околу ${profile.name}.`}
             </p>
           </div>
 
           <div className="rail-card">
-            <h3 className="rail-card-title">dalje</h3>
+            <h3 className="rail-card-title uppercase tracking-widest text-[10px]">{lang === 'sr' ? 'dalje' : 'понатаму'}</h3>
             <div className="flex flex-col gap-3">
-              <a href="/archive" className="entity-related-jump">Otvori arhivu</a>
-              <a href="/izvori" className="entity-related-jump">Отвори изворе</a>
-              <a href="/pulse" className="entity-related-jump">Упореди медије</a>
+              <a href={lang === 'sr' ? "/archive" : "/mk/archive"} className="entity-related-jump">{lang === 'sr' ? 'Otvori arhivu' : 'Отвори архива'}</a>
+              <a href={lang === 'sr' ? "/izvori" : "/mk/izvori"} className="entity-related-jump">{lang === 'sr' ? 'Otvori izvore' : 'Отвори извори'}</a>
+              <a href={lang === 'sr' ? "/pulse" : "/mk/pulse"} className="entity-related-jump">{lang === 'sr' ? 'Uporedi medije' : 'Спореди медиуми'}</a>
             </div>
           </div>
         </aside>

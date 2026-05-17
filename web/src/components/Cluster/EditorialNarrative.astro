@@ -61,7 +61,8 @@ const renderSynthesisHtml = (text: string) => {
                 // Create tooltip element
                 tooltip = document.createElement('div');
                 tooltip.className = 'entity-tooltip';
-                tooltip.innerHTML = `<div class="p-4 bg-background border border-border shadow-xl rounded-lg w-64 text-sm"><div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-nyt-accent animate-pulse"></div> Ucitavam kontekst za ${name}...</div></div>`;
+                const loadingText = lang === 'sr' ? `Učitavam kontekst za ${name}...` : `Вчитувам контекст за ${name}...`;
+                tooltip.innerHTML = `<div class="p-4 bg-background border border-border shadow-xl rounded-lg w-64 text-sm"><div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-nyt-accent animate-pulse"></div> ${loadingText}</div></div>`;
                 document.body.appendChild(tooltip);
 
                 popperInstance = createPopper(entity, tooltip, {
@@ -70,12 +71,13 @@ const renderSynthesisHtml = (text: string) => {
                 });
 
                 // Fetch real data
-                const res = await fetch(`/api/entity-graph/${encodeURIComponent(name)}`);
+                const res = await fetch(`/api/entity-graph/${encodeURIComponent(name)}?lang=${lang}`);
                 const json = await res.json();
                 if (json.status === 'success') {
+                    const noDetailsText = lang === 'sr' ? 'Nema dostupnih detalja.' : 'Нема достапни детали.';
                     tooltip.innerHTML = `<div class="p-4 bg-background border border-border shadow-xl rounded-lg w-64 text-sm font-sans">
                         <h4 class="font-bold text-base mb-1">${name}</h4>
-                        <p class="text-[11px] text-muted-foreground">${json.data.summary || 'Nema dostapni detalji.'}</p>
+                        <p class="text-[11px] text-muted-foreground">${json.data.summary || noDetailsText}</p>
                     </div>`;
                 }
             });

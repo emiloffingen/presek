@@ -1,7 +1,7 @@
 import React from 'react';
-import { ShieldCheck, Globe, CheckCircle2, Sparkles, Activity } from 'lucide-react';
+import { ShieldCheck, Globe, CheckCircle2, Sparkles, Activity, Clock, Layers, Palette, ArrowRight } from 'lucide-react';
 import { chooseClusterImage } from '../utils/imageSelection';
-import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores } from '../utils/textUtils';
+import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, getDesignCardContext } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
 import type { NewsCluster, Article } from '../types';
 
@@ -9,120 +9,118 @@ interface NewsCardProps {
   cluster: NewsCluster;
   isLead?: boolean;
   variant?: 'standard' | 'featured' | 'compact' | 'wire';
+  lang?: string;
 }
+
+const _T: Record<string, Record<string, string>> = {
+    'news.breaking': { sr: 'Široko pokriveno', mk: 'Широко покриено' },
+    'news.tracked': { sr: 'Praćena tema', mk: 'Следена тема' },
+    'news.urgent': { sr: 'Hitan razvoj', mk: 'Итен развој' },
+    'news.ongoing': { sr: 'U toku', mk: 'Во тек' },
+    'news.source': { sr: 'izvor', mk: 'извор' },
+    'news.sources': { sr: 'izvora', mk: 'извори' },
+    'news.synthesis': { sr: 'Sistemska sinteza Preseka', mk: 'Системска синтеза на Пресек' },
+    'news.now': { sr: 'SADA', mk: 'СЕГА' },
+    'news.ago': { sr: 'PRE', mk: 'ПРЕД' },
+    'news.min_short': { sr: 'MIN', mk: 'МИН' },
+    'news.go_to_article': { sr: 'IDI NA ČLANAK', mk: 'ОДИ ДО АРТИКЛОТ' },
+    'news.global': { sr: 'SVETSKA vest', mk: 'СВЕТСКА вест' },
+    'news.live': { sr: 'UŽIVO', mk: 'ВО ЖИВО' },
+    'news.fact_check': { sr: 'FAKT-ČEK', mk: 'ФАКТ-ЧЕК' },
+    'news.preview': { sr: 'PRESEK PREGLED', mk: 'ПРЕСЕК ПРЕГЛЕД' },
+};
 
 export const NewsCard: React.FC<NewsCardProps> = ({
   cluster,
   isLead = false,
   variant = 'standard',
+  lang = 'sr'
 }) => {
+  const isMK = lang === 'mk';
+  const t = (key: string) => _T[key]?.[lang] || key;
+
   const main = cluster.articles?.[0];
   if (!main) return null;
+  
   const sourceSignal = main?.source_signal || {};
-  const sourceCount = cluster.articles.length;
-  const showTrustBadge = sourceCount >= 2 && Boolean(sourceSignal.trust_label);
-  const showSignificanceLabel = cluster.is_breaking || sourceCount >= 3;
+  const totalSources = cluster.articles.length;
+  const showTrustBadge = totalSources >= 2 && Boolean(sourceSignal.trust_label);
+  const showSignificanceLabel = cluster.is_breaking || totalSources >= 3;
+  
   const significanceLabel =
-    sourceCount >= 6
-      ? 'Široko pokriveno'
-      : sourceCount >= 4
-      ? 'Praćena tema'
-      : cluster.is_breaking
-      ? 'Hitan razvoj'
-      : 'U toku';
-
-  const getIzvorLabel = (count: number) => {
-    if (count % 10 === 1 && count % 100 !== 11) return 'izvor';
-    return 'izvora';
-  };
+    totalSources >= 6 ? t('news.breaking') :
+    totalSources >= 4 ? t('news.tracked') :
+    cluster.is_breaking ? t('news.urgent') :
+    t('news.ongoing');
 
   const selectedImage = chooseClusterImage(cluster, isLead ? 'hero' : 'card');
   const thumbSrc = selectedImage.proxiedUrl;
   const isFallbackArt = selectedImage.isWeak;
+  const tintColor = cluster.dominant_color || '#1e40af';
 
-  const displayTitle = highlightScores(getDisplayTitle(main));
+  const rawLeadTitle = cluster.synthetic_headline || getDisplayTitle(main);
+  const displayTitle = highlightScores(rawLeadTitle);
   const titleIsCyrillic = isMostlyCyrillic(displayTitle);
 
-  const getCardSummary = (article: Article, lead = false) => {
+  const cardContext = getDesignCardContext(cluster);
+  // Simple mapping for card labels if needed, or just use defaults
+  const cardLabel = t('news.preview');
+
+  function getCardSummary(article: Article, lead = false) {
     const text = getDisplaySummary(article);
     if (!text) return '';
     const limit = lead ? 300 : 180;
     const truncated = text.length > limit ? `${text.slice(0, limit).trimEnd()}...` : text;
     return highlightScores(truncated);
-  };
+  }
 
-  const displaySummary = getCardSummary(main, isLead);
+  const displaySummary = cluster.synthetic_standfirst || getCardSummary(main, isLead);
   const summaryIsCyrillic = isMostlyCyrillic(displaySummary);
-
-  const getWhyItMatters = () => {
-    if (sourceSignal.role_label && sourceCount >= 4) {
-      return `${sourceSignal.role_label}. Tema se već potvrđuje i proširuje kroz više redakcija.`;
-    }
-    if (sourceSignal.role_label && sourceCount >= 2) {
-      return `${sourceSignal.role_label}. Pratite za nove potvrde i reakcije.`;
-    }
-    if (sourceCount >= 6) {
-      return `razvoj sa širokim medijskim pokrivanjem od ${sourceCount} ${sourceCount === 1 ? 'izvor' : 'izvora'}.`;
-    }
-    if (sourceCount >= 4) {
-      return 'Više redakcija već dodaje nove detalje.';
-    }
-    if (sourceCount >= 2) {
-      return 'priča koja počinje da dobija potvrde i širi kontekst.';
-    }
-    return 'Prvi signal. Vredi pratiti da li će dobiti širu potvrdu.';
-  };
-
-  const whyItMatters = getWhyItMatters();
 
   const getTimeStr = (dateStr: string) => {
     try {
       const date = new Date(dateStr.replace("Z", ""));
-      return date.toLocaleTimeString('sr-RS', { hour: '2-digit', minute: '2-digit' });
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+
+      if (diffMins < 1) return t('news.now');
+      if (diffMins < 60) return `${t('news.ago')} ${diffMins} ${t('news.min_short')}`;
+
+      return date.toLocaleTimeString(lang === 'sr' ? 'sr-RS' : 'mk-MK', { 
+          hour: '2-digit', 
+          minute: '2-digit'
+      });
     } catch {
       return '';
     }
   };
 
   return (
-    <article className={`nyt-article variant-${variant} ${isLead ? 'lead-story' : ''}`}>
+    <article className={`nyt-article variant-${variant} ${isLead ? 'lead-story' : ''} ${showTrustBadge ? 'premium-spotlight' : ''}`}>
       <div className="article-body">
-        <div className="article-meta">
-          <span className="source-label">
-            {main.source}
+        <div className="article-meta-v2">
+          <div className="kicker-group">
+            <span className="kicker">{main.source}</span>
             {showTrustBadge && sourceSignal.trust_label === 'Visoko poverenje' && (
-              <span title="Visoko poverenje">
-                <ShieldCheck size={12} className="inline-block ml-1 text-blue-600 dark:text-blue-400" />
-              </span>
+              <ShieldCheck size={10} className="text-blue-500" />
             )}
-          </span>
-
-          {main.is_global && (
-            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-500">
-              <Globe size={11} /> SVETSKA vest
-            </span>
-          )}
-
-          {cluster.is_breaking && (
-
-            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-500">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
-              </span>
-              UŽIVO
-            </span>
-          )}
-
-          {anyFactCheck(cluster.articles) && (
-            <span className="bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 px-1.5 py-0.5 rounded text-[10px] font-bold border border-amber-200/50 flex items-center gap-1">
-              FAKT-ČEK
-            </span>
-          )}
+            {main.is_global && (
+              <Globe size={10} className="text-emerald-500" />
+            )}
+          </div>
+          
+          <div className="meta-right">
+            {showSignificanceLabel && (
+                <span className={`significance-badge ${cluster.is_breaking ? 'is-breaking' : ''}`}>
+                    {significanceLabel}
+                </span>
+            )}
+            <span className="time-stamp">{getTimeStr(main.ingested_at || main.created_at)}</span>
+          </div>
         </div>
 
-
-        <a href={`/cluster/${cluster.cluster_id}`} className="headline-link group">
+        <a href={lang === 'sr' ? `/cluster/${cluster.cluster_id}` : `/mk/cluster/${cluster.cluster_id}`} className="headline-link group">
           <h2
             className={`headline ${
                 isLead ? 'headline-lead' : (variant === 'compact' ? 'headline-compact' : 'headline-standard')
@@ -134,7 +132,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         {cluster.has_synthesis && (
             <span className="editorial-byline">
                 <Sparkles size={11} className="inline-block mr-1 text-nyt-accent" />
-                Sistemska sinteza Preseka
+                {t('news.synthesis')}
             </span>
         )}
 
@@ -152,7 +150,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
             {cluster.articles.slice(1, 4).map((sub: Article, idx: number) => (
               <li key={idx}>
                 <a
-                  href={`/cluster/${cluster.cluster_id}`}
+                  href={lang === 'sr' ? `/cluster/${cluster.cluster_id}` : `/mk/cluster/${cluster.cluster_id}`}
                   dangerouslySetInnerHTML={{ __html: sanitizeHtml(getDisplayTitle(sub)) }}
                 ></a>
               </li>
@@ -160,59 +158,49 @@ export const NewsCard: React.FC<NewsCardProps> = ({
           </ul>
         )}
 
-        <div className="footer-meta">
-          <span>{getTimeStr(main.ingested_at || main.created_at)}</span>
-          <span className="dot">·</span>
-          <span>{cluster.articles.length} {cluster.articles.length === 1 ? 'izvor' : 'izvora'}</span>
+        <div className="footer-meta flex items-center gap-3">
+          <span className="flex items-center gap-1">
+            <Clock size={11} className="opacity-70" />
+            {getTimeStr(main.ingested_at || main.created_at)}
+          </span>
+          <span className="flex items-center gap-1">
+            <Layers size={11} className="opacity-70" />
+            {totalSources} {totalSources === 1 ? t('news.source') : t('news.sources')}
+          </span>
         </div>
       </div>
 
       {thumbSrc && (
         <div className={`image-wrap ${isFallbackArt ? 'image-wrap-fallback' : ''}`}>
-          <a href={`/cluster/${cluster.cluster_id}`} className="block h-full">
+          <a href={lang === 'sr' ? `/cluster/${cluster.cluster_id}` : `/mk/cluster/${cluster.cluster_id}`} className="block h-full">
             {isFallbackArt ? (
-              <div className="article-image-placeholder design-card">
+              <div className="article-image-placeholder design-card" style={{ '--placeholder-bg': tintColor } as any}>
                 <div className="design-card-pattern"></div>
                 <div className="design-card-ribbon">
-                    <span>PRESEK PREGLED</span>
+                    <span>{cardLabel}</span>
                 </div>
                 <div className="design-card-main">
                     <div className="design-card-icon-wrap">
                         <Activity size={24} className="text-white/90" />
                     </div>
-                    <h3>{main.category || 'vesti'}</h3>
-                    <p className="design-card-sub">{cluster.articles.length} {cluster.articles.length === 1 ? 'izvor' : 'izvora'}</p>
+                    <h3 className={titleIsCyrillic ? 'headline-cyrillic' : ''}>{rawLeadTitle}</h3>
+                    <p className="design-card-sub">{totalSources} {totalSources === 1 ? t('news.source') : t('news.sources')}</p>
                 </div>
                 <div className="design-card-footer">
-                    <span className="design-card-cta">IDI NA ČLANAK</span>
+                    <span className="design-card-cta">{t('news.go_to_article')} <ArrowRight size={12} className="ml-1" /></span>
                 </div>
               </div>
             ) : (
-              <>
+              <div className="relative w-full h-full">
                 <img
                   src={thumbSrc}
                   alt={displayTitle}
                   width="700"
                   height="500"
-                  className="article-image"
+                  className="article-image is-loaded"
                   loading={isLead ? 'eager' : 'lazy'}
-                  onLoad={(e) => (e.currentTarget as HTMLImageElement).classList.add('is-loaded')}
-                  onError={(e) => {
-                    const img = e.currentTarget as HTMLImageElement;
-                    console.warn(`Image failed to load: ${thumbSrc}`, e);
-                    img.style.display = 'none';
-                    if (img.nextElementSibling) {
-                      (img.nextElementSibling as HTMLElement).style.display = 'flex';
-                    }
-                  }}
                 />
-                <div className="article-image-placeholder design-card is-error-fallback" style={{ display: 'none' }}>
-                    <div className="design-card-pattern"></div>
-                    <div className="design-card-main">
-                        <h3>{main.source}</h3>
-                    </div>
-                </div>
-              </>
+              </div>
             )}
           </a>
           {isLead && main.image_caption && (

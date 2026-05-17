@@ -19,7 +19,7 @@ function summarizeRecent(profile: any) {
   })).filter((item: any) => item.clusterId && item.title);
 }
 
-export default function SettingsProfileIsland() {
+export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }) {
   const profile = useStore($profile);
 
   useEffect(() => {
@@ -109,30 +109,34 @@ export default function SettingsProfileIsland() {
     }
   };
 
+  const isMK = lang === 'mk';
+
   return (
     <div className="settings-island">
       <section className="settings-module">
         <div className="settings-module-head">
           <div>
-            <p className="settings-kicker"><Sparkles size={14} /> Vaš profil čitanja</p>
-            <h2>Šta Presek pami na ovom uređaju</h2>
+            <p className="settings-kicker"><Sparkles size={14} /> {isMK ? 'Вашиот профил на читање' : 'Vaš profil čitanja'}</p>
+            <h2>{isMK ? 'Што Пресек памети на овој уред' : 'Šta Presek pamti na ovom uređaju'}</h2>
           </div>
           <p className="settings-copy">
-            Ovi signali oblikuju vaš „Za Vas“ modul, izbor izveštaja i nedeljnju dostavu još pre sinhronizacije.
+            {isMK 
+              ? 'Овие сигнали го обликуваат вашиот „За Вас“ модул, изборот на извештаи и неделната достава уште пред синхронизација.' 
+              : 'Ovi signali oblikuju vaš „Za Vas“ modul, izbor izveštaja i nedeljnu dostavu još pre sinhronizacije.'}
           </p>
         </div>
 
         <div className="settings-stat-grid">
           <div className="settings-stat-card">
-            <span>Praćene teme</span>
+            <span>{isMK ? 'Следени теми' : 'Praćene teme'}</span>
             <strong>{followedTopics.length}</strong>
           </div>
           <div className="settings-stat-card">
-            <span>Praćeni izvori</span>
+            <span>{isMK ? 'Следени извори' : 'Praćeni izvori'}</span>
             <strong>{followedSources.length}</strong>
           </div>
           <div className="settings-stat-card">
-            <span>Nedavni klasteri</span>
+            <span>{isMK ? 'Неодамнешни кластери' : 'Nedavni klasteri'}</span>
             <strong>{(profile?.recentClusters || []).length}</strong>
           </div>
         </div>
@@ -140,11 +144,15 @@ export default function SettingsProfileIsland() {
         {topFocusTopic && (
             <div className="mt-8 p-4 bg-nyt-accent/5 border border-nyt-accent/20 rounded-lg flex items-center justify-between">
                 <div>
-                    <p className="text-[10px] font-black uppercase text-nyt-accent tracking-widest mb-1">Vaša primarna fokus tema</p>
+                    <p className="text-[10px] font-black uppercase text-nyt-accent tracking-widest mb-1">{isMK ? 'Ваша примарна фокус тема' : 'Vaša primarna fokus tema'}</p>
                     <h4 className="font-serif font-black text-xl italic">{topFocusTopic}</h4>
                 </div>
                 <div className="text-right">
-                    <p className="text-[10px] font-bold text-muted-foreground leading-tight">Na osnovu poslednjeg čitanja.<br/>Koristimo ga za „Za Vas“.</p>
+                    <p className="text-[10px] font-bold text-muted-foreground leading-tight">
+                        {isMK 
+                          ? 'Врз основа на последното читање.\nГо користиме за „За Вас“.' 
+                          : 'Na osnovu poslednjeg čitanja.\nKoristimo ga za „Za Vas“.'}
+                    </p>
                 </div>
             </div>
         )}
@@ -154,8 +162,8 @@ export default function SettingsProfileIsland() {
         <div className="settings-module">
           <div className="settings-module-head">
             <div>
-              <p className="settings-kicker"><Newspaper size={14} /> Praćene teme</p>
-              <h3>Teme koje želite da se pojavljuju brže</h3>
+              <p className="settings-kicker"><Newspaper size={14} /> {isMK ? 'Следени теми' : 'Praćene teme'}</p>
+              <h3>{isMK ? 'Теми што сакате да се појавуваат побрзо' : 'Teme koje želite da se pojavljuju brže'}</h3>
             </div>
           </div>
           {followedTopics.length > 0 ? (
@@ -173,15 +181,19 @@ export default function SettingsProfileIsland() {
               ))}
             </div>
           ) : (
-            <p className="settings-empty">još uvek nemate praćene teme. Pratite temu sa strane za teme da biste dobili personalizovanu dostavu i rangiranje.</p>
+            <p className="settings-empty">
+                {isMK 
+                  ? 'Сè уште немате следени теми. Следете тема од страната за теми за да добиете персонализирана достава и рангирање.' 
+                  : 'Još uvek nemate praćene teme. Pratite temu sa strane za teme da biste dobili personalizovanu dostavu i rangiranje.'}
+            </p>
           )}
         </div>
 
         <div className="settings-module">
           <div className="settings-module-head">
             <div>
-              <p className="settings-kicker"><Newspaper size={14} /> Praćeni izvori</p>
-              <h3>izvori koje želite pažljivije da pratite</h3>
+              <p className="settings-kicker"><Newspaper size={14} /> {isMK ? 'Следени извори' : 'Praćeni izvori'}</p>
+              <h3>{isMK ? 'Извори што сакате повнимателно да ги следите' : 'Izvori koje želite pažljivije da pratite'}</h3>
             </div>
           </div>
           {followedSources.length > 0 ? (
@@ -199,7 +211,11 @@ export default function SettingsProfileIsland() {
               ))}
             </div>
           ) : (
-            <p className="settings-empty">još uvek nemate praćene izvore. Pratite vodeći izvor sa stranice klastera da biste dobijali ažuriranja specifična za izvor.</p>
+            <p className="settings-empty">
+                {isMK 
+                  ? 'Сè уште немате следени извори. Следете го водечкиот извор од страницата на кластерот за да добивате ажурирања специфични за изворот.' 
+                  : 'Još uvek nemate praćene izvore. Pratite vodeći izvor sa stranice klastera da biste dobijali ažuriranja specifična za izvor.'}
+            </p>
           )}
         </div>
       </section>
@@ -208,8 +224,8 @@ export default function SettingsProfileIsland() {
         <div className="settings-module">
           <div className="settings-module-head">
             <div>
-              <p className="settings-kicker"><Sparkles size={14} /> Predlozi za teme</p>
-              <h3>Šta vredno sledeće pratite</h3>
+              <p className="settings-kicker"><Sparkles size={14} /> {isMK ? 'Предлози за теми' : 'Predlozi za teme'}</p>
+              <h3>{isMK ? 'Што вредно следно да следите' : 'Šta vredno sledeće da pratite'}</h3>
             </div>
           </div>
           {recommendations.topics.length > 0 ? (
@@ -227,15 +243,19 @@ export default function SettingsProfileIsland() {
               ))}
             </div>
           ) : (
-            <p className="settings-empty">Kad pročitate još nekoliko klastera, ovde će se pojaviti teme koje ima smisla da pratite.</p>
+            <p className="settings-empty">
+                {isMK 
+                  ? 'Кога ќе прочитате уште неколку кластери, овде ќе се појават теми кои има смисла да ги следите.' 
+                  : 'Kad pročitate još nekoliko klastera, ovde će se pojaviti teme koje ima smisla da pratite.'}
+            </p>
           )}
         </div>
 
         <div className="settings-module">
           <div className="settings-module-head">
             <div>
-              <p className="settings-kicker"><Sparkles size={14} /> Predlozi za izvore</p>
-              <h3>izvori koji se već uklapaju u vaše čitanje</h3>
+              <p className="settings-kicker"><Sparkles size={14} /> {isMK ? 'Предлози за извори' : 'Predlozi za izvore'}</p>
+              <h3>{isMK ? 'Извори кои веќе се вклопуваат во вашето читање' : 'Izvori koji se već uklapaju u vaše čitanje'}</h3>
             </div>
           </div>
           {recommendations.sources.length > 0 ? (
@@ -253,7 +273,11 @@ export default function SettingsProfileIsland() {
               ))}
             </div>
           ) : (
-            <p className="settings-empty">Kad se pojave ponavljajući izvori u vašem čitanju, ovde ćete dobiti brze predloge za praćenje.</p>
+            <p className="settings-empty">
+                {isMK 
+                  ? 'Кога ќе се појават извори што се повторуваат во вашето читање, овде ќе добиете брзи предлози за следење.' 
+                  : 'Kad se pojave izvori koji se ponavljaju u vašem čitanju, ovde ćete dobiti brze predloge za praćenje.'}
+            </p>
           )}
         </div>
       </section>
@@ -261,25 +285,29 @@ export default function SettingsProfileIsland() {
       <section className="settings-module">
         <div className="settings-module-head">
           <div>
-            <p className="settings-kicker"><Clock3 size={14} /> Nedavno čitanje</p>
-            <h3>klasteri koji oblikuju vaš trenutni profil</h3>
+            <p className="settings-kicker"><Clock3 size={14} /> {isMK ? 'Неодамнешно читање' : 'Nedavno čitanje'}</p>
+            <h3>{isMK ? 'Кластери што го обликуваат вашиот моментален профил' : 'Klasteri koji oblikuju vaš trenutni profil'}</h3>
           </div>
         </div>
         {recentItems.length > 0 ? (
           <div className="settings-recent-list">
             {recentItems.map((item: any) => (
-              <a key={item.clusterId} href={`/cluster/${item.clusterId}`} className="settings-recent-item">
+              <a key={item.clusterId} href={isMK ? `/mk/cluster/${item.clusterId}` : `/cluster/${item.clusterId}`} className="settings-recent-item">
                 <div>
-                  <p className="settings-recent-topic">{item.topic || 'klaster'}</p>
+                  <p className="settings-recent-topic">{item.topic || (isMK ? 'кластер' : 'klaster')}</p>
                   <h4>{item.title}</h4>
-                  <p className="settings-recent-source">{item.source || 'izvor'}</p>
+                  <p className="settings-recent-source">{item.source || (isMK ? 'извор' : 'izvor')}</p>
                 </div>
                 <ArrowUpRight size={14} />
               </a>
             ))}
           </div>
         ) : (
-          <p className="settings-empty">Otvorite nekoliko klastera i ova stranica će početi da objašnjava što pokreće vašu personalizaciju i dostavu.</p>
+          <p className="settings-empty">
+              {isMK 
+                ? 'Отворете неколку кластери и оваа страница ќе почне да објаснува што ја придвижува вашата персонализација и достава.' 
+                : 'Otvorite nekoliko klastera i ova stranica će početi da objašnjava šta pokreće vašu personalizaciju i dostavu.'}
+          </p>
         )}
       </section>
     </div>

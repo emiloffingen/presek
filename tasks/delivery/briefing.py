@@ -580,9 +580,9 @@ def _select_breaking_cluster_for_profile(profile, seen_cluster_ids, alert_contex
 @celery_app.task
 def generate_daily_brief_task(retry_attempt=0, lang="sr"):
     now = datetime.datetime.now()
-    lock_key = f"lock:daily_brief:{lang}:{now.date()}:{now.hour // 6}"
+    lock_key = f"lock:daily_brief:{lang}:{now.date()}"
     try:
-        if not redis_client.set(lock_key, "1", nx=True, ex=3600):
+        if not redis_client.set(lock_key, "1", nx=True, ex=7200):
             log.info(f"Daily brief ({lang}) generation already in progress or completed for today.")
             return
     except Exception as e: log.warning(f"Redis lock check failed for daily brief: {e}")
@@ -596,10 +596,10 @@ def generate_daily_brief_task(retry_attempt=0, lang="sr"):
         diverse_pct = round((balance_stats["diverse"] / total_24h) * 100) if total_24h > 0 else 0
         subjects_rows = db.execute("SELECT topic, COUNT(*) as c FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' AND country = %s AND topic IS NOT NULL GROUP BY topic ORDER BY c DESC LIMIT 3", (country_filter,))
         top_subjects = ", ".join([r["topic"] for r in subjects_rows]); top_locations = "Balkan"
-        hour = datetime.datetime.now().hour
-        if 5 <= hour < 12: dispatch_name = "Jutarnji brifing" if lang == "sr" else "Утрински брифинг"
-        elif 12 <= hour < 18: dispatch_name = "Podnevni pregled" if lang == "sr" else "Пладневен преглед"
-        else: dispatch_name = "Vecernji pregled" if lang == "sr" else "Вечерен преглед"
+        
+        # Consistent daily naming
+        dispatch_name = "Dnevni brifing" if lang == "sr" else "Дневен брифинг"
+        
         clusters = _load_daily_brief_clusters(limit=10, lang=lang); content_context = _build_daily_brief_context(clusters)
         system_insight = f"\n\n[SISTEMSKA ANALIZA ZA POSLEDNJIH 24 SATA]\n- Obradjeni clanci: {total_24h}\n- Udeo svetskih vest: {intl_pct}%\n- Indeks pluralizma (raznovrsni izvori): {diverse_pct}%\n- Najzastupljeni akteri: {top_subjects or 'Nema'}\n- U focusu lokacije: {top_locations or 'Nema'}\n- Naziv izvestaja: {dispatch_name}"
         full_context = f"<briefing_context>\n{content_context}\n{system_insight}\n</briefing_context>"

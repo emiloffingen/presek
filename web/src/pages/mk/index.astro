@@ -206,7 +206,7 @@ const effectiveLeadSignal = isHomepage
     : leadSignal;
 
 // Remove the verbose development signal if it matches the default
-const finalLeadSignal = effectiveLeadSignal === 'razvoj sto vredi da se sledi' ? '' : effectiveLeadSignal;
+const finalLeadSignal = (effectiveLeadSignal === 'razvoj sto vredi da se sledi' || effectiveLeadSignal === 'развој што вреди да се следи' || effectiveLeadSignal === t('home.lead_follow')) ? '' : effectiveLeadSignal;
 const leadTitleIsCyrillic = isMostlyCyrillic(leadTitle);
 const leadSummaryIsCyrillic = isMostlyCyrillic(leadSummary);
 const leadVisual = leadCluster ? chooseClusterImage(leadCluster, 'hero') : null;
@@ -441,7 +441,7 @@ function getBriefingSnippet(content: string) {
 
                 {clusters.length > 4 && (
 					<div class="section-wrapper for-you-wrapper">
-					    <ForYouIsland client:visible clusters={forYouClusters} excludeClusterIds={excludedClusterIds} />
+					    <ForYouIsland client:visible clusters={forYouClusters} excludeClusterIds={excludedClusterIds} lang={lang} />
                     </div>
 				)}
 

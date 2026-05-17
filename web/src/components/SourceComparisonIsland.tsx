@@ -50,9 +50,9 @@ export default function SourceComparisonIsland({ allSources, lang = 'sr' }: { al
     const p1 = Math.max(0, Math.min(100, Math.round((Number(val1) || 0) * 100)));
     const p2 = Math.max(0, Math.min(100, Math.round((Number(val2) || 0) * 100)));
 
-    const tooltip = label === (isMK ? "Индекс на Објективност" : "Indeks na Objektivnost")
-      ? (isMK ? "Мерка за непристрасност и присуство на фактички верификувани изјави." : "Merka za nepristrasnost i prisustvo na fakticki verifikuvani izjavi.")
-      : (isMK ? "Ниво на емотивен набој и употреба на реторика за привлекување внимание." : "Nivo na emotiven naboj i upotreba na retorika za privlekuvanje vnimanie.");
+    const tooltip = label === (isMK ? "Индекс на Објективност" : "Indeks Objektivnosti")
+      ? (isMK ? "Мерка за непристрасност и присуство на фактички верификувани изјави." : "Mera nepristrasnosti i prisustva faktički verifikovanih izjava.")
+      : (isMK ? "Ниво на емотивен набој и употреба на реторика за привлекување внимание." : "Nivo emotivnog naboja i upotreba retorike za privlačenje pažnje.");
 
     const isWinner1 = inverse ? p1 < p2 : p1 > p2;
     const isWinner2 = inverse ? p2 < p1 : p2 > p1;
@@ -91,7 +91,7 @@ export default function SourceComparisonIsland({ allSources, lang = 'sr' }: { al
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
         <div className="space-y-2">
-            <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">{isMK ? 'Прв извор' : 'Prvi izvor'}</label>
+            <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">{isMK ? 'ПРВ ИЗВОР' : 'PRVI IZVOR'}</label>
             <select 
             value={s1} 
             onChange={e => setS1(e.target.value)}
@@ -102,7 +102,7 @@ export default function SourceComparisonIsland({ allSources, lang = 'sr' }: { al
             </select>
         </div>
         <div className="space-y-2">
-            <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">{isMK ? 'Втор извор' : 'Drugi izvor'}</label>
+            <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">{isMK ? 'ВТОР ИЗВОР' : 'DRUGI IZVOR'}</label>
             <select 
             value={s2} 
             onChange={e => setS2(e.target.value)}
@@ -117,16 +117,16 @@ export default function SourceComparisonIsland({ allSources, lang = 'sr' }: { al
       {loading ? (
         <div className="py-20 flex flex-col items-center gap-4">
             <Loader2 className="animate-spin text-nyt-accent" size={32} />
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{isMK ? 'Пресметување...' : 'Kalkuliranje na metriki...'}</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{isMK ? 'Пресметување...' : 'Izračunavanje...'}</p>
         </div>
       ) : m1 && m2 ? (
         <div className="space-y-12">
-          {renderMetric(isMK ? "Индекс на Објективност" : "Indeks na Objektivnost", m1.avg_objectivity, m2.avg_objectivity)}
+          {renderMetric(isMK ? "Индекс на Објективност" : "Indeks Objektivnosti", m1.avg_objectivity, m2.avg_objectivity)}
           {renderMetric(isMK ? "Сензационализам" : "Senzacionalizam", m1.avg_sensationalism, m2.avg_sensationalism, true)}
           
           {overlap && (
             <div className="space-y-5 pt-6 border-t border-zinc-100 dark:border-zinc-800">
-              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground text-center">{isMK ? 'Тематско преклопување' : 'Tematsko Preklopuvanje'}</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground text-center">{isMK ? 'Тематско преклопување' : 'Tematsko Preklapanje'}</p>
               
               <div className="flex w-full h-10 rounded-xl overflow-hidden border-2 border-zinc-100 dark:border-zinc-800 shadow-sm p-1 gap-1">
                 {(() => {
@@ -144,7 +144,7 @@ export default function SourceComparisonIsland({ allSources, lang = 'sr' }: { al
                         style={{ width: `${Math.max((overlap.shared_clusters / totalOverlap) * 100, 20)}%` }}
                       >
                         <span className="text-[11px] font-black leading-none">{overlap.shared_clusters}</span>
-                        <span className="text-[7px] font-black uppercase mt-0.5">{isMK ? 'заеднички' : 'zajednicki'}</span>
+                        <span className="text-[7px] font-black uppercase mt-0.5">{isMK ? 'заеднички' : 'zajednički'}</span>
                       </div>
                       <div
                         className="h-full bg-nyt-red rounded-r-lg flex flex-col items-center justify-center text-white transition-all hover:brightness-110"
@@ -159,7 +159,7 @@ export default function SourceComparisonIsland({ allSources, lang = 'sr' }: { al
               
               <div className="flex justify-between text-[10px] font-black uppercase tracking-tighter text-zinc-500 px-1">
                   <span className="w-1/3 truncate" title={s1}>{s1} {isMK ? 'сам' : 'sam'}</span>
-                  <span className="w-1/3 text-center">{isMK ? 'Споделен интерес' : 'Spodelen interes'}</span>
+                  <span className="w-1/3 text-center">{isMK ? 'Заеднички интерес' : 'Zajednički interes'}</span>
                   <span className="w-1/3 text-right truncate" title={s2}>{s2} {isMK ? 'сам' : 'sam'}</span>
               </div>
             </div>
@@ -177,7 +177,7 @@ export default function SourceComparisonIsland({ allSources, lang = 'sr' }: { al
                 <p className="text-[10px] font-black uppercase tracking-widest text-nyt-red mb-2">{s2}</p>
                 <div className="flex items-baseline justify-center gap-1">
                     <span className="text-2xl font-black tabular-nums">{m2.cluster_count}</span>
-                    <span className="text-[10px] font-bold text-muted-foreground">{isMK ? 'вести' : 'vesti'}</span>
+                    <span className="text-[10px] font-bold text-muted-foreground">{isMK ? 'vesti' : 'vesti'}</span>
                 </div>
             </div>
           </div>

@@ -65,6 +65,7 @@ import type { Article, ClusterDetail } from '../../../types';
 
 const { slug } = Astro.params;
 const API_URL = apiBaseUrl();
+const SITE_URL = (import.meta.env.PUBLIC_SITE_URL || 'https://presek.live').replace(/\/+$/, '');
 
 // Extract ID from slug (handles both legacy 8-char and new 12-char dashed IDs)
 const idMatch = slug?.match(/^([0-9a-f]{8}-[0-9a-f]{3,4}|[0-9a-f]{8,12})/);
@@ -297,10 +298,10 @@ const articleSchema = cluster ? {
 					<div class="header-main-info flex-grow">
 						<div class="edition-kicker flex items-center gap-4 mb-6">
 							<span class="edition-badge bg-foreground text-background px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em]">
-								{getEditionStr(cluster.articles?.[0].created_at).split('.').pop()?.toUpperCase()} ИЗДАНИЕ
+								{getEditionStr(cluster.articles?.[0].created_at).split('.').pop()?.toUpperCase()} {lang === 'sr' ? 'IZDANJE' : 'ИЗДАНИЕ'}
 							</span>
 							<span class="header-date text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground border-l border-border pl-4">
-								{new Date(cluster.articles?.[0].created_at || '').toLocaleDateString('mk-MK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+								{new Date(cluster.articles?.[0].created_at || '').toLocaleDateString(lang === 'sr' ? 'sr-RS' : 'mk-MK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
 							</span>
 						</div>
 						<h1 class="headline font-serif text-5xl md:text-7xl font-black leading-[1.05] tracking-tight text-foreground mb-6">
@@ -309,10 +310,10 @@ const articleSchema = cluster ? {
 						<div class="header-meta flex flex-wrap items-center gap-x-8 gap-y-3 text-[11px] font-black uppercase tracking-widest text-muted-foreground">
 							<div class="flex items-center gap-2">
 								<div class="w-3 h-3 rounded-full bg-nyt-accent"></div>
-								<span class="text-foreground">{cluster.articles?.[0].category || 'ГЕНЕРАЛНО'}</span>
+								<span class="text-foreground">{cluster.articles?.[0].category || (lang === 'sr' ? 'GENERALNO' : 'ГЕНЕРАЛНО')}</span>
 							</div>
-							<span class="border-l border-border pl-8">{cluster.articles?.length || 0} ИЗВОРИ АНАЛИЗИРАНИ</span>
-							<span class="hidden md:inline border-l border-border pl-8">СИСТЕМСКИ ВЕРИФИКУВАНО</span>
+							<span class="border-l border-border pl-8">{cluster.articles?.length || 0} {lang === 'sr' ? 'IZVORA ANALIZIRANO' : 'ИЗВОРИ АНАЛИЗИРАНИ'}</span>
+							<span class="hidden md:inline border-l border-border pl-8">{lang === 'sr' ? 'SISTEMSKI VERIFIKOVANO' : 'СИСТЕМСКИ ВЕРИФИКУВАНО'}</span>
 						</div>
 					</div>
 					<div class="header-actions flex gap-4 pb-1">

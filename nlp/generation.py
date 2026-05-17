@@ -17,6 +17,79 @@ from nlp.utils import (
 )
 from utils import record_runtime_event
 
+_T = {
+    "mk": {
+        "klucen_razvoj": "Клучен развој",
+        "nastan": "Настан",
+        "detali": "Детали",
+        "fokus": "Фокус",
+        "pokrienost": "Медиумска покриеност",
+        "izvori": "извори",
+        "otvoreno": "Отворено",
+        "otvoreno_lower": "отворено",
+        "konsenzus": "Консензус",
+        "nijansi": "Нијанси",
+        "dneven_brifing": "Дневен брифинг",
+        "nema_vesti": "Нема доволно достапни вести.",
+        "dinamika_den": "Динамика на денот",
+        "klucni_nastani": "Клучни настани",
+        "analiticki_uvid": "Аналитички увид",
+        "ostanuva_otvoreno": "Останува отворено",
+        "kontekst_razliki": "Контекст и разлики",
+        "klucen_aspekt": "Клучен аспект",
+        "zosto_vazno": "Зошто е важно",
+        "beleska": "Белешка",
+        "sodrzina_generirana": "Содржината е генерирана преку локална системска анализа.",
+        "povece_mediumi": "Развојот на настаните го следат повеќе медиуми.",
+        "sistemski_pregled": "Системски преглед базиран на {count} извори.",
+        "potvrda_osnovna": "{s1} и {s2} ја потврдуваат истата основна линија на настанот.",
+        "denesniot_pregled": "Денешниот преглед е обележан со: {text}.",
+        "denot_obeleza": "Денот го обележа {text1}, а внимание привлекува и {text2}.",
+        "potencijalna_promena": "Потенцијална промена во политичката моќ и регионалните стратегии.",
+        "direktno_vlijanie": "Директно влијание врз економската стабилност и стандардот на граѓаните.",
+        "potvrden_razvoj": "Потврден развој со висок медиумски консензус од {count} извори.",
+        "faza_razvoj": "Настанот е во фаза на развој и се очекуваат понатамошни официјални потврди.",
+        "najdirektno": "Најдиректно од достапните извори: {text}",
+        "sto_se_slucuva": "Што се случува",
+        "sledeno_od": "Следено од",
+    },
+    "sr": {
+        "klucen_razvoj": "Ključni razvoj",
+        "nastan": "Događaj",
+        "detali": "Detalji",
+        "fokus": "Fokus",
+        "pokrienost": "Medijska pokrivenost",
+        "izvori": "izvori",
+        "otvoreno": "Otvoreno",
+        "otvoreno_lower": "otvoreno",
+        "konsenzus": "Konsenzus",
+        "nijansi": "Nijanse",
+        "dneven_brifing": "Dnevni brifing",
+        "nema_vesti": "Nema dovoljno dostupnih vesti.",
+        "dinamika_den": "Dinamika dana",
+        "klucni_nastani": "Ključni događaji",
+        "analiticki_uvid": "Analitički uvid",
+        "ostanuva_otvoreno": "Ostaje otvoreno",
+        "kontekst_razliki": "Kontekst i razlike",
+        "klucen_aspekt": "Ključni aspekt",
+        "zosto_vazno": "Zašto je važno",
+        "beleska": "Beleška",
+        "sodrzina_generirana": "Sadržaj je generisan putem lokalne sistemske analize.",
+        "povece_mediumi": "Razvoj događaja prati više medija.",
+        "sistemski_pregled": "Sistemski pregled baziran na {count} izvora.",
+        "potvrda_osnovna": "{s1} i {s2} potvrđuju istu osnovnu liniju događaja.",
+        "denesniot_pregled": "Današnji pregled je obeležen sa: {text}.",
+        "denot_obeleza": "Dan je obeležio {text1}, a pažnju privlači i {text2}.",
+        "potencijalna_promena": "Potencijalna promena u političkoj moći i regionalnim strategijama.",
+        "direktno_vlijanie": "Direktan uticaj na ekonomsku stabilnost i standard građana.",
+        "potvrden_razvoj": "Potvrđen razvoj sa visokim medijskim konsenzusom od {count} izvora.",
+        "faza_razvoj": "Događaj je u fazi razvoja i očekuju se dalja službena potvrđivanja.",
+        "najdirektno": "Najdirektnije iz dostupnih izvora: {text}",
+        "sto_se_slucuva": "Šta se dešava",
+        "sledeno_od": "Prati",
+    },
+}
+
 from nlp.keywords import (
     _sentence_tokens,
     _extract_capitalized_phrases,
@@ -74,7 +147,7 @@ def _briefing_lines_from_text(text, *, max_lines=3):
     return lines
 
 
-def _extract_briefing_update(cluster):
+def _extract_briefing_update(cluster, lang="mk"):
     cluster = cluster or {}
     
     # 1. Try to use synthesis if available (it should already be diverse)
@@ -120,8 +193,9 @@ def _extract_briefing_update(cluster):
     return summary or clean_description or clean_title
 
 
-def _extract_briefing_importance(cluster):
+def _extract_briefing_importance(cluster, lang="mk"):
     cluster = cluster or {}
+    t = _T.get(lang, _T["mk"])
     diff = _normalize_briefing_line(cluster.get("difference_point"))
     if diff:
         return diff
@@ -143,16 +217,16 @@ def _extract_briefing_importance(cluster):
     context = f"{clean_title} {clean_description}".casefold()
     
     # Check for domain-specific impact markers
-    if any(term in context for term in ("izbori", "glasanje", "parlamentar")):
-        return "Potencijalna promena vo politickata moc i regionalnite strategii."
-    if any(term in context for term in ("cena", "poskap", "inflacija", "budzet")):
-        return "Direktno vlijanie vrz ekonomskata stabilnost i standardot na gradjanite."
+    if any(term in context for term in ("izbori", "glasanje", "parlamentar", "избори", "гласање", "парламентар")):
+        return t["potencijalna_promena"]
+    if any(term in context for term in ("cena", "poskap", "inflacija", "budzet", "цена", "поскап", "инфлација", "буџет")):
+        return t["direktno_vlijanie"]
 
     # 1. Fact Extraction: Find the most informative sentence in description that adds new info
     # We use a stricter overlap check than the 'update' to ensure importance is different
     description_lines = _briefing_lines_from_text(clean_description, max_lines=6)
     title_terms = set(_extract_terms(clean_title))
-    update_text = _extract_briefing_update(cluster)
+    update_text = _extract_briefing_update(cluster, lang=lang)
     update_terms = set(_extract_terms(update_text))
 
     for line in description_lines:
@@ -169,9 +243,9 @@ def _extract_briefing_importance(cluster):
     # 2. Coverage-based fallback
     source_count = cluster.get("source_count") or 1
     if source_count >= 3:
-        return f"Potvrden razvoj so visok mediumski konsenzus od {source_count} izvori."
+        return t["potvrden_razvoj"].format(count=source_count)
 
-    return "Nastanot e vo faza na razvoj i se ocekuvaat ponatamosni oficijalni potvrdi."
+    return t["faza_razvoj"]
 
 
 def _condense_briefing_update(text, *, max_chars=180):
@@ -191,15 +265,15 @@ def _condense_briefing_update(text, *, max_chars=180):
     return candidate[: max_chars - 1].rstrip(" ,;:") + "…"
 
 
-def _extract_briefing_focus_point(cluster):
-    text = _condense_briefing_update(_extract_briefing_update(cluster), max_chars=160)
+def _extract_briefing_focus_point(cluster, lang="mk"):
+    text = _condense_briefing_update(_extract_briefing_update(cluster, lang=lang), max_chars=160)
     if not text:
         text = _clean_briefing_snippet(cluster.get("title"))
     return _normalize_briefing_line(text).rstrip(" .,;:")
 
 
 
-def _dedupe_briefing_clusters(clusters, limit=4):
+def _dedupe_briefing_clusters(clusters, limit=4, lang="mk"):
     deduped = []
     seen_titles = set()
     seen_updates = []
@@ -210,7 +284,7 @@ def _dedupe_briefing_clusters(clusters, limit=4):
         if title_key and title_key in seen_titles:
             continue
 
-        update = _extract_briefing_focus_point(cluster)
+        update = _extract_briefing_focus_point(cluster, lang=lang)
         update_tokens = set(_extract_terms(update))
         duplicate_update = False
         for other_tokens in seen_updates:
@@ -324,7 +398,7 @@ def _extract_sports_scores(text):
     return scores
 
 
-def summarize_locally(text, sentence_count=3, topic=None, title=None):
+def summarize_locally(text, sentence_count=3, topic=None, title=None, lang="mk"):
     """Non-AI summarizer for news-like text."""
     if not text or len(text) < 100:
         return text
@@ -362,47 +436,27 @@ def summarize_locally(text, sentence_count=3, topic=None, title=None):
     topic_boost_words = set()
     if topic == "Ekonomija":
         topic_boost_words = {
-            "denari",
-            "evra",
-            "procent",
-            "milioni",
-            "budzet",
-            "plata",
-            "ceni",
-            "inflacija",
-            "berza",
+            "denari", "evra", "procent", "milioni", "budzet", "plata", "ceni", "inflacija", "berza",
+            "денари", "евра", "процент", "милиони", "буџет", "плата", "цени", "инфлација", "берза",
+            "dinara", "evra", "procenat", "miliona", "budžet", "plata", "cene", "inflacija", "berza"
         }
     elif topic == "Politika":
         topic_boost_words = {
-            "minister",
-            "pretsedatel",
-            "sobranie",
-            "zakon",
-            "partija",
-            "lider",
-            "vlada",
-            "izbori",
+            "minister", "pretsedatel", "sobranie", "zakon", "partija", "lider", "vlada", "izbori",
+            "министер", "претседател", "собрание", "закон", "партија", "лидер", "влада", "избори",
+            "ministar", "predsednik", "skupština", "zakon", "partija", "lider", "vlada", "izbori"
         }
     elif topic == "Sport":
         topic_boost_words = {
-            "natprevar",
-            "gol",
-            "pobeda",
-            "prvenstvo",
-            "klub",
-            "liga",
-            "fudbal",
-            "kosarka",
+            "natprevar", "gol", "pobeda", "prvenstvo", "klub", "liga", "fudbal", "kosarka",
+            "натпревар", "гол", "победа", "првенство", "клуб", "лига", "фудбал", "кошарка",
+            "utakmica", "gol", "pobeda", "prvenstvo", "klub", "liga", "fudbal", "košarka"
         }
     elif topic == "Kriminal":
         topic_boost_words = {
-            "policija",
-            "apsenje",
-            "ubistvo",
-            "sud",
-            "obvinitelstvo",
-            "zatvor",
-            "napad",
+            "policija", "apsenje", "ubistvo", "sud", "obvinitelstvo", "zatvor", "napad",
+            "полиција", "апсење", "убиство", "суд", "обвинителство", "затвор", "напад",
+            "policija", "hapšenje", "ubistvo", "sud", "tužilaštvo", "zatvor", "napad"
         }
 
     sentence_scores = {}
@@ -463,11 +517,11 @@ def summarize_locally(text, sentence_count=3, topic=None, title=None):
     return " ".join(summary)
 
 
-def summarize_article_fallback(title, description=None, topic=None):
+def summarize_article_fallback(title, description=None, topic=None, lang="mk"):
     parts = [str(title or "").strip(), str(description or "").strip()]
     text = ". ".join([part for part in parts if part])
     summary = summarize_locally(
-        text, sentence_count=2, topic=topic, title=title
+        text, sentence_count=2, topic=topic, title=title, lang=lang
     ).strip()
     summary = re.sub(r"^[⚪🟢🔴]\s*", "", summary, flags=re.UNICODE)
     summary = re.sub(r"#[^\s#]+", "", summary)
@@ -504,12 +558,12 @@ def _source_list(articles, limit=3):
     return ", ".join(name for name in names if name)
 
 
-def compare_cluster_sources(articles):
+def compare_cluster_sources(articles, lang="mk"):
     articles = _normalize_articles_for_local_use(articles)
     if not articles:
         return {"common_line": "", "difference_points": [], "open_points": []}
 
-    cache_key = _articles_cache_key(articles)
+    cache_key = _articles_cache_key(articles) + f":{lang}"
     cached = _cache_get(_comparison_cache, cache_key)
     if cached is not None:
         record_runtime_event("local_compare_cache", mode="hit")
@@ -528,6 +582,11 @@ def compare_cluster_sources(articles):
         "se jos",
         "se razviva",
     )
+    if lang == "mk":
+        uncertainty_markers = (
+            "тврди", "според", "непотвр", "навод", "се очекува", "може", "би мож", "засега", "се уште", "се развива"
+        )
+
     all_terms = Counter()
     article_term_sets, article_texts_lower, title_pairs = [], [], []
     number_map, entity_map = {}, {}
@@ -577,22 +636,35 @@ def compare_cluster_sources(articles):
     common_line = ""
     if common_phrases:
         from nlp.keywords import _format_common_line_from_phrases
-
         try:
-            common_line = _format_common_line_from_phrases(common_phrases[:3])
+            common_line = _format_common_line_from_phrases(common_phrases[:3], lang=lang)
         except Exception as e:
             log.debug(f"[nlp.generation] Error formatting common line: {e}")
-            common_line = (
-                "Poveceto izvori se soglasuvaat okolu "
-                + ", ".join(common_phrases[:3])
-                + " kao temi vo fokus."
-            )
+            if lang == "sr":
+                common_line = (
+                    "Većina izvora se slaže oko "
+                    + ", ".join(common_phrases[:3])
+                    + " kao tema u fokusu."
+                )
+            else:
+                common_line = (
+                    "Повеќето извори се согласуваат околу "
+                    + ", ".join(common_phrases[:3])
+                    + " како теми во фокус."
+                )
     elif common_terms:
-        common_line = (
-            "Poveceto izvori se soglasuvaat okolu "
-            + ", ".join(common_terms[:4])
-            + " kako temi vo fokus."
-        )
+        if lang == "sr":
+            common_line = (
+                "Većina izvora se slaže oko "
+                + ", ".join(common_terms[:4])
+                + " kao tema u fokusu."
+            )
+        else:
+            common_line = (
+                "Повеќето извори се согласуваат околу "
+                + ", ".join(common_terms[:4])
+                + " како теми во фокус."
+            )
 
     difference_points, seen_titles = [], set()
     unique_titles = []
@@ -601,9 +673,14 @@ def compare_cluster_sources(articles):
             seen_titles.add(t.casefold())
             unique_titles.append((s, t))
     if len(unique_titles) >= 2:
-        difference_points.append(
-            f"{unique_titles[0][0]} najdirektno ga formulira razvojot kako „{unique_titles[0][1]}“, dodeka {unique_titles[1][0]} povece naglasuva „{unique_titles[1][1]}“."
-        )
+        if lang == "sr":
+            difference_points.append(
+                f"{unique_titles[0][0]} najdirektnije formuliše razvoj kao „{unique_titles[0][1]}“, dok {unique_titles[1][0]} više naglašava „{unique_titles[1][1]}“."
+            )
+        else:
+            difference_points.append(
+                f"{unique_titles[0][0]} најдиректно го формулира развојот како „{unique_titles[0][1]}“, додека {unique_titles[1][0]} повеќе нагласува „{unique_titles[1][1]}“."
+            )
 
     open_points = []
     uncertain_sources = [
@@ -617,13 +694,23 @@ def compare_cluster_sources(articles):
                 "navodno",
                 "spored neimenuvani",
                 "nepotvrdeno",
+                "можеби",
+                "се очекува",
+                "наводно",
+                "според неименувани",
+                "непотврдено",
             ]
         )
     ]
     if uncertain_sources:
-        open_points.append(
-            f"Detalite okolu ovoj razvoj ostanuvaat nepotvrdeni kaj {', '.join(uncertain_sources[:2])}."
-        )
+        if lang == "sr":
+            open_points.append(
+                f"Detalji oko ovog razvoja ostaju nepotvrđeni kod {', '.join(uncertain_sources[:2])}."
+            )
+        else:
+            open_points.append(
+                f"Деталите околу овој развој остануваат непотврдени кај {', '.join(uncertain_sources[:2])}."
+            )
 
     # Extra check for numbers mismatch as open points
     from nlp.categories import detect_topic
@@ -644,9 +731,14 @@ def compare_cluster_sources(articles):
             if sum(1 for ms in scores if s in ms) < len(articles) and len(articles) > 1
         ]
         if conflicting_scores:
-            open_points.append(
-                f"Informaciite za konecniot rezultat se razlikuvaat (na primer: {conflicting_scores[0]}), sto moze da ukazuva na promena vo tekot na mecot."
-            )
+            if lang == "sr":
+                open_points.append(
+                    f"Informacije za konačan rezultat se razlikuju (na primer: {conflicting_scores[0]}), što može ukazivati na promenu u toku meča."
+                )
+            else:
+                open_points.append(
+                    f"Информациите за конечниот резултат се разликуваат (на пример: {conflicting_scores[0]}), што може да укажува на промена во текот на мечот."
+                )
 
     # Generic numbers only if not many articles (less noise)
     if len(articles) > 1 and len(articles) <= 3:
@@ -658,9 +750,14 @@ def compare_cluster_sources(articles):
         if conflicting_nums and not any(
             n in "".join(open_points) for n in conflicting_nums
         ):
-            open_points.append(
-                f"Postojat razliciti informacii okolu brojkite (na primer: {conflicting_nums[0]}), sto ukazuva na dinamicno izvestuvanje."
-            )
+            if lang == "sr":
+                open_points.append(
+                    f"Postoje različite informacije oko brojki (na primer: {conflicting_nums[0]}), što ukazuje na dinamično izveštavanje."
+                )
+            else:
+                open_points.append(
+                    f"Постојат различни информации околу бројките (на пример: {conflicting_nums[0]}), што укажува на динамично известување."
+                )
 
     result = {
         "common_line": common_line,
@@ -671,7 +768,7 @@ def compare_cluster_sources(articles):
     return result
 
 
-def synthesize_cluster_fallback(articles):
+def synthesize_cluster_fallback(articles, lang="mk"):
     articles = _normalize_articles_for_local_use(articles)
     if not articles:
         return {
@@ -681,8 +778,9 @@ def synthesize_cluster_fallback(articles):
             "generated_article": "",
         }
 
+    t = _T.get(lang, _T["mk"])
     lead = articles[0]
-    comparison = compare_cluster_sources(articles)
+    comparison = compare_cluster_sources(articles, lang=lang)
 
     # 1. Smarter Context Extraction
     desc = cleanAndDecode(lead.get("description", ""))
@@ -698,32 +796,38 @@ def synthesize_cluster_fallback(articles):
     lead_title = deShout(cleanAndDecode(lead.get("title", ""))).strip()
     
     # Use the improved update extraction to avoid title repetition
-    update_point = _extract_briefing_update({"title": lead_title, "description": desc})
+    update_point = _extract_briefing_update({"title": lead_title, "description": desc}, lang=lang)
+
     if update_point and update_point.casefold() != lead_title.casefold():
-        summary_lines.append(f"• Klucen razvoj: {update_point}")
+        summary_lines.append(f"• {t['klucen_razvoj']}: {update_point}")
     else:
         # If no good update found, use a refined version of the title
-        summary_lines.append(f"• Nastan: {lead_title}")
+        summary_lines.append(f"• {t['nastan']}: {lead_title}")
 
     if len(sentences) > 1:
-        summary_lines.append(f"• Detali: {sentences[0]}")
+        summary_lines.append(f"• {t['detali']}: {sentences[0]}")
 
     common = (
         comparison.get("common_line", "")
         .replace("Poveceto izvori se soglasuvaat okolu ", "")
+        .replace("Повеќето извори се согласуваат околу ", "")
+        .replace("Većina izvora se slaže oko ", "")
         .replace(" kako temi vo fokus.", "")
+        .replace(" како теми во фокус.", "")
+        .replace(" како тема во фокус.", "")
+        .replace(" kao tema u fokusu.", "")
         .strip()
     )
     if common and len(common) > 18 and "," not in common:
-        summary_lines.append(f"• Fokus: {common}")
+        summary_lines.append(f"• {t['fokus']}: {common}")
 
     sources_str = _source_list(articles, limit=4)
     summary_lines.append(
-        f"• Mediumska pokrienost: Sledeno od {len(articles)} izvori ({sources_str})."
+        f"• {t['pokrienost']}: {t['sledeno_od']} {len(articles)} {t['izvori']} ({sources_str})."
     )
     
     if comparison.get("open_points"):
-        summary_lines.append(f"• otvoreno: {comparison['open_points'][0]}")
+        summary_lines.append(f"• {t['otvoreno_lower']}: {comparison['open_points'][0]}")
 
     summary = "\n".join(summary_lines)
 
@@ -732,7 +836,7 @@ def synthesize_cluster_fallback(articles):
     if update_point and update_point.casefold() != lead_title.casefold():
         article_body.append(f"{lead_title}. {update_point}.")
     else:
-        article_body.append(f"{lead_title}. Razvojot na nastanite ga sledat povece mediumi.")
+        article_body.append(f"{lead_title}. {t['povece_mediumi']}")
 
     if comparison.get("common_line"):
         article_body.append(comparison["common_line"])
@@ -747,19 +851,19 @@ def synthesize_cluster_fallback(articles):
     if len(articles) > 1:
         perspectives.append(
             {
-                "angle": "Konsenzus",
-                "content": f"{articles[0]['source']} i {articles[1]['source']} ja potvrduvaat istata osnovna linija na nastanot.",
+                "angle": t["konsenzus"],
+                "content": t["potvrda_osnovna"].format(s1=articles[0]['source'], s2=articles[1]['source']),
             }
         )
 
     if comparison["difference_points"]:
         perspectives.append(
-            {"angle": "Nijansi", "content": comparison["difference_points"][0]}
+            {"angle": t["nijansi"], "content": comparison["difference_points"][0]}
         )
 
     if comparison.get("open_points"):
         perspectives.append(
-            {"angle": "otvoreno", "content": comparison["open_points"][0]}
+            {"angle": t["otvoreno_lower"], "content": comparison["open_points"][0]}
         )
 
     record_runtime_event("local_synthesis_path", mode="enhanced_fallback")
@@ -768,13 +872,14 @@ def synthesize_cluster_fallback(articles):
         "perspectives": perspectives[:3],
         "synthetic_headline": lead_title,
         "generated_article": generated_article,
-        "synthetic_standfirst": f"Sistemski pregled baziran na {len(articles)} izvori.",
+        "synthetic_standfirst": t["sistemski_pregled"].format(count=len(articles)),
     }
 
 
-def generate_daily_brief_fallback(clusters):
+def generate_daily_brief_fallback(clusters, lang="mk"):
+    t = _T.get(lang, _T["mk"])
     if not clusters:
-        return "## Dneven Brifing\n\nNema dovolno dostapni vesti."
+        return f"## {t['dneven_brifing']}\n\n{t['nema_vesti']}"
     display_clusters = sorted(
         clusters[:4],
         key=lambda item: (
@@ -783,25 +888,25 @@ def generate_daily_brief_fallback(clusters):
             -int(item.get("source_count") or 0),
         ),
     )
-    display_clusters = _dedupe_briefing_clusters(display_clusters, limit=4)
-    lines = ["## Dinamika na denot", ""]
+    display_clusters = _dedupe_briefing_clusters(display_clusters, limit=4, lang=lang)
+    lines = [f"## {t['dinamika_den']}", ""]
     
     if len(display_clusters) >= 1:
         lead_update = _condense_briefing_update(
-            _extract_briefing_update(display_clusters[0]), max_chars=150
+            _extract_briefing_update(display_clusters[0], lang=lang), max_chars=150
         )
-        intro_line = f"Denesniot pregled e obelezan so: {lead_update}."
+        intro_line = t["denesniot_pregled"].format(text=lead_update)
 
         if len(display_clusters) >= 2:
             sec_update = _condense_briefing_update(
-                _extract_briefing_update(display_clusters[1]), max_chars=150
+                _extract_briefing_update(display_clusters[1], lang=lang), max_chars=150
             )
-            intro_line = f"Denot ga obeleza {lead_update}, a vnimanie privlekuva i {sec_update}."
+            intro_line = t["denot_obeleza"].format(text1=lead_update, text2=sec_update)
 
         lines.append(intro_line)
         lines.append("")
 
-    lines.append("## kontekst i razliki")
+    lines.append(f"## {t['kontekst_razliki']}")
     lines.append("")
     difference_added = False
     for cluster in display_clusters[:3]:
@@ -814,7 +919,7 @@ def generate_daily_brief_fallback(clusters):
         fallback_cluster = display_clusters[0]
         short_t = _condense_briefing_update(fallback_cluster.get("title"), max_chars=80)
         lines.append(
-            f"• {short_t}: " f"{_extract_briefing_importance(fallback_cluster)}."
+            f"• {short_t}: " f"{_extract_briefing_importance(fallback_cluster, lang=lang)}."
         )
     lines.append("")
 
@@ -823,19 +928,19 @@ def generate_daily_brief_fallback(clusters):
         clean_title = _clean_briefing_snippet(title)
         
         # Use content-aware extraction to avoid repeating the title
-        summary = _extract_briefing_update(cluster)
-        importance = _extract_briefing_importance(cluster)
+        summary = _extract_briefing_update(cluster, lang=lang)
+        importance = _extract_briefing_importance(cluster, lang=lang)
         
         lines.append(f"### {index}. {clean_title or title}")
         
         if summary and summary.casefold() != (clean_title or title).casefold():
-            lines.append(f"- Klucen aspekt: {summary}.")
+            lines.append(f"- {t['klucen_aspekt']}: {summary}.")
         
-        lines.append(f"- Zosto e vazno: {importance}.")
+        lines.append(f"- {t['zosto_vazno']}: {importance}.")
         lines.append("")
         
     lines.append(
-        "**Beleska**: Sodrzinata e generirana preku lokalna sistemska analiza."
+        f"**{t['beleska']}**: {t['sodrzina_generirana']}"
     )
     return "\n".join(lines).strip()
 
@@ -971,7 +1076,8 @@ def _is_low_quality_local_text(text, evidence=None):
     )
 
 
-def _build_grounded_answer_from_evidence(evidence, comparison=None):
+def _build_grounded_answer_from_evidence(evidence, comparison=None, lang="mk"):
+    t = _T.get(lang, _T["mk"])
     if not evidence:
         return ""
     p = evidence[0]
@@ -982,14 +1088,15 @@ def _build_grounded_answer_from_evidence(evidence, comparison=None):
         p_snip = _coerce_grounded_snippet(
             summarize_locally(p["article"].get("description", ""), sentence_count=1)
         )
-    return f"Najdirektno od dostapnite izvori: {p_snip}"
+    return t["najdirektno"].format(text=p_snip)
 
 
-def _build_minimum_cluster_summary(articles, comparison=None):
+def _build_minimum_cluster_summary(articles, comparison=None, lang="mk"):
+    t = _T.get(lang, _T["mk"])
     articles = _normalize_articles_for_local_use(articles)
     if not articles:
         return ""
-    return f"• Sto se slucuva: {articles[0]['title']}\n• Pokrienost: {len(articles)} izvori, vklucuvajci ga i {_source_list(articles)}."
+    return f"• {t['sto_se_slucuva']}: {articles[0]['title']}\n• {t['pokrienost']}: {len(articles)} {t['izvori']}, {t['sledeno_od']} i {_source_list(articles)}."
 
 
 def generate_local_placeholder(cluster_id, title, category="vesti"):

@@ -65,7 +65,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
     };
 
     fetchSemantic();
-  }, [profile, syncToken]);
+  }, [profile, syncToken, lang]);
 
   const hasSignals = useMemo(() => hasPersonalizationSignal(profile), [profile]);
 
@@ -123,10 +123,10 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
       <section className="for-you-module" aria-labelledby="for-you-title">
         <div className="for-you-head">
           <div>
-            <p className="for-you-kicker"><Sparkles size={14} /> Za Vas</p>
-            <h2 id="for-you-title">Personalizovan izbor</h2>
+            <p className="for-you-kicker"><Sparkles size={14} /> {lang === 'sr' ? 'Za Vas' : 'За Вас'}</p>
+            <h2 id="for-you-title">{lang === 'sr' ? 'Personalizovan izbor' : 'Персонализиран избор'}</h2>
           </div>
-          <p className="for-you-note">Pripremanje preporuka...</p>
+          <p className="for-you-note">{lang === 'sr' ? 'Pripremanje preporuka...' : 'Подготовка на препораки...'}</p>
         </div>
         <div className="for-you-grid">
           {[1, 2, 3, 4].map(i => (
@@ -164,11 +164,11 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
       <section className={`for-you-module ${semanticLoading ? 'opacity-70' : ''}`} aria-labelledby="for-you-title">
         <div className="for-you-head">
           <div>
-            <p className="for-you-kicker"><Sparkles size={14} /> Za Vas</p>
-            <h2 id="for-you-title">Personaliziran izbor</h2>
+            <p className="for-you-kicker"><Sparkles size={14} /> {lang === 'sr' ? 'Za Vas' : 'За Вас'}</p>
+            <h2 id="for-you-title">{lang === 'sr' ? 'Personalizovan izbor' : 'Персонализиран избор'}</h2>
           </div>
           <p className="for-you-note">
-            Izbor spored temite i izvorite sto vece im sledite.
+            {lang === 'sr' ? 'Izbor prema temama i izvorima koje najviše pratite.' : 'Избор според темите и изворите што најмногу ги следите.'}
           </p>
         </div>
 
@@ -181,10 +181,10 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
             const isSemantic = Boolean(item.similarity);
 
             return (
-              <a key={cluster.cluster_id} href={`/cluster/${cluster.cluster_id}`} className={`for-you-card ${isSemantic ? 'premium-spotlight' : ''}`} aria-label={`Otvori klaster: ${title}`}>
+              <a key={cluster.cluster_id} href={lang === 'sr' ? `/cluster/${cluster.cluster_id}` : `/mk/cluster/${cluster.cluster_id}`} className={`for-you-card ${isSemantic ? 'premium-spotlight' : ''}`} aria-label={`Otvori: ${title}`}>
                 <p className={`for-you-card-kicker ${isSemantic ? 'text-nyt-accent' : ''}`}>
                   {isSemantic ? <BrainCircuit size={12} /> : <Compass size={12} />}
-                  <span>{isSemantic ? 'Semanticka preporaka' : (item.reason || 'Srodna tema')}</span>
+                  <span>{isSemantic ? (lang === 'sr' ? 'Semantička preporuka' : 'Семантичка препорака') : (item.reason || (lang === 'sr' ? 'Srodna tema' : 'Сродна тема'))}</span>
                 </p>
                 <h3 dangerouslySetInnerHTML={{ __html: sanitizeHtml(highlightScores(title)) }}></h3>
                 {summary && <p className="for-you-card-copy">{summary}</p>}
@@ -192,16 +192,16 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
                   <div className="for-you-card-meta">
                     <span>{article.source || 'izvor'}</span>
                     <span>·</span>
-                    <span>{cluster.sources_count ?? cluster.articles?.length ?? 0} { (cluster.sources_count ?? cluster.articles?.length ?? 0) === 1 ? 'izvor' : 'izvori' }</span>
+                    <span>{cluster.sources_count ?? cluster.articles?.length ?? 0} { (cluster.sources_count ?? cluster.articles?.length ?? 0) === 1 ? (lang === 'sr' ? 'izvor' : 'извор') : (lang === 'sr' ? 'izvora' : 'извори') }</span>
                   </div>
-                  <span className="for-you-card-cta">Otvori <ArrowUpRight size={12} /></span>
+                  <span className="for-you-card-cta">{lang === 'sr' ? 'Otvori' : 'Отвори'} <ArrowUpRight size={12} /></span>
                 </div>
               </a>
             );
           })}
         </div>
         
-        <OnboardingIslandCompact profile={profile} recommendations={recommendations} />
+        <OnboardingIslandCompact profile={profile} recommendations={recommendations} lang={lang} />
       </section>
     );
   }
@@ -211,11 +211,11 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
     <section className="for-you-module" aria-labelledby="discover-title">
       <div className="for-you-head">
         <div>
-          <p className="for-you-kicker"><Compass size={14} /> Otkrijte</p>
-          <h2 id="discover-title">Najnovo za vas</h2>
+          <p className="for-you-kicker"><Compass size={14} /> {lang === 'sr' ? 'Otkrijte' : 'Откријте'}</p>
+          <h2 id="discover-title">{lang === 'sr' ? 'Najnovije za Vas' : 'Најново за Вас'}</h2>
         </div>
         <p className="for-you-note">
-          Poceten izbor dodeka ne postavite sto sakate da sledite.
+          {lang === 'sr' ? 'Početni izbor dok ne postavite šta želite da pratite.' : 'Почетен избор додека не поставите што сакате да следите.'}
         </p>
       </div>
       
@@ -226,10 +226,10 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
             const summary = getSummary(cluster);
             const title = getTitle(cluster);
             return (
-              <a key={cluster.cluster_id} href={`/cluster/${cluster.cluster_id}`} className="for-you-card" aria-label={`Otvori klaster: ${title}`}>
+              <a key={cluster.cluster_id} href={lang === 'sr' ? `/cluster/${cluster.cluster_id}` : `/mk/cluster/${cluster.cluster_id}`} className="for-you-card" aria-label={`Otvori: ${title}`}>
                 <p className="for-you-card-kicker">
                   <Clock3 size={12} />
-                  <span>Aktuelno u trenutku</span>
+                  <span>{lang === 'sr' ? 'Aktuelno u trenutku' : 'Актуелно во моментот'}</span>
                 </p>
                 <h3 dangerouslySetInnerHTML={{ __html: sanitizeHtml(highlightScores(title)) }}></h3>
                 {summary && <p className="for-you-card-copy">{summary}</p>}
@@ -237,9 +237,9 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
                   <div className="for-you-card-meta">
                     <span>{article.source || 'izvor'}</span>
                     <span>·</span>
-                    <span>{cluster.sources_count ?? cluster.articles?.length ?? 0} { (cluster.sources_count ?? cluster.articles?.length ?? 0) === 1 ? 'izvor' : 'izvori' }</span>
+                    <span>{cluster.sources_count ?? cluster.articles?.length ?? 0} { (cluster.sources_count ?? cluster.articles?.length ?? 0) === 1 ? (lang === 'sr' ? 'izvor' : 'извор') : (lang === 'sr' ? 'izvora' : 'извори') }</span>
                   </div>
-                  <span className="for-you-card-cta">Otvori <ArrowUpRight size={12} /></span>
+                  <span className="for-you-card-cta">{lang === 'sr' ? 'Otvori' : 'Отвори'} <ArrowUpRight size={12} /></span>
                 </div>
               </a>
             );
@@ -247,29 +247,29 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
         </div>
       ) : (
         <div className="py-12 text-center border border-dashed border-border rounded-lg bg-secondary/5">
-          <p className="text-sm text-muted-foreground">Nema novi preporaki vo ovoj moment.</p>
+          <p className="text-sm text-muted-foreground">{lang === 'sr' ? 'Nema novih preporuka u ovom trenutku.' : 'Нема нови препораки во овој момент.'}</p>
         </div>
       )}
 
-      <OnboardingIslandCompact profile={profile} recommendations={recommendations} />
+      <OnboardingIslandCompact profile={profile} recommendations={recommendations} lang={lang} />
     </section>
   );
 }
 
-function OnboardingIslandCompact({ profile, recommendations }: any) {
+function OnboardingIslandCompact({ profile, recommendations, lang = 'sr' }: any) {
   if (((profile?.followedTopics || []).length + (profile?.followedSources || []).length >= 5)) return null;
   if (recommendations.topics.length === 0 && recommendations.sources.length === 0) return null;
 
   return (
     <div className="for-you-follow-block">
       <div className="for-you-follow-head">
-          <p className="for-you-kicker"><Sparkles size={14} /> Pratite dalje</p>
+          <p className="for-you-kicker"><Sparkles size={14} /> {lang === 'sr' ? 'Pratite dalje' : 'Следете понатаму'}</p>
       </div>
       <div className="for-you-follow-grid">
         {recommendations.topics.slice(0, 2).map((item: any) => (
           <div key={`topic:${item.value}`} className="for-you-follow-card">
             <div>
-              <p className="for-you-follow-kicker">Tema</p>
+              <p className="for-you-follow-kicker">{lang === 'sr' ? 'Tema' : 'Тема'}</p>
               <strong>{item.value}</strong>
               {item.reason && <p className="text-[10px] text-muted-foreground mt-1 opacity-80">{item.reason}</p>}
             </div>
@@ -283,7 +283,7 @@ function OnboardingIslandCompact({ profile, recommendations }: any) {
         {recommendations.sources.slice(0, 1).map((item: any) => (
           <div key={`source:${item.value}`} className="for-you-follow-card">
             <div>
-              <p className="for-you-follow-kicker">izvor</p>
+              <p className="for-you-follow-kicker">{lang === 'sr' ? 'Izvor' : 'Извор'}</p>
               <strong>{item.value}</strong>
               {item.reason && <p className="text-[10px] text-muted-foreground mt-1 opacity-80">{item.reason}</p>}
             </div>
@@ -298,5 +298,3 @@ function OnboardingIslandCompact({ profile, recommendations }: any) {
     </div>
   );
 }
-
-

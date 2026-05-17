@@ -141,7 +141,7 @@ def summarize_article_task(article_id, final_title=None):
         invalidate_public_data_caches()
         log.info(f"Successfully summarized article {article_id}")
     else:
-        fallback = summarize_article_fallback(title, context_text, topic=topic)
+        fallback = summarize_article_fallback(title, context_text, topic=topic, lang=lang)
         if fallback:
             db.execute(
                 "UPDATE articles SET summary = %s WHERE id = %s",
@@ -167,14 +167,14 @@ def _build_cluster_synthesis_content(article_rows):
     )
 
 
-def _normalize_cluster_synthesis(summary, perspectives, article_rows):
+def _normalize_cluster_synthesis(summary, perspectives, article_rows, lang="mk"):
     clean_summary = normalize_summary_text(summary)
     clean_perspectives = normalize_perspectives(perspectives)
 
     if clean_summary and clean_perspectives:
         return clean_summary, clean_perspectives
 
-    fallback = synthesize_cluster_fallback(article_rows)
+    fallback = synthesize_cluster_fallback(article_rows, lang=lang)
     fallback_summary = normalize_summary_text(fallback.get("summary", ""))
     fallback_perspectives = normalize_perspectives(fallback.get("perspectives", []))
 
@@ -511,7 +511,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                         f"[tasks/synthesis] AI returned unstructured or partial response for {
                              cluster_id} ({lang}), merging with enhanced fallback."
                     )
-                    fallback = synthesize_cluster_fallback(article_rows)
+                    fallback = synthesize_cluster_fallback(article_rows, lang=lang)
 
                     # Merge: Prefer AI summary if it exists and is long enough, otherwise fallback
                     summary = res_data.get("summary") or (
@@ -583,7 +583,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 }
 
                 summary, perspectives = _normalize_cluster_synthesis(
-                    summary, perspectives, article_rows
+                    summary, perspectives, article_rows, lang=lang
                 )
                 record_runtime_event(
                     "synthesis_path", mode=provider or "unknown", fast_mode=fast_mode, lang=lang
@@ -686,7 +686,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 log.warning(
                     f"[tasks/synthesis] AI provider {provider} returned no content for {cluster_id} ({lang}), using enhanced fallback"
                 )
-                fallback = synthesize_cluster_fallback(article_rows)
+                fallback = synthesize_cluster_fallback(article_rows, lang=lang)
                 summary = fallback["summary"]
                 perspectives = fallback["perspectives"]
                 synthetic_headline = deShout(article_rows[0]["title"])
@@ -1692,7 +1692,7 @@ def backfill_cluster_summaries_task(days=30, lang="sr"):
                 # Generate summary using fallback (local) synthesis
                 from nlp.generation import synthesize_cluster_fallback
                 
-                fallback_result = synthesize_cluster_fallback(article_rows)
+                fallback_result = synthesize_cluster_fallback(article_rows, lang=lang)
                 
                 if fallback_result["summary"] or fallback_result["generated_article"]:
                     # Store the summary in database

@@ -362,7 +362,7 @@ function getBriefingSnippet(content: string) {
                     <div class="max-w-full overflow-hidden mb-24">
                         <div class="quick-pills-container overflow-x-auto hide-scrollbar -mx-4 px-4 pb-2">
                             <div class="flex items-center gap-3">
-                                <span class="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground mr-4 shrink-0">Istraži:</span>
+                                <span class="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground mr-4 shrink-0">{t('home.explore')}</span>
                                 {[
                                     { id: 'rs', label: lang === 'mk' ? 'Makedonija' : 'Srbija', href: '/?category=' + encodeURIComponent(lang === 'mk' ? 'Makedonija' : 'Srbija'), active: category === (lang === 'mk' ? 'Makedonija' : 'Srbija') },
                                     { id: 'pol', label: 'Politika', href: '/?topic=' + encodeURIComponent('Politika'), active: topic === 'Politika' },
@@ -458,7 +458,7 @@ function getBriefingSnippet(content: string) {
 
                 {clusters.length > 4 && (
 					<div class="section-wrapper for-you-wrapper">
-					    <ForYouIsland client:visible clusters={forYouClusters} excludeClusterIds={excludedClusterIds} />
+					    <ForYouIsland client:visible clusters={forYouClusters} excludeClusterIds={excludedClusterIds} lang={lang} />
                     </div>
 				)}
 
@@ -662,6 +662,13 @@ function getBriefingSnippet(content: string) {
     }
     .dark .quick-pill.is-active {
         background: var(--nyt-accent);
+    }
+
+    @media (max-width: 768px) {
+        .broadsheet-main { border-right: none; padding-right: 0; }
+    }
+</style>
+
     }
 
     @media (max-width: 768px) {

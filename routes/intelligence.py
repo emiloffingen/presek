@@ -521,7 +521,7 @@ async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts", lang:
 
     except Exception as e:
         log.error(f"[analyst] Unexpected error for {cluster_id}: {e}", exc_info=True)
-        return {"status": "error", "message": "Greska pri analizata." if lang == "mk" else "Greška pri analizi."}
+        return {"status": "error", "message": "Грешка при анализата." if lang == "mk" else "Greška pri analizi."}
 
 
 @router.get("/intelligence/source-pulse")

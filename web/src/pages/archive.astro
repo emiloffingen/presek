@@ -2,13 +2,19 @@
 import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
-import NewsCard from '../components/NewsCard.astro';
 import ArchiveFeedIsland from '../components/ArchiveFeedIsland.tsx';
 import ArchiveHeatmapIsland from '../components/ArchiveHeatmapIsland.tsx';
 
 import { apiBaseUrl } from '../lib/apiBase';
 import { sanitizeHtml } from '../lib/sanitize';
 import { CalendarDays, ChevronRight, Hash, Building2, Sparkles, Search, Activity } from 'lucide-react';
+
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
+
+const hostHeader = Astro.request?.headers.get('host');
+const lang = getLangFromUrl(Astro.url, hostHeader);
+const t = useTranslations(lang);
+const isMK = lang === 'mk';
 
 const date = Astro.url.searchParams.get('date') || new Date().toISOString().split('T')[0];
 const q = Astro.url.searchParams.get('q') || '';
@@ -25,7 +31,7 @@ let error = null;
 try {
   const archiveUrl = new URL(`${API_URL}/api/archive`);
   archiveUrl.searchParams.set('date', date);
-  archiveUrl.searchParams.set('lang', 'sr');
+  archiveUrl.searchParams.set('lang', lang);
   archiveUrl.searchParams.set('page', String(page));
   archiveUrl.searchParams.set('page_size', '50');
   if (q) archiveUrl.searchParams.set('q', q);
@@ -34,8 +40,8 @@ try {
   
   const [res, briefRes, otdRes] = await Promise.all([
     fetch(archiveUrl),
-    fetch(`${API_URL}/api/archive/daily-briefing?date=${date}&lang=sr`),
-    fetch(`${API_URL}/api/archive/on-this-day?date=${date}&lang=sr`)
+    fetch(`${API_URL}/api/archive/daily-briefing?date=${date}&lang=${lang}`),
+    fetch(`${API_URL}/api/archive/on-this-day?date=${date}&lang=${lang}`)
   ]);
 
   if (res.ok) archive = await res.json();
@@ -43,11 +49,11 @@ try {
   if (otdRes.ok) onThisDay = await otdRes.json();
 
   if (!res.ok) {
-    error = 'Архива тренутно није доступна.';
+    error = t('home.error');
     Astro.response.status = 500;
   }
 } catch (err) {
-  error = 'Грешка при учитавању архиве.';
+  error = t('home.error');
   Astro.response.status = 500;
 }
 
@@ -56,56 +62,56 @@ const buildFilterHref = (kind: 'source' | 'topic' | 'q', value: string) => {
   if (kind === 'source') { if (value) params.set('source', value); if (topic) params.set('topic', topic); if (q) params.set('q', q); }
   else if (kind === 'topic') { if (source) params.set('source', source); if (value) params.set('topic', value); if (q) params.set('q', q); }
   else { if (source) params.set('source', source); if (topic) params.set('topic', topic); if (value) params.set('q', value); }
-  return `/archive?${params.toString()}`;
+  const prefix = isMK ? '/mk' : '';
+  return `${prefix}/archive?${params.toString()}`;
 };
 
-const formattedDisplayDate = new Date(archive.date).toLocaleDateString('sr-RS', { day: 'numeric', month: 'long', year: 'numeric' });
+const formattedDisplayDate = new Date(archive.date).toLocaleDateString(isMK ? 'mk-MK' : 'sr-RS', { day: 'numeric', month: 'long', year: 'numeric' });
 
-// More robust splitting to handle different bullet characters or spacing
 const briefingItems = briefingData.briefing ? briefingData.briefing.split(/\s*[•·]\s*/) : [];
 
 function formatBriefingItem(item: string) {
     if (!item) return '';
-    // 1. First, handle markdown bolding
     const bolded = item.replace(/\*\*(.*?)\*\*/g, '<strong class="font-black text-foreground not-italic">$1</strong>');
-    // 2. Sanitize resulting HTML (allows strong, b, etc.)
     return sanitizeHtml(bolded);
 }
 ---
 
-<Layout title="Архива — Пресек" description="Претражујте кроз историју српских медија.">
+<Layout title={`${t('nav.archive')} — Presek`} description={t('archive.description')}>
   <NYTHeader />
   
   <main class="site-layout broadsheet-layout pt-32 pb-[var(--page-py)]">
     <header class="editorial-masthead mb-16 border-t border-foreground pt-4">
         <div class="masthead-top mb-8 flex justify-between items-center">
-            <span class="masthead-kicker font-sans text-[10px] font-black uppercase tracking-[0.25em] text-nyt-accent">МЕДИЈСКА МЕМОРИЈА</span>
+            <span class="masthead-kicker font-sans text-[10px] font-black uppercase tracking-[0.25em] text-nyt-accent">{t('archive.memory')}</span>
             <div class="masthead-meta-compact hidden md:flex items-center gap-6 font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
                 <span class="flex items-center gap-2"><CalendarDays size={12} /> {formattedDisplayDate}</span>
                 <span class="w-1 h-1 rounded-full bg-border"></span>
-                <span>{archive.total_clusters} тема</span>
+                <span>{archive.total_clusters} {t('archive.tema')}</span>
                 <span class="w-1 h-1 rounded-full bg-border"></span>
-                <span>{archive.sources} медија</span>
+                <span>{archive.sources} {t('archive.redakcija')}</span>
             </div>
         </div>
 
         <div class="masthead-main flex flex-col md:flex-row justify-between items-start md:items-end gap-12 mb-12">
             <div class="max-w-3xl">
-                <h1 class="masthead-title font-serif text-5xl md:text-7xl font-black leading-[0.9] tracking-tighter mb-4">Архива <span class="text-nyt-accent italic font-light">Издања</span></h1>
-                <p class="font-serif text-xl italic text-muted-foreground leading-snug max-w-2xl">Преглед медијског циклуса и историјског наратива кроз консолидоване извештаје Пресека.</p>
+                <h1 class="masthead-title font-serif text-5xl md:text-7xl font-black leading-[0.9] tracking-tighter mb-4">{t('nav.archive')} <span class="text-nyt-accent italic font-light">{isMK ? 'Изданија' : 'Izdanja'}</span></h1>
+                <p class="font-serif text-xl italic text-muted-foreground leading-snug max-w-2xl">
+                    {t('archive.masthead_desc')}
+                </p>
             </div>
             <div class="masthead-data-deck grid grid-cols-3 gap-0 border border-border/60 bg-secondary/10 overflow-hidden rounded-sm w-full md:w-auto min-w-[320px]">
                 <div class="deck-stat p-6 border-r border-border/60 text-center">
-                    <span class="block text-2xl font-black tabular-nums">{archive.total.toLocaleString('sr-RS')}</span>
-                    <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Објава</span>
+                    <span class="block text-2xl font-black tabular-nums">{archive.total.toLocaleString(isMK ? 'mk-MK' : 'sr-RS')}</span>
+                    <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{t('archive.objava')}</span>
                 </div>
                 <div class="deck-stat p-6 border-r border-border/60 text-center">
                     <span class="block text-2xl font-black tabular-nums">{archive.sources}</span>
-                    <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Редакција</span>
+                    <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{t('archive.redakcija')}</span>
                 </div>
                 <div class="deck-stat p-6 bg-nyt-accent/5 text-center">
                     <span class="block text-2xl font-black tabular-nums text-nyt-accent">{archive.total_clusters}</span>
-                    <span class="text-[9px] font-black uppercase tracking-widest text-nyt-accent/70">Тема</span>
+                    <span class="text-[9px] font-black uppercase tracking-widest text-nyt-accent/70">{t('archive.tema')}</span>
                 </div>
             </div>
         </div>
@@ -114,7 +120,7 @@ function formatBriefingItem(item: string) {
             <div class="daily-briefing-highlight mb-16 p-8 bg-background border-l-4 border-nyt-accent shadow-editorial">
                 <div class="flex items-center gap-2 mb-6">
                     <Sparkles size={14} className="text-nyt-accent" />
-                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent">КРАТАК БРИФИНГ ЗА ДАН</span>
+                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent">{t('archive.briefing_kicker')}</span>
                 </div>
                 <ul class="space-y-4">
                     {briefingItems.map(item => (
@@ -147,17 +153,17 @@ function formatBriefingItem(item: string) {
 
                     <div class="flex items-center gap-1">
                         <a 
-                            href={`/archive?date=${new Date(new Date(date).getTime() - 86400000).toISOString().split('T')[0]}`} 
+                            href={`${isMK ? '/mk' : ''}/archive?date=${new Date(new Date(date).getTime() - 86400000).toISOString().split('T')[0]}`} 
                             class="px-4 py-2 bg-secondary/50 border border-border/60 rounded font-sans text-[10px] font-black uppercase tracking-widest hover:bg-foreground hover:text-background transition-all"
                         >
-                            ← ПРЕТХОДНИ
+                            ← {isMK ? 'ПРЕТХОДЕН' : 'PRETHODNI'}
                         </a>
                         {new Date(date) < new Date(new Date().toISOString().split('T')[0]) && (
                             <a 
-                                href={`/archive?date=${new Date(new Date(date).getTime() + 86400000).toISOString().split('T')[0]}`} 
+                                href={`${isMK ? '/mk' : ''}/archive?date=${new Date(new Date(date).getTime() + 86400000).toISOString().split('T')[0]}`} 
                                 class="px-4 py-2 bg-secondary/50 border border-border/60 rounded font-sans text-[10px] font-black uppercase tracking-widest hover:bg-foreground hover:text-background transition-all"
                             >
-                                СЛЕДЕЋИ →
+                                {isMK ? 'СЛЕДЕН' : 'SLEDEĆI'} →
                             </a>
                         )}
                     </div>
@@ -170,7 +176,7 @@ function formatBriefingItem(item: string) {
                             type="text" 
                             name="q" 
                             value={q} 
-                            placeholder="Претражи овај дан..." 
+                            placeholder={isMK ? "Пребарај го овој ден..." : "Pretraži ovaj dan..."} 
                             class="w-full bg-secondary/20 border-b-2 border-border py-2 pl-2 pr-10 font-serif font-bold text-lg outline-none focus:border-nyt-accent placeholder:italic placeholder:font-normal placeholder:opacity-40 transition-all"
                         />
                         <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none opacity-40">
@@ -189,17 +195,17 @@ function formatBriefingItem(item: string) {
                     <Activity size={18} />
                 </div>
                 <div>
-                    <span class="block font-sans text-[11px] font-black uppercase tracking-widest">Медијски Пулс</span>
-                    <span class="text-xs text-muted-foreground">Интензитет извештавања и тематски циклуси</span>
+                    <span class="block font-sans text-[11px] font-black uppercase tracking-widest">{t('cluster.media_pulse')}</span>
+                    <span class="text-xs text-muted-foreground">{isMK ? 'Интензитет на известување и тематски циклуси' : 'Intenzitet izveštavanja i tematski ciklusi'}</span>
                 </div>
             </div>
             <div class="flex items-center gap-3 font-sans text-[10px] font-black uppercase tracking-widest text-nyt-accent">
-                <span class="group-open:hidden">ОТВОРИ ПРЕГЛЕД ↓</span>
-                <span class="hidden group-open:inline">ЗАТВОРИ ПРЕГЛЕД ↑</span>
+                <span class="group-open:hidden">{isMK ? 'ОТВОРИ ПРЕГЛЕД' : 'OTVORI PREGLED'} ↓</span>
+                <span class="hidden group-open:inline">{isMK ? 'ЗАТВОРИ ПРЕГЛЕД' : 'ZATVORI PREGLED'} ↑</span>
             </div>
         </summary>
         <div class="p-8 border-t border-border bg-white dark:bg-zinc-950/50">
-            <ArchiveHeatmapIsland client:visible selectedDate={date} />
+            <ArchiveHeatmapIsland client:visible selectedDate={date} lang={lang} />
         </div>
     </details>
 
@@ -207,13 +213,13 @@ function formatBriefingItem(item: string) {
         <section class="broadsheet-main pr-12 border-r border-border/40">
             {q || source || topic ? (
                 <div class="active-filters mb-12 flex items-center gap-4 p-4 bg-nyt-accent/[0.03] border border-nyt-accent/10 rounded-lg">
-                    <span class="font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground">АКТИВАН ФИЛТЕР:</span>
+                    <span class="font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('archive.active_filter')}</span>
                     <div class="flex flex-wrap gap-2">
                         {q && <span class="px-3 py-1 bg-foreground text-background rounded-full font-sans text-[10px] font-black uppercase tracking-widest flex items-center gap-2">🔍 {q} <a href={buildFilterHref('q', '')} class="ml-1 opacity-60 hover:opacity-100">×</a></span>}
                         {source && <span class="px-3 py-1 bg-foreground text-background rounded-full font-sans text-[10px] font-black uppercase tracking-widest flex items-center gap-2">🏢 {source} <a href={buildFilterHref('source', '')} class="ml-1 opacity-60 hover:opacity-100">×</a></span>}
                         {topic && <span class="px-3 py-1 bg-foreground text-background rounded-full font-sans text-[10px] font-black uppercase tracking-widest flex items-center gap-2"># {topic} <a href={buildFilterHref('topic', '')} class="ml-1 opacity-60 hover:opacity-100">×</a></span>}
                     </div>
-                    <a href={`/archive?date=${date}`} class="ml-auto font-sans text-[10px] font-black uppercase tracking-widest text-nyt-accent underline decoration-2 underline-offset-4">ОЧИСТИ</a>
+                    <a href={`${isMK ? '/mk' : ''}/archive?date=${date}`} class="ml-auto font-sans text-[10px] font-black uppercase tracking-widest text-nyt-accent underline decoration-2 underline-offset-4">{t('archive.clear')}</a>
                 </div>
             ) : null}
 
@@ -223,12 +229,12 @@ function formatBriefingItem(item: string) {
                         <p class="font-serif text-2xl italic text-muted-foreground">{error}</p>
                     </div>
                 ) : archive.clusters.length > 0 ? (
-                    <ArchiveFeedIsland client:visible initialClusters={archive.clusters} initialHasMore={archive.has_more} pageSize={archive.page_size || 50} date={date} q={q} source={source} topic={topic} />
+                    <ArchiveFeedIsland client:visible initialClusters={archive.clusters} initialHasMore={archive.has_more} pageSize={archive.page_size || 50} date={date} q={q} source={source} topic={topic} lang={lang} />
                 ) : (
                     <div class="py-32 text-center border-2 border-dashed border-border rounded-2xl">
-                        <h2 class="font-serif text-3xl font-black italic mb-4">Нема пронађених издања.</h2>
-                        <p class="font-nyt-body text-muted-foreground">Пробајте са другим датумом или прилагодите филтере претраге.</p>
-                        <a href="/archive" class="mt-8 inline-block px-8 py-3 bg-foreground text-background font-sans text-[10px] font-black uppercase tracking-widest hover:bg-nyt-accent transition-all">Врати се данас</a>
+                        <h2 class="font-serif text-3xl font-black italic mb-4">{t('archive.empty')}</h2>
+                        <p class="font-nyt-body text-muted-foreground">{isMK ? 'Пробајте со друг датум или прилагодете ги филтрите за пребарување.' : 'Probajte sa drugim datumom ili prilagodite filtere pretrage.'}</p>
+                        <a href={isMK ? "/mk/archive" : "/archive"} class="mt-8 inline-block px-8 py-3 bg-foreground text-background font-sans text-[10px] font-black uppercase tracking-widest hover:bg-nyt-accent transition-all">{t('archive.back_today')}</a>
                     </div>
                 )}
             </div>
@@ -236,8 +242,8 @@ function formatBriefingItem(item: string) {
 
         <aside class="broadsheet-rail pl-4">
             <div class="rail-nav-block mb-12">
-                <a href="/archive" class="group flex items-center justify-between p-4 bg-foreground text-background rounded-sm transition-all hover:bg-nyt-accent shadow-lg shadow-black/5 hover:-translate-y-1">
-                    <span class="font-sans text-[11px] font-black uppercase tracking-widest">ВРАТИ СЕ ДАНАС</span>
+                <a href={isMK ? "/mk/archive" : "/archive"} class="group flex items-center justify-between p-4 bg-foreground text-background rounded-sm transition-all hover:bg-nyt-accent shadow-lg shadow-black/5 hover:-translate-y-1">
+                    <span class="font-sans text-[11px] font-black uppercase tracking-widest">{t('archive.back_today')}</span>
                     <ChevronRight size={16} />
                 </a>
             </div>
@@ -247,15 +253,17 @@ function formatBriefingItem(item: string) {
                     <div class="absolute top-0 right-0 p-4 opacity-10">
                         <CalendarDays size={64} />
                     </div>
-                    <span class="block font-sans text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent mb-4">НА ОВАЈ ДАН</span>
-                    <h3 class="font-serif text-2xl font-black leading-tight mb-4 tracking-tight">ПРЕ {onThisDay.years_ago} {onThisDay.years_ago === 1 ? 'ГОДИНЕ' : (onThisDay.years_ago > 1 && onThisDay.years_ago < 5 ? 'ГОДИНЕ' : 'ГОДИНА')}</h3>
+                    <span class="block font-sans text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent mb-4">{t('archive.on_this_day')}</span>
+                    <h3 class="font-serif text-2xl font-black leading-tight mb-4 tracking-tight">
+                        {t('archive.years_ago').replace('{n}', onThisDay.years_ago)}
+                    </h3>
                     <div class="otd-content group">
                         {onThisDay.image && (
                             <div class="mb-4 overflow-hidden rounded-lg shadow-sm">
                                 <img src={onThisDay.image} alt="" class="w-full aspect-video object-cover transition-transform group-hover:scale-105 duration-700" />
                             </div>
                         )}
-                        <a href={`/cluster/${onThisDay.cluster_id}`} class="block group">
+                        <a href={isMK ? `/mk/cluster/${onThisDay.cluster_id}` : `/cluster/${onThisDay.cluster_id}`} class="block group">
                             <h4 class="font-serif font-black text-lg leading-tight group-hover:text-nyt-accent transition-colors mb-3">{onThisDay.title}</h4>
                         </a>
                         <p class="font-nyt-body text-sm leading-relaxed text-muted-foreground line-clamp-4 italic">"{onThisDay.summary}"</p>
@@ -264,7 +272,7 @@ function formatBriefingItem(item: string) {
             )}
 
             <div class="rail-directory-module mb-12">
-                <h3 class="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-foreground mb-6 pb-2 border-b-2 border-foreground">ТЕМЕ У ФОКУСУ</h3>
+                <h3 class="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-foreground mb-6 pb-2 border-b-2 border-foreground">{t('archive.focus_topics')}</h3>
                 <div class="flex flex-col gap-1">
                     {archive.top_topics?.slice(0, 15).map((item: any) => (
                         <a href={buildFilterHref('topic', item.topic)} class="group flex items-center justify-between py-2 border-b border-border/40 hover:bg-secondary/20 transition-all px-1">
@@ -276,7 +284,7 @@ function formatBriefingItem(item: string) {
             </div>
 
             <div class="rail-directory-module">
-                <h3 class="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-foreground mb-6 pb-2 border-b-2 border-foreground">ВОДЕЋИ КАНАЛИ</h3>
+                <h3 class="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-foreground mb-6 pb-2 border-b-2 border-foreground">{t('archive.leading_channels')}</h3>
                 <div class="flex flex-col gap-1">
                     {archive.top_sources?.slice(0, 15).map((item: any) => (
                         <a href={buildFilterHref('source', item.source)} class="group flex items-center justify-between py-2 border-b border-border/40 hover:bg-secondary/20 transition-all px-1">
