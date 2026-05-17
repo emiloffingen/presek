@@ -41,12 +41,12 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
   const main = cluster.articles?.[0];
   if (!main) return null;
-  
+
   const sourceSignal = main?.source_signal || {};
   const totalSources = cluster.articles.length;
   const showTrustBadge = totalSources >= 2 && Boolean(sourceSignal.trust_label);
   const showSignificanceLabel = cluster.is_breaking || totalSources >= 3;
-  
+
   const significanceLabel =
     totalSources >= 6 ? t('news.breaking') :
     totalSources >= 4 ? t('news.tracked') :
@@ -86,8 +86,8 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
       if (diffMins < 1) return t('news.just_now');
       if (diffMins < 60) return `${t('news.ago')} ${diffMins} ${t('news.min_short')}`;
-      return date.toLocaleTimeString(lang === 'sr' ? 'sr-RS' : 'mk-MK', { 
-          hour: '2-digit', 
+      return date.toLocaleTimeString(lang === 'sr' ? 'sr-RS' : 'mk-MK', {
+          hour: '2-digit',
           minute: '2-digit'
       });
     } catch {
@@ -99,7 +99,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
     <article className={`nyt-article variant-${variant} ${isLead ? 'lead-story' : ''} ${showTrustBadge ? 'premium-spotlight' : ''}`}>
       <div className="article-body">
         <div className="article-meta-v2">
-          <div className="kicker-group">
+          <div className="kicker-group min-w-0 flex flex-wrap items-center gap-1">
             <span className="kicker">{main.source}</span>
             {showTrustBadge && sourceSignal.trust_label === 'Visoko poverenje' && (
               <ShieldCheck size={10} className="text-blue-500" />
@@ -108,7 +108,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
               <Globe size={10} className="text-emerald-500" />
             )}
           </div>
-          
+
           <div className="meta-right">
             {showSignificanceLabel && (
                 <span className={`significance-badge ${cluster.is_breaking ? 'is-breaking' : ''}`}>
@@ -138,7 +138,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         <div className="card-content-stack">
           {displaySummary && (
             <p
-              className={`summary ${summaryIsCyrillic ? 'summary-cyrillic' : ''}`}
+              className={`summary ${summaryIsCyrillic ? 'summary-cyrillic' : ''} min-w-0 break-words whitespace-normal`}
               dangerouslySetInnerHTML={{ __html: sanitizeHtml(displaySummary) }}
             ></p>
           )}
