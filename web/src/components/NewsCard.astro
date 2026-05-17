@@ -1,7 +1,7 @@
 ---
 /* Cache-bust marker for NewsCard stylesheet hashing. */
 import { chooseClusterImage } from '../utils/imageSelection';
-import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, slugify, getDesignCardContext } from '../utils/textUtils';
+import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, slugify, getDesignCardContext, transliterate, cleanAndDecode } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
 import { Clock, Layers, ShieldCheck, Globe, Sparkles, Zap, AlertCircle, Palette, Building2, TrendingUp, Award, Cpu, Newspaper, ArrowRight } from 'lucide-react';
 import type { NewsCluster, Article } from '../types';
