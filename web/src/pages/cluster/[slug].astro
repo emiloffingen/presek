@@ -516,8 +516,8 @@ const articleSchema = cluster ? {
                             </div>
                             <div class="space-y-20">
                                 <ResearchIsland client:visible clusterId={id || ''} initialHeadline={displayHeadline || ''} sources={allSourcesNames} lang={lang} />
-                                <StorylineHistoryIsland client:visible clusterId={id || ''} apiUrl={API_URL} />
-                                <ClusterHistoryIsland client:visible clusterId={id || ''} />
+                                <StorylineHistoryIsland client:visible clusterId={id || ''} apiUrl={API_URL} lang={lang} />
+                                <ClusterHistoryIsland client:visible clusterId={id || ''} lang={lang} />
                             </div>
                         </section>
 

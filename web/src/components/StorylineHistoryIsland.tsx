@@ -9,18 +9,19 @@ interface StorylineItem {
     image_url?: string;
 }
 
-const StorylineHistoryIsland: React.FC<{ clusterId: string; apiUrl: string }> = ({ clusterId, apiUrl }) => {
+const StorylineHistoryIsland: React.FC<{ clusterId: string; apiUrl: string; lang?: string }> = ({ clusterId, apiUrl, lang = 'sr' }) => {
     const [history, setHistory] = useState<StorylineItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const isMK = lang === 'mk';
 
     useEffect(() => {
-        fetch(`${apiUrl}/intelligence/cluster/${clusterId}/history`)
+        fetch(`${apiUrl}/intelligence/cluster/${clusterId}/history?lang=${lang}`)
             .then(res => res.json())
             .then(data => {
                 setHistory(data.history || []);
             })
             .finally(() => setLoading(false));
-    }, [clusterId, apiUrl]);
+    }, [clusterId, apiUrl, lang]);
 
     if (loading) return null;
     if (history.length === 0) return null;
@@ -29,7 +30,9 @@ const StorylineHistoryIsland: React.FC<{ clusterId: string; apiUrl: string }> = 
         <section className="mt-16 pt-12 border-t border-border">
             <div className="flex items-center gap-3 mb-10">
                 <History size={20} className="text-nyt-accent" />
-                <h2 className="font-sans text-xs font-black uppercase tracking-widest">Hronologija na razvojot</h2>
+                <h2 className="font-sans text-xs font-black uppercase tracking-widest">
+                    {isMK ? 'Хронологија на развојот' : 'Hronologija razvoja'}
+                </h2>
             </div>
 
             <div className="relative pl-8 space-y-10 before:content-[''] before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-px before:bg-border">
@@ -42,17 +45,17 @@ const StorylineHistoryIsland: React.FC<{ clusterId: string; apiUrl: string }> = 
                             <div className="md:w-32 flex-shrink-0 pt-1">
                                 <span className="font-sans text-[10px] font-black uppercase text-muted-foreground flex items-center gap-1">
                                     <Calendar size={10} />
-                                    {new Date(item.first_seen).toLocaleDateString('mk-RS', { day: 'numeric', month: 'short' })}
+                                    {new Date(item.first_seen).toLocaleDateString(isMK ? 'mk-MK' : 'sr-RS', { day: 'numeric', month: 'short' })}
                                 </span>
                             </div>
                             
-                            <a href={`/cluster/${item.cluster_id}`} className="group flex-1 flex gap-4 items-start">
+                            <a href={isMK ? `/mk/cluster/${item.cluster_id}` : `/cluster/${item.cluster_id}`} className="group flex-1 flex gap-4 items-start">
                                 <div className="flex-1">
                                     <h3 className="font-serif font-bold text-base md:text-lg leading-tight group-hover:text-nyt-accent transition-colors">
                                         {item.title}
                                     </h3>
                                     <div className="mt-2 flex items-center gap-2 text-[10px] font-black uppercase text-nyt-accent opacity-0 group-hover:opacity-100 transition-opacity">
-                                        Vidi im detalite <ArrowRight size={12} />
+                                        {isMK ? 'Види ги деталите' : 'Vidi detalje'} <ArrowRight size={12} />
                                     </div>
                                 </div>
                                 {item.image_url && (
