@@ -404,7 +404,7 @@ async def get_deep_research(
         
         prompt = f"PITANJE: {query}\n\nKONTEKST ZA ANALIZU:\n{context}" if lang == "sr" else f"PRASANjE: {query}\n\nKONTEKST ZA ANALIZA:\n{context}"
 
-        # Use cascading AI engine (will route to mistral -> local based on task_type="research")
+        # Use cascading AI engine
         raw, provider = sync_call_ai(
             prompt,
             research_system_prompt,
@@ -415,7 +415,11 @@ async def get_deep_research(
         )
 
         if not raw:
-            return {"status": "error", "message": "Sistemot momentalno ne e dostapen." if lang == "mk" else "Sistem trenutno nije dostupan."}
+            # Handle rate-limiting or provider failure explicitly
+            return {
+                "status": "error", 
+                "message": "Sistemot e preoptereten, obidete se povtorno za nekolku minuti." if lang == "mk" else "Sistem je trenutno preopterećen, pokušajte ponovo za nekoliko minuta."
+            }
 
         # Parse structured response
         response = clean_json_response(raw)
