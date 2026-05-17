@@ -55,7 +55,7 @@ const cardContext = getDesignCardContext(cluster);
 const cardLabel = cardContext.labelKey ? t(cardContext.labelKey as any) : '';
 const cardSub = cardContext.subKey ? t(cardContext.subKey as any) : '';
 
-const IconComponent = 
+const IconComponent =
     cardContext.icon === 'palette' ? Palette :
     cardContext.icon === 'building-2' ? Building2 :
     cardContext.icon === 'trending-up' ? TrendingUp :
@@ -103,8 +103,8 @@ function getTimeStr(dateStr: string) {
         if (diffMins < 1) return t('news.just_now');
         if (diffMins < 60) return `${t('news.ago')} ${diffMins} ${t('news.min_short')}`;
 
-        return date.toLocaleTimeString(lang === 'sr' ? 'sr-RS' : 'mk-MK', { 
-            hour: '2-digit', 
+        return date.toLocaleTimeString(lang === 'sr' ? 'sr-RS' : 'mk-MK', {
+            hour: '2-digit',
             minute: '2-digit',
             timeZone: 'Europe/Belgrade'
         });
@@ -115,10 +115,10 @@ function getTimeStr(dateStr: string) {
 ---
 
 <article class:list={["nyt-article", `variant-${variant}`, { "lead-story": isLead, "premium-spotlight": showTrustBadge, "has-image": !!thumbSrc }, bentoSpan ? `bento-${bentoSpan}` : ""]} data-cluster={JSON.stringify(slimCluster)}>
-	<div class="article-body flex flex-col justify-between h-full">
+	<div class="article-body min-w-0 w-full flex flex-col sm:flex-row justify-between h-full">
         <div class="flex-grow">
             <div class="article-meta-v2">
-                <div class="kicker-group">
+                <div class="kicker-group min-w-0 flex flex-wrap items-center gap-1">
                     <span class="kicker">{main.source}</span>
                     {showTrustBadge && sourceSignal.trust_label === 'Visoko poverenje' && (
                         <ShieldCheck size={10} className="text-blue-500" title="Proveren izvor" />
@@ -139,7 +139,7 @@ function getTimeStr(dateStr: string) {
 
 
             <a href={clusterUrl} class="headline-link group" onmouseenter={`fetch('${clusterUrl}', { priority: 'low' })`}>
-                <h2 class:list={["headline", isLead ? "headline-lead" : (variant === 'compact' || variant === 'wire' ? "headline-compact" : "headline-standard"), { "headline-cyrillic": titleIsCyrillic }]} set:html={sanitizeHtml(displayTitle)}>
+                <h2 class:list={["headline", "min-w-0 break-words whitespace-normal", isLead ? "headline-lead" : (variant === 'compact' || variant === 'wire' ? "headline-compact" : "headline-standard"), { "headline-cyrillic": titleIsCyrillic }]} set:html={sanitizeHtml(displayTitle)}>
                 </h2>
             </a>
 
@@ -155,7 +155,7 @@ function getTimeStr(dateStr: string) {
                     <div class="card-content-stack">
                         {displaySummary && (
                             <div class="summary-container" tabindex="0" role="button" aria-expanded="false" aria-label="Klikni za prikaz celog rezimea">
-                                <p class:list={["summary", { "summary-cyrillic": summaryIsCyrillic }]} set:html={sanitizeHtml(displaySummary)}></p>
+                                <p class:list={["summary", "min-w-0 break-words whitespace-normal", { "summary-cyrillic": summaryIsCyrillic }]} set:html={sanitizeHtml(displaySummary)}></p>
                             </div>
                         )}
                     </div>
@@ -189,7 +189,7 @@ function getTimeStr(dateStr: string) {
 		</div>
 
 		{thumbSrc && (
-		<div class:list={["image-wrap", { "image-wrap-fallback": isFallbackArt }]}>
+		<div class:list={["image-wrap w-full sm:w-40 flex-shrink-0", { "image-wrap-fallback": isFallbackArt }]}>
 			<a href={clusterUrl} class="block h-full">
 				{isFallbackArt ? (
 					<div class="article-image-placeholder design-card" style={`--placeholder-bg: ${tintColor};`}>
@@ -448,9 +448,9 @@ function getTimeStr(dateStr: string) {
         padding: 2rem;
         position: relative;
         overflow: hidden;
-        background: 
-            linear-gradient(165deg, 
-                color-mix(in srgb, var(--placeholder-bg, #070c16) 100%, #1a1a1a) 0%, 
+        background:
+            linear-gradient(165deg,
+                color-mix(in srgb, var(--placeholder-bg, #070c16) 100%, #1a1a1a) 0%,
                 color-mix(in srgb, var(--placeholder-bg, #070c16) 80%, black) 100%
             );
         border: 1px solid color-mix(in srgb, var(--placeholder-bg, var(--border)) 40%, var(--border));
@@ -464,7 +464,7 @@ function getTimeStr(dateStr: string) {
         position: absolute;
         inset: 0;
         opacity: 0.12;
-        background-image: 
+        background-image:
             radial-gradient(circle at 2px 2px, rgba(255,255,255,0.2) 1px, transparent 0),
             linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
             linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
