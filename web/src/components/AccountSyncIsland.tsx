@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useStore } from '@nanostores/react';
-import { $syncToken, updateSyncToken } from '../lib/profileStore';
+import { $syncToken, updateSyncToken } from '../lib/store';
 import { KeyRound, ShieldCheck, RefreshCw, Copy, Upload, Download, AlertCircle } from 'lucide-react';
 
 export default function AccountSyncIsland({ lang = 'sr' }: { lang?: string }) {
