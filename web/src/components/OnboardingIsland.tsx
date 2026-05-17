@@ -12,11 +12,12 @@ import {
   sendSuggestionEvents,
 } from '../lib/personalization.js';
 
-export default function OnboardingIsland({ compact = false }: { compact?: boolean }) {
+export default function OnboardingIsland({ compact = false, lang = 'sr' }: { compact?: boolean, lang?: string }) {
   const profile = useStore($profile);
   const onboarding = useStore($onboarding);
   const progress = useMemo(() => getStoredOnboardingProgress(), [profile, onboarding]);
   const [visible, setVisible] = useState(true);
+  const isMK = lang === 'mk';
 
   useEffect(() => {
     if (!progress.shouldShow) {
@@ -96,21 +97,23 @@ export default function OnboardingIsland({ compact = false }: { compact?: boolea
     <section className={`onboarding-card ${compact ? 'is-compact' : ''}`}>
       <div className="onboarding-head">
         <div>
-          <p className="onboarding-kicker"><Sparkles size={14} /> Početno podešavanje</p>
-          <h2>Postavite šta želite da pratite</h2>
+          <p className="onboarding-kicker"><Sparkles size={14} /> {isMK ? 'Почетно подесување' : 'Početno podešavanje'}</p>
+          <h2>{isMK ? 'Поставете што сакате да следите' : 'Postavite šta želite da pratite'}</h2>
         </div>
-        <button type="button" className="onboarding-dismiss" onClick={close} aria-label="Zatvori">
+        <button type="button" className="onboarding-dismiss" onClick={close} aria-label={isMK ? "Затвори" : "Zatvori"}>
           <X size={14} />
         </button>
       </div>
 
       <p className="onboarding-copy">
-        Izaberite nekoliko tema ili izvora da biste personalizovali vaš sadržaj. Ovi signali pomažu modulu „Za Vas“, dnevni brifing i izveštaji da budu precizniji.
+        {isMK 
+          ? 'Изберете неколку теми или извори за да ја персонализирате вашата содржина. Овие сигнали му помагаат на модулот „За Вас“, дневниот брифинг и извештаите да бидат попрецизни.' 
+          : 'Izaberite nekoliko tema ili izvora da biste personalizovali vaš sadržaj. Ovi signali pomažu modulu „Za Vas“, dnevni brifing i izveštaji da budu precizniji.'}
       </p>
 
       <div className="onboarding-progress">
         <strong>{progress.doneCount}/{progress.total}</strong>
-        <span> koraka završeno</span>
+        <span> {isMK ? ' чекори завршени' : ' koraka završeno'}</span>
       </div>
 
       <div className="onboarding-steps">
@@ -125,8 +128,8 @@ export default function OnboardingIsland({ compact = false }: { compact?: boolea
       {compact && (recommendations.topics.length > 0 || recommendations.sources.length > 0) && (
         <div className="onboarding-starters">
           <div>
-            <p className="onboarding-starters-title">Brzi početak</p>
-            <p className="onboarding-starters-copy">Izaberite 1 do 2 signala za prvi personalizovani pregled.</p>
+            <p className="onboarding-starters-title">{isMK ? 'Брз почеток' : 'Brzi početak'}</p>
+            <p className="onboarding-starters-copy">{isMK ? 'Изберете 1 до 2 сигнали за првиот персонализиран преглед.' : 'Izaberite 1 do 2 signala za prvi personalizovani pregled.'}</p>
           </div>
 
           {recommendations.topics.length > 0 && (
@@ -164,8 +167,8 @@ export default function OnboardingIsland({ compact = false }: { compact?: boolea
       )}
 
       <div className="onboarding-actions">
-        <a href="/settings" className="onboarding-action">Otvori podešavanja</a>
-        <button type="button" className="onboarding-action secondary" onClick={markDone}>Sakrij vodič</button>
+        <a href={isMK ? "/mk/settings" : "/settings"} className="onboarding-action">{isMK ? 'Отвори подесувања' : 'Otvori podešavanja'}</a>
+        <button type="button" className="onboarding-action secondary" onClick={markDone}>{isMK ? 'Скриј водич' : 'Sakrij vodič'}</button>
       </div>
     </section>
   );
