@@ -28,7 +28,7 @@ let onThisDay = { on_this_day: null };
 let error = null;
 
 try {
-  const archiveUrl = new URL(`${API_URL}/api/archive`);
+  const archiveUrl = new URL(`${API_URL}/archive`);
   archiveUrl.searchParams.set('date', date);
   archiveUrl.searchParams.set('lang', lang);
   archiveUrl.searchParams.set('page', String(page));
@@ -39,8 +39,8 @@ try {
   
   const [res, briefRes, otdRes] = await Promise.all([
     fetch(archiveUrl),
-    fetch(`${API_URL}/api/archive/daily-briefing?date=${date}&lang=${lang}`),
-    fetch(`${API_URL}/api/archive/on-this-day?date=${date}&lang=${lang}`)
+    fetch(`${API_URL}/archive/daily-briefing?date=${date}&lang=${lang}`),
+    fetch(`${API_URL}/archive/on-this-day?date=${date}&lang=${lang}`)
   ]);
 
   if (res.ok) archive = await res.json();
