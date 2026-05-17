@@ -488,9 +488,8 @@ const articleSchema = cluster ? {
 												<div class="related-card-content">
 													<div class="flex justify-between items-center mb-4">
 														<span class="related-source text-[9px] font-black uppercase tracking-[0.15em] text-nyt-red">
-															Povezana tema
-														</span>
-														<span class="text-[9px] font-bold text-muted-foreground uppercase">{getRelativeTimeStr(rel.created_at)}</span>
+														                                                                                                               {t('cluster.related_topic')}
+														                                                                                                               </span>														<span class="text-[9px] font-bold text-muted-foreground uppercase">{getRelativeTimeStr(rel.created_at)}</span>
 													</div>
 													<h3 class="related-title font-serif text-lg md:text-xl font-bold leading-tight group-hover:text-nyt-red transition-colors">
 														{deShout(cleanAndDecode(rel.title))}

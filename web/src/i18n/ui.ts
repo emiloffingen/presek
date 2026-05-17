@@ -157,6 +157,8 @@ export const ui = {
     'cluster.hero_caption': 'Ilustracija iz vodećih izveštaja',
     'cluster.newsrooms_analyzed': 'redakcija analizirano',
     'cluster.no_image': 'Nema dostupne ilustracije za ovaj razvoj.',
+    'cluster.quote_of_day': 'CITAT DANA',
+    'cluster.related_topic': 'POVEZANA TEMA',
   },
   mk: {
     'nav.home': 'Почетна',
@@ -309,5 +311,7 @@ export const ui = {
     'cluster.hero_caption': 'Илустрација од водечките извештаи',
     'cluster.newsrooms_analyzed': 'редакции анализирано',
     'cluster.no_image': 'Нема достапна илустрација за овој развој.',
+    'cluster.quote_of_day': 'ЦИТАТ НА ДЕНОТ',
+    'cluster.related_topic': 'ПОВРЗАНА ТЕМА',
   },
 } as const;
