@@ -123,7 +123,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
           <h2
             className={`headline ${
                 isLead ? 'headline-lead' : (variant === 'compact' ? 'headline-compact' : 'headline-standard')
-            } ${titleIsCyrillic ? 'headline-cyrillic' : ''}`}
+            } ${titleIsCyrillic ? 'headline-cyrillic' : ''} line-clamp-2 lg:line-clamp-3`}
             dangerouslySetInnerHTML={{ __html: sanitizeHtml(displayTitle) }}
           ></h2>
         </a>
@@ -138,7 +138,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         <div className="card-content-stack">
           {displaySummary && (
             <p
-              className={`summary ${summaryIsCyrillic ? 'summary-cyrillic' : ''} min-w-0 break-words whitespace-normal`}
+              className={`summary ${summaryIsCyrillic ? 'summary-cyrillic' : ''} min-w-0 break-words line-clamp-3 text-neutral-600 dark:text-neutral-400`}
               dangerouslySetInnerHTML={{ __html: sanitizeHtml(displaySummary) }}
             ></p>
           )}
@@ -157,13 +157,13 @@ export const NewsCard: React.FC<NewsCardProps> = ({
           </ul>
         )}
 
-        <div className="footer-meta flex items-center gap-[var(--grid-gap)]">
+        <div className="footer-meta flex items-center gap-[var(--grid-gap)] text-neutral-500 dark:text-neutral-400">
           <span className="flex items-center gap-1">
-            <Clock size={11} className="opacity-70" />
+            <Clock size={11} />
             {getTimeStr(main.ingested_at || main.created_at)}
           </span>
           <span className="flex items-center gap-1">
-            <Layers size={11} className="opacity-70" />
+            <Layers size={11} />
             {totalSources} {totalSources === 1 ? t('news.source') : t('news.sources')}
           </span>
         </div>
