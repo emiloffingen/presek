@@ -1078,13 +1078,20 @@ button:focus-visible,
   }
 }
 
-/* NYT Utility Classes */
+/* Fluid Site Layout - Filling empty space on desktop */
 .site-layout {
-    max-width: 1280px;
+    max-width: 1800px;
     margin: 0 auto;
-    padding: 0 clamp(0.75rem, 3vw, 2rem);
-    width: 100%;
+    padding: 0 clamp(0.75rem, 2vw, 2.5rem);
+    width: 96%;
     box-sizing: border-box;
+}
+
+@media (min-width: 1600px) {
+    .site-layout {
+        width: 98%;
+        max-width: 2200px;
+    }
 }
 
 @keyframes pulse {
@@ -1704,7 +1711,7 @@ button:active,
 }
 
 .editorial-shell {
-    max-width: 78rem;
+    max-width: 100%;
     margin: 0 auto;
 }
 
@@ -1722,7 +1729,7 @@ button:active,
 
 .editorial-intro {
     margin: 0;
-    max-width: 58ch;
+    max-width: 80ch;
     font-family: var(--font-nyt-body);
     font-size: 1.04rem;
     line-height: 1.68;
@@ -1732,17 +1739,27 @@ button:active,
 
 .editorial-page-grid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+    .editorial-page-grid {
+        grid-template-columns: minmax(0, 1fr) 300px;
+    }
+}
+
+@media (min-width: 1440px) {
+    .editorial-page-grid {
+        grid-template-columns: minmax(0, 1fr) 350px;
+    }
 }
 
 /* If the main content is the only child, or explicitly told to span full width */
 .editorial-page-grid > .editorial-main:only-child,
 .editorial-page-grid > .editorial-main.col-span-full {
     grid-column: 1 / -1;
-    max-width: 64rem; /* ~4xl */
-    margin-left: auto;
-    margin-right: auto;
+    max-width: 100%;
 }
 
 .editorial-main,
@@ -1852,46 +1869,26 @@ button:active,
 @media (min-width: 1024px) {
     .news-feed-grid {
         grid-template-columns: repeat(3, 1fr);
-        column-gap: 2rem;
+        column-gap: 1.5rem;
         row-gap: 1.5rem;
-        justify-content: center;
-    }
-    .news-feed-grid > * {
-        grid-row: span 4;
-        display: grid;
-        grid-template-rows: subgrid;
-        height: 100%;
-        align-content: start;
-        position: relative;
-        padding-bottom: 1.5rem;
-        border-bottom: 1px solid var(--border);
-    }
-    /* Vertical Column Dividers */
-    .news-feed-grid > *:not(:nth-child(3n)):not(:last-child)::after {
-        content: "";
-        position: absolute;
-        top: 0;
-        bottom: 1.5rem;
-        right: -1rem;
-        width: 1px;
-        background: var(--border);
-        opacity: 0.8;
     }
     .lead-story {
-        grid-column: span 3;
+        grid-column: 1 / -1;
         padding-bottom: 2rem;
         border-bottom: 1px solid var(--foreground) !important;
         margin-bottom: 1.5rem;
     }
-    .lead-story::after {
-        display: none !important;
+}
+
+@media (min-width: 1440px) {
+    .news-feed-grid {
+        grid-template-columns: repeat(4, 1fr);
     }
 }
 
-@media (min-width: 1280px) {
+@media (min-width: 1800px) {
     .news-feed-grid {
-        grid-template-columns: repeat(3, 1fr);
-        justify-content: center;
+        grid-template-columns: repeat(5, 1fr);
     }
 }
 
