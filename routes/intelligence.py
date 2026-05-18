@@ -13,6 +13,7 @@ from core.ai_engine import clean_json_response, sync_call_ai
 from core.database import db_manager as db
 from core.embeddings import generate_query_embedding
 from core.entities import normalize_entity_name, normalize_person_surface_name
+from core.language import transliterate_lat_to_cyr
 from core.limiter import custom_rate_limit
 from core.prompts import RESEARCH_SYSTEM_PROMPT, RESEARCH_SYSTEM_PROMPT_MK
 from nlp import normalize_tag_name
@@ -904,6 +905,10 @@ async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] =
             name = normalize_tag_name(r["name"])
             if not _is_valid_focus_entity(name, None):
                 continue
+            
+            if lang == "mk":
+                name = transliterate_lat_to_cyr(name)
+                
             if name.casefold() in seen:
                 continue
             seen.add(name.casefold())
@@ -1030,6 +1035,10 @@ async def get_top_entities(limit: int = 10, lang: Optional[str] = "sr"):
         norm = normalize_person_surface_name(normalize_tag_name(normalize_entity_name(row["name"])))
         if not _is_valid_focus_entity(norm, None):
             continue
+        
+        if lang == "mk":
+            norm = transliterate_lat_to_cyr(norm)
+            
         key = norm.casefold()
         aggregated[key] = {
             "name": norm,
@@ -1190,46 +1199,66 @@ async def get_latest_briefing(date: Optional[str] = None, lang: str = "sr"):
         return {"status": "error", "message": "Брифингот не е пронајден" if lang == "mk" else "Brifing nije pronađen"}
 
     target_date = row["date"]
+    target_country = "MK" if lang == "mk" else "RS"
 
-    # 1. Fetch metadata for the sidebar
-    subjects = await db.async_execute(
-        """
-        SELECT name, total_mentions
-        FROM knowledge_entities
-        WHERE type = 'PERSON' AND last_seen >= %s::date - INTERVAL '24 hours'
-          AND last_seen <= %s::date + INTERVAL '23 hours 59 minutes'
-        ORDER BY total_mentions DESC LIMIT 6
-    """,
-        (target_date, target_date),
-    )
+    # 1. Fetch metadata for the sidebar with country filtering and proper daily aggregation
+    async def fetch_briefing_entities(entity_type, limit):
+        # We look at tags in clusters created on that day for that country
+        rows = await db.async_execute(
+            f"""
+            SELECT t.name, COUNT(DISTINCT t.cluster_id) as daily_mentions
+            FROM (
+                SELECT UNNEST(cm.tags) as name, cm.cluster_id
+                FROM cluster_metadata cm
+                JOIN articles a ON cm.cluster_id = a.cluster_id
+                WHERE a.country = %s AND a.created_at >= %s::date AND a.created_at < %s::date + INTERVAL '1 day'
+            ) t
+            JOIN knowledge_entities ke ON t.name = ke.name
+            WHERE ke.type = %s
+            GROUP BY t.name
+            ORDER BY daily_mentions DESC LIMIT 20
+        """,
+            (target_country, target_date, target_date, entity_type),
+        )
+        
+        processed = []
+        seen = set()
+        for r in rows:
+            name = normalize_person_surface_name(normalize_tag_name(normalize_entity_name(r["name"])))
+            if not _is_valid_focus_entity(name, entity_type):
+                continue
+            if lang == "mk":
+                name = transliterate_lat_to_cyr(name)
+            
+            key = name.casefold()
+            if key in seen:
+                continue
+            seen.add(key)
+            processed.append({"name": name, "total_mentions": r["daily_mentions"]})
+            if len(processed) >= limit:
+                break
+        return processed
 
-    locations = await db.async_execute(
-        """
-        SELECT name, total_mentions
-        FROM knowledge_entities
-        WHERE type = 'GPE' AND last_seen >= %s::date - INTERVAL '24 hours'
-          AND last_seen <= %s::date + INTERVAL '23 hours 59 minutes'
-        ORDER BY total_mentions DESC LIMIT 8
-    """,
-        (target_date, target_date),
-    )
+    subjects = await fetch_briefing_entities("PERSON", 6)
+    locations = await fetch_briefing_entities("GPE", 8)
 
     # 2. Historical dates for navigation
     historical = await db.async_execute("SELECT date::text as day FROM daily_briefings ORDER BY date DESC LIMIT 14")
 
-    # 3. Lead cluster for the day
+    # 3. Lead cluster for the day (filtered by country)
     lead_cluster = await db.async_execute_one(
         """
         SELECT s.cluster_id, s.synthetic_headline, m.representative_image
         FROM cluster_summaries s
         JOIN cluster_metadata m ON s.cluster_id = m.cluster_id
         JOIN articles a ON s.cluster_id = a.cluster_id
-        WHERE a.created_at >= %s::date AND a.created_at < %s::date + INTERVAL '1 day'
+        WHERE a.country = %s AND a.created_at >= %s::date AND a.created_at < %s::date + INTERVAL '1 day'
+          AND s.lang = %s
         GROUP BY s.cluster_id, s.synthetic_headline, m.representative_image, s.pluralism_score
         ORDER BY s.pluralism_score DESC, COUNT(a.id) DESC
         LIMIT 1
     """,
-        (target_date, target_date),
+        (target_country, target_date, target_date, lang),
     )
 
     # Fetch stats for that day
@@ -1239,9 +1268,9 @@ async def get_latest_briefing(date: Optional[str] = None, lang: str = "sr"):
             COUNT(*) as total_articles,
             COUNT(DISTINCT source) as total_sources
         FROM articles
-        WHERE created_at >= %s::date AND created_at < %s::date + INTERVAL '1 day'
+        WHERE country = %s AND created_at >= %s::date AND created_at < %s::date + INTERVAL '1 day'
     """,
-        (target_date, target_date),
+        (target_country, target_date, target_date),
     )
 
     return {

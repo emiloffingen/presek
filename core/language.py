@@ -276,3 +276,22 @@ def transliterate_cyr_to_lat(text: str) -> str:
     if not text:
         return ""
     return "".join(_CYR_LAT_MAP.get(c, c) for c in text)
+
+
+def transliterate_lat_to_cyr(text: str) -> str:
+    """Standard Latin to Macedonian Cyrillic transliteration."""
+    if not text:
+        return ""
+    
+    # Check if it already has significant Cyrillic
+    cyr_chars = sum(1 for c in text if "\u0400" <= c <= "\u04ff")
+    if cyr_chars > 0:
+        return text
+
+    # Build reverse map, sorting by length descending to handle multi-char sequences like 'Dzh'
+    lat_to_cyr_map = {v: k for k, v in _CYR_LAT_MAP.items()}
+    
+    res = text
+    for k in sorted(lat_to_cyr_map.keys(), key=len, reverse=True):
+        res = res.replace(k, lat_to_cyr_map[k])
+    return res
