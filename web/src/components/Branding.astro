@@ -28,15 +28,14 @@ const t = useTranslations(lang);
 
     {(mode === 'full' || mode === 'logo') && (
         <div class="logo-text-group">
-            <svg viewBox="0 0 600 135" fill="none" xmlns="http://www.w3.org/2000/svg" class="presek-logo-svg">
-                <text x="0" y="72" font-family="var(--font-serif)" font-size="94" letter-spacing="-3" fill="currentColor">
-                    <tspan font-weight="950">{lang === 'mk' ? 'ПРЕСЕК' : 'PRESEK'}</tspan><tspan font-weight="300" fill="var(--nyt-accent)" font-style="italic">.{lang === 'mk' ? 'mk' : 'rs'}</tspan>
+            <div class="logo-international-label">INTERNATIONAL</div>
+            <svg viewBox="0 0 600 110" fill="none" xmlns="http://www.w3.org/2000/svg" class="presek-logo-svg">
+                <text x="300" y="82" font-family="var(--font-serif)" font-size="98" letter-spacing="-3" fill="currentColor" text-anchor="middle">
+                    <tspan font-weight="950">{lang === 'mk' ? 'ПРЕСЕК' : 'PRESEK'}</tspan>
                 </text>
-                {/* Authority Triple-Rule System */}
-                <rect x="0" y="96" width="600" height="0.8" fill="currentColor" />
-                <rect x="0" y="104" width="600" height="3.5" fill="currentColor" />
-                <rect x="0" y="114" width="600" height="0.8" fill="currentColor" />
-                <rect x="0" y="126" width="300" height="1" fill="var(--nyt-accent)" opacity="0.6" />
+                {/* Precision Editorial Rules */}
+                <rect x="0" y="102" width="600" height="4" fill="currentColor" />
+                <rect x="0" y="108" width="600" height="1" fill="currentColor" />
             </svg>
             <span class="logo-sublabel">{t('branding.sublabel')}</span>
         </div>
@@ -46,34 +45,37 @@ const t = useTranslations(lang);
 <style>
     .presek-branding {
         display: flex;
+        flex-direction: column;
         align-items: center;
-        gap: 1.2rem;
+        gap: 0.4rem;
         transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         color: var(--foreground);
         min-width: 0;
     }
 
-    .emblem-container { position: relative; display: flex; align-items: center; justify-content: center; }
-
-    .presek-emblem-svg {
-        position: relative;
-        z-index: 2;
-        width: 45px;
-        height: 45px;
-        filter: drop-shadow(0 4px 12px rgba(0,0,0,0.08));
-        transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-    }
+    .emblem-container { display: none; } /* NYT International doesn't use the block emblem in the main masthead */
 
     .logo-text-group {
         display: flex;
         flex-direction: column;
-        gap: 0.2rem;
+        align-items: center;
+        gap: 0.1rem;
         min-width: 0;
     }
 
+    .logo-international-label {
+        font-family: var(--font-sans);
+        font-size: 0.55rem;
+        font-weight: 900;
+        letter-spacing: 0.35em;
+        color: var(--foreground);
+        text-transform: uppercase;
+        margin-bottom: -0.2rem;
+    }
+
     .presek-logo-svg {
-        width: 220px;
-        height: 44px;
+        width: 320px;
+        height: 58px;
     }
 
     .logo-sublabel {

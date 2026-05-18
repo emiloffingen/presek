@@ -342,15 +342,20 @@ button:focus-visible,
 
 .section-heading {
     font-family: var(--font-serif);
-    font-size: 1.35rem;
+    font-size: 1.15rem;
     font-weight: 950;
-    font-style: italic;
     line-height: 1.1;
     color: var(--foreground);
     display: flex;
     align-items: center;
-    gap: var(--grid-gap);
+    gap: 0.75rem;
     letter-spacing: -0.01em;
+    padding: 0.5rem 0;
+    border-top: 1px solid var(--foreground);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    font-variant-caps: all-small-caps;
 }
 
 /* Elegant Underline Hover for Headlines */
@@ -1846,8 +1851,8 @@ button:active,
 @media (min-width: 1024px) {
     .news-feed-grid {
         grid-template-columns: repeat(3, 1fr);
-        column-gap: 2.5rem; /* Increased for Broadsheet feel */
-        row-gap: 2rem;
+        column-gap: 2rem;
+        row-gap: 1.5rem;
         justify-content: center;
     }
     .news-feed-grid > * {
@@ -1857,25 +1862,26 @@ button:active,
         height: 100%;
         align-content: start;
         position: relative;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border);
     }
     /* Vertical Column Dividers */
     .news-feed-grid > *:not(:nth-child(3n)):not(:last-child)::after {
         content: "";
         position: absolute;
         top: 0;
-        bottom: 0;
-        right: -1.25rem;
+        bottom: 1.5rem;
+        right: -1rem;
         width: 1px;
         background: var(--border);
-        opacity: 0.6;
+        opacity: 0.8;
     }
     .lead-story {
-        grid-column: span 3; /* Spans full width on larger screens */
-        padding-bottom: 2.5rem;
-        border-bottom: 4px double var(--border); /* Editorial double rule */
-        margin-bottom: 2rem;
+        grid-column: span 3;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid var(--foreground) !important;
+        margin-bottom: 1.5rem;
     }
-    /* Lead story doesn't need vertical divider */
     .lead-story::after {
         display: none !important;
     }
