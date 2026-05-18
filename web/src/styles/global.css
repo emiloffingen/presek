@@ -80,9 +80,9 @@
     }
 
     :root {
-        /* 60% Dominant: Background (Soft Off-White) */
-        --background: #fafafb;
-        --foreground: #111827; /* Rule 2: Deep Navy Gray instead of Pure Black */
+        /* 60% Dominant: Background (Pure Editorial White) */
+        --background: #ffffff;
+        --foreground: #111111; /* Rule 2: Near Black for sharp text */
 
         /* 30% Secondary: Structural Elements */
         --card: #ffffff;
@@ -121,15 +121,15 @@
 
         /* ... rest of variables unchanged ... */
 
-        /* Fluid Typography Scale - Editorial & Premium */
-        --text-xs: clamp(0.7rem, 0.65rem + 0.1vw, 0.75rem);
-        --text-sm: clamp(0.8rem, 0.75rem + 0.2vw, 0.875rem);
-        --text-base: clamp(0.9375rem, 0.9rem + 0.2vw, 1rem); /* ~15px to 16px */
-        --text-lg: clamp(1rem, 0.95rem + 0.3vw, 1.125rem);
-        --text-xl: clamp(1.125rem, 1.05rem + 0.5vw, 1.375rem);
-        --text-2xl: clamp(1.375rem, 1.25rem + 0.8vw, 1.75rem);
-        --text-3xl: clamp(1.75rem, 1.5rem + 1.2vw, 2.25rem);
-        --text-4xl: clamp(2.25rem, 1.8rem + 1.8vw, 3rem);
+        /* Fluid Typography Scale - Editorial & Premium (Broadsheet Proportions) */
+        --text-xs: clamp(0.68rem, 0.64rem + 0.1vw, 0.72rem);
+        --text-sm: clamp(0.78rem, 0.74rem + 0.2vw, 0.84rem);
+        --text-base: clamp(0.9rem, 0.88rem + 0.2vw, 0.98rem); /* Sharper 15-16px base */
+        --text-lg: clamp(1rem, 0.96rem + 0.3vw, 1.1rem);
+        --text-xl: clamp(1.15rem, 1.08rem + 0.5vw, 1.35rem);
+        --text-2xl: clamp(1.4rem, 1.3rem + 0.8vw, 1.8rem);
+        --text-3xl: clamp(1.85rem, 1.6rem + 1.2vw, 2.4rem);
+        --text-4xl: clamp(2.4rem, 2rem + 1.8vw, 3.8rem); /* Increased for Hero Impact */
 
         /* Standardized Spacing - Relaxed for Premium Feel */
         --section-py: clamp(1.5rem, 3vw, 3rem);
@@ -298,11 +298,11 @@ button:focus-visible,
 }
 
 .headline-lead {
-    font-size: var(--text-3xl);
-    font-weight: 950;
-    margin-bottom: 0.75rem;
+    font-size: var(--text-4xl); /* Now clamp(2.4rem, 2rem + 1.8vw, 3.8rem) */
+    font-weight: 850;
+    margin-bottom: 1.25rem;
     letter-spacing: -0.04em;
-    line-height: 0.98;
+    line-height: 0.92;
     text-wrap: balance;
     display: -webkit-box;
     -webkit-line-clamp: 4;
@@ -431,10 +431,10 @@ button:focus-visible,
     /* Desktop Hover Effects */
     @media (min-width: 1024px) {
         .nyt-article:not(.lead-story):hover {
-            transform: translateY(-4px) scale(1.01);
-            box-shadow: var(--shadow-premium);
-            border-color: color-mix(in srgb, var(--border) 60%, var(--nyt-accent) 40%);
-            background: linear-gradient(180deg, var(--card), color-mix(in srgb, var(--card) 98%, var(--nyt-accent) 2%));
+            transform: translateY(-2px);
+            box-shadow: none;
+            border-color: var(--nyt-accent);
+            background: color-mix(in srgb, var(--card) 98%, var(--nyt-accent) 2%);
             z-index: 10;
         }
     }
@@ -531,10 +531,10 @@ button:focus-visible,
 	.headline {
 		font-family: var(--font-serif);
         font-size: var(--text-2xl);
-        font-weight: 900;
-        line-height: 1.1;
-        letter-spacing: -0.01em;
-		margin-bottom: 0.15rem;
+        font-weight: 850;
+        line-height: 1.08;
+        letter-spacing: -0.015em;
+		margin-bottom: 0.25rem;
 		color: var(--foreground);
         max-width: 100%;
         overflow-wrap: anywhere;
@@ -1208,8 +1208,8 @@ button:active,
 }
 
 .nyt-article:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 20px 40px -15px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+    box-shadow: none;
     border-color: var(--nyt-accent);
 }
 
@@ -1843,9 +1843,10 @@ button:active,
     row-gap: 0.85rem;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
     .news-feed-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(3, 1fr);
+        column-gap: 2.5rem; /* Increased for Broadsheet feel */
         row-gap: 2rem;
         justify-content: center;
     }
@@ -1855,9 +1856,28 @@ button:active,
         grid-template-rows: subgrid;
         height: 100%;
         align-content: start;
+        position: relative;
+    }
+    /* Vertical Column Dividers */
+    .news-feed-grid > *:not(:nth-child(3n)):not(:last-child)::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: -1.25rem;
+        width: 1px;
+        background: var(--border);
+        opacity: 0.6;
     }
     .lead-story {
-        grid-column: span 2;
+        grid-column: span 3; /* Spans full width on larger screens */
+        padding-bottom: 2.5rem;
+        border-bottom: 4px double var(--border); /* Editorial double rule */
+        margin-bottom: 2rem;
+    }
+    /* Lead story doesn't need vertical divider */
+    .lead-story::after {
+        display: none !important;
     }
 }
 

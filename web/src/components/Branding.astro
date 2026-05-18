@@ -28,13 +28,15 @@ const t = useTranslations(lang);
 
     {(mode === 'full' || mode === 'logo') && (
         <div class="logo-text-group">
-            <svg viewBox="0 0 600 115" fill="none" xmlns="http://www.w3.org/2000/svg" class="presek-logo-svg">
+            <svg viewBox="0 0 600 135" fill="none" xmlns="http://www.w3.org/2000/svg" class="presek-logo-svg">
                 <text x="0" y="72" font-family="var(--font-serif)" font-size="94" letter-spacing="-3" fill="currentColor">
                     <tspan font-weight="950">{lang === 'mk' ? 'ПРЕСЕК' : 'PRESEK'}</tspan><tspan font-weight="300" fill="var(--nyt-accent)" font-style="italic">.{lang === 'mk' ? 'mk' : 'rs'}</tspan>
                 </text>
-                {/* Modern Editorial Double-Rule */}
-                <rect x="0" y="96" width="600" height="4.5" fill="currentColor" />
-                <rect x="0" y="106" width="450" height="1.2" fill="currentColor" opacity="0.5" />
+                {/* Authority Triple-Rule System */}
+                <rect x="0" y="96" width="600" height="0.8" fill="currentColor" />
+                <rect x="0" y="104" width="600" height="3.5" fill="currentColor" />
+                <rect x="0" y="114" width="600" height="0.8" fill="currentColor" />
+                <rect x="0" y="126" width="300" height="1" fill="var(--nyt-accent)" opacity="0.6" />
             </svg>
             <span class="logo-sublabel">{t('branding.sublabel')}</span>
         </div>
