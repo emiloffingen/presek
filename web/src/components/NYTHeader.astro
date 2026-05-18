@@ -162,14 +162,6 @@ function getRelativeTimeStr(dateStr?: string) {
     <header class="editorial-topbar site-layout">
         <div class="topbar-main">
             <div class="topbar-left-stack">
-                <button class="sections-btn" aria-label="Sections Menu">
-                    <div class="menu-icon">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </div>
-                    <span class="sections-text">{t('nav.sections') || 'SECTIONS'}</span>
-                </button>
                 <div class="search-entry-wrap">
                     <SearchIsland initialQuery={q} client:load lang={lang} />
                 </div>
@@ -232,32 +224,6 @@ function getRelativeTimeStr(dateStr?: string) {
             <div class="nav-fade right"></div>
         </div>
     </nav>
-
-    <!-- Sections Menu Overlay -->
-    <div class="sections-menu-overlay" id="sections-overlay">
-        <div class="sections-menu-content">
-            <div class="sections-menu-header">
-                <h3>{t('nav.all_sections') || 'All Sections'}</h3>
-                <button class="close-sections-btn" id="close-sections" aria-label={t('nav.close') || 'Close'}>
-                    &times;
-                </button>
-            </div>
-            <div class="sections-menu-body">
-                {visibleSections.map((section: any) => (
-                    <div class="section-group">
-                        <h4>{section.label || t('nav.section')}</h4>
-                        <div class="section-items">
-                            {section.items.map((item: any) => (
-                                <a href={l(item.href)} class="section-item-link">
-                                    {item.label.replace('#', '')}
-                                </a>
-                            ))}
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
-    </div>
 </div>
 
 <style>
@@ -304,34 +270,6 @@ function getRelativeTimeStr(dateStr?: string) {
     .topbar-main { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
 
     .topbar-left-stack { display: flex; align-items: center; gap: 1.5rem; }
-    .sections-btn {
-        display: flex;
-        align-items: center;
-        gap: 0.6rem;
-        background: none;
-        border: none;
-        padding: 0;
-        cursor: pointer;
-        color: var(--foreground);
-    }
-    .sections-btn span {
-        font-family: var(--font-sans);
-        font-size: 0.62rem;
-        font-weight: 900;
-        letter-spacing: 0.05em;
-    }
-    .menu-icon {
-        display: flex;
-        flex-direction: column;
-        gap: 3px;
-        width: 14px;
-    }
-    .menu-icon span {
-        display: block;
-        height: 2px;
-        width: 100%;
-        background: currentColor;
-    }
     .search-entry-wrap { width: 140px; }
 
     .topbar-branding { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.5rem 0; }
@@ -436,7 +374,6 @@ function getRelativeTimeStr(dateStr?: string) {
         .topbar-actions { order: 3; flex-direction: row; }
         .mode-link span { display: none; }
         .search-entry-wrap { width: 140px; }
-        .sections-text { display: none; }
     }
 
     @media (max-width: 768px) {
@@ -453,132 +390,7 @@ function getRelativeTimeStr(dateStr?: string) {
         .user-action-link { display: none; }
     }
 
-    /* ── Sections Menu Overlay ───────────────────────── */
-    .sections-menu-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.7);
-        backdrop-filter: blur(4px);
-        z-index: 1000;
-        display: none;
-        justify-content: center;
-        align-items: flex-start;
-        padding: 2rem 1rem;
-        overflow-y: auto;
-    }
-
-    .sections-menu-content {
-        background: var(--background);
-        border: 1px solid var(--border);
-        border-radius: 0px;
-        width: 100%;
-        max-width: 600px;
-        max-height: 80vh;
-        overflow-y: auto;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    }
-
-    .sections-menu-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1.5rem 2rem;
-        border-bottom: 1px solid var(--border);
-    }
-
-    .sections-menu-header h3 {
-        font-family: var(--font-sans);
-        font-size: 1.1rem;
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin: 0;
-        color: var(--foreground);
-    }
-
-    .close-sections-btn {
-        background: none;
-        border: none;
-        font-size: 1.8rem;
-        cursor: pointer;
-        color: var(--muted-foreground);
-        padding: 0.5rem;
-        line-height: 1;
-    }
-
-    .close-sections-btn:hover {
-        color: var(--foreground);
-    }
-
-    .sections-menu-body {
-        padding: 2rem;
-    }
-
-    .section-group {
-        margin-bottom: 2.5rem;
-    }
-
-    .section-group h4 {
-        font-family: var(--font-sans);
-        font-size: 0.7rem;
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: var(--nyt-accent);
-        margin: 0 0 1rem 0;
-        padding-bottom: 0.5rem;
-        border-bottom: 1px solid var(--border);
-    }
-
-    .section-items {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-        gap: 0.8rem;
-    }
-
-    .section-item-link {
-        display: block;
-        font-family: var(--font-serif);
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: var(--foreground);
-        text-decoration: none;
-        padding: 0.75rem 1rem;
-        border-radius: 0px;
-        transition: all 0.2s;
-        border: 1px solid transparent;
-    }
-
-    .section-item-link:hover {
-        background: var(--secondary);
-        border-color: var(--border);
-    }
-
     @media (max-width: 768px) {
-        .sections-menu-content {
-            margin: 0 1rem;
-        }
-
-        .sections-menu-header {
-            padding: 1.25rem 1.5rem;
-        }
-
-        .sections-menu-body {
-            padding: 1.5rem;
-        }
-
-        .section-items {
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 0.6rem;
-        }
-
-        .section-item-link {
-            font-size: 1rem;
-            padding: 0.6rem 0.8rem;
-        }
     }
 </style>
 
@@ -619,38 +431,11 @@ function getRelativeTimeStr(dateStr?: string) {
             update();
         };
 
-        const initSectionsMenu = () => {
-            const sectionsBtn = document.querySelector('.sections-btn');
-            const sectionsOverlay = document.getElementById('sections-overlay');
-            const closeBtn = document.getElementById('close-sections');
-            
-            if (!sectionsBtn || !sectionsOverlay || !closeBtn) return;
-
-            sectionsBtn.addEventListener('click', () => {
-                sectionsOverlay.style.display = 'flex';
-                document.body.style.overflow = 'hidden';
-            });
-
-            closeBtn.addEventListener('click', () => {
-                sectionsOverlay.style.display = 'none';
-                document.body.style.overflow = '';
-            });
-
-            sectionsOverlay.addEventListener('click', (e) => {
-                if (e.target === sectionsOverlay) {
-                    sectionsOverlay.style.display = 'none';
-                    document.body.style.overflow = '';
-                }
-            });
-        };
-
         initHeaderControl();
         initFades();
-        initSectionsMenu();
         document.addEventListener('astro:page-load', () => {
             initHeaderControl();
             initFades();
-            initSectionsMenu();
         });
     })();
 </script>
