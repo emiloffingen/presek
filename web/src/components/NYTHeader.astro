@@ -187,7 +187,7 @@ function getRelativeTimeStr(dateStr?: string) {
 
             <div class="topbar-actions">
                 <div class="topbar-util">
-                    <a href={l('/profile')} class="user-action-link">{t('nav.account') || 'ACCOUNT'}</a>
+                    <a href={l('/for-you')} class="user-action-link">{t('nav.for_you') || 'FOR YOU'}</a>
                     <ScriptSwitcher />
                     <ThemeIsland client:idle />
                 </div>
@@ -422,6 +422,134 @@ function getRelativeTimeStr(dateStr?: string) {
         .topbar-main { gap: 0.5rem; }
         .search-entry { max-width: 120px; }
     }
+
+    /* ── Sections Menu Overlay ───────────────────────── */
+    .sections-menu-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(4px);
+        z-index: 1000;
+        display: none;
+        justify-content: center;
+        align-items: flex-start;
+        padding: 2rem 1rem;
+        overflow-y: auto;
+    }
+
+    .sections-menu-content {
+        background: var(--background);
+        border: 1px solid var(--border);
+        border-radius: 0px;
+        width: 100%;
+        max-width: 600px;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .sections-menu-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .sections-menu-header h3 {
+        font-family: var(--font-sans);
+        font-size: 1.1rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin: 0;
+        color: var(--foreground);
+    }
+
+    .close-sections-btn {
+        background: none;
+        border: none;
+        font-size: 1.8rem;
+        cursor: pointer;
+        color: var(--muted-foreground);
+        padding: 0.5rem;
+        line-height: 1;
+    }
+
+    .close-sections-btn:hover {
+        color: var(--foreground);
+    }
+
+    .sections-menu-body {
+        padding: 2rem;
+    }
+
+    .section-group {
+        margin-bottom: 2.5rem;
+    }
+
+    .section-group h4 {
+        font-family: var(--font-sans);
+        font-size: 0.7rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--nyt-accent);
+        margin: 0 0 1rem 0;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .section-items {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 0.8rem;
+    }
+
+    .section-item-link {
+        display: block;
+        font-family: var(--font-serif);
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--foreground);
+        text-decoration: none;
+        padding: 0.75rem 1rem;
+        border-radius: 0px;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+    }
+
+    .section-item-link:hover {
+        background: var(--secondary);
+        border-color: var(--border);
+    }
+
+    @media (max-width: 768px) {
+        .sections-menu-content {
+            margin: 0 1rem;
+        }
+
+        .sections-menu-header {
+            padding: 1.25rem 1.5rem;
+        }
+
+        .sections-menu-body {
+            padding: 1.5rem;
+        }
+
+        .section-items {
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 0.6rem;
+        }
+
+        .section-item-link {
+            font-size: 1rem;
+            padding: 0.6rem 0.8rem;
+        }
+    }
 </style>
 
 <script is:inline>
@@ -461,11 +589,87 @@ function getRelativeTimeStr(dateStr?: string) {
             update();
         };
 
+        const initSectionsMenu = () => {
+            const sectionsBtn = document.querySelector('.sections-btn');
+            if (!sectionsBtn) return;
+
+            // Create sections menu container
+            const sectionsMenu = document.createElement('div');
+            sectionsMenu.className = 'sections-menu-overlay';
+            sectionsMenu.innerHTML = `
+                <div class="sections-menu-content">
+                    <div class="sections-menu-header">
+                        <h3>${t('nav.all_sections') || 'All Sections'}</h3>
+                        <button class="close-sections-btn" aria-label="${t('nav.close') || 'Close'}">
+                            &times;
+                        </button>
+                    </div>
+                    <div class="sections-menu-body">
+                        <!-- Sections will be populated here -->
+                    </div>
+                </div>
+            `;
+
+            // Add to body
+            document.body.appendChild(sectionsMenu);
+
+            // Close button handler
+            const closeBtn = sectionsMenu.querySelector('.close-sections-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    sectionsMenu.style.display = 'none';
+                });
+            }
+
+            // Click outside to close
+            sectionsMenu.addEventListener('click', (e) => {
+                if (e.target === sectionsMenu) {
+                    sectionsMenu.style.display = 'none';
+                }
+            });
+
+            // Sections button click handler
+            sectionsBtn.addEventListener('click', () => {
+                // Populate sections
+                const menuBody = sectionsMenu.querySelector('.sections-menu-body');
+                if (menuBody) {
+                    menuBody.innerHTML = '';
+                    
+                    visibleSections.forEach((section) => {
+                        const sectionDiv = document.createElement('div');
+                        sectionDiv.className = 'section-group';
+                        
+                        const sectionTitle = document.createElement('h4');
+                        sectionTitle.textContent = section.label || t('nav.section');
+                        sectionDiv.appendChild(sectionTitle);
+                        
+                        const itemsList = document.createElement('div');
+                        itemsList.className = 'section-items';
+                        
+                        section.items.forEach((item) => {
+                            const itemLink = document.createElement('a');
+                            itemLink.href = l(item.href);
+                            itemLink.textContent = item.label.replace('#', '');
+                            itemLink.className = 'section-item-link';
+                            itemsList.appendChild(itemLink);
+                        });
+                        
+                        sectionDiv.appendChild(itemsList);
+                        menuBody.appendChild(sectionDiv);
+                    });
+                }
+                
+                sectionsMenu.style.display = 'flex';
+            });
+        };
+
         initHeaderControl();
         initFades();
+        initSectionsMenu();
         document.addEventListener('astro:page-load', () => {
             initHeaderControl();
             initFades();
+            initSectionsMenu();
         });
     })();
 </script>
