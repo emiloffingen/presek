@@ -296,18 +296,20 @@ class NvidiaProvider(OpenAICompatibleProvider):
 
 class GeminiProvider(AIProvider):
     def __init__(self, api_key: str, model: str):
-        self.model = None
+        self.api_key = api_key or os.environ.get("GOOGLE_API_KEY")
         self.model_name = model
-        if not api_key:
+        if not self.api_key:
             return
         try:
-            import google.generativeai as genai
-        except ModuleNotFoundError:
-            log.warning("[ai/gemini] google-generativeai package is not installed; provider disabled")
+            from google import genai
+            self.client = genai.Client(api_key=self.api_key)
+            self.model = model
+        except ImportError:
+            log.warning("[ai/gemini] google-genai package not installed")
             return
-
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel(model)
+        except Exception as e:
+            log.error(f"[ai/gemini] Initialization failed: {e}")
+            return
 
     def call(
         self,
@@ -322,13 +324,13 @@ class GeminiProvider(AIProvider):
         if self.model is None:
             return None
         try:
-            # Gemini models take system instruction in the initialization or as a separate role,
-            # but for simplicity, we prepend it.
             full_prompt = f"{system}\n\n{prompt}"
-            response = self.model.generate_content(full_prompt)
+            response = self.client.models.generate_content(
+                model=self.model, contents=full_prompt
+            )
             return response.text
         except Exception as e:
-            log.error(f"[ai/gemini] GeminiProvider failed: {e}")
+            log.error(f"[ai/gemini] GeminiProvider call failed: {e}")
             return None
             log.warning(f"[ai/nvidia] Call failed: {e}")
         return None
@@ -393,11 +395,15 @@ async def _call_ai_async(
         AI_CALLS.labels(provider="sanitization", task_type=task_type, status="blocked").inc()
         return None, None
 
-    fallback_order = PROVIDER_FALLBACK_ORDER
+    fallback_order = list(PROVIDER_FALLBACK_ORDER)
     if task_type == "research":
-        fallback_order = PROVIDER_FALLBACK_ORDER_RESEARCH
+        fallback_order = list(PROVIDER_FALLBACK_ORDER_RESEARCH)
     elif task_type in ("summarize", "synthesis"):
-        fallback_order = PROVIDER_FALLBACK_ORDER_SUMMARY
+        fallback_order = list(PROVIDER_FALLBACK_ORDER_SUMMARY)
+    
+    # Always ensure local is the absolute final fallback if not already present
+    if "local" not in fallback_order:
+        fallback_order.append("local")
 
     for provider_name in fallback_order:
         provider = PROVIDERS[provider_name]
@@ -468,11 +474,15 @@ def _call_ai(
         AI_CALLS.labels(provider="sanitization", task_type=task_type, status="blocked").inc()
         return None, None
 
-    fallback_order = PROVIDER_FALLBACK_ORDER
+    fallback_order = list(PROVIDER_FALLBACK_ORDER)
     if task_type == "research":
-        fallback_order = PROVIDER_FALLBACK_ORDER_RESEARCH
+        fallback_order = list(PROVIDER_FALLBACK_ORDER_RESEARCH)
     elif task_type in ("summarize", "synthesis"):
-        fallback_order = PROVIDER_FALLBACK_ORDER_SUMMARY
+        fallback_order = list(PROVIDER_FALLBACK_ORDER_SUMMARY)
+    
+    # Always ensure local is the absolute final fallback if not already present
+    if "local" not in fallback_order:
+        fallback_order.append("local")
 
     for provider_name in fallback_order:
         provider = PROVIDERS[provider_name]
