@@ -328,11 +328,16 @@ button:focus-visible,
     overflow: hidden;
 }
 
-.headline-compact {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+.section-heading {
+    font-family: var(--font-serif);
+    font-size: 1.25rem;
+    font-weight: 950;
+    font-style: italic;
+    line-height: 1.2;
+    color: var(--foreground);
+    display: flex;
+    align-items: center;
+    gap: var(--grid-gap);
 }
 
 /* Elegant Underline Hover for Headlines */

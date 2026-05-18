@@ -99,7 +99,7 @@ export default function ArchiveHeatmapIsland({ selectedDate, lang = 'sr' }: Prop
     <div className="bg-card border border-border rounded-xl p-6 mb-8 overflow-hidden">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-[var(--grid-gap)] mb-6">
         <div>
-          <h2 className="font-serif text-xl font-black italic flex items-center gap-[var(--grid-gap)]">
+          <h2 className="section-heading">
             <CalendarRange size={18} className="text-nyt-accent" /> {isMK ? 'Машина на Времето' : 'Mašina Vremena'}
           </h2>
           <p className="text-[11px] text-muted-foreground uppercase font-black tracking-widest mt-1">
