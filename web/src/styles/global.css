@@ -4237,6 +4237,11 @@ button:active,
         grid-column: span 2;
         grid-row: span 2;
     }
+
+    .bento-2x1 {
+        grid-column: span 2;
+        grid-row: span 1;
+    }
 }
 
 @media (min-width: 1600px) {
@@ -4248,11 +4253,6 @@ button:active,
 @media (min-width: 2000px) {
     .bento-box-grid {
         grid-template-columns: repeat(5, 1fr);
-    }
-}
-    .bento-2x1 {
-        grid-column: span 2;
-        grid-row: span 1;
     }
 }
 
