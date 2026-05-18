@@ -161,8 +161,6 @@ const sourceFollowSuggestions = sourceRows.slice(0, 2).map(([name, count]) => ({
 	reason: `${count} pojavljivanja u aktivnim klasterima za ovu temu.`,
 }));
 
-const hostHeader = Astro.request?.headers.get('host');
-const lang = getLangFromUrl(Astro.url, hostHeader);
 const siteUrl = lang === 'sr' ? 'https://presek.live' : 'https://presek.mk';
 const canonicalUrl = new URL(Astro.url.pathname, siteUrl).href.replace(/\/+$/, "");
 
