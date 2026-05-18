@@ -421,18 +421,15 @@ function getBriefingSnippet(content: string) {
 				)}
 
 				{leadCluster && supportingClusters.length > 0 && (
-					<LayoutSingle>
 						<SupportingBand
 							supportingFeatured={supportingFeatured}
 							supportingCompact={supportingCompact}
                             lang={lang}
 						/>
-					</LayoutSingle>
 				)}
 
                 {/* THE BIG PICTURE (HIGH CONSENSUS) */}
                 {isHomepage && consensusClusters.length > 0 && (
-                    <LayoutSingle>
                         <div class="consensus-section bg-secondary/10 p-12 border-y border-border/40">
                             <div class="section-heading-row mb-8">
                                 <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent block mb-2">{t('home.consensus_title')}</span>
@@ -450,11 +447,9 @@ function getBriefingSnippet(content: string) {
                                 <div class="carousel-fade-hint right md:hidden"></div>
                             </div>
                         </div>
-                    </LayoutSingle>
                 )}
 
 				{feedClusters.length > 0 && (
-					<LayoutSingle>
 						<DevelopmentsSection
 							title={t('home.developing_title')}
 							note={t('home.developing_desc')}
@@ -462,17 +457,13 @@ function getBriefingSnippet(content: string) {
 							developmentsCompact={developmentsCompact}
                             tone="developing"
 						/>
-					</LayoutSingle>
 				)}
 
                 {clusters.length > 4 && (
-					<LayoutSingle>
 					    <ForYouIsland client:visible clusters={forYouClusters} excludeClusterIds={excludedClusterIds} lang={lang} />
-                    </LayoutSingle>
 				)}
 
 				{globalClusters.length > 0 && (
-					<LayoutSingle>
 						<DevelopmentsSection
 							title={t('home.global_title')}
 							note={t('home.global_desc')}
@@ -480,11 +471,9 @@ function getBriefingSnippet(content: string) {
 							developmentsCompact={globalClusters.slice(2)}
                             tone="global"
 						/>
-					</LayoutSingle>
 				)}
 
 				{wireClusters.length > 0 && (
-					<LayoutSingle>
 						<DevelopmentsSection
 							title={t('home.wire_title')}
 							note={t('home.wire_desc')}
@@ -493,7 +482,6 @@ function getBriefingSnippet(content: string) {
 							variant="wire"
                             tone="wire"
 						/>
-					</LayoutSingle>
 				)}
 
 			</div>
