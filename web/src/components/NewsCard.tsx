@@ -96,9 +96,9 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   };
 
   return (
-    <article className={`nyt-article variant-${variant} ${isLead ? 'lead-story' : ''} ${showTrustBadge ? 'premium-spotlight' : ''} flex flex-row items-start gap-3 w-full min-w-0`}>
-      <div className="article-body flex-1 min-w-0">
-        <div className="article-meta-v2">
+    <article className={`nyt-article variant-${variant} ${isLead ? 'lead-story' : ''} ${showTrustBadge ? 'premium-spotlight' : ''} flex flex-row items-start gap-4 w-full min-w-0`}>
+      <div className="article-body flex-grow flex-1 min-w-0 flex flex-col h-full">
+        <div className="article-meta-v2 mb-1">
           <div className="kicker-group min-w-0 flex flex-wrap items-center gap-1">
             <span className="kicker">{main.source}</span>
             {showTrustBadge && sourceSignal.trust_label === 'Visoko poverenje' && (
@@ -108,22 +108,13 @@ export const NewsCard: React.FC<NewsCardProps> = ({
               <Globe size={10} className="text-emerald-500" />
             )}
           </div>
-
-          <div className="meta-right">
-            {showSignificanceLabel && (
-                <span className={`significance-badge ${cluster.is_breaking ? 'is-breaking' : ''}`}>
-                    {significanceLabel}
-                </span>
-            )}
-            <span className="time-stamp">{getTimeStr(main.ingested_at || main.created_at)}</span>
-          </div>
         </div>
 
         <a href={lang === 'sr' ? `/cluster/${cluster.cluster_id}` : `/mk/cluster/${cluster.cluster_id}`} className="headline-link group">
           <h2
             className={`headline ${
                 isLead ? 'headline-lead' : (variant === 'compact' ? 'headline-compact' : 'headline-standard')
-            } ${titleIsCyrillic ? 'headline-cyrillic' : ''} whitespace-normal break-words line-clamp-3 overflow-hidden text-ellipsis h-auto min-h-[4.5rem]`}
+            } ${titleIsCyrillic ? 'headline-cyrillic' : ''} text-neutral-900 font-bold whitespace-normal break-words line-clamp-2 md:line-clamp-3 text-lg leading-snug`}
             dangerouslySetInnerHTML={{ __html: sanitizeHtml(displayTitle) }}
           ></h2>
         </a>
@@ -135,7 +126,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
             </span>
         )}
 
-        <div className="card-content-stack">
+        <div className="card-content-stack mt-1">
           {displaySummary && (
             <p
               className={`summary ${summaryIsCyrillic ? 'summary-cyrillic' : ''} min-w-0 break-words line-clamp-3 text-neutral-600 dark:text-neutral-400`}
@@ -144,20 +135,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
           )}
         </div>
 
-        {isLead && cluster.articles.length > 1 && (
-          <ul className="sub-headlines">
-            {cluster.articles.slice(1, 4).map((sub: Article, idx: number) => (
-              <li key={idx}>
-                <a
-                  href={lang === 'sr' ? `/cluster/${cluster.cluster_id}` : `/mk/cluster/${cluster.cluster_id}`}
-                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(getDisplayTitle(sub)) }}
-                ></a>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <div className="footer-meta flex items-center gap-[var(--grid-gap)] text-neutral-500 dark:text-neutral-400">
+        <div className="mt-auto pt-2 flex items-center gap-3 text-xs text-neutral-500">
           <span className="flex items-center gap-1">
             <Clock size={11} />
             {getTimeStr(main.ingested_at || main.created_at)}
@@ -170,7 +148,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
       </div>
 
       {thumbSrc && (
-        <div className={`image-wrap ${isFallbackArt ? 'image-wrap-fallback' : ''} w-24 h-16 md:w-32 md:h-20 flex-shrink-0`}>
+        <div className={`image-wrap ${isFallbackArt ? 'image-wrap-fallback' : ''} w-28 h-20 flex-shrink-0`}>
           <a href={lang === 'sr' ? `/cluster/${cluster.cluster_id}` : `/mk/cluster/${cluster.cluster_id}`} className="block h-full">
             {isFallbackArt ? (
               <div className="article-image-placeholder design-card" style={{ '--placeholder-bg': tintColor } as any}>
@@ -202,9 +180,6 @@ export const NewsCard: React.FC<NewsCardProps> = ({
               </div>
             )}
           </a>
-          {isLead && main.image_caption && (
-            <p className="image-caption">{main.image_caption}</p>
-          )}
         </div>
       )}
     </article>
