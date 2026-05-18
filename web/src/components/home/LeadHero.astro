@@ -128,9 +128,17 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
     <div class="lead-copy">
         <div class="lead-edition-bar" role="note" aria-label={t('lead.narrative_kicker')}>
             <span class="lead-edition-label">{t('lead.narrative_kicker')}</span>
-            {leadCluster.articles.length === 1 && <span class="lead-edition-note">{lang === 'mk' ? 'Консензус помеѓу 1 редакција' : 'Konsenzus između 1 redakcije'}</span>}
-            {leadCluster.articles.length >= 2 && leadCluster.articles.length <= 4 && <span class="lead-edition-note">{lang === 'mk' ? `Консензус помеѓу ${leadCluster.articles.length} редакции` : `Konsenzus između ${leadCluster.articles.length} redakcije`}</span>}
-            {leadCluster.articles.length > 4 && <span class="lead-edition-note">{lang === 'mk' ? `Консензус помеѓу ${leadCluster.articles.length} редакции` : `Konsenzus između ${leadCluster.articles.length} redakcija`}</span>}
+            <span class="lead-edition-note">
+                {t('lead.consensus_prefix')} {leadCluster.articles.length} {
+                    lang === 'sr'
+                        ? (leadCluster.articles.length === 1 || (leadCluster.articles.length >= 2 && leadCluster.articles.length <= 4)
+                            ? t('lead.consensus_suffix_1')
+                            : t('lead.consensus_suffix_5plus'))
+                        : (leadCluster.articles.length === 1
+                            ? t('lead.consensus_suffix_1')
+                            : t('lead.consensus_suffix_2plus'))
+                }
+            </span>
         </div>
         <div class="lead-kicker-v2 mb-4">
             <span class="source-badge" aria-label={t('lead.title_prefix')}>{leadCluster.articles?.[0].source}</span>

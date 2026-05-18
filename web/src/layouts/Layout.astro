@@ -337,10 +337,26 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
         box-sizing: border-box !important;
         -webkit-text-size-adjust: 100%;
         position: relative;
+        overflow-wrap: break-word;
+        word-wrap: break-word;
     }
 
     * {
         box-sizing: border-box !important;
+    }
+
+    h1, h2, h3, h4, h5, h6, p, span, a {
+        overflow-wrap: break-word;
+    }
+
+    @media (max-width: 480px) {
+        .headline-lead {
+            font-size: 1.85rem !important;
+            line-height: 1.1 !important;
+        }
+        .editorial-headline {
+            font-size: 1.75rem !important;
+        }
     }
 
     img, video, canvas, svg, iframe {

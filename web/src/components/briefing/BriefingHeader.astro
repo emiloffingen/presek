@@ -1,5 +1,6 @@
 ---
 import { Timer, Activity, ShieldCheck, Cpu } from 'lucide-react';
+import { useTranslations } from '../../i18n/utils';
 
 interface Props {
 	currentDate: string;
@@ -11,6 +12,7 @@ interface Props {
 }
 
 const { currentDate, dispatchIcon: DispatchIcon, stats, readingTime = 5, metadata, lang = 'sr' } = Astro.props;
+const t = useTranslations(lang as any);
 const isMK = lang === 'mk';
 
 const systemSignature = metadata?.system_signature || 'Presek v2.1-CC';
@@ -23,8 +25,8 @@ const modelName = metadata?.model || 'Gemma 2 / Mistral';
         <div class="status-inner">
             <div class="status-item">
                 <div class="status-indicator pulse-emerald"></div>
-                <span class="status-label">{isMK ? 'СИСТЕМСКИ СИГНАЛ' : 'SISTEMSKI SIGNAL'}</span>
-                <span class="status-value">{isMK ? 'АКТИВЕН' : 'AKTIVAN'}</span>
+                <span class="status-label">{t('footer.system_signal')}</span>
+                <span class="status-value">{t('footer.active')}</span>
             </div>
             <div class="status-item divider-left">
                 <Cpu size={10} className="text-muted-foreground" />
@@ -45,12 +47,12 @@ const modelName = metadata?.model || 'Gemma 2 / Mistral';
 	<div class="masthead-main mb-12">
 		<div class="masthead-branding mb-8">
 			<h1 class="masthead-title uppercase tracking-tighter">
-                {isMK ? 'Интелигенција' : 'Obaveštajni'} <span class="text-nyt-accent italic-serif lowercase">{isMK ? 'извештај' : 'izveštaj'}</span>
+                {t('briefing.report_title')} <span class="text-nyt-accent italic-serif lowercase">{t('briefing.report_subtitle')}</span>
             </h1>
             <div class="masthead-subline mt-2 flex items-center justify-center gap-[var(--grid-gap)]">
                 <div class="h-px w-12 bg-border"></div>
                 <span class="font-sans text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground">
-                    {isMK ? 'ДНЕВНА СИНТЕЗА ЗА МАКЕДОНИЈА' : 'DNEVNA SINTEZA ZA SRBIJU'}
+                    {t('briefing.synthesis_geo')}
                 </span>
                 <div class="h-px w-12 bg-border"></div>
             </div>

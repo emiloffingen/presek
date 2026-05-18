@@ -17,7 +17,7 @@ const t = useTranslations(lang);
 	<p class="empty-copy">{t('home.empty_desc')}</p>
 	<div class="trend-links">
 		{trending.slice(0, 8).map((t: any) => (
-			<a href={`/?q=${encodeURIComponent(t.word)}`}>{t.word}</a>
+			<a href={l(`/?q=${encodeURIComponent(t.word)}`)}>{t.word}</a>
 		))}
 	</div>
 </div>

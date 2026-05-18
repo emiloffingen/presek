@@ -11,6 +11,12 @@ import { buildTopicConnections } from '../../lib/topicDiscovery.js';
 import { apiBaseUrl } from '../../lib/apiBase';
 import { cleanAndDecode, getDisplaySummary } from '../../utils/textUtils';
 import { ArrowRight, Clock3, Newspaper, Sparkles } from 'lucide-react';
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+
+const hostHeader = Astro.request?.headers.get('host');
+const lang = getLangFromUrl(Astro.url, hostHeader);
+const t = useTranslations(lang);
+const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
 
 const rawTopicParam = Astro.params.topic || '';
 const topic = (() => {
@@ -189,7 +195,7 @@ function topicIntro() {
 
 	<main class="site-layout py-[var(--page-py)]">
 		{(error || !clusters.length) && (
-			<Breadcrumbs items={[{ label: "Teme", href: "/" }, { label: topic || "Tema" }]} />
+			<Breadcrumbs items={[{ label: "Teme", href: l("/") }, { label: topic || "Tema" }]} />
 		)}
 
 		{error && (
@@ -199,8 +205,8 @@ function topicIntro() {
 					<h1 class="topic-empty-title">{topic || 'Tema'}</h1>
 					<p>{error}</p>
 					<div class="topic-empty-actions">
-						<a href="/" class="topic-empty-link">Nazad na početak</a>
-						<a href="/archive" class="topic-empty-link topic-empty-link-secondary">Otvori arhivu</a>
+						<a href={l("/")} class="topic-empty-link">Nazad na početak</a>
+						<a href={l("/archive")} class="topic-empty-link topic-empty-link-secondary">Otvori arhivu</a>
 					</div>
 				</div>
 			</div>
@@ -213,8 +219,8 @@ function topicIntro() {
 					<h1 class="topic-empty-title">{topic}</h1>
 					<p>Nema dovoljno aktivnih klastera za ovu temu u ovom trenutku.</p>
 					<div class="topic-empty-actions">
-						<a href="/" class="topic-empty-link">Početna</a>
-						<a href="/archive" class="topic-empty-link topic-empty-link-secondary">Potraži u arhivi</a>
+						<a href={l("/")} class="topic-empty-link">Početna</a>
+						<a href={l("/archive")} class="topic-empty-link topic-empty-link-secondary">Potraži u arhivi</a>
 					</div>
 				</div>
 			</div>
@@ -345,7 +351,7 @@ function topicIntro() {
 								<h3 class="rail-card-title">Imena i uglovi</h3>
 								<div class="topic-chip-list">
 									{tagRows.map(([name, count]) => (
-										<a href={`/?q=${encodeURIComponent(name)}`} class="topic-chip">
+										<a href={l(`/?q=${encodeURIComponent(name)}`)} class="topic-chip">
 											{name} <strong>{count}</strong>
 										</a>
 									))}
@@ -358,7 +364,7 @@ function topicIntro() {
 								<h3 class="rail-card-title">Gde ići dalje</h3>
 								<div class="topic-connection-list">
 									{topicConnections.map((item: any) => (
-										<a href={`/tema/${encodeURIComponent(item.topic)}`} class="topic-connection-card">
+										<a href={l(`/tema/${encodeURIComponent(item.topic)}`)} class="topic-connection-card">
 											<p class="topic-connection-kicker">{item.relationshipLabel}</p>
 											<h4>{item.topic}</h4>
 											<p class="topic-connection-copy">{item.relationshipNote}</p>
@@ -393,7 +399,7 @@ function topicIntro() {
 								<h3 class="rail-card-title">Šta čitati dalje</h3>
 								<div class="topic-related-list">
 									{relatedClusters.map((item: any) => (
-										<a href={`/cluster/${item.cluster_id}`} class="topic-related-link">
+										<a href={l(`/cluster/${item.cluster_id}`)} class="topic-related-link">
 											{item.relationship_label && <span class="topic-related-kicker">{item.relationship_label}</span>}
 											<strong>{item.title}</strong>
 											{item.relationship_note && <p>{item.relationship_note}</p>}
