@@ -96,8 +96,8 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   };
 
   return (
-    <article className={`nyt-article variant-${variant} ${isLead ? 'lead-story' : ''} ${showTrustBadge ? 'premium-spotlight' : ''}`}>
-      <div className="article-body">
+    <article className={`nyt-article variant-${variant} ${isLead ? 'lead-story' : ''} ${showTrustBadge ? 'premium-spotlight' : ''} flex flex-row items-start gap-3 w-full min-w-0`}>
+      <div className="article-body flex-1 min-w-0">
         <div className="article-meta-v2">
           <div className="kicker-group min-w-0 flex flex-wrap items-center gap-1">
             <span className="kicker">{main.source}</span>
@@ -123,7 +123,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
           <h2
             className={`headline ${
                 isLead ? 'headline-lead' : (variant === 'compact' ? 'headline-compact' : 'headline-standard')
-            } ${titleIsCyrillic ? 'headline-cyrillic' : ''} line-clamp-2 lg:line-clamp-3`}
+            } ${titleIsCyrillic ? 'headline-cyrillic' : ''} whitespace-normal break-words line-clamp-3 overflow-hidden text-ellipsis h-auto min-h-[4.5rem]`}
             dangerouslySetInnerHTML={{ __html: sanitizeHtml(displayTitle) }}
           ></h2>
         </a>
@@ -170,7 +170,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
       </div>
 
       {thumbSrc && (
-        <div className={`image-wrap ${isFallbackArt ? 'image-wrap-fallback' : ''}`}>
+        <div className={`image-wrap ${isFallbackArt ? 'image-wrap-fallback' : ''} w-24 h-16 md:w-32 md:h-20 flex-shrink-0`}>
           <a href={lang === 'sr' ? `/cluster/${cluster.cluster_id}` : `/mk/cluster/${cluster.cluster_id}`} className="block h-full">
             {isFallbackArt ? (
               <div className="article-image-placeholder design-card" style={{ '--placeholder-bg': tintColor } as any}>
@@ -196,7 +196,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                   alt={displayTitle}
                   width="700"
                   height="500"
-                  className="article-image is-loaded"
+                  className="article-image is-loaded w-full h-full object-cover rounded-md"
                   loading={isLead ? 'eager' : 'lazy'}
                 />
               </div>
