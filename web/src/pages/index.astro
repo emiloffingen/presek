@@ -454,7 +454,7 @@ function getBriefingSnippet(content: string) {
                 )}
 
 				{feedClusters.length > 0 && (
-					<div class="section-wrapper">
+					<LayoutSingle>
 						<DevelopmentsSection
 							title={t('home.developing_title')}
 							note={t('home.developing_desc')}
@@ -462,7 +462,7 @@ function getBriefingSnippet(content: string) {
 							developmentsCompact={developmentsCompact}
                             tone="developing"
 						/>
-					</div>
+					</LayoutSingle>
 				)}
 
                 {clusters.length > 4 && (
