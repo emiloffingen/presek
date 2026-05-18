@@ -466,13 +466,13 @@ function getBriefingSnippet(content: string) {
 				)}
 
                 {clusters.length > 4 && (
-					<div class="section-wrapper for-you-wrapper">
+					<LayoutSingle>
 					    <ForYouIsland client:visible clusters={forYouClusters} excludeClusterIds={excludedClusterIds} lang={lang} />
-                    </div>
+                    </LayoutSingle>
 				)}
 
 				{globalClusters.length > 0 && (
-					<div class="section-wrapper">
+					<LayoutSingle>
 						<DevelopmentsSection
 							title={t('home.global_title')}
 							note={t('home.global_desc')}
@@ -480,11 +480,11 @@ function getBriefingSnippet(content: string) {
 							developmentsCompact={globalClusters.slice(2)}
                             tone="global"
 						/>
-					</div>
+					</LayoutSingle>
 				)}
 
 				{wireClusters.length > 0 && (
-					<div class="section-wrapper">
+					<LayoutSingle>
 						<DevelopmentsSection
 							title={t('home.wire_title')}
 							note={t('home.wire_desc')}
@@ -493,7 +493,7 @@ function getBriefingSnippet(content: string) {
 							variant="wire"
                             tone="wire"
 						/>
-					</div>
+					</LayoutSingle>
 				)}
 
 			</div>
