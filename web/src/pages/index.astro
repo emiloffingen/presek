@@ -506,17 +506,17 @@ function getBriefingSnippet(content: string) {
     .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: var(--grid-gap); }
 
     @media (min-width: 768px) {
-        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 260px; gap: calc(var(--grid-gap) * 1.25); }
-        .broadsheet-main { border-right: 1px solid var(--border); padding-right: calc(var(--grid-gap) * 0.85); }
+        .broadsheet-grid { grid-template-columns: 1fr; gap: calc(var(--grid-gap) * 1.25); }
+        .broadsheet-main { border-right: none; padding-right: 0; }
     }
 
     @media (min-width: 1024px) {
-        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; gap: calc(var(--grid-gap) * 1.5); }
-        .broadsheet-main { border-right: 1px solid var(--border); padding-right: calc(var(--grid-gap) * 1); }
+        .broadsheet-grid { grid-template-columns: 1fr; gap: calc(var(--grid-gap) * 1.5); }
+        .broadsheet-main { border-right: none; padding-right: 0; }
     }
 
     @media (min-width: 1440px) {
-        :global(.site-layout) { max-width: 1600px; }
+        :global(.site-layout) { max-width: 100%; }
         .broadsheet-grid { gap: calc(var(--grid-gap) * 2); }
     }
 

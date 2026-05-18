@@ -221,7 +221,7 @@ const IzvoriPage: React.FC<{ lang?: string }> = ({ lang = 'sr' }) => {
       </header>
 
       <div className="broadsheet-grid">
-        <div className="broadsheet-main pr-12 border-r border-border/40">
+        <div className="broadsheet-main">
           {loading ? (
             <div className="py-32 text-center opacity-30"><Activity size={48} className="animate-spin mx-auto text-nyt-accent" /></div>
           ) : error ? (
@@ -313,8 +313,8 @@ const IzvoriPage: React.FC<{ lang?: string }> = ({ lang = 'sr' }) => {
 
         .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
         @media (min-width: 1024px) {
-          .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 320px; }
-          .broadsheet-rail { position: sticky; top: 8rem; align-self: start; }
+          .broadsheet-grid { grid-template-columns: 1fr; }
+          .broadsheet-rail {   align-self: start; }
         }
 
         @media (max-width: 768px) {

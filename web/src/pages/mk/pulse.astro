@@ -309,9 +309,9 @@ const siteTitle = isMK ? 'Медиумски Пулс' : 'Medijski Puls';
 
     :global(.broadsheet-grid) { display: grid; grid-template-columns: 1fr; gap: 2rem; }
     @media (min-width: 1024px) {
-        :global(.broadsheet-grid) { grid-template-columns: minmax(0, 1fr) 300px; gap: 3rem; }
-        :global(.broadsheet-main) { border-right: 1px solid var(--border); padding-right: 2rem; min-width: 0; }
-        :global(.broadsheet-rail) { position: sticky; top: 7rem; align-self: start; min-width: 0; }
+        :global(.broadsheet-grid) { grid-template-columns: 1fr; gap: 3rem; }
+        :global(.broadsheet-main) { border-right: none; padding-right: 0; min-width: 0; }
+        :global(.broadsheet-rail) {   align-self: start; min-width: 0; }
     }
 
     :global(.section-title-italic) { font-family: var(--font-serif); font-size: clamp(1.5rem, 3vw, 1.8rem); font-weight: 900; font-style: italic; margin-bottom: 1.25rem; }

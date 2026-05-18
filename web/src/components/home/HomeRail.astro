@@ -144,10 +144,39 @@ const uniqueEntities = Array.from(uniqueEntitiesMap.values())
 </aside>
 
 <style>
-    .broadsheet-rail { position: sticky; top: 8rem; align-self: start; height: auto; }
+    .broadsheet-rail {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        margin-top: 6rem;
+        border-top: 1px solid var(--foreground);
+        padding-
+        width: 100%;
+    }
 
-    .rail-block { margin-bottom: 2rem; padding-bottom: 2rem; border-bottom: 1px solid var(--border); }
-    .rail-block:last-child { border-bottom: none; }
+    @media (min-width: 768px) {
+        .broadsheet-rail {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .broadsheet-rail {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    @media (min-width: 1440px) {
+        .broadsheet-rail {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+
+    .rail-block { margin-bottom: 0; padding-bottom: 2rem; border-bottom: 1px solid var(--border); }
+    @media (min-width: 768px) {
+        .rail-block { border-bottom: none; border-right: 1px solid var(--border); padding-right: 2rem; padding-bottom: 0; }
+        .rail-block:last-child { border-right: none; padding-right: 0; }
+    }
     .rail-block-quiet { opacity: 0.85; }
 
     .rail-section-title {

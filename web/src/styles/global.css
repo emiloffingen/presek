@@ -1745,13 +1745,13 @@ button:active,
 
 @media (min-width: 1024px) {
     .editorial-page-grid {
-        grid-template-columns: minmax(0, 1fr) 300px;
+        grid-template-columns: 1fr;
     }
 }
 
 @media (min-width: 1440px) {
     .editorial-page-grid {
-        grid-template-columns: minmax(0, 1fr) 350px;
+        grid-template-columns: 1fr;
     }
 }
 
@@ -4237,7 +4237,19 @@ button:active,
         grid-column: span 2;
         grid-row: span 2;
     }
+}
 
+@media (min-width: 1600px) {
+    .bento-box-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (min-width: 2000px) {
+    .bento-box-grid {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}
     .bento-2x1 {
         grid-column: span 2;
         grid-row: span 1;

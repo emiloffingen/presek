@@ -208,7 +208,7 @@ function formatBriefingItem(item: string) {
     </details>
 
     <div class="broadsheet-grid">
-      <div class="broadsheet-main pr-12 border-r border-border/40">
+      <div class="broadsheet-main">
         {error && <div class="bg-destructive/10 text-destructive p-4 rounded-sm border border-destructive/20 mb-8 font-black uppercase text-[10px] tracking-widest">{error}</div>}
 
         {q || source || topic ? (
@@ -306,9 +306,9 @@ function formatBriefingItem(item: string) {
     .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 4rem; }
 
     @media (min-width: 1024px) {
-        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 320px; }
-        .broadsheet-main { border-right: 1px solid var(--border); padding-right: 4rem; }
-        .broadsheet-rail { position: sticky; top: 8rem; align-self: start; }
+        .broadsheet-grid { grid-template-columns: 1fr; }
+        .broadsheet-main { border-right: none; padding-right: 0; }
+        .broadsheet-rail {   align-self: start; }
     }
 
     .masthead-title span { font-style: italic; font-weight: 300; }
