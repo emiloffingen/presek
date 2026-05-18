@@ -97,16 +97,16 @@ export default function ArchiveHeatmapIsland({ selectedDate, lang = 'sr' }: Prop
 
   return (
     <div className="bg-card border border-border rounded-xl p-6 mb-8 overflow-hidden">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-[var(--grid-gap)] mb-6">
         <div>
-          <h2 className="font-serif text-xl font-black italic flex items-center gap-2">
+          <h2 className="font-serif text-xl font-black italic flex items-center gap-[var(--grid-gap)]">
             <CalendarRange size={18} className="text-nyt-accent" /> {isMK ? 'Машина на Времето' : 'Mašina Vremena'}
           </h2>
           <p className="text-[11px] text-muted-foreground uppercase font-black tracking-widest mt-1">
               {isMK ? 'Интензитет на вести: Последни 180 дена' : 'Intenzitet vesti: Poslednjih 180 dana'}
           </p>
         </div>
-        <div className="flex gap-4 text-xs font-bold font-sans">
+        <div className="flex gap-[var(--grid-gap)] text-xs font-bold font-sans">
           <div className="flex items-center gap-2"><span className="w-3 h-3 bg-nyt-accent/60 rounded-sm"></span> {isMK ? 'Волумен' : 'Volumen'}</div>
           <div className="flex items-center gap-2"><span className="w-3 h-3 bg-nyt-red/60 rounded-sm"></span> {isMK ? 'Итни развои' : 'Hitni razvoji'}</div>
         </div>
@@ -118,24 +118,24 @@ export default function ArchiveHeatmapIsland({ selectedDate, lang = 'sr' }: Prop
             const isBreakingDay = dayData.breaking_clusters > (maxBreaking * 0.3); // High breaking day
             const heightTotal = Math.max(10, (dayData.total_clusters / maxTotal) * 100);
             const intensity = getIntensityClass(
-                isBreakingDay ? dayData.breaking_clusters : dayData.total_clusters, 
-                isBreakingDay ? maxBreaking : maxTotal, 
+                isBreakingDay ? dayData.breaking_clusters : dayData.total_clusters,
+                isBreakingDay ? maxBreaking : maxTotal,
                 isBreakingDay
             );
-            
+
             // Highlight every start of week/month or first item
             const d = new Date(dayData.day);
             const isMarker = idx === 0 || idx === grid.length - 1 || d.getDate() === 1;
             const isActive = dayData.day === selectedDate;
 
             return (
-              <a 
-                key={dayData.day} 
+              <a
+                key={dayData.day}
                 href={`${isMK ? '/mk' : ''}/archive?date=${dayData.day}`}
                 className={`group flex flex-col items-center justify-end h-full gap-1 ${isActive ? 'scale-110 z-20' : ''}`}
                 title={`${getLabel(dayData.day)}: ${dayData.total_clusters} ${isMK ? 'вести' : 'vesti'}, ${dayData.breaking_clusters} ${isMK ? 'итни' : 'hitni'}`}
               >
-                <div 
+                <div
                   className={`w-3 sm:w-4 rounded-sm transition-all hover:opacity-80 relative ${intensity} ${isActive ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background' : ''}`}
                   style={{ height: `${heightTotal}%` }}
                 >
