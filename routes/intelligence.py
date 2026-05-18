@@ -429,25 +429,7 @@ async def get_deep_research(request: Request, cluster_id: str, mode: str = "fact
 
         # Additional cleanup for system prompt leakage and commands
         if isinstance(answer, str):
-            # Remove common system prompt patterns that might leak through
-            answer = re.sub(r'^PITANJE:.*?\n\nKONTEKST ZA ANALIZU:\s*', '', answer, flags=re.IGNORECASE | re.DOTALL)
-            answer = re.sub(r'^PRASANjE:.*?\n\nKONTEKST ZA ANALIZA:\s*', '', answer, flags=re.IGNORECASE | re.DOTALL)
-            answer = re.sub(r'^\*\*\*\s*Presek.*?\*\*\*\s*', '', answer, flags=re.IGNORECASE | re.DOTALL)
-            answer = re.sub(r'^\*\*\*\s*Пресек.*?\*\*\*\s*', '', answer, flags=re.IGNORECASE | re.DOTALL)
-            
-            # Remove common command patterns - but only if they appear at the beginning or after newlines
-            answer = re.sub(r'(^|\n)\s*(?:PITANJE|PRASANjE|KONTEKST|ODGOVOR|ANSWER|REPORT):\s*', r'\1', answer, flags=re.IGNORECASE)
-            
-            # Remove JSON-like structures that might have leaked
-            answer = re.sub(r'\{\s*"[^"]+"\s*:\s*"[^"]*"\s*\}\s*', '', answer)
-            
-            # Remove any remaining system prompt artifacts
-            answer = re.sub(r'^\*\*\*\s*[^\*]+\*\*\*\s*', '', answer, flags=re.DOTALL)
-            
-            # Additional cleanup for system prompt leakage and commands
-            # Remove common system prompt patterns that might leak through
-            
-            # First, try to remove complete system prompt blocks
+            # First, try to remove complete system prompt blocks that might have leaked
             system_prompt_patterns = [
                 r'^PITANJE:\s*.*?\n\nKONTEKST ZA ANALIZU:\s*.*?\n\n',
                 r'^PRASANjE:\s*.*?\n\nKONTEKST ZA ANALIZA:\s*.*?\n\n',
@@ -460,25 +442,14 @@ async def get_deep_research(request: Request, cluster_id: str, mode: str = "fact
                 if match:
                     answer = answer[match.end():].strip()
                     break
-            
-            # Remove individual command patterns from the beginning (after system prompt removal)
+
+            # Remove individual command patterns from the beginning
             answer = re.sub(r'^(?:PITANJE|PRASANjE|KONTEKST|ODGOVOR|ANSWER|REPORT):\s*', '', answer, flags=re.IGNORECASE)
-            
-            # Remove JSON-like structures that might have leaked
-            answer = re.sub(r'\{\s*"[^"]+"\s*:\s*"[^"]*"\s*\}\s*', '', answer)
             
             # Remove any remaining asterisk-delimited patterns
             answer = re.sub(r'^\*\*\*\s*[^\*]+\*\*\*\s*', '', answer, flags=re.DOTALL)
             
-            # Clean up any remaining command-like patterns at the start
-            answer = re.sub(r'^[A-Z\s]+:\s*', '', answer)
-            
-            # Also remove common answer prefixes in both languages
-            answer = re.sub(r'^(?:ODGOVOR|ANSWER):\s*', '', answer, flags=re.IGNORECASE)
-            
-            # Final cleanup: remove empty lines and trim
-            answer = '\n'.join(line for line in answer.split('\n') if line.strip())
-            
+            # Final cleanup: trim
             answer = answer.strip()
 
         if not answer:

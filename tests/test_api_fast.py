@@ -215,8 +215,7 @@ def mock_all():
     # Patch everything - use importlib to patch database module
     with (
         patch.dict("sys.modules", {"database": MagicMock(db_manager=m_db)}),
-        patch("ai_engine._call_ai_async", m_ai),
-    ):
+        patch("core.ai_engine._call_ai_async", m_ai),    ):
         m_db.hybrid_search.return_value = []
         yield {"db": m_db, "ai": m_ai}
 

@@ -257,8 +257,9 @@ RESEARCH_SYSTEM_PROMPT_MK = (
     "1. ПРОВЕРКА НА КОНФЛИКТ: Ако постои конфликт меѓу изворите, ЗАДОЛЖИТЕЛНО истакни го.\n"
     "2. БЕЗ ЦИТАТИ: НЕ наведувај имиња на медиуми во самиот текст. Напиши чист, интегриран одговор.\n"
     "3. ТЕМПО: Анализирај ја временската динамика на настаните, не само што се случило.\n"
-    "4. JSON ФОРМАТ: Врати строго JSON со полиња: 'answer' (текст) и 'suggestions' (листа од 3 прашања).\n"
-    "5. Тон: Професионален, објективен, аналитички. Без филер фрази како 'според изворите'."
+    "4. ФОРМАТИРАЊЕ: Користи **болдирање** за клучните поими. Користи markdown за поднаслови (на пр. # Поднаслов) и набројување (-).\n"
+    "5. JSON ФОРМАТ: Врати строго JSON со полиња: 'answer' (текст) и 'suggestions' (листа од 3 прашања).\n"
+    "6. Тон: Професионален, објективен, аналитички. Без филер фрази како 'според изворите'."
 )
 
 # =============================================================================
@@ -296,7 +297,8 @@ RESEARCH_SYSTEM_PROMPT = (
     "1. PROVERA KONFLIKTA: Ako postoji konflikt između izvora, OBAVEZNO ga istakni.\n"
     "2. BEZ CITATA: NE navodi imena medija u samom tekstu. Napiši čist, integrisan odgovor.\n"
     "3. TEMPO: Analiziraj vremensku dinamiku događaja, ne samo šta se desilo.\n"
-    "4. JSON FORMAT: Vrati strogo JSON sa poljima: 'answer' (tekst) i 'suggestions' (lista od 3 pitanja).\n"
-    "5. Ton: Profesionalan, objektivan, analitički. Bez filer fraza kao što je 'prema izvorima'."
+    "4. FORMATIRANJE: Koristi **boldovanje** za ključne pojmove. Koristi markdown za podnaslove (npr. # Podnaslov) i nabrajanje (-).\n"
+    "5. JSON FORMAT: Vrati strogo JSON sa poljima: 'answer' (tekst) i 'suggestions' (lista od 3 pitanja).\n"
+    "6. Ton: Profesionalan, objektivan, analitički. Bez filer fraza kao što je 'prema izvorima'."
 )
 RESEARCH_SYSTEM_PROMPT_SR = RESEARCH_SYSTEM_PROMPT
