@@ -102,10 +102,10 @@ def stem(word: str, lang: str = "sr") -> str:
         return word
     word = re.sub(r"[^\w\s]", "", word)
 
-    # Strip common comparative/superlative prefixes
-    if word.startswith("naj") and len(word) > 6:
+    # Strip common comparative/superlative prefixes (Latin and Cyrillic)
+    if (word.startswith("naj") or word.startswith("нај")) and len(word) > 6:
         word = word[3:]
-    elif word.startswith("po") and len(word) > 5:
+    elif (word.startswith("po") or word.startswith("по")) and len(word) > 5:
         word = word[2:]
 
     for suffix in get_stemmer_suffixes(lang):

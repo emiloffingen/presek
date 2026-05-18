@@ -107,12 +107,12 @@ def _clean_briefing_snippet(text):
     if not clean:
         return ""
     clean = re.sub(
-        r"^[A-Za-z][^,]{0,40},\s*\d{1,2}\s+[^\d]{3,20}\s+\d{4}\s*\([^)]{2,20}\)\s*[-–—]\s*",
+        r"^[A-Za-z\u0400-\u04FF][^,]{0,40},\s*\d{1,2}\s+[^\d]{3,20}\s+\d{4}\s*\([^)]{2,20}\)\s*[-–—]\s*",
         "",
         clean,
     )
     clean = re.sub(
-        r"^(Beograd|Bitola|Ohrid|Tetovo|Stip|Prilep|Veles|Kumanovo|Berovo|Dojran)\s*,\s*",
+        r"^(Beograd|Bitola|Ohrid|Tetovo|Stip|Prilep|Veles|Kumanovo|Berovo|Dojran|Београд|Битола|Охрид|Тетово|Штип|Прилеп|Велес|Куманово|Берово|Дојран)\s*,\s*",
         "",
         clean,
     )
@@ -309,7 +309,7 @@ def _dedupe_briefing_clusters(clusters, limit=4, lang="mk"):
 def _is_penalized_briefing_title(title):
     clean = str(title or "").strip()
     lowered = clean.casefold()
-    if re.match(r"^[A-Za-z0-9\-]{2,}:\s", clean):
+    if re.match(r"^[A-Za-z\u0400-\u04FF0-9\-]{2,}:\s", clean):
         return True
     return any(
         marker in lowered
@@ -328,7 +328,7 @@ def _is_penalized_briefing_title(title):
 
 
 def _extract_terms(text):
-    return [term for term in re.findall(r"[A-Za-zA-Za-z0-9]{3,}", (text or "").lower()) if term not in STOPWORDS]
+    return [term for term in re.findall(r"[A-Za-z\u0400-\u04FF0-9]{3,}", (text or "").lower()) if term not in STOPWORDS]
 
 
 def _extract_number_tokens(text):

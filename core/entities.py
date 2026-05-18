@@ -316,7 +316,7 @@ IGNORE_WORDS = {
 # Uses a negative lookahead to avoid matching common trailing noise words
 _trailing_ignore = "|".join(IGNORE_WORDS)
 PROPER_NOUN_PATTERN = re.compile(
-    r"(?:\b[A-Za-z][A-Za-z0-9]+\b(?:[\s-]+\b(?!" + _trailing_ignore + r")[A-Za-z][A-Za-z0-9]+\b){0,3})"
+    r"(?:\b[A-Za-z\u0400-\u04FF][A-Za-z0-9\u0400-\u04FF]+\b(?:[\s-]+\b(?!" + _trailing_ignore + r")[A-Za-z\u0400-\u04FF][A-Za-z0-9\u0400-\u04FF]+\b){0,3})"
 )
 
 
@@ -434,7 +434,7 @@ for _alias, _canonical in ENTITY_ALIASES.items():
         if KNOWN_ENTITIES[_canonical] == "PERSON":
             _KNOWN_SURNAMES[_alias] = _canonical
 
-_NAME_SURFACE_RE = re.compile(r"^[A-Za-z' .-]+$")
+_NAME_SURFACE_RE = re.compile(r"^[A-Za-z\u0400-\u04FF' .-]+$")
 
 
 def _title_case_name_part(part: str) -> str:
@@ -513,7 +513,7 @@ def validate_person_names(text: str | list[str]) -> str | list[str]:
         joined_text = str(text)
 
     # 1. Look for known name phrases (2 or 3 parts)
-    all_words = re.findall(r"\b[A-Za-z][A-Za-z-]+(?:\s+[A-Za-z][A-Za-z-]+){1,2}\b", joined_text)
+    all_words = re.findall(r"\b[A-Za-z\u0400-\u04FF][A-Za-z\u0400-\u04FF-]+(?:\s+[A-Za-z\u0400-\u04FF][A-Za-z\u0400-\u04FF-]+){1,2}\b", joined_text)
     all_words = list(set(all_words))  # De-duplicate for efficiency
     all_words.sort(key=len, reverse=True)
 
@@ -567,7 +567,7 @@ def validate_person_names(text: str | list[str]) -> str | list[str]:
 
             if is_wrong_first or is_alias_surname:
                 # Use word boundaries and ensure we match the ENTIRE pair
-                pattern = rf"(?<![A-Za-z-]){re.escape(clean_pair)}(?![A-Za-z-])"
+                pattern = rf"(?<![A-Za-z\u0400-\u04FF-]){re.escape(clean_pair)}(?![A-Za-z\u0400-\u04FF-])"
                 if re.search(pattern, joined_text):
                     joined_text = re.sub(pattern, canonical, joined_text)
                     log.info(f"[entities/fix] Hallucination detected: {clean_pair} -> {canonical}")
@@ -594,7 +594,7 @@ def _is_name_like_phrase(candidate: str) -> bool:
     for part in parts:
         if len(part) < 2:  # "von der" uses short words
             return False
-        if not re.match(r"^[A-Za-z][A-Za-z'.-]*$", part):
+        if not re.match(r"^[A-Za-z\u0400-\u04FF][A-Za-z\u0400-\u04FF'.-]*$", part):
             # Allow lowercase parts for particles like 'von', 'der' if already passed IGNORE_WORDS
             # but usually regex fallback captures capitalized words.
             pass

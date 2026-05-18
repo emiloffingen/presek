@@ -142,7 +142,7 @@ def is_junk(title: str, desc: str) -> bool:
     if clean_title:
         # Check if the title starts with an all-caps segment followed by a colon
         # We use a precise range for uppercase Cyrillic to avoid matching lowercase
-        prefix_match = re.match(r"^([A-Za-z\s]{8,}):", clean_title)
+        prefix_match = re.match(r"^([A-Za-z\u0400-\u042F\s]{8,}):", clean_title)
         if prefix_match:
             return True
 

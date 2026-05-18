@@ -531,7 +531,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 comparison_text = (summary or "") + "\n" + (generated_article or "")
                 if (
                     not fast_mode
-                    and not _is_grounded_synthesis(comparison_text, source_context or legacy_summary)
+                    and not _is_grounded_synthesis(comparison_text, current_context or legacy_summary)
                     and retry_attempt < 2
                 ):
                     log.warning(f"Hallucination gate failed for cluster {cluster_id} ({lang}), retrying later...")
