@@ -432,23 +432,25 @@ function getBriefingSnippet(content: string) {
 
                 {/* THE BIG PICTURE (HIGH CONSENSUS) */}
                 {isHomepage && consensusClusters.length > 0 && (
-                    <div class="section-wrapper consensus-section bg-secondary/10 p-12 border-y border-border/40">
-                        <div class="section-heading-row mb-8">
-                            <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent block mb-2">{t('home.consensus_title')}</span>
-                            <h2 class="font-serif text-3xl font-black italic">{t('home.consensus_subtitle')}</h2>
-                            <p class="text-sm text-muted-foreground mt-2">{t('home.consensus_desc')}</p>
-                        </div>
-                        <div class="consensus-carousel-wrap">
-                            <div class="consensus-grid hide-scrollbar">
-                                {consensusClusters.map((cluster: NewsCluster) => (
-                                    <div class="consensus-item">
-                                        <NewsCard cluster={cluster} variant="compact" lang={lang} />
-                                    </div>
-                                ))}
+                    <LayoutSingle>
+                        <div class="consensus-section bg-secondary/10 p-12 border-y border-border/40">
+                            <div class="section-heading-row mb-8">
+                                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent block mb-2">{t('home.consensus_title')}</span>
+                                <h2 class="font-serif text-3xl font-black italic">{t('home.consensus_subtitle')}</h2>
+                                <p class="text-sm text-muted-foreground mt-2">{t('home.consensus_desc')}</p>
                             </div>
-                            <div class="carousel-fade-hint right md:hidden"></div>
+                            <div class="consensus-carousel-wrap">
+                                <div class="consensus-grid hide-scrollbar">
+                                    {consensusClusters.map((cluster: NewsCluster) => (
+                                        <div class="consensus-item">
+                                            <NewsCard cluster={cluster} variant="compact" lang={lang} />
+                                        </div>
+                                    ))}
+                                </div>
+                                <div class="carousel-fade-hint right md:hidden"></div>
+                            </div>
                         </div>
-                    </div>
+                    </LayoutSingle>
                 )}
 
 				{feedClusters.length > 0 && (
