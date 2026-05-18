@@ -72,15 +72,15 @@
 UPDATE feed_sources SET is_active = FALSE WHERE id IN (27, 77);
 
 -- Add quality feeds (22 total)
-INSERT INTO feed_sources (name, url, is_active) 
-VALUES ('Feed Name', 'https://feed.url/feed/', TRUE) 
+INSERT INTO feed_sources (name, url, is_active)
+VALUES ('Feed Name', 'https://feed.url/feed/', TRUE)
 ON CONFLICT (name) DO NOTHING;
 ```
 
 ### Documentation
 ```bash
 # Create analysis documents
-touch CATEGORY_COVERAGE_ANALYSIS.md 
+touch CATEGORY_COVERAGE_ANALYSIS.md
 touch FEED_ENHANCEMENT_SUMMARY.md
 
 # Commit to GitHub

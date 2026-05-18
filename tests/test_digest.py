@@ -1,5 +1,6 @@
 from datetime import datetime
-from core.digest import sr_date, render_html, SR_MONTHS, SR_DAYS
+
+from core.digest import SR_DAYS, SR_MONTHS, render_html, sr_date
 
 
 class TestMkDate:

@@ -1,11 +1,12 @@
 import datetime
 import json
 import urllib.parse
+
 import httpx
 
-from core.database import db_manager as db
 from core.config import NTFY_TOKEN
-from tasks.utils import log, _PUBLIC_SITE_URL
+from core.database import db_manager as db
+from tasks.utils import _PUBLIC_SITE_URL, log
 
 _BREAKING_ALERT_QUEUE_DEPTH_LIMIT = 100
 _BREAKING_ALERT_TASK_LOCK = "lock:breaking_alerts"
@@ -38,6 +39,7 @@ _LOCALIZED_DELIVERY = {
     },
 }
 
+
 def _parse_row_datetime(value):
     if isinstance(value, datetime.datetime):
         return value
@@ -48,6 +50,7 @@ def _parse_row_datetime(value):
             log.debug(f"Failed to parse datetime: {e}")
             return None
     return None
+
 
 def _record_delivery_tracking_event(
     sync_token,
@@ -78,6 +81,7 @@ def _record_delivery_tracking_event(
     )
     return int((row or {}).get("id") or 0)
 
+
 def _tracked_delivery_url(event_id, event_type, path):
     event_id = int(event_id or 0)
     clean_path = str(path or "").strip()
@@ -86,12 +90,14 @@ def _tracked_delivery_url(event_id, event_type, path):
     query = urllib.parse.urlencode({"event_id": event_id, "redirect": clean_path})
     return f"{_PUBLIC_SITE_URL}/api/delivery/track/{urllib.parse.quote(str(event_type or 'click'), safe='')}?{query}"
 
+
 def _send_web_push_message(subscription_json_str, title, message, click_url=None):
-    from core.config import VAPID_PRIVATE_KEY, VAPID_CLAIMS
+    from core.config import VAPID_CLAIMS, VAPID_PRIVATE_KEY
 
     try:
-        import pywebpush
         import json
+
+        import pywebpush
 
         sub_info = json.loads(subscription_json_str)
         payload = json.dumps(
@@ -112,6 +118,7 @@ def _send_web_push_message(subscription_json_str, title, message, click_url=None
     except Exception as e:
         log.warning(f"[tasks] web_push error: {e}")
         return False
+
 
 def _send_ntfy_message(topic, title, message, tags="newspaper", click_url=None):
     clean_topic = str(topic or "").strip()
@@ -150,6 +157,7 @@ def _send_ntfy_message(topic, title, message, tags="newspaper", click_url=None):
         log.warning(f"[tasks] ntfy delivery failed for topic {clean_topic}: {e}")
         return False
 
+
 def _normalize_alert_context(context):
     if isinstance(context, str):
         try:
@@ -167,6 +175,7 @@ def _normalize_alert_context(context):
             clean[key_text] = value_text
     return clean
 
+
 def _next_alert_context(existing_context, candidate):
     context = _normalize_alert_context(existing_context)
     now = datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -174,14 +183,15 @@ def _next_alert_context(existing_context, candidate):
         context[key] = now
     return context
 
+
 def _load_delivery_kind_performance(days=30):
     rows = db.execute(
-        """SELECT delivery_kind, 
-        COUNT(*) FILTER (WHERE event_type = 'send') AS sends, 
-        COUNT(*) FILTER (WHERE event_type = 'open') AS opens, 
-        COUNT(*) FILTER (WHERE event_type = 'click') AS clicks 
-        FROM delivery_tracking_events 
-        WHERE created_at >= NOW() - (%s * INTERVAL '1 day') 
+        """SELECT delivery_kind,
+        COUNT(*) FILTER (WHERE event_type = 'send') AS sends,
+        COUNT(*) FILTER (WHERE event_type = 'open') AS opens,
+        COUNT(*) FILTER (WHERE event_type = 'click') AS clicks
+        FROM delivery_tracking_events
+        WHERE created_at >= NOW() - (%s * INTERVAL '1 day')
         GROUP BY delivery_kind""",
         (days,),
     )
@@ -202,18 +212,19 @@ def _load_delivery_kind_performance(days=30):
         }
     return performance
 
+
 def _load_breaking_target_performance(days=45):
     send_rows = db.execute(
-        """SELECT id, metadata 
-        FROM delivery_tracking_events 
-        WHERE delivery_kind = 'breaking' AND event_type = 'send' 
+        """SELECT id, metadata
+        FROM delivery_tracking_events
+        WHERE delivery_kind = 'breaking' AND event_type = 'send'
         AND created_at >= NOW() - (%s * INTERVAL '1 day')""",
         (days,),
     )
     child_rows = db.execute(
-        """SELECT parent_event_id, event_type 
-        FROM delivery_tracking_events 
-        WHERE delivery_kind = 'breaking' AND event_type IN ('open', 'click') 
+        """SELECT parent_event_id, event_type
+        FROM delivery_tracking_events
+        WHERE delivery_kind = 'breaking' AND event_type IN ('open', 'click')
         AND created_at >= NOW() - (%s * INTERVAL '1 day')""",
         (days,),
     )

@@ -41,7 +41,7 @@ export function isWeakVisual(url?: string | null) {
   if (!value) return true;
   // Generated AI art is never weak
   if (value.includes('/static/generated/')) return false;
-  if (value.length < 15) return true; 
+  if (value.length < 15) return true;
   return WEAK_VISUAL_TOKENS.some((token) => value.includes(token));
 }
 
@@ -152,7 +152,7 @@ export function chooseClusterImage(cluster: ClusterLike, variant: ImageVariant =
   const cid = cluster?.cluster_id || '';
   const title = articles[0]?.title || '';
   const cat = articles[0]?.category || '';
-  
+
   let proxiedUrl = null;
   if (chosen) {
     const params = new URLSearchParams({

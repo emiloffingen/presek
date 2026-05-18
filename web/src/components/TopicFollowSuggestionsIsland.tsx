@@ -87,8 +87,8 @@ export default function TopicFollowSuggestionsIsland({
           <Sparkles size={12} /> {isMK ? 'Следете понатаму' : 'Pratite dalje'}
         </p>
         <p className="topic-follow-suggestions-copy">
-          {isMK 
-            ? 'Зачувајте ја темата или водечките извори за следниот преглед да биде попрецизен.' 
+          {isMK
+            ? 'Зачувајте ја темата или водечките извори за следниот преглед да биде попрецизен.'
             : 'Sačuvajte temu ili vodeće izvore da bi sledeći pregled bio precizniji.'}
         </p>
       </div>

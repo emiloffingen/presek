@@ -20,13 +20,13 @@ interface Props {
     lang?: string;
 }
 
-const { 
-    leadCluster, 
-    leadTitle, 
-    leadTitleIsCyrillic, 
-    leadSignal, 
-    leadSummary, 
-    leadSummaryIsCyrillic, 
+const {
+    leadCluster,
+    leadTitle,
+    leadTitleIsCyrillic,
+    leadSignal,
+    leadSummary,
+    leadSummaryIsCyrillic,
     leadVisual,
     dominantColor,
     getTimeStr,
@@ -61,7 +61,7 @@ const cardContext = getDesignCardContext(leadCluster);
 const cardLabel = cardContext.labelKey ? t(cardContext.labelKey as any) : '';
 const cardSub = cardContext.subKey ? t(cardContext.subKey as any) : '';
 
-const IconComponent = 
+const IconComponent =
     cardContext.icon === 'palette' ? Palette :
     cardContext.icon === 'building-2' ? Building2 :
     cardContext.icon === 'trending-up' ? TrendingUp :
@@ -109,7 +109,7 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
                     <div class="design-card-ribbon">
                         <span>{cardLabel}</span>
                     </div>
-                    
+
                     <div class="design-card-main">
                         <div class="design-card-icon-wrap">
                             <IconComponent size={48} strokeWidth={1.5} class="text-white/90" />
@@ -134,7 +134,7 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
         </div>
         <div class="lead-kicker-v2 mb-4">
             <span class="source-badge" aria-label={t('lead.title_prefix')}>{leadCluster.articles?.[0].source}</span>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-[var(--grid-gap)]">
                 {leadCluster.is_breaking && <span class="significance-badge is-breaking" aria-label={`${t('header.breaking')}: ${t('news.breaking')}`}>{t('news.breaking').toUpperCase()}</span>}
                 {leadSignal && (
                     <span class="lead-status-badge" aria-label={`Signal: ${leadSignal}`}>
@@ -155,11 +155,11 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
         {leadCluster.key_facts && leadCluster.key_facts.length > 0 && (
             <div class="lead-analyst-box" aria-label={t('lead.system_insight')}>
                 <div class="analyst-header">
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-[var(--grid-gap)]">
                         <Zap size={14} class="text-nyt-accent fill-nyt-accent/20" aria-hidden="true" />
                         <span class="analyst-label">{t('lead.system_insight')}</span>
                     </div>
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-[var(--grid-gap)]">
                         {leadCluster.pulse_score && (
                             <div class="pulse-indicator" aria-label={`${t('nav.pulse')}: ${leadCluster.pulse_score}%`}>
                                 <span class="pulse-text">{t('nav.pulse').toUpperCase()}</span>
@@ -186,7 +186,7 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
             </div>
         )}
         <div class="lead-meta border-t border-border/50 pt-4 mt-4 flex justify-between items-center">
-            <div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-tight text-muted-foreground">
+            <div class="flex items-center gap-[var(--grid-gap)] text-[10px] font-bold uppercase tracking-tight text-muted-foreground">
                 <span>{getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)}</span>
                 <span class="opacity-30">·</span>
                 <span>{leadCluster.articles.length} {leadCluster.articles.length === 1 ? t('news.source') : t('news.sources')}</span>
@@ -200,7 +200,7 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
                 <ul class="lead-related">
                     {relatedArticles.map((article: any) => (
                         <li>
-                            <a 
+                            <a
                                 href={l(`/cluster/${leadCluster.cluster_id}`)}
                                 set:html={sanitizeHtml(highlightScores(getDisplayTitle(article, '', lang)))}
                             >
@@ -357,7 +357,7 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
 		left: -10%;
 		width: 120%;
 		height: 160%;
-		background: 
+		background:
             radial-gradient(circle at 20% 30%, color-mix(in srgb, var(--tint-color) 8%, transparent), transparent 50%),
             radial-gradient(circle at 80% 70%, color-mix(in srgb, var(--tint-color) 5%, transparent), transparent 50%);
 		opacity: 0.15;
@@ -652,9 +652,9 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
 		padding: 4rem;
 		position: relative;
 		overflow: hidden;
-		background: 
-            linear-gradient(135deg, 
-                color-mix(in srgb, var(--placeholder-bg, #070c16) 100%, black) 0%, 
+		background:
+            linear-gradient(135deg,
+                color-mix(in srgb, var(--placeholder-bg, #070c16) 100%, black) 0%,
                 color-mix(in srgb, var(--placeholder-bg, #132a4f) 60%, black) 100%
             );
 		box-shadow:
@@ -666,7 +666,7 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
         position: absolute;
         inset: 0;
         opacity: 0.1;
-        background-image: 
+        background-image:
             radial-gradient(circle at 2px 2px, rgba(255,255,255,0.2) 1px, transparent 0),
             linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
             linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);

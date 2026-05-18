@@ -9,7 +9,7 @@ function readConsentState(): boolean {
   if (typeof window === 'undefined') return true;
   const raw = localStorage.getItem(CONSENT_KEY);
   if (!raw) return false;
-  
+
   if (raw === 'accepted') return true;
 
   try {
@@ -38,7 +38,7 @@ function writeConsentState(status: 'accepted' | 'dismissed') {
 export const ConsentBanner: React.FC = () => {
   const [visible, setVisible] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  
+
   // Detect language for translations
   const [lang, setLang] = useState<'sr' | 'mk'>('sr');
   useEffect(() => {
@@ -99,9 +99,9 @@ export const ConsentBanner: React.FC = () => {
   return (
     <div className="fixed inset-x-0 bottom-0 z-[100] px-2 pb-2 md:p-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="mx-auto max-w-5xl rounded-2xl border border-border bg-background/94 px-2.5 py-1.5 shadow-[0_-8px_30px_rgba(17,24,39,0.08)] backdrop-blur-md md:px-5 md:py-3.5">
-        <div className="flex items-center gap-2 md:items-center md:justify-between">
+        <div className="flex items-center gap-[var(--grid-gap)] md:items-center md:justify-between">
           <div className="min-w-0 flex-1">
-            <div className="mb-0.5 flex items-center gap-2">
+            <div className="mb-0.5 flex items-center gap-[var(--grid-gap)]">
               <h3 className="font-sans text-[11px] font-black uppercase tracking-[0.14em] text-foreground">{t('cookies.title')}</h3>
               <span className="hidden md:inline text-[11px] text-muted-foreground">•</span>
               <span className="hidden md:inline text-xs text-muted-foreground">{t('cookies.kicker')}</span>

@@ -1,4 +1,5 @@
 from unittest.mock import patch
+
 from core.api_helpers import is_safe_url
 
 

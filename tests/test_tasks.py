@@ -1,6 +1,7 @@
-import json
 import datetime
+import json
 from unittest.mock import patch
+
 import tasks
 
 
@@ -16,9 +17,7 @@ class TestBackfillCoverArtTask:
             patch("tasks.intelligence.db") as mock_db,
             patch("tasks.intelligence.redis_client") as mock_redis,
             patch("tasks.intelligence.get_celery_queue_depth", return_value=0),
-            patch.object(
-                tasks.backfill_cover_art_single_task, "apply_async"
-            ) as mock_apply,
+            patch.object(tasks.backfill_cover_art_single_task, "apply_async") as mock_apply,
         ):
             mock_db.execute.return_value = rows
             mock_redis.set.return_value = True
@@ -36,9 +35,7 @@ class TestBackfillCoverArtTask:
         with (
             patch("tasks.intelligence.get_celery_queue_depth", return_value=150),
             patch("tasks.intelligence.db") as mock_db,
-            patch.object(
-                tasks.backfill_cover_art_single_task, "apply_async"
-            ) as mock_apply,
+            patch.object(tasks.backfill_cover_art_single_task, "apply_async") as mock_apply,
         ):
             tasks.backfill_cover_art_task()
 
@@ -167,19 +164,11 @@ class TestReclusterRecentArticlesTask:
         with (
             patch("tasks.intelligence.db") as mock_db,
             patch("core.clustering.find_or_create_cluster", return_value="old-a"),
-            patch(
-                "tasks.intelligence.invalidate_public_data_caches"
-            ) as mock_invalidate,
+            patch("tasks.intelligence.invalidate_public_data_caches") as mock_invalidate,
             patch("tasks.utils.record_task_event"),
-            patch.object(
-                tasks.extract_entities_task, "apply_async"
-            ) as mock_extract_delay,
-            patch.object(
-                tasks.generate_cluster_metadata_task, "apply_async"
-            ) as mock_meta_delay,
-            patch.object(
-                tasks.intelligence.auto_summarize_task, "apply_async"
-            ) as mock_summary_delay,
+            patch.object(tasks.extract_entities_task, "apply_async") as mock_extract_delay,
+            patch.object(tasks.generate_cluster_metadata_task, "apply_async") as mock_meta_delay,
+            patch.object(tasks.intelligence.auto_summarize_task, "apply_async") as mock_summary_delay,
         ):
             mock_db.execute.side_effect = [
                 recent_rows,
@@ -196,9 +185,7 @@ class TestReclusterRecentArticlesTask:
         assert result["reclustered"] == 1
         assert result["touched_clusters"] == 2
         update_call = mock_db.execute.call_args_list[1]
-        assert (
-            "UPDATE articles SET cluster_id = %s WHERE id = %s" in update_call.args[0]
-        )
+        assert "UPDATE articles SET cluster_id = %s WHERE id = %s" in update_call.args[0]
         assert update_call.args[1] == ("old-a", 2)
         mock_extract_delay.assert_called_once_with(
             kwargs={"hours": 24, "target_clusters": ["old-a", "old-b"]}, countdown=5
@@ -206,9 +193,7 @@ class TestReclusterRecentArticlesTask:
         mock_meta_delay.assert_called_once_with(
             kwargs={"hours": 24, "target_clusters": ["old-a", "old-b"]}, countdown=5
         )
-        mock_summary_delay.assert_called_once_with(
-            args=(["old-a", "old-b"],), countdown=2
-        )
+        mock_summary_delay.assert_called_once_with(args=(["old-a", "old-b"],), countdown=2)
 
         mock_invalidate.assert_called_once()
 
@@ -352,25 +337,13 @@ class TestDailyBriefTaskQuality:
 
     def test_daily_brief_penalizes_press_release_style_titles(self):
 
-        assert (
-            tasks.delivery.briefing._briefing_title_penalty(
-                "VMRO-DPMNE: Vo ocajna potraga po dobra vest"
-            )
-            > 3.0
-        )
-        assert (
-            tasks.delivery.briefing._briefing_title_penalty(
-                "Zemjotres od 4,8 stepeni me potrese Srbija"
-            )
-            == 0.0
-        )
+        assert tasks.delivery.briefing._briefing_title_penalty("VMRO-DPMNE: Vo ocajna potraga po dobra vest") > 3.0
+        assert tasks.delivery.briefing._briefing_title_penalty("Zemjotres od 4,8 stepeni me potrese Srbija") == 0.0
         assert tasks.delivery.briefing._briefing_title_penalty(
             "VMRO-DPMNE: Vo ocajna potraga po dobra vest",
             source_count=8,
             has_editorial_depth=True,
-        ) < tasks.delivery.briefing._briefing_title_penalty(
-            "VMRO-DPMNE: Vo ocajna potraga po dobra vest"
-        )
+        ) < tasks.delivery.briefing._briefing_title_penalty("VMRO-DPMNE: Vo ocajna potraga po dobra vest")
 
     def test_load_daily_brief_clusters_pushes_plain_party_pr_behind_public_interest_cluster(
         self,
@@ -1044,9 +1017,7 @@ class TestProfileDeliveryTasks:
         }
 
         with (
-            patch(
-                "tasks.delivery.briefing._load_recent_breaking_clusters", return_value=[cluster]
-            ),
+            patch("tasks.delivery.briefing._load_recent_breaking_clusters", return_value=[cluster]),
             patch(
                 "tasks.delivery.briefing._load_cluster_alert_material",
                 return_value=(
@@ -1077,9 +1048,7 @@ class TestProfileDeliveryTasks:
 
     def test_select_breaking_cluster_allows_material_refresh_after_seen(self):
 
-        older = (
-            datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=5)
-        ).isoformat()
+        older = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=5)).isoformat()
         cluster = {
             "cluster_id": "same-cluster",
             "title": "Breaking story",
@@ -1097,9 +1066,7 @@ class TestProfileDeliveryTasks:
         }
 
         with (
-            patch(
-                "tasks.delivery.briefing._load_recent_breaking_clusters", return_value=[cluster]
-            ),
+            patch("tasks.delivery.briefing._load_recent_breaking_clusters", return_value=[cluster]),
             patch(
                 "tasks.delivery.briefing._load_cluster_alert_material",
                 return_value=(
@@ -1177,9 +1144,7 @@ class TestProfileDeliveryTasks:
             [],
             {},
             {
-                "topics": {
-                    "Politika": {"sends": 3, "open_rate": 0.67, "click_rate": 0.25}
-                },
+                "topics": {"Politika": {"sends": 3, "open_rate": 0.67, "click_rate": 0.25}},
                 "sources": {},
             },
         )

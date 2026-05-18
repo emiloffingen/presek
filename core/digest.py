@@ -4,16 +4,17 @@ Generates a localized styled HTML email digest of the top stories.
 Can send via Gmail SMTP or save to file.
 """
 
-import core.database as database
 import argparse
 import logging
+import os
 import smtplib
 import ssl
+from collections import defaultdict
+from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from datetime import datetime, timedelta
-from collections import defaultdict
-import os
+
+import core.database as database
 
 log = logging.getLogger(__name__)
 
@@ -21,7 +22,20 @@ log = logging.getLogger(__name__)
 
 LOCALES = {
     "sr": {
-        "months": ["januar", "februar", "mart", "april", "maj", "jun", "jul", "avgust", "septembar", "oktobar", "novembar", "decembar"],
+        "months": [
+            "januar",
+            "februar",
+            "mart",
+            "april",
+            "maj",
+            "jun",
+            "jul",
+            "avgust",
+            "septembar",
+            "oktobar",
+            "novembar",
+            "decembar",
+        ],
         "days": ["Ponedeljak", "Utorak", "Sreda", "Cetvrtak", "Petak", "Subota", "Nedelja"],
         "default_cat": "Srbija",
         "subject": "Presek — Jutarnji Brifing",
@@ -40,10 +54,23 @@ LOCALES = {
         "lang_code": "sr",
         "country_code": "RS",
         "read_more": "Procitaj me vesta →",
-        "format_source": lambda c: "1 izvor" if c == 1 else f"{c} izvori"
+        "format_source": lambda c: "1 izvor" if c == 1 else f"{c} izvori",
     },
     "mk": {
-        "months": ["јануари", "февруари", "март", "април", "мај", "јуни", "јули", "август", "септември", "октомври", "ноември", "декември"],
+        "months": [
+            "јануари",
+            "февруари",
+            "март",
+            "април",
+            "мај",
+            "јуни",
+            "јули",
+            "август",
+            "септември",
+            "октомври",
+            "ноември",
+            "декември",
+        ],
         "days": ["Понеделник", "Вторник", "Среда", "Четврток", "Петок", "Сабота", "Недела"],
         "default_cat": "Македонија",
         "subject": "Пресек — Утрински брифинг",
@@ -62,8 +89,8 @@ LOCALES = {
         "lang_code": "mk",
         "country_code": "MK",
         "read_more": "Прочитај ја веста →",
-        "format_source": lambda c: "1 извор" if c == 1 else f"{c} извори"
-    }
+        "format_source": lambda c: "1 извор" if c == 1 else f"{c} извори",
+    },
 }
 
 
@@ -87,6 +114,7 @@ def format_sources(count: int, locale: str = "sr") -> str:
 
 # ── Logic ───────────────────────────────────────────────────────────────────
 
+
 def fetch_top_stories(days: int = 7, per_category: int = 3, locale: str = "sr") -> dict[str, list[dict]]:
     """
     Fetch top articles from the last N days, grouped by category.
@@ -94,7 +122,7 @@ def fetch_top_stories(days: int = 7, per_category: int = 3, locale: str = "sr") 
     """
     conf = LOCALES.get(locale, LOCALES["sr"])
     country = conf["country_code"]
-    
+
     try:
         with database.get_db() as conn:
             rows = conn.execute(
@@ -136,16 +164,9 @@ def render_html(
 ) -> str:
     """Render the full HTML digest email with localized strings."""
     conf = LOCALES.get(locale, LOCALES["sr"])
-    
+
     total_stories = sum(len(v) for v in stories_by_cat.values())
-    total_sources = len(
-        {
-            a.get("source")
-            for articles in stories_by_cat.values()
-            for a in articles
-            if a.get("source")
-        }
-    )
+    total_sources = len({a.get("source") for articles in stories_by_cat.values() for a in articles if a.get("source")})
 
     cat_blocks = ""
     for cat, articles in stories_by_cat.items():
@@ -154,9 +175,7 @@ def render_html(
             summary_html = ""
             if a.get("summary"):
                 clean = " ".join(
-                    line
-                    for line in a["summary"].split("\n")
-                    if line.strip() and not line.strip().startswith("#")
+                    line for line in a["summary"].split("\n") if line.strip() and not line.strip().startswith("#")
                 )
                 summary_html = f"<p style=\"margin:8px 0 0;color:#4a4a4a;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;letter-spacing:-0.01em\">{clean[:220]}…</p>"
 
@@ -271,7 +290,7 @@ def render_html(
         </tr>
 
       </table>
-      
+
       <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%">
         <tr>
             <td style="padding:20px 0;text-align:center">
@@ -299,18 +318,18 @@ def send_newsletter_to_all_subscribers(days: int = 1) -> int:
         return 0
 
     from core.database import db_manager as db
-    
+
     # Pre-generate digests for each locale to avoid redundant DB calls and rendering
     digests = {}
     now = datetime.now()
     start = now - timedelta(days=days)
-    
+
     for loc in LOCALES:
         stories = fetch_top_stories(days=days, locale=loc)
         if stories:
             digests[loc] = {
                 "html": render_html(stories, start, now, locale=loc),
-                "subject": f"{LOCALES[loc]['subject']} ({format_date(now, loc)})"
+                "subject": f"{LOCALES[loc]['subject']} ({format_date(now, loc)})",
             }
 
     try:
@@ -322,10 +341,10 @@ def send_newsletter_to_all_subscribers(days: int = 1) -> int:
         sent_count = 0
         for sub in subscribers:
             user_email = sub["email"]
-            loc = sub.get("locale") or "sr" # fallback
+            loc = sub.get("locale") or "sr"  # fallback
             if loc not in digests:
-                continue # Skip if no stories for this locale
-                
+                continue  # Skip if no stories for this locale
+
             digest = digests[loc]
             unsubscribe_url = f"{LOCALES[loc]['url']}/api/newsletter/unsubscribe?email={user_email}"
             personalized_html = digest["html"].replace("{{UNSUBSCRIBE_URL}}", unsubscribe_url)
@@ -379,10 +398,10 @@ def send_digest(days: int = 1) -> bool:
     """
     smtp_user = os.environ.get("SMTP_USER", "")
     smtp_pass = os.environ.get("SMTP_PASS", "")
-    to_address = os.environ.get("DIGEST_TO", "") # Admin recipient
+    to_address = os.environ.get("DIGEST_TO", "")  # Admin recipient
 
     ok = False
-    
+
     if smtp_user and smtp_pass and to_address:
         # Send admin digests
         for loc in ["mk", "sr"]:

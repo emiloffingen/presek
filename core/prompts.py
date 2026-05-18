@@ -39,7 +39,7 @@ SYNTHESIS_SYSTEM_PROMPT = (
     '  "tone_analysis": {\n'
     '    "objectivity": 0.85,\n'
     '    "sensationalism": 0.15\n'
-    '  }\n'
+    "  }\n"
     "}\n\n"
     "KRITIČNA PRAVILA:\n"
     "1. NE-PONAVLJANJE: Informacija koja je u 'summary' (Briefing) NE SME biti u 'article' (Sinteza). 'summary' je za brzo čitanje, 'article' je za duboko razumevanje.\n"
@@ -167,7 +167,7 @@ SYNTHESIS_SYSTEM_PROMPT_MK = (
     '  "tone_analysis": {\n'
     '    "objectivity": 0.85,\n'
     '    "sensationalism": 0.15\n'
-    '  }\n'
+    "  }\n"
     "}\n\n"
     "КРИТИЧНИ ПРАВИЛА:\n"
     "1. БЕЗ ПОВТОРУВАЊЕ: Информацијата која е во 'summary' (Briefing) НЕ СМЕЕ да биде во 'article' (Синтеза). 'summary' е за брзо читање, 'article' е за длабоко разбирање.\n"

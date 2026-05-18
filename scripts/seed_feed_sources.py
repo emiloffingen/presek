@@ -17,7 +17,6 @@ SERBIAN_FEED_CATALOG = [
     ("Kurir Sport", "https://www.kurir.rs/rss/Sport"),
     ("Telegraf Sport", "https://www.telegraf.rs/rss/Sport"),
     ("Mozzart Sport", "https://www.mozzartsport.com/rss"),
-
     # Independent / Public / Analytical
     ("N1 Info", "https://n1info.rs/feed/"),
     ("nova.rs", "https://nova.rs/feed/"),
@@ -42,7 +41,6 @@ SERBIAN_FEED_CATALOG = [
     ("Direktno", "https://direktno.rs/rss"),
     ("Istinomer", "https://www.istinomer.rs/feed/"),
     ("Mašina", "https://www.masina.rs/feed/"),
-
     # Regional
     ("021.rs", "https://www.021.rs/rss/Sve-vesti"),
     ("RTV", "https://rtv.rs/sr_lat/rss/"),
@@ -64,7 +62,6 @@ SERBIAN_FEED_CATALOG = [
     ("Pirotske vesti", "https://www.pirotskevesti.rs/feed/"),
     ("Kraljevo Online", "https://kraljevo.online/feed/"),
     ("Valjevska posla", "https://valjevskaposla.rs/feed/"),
-
     # Thematic / Lifestyle / Tech / Cultural
     ("BenchMark", "https://benchmark.rs/feed/"),
     ("PC Press", "https://pcpress.rs/feed/"),
@@ -90,12 +87,13 @@ SERBIAN_FEED_CATALOG = [
     ("Tanjug Biznis", "https://www.tanjug.rs/rss/biznis"),
 ]
 
+
 def seed_feed_sources():
     print(f"Seeding {len(SERBIAN_FEED_CATALOG)} Serbian feed sources into the 'feed_sources' table...")
-    
+
     added = 0
     updated = 0
-    
+
     for name, url in SERBIAN_FEED_CATALOG:
         exists = db.execute_one("SELECT name FROM feed_sources WHERE name = %s", (name,))
         if not exists:
@@ -114,8 +112,9 @@ def seed_feed_sources():
             )
             updated += 1
             print(f"  . Updated feed source: {name}")
-            
+
     print(f"Sync complete. Added {added}, updated {updated} feed sources.")
+
 
 if __name__ == "__main__":
     seed_feed_sources()

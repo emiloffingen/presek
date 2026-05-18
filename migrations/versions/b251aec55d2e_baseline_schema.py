@@ -10,7 +10,6 @@ from typing import Sequence, Union
 
 from alembic import op
 
-
 # revision identifiers, used by Alembic.
 revision: str = "b251aec55d2e"
 down_revision: Union[str, Sequence[str], None] = "438101a6575f"
@@ -25,25 +24,25 @@ def upgrade() -> None:
     # 2. Articles Table
     op.execute(
         """CREATE TABLE IF NOT EXISTS articles (
-        id SERIAL PRIMARY KEY, 
-        cluster_id TEXT NOT NULL, 
-        source TEXT NOT NULL, 
+        id SERIAL PRIMARY KEY,
+        cluster_id TEXT NOT NULL,
+        source TEXT NOT NULL,
         link TEXT UNIQUE NOT NULL,
-        title TEXT NOT NULL, 
-        original_title TEXT DEFAULT '', 
-        description TEXT DEFAULT '', 
+        title TEXT NOT NULL,
+        original_title TEXT DEFAULT '',
+        description TEXT DEFAULT '',
         summary TEXT,
-        category TEXT, 
-        subcategory TEXT DEFAULT '', 
+        category TEXT,
+        subcategory TEXT DEFAULT '',
         topic TEXT DEFAULT 'vesti',
         country TEXT DEFAULT 'RS',
         created_at TIMESTAMP NOT NULL,
         ingested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        image_url TEXT, 
+        image_url TEXT,
         local_image_path TEXT,
-        clicks INTEGER DEFAULT 0, 
+        clicks INTEGER DEFAULT 0,
         original_description TEXT DEFAULT '',
-        is_translated INTEGER DEFAULT 0, 
+        is_translated INTEGER DEFAULT 0,
         is_fact_check BOOLEAN DEFAULT FALSE,
         embedding vector(384),
         search_vector tsvector
@@ -55,13 +54,13 @@ def upgrade() -> None:
     # Handle vector dimension change if table already existed (migration support)
     op.execute(
         """
-        DO $$ 
+        DO $$
         BEGIN
             IF EXISTS (
-                SELECT 1 FROM information_schema.columns 
+                SELECT 1 FROM information_schema.columns
                 WHERE table_name='articles' AND column_name='embedding'
             ) THEN
-                IF (SELECT atttypmod FROM pg_attribute 
+                IF (SELECT atttypmod FROM pg_attribute
                     WHERE attrelid = 'articles'::regclass AND attname = 'embedding') != 384 THEN
                     ALTER TABLE articles DROP COLUMN embedding;
                     ALTER TABLE articles ADD COLUMN embedding vector(384);
@@ -74,12 +73,12 @@ def upgrade() -> None:
     # 3. Cluster Summaries & History
     op.execute(
         """CREATE TABLE IF NOT EXISTS cluster_summaries (
-        cluster_id TEXT PRIMARY KEY, 
-        summary TEXT, 
+        cluster_id TEXT PRIMARY KEY,
+        summary TEXT,
         generated_article TEXT,
         synthetic_headline TEXT,
         synthetic_standfirst TEXT,
-        perspectives JSONB DEFAULT '[]', 
+        perspectives JSONB DEFAULT '[]',
         sentiment JSONB DEFAULT '{}',
         tone_analysis JSONB DEFAULT '{}',
         verification_report JSONB,
@@ -108,9 +107,9 @@ def upgrade() -> None:
     # 4. Metadata & Entities
     op.execute(
         """CREATE TABLE IF NOT EXISTS cluster_metadata (
-        cluster_id TEXT PRIMARY KEY, 
-        tags TEXT[], 
-        topics TEXT[], 
+        cluster_id TEXT PRIMARY KEY,
+        tags TEXT[],
+        topics TEXT[],
         representative_image TEXT,
         dominant_color TEXT,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -119,9 +118,9 @@ def upgrade() -> None:
 
     op.execute(
         """CREATE TABLE IF NOT EXISTS cluster_entities (
-        cluster_id TEXT, 
-        entity_name TEXT, 
-        entity_type TEXT, 
+        cluster_id TEXT,
+        entity_name TEXT,
+        entity_type TEXT,
         PRIMARY KEY (cluster_id, entity_name)
     )"""
     )
@@ -129,25 +128,25 @@ def upgrade() -> None:
     # 5. Engagement & Support
     op.execute(
         """CREATE TABLE IF NOT EXISTS reactions (
-        cluster_id TEXT, 
-        emoji TEXT, 
-        count INTEGER DEFAULT 1, 
+        cluster_id TEXT,
+        emoji TEXT,
+        count INTEGER DEFAULT 1,
         PRIMARY KEY (cluster_id, emoji)
     )"""
     )
 
     op.execute(
         """CREATE TABLE IF NOT EXISTS daily_briefings (
-        date DATE PRIMARY KEY, 
-        content TEXT, 
+        date DATE PRIMARY KEY,
+        content TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )"""
     )
 
     op.execute(
         """CREATE TABLE IF NOT EXISTS subscribers (
-        id SERIAL PRIMARY KEY, 
-        email TEXT UNIQUE NOT NULL, 
+        id SERIAL PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
         is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )"""
@@ -325,39 +324,19 @@ def upgrade() -> None:
     # 10. Indexes
     op.execute("CREATE INDEX IF NOT EXISTS idx_cluster_id ON articles(cluster_id)")
     op.execute("CREATE INDEX IF NOT EXISTS idx_created_at ON articles(created_at DESC)")
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS idx_ingested_at ON articles(ingested_at DESC)"
-    )
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS idx_articles_fts ON articles USING GIN (search_vector)"
-    )
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS idx_articles_country_created ON articles(country, created_at DESC)"
-    )
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS idx_articles_source_created ON articles(source, created_at DESC)"
-    )
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS idx_articles_cat_created ON articles(category, created_at DESC)"
-    )
+    op.execute("CREATE INDEX IF NOT EXISTS idx_ingested_at ON articles(ingested_at DESC)")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_articles_fts ON articles USING GIN (search_vector)")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_articles_country_created ON articles(country, created_at DESC)")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_articles_source_created ON articles(source, created_at DESC)")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_articles_cat_created ON articles(category, created_at DESC)")
     op.execute(
         "CREATE INDEX IF NOT EXISTS idx_articles_local_image_path ON articles(local_image_path) WHERE local_image_path IS NOT NULL"
     )
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS idx_articles_embedding ON articles USING hnsw (embedding vector_cosine_ops)"
-    )
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS idx_cluster_metadata_tags ON cluster_metadata USING GIN (tags)"
-    )
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS idx_cluster_summary_history_cid ON cluster_summary_history(cluster_id)"
-    )
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS idx_rel_weight ON knowledge_relationships(weight DESC)"
-    )
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS idx_rel_entity_b ON knowledge_relationships(entity_b)"
-    )
+    op.execute("CREATE INDEX IF NOT EXISTS idx_articles_embedding ON articles USING hnsw (embedding vector_cosine_ops)")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_cluster_metadata_tags ON cluster_metadata USING GIN (tags)")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_cluster_summary_history_cid ON cluster_summary_history(cluster_id)")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_rel_weight ON knowledge_relationships(weight DESC)")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_rel_entity_b ON knowledge_relationships(entity_b)")
     op.execute(
         "CREATE INDEX IF NOT EXISTS idx_delivery_tracking_sync_created ON delivery_tracking_events(sync_token, created_at DESC)"
     )
@@ -373,12 +352,8 @@ def upgrade() -> None:
     op.execute(
         "CREATE INDEX IF NOT EXISTS idx_suggestion_surface_events_sync_created ON suggestion_surface_events(sync_token, created_at DESC)"
     )
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS idx_failed_tasks_created ON failed_tasks(created_at DESC)"
-    )
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS idx_entity_knowledge_last_seen ON entity_knowledge(last_seen DESC)"
-    )
+    op.execute("CREATE INDEX IF NOT EXISTS idx_failed_tasks_created ON failed_tasks(created_at DESC)")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_entity_knowledge_last_seen ON entity_knowledge(last_seen DESC)")
 
     # 11. Triggers
     op.execute(

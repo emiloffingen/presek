@@ -30,7 +30,7 @@ export default function NationalMoodIsland({ lang = 'sr' }: { lang?: string }) {
                     fetch(`${base}/stats/mood?lang=${lang}`),
                     fetch(`${base}/stats/sentiment-trends?lang=${lang}`)
                 ]);
-                
+
                 const moodJson = await moodRes.json();
                 const trendsJson = await trendsRes.json();
 
@@ -49,7 +49,7 @@ export default function NationalMoodIsland({ lang = 'sr' }: { lang?: string }) {
         return (
             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm opacity-70">
                 <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-[var(--grid-gap)]">
                         <div className="w-4 h-4 rounded-full bg-muted animate-pulse"></div>
                         <div className="h-3 w-24 bg-muted rounded animate-pulse"></div>
                     </div>
@@ -63,14 +63,14 @@ export default function NationalMoodIsland({ lang = 'sr' }: { lang?: string }) {
                         </div>
                         <div className="h-2 w-full bg-muted rounded-full animate-pulse"></div>
                         <div className="mt-3 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-[var(--grid-gap)]">
                                 <div className="w-5 h-5 rounded-full bg-muted animate-pulse"></div>
                                 <div className="h-3 w-16 bg-muted rounded animate-pulse"></div>
                             </div>
                             <div className="h-2 w-16 bg-muted rounded animate-pulse"></div>
                         </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                    <div className="grid grid-cols-2 gap-[var(--grid-gap)] pt-2 border-t border-zinc-100 dark:border-zinc-800">
                         <div>
                             <div className="h-2 w-16 bg-muted rounded animate-pulse mb-2"></div>
                             <div className="h-6 w-12 bg-muted rounded animate-pulse"></div>
@@ -92,7 +92,7 @@ export default function NationalMoodIsland({ lang = 'sr' }: { lang?: string }) {
         return (
             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm opacity-80">
                 <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-[var(--grid-gap)]">
                         <Activity size={18} className="text-muted-foreground" />
                         <h3 className="font-bold text-sm uppercase tracking-tighter">{lang === 'sr' ? 'Nacionalni Puls' : 'Национален Пулс'}</h3>
                     </div>
@@ -122,15 +122,15 @@ export default function NationalMoodIsland({ lang = 'sr' }: { lang?: string }) {
     return (
         <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-[var(--grid-gap)]">
                     <Activity size={18} className="text-nyt-accent" />
                     <h3 className="font-bold text-sm uppercase tracking-tighter">{lang === 'sr' ? 'Nacionalni Puls' : 'Национален Пулс'}</h3>
                 </div>
                 <div className="group relative">
                     <Info size={14} className="text-muted-foreground cursor-help" />
                     <div className="absolute right-0 bottom-full mb-2 w-48 p-2 bg-black text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
-                        {lang === 'sr' 
-                          ? 'Sistemska analiza emotivnog tona i objektivnosti u medijskom prostoru za poslednjih 24 časa.' 
+                        {lang === 'sr'
+                          ? 'Sistemska analiza emotivnog tona i objektivnosti u medijskom prostoru za poslednjih 24 časa.'
                           : 'Системска анализа на емотивниот тон и објективноста во медиумскиот простор за последните 24 часа.'}
                     </div>
                 </div>
@@ -145,14 +145,14 @@ export default function NationalMoodIsland({ lang = 'sr' }: { lang?: string }) {
                         <span className="text-emerald-600">{lang === 'sr' ? 'Pozitivan' : 'Позитивен'}</span>
                     </div>
                     <div className="relative h-2 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                        <div 
+                        <div
                             className="absolute top-0 bottom-0 w-1 bg-black dark:bg-white transition-all duration-1000 ease-out z-10"
                             style={{ left: `${indicatorPos}%`, marginLeft: '-2px' }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-r from-red-500/20 via-transparent to-emerald-500/20" />
                     </div>
                     <div className="mt-3 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-[var(--grid-gap)]">
                             {getMoodIcon(mood.score)}
                             <span className="text-sm font-serif italic capitalize">{mood.mood}</span>
                         </div>
@@ -163,7 +163,7 @@ export default function NationalMoodIsland({ lang = 'sr' }: { lang?: string }) {
                 </div>
 
                 {/* Sub-metrics */}
-                <div className="grid grid-cols-2 gap-4 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                <div className="grid grid-cols-2 gap-[var(--grid-gap)] pt-2 border-t border-zinc-100 dark:border-zinc-800">
                     <div>
                         <p className="text-[10px] uppercase font-bold text-muted-foreground/90 dark:text-zinc-400 mb-1">{lang === 'sr' ? 'Objektivnost' : 'Објективност'}</p>
                         <div className="flex items-end gap-1">
@@ -174,10 +174,10 @@ export default function NationalMoodIsland({ lang = 'sr' }: { lang?: string }) {
                         <p className="text-[10px] uppercase font-bold text-muted-foreground/90 dark:text-zinc-400 mb-1 text-right">{lang === 'sr' ? 'Trendovi (7d)' : 'Трендови (7д)'}</p>
                         <div className="flex gap-1.5 h-12 items-end">
                             {trends.map((t, i) => (
-                                <div 
+                                <div
                                     key={i}
                                     className="w-2.5 rounded-t-sm transition-all hover:opacity-80"
-                                    style={{ 
+                                    style={{
                                         height: `${Math.max(20, (t.objectivity * 100))}%`,
                                         backgroundColor: t.score > 0.1 ? '#10b981' : t.score < -0.1 ? '#ef4444' : '#71717a'
                                     }}

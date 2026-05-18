@@ -1,7 +1,7 @@
-import os
-import sys
 import asyncio
 import logging
+import os
+import sys
 
 # Add parent directory to path to import modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -20,8 +20,8 @@ async def main():
     logger.info("Step 1: Re-detecting topics for recent articles...")
     articles = await db.async_execute(
         """
-        SELECT id, title, description 
-        FROM articles 
+        SELECT id, title, description
+        FROM articles
         WHERE created_at >= NOW() - INTERVAL '7 days'
     """
     )
@@ -57,9 +57,7 @@ async def main():
         topics = r["topics"]
 
         # Check if cluster_metadata exists
-        meta = await db.async_execute_one(
-            "SELECT 1 FROM cluster_metadata WHERE cluster_id = %s", (cid,)
-        )
+        meta = await db.async_execute_one("SELECT 1 FROM cluster_metadata WHERE cluster_id = %s", (cid,))
 
         if meta:
             await db.async_execute(

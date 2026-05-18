@@ -1,28 +1,22 @@
 import json
-import secrets
 import logging
-from pydantic import BaseModel
+import secrets
 from typing import List
-from fastapi import APIRouter, Request, HTTPException
 
-from core.database import db_manager as db
-from utils import (
-    delete_cache,
-    score_cluster,
-    is_balanced,
-    score_cluster_for_homepage,
-    annotate_cluster_articles,
-)
+from fastapi import APIRouter, HTTPException, Request
+from pydantic import BaseModel
+
+from core.api_helpers import normalize_server_delivery_subscription as _normalize_server_delivery_subscription
 from core.config import BREAKING_SCORE_THRESHOLD
-from core.api_helpers import (
-    normalize_server_delivery_subscription as _normalize_server_delivery_subscription,
-)
+from core.database import db_manager as db
+from utils import annotate_cluster_articles, delete_cache, is_balanced, score_cluster, score_cluster_for_homepage
+
 from .common import (
-    _normalize_sync_list,
     _extract_sync_token,
-    _normalize_suggestion_surface,
-    _normalize_suggestion_kind,
     _normalize_suggestion_event_type,
+    _normalize_suggestion_kind,
+    _normalize_suggestion_surface,
+    _normalize_sync_list,
     _validate_sync_token_value,
 )
 
@@ -79,11 +73,7 @@ async def _prune_recent_clusters(items):
         "SELECT DISTINCT cluster_id FROM articles WHERE cluster_id = ANY(%s)",
         (cluster_ids,),
     )
-    valid_ids = {
-        str(row.get("cluster_id") or "").strip()
-        for row in rows
-        if row.get("cluster_id")
-    }
+    valid_ids = {str(row.get("cluster_id") or "").strip() for row in rows if row.get("cluster_id")}
     return [item for item in recent if item["cluster_id"] in valid_ids]
 
 
@@ -92,8 +82,7 @@ def _normalize_delivery_preferences(prefs):
     return {
         "morningBriefing": prefs.get("morningBriefing") is not False,
         "breakingAlerts": prefs.get("breakingAlerts") is not False,
-        "browserPermission": str(prefs.get("browserPermission") or "default").strip()
-        or "default",
+        "browserPermission": str(prefs.get("browserPermission") or "default").strip() or "default",
     }
 
 
@@ -127,18 +116,10 @@ def _normalize_recent_clusters(items):
 def _normalize_synced_profile(payload):
     payload = payload or {}
     return {
-        "followedTopics": _normalize_sync_list(
-            payload.get("followedTopics") or [], limit=12
-        ),
-        "followedSources": _normalize_sync_list(
-            payload.get("followedSources") or [], limit=12
-        ),
-        "recentClusters": _normalize_recent_clusters(
-            payload.get("recentClusters") or []
-        ),
-        "deliveryPreferences": _normalize_delivery_preferences(
-            payload.get("deliveryPreferences") or {}
-        ),
+        "followedTopics": _normalize_sync_list(payload.get("followedTopics") or [], limit=12),
+        "followedSources": _normalize_sync_list(payload.get("followedSources") or [], limit=12),
+        "recentClusters": _normalize_recent_clusters(payload.get("recentClusters") or []),
+        "deliveryPreferences": _normalize_delivery_preferences(payload.get("deliveryPreferences") or {}),
     }
 
 
@@ -153,12 +134,8 @@ def _merge_synced_profiles(left, right):
         )
     )
     return {
-        "followedTopics": _normalize_sync_list(
-            left["followedTopics"] + right["followedTopics"], limit=12
-        ),
-        "followedSources": _normalize_sync_list(
-            left["followedSources"] + right["followedSources"], limit=12
-        ),
+        "followedTopics": _normalize_sync_list(left["followedTopics"] + right["followedTopics"], limit=12),
+        "followedSources": _normalize_sync_list(left["followedSources"] + right["followedSources"], limit=12),
         "recentClusters": merged_recent,
         "deliveryPreferences": {
             **left["deliveryPreferences"],
@@ -235,9 +212,7 @@ async def save_profile_sync(request: Request):
     if not existing:
         raise HTTPException(status_code=404, detail="Profil nije pronadjen")
     merged = _merge_synced_profiles(existing.get("profile_data") or {}, incoming)
-    merged["recentClusters"] = await _prune_recent_clusters(
-        merged.get("recentClusters") or []
-    )
+    merged["recentClusters"] = await _prune_recent_clusters(merged.get("recentClusters") or [])
     await db.async_execute(
         "UPDATE synced_reader_profiles SET profile_data = %s::jsonb, updated_at = NOW() WHERE sync_token = %s",
         (json.dumps(merged), token),
@@ -258,9 +233,7 @@ async def get_vapid_key():
 @router.get("/profile/delivery")
 async def get_profile_delivery(request: Request):
     token = _validate_sync_token_value(_extract_sync_token(request))
-    row = await db.async_execute_one(
-        "SELECT * FROM synced_delivery_subscriptions WHERE sync_token = %s", (token,)
-    )
+    row = await db.async_execute_one("SELECT * FROM synced_delivery_subscriptions WHERE sync_token = %s", (token,))
     return {
         "status": "success",
         "subscription": _normalize_server_delivery_row(row),
@@ -275,9 +248,7 @@ async def save_profile_delivery(request: Request):
     except Exception:
         raise HTTPException(status_code=400, detail="Nevaliden JSON")
     token = _validate_sync_token_value(payload.get("token"))
-    if not await db.async_execute_one(
-        "SELECT 1 FROM synced_reader_profiles WHERE sync_token = %s", (token,)
-    ):
+    if not await db.async_execute_one("SELECT 1 FROM synced_reader_profiles WHERE sync_token = %s", (token,)):
         raise HTTPException(status_code=400, detail="Nevaliden kluc za sinhronizacija")
     sub = _normalize_server_delivery_subscription(payload.get("subscription") or {})
     locale = str(payload.get("locale") or "sr").strip().lower()[:5]
@@ -335,7 +306,7 @@ async def get_personalized_news_sync(request: Request):
         topics = profile.get("followedTopics")
         seed_rows = await db.async_execute(
             """
-            SELECT embedding FROM articles 
+            SELECT embedding FROM articles
             WHERE (topic = ANY(%s) OR category = ANY(%s))
             AND created_at >= NOW() - INTERVAL '72 hours'
             AND embedding IS NOT NULL
@@ -389,8 +360,9 @@ async def get_personalized_news_sync(request: Request):
     )
 
     # 3. Group and annotate
-    from .news import _public_article_payload
     from collections import defaultdict
+
+    from .news import _public_article_payload
 
     clusters = defaultdict(list)
     for r in rows:
@@ -405,9 +377,7 @@ async def get_personalized_news_sync(request: Request):
         f"SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY {_FRESHNESS_EXPR} DESC, created_at DESC",
         (cids,),
     )
-    meta_rows = await db.async_execute(
-        "SELECT * FROM cluster_metadata WHERE cluster_id = ANY(%s)", (cids,)
-    )
+    meta_rows = await db.async_execute("SELECT * FROM cluster_metadata WHERE cluster_id = ANY(%s)", (cids,))
     synthesis_ids = set(await db.async_get_synthesis_ids(cids))
 
     meta_map = {r["cluster_id"]: r for r in meta_rows}
@@ -417,9 +387,7 @@ async def get_personalized_news_sync(request: Request):
 
     results = []
     # Rank by original similarity
-    sorted_cids = sorted(
-        cids, key=lambda cid: clusters[cid][0]["similarity"], reverse=True
-    )
+    sorted_cids = sorted(cids, key=lambda cid: clusters[cid][0]["similarity"], reverse=True)
 
     for cid in sorted_cids[:limit]:
         arts = cluster_articles[cid]

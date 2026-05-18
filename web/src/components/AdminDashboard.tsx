@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiBaseUrl } from '../lib/apiBase';
-import { 
-  Shield, Layout, Activity, Zap, 
+import {
+  Shield, Layout, Activity, Zap,
   Settings, Terminal, AlertTriangle, CheckCircle2,
   RefreshCw, BarChart3, Database, Globe
 } from 'lucide-react';
@@ -16,7 +16,7 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
   const fetchDashboard = async (overrideToken?: string) => {
     const activeToken = overrideToken || token;
     if (!activeToken) return;
-    
+
     setLoading(true);
     setError(null);
     try {
@@ -83,7 +83,7 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
             <h2 className="text-xl font-bold text-center uppercase tracking-tight">{lang === 'sr' ? 'ADMIN AUTENTIKACIJA' : 'ADMIN АВТЕНТИКАЦИЈА'}</h2>
           </div>
           <div className="space-y-4">
-            <input 
+            <input
               type="password"
               value={token}
               onChange={(e) => setToken(e.target.value)}
@@ -91,7 +91,7 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
               className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-3 font-mono text-xs focus:ring-1 focus:ring-nyt-accent outline-none"
               onKeyDown={(e) => e.key === 'Enter' && fetchDashboard()}
             />
-            <button 
+            <button
               onClick={() => fetchDashboard()}
               disabled={loading}
               className="w-full bg-zinc-100 text-black font-black text-xs py-3 rounded-lg hover:bg-white transition-all disabled:opacity-50"
@@ -113,8 +113,8 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Top Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-[var(--grid-gap)]">
+        <StatCard
           icon={<Zap size={18} />}
           label={lang === 'sr' ? 'SINTETIČKI PREGLED' : 'СИНТЕТИЧКИ ПРЕГЛЕД'}
           value={data.clusters.total_summaries}
@@ -122,7 +122,7 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
           trend={systemOk ? 'SISTEM OK' : 'ISSUE'}
           color="text-nyt-accent"
         />
-        <StatCard 
+        <StatCard
           icon={<Globe size={18} />}
           label={lang === 'sr' ? 'ZDRAVLJE KRAVLERA' : 'ЗДРАВЈЕ НА КРАВЛЕР'}
           value={data.scrapers.healthy_feeds}
@@ -130,7 +130,7 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
           trend={`${Math.round((data.scrapers.healthy_feeds / data.scrapers.total_feeds) * 100)}%`}
           color="text-emerald-500"
         />
-        <StatCard 
+        <StatCard
           icon={<Activity size={18} />}
           label={lang === 'sr' ? 'INGESTIJA 24Č' : 'ИНГЕСТИЈА 24Ч'}
           value={data.articles.last_24h}
@@ -138,7 +138,7 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
           trend="+4.2%"
           color="text-blue-500"
         />
-        <StatCard 
+        <StatCard
           icon={<AlertTriangle size={18} />}
           label={lang === 'sr' ? 'NEUSPELI ZADACI' : 'НЕУСПЕШНИ ЗАДАЧИ'}
           value={data.tasks.failed_tasks}
@@ -148,30 +148,30 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-[var(--grid-gap)]">
         {/* System Health Section */}
         <div className="space-y-6">
-          <StatusTile 
+          <StatusTile
             icon={<Database size={16} />}
             label="POSTGRESQL"
             value={data.db?.version || 'Connected'}
             detail={`${data.db?.pool_size || 0} active connections`}
             ok={data.db?.ok}
           />
-          <StatusTile 
+          <StatusTile
             icon={<Activity size={16} />}
             label="REDIS / CACHE"
             value={data.redis?.ping === 'PONG' ? 'Active' : 'Offline'}
             detail={data.redis?.error || 'Cache and queues reachable'}
             ok={data.redis?.ok}
           />
-          
+
           <div className="bg-nyt-accent/5 border border-nyt-accent/20 rounded-2xl p-6">
-            <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 mb-4 text-nyt-accent">
+            <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-[var(--grid-gap)] mb-4 text-nyt-accent">
               <Zap size={14} /> {lang === 'sr' ? 'AI KVOTA' : 'AI КВОТА'} (GEMINI)
             </h3>
             <div className="relative h-2 w-full bg-zinc-800 rounded-full overflow-hidden mb-4">
-              <div 
+              <div
                 className="absolute top-0 left-0 h-full bg-nyt-accent transition-all duration-1000"
                 style={{ width: `${aiPercent}%` }}
               />
@@ -189,7 +189,7 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
         {/* Scraper Status Table */}
         <div className="lg:col-span-2 bg-zinc-900/40 border border-zinc-800 rounded-2xl overflow-hidden">
           <div className="p-6 border-b border-zinc-800 flex items-center justify-between">
-            <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+            <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-[var(--grid-gap)]">
               <Layout size={14} className="text-zinc-500" /> {lang === 'sr' ? 'MONITORING IZVORA' : 'МОНИТОРИНГ НА ИЗВОРИ'}
             </h3>
             <span className="px-3 py-1 bg-zinc-800 rounded-full text-[9px] font-black text-zinc-400">LATEST FEED UPDATES</span>
@@ -224,9 +224,9 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
       </div>
 
       {/* Action Panels */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-[var(--grid-gap)]">
           <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-6">
-            <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 mb-6">
+            <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-[var(--grid-gap)] mb-6">
               <Terminal size={14} className="text-zinc-500" /> {lang === 'sr' ? 'POSLEDNJE GREŠKE' : 'ПОСЛЕДНИ ГРЕШКИ'}
             </h3>
             <div className="space-y-3">
@@ -238,9 +238,9 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
                       <p className="text-[10px] font-mono text-zinc-500 line-clamp-2">{f.error}</p>
                     </div>
                   ))}
-                  <button 
+                  <button
                     onClick={clearFailedTasks}
-                    className="w-full mt-4 flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white text-[10px] font-bold py-3 rounded-lg transition-all"
+                    className="w-full mt-4 flex items-center justify-center gap-[var(--grid-gap)] bg-zinc-800 hover:bg-zinc-700 text-white text-[10px] font-bold py-3 rounded-lg transition-all"
                   >
                     {lang === 'sr' ? 'IZBRIŠI GREŠKE' : 'ИЗБРИШИ ГРЕШКИ'}
                   </button>
@@ -255,19 +255,19 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
           </div>
 
           <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-6">
-            <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 mb-6">
+            <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-[var(--grid-gap)] mb-6">
               <Settings size={14} className="text-zinc-500" /> {lang === 'sr' ? 'SISTEMSKE KONTROLE' : 'СИСТЕМСКИ КОНТРОЛИ'}
             </h3>
-            <div className="grid grid-cols-1 gap-4">
-                <button 
+            <div className="grid grid-cols-1 gap-[var(--grid-gap)]">
+                <button
                   onClick={triggerNewsletter}
-                  className="w-full flex items-center justify-center gap-2 bg-nyt-accent hover:bg-nyt-accent/80 text-black text-[10px] font-black py-3 rounded-lg transition-all"
+                  className="w-full flex items-center justify-center gap-[var(--grid-gap)] bg-nyt-accent hover:bg-nyt-accent/80 text-black text-[10px] font-black py-3 rounded-lg transition-all"
                 >
                   <Zap size={14} /> {lang === 'sr' ? 'TRIGERUJ BILTEN' : 'ТРИГЕРУВАЈ БИЛТЕН'}
                 </button>
-                <button 
+                <button
                   onClick={() => fetchDashboard()}
-                  className="w-full flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white text-[10px] font-bold py-3 rounded-lg transition-all"
+                  className="w-full flex items-center justify-center gap-[var(--grid-gap)] bg-zinc-800 hover:bg-zinc-700 text-white text-[10px] font-bold py-3 rounded-lg transition-all"
                 >
                   <RefreshCw size={14} /> {lang === 'sr' ? 'RESTARTOVANJE ZADATAKA' : 'РЕСТАРТИРАЈ ЗАДАЧИ'}
                 </button>
@@ -300,7 +300,7 @@ function StatCard({ icon, label, value, sub, trend, color }: any) {
 
 function StatusTile({ icon, label, value, detail, ok }: any) {
   return (
-    <div className="flex items-center gap-4 p-4 bg-zinc-900/40 border border-zinc-800 rounded-2xl">
+    <div className="flex items-center gap-[var(--grid-gap)] p-4 bg-zinc-900/40 border border-zinc-800 rounded-2xl">
       <div className={`p-3 rounded-xl ${ok ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
         {icon}
       </div>

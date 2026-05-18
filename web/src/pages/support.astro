@@ -6,8 +6,8 @@ import Breadcrumbs from '../components/Breadcrumbs.astro';
 import { Heart, Coffee, ShieldCheck, Cpu, Globe } from 'lucide-react';
 ---
 
-<Layout 
-    title="Подржите пројекат — Пресек" 
+<Layout
+    title="Подржите пројекат — Пресек"
     description="Пресек је независни сервис за вести. Помозите нам да сачувамо чисту информисаност."
 >
     <NYTHeader />
@@ -54,7 +54,7 @@ import { Heart, Coffee, ShieldCheck, Cpu, Globe } from 'lucide-react';
                             <Coffee size={40} className="text-[#ff5e5b] mb-6" />
                             <h2 class="font-serif text-3xl font-black mb-4">Постаните подржавалац</h2>
                             <p class="text-lg opacity-80 mb-10">Сваки допринос је важан. Подржите нас једним „кафем“ преко Ko-fi платформе.</p>
-                            
+
                             <a href="https://ko-fi.com/presek" target="_blank" rel="noopener noreferrer" class="support-cta">
                                 <img src="https://ko-fi.com/img/cup-border.png" alt="" class="h-6" />
                                 <span>ЧАСТИТЕ КАФУ НА KO-FI</span>
@@ -100,7 +100,7 @@ import { Heart, Coffee, ShieldCheck, Cpu, Globe } from 'lucide-react';
     /* ── Prose & Content ─────────────────────────────── */
     .prose-editorial { font-family: var(--font-nyt-body); font-size: 1.1rem; line-height: 1.75; color: var(--secondary-foreground); }
     .first-paragraph::first-letter { float: left; font-family: var(--font-serif); font-size: 5rem; font-weight: 900; line-height: 0.8; padding-top: 0.5rem; padding-right: 0.75rem; color: var(--foreground); }
-    
+
     .support-pillars { display: grid; grid-template-columns: 1fr; gap: 2rem; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 3rem 0; }
     @media (min-width: 640px) { .support-pillars { grid-template-columns: repeat(3, 1fr); } }
     .pillar h3 { font-family: var(--font-sans); font-size: 0.7rem; font-weight: 950; letter-spacing: 0.1em; margin: 1rem 0 0.5rem; color: var(--foreground); }

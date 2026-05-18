@@ -10,7 +10,7 @@ export default function ThemeIsland({ fixed = false }: { fixed?: boolean }) {
     const isDark = document.documentElement.classList.contains('dark');
     const initialTheme = isDark ? 'dark' : 'light';
     setTheme(initialTheme);
-    
+
     // Also check localStorage for user preference
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
     if (savedTheme && savedTheme !== initialTheme) {
@@ -28,7 +28,7 @@ export default function ThemeIsland({ fixed = false }: { fixed?: boolean }) {
       } else {
         root.classList.remove('dark');
       }
-      
+
       // Update theme-color meta tags for immediate effect
       const lightMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: light)"]');
       const darkMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: dark)"]');
@@ -47,7 +47,7 @@ export default function ThemeIsland({ fixed = false }: { fixed?: boolean }) {
   const inlineClasses = "rounded-full p-2 hover:bg-secondary";
 
   return (
-    <button 
+    <button
       onClick={toggleTheme}
       className={`${baseClasses} ${fixed ? fixedClasses : inlineClasses}`}
       aria-label="Promeni tema"

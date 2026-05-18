@@ -1,35 +1,31 @@
+import asyncio
 import datetime
 import time
-import asyncio
 import types
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 from core.ingestion import (
-    normalize_headline,
     clean_rss_footer,
-    normalize_feed_link,
-    normalize_candidate_title,
-    is_supported_display_language,
-    parse_entry_timestamp,
     extract_image_url,
     fetch_og_image,
     fill_missing_og_images,
+    is_supported_display_language,
+    normalize_candidate_title,
+    normalize_feed_link,
+    normalize_headline,
+    parse_entry_timestamp,
 )
 
 
 def test_normalize_headline():
     assert normalize_headline("VIDEO: ova e naslov") == "Ova e naslov"
     assert normalize_headline("Normalen naslov") == "Normalen naslov"
-    assert (
-        normalize_headline("  ova e naslov so prazni mesta  ")
-        == "Ova e naslov so prazni mesta"
-    )
+    assert normalize_headline("  ova e naslov so prazni mesta  ") == "Ova e naslov so prazni mesta"
     assert normalize_headline("") == ""
 
 
 def test_clean_rss_footer():
-    text1 = (
-        "This is some news content. The post Some title appeared first on Some source."
-    )
+    text1 = "This is some news content. The post Some title appeared first on Some source."
     assert clean_rss_footer(text1) == "This is some news content."
 
     text2 = "Content. This article was originally published on Site."
@@ -118,9 +114,7 @@ def test_normalize_candidate_title_removes_clock_noise():
 def test_parse_entry_timestamp_uses_published_parsed():
     fallback = datetime.datetime(2026, 4, 4, 22, 0, 0)
     entry = {"published_parsed": time.struct_time((2026, 4, 4, 20, 30, 0, 0, 0, 0))}
-    assert parse_entry_timestamp(entry, fallback) == datetime.datetime(
-        2026, 4, 4, 20, 30, 0
-    )
+    assert parse_entry_timestamp(entry, fallback) == datetime.datetime(2026, 4, 4, 20, 30, 0)
 
 
 def test_parse_entry_timestamp_rejects_future_dates():
@@ -291,9 +285,7 @@ def test_ingest_updates_last_fetched_even_when_all_entries_are_filtered_out():
         patch.object(ingestion, "record_source_fetch"),
         patch("utils.cache.redis_client", MagicMock()),
     ):
-        new_count, inserted_ids, errors = asyncio.run(
-            ingestion.ingest_all_sources_async()
-        )
+        new_count, inserted_ids, errors = asyncio.run(ingestion.ingest_all_sources_async())
     assert new_count == 0
     assert errors == []
 

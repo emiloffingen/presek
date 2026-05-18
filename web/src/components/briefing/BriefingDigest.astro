@@ -9,7 +9,7 @@ const l = (path: string) => isMK ? `/mk${path}` : path;
 {homeData && homeData.developing && (
     <section class="mt-8">
         <h3 class="font-sans font-black uppercase tracking-widest text-xs mb-6 text-nyt-accent">{isMK ? 'АКТУЕЛНИ ТЕМИ ВО ФОКУС' : 'AKTUELNE FOKUSNE TEME'}</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-[var(--grid-gap)]">
             {homeData.developing.slice(0, 6).map((c: any) => (
                 <a href={l(`/cluster/${c.cluster_id}`)} class="block p-6 bg-secondary/50 border border-border hover:border-nyt-accent transition-all group">
                     <p class="font-sans text-[10px] font-black uppercase text-nyt-accent mb-3 tracking-widest">{isMK ? 'ВО ТРЕНД' : 'U TRENDU'}</p>

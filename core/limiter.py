@@ -1,5 +1,5 @@
-import os
 import logging
+import os
 import sys
 
 log = logging.getLogger("presek.limiter")
@@ -17,9 +17,8 @@ class _RateLimitExceededFallback(Exception):
 
 
 try:
-    from slowapi import Limiter
+    from slowapi import Limiter, errors
     from slowapi.util import get_remote_address
-    from slowapi import errors
 
     RateLimitExceeded = errors.RateLimitExceeded
     _rate_limiter_enabled = True

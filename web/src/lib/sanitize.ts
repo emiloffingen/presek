@@ -2,16 +2,16 @@ import DOMPurify from "isomorphic-dompurify";
 
 /**
  * Sanitize HTML content to prevent XSS attacks.
- * 
+ *
  * Security: Uses DOMPurify with a strict allowlist. Only permits safe formatting tags
  * and specific attributes. All event handlers, javascript: URLs, and style attributes
  * are explicitly blocked.
- * 
+ *
  * Safe for use in both SSR (Node) and client-side (browser) contexts.
- * 
+ *
  * @param dirty - The potentially unsafe HTML string to sanitize
  * @returns A safe HTML string with all dangerous content removed
- * 
+ *
  * @example
  * ```ts
  * const safe = sanitizeHtml('<script>alert("xss")</script><b>Hello</b>');
@@ -20,11 +20,11 @@ import DOMPurify from "isomorphic-dompurify";
  */
 export function sanitizeHtml(dirty: string): string {
   if (!dirty) return "";
-  
+
   // Trim to prevent edge cases with leading/trailing whitespace
   const trimmed = dirty.trim();
   if (!trimmed) return "";
-  
+
   return DOMPurify.sanitize(trimmed, {
     // Only allow safe formatting and structural tags
     ALLOWED_TAGS: [
@@ -38,7 +38,7 @@ export function sanitizeHtml(dirty: string): string {
     ],
     // Explicitly block dangerous attributes
     FORBID_ATTR: [
-      "style", "onclick", "onload", "onerror", "onmouseover", 
+      "style", "onclick", "onload", "onerror", "onmouseover",
       "onmouseout", "onmousedown", "onmouseup", "onkeydown",
       "onkeyup", "onfocus", "onblur", "javascript:", "data:"
     ],

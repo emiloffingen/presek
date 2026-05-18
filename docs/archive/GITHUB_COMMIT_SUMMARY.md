@@ -42,7 +42,7 @@
 
 - **Commit**: https://github.com/emiloffingen/presek/commit/04ecf30
 - **Repository**: https://github.com/emiloffingen/presek
-- **Files**: 
+- **Files**:
   - [CATEGORY_COVERAGE_ANALYSIS.md](https://github.com/emiloffingen/presek/blob/main/CATEGORY_COVERAGE_ANALYSIS.md)
   - [FEED_ENHANCEMENT_SUMMARY.md](https://github.com/emiloffingen/presek/blob/main/FEED_ENHANCEMENT_SUMMARY.md)
 

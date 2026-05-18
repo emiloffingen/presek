@@ -11,6 +11,7 @@ No API key, no quota, no network at runtime.
 import json
 import logging
 import threading
+
 from core.hf_cache import configure_huggingface_cache
 
 log = logging.getLogger("presek")
@@ -54,12 +55,11 @@ def _get_model():
         try:
             # Check for GPU availability and use if available
             import torch
+
             device = "cuda" if torch.cuda.is_available() else "cpu"
             log.info(f"[embeddings] Loading local model '{EMBEDDING_MODEL}' on {device}")
             _model = SentenceTransformer(EMBEDDING_MODEL, device=device)
-            log.info(
-                f"[embeddings] Model loaded on {device}, dim={_model.get_embedding_dimension()}"
-            )
+            log.info(f"[embeddings] Model loaded on {device}, dim={_model.get_embedding_dimension()}")
         except Exception as e:
             log.error(f"[embeddings] Failed to load model: {e}")
             _model = None
@@ -143,9 +143,7 @@ def embed_recent_articles(hours: int = 24, limit: int = 100) -> int:
             )
             embedded += 1
         except Exception as e:
-            log.warning(
-                f"[embeddings] Failed to store embedding for article {row['id']}: {e}"
-            )
+            log.warning(f"[embeddings] Failed to store embedding for article {row['id']}: {e}")
 
     log.info(f"[embeddings] Embedded {embedded}/{len(rows)} recent articles")
     return embedded
@@ -162,8 +160,9 @@ def generate_query_embedding(text: str) -> list[float] | None:
     if not clean_text:
         return None
 
-    from utils import redis_client
     import json
+
+    from utils import redis_client
 
     cache_key = f"emb:query:{clean_text}"
     try:
@@ -299,9 +298,7 @@ def get_cluster_embedding(cluster_id: str) -> list[float] | None:
 
         return average_embeddings([r.get("embedding") for r in rows])
     except Exception as e:
-        log.warning(
-            f"[embeddings] Failed to calculate cluster embedding for {cluster_id}: {e}"
-        )
+        log.warning(f"[embeddings] Failed to calculate cluster embedding for {cluster_id}: {e}")
         return None
 
 
@@ -331,17 +328,13 @@ async def generate_embeddings_batch_async(texts: list[str]) -> list[list[float] 
     blocking the event loop. This is critical for API responsiveness.
     """
     loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(
-        _embedding_executor, generate_embeddings_batch, texts
-    )
+    return await loop.run_in_executor(_embedding_executor, generate_embeddings_batch, texts)
 
 
 async def get_query_embedding_async(text: str) -> list[float] | None:
     """Async version of generate_query_embedding with Redis caching."""
     loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(
-        _embedding_executor, generate_query_embedding, text
-    )
+    return await loop.run_in_executor(_embedding_executor, generate_query_embedding, text)
 
 
 def shutdown_embedding_executor():

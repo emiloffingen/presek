@@ -44,9 +44,9 @@ export default function ClusterHistoryIsland({ clusterId, lang = 'sr' }: { clust
 
   return (
     <div className="mt-8 border-t border-border pt-6">
-      <button 
+      <button
         onClick={toggleOpen}
-        className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-nyt-accent transition-all group"
+        className="flex items-center gap-[var(--grid-gap)] text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-nyt-accent transition-all group"
       >
         <div className="w-6 h-[1px] bg-border group-hover:bg-nyt-accent transition-colors" />
         <History size={11} className="group-hover:rotate-[-30deg] transition-transform" />
@@ -61,7 +61,7 @@ export default function ClusterHistoryIsland({ clusterId, lang = 'sr' }: { clust
                 {isMK ? 'Архивски увид...' : 'Arhivski uvid...'}
             </p>
           ) : history.length === 0 ? (
-            <div className="flex items-center gap-3 p-4 border border-border/40 bg-secondary/5 rounded-sm">
+            <div className="flex items-center gap-[var(--grid-gap)] p-4 border border-border/40 bg-secondary/5 rounded-sm">
                 <Sparkles size={14} className="text-nyt-accent" />
                 <span className="text-[11px] font-black uppercase tracking-widest text-foreground">
                     {isMK ? 'Нов наратив: Прва верзија на синтезата' : 'Nov narativ: Prva verzija sinteze'}
@@ -74,15 +74,15 @@ export default function ClusterHistoryIsland({ clusterId, lang = 'sr' }: { clust
                 </p>
                 {history.map((item, idx) => (
                 <div key={idx} className="border border-border/60 bg-background shadow-sm hover:border-nyt-accent/30 transition-all">
-                    <button 
+                    <button
                     onClick={() => setExpandedIndex(expandedIndex === idx ? null : idx)}
                     className="w-full flex items-center justify-between p-4"
                     >
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-[var(--grid-gap)]">
                         <Clock size={12} className="text-muted-foreground/60" />
                         <span className="text-[11px] font-black tabular-nums text-foreground">
-                            {new Date(item.created_at).toLocaleString(isMK ? 'mk-MK' : 'sr-RS', { 
-                                day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' 
+                            {new Date(item.created_at).toLocaleString(isMK ? 'mk-MK' : 'sr-RS', {
+                                day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
                             })}
                         </span>
                     </div>
@@ -90,7 +90,7 @@ export default function ClusterHistoryIsland({ clusterId, lang = 'sr' }: { clust
                         {isMK ? 'РЕВИЗИЈА' : 'REVIZIJA'} {history.length - idx}
                     </span>
                     </button>
-                    
+
                     {expandedIndex === idx && (
                     <div className="p-5 pt-0 animate-in fade-in duration-300">
                         <div className="prose-nyt text-[13px] leading-relaxed text-secondary-foreground font-serif italic border-l-2 border-border pl-4">

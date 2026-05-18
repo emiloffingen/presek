@@ -27,12 +27,12 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
     const timer = setTimeout(() => setIsMounted(true), 50);
     return () => clearTimeout(timer);
   }, []);
-  
+
   // Normalize values to 0-100 for the SVG
   const sensationalism = Math.min(100, Math.max(0, (tone_analysis?.sensationalism || 0) * 100));
   const objectivity = Math.min(100, Math.max(0, (tone_analysis?.objectivity || 0) * 100));
   const emotionalCharge = Math.min(100, Math.max(0, (tone_analysis?.emotional_charge || 0) * 100));
-  
+
   // Scale factor for animation
   const scale = isMounted ? 1 : 0.01;
 
@@ -70,17 +70,17 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
           <svg viewBox="0 0 200 200" className="w-full h-full overflow-visible drop-shadow-md relative z-10">
             {/* Background circles */}
             {[1, 0.75, 0.5, 0.25].map((lvl) => (
-                <circle 
+                <circle
                     key={lvl}
-                    cx="100" cy="100" r={radius * lvl} 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="0.75" 
-                    className="text-border" 
-                    strokeDasharray={lvl === 1 ? "none" : "3 3"} 
+                    cx="100" cy="100" r={radius * lvl}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="0.75"
+                    className="text-border"
+                    strokeDasharray={lvl === 1 ? "none" : "3 3"}
                 />
             ))}
-            
+
             {/* Axis lines */}
             <line x1="100" y1={cy - radius} x2="100" y2="100" stroke="currentColor" strokeWidth="1.5" className="text-border" />
             <line x1="100" y1="100" x2={cx + radius * Math.sin(120 * Math.PI / 180)} y2={cy - radius * Math.cos(120 * Math.PI / 180)} stroke="currentColor" strokeWidth="1.5" className="text-border" />
@@ -92,32 +92,32 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
             <text x={cx + radius * Math.sin(240 * Math.PI / 180) - 18} y={cy - radius * Math.cos(240 * Math.PI / 180) + 18} textAnchor="middle" className="text-[11px] font-black fill-muted-foreground uppercase tracking-[0.2em]">Emocije</text>
 
             {/* Data shape */}
-            <polygon 
-              points={points} 
+            <polygon
+              points={points}
               fill="var(--nyt-accent)"
               fillOpacity="0.2"
-              stroke="var(--nyt-accent)" 
+              stroke="var(--nyt-accent)"
               strokeWidth="3"
               strokeLinejoin="round"
               className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1)"
             />
-            
+
             {/* Interactive Points */}
             <g className="cursor-crosshair">
-                <circle cx={x1} cy={y1} r="6" fill="var(--nyt-accent)" className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) stroke-[4px] stroke-background hover:scale-150 hover:stroke-[2px]" 
+                <circle cx={x1} cy={y1} r="6" fill="var(--nyt-accent)" className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) stroke-[4px] stroke-background hover:scale-150 hover:stroke-[2px]"
                   onMouseEnter={() => setActiveTooltip({x: x1, y: y1, label: 'Objektivnost', value: `${objectivity.toFixed(1)}%`})} onMouseLeave={() => setActiveTooltip(null)} />
-                <circle cx={x2} cy={y2} r="6" fill="var(--nyt-accent)" className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) stroke-[4px] stroke-background hover:scale-150 hover:stroke-[2px]" 
+                <circle cx={x2} cy={y2} r="6" fill="var(--nyt-accent)" className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) stroke-[4px] stroke-background hover:scale-150 hover:stroke-[2px]"
                   onMouseEnter={() => setActiveTooltip({x: x2, y: y2, label: 'Senzacionalizam', value: `${sensationalism.toFixed(1)}%`})} onMouseLeave={() => setActiveTooltip(null)} />
-                <circle cx={x3} cy={y3} r="6" fill="var(--nyt-accent)" className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) stroke-[4px] stroke-background hover:scale-150 hover:stroke-[2px]" 
+                <circle cx={x3} cy={y3} r="6" fill="var(--nyt-accent)" className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) stroke-[4px] stroke-background hover:scale-150 hover:stroke-[2px]"
                   onMouseEnter={() => setActiveTooltip({x: x3, y: y3, label: 'Emocije', value: `${emotionalCharge.toFixed(1)}%`})} onMouseLeave={() => setActiveTooltip(null)} />
             </g>
           </svg>
 
           {/* HTML Tooltip Overlay */}
-          <div 
+          <div
             className={`absolute z-20 pointer-events-none bg-zinc-900 text-white dark:bg-white dark:text-black px-3 py-2 rounded shadow-xl text-xs font-bold transition-all duration-200 whitespace-nowrap flex flex-col items-center ${activeTooltip ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
-            style={{ 
-              left: activeTooltip ? `${(activeTooltip.x / 200) * 100}%` : '50%', 
+            style={{
+              left: activeTooltip ? `${(activeTooltip.x / 200) * 100}%` : '50%',
               top: activeTooltip ? `${(activeTooltip.y / 200) * 100}%` : '50%',
               transform: 'translate(-50%, -120%)'
             }}
@@ -136,10 +136,10 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 md:gap-10 pt-8 border-t border-border">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-[var(--grid-gap)] md:gap-10 pt-8 border-t border-border">
             <div className="space-y-3">
               <span className="text-[11px] font-black uppercase text-muted-foreground block tracking-[0.15em]">Objektivnost</span>
-              <div className="flex items-end gap-3">
+              <div className="flex items-end gap-[var(--grid-gap)]">
                 <span className="text-3xl md:text-4xl font-black tabular-nums tracking-tighter">{objectivity.toFixed(0)}%</span>
                 <div className="h-2 flex-1 mb-2.5 bg-border rounded-full overflow-hidden">
                     <div className="h-full bg-foreground transition-all duration-1000 delay-300" style={{ width: isMounted ? `${objectivity}%` : '0%' }}></div>
@@ -148,7 +148,7 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
             </div>
             <div className="space-y-3">
               <span className="text-[11px] font-black uppercase text-muted-foreground block tracking-[0.15em]">Senzacionalizam</span>
-              <div className="flex items-end gap-3">
+              <div className="flex items-end gap-[var(--grid-gap)]">
                 <span className="text-3xl md:text-4xl font-black tabular-nums tracking-tighter">{sensationalism.toFixed(0)}%</span>
                 <div className="h-2 flex-1 mb-2.5 bg-border rounded-full overflow-hidden">
                     <div className="h-full bg-nyt-red transition-all duration-1000 delay-500" style={{ width: isMounted ? `${sensationalism}%` : '0%' }}></div>
@@ -157,7 +157,7 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
             </div>
             <div className="space-y-3">
               <span className="text-[11px] font-black uppercase text-muted-foreground block tracking-[0.15em]">Emocionalnost</span>
-              <div className="flex items-end gap-3">
+              <div className="flex items-end gap-[var(--grid-gap)]">
                 <span className="text-3xl md:text-4xl font-black tabular-nums tracking-tighter">{emotionalCharge.toFixed(0)}%</span>
                 <div className="h-2 flex-1 mb-2.5 bg-border rounded-full overflow-hidden">
                     <div className="h-full bg-amber-500 transition-all duration-1000 delay-700" style={{ width: isMounted ? `${emotionalCharge}%` : '0%' }}></div>

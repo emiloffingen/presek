@@ -1,10 +1,11 @@
+import argparse
 import asyncio
 import logging
-import argparse
+
 from core.database import db_manager as db
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)s | %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
 log = logging.getLogger("presek.repair_sources")
 
 # Sources to update (404s with known new endpoints)
@@ -12,7 +13,7 @@ REPLACEMENTS = {
     "CrnoBelo": "https://www.crnobelo.com/feed",
     "MKD.mk": "https://mkd.mk/feed/",
     "Vesti.mk": "https://vesti.mk/feed",
-    "Sputnjik Srbija": "https://sputnikportal.rs/export/rss2/archive/index.xml", # Common sputnik fallback
+    "Sputnjik Srbija": "https://sputnikportal.rs/export/rss2/archive/index.xml",  # Common sputnik fallback
     "SakamDaKazam.mk": "https://sdk.mk/feed/",
     "KumanovoNews": "https://kumanovonews.mk/feed/",
     "Kurir Sport": "https://www.kurir.rs/rss/sport/",
@@ -36,6 +37,7 @@ DEACTIVATE = [
     "Vesti-MK",
 ]
 
+
 async def repair_sources(dry_run=True):
     if dry_run:
         log.info("DRY RUN: No changes will be committed to the database.")
@@ -45,9 +47,7 @@ async def repair_sources(dry_run=True):
         log.info(f"Checking replacement for {name} -> {new_url}")
         if not dry_run:
             result = await db.async_execute(
-                "UPDATE feed_sources SET url = %s, is_active = TRUE WHERE name = %s",
-                (new_url, name),
-                fetch=False
+                "UPDATE feed_sources SET url = %s, is_active = TRUE WHERE name = %s", (new_url, name), fetch=False
             )
             log.info(f"Updated {name}")
 
@@ -55,14 +55,11 @@ async def repair_sources(dry_run=True):
     for name in DEACTIVATE:
         log.info(f"Deactivating source: {name}")
         if not dry_run:
-            await db.async_execute(
-                "UPDATE feed_sources SET is_active = FALSE WHERE name = %s",
-                (name,),
-                fetch=False
-            )
+            await db.async_execute("UPDATE feed_sources SET is_active = FALSE WHERE name = %s", (name,), fetch=False)
             log.info(f"Deactivated {name}")
 
     log.info("Repair process completed.")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Repair broken news sources in the database.")

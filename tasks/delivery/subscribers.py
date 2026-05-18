@@ -1,23 +1,22 @@
 import json
+
 from core.database import db_manager as db
 from tasks.utils import log
+
 
 def _normalize_synced_profile_for_delivery(profile):
     profile = profile or {}
     return {
         "followedTopics": [
-            str(item or "").strip()
-            for item in profile.get("followedTopics") or []
-            if str(item or "").strip()
+            str(item or "").strip() for item in profile.get("followedTopics") or [] if str(item or "").strip()
         ],
         "followedSources": [
-            str(item or "").strip()
-            for item in profile.get("followedSources") or []
-            if str(item or "").strip()
+            str(item or "").strip() for item in profile.get("followedSources") or [] if str(item or "").strip()
         ],
         "recentClusters": profile.get("recentClusters") or [],
         "deliveryPreferences": profile.get("deliveryPreferences") or {},
     }
+
 
 def _load_active_delivery_rows():
     return db.execute(
@@ -29,18 +28,13 @@ def _load_active_delivery_rows():
            WHERE s.is_active = TRUE"""
     )
 
-def _cluster_delivery_match(
-    cluster, profile, *, include_topics=True, include_sources=True
-):
+
+def _cluster_delivery_match(cluster, profile, *, include_topics=True, include_sources=True):
     followed_topics = {
-        str(item or "").strip()
-        for item in profile.get("followedTopics") or []
-        if str(item or "").strip()
+        str(item or "").strip() for item in profile.get("followedTopics") or [] if str(item or "").strip()
     }
     followed_sources = {
-        str(item or "").strip()
-        for item in profile.get("followedSources") or []
-        if str(item or "").strip()
+        str(item or "").strip() for item in profile.get("followedSources") or [] if str(item or "").strip()
     }
 
     cluster_topics = {
@@ -52,9 +46,7 @@ def _cluster_delivery_match(
     score = 0.0
     reasons = []
 
-    topic_hits = sorted(
-        topic for topic in cluster_topics if topic and topic in followed_topics
-    )
+    topic_hits = sorted(topic for topic in cluster_topics if topic and topic in followed_topics)
     if include_topics and topic_hits:
         score += 2.8 + (0.4 * len(topic_hits))
         reasons.append(f"sledena tema: {', '.join(topic_hits[:2])}")
@@ -73,19 +65,20 @@ def _cluster_delivery_match(
         [lead_source] if lead_source and lead_source in followed_sources else [],
     )
 
+
 def _load_weekly_cluster_engagement(days=45):
     send_rows = db.execute(
-        """SELECT id, cluster_id, metadata 
-        FROM delivery_tracking_events 
-        WHERE delivery_kind = 'weekly' AND event_type = 'send' 
+        """SELECT id, cluster_id, metadata
+        FROM delivery_tracking_events
+        WHERE delivery_kind = 'weekly' AND event_type = 'send'
         AND created_at >= NOW() - (%s * INTERVAL '1 day')""",
         (days,),
     )
 
     child_rows = db.execute(
-        """SELECT parent_event_id, event_type 
-        FROM delivery_tracking_events 
-        WHERE delivery_kind = 'weekly' AND event_type IN ('open', 'click') 
+        """SELECT parent_event_id, event_type
+        FROM delivery_tracking_events
+        WHERE delivery_kind = 'weekly' AND event_type IN ('open', 'click')
         AND created_at >= NOW() - (%s * INTERVAL '1 day')""",
         (days,),
     )
@@ -128,9 +121,7 @@ def _load_weekly_cluster_engagement(days=45):
 
         child_stats = child_map.get(event_id) or {"opens": 0, "clicks": 0}
         for cluster_id in cluster_ids:
-            bucket = engagement.setdefault(
-                cluster_id, {"sends": 0, "opens": 0, "clicks": 0}
-            )
+            bucket = engagement.setdefault(cluster_id, {"sends": 0, "opens": 0, "clicks": 0})
             bucket["sends"] += 1
             bucket["opens"] += child_stats["opens"]
             bucket["clicks"] += child_stats["clicks"]
@@ -144,26 +135,25 @@ def _load_weekly_cluster_engagement(days=45):
         bucket["engagement_score"] = round(
             min(
                 1.1,
-                bucket["click_rate"] * 1.5
-                + bucket["open_rate"] * 0.55
-                + min(0.25, clicks * 0.05),
+                bucket["click_rate"] * 1.5 + bucket["open_rate"] * 0.55 + min(0.25, clicks * 0.05),
             ),
             3,
         )
     return engagement
 
+
 def _load_weekly_topic_engagement(days=45):
     send_rows = db.execute(
-        """SELECT id, metadata 
-        FROM delivery_tracking_events 
-        WHERE delivery_kind = 'weekly' AND event_type = 'send' 
+        """SELECT id, metadata
+        FROM delivery_tracking_events
+        WHERE delivery_kind = 'weekly' AND event_type = 'send'
         AND created_at >= NOW() - (%s * INTERVAL '1 day')""",
         (days,),
     )
     child_rows = db.execute(
-        """SELECT parent_event_id, event_type 
-        FROM delivery_tracking_events 
-        WHERE delivery_kind = 'weekly' AND event_type IN ('open', 'click') 
+        """SELECT parent_event_id, event_type
+        FROM delivery_tracking_events
+        WHERE delivery_kind = 'weekly' AND event_type IN ('open', 'click')
         AND created_at >= NOW() - (%s * INTERVAL '1 day')""",
         (days,),
     )
@@ -209,26 +199,25 @@ def _load_weekly_topic_engagement(days=45):
         bucket["section_score"] = round(
             min(
                 1.2,
-                bucket["click_rate"] * 1.8
-                + bucket["open_rate"] * 0.7
-                + min(0.2, clicks * 0.04),
+                bucket["click_rate"] * 1.8 + bucket["open_rate"] * 0.7 + min(0.2, clicks * 0.04),
             ),
             3,
         )
     return topic_map
 
+
 def _load_weekly_source_engagement(days=45):
     send_rows = db.execute(
-        """SELECT id, metadata 
-        FROM delivery_tracking_events 
-        WHERE delivery_kind = 'weekly' AND event_type = 'send' 
+        """SELECT id, metadata
+        FROM delivery_tracking_events
+        WHERE delivery_kind = 'weekly' AND event_type = 'send'
         AND created_at >= NOW() - (%s * INTERVAL '1 day')""",
         (days,),
     )
     child_rows = db.execute(
-        """SELECT parent_event_id, event_type 
-        FROM delivery_tracking_events 
-        WHERE delivery_kind = 'weekly' AND event_type IN ('open', 'click') 
+        """SELECT parent_event_id, event_type
+        FROM delivery_tracking_events
+        WHERE delivery_kind = 'weekly' AND event_type IN ('open', 'click')
         AND created_at >= NOW() - (%s * INTERVAL '1 day')""",
         (days,),
     )
@@ -274,9 +263,7 @@ def _load_weekly_source_engagement(days=45):
         bucket["section_score"] = round(
             min(
                 1.15,
-                bucket["click_rate"] * 1.75
-                + bucket["open_rate"] * 0.6
-                + min(0.18, clicks * 0.04),
+                bucket["click_rate"] * 1.75 + bucket["open_rate"] * 0.6 + min(0.18, clicks * 0.04),
             ),
             3,
         )

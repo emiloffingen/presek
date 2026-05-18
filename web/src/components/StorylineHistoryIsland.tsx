@@ -28,7 +28,7 @@ const StorylineHistoryIsland: React.FC<{ clusterId: string; apiUrl: string; lang
 
     return (
         <section className="mt-16 pt-12 border-t border-border">
-            <div className="flex items-center gap-3 mb-10">
+            <div className="flex items-center gap-[var(--grid-gap)] mb-10">
                 <History size={20} className="text-nyt-accent" />
                 <h2 className="font-sans text-xs font-black uppercase tracking-widest">
                     {isMK ? 'Хронологија на развојот' : 'Hronologija razvoja'}
@@ -40,7 +40,7 @@ const StorylineHistoryIsland: React.FC<{ clusterId: string; apiUrl: string; lang
                     <div key={item.cluster_id} className="relative">
                         {/* Dot */}
                         <div className="absolute -left-[30px] top-1.5 w-4 h-4 rounded-full border-2 border-nyt-accent bg-background z-10"></div>
-                        
+
                         <div className="flex flex-col md:flex-row md:items-start gap-5">
                             <div className="md:w-32 flex-shrink-0 pt-1">
                                 <span className="font-sans text-[10px] font-black uppercase text-muted-foreground flex items-center gap-1">
@@ -48,20 +48,20 @@ const StorylineHistoryIsland: React.FC<{ clusterId: string; apiUrl: string; lang
                                     {new Date(item.first_seen).toLocaleDateString(isMK ? 'mk-MK' : 'sr-RS', { day: 'numeric', month: 'short' })}
                                 </span>
                             </div>
-                            
-                            <a href={isMK ? `/mk/cluster/${item.cluster_id}` : `/cluster/${item.cluster_id}`} className="group flex-1 flex gap-4 items-start">
+
+                            <a href={isMK ? `/mk/cluster/${item.cluster_id}` : `/cluster/${item.cluster_id}`} className="group flex-1 flex gap-[var(--grid-gap)] items-start">
                                 <div className="flex-1">
                                     <h3 className="font-serif font-bold text-base md:text-lg leading-tight group-hover:text-nyt-accent transition-colors">
                                         {item.title}
                                     </h3>
-                                    <div className="mt-2 flex items-center gap-2 text-[10px] font-black uppercase text-nyt-accent opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="mt-2 flex items-center gap-[var(--grid-gap)] text-[10px] font-black uppercase text-nyt-accent opacity-0 group-hover:opacity-100 transition-opacity">
                                         {isMK ? 'Види ги деталите' : 'Vidi detalje'} <ArrowRight size={12} />
                                     </div>
                                 </div>
                                 {item.image_url && (
                                     <div className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0">
-                                        <img 
-                                            src={`/proxy?url=${encodeURIComponent(item.image_url)}&w=160`} 
+                                        <img
+                                            src={`/proxy?url=${encodeURIComponent(item.image_url)}&w=160`}
                                             alt={item.title}
                                             className="w-full h-full object-cover rounded border border-border group-hover:border-nyt-accent transition-colors"
                                         />

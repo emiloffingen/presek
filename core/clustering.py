@@ -73,17 +73,14 @@ Key metrics to watch:
 
 """
 
-import math
-import uuid
-import re
 import datetime
 import logging
+import math
 import os
 import re
-import math
-import datetime
 import uuid
 from collections import Counter
+
 from core.config import CLUSTERING_THRESHOLDS, LANGUAGE_CONFIG
 
 log = logging.getLogger("presek")
@@ -300,9 +297,7 @@ def _temporal_decay(created_at) -> float:
         return 1.0
     if isinstance(created_at, str):
         try:
-            created_at = datetime.datetime.fromisoformat(
-                created_at.replace("Z", "+00:00")
-            )
+            created_at = datetime.datetime.fromisoformat(created_at.replace("Z", "+00:00"))
         except (ValueError, TypeError):
             return 1.0
 
@@ -355,9 +350,7 @@ def _extract_title_entities(title: str) -> set[str]:
     return extract_title_entities_regex(str(title or ""))
 
 
-def _entity_token_overlap(
-    left_entities: set[str], right_entities: set[str], lang: str = "sr"
-) -> set[str]:
+def _entity_token_overlap(left_entities: set[str], right_entities: set[str], lang: str = "sr") -> set[str]:
     # Use lowercase stemmed tokens and apply synonyms to improve overlap detection
     # (e.g., "Vlada" and "Ministarstvo" -> "vlad")
     left_tokens = {
@@ -436,18 +429,14 @@ def _topic_bridge_allowed(
         return (
             (shared_count >= 1 and phrase_overlap >= (0.16 if same_day else 0.22))
             or phrase_overlap >= (0.42 if recent_cycle else 0.50)
-            or lexical_overlap
-            >= (0.50 if recent_cycle else (0.56 if same_day else 0.62))
+            or lexical_overlap >= (0.50 if recent_cycle else (0.56 if same_day else 0.62))
         )
 
     return (
         (shared_count >= 2 and phrase_overlap >= (0.24 if same_day else 0.30))
         or (
             shared_count >= 1
-            and (
-                phrase_overlap >= (0.34 if same_day else 0.42)
-                or lexical_overlap >= (0.48 if same_day else 0.56)
-            )
+            and (phrase_overlap >= (0.34 if same_day else 0.42) or lexical_overlap >= (0.48 if same_day else 0.56))
         )
         or phrase_overlap >= (0.50 if recent_cycle else 0.56)
         or lexical_overlap >= (0.60 if recent_cycle else (0.66 if same_day else 0.72))
@@ -480,17 +469,13 @@ def find_cluster_semantic(
             "Region",
             "Nemacka",
         ):
-            threshold = (
-                0.22  # Slightly more lenient to catch related global developments
-            )
+            threshold = 0.22  # Slightly more lenient to catch related global developments
 
         # 2. EVEN STRICTER for the generic 'vesti' topic (the catch-all)
         # Articles tagged only as 'vesti' often lack specific keywords, causing
         # vector-based 'gravitational' pull for unrelated content.
         if topic == "vesti" or not topic:
-            threshold = min(
-                threshold, 0.24
-            )  # Increased for better recall on general news
+            threshold = min(threshold, 0.24)  # Increased for better recall on general news
 
         params = [str(embedding), lookback_hours]
         filters = []
@@ -528,9 +513,7 @@ def find_cluster_semantic(
 
             # Temporal Tightening: As a cluster gets older, we require it to be
             # MORE similar (stricter threshold) to accept new members.
-            age_hours = (
-                datetime.datetime.now() - row["updated_at"]
-            ).total_seconds() / 3600.0
+            age_hours = (datetime.datetime.now() - row["updated_at"]).total_seconds() / 3600.0
             if age_hours > 12:
                 threshold *= 0.85  # 15% stricter
             if age_hours > 24:
@@ -584,9 +567,7 @@ def find_or_create_cluster(
     """
     # 1. Semantic Vector Match (Primary Path)
     if embedding:
-        cid = find_cluster_semantic(
-            conn, embedding, category=category, topic=topic, title=title
-        )
+        cid = find_cluster_semantic(conn, embedding, category=category, topic=topic, title=title)
         if cid:
             return cid
 
@@ -647,13 +628,9 @@ def find_or_create_cluster(
         rep_topic = rep_0.get("topic", "vesti")
         incoming_topic = topic or "vesti"
         rep_category = rep_0.get("category")
-        freshest_rep_hours = min(
-            (_rep_age_hours(rep.get("created_at")) for rep in reps), default=999.0
-        )
+        freshest_rep_hours = min((_rep_age_hours(rep.get("created_at")) for rep in reps), default=999.0)
         shared_entities = (
-            potential_entities.intersection(rep_entities)
-            if potential_entities and rep_entities
-            else set()
+            potential_entities.intersection(rep_entities) if potential_entities and rep_entities else set()
         )
         if not shared_entities and potential_entities and rep_entities:
             shared_entities = _entity_token_overlap(potential_entities, rep_entities, lang=lang)
@@ -693,9 +670,7 @@ def find_or_create_cluster(
         if source and source in cluster_sources.get(cid, set()):
             # Find time of earliest/latest article from same source in this cluster
             source_times = [
-                r["created_at"]
-                for r in recent_articles
-                if r.get("cluster_id") == cid and r.get("source") == source
+                r["created_at"] for r in recent_articles if r.get("cluster_id") == cid and r.get("source") == source
             ]
             if source_times:
                 # If the last article from this source was < 2 hours ago, penalize heavily
@@ -703,15 +678,11 @@ def find_or_create_cluster(
                 try:
                     last_src_time = max(source_times)
                     if isinstance(last_src_time, str):
-                        last_src_time = datetime.datetime.fromisoformat(
-                            last_src_time.replace("Z", "+00:00")
-                        )
+                        last_src_time = datetime.datetime.fromisoformat(last_src_time.replace("Z", "+00:00"))
 
                     now_utc = datetime.datetime.now(datetime.timezone.utc)
                     if last_src_time.tzinfo is None:
-                        last_src_time = last_src_time.replace(
-                            tzinfo=datetime.timezone.utc
-                        )
+                        last_src_time = last_src_time.replace(tzinfo=datetime.timezone.utc)
 
                     if (now_utc - last_src_time).total_seconds() < 7200:  # 2 hours
                         source_penalty = 0.4  # Very high penalty for rapid repeats
@@ -738,10 +709,7 @@ def find_or_create_cluster(
 
             # Short title penalty: be stricter with very short headlines (under 30 chars)
             # as they are prone to false positives.
-            if (
-                len(normalized_input) < 30
-                or len(_normalize_cluster_title(rep_title)) < 30
-            ):
+            if len(normalized_input) < 30 or len(_normalize_cluster_title(rep_title)) < 30:
                 lexical_score *= 0.85
                 phrase_score *= 0.85
 
@@ -794,10 +762,7 @@ def find_or_create_cluster(
             else:  # Older clusters
                 current_threshold = min(threshold, 0.48)
 
-        if (
-            current_best_rep_score > current_threshold
-            and current_best_rep_score > best_score
-        ):
+        if current_best_rep_score > current_threshold and current_best_rep_score > best_score:
             best_score = current_best_rep_score
             best_cid = cid
 
@@ -807,13 +772,9 @@ def find_or_create_cluster(
             try:
                 from tasks.intelligence import refresh_cluster_centroid_task
 
-                refresh_cluster_centroid_task.apply_async(
-                    args=(best_cid,), countdown=30
-                )
+                refresh_cluster_centroid_task.apply_async(args=(best_cid,), countdown=30)
             except Exception as e:
-                log.warning(
-                    f"[clustering] centroid refresh dispatch failed for {best_cid}: {e}"
-                )
+                log.warning(f"[clustering] centroid refresh dispatch failed for {best_cid}: {e}")
         return best_cid
 
     return uuid.uuid4().hex[:12]

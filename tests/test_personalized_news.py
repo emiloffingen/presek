@@ -1,8 +1,9 @@
+import asyncio
 import sys
 import types
-import asyncio
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
 
 # --- Robust Global FastAPI Mocks ---
 
@@ -146,14 +147,10 @@ def test_get_personalized_news_sync_with_history():
     mock_db_manager.async_get_synthesis_ids.return_value = ["c2"]
 
     request = MagicMock()
-    request.json = AsyncMock(
-        return_value={"profile": {"recentClusters": recent}, "limit": 5}
-    )
+    request.json = AsyncMock(return_value={"profile": {"recentClusters": recent}, "limit": 5})
 
     with (
-        patch(
-            "routes.profile.annotate_cluster_articles", side_effect=lambda x, **kw: x
-        ),
+        patch("routes.profile.annotate_cluster_articles", side_effect=lambda x, **kw: x),
         patch("routes.profile.score_cluster", return_value=5.0),
         patch("routes.profile.is_balanced", return_value=True),
         patch("routes.profile.score_cluster_for_homepage", return_value=4.0),

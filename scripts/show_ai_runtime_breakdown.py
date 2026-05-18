@@ -12,14 +12,10 @@ def main():
     filtered = {
         field: int(count)
         for field, count in sorted(data.items())
-        if field.startswith(
-            ("summary_path", "translation_path", "synthesis_path", "chat_path")
-        )
+        if field.startswith(("summary_path", "translation_path", "synthesis_path", "chat_path"))
     }
 
-    print(
-        json.dumps({"bucket": bucket, "counts": filtered}, ensure_ascii=False, indent=2)
-    )
+    print(json.dumps({"bucket": bucket, "counts": filtered}, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

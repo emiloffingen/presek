@@ -90,14 +90,14 @@ Enhance RSS feed coverage by adding quality sources to missing and under-covered
 
 **SQL Commands Used:**
 ```sql
-INSERT INTO feed_sources (name, url, is_active) 
-VALUES ('Feed Name', 'https://feed.url/feed/', TRUE) 
+INSERT INTO feed_sources (name, url, is_active)
+VALUES ('Feed Name', 'https://feed.url/feed/', TRUE)
 ON CONFLICT (name) DO NOTHING;
 ```
 
 **Feeds Added**: 22 total
 - 4 Health feeds
-- 5 Political feeds  
+- 5 Political feeds
 - 4 Business/Economy feeds
 - 4 Technology feeds
 - 5 Culture/Entertainment feeds

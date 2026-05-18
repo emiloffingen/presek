@@ -7,11 +7,12 @@ security over the previous admin token system.
 
 import os
 import secrets
-from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
+from typing import Any, Dict, Optional
+
 import jwt
-from fastapi import Request, HTTPException
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import HTTPException, Request
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 # Configuration
 JWT_SECRET = os.environ.get("JWT_SECRET", secrets.token_urlsafe(32))
@@ -21,10 +22,10 @@ JWT_EXPIRE_MINUTES = int(os.environ.get("JWT_EXPIRE_MINUTES", "60"))
 
 class JWTBearer(HTTPBearer):
     """Dependency for JWT token authentication."""
-    
+
     def __init__(self, auto_error: bool = True):
         super(JWTBearer, self).__init__(auto_error=auto_error)
-    
+
     async def __call__(self, request: Request):
         credentials: HTTPAuthorizationCredentials = await super(JWTBearer, self).__call__(request)
         if credentials:
@@ -35,7 +36,7 @@ class JWTBearer(HTTPBearer):
             return credentials.credentials
         else:
             raise HTTPException(status_code=403, detail="Invalid authorization code.")
-    
+
     def verify_jwt(self, jwt_token: str) -> bool:
         """Verify JWT token validity."""
         try:
@@ -53,10 +54,10 @@ def create_jwt_token(subject: str, additional_claims: Optional[Dict[str, Any]] =
         "exp": datetime.utcnow() + timedelta(minutes=JWT_EXPIRE_MINUTES),
         "jti": secrets.token_hex(16),
     }
-    
+
     if additional_claims:
         payload.update(additional_claims)
-    
+
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
@@ -76,7 +77,7 @@ def get_current_user(request: Request) -> str:
     token = request.headers.get("Authorization")
     if not token:
         raise HTTPException(status_code=401, detail="Authorization header missing")
-    
+
     try:
         token = token.split("Bearer ")[1]
         payload = decode_jwt(token)

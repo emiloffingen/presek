@@ -1,11 +1,12 @@
-import os
 import asyncio
+import os
 import smtplib
 import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from utils import delete_cache, delete_cache_prefix, redis_client  # noqa: F401
+
 from core.logging_config import get_logger
+from utils import delete_cache, delete_cache_prefix, redis_client  # noqa: F401
 
 log = get_logger("presek_celery")
 
@@ -44,9 +45,7 @@ def send_email(
         return False
 
 
-_PUBLIC_SITE_URL = str(
-    os.environ.get("PUBLIC_SITE_URL") or "https://presek.live"
-).rstrip("/")
+_PUBLIC_SITE_URL = str(os.environ.get("PUBLIC_SITE_URL") or "https://presek.live").rstrip("/")
 
 
 def invalidate_public_data_caches():

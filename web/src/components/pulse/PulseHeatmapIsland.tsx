@@ -39,34 +39,34 @@ export default function PulseHeatmapIsland({ lang = 'sr' }: { lang?: string }) {
     return (
         <section className="pulse-heatmap-module mb-16">
             <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-[var(--grid-gap)]">
                     <Activity size={18} className="text-nyt-accent" />
                     <h3 className="font-bold text-lg uppercase tracking-tighter">
                         {isMK ? 'Активност на медиумите' : 'Aktivnost medija'}
                     </h3>
                 </div>
-                <div className="flex items-center gap-2 text-[10px] font-black uppercase text-muted-foreground">
+                <div className="flex items-center gap-[var(--grid-gap)] text-[10px] font-black uppercase text-muted-foreground">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                     {isMK ? 'Во живо (24ч)' : 'Uživo (24h)'}
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-[var(--grid-gap)]">
                 {data.slice(0, 24).map((item) => {
                     const intensity = (item.activity_score / maxScore);
                     return (
-                        <div 
+                        <div
                             key={item.source}
                             className="relative group p-4 border border-border bg-card hover:border-nyt-accent transition-all overflow-hidden"
                             style={{
                                 boxShadow: intensity > 0.7 ? `0 0 15px rgba(185, 28, 28, ${intensity * 0.1})` : 'none'
                             }}
                         >
-                            <div 
+                            <div
                                 className="absolute inset-0 opacity-5 pointer-events-none transition-opacity group-hover:opacity-10"
                                 style={{ background: intensity > 0.5 ? 'var(--nyt-red)' : 'var(--nyt-accent)' }}
                             />
-                            
+
                             <div className="relative z-10">
                                 <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">
                                     {item.source}
@@ -77,10 +77,10 @@ export default function PulseHeatmapIsland({ lang = 'sr' }: { lang?: string }) {
                                     </span>
                                     <div className="flex gap-0.5 mb-1">
                                         {[1, 2, 3].map(i => (
-                                            <div 
+                                            <div
                                                 key={i}
                                                 className={`w-1 h-3 rounded-full ${i <= Math.ceil(intensity * 3) ? 'bg-nyt-accent' : 'bg-secondary'}`}
-                                                style={{ 
+                                                style={{
                                                     animationDelay: `${i * 0.1}s`,
                                                     animation: intensity > 0.8 ? 'pulse 1.5s infinite' : 'none'
                                                 }}
@@ -93,8 +93,8 @@ export default function PulseHeatmapIsland({ lang = 'sr' }: { lang?: string }) {
                     );
                 })}
             </div>
-            
-            <div className="mt-4 flex items-center gap-2 text-[9px] font-bold text-muted-foreground opacity-60 uppercase">
+
+            <div className="mt-4 flex items-center gap-[var(--grid-gap)] text-[9px] font-bold text-muted-foreground opacity-60 uppercase">
                 <Info size={10} />
                 {isMK ? 'Резултатот ја претставува тежината на објавите и фреквенцијата во последните 24 часа.' : 'Rezultat predstavlja težinu objava i frekvenciju u poslednjih 24 časa.'}
             </div>

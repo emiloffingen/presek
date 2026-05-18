@@ -1,7 +1,6 @@
 import os
 import sys
 
-
 sys.path.insert(0, os.getcwd())
 
 from core.database import db_manager as db
@@ -24,14 +23,8 @@ def merge_knowledge_entity(alias: str, canonical: str) -> None:
         (canonical,),
     )
 
-    canonical_type = (
-        (canonical_row or {}).get("type")
-        or KNOWN_ENTITIES.get(canonical)
-        or alias_row.get("type")
-    )
-    total_mentions = int(alias_row.get("total_mentions") or 0) + int(
-        (canonical_row or {}).get("total_mentions") or 0
-    )
+    canonical_type = (canonical_row or {}).get("type") or KNOWN_ENTITIES.get(canonical) or alias_row.get("type")
+    total_mentions = int(alias_row.get("total_mentions") or 0) + int((canonical_row or {}).get("total_mentions") or 0)
     sentiment_values = [
         value
         for value in [
@@ -40,9 +33,7 @@ def merge_knowledge_entity(alias: str, canonical: str) -> None:
         ]
         if value is not None
     ]
-    sentiment_score = (
-        sum(sentiment_values) / len(sentiment_values) if sentiment_values else 0
-    )
+    sentiment_score = sum(sentiment_values) / len(sentiment_values) if sentiment_values else 0
     first_seen = min(
         value
         for value in [
@@ -95,13 +86,9 @@ def merge_knowledge_entity(alias: str, canonical: str) -> None:
         if left == right:
             continue
         pair = tuple(sorted((left, right)))
-        bucket = merged.setdefault(
-            pair, {"weight": 0, "last_seen": row.get("last_seen")}
-        )
+        bucket = merged.setdefault(pair, {"weight": 0, "last_seen": row.get("last_seen")})
         bucket["weight"] += int(row.get("weight") or 0)
-        if row.get("last_seen") and (
-            bucket["last_seen"] is None or row["last_seen"] > bucket["last_seen"]
-        ):
+        if row.get("last_seen") and (bucket["last_seen"] is None or row["last_seen"] > bucket["last_seen"]):
             bucket["last_seen"] = row["last_seen"]
 
     db.execute(
@@ -137,22 +124,16 @@ def merge_knowledge_entity(alias: str, canonical: str) -> None:
             (row["cluster_id"], canonical, canonical_type or row.get("entity_type")),
             fetch=False,
         )
-    db.execute(
-        "DELETE FROM cluster_entities WHERE entity_name = %s", (alias,), fetch=False
-    )
+    db.execute("DELETE FROM cluster_entities WHERE entity_name = %s", (alias,), fetch=False)
     db.execute("DELETE FROM knowledge_entities WHERE name = %s", (alias,), fetch=False)
 
 
 def main() -> None:
     repaired = 0
-    for alias, canonical in sorted(
-        ENTITY_ALIASES.items(), key=lambda item: (-len(item[0]), item[0])
-    ):
+    for alias, canonical in sorted(ENTITY_ALIASES.items(), key=lambda item: (-len(item[0]), item[0])):
         if canonical not in KNOWN_ENTITIES:
             continue
-        alias_row = db.execute_one(
-            "SELECT name FROM knowledge_entities WHERE name = %s", (alias,)
-        )
+        alias_row = db.execute_one("SELECT name FROM knowledge_entities WHERE name = %s", (alias,))
         cluster_row = db.execute_one(
             "SELECT entity_name FROM cluster_entities WHERE entity_name = %s LIMIT 1",
             (alias,),

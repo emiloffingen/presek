@@ -1,7 +1,8 @@
 import asyncio
 import logging
-from playwright.async_api import async_playwright
 import os
+
+from playwright.async_api import async_playwright
 
 log = logging.getLogger("presek.take_screenshots")
 
@@ -19,20 +20,14 @@ async def run():
             await page.goto("http://localhost:80", wait_until="load")
             # Wait a bit for images to proxy/load if needed
             await asyncio.sleep(4)
-            await page.screenshot(
-                path="screenshots/homepage_desktop.png", full_page=True
-            )
+            await page.screenshot(path="screenshots/homepage_desktop.png", full_page=True)
 
             # Capture mobile version
             log.info("Capturing homepage mobile...")
-            mobile_page = await browser.new_page(
-                viewport={"width": 390, "height": 844}, is_mobile=True
-            )
+            mobile_page = await browser.new_page(viewport={"width": 390, "height": 844}, is_mobile=True)
             await mobile_page.goto("http://localhost:80", wait_until="load")
             await asyncio.sleep(4)
-            await mobile_page.screenshot(
-                path="screenshots/homepage_mobile.png", full_page=True
-            )
+            await mobile_page.screenshot(path="screenshots/homepage_mobile.png", full_page=True)
 
             # Find first cluster and capture it
             log.info("Capturing a cluster page...")
@@ -42,9 +37,7 @@ async def run():
                 cluster_url = f"http://localhost:80{href}"
                 await page.goto(cluster_url, wait_until="load")
                 await asyncio.sleep(4)
-                await page.screenshot(
-                    path="screenshots/cluster_detail.png", full_page=True
-                )
+                await page.screenshot(path="screenshots/cluster_detail.png", full_page=True)
         finally:
             await browser.close()
         log.info("Screenshots saved in screenshots/ directory.")

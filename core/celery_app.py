@@ -18,7 +18,7 @@ log = get_logger("presek_celery")
 @worker_process_init.connect
 def reset_db_pool(**kwargs):
     """Ensure each worker process gets fresh DB connection pools after forking."""
-    from core.database import db_manager, async_db
+    from core.database import async_db, db_manager
 
     log.info(
         "Resetting database connection pools for worker process",
@@ -49,8 +49,9 @@ def on_task_failure(
         },
     )
     try:
-        from core.database import db_manager
         import json
+
+        from core.database import db_manager
 
         db_manager.execute(
             """
@@ -169,7 +170,7 @@ celery_app.conf.update(
         },
         "send-profile-breaking-alerts": {
             "task": "tasks.delivery.send_profile_breaking_alerts_task",
-            "schedule": 600.0, # Increased from 3m to 10m
+            "schedule": 600.0,  # Increased from 3m to 10m
         },
         "backfill-cover-art": {
             "task": "tasks.intelligence.backfill_cover_art_task",

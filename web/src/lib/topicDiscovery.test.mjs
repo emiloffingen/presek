@@ -50,4 +50,3 @@ test('buildTopicConnections skips the current topic and preserves sample tags', 
   assert.equal(result[0].topic, 'Bezbednost');
   assert.deepEqual(result[0].sampleTags, ['NATO', 'Samit', 'EU']);
 });
-

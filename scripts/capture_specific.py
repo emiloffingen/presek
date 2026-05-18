@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import sys
+
 from playwright.async_api import async_playwright
 
 log = logging.getLogger("presek.capture_specific")

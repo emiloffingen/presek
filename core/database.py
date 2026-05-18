@@ -1,14 +1,16 @@
-import psycopg
 import asyncio
-from psycopg_pool import AsyncConnectionPool, ConnectionPool
-from psycopg.rows import dict_row
-from contextlib import contextmanager, asynccontextmanager
-from collections import defaultdict
-import alembic.config
-import alembic.command
 import logging
-import time
 import os
+import time
+from collections import defaultdict
+from contextlib import asynccontextmanager, contextmanager
+
+import alembic.command
+import alembic.config
+import psycopg
+from psycopg.rows import dict_row
+from psycopg_pool import AsyncConnectionPool, ConnectionPool
+
 from core.version import APP_VERSION_LABEL
 
 # --- Security: Input Validation for SQL ---
@@ -28,7 +30,7 @@ VALID_SORT_BY = {"hybrid", "recent"}
 
 def _validate_timespan(timespan: str | None) -> str:
     """Validate timespan parameter and return safe SQL WHERE clause fragment.
-    
+
     Security: Only allows predefined timespan values to prevent SQL injection.
     Returns empty string for None or invalid values.
     """
@@ -41,7 +43,7 @@ def _validate_timespan(timespan: str | None) -> str:
 
 def _validate_sort_by(sort_by: str) -> str:
     """Validate sort_by parameter to prevent SQL injection.
-    
+
     Returns 'hybrid' for invalid values.
     """
     if isinstance(sort_by, str) and sort_by.lower() in VALID_SORT_BY:
@@ -52,9 +54,7 @@ def _validate_sort_by(sort_by: str) -> str:
 # --- SQL Query Catalog ---
 
 DB_SESSION_OPTIONS = (
-    "-c statement_timeout=120000 "
-    "-c idle_in_transaction_session_timeout=60000 "
-    "-c timezone=Europe/Skopje"
+    "-c statement_timeout=120000 " "-c idle_in_transaction_session_timeout=60000 " "-c timezone=Europe/Skopje"
 )
 
 SQL_SEMANTIC_SEARCH = """
@@ -94,7 +94,7 @@ SQL_ARTICLE_SEARCH = """
 
 def _build_hybrid_search_sql(time_filter: str, sort_by: str) -> str:
     """Helper to build dynamic hybrid search SQL.
-    
+
     Security: time_filter and sort_by must be validated by caller to prevent SQL injection.
     time_filter should only contain safe WHERE clause fragments (e.g., "AND created_at >= ...")
     sort_by should only be "hybrid" or "recent"
@@ -102,9 +102,9 @@ def _build_hybrid_search_sql(time_filter: str, sort_by: str) -> str:
     # Validate sort_by to prevent SQL injection
     if sort_by not in ("hybrid", "recent"):
         sort_by = "hybrid"
-    
+
     order_clause = "hybrid_score DESC" if sort_by == "hybrid" else "created_at DESC"
-    
+
     return f"""
         WITH fts_results AS (
             SELECT id, ts_rank_cd(search_vector, websearch_to_tsquery('simple', %s)) AS rank
@@ -124,7 +124,7 @@ def _build_hybrid_search_sql(time_filter: str, sort_by: str) -> str:
             LIMIT 300
         ),
         scored_articles AS (
-            SELECT a.*, 
+            SELECT a.*,
                    (COALESCE(f.rank, 0) * 0.45 + COALESCE(s.similarity, 0) * 0.55) AS base_score,
                    -- Sharper recency decay: 1.0 for now, 0.2 after 7 days
                    GREATEST(0.1, 1.0 - (EXTRACT(EPOCH FROM (NOW() - a.created_at)) / 604800)) as recency_factor
@@ -278,19 +278,17 @@ class DatabaseManager:
                     )
                     time.sleep(wait_time)
                 else:
-                    log.error(
-                        f"Failed to initialize database connection pool after {retries} attempts: {e}"
-                    )
+                    log.error(f"Failed to initialize database connection pool after {retries} attempts: {e}")
                     self._pool = None
 
     def _init_read_pool(self, retries=3, backoff_base=2):
         """Initialize read replica connection pool if configured."""
         from core.config import DATABASE_READ_REPLICA_URL, USE_READ_REPLICA
-        
+
         if not USE_READ_REPLICA or not DATABASE_READ_REPLICA_URL:
             self._read_pool = None
             return
-            
+
         for attempt in range(retries):
             try:
                 self._read_pool = ConnectionPool(
@@ -317,9 +315,7 @@ class DatabaseManager:
                     )
                     time.sleep(wait_time)
                 else:
-                    log.error(
-                        f"Failed to initialize database read replica pool after {retries} attempts: {e}"
-                    )
+                    log.error(f"Failed to initialize database read replica pool after {retries} attempts: {e}")
                     self._read_pool = None
 
     def _reset_pool(self):
@@ -348,7 +344,7 @@ class DatabaseManager:
 
     def execute(self, sql, params=None, fetch=True, read_only=False):
         """Standardized query execution with automatic connection release.
-        
+
         Args:
             sql: SQL query string
             params: Parameters for the query
@@ -360,7 +356,7 @@ class DatabaseManager:
             # Route read-only queries to replica if available
             pool = self._read_pool if read_only and self._read_pool else self._pool
             conn = pool.getconn() if pool else self.get_conn()
-            
+
             with conn.cursor() as cur:
                 cur.execute(sql, params)
                 results = None
@@ -408,9 +404,7 @@ class DatabaseManager:
             (ids,),
         )
 
-    async def async_search_semantic(
-        self, query_embedding: list[float], limit: int = 100
-    ):
+    async def async_search_semantic(self, query_embedding: list[float], limit: int = 100):
         vec_str = "[" + ",".join(map(str, query_embedding)) + "]"
         return await self.async_execute(SQL_SEMANTIC_SEARCH, (vec_str, vec_str, limit))
 
@@ -500,9 +494,7 @@ class DatabaseManager:
         sql = _build_hybrid_search_sql(time_filter, validated_sort_by)
         return self.execute(sql, (query_text, query_text, vec_str, limit))
 
-    def get_articles_by_country(
-        self, country, limit=200, sub=None, topic=None, sentiment=None, category=None
-    ):
+    def get_articles_by_country(self, country, limit=200, sub=None, topic=None, sentiment=None, category=None):
         sql = "SELECT * FROM articles WHERE 1=1"
         params = []
 
@@ -522,9 +514,7 @@ class DatabaseManager:
             sql += " AND topic = %s"
             params.append(topic)
         if sentiment:
-            escaped_sentiment = (
-                sentiment.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-            )
+            escaped_sentiment = sentiment.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
             sql += " AND summary ILIKE %s ESCAPE '\\'"
             params.append(f"%{escaped_sentiment}%")
 
@@ -615,18 +605,8 @@ class DatabaseManager:
             total_row = self.execute_one("SELECT COUNT(*) FROM articles")
             total = total_row["count"] if total_row else 0
 
-            by_cat = (
-                self.execute(
-                    "SELECT category, COUNT(*) n FROM articles GROUP BY category ORDER BY n DESC"
-                )
-                or []
-            )
-            by_source = (
-                self.execute(
-                    "SELECT source, COUNT(*) n FROM articles GROUP BY source ORDER BY n DESC"
-                )
-                or []
-            )
+            by_cat = self.execute("SELECT category, COUNT(*) n FROM articles GROUP BY category ORDER BY n DESC") or []
+            by_source = self.execute("SELECT source, COUNT(*) n FROM articles GROUP BY source ORDER BY n DESC") or []
 
             recent_24h_row = self.execute_one(
                 "SELECT COUNT(*) FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '1 day'"
@@ -666,13 +646,9 @@ class DatabaseManager:
         """Unified Schema management via Alembic."""
         try:
             # Check for Alembic config file
-            ini_path = os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), "alembic.ini"
-            )
+            ini_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "alembic.ini")
             if not os.path.exists(ini_path):
-                log.warning(
-                    f"Alembic config not found at {ini_path}, skipping migrations."
-                )
+                log.warning(f"Alembic config not found at {ini_path}, skipping migrations.")
                 return
 
             cfg = alembic.config.Config(ini_path)

@@ -6,8 +6,8 @@ import Breadcrumbs from '../components/Breadcrumbs.astro';
 import { Cookie, ShieldCheck, Lock } from 'lucide-react';
 ---
 
-<Layout 
-    title="Политика колачића — Пресек" 
+<Layout
+    title="Политика колачића — Пресек"
     description="Информације о томе како користимо колачиће како бисмо унапредили ваше корисничко искуство."
 >
     <NYTHeader />
@@ -33,9 +33,9 @@ import { Cookie, ShieldCheck, Lock } from 'lucide-react';
 
                     <h2>Шта користимо?</h2>
                     <p>Наш систем користи колачиће за следеће сврхе:</p>
-                    
+
                     <div class="cookie-types space-y-8 my-10">
-                        <div class="type-item flex gap-6 p-6 border border-border bg-secondary/10">
+                        <div class="type-item flex gap-[var(--grid-gap)] p-6 border border-border bg-secondary/10">
                             <ShieldCheck className="text-nyt-accent shrink-0" size={24} />
                             <div>
                                 <h4 class="font-sans font-black text-[10px] uppercase tracking-widest mb-2">Неопходни колачићи</h4>
@@ -43,7 +43,7 @@ import { Cookie, ShieldCheck, Lock } from 'lucide-react';
                             </div>
                         </div>
 
-                        <div class="type-item flex gap-6 p-6 border border-border">
+                        <div class="type-item flex gap-[var(--grid-gap)] p-6 border border-border">
                             <Cookie className="text-nyt-accent shrink-0" size={24} />
                             <div>
                                 <h4 class="font-sans font-black text-[10px] uppercase tracking-widest mb-2">Преференције корисника</h4>
@@ -51,7 +51,7 @@ import { Cookie, ShieldCheck, Lock } from 'lucide-react';
                             </div>
                         </div>
 
-                        <div class="type-item flex gap-6 p-6 border border-border">
+                        <div class="type-item flex gap-[var(--grid-gap)] p-6 border border-border">
                             <Lock className="text-nyt-accent shrink-0" size={24} />
                             <div>
                                 <h4 class="font-sans font-black text-[10px] uppercase tracking-widest mb-2">Аналитика сесија</h4>

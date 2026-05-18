@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import sys
+
 from core.database import db_manager as db
 from core.embeddings import generate_query_embedding
 
@@ -11,9 +12,7 @@ log = logging.getLogger("presek.semantic_prototype")
 async def run_semantic_search_test(query: str, limit: int = 5):
     print("\n--- Presek Semantic Search Prototype (MiniLM) ---")
     print(f'Query: "{query}"')
-    print(
-        "Goal: Find Macedonian news semantically related to this (even if English).\n"
-    )
+    print("Goal: Find Macedonian news semantically related to this (even if English).\n")
 
     # 1. Generate the embedding for the query (English or Macedonian)
     vector = generate_query_embedding(query)

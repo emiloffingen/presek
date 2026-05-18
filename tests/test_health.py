@@ -1,19 +1,20 @@
 import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 from core.health import (
-    record_refresh,
-    record_task_event,
-    record_source_fetch,
-    update_source_policy,
-    reset_source_policy,
     _REDIS_KEY,
-    _TASK_REDIS_KEY,
-    _SOURCE_REDIS_KEY,
     _SOURCE_POLICY_REDIS_KEY,
+    _SOURCE_REDIS_KEY,
+    _TASK_REDIS_KEY,
     _freshness_payload,
-    _source_quality_payload,
     _probe_database,
     _probe_redis,
+    _source_quality_payload,
+    record_refresh,
+    record_source_fetch,
+    record_task_event,
+    reset_source_policy,
+    update_source_policy,
 )
 
 
@@ -24,9 +25,7 @@ class TestRecordRefresh:
         r.set.side_effect = lambda k, v, **kw: store.update({k: v})
         r.get.side_effect = lambda k: store.get(k)
         hash_store = {}
-        r.hset.side_effect = lambda k, field, value: hash_store.setdefault(
-            k, {}
-        ).update({field: value})
+        r.hset.side_effect = lambda k, field, value: hash_store.setdefault(k, {}).update({field: value})
         r.hgetall.side_effect = lambda k: hash_store.get(k, {})
         r.hget.side_effect = lambda k, field: hash_store.get(k, {}).get(field)
         r.hdel.side_effect = lambda k, field: hash_store.get(k, {}).pop(field, None)
@@ -132,9 +131,7 @@ class TestFreshnessPayload:
         with patch("health.datetime") as mock_datetime:
             from datetime import datetime, timezone
 
-            mock_datetime.now.return_value = datetime(
-                2026, 4, 4, 22, 10, tzinfo=timezone.utc
-            )
+            mock_datetime.now.return_value = datetime(2026, 4, 4, 22, 10, tzinfo=timezone.utc)
             mock_datetime.fromisoformat.side_effect = datetime.fromisoformat
             result = _freshness_payload(recent)
         assert result["status"] == "fresh"
@@ -144,9 +141,7 @@ class TestFreshnessPayload:
         with patch("health.datetime") as mock_datetime:
             from datetime import datetime, timezone
 
-            mock_datetime.now.return_value = datetime(
-                2026, 4, 4, 22, 0, tzinfo=timezone.utc
-            )
+            mock_datetime.now.return_value = datetime(2026, 4, 4, 22, 0, tzinfo=timezone.utc)
             mock_datetime.fromisoformat.side_effect = datetime.fromisoformat
             result = _freshness_payload(stale)
         assert result["status"] == "stale"

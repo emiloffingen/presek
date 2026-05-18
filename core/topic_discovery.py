@@ -1,7 +1,7 @@
-import logging
 import json
+import logging
 import re
-from typing import Dict, Any
+from typing import Any, Dict
 
 from core.database import db_manager as db
 from nlp.keywords import extract_cluster_tags_locally
@@ -28,7 +28,7 @@ class StoryDiscoveryEngine:
         # Enhanced query to calculate source velocity (sources in last 3 hours)
         unassigned_clusters = db.execute(
             """
-            SELECT DISTINCT a.cluster_id, 
+            SELECT DISTINCT a.cluster_id,
                    AVG(a.embedding) as avg_embedding,
                    MAX(a.created_at) as latest_activity,
                    COUNT(DISTINCT a.source) as source_count,
@@ -63,10 +63,10 @@ class StoryDiscoveryEngine:
         # Stricter lookback for matching (3 days) to keep stories focused
         best_storyline = db.execute_one(
             """
-            SELECT s.id, s.title, 
-                   (SELECT AVG(a.embedding) 
-                    FROM articles a 
-                    JOIN storyline_clusters_v2 sc2 ON a.cluster_id = sc2.cluster_id 
+            SELECT s.id, s.title,
+                   (SELECT AVG(a.embedding)
+                    FROM articles a
+                    JOIN storyline_clusters_v2 sc2 ON a.cluster_id = sc2.cluster_id
                     WHERE sc2.storyline_id = s.id) <=> %s::vector as distance
             FROM storylines_v2 s
             WHERE s.status = 'active'
@@ -77,14 +77,9 @@ class StoryDiscoveryEngine:
             (emb,),
         )
 
-        if (
-            best_storyline
-            and float(best_storyline["distance"]) < STORYLINE_LINK_THRESHOLD
-        ):
+        if best_storyline and float(best_storyline["distance"]) < STORYLINE_LINK_THRESHOLD:
             sid = best_storyline["id"]
-            log.info(
-                f"Linking cluster {cid} to existing storyline: {best_storyline['title']} (velocity: {velocity})"
-            )
+            log.info(f"Linking cluster {cid} to existing storyline: {best_storyline['title']} (velocity: {velocity})")
 
             db.execute(
                 "INSERT INTO storyline_clusters_v2 (storyline_id, cluster_id, relevance_score) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
@@ -129,7 +124,7 @@ class StoryDiscoveryEngine:
 
         try:
             res = db.execute(
-                """INSERT INTO storylines_v2 (title, slug, last_activity, metadata) 
+                """INSERT INTO storylines_v2 (title, slug, last_activity, metadata)
                    VALUES (%s, %s, NOW(), %s) RETURNING id""",
                 (story_title, slug, json.dumps({"origin_cluster": cid})),
             )
@@ -158,7 +153,7 @@ class StoryDiscoveryEngine:
             # Get all titles and summaries in this storyline
             rows = db.execute(
                 """
-                SELECT a.title, a.summary 
+                SELECT a.title, a.summary
                 FROM articles a
                 JOIN storyline_clusters_v2 sc ON a.cluster_id = sc.cluster_id
                 WHERE sc.storyline_id = %s
@@ -170,9 +165,7 @@ class StoryDiscoveryEngine:
             if not rows:
                 continue
 
-            combined_text = "\n".join(
-                [f"• {r['title']}: {r.get('summary','')}" for r in rows]
-            )
+            combined_text = "\n".join([f"• {r['title']}: {r.get('summary','')}" for r in rows])
             story_summary = analyst.analyze(
                 combined_text,
                 "Napisi kratok pregled (2-3 recenici) na makedonski jazik za dosegasniot razvoj na ova prica vrz osnova na nastanite podolu. Fokusiraj se na glavni narativ.",

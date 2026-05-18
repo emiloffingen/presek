@@ -1,21 +1,23 @@
 import asyncio
-import pytest
 import datetime
-import utils
 from unittest.mock import patch
+
+import pytest
+
+import utils
 from utils import (
-    score_cluster,
-    score_cluster_for_synthesis,
-    score_cluster_for_homepage,
-    rank_articles_in_cluster,
-    get_source_effective_weight,
+    annotate_cluster_articles,
     assess_cluster_synthesis_freshness,
     build_cluster_source_signals,
-    annotate_cluster_articles,
-    get_source_trust_label,
     build_read_next_clusters,
     build_source_reputation_rows,
     event_stream,
+    get_source_effective_weight,
+    get_source_trust_label,
+    rank_articles_in_cluster,
+    score_cluster,
+    score_cluster_for_homepage,
+    score_cluster_for_synthesis,
 )
 
 
@@ -57,11 +59,7 @@ class TestScoreCluster:
     @patch("utils.ranking.get_source_health_map", return_value={})
     def test_recency_decay(self, _mock_health):
         recent = [_make_article(created_at=datetime.datetime.now())]
-        old = [
-            _make_article(
-                created_at=datetime.datetime.now() - datetime.timedelta(hours=24)
-            )
-        ]
+        old = [_make_article(created_at=datetime.datetime.now() - datetime.timedelta(hours=24))]
         assert score_cluster(recent) > score_cluster(old)
 
     @patch("utils.ranking.get_source_health_map", return_value={})
@@ -195,9 +193,7 @@ def test_event_stream_stops_when_client_disconnects():
             },
         ]
 
-        assert score_cluster_for_synthesis(richer) > score_cluster_for_synthesis(
-            shallow
-        )
+        assert score_cluster_for_synthesis(richer) > score_cluster_for_synthesis(shallow)
 
     @patch("utils.ranking.get_source_health_map", return_value={})
     def test_synthesis_priority_rewards_title_divergence(self, _mock_health):
@@ -226,14 +222,10 @@ def test_event_stream_stops_when_client_disconnects():
             },
         ]
 
-        assert score_cluster_for_synthesis(divergent) > score_cluster_for_synthesis(
-            aligned
-        )
+        assert score_cluster_for_synthesis(divergent) > score_cluster_for_synthesis(aligned)
 
     @patch("utils.ranking.get_source_health_map", return_value={})
-    def test_homepage_priority_prefers_corroborated_multi_source_cluster(
-        self, _mock_health
-    ):
+    def test_homepage_priority_prefers_corroborated_multi_source_cluster(self, _mock_health):
         thin = [
             {
                 **_make_article("Kurir"),
@@ -308,9 +300,7 @@ def test_event_stream_stops_when_client_disconnects():
             },
         ]
 
-        assert score_cluster_for_homepage(broader) > score_cluster_for_homepage(
-            single_source
-        )
+        assert score_cluster_for_homepage(broader) > score_cluster_for_homepage(single_source)
 
 
 # ── rank_articles_in_cluster ──────────────────────────────────────
@@ -357,9 +347,7 @@ class TestRankArticles:
                 "description": "Opis so povece detali, rokovi i reakcija na pazarite.",
             },
             {
-                **_make_article(
-                    "Reuters", created_at=now - datetime.timedelta(minutes=6)
-                ),
+                **_make_article("Reuters", created_at=now - datetime.timedelta(minutes=6)),
                 "title": "Reakciite na pazarite po najavenite carini na Tramp",
                 "description": "Vtor izvor sto ga potvrduva glavni razvoj i dodava kontekst.",
             },
@@ -454,22 +442,16 @@ class TestSynthesisFreshness:
         assert "new_numbers" in result["reasons"]
 
     @patch("utils.ranking.get_source_health_map", return_value={})
-    def test_single_quick_followup_does_not_force_refresh_in_cooldown(
-        self, _mock_health
-    ):
+    def test_single_quick_followup_does_not_force_refresh_in_cooldown(self, _mock_health):
         synthesis_time = datetime.datetime.now() - datetime.timedelta(minutes=10)
         arts = [
             {
-                **_make_article(
-                    "N1 Info", created_at=synthesis_time - datetime.timedelta(minutes=5)
-                ),
+                **_make_article("N1 Info", created_at=synthesis_time - datetime.timedelta(minutes=5)),
                 "title": "Tramp najavi carini",
                 "description": "Prv izvestaj.",
             },
             {
-                **_make_article(
-                    "N1 Info", created_at=synthesis_time + datetime.timedelta(minutes=4)
-                ),
+                **_make_article("N1 Info", created_at=synthesis_time + datetime.timedelta(minutes=4)),
                 "title": "Tramp najavi carini za uvoz",
                 "description": "Malo dopolnuvanje bez nov izvor.",
             },
@@ -491,16 +473,12 @@ class TestSourceSignals:
                 "description": "Prv izvestaj.",
             },
             {
-                **_make_article(
-                    "Reuters", created_at=now - datetime.timedelta(minutes=20)
-                ),
+                **_make_article("Reuters", created_at=now - datetime.timedelta(minutes=20)),
                 "title": "reakcije na carinite i novite merki na Tramp",
                 "description": "Vtoriot izvor nosi dopolnitelen kontekst.",
             },
             {
-                **_make_article(
-                    "Kurir", created_at=now - datetime.timedelta(minutes=10)
-                ),
+                **_make_article("Kurir", created_at=now - datetime.timedelta(minutes=10)),
                 "title": "Pazarite reagiraat na carinite",
                 "description": "Follow-up angle.",
             },
@@ -526,9 +504,7 @@ class TestSourceSignals:
                 "description": "Test opis.",
             },
             {
-                **_make_article(
-                    "Politika", created_at=now - datetime.timedelta(minutes=5)
-                ),
+                **_make_article("Politika", created_at=now - datetime.timedelta(minutes=5)),
                 "title": "Drug ugao za temata",
                 "description": "Test opis 2.",
             },
@@ -542,9 +518,7 @@ class TestSourceSignals:
 
 class TestReadNextClusters:
     @patch("utils.ranking.get_source_health_map", return_value={})
-    def test_build_read_next_clusters_prefers_meaningful_shared_context(
-        self, _mock_health
-    ):
+    def test_build_read_next_clusters_prefers_meaningful_shared_context(self, _mock_health):
         now = datetime.datetime.now()
         current_articles = [
             {
@@ -555,9 +529,7 @@ class TestReadNextClusters:
                 "topic": "Ekonomija",
             },
             {
-                **_make_article(
-                    "Reuters", created_at=now - datetime.timedelta(minutes=30)
-                ),
+                **_make_article("Reuters", created_at=now - datetime.timedelta(minutes=30)),
                 "title": "reakcije na najavata za carini",
                 "description": "kontekst i reakcije.",
                 "entity_names": ["Tramp", "SAD"],
@@ -575,9 +547,7 @@ class TestReadNextClusters:
                 "topic": "Ekonomija",
             },
             {
-                **_make_article(
-                    "Kurir", created_at=now - datetime.timedelta(minutes=10)
-                ),
+                **_make_article("Kurir", created_at=now - datetime.timedelta(minutes=10)),
                 "cluster_id": "next-2",
                 "title": "Sosema druga domasna tema",
                 "description": "Nerelevanten klaster.",
@@ -587,9 +557,7 @@ class TestReadNextClusters:
             },
         ]
 
-        result = build_read_next_clusters(
-            "current", current_articles, ["Tramp", "Carini"], candidates, limit=4
-        )
+        result = build_read_next_clusters("current", current_articles, ["Tramp", "Carini"], candidates, limit=4)
 
         assert result
         assert result[0]["cluster_id"] == "next-1"
@@ -613,9 +581,7 @@ class TestReadNextClusters:
         ]
         candidates = [
             {
-                **_make_article(
-                    "Kurir", created_at=now - datetime.timedelta(minutes=5)
-                ),
+                **_make_article("Kurir", created_at=now - datetime.timedelta(minutes=5)),
                 "cluster_id": "noise-1",
                 "title": "Lokalen sportski rezultat",
                 "description": "Bez vrska so temata.",
@@ -625,9 +591,7 @@ class TestReadNextClusters:
             },
         ]
 
-        result = build_read_next_clusters(
-            "current", current_articles, ["Tramp"], candidates, limit=4
-        )
+        result = build_read_next_clusters("current", current_articles, ["Tramp"], candidates, limit=4)
 
         assert result == []
 
@@ -675,9 +639,7 @@ class TestSourceReputationRows:
             },
         ]
 
-        result = build_source_reputation_rows(
-            source_rows, pulse_rows, speed_rows, history_rows
-        )
+        result = build_source_reputation_rows(source_rows, pulse_rows, speed_rows, history_rows)
 
         assert result[0]["source"] == "N1 Info"
         assert result[0]["trust_tier"] == "Visoko poverenje"

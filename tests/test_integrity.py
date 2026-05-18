@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -24,10 +23,7 @@ class TestAstroFrontendIntegrity:
     def test_layout_keeps_theme_sync_and_canonical_metadata(self):
         layout = _read("web/src/layouts/Layout.astro")
         assert '<html lang="sr-Latn">' in layout
-        assert (
-            "const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('theme') : null;"
-            in layout
-        )
+        assert "const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('theme') : null;" in layout
         assert "window.localStorage.setItem('theme', theme);" not in layout
         assert '<link rel="canonical" href={canonicalUrl} />' in layout
         assert '<meta property="og:url" content={canonicalUrl} />' in layout
@@ -60,13 +56,9 @@ class TestAstroFrontendIntegrity:
             content = _read(rel_path)
             uses_helper = "apiBaseUrl" in content
             uses_inline_env = "PUBLIC_API_URL" in content
-            assert (
-                uses_helper or uses_inline_env
-            ), f"Missing apiBaseUrl()/PUBLIC_API_URL in {rel_path}"
+            assert uses_helper or uses_inline_env, f"Missing apiBaseUrl()/PUBLIC_API_URL in {rel_path}"
             if uses_inline_env:
-                assert (
-                    "127.0.0.1:5001/api" in content or '"/api"' in content
-                ), f"Missing FastAPI fallback in {rel_path}"
+                assert "127.0.0.1:5001/api" in content or '"/api"' in content, f"Missing FastAPI fallback in {rel_path}"
 
         # The shared helper must still contain the canonical fallback values
         # so that the assertion above is actually meaningful.
@@ -101,18 +93,14 @@ class TestAstroFrontendIntegrity:
         assert "ingested_at" in stats
         assert "INTERVAL '1 hour'" in stats
         assert "_article_freshness_time(article)" in homepage
-        assert (
-            "def _cluster_title_overlap(left: str, right: str) -> float:" in clustering
-        )
+        assert "def _cluster_title_overlap(left: str, right: str) -> float:" in clustering
 
     def test_homepage_focus_entities_preserve_raw_slug_and_display_name(self):
         home_route = _read("routes/home.py")
         homepage = _read("web/src/pages/index.astro")
         entity_route = _read("routes/intelligence.py")
 
-        assert (
-            'normalized["display_name"] = _display_entity_name(raw_name)' in home_route
-        )
+        assert 'normalized["display_name"] = _display_entity_name(raw_name)' in home_route
         assert 'normalized["name"] = raw_name' in home_route
         assert "LOWER(name) = LOWER(%s)" in entity_route
         assert "LOWER(tag) = LOWER(%s)" in entity_route
@@ -126,10 +114,7 @@ class TestAstroFrontendIntegrity:
         assert "getTimeStr(main.ingested_at || main.created_at)" in homepage
         assert "getTimeStr(main.ingested_at || main.created_at)" in interactive_card
         assert "getTimeStr(article.ingested_at || article.created_at)" in live_updates
-        assert (
-            "getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)"
-            in lead
-        )
+        assert "getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)" in lead
 
     def test_generated_article_footnotes_are_sanitized_before_html_rendering(self):
         cluster_page = _read("web/src/pages/cluster/[slug].astro")
@@ -169,18 +154,12 @@ class TestAstroFrontendIntegrity:
         profile_route = _read("routes/profile.py")
 
         assert "let initialError: string | null = null;" in for_you_page
-        assert (
-            'initialError = "Ne možemo da učitamo početne preporuke u ovom trenutku."'
-            in for_you_page
-        )
+        assert 'initialError = "Ne možemo da učitamo početne preporuke u ovom trenutku."' in for_you_page
         assert (
             "<ForYouPageIsland client:load initialClusters={initialClusters} initialError={initialError} />"
             in for_you_page
         )
-        assert (
-            "const [semanticError, setSemanticError] = useState<string | null>(null);"
-            in for_you_island
-        )
+        assert "const [semanticError, setSemanticError] = useState<string | null>(null);" in for_you_island
         assert "}, [profile]);" in for_you_island
         assert "const pageError = semanticError || initialError;" in for_you_island
         assert "COALESCE(ingested_at, created_at)" in profile_route
@@ -198,13 +177,9 @@ class TestAstroFrontendIntegrity:
 
         assert '_FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"' in intelligence
         assert "WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '48 hours'" in intelligence
+        assert "WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY a.source" in intelligence
         assert (
-            "WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY a.source"
-            in intelligence
-        )
-        assert (
-            "EXISTS (SELECT 1 FROM unnest(COALESCE(m.tags, '{}')) AS tag WHERE LOWER(tag) = LOWER(%s))"
-            in intelligence
+            "EXISTS (SELECT 1 FROM unnest(COALESCE(m.tags, '{}')) AS tag WHERE LOWER(tag) = LOWER(%s))" in intelligence
         )
         assert '_FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"' in stats
         assert "WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours'" in stats
@@ -244,9 +219,7 @@ class TestAstroFrontendIntegrity:
     ):
         news = _read("routes/news.py")
         assert "def _public_article_payload(article):" in news
-        assert (
-            '"articles": [_public_article_payload(article) for article in arts]' in news
-        )
+        assert '"articles": [_public_article_payload(article) for article in arts]' in news
         assert '"articles": public_articles' in news
         assert '"image_caption"' in news
         assert '"is_redundant"' in news
@@ -255,16 +228,10 @@ class TestAstroFrontendIntegrity:
         news = _read("routes/news.py")
         topic_discovery = _read("web/src/lib/topicDiscovery.js")
 
-        assert (
-            'if topic and r.get("topic") != topic and r.get("category") != topic:'
-            in news
-        )
+        assert 'if topic and r.get("topic") != topic and r.get("category") != topic:' in news
         assert 'if category and r.get("category") != category:' in news
         assert "visibleClusterTopics" in topic_discovery
-        assert (
-            "visibleClusterTopics.size === 0 || visibleClusterTopics.has(topic)"
-            in topic_discovery
-        )
+        assert "visibleClusterTopics.size === 0 || visibleClusterTopics.has(topic)" in topic_discovery
 
     def test_cluster_related_payload_preserves_shared_metadata(self):
         news = _read("routes/news.py")

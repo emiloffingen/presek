@@ -9,7 +9,7 @@
   - Health and tracking endpoints exempt from limits
   - Graceful fallback if slowapi not installed
 
-- **Celery Worker Protection**: 
+- **Celery Worker Protection**:
   - Memory limit: 2GB per worker process (`worker_max_memory_per_child`)
   - Task limit: 100 tasks per worker before restart (`worker_max_tasks_per_child`)
   - Reduced concurrency: 2 concurrent tasks per worker (down from 4)

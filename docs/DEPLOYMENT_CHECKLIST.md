@@ -21,7 +21,7 @@ This document provides a comprehensive checklist for deploying Presek in product
 
 ### 2. Infrastructure Requirements
 - [ ] PostgreSQL 15+ with pgvector extension
-- [ ] Redis 7+ 
+- [ ] Redis 7+
 - [ ] Node.js 22+ (for frontend build)
 - [ ] Python 3.12+
 - [ ] Docker (for containerized deployment)
@@ -81,14 +81,14 @@ This document provides a comprehensive checklist for deploying Presek in product
    ```bash
    # Using start.sh for development
    ./start.sh
-   
+
    # Or manually:
    # FastAPI
    uvicorn api_fast:app --host 0.0.0.0 --port 8000 --workers 4
-   
+
    # Celery worker
    celery -A celery_app worker --loglevel=info --concurrency=4
-   
+
    # Celery beat
    celery -A celery_app beat --loglevel=info
    ```
@@ -115,13 +115,13 @@ This document provides a comprehensive checklist for deploying Presek in product
    # Copy systemd units
    sudo cp deploy/systemd/*.service /etc/systemd/system/
    sudo systemctl daemon-reload
-   
+
    # Enable and start services
    sudo systemctl enable presek-fastapi.service
    sudo systemctl enable presek-worker.service
    sudo systemctl enable presek-beat.service
    sudo systemctl enable presek-astro.service
-   
+
    sudo systemctl start presek-fastapi.service
    sudo systemctl start presek-worker.service
    sudo systemctl start presek-beat.service
@@ -280,10 +280,10 @@ server {
 server {
     listen 443 ssl http2;
     server_name presek.live www.presek.live;
-    
+
     ssl_certificate /etc/letsencrypt/live/presek.live/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/presek.live/privkey.pem;
-    
+
     location / {
         proxy_pass http://127.0.0.1:3000;
         proxy_set_header Host $host;
@@ -291,7 +291,7 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
-    
+
     location /api/ {
         proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host $host;
@@ -299,7 +299,7 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
-    
+
     location /static/ {
         alias /home/emiloffingen/presek-runtime/current/static/;
         expires 1y;

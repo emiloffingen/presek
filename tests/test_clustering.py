@@ -1,14 +1,15 @@
 import datetime
-from unittest.mock import patch, MagicMock
+from collections import Counter
+from unittest.mock import MagicMock, patch
+
 from core.clustering import (
-    sr_stem,
-    text_to_vector,
-    get_cosine,
-    find_or_create_cluster,
     _title_phrase_overlap,
     _topic_bridge_allowed,
+    find_or_create_cluster,
+    get_cosine,
+    sr_stem,
+    text_to_vector,
 )
-from collections import Counter
 
 # db_manager is imported inside find_or_create_cluster as `from database import db_manager`,
 # so we must patch the source attribute on the database module.
@@ -56,26 +57,14 @@ def test_title_phrase_overlap_prefers_shared_bigram_structure():
         "Vlada usvojila paket mera za Ekonomiju",
         "Nov paket mera za Ekonomiju usvojila vlada",
     )
-    far = _title_phrase_overlap(
-        "Vlada usvojila paket mera za Ekonomiju", "Fudbalski meč u Ligi Šampiona"
-    )
+    far = _title_phrase_overlap("Vlada usvojila paket mera za Ekonomiju", "Fudbalski meč u Ligi Šampiona")
     assert close > far
 
 
 def test_topic_bridge_is_more_permissive_for_fresh_followups_than_old_ones():
     shared = {"Kočani"}
-    assert (
-        _topic_bridge_allowed(
-            "Politika", "vesti", "Srbija", "Srbija", 0.0, 0.55, shared, 4.0
-        )
-        is True
-    )
-    assert (
-        _topic_bridge_allowed(
-            "Politika", "vesti", "Srbija", "Srbija", 0.0, 0.55, shared, 30.0
-        )
-        is False
-    )
+    assert _topic_bridge_allowed("Politika", "vesti", "Srbija", "Srbija", 0.0, 0.55, shared, 4.0) is True
+    assert _topic_bridge_allowed("Politika", "vesti", "Srbija", "Srbija", 0.0, 0.55, shared, 30.0) is False
 
 
 @patch(_DB_PATCH, _mock_db)
@@ -101,9 +90,7 @@ def test_find_or_create_cluster():
 @patch(_DB_PATCH, _mock_db)
 def test_max_cluster_size():
     # Mocking a full cluster
-    recent_articles = [
-        {"cluster_id": "c1", "title": "Vlada donela novu meru za ekonomiju"}
-    ] * 40
+    recent_articles = [{"cluster_id": "c1", "title": "Vlada donela novu meru za ekonomiju"}] * 40
     title1 = "Mere vlade za Ekonomiju"
     cid1 = find_or_create_cluster(MagicMock(), title1, recent_articles)
     assert cid1 != "c1"
@@ -125,9 +112,7 @@ def test_completely_different_topic():
     recent = [
         {"cluster_id": "c1", "title": "Vlada donela novu meru za ekonomiju"},
     ]
-    cid = find_or_create_cluster(
-        MagicMock(), "Fudbalski meč u Ligi Šampiona", recent
-    )
+    cid = find_or_create_cluster(MagicMock(), "Fudbalski meč u Ligi Šampiona", recent)
     assert cid != "c1"
 
 
@@ -160,6 +145,7 @@ def test_get_cosine_identical():
 @patch(_DB_PATCH, _mock_db)
 def test_cluster_age_decay():
     import datetime
+
     old_time = datetime.datetime.now() - datetime.timedelta(hours=48)
     recent_time = datetime.datetime.now() - datetime.timedelta(minutes=5)
     title = "Vlada donela meru za ekonomiju"
@@ -196,9 +182,7 @@ def test_phrase_overlap_helps_short_variants_join_same_cluster():
             "created_at": datetime.datetime.now(),
         },
     ]
-    cid = find_or_create_cluster(
-        MagicMock(), "Vlada donela paket mera za ekonomiju", recent_articles
-    )
+    cid = find_or_create_cluster(MagicMock(), "Vlada donela paket mera za ekonomiju", recent_articles)
     assert cid == "c1"
 
 
@@ -263,7 +247,8 @@ def test_topic_bridge_does_not_merge_same_category_story_without_shared_entities
         }
     ]
     cid = find_or_create_cluster(
-        MagicMock(), "Vlada otvara nov konkurs za direktore škola",
+        MagicMock(),
+        "Vlada otvara nov konkurs za direktore škola",
         recent_articles,
         category="Srbija",
         source="nova.rs",
@@ -309,7 +294,7 @@ def test_edge_case_very_short_titles():
     # Similar short title should cluster
     cid1 = find_or_create_cluster(MagicMock(), "Potres", recent_articles)
     assert cid1 == "c1"
-    
+
     # Different short title should not cluster
     cid2 = find_or_create_cluster(MagicMock(), "Poplava", recent_articles)
     assert cid2 != "c1"
@@ -350,10 +335,8 @@ def test_edge_case_mixed_languages():
 def test_edge_case_max_cluster_size_boundary():
     """Edge case: Exactly at max cluster size should not merge."""
     # Create exactly 40 articles in one cluster (assuming max is 40)
-    recent_articles = [
-        {"cluster_id": "c1", "title": "Vlada donela meru"}
-    ] * 40
-    
+    recent_articles = [{"cluster_id": "c1", "title": "Vlada donela meru"}] * 40
+
     cid = find_or_create_cluster(MagicMock(), "Vlada donela novu meru", recent_articles)
     assert cid != "c1"  # Should not merge into full cluster
 
@@ -369,7 +352,7 @@ def test_edge_case_very_old_cluster():
             "created_at": old_time,
         },
     ]
-    
+
     cid = find_or_create_cluster(MagicMock(), "Vlada donela novu meru", recent_articles)
     assert cid != "c1"  # Should not merge with very old cluster
 
@@ -385,7 +368,7 @@ def test_edge_case_identical_but_different_sources():
             "created_at": datetime.datetime.now(),
         },
     ]
-    
+
     cid = find_or_create_cluster(
         MagicMock(),
         "Premierka odrzala sobranje",
@@ -411,7 +394,7 @@ def test_edge_case_rapid_followups():
             "created_at": now - datetime.timedelta(minutes=2),
         },
     ]
-    
+
     # Very recent follow-up should cluster with most recent
     cid = find_or_create_cluster(MagicMock(), "Vlada donela novu meru za ekonomiju", recent_articles)
     assert cid in ["c1", "c2"]  # Should cluster with one of the recent ones
@@ -454,4 +437,3 @@ def test_gold_standard_different_topics_dont_cluster():
     ]
     cid = find_or_create_cluster(MagicMock(), "Nogometen meč Makedonija Albanija", recent_articles)
     assert cid != "c1"
-

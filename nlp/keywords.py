@@ -1,6 +1,7 @@
 import re
 import threading
 from collections import Counter
+
 from core.trending import STOPWORDS
 from nlp.utils import log
 
@@ -21,6 +22,7 @@ def _get_keybert():
             return _keybert_model
         try:
             from keybert import KeyBERT
+
             from core.embeddings import get_shared_model
 
             st_model = get_shared_model()
@@ -30,9 +32,7 @@ def _get_keybert():
             _keybert_model = KeyBERT(model=st_model)
             log.info("[nlp.keywords] KeyBERT ready (sharing MiniLM embedding model)")
         except Exception as e:
-            log.warning(
-                f"[nlp.keywords] KeyBERT unavailable, using legacy keyphrases: {e}"
-            )
+            log.warning(f"[nlp.keywords] KeyBERT unavailable, using legacy keyphrases: {e}")
             _keybert_unavailable = True
             return None
         return _keybert_model
@@ -612,10 +612,10 @@ def normalize_tag_name(name):
 def is_valid_focus_entity(name, entity_type=None):
     clean = normalize_tag_name(name)
     lowered = clean.lower()
-    
+
     # Strip common news domain extensions for checking noise
     noise_check = re.sub(r"\.(mk|rs|com|net|info|org|press|live)$", "", lowered)
-    
+
     words = [word for word in re.split(r"\s+", lowered) if word]
     # Also check individual words without extensions
     noise_words = [re.sub(r"\.(mk|rs|com|net|info|org|press|live)$", "", w) for w in words]
@@ -658,9 +658,7 @@ def filter_cluster_tags(tags, limit=10):
     seen = set()
     for raw in tags or []:
         if isinstance(raw, dict):
-            clean = normalize_tag_name(
-                raw.get("name") or raw.get("entity_name") or raw.get("tag")
-            )
+            clean = normalize_tag_name(raw.get("name") or raw.get("entity_name") or raw.get("tag"))
             entity_type = raw.get("type") or raw.get("entity_type")
         else:
             clean = normalize_tag_name(raw)
@@ -681,9 +679,7 @@ def _tokenize_title_terms(text, lemmatize=False):
     tokens = [
         token
         for token in re.findall(r"[A-Za-zA-Za-z0-9]{3,}", (text or "").lower())
-        if token not in STOPWORDS
-        and token not in TAG_NOISE_WORDS
-        and token not in SOURCE_NOISE_WORDS
+        if token not in STOPWORDS and token not in TAG_NOISE_WORDS and token not in SOURCE_NOISE_WORDS
     ]
     if lemmatize:
         from nlp.text_processing import lemmatize_sr
@@ -702,21 +698,17 @@ def _extract_capitalized_phrases(text):
     # Supports both Latin and Cyrillic (Macedonian/Serbian)
     upper = r"[A-Z\u0400-\u042F]"
     lower = r"[a-z0-9\u0430-\u044F\u0450-\u045F]"
-    pattern = re.compile(
-        rf"(?:\b{upper}{lower}+\b(?:[\s-]+\b{upper}{lower}+\b){{0,2}})"
-    )
+    pattern = re.compile(rf"(?:\b{upper}{lower}+\b(?:[\s-]+\b{upper}{lower}+\b){{0,2}})")
     return [match.group(0).strip() for match in pattern.finditer(text)]
 
 
 def extract_cluster_tags_locally(titles, entity_names=None, sources=None, top_n=8):
-    from nlp.text_processing import lemmatize_sr
     from core.entities import normalize_entity_name
+    from nlp.text_processing import lemmatize_sr
 
     candidates = []
     prioritized_entities = []
-    normalized_titles = [
-        str(title or "").strip() for title in titles or [] if str(title or "").strip()
-    ]
+    normalized_titles = [str(title or "").strip() for title in titles or [] if str(title or "").strip()]
 
     for entity in entity_names or []:
         if isinstance(entity, dict):
@@ -732,9 +724,7 @@ def extract_cluster_tags_locally(titles, entity_names=None, sources=None, top_n=
         prioritized_entities.append((mentions, clean))
         candidates.append(entity)
 
-    prioritized_entities.sort(
-        key=lambda item: (item[0], len(item[1].split()), len(item[1])), reverse=True
-    )
+    prioritized_entities.sort(key=lambda item: (item[0], len(item[1].split()), len(item[1])), reverse=True)
     for _mentions, clean in prioritized_entities:
         candidates.insert(0, clean)
 
@@ -772,15 +762,9 @@ def extract_cluster_tags_locally(titles, entity_names=None, sources=None, top_n=
     for candidate in filtered:
         lowered = candidate.casefold()
         candidate_words = lowered.split()
-        if any(
-            lowered != other.casefold() and lowered in other.casefold()
-            for other in compact
-        ):
+        if any(lowered != other.casefold() and lowered in other.casefold() for other in compact):
             continue
-        if any(
-            other.casefold() in lowered and len(other.split()) <= len(candidate_words)
-            for other in compact
-        ):
+        if any(other.casefold() in lowered and len(other.split()) <= len(candidate_words) for other in compact):
             continue
         compact.append(candidate)
         if len(compact) >= top_n:
@@ -799,7 +783,7 @@ def _format_common_line_from_phrases(phrases, lang="mk"):
     clean = [str(p).strip() for p in phrases if len(str(p).strip()) > 3]
     if not clean:
         return ""
-    
+
     if lang == "sr":
         if len(clean) == 1:
             return f"Većina izvora se slaže oko {clean[0]} kao teme u fokusu."
@@ -870,13 +854,7 @@ def extract_keyphrases_locally(text, top_n=5):
 
     # Legacy fallback
     words = re.findall(r"[A-Za-z\w]{4,}", text.lower())
-    words = [
-        w
-        for w in words
-        if w not in STOPWORDS
-        and w not in SOURCE_NOISE_WORDS
-        and w not in TAG_NOISE_WORDS
-    ]
+    words = [w for w in words if w not in STOPWORDS and w not in SOURCE_NOISE_WORDS and w not in TAG_NOISE_WORDS]
 
     raw_sentences = re.split(r"[.!?]\s*", text.lower())
     bigrams = []
@@ -884,11 +862,7 @@ def extract_keyphrases_locally(text, top_n=5):
     for sent in raw_sentences:
         sent_words = re.findall(r"[A-Za-z\w]{3,}", sent)
         sent_words = [
-            w
-            for w in sent_words
-            if w not in STOPWORDS
-            and w not in SOURCE_NOISE_WORDS
-            and w not in TAG_NOISE_WORDS
+            w for w in sent_words if w not in STOPWORDS and w not in SOURCE_NOISE_WORDS and w not in TAG_NOISE_WORDS
         ]
         for i in range(len(sent_words) - 1):
             bigrams.append(f"{sent_words[i]} {sent_words[i+1]}")

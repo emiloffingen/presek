@@ -45,14 +45,14 @@ export default function ClusterFollowSuggestionsIsland({
       value: String(topic || '').trim(),
       reason: isMK ? 'ова е главната тема на кластерот што го читате.' : 'ovo je glavna tema klastera koji čitate.',
     }, followedTopics);
-    
+
     if (adjacentTopic) {
         addUnique(topicSuggestions, {
           value: String(adjacentTopic || '').trim(),
           reason: isMK ? 'оваа поврзана тема често ја носи следната развојна линија.' : 'ova povezana tema često nosi sledeću razvojnu liniju.',
         }, followedTopics);
     }
-    
+
     addUnique(sourceSuggestions, {
       value: String(source || '').trim(),
       reason: isMK ? 'овој извор ја води главната линија во кластерот што го читате.' : 'ovaj izvor vodi glavnu liniju u klasteru koji čitate.',
@@ -90,8 +90,8 @@ export default function ClusterFollowSuggestionsIsland({
           <Sparkles size={12} /> {isMK ? 'Следете понатаму' : 'Pratite dalje'}
         </p>
         <p className="cluster-follow-suggestions-copy">
-          {isMK 
-            ? 'Зачувајте ја темата или изворот што најмногу ја продолжува оваа приказна.' 
+          {isMK
+            ? 'Зачувајте ја темата или изворот што најмногу ја продолжува оваа приказна.'
             : 'Sačuvajte temu ili izvor koji najbolje nastavlja ovu priču.'}
         </p>
       </div>

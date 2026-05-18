@@ -1,7 +1,8 @@
-import re
-import math
 import logging
+import math
+import re
 from collections import Counter
+
 from core.trending import STOPWORDS
 
 log = logging.getLogger(__name__)
@@ -10,8 +11,8 @@ from nlp.utils import (
     _cache_get,
     _cache_set,
     _comparison_cache,
-    _question_evidence_cache,
     _normalize_articles_for_local_use,
+    _question_evidence_cache,
     cleanAndDecode,
     deShout,
 )
@@ -91,14 +92,14 @@ _T = {
 }
 
 from nlp.keywords import (
-    _sentence_tokens,
-    _extract_capitalized_phrases,
-    extract_keyphrases_locally,
-    normalize_tag_name,
     SOURCE_NOISE_WORDS,
     TAG_NOISE_WORDS,
+    _extract_capitalized_phrases,
+    _sentence_tokens,
+    extract_keyphrases_locally,
+    normalize_tag_name,
 )
-from nlp.text_processing import _normalize_summary_sentence, _is_noisy_summary_sentence
+from nlp.text_processing import _is_noisy_summary_sentence, _normalize_summary_sentence
 
 
 def _clean_briefing_snippet(text):
@@ -149,7 +150,7 @@ def _briefing_lines_from_text(text, *, max_lines=3):
 
 def _extract_briefing_update(cluster, lang="mk"):
     cluster = cluster or {}
-    
+
     # 1. Try to use synthesis if available (it should already be diverse)
     synthesis_lines = _briefing_lines_from_text(
         cluster.get("cluster_summary") or cluster.get("generated_article") or "",
@@ -161,14 +162,12 @@ def _extract_briefing_update(cluster, lang="mk"):
     # 2. Extract from description, explicitly avoiding title repetition
     clean_title = _clean_briefing_snippet(cluster.get("title"))
     clean_description = _clean_briefing_snippet(cluster.get("description"))
-    
+
     if not clean_description or len(clean_description) < 20:
-        return clean_title # Fallback if no description
+        return clean_title  # Fallback if no description
 
     title_terms = set(_extract_terms(clean_title))
-    description_sentences = [
-        s.strip() for s in re.split(r"(?<=[.!?])\s+", clean_description) if len(s.strip()) > 20
-    ]
+    description_sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", clean_description) if len(s.strip()) > 20]
 
     for sentence in description_sentences:
         sent_terms = set(_extract_terms(sentence))
@@ -181,11 +180,9 @@ def _extract_briefing_update(cluster, lang="mk"):
 
     # 3. If no unique sentence found, use localized summary but skip title-only lines
     summary = _clean_briefing_snippet(
-        summarize_locally(
-            f"{clean_title}. {clean_description}", sentence_count=1, title=clean_title
-        ).strip()
+        summarize_locally(f"{clean_title}. {clean_description}", sentence_count=1, title=clean_title).strip()
     )
-    
+
     # Final check: if summary is still just the title, try to return first 140 chars of description
     if summary.casefold() == clean_title.casefold() and clean_description:
         return clean_description[:140]
@@ -215,11 +212,13 @@ def _extract_briefing_importance(cluster, lang="mk"):
     clean_title = _clean_briefing_snippet(cluster.get("title"))
     clean_description = _clean_briefing_snippet(cluster.get("description"))
     context = f"{clean_title} {clean_description}".casefold()
-    
+
     # Check for domain-specific impact markers
     if any(term in context for term in ("izbori", "glasanje", "parlamentar", "избори", "гласање", "парламентар")):
         return t["potencijalna_promena"]
-    if any(term in context for term in ("cena", "poskap", "inflacija", "budzet", "цена", "поскап", "инфлација", "буџет")):
+    if any(
+        term in context for term in ("cena", "poskap", "inflacija", "budzet", "цена", "поскап", "инфлација", "буџет")
+    ):
         return t["direktno_vlijanie"]
 
     # 1. Fact Extraction: Find the most informative sentence in description that adds new info
@@ -235,7 +234,7 @@ def _extract_briefing_importance(cluster, lang="mk"):
             continue
         t_overlap = len(title_terms & line_terms) / len(line_terms)
         u_overlap = len(update_terms & line_terms) / len(line_terms)
-        
+
         # We want a line that isn't title AND isn't the update
         if t_overlap < 0.6 and u_overlap < 0.6 and len(line) > 35:
             return _condense_briefing_update(line, max_chars=160)
@@ -255,10 +254,10 @@ def _condense_briefing_update(text, *, max_chars=180):
     # Split by sentence but keep punctuation
     sentences = re.split(r"(?<=[.!?])\s+", clean)
     candidate = sentences[0].strip()
-    
+
     if len(candidate) < 30 and len(sentences) > 1:
         candidate = f"{candidate} {sentences[1].strip()}"
-        
+
     candidate = candidate.rstrip(" .,;:")
     if len(candidate) <= max_chars:
         return candidate
@@ -270,7 +269,6 @@ def _extract_briefing_focus_point(cluster, lang="mk"):
     if not text:
         text = _clean_briefing_snippet(cluster.get("title"))
     return _normalize_briefing_line(text).rstrip(" .,;:")
-
 
 
 def _dedupe_briefing_clusters(clusters, limit=4, lang="mk"):
@@ -290,9 +288,7 @@ def _dedupe_briefing_clusters(clusters, limit=4, lang="mk"):
         for other_tokens in seen_updates:
             if not update_tokens or not other_tokens:
                 continue
-            overlap = len(update_tokens & other_tokens) / max(
-                1, min(len(update_tokens), len(other_tokens))
-            )
+            overlap = len(update_tokens & other_tokens) / max(1, min(len(update_tokens), len(other_tokens)))
             if overlap >= 0.8:
                 duplicate_update = True
                 break
@@ -332,11 +328,7 @@ def _is_penalized_briefing_title(title):
 
 
 def _extract_terms(text):
-    return [
-        term
-        for term in re.findall(r"[A-Za-zA-Za-z0-9]{3,}", (text or "").lower())
-        if term not in STOPWORDS
-    ]
+    return [term for term in re.findall(r"[A-Za-zA-Za-z0-9]{3,}", (text or "").lower()) if term not in STOPWORDS]
 
 
 def _extract_number_tokens(text):
@@ -403,10 +395,7 @@ def summarize_locally(text, sentence_count=3, topic=None, title=None, lang="mk")
     if not text or len(text) < 100:
         return text
 
-    sentences = [
-        _normalize_summary_sentence(sentence)
-        for sentence in re.split(r"(?<=[.!?])\s+", text)
-    ]
+    sentences = [_normalize_summary_sentence(sentence) for sentence in re.split(r"(?<=[.!?])\s+", text)]
     sentences = [sentence for sentence in sentences if sentence]
     if len(sentences) <= sentence_count:
         return text
@@ -418,11 +407,7 @@ def summarize_locally(text, sentence_count=3, topic=None, title=None, lang="mk")
                 potential_title = s
                 break
 
-    title_terms = (
-        set(_sentence_tokens(title))
-        if title
-        else set(_sentence_tokens(potential_title or sentences[0]))
-    )
+    title_terms = set(_sentence_tokens(title)) if title else set(_sentence_tokens(potential_title or sentences[0]))
 
     words = _sentence_tokens(text)
     word_freq = Counter(words)
@@ -436,27 +421,111 @@ def summarize_locally(text, sentence_count=3, topic=None, title=None, lang="mk")
     topic_boost_words = set()
     if topic == "Ekonomija":
         topic_boost_words = {
-            "denari", "evra", "procent", "milioni", "budzet", "plata", "ceni", "inflacija", "berza",
-            "денари", "евра", "процент", "милиони", "буџет", "плата", "цени", "инфлација", "берза",
-            "dinara", "evra", "procenat", "miliona", "budžet", "plata", "cene", "inflacija", "berza"
+            "denari",
+            "evra",
+            "procent",
+            "milioni",
+            "budzet",
+            "plata",
+            "ceni",
+            "inflacija",
+            "berza",
+            "денари",
+            "евра",
+            "процент",
+            "милиони",
+            "буџет",
+            "плата",
+            "цени",
+            "инфлација",
+            "берза",
+            "dinara",
+            "evra",
+            "procenat",
+            "miliona",
+            "budžet",
+            "plata",
+            "cene",
+            "inflacija",
+            "berza",
         }
     elif topic == "Politika":
         topic_boost_words = {
-            "minister", "pretsedatel", "sobranie", "zakon", "partija", "lider", "vlada", "izbori",
-            "министер", "претседател", "собрание", "закон", "партија", "лидер", "влада", "избори",
-            "ministar", "predsednik", "skupština", "zakon", "partija", "lider", "vlada", "izbori"
+            "minister",
+            "pretsedatel",
+            "sobranie",
+            "zakon",
+            "partija",
+            "lider",
+            "vlada",
+            "izbori",
+            "министер",
+            "претседател",
+            "собрание",
+            "закон",
+            "партија",
+            "лидер",
+            "влада",
+            "избори",
+            "ministar",
+            "predsednik",
+            "skupština",
+            "zakon",
+            "partija",
+            "lider",
+            "vlada",
+            "izbori",
         }
     elif topic == "Sport":
         topic_boost_words = {
-            "natprevar", "gol", "pobeda", "prvenstvo", "klub", "liga", "fudbal", "kosarka",
-            "натпревар", "гол", "победа", "првенство", "клуб", "лига", "фудбал", "кошарка",
-            "utakmica", "gol", "pobeda", "prvenstvo", "klub", "liga", "fudbal", "košarka"
+            "natprevar",
+            "gol",
+            "pobeda",
+            "prvenstvo",
+            "klub",
+            "liga",
+            "fudbal",
+            "kosarka",
+            "натпревар",
+            "гол",
+            "победа",
+            "првенство",
+            "клуб",
+            "лига",
+            "фудбал",
+            "кошарка",
+            "utakmica",
+            "gol",
+            "pobeda",
+            "prvenstvo",
+            "klub",
+            "liga",
+            "fudbal",
+            "košarka",
         }
     elif topic == "Kriminal":
         topic_boost_words = {
-            "policija", "apsenje", "ubistvo", "sud", "obvinitelstvo", "zatvor", "napad",
-            "полиција", "апсење", "убиство", "суд", "обвинителство", "затвор", "напад",
-            "policija", "hapšenje", "ubistvo", "sud", "tužilaštvo", "zatvor", "napad"
+            "policija",
+            "apsenje",
+            "ubistvo",
+            "sud",
+            "obvinitelstvo",
+            "zatvor",
+            "napad",
+            "полиција",
+            "апсење",
+            "убиство",
+            "суд",
+            "обвинителство",
+            "затвор",
+            "напад",
+            "policija",
+            "hapšenje",
+            "ubistvo",
+            "sud",
+            "tužilaštvo",
+            "zatvor",
+            "napad",
         }
 
     sentence_scores = {}
@@ -482,19 +551,10 @@ def summarize_locally(text, sentence_count=3, topic=None, title=None, lang="mk")
 
         if len(sentence) > 280:
             score *= 0.6
-        score += (
-            (overlap * 0.5)
-            + number_bonus
-            + lead_bonus
-            + density_bonus
-            + proper_noun_bonus
-            + topic_bonus
-        )
+        score += (overlap * 0.5) + number_bonus + lead_bonus + density_bonus + proper_noun_bonus + topic_bonus
         sentence_scores[i] = score
 
-    top_indices = sorted(sentence_scores, key=sentence_scores.get, reverse=True)[
-        :sentence_count
-    ]
+    top_indices = sorted(sentence_scores, key=sentence_scores.get, reverse=True)[:sentence_count]
     top_indices.sort()
 
     summary = []
@@ -508,11 +568,7 @@ def summarize_locally(text, sentence_count=3, topic=None, title=None, lang="mk")
         summary.append(sentence)
 
     if not summary:
-        summary = [
-            sentence
-            for sentence in sentences[:sentence_count]
-            if not _is_noisy_summary_sentence(sentence)
-        ]
+        summary = [sentence for sentence in sentences[:sentence_count] if not _is_noisy_summary_sentence(sentence)]
 
     return " ".join(summary)
 
@@ -520,9 +576,7 @@ def summarize_locally(text, sentence_count=3, topic=None, title=None, lang="mk")
 def summarize_article_fallback(title, description=None, topic=None, lang="mk"):
     parts = [str(title or "").strip(), str(description or "").strip()]
     text = ". ".join([part for part in parts if part])
-    summary = summarize_locally(
-        text, sentence_count=2, topic=topic, title=title, lang=lang
-    ).strip()
+    summary = summarize_locally(text, sentence_count=2, topic=topic, title=title, lang=lang).strip()
     summary = re.sub(r"^[⚪🟢🔴]\s*", "", summary, flags=re.UNICODE)
     summary = re.sub(r"#[^\s#]+", "", summary)
     summary = re.sub(r"\s+", " ", summary).strip()
@@ -530,11 +584,7 @@ def summarize_article_fallback(title, description=None, topic=None, lang="mk"):
 
 
 def _join_fragments(parts):
-    clean = [
-        str(part or "").strip(" .,;:")
-        for part in parts
-        if str(part or "").strip(" .,;:")
-    ]
+    clean = [str(part or "").strip(" .,;:") for part in parts if str(part or "").strip(" .,;:")]
     return "; ".join(clean)
 
 
@@ -552,9 +602,7 @@ def _extract_comparison_entities(text):
 
 
 def _source_list(articles, limit=3):
-    names = [
-        str(article.get("source") or "izvor").strip() for article in articles[:limit]
-    ]
+    names = [str(article.get("source") or "izvor").strip() for article in articles[:limit]]
     return ", ".join(name for name in names if name)
 
 
@@ -584,7 +632,16 @@ def compare_cluster_sources(articles, lang="mk"):
     )
     if lang == "mk":
         uncertainty_markers = (
-            "тврди", "според", "непотвр", "навод", "се очекува", "може", "би мож", "засега", "се уште", "се развива"
+            "тврди",
+            "според",
+            "непотвр",
+            "навод",
+            "се очекува",
+            "може",
+            "би мож",
+            "засега",
+            "се уште",
+            "се развива",
         )
 
     all_terms = Counter()
@@ -619,52 +676,33 @@ def compare_cluster_sources(articles, lang="mk"):
         )
 
     threshold = max(2, math.ceil(len(articles) / 2))
-    common_terms = [
-        t
-        for t, c in all_terms.most_common(8)
-        if c >= threshold and t not in SOURCE_NOISE_WORDS
-    ]
+    common_terms = [t for t, c in all_terms.most_common(8) if c >= threshold and t not in SOURCE_NOISE_WORDS]
     pooled_text = " ".join(a["title"] + ". " + a["description"] for a in articles)
     candidate_phrases = extract_keyphrases_locally(pooled_text, top_n=12)
     common_phrases = [
         p
         for p in candidate_phrases
-        if p
-        and " " in p
-        and sum(1 for txt in article_texts_lower if p.lower() in txt) >= threshold
+        if p and " " in p and sum(1 for txt in article_texts_lower if p.lower() in txt) >= threshold
     ]
     common_line = ""
     if common_phrases:
         from nlp.keywords import _format_common_line_from_phrases
+
         try:
             common_line = _format_common_line_from_phrases(common_phrases[:3], lang=lang)
         except Exception as e:
             log.debug(f"[nlp.generation] Error formatting common line: {e}")
             if lang == "sr":
-                common_line = (
-                    "Većina izvora se slaže oko "
-                    + ", ".join(common_phrases[:3])
-                    + " kao tema u fokusu."
-                )
+                common_line = "Većina izvora se slaže oko " + ", ".join(common_phrases[:3]) + " kao tema u fokusu."
             else:
                 common_line = (
-                    "Повеќето извори се согласуваат околу "
-                    + ", ".join(common_phrases[:3])
-                    + " како теми во фокус."
+                    "Повеќето извори се согласуваат околу " + ", ".join(common_phrases[:3]) + " како теми во фокус."
                 )
     elif common_terms:
         if lang == "sr":
-            common_line = (
-                "Većina izvora se slaže oko "
-                + ", ".join(common_terms[:4])
-                + " kao tema u fokusu."
-            )
+            common_line = "Većina izvora se slaže oko " + ", ".join(common_terms[:4]) + " kao tema u fokusu."
         else:
-            common_line = (
-                "Повеќето извори се согласуваат околу "
-                + ", ".join(common_terms[:4])
-                + " како теми во фокус."
-            )
+            common_line = "Повеќето извори се согласуваат околу " + ", ".join(common_terms[:4]) + " како теми во фокус."
 
     difference_points, seen_titles = [], set()
     unique_titles = []
@@ -704,9 +742,7 @@ def compare_cluster_sources(articles, lang="mk"):
     ]
     if uncertain_sources:
         if lang == "sr":
-            open_points.append(
-                f"Detalji oko ovog razvoja ostaju nepotvrđeni kod {', '.join(uncertain_sources[:2])}."
-            )
+            open_points.append(f"Detalji oko ovog razvoja ostaju nepotvrđeni kod {', '.join(uncertain_sources[:2])}.")
         else:
             open_points.append(
                 f"Деталите околу овој развој остануваат непотврдени кај {', '.join(uncertain_sources[:2])}."
@@ -720,15 +756,12 @@ def compare_cluster_sources(articles, lang="mk"):
 
     if is_sport:
         scores = [
-            set(_extract_sports_scores(a.get("title") or ""))
-            | set(_extract_sports_scores(a.get("description") or ""))
+            set(_extract_sports_scores(a.get("title") or "")) | set(_extract_sports_scores(a.get("description") or ""))
             for a in articles
         ]
         all_scores = set().union(*scores)
         conflicting_scores = [
-            s
-            for s in all_scores
-            if sum(1 for ms in scores if s in ms) < len(articles) and len(articles) > 1
+            s for s in all_scores if sum(1 for ms in scores if s in ms) < len(articles) and len(articles) > 1
         ]
         if conflicting_scores:
             if lang == "sr":
@@ -742,14 +775,10 @@ def compare_cluster_sources(articles, lang="mk"):
 
     # Generic numbers only if not many articles (less noise)
     if len(articles) > 1 and len(articles) <= 3:
-        nums = [
-            set(_extract_number_tokens(a.get("description") or "")) for a in articles
-        ]
+        nums = [set(_extract_number_tokens(a.get("description") or "")) for a in articles]
         all_nums = set().union(*nums)
         conflicting_nums = [n for n in all_nums if sum(1 for s in nums if n in s) == 1]
-        if conflicting_nums and not any(
-            n in "".join(open_points) for n in conflicting_nums
-        ):
+        if conflicting_nums and not any(n in "".join(open_points) for n in conflicting_nums):
             if lang == "sr":
                 open_points.append(
                     f"Postoje različite informacije oko brojki (na primer: {conflicting_nums[0]}), što ukazuje na dinamično izveštavanje."
@@ -784,17 +813,13 @@ def synthesize_cluster_fallback(articles, lang="mk"):
 
     # 1. Smarter Context Extraction
     desc = cleanAndDecode(lead.get("description", ""))
-    sentences = [
-        _normalize_briefing_line(s)
-        for s in re.split(r"(?<=[.!?])\s+", desc)
-        if len(s.strip()) > 20
-    ]
+    sentences = [_normalize_briefing_line(s) for s in re.split(r"(?<=[.!?])\s+", desc) if len(s.strip()) > 20]
     sentences = [s for s in sentences if s and not _is_noisy_summary_sentence(s)]
 
     # 2. Build Summary Points
     summary_lines = []
     lead_title = deShout(cleanAndDecode(lead.get("title", ""))).strip()
-    
+
     # Use the improved update extraction to avoid title repetition
     update_point = _extract_briefing_update({"title": lead_title, "description": desc}, lang=lang)
 
@@ -822,10 +847,8 @@ def synthesize_cluster_fallback(articles, lang="mk"):
         summary_lines.append(f"• {t['fokus']}: {common}")
 
     sources_str = _source_list(articles, limit=4)
-    summary_lines.append(
-        f"• {t['pokrienost']}: {t['sledeno_od']} {len(articles)} {t['izvori']} ({sources_str})."
-    )
-    
+    summary_lines.append(f"• {t['pokrienost']}: {t['sledeno_od']} {len(articles)} {t['izvori']} ({sources_str}).")
+
     if comparison.get("open_points"):
         summary_lines.append(f"• {t['otvoreno_lower']}: {comparison['open_points'][0]}")
 
@@ -852,19 +875,15 @@ def synthesize_cluster_fallback(articles, lang="mk"):
         perspectives.append(
             {
                 "angle": t["konsenzus"],
-                "content": t["potvrda_osnovna"].format(s1=articles[0]['source'], s2=articles[1]['source']),
+                "content": t["potvrda_osnovna"].format(s1=articles[0]["source"], s2=articles[1]["source"]),
             }
         )
 
     if comparison["difference_points"]:
-        perspectives.append(
-            {"angle": t["nijansi"], "content": comparison["difference_points"][0]}
-        )
+        perspectives.append({"angle": t["nijansi"], "content": comparison["difference_points"][0]})
 
     if comparison.get("open_points"):
-        perspectives.append(
-            {"angle": t["otvoreno_lower"], "content": comparison["open_points"][0]}
-        )
+        perspectives.append({"angle": t["otvoreno_lower"], "content": comparison["open_points"][0]})
 
     record_runtime_event("local_synthesis_path", mode="enhanced_fallback")
     return {
@@ -890,11 +909,9 @@ def generate_daily_brief_fallback(clusters, lang="mk"):
     )
     display_clusters = _dedupe_briefing_clusters(display_clusters, limit=4, lang=lang)
     lines = [f"## {t['dinamika_den']}", ""]
-    
+
     if len(display_clusters) >= 1:
-        lead_update = _condense_briefing_update(
-            _extract_briefing_update(display_clusters[0], lang=lang), max_chars=150
-        )
+        lead_update = _condense_briefing_update(_extract_briefing_update(display_clusters[0], lang=lang), max_chars=150)
         intro_line = t["denesniot_pregled"].format(text=lead_update)
 
         if len(display_clusters) >= 2:
@@ -918,32 +935,27 @@ def generate_daily_brief_fallback(clusters, lang="mk"):
     if not difference_added and display_clusters[:3]:
         fallback_cluster = display_clusters[0]
         short_t = _condense_briefing_update(fallback_cluster.get("title"), max_chars=80)
-        lines.append(
-            f"• {short_t}: " f"{_extract_briefing_importance(fallback_cluster, lang=lang)}."
-        )
+        lines.append(f"• {short_t}: " f"{_extract_briefing_importance(fallback_cluster, lang=lang)}.")
     lines.append("")
 
     for index, cluster in enumerate(display_clusters, start=1):
         title = str(cluster.get("title") or "").strip()
         clean_title = _clean_briefing_snippet(title)
-        
+
         # Use content-aware extraction to avoid repeating the title
         summary = _extract_briefing_update(cluster, lang=lang)
         importance = _extract_briefing_importance(cluster, lang=lang)
-        
+
         lines.append(f"### {index}. {clean_title or title}")
-        
+
         if summary and summary.casefold() != (clean_title or title).casefold():
             lines.append(f"- {t['klucen_aspekt']}: {summary}.")
-        
+
         lines.append(f"- {t['zosto_vazno']}: {importance}.")
         lines.append("")
-        
-    lines.append(
-        f"**{t['beleska']}**: {t['sodrzina_generirana']}"
-    )
-    return "\n".join(lines).strip()
 
+    lines.append(f"**{t['beleska']}**: {t['sodrzina_generirana']}")
+    return "\n".join(lines).strip()
 
 
 def _article_context_text(article):
@@ -976,22 +988,15 @@ def _article_candidate_snippets(article):
     return snippets[:4]
 
 
-def _score_question_snippet(
-    question_terms, question_entities, question_numbers, snippet, kind, article_rank
-):
+def _score_question_snippet(question_terms, question_entities, question_numbers, snippet, kind, article_rank):
     text = str(snippet or "").strip()
     if not text:
         return 0.0
-    snippet_terms, snippet_numbers = set(_extract_terms(text)), set(
-        _extract_number_tokens(text)
-    )
+    snippet_terms, snippet_numbers = set(_extract_terms(text)), set(_extract_number_tokens(text))
     snippet_entities = {e.casefold() for e in _extract_capitalized_phrases(text)}
     score = (
         len(question_terms & snippet_terms) * 2.4
-        + sum(
-            1 for e in question_entities if e in text.lower() or e in snippet_entities
-        )
-        * 2.1
+        + sum(1 for e in question_entities if e in text.lower() or e in snippet_entities) * 2.1
         + len(question_numbers & snippet_numbers) * 2.8
     )
     score += 1.1 if kind == "title" else (0.7 if kind == "description" else 0.4)
@@ -1027,15 +1032,8 @@ def _rank_cluster_question_evidence(question, articles, synthesis=""):
             + len(q_numbers & set(_extract_number_tokens(context_text))) * 1.2
         )
         for snip, kind in snippets:
-            score = (
-                _score_question_snippet(
-                    q_terms, q_entities, q_numbers, snip, kind, rank
-                )
-                + c_score
-            )
-            ranked.append(
-                {"article": art, "snippet": snip, "kind": kind, "score": score}
-            )
+            score = _score_question_snippet(q_terms, q_entities, q_numbers, snip, kind, rank) + c_score
+            ranked.append({"article": art, "snippet": snip, "kind": kind, "score": score})
     ranked.sort(key=lambda x: x["score"], reverse=True)
     deduped, seen = [], set()
     for item in ranked:
@@ -1061,19 +1059,12 @@ def _is_low_information_fragment(text):
 
 
 def _is_low_quality_local_text(text, evidence=None):
-    sentences = [
-        s.strip()
-        for s in re.split(r"(?<=[.!?])\s+", str(text or "").strip())
-        if s.strip()
-    ]
+    sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", str(text or "").strip()) if s.strip()]
     if not sentences:
         return True
     if len(set(re.sub(r"\s+", " ", s.casefold()) for s in sentences)) < len(sentences):
         return True
-    return (
-        sum(1 for s in sentences if _is_low_information_fragment(s))
-        > len(sentences) / 2
-    )
+    return sum(1 for s in sentences if _is_low_information_fragment(s)) > len(sentences) / 2
 
 
 def _build_grounded_answer_from_evidence(evidence, comparison=None, lang="mk"):
@@ -1081,13 +1072,9 @@ def _build_grounded_answer_from_evidence(evidence, comparison=None, lang="mk"):
     if not evidence:
         return ""
     p = evidence[0]
-    p_snip = _coerce_grounded_snippet(
-        p.get("snippet") or p["article"].get("title") or ""
-    )
+    p_snip = _coerce_grounded_snippet(p.get("snippet") or p["article"].get("title") or "")
     if _is_low_information_fragment(p_snip):
-        p_snip = _coerce_grounded_snippet(
-            summarize_locally(p["article"].get("description", ""), sentence_count=1)
-        )
+        p_snip = _coerce_grounded_snippet(summarize_locally(p["article"].get("description", ""), sentence_count=1))
     return t["najdirektno"].format(text=p_snip)
 
 
@@ -1101,34 +1088,34 @@ def _build_minimum_cluster_summary(articles, comparison=None, lang="mk"):
 
 def generate_local_placeholder(cluster_id, title, category="vesti"):
     import hashlib
-    
+
     # 1. Deterministic seed from cluster_id
     seed = int(hashlib.md5(str(cluster_id).encode()).hexdigest(), 16)
-    
+
     # 2. Professional Category Palettes (Primary, Deep, Accent)
     palettes = {
-        "Srbija":      ["#8b1e22", "#4a0e10", "#c42a2e"], # Editorial Crimson
-        "Makedonija":  ["#d62828", "#8c1c1c", "#f77f00"], # Macedonian Sun tones
-        "Balkan":      ["#2d4a3e", "#1a2e25", "#4d806a"], # Deep Forest
-        "Evropa":      ["#1b3a5a", "#0d1e33", "#3d6db2"], # Diplomatic Blue
-        "Amerika":     ["#1a365d", "#102a43", "#2b6cb0"], # Atlantic Blue
-        "Svet":        ["#4a3f5a", "#2d2638", "#7a6a96"], # Global Dusk
-        "Sport":       ["#9c4221", "#5c2a12", "#e85d04"], # Clay/Dynamic
-        "Tehnologija": ["#1a202c", "#0f172a", "#4a5568"], # Slate/Midnight
-        "Ekonomija":   ["#2c5282", "#1a365d", "#4299e1"], # Corporate Blue
-        "Hronika":     ["#2d3748", "#1a202c", "#4a5568"], # Industrial Grey
-        "Zabava":      ["#702459", "#4a0e3a", "#b83280"], # Artsy Magenta
-        "default":     ["#2d3748", "#1a202c", "#718096"],
+        "Srbija": ["#8b1e22", "#4a0e10", "#c42a2e"],  # Editorial Crimson
+        "Makedonija": ["#d62828", "#8c1c1c", "#f77f00"],  # Macedonian Sun tones
+        "Balkan": ["#2d4a3e", "#1a2e25", "#4d806a"],  # Deep Forest
+        "Evropa": ["#1b3a5a", "#0d1e33", "#3d6db2"],  # Diplomatic Blue
+        "Amerika": ["#1a365d", "#102a43", "#2b6cb0"],  # Atlantic Blue
+        "Svet": ["#4a3f5a", "#2d2638", "#7a6a96"],  # Global Dusk
+        "Sport": ["#9c4221", "#5c2a12", "#e85d04"],  # Clay/Dynamic
+        "Tehnologija": ["#1a202c", "#0f172a", "#4a5568"],  # Slate/Midnight
+        "Ekonomija": ["#2c5282", "#1a365d", "#4299e1"],  # Corporate Blue
+        "Hronika": ["#2d3748", "#1a202c", "#4a5568"],  # Industrial Grey
+        "Zabava": ["#702459", "#4a0e3a", "#b83280"],  # Artsy Magenta
+        "default": ["#2d3748", "#1a202c", "#718096"],
     }
-    
+
     colors = palettes.get(category, palettes["default"])
     c1, c2, c3 = colors
-    
+
     # 3. Deterministic Geometric Shifts
-    shift_x = (seed % 100)
-    shift_y = (seed % 80)
-    angle = (seed % 360)
-    
+    shift_x = seed % 100
+    shift_y = seed % 80
+    angle = seed % 360
+
     # 4. Text Wrapping Logic
     def wrap_text(text, max_chars=35):
         words = text.split()
@@ -1140,12 +1127,13 @@ def generate_local_placeholder(cluster_id, title, category="vesti"):
                 cur = [w]
             else:
                 cur.append(w)
-        if cur: lines.append(" ".join(cur))
-        return lines[:4] # Max 4 lines
+        if cur:
+            lines.append(" ".join(cur))
+        return lines[:4]  # Max 4 lines
 
     display_lines = wrap_text(title)
     text_y_start = 220 - (len(display_lines) - 1) * 25
-    
+
     tspans = ""
     for i, line in enumerate(display_lines):
         y = text_y_start + i * 52
@@ -1156,50 +1144,54 @@ def generate_local_placeholder(cluster_id, title, category="vesti"):
     # 5. Generative SVG Construction
     svg = [
         f'<svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">',
-        f'<defs>',
+        f"<defs>",
         # Main Linear Gradient
         f'  <linearGradient id="grad_{cluster_id}" x1="0%" y1="0%" x2="100%" y2="100%" gradientTransform="rotate({angle})">',
         f'    <stop offset="0%" style="stop-color:{c1};stop-opacity:1" />',
         f'    <stop offset="100%" style="stop-color:{c2};stop-opacity:1" />',
-        f'  </linearGradient>',
+        f"  </linearGradient>",
         # Radial Accent (The "Mesh" feel)
         f'  <radialGradient id="mesh_{cluster_id}" cx="{20 + (seed%60)}%" cy="{20 + (seed%60)}%" r="80%">',
         f'    <stop offset="0%" style="stop-color:{c3};stop-opacity:0.4" />',
         f'    <stop offset="100%" style="stop-color:{c2};stop-opacity:0" />',
-        f'  </radialGradient>',
+        f"  </radialGradient>",
         # Filter for subtle noise/texture
         f'  <filter id="noise" x="0" y="0" width="100%" height="100%">',
         f'    <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" />',
         f'    <feColorMatrix type="saturate" values="0" />',
         f'    <feComponentTransfer><feFuncA type="linear" slope="0.03" /></feComponentTransfer>',
         f'    <feComposite operator="in" in2="SourceGraphic" />',
-        f'  </filter>',
-        f'</defs>',
+        f"  </filter>",
+        f"</defs>",
         # Background Layers
         f'<rect width="100%" height="100%" fill="url(#grad_{cluster_id})" />',
         f'<rect width="100%" height="100%" fill="url(#mesh_{cluster_id})" />',
         # Subtle Geometric Overlay (Dots or Lines)
         f'<rect width="100%" height="100%" fill="white" opacity="0.03" filter="url(#noise)" />',
     ]
-    
+
     # Optional Geometric Detail based on ID
     if seed % 2 == 0:
         # Grid Pattern
-        svg.append(f'<path d="M 0 {shift_y} L 800 {shift_y} M {shift_x} 0 L {shift_x} 450" stroke="white" stroke-width="0.5" opacity="0.1" />')
+        svg.append(
+            f'<path d="M 0 {shift_y} L 800 {shift_y} M {shift_x} 0 L {shift_x} 450" stroke="white" stroke-width="0.5" opacity="0.1" />'
+        )
     else:
         # Subtle circle
         svg.append(f'<circle cx="{800-shift_x}" cy="{shift_y}" r="150" fill="white" opacity="0.05" />')
 
     # Typography
-    svg.extend([
-        f'<text font-family="serif" text-anchor="middle" font-size="38" font-weight="800" fill="white" style="text-shadow: 0 4px 12px rgba(0,0,0,0.3)">',
-        f"{tspans}",
-        f"</text>",
-        # Branding
-        f'<rect x="40" y="385" width="120" height="2" fill="white" opacity="0.3" />',
-        f'<text x="40" y="415" font-family="sans-serif" font-size="16" font-weight="900" fill="white" opacity="0.6" letter-spacing="4">PRESEK</text>',
-        f'<text x="760" y="415" text-anchor="end" font-family="sans-serif" font-size="12" font-weight="700" fill="white" opacity="0.4" letter-spacing="1">{category.upper()}</text>',
-        f"</svg>"
-    ])
-    
+    svg.extend(
+        [
+            f'<text font-family="serif" text-anchor="middle" font-size="38" font-weight="800" fill="white" style="text-shadow: 0 4px 12px rgba(0,0,0,0.3)">',
+            f"{tspans}",
+            f"</text>",
+            # Branding
+            f'<rect x="40" y="385" width="120" height="2" fill="white" opacity="0.3" />',
+            f'<text x="40" y="415" font-family="sans-serif" font-size="16" font-weight="900" fill="white" opacity="0.6" letter-spacing="4">PRESEK</text>',
+            f'<text x="760" y="415" text-anchor="end" font-family="sans-serif" font-size="12" font-weight="700" fill="white" opacity="0.4" letter-spacing="1">{category.upper()}</text>',
+            f"</svg>",
+        ]
+    )
+
     return "".join(svg)

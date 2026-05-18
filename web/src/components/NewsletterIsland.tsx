@@ -42,7 +42,7 @@ export default function NewsletterIsland({ lang = 'sr' }: { lang?: string }) {
             {lang === 'sr' ? 'Uspešno ste se prijavili!' : 'Успешно се пријавивте!'}
           </h3>
           <p className="font-serif italic text-sm text-secondary-foreground leading-relaxed">
-            {lang === 'sr' 
+            {lang === 'sr'
               ? 'Svako jutro u 08:00 časova ćete dobijati najvažniji presek vesti direktno u vaše sanduče.'
               : 'Секое утро во 08:00 часот ќе го добивате најважниот пресек на вестите директно во вашето сандаче.'}
           </p>
@@ -62,7 +62,7 @@ export default function NewsletterIsland({ lang = 'sr' }: { lang?: string }) {
             {lang === 'sr' ? 'DNEVNI PREGLED' : 'ДНЕВЕН ПРЕГЛЕД'}
           </span>
           <h3 className="font-serif text-xl font-black leading-tight tracking-tight">
-            {lang === 'sr' 
+            {lang === 'sr'
               ? 'Uređen pregled dana kroz objektiv pluralizma.'
               : 'Уреден преглед на денот низ објективот на плурализмот.'}
           </h3>
@@ -74,7 +74,7 @@ export default function NewsletterIsland({ lang = 'sr' }: { lang?: string }) {
             : 'Секое утро добивајте дестилиран сублимат на настаните што ја обликуваат јавната дебата.'}
         </p>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-[var(--grid-gap)]">
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
             <input
@@ -86,7 +86,7 @@ export default function NewsletterIsland({ lang = 'sr' }: { lang?: string }) {
               className="w-full pl-9 pr-4 py-2.5 bg-background border border-border focus:border-nyt-accent outline-none font-sans text-sm transition-all"
             />
           </div>
-          
+
           {status === 'error' && (
             <p className="text-[10px] font-bold text-nyt-red uppercase tracking-tight">{message}</p>
           )}
@@ -94,7 +94,7 @@ export default function NewsletterIsland({ lang = 'sr' }: { lang?: string }) {
           <button
             type="submit"
             disabled={status === 'loading'}
-            className="w-full py-2.5 bg-foreground text-background hover:bg-nyt-accent hover:text-white font-sans text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+            className="w-full py-2.5 bg-foreground text-background hover:bg-nyt-accent hover:text-white font-sans text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-[var(--grid-gap)]"
           >
             {status === 'loading' ? (
               <Loader2 size={14} className="animate-spin" />
@@ -110,7 +110,7 @@ export default function NewsletterIsland({ lang = 'sr' }: { lang?: string }) {
             : '* Со пријавувањето се согласувате со нашите услови. Можете да се одјавите во секое време.'}
         </p>
       </div>
-      
+
       <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity">
         <Mail size={120} strokeWidth={1} />
       </div>

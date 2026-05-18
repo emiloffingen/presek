@@ -11,7 +11,7 @@ services:
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
     networks:
       - presek-net
-  
+
   db-replica:
     image: postgres:15-alpine
     environment:

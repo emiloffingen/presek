@@ -1,34 +1,32 @@
-import os
-import json
 import datetime
+import json
+import os
 import time
+
+import fastapi
 from fastapi import FastAPI, Request
 from fastapi.responses import Response
-import fastapi
 
 if not hasattr(fastapi, "responses"):
     import fastapi.responses
-from fastapi.responses import JSONResponse, FileResponse, RedirectResponse
-from fastapi.staticfiles import StaticFiles
+
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
-from core.limiter import (
-    _rate_limiter_enabled,
-    limiter,
-    RateLimitExceeded,
-    exempt_from_rate_limit,
-)
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+
+from core.limiter import RateLimitExceeded, _rate_limiter_enabled, exempt_from_rate_limit, limiter
 
 if _rate_limiter_enabled:
     from slowapi.middleware import SlowAPIMiddleware
 
 from core.database import db_manager as db
-from core.version import APP_VERSION, APP_VERSION_LABEL, get_full_version_info
+from core.error_tracking import configure_error_tracking
 
 # Initialize logging early (before other imports)
 from core.logging_config import get_logger
-from core.error_tracking import configure_error_tracking
+from core.version import APP_VERSION, APP_VERSION_LABEL, get_full_version_info
 
 # early_setup() already called by logging_config import
 # Initialize error tracking
@@ -44,27 +42,39 @@ app = FastAPI(
     docs_url="/api/docs" if os.environ.get("ENV") != "production" else None,
     redoc_url="/api/redoc" if os.environ.get("ENV") != "production" else None,
 )
+from core.api_helpers import rank_cluster_citations as _rank_cluster_citations
 from core.health import _probe_database, _probe_redis
-from core.api_helpers import (
-    rank_cluster_citations as _rank_cluster_citations,
-)
 
 # Middleware
 # Security: Restrict CORS to configured origins. In production, never use "*" with allow_credentials=True
 cors_origins = os.environ.get("CORS_ORIGINS", "")
 if cors_origins == "*" and os.environ.get("ENV") == "production":
     cors_origins = ["https://presek.live", "https://www.presek.live", "https://presek.mk", "https://www.presek.mk"]
-    log.warning(
-        "CORS_ORIGINS was '*', defaulting to presek.live and presek.mk for production security"
-    )
+    log.warning("CORS_ORIGINS was '*', defaulting to presek.live and presek.mk for production security")
 elif cors_origins == "*":
     # In development, still avoid wildcard - use explicit localhost origins
-    cors_origins = ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5001", "http://127.0.0.1:5001", "http://localhost:3001", "http://127.0.0.1:3001"]
-    log.warning(
-        "CORS_ORIGINS set to '*' in development - using explicit localhost origins instead"
-    )
+    cors_origins = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5001",
+        "http://127.0.0.1:5001",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
+    ]
+    log.warning("CORS_ORIGINS set to '*' in development - using explicit localhost origins instead")
 else:
-    cors_origins = cors_origins.split(",") if cors_origins else ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5001", "http://127.0.0.1:5001", "http://localhost:3001", "http://127.0.0.1:3001"]
+    cors_origins = (
+        cors_origins.split(",")
+        if cors_origins
+        else [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:5001",
+            "http://127.0.0.1:5001",
+            "http://localhost:3001",
+            "http://127.0.0.1:3001",
+        ]
+    )
 
 app.add_middleware(
     CORSMiddleware,
@@ -162,18 +172,14 @@ async def startup_event():
 
 
 # Import and include routers
-from routes import home, news, intelligence, profile, stats, system, admin
+from routes import admin, home, intelligence, news, profile, stats, system
 
 
-def _safe_rank_cluster_citations(
-    question: str, answer: str, articles, citation_numbers
-) -> list[dict]:
+def _safe_rank_cluster_citations(question: str, answer: str, articles, citation_numbers) -> list[dict]:
     try:
         return _rank_cluster_citations(question, answer, articles, citation_numbers)
     except Exception as e:
-        log.warning(
-            f"[fastapi cluster_answer] citation ranking failed: {e}", exc_info=True
-        )
+        log.warning(f"[fastapi cluster_answer] citation ranking failed: {e}", exc_info=True)
         return []
 
 
@@ -277,15 +283,14 @@ async def get_generated_image(filename: str):
 @app.get("/metrics")
 async def metrics():
     """Expose Prometheus metrics for monitoring."""
-    from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+    from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+
     return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @app.get("/api/delivery/track/{event_type}")
 @exempt_from_rate_limit
-async def track_delivery_event(
-    event_type: str, event_id: int, redirect: str = "/briefing"
-):
+async def track_delivery_event(event_type: str, event_id: int, redirect: str = "/briefing"):
     from routes.common import _safe_tracking_redirect_path
 
     p = await db.async_execute_one(
@@ -315,6 +320,7 @@ async def track_delivery_event(
 # For new development, use /api/v1. Legacy /api routes are maintained for backward compatibility.
 API_VERSION = "v1"
 
+
 # Clustering Control Endpoints - Manual triggers for debugging/emergency use
 @app.post("/api/admin/trigger-reclustering")
 @exempt_from_rate_limit
@@ -325,16 +331,13 @@ def trigger_reclustering(hours: int = 6, limit: int = 500):
     """
     try:
         from core.celery_app import celery_app
-        
-        task = celery_app.send_task(
-            'tasks.intelligence.recluster_recent_articles_task',
-            args=[hours, limit]
-        )
-        
+
+        task = celery_app.send_task("tasks.intelligence.recluster_recent_articles_task", args=[hours, limit])
+
         return {
             "status": "success",
             "task_id": str(task.id),
-            "message": f"Triggered reclustering for last {hours} hours, limit {limit} articles"
+            "message": f"Triggered reclustering for last {hours} hours, limit {limit} articles",
         }
     except Exception as e:
         log.error(f"Failed to trigger reclustering: {e}")
@@ -350,16 +353,10 @@ def trigger_storyline_discovery():
     """
     try:
         from core.celery_app import celery_app
-        
-        task = celery_app.send_task(
-            'tasks.intelligence.discover_storylines_task'
-        )
-        
-        return {
-            "status": "success",
-            "task_id": str(task.id),
-            "message": "Triggered storyline discovery"
-        }
+
+        task = celery_app.send_task("tasks.intelligence.discover_storylines_task")
+
+        return {"status": "success", "task_id": str(task.id), "message": "Triggered storyline discovery"}
     except Exception as e:
         log.error(f"Failed to trigger storyline discovery: {e}")
         return {"status": "error", "error": str(e)}
@@ -376,22 +373,20 @@ def get_clustering_status():
         recent_articles = db.execute(
             "SELECT COUNT(*) as count FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours'"
         )[0]["count"]
-        
+
         # Check articles with cluster IDs
         clustered_articles = db.execute(
             "SELECT COUNT(*) as count FROM articles WHERE cluster_id IS NOT NULL AND created_at >= NOW() - INTERVAL '24 hours'"
         )[0]["count"]
-        
+
         # Check storylines
         storylines = db.execute(
             "SELECT COUNT(*) as count FROM storylines_v2 WHERE created_at >= NOW() - INTERVAL '24 hours'"
         )[0]["count"]
-        
+
         # Check clusters in storylines
-        clusters_in_storylines = db.execute(
-            "SELECT COUNT(*) as count FROM storyline_clusters_v2"
-        )[0]["count"]
-        
+        clusters_in_storylines = db.execute("SELECT COUNT(*) as count FROM storyline_clusters_v2")[0]["count"]
+
         return {
             "status": "success",
             "stats": {
@@ -399,15 +394,17 @@ def get_clustering_status():
                 "clustered_articles_24h": clustered_articles,
                 "storylines_24h": storylines,
                 "clusters_in_storylines_total": clusters_in_storylines,
-                "clustering_rate": round(clustered_articles / max(recent_articles, 1) * 100, 1) if recent_articles > 0 else 0
+                "clustering_rate": (
+                    round(clustered_articles / max(recent_articles, 1) * 100, 1) if recent_articles > 0 else 0
+                ),
             },
             "health": {
                 "articles_ingested": recent_articles > 0,
                 "articles_clustered": clustered_articles > 0,
                 "storylines_created": storylines > 0,
                 "clusters_available": clusters_in_storylines > 0,
-                "overall_healthy": storylines > 0 and clusters_in_storylines > 0
-            }
+                "overall_healthy": storylines > 0 and clusters_in_storylines > 0,
+            },
         }
     except Exception as e:
         log.error(f"Failed to get clustering status: {e}")

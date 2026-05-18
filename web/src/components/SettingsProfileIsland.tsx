@@ -58,7 +58,7 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
   const followedTopics = useMemo(() => profile?.followedTopics || [], [profile]);
   const followedSources = useMemo(() => profile?.followedSources || [], [profile]);
   const recentItems = useMemo(() => summarizeRecent(profile), [profile]);
-  
+
   const topFocusTopic = useMemo(() => {
     if (recentItems.length === 0) return null;
     const counts: Record<string, number> = {};
@@ -100,7 +100,7 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
     const field = kind === 'source' ? 'followedSources' : 'followedTopics';
     const currentList = profile[field] || [];
     const newList = [...new Set([...currentList, value])].slice(0, 12);
-    
+
     updateProfile({ [field]: newList });
 
     const tracked = recordSuggestionFollow('settings', kind, value);
@@ -120,8 +120,8 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
             <h2>{isMK ? 'Што Пресек памети на овој уред' : 'Šta Presek pamti na ovom uređaju'}</h2>
           </div>
           <p className="settings-copy">
-            {isMK 
-              ? 'Овие сигнали го обликуваат вашиот „За Вас“ модул, изборот на извештаи и неделната достава уште пред синхронизација.' 
+            {isMK
+              ? 'Овие сигнали го обликуваат вашиот „За Вас“ модул, изборот на извештаи и неделната достава уште пред синхронизација.'
               : 'Ovi signali oblikuju vaš „Za Vas“ modul, izbor izveštaja i nedeljnu dostavu još pre sinhronizacije.'}
           </p>
         </div>
@@ -149,8 +149,8 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
                 </div>
                 <div className="text-right">
                     <p className="text-[10px] font-bold text-muted-foreground leading-tight">
-                        {isMK 
-                          ? 'Врз основа на последното читање.\nГо користиме за „За Вас“.' 
+                        {isMK
+                          ? 'Врз основа на последното читање.\nГо користиме за „За Вас“.'
                           : 'Na osnovu poslednjeg čitanja.\nKoristimo ga za „Za Vas“.'}
                     </p>
                 </div>
@@ -182,8 +182,8 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
             </div>
           ) : (
             <p className="settings-empty">
-                {isMK 
-                  ? 'Сè уште немате следени теми. Следете тема од страната за теми за да добиете персонализирана достава и рангирање.' 
+                {isMK
+                  ? 'Сè уште немате следени теми. Следете тема од страната за теми за да добиете персонализирана достава и рангирање.'
                   : 'Još uvek nemate praćene teme. Pratite temu sa strane za teme da biste dobili personalizovanu dostavu i rangiranje.'}
             </p>
           )}
@@ -212,8 +212,8 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
             </div>
           ) : (
             <p className="settings-empty">
-                {isMK 
-                  ? 'Сè уште немате следени извори. Следете го водечкиот извор од страницата на кластерот за да добивате ажурирања специфични за изворот.' 
+                {isMK
+                  ? 'Сè уште немате следени извори. Следете го водечкиот извор од страницата на кластерот за да добивате ажурирања специфични за изворот.'
                   : 'Još uvek nemate praćene izvore. Pratite vodeći izvor sa stranice klastera da biste dobijali ažuriranja specifična za izvor.'}
             </p>
           )}
@@ -244,8 +244,8 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
             </div>
           ) : (
             <p className="settings-empty">
-                {isMK 
-                  ? 'Кога ќе прочитате уште неколку кластери, овде ќе се појават теми кои има смисла да ги следите.' 
+                {isMK
+                  ? 'Кога ќе прочитате уште неколку кластери, овде ќе се појават теми кои има смисла да ги следите.'
                   : 'Kad pročitate još nekoliko klastera, ovde će se pojaviti teme koje ima smisla da pratite.'}
             </p>
           )}
@@ -274,8 +274,8 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
             </div>
           ) : (
             <p className="settings-empty">
-                {isMK 
-                  ? 'Кога ќе се појават извори што се повторуваат во вашето читање, овде ќе добиете брзи предлози за следење.' 
+                {isMK
+                  ? 'Кога ќе се појават извори што се повторуваат во вашето читање, овде ќе добиете брзи предлози за следење.'
                   : 'Kad se pojave izvori koji se ponavljaju u vašem čitanju, ovde ćete dobiti brze predloge za praćenje.'}
             </p>
           )}
@@ -304,8 +304,8 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
           </div>
         ) : (
           <p className="settings-empty">
-              {isMK 
-                ? 'Отворете неколку кластери и оваа страница ќе почне да објаснува што ја придвижува вашата персонализација и достава.' 
+              {isMK
+                ? 'Отворете неколку кластери и оваа страница ќе почне да објаснува што ја придвижува вашата персонализација и достава.'
                 : 'Otvorite nekoliko klastera i ova stranica će početi da objašnjava šta pokreće vašu personalizaciju i dostavu.'}
           </p>
         )}

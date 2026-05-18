@@ -105,7 +105,7 @@ export function deShout(text: string): string {
     // If text doesn't have many lowercase letters, it's probably shouting
     const lowerCount = (text.match(/\p{Ll}/gu) || []).length;
     const totalAlpha = (text.match(/\p{L}/gu) || []).length;
-    
+
     if (totalAlpha > 5 && lowerCount < totalAlpha * 0.2) {
         const lower = text.toLowerCase();
         return lower.charAt(0).toUpperCase() + lower.slice(1);
@@ -120,9 +120,9 @@ export function deShout(text: string): string {
 export function cleanAndDecode(text: any): string {
     if (!text) return '';
     if (typeof text !== 'string') text = String(text);
-    
+
     let cleaned = decodeHtmlEntities(text);
-    
+
     // 1. Strip scraping artifacts from the end or middle
     // Handles variants like: Read More », Read More, [&#8230;], Procitaj povece, etc.
     const artifacts = [
@@ -134,7 +134,7 @@ export function cleanAndDecode(text: any): string {
         /\s*&#8230;\s*$/g,        // Trailing ellipsis entity
         /\s*…\s*$/g               // Trailing actual ellipsis
     ];
-    
+
     artifacts.forEach(regex => {
         cleaned = cleaned.replace(regex, '');
     });
@@ -165,10 +165,10 @@ export function extractCleanSummaryText(input: any): string {
             trimmed.includes('"summary":')
         ) {
             try {
-                const decoded = (trimmed.includes('&quot;') || trimmed.includes('&lt;')) 
-                    ? cleanAndDecode(trimmed) 
+                const decoded = (trimmed.includes('&quot;') || trimmed.includes('&lt;'))
+                    ? cleanAndDecode(trimmed)
                     : trimmed;
-                
+
                 if (decoded.startsWith('{')) {
                     const parsed = JSON.parse(decoded);
                     if (parsed?.summary) {
@@ -199,32 +199,32 @@ export function extractCleanSummaryText(input: any): string {
 
     // Enhanced markdown cleanup - strip common markdown syntax that shouldn't be rendered as HTML
     let cleaned = cleanAndDecode(text);
-    
+
     // Remove markdown bold/italic syntax but preserve the content
     cleaned = cleaned.replace(/\*\*(.*?)\*\*/g, '$1'); // **bold**
     cleaned = cleaned.replace(/__(.*?)__/g, '$1');       // __bold__
     cleaned = cleaned.replace(/\*(.*?)\*/g, '$1');     // *italic*
     cleaned = cleaned.replace(/_(.*?)_/g, '$1');        // _italic_
-    
+
     // Remove markdown links but keep the link text
     cleaned = cleaned.replace(/\\[(.*?)\\]\\(.*?\\)/g, '$1');
-    
+
     // Remove markdown headers
     cleaned = cleaned.replace(/^#+\s+/gm, '');
-    
+
     // Remove markdown code blocks
     cleaned = cleaned.replace(/`{1,3}(.*?)`{1,3}/g, '$1');
-    
+
     // Remove markdown horizontal rules
     cleaned = cleaned.replace(/^[-*_]{3,}\s*$/gm, '');
-    
+
     // Remove markdown blockquotes
     cleaned = cleaned.replace(/^>\s+/gm, '');
-    
+
     // Remove markdown list markers
     cleaned = cleaned.replace(/^\s*[-*+]\s+/gm, '');
     cleaned = cleaned.replace(/^\s*\d+\.\s+/gm, '');
-    
+
     return cleaned.trim();
 }
 
@@ -289,25 +289,25 @@ export function highlightScores(text: string): string {
 
     // Normalize ALL CAPS to Sentence Case (editorial polish)
     const normalized = deShout(text);
-    
+
     // Pattern for N:N or N-N (with optional parentheses)
     return normalized.replace(/\(?\b(\d+[:\-]\d+)\b\)?/g, (match, score) => {
         const parts = score.split(/[:\-]/);
         if (parts.length === 2) {
             const h = parseInt(parts[0], 10);
             const m = parseInt(parts[1], 10);
-            
+
             // 1. If it's a ":" separator and looks like an hour (>12), it's probably time
             if (score.includes(':') && h > 12) return match;
-            
+
             // 2. If it's a "-" separator and looks like a year-range (e.g. 2024-2025), it's not a score
             if (score.includes('-') && h > 1900 && m > 1900) return match;
-            
+
             // 3. Scores like 15:00 can be basketball, but in most cases it's time
             // Let's assume scores are relatively small or if it's football/handball
             // If it's exactly 15:00, 20:00 etc it's very likely time.
             if (score.includes(':') && (h >= 10 && m === 0)) return match;
-            
+
             return `<span class="font-bold text-red-600 dark:text-red-400">${match}</span>`;
         }
         return match;
@@ -320,13 +320,13 @@ export function highlightScores(text: string): string {
 export function getEditionStr(dateInput: any): string {
     const date = new Date(dateInput);
     if (isNaN(date.getTime())) return '';
-    
+
     const hour = Number(new Intl.DateTimeFormat('en-US', {
         hour: 'numeric',
         hour12: false,
         timeZone: 'Europe/Skopje',
     }).format(date));
-    
+
     if (hour >= 5 && hour < 12) return 'edition.morning';
     if (hour >= 12 && hour < 18) return 'edition.afternoon';
     return 'edition.evening';
@@ -338,7 +338,7 @@ export function getEditionStr(dateInput: any): string {
 export function getDesignCardContext(cluster: any) {
     const topic = (cluster.topics?.[0] || cluster.articles?.[0]?.topic || '').toLowerCase();
     const category = (cluster.articles?.[0]?.category || '').toLowerCase();
-    
+
     if (topic.includes('kultura') || category.includes('kultura') || topic.includes('umetnost')) {
         return { labelKey: 'card.culture', icon: 'palette', subKey: 'card.culture_desc' };
     }
@@ -354,7 +354,7 @@ export function getDesignCardContext(cluster: any) {
     if (topic.includes('tehnologija') || category.includes('tehnologija') || topic.includes('nauka')) {
         return { labelKey: 'card.tech', icon: 'cpu', subKey: 'card.tech_desc' };
     }
-    
+
     return { labelKey: 'card.general', icon: 'newspaper', subKey: 'card.general_desc' };
 }
 
@@ -363,7 +363,7 @@ export function getDesignCardContext(cluster: any) {
  */
 export function parseFootnotes(text: string): string {
     if (!text) return '';
-    
+
     let processed = text;
 
     // 1. Convert raw numbers at the end of words/sentences into brackets

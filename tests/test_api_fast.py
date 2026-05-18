@@ -2,8 +2,9 @@ import asyncio
 import os
 import sys
 import types
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
 
 # --- Robust Global FastAPI Mocks ---
 
@@ -91,11 +92,7 @@ class _FakeResponse:
         raise KeyError(key)
 
     def get(self, key, default=None):
-        return (
-            self.content.get(key, default)
-            if isinstance(self.content, dict)
-            else default
-        )
+        return self.content.get(key, default) if isinstance(self.content, dict) else default
 
 
 class _FakeJSONResponse(_FakeResponse):
@@ -169,9 +166,7 @@ def _get_fake_fastapi_modules():
 
 @pytest.fixture(scope="module", autouse=True)
 def _install_fake_fastapi_modules():
-    original_modules = {
-        name: sys.modules.get(name) for name in _get_fake_fastapi_modules()
-    }
+    original_modules = {name: sys.modules.get(name) for name in _get_fake_fastapi_modules()}
     sys.modules.update(_get_fake_fastapi_modules())
     for name in [
         "api_fast",
@@ -304,13 +299,8 @@ def test_client_ip_only_trusts_configured_proxies(mock_all):
 def test_rate_limited_paths_include_public_ai_endpoints(mock_all):
     import routes.common as common
 
-    assert (
-        common._is_rate_limited_path("/api/intelligence/cluster/abc123/research")
-        is True
-    )
-    assert (
-        common._is_rate_limited_path("/api/intelligence/cluster/abc123/analyst") is True
-    )
+    assert common._is_rate_limited_path("/api/intelligence/cluster/abc123/research") is True
+    assert common._is_rate_limited_path("/api/intelligence/cluster/abc123/analyst") is True
     assert common._is_rate_limited_path("/api/profile/sync/personalized-news") is True
 
 
@@ -318,11 +308,7 @@ def test_profile_sync_rejects_weak_token_headers(mock_all):
     import routes.profile as profile
 
     with pytest.raises(_FakeHTTPException) as exc:
-        asyncio.run(
-            profile.get_profile_sync(
-                _FakeRequest(headers={"x-sync-token": "short-token"})
-            )
-        )
+        asyncio.run(profile.get_profile_sync(_FakeRequest(headers={"x-sync-token": "short-token"})))
     assert exc.value.status_code == 400
 
 
@@ -330,11 +316,7 @@ def test_profile_sync_rejects_invalid_body_token(mock_all):
     import routes.profile as profile
 
     with pytest.raises(_FakeHTTPException) as exc:
-        asyncio.run(
-            profile.save_profile_sync(
-                _FakeRequest(payload={"token": "bad token with spaces", "profile": {}})
-            )
-        )
+        asyncio.run(profile.save_profile_sync(_FakeRequest(payload={"token": "bad token with spaces", "profile": {}})))
     assert exc.value.status_code == 400
 
 
@@ -346,9 +328,7 @@ def test_fastapi_public_health_omits_internal_connection_details(mock_all):
             "routes.system._probe_database",
             return_value={"ok": True, "article_count": 8},
         ),
-        patch(
-            "routes.system._probe_redis", return_value={"ok": False, "url": "secret"}
-        ),
+        patch("routes.system._probe_redis", return_value={"ok": False, "url": "secret"}),
     ):
         data = asyncio.run(system_routes.health(_FakeRequest()))
     assert "url" not in data["redis"]
@@ -370,9 +350,7 @@ def test_global_pulse_uses_common_intelligence_summary_builder(mock_all):
     async def async_execute_side_effect(query, params=None, fetch=True):
         if "date_trunc" in query and "t" in query and "ORDER BY t" in query:
             return [{"t": "2026-04-22T10:00:00Z", "n": 3}]
-        if "GROUP BY a.category" in query or (
-            "GROUP BY category" in query and "ORDER BY n DESC" in query
-        ):
+        if "GROUP BY a.category" in query or ("GROUP BY category" in query and "ORDER BY n DESC" in query):
             return [{"category": "Srbija", "n": 12}]
         if "FROM cluster_summaries s" in query and "AVG(CAST(s.sentiment" in query:
             return [
@@ -420,9 +398,7 @@ def test_global_pulse_uses_common_intelligence_summary_builder(mock_all):
 
 
 def test_fastapi_only_registers_prefixed_routers(mock_all):
-    content = open(
-        os.path.join(os.path.dirname(__file__), "..", "api_fast.py"), encoding="utf-8"
-    ).read()
+    content = open(os.path.join(os.path.dirname(__file__), "..", "api_fast.py"), encoding="utf-8").read()
     assert 'app.include_router(news.router, prefix="/api")' in content
     assert 'app.include_router(home.router, prefix="/api")' in content
     assert "app.include_router(news.router)\n" not in content
@@ -717,9 +693,7 @@ def test_home_route_composes_named_slots(mock_all):
         ),
         patch(
             "routes.home.get_top_entities",
-            new=AsyncMock(
-                return_value=[{"name": "vlada", "total_mentions": 7, "type": "ORG"}]
-            ),
+            new=AsyncMock(return_value=[{"name": "vlada", "total_mentions": 7, "type": "ORG"}]),
         ),
         patch(
             "routes.home.get_stats_summary",
@@ -928,10 +902,7 @@ def test_news_topic_response_filters_mixed_cluster_articles(mock_all):
                     "created_at": "2026-04-22T19:55:00Z",
                 },
             ]
-        if (
-            "SELECT cluster_id, representative_image, dominant_color FROM cluster_metadata"
-            in query
-        ):
+        if "SELECT cluster_id, representative_image, dominant_color FROM cluster_metadata" in query:
             return [
                 {
                     "cluster_id": "mixed",
@@ -956,9 +927,7 @@ def test_news_topic_response_filters_mixed_cluster_articles(mock_all):
 
     assert data["status"] == "success"
     assert len(data["clusters"]) == 1
-    assert [article["topic"] for article in data["clusters"][0]["articles"]] == [
-        "Sport"
-    ]
+    assert [article["topic"] for article in data["clusters"][0]["articles"]] == ["Sport"]
     assert data["clusters"][0]["articles"][0]["source"] == "SportSport"
 
 
@@ -1004,10 +973,7 @@ def test_news_entity_response_merges_metadata_and_article_matches(mock_all):
                     "ingested_at": "2026-04-27T12:01:00Z",
                 },
             ]
-        if (
-            "SELECT cluster_id, representative_image, dominant_color FROM cluster_metadata"
-            in query
-        ):
+        if "SELECT cluster_id, representative_image, dominant_color FROM cluster_metadata" in query:
             return [
                 {
                     "cluster_id": "fresh-text-match",
@@ -1073,10 +1039,7 @@ def test_news_category_response_filters_mixed_cluster_articles(mock_all):
                     "created_at": "2026-04-22T19:55:00Z",
                 },
             ]
-        if (
-            "SELECT cluster_id, representative_image, dominant_color FROM cluster_metadata"
-            in query
-        ):
+        if "SELECT cluster_id, representative_image, dominant_color FROM cluster_metadata" in query:
             return [
                 {
                     "cluster_id": "mixed-geo",
@@ -1101,9 +1064,7 @@ def test_news_category_response_filters_mixed_cluster_articles(mock_all):
 
     assert data["status"] == "success"
     assert len(data["clusters"]) == 1
-    assert [article["category"] for article in data["clusters"][0]["articles"]] == [
-        "Evropa"
-    ]
+    assert [article["category"] for article in data["clusters"][0]["articles"]] == ["Evropa"]
     assert data["clusters"][0]["articles"][0]["source"] == "Foreign"
 
 
@@ -1134,9 +1095,7 @@ def test_news_editorial_signals_classify_story_state(mock_all):
         },
     ]
 
-    signals = news._compute_editorial_signals(
-        arts, cluster_score=2.5, homepage_score=2.0
-    )
+    signals = news._compute_editorial_signals(arts, cluster_score=2.5, homepage_score=2.0)
 
     assert signals["story_state"] in {"developing", "confirmed", "stale"}
     assert signals["live_now_fit"] in (True, False)
@@ -1168,9 +1127,7 @@ def test_fastapi_proxy_ignores_unsafe_db_local_image_path(mock_all):
         patch("routes.system.generate_local_placeholder", return_value="<svg/>"),
         patch("routes.system._resolve_public_ips", side_effect=ValueError("blocked")),
     ):
-        response = asyncio.run(
-            system_routes.proxy_image("https://example.com/image.jpg", None)
-        )
+        response = asyncio.run(system_routes.proxy_image("https://example.com/image.jpg", None))
 
     assert response.media_type == "image/svg+xml"
     assert response.headers["X-Proxy-Fallback"] == "security_block"
@@ -1187,9 +1144,7 @@ def test_fastapi_serves_get_cluster_share_card(mock_all):
     import routes.system as system_routes
 
     mock_all["db"].execute_one.side_effect = [{"title": "T"}, {"summary": "S"}]
-    mock_all["db"].execute.return_value = [
-        {"title": "T1", "source": "S1", "category": "C1"}
-    ]
+    mock_all["db"].execute.return_value = [{"title": "T1", "source": "S1", "category": "C1"}]
 
     with (
         patch("PIL.Image.new"),
@@ -1223,9 +1178,7 @@ def test_fastapi_get_cluster_share_card_blocks_unresolved_remote_backgrounds(moc
     fake_client = MagicMock()
 
     with (
-        patch(
-            "routes.system._resolve_public_ips", side_effect=ValueError("Blocked URL")
-        ),
+        patch("routes.system._resolve_public_ips", side_effect=ValueError("Blocked URL")),
         patch("httpx.Client", return_value=fake_client),
         patch("PIL.Image.new", return_value=fake_image),
         patch("PIL.ImageDraw.Draw"),
@@ -1262,7 +1215,7 @@ def test_fastapi_historical_events_formats_pgvector_parameter(mock_all):
 
 
 def test_request_size_middleware_rejects_large_content_length():
-    from routes.security import RequestSizeMiddleware, MAX_REQUEST_BODY_SIZE
+    from routes.security import MAX_REQUEST_BODY_SIZE, RequestSizeMiddleware
 
     request = types.SimpleNamespace(
         headers={"content-length": str(MAX_REQUEST_BODY_SIZE + 1)},
@@ -1282,10 +1235,7 @@ def test_stats_summary_includes_intelligence_payload(mock_all):
     def execute_one_side_effect(query, *args, **kwargs):
         if "category IN" in query and ("is_global" in query or "Svet" in query):
             return {"count": 18}
-        if (
-            "COUNT(*) FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '1 hour'"
-            in query
-        ):
+        if "COUNT(*) FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '1 hour'" in query:
             return {"count": 12}
         if "COUNT(*) FROM sources WHERE is_active = TRUE" in query:
             return {"count": 40}
@@ -1336,21 +1286,14 @@ def test_global_pulse_uses_ingestion_aware_window_and_filters_blank_categories(
     import routes.intelligence as intelligence
 
     async def execute_one_side_effect(query, params=None):
-        if (
-            "SELECT COUNT(*) FROM articles" in query
-            and "INTERVAL '24 hours'" in query
-            and "category IN" not in query
-        ):
+        if "SELECT COUNT(*) FROM articles" in query and "INTERVAL '24 hours'" in query and "category IN" not in query:
             return {"count": 12}
         raise AssertionError(f"Unexpected query: {query}")
 
     async def execute_side_effect(query, params=None, fetch=True):
         if "date_trunc" in query and "COALESCE" in query:
             return [{"t": "2026-04-22T10:00:00Z", "n": 3}]
-        if (
-            "FROM articles a" in query
-            and "GROUP BY a.category ORDER BY n DESC" in query
-        ):
+        if "FROM articles a" in query and "GROUP BY a.category ORDER BY n DESC" in query:
             assert "category IS NOT NULL" in query
             assert "category != ''" in query
             return [{"category": "Srbija", "n": 12}]
@@ -1407,10 +1350,7 @@ def test_navigation_counts_use_article_level_classifications(mock_all):
             return []
         if "SELECT category, topic, COUNT(DISTINCT cluster_id) as n" in query:
             assert "FROM articles" in query
-            assert (
-                "COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '24 hours'"
-                in query
-            )
+            assert "COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '24 hours'" in query
             return [
                 {"category": "Evropa", "topic": "Sport", "n": 3},
                 {"category": "Srbija", "topic": "Politika", "n": 4},
@@ -1432,9 +1372,7 @@ def test_navigation_counts_use_article_level_classifications(mock_all):
     news_items = data["sections"][1]["items"]
     assert next(item for item in geography if item["label"] == "Evropa")["count"] == 3
     assert next(item for item in news_items if item["label"] == "Sport")["count"] == 3
-    assert (
-        next(item for item in news_items if item["label"] == "Politika")["count"] == 4
-    )
+    assert next(item for item in news_items if item["label"] == "Politika")["count"] == 4
 
 
 def test_editorial_signals_prefer_ingested_at_for_freshness(mock_all):
@@ -1459,9 +1397,7 @@ def test_editorial_signals_prefer_ingested_at_for_freshness(mock_all):
         },
     ]
 
-    signals = news._compute_editorial_signals(
-        arts, cluster_score=2.5, homepage_score=2.0
-    )
+    signals = news._compute_editorial_signals(arts, cluster_score=2.5, homepage_score=2.0)
 
     assert signals["story_state"] in {"breaking", "confirmed", "developing", "stale"}
     assert signals["live_now_fit"] in (True, False)

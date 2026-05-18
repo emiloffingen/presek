@@ -1,7 +1,9 @@
 """
 Test the proxy endpoint to ensure it handles valid and invalid URLs correctly.
 """
+
 from fastapi.testclient import TestClient
+
 from core.api_fast import app
 
 client = TestClient(app)

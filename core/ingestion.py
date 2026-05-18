@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-import re
-import html
-import datetime
 import asyncio
-import random
-import feedparser
+import datetime
+import html
 import logging
+import random
+import re
 from collections import defaultdict
-from typing import List, Dict, Any, Tuple
+from typing import Any, Dict, List, Tuple
 from urllib.parse import parse_qsl, urlencode, urljoin, urlsplit, urlunsplit
+
+import feedparser
 
 try:
     import httpx
@@ -21,21 +22,16 @@ try:
 except ModuleNotFoundError:
     cloudscraper = None
 
-import core.clustering as clustering
-from nlp.categories import (
-    detect_category,
-    detect_subcategory,
-    normalize_headline,
-    detect_topic,
-)
-from core.database import db_manager as db
-from core.config import CLUSTER_LOOKBACK, HARDCODED_FEED_CATEGORIES, JUNK_KEYWORDS
-from core.embeddings import generate_embeddings_batch
-from core.health import record_source_fetch, get_source_statuses
-from core.language import is_cyrillic_south_slavic
-from core.api_helpers import is_safe_url
-
 from prometheus_client import Counter
+
+import core.clustering as clustering
+from core.api_helpers import is_safe_url
+from core.config import CLUSTER_LOOKBACK, HARDCODED_FEED_CATEGORIES, JUNK_KEYWORDS
+from core.database import db_manager as db
+from core.embeddings import generate_embeddings_batch
+from core.health import get_source_statuses, record_source_fetch
+from core.language import is_cyrillic_south_slavic
+from nlp.categories import detect_category, detect_subcategory, detect_topic, normalize_headline
 
 log = logging.getLogger("presek")
 
@@ -55,12 +51,8 @@ _PROBLEMATIC_FEEDS = {
 }
 
 # --- Prometheus Metrics ---
-INGESTION_TOTAL = Counter(
-    "presek_ingestion_total", "Total articles fetched by source", ["source"]
-)
-INGESTION_ACCEPTED = Counter(
-    "presek_ingestion_accepted_total", "Total articles accepted by source", ["source"]
-)
+INGESTION_TOTAL = Counter("presek_ingestion_total", "Total articles fetched by source", ["source"])
+INGESTION_ACCEPTED = Counter("presek_ingestion_accepted_total", "Total articles accepted by source", ["source"])
 INGESTION_ERRORS = Counter(
     "presek_ingestion_errors_total",
     "Total errors during ingestion",
@@ -105,23 +97,17 @@ def _fetch_with_cloudscraper(url: str, timeout: int = 30) -> bytes:
     """Fetch URL content using cloudscraper to bypass Cloudflare protection."""
     if cloudscraper is None:
         raise ImportError("cloudscraper is not installed")
-    scraper = cloudscraper.create_scraper(
-        browser={
-            'browser': 'chrome',
-            'platform': 'windows',
-            'mobile': False
-        }
-    )
+    scraper = cloudscraper.create_scraper(browser={"browser": "chrome", "platform": "windows", "mobile": False})
     try:
         # Add common headers to mimic real browser
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1',
-            'Cache-Control': 'max-age=0',
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1",
+            "Cache-Control": "max-age=0",
         }
         resp = scraper.get(url, timeout=timeout, headers=headers)
         resp.raise_for_status()
@@ -198,9 +184,7 @@ def is_junk(title: str, desc: str) -> bool:
     except (ImportError, TypeError, ValueError, KeyError) as e:
         log.warning(f"[ingestion] Quality classifier configuration or data error: {e}")
     except Exception as e:
-        log.error(
-            f"[ingestion] Unexpected error in quality classifier: {e}", exc_info=True
-        )
+        log.error(f"[ingestion] Unexpected error in quality classifier: {e}", exc_info=True)
 
     return False
 
@@ -259,9 +243,7 @@ def normalize_feed_link(link: str) -> str:
     try:
         parts = urlsplit(link.strip())
         query_items = [
-            (k, v)
-            for k, v in parse_qsl(parts.query, keep_blank_values=True)
-            if k.lower() not in _TRACKING_PARAMS
+            (k, v) for k, v in parse_qsl(parts.query, keep_blank_values=True) if k.lower() not in _TRACKING_PARAMS
         ]
         normalized_path = parts.path.rstrip("/") or "/"
         return urlunsplit(
@@ -277,9 +259,7 @@ def normalize_feed_link(link: str) -> str:
         log.debug(f"[ingestion] URL normalization failed: {e}")
         return link.strip()
     except Exception as e:
-        log.error(
-            f"[ingestion] Unexpected error in URL normalization: {e}", exc_info=True
-        )
+        log.error(f"[ingestion] Unexpected error in URL normalization: {e}", exc_info=True)
         return link.strip()
 
 
@@ -305,12 +285,8 @@ def normalize_candidate_title(title: str) -> str:
     if not title:
         return ""
     text = normalize_headline(re.sub(r"<[^>]+>", " ", title))
-    text = re.sub(
-        r"^\[(live|update|breaking|video|photo)\]\s*", "", text, flags=re.IGNORECASE
-    )
-    text = re.sub(
-        r"^(live|update|updated|breaking)\s*[:\-]\s*", "", text, flags=re.IGNORECASE
-    )
+    text = re.sub(r"^\[(live|update|breaking|video|photo)\]\s*", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"^(live|update|updated|breaking)\s*[:\-]\s*", "", text, flags=re.IGNORECASE)
     text = re.sub(
         r"\s*[\-–—|]\s*(live updates?|updated|video|photo|gallery)\s*$",
         "",
@@ -331,11 +307,7 @@ def parse_entry_timestamp(entry, fallback_now: datetime.datetime) -> datetime.da
     Extract a sane publication timestamp from an RSS entry.
     Falls back to the current cycle time when the feed timestamp is missing or implausible.
     """
-    parsed_value = (
-        entry.get("published_parsed")
-        or entry.get("updated_parsed")
-        or entry.get("created_parsed")
-    )
+    parsed_value = entry.get("published_parsed") or entry.get("updated_parsed") or entry.get("created_parsed")
     if parsed_value:
         try:
             published_at = datetime.datetime(*parsed_value[:6])
@@ -358,12 +330,8 @@ def extract_image_url(entry):
         except (TypeError, ValueError):
             return 0
 
-    def _image_url_score(
-        url: str, mime_type: str, width: int, height: int, source_rank: float
-    ) -> float:
-        if not url or not re.match(
-            r"^https?://", str(url).strip(), flags=re.IGNORECASE
-        ):
+    def _image_url_score(url: str, mime_type: str, width: int, height: int, source_rank: float) -> float:
+        if not url or not re.match(r"^https?://", str(url).strip(), flags=re.IGNORECASE):
             return -100.0
 
         parsed = urlsplit(str(url).strip())
@@ -373,9 +341,7 @@ def extract_image_url(entry):
         mime = str(mime_type or "").lower()
 
         score = source_rank
-        if "image/" in mime or path.endswith(
-            (".jpg", ".jpeg", ".png", ".webp", ".avif")
-        ):
+        if "image/" in mime or path.endswith((".jpg", ".jpeg", ".png", ".webp", ".avif")):
             score += 4.0
         elif "image" in mime:
             score += 3.0
@@ -408,27 +374,22 @@ def extract_image_url(entry):
                 "favicon",
                 "pixel",
                 "small",
-                "ytimg",      # YouTube thumbnail indicator
+                "ytimg",  # YouTube thumbnail indicator
                 "video_thumb",
                 "play_button",
                 "player",
-                "tiktok",     # General TikTok related image
+                "tiktok",  # General TikTok related image
             )
         ):
             score -= 6.0
-        if any(
-            pattern in combined
-            for pattern in ("hero", "lead", "main", "large", "full", "original")
-        ):
+        if any(pattern in combined for pattern in ("hero", "lead", "main", "large", "full", "original")):
             score += 1.5
 
         return score
 
     candidates = []
 
-    for item in (
-        getattr(entry, "media_content", None) or entry.get("media_content", []) or []
-    ):
+    for item in getattr(entry, "media_content", None) or entry.get("media_content", []) or []:
         candidates.append(
             {
                 "url": item.get("url") or item.get("href"),
@@ -467,22 +428,14 @@ def extract_image_url(entry):
     # Extract <img> from summary/content HTML (many WP sites embed images this way)
     if not candidates:
         html_sources = []
-        for content_block in (
-            getattr(entry, "content", None) or entry.get("content", []) or []
-        ):
+        for content_block in getattr(entry, "content", None) or entry.get("content", []) or []:
             html_sources.append(content_block.get("value", ""))
-        html_sources.append(
-            getattr(entry, "summary", None) or entry.get("summary", "") or ""
-        )
-        html_sources.append(
-            getattr(entry, "description", None) or entry.get("description", "") or ""
-        )
+        html_sources.append(getattr(entry, "summary", None) or entry.get("summary", "") or "")
+        html_sources.append(getattr(entry, "description", None) or entry.get("description", "") or "")
 
         seen_urls = set()
         for html_source in html_sources:
-            for img_match in re.finditer(
-                r'<img[^>]+src=["\']([^"\']+)["\']', str(html_source)
-            ):
+            for img_match in re.finditer(r'<img[^>]+src=["\']([^"\']+)["\']', str(html_source)):
                 img_url = img_match.group(1).strip()
                 if img_url in seen_urls or not re.match(r"^https?://", img_url):
                     continue
@@ -525,24 +478,15 @@ async def fetch_og_image(client: httpx.AsyncClient, url: str) -> str | None:
     max_retries = 2
     for attempt in range(max_retries):
         try:
-            async with client.stream(
-                "GET", url, timeout=10.0, follow_redirects=True
-            ) as resp:
+            async with client.stream("GET", url, timeout=10.0, follow_redirects=True) as resp:
                 # Handle Cloudflare and other 403s
-                if (
-                    resp.status_code == 403
-                    and str(resp.headers.get("cf-mitigated", "")).lower() == "challenge"
-                ):
+                if resp.status_code == 403 and str(resp.headers.get("cf-mitigated", "")).lower() == "challenge":
                     raise RuntimeError(f"Cloudflare challenge blocked og:image: {url}")
 
                 resp.raise_for_status()
 
                 content_type = str(resp.headers.get("content-type", "")).lower()
-                if (
-                    content_type
-                    and "html" not in content_type
-                    and "xml" not in content_type
-                ):
+                if content_type and "html" not in content_type and "xml" not in content_type:
                     return None
 
                 head_bytes = bytearray()
@@ -559,9 +503,7 @@ async def fetch_og_image(client: httpx.AsyncClient, url: str) -> str | None:
                     # Check if we have enough to find the tag early
                     if b"og:image" in head_bytes:
                         try:
-                            temp_text = head_bytes.decode(
-                                resp.encoding or "utf-8", errors="ignore"
-                            )
+                            temp_text = head_bytes.decode(resp.encoding or "utf-8", errors="ignore")
                             if re.search(
                                 r"<meta[^>]+property=[\"']og:image[\"'][^>]+content=[\"']([^\"']+)[\"']",
                                 temp_text,
@@ -621,9 +563,7 @@ async def fetch_og_image(client: httpx.AsyncClient, url: str) -> str | None:
     return None
 
 
-async def fill_missing_og_images(
-    client: httpx.AsyncClient, candidates: List[Dict[str, Any]]
-) -> int:
+async def fill_missing_og_images(client: httpx.AsyncClient, candidates: List[Dict[str, Any]]) -> int:
     """Backfill missing article images using og:image with bounded concurrency."""
     no_image = []
     skipped_domains = 0
@@ -637,9 +577,7 @@ async def fill_missing_og_images(
     if not no_image:
         return 0
     if skipped_domains:
-        log.info(
-            f"[ingest] Skipping og:image fetch for {skipped_domains} articles on bot-protected domains"
-        )
+        log.info(f"[ingest] Skipping og:image fetch for {skipped_domains} articles on bot-protected domains")
 
     log.info(f"[ingest] Fetching og:image for {len(no_image)} articles without images")
     semaphore = asyncio.Semaphore(_OG_IMAGE_CONCURRENCY)
@@ -659,9 +597,7 @@ async def fill_missing_og_images(
     return filled
 
 
-async def fetch_feed_async(
-    client: httpx.AsyncClient, source: Dict[str, Any]
-) -> Tuple[str, List[Any], str | None]:
+async def fetch_feed_async(client: httpx.AsyncClient, source: Dict[str, Any]) -> Tuple[str, List[Any], str | None]:
     """Asynchronously fetch and parse a single RSS feed with retry logic."""
     name = source["name"]
     url = source["url"]
@@ -683,8 +619,7 @@ async def fetch_feed_async(
 
             # Handle Cloudflare challenge
             is_cf_challenge = (
-                resp.status_code == 403
-                and str(resp.headers.get("cf-mitigated", "")).lower() == "challenge"
+                resp.status_code == 403 and str(resp.headers.get("cf-mitigated", "")).lower() == "challenge"
             )
 
             # For known problematic feeds, log and continue
@@ -703,9 +638,7 @@ async def fetch_feed_async(
                     log.debug(f"[ingest] {name}: got 403, trying cloudscraper (attempt {attempt + 1})")
                     loop = asyncio.get_event_loop()
                     try:
-                        content = await loop.run_in_executor(
-                            None, _fetch_with_cloudscraper, url, timeout
-                        )
+                        content = await loop.run_in_executor(None, _fetch_with_cloudscraper, url, timeout)
                         feed = feedparser.parse(content)
                         entries = feed.entries[:limit]
                         log.debug(f"[ingest] {name}: fetched {len(entries)} articles via cloudscraper")
@@ -747,10 +680,10 @@ async def fetch_feed_async(
             error_msg = str(e)
             # Detect if this might be a new problematic feed
             if attempt == 0 and (
-                "cloudflare" in error_msg.lower() or
-                "403" in error_msg or
-                "forbidden" in error_msg.lower() or
-                "connection" in error_msg.lower()
+                "cloudflare" in error_msg.lower()
+                or "403" in error_msg
+                or "forbidden" in error_msg.lower()
+                or "connection" in error_msg.lower()
             ):
                 log.warning(f"[ingest] {name} potential new problematic feed: {error_msg}")
                 # Add to problematic feeds tracking (in-memory only for this session)
@@ -767,14 +700,14 @@ def get_active_sources():
     """Fetches all active sources from the database."""
     rows = db.execute(
         """
-        SELECT 
-            fs.name, 
-            fs.url, 
-            s.country, 
-            COALESCE(fs.category, s.category) as category, 
-            s.credibility, 
-            s.source_limit, 
-            s.pause_mode, 
+        SELECT
+            fs.name,
+            fs.url,
+            s.country,
+            COALESCE(fs.category, s.category) as category,
+            s.credibility,
+            s.source_limit,
+            s.pause_mode,
             s.pause_reason
         FROM feed_sources fs
         JOIN sources s ON fs.name = s.name
@@ -793,13 +726,13 @@ def get_ingestion_health():
     """Returns overall ingestion system health metrics."""
     total_sources = len(get_active_sources())
     problematic_count = len(_PROBLEMATIC_FEEDS)
-    
+
     return {
-        'total_sources': total_sources,
-        'problematic_feeds': problematic_count,
-        'healthy_feeds': total_sources - problematic_count,
-        'problematic_feed_percentage': round((problematic_count / total_sources * 100) if total_sources > 0 else 0, 1),
-        'known_issues': list(_PROBLEMATIC_FEEDS.items())
+        "total_sources": total_sources,
+        "problematic_feeds": problematic_count,
+        "healthy_feeds": total_sources - problematic_count,
+        "problematic_feed_percentage": round((problematic_count / total_sources * 100) if total_sources > 0 else 0, 1),
+        "known_issues": list(_PROBLEMATIC_FEEDS.items()),
     }
 
 
@@ -843,10 +776,7 @@ async def ingest_all_sources_async():
     # 2. Parallel Fetching with httpx
     candidates = []
     errors = []
-    source_stats = {
-        source["name"]: {"status": "ok", "fetched": 0, "accepted": 0, "error": ""}
-        for source in sources
-    }
+    source_stats = {source["name"]: {"status": "ok", "fetched": 0, "accepted": 0, "error": ""} for source in sources}
     seen_links = set()
     seen_titles_by_source = defaultdict(set)
     cycle_now = datetime.datetime.now()
@@ -878,9 +808,7 @@ async def ingest_all_sources_async():
             lock_key = f"lock:ingest:source:{source_name}"
             try:
                 if not redis_client.set(lock_key, "1", nx=True, ex=300):
-                    log.info(
-                        f"Source {source_name} is being processed by another worker, skipping."
-                    )
+                    log.info(f"Source {source_name} is being processed by another worker, skipping.")
                     continue
             except Exception as e:
                 log.debug(f"Redis lock error for source {source_name}: {e}")
@@ -892,9 +820,7 @@ async def ingest_all_sources_async():
                 if err:
                     source_stats[source_name]["status"] = "error"
                     source_stats[source_name]["error"] = str(err)
-                    INGESTION_ERRORS.labels(
-                        source=source_name, error_type=type(err).__name__
-                    ).inc()
+                    INGESTION_ERRORS.labels(source=source_name, error_type=type(err).__name__).inc()
                     errors.append((source_name, err))
                     continue
 
@@ -904,12 +830,7 @@ async def ingest_all_sources_async():
                     link = normalize_feed_link(e.get("link", ""))
                     title_key = normalize_candidate_title(title)
 
-                    if (
-                        not title
-                        or not link
-                        or link in known_links
-                        or link in seen_links
-                    ):
+                    if not title or not link or link in known_links or link in seen_links:
                         continue
 
                     raw_desc = e.get("summary", "") or e.get("description", "")
@@ -924,10 +845,7 @@ async def ingest_all_sources_async():
                     if not title_key:
                         continue
 
-                    if (
-                        title_key in recent_by_source[source_name]
-                        or title_key in seen_titles_by_source[source_name]
-                    ):
+                    if title_key in recent_by_source[source_name] or title_key in seen_titles_by_source[source_name]:
                         continue
 
                     published_at = parse_entry_timestamp(e, fallback_now=cycle_now)
@@ -955,19 +873,12 @@ async def ingest_all_sources_async():
                 except Exception as e:
                     log.debug(f"Redis unlock error for source {source_name}: {e}")
 
-            if (
-                source_stats[source_name]["accepted"] == 0
-                and source_stats[source_name]["fetched"] > 0
-            ):
+            if source_stats[source_name]["accepted"] == 0 and source_stats[source_name]["fetched"] > 0:
                 source_stats[source_name]["status"] = "warning"
 
         await fill_missing_og_images(client, candidates)
 
-    successful_sources = [
-        name
-        for name, stats in source_stats.items()
-        if stats["fetched"] > 0 and not stats["error"]
-    ]
+    successful_sources = [name for name, stats in source_stats.items() if stats["fetched"] > 0 and not stats["error"]]
     if successful_sources:
         db_manager.execute(
             "UPDATE sources SET last_fetched = NOW() WHERE name = ANY(%s)",
@@ -992,9 +903,7 @@ async def ingest_all_sources_async():
     # Generate embeddings in one batch
     texts_to_embed = [f"{c['title']} {c['desc'][:200]}" for c in candidates]
     loop = asyncio.get_event_loop()
-    embeddings = await loop.run_in_executor(
-        None, generate_embeddings_batch, texts_to_embed
-    )
+    embeddings = await loop.run_in_executor(None, generate_embeddings_batch, texts_to_embed)
 
     # 4. Clustering & DB Preparation
     # (Rest of the logic remains mostly same but wrapped in async orchestration)
@@ -1007,11 +916,7 @@ async def ingest_all_sources_async():
         )
         recent_articles = [dict(r) for r in cur.fetchall()]
 
-        from core.clustering import (
-            VECTOR_THRESHOLD,
-            _cluster_title_overlap,
-            _extract_title_entities,
-        )
+        from core.clustering import VECTOR_THRESHOLD, _cluster_title_overlap, _extract_title_entities
 
         prepared_rows = []
         batch_clusters = []
@@ -1030,9 +935,7 @@ async def ingest_all_sources_async():
                     )
                     or c["category"]
                 )
-                subcategory = (
-                    detect_subcategory(c["title"], description=c["desc"]) or ""
-                )
+                subcategory = detect_subcategory(c["title"], description=c["desc"]) or ""
                 topic = detect_topic(c["title"], description=c["desc"])
 
                 is_intl = c["country"] != "RS"
@@ -1058,9 +961,7 @@ async def ingest_all_sources_async():
                                 if incoming_entities and batch_entities
                                 else set()
                             )
-                            phrase_overlap = _cluster_title_overlap(
-                                display_title, bc["title"]
-                            )
+                            phrase_overlap = _cluster_title_overlap(display_title, bc["title"])
                             if not shared_entities and phrase_overlap < 0.34:
                                 continue
                             cluster_id = bc["cid"]
@@ -1077,9 +978,7 @@ async def ingest_all_sources_async():
                         topic=topic,
                     )
 
-                clean_desc = (
-                    re.sub(r"<[^>]+>", "", c["desc"]).strip() if c["desc"] else ""
-                )
+                clean_desc = re.sub(r"<[^>]+>", "", c["desc"]).strip() if c["desc"] else ""
                 clean_desc = clean_rss_footer(clean_desc)[:500]
                 created_at = c.get("created_at") or cycle_now
                 ingested_at = c.get("ingested_at") or cycle_now
@@ -1139,15 +1038,15 @@ async def ingest_all_sources_async():
             cur = conn.cursor()
             sql = """
                 INSERT INTO articles (
-                    title, original_title, link, source, category, subcategory, 
-                    cluster_id, created_at, ingested_at, image_url, description, original_description, 
+                    title, original_title, link, source, category, subcategory,
+                    cluster_id, created_at, ingested_at, image_url, description, original_description,
                     country, is_translated, embedding, topic, is_fact_check
                 ) VALUES (
                     %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                 ) ON CONFLICT (link) DO NOTHING RETURNING id
             """
             cur.executemany(sql, prepared_rows, returning=True)
-            
+
             inserted_ids = []
             while True:
                 batch_results = cur.fetchall()
@@ -1157,7 +1056,7 @@ async def ingest_all_sources_async():
                             inserted_ids.append(r["id"])
                 if not cur.nextset():
                     break
-            
+
             new_count = len(inserted_ids)
             conn.commit()
 
@@ -1193,9 +1092,9 @@ async def ingest_all_sources_async():
 
                 from tasks.ingestion_task import crawl_article_task
                 from tasks.intelligence import (
-                    summarize_articles_batch_task,
-                    standardize_article_styles_batch_task,
                     detect_global_stories_batch_task,
+                    standardize_article_styles_batch_task,
+                    summarize_articles_batch_task,
                 )
 
                 # 1. Batch Crawl
@@ -1206,11 +1105,7 @@ async def ingest_all_sources_async():
                 detect_global_stories_batch_task.delay(inserted_ids)
 
                 # 3. Batch Style Normalization
-                credibility_ids = [
-                    art["id"]
-                    for art in inserted_data
-                    if art.get("credibility", 1.5) < 1.2
-                ]
+                credibility_ids = [art["id"] for art in inserted_data if art.get("credibility", 1.5) < 1.2]
                 if credibility_ids:
                     standardize_article_styles_batch_task.delay(credibility_ids)
 
@@ -1226,11 +1121,7 @@ async def ingest_all_sources_async():
             accepted=stats["accepted"],
             error=stats["error"],
         )
-        updated_status = (
-            get_source_statuses().get(source_name)
-            or current_statuses.get(source_name)
-            or {}
-        )
+        updated_status = get_source_statuses().get(source_name) or current_statuses.get(source_name) or {}
         if updated_status.get("should_auto_pause"):
             db.execute(
                 """UPDATE sources

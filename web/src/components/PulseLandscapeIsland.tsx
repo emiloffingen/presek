@@ -16,7 +16,7 @@ interface PulseRow {
 
 const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, lang?: string, onSourceClick?: (s: string) => void }> = ({ data, loading = false, lang = 'sr', onSourceClick }) => {
     const isMK = lang === 'mk';
-    
+
     if (loading) {
         return (
             <div className="mb-12 border border-border rounded-[1.25rem] bg-card p-6 md:p-8 animate-pulse overflow-hidden">
@@ -37,18 +37,18 @@ const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, lang
     // Filter to top sources for clarity in the map
     const plotData = useMemo(() => {
         if (!data || data.length === 0) return [];
-        
+
         const topData = data.slice(0, 35);
-        
+
         // Find ranges for normalization to spread points across quadrants
         const objs = topData.map(d => d.avg_objectivity);
         const sens = topData.map(d => d.avg_sensationalism);
-        
+
         const minObj = Math.min(...objs);
         const maxObj = Math.max(...objs);
         const minSens = Math.min(...sens);
         const maxSens = Math.max(...sens);
-        
+
         const rangeObj = (maxObj - minObj) || 1;
         const rangeSens = (maxSens - minSens) || 1;
 
@@ -57,7 +57,7 @@ const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, lang
             const yNorm = 15 + ((item.avg_sensationalism - minSens) / rangeSens) * 70;
 
             // Deterministic jitter based on index to prevent overlap
-            const jitterX = ((idx % 3) - 1) * 2.2; 
+            const jitterX = ((idx % 3) - 1) * 2.2;
             const jitterY = (((idx * 7) % 3) - 1) * 2.2;
 
             return {
@@ -100,12 +100,12 @@ const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, lang
                 {/* Plot Area */}
                 <div className="relative w-full h-full">
                     {plotData.map((source) => (
-                        <div 
+                        <div
                             key={source.source}
                             onClick={() => onSourceClick?.(source.source)}
                             className="absolute group transition-all hover:z-50 cursor-pointer"
-                            style={{ 
-                                left: `${source.x}%`, 
+                            style={{
+                                left: `${source.x}%`,
                                 bottom: `${source.y}%`,
                                 transform: 'translate(-50%, 50%)'
                             }}
@@ -132,7 +132,7 @@ const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, lang
                             {/* Tooltip */}
                             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 bg-foreground text-background p-4 rounded-xl shadow-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-all z-50 scale-95 group-hover:scale-100">
                                 <div className="flex items-center justify-between border-b border-background/20 pb-2 mb-3">
-                                    <p className="text-[12px] font-black uppercase tracking-widest flex items-center gap-2 text-background">
+                                    <p className="text-[12px] font-black uppercase tracking-widest flex items-center gap-[var(--grid-gap)] text-background">
                                         {source.source}
                                         {source.trust_label === (isMK ? 'Висока доверба' : 'Visoko poverenje') && <ShieldCheck size={11} className="text-blue-400" />}
                                     </p>
@@ -166,12 +166,12 @@ const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, lang
                 </div>
             </div>
 
-            <div className="mt-12 flex flex-wrap gap-8 items-center justify-center md:justify-start border-t border-border pt-6">
-                <div className="flex items-center gap-2">
+            <div className="mt-12 flex flex-wrap gap-[var(--grid-gap)] items-center justify-center md:justify-start border-t border-border pt-6">
+                <div className="flex items-center gap-[var(--grid-gap)]">
                     <div className="w-3.5 h-3.5 rounded-full bg-nyt-accent shadow-sm border border-blue-300"></div>
                     <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{isMK ? 'Висока доверба' : 'Visoko poverenje'}</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-[var(--grid-gap)]">
                     <div className="w-2.5 h-2.5 rounded-full bg-background border-2 border-border shadow-sm"></div>
                     <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{isMK ? 'следни извори' : 'sledeći izvori'}</span>
                 </div>

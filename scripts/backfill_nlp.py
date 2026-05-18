@@ -3,11 +3,7 @@ import logging
 from core.database import db_manager as db
 from core.embeddings import generate_embedding
 from tasks import synthesize_cluster_task
-from tasks.intelligence import (
-    _build_cluster_synthesis_content,
-    _load_cluster_articles_for_synthesis,
-)
-
+from tasks.intelligence import _build_cluster_synthesis_content, _load_cluster_articles_for_synthesis
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("backfill")
@@ -64,9 +60,7 @@ def backfill_cluster_summaries():
         article_rows = _load_cluster_articles_for_synthesis(cluster_id)
         content = _build_cluster_synthesis_content(article_rows)
         if not content:
-            log.warning(
-                f"Skipping cluster {cluster_id}: no synthesis content available"
-            )
+            log.warning(f"Skipping cluster {cluster_id}: no synthesis content available")
             continue
         synthesize_cluster_task.delay(cluster_id, content)
 

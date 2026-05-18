@@ -1,14 +1,14 @@
-import logging
 import asyncio
+import logging
 import random
-from typing import Dict, Any
+from typing import Any, Dict
 from urllib.parse import urljoin
 
 import httpx
 import trafilatura
 from playwright.async_api import async_playwright
 
-from utils import _resolve_public_ips, _peer_ip
+from utils import _peer_ip, _resolve_public_ips
 
 log = logging.getLogger("presek.crawler")
 
@@ -51,15 +51,11 @@ class CrawlerService:
         try:
             headers = self._get_headers()
             safe_ips = _resolve_public_ips(url)
-            async with httpx.AsyncClient(
-                headers=headers, follow_redirects=True, timeout=15.0
-            ) as client:
+            async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=15.0) as client:
                 async with client.stream("GET", url) as resp:
                     p_ip = _peer_ip(resp)
                     if not p_ip or p_ip not in safe_ips:
-                        log.warning(
-                            f"SSRF blocked: Peer IP {p_ip} not in safe list for {url}"
-                        )
+                        log.warning(f"SSRF blocked: Peer IP {p_ip} not in safe list for {url}")
                         return await self._extract_headless(url)
 
                     await resp.aread()
@@ -79,9 +75,7 @@ class CrawlerService:
 
         # If trafilatura failed to get meaningful content, it might be a JS-rendered site
         if not extracted.get("content") or len(extracted.get("content", "")) < 200:
-            log.info(
-                f"Low quality content from fast path for {url}, falling back to headless"
-            )
+            log.info(f"Low quality content from fast path for {url}, falling back to headless")
             return await self._extract_headless(url)
 
         result.update(extracted)
@@ -168,8 +162,7 @@ class CrawlerService:
                     {
                         "title": metadata.get("title") or extracted.get("title"),
                         "content": extracted.get("content"),
-                        "image_url": metadata.get("ogImage")
-                        or extracted.get("image_url"),
+                        "image_url": metadata.get("ogImage") or extracted.get("image_url"),
                         "author": metadata.get("author") or extracted.get("author"),
                         "published_at": extracted.get("published_at"),
                     }
@@ -196,13 +189,9 @@ class CrawlerService:
             async with async_playwright() as p:
                 browser = await p.chromium.launch(headless=True)
                 try:
-                    page = await browser.new_page(
-                        user_agent=self._get_headers()["User-Agent"]
-                    )
+                    page = await browser.new_page(user_agent=self._get_headers()["User-Agent"])
                     # Increase timeout for potential redirects
-                    await page.goto(
-                        homepage_url, wait_until="networkidle", timeout=30000
-                    )
+                    await page.goto(homepage_url, wait_until="networkidle", timeout=30000)
 
                     # Look for <link rel="alternate" type="application/rss+xml" ...>
                     found = await page.evaluate(

@@ -84,7 +84,7 @@ export default function OnboardingIsland({ compact = false, lang = 'sr' }: { com
     const field = kind === 'source' ? 'followedSources' : 'followedTopics';
     const currentList = profile[field] || [];
     const newList = [...new Set([...currentList, value])].slice(0, 12);
-    
+
     updateProfile({ [field]: newList });
 
     const tracked = recordSuggestionFollow('onboarding', kind, value);
@@ -106,8 +106,8 @@ export default function OnboardingIsland({ compact = false, lang = 'sr' }: { com
       </div>
 
       <p className="onboarding-copy">
-        {isMK 
-          ? 'Изберете неколку теми или извори за да ја персонализирате вашата содржина. Овие сигнали му помагаат на модулот „За Вас“, дневниот брифинг и извештаите да бидат попрецизни.' 
+        {isMK
+          ? 'Изберете неколку теми или извори за да ја персонализирате вашата содржина. Овие сигнали му помагаат на модулот „За Вас“, дневниот брифинг и извештаите да бидат попрецизни.'
           : 'Izaberite nekoliko tema ili izvora da biste personalizovali vaš sadržaj. Ovi signali pomažu modulu „Za Vas“, dnevni brifing i izveštaji da budu precizniji.'}
       </p>
 

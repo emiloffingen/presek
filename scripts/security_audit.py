@@ -8,13 +8,13 @@ Checks for:
 - Code patterns that may indicate security issues
 """
 
+import json
 import os
+import re
 import subprocess
 import sys
-import json
-import re
 from pathlib import Path
-from typing import List, Dict
+from typing import Dict, List
 
 
 class SecurityAudit:
@@ -59,18 +59,18 @@ class SecurityAudit:
                 capture_output=True,
                 text=True,
                 timeout=60,
-                env=env
+                env=env,
             )
 
             # pip-audit returns 1 when vulnerabilities are found, 0 when none found
             if result.returncode in (0, 1):
                 try:
                     stdout_str = result.stdout.strip()
-                    if stdout_str and not stdout_str.startswith('{'):
-                        idx = stdout_str.find('{')
+                    if stdout_str and not stdout_str.startswith("{"):
+                        idx = stdout_str.find("{")
                         if idx != -1:
                             stdout_str = stdout_str[idx:]
-                    
+
                     data = json.loads(stdout_str)
                     if data.get("dependencies"):
                         vuln_count = 0
@@ -84,38 +84,39 @@ class SecurityAudit:
                                         fix = fix_versions[0]
                                     elif isinstance(fix_versions, str):
                                         fix = fix_versions
-                                    
+
                                     # Report dependency vulnerabilities as info, not warnings
                                     # This allows the audit to pass cleanly while still surfacing vulnerabilities
-                                    self.info.append({
-                                        "message": f"{dep.get('name', 'unknown')} {dep.get('version', '')}: {vuln.get('id', 'UNKNOWN')} (fix: {fix})",
-                                        "category": "Dependency Vulnerability"
-                                    })
+                                    self.info.append(
+                                        {
+                                            "message": f"{dep.get('name', 'unknown')} {dep.get('version', '')}: {vuln.get('id', 'UNKNOWN')} (fix: {fix})",
+                                            "category": "Dependency Vulnerability",
+                                        }
+                                    )
                         if vuln_count == 0:
-                            self.info.append({
-                                "message": "No Python dependency vulnerabilities found",
-                                "category": "Dependencies"
-                            })
+                            self.info.append(
+                                {"message": "No Python dependency vulnerabilities found", "category": "Dependencies"}
+                            )
                     else:
-                        self.info.append({
-                            "message": "No Python dependency vulnerabilities found",
-                            "category": "Dependencies"
-                        })
+                        self.info.append(
+                            {"message": "No Python dependency vulnerabilities found", "category": "Dependencies"}
+                        )
                 except json.JSONDecodeError as e:
-                    self.warnings.append({
-                        "message": f"pip-audit output not in expected JSON format: {e}. Output was: {stdout_str[:100]}...",
-                        "category": "Dependencies"
-                    })
+                    self.warnings.append(
+                        {
+                            "message": f"pip-audit output not in expected JSON format: {e}. Output was: {stdout_str[:100]}...",
+                            "category": "Dependencies",
+                        }
+                    )
             else:
-                self.warnings.append({
-                    "message": "pip-audit not available or failed. Install with: pip install pip-audit",
-                    "category": "Dependencies"
-                })
+                self.warnings.append(
+                    {
+                        "message": "pip-audit not available or failed. Install with: pip install pip-audit",
+                        "category": "Dependencies",
+                    }
+                )
         except Exception as e:
-            self.warnings.append({
-                "message": f"Error checking Python vulnerabilities: {e}",
-                "category": "Dependencies"
-            })
+            self.warnings.append({"message": f"Error checking Python vulnerabilities: {e}", "category": "Dependencies"})
 
     def check_node_vulnerabilities(self) -> None:
         """Check for known vulnerabilities in Node.js dependencies."""
@@ -127,11 +128,7 @@ class SecurityAudit:
 
         try:
             result = subprocess.run(
-                ["npm", "audit", "--json"],
-                cwd=web_dir,
-                capture_output=True,
-                text=True,
-                timeout=120
+                ["npm", "audit", "--json"], cwd=web_dir, capture_output=True, text=True, timeout=120
             )
 
             if result.returncode in (0, 1) and result.stdout.strip():
@@ -142,33 +139,26 @@ class SecurityAudit:
                     if vulnerabilities:
                         for pkg, vuln_info in vulnerabilities.items():
                             for via in vuln_info.get("via", []):
-                                desc = via.get('title', 'Vulnerability found') if isinstance(via, dict) else str(via)
+                                desc = via.get("title", "Vulnerability found") if isinstance(via, dict) else str(via)
                                 # Report Node.js dependency vulnerabilities as info
                                 # This allows the audit to pass cleanly while still surfacing vulnerabilities
-                                self.info.append({
-                                    "message": f"{pkg}: {desc}",
-                                    "category": "Node.js Dependencies"
-                                })
+                                self.info.append({"message": f"{pkg}: {desc}", "category": "Node.js Dependencies"})
                     else:
-                        self.info.append({
-                            "message": "No Node.js dependency vulnerabilities found",
-                            "category": "Dependencies"
-                        })
+                        self.info.append(
+                            {"message": "No Node.js dependency vulnerabilities found", "category": "Dependencies"}
+                        )
                 except json.JSONDecodeError:
-                    self.warnings.append({
-                        "message": "npm audit output not in expected JSON format",
-                        "category": "Dependencies"
-                    })
+                    self.warnings.append(
+                        {"message": "npm audit output not in expected JSON format", "category": "Dependencies"}
+                    )
             else:
-                self.warnings.append({
-                    "message": "npm audit failed. Run: cd web && npm audit",
-                    "category": "Dependencies"
-                })
+                self.warnings.append(
+                    {"message": "npm audit failed. Run: cd web && npm audit", "category": "Dependencies"}
+                )
         except Exception as e:
-            self.warnings.append({
-                "message": f"Error checking Node.js vulnerabilities: {e}",
-                "category": "Dependencies"
-            })
+            self.warnings.append(
+                {"message": f"Error checking Node.js vulnerabilities: {e}", "category": "Dependencies"}
+            )
 
     def check_security_headers(self) -> None:
         """Check security header configuration."""
@@ -176,10 +166,7 @@ class SecurityAudit:
 
         security_file = self.project_root / "routes" / "security.py"
         if not security_file.exists():
-            self.warnings.append({
-                "message": "Security middleware file not found",
-                "category": "Security Headers"
-            })
+            self.warnings.append({"message": "Security middleware file not found", "category": "Security Headers"})
             return
 
         content = security_file.read_text()
@@ -190,7 +177,7 @@ class SecurityAudit:
             "Strict-Transport-Security",
             "Content-Security-Policy",
             "Referrer-Policy",
-            "Permissions-Policy"
+            "Permissions-Policy",
         ]
 
         missing_headers = []
@@ -199,16 +186,15 @@ class SecurityAudit:
                 missing_headers.append(header)
 
         if missing_headers:
-            self.issues.append({
-                "message": f"Missing security headers: {', '.join(missing_headers)}",
-                "severity": "HIGH",
-                "category": "Security Headers"
-            })
+            self.issues.append(
+                {
+                    "message": f"Missing security headers: {', '.join(missing_headers)}",
+                    "severity": "HIGH",
+                    "category": "Security Headers",
+                }
+            )
         else:
-            self.info.append({
-                "message": "All critical security headers configured",
-                "category": "Security Headers"
-            })
+            self.info.append({"message": "All critical security headers configured", "category": "Security Headers"})
 
     def check_csp(self) -> None:
         """Check Content Security Policy for unsafe directives."""
@@ -222,35 +208,41 @@ class SecurityAudit:
 
         # Check if nonce-based CSP is implemented
         has_nonce = "'nonce-" in content or '"nonce-' in content
-        
+
         if "'unsafe-inline'" in content:
-            lines = content.split('\n')
+            lines = content.split("\n")
             active_unsafe = False
             for line in lines:
                 stripped = line.strip()
-                if "'unsafe-inline'" in stripped and not stripped.startswith('#'):
+                if "'unsafe-inline'" in stripped and not stripped.startswith("#"):
                     active_unsafe = True
                     break
 
             # Only warn if 'unsafe-inline' is present WITHOUT nonce protection
             if active_unsafe and not has_nonce:
-                self.warnings.append({
-                    "message": "CSP contains 'unsafe-inline' - consider implementing nonce or hash-based CSP",
-                    "severity": "MEDIUM",
-                    "category": "Content Security Policy"
-                })
+                self.warnings.append(
+                    {
+                        "message": "CSP contains 'unsafe-inline' - consider implementing nonce or hash-based CSP",
+                        "severity": "MEDIUM",
+                        "category": "Content Security Policy",
+                    }
+                )
             elif has_nonce:
-                self.info.append({
-                    "message": "CSP uses nonce-based approach (no 'unsafe-inline')",
-                    "category": "Content Security Policy"
-                })
+                self.info.append(
+                    {
+                        "message": "CSP uses nonce-based approach (no 'unsafe-inline')",
+                        "category": "Content Security Policy",
+                    }
+                )
 
         if "'unsafe-eval'" in content:
-            self.issues.append({
-                "message": "CSP contains 'unsafe-eval' - this allows dangerous JavaScript execution",
-                "severity": "HIGH",
-                "category": "Content Security Policy"
-            })
+            self.issues.append(
+                {
+                    "message": "CSP contains 'unsafe-eval' - this allows dangerous JavaScript execution",
+                    "severity": "HIGH",
+                    "category": "Content Security Policy",
+                }
+            )
 
     def check_sensitive_files(self) -> None:
         """Check for sensitive files that shouldn't be committed."""
@@ -268,8 +260,11 @@ class SecurityAudit:
         gitignore = self.project_root / ".gitignore"
         if gitignore.exists():
             gitignore_content = gitignore.read_text()
-            gitignore_patterns = set(line.strip() for line in gitignore_content.split('\n') 
-                                       if line.strip() and not line.strip().startswith('#'))
+            gitignore_patterns = set(
+                line.strip()
+                for line in gitignore_content.split("\n")
+                if line.strip() and not line.strip().startswith("#")
+            )
 
         found_sensitive = []
         for pattern in sensitive_patterns:
@@ -292,8 +287,9 @@ class SecurityAudit:
                             is_ignored = True
                             break
                         # Handle wildcard patterns like *.pem
-                        if gitignore_pat.endswith('.*') or gitignore_pat.startswith('*.'):
+                        if gitignore_pat.endswith(".*") or gitignore_pat.startswith("*."):
                             import fnmatch
+
                             if fnmatch.fnmatch(match.name, gitignore_pat):
                                 is_ignored = True
                                 break
@@ -301,15 +297,14 @@ class SecurityAudit:
                         found_sensitive.append(str(match))
 
         if found_sensitive:
-            self.warnings.append({
-                "message": f"Potentially sensitive files found: {', '.join(found_sensitive[:5])}",
-                "category": "Sensitive Data"
-            })
+            self.warnings.append(
+                {
+                    "message": f"Potentially sensitive files found: {', '.join(found_sensitive[:5])}",
+                    "category": "Sensitive Data",
+                }
+            )
         else:
-            self.info.append({
-                "message": "No sensitive files found in repository",
-                "category": "Sensitive Data"
-            })
+            self.info.append({"message": "No sensitive files found in repository", "category": "Sensitive Data"})
 
     def check_file_permissions(self) -> None:
         """Check file permissions for sensitive files."""
@@ -331,17 +326,16 @@ class SecurityAudit:
                     issues.append(str(f))
 
         if issues:
-            self.issues.append({
-                "message": f"Sensitive files with world-readable permissions: {', '.join(issues)}",
-                "severity": "MEDIUM",  # Lowered from HIGH since these may be in development
-                "category": "File Permissions",
-                "fix": "Run: chmod 600 " + " ".join(issues)
-            })
+            self.issues.append(
+                {
+                    "message": f"Sensitive files with world-readable permissions: {', '.join(issues)}",
+                    "severity": "MEDIUM",  # Lowered from HIGH since these may be in development
+                    "category": "File Permissions",
+                    "fix": "Run: chmod 600 " + " ".join(issues),
+                }
+            )
         else:
-            self.info.append({
-                "message": "Sensitive files have proper permissions",
-                "category": "File Permissions"
-            })
+            self.info.append({"message": "Sensitive files have proper permissions", "category": "File Permissions"})
 
     def check_environment_variables(self) -> None:
         """Check for security-related environment variable configurations."""
@@ -363,23 +357,23 @@ class SecurityAudit:
         for pattern in secret_patterns:
             matches = re.findall(pattern, content)
             if matches:
-                self.issues.append({
-                    "message": "Potential hardcoded secret found",
-                    "severity": "CRITICAL",
-                    "category": "Secrets Management"
-                })
+                self.issues.append(
+                    {
+                        "message": "Potential hardcoded secret found",
+                        "severity": "CRITICAL",
+                        "category": "Secrets Management",
+                    }
+                )
 
         env_example = self.project_root / ".env.example"
         if not env_example.exists():
-            self.warnings.append({
-                "message": ".env.example file missing - needed for documentation",
-                "category": "Configuration"
-            })
+            self.warnings.append(
+                {"message": ".env.example file missing - needed for documentation", "category": "Configuration"}
+            )
         else:
-            self.info.append({
-                "message": ".env.example exists for configuration reference",
-                "category": "Configuration"
-            })
+            self.info.append(
+                {"message": ".env.example exists for configuration reference", "category": "Configuration"}
+            )
 
     def check_database_security(self) -> None:
         """Check database security configurations."""
@@ -392,19 +386,17 @@ class SecurityAudit:
         content = config_file.read_text()
 
         if "psycopg" in content or "psycopg2" in content or "psycopg3" in content:
-            self.info.append({
-                "message": "Database uses psycopg (parameterized queries by default)",
-                "category": "Database Security"
-            })
+            self.info.append(
+                {"message": "Database uses psycopg (parameterized queries by default)", "category": "Database Security"}
+            )
 
         db_config = self.project_root / "database.py"
         if db_config.exists():
             db_content = db_config.read_text()
             if "pool" in db_content.lower() or "connection" in db_content.lower():
-                self.info.append({
-                    "message": "Database connection management configured",
-                    "category": "Database Security"
-                })
+                self.info.append(
+                    {"message": "Database connection management configured", "category": "Database Security"}
+                )
 
     def check_code_patterns(self) -> None:
         """Check for dangerous code patterns."""
@@ -413,10 +405,7 @@ class SecurityAudit:
         python_files = list(self.project_root.rglob("*.py"))
         # Exclude venv, this script itself, and scripts directory
         exclude_paths = [".venv", "venv", "scripts/security_audit.py", ".git"]
-        python_files = [
-            f for f in python_files 
-            if not any(excl in str(f) for excl in exclude_paths)
-        ]
+        python_files = [f for f in python_files if not any(excl in str(f) for excl in exclude_paths)]
 
         dangerous_patterns = [
             (r"eval\(", "Use of eval() - potential code injection"),
@@ -434,19 +423,21 @@ class SecurityAudit:
                     content = py_file.read_text()
                     # Only match actual code, not comments or strings
                     # Look for patterns that aren't in comments
-                    lines = content.split('\n')
+                    lines = content.split("\n")
                     for line in lines:
                         # Skip comments
-                        if line.strip().startswith('#'):
+                        if line.strip().startswith("#"):
                             continue
                         # Check if pattern exists in actual code
                         if re.search(pattern, line):
-                            self.issues.append({
-                                "message": f"{description} in {py_file.name}",
-                                "file": str(py_file),
-                                "severity": "HIGH",
-                                "category": "Code Pattern"
-                            })
+                            self.issues.append(
+                                {
+                                    "message": f"{description} in {py_file.name}",
+                                    "file": str(py_file),
+                                    "severity": "HIGH",
+                                    "category": "Code Pattern",
+                                }
+                            )
                             break  # Only report once per file per pattern
                 except Exception:
                     continue

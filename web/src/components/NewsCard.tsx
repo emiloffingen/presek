@@ -157,7 +157,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
           </ul>
         )}
 
-        <div className="footer-meta flex items-center gap-3">
+        <div className="footer-meta flex items-center gap-[var(--grid-gap)]">
           <span className="flex items-center gap-1">
             <Clock size={11} className="opacity-70" />
             {getTimeStr(main.ingested_at || main.created_at)}

@@ -1,13 +1,13 @@
 from nlp import (
-    filter_cluster_tags,
+    compare_cluster_sources,
     extract_cluster_tags_locally,
     extract_keyphrases_locally,
+    filter_cluster_tags,
     generate_daily_brief_fallback,
     is_valid_focus_entity,
     rewrite_to_serbian_locally,
-    summarize_locally,
     summarize_article_fallback,
-    compare_cluster_sources,
+    summarize_locally,
     synthesize_cluster_fallback,
 )
 
@@ -109,9 +109,7 @@ class TestClusterComparison:
         assert result["common_line"]
         assert result["difference_points"]
         assert result["open_points"]
-        assert any(
-            "100" in item or "120" in item for item in result["difference_points"]
-        )
+        assert any("100" in item or "120" in item for item in result["difference_points"])
 
     def test_compare_cluster_sources_uses_phrase_based_common_line(self):
         articles = [
@@ -166,14 +164,9 @@ class TestClusterComparison:
 
         result = compare_cluster_sources(articles)
 
-        assert any(
-            "120" in item or "Stopanskata komora" in item
-            for item in result["open_points"]
-        )
+        assert any("120" in item or "Stopanskata komora" in item for item in result["open_points"])
 
-    def test_compare_cluster_sources_reuses_cached_result_for_same_articles(
-        self, monkeypatch
-    ):
+    def test_compare_cluster_sources_reuses_cached_result_for_same_articles(self, monkeypatch):
         import nlp.generation
 
         nlp.generation._comparison_cache.clear()
@@ -184,9 +177,7 @@ class TestClusterComparison:
             calls["count"] += 1
             return original(*args, **kwargs)
 
-        monkeypatch.setattr(
-            nlp.generation, "extract_keyphrases_locally", counting_extract
-        )
+        monkeypatch.setattr(nlp.generation, "extract_keyphrases_locally", counting_extract)
         articles = [
             {
                 "source": "MIA",
@@ -319,9 +310,7 @@ class TestArticleSummaryFallback:
 
 class TestLocalSerbianRewrite:
     def test_rewrites_common_english_news_copy(self):
-        result = rewrite_to_serbian_locally(
-            "Prime Minister announced new measures on Tuesday according to officials"
-        )
+        result = rewrite_to_serbian_locally("Prime Minister announced new measures on Tuesday according to officials")
 
         lowered = result.lower()
         assert "premijer" in lowered
@@ -414,9 +403,7 @@ class TestLocalBriefingFallback:
 
         result = generate_daily_brief_fallback(clusters)
 
-        assert (
-            "Sobraniskata rasprava za interpelacijata vleguva vo zavrsna faza" in result
-        )
+        assert "Sobraniskata rasprava za interpelacijata vleguva vo zavrsna faza" in result
         assert "Opst partiski stav bez mnogu detali" not in result
 
     def test_generate_daily_brief_fallback_strips_agency_boilerplate(self):
@@ -463,10 +450,7 @@ class TestLocalBriefingFallback:
 
         result = generate_daily_brief_fallback(clusters)
 
-        assert (
-            "Zemjotres od 4,8 stepeni e pocuvstvuvan vo povece gradovi niz Srbija"
-            in result.splitlines()[2]
-        )
+        assert "Zemjotres od 4,8 stepeni e pocuvstvuvan vo povece gradovi niz Srbija" in result.splitlines()[2]
         assert "SDSM: Vo ocajna potraga po dobra vest" not in result.splitlines()[2]
 
     def test_generate_daily_brief_fallback_keeps_required_sections_without_editorial_points(

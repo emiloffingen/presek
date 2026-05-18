@@ -1,7 +1,8 @@
 """Tests for database.py — connection wrapper and utility functions."""
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 
 class TestDBWrapper:
@@ -118,7 +119,7 @@ class TestDatabaseManagerExecute:
 
 class TestGetDb:
     def test_get_db_returns_wrapper(self):
-        from core.database import get_db, DBWrapper
+        from core.database import DBWrapper, get_db
 
         with patch("database.db_manager") as mock_manager:
             mock_manager.get_conn.return_value = MagicMock()
@@ -137,8 +138,9 @@ class TestGetDb:
 
 class TestSchemaMigrations:
     def test_init_schema_calls_alembic_upgrade(self):
-        from core.database import DatabaseManager
         from unittest.mock import patch
+
+        from core.database import DatabaseManager
 
         manager = DatabaseManager.__new__(DatabaseManager)
 

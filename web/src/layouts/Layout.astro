@@ -28,7 +28,7 @@ const t = useTranslations(lang);
 
 const {
 	title,
-	description = lang === 'sr' 
+	description = lang === 'sr'
         ? "Presek je moderni srpski agregator vesti koji koristi naprednu jezičku obradu (NLP) za grupisanje i sumiranje najvažnijih događaja iz svih medija."
         : "Пресек е модерен македонски агрегатор на вести кој користи напредна јазична обработка (NLP) за групирање и сумирање на најважните настани од сите медиуми.",
 	image = "/img/presek_emblem.png",
@@ -39,14 +39,14 @@ const {
 } = Astro.props;
 
 // Also update the default description for Macedonian site
-const defaultDescription = lang === 'sr' 
+const defaultDescription = lang === 'sr'
     ? "Presek je srpski informativni agregator koji sakuplja vesti iz svih medija, grupiše ih po temi i pokazuje kako različiti izvori izveštavaju o istom događaju."
     : "Пресек е македонски информативен агрегатор кој собира вести од сите медиуми, ги групира по тема и покажува како различни извори известуваат за истиот настан.";
 
 const siteUrl = lang === 'sr' ? "https://presek.live" : "https://presek.mk";
 const siteName = lang === 'sr' ? "PRESEK.live" : "пресек.мк";
-const pageTitle = title.includes("Presek") || title.includes("Пресек") 
-    ? title.replace(/Presek|Пресек/, siteName) 
+const pageTitle = title.includes("Presek") || title.includes("Пресек")
+    ? title.replace(/Presek|Пресек/, siteName)
     : `${title} | ${siteName}`;
 
 function buildCanonicalUrl(pathname: string): string {
@@ -103,7 +103,7 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 		<meta name="twitter:title" content={pageTitle} />
 		<meta name="twitter:description" content={description || defaultDescription} />
 		<meta name="twitter:image" content={imageUrl} />
-		
+
 		<title>{pageTitle}</title>
 
 		<ClientRouter />
@@ -114,13 +114,13 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 
 		<script is:inline>
 			/**
-			 * Immediate theme sync to prevent flicker. 
+			 * Immediate theme sync to prevent flicker.
 			 */
 			function applyTheme() {
 				const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('theme') : null;
                 const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 				const isDark = stored ? stored === 'dark' : (stored === null ? prefersDark : false);
-				
+
 				if (isDark) {
 					document.documentElement.classList.add('dark');
                     document.documentElement.style.colorScheme = 'dark';
@@ -149,7 +149,7 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
         opacity: 0.012;
         background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
     }
-    
+
     .dark .noise-overlay {
         opacity: 0.02;
     }
@@ -210,7 +210,7 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 			initParallax();
 			document.addEventListener('astro:page-load', initParallax);
 		</script>
-        
+
 		<script>
 			// Global Headline Reveal Animation
 			const initHeadlineReveal = () => {
@@ -275,12 +275,12 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 	.dark .site-emblem {
 		filter: invert(1) brightness(1.5);
 	}
-    
+
     /* Ensure serif fonts are applied to all broadsheet text */
     .nyt-serif {
         font-family: var(--font-serif);
     }
-    
+
     .nyt-sans {
         font-family: var(--font-sans);
     }

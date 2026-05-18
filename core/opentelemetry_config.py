@@ -6,10 +6,10 @@ across the Presek application services.
 
 Usage:
     from core.opentelemetry_config import setup_tracing, get_tracer
-    
+
     # At application startup
     setup_tracing(service_name="presek-api")
-    
+
     # In modules
     tracer = get_tracer(__name__)
     with tracer.start_as_current_span("my-operation"):
@@ -18,16 +18,14 @@ Usage:
 
 import os
 from typing import Optional
+
 from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter as HTTPOTLPSpanExporter
+from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
-    OTLPSpanExporter as HTTPOTLPSpanExporter,
-)
 from opentelemetry.trace import Status, StatusCode
-
 
 # Global tracer provider
 _tracer_provider: Optional[TracerProvider] = None
@@ -58,10 +56,7 @@ def setup_tracing(
     # Determine configuration from environment
     env = os.environ.get("ENV", environment)
     endpoint = otlp_endpoint or os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT")
-    insecure = (
-        otlp_insecure
-        or os.environ.get("OTEL_EXPORTER_OTLP_INSECURE", "").lower() == "true"
-    )
+    insecure = otlp_insecure or os.environ.get("OTEL_EXPORTER_OTLP_INSECURE", "").lower() == "true"
 
     # Create resource with service metadata
     resource = Resource.create(
@@ -99,18 +94,14 @@ def setup_tracing(
             # Log but don't fail if OTLP setup fails
             import logging
 
-            logging.getLogger("presek.opentelemetry").warning(
-                f"Failed to configure OTLP exporter: {e}"
-            )
+            logging.getLogger("presek.opentelemetry").warning(f"Failed to configure OTLP exporter: {e}")
 
     # Filter out None processors
     span_processors = [p for p in span_processors if p is not None]
 
     if span_processors:
         _tracer_provider.add_span_processor(
-            BatchSpanProcessor(*span_processors)
-            if len(span_processors) > 1
-            else span_processors[0]
+            BatchSpanProcessor(*span_processors) if len(span_processors) > 1 else span_processors[0]
         )
 
     # Set as global tracer provider

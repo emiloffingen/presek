@@ -12,9 +12,7 @@ def check_failed_tasks():
         if rows:
             log.warning(f"[monitor] Found {len(rows)} task failures in the last hour.")
             for row in rows:
-                log.error(
-                    f"[monitor] Task {row['task_name']} failed at {row['created_at']}: {row['error_message']}"
-                )
+                log.error(f"[monitor] Task {row['task_name']} failed at {row['created_at']}: {row['error_message']}")
         else:
             log.info("[monitor] No task failures detected in the last hour.")
     except Exception as e:

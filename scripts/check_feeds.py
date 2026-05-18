@@ -1,7 +1,9 @@
 import asyncio
 import logging
-import httpx
+
 import feedparser
+import httpx
+
 from core.database import db_manager as db
 
 log = logging.getLogger("presek.check_feeds")
@@ -36,9 +38,7 @@ async def main():
     sources = db.execute("SELECT name, url FROM sources WHERE is_active = TRUE")
     log.info(f"Checking {len(sources)} active feeds...")
 
-    async with httpx.AsyncClient(
-        headers={"User-Agent": "Presek/1.0 (Audit)"}
-    ) as client:
+    async with httpx.AsyncClient(headers={"User-Agent": "Presek/1.0 (Audit)"}) as client:
         # Check in batches of 10 to avoid overwhelming local resources/DNS
         batch_size = 10
         for i in range(0, len(sources), batch_size):

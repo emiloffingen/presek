@@ -1,8 +1,10 @@
 import asyncio
-import json
 import datetime
+import json
 import os
+
 from core.database import db_manager as db
+
 
 async def test():
     try:
@@ -14,16 +16,16 @@ async def test():
         if not row:
             print("No row found")
             return
-            
+
         target_date = row["date"]
         print(f"Target Date: {target_date}")
 
         print("Fetching subjects...")
         subjects = await db.async_execute(
             """
-            SELECT name, total_mentions 
-            FROM knowledge_entities 
-            WHERE type = 'PERSON' AND last_seen >= %s::date - INTERVAL '24 hours' 
+            SELECT name, total_mentions
+            FROM knowledge_entities
+            WHERE type = 'PERSON' AND last_seen >= %s::date - INTERVAL '24 hours'
               AND last_seen <= %s::date + INTERVAL '23 hours 59 minutes'
             ORDER BY total_mentions DESC LIMIT 6
         """,
@@ -33,8 +35,8 @@ async def test():
         print("Fetching locations...")
         locations = await db.async_execute(
             """
-            SELECT name, total_mentions 
-            FROM knowledge_entities 
+            SELECT name, total_mentions
+            FROM knowledge_entities
             WHERE type = 'GPE' AND last_seen >= %s::date - INTERVAL '24 hours'
               AND last_seen <= %s::date + INTERVAL '23 hours 59 minutes'
             ORDER BY total_mentions DESC LIMIT 8
@@ -43,9 +45,7 @@ async def test():
         )
 
         print("Fetching historical...")
-        historical = await db.async_execute(
-            "SELECT date::text as day FROM daily_briefings ORDER BY date DESC LIMIT 14"
-        )
+        historical = await db.async_execute("SELECT date::text as day FROM daily_briefings ORDER BY date DESC LIMIT 14")
 
         print("Fetching lead cluster...")
         # Note: If this fails, it's likely due to missing columns or tables
@@ -66,10 +66,10 @@ async def test():
         print("Fetching stats...")
         stats_res = await db.async_execute_one(
             """
-            SELECT 
+            SELECT
                 COUNT(*) as total_articles,
                 COUNT(DISTINCT source) as total_sources
-            FROM articles 
+            FROM articles
             WHERE created_at >= %s::date AND created_at < %s::date + INTERVAL '1 day'
         """,
             (target_date, target_date),
@@ -88,11 +88,13 @@ async def test():
             "day_stats": stats_res,
         }
         print("Success!")
-        
+
     except Exception as e:
         print(f"FAILED with error: {e}")
         import traceback
+
         traceback.print_exc()
+
 
 if __name__ == "__main__":
     asyncio.run(test())

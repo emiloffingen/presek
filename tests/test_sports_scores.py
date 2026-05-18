@@ -1,9 +1,6 @@
 import pytest
-from nlp.generation import (
-    _extract_sports_scores,
-    _extract_number_tokens,
-    compare_cluster_sources,
-)
+
+from nlp.generation import _extract_number_tokens, _extract_sports_scores, compare_cluster_sources
 
 
 def test_extract_sports_scores():

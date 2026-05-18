@@ -82,8 +82,8 @@ function formatBriefingItem(item: string) {
     <header class="editorial-masthead mb-16 border-t border-foreground pt-4">
         <div class="masthead-top mb-8 flex justify-between items-center">
             <span class="masthead-kicker font-sans text-[10px] font-black uppercase tracking-[0.25em] text-nyt-accent">{t('archive.memory')}</span>
-            <div class="masthead-meta-compact hidden md:flex items-center gap-6 font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
-                <span class="flex items-center gap-2"><CalendarDays size={12} /> {formattedDisplayDate}</span>
+            <div class="masthead-meta-compact hidden md:flex items-center gap-[var(--grid-gap)] font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
+                <span class="flex items-center gap-[var(--grid-gap)]"><CalendarDays size={12} /> {formattedDisplayDate}</span>
                 <span class="w-1 h-1 rounded-full bg-border"></span>
                 <span>{archive.total_clusters} {t('archive.tema')}</span>
                 <span class="w-1 h-1 rounded-full bg-border"></span>
@@ -98,7 +98,7 @@ function formatBriefingItem(item: string) {
                     {t('archive.masthead_desc')}
                 </p>
             </div>
-            <div class="masthead-data-deck grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 border border-border/60 bg-secondary/10 overflow-hidden rounded-sm w-full md:w-auto">
+            <div class="masthead-data-deck grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[var(--grid-gap)] border border-border/60 bg-secondary/10 overflow-hidden rounded-sm w-full md:w-auto">
                 <div class="deck-stat p-6 border-r border-border/60 text-center">
                     <span class="block text-2xl font-black tabular-nums">{archive.total.toLocaleString(isMK ? 'mk-MK' : 'sr-RS')}</span>
                     <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{t('archive.objava')}</span>
@@ -116,7 +116,7 @@ function formatBriefingItem(item: string) {
 
         {briefingItems.length > 0 && (
             <div class="daily-briefing-highlight mb-16 p-8 bg-background border-l-4 border-nyt-accent shadow-editorial">
-                <div class="flex items-center gap-2 mb-6">
+                <div class="flex items-center gap-[var(--grid-gap)] mb-6">
                     <Sparkles size={14} className="text-nyt-accent" />
                     <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent">{t('archive.briefing_kicker')}</span>
                 </div>
@@ -132,8 +132,8 @@ function formatBriefingItem(item: string) {
         )}
 
         <div class="archive-nav-bar sticky top-[72px] z-30 bg-background/80 backdrop-blur-xl border-y border-border py-4 mb-16">
-            <div class="flex flex-col md:flex-row justify-between items-center gap-6">
-                <div class="flex items-center gap-4 flex-wrap">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-[var(--grid-gap)]">
+                <div class="flex items-center gap-[var(--grid-gap)] flex-wrap">
                     <form method="get" class="date-select-form">
                         <div class="relative group">
                             <input
@@ -188,7 +188,7 @@ function formatBriefingItem(item: string) {
 
     <details class="archive-pulse-toggle mb-20 group border border-border rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md">
         <summary class="list-none p-6 bg-secondary/5 cursor-pointer flex justify-between items-center group-open:bg-secondary/10">
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-[var(--grid-gap)]">
                 <div class="p-2 bg-nyt-accent/10 rounded-lg text-nyt-accent">
                     <Activity size={18} />
                 </div>
@@ -197,7 +197,7 @@ function formatBriefingItem(item: string) {
                     <span class="text-xs text-muted-foreground">{isMK ? 'Интензитет на известување и тематски циклуси' : 'Intenzitet izveštavanja i tematski ciklusi'}</span>
                 </div>
             </div>
-            <div class="flex items-center gap-3 font-sans text-[10px] font-black uppercase tracking-widest text-nyt-accent">
+            <div class="flex items-center gap-[var(--grid-gap)] font-sans text-[10px] font-black uppercase tracking-widest text-nyt-accent">
                 <span class="group-open:hidden">{isMK ? 'ОТВОРИ ПРЕГЛЕД' : 'OTVORI PREGLED'} ↓</span>
                 <span class="hidden group-open:inline">{isMK ? 'ЗАТВОРИ ПРЕГЛЕД' : 'ZATVORI PREGLED'} ↑</span>
             </div>
@@ -212,12 +212,12 @@ function formatBriefingItem(item: string) {
         {error && <div class="bg-destructive/10 text-destructive p-4 rounded-sm border border-destructive/20 mb-8 font-black uppercase text-[10px] tracking-widest">{error}</div>}
 
         {q || source || topic ? (
-                <div class="active-filters mb-12 flex items-center gap-4 p-4 bg-nyt-accent/[0.03] border border-nyt-accent/10 rounded-lg">
+                <div class="active-filters mb-12 flex items-center gap-[var(--grid-gap)] p-4 bg-nyt-accent/[0.03] border border-nyt-accent/10 rounded-lg">
                     <span class="font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('archive.active_filter')}</span>
-                    <div class="flex flex-wrap gap-2">
-                        {q && <span class="px-3 py-1 bg-foreground text-background rounded-full font-sans text-[10px] font-black uppercase tracking-widest flex items-center gap-2">🔍 {q} <a href={buildFilterHref('q', '')} class="ml-1 opacity-60 hover:opacity-100">×</a></span>}
-                        {source && <span class="px-3 py-1 bg-foreground text-background rounded-full font-sans text-[10px] font-black uppercase tracking-widest flex items-center gap-2">🏢 {source} <a href={buildFilterHref('source', '')} class="ml-1 opacity-60 hover:opacity-100">×</a></span>}
-                        {topic && <span class="px-3 py-1 bg-foreground text-background rounded-full font-sans text-[10px] font-black uppercase tracking-widest flex items-center gap-2"># {topic} <a href={buildFilterHref('topic', '')} class="ml-1 opacity-60 hover:opacity-100">×</a></span>}
+                    <div class="flex flex-wrap gap-[var(--grid-gap)]">
+                        {q && <span class="px-3 py-1 bg-foreground text-background rounded-full font-sans text-[10px] font-black uppercase tracking-widest flex items-center gap-[var(--grid-gap)]">🔍 {q} <a href={buildFilterHref('q', '')} class="ml-1 opacity-60 hover:opacity-100">×</a></span>}
+                        {source && <span class="px-3 py-1 bg-foreground text-background rounded-full font-sans text-[10px] font-black uppercase tracking-widest flex items-center gap-[var(--grid-gap)]">🏢 {source} <a href={buildFilterHref('source', '')} class="ml-1 opacity-60 hover:opacity-100">×</a></span>}
+                        {topic && <span class="px-3 py-1 bg-foreground text-background rounded-full font-sans text-[10px] font-black uppercase tracking-widest flex items-center gap-[var(--grid-gap)]"># {topic} <a href={buildFilterHref('topic', '')} class="ml-1 opacity-60 hover:opacity-100">×</a></span>}
                     </div>
                     <a href={`/mk/archive?date=${date}`} class="ml-auto font-sans text-[10px] font-black uppercase tracking-widest text-nyt-accent underline decoration-2 underline-offset-4">{t('archive.clear')}</a>
                 </div>
@@ -284,7 +284,7 @@ function formatBriefingItem(item: string) {
                 <div class="flex flex-col gap-1">
                     {archive.top_sources.slice(0, 15).map((item: any) => (
                         <a href={buildFilterHref('source', item.source)} class="group flex items-center justify-between py-2 border-b border-border/40 hover:bg-secondary/20 transition-all px-1">
-                            <span class="font-serif font-bold text-base group-hover:text-nyt-accent transition-colors flex items-center gap-2">
+                            <span class="font-serif font-bold text-base group-hover:text-nyt-accent transition-colors flex items-center gap-[var(--grid-gap)]">
                                 <Building2 size={12} className="opacity-30 group-hover:opacity-100 transition-opacity" />
                                 {item.source}
                             </span>

@@ -1,10 +1,11 @@
-import os
-import logging
 import json
-import time
-import threading
+import logging
+import os
 import re
-from typing import Optional, Dict, Any, List
+import threading
+import time
+from typing import Any, Dict, List, Optional
+
 from llama_cpp import Llama, LlamaGrammar
 
 log = logging.getLogger("presek.analyst")
@@ -54,9 +55,7 @@ class LocalAnalyst:
                 return True
 
             if not os.path.exists(MODEL_PATH):
-                log.warning(
-                    f"Local model not found at {MODEL_PATH}. Deep Local tasks will be skipped."
-                )
+                log.warning(f"Local model not found at {MODEL_PATH}. Deep Local tasks will be skipped.")
                 return False
 
             try:
@@ -89,9 +88,15 @@ class LocalAnalyst:
             prompt = prompt or ""
             system_prompt = system_prompt or ""
             # Enforce literary language
-            if "makedonski" not in system_prompt.lower() and "srpskom" not in system_prompt.lower() and "srpski" not in system_prompt.lower():
+            if (
+                "makedonski" not in system_prompt.lower()
+                and "srpskom" not in system_prompt.lower()
+                and "srpski" not in system_prompt.lower()
+            ):
                 if lang == "sr":
-                    lang_constraint = "Zboruvaj ISKLUCIVO na srpskom jeziku (ekavica). Koristi srpsku gramatiku i vokabular."
+                    lang_constraint = (
+                        "Zboruvaj ISKLUCIVO na srpskom jeziku (ekavica). Koristi srpsku gramatiku i vokabular."
+                    )
                 else:
                     lang_constraint = "Zboruvaj ISKLUCIVO na standarden literaturen makedonski jazik. ZABRANETO e koristenje na bugarski, srpski ili hrvatski zborovi ili formi."
                 system_prompt = f"{lang_constraint} {system_prompt}"

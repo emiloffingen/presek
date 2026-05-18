@@ -19,7 +19,7 @@ jobs:
   backend-test:
     name: Backend Tests
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:16-alpine
@@ -30,7 +30,7 @@ jobs:
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-      
+
       redis:
         image: redis:7-alpine
         ports:
@@ -91,7 +91,7 @@ jobs:
   frontend-test:
     name: Frontend Tests
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -122,7 +122,7 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     needs: [backend-test, frontend-test]
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -169,7 +169,7 @@ jobs:
     name: Load Testing
     runs-on: ubuntu-latest
     needs: build
-    
+
     services:
       postgres:
         image: postgres:16-alpine
@@ -180,7 +180,7 @@ jobs:
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-      
+
       redis:
         image: redis:7-alpine
         ports:
@@ -235,7 +235,7 @@ jobs:
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -292,7 +292,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build, load-test, security-scan]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

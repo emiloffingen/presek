@@ -39,7 +39,7 @@ SYNTHESIS_SYSTEM_PROMPT = (
     '  "tone_analysis": {\n'
     '    "objectivity": 0.85,\n'
     '    "sensationalism": 0.15\n'
-    '  }\n'
+    "  }\n"
     "}\n\n"
     "CRITICAL RULES:\n"
     "1. NO-REPETITION: Information in 'summary' (Briefing) MUST NOT be in 'article' (Synthesis). 'summary' is for quick reading, 'article' is for deep understanding.\n"

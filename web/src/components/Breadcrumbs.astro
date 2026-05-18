@@ -30,16 +30,16 @@ const breadcrumbSchema = {
 ---
 
 <nav class="breadcrumb-container" aria-label="Breadcrumb">
-  <ol class="flex items-center flex-wrap gap-2 text-[11px] font-sans font-bold uppercase tracking-widest text-muted-foreground">
+  <ol class="flex items-center flex-wrap gap-[var(--grid-gap)] text-[11px] font-sans font-bold uppercase tracking-widest text-muted-foreground">
     <li class="flex items-center">
       <a href="/" class="hover:text-nyt-accent transition-colors flex items-center gap-1">
         <Home size={12} />
         <span>Pocetna</span>
       </a>
     </li>
-    
+
     {items.map((item, index) => (
-      <li class="flex items-center gap-2">
+      <li class="flex items-center gap-[var(--grid-gap)]">
         <ChevronRight size={10} className="opacity-40" />
         {item.href ? (
           <a href={item.href} class="hover:text-nyt-accent transition-colors">

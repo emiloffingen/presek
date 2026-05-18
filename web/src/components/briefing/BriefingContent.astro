@@ -16,43 +16,43 @@ const safeBriefing = sanitizeHtml(formattedBriefing);
 <style is:global>
     .briefing-content-container { max-width: 850px; margin: 0 auto; width: 100%; box-sizing: border-box; padding: 0 1.5rem; }
     .briefing-body { font-family: var(--font-nyt-body); font-size: clamp(1.2rem, 2.5vw, 1.45rem); line-height: 1.85; color: var(--foreground); letter-spacing: -0.01em; }
-    .briefing-section-title { 
-        clear: both; 
-        font-family: var(--font-serif); 
-        font-size: clamp(2.5rem, 6vw, 3.8rem); 
-        font-weight: 950; 
-        margin: 6rem 0 2rem; 
-        padding-bottom: 1.5rem; 
-        border-bottom: 6px solid var(--foreground); 
-        letter-spacing: -0.04em; 
+    .briefing-section-title {
+        clear: both;
+        font-family: var(--font-serif);
+        font-size: clamp(2.5rem, 6vw, 3.8rem);
+        font-weight: 950;
+        margin: 6rem 0 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 6px solid var(--foreground);
+        letter-spacing: -0.04em;
         line-height: 0.95;
     }
     .briefing-paragraph { margin-bottom: 2.5rem; text-align: left; position: relative; overflow: hidden; }
     .briefing-paragraph.drop-cap { min-height: 6rem; }
-    .briefing-paragraph.drop-cap::first-letter { 
-        float: left; 
-        font-family: var(--font-serif); 
-        font-size: clamp(5rem, 18vw, 7.5rem); 
-        line-height: 0.72; 
-        margin-top: 0.1em; 
-        margin-right: 0.15em; 
-        padding-top: 0.08em; 
-        padding-left: 4px; 
-        font-weight: 950; 
-        color: var(--foreground); 
+    .briefing-paragraph.drop-cap::first-letter {
+        float: left;
+        font-family: var(--font-serif);
+        font-size: clamp(5rem, 18vw, 7.5rem);
+        line-height: 0.72;
+        margin-top: 0.1em;
+        margin-right: 0.15em;
+        padding-top: 0.08em;
+        padding-left: 4px;
+        font-weight: 950;
+        color: var(--foreground);
     }
-    .briefing-pull-quote { 
-        font-family: var(--font-serif); 
-        font-size: clamp(1.8rem, 4vw, 2.8rem); 
-        font-weight: 900; 
-        font-style: italic; 
-        color: var(--nyt-accent); 
-        border-left: 8px solid var(--nyt-accent); 
-        padding: 2rem 4rem; 
-        margin: 5rem 0; 
-        line-height: 1.15; 
-        letter-spacing: -0.02em; 
-        position: relative; 
+    .briefing-pull-quote {
+        font-family: var(--font-serif);
+        font-size: clamp(1.8rem, 4vw, 2.8rem);
+        font-weight: 900;
+        font-style: italic;
+        color: var(--nyt-accent);
+        border-left: 8px solid var(--nyt-accent);
+        padding: 2rem 4rem;
+        margin: 5rem 0;
+        line-height: 1.15;
+        letter-spacing: -0.02em;
+        position: relative;
         background: color-mix(in srgb, var(--nyt-accent) 4%, transparent);
     }
     .briefing-pull-quote::before { content: "“"; position: absolute; left: 1rem; top: 0; font-size: 8rem; opacity: 0.1; font-family: serif; }
@@ -61,23 +61,23 @@ const safeBriefing = sanitizeHtml(formattedBriefing);
     .briefing-ul { list-style: none; padding: 0; margin: 0 0 4rem; display: flex; flex-direction: column; gap: 1.75rem; }
     .briefing-li { position: relative; padding-left: 2.5rem; font-size: clamp(1.15rem, 2.2vw, 1.45rem); line-height: 1.6; }
     .briefing-li::before { content: "—"; position: absolute; left: 0; color: var(--nyt-accent); font-weight: 950; font-size: 1.8rem; opacity: 0.8; }
-    .briefing-inline-badge { 
-        display: inline-flex; 
-        align-items: center; 
-        background: color-mix(in srgb, var(--nyt-accent) 12%, transparent); 
-        border: 1px solid color-mix(in srgb, var(--nyt-accent) 30%, var(--border)); 
-        color: var(--nyt-accent); 
-        font-family: var(--font-sans); 
-        font-size: 0.55rem; 
-        font-weight: 950; 
-        padding: 0.25rem 0.75rem; 
-        border-radius: 4px; 
-        margin-left: 1rem; 
-        text-decoration: none; 
-        vertical-align: middle; 
-        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); 
-        white-space: nowrap; 
-        letter-spacing: 0.08em; 
+    .briefing-inline-badge {
+        display: inline-flex;
+        align-items: center;
+        background: color-mix(in srgb, var(--nyt-accent) 12%, transparent);
+        border: 1px solid color-mix(in srgb, var(--nyt-accent) 30%, var(--border));
+        color: var(--nyt-accent);
+        font-family: var(--font-sans);
+        font-size: 0.55rem;
+        font-weight: 950;
+        padding: 0.25rem 0.75rem;
+        border-radius: 4px;
+        margin-left: 1rem;
+        text-decoration: none;
+        vertical-align: middle;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        white-space: nowrap;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
     }
     .briefing-inline-badge:hover { background: var(--nyt-accent); color: white; transform: translateY(-2px) scale(1.05); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }

@@ -1,7 +1,9 @@
-from core.database import db_manager as db
 import logging
 
+from core.database import db_manager as db
+
 log = logging.getLogger("presek")
+
 
 def get_source_catalog():
     try:
@@ -10,6 +12,7 @@ def get_source_catalog():
     except Exception as e:
         log.warning(f"Failed to fetch feed sources from DB: {e}")
         return []
+
 
 # For backward compatibility during transition, fetch at runtime when accessed if possible.
 # Some scripts might still expect DEFAULT_SOURCE_CATALOG as a list.

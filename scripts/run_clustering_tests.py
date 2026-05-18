@@ -1,8 +1,8 @@
-import os
-import sys
-import json
-import re
 import datetime
+import json
+import os
+import re
+import sys
 from unittest.mock import MagicMock, patch
 
 # Add parent directory to path
@@ -47,9 +47,7 @@ def test_clustering_suite():
             topic_a = detect_topic(title_a)
 
             # Simulate entities in DB for the existing cluster
-            mock_db.get_cluster_entities.return_value = {
-                cid_a: case_entities or simple_extract_entities(title_a)
-            }
+            mock_db.get_cluster_entities.return_value = {cid_a: case_entities or simple_extract_entities(title_a)}
 
             # Mock articles window - use a very recent date to avoid temporal decay
             recent_articles = [
@@ -59,9 +57,7 @@ def test_clustering_suite():
                     "category": category_a,
                     "topic": topic_a,
                     "source": "Source A",
-                    "created_at": datetime.datetime.now(
-                        datetime.timezone.utc
-                    ).isoformat(),
+                    "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
                 }
             ]
 
@@ -86,9 +82,7 @@ def test_clustering_suite():
                 is_clustered = result_cid == cid_a
 
                 if is_clustered == should_cluster:
-                    print(
-                        f"✅ PASS: '{title_a[:30]}...' and '{title_b[:30]}...' -> {is_clustered}"
-                    )
+                    print(f"✅ PASS: '{title_a[:30]}...' and '{title_b[:30]}...' -> {is_clustered}")
                     passed += 1
                 else:
                     print(f"❌ FAIL: '{title_a[:30]}...' and '{title_b[:30]}...'")

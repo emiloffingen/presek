@@ -2,34 +2,36 @@
 
 import os
 import sys
-sys.path.insert(0, '/home/emiloffingen/presek')
+
+sys.path.insert(0, "/home/emiloffingen/presek")
 
 # Set up environment
-os.environ['VIBE_HOME'] = '/home/emiloffingen/presek'
+os.environ["VIBE_HOME"] = "/home/emiloffingen/presek"
 
 from core.database import db_manager as db
+
 
 def check_briefings():
     """Check if briefings have been generated."""
     print("Checking generated briefings...")
-    
+
     # Check for Serbian briefing
     sr_briefing = db.execute_one(
         "SELECT date, lang, LENGTH(content) as content_length, "
         "SUBSTRING(content FROM 1 FOR 100) as preview "
         "FROM daily_briefings WHERE date = CURRENT_DATE AND lang = 'sr'"
     )
-    
+
     # Check for Macedonian briefing
     mk_briefing = db.execute_one(
         "SELECT date, lang, LENGTH(content) as content_length, "
         "SUBSTRING(content FROM 1 FOR 100) as preview "
         "FROM daily_briefings WHERE date = CURRENT_DATE AND lang = 'mk'"
     )
-    
+
     print("\n📊 Briefing Generation Status:")
     print(f"   Date: {sr_briefing['date'] if sr_briefing else 'N/A'}")
-    
+
     if sr_briefing:
         print("\n🇷🇸 Serbian Briefing:")
         print(f"   Language: {sr_briefing['lang']}")
@@ -37,7 +39,7 @@ def check_briefings():
         print(f"   Preview: {sr_briefing['preview']}...")
     else:
         print("\n🇷🇸 Serbian Briefing: Not generated yet")
-    
+
     if mk_briefing:
         print("\n🇲🇰 Macedonian Briefing:")
         print(f"   Language: {mk_briefing['lang']}")
@@ -45,7 +47,7 @@ def check_briefings():
         print(f"   Preview: {mk_briefing['preview']}...")
     else:
         print("\n🇲🇰 Macedonian Briefing: Not generated yet")
-    
+
     # Check if both are complete
     if sr_briefing and mk_briefing:
         print("\n✅ SUCCESS: Both briefings have been generated!")
@@ -53,6 +55,7 @@ def check_briefings():
     else:
         print("\n⏳ Still generating... Check back in a few minutes.")
         return False
+
 
 if __name__ == "__main__":
     try:
@@ -63,5 +66,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n💥 Error checking briefings: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

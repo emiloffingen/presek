@@ -1,10 +1,11 @@
 import datetime
+import json
+import logging
 import math
 import re
-import json
 import time
-from typing import List, Dict, Any
-import logging
+from typing import Any, Dict, List
+
 from core.config import BALANCED_COVERAGE_THRESHOLD, DEFAULT_CREDIBILITY
 from utils.cache import redis_client
 from utils.db_helpers import get_source_registry
@@ -13,6 +14,7 @@ from utils.time import _coerce_datetime
 log = logging.getLogger("presek")
 
 _SOURCE_STATUS_CACHE = {"time": 0.0, "data": {}}
+
 
 def get_source_health_map(ttl: int = 60) -> Dict[str, Any]:
     now = time.time()
@@ -27,6 +29,7 @@ def get_source_health_map(ttl: int = 60) -> Dict[str, Any]:
         log.debug(f"Failed to load source statuses: {e}")
         return _SOURCE_STATUS_CACHE["data"] or {}
 
+
 def get_source_quality_multiplier(source: str) -> float:
     status = get_source_health_map().get(source) or {}
     q_score = status.get("quality_score")
@@ -34,10 +37,12 @@ def get_source_quality_multiplier(source: str) -> float:
         return 1.0
     return max(0.45, min(1.05, 0.55 + float(q_score) * 0.5))
 
+
 def get_source_effective_weight(source: str) -> float:
     reg = get_source_registry()
     base = reg.get(source, {}).get("credibility", DEFAULT_CREDIBILITY)
     return base * get_source_quality_multiplier(source)
+
 
 def get_source_trust_label(source: str) -> str:
     weight = get_source_effective_weight(source)
@@ -47,11 +52,13 @@ def get_source_trust_label(source: str) -> str:
         return "Potvrden izvor"
     return "sledeci izvor"
 
+
 def _cluster_title_overlap(left: str, right: str) -> float:
     l_set = {t for t in str(left or "").lower().split() if len(t) >= 4}
     r_set = {t for t in str(right or "").lower().split() if len(t) >= 4}
     union = len(l_set | r_set) or 1
     return len(l_set & r_set) / union
+
 
 def build_cluster_source_signals(arts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     ranked = rank_articles_in_cluster(arts)
@@ -61,11 +68,7 @@ def build_cluster_source_signals(arts: List[Dict[str, Any]]) -> List[Dict[str, A
     lead_title = str(ranked[0].get("title") or "")
     lead_dt = _coerce_datetime(ranked[0].get("created_at"))
     earliest_dt = min(
-        (
-            _coerce_datetime(a.get("created_at"))
-            for a in ranked
-            if _coerce_datetime(a.get("created_at"))
-        ),
+        (_coerce_datetime(a.get("created_at")) for a in ranked if _coerce_datetime(a.get("created_at"))),
         default=None,
     )
 
@@ -73,12 +76,7 @@ def build_cluster_source_signals(arts: List[Dict[str, Any]]) -> List[Dict[str, A
     for art in ranked:
         t = str(art.get("title") or "")
         corrob_scores.append(
-            sum(
-                1
-                for o in ranked
-                if o is not art
-                and _cluster_title_overlap(t, str(o.get("title") or "")) >= 0.3
-            )
+            sum(1 for o in ranked if o is not art and _cluster_title_overlap(t, str(o.get("title") or "")) >= 0.3)
         )
 
     signals = []
@@ -87,11 +85,7 @@ def build_cluster_source_signals(arts: List[Dict[str, Any]]) -> List[Dict[str, A
         src = str(art.get("source") or "")
         weight = get_source_effective_weight(src)
         art_dt = _coerce_datetime(art.get("created_at"))
-        overlap = (
-            1.0
-            if idx == 0
-            else _cluster_title_overlap(str(art.get("title") or ""), lead_title)
-        )
+        overlap = 1.0 if idx == 0 else _cluster_title_overlap(str(art.get("title") or ""), lead_title)
         corrob_by = corrob_scores[idx]
 
         if idx == 0 and corrob_by >= 2:
@@ -144,9 +138,8 @@ def build_cluster_source_signals(arts: List[Dict[str, Any]]) -> List[Dict[str, A
         )
     return signals
 
-def annotate_cluster_articles(
-    arts: List[Dict[str, Any]], prefer_recent: bool = False
-) -> List[Dict[str, Any]]:
+
+def annotate_cluster_articles(arts: List[Dict[str, Any]], prefer_recent: bool = False) -> List[Dict[str, Any]]:
     ranked = rank_articles_in_cluster(arts, prefer_recent=prefer_recent)
     signals = build_cluster_source_signals(ranked)
 
@@ -161,17 +154,10 @@ def annotate_cluster_articles(
         "Lokalni": "R",
     }
     reg = get_source_registry()
-    tiers = {
-        TIER_MAP.get(reg.get(a["source"], {}).get("category", "Lokalni"), "R")
-        for a in ranked
-    }
+    tiers = {TIER_MAP.get(reg.get(a["source"], {}).get("category", "Lokalni"), "R") for a in ranked}
 
     bal_score = len(tiers)
-    bal_label = (
-        "sirok Konsenzus"
-        if bal_score >= 3
-        else ("Raznovidni izvori" if bal_score == 2 else None)
-    )
+    bal_label = "sirok Konsenzus" if bal_score >= 3 else ("Raznovidni izvori" if bal_score == 2 else None)
 
     annotated = []
     lead = ranked[0] if ranked else None
@@ -187,32 +173,21 @@ def annotate_cluster_articles(
                 "label": "OSNOVNA OBJAVA",
             }
         else:
-            overlap = _cluster_title_overlap(
-                lead.get("title", ""), art.get("title", "")
-            )
-            label = (
-                "ISTA prica"
-                if overlap >= 0.45
-                else ("POVRZANA prica" if overlap >= 0.20 else "IST kontekst")
-            )
+            overlap = _cluster_title_overlap(lead.get("title", ""), art.get("title", ""))
+            label = "ISTA prica" if overlap >= 0.45 else ("POVRZANA prica" if overlap >= 0.20 else "IST kontekst")
             enriched["relationship_to_lead"] = {"tone": "neutral", "label": label}
         annotated.append(enriched)
     return annotated
 
-def rank_articles_in_cluster(
-    arts: List[Dict[str, Any]], prefer_recent: bool = False
-) -> List[Dict[str, Any]]:
+
+def rank_articles_in_cluster(arts: List[Dict[str, Any]], prefer_recent: bool = False) -> List[Dict[str, Any]]:
     if not arts:
         return []
 
     def initial_weight(a):
-        w = get_source_effective_weight(a["source"]) + (
-            0.12 if str(a.get("description") or "").strip() else 0.0
-        )
+        w = get_source_effective_weight(a["source"]) + (0.12 if str(a.get("description") or "").strip() else 0.0)
         if prefer_recent:
-            return (
-                _coerce_datetime(a.get("created_at")) or datetime.datetime.min
-            ).timestamp() + (w * 0.001)
+            return (_coerce_datetime(a.get("created_at")) or datetime.datetime.min).timestamp() + (w * 0.001)
         return w
 
     sorted_arts = sorted(arts, key=initial_weight, reverse=True)
@@ -233,6 +208,7 @@ def rank_articles_in_cluster(
 
     return sorted(ranked, key=final_key, reverse=True)
 
+
 def build_read_next_clusters(
     cur_id: str,
     cur_arts: List[Dict[str, Any]],
@@ -245,15 +221,8 @@ def build_read_next_clusters(
         return []
 
     c_tags = {str(t).strip() for t in (cur_tags or []) if str(t).strip()}
-    c_ents = {
-        str(e).strip()
-        for a in cur_ranked
-        for e in (a.get("entity_names") or [])
-        if str(e).strip()
-    }
-    c_topics = {
-        str(a.get("topic")).strip() for a in cur_ranked if str(a.get("topic")).strip()
-    }
+    c_ents = {str(e).strip() for a in cur_ranked for e in (a.get("entity_names") or []) if str(e).strip()}
+    c_topics = {str(a.get("topic")).strip() for a in cur_ranked if str(a.get("topic")).strip()}
     c_lead_title = str(cur_ranked[0].get("title") or "")
 
     grouped = {}
@@ -268,21 +237,9 @@ def build_read_next_clusters(
         if not ranked:
             continue
         lead = ranked[0]
-        cand_tags = {
-            str(t).strip()
-            for r in rows
-            for t in (r.get("cluster_tags") or [])
-            if str(t).strip()
-        }
-        cand_ents = {
-            str(e).strip()
-            for r in rows
-            for e in (r.get("entity_names") or [])
-            if str(e).strip()
-        }
-        cand_topics = {
-            str(r.get("topic")).strip() for r in rows if str(r.get("topic")).strip()
-        }
+        cand_tags = {str(t).strip() for r in rows for t in (r.get("cluster_tags") or []) if str(t).strip()}
+        cand_ents = {str(e).strip() for r in rows for e in (r.get("entity_names") or []) if str(e).strip()}
+        cand_topics = {str(r.get("topic")).strip() for r in rows if str(r.get("topic")).strip()}
 
         sh_tags, sh_ents, sh_topics = (
             c_tags & cand_tags,
@@ -320,10 +277,7 @@ def build_read_next_clusters(
         if dt:
             score += max(
                 0.0,
-                0.8
-                - min(
-                    0.8, (datetime.datetime.now() - dt).total_seconds() / 3600.0 * 0.08
-                ),
+                0.8 - min(0.8, (datetime.datetime.now() - dt).total_seconds() / 3600.0 * 0.08),
             )
 
         if score > 0.9:
@@ -345,16 +299,10 @@ def build_read_next_clusters(
 
     return sorted(results, key=lambda x: x["score"], reverse=True)[:limit]
 
-def build_source_reputation_rows(
-    source_rows, pulse_rows=None, speed_rows=None, history_rows=None, category_rows=None
-):
-    pulse_map = {
-        str(i.get("source")): int(i.get("count") or i.get("n") or 0)
-        for i in (pulse_rows or [])
-    }
-    speed_map = {
-        str(i.get("source")): int(i.get("first_count") or 0) for i in (speed_rows or [])
-    }
+
+def build_source_reputation_rows(source_rows, pulse_rows=None, speed_rows=None, history_rows=None, category_rows=None):
+    pulse_map = {str(i.get("source")): int(i.get("count") or i.get("n") or 0) for i in (pulse_rows or [])}
+    speed_map = {str(i.get("source")): int(i.get("first_count") or 0) for i in (speed_rows or [])}
     history_map = {str(i.get("source")): i for i in (history_rows or [])}
 
     from collections import defaultdict
@@ -373,16 +321,8 @@ def build_source_reputation_rows(
         weight = get_source_effective_weight(name)
         hist = history_map.get(name, {})
         l_30d = int(hist.get("lead_count_30d") or 0)
-        c_rate = (
-            round(int(hist.get("corroborated_lead_count_30d") or 0) / l_30d, 2)
-            if l_30d > 0
-            else 0.0
-        )
-        l_rate = (
-            round(int(hist.get("solo_lead_count_30d") or 0) / l_30d, 2)
-            if l_30d > 0
-            else 0.0
-        )
+        c_rate = round(int(hist.get("corroborated_lead_count_30d") or 0) / l_30d, 2) if l_30d > 0 else 0.0
+        l_rate = round(int(hist.get("solo_lead_count_30d") or 0) / l_30d, 2) if l_30d > 0 else 0.0
         vol_7d = int(hist.get("recent_7d_volume") or 0)
         delta = vol_7d - int(hist.get("previous_7d_volume") or 0)
         first_c = speed_map.get(name, 0)
@@ -395,21 +335,15 @@ def build_source_reputation_rows(
                 "top_categories": cat_map.get(name, []),
                 "effective_weight": round(weight, 2),
                 "trust_tier": (
-                    "Visoko poverenje"
-                    if weight >= 1.75
-                    else ("Potvrden izvor" if weight >= 1.3 else "sledeci izvor")
+                    "Visoko poverenje" if weight >= 1.75 else ("Potvrden izvor" if weight >= 1.3 else "sledeci izvor")
                 ),
                 "recent_volume": pulse_map.get(name, 0),
                 "speed_first_count": first_c,
                 "corroboration_rate": c_rate,
                 "lone_lead_rate": l_rate,
                 "lead_count_30d": l_30d,
-                "trend_label": (
-                    "Raste" if delta >= 4 else ("Slabee" if delta <= -4 else "Stabilen ritam")
-                ),
-                "tendency": (
-                    "Cesto prv na prikaznata" if first_c >= 5 else "Postepeno sledenje"
-                ),
+                "trend_label": ("Raste" if delta >= 4 else ("Slabee" if delta <= -4 else "Stabilen ritam")),
+                "tendency": ("Cesto prv na prikaznata" if first_c >= 5 else "Postepeno sledenje"),
                 "last_fetched": row.get("last_fetched"),
                 "is_active": row.get("is_active", True),
             }
@@ -423,6 +357,7 @@ def build_source_reputation_rows(
         ),
         reverse=True,
     )
+
 
 def build_editor_analytics_payload(
     profile_stats=None,
@@ -469,13 +404,9 @@ def build_editor_analytics_payload(
     for r in sugg_surface or []:
         surf = r.get("surface")
         curr = p_map.get(surf, {})
-        rate = round(
-            int(r.get("follows") or 0) / int(r.get("impressions") or 1) * 100, 1
-        )
+        rate = round(int(r.get("follows") or 0) / int(r.get("impressions") or 1) * 100, 1)
         prev_rate = round(
-            int(curr.get("previous_follows") or 0)
-            / int(curr.get("previous_impressions") or 1)
-            * 100,
+            int(curr.get("previous_follows") or 0) / int(curr.get("previous_impressions") or 1) * 100,
             1,
         )
         s_perf.append(
@@ -492,21 +423,12 @@ def build_editor_analytics_payload(
         "delivery_active": int(d.get("delivery_active") or 0),
         "sends_7d": s7,
         "open_rate_7d": round((o7 / s7) * 100, 1) if s7 else 0.0,
-        "delivery_performance": _perf(
-            tracking_perf, {"morning": "Utrinski", "weekly": "Nedelen"}
-        ),
-        "suggestion_performance": sorted(
-            s_perf, key=lambda x: x["conversion_rate"], reverse=True
-        ),
-        "top_topics": [
-            {"topic": r.get("topic"), "n": int(r.get("n") or 0)}
-            for r in (top_topics or [])
-        ],
-        "top_sources": [
-            {"source": r.get("source"), "n": int(r.get("n") or 0)}
-            for r in (top_sources or [])
-        ],
+        "delivery_performance": _perf(tracking_perf, {"morning": "Utrinski", "weekly": "Nedelen"}),
+        "suggestion_performance": sorted(s_perf, key=lambda x: x["conversion_rate"], reverse=True),
+        "top_topics": [{"topic": r.get("topic"), "n": int(r.get("n") or 0)} for r in (top_topics or [])],
+        "top_sources": [{"source": r.get("source"), "n": int(r.get("n") or 0)} for r in (top_sources or [])],
     }
+
 
 def score_cluster(arts: List[Dict[str, Any]]) -> float:
     if not arts:
@@ -523,16 +445,16 @@ def score_cluster(arts: List[Dict[str, Any]]) -> float:
     clicks = sum(a.get("clicks", 0) or 0 for a in arts)
     return cred * recency * math.log1p(len(arts)) * (1 + math.log1p(clicks) * 0.15)
 
+
 def score_cluster_for_synthesis(arts: List[Dict[str, Any]]) -> float:
     if not arts:
         return 0.0
     ranked = rank_articles_in_cluster(arts)
     base = score_cluster(ranked)
     src_bonus = 1 + min(0.8, math.log1p(len({a["source"] for a in ranked})) * 0.28)
-    ctx_bonus = 1 + min(
-        0.35, sum(1 for a in ranked if str(a.get("description")).strip()) * 0.08
-    )
+    ctx_bonus = 1 + min(0.35, sum(1 for a in ranked if str(a.get("description")).strip()) * 0.08)
     return base * src_bonus * ctx_bonus
+
 
 def score_cluster_for_homepage(arts: List[Dict[str, Any]]) -> float:
     if not arts:
@@ -543,9 +465,8 @@ def score_cluster_for_homepage(arts: List[Dict[str, Any]]) -> float:
     t_bonus = 1 + max(0.0, min(0.22, (sum(w) / len(w) - 1.0) * 0.16))
     return base * t_bonus * (0.72 if len({a["source"] for a in ranked}) <= 1 else 1.0)
 
-def assess_cluster_synthesis_freshness(
-    arts: List[Dict[str, Any]], synth_at
-) -> Dict[str, Any]:
+
+def assess_cluster_synthesis_freshness(arts: List[Dict[str, Any]], synth_at) -> Dict[str, Any]:
     if not arts:
         return {
             "refresh_needed": False,
@@ -557,9 +478,7 @@ def assess_cluster_synthesis_freshness(
         }
     ranked = rank_articles_in_cluster(arts)
     s_dt = _coerce_datetime(synth_at)
-    latest_article_at = max(
-        (_coerce_datetime(a.get("created_at")) for a in ranked), default=None
-    )
+    latest_article_at = max((_coerce_datetime(a.get("created_at")) for a in ranked), default=None)
     if not s_dt:
         return {
             "refresh_needed": True,
@@ -570,11 +489,7 @@ def assess_cluster_synthesis_freshness(
             "synthesis_updated_at": None,
         }
 
-    newer = [
-        a
-        for a in ranked
-        if (_coerce_datetime(a.get("created_at")) or datetime.datetime.min) > s_dt
-    ]
+    newer = [a for a in ranked if (_coerce_datetime(a.get("created_at")) or datetime.datetime.min) > s_dt]
     older = [a for a in ranked if a not in newer]
 
     if not newer:
@@ -612,11 +527,7 @@ def assess_cluster_synthesis_freshness(
         score += 1.1
         reasons.append("new_numbers")
 
-    if (
-        older
-        and _cluster_title_overlap(str(newer[0].get("title")), str(older[0].get("title")))
-        < 0.26
-    ):
+    if older and _cluster_title_overlap(str(newer[0].get("title")), str(older[0].get("title"))) < 0.26:
         score += 0.9
         reasons.append("new_angle")
 
@@ -637,9 +548,7 @@ def assess_cluster_synthesis_freshness(
         score += 1.2
         reasons.append("broad_coverage_achieved")
 
-    age_min = max(
-        0.0, ((latest_article_at or s_dt) - s_dt).total_seconds() / 60.0
-    )
+    age_min = max(0.0, ((latest_article_at or s_dt) - s_dt).total_seconds() / 60.0)
     min_cooldown = 40 if current_score < 4.0 else 20
     refresh_needed = (score >= 2.0 or len(newer) >= 4) and not (
         age_min < min_cooldown and (len(newer) < 2 and not net_new)
@@ -655,11 +564,9 @@ def assess_cluster_synthesis_freshness(
         "synthesis_updated_at": s_dt,
     }
 
+
 def is_balanced(arts: List[Dict[str, Any]]) -> bool:
     if len(arts) < BALANCED_COVERAGE_THRESHOLD:
         return False
     reg = get_source_registry()
-    return (
-        len({a["source"] for a in arts}) >= 4
-        or len({reg.get(a["source"], {}).get("category") for a in arts}) >= 2
-    )
+    return len({a["source"] for a in arts}) >= 4 or len({reg.get(a["source"], {}).get("category") for a in arts}) >= 2

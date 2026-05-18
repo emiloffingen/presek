@@ -40,11 +40,11 @@ function getTimeStr(dateStr?: string, lang = 'sr') {
 
     if (diffMins < 1) return lang === 'sr' ? 'UPRAVO SADA' : 'ТУКУШТО';
     if (diffMins < 60) return lang === 'sr' ? `PRE ${diffMins} MIN` : `ПРЕД ${diffMins} МИН`;
-    
-    return date.toLocaleTimeString(lang === 'sr' ? 'sr-RS' : 'mk-MK', { 
-      hour: '2-digit', 
+
+    return date.toLocaleTimeString(lang === 'sr' ? 'sr-RS' : 'mk-MK', {
+      hour: '2-digit',
       minute: '2-digit',
-      timeZone: 'Europe/Belgrade' 
+      timeZone: 'Europe/Belgrade'
     });
   } catch {
     return '';
@@ -82,7 +82,7 @@ export default function HomeLiveUpdatesIsland({ excludeClusterIds = [], initialC
         const payload = JSON.parse(event.data);
         // Support both batch and single article events
         if (payload?.type !== 'new_articles' && payload?.type !== 'new_article' && payload?.type !== 'new_articles_batch') return;
-        
+
         if (payload.type === 'new_article') {
              setLiveState(prev => ({
                 count: (prev?.count || 0) + 1,
@@ -94,7 +94,7 @@ export default function HomeLiveUpdatesIsland({ excludeClusterIds = [], initialC
                 time: String(payload.time || ''),
             });
         }
-        
+
         if (refreshTimer) clearTimeout(refreshTimer);
         refreshTimer = setTimeout(() => {
           loadLatest();
@@ -147,7 +147,7 @@ export default function HomeLiveUpdatesIsland({ excludeClusterIds = [], initialC
           const title = getPersonalizedText(getDisplayTitle(article, '', lang), lang);
           return (
             <a key={cluster.cluster_id} href={isMK ? `/mk/cluster/${cluster.cluster_id}` : `/cluster/${cluster.cluster_id}`} className="live-now-card group">
-              <div className="live-now-meta flex items-center justify-between gap-2 mb-2">
+              <div className="live-now-meta flex items-center justify-between gap-[var(--grid-gap)] mb-2">
                 <span className="live-now-source text-[10px] font-black uppercase tracking-widest text-nyt-accent group-hover:text-foreground transition-colors">{article.source || 'izvor'}</span>
                 <span className="text-[10px] font-bold text-muted-foreground tabular-nums">{getTimeStr(article.ingested_at || article.created_at, lang)}</span>
               </div>

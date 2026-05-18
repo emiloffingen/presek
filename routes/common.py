@@ -1,11 +1,12 @@
-import os
-import secrets
-import logging
 import datetime
-import re
 import ipaddress
+import logging
+import os
+import re
+import secrets
 from typing import Optional
-from fastapi import Request, HTTPException
+
+from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from core.database import db_manager as db
@@ -42,14 +43,10 @@ def _validate_sync_token_value(value: str, *, required: bool = True) -> str:
     token = str(value or "").strip()
     if not token:
         if required:
-            raise HTTPException(
-                status_code=400, detail="Nedostasuva kluc za sinhronizacija"
-            )
+            raise HTTPException(status_code=400, detail="Nedostasuva kluc za sinhronizacija")
         return ""
     if not SYNC_TOKEN_PATTERN.fullmatch(token):
-        raise HTTPException(
-            status_code=400, detail="Nevaliden format na klucot za sinhronizacija"
-        )
+        raise HTTPException(status_code=400, detail="Nevaliden format na klucot za sinhronizacija")
     return token
 
 
@@ -76,9 +73,7 @@ def _preferred_cluster_headline(rows) -> str:
         if not fallback:
             fallback = title
         original_title = cleanAndDecode(row.get("original_title") or "")
-        is_translated = bool(row.get("is_translated")) or (
-            original_title and title != original_title
-        )
+        is_translated = bool(row.get("is_translated")) or (original_title and title != original_title)
         if is_translated and _looks_macedonian_headline(title):
             return title
         if preferred_mk is None and _looks_macedonian_headline(title):
@@ -119,19 +114,13 @@ def _is_trusted_proxy_ip(client_host: str) -> bool:
 
 def _client_ip_for_request(request: Request) -> str:
     """Extract the best-guess client IP address from known trusted proxies only."""
-    client_host = _parse_ip_literal(
-        str(getattr(getattr(request, "client", None), "host", "") or "")
-    )
+    client_host = _parse_ip_literal(str(getattr(getattr(request, "client", None), "host", "") or ""))
 
     if _is_trusted_proxy_ip(client_host):
         # Trust X-Real-IP or the first entry in X-Forwarded-For
-        real_ip = _parse_ip_literal(
-            (request.headers.get("X-Real-IP") or "").split(",")[0].strip()
-        )
+        real_ip = _parse_ip_literal((request.headers.get("X-Real-IP") or "").split(",")[0].strip())
         if not real_ip:
-            real_ip = _parse_ip_literal(
-                (request.headers.get("X-Forwarded-For") or "").split(",")[0].strip()
-            )
+            real_ip = _parse_ip_literal((request.headers.get("X-Forwarded-For") or "").split(",")[0].strip())
         if real_ip:
             return real_ip
 
@@ -236,34 +225,28 @@ def _is_rate_limited_path(path: str) -> bool:
         return False
     if clean in _RATE_LIMITED_API_PATHS:
         return True
-    if re.fullmatch(
-        r"/api/intelligence/cluster/[a-f0-9]{6,64}/(research|analyst)", clean
-    ):
+    if re.fullmatch(r"/api/intelligence/cluster/[a-f0-9]{6,64}/(research|analyst)", clean):
         return True
     canonical = clean[4:] if clean.startswith("/api/") else clean
     return f"/api{canonical}" in _RATE_LIMITED_API_PATHS
 
 
 def _rate_limit_error_payload() -> dict:
-    return {
-        "error": "Sintezata se podgotvuva... Ve molime obidete se povtorno za nekoja minuta."
-    }
+    return {"error": "Sintezata se podgotvuva... Ve molime obidete se povtorno za nekoja minuta."}
 
 
 async def build_intelligence_summary_payload(
     last_24h: int, category: Optional[str] = None, runtime_events: Optional[dict] = None, lang: Optional[str] = "sr"
 ) -> dict:
     """Calculates synthesis transparency, pluralism and international share metrics with optional category and language filter."""
-    from utils import cached_response, set_cache, redis_client
     import asyncio
+
+    from utils import cached_response, redis_client, set_cache
 
     country_filter = "MK" if lang == "mk" else "RS"
     cat_id = f"cat-{category}-{lang}" if category else f"all-{lang}"
     cache_key = f"stats:intel_summary:{last_24h}:{cat_id}:v4"
-    use_redis = bool(
-        os.environ.get("REDIS_URL")
-        and not os.environ.get("CODEX_SANDBOX_NETWORK_DISABLED")
-    )
+    use_redis = bool(os.environ.get("REDIS_URL") and not os.environ.get("CODEX_SANDBOX_NETWORK_DISABLED"))
     cached = cached_response(cache_key, ttl=600) if use_redis else None
     if cached:
         return cached
@@ -281,7 +264,7 @@ async def build_intelligence_summary_payload(
 
     counts_res = await db.async_execute_one(
         f"""
-        SELECT 
+        SELECT
             COUNT(*) as total,
             COUNT(*) FILTER (WHERE a.category IN ('Svet', 'Evropa', 'Balkan', 'Region', 'Amerika', 'SAD') OR a.is_global = TRUE) as intl
         FROM articles a
@@ -291,21 +274,14 @@ async def build_intelligence_summary_payload(
     )
 
     total_articles_24h = counts_res.get("total", last_24h) if counts_res else 0
-    intl_articles_24h = (
-        counts_res.get("intl", counts_res.get("count", 0)) if counts_res else 0
-    )
+    intl_articles_24h = counts_res.get("intl", counts_res.get("count", 0)) if counts_res else 0
 
     if runtime_events is not None:
         ai_events = runtime_events or {}
     elif use_redis:
         bucket = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d")
         try:
-            ai_events = (
-                await asyncio.to_thread(
-                    redis_client.hgetall, f"presek:runtime_events:{bucket}"
-                )
-                or {}
-            )
+            ai_events = await asyncio.to_thread(redis_client.hgetall, f"presek:runtime_events:{bucket}") or {}
         except Exception as e:
             log.warning(f"[stats] runtime event read failed: {e}")
             ai_events = {}
@@ -360,17 +336,13 @@ async def build_intelligence_summary_payload(
     res = {
         "last_24h": total_articles_24h,
         "international_share_pct": (
-            round((intl_articles_24h / max(1, total_articles_24h) * 100), 1)
-            if total_articles_24h > 0
-            else 0
+            round((intl_articles_24h / max(1, total_articles_24h) * 100), 1) if total_articles_24h > 0 else 0
         ),
         "synthesis_transparency": {
             "systemic_summaries": systemic_summaries,
             "local_summaries": local_summaries,
             "systemic_ratio": (
-                round(
-                    systemic_summaries / (systemic_summaries + local_summaries) * 100, 1
-                )
+                round(systemic_summaries / (systemic_summaries + local_summaries) * 100, 1)
                 if (systemic_summaries + local_summaries) > 0
                 else 0
             ),
@@ -384,15 +356,11 @@ async def build_intelligence_summary_payload(
                 1,
             ),
             "high_consensus_pct": round(
-                balance_stats["high_consensus"]
-                / max(1, balance_stats["total_clusters"])
-                * 100,
+                balance_stats["high_consensus"] / max(1, balance_stats["total_clusters"]) * 100,
                 1,
             ),
             "diverse_sources_pct": round(
-                balance_stats["diverse_sources"]
-                / max(1, balance_stats["total_clusters"])
-                * 100,
+                balance_stats["diverse_sources"] / max(1, balance_stats["total_clusters"]) * 100,
                 1,
             ),
         },

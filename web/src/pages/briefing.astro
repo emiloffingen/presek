@@ -53,7 +53,7 @@ try {
 
 const formattedBriefing = briefingData?.content ? formatBriefing(briefingData.content, lang) : "";
 
-const displayDate = briefingData?.date 
+const displayDate = briefingData?.date
     ? new Date(briefingData.date).toLocaleDateString(isMK ? 'mk-MK' : 'sr-RS', {
         weekday: 'long',
         day: 'numeric',
@@ -65,20 +65,20 @@ const displayDate = briefingData?.date
 
 <Layout title={`${isMK ? 'Уреднички брифинг' : 'Urednički brifing'} — Presek`}>
     <NYTHeader stats={stats} />
-    
+
     <main class="site-layout broadsheet-layout pt-24 pb-[var(--page-py)] overflow-x-hidden">
         <div class="briefing-page-container">
             {error ? (
                 <div class="py-20 text-center animate-rise">
                     <h2 class="font-serif text-3xl mb-6 font-black italic">{error}</h2>
-                    <a href={isMK ? '/mk/briefing' : '/briefing'} class="inline-flex items-center gap-2 px-6 py-3 bg-foreground text-background font-sans font-black text-xs uppercase tracking-widest hover:bg-nyt-accent transition-colors">
+                    <a href={isMK ? '/mk/briefing' : '/briefing'} class="inline-flex items-center gap-[var(--grid-gap)] px-6 py-3 bg-foreground text-background font-sans font-black text-xs uppercase tracking-widest hover:bg-nyt-accent transition-colors">
                         {isMK ? 'Врати се на последното издание' : 'Vrati se na poslednje izdanje'}
                     </a>
                 </div>
             ) : briefingData ? (
                 <div class="briefing-layout-grid relative">
                     <div class="briefing-main-col">
-                        <BriefingHeader 
+                        <BriefingHeader
                             currentDate={displayDate}
                             dispatchIcon={Newspaper}
                             lang={lang}
@@ -105,7 +105,7 @@ const displayDate = briefingData?.date
                             <div class="mt-40 pt-16 border-t-4 border-foreground">
                                 <div class="flex items-center justify-between mb-12">
                                     <h2 class="font-serif text-4xl font-black italic">{isMK ? 'Продолжете со читање' : 'Nastavite sa čitanjem'}</h2>
-                                    <a href={isMK ? '/mk' : '/'} class="flex items-center gap-2 font-black text-[10px] uppercase tracking-widest text-nyt-accent hover:underline">
+                                    <a href={isMK ? '/mk' : '/'} class="flex items-center gap-[var(--grid-gap)] font-black text-[10px] uppercase tracking-widest text-nyt-accent hover:underline">
                                         {isMK ? 'НАСЛОВНА' : 'NASLOVNA'} <ChevronRight size={14} />
                                     </a>
                                 </div>
@@ -116,9 +116,9 @@ const displayDate = briefingData?.date
 
                     <div class="briefing-sidebar-col">
                         <div class="sidebar-inner sticky top-32">
-                            <BriefingSidebar 
+                            <BriefingSidebar
                                 stats={stats}
-                                health={{}} 
+                                health={{}}
                                 leadCluster={briefingData.lead_cluster}
                                 briefing={{
                                     date: briefingData.date,
@@ -131,7 +131,7 @@ const displayDate = briefingData?.date
                     </div>
                 </div>
             ) : (
-                <div class="py-40 text-center flex flex-col items-center gap-6">
+                <div class="py-40 text-center flex flex-col items-center gap-[var(--grid-gap)]">
                     <div class="w-12 h-12 border-4 border-nyt-accent border-t-transparent rounded-full animate-spin"></div>
                     <p class="font-serif text-xl italic text-muted-foreground">{isMK ? 'Подготвуваме дневен преглед...' : 'Pripremamo dnevni pregled...'}</p>
                 </div>

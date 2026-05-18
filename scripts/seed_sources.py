@@ -1,18 +1,16 @@
-from core.database import db_manager as db
-from core.source_catalog import DEFAULT_SOURCE_CATALOG
 from core.config import (
-    SOURCE_CREDIBILITY,
-    SOURCE_CATEGORIES,
-    SOURCE_LIMITS,
     DEFAULT_CREDIBILITY,
     DEFAULT_SOURCE_CATEGORY,
+    SOURCE_CATEGORIES,
+    SOURCE_CREDIBILITY,
+    SOURCE_LIMITS,
 )
+from core.database import db_manager as db
+from core.source_catalog import DEFAULT_SOURCE_CATALOG
 
 
 def seed_sources():
-    print(
-        f"Syncing {len(DEFAULT_SOURCE_CATALOG)} sources from source_catalog.py with metadata from config.py..."
-    )
+    print(f"Syncing {len(DEFAULT_SOURCE_CATALOG)} sources from source_catalog.py with metadata from config.py...")
     for name, url in DEFAULT_SOURCE_CATALOG:
         cred = SOURCE_CREDIBILITY.get(name, DEFAULT_CREDIBILITY)
         cat = SOURCE_CATEGORIES.get(name, DEFAULT_SOURCE_CATEGORY)

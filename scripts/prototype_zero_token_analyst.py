@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import re
+
 from core.database import db_manager as db
 
 logging.basicConfig(level=logging.INFO)
@@ -54,7 +55,7 @@ async def run_analyst_prototype():
     row = db.execute_one(
         """
         SELECT cluster_id, MIN(title) as title
-        FROM articles 
+        FROM articles
         WHERE full_content IS NOT NULL AND LENGTH(full_content) > 500
         GROUP BY cluster_id LIMIT 1
     """

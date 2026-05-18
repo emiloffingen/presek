@@ -1,6 +1,7 @@
-import httpx
 import os
 import sys
+
+import httpx
 
 # Ensure project root is in path for Celery workers
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -8,22 +9,21 @@ if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
 from celery import chain, group
+
 from core.celery_app import celery_app
-from core.database import db_manager as db
 from core.crawler import crawler
-from core.image_service import image_service
+from core.database import db_manager as db
 from core.health import record_refresh, record_task_event
-from tasks.utils import invalidate_public_data_caches, redis_client, log, safe_async_run
+from core.image_service import image_service
 from core.services.notifier import SystemNotifier as Notifier
 from core.version import APP_VERSION_LABEL
+from tasks.utils import invalidate_public_data_caches, log, redis_client, safe_async_run
 
 # Whitelist of allowed columns for dynamic UPDATE to prevent SQL injection
 _ALLOWED_ARTICLE_COLUMNS = {"full_content", "image_url"}
 
 
-@celery_app.task(
-    rate_limit="100/m", autoretry_for=(Exception,), retry_backoff=True, max_retries=2
-)
+@celery_app.task(rate_limit="100/m", autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
 def crawl_article_task(article_id, url):
     """
     Main crawler orchestrator.
@@ -61,14 +61,10 @@ def crawl_article_task(article_id, url):
             # Post-crawl pipeline
             post_crawl_tasks = []
             if image_url:
-                post_crawl_tasks.append(
-                    process_article_image_task.signature(args=(article_id, image_url))
-                )
+                post_crawl_tasks.append(process_article_image_task.signature(args=(article_id, image_url)))
 
             if res.get("content"):
-                post_crawl_tasks.append(
-                    post_crawl_invalidation_task.signature(args=(article_id,))
-                )
+                post_crawl_tasks.append(post_crawl_invalidation_task.signature(args=(article_id,)))
 
             if post_crawl_tasks:
                 if len(post_crawl_tasks) > 1:
@@ -92,9 +88,7 @@ def crawl_article_task(article_id, url):
 def process_article_image_task(article_id, image_url):
     """Processes and locally caches an article image."""
     try:
-        local_path = safe_async_run(
-            image_service.process_and_save(image_url, article_id)
-        )
+        local_path = safe_async_run(image_service.process_and_save(image_url, article_id))
         if local_path:
             db.execute(
                 "UPDATE articles SET local_image_path = %s WHERE id = %s",
@@ -126,15 +120,11 @@ def run_ingestion():
     try:
         acquired = redis_client.set(lock_key, "1", nx=True, ex=900)
     except Exception as e:
-        log.error(
-            f"[ingestion] Redis lock check failed, skipping cycle for safety: {e}"
-        )
+        log.error(f"[ingestion] Redis lock check failed, skipping cycle for safety: {e}")
         Notifier.send_alert("INGESTION_LOCK_FAILURE", f"Redis lock check failed: {e}")
         return  # Fail-closed: better to skip a minute than crash the DB
     if not acquired:
-        log.info(
-            f"Presek {APP_VERSION_LABEL}: ingestion cycle already in flight, skipping duplicate dispatch."
-        )
+        log.info(f"Presek {APP_VERSION_LABEL}: ingestion cycle already in flight, skipping duplicate dispatch.")
         return
     try:
         from core.ingestion import ingest_feeds
@@ -155,20 +145,16 @@ def run_ingestion():
 
             # Extract modified cluster IDs for targeted updates
             # We fetch from DB to get cluster_ids for all inserted articles
-            inserted_data = db.execute(
-                "SELECT cluster_id FROM articles WHERE id = ANY(%s)", (inserted_ids,)
-            )
-            modified_cluster_ids = list(
-                set(art["cluster_id"] for art in inserted_data if art.get("cluster_id"))
-            )
+            inserted_data = db.execute("SELECT cluster_id FROM articles WHERE id = ANY(%s)", (inserted_ids,))
+            modified_cluster_ids = list(set(art["cluster_id"] for art in inserted_data if art.get("cluster_id")))
             # Lazy import to avoid circular dependencies
             from tasks.intelligence import (
-                generate_embeddings_task,
-                generate_cluster_metadata_task,
+                auto_summarize_task,
                 classify_topics_task,
                 extract_entities_task,
+                generate_cluster_metadata_task,
+                generate_embeddings_task,
                 recategorize_clusters_task,
-                auto_summarize_task,
             )
 
             # Create a chain of post-ingestion tasks
@@ -201,9 +187,7 @@ def auto_repair_sources_task():
     Identifies paused sources and dispatches individual repair tasks.
     """
     try:
-        paused_sources = db.execute(
-            "SELECT name FROM sources WHERE is_active = FALSE AND pause_mode = 'auto'"
-        )
+        paused_sources = db.execute("SELECT name FROM sources WHERE is_active = FALSE AND pause_mode = 'auto'")
         for source in paused_sources:
             repair_single_source_task.delay(source["name"])
     except Exception as e:
@@ -237,11 +221,9 @@ def repair_single_source_task(name):
                     if resp.status_code == 200:
                         f = feedparser.parse(resp.content)
                         if not f.bozo and len(f.entries) > 0:
-                            log.info(
-                                f"Source '{name}' repaired with new URL: {feed_url}"
-                            )
+                            log.info(f"Source '{name}' repaired with new URL: {feed_url}")
                             db.execute(
-                                """UPDATE sources 
+                                """UPDATE sources
                                    SET url = %s, is_active = TRUE, pause_mode = NULL, pause_reason = NULL, paused_at = NULL
                                    WHERE name = %s""",
                                 (feed_url, name),

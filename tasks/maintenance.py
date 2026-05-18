@@ -8,9 +8,10 @@ if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
 from core.celery_app import celery_app
-from core.database import db_manager as db, prune_db
+from core.database import db_manager as db
+from core.database import prune_db
 from core.image_service import image_service
-from tasks.utils import log, invalidate_public_data_caches
+from tasks.utils import invalidate_public_data_caches, log
 
 
 @celery_app.task
@@ -49,10 +50,10 @@ def validate_cluster_images_task():
     # 1. Get recent clusters
     recent_clusters = db.execute(
         """
-        SELECT cluster_id, representative_image 
-        FROM cluster_metadata 
+        SELECT cluster_id, representative_image
+        FROM cluster_metadata
         WHERE updated_at >= NOW() - INTERVAL '48 hours'
-        ORDER BY updated_at DESC 
+        ORDER BY updated_at DESC
         LIMIT 100
     """
     )
@@ -60,9 +61,7 @@ def validate_cluster_images_task():
     if not recent_clusters:
         return
 
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PresekHealthCheck/1.0"
-    }
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PresekHealthCheck/1.0"}
 
     fixed_count = 0
     with httpx.Client(headers=headers, timeout=5.0, follow_redirects=True) as client:
@@ -84,9 +83,9 @@ def validate_cluster_images_task():
                 # 2. Find a fallback from the same cluster
                 articles = db.execute(
                     """
-                    SELECT image_url FROM articles 
-                    WHERE cluster_id = %s 
-                      AND image_url IS NOT NULL 
+                    SELECT image_url FROM articles
+                    WHERE cluster_id = %s
+                      AND image_url IS NOT NULL
                       AND image_url != %s
                     ORDER BY created_at DESC
                 """,
@@ -114,9 +113,7 @@ def validate_cluster_images_task():
                         (new_img, cluster["cluster_id"]),
                         fetch=False,
                     )
-                    log.info(
-                        f"[maintenance] Fixed cluster {cluster['cluster_id']} with new image: {new_img}"
-                    )
+                    log.info(f"[maintenance] Fixed cluster {cluster['cluster_id']} with new image: {new_img}")
                     fixed_count += 1
                 else:
                     # No good images found, set to NULL so it uses brand fallback
@@ -143,9 +140,7 @@ def repair_knowledge_graph_task():
     try:
         log.info("[maintenance] Starting knowledge graph repair...")
         # 1. Fetch all entities
-        rows = db.execute(
-            "SELECT name, total_mentions, sentiment_score, type FROM knowledge_entities"
-        )
+        rows = db.execute("SELECT name, total_mentions, sentiment_score, type FROM knowledge_entities")
         if not rows:
             return "No entities to repair."
 
@@ -166,10 +161,7 @@ def repair_knowledge_graph_task():
             else:
                 canonical_map[canonical]["mentions"] += total
                 canonical_map[canonical]["sentiment_sum"] += sentiment * total
-                if (
-                    etype in ("PERSON", "ORG", "LOC")
-                    and canonical_map[canonical]["type"] == "ENTITY"
-                ):
+                if etype in ("PERSON", "ORG", "LOC") and canonical_map[canonical]["type"] == "ENTITY":
                     canonical_map[canonical]["type"] = etype
 
         merged_total = 0
@@ -179,10 +171,7 @@ def repair_knowledge_graph_task():
 
             # Find all aliases that resolve to this canonical
             aliases = [
-                r["name"]
-                for r in rows
-                if normalize_entity_name(r["name"]) == canonical
-                and r["name"] != canonical
+                r["name"] for r in rows if normalize_entity_name(r["name"]) == canonical and r["name"] != canonical
             ]
 
             # Always update/insert canonical first to ensure it exists for FKs
@@ -271,9 +260,11 @@ def repair_knowledge_graph_task():
 @celery_app.task
 def refresh_global_headlines_task():
     """Fetches top global headlines (English) and caches their embeddings for comparison."""
+    import json
+
     import feedparser
     import httpx
-    import json
+
     from core.embeddings import generate_query_embedding
     from utils import redis_client
 
@@ -301,9 +292,7 @@ def refresh_global_headlines_task():
                     log.warning(f"[maintenance] Failed to fetch global feed {url}: {e}")
 
         if all_heads:
-            redis_client.setex(
-                "presek:global_headlines:v1", 7200, json.dumps(all_heads)
-            )
+            redis_client.setex("presek:global_headlines:v1", 7200, json.dumps(all_heads))
             log.info(f"[maintenance] Cached {len(all_heads)} global headlines.")
 
     except Exception as e:

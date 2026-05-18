@@ -11,9 +11,9 @@ The daily briefing system is generating mixed-language content because:
 
 ```sql
 -- tasks/delivery.py line ~XXX
-SELECT cluster_id, title, description, summary, source, category, topic, created_at 
-FROM articles 
-WHERE created_at >= NOW() - INTERVAL '24 hours' 
+SELECT cluster_id, title, description, summary, source, category, topic, created_at
+FROM articles
+WHERE created_at >= NOW() - INTERVAL '24 hours'
 ORDER BY created_at DESC LIMIT 180
 ```
 
@@ -27,16 +27,16 @@ Modify the query to filter by language:
 
 ```sql
 -- For Serbian briefing
-SELECT cluster_id, title, description, summary, source, category, topic, created_at 
-FROM articles 
-WHERE created_at >= NOW() - INTERVAL '24 hours' 
+SELECT cluster_id, title, description, summary, source, category, topic, created_at
+FROM articles
+WHERE created_at >= NOW() - INTERVAL '24 hours'
   AND (source LIKE '%.rs' OR source LIKE '%.com' OR source IN ('B92', 'Nova.rs', 'Kurir.rs'))
 ORDER BY created_at DESC LIMIT 180
 
 -- For Macedonian briefing
-SELECT cluster_id, title, description, summary, source, category, topic, created_at 
-FROM articles 
-WHERE created_at >= NOW() - INTERVAL '24 hours' 
+SELECT cluster_id, title, description, summary, source, category, topic, created_at
+FROM articles
+WHERE created_at >= NOW() - INTERVAL '24 hours'
   AND (source LIKE '%.mk' OR source IN ('360 Stepeni', 'A1on', 'Alsat'))
 ORDER BY created_at DESC LIMIT 180
 ```
@@ -47,8 +47,8 @@ ORDER BY created_at DESC LIMIT 180
 ALTER TABLE daily_briefings ADD COLUMN lang CHAR(2);
 
 -- Then update generation to specify language
-INSERT INTO daily_briefings (date, content, lang) 
-VALUES (CURRENT_DATE, %s, 'sr') 
+INSERT INTO daily_briefings (date, content, lang)
+VALUES (CURRENT_DATE, %s, 'sr')
 ON CONFLICT (date, lang) DO UPDATE SET content = EXCLUDED.content;
 ```
 

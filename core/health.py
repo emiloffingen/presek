@@ -3,13 +3,13 @@ health.py — Health check + monitoring for Presek.mk
 Used by api_fast.py for /api/health and per-source policy tracking.
 """
 
-import core.database as database
-import logging
-import time
 import json
+import logging
 import os
+import time
 from datetime import datetime, timezone
 
+import core.database as database
 from utils import redis_client as _shared_redis_client
 
 log = logging.getLogger(__name__)
@@ -84,9 +84,7 @@ def _probe_redis():
     return result
 
 
-def _source_quality_payload(
-    status: str, fetched: int, accepted: int, error: str | None = None
-):
+def _source_quality_payload(status: str, fetched: int, accepted: int, error: str | None = None):
     fetched = max(0, int(fetched or 0))
     accepted = max(0, int(accepted or 0))
     acceptance_ratio = (accepted / fetched) if fetched else 0.0
@@ -117,9 +115,7 @@ def _source_quality_payload(
     }
 
 
-def update_source_policy(
-    source_name: str, status: str, fetched: int = 0, accepted: int = 0
-):
+def update_source_policy(source_name: str, status: str, fetched: int = 0, accepted: int = 0):
     fetched = max(0, int(fetched or 0))
     accepted = max(0, int(accepted or 0))
     acceptance_ratio = (accepted / fetched) if fetched else 0.0
@@ -147,9 +143,7 @@ def update_source_policy(
         state["consecutive_errors"] = 0
 
     low_accept = (
-        fetched >= LOW_ACCEPTANCE_MIN_FETCHED
-        and acceptance_ratio < LOW_ACCEPTANCE_THRESHOLD
-        and status != "error"
+        fetched >= LOW_ACCEPTANCE_MIN_FETCHED and acceptance_ratio < LOW_ACCEPTANCE_THRESHOLD and status != "error"
     )
     if low_accept:
         state["low_accept_streak"] = int(state.get("low_accept_streak", 0)) + 1
@@ -242,9 +236,7 @@ def _freshness_payload(last_refresh_time: str | None):
 
     try:
         refresh_dt = datetime.fromisoformat(last_refresh_time.replace("Z", "+00:00"))
-        age_minutes = max(
-            0, int((datetime.now(timezone.utc) - refresh_dt).total_seconds() // 60)
-        )
+        age_minutes = max(0, int((datetime.now(timezone.utc) - refresh_dt).total_seconds() // 60))
     except Exception as e:
         log.debug(f"Failed to parse refresh time {last_refresh_time}: {e}")
         return {"status": "stale", "age_minutes": None, "label": "Nepoznato osvezuvanje"}

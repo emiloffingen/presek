@@ -4,11 +4,12 @@ Extracts hot topics from recent articles by counting significant words,
 weighted by recency and a proper-noun bonus (capitalized mid-sentence words).
 """
 
-import core.database as database
 import logging
 import re
 from collections import Counter
 from datetime import datetime, timedelta
+
+import core.database as database
 
 log = logging.getLogger(__name__)
 
@@ -396,14 +397,9 @@ def get_trending(hours: int = 12, limit: int = MAX_RESULTS, country: str = "RS")
         pairs = extract_words_with_flags(row["title"] or "")
         try:
             if isinstance(row["created_at"], datetime):
-                age_h = (
-                    now - row["created_at"].replace(tzinfo=None)
-                ).total_seconds() / 3600
+                age_h = (now - row["created_at"].replace(tzinfo=None)).total_seconds() / 3600
             else:
-                age_h = (
-                    now
-                    - datetime.fromisoformat(row["created_at"].replace("+00:00", ""))
-                ).total_seconds() / 3600
+                age_h = (now - datetime.fromisoformat(row["created_at"].replace("+00:00", ""))).total_seconds() / 3600
         except Exception as e:
             log.debug(f"Failed to calculate age: {e}")
             age_h = 12
@@ -465,11 +461,7 @@ def get_trending(hours: int = 12, limit: int = MAX_RESULTS, country: str = "RS")
 
     # Calculate final scores and trends
     scored_items = []
-    all_words = (
-        set(hot_weighted.keys())
-        | set(rising_weighted.keys())
-        | set(baseline_weighted.keys())
-    )
+    all_words = set(hot_weighted.keys()) | set(rising_weighted.keys()) | set(baseline_weighted.keys())
 
     for word in all_words:
         if raw[word] < MIN_COUNT:

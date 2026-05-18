@@ -1,4 +1,4 @@
-from nlp.keywords import _extract_capitalized_phrases, ENTITY_NOISE_WORDS
+from nlp.keywords import ENTITY_NOISE_WORDS, _extract_capitalized_phrases
 
 
 def classify_news_quality_locally(title: str, description: str) -> dict:
@@ -82,11 +82,7 @@ def classify_news_quality_locally(title: str, description: str) -> dict:
 
     # 4. Entity Density Check (Hard news has more unique named entities)
     potential_entities = _extract_capitalized_phrases(f"{title} {description or ''}")
-    unique_entities = set(
-        e.casefold()
-        for e in potential_entities
-        if e.casefold() not in ENTITY_NOISE_WORDS
-    )
+    unique_entities = set(e.casefold() for e in potential_entities if e.casefold() not in ENTITY_NOISE_WORDS)
     entity_count = len(unique_entities)
 
     # 5. Scoring Logic

@@ -1,8 +1,9 @@
 import asyncio
 import logging
-from playwright.async_api import async_playwright
 import os
 import sys
+
+from playwright.async_api import async_playwright
 
 logging.basicConfig(
     level=logging.INFO,
@@ -10,15 +11,16 @@ logging.basicConfig(
 )
 log = logging.getLogger("presek.check_live_site")
 
+
 async def run():
     target_url = sys.argv[1] if len(sys.argv) > 1 else "https://presek.live/"
     log.info(f"Targeting URL: {target_url}")
-    
+
     async with async_playwright() as p:
         browser = await p.chromium.launch()
         context = await browser.new_context(
             viewport={"width": 1280, "height": 800},
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
         )
         page = await context.new_page()
 
@@ -26,8 +28,10 @@ async def run():
         network_failures = []
 
         # Listen for console errors
-        page.on("console", lambda msg: errors.append(f"Console {msg.type}: {msg.text}") if msg.type == "error" else None)
-        
+        page.on(
+            "console", lambda msg: errors.append(f"Console {msg.type}: {msg.text}") if msg.type == "error" else None
+        )
+
         # Listen for page errors
         page.on("pageerror", lambda exc: errors.append(f"Page Error: {exc}"))
 
@@ -41,16 +45,16 @@ async def run():
         try:
             log.info(f"Navigating to {target_url} ...")
             response = await page.goto(target_url, wait_until="networkidle", timeout=60000)
-            
+
             if not response:
                 log.error("Failed to load page (no response)")
                 return
-            
+
             log.info(f"Page loaded with status {response.status}")
-            
+
             if response.status != 200:
                 log.error(f"Homepage returned status {response.status}")
-            
+
             # 1. Scroll to ensure client:visible islands hydrate
             log.info("Scrolling page to hydrate widgets...")
             await page.evaluate("window.scrollTo(0, document.body.scrollHeight / 2)")
@@ -67,9 +71,9 @@ async def run():
                 "Newsletter Widget": "astro-island[component-url*='NewsletterIsland']",
                 "National Mood Widget": "astro-island[component-url*='NationalMoodIsland']",
                 "Topics in Focus": ".rail-tag-cloud",
-                "Footer": "footer"
+                "Footer": "footer",
             }
-            
+
             found_elements = {}
             for name, selector in elements_to_check.items():
                 el = await page.query_selector(selector)
@@ -112,6 +116,7 @@ async def run():
             log.exception(f"An error occurred during check: {e}")
         finally:
             await browser.close()
+
 
 if __name__ == "__main__":
     asyncio.run(run())

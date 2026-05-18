@@ -59,7 +59,7 @@ main() {
     info "Creating PostgreSQL backup at $outfile"
     pg_dump "$DATABASE_URL" | gzip -9 > "$outfile"
   fi
-  
+
   ok "Backup complete"
 
   info "Pruning backups older than $KEEP_DAYS days"

@@ -5,29 +5,30 @@ This file defines various user behaviors and test scenarios for
 performance testing the Presek application.
 """
 
-from locust import HttpUser, task, between, events
 import random
+
+from locust import HttpUser, between, events, task
 
 
 class PresekUser(HttpUser):
     """Base user class with common behavior."""
-    
+
     wait_time = between(1, 5)
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.headers = {
             "Accept": "application/json",
             "Content-Type": "application/json",
         }
-        
+
         # Generate a random user ID for this user
         self.user_id = f"user_{random.randint(1, 10000)}"
 
 
 class NewsConsumer(PresekUser):
     """User that primarily consumes news content."""
-    
+
     @task(3)
     def get_recent_news(self):
         """Get recent news articles."""
@@ -42,7 +43,7 @@ class NewsConsumer(PresekUser):
         """Get news by category."""
         categories = ["politics", "sports", "technology", "business"]
         category = random.choice(categories)
-        
+
         with self.client.get(f"/api/news/category/{category}", headers=self.headers, catch_response=True) as response:
             if response.status_code != 200:
                 response.failure(f"Failed to get news by category: {response.status_code}")
@@ -54,7 +55,7 @@ class NewsConsumer(PresekUser):
         """Search for news articles."""
         search_terms = ["elections", "economy", "sports", "technology", "health"]
         query = random.choice(search_terms)
-        
+
         with self.client.get(f"/api/news/search?q={query}", headers=self.headers, catch_response=True) as response:
             if response.status_code != 200:
                 response.failure(f"Failed to search news: {response.status_code}")
@@ -64,7 +65,7 @@ class NewsConsumer(PresekUser):
 
 class ClusterExplorer(PresekUser):
     """User that explores news clusters."""
-    
+
     @task(2)
     def get_clusters(self):
         """Get news clusters."""
@@ -79,7 +80,7 @@ class ClusterExplorer(PresekUser):
         """Get details for a specific cluster."""
         # In a real test, we'd use actual cluster IDs from the API
         cluster_id = f"cluster_{random.randint(1, 100)}"
-        
+
         with self.client.get(f"/api/news/cluster/{cluster_id}", headers=self.headers, catch_response=True) as response:
             if response.status_code != 200:
                 response.failure(f"Failed to get cluster details: {response.status_code}")
@@ -89,7 +90,7 @@ class ClusterExplorer(PresekUser):
 
 class IntelligenceUser(PresekUser):
     """User that uses intelligence features."""
-    
+
     @task(1)
     def get_trending_topics(self):
         """Get trending topics."""
@@ -104,8 +105,10 @@ class IntelligenceUser(PresekUser):
         """Get AI analysis for a topic."""
         topics = ["politics", "economy", "sports", "technology"]
         topic = random.choice(topics)
-        
-        with self.client.get(f"/api/intelligence/analysis/{topic}", headers=self.headers, catch_response=True) as response:
+
+        with self.client.get(
+            f"/api/intelligence/analysis/{topic}", headers=self.headers, catch_response=True
+        ) as response:
             if response.status_code != 200:
                 response.failure(f"Failed to get AI analysis: {response.status_code}")
             else:
@@ -114,16 +117,16 @@ class IntelligenceUser(PresekUser):
 
 class AdminUser(HttpUser):
     """Admin user that accesses admin endpoints."""
-    
+
     wait_time = between(2, 10)
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.headers = {
             "Accept": "application/json",
             "Content-Type": "application/json",
         }
-        
+
         # In a real test, we'd use a valid admin token
         # For load testing, we'll use a dummy token
         self.admin_token = "dummy_admin_token_for_load_testing"
@@ -141,7 +144,7 @@ class AdminUser(HttpUser):
 
 class MixedBehaviorUser(PresekUser):
     """User with mixed behavior patterns."""
-    
+
     @task(4)
     def browse_news(self):
         """Browse recent news."""
@@ -157,13 +160,13 @@ class MixedBehaviorUser(PresekUser):
         # Search
         search_terms = ["elections", "economy", "sports", "technology"]
         query = random.choice(search_terms)
-        
+
         with self.client.get(f"/api/news/search?q={query}", headers=self.headers, catch_response=True) as response:
             if response.status_code != 200:
                 response.failure(f"Failed to search: {response.status_code}")
             else:
                 response.success()
-        
+
         # Explore clusters
         with self.client.get("/api/news/clusters", headers=self.headers, catch_response=True) as response:
             if response.status_code != 200:

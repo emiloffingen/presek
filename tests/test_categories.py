@@ -1,13 +1,12 @@
 from nlp.categories import (
-    validate_category,
+    ALLOWED_CATEGORIES,
     detect_category,
+    detect_country,
     detect_subcategory,
     detect_topic,
-    detect_country,
     normalize_headline,
-    ALLOWED_CATEGORIES,
+    validate_category,
 )
-
 
 # ── validate_category ─────────────────────────────────────────────
 
@@ -84,10 +83,7 @@ class TestDetectCategory:
 
     # Description also scanned
     def test_description_matters(self):
-        assert (
-            detect_category("nova odluka", description="Bundestag glasase")
-            == "Germanija"
-        )
+        assert detect_category("nova odluka", description="Bundestag glasase") == "Germanija"
 
     # Short keyword boundary check (e.g., "sad" should not match "nasadi")
     def test_short_keyword_word_boundary(self):
@@ -112,17 +108,12 @@ class TestDetectCategory:
 
     def test_category_understands_common_english_geo_terms(self):
         assert detect_category("White House announces new tariffs") == "Amerika"
-        assert (
-            detect_category("European Commission opens new Brussels talks") == "Evropa"
-        )
+        assert detect_category("European Commission opens new Brussels talks") == "Evropa"
 
     def test_foreign_sports_clubs_do_not_default_to_macedonia(self):
         assert detect_category("Liam Rozenior vece ne e trener na Celzi") == "Evropa"
         assert detect_category("PSZ ga pobedi Nant so 3:0") == "Evropa"
-        assert (
-            detect_category("Lebron ga predvodese Lejkers do pobeda nad Hjuston")
-            == "Amerika"
-        )
+        assert detect_category("Lebron ga predvodese Lejkers do pobeda nad Hjuston") == "Amerika"
 
 
 # ── detect_subcategory ────────────────────────────────────────────
@@ -141,10 +132,7 @@ class TestDetectSubcategory:
         assert detect_subcategory("Vladata donese odluka") is None
 
     def test_description_helps(self):
-        assert (
-            detect_subcategory("Nov proekt", description="izgradba vo Beograd")
-            == "Beograd"
-        )
+        assert detect_subcategory("Nov proekt", description="izgradba vo Beograd") == "Beograd"
 
 
 # ── detect_country ────────────────────────────────────────────────
@@ -195,10 +183,7 @@ class TestNormalizeHeadline:
         assert normalize_headline(None) == ""
 
     def test_normal_headline_unchanged(self):
-        assert (
-            normalize_headline("Normalen naslov bez prefiksi")
-            == "Normalen naslov bez prefiksi"
-        )
+        assert normalize_headline("Normalen naslov bez prefiksi") == "Normalen naslov bez prefiksi"
 
     def test_case_insensitive_prefix(self):
         assert normalize_headline("video: mal naslov") == "Mal naslov"
@@ -209,10 +194,7 @@ class TestNormalizeHeadline:
         assert normalize_headline("Informacija – SDK.mk") == "Informacija"
 
     def test_de_shouting(self):
-        assert (
-            normalize_headline("ova E CELOSNO GLASEN NASLOV")
-            == "Ova e celosno glasen naslov"
-        )
+        assert normalize_headline("ova E CELOSNO GLASEN NASLOV") == "Ova e celosno glasen naslov"
         # Prefix "SKANDAL" is stripped first, then the rest is de-shouted if it was screaming
         assert normalize_headline("SKANDAL VO MVR I VMRO") == "Vo MVR i VMRO"
 
@@ -226,27 +208,24 @@ class TestNormalizeHeadline:
         assert normalize_headline("ova pocnuva so mala") == "Ova pocnuva so mala"
 
     def test_restores_known_person_and_political_bloc_casing(self):
-        title = "Manasievski: SDSM stana servis za interesite na srpskata opozicija, basanovic i zaev im krojat politikite"
+        title = (
+            "Manasievski: SDSM stana servis za interesite na srpskata opozicija, basanovic i zaev im krojat politikite"
+        )
         # 'Manasievski:' is stripped because it matches the prefix regex
         assert normalize_headline(title) == (
-            "SDSM stana servis za interesite na Srpskata opozicija, "
-            "Basanovic i Zaev im krojat politikite"
+            "SDSM stana servis za interesite na Srpskata opozicija, " "Basanovic i Zaev im krojat politikite"
         )
 
     def test_restores_known_country_casing(self):
         title = "Tramp veli oti saka da igra leka-poleka: ne brzam da ga zavrsam konfliktot vo iran"
         # This whole part matches the prefix regex and is stripped
-        assert normalize_headline(title) == (
-            "Ne brzam da ga zavrsam konfliktot vo Iran"
+        assert normalize_headline(title) == ("Ne brzam da ga zavrsam konfliktot vo Iran")
+        assert normalize_headline("Direkten sudir na vozovi vo danska: nekolku lica bea povredeni") == (
+            "Nekolku lica bea povredeni"
         )
-        assert normalize_headline(
-            "Direkten sudir na vozovi vo danska: nekolku lica bea povredeni"
-        ) == ("Nekolku lica bea povredeni")
-        assert normalize_headline(
-            "Poranesen sef na NATO: evropa mora da stane voeno nezavisna od SAD"
-        ) == ("Evropa mora da stane voeno nezavisna od SAD")
+        assert normalize_headline("Poranesen sef na NATO: evropa mora da stane voeno nezavisna od SAD") == (
+            "Evropa mora da stane voeno nezavisna od SAD"
+        )
         assert normalize_headline(
             "Najbogatiot covek vo jugoslavija ne bil tito: misteriozniot ugostitel od Srbija zarabotil milioni"
-        ) == (
-            "Misteriozniot ugostitel od Srbija zarabotil milioni"
-        )
+        ) == ("Misteriozniot ugostitel od Srbija zarabotil milioni")

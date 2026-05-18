@@ -1,10 +1,11 @@
 import datetime
 import json
+import logging
 import re
 from typing import Optional
-import logging
 
 log = logging.getLogger("presek")
+
 
 class DateTimeEncoder(json.JSONEncoder):
     """Custom JSON encoder to handle datetime objects."""
@@ -15,6 +16,7 @@ class DateTimeEncoder(json.JSONEncoder):
                 return obj.isoformat() + "Z"
             return obj.isoformat()
         return super().default(obj)
+
 
 def _coerce_datetime(value) -> Optional[datetime.datetime]:
     if isinstance(value, datetime.datetime):

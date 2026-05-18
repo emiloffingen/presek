@@ -25,8 +25,8 @@ sudo -u $DB_USER psql -d $DB_NAME -c "DELETE FROM cluster_metadata WHERE cluster
 echo "> Current index sizes:"
 sudo -u $DB_USER psql -d $DB_NAME -c "
 SELECT relname as index_name, pg_size_pretty(pg_total_relation_size(relid)) as total_size
-FROM pg_stat_user_tables 
-ORDER BY pg_total_relation_size(relid) DESC 
+FROM pg_stat_user_tables
+ORDER BY pg_total_relation_size(relid) DESC
 LIMIT 10;"
 
 echo "--- Database Optimization Complete: $(date) ---"

@@ -104,7 +104,7 @@ function getSentimentTrend(history: SentimentPoint[]) {
   const prev = history.slice(-6, -3);
   if (prev.length === 0) return 'stable';
   const prevAvg = prev.reduce((sum, item) => sum + item.avg_sentiment, 0) / prev.length;
-  
+
   if (avg > prevAvg + 0.1) return 'improving';
   if (avg < prevAvg - 0.1) return 'declining';
   return 'stable';
@@ -146,7 +146,7 @@ function coMentionedEntities(clusters: NewsCluster[], currentName: string) {
   const counts = new Map<string, number>();
   const current = currentName.toLowerCase();
   for (const cluster of clusters) {
-    const ents = cluster.entities || []; 
+    const ents = cluster.entities || [];
     for (const entity of ents) {
       const clean = String(entity || '').trim();
       if (!clean || clean.toLowerCase() === current) continue;
@@ -210,7 +210,7 @@ export default function EntityIsland({
             <span className="entity-type">{profile.type === 'ORG' ? (lang === 'sr' ? 'Organizacija' : 'Организација') : (lang === 'sr' ? 'Subjekt' : 'Субјект')}</span>
             <h1 className="entity-name">{profile.name}</h1>
             <p className="entity-summary-copy">
-              {lang === 'sr' 
+              {lang === 'sr'
                 ? `Sistemski profil koji prati medijsko prisustvo, mrežu povezanosti i ton izveštavanja za ${profile.name}.`
                 : `Системски профил кој го следи медиумското присуство, мрежата на поврзаност и тонот на известување за ${profile.name}.`}
             </p>
@@ -234,8 +234,8 @@ export default function EntityIsland({
                 </strong>
                 {trend !== 'stable' && (
                     <span className={`text-[9px] font-black uppercase tracking-tighter ${trend === 'improving' ? 'text-green-600' : 'text-nyt-red'}`}>
-                        {trend === 'improving' 
-                          ? (lang === 'sr' ? '↑ Pozitivan trend' : '↑ Позитивен тренд') 
+                        {trend === 'improving'
+                          ? (lang === 'sr' ? '↑ Pozitivan trend' : '↑ Позитивен тренд')
                           : (lang === 'sr' ? '↓ Kritičan trend' : '↓ Критичен тренд')}
                     </span>
                 )}
@@ -251,7 +251,7 @@ export default function EntityIsland({
       <div className="entity-grid">
         <div className="sources-main">
           <section className="entity-summary entity-featured">
-            <h2 className="entity-section-title flex items-center gap-2"><Sparkles size={14} /> {lang === 'sr' ? 'Medijski Presek' : 'Медиумски Пресек'}</h2>
+            <h2 className="entity-section-title flex items-center gap-[var(--grid-gap)]"><Sparkles size={14} /> {lang === 'sr' ? 'Medijski Presek' : 'Медиумски Пресек'}</h2>
             <p className="entity-summary-copy">{whyItMatters}</p>
             <div className="entity-chip-list">
               <span className="entity-chip">{clusters.length} {lang === 'sr' ? 'aktivnih tema' : 'активни теми'}</span>
@@ -265,15 +265,15 @@ export default function EntityIsland({
           <div className="entity-insight-grid">
             <section className="entity-summary">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="entity-section-title flex items-center gap-2 m-0"><TrendingUp size={14} /> {lang === 'sr' ? 'Dinamika' : 'Динамика'}</h2>
+                <h2 className="entity-section-title flex items-center gap-[var(--grid-gap)] m-0"><TrendingUp size={14} /> {lang === 'sr' ? 'Dinamika' : 'Динамика'}</h2>
                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{lang === 'sr' ? 'Poslednjih 14 dana' : 'Последните 14 дена'}</span>
               </div>
               <div className="entity-pulse h-32 flex items-end gap-1 px-2">
                 {timeline.map((item) => (
                   <div key={item.key} className="flex-1 group relative">
-                    <div 
-                        className={`w-full rounded-t-sm transition-all ${item.sentiment > 0.1 ? 'bg-green-500/40' : item.sentiment < -0.1 ? 'bg-nyt-red/40' : 'bg-nyt-accent/40'} group-hover:opacity-100`} 
-                        style={{ height: `${item.percent}%`, opacity: 0.7 }} 
+                    <div
+                        className={`w-full rounded-t-sm transition-all ${item.sentiment > 0.1 ? 'bg-green-500/40' : item.sentiment < -0.1 ? 'bg-nyt-red/40' : 'bg-nyt-accent/40'} group-hover:opacity-100`}
+                        style={{ height: `${item.percent}%`, opacity: 0.7 }}
                     />
                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-foreground text-background text-[9px] font-bold py-1 px-2 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity z-10">
                         {item.count} {lang === 'sr' ? 'objave' : 'објави'} • {item.label}
@@ -289,16 +289,16 @@ export default function EntityIsland({
             </section>
 
             <section className="entity-summary">
-              <h2 className="entity-section-title flex items-center gap-2"><Newspaper size={14} /> {lang === 'sr' ? 'Tematski profil' : 'Тематски профил'}</h2>
+              <h2 className="entity-section-title flex items-center gap-[var(--grid-gap)]"><Newspaper size={14} /> {lang === 'sr' ? 'Tematski profil' : 'Тематски профил'}</h2>
               <div className="space-y-3 mt-4">
                 {leadingCategories.map((c) => (
                   <div key={c.category} className="flex items-center justify-between">
                     <span className="font-sans font-bold text-[11px] uppercase tracking-wide">{c.category}</span>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-[var(--grid-gap)]">
                       <div className="w-24 h-1.5 bg-secondary rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-foreground opacity-80" 
-                          style={{ width: `${Math.min((c.count / (clusters.length || 1)) * 100, 100)}%` }} 
+                        <div
+                          className="h-full bg-foreground opacity-80"
+                          style={{ width: `${Math.min((c.count / (clusters.length || 1)) * 100, 100)}%` }}
                         />
                       </div>
                       <span className="font-sans text-[10px] font-black w-8 text-right">{Math.round((c.count / (clusters.length || 1)) * 100)}%</span>
@@ -308,7 +308,7 @@ export default function EntityIsland({
                 {leadingCategories.length === 0 && <p className="text-xs text-muted italic">{lang === 'sr' ? 'Nema dovoljno podataka za teme.' : 'Нема доволно податоци за теми.'}</p>}
                 {categories && categories.length > leadingCategories.length && (
                   <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pt-1">
-                    {lang === 'sr' 
+                    {lang === 'sr'
                       ? `Prikazani su vodeći ${leadingCategories.length} tematski pravci.`
                       : `Прикажани се водечките ${leadingCategories.length} тематски правци.`}
                   </p>
@@ -318,7 +318,7 @@ export default function EntityIsland({
           </div>
 
           <section className="entity-summary">
-            <h2 className="entity-section-title flex items-center gap-2"><Link2 size={14} /> {lang === 'sr' ? 'Isti kontekst' : 'Ист контекст'}</h2>
+            <h2 className="entity-section-title flex items-center gap-[var(--grid-gap)]"><Link2 size={14} /> {lang === 'sr' ? 'Isti kontekst' : 'Ист контекст'}</h2>
             <p className="entity-summary-copy">
               {lang === 'sr'
                 ? `Ova imena se najčešće pojavljuju zajedno sa ${profile.name} u istim klasterima i pomažu da se vidi šira mreža oko priče.`
@@ -331,7 +331,7 @@ export default function EntityIsland({
                 </a>
               ))}
               {contextEntities.length === 0 && (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-[var(--grid-gap)]">
                   {related.map(r => (
                     <a key={r.related_entity} href={lang === 'sr' ? `/subjekt/${encodeURIComponent(r.related_entity)}` : `/mk/subjekt/${encodeURIComponent(r.related_entity)}`} className="entity-chip entity-chip-link">
                       {r.related_entity}
@@ -345,7 +345,7 @@ export default function EntityIsland({
 
         <aside className="sources-rail">
           <div className="rail-card">
-            <h3 className="rail-card-title flex items-center gap-2"><Link2 size={14} /> {lang === 'sr' ? 'Najbliže povezani' : 'Најблиску поврзани'}</h3>
+            <h3 className="rail-card-title flex items-center gap-[var(--grid-gap)]"><Link2 size={14} /> {lang === 'sr' ? 'Najbliže povezani' : 'Најблиску поврзани'}</h3>
             <p className="rail-copy">
               {lang === 'sr'
                 ? `Ovde su prikazani subjekti koji najčešće ulaze u isti kontekst sa ${profile.name}, sa najjačim vezama na vrhu.`
@@ -358,7 +358,7 @@ export default function EntityIsland({
                     <span className="entity-related-name">{rel.related_entity}</span>
                     <p className="entity-related-band">{lang === 'sr' ? 'Tesna veza' : 'Тисна врска'}</p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-[var(--grid-gap)]">
                     <div className="entity-related-track">
                       <div className="h-full bg-nyt-accent" style={{ width: `${Math.min(rel.weight * 10, 100)}%` }} />
                     </div>
@@ -381,7 +381,7 @@ export default function EntityIsland({
 
           <div className="rail-card">
             <h3 className="rail-card-title uppercase tracking-widest text-[10px]">{lang === 'sr' ? 'dalje' : 'понатаму'}</h3>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-[var(--grid-gap)]">
               <a href={lang === 'sr' ? "/archive" : "/mk/archive"} className="entity-related-jump">{lang === 'sr' ? 'Otvori arhivu' : 'Отвори архива'}</a>
               <a href={lang === 'sr' ? "/izvori" : "/mk/izvori"} className="entity-related-jump">{lang === 'sr' ? 'Otvori izvore' : 'Отвори извори'}</a>
               <a href={lang === 'sr' ? "/pulse" : "/mk/pulse"} className="entity-related-jump">{lang === 'sr' ? 'Uporedi medije' : 'Спореди медиуми'}</a>

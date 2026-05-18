@@ -24,7 +24,7 @@ export function formatBriefing(markdown: string, lang = 'sr'): string {
 
     // 3. Handle Lists (e.g., - Item, * Item, • Item)
     html = html.replace(/^[-*\u2022]\s+(.+)$/gm, '<li class="briefing-li">$1</li>');
-    
+
     // Wrap adjacent <li> tags in <ul>
     html = html.replace(/(<li class="briefing-li">.*?<\/li>\n?)+/g, (match) => {
         return `<ul class="briefing-ul">\n${match}</ul>\n`;
@@ -39,7 +39,7 @@ export function formatBriefing(markdown: string, lang = 'sr'): string {
         if (trimmed.startsWith('<h') || trimmed.startsWith('<ul') || trimmed.startsWith('<li') || trimmed.startsWith('<blockquote')) {
             return trimmed;
         }
-        
+
         // Apply drop-cap only to the very first regular paragraph
         if (!hasAppliedDropCap && trimmed.length > 100 && !trimmed.includes('<')) {
              hasAppliedDropCap = true;

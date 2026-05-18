@@ -8,8 +8,8 @@ Pipeline:
 3. Regex capitalized-phrase heuristic as a final fallback
 """
 
-import re
 import logging
+import re
 import threading
 
 log = logging.getLogger("presek")
@@ -37,9 +37,7 @@ def _get_spacy():
             _spacy_unavailable = True
             return None
         try:
-            _spacy_nlp = spacy.load(
-                "xx_ent_wiki_sm", disable=["tagger", "parser", "lemmatizer"]
-            )
+            _spacy_nlp = spacy.load("xx_ent_wiki_sm", disable=["tagger", "parser", "lemmatizer"])
             log.info("[entities] spaCy xx_ent_wiki_sm NER loaded")
         except Exception as e:
             log.warning(
@@ -318,9 +316,7 @@ IGNORE_WORDS = {
 # Uses a negative lookahead to avoid matching common trailing noise words
 _trailing_ignore = "|".join(IGNORE_WORDS)
 PROPER_NOUN_PATTERN = re.compile(
-    r"(?:\b[A-Za-z][A-Za-z0-9]+\b(?:[\s-]+\b(?!"
-    + _trailing_ignore
-    + r")[A-Za-z][A-Za-z0-9]+\b){0,3})"
+    r"(?:\b[A-Za-z][A-Za-z0-9]+\b(?:[\s-]+\b(?!" + _trailing_ignore + r")[A-Za-z][A-Za-z0-9]+\b){0,3})"
 )
 
 
@@ -411,16 +407,9 @@ for _surname, _people in _surname_to_person.items():
 
 ENTITY_ALIASES.update(_unique_person_surnames)
 
-_ENTITY_ALIASES_CASEFOLDED = {
-    str(alias).strip().casefold(): canonical
-    for alias, canonical in ENTITY_ALIASES.items()
-}
-_KNOWN_ENTITIES_ORDERED = sorted(
-    KNOWN_ENTITIES.items(), key=lambda item: (-len(item[0]), item[0])
-)
-_ENTITY_ALIASES_ORDERED = sorted(
-    ENTITY_ALIASES.items(), key=lambda item: (-len(item[0]), item[0])
-)
+_ENTITY_ALIASES_CASEFOLDED = {str(alias).strip().casefold(): canonical for alias, canonical in ENTITY_ALIASES.items()}
+_KNOWN_ENTITIES_ORDERED = sorted(KNOWN_ENTITIES.items(), key=lambda item: (-len(item[0]), item[0]))
+_ENTITY_ALIASES_ORDERED = sorted(ENTITY_ALIASES.items(), key=lambda item: (-len(item[0]), item[0]))
 
 _KNOWN_SURNAMES = {}
 _KNOWN_FIRSTNAMES = {}
@@ -454,10 +443,7 @@ def _title_case_name_part(part: str) -> str:
             return ""
         return piece[:1].upper() + piece[1:].lower()
 
-    hyphenated = [
-        "'".join(_fix_piece(piece) for piece in apostrophe.split("'"))
-        for apostrophe in part.split("-")
-    ]
+    hyphenated = ["'".join(_fix_piece(piece) for piece in apostrophe.split("'")) for apostrophe in part.split("-")]
     return "-".join(hyphenated)
 
 
@@ -527,9 +513,7 @@ def validate_person_names(text: str | list[str]) -> str | list[str]:
         joined_text = str(text)
 
     # 1. Look for known name phrases (2 or 3 parts)
-    all_words = re.findall(
-        r"\b[A-Za-z][A-Za-z-]+(?:\s+[A-Za-z][A-Za-z-]+){1,2}\b", joined_text
-    )
+    all_words = re.findall(r"\b[A-Za-z][A-Za-z-]+(?:\s+[A-Za-z][A-Za-z-]+){1,2}\b", joined_text)
     all_words = list(set(all_words))  # De-duplicate for efficiency
     all_words.sort(key=len, reverse=True)
 
@@ -562,9 +546,7 @@ def validate_person_names(text: str | list[str]) -> str | list[str]:
 
         # Fallback for very specific high-profile mixups
         if not canonical:
-            if first == "Bujar" and (
-                "Siljanovska" in clean_pair or "Siljanovska" in clean_pair
-            ):
+            if first == "Bujar" and ("Siljanovska" in clean_pair or "Siljanovska" in clean_pair):
                 canonical = "Gordana Siljanovska-Davkova"
                 matched_part = parts[-1]
 
@@ -577,10 +559,7 @@ def validate_person_names(text: str | list[str]) -> str | list[str]:
             is_wrong_first = first != canonical_parts[0] and first in _KNOWN_FIRSTNAMES
 
             # Special logic for Bujar + Siljanovska
-            if first == "Bujar" and (
-                "Siljanovska" in (matched_part or "")
-                or "Siljanovska" in (matched_part or "")
-            ):
+            if first == "Bujar" and ("Siljanovska" in (matched_part or "") or "Siljanovska" in (matched_part or "")):
                 is_wrong_first = True
                 canonical = "Gordana Siljanovska-Davkova"
 
@@ -588,14 +567,10 @@ def validate_person_names(text: str | list[str]) -> str | list[str]:
 
             if is_wrong_first or is_alias_surname:
                 # Use word boundaries and ensure we match the ENTIRE pair
-                pattern = (
-                    rf"(?<![A-Za-z-]){re.escape(clean_pair)}(?![A-Za-z-])"
-                )
+                pattern = rf"(?<![A-Za-z-]){re.escape(clean_pair)}(?![A-Za-z-])"
                 if re.search(pattern, joined_text):
                     joined_text = re.sub(pattern, canonical, joined_text)
-                    log.info(
-                        f"[entities/fix] Hallucination detected: {clean_pair} -> {canonical}"
-                    )
+                    log.info(f"[entities/fix] Hallucination detected: {clean_pair} -> {canonical}")
 
     if is_list:
         return joined_text.split("\n")
@@ -700,9 +675,7 @@ def extract_entities(text: str, max_entities: int = 5) -> list[dict]:
                     continue
                 mapped = _SPACY_LABEL_MAP.get(ent.label_, "ENTITY")
                 if mapped == "PERSON" and not (
-                    _is_name_like_phrase(name)
-                    or name in ENTITY_ALIASES
-                    or name in KNOWN_ENTITIES
+                    _is_name_like_phrase(name) or name in ENTITY_ALIASES or name in KNOWN_ENTITIES
                 ):
                     continue
                 # Prefer the curated type if we already matched this name

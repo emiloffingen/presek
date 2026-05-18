@@ -174,7 +174,7 @@ function getTimeStr(dateStr: string) {
             </div>
         </div>
 
-		<div class="footer-meta mt-auto pt-2 flex items-center gap-4">
+		<div class="footer-meta mt-auto pt-2 flex items-center gap-[var(--grid-gap)]">
 			<span class="flex items-center gap-1" aria-label="Vreme">
 		<Clock size={11} className="opacity-70" aria-hidden="true" />
 		{getTimeStr(main.ingested_at || main.created_at)}

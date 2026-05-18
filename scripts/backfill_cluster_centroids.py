@@ -1,15 +1,15 @@
-import numpy as np
-import json
-from core.database import db_manager as db
 import datetime
+import json
+
+import numpy as np
+
+from core.database import db_manager as db
 
 
 def backfill_centroids():
     print("Backfilling centroids for recent clusters...")
     cutoff = datetime.datetime.now() - datetime.timedelta(days=7)
-    clusters = db.execute(
-        "SELECT DISTINCT cluster_id FROM articles WHERE created_at >= %s", (cutoff,)
-    )
+    clusters = db.execute("SELECT DISTINCT cluster_id FROM articles WHERE created_at >= %s", (cutoff,))
 
     count = 0
     for c in clusters:
@@ -30,9 +30,7 @@ def backfill_centroids():
         vecs = [parse_vec(a["embedding"]) for a in arts]
         if vecs:
             centroid = np.mean(vecs, axis=0).tolist()
-            centroid_str = (
-                f"[{','.join(map(str, centroid))}]" if len(centroid) == 384 else None
-            )
+            centroid_str = f"[{','.join(map(str, centroid))}]" if len(centroid) == 384 else None
             db.execute(
                 "INSERT INTO cluster_metadata (cluster_id, centroid, updated_at) VALUES (%s, %s, NOW()) ON CONFLICT (cluster_id) DO UPDATE SET centroid = EXCLUDED.centroid, updated_at = NOW()",
                 (cid, centroid_str),

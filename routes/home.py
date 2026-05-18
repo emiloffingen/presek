@@ -1,10 +1,13 @@
+import asyncio
 import logging
 import re
-import asyncio
+from typing import Any, Dict, List, Optional
+
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
-from typing import Optional, List, Any, Dict
+
 from utils import cached_response, set_cache
+
 from .common import cleanAndDecode
 from .intelligence import get_top_entities
 from .news import get_news
@@ -82,15 +85,9 @@ def _title_looks_like_feature(title):
 
 
 def _extract_preview_summary(article):
-    text = str(
-        (article or {}).get("summary") or (article or {}).get("description") or ""
-    )
+    text = str((article or {}).get("summary") or (article or {}).get("description") or "")
     trimmed = text.strip()
-    if (
-        trimmed.startswith("{")
-        or trimmed.startswith("&lt;%")
-        or "&quot;summary&quot;" in trimmed
-    ):
+    if trimmed.startswith("{") or trimmed.startswith("&lt;%") or "&quot;summary&quot;" in trimmed:
         try:
             decoded = cleanAndDecode(trimmed) if "&quot;" in trimmed else trimmed
             if decoded.startswith("{"):
@@ -163,9 +160,7 @@ def _rank_live_now_clusters(items, exclude_cluster_ids=None, limit=4):
         [
             cluster
             for cluster in (items or [])
-            if cluster
-            and cluster.get("cluster_id") not in exclude
-            and _is_live_now_candidate(cluster)
+            if cluster and cluster.get("cluster_id") not in exclude and _is_live_now_candidate(cluster)
         ],
         key=sort_key,
         reverse=True,
@@ -260,10 +255,7 @@ def _decorate_cluster_display(cluster):
     if not isinstance(cluster, dict):
         return cluster
     decorated = dict(cluster)
-    decorated["articles"] = [
-        _decorate_article_display(article)
-        for article in (cluster.get("articles") or [])
-    ]
+    decorated["articles"] = [_decorate_article_display(article) for article in (cluster.get("articles") or [])]
     # Inject synthesized fields if they exist in the cluster data
     if "synthetic_headline" in cluster:
         decorated["synthetic_headline"] = cluster["synthetic_headline"]
@@ -336,13 +328,8 @@ async def get_home(lang: Optional[str] = "sr"):
             for cluster in feed_clusters
             if (
                 (
-                    str(cluster.get("story_state") or "")
-                    in {"breaking", "developing", "confirmed"}
-                    and int(
-                        cluster.get("source_count")
-                        or len(cluster.get("articles") or [])
-                    )
-                    >= 2
+                    str(cluster.get("story_state") or "") in {"breaking", "developing", "confirmed"}
+                    and int(cluster.get("source_count") or len(cluster.get("articles") or [])) >= 2
                 )
                 or len(cluster.get("articles") or []) >= 2
             )
@@ -363,12 +350,8 @@ async def get_home(lang: Optional[str] = "sr"):
             ]
             if cluster_id
         ]
-        recent_clusters = (
-            recent_result.get("clusters") if isinstance(recent_result, dict) else []
-        )
-        live_now = _rank_live_now_clusters(
-            recent_clusters, exclude_cluster_ids=excluded_cluster_ids, limit=4
-        )
+        recent_clusters = recent_result.get("clusters") if isinstance(recent_result, dict) else []
+        live_now = _rank_live_now_clusters(recent_clusters, exclude_cluster_ids=excluded_cluster_ids, limit=4)
 
         raw_wire_articles = []
         seen_links = set()
@@ -423,18 +406,12 @@ async def get_home_live_now(exclude: str = "", lang: Optional[str] = "sr"):
     try:
         recent_result = await get_news(sort="recent", page_size=24, lang=lang)
         exclude_cluster_ids = [
-            token.strip()
-            for token in str(exclude or "").split(",")
-            if token.strip() and len(token.strip()) <= 80
+            token.strip() for token in str(exclude or "").split(",") if token.strip() and len(token.strip()) <= 80
         ]
-        recent_clusters = (
-            recent_result.get("clusters") if isinstance(recent_result, dict) else []
-        )
+        recent_clusters = recent_result.get("clusters") if isinstance(recent_result, dict) else []
         response = {
             "status": "success",
-            "clusters": _rank_live_now_clusters(
-                recent_clusters, exclude_cluster_ids=exclude_cluster_ids, limit=4
-            ),
+            "clusters": _rank_live_now_clusters(recent_clusters, exclude_cluster_ids=exclude_cluster_ids, limit=4),
         }
         set_cache(cache_key, response, ttl=60)
         return response
@@ -452,9 +429,7 @@ async def get_home_latest_wire(limit: int = 15, lang: Optional[str] = "sr"):
         return cached
     try:
         recent_result = await get_news(sort="recent", page_size=24, lang=lang)
-        recent_clusters = (
-            recent_result.get("clusters") if isinstance(recent_result, dict) else []
-        )
+        recent_clusters = recent_result.get("clusters") if isinstance(recent_result, dict) else []
         raw_wire_articles = []
         seen_links = set()
         for cluster in recent_clusters or []:
@@ -467,9 +442,7 @@ async def get_home_latest_wire(limit: int = 15, lang: Optional[str] = "sr"):
                 raw_wire_articles.append(article)
         response = {
             "status": "success",
-            "articles": _rank_latest_wire_articles(
-                raw_wire_articles, limit=bounded_limit
-            ),
+            "articles": _rank_latest_wire_articles(raw_wire_articles, limit=bounded_limit),
         }
         set_cache(cache_key, response, ttl=120)
         return response

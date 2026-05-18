@@ -1,40 +1,34 @@
+import datetime
 import json
 import logging
 import re
-import datetime
-
-from typing import Optional, List, Any
-from pydantic import BaseModel
 from collections import defaultdict
-from fastapi import APIRouter, Request, Query, HTTPException
-from fastapi.responses import StreamingResponse, JSONResponse
+from typing import Any, List, Optional
 
+from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import JSONResponse, StreamingResponse
+from pydantic import BaseModel
+
+from core.config import API_MAX_PAGE, API_MAX_Q_LEN, BREAKING_SCORE_THRESHOLD
 from core.database import db_manager as db
+from core.language import is_cyrillic_south_slavic
+from nlp import filter_cluster_tags
 from utils import (
-    score_cluster,
-    calculate_reading_time,
-    cached_response,
-    set_cache,
-    is_balanced,
-    assess_cluster_synthesis_freshness,
+    _coerce_datetime,
     annotate_cluster_articles,
-    score_cluster_for_homepage,
+    assess_cluster_synthesis_freshness,
     build_read_next_clusters,
+    cached_response,
+    calculate_reading_time,
     event_stream,
     get_source_effective_weight,
-    _coerce_datetime,
+    is_balanced,
+    score_cluster,
+    score_cluster_for_homepage,
+    set_cache,
 )
-from core.config import (
-    BREAKING_SCORE_THRESHOLD,
-    API_MAX_PAGE,
-    API_MAX_Q_LEN,
-)
-from nlp import (
-    filter_cluster_tags,
-)
-from core.language import is_cyrillic_south_slavic
-from .common import cleanAndDecode, _news_row_limit
 
+from .common import _news_row_limit, cleanAndDecode
 from .security import validate_cluster_id
 
 log = logging.getLogger("presek")
@@ -98,9 +92,7 @@ _FEATURE_PATTERNS = [
 def _is_publicly_displayable_article(article):
     if article.get("is_translated"):
         return True
-    return is_cyrillic_south_slavic(
-        f"{article.get('title') or ''}. {article.get('description') or ''}"
-    )
+    return is_cyrillic_south_slavic(f"{article.get('title') or ''}. {article.get('description') or ''}")
 
 
 _PUBLIC_ARTICLE_FIELDS = {
@@ -138,8 +130,9 @@ _PUBLIC_ARTICLE_FIELDS = {
 
 
 def _public_article_payload(article):
-    from nlp.categories import normalize_headline
     import datetime
+
+    from nlp.categories import normalize_headline
 
     res = {}
     for key, value in article.items():
@@ -159,9 +152,7 @@ def _public_article_payload(article):
                 else:
                     res[key] = value.isoformat()
             else:
-                res[key] = str(value) + (
-                    "Z" if "Z" not in str(value) and "T" in str(value) else ""
-                )
+                res[key] = str(value) + ("Z" if "Z" not in str(value) and "T" in str(value) else "")
         else:
             res[key] = value
 
@@ -215,35 +206,23 @@ def _compute_editorial_signals(arts, cluster_score, homepage_score):
         }
 
     main = ranked[0]
-    unique_sources = {
-        str(a.get("source") or "").strip()
-        for a in ranked
-        if str(a.get("source") or "").strip()
-    }
+    unique_sources = {str(a.get("source") or "").strip() for a in ranked if str(a.get("source") or "").strip()}
     source_count = len(unique_sources)
     latest_dt = max(
         (_coerce_datetime(a.get("ingested_at") or a.get("created_at")) for a in ranked),
         default=None,
     )
     now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
-    hours_since_latest = (
-        max(0.0, ((now - latest_dt).total_seconds() / 3600.0)) if latest_dt else 999.0
-    )
+    hours_since_latest = max(0.0, ((now - latest_dt).total_seconds() / 3600.0)) if latest_dt else 999.0
     recent_cutoff = now - datetime.timedelta(hours=6)
     recent_developments = sum(
         1
         for article in ranked
-        if (
-            _coerce_datetime(article.get("ingested_at") or article.get("created_at"))
-            or datetime.datetime.min
-        )
+        if (_coerce_datetime(article.get("ingested_at") or article.get("created_at")) or datetime.datetime.min)
         >= recent_cutoff
     )
 
-    top_weights = [
-        get_source_effective_weight(str(article.get("source") or ""))
-        for article in ranked[:3]
-    ]
+    top_weights = [get_source_effective_weight(str(article.get("source") or "")) for article in ranked[:3]]
     avg_top_weight = (sum(top_weights) / len(top_weights)) if top_weights else 0.0
     if hours_since_latest <= 12:
         freshness_base = 10.0 - (hours_since_latest * 0.45)
@@ -255,15 +234,12 @@ def _compute_editorial_signals(arts, cluster_score, homepage_score):
         10.0,
         max(0.0, freshness_base) + min(1.6, max(0, recent_developments - 1) * 0.45),
     )
-    development_score = min(
-        10.0, max(0, source_count - 1) * 1.85 + min(2.0, recent_developments * 0.6)
-    )
+    development_score = min(10.0, max(0, source_count - 1) * 1.85 + min(2.0, recent_developments * 0.6))
     trust_score = min(10.0, avg_top_weight * 5.0)
     importance_score = min(10.0, float(homepage_score or 0.0) * 3.0)
     novelty_score = min(
         10.0,
-        freshness_score * (1.0 if source_count <= 2 else 0.65)
-        + (1.25 if source_count == 1 else 0.0),
+        freshness_score * (1.0 if source_count <= 2 else 0.65) + (1.25 if source_count == 1 else 0.0),
     )
 
     if hours_since_latest >= 36:
@@ -364,8 +340,8 @@ async def get_news(
             # Check if query matches a known entity
             e_row = await db.async_execute_one(
                 """
-                SELECT name, type, total_mentions, sentiment_score, image_url 
-                FROM knowledge_entities 
+                SELECT name, type, total_mentions, sentiment_score, image_url
+                FROM knowledge_entities
                 WHERE LOWER(name) = LOWER(%s)
             """,
                 (q,),
@@ -396,9 +372,7 @@ async def get_news(
                     country=country,
                 )
                 if query_vec
-                else await db.async_search_articles(
-                    q, limit=row_limit, timespan=timespan, country=country
-                )
+                else await db.async_search_articles(q, limit=row_limit, timespan=timespan, country=country)
             )
         elif subcategory:
             query = """
@@ -410,14 +384,12 @@ async def get_news(
             if country:
                 query += " AND country = %s"
                 params.append(country)
-            
+
             query += " GROUP BY cluster_id ORDER BY last_article DESC LIMIT %s"
             params.append(page_size * (page + 1))
-            
+
             rows = await db.async_execute(query, tuple(params))
-            cids = [
-                r["cluster_id"] for r in rows[page * page_size : (page + 1) * page_size]
-            ]
+            cids = [r["cluster_id"] for r in rows[page * page_size : (page + 1) * page_size]]
             rows = (
                 await db.async_execute(
                     "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
@@ -428,7 +400,7 @@ async def get_news(
             )
         elif entity:
             # Escape LIKE special characters in entity search
-            escaped_entity = (entity.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_"))
+            escaped_entity = entity.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
             query = """
                 WITH entity_clusters AS (
                     SELECT ce.cluster_id
@@ -455,7 +427,7 @@ async def get_news(
             if country:
                 query += " AND a.country = %s"
                 params.append(country)
-            
+
             query += " GROUP BY a.cluster_id ORDER BY last_article DESC LIMIT %s"
             params.append(page_size * (page + 1))
 
@@ -490,7 +462,7 @@ async def get_news(
             if country:
                 query += " AND a.country = %s"
                 params.append(country)
-            
+
             query += " GROUP BY a.cluster_id ORDER BY last_article DESC LIMIT %s"
             params.append(page_size * (page + 1))
 
@@ -507,7 +479,7 @@ async def get_news(
             )
         elif category:
             query = """
-                SELECT m.cluster_id, m.updated_at as last_article 
+                SELECT m.cluster_id, m.updated_at as last_article
                 FROM cluster_metadata m
                 JOIN articles a ON a.cluster_id = m.cluster_id
                 WHERE m.category = %s
@@ -516,14 +488,12 @@ async def get_news(
             if country:
                 query += " AND a.country = %s"
                 params.append(country)
-            
+
             query += " GROUP BY m.cluster_id, m.updated_at ORDER BY m.updated_at DESC LIMIT %s"
             params.append(page_size * (page + 1))
-            
+
             rows = await db.async_execute(query, tuple(params))
-            cids = [
-                r["cluster_id"] for r in rows[page * page_size : (page + 1) * page_size]
-            ]
+            cids = [r["cluster_id"] for r in rows[page * page_size : (page + 1) * page_size]]
             rows = (
                 await db.async_execute(
                     "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
@@ -535,7 +505,7 @@ async def get_news(
         else:
             # Fallback
             query = """
-                SELECT m.cluster_id, m.updated_at as last_article 
+                SELECT m.cluster_id, m.updated_at as last_article
                 FROM cluster_metadata m
                 JOIN articles a ON a.cluster_id = m.cluster_id
                 WHERE 1=1
@@ -544,14 +514,12 @@ async def get_news(
             if country:
                 query += " AND a.country = %s"
                 params.append(country)
-            
+
             query += " GROUP BY m.cluster_id, m.updated_at ORDER BY m.updated_at DESC LIMIT %s"
             params.append(page_size * (page + 1))
 
             rows = await db.async_execute(query, tuple(params))
-            cids = [
-                r["cluster_id"] for r in rows[page * page_size : (page + 1) * page_size]
-            ]
+            cids = [r["cluster_id"] for r in rows[page * page_size : (page + 1) * page_size]]
             rows = (
                 await db.async_execute(
                     "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
@@ -560,7 +528,6 @@ async def get_news(
                 if cids
                 else []
             )
-
 
         clusters = defaultdict(list)
         cluster_relevance = {}
@@ -579,8 +546,7 @@ async def get_news(
                     cluster_relevance[cid] = score
 
         ranked_clusters = [
-            annotate_cluster_articles(arts, prefer_recent=(sort == "recent"))
-            for arts in clusters.values()
+            annotate_cluster_articles(arts, prefer_recent=(sort == "recent")) for arts in clusters.values()
         ]
         if sort == "popular":
             ranked_clusters.sort(
@@ -593,9 +559,7 @@ async def get_news(
                 if not cluster_arts:
                     return 0
                 lead_art = cluster_arts[0]
-                dt = _coerce_datetime(
-                    lead_art.get("ingested_at") or lead_art.get("created_at")
-                )
+                dt = _coerce_datetime(lead_art.get("ingested_at") or lead_art.get("created_at"))
                 return dt.timestamp() if dt else 0
 
             ranked_clusters.sort(key=get_recent_sort_key, reverse=True)
@@ -616,8 +580,8 @@ async def get_news(
         global_clusters_raw = []
         if not q and not category and not topic and not entity and page == 0:
             g_query = """
-                SELECT * FROM articles 
-                WHERE category IN ('Amerika', 'Evropa') 
+                SELECT * FROM articles
+                WHERE category IN ('Amerika', 'Evropa')
                   AND created_at >= NOW() - INTERVAL '48 hours'
             """
             g_params = []
@@ -630,9 +594,7 @@ async def get_news(
                 g_grouped = defaultdict(list)
                 for r in g_rows:
                     g_grouped[r["cluster_id"]].append(r)
-                g_ranked = [
-                    annotate_cluster_articles(arts) for arts in g_grouped.values()
-                ]
+                g_ranked = [annotate_cluster_articles(arts) for arts in g_grouped.values()]
                 g_ranked.sort(key=score_cluster_for_homepage, reverse=True)
                 global_clusters_raw = g_ranked[:6]  # Top 6 global stories
 
@@ -646,9 +608,7 @@ async def get_news(
             else []
         )
         meta_map = {r["cluster_id"]: r for r in meta_rows}
-        synthesis_ids = (
-            set(await db.async_get_synthesis_ids(all_cids, lang=lang)) if all_cids else set()
-        )
+        synthesis_ids = set(await db.async_get_synthesis_ids(all_cids, lang=lang)) if all_cids else set()
         summary_rows = (
             await db.async_execute(
                 """
@@ -683,9 +643,7 @@ async def get_news(
                 "analyst_entities": _as_list(summary.get("analyst_entities")),
                 "pulse_score": summary.get("pulse_score"),
                 "pluralism_score": summary.get("pluralism_score"),
-                "narrative_diversity": _parse_maybe_json(
-                    summary.get("narrative_diversity")
-                ),
+                "narrative_diversity": _parse_maybe_json(summary.get("narrative_diversity")),
                 "reading_time": main.get("reading_time", 1),
                 "score": round(s, 3),
                 "homepage_score": round(homepage_score, 3),
@@ -713,9 +671,7 @@ async def get_news(
         return final_response
     except Exception as e:
         log.error(f"News Route Error: {e}", exc_info=True)
-        return JSONResponse(
-            status_code=500, content={"message": "Internal server error"}
-        )
+        return JSONResponse(status_code=500, content={"message": "Internal server error"})
 
 
 @router.get("/search/semantic")
@@ -738,10 +694,12 @@ async def semantic_search(
 
         query_vec = generate_query_embedding(q)
         if not query_vec:
-            detail = "Neuspešno generisanje vektora za pretraživanje" if lang == "sr" else "Неуспешно генерирање на вектор за пребарување"
-            raise HTTPException(
-                status_code=500, detail=detail
+            detail = (
+                "Neuspešno generisanje vektora za pretraživanje"
+                if lang == "sr"
+                else "Неуспешно генерирање на вектор за пребарување"
             )
+            raise HTTPException(status_code=500, detail=detail)
 
         # Fetch articles using vector distance
         rows = await db.async_search_semantic(query_vec, limit=limit)
@@ -758,9 +716,7 @@ async def semantic_search(
         processed.sort(key=lambda arts: arts[0].get("similarity", 0), reverse=True)
 
         cid_list = list(clusters.keys())
-        synthesis_ids = (
-            set(await db.async_get_synthesis_ids(cid_list)) if cid_list else set()
-        )
+        synthesis_ids = set(await db.async_get_synthesis_ids(cid_list)) if cid_list else set()
 
         result = []
         for arts in processed:
@@ -785,9 +741,7 @@ async def semantic_search(
         log.error(f"Semantic Search Route Error: {e}", exc_info=True)
         if isinstance(e, HTTPException):
             raise e
-        return JSONResponse(
-            status_code=500, content={"message": "Internal server error"}
-        )
+        return JSONResponse(status_code=500, content={"message": "Internal server error"})
 
 
 @router.get("/cluster/{cluster_id}")
@@ -843,7 +797,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                 """,
                 (cluster_id,),
             )
-        
+
         log.debug(f"[debug] s_row found: {bool(s_row)}")
 
         # Synthesis and AI Content Mapping
@@ -860,36 +814,24 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
         key_facts = _as_list(s_row.get("key_facts")) if s_row else []
         analyst_entities = _as_list(s_row.get("analyst_entities")) if s_row else []
         perspectives = _parse_maybe_json(s_row.get("perspectives")) if s_row else []
-        verification_report = (
-            _parse_maybe_json(s_row.get("verification_report")) if s_row else None
-        )
+        verification_report = _parse_maybe_json(s_row.get("verification_report")) if s_row else None
         sentiment = _parse_maybe_json(s_row.get("sentiment")) if s_row else None
         tone_analysis = _parse_maybe_json(s_row.get("tone_analysis")) if s_row else None
-        citation_sources = (
-            _parse_maybe_json(s_row.get("citation_sources")) if s_row else []
-        )
+        citation_sources = _parse_maybe_json(s_row.get("citation_sources")) if s_row else []
 
-        freshness = assess_cluster_synthesis_freshness(
-            articles, (s_row or {}).get("created_at")
-        )
+        freshness = assess_cluster_synthesis_freshness(articles, (s_row or {}).get("created_at"))
 
         cluster_meta = await db.async_execute_one(
             "SELECT tags, topics, representative_image, dominant_color, centroid FROM cluster_metadata WHERE cluster_id = %s",
             (cluster_id,),
         )
 
-        tags = filter_cluster_tags(
-            (cluster_meta.get("tags") or []) if cluster_meta else []
-        )
+        tags = filter_cluster_tags((cluster_meta.get("tags") or []) if cluster_meta else [])
         topics = (cluster_meta.get("topics") or []) if cluster_meta else []
         rep_image = cluster_meta.get("representative_image") if cluster_meta else None
         dominant_color = cluster_meta.get("dominant_color") if cluster_meta else None
-        current_tags = {
-            str(tag or "").strip() for tag in tags if str(tag or "").strip()
-        }
-        current_topics = {
-            str(topic or "").strip() for topic in topics if str(topic or "").strip()
-        }
+        current_tags = {str(tag or "").strip() for tag in tags if str(tag or "").strip()}
+        current_topics = {str(topic or "").strip() for topic in topics if str(topic or "").strip()}
 
         # Just-in-time extraction if missing
         if rep_image and not dominant_color:
@@ -926,9 +868,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                 ORDER BY m.centroid <=> %s::vector
                 LIMIT 15
             """
-            related_results = await db.async_execute(
-                related_query, (vec_str, cluster_id, country_filter, vec_str)
-            )
+            related_results = await db.async_execute(related_query, (vec_str, cluster_id, country_filter, vec_str))
 
             related_cids = []
             for r in related_results:
@@ -942,11 +882,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                     "SELECT a.*, COALESCE(m.tags, '{}') as cluster_tags FROM articles a LEFT JOIN cluster_metadata m ON a.cluster_id = m.cluster_id WHERE a.cluster_id = ANY(%s)",
                     (related_cids,),
                 )
-                synthesis_ids = (
-                    set(await db.async_get_synthesis_ids(related_cids))
-                    if related_cids
-                    else set()
-                )
+                synthesis_ids = set(await db.async_get_synthesis_ids(related_cids)) if related_cids else set()
                 scored_related = build_read_next_clusters(
                     cluster_id,
                     articles,
@@ -964,8 +900,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                             "title": item["title"],
                             "image_url": item.get("image_url"),
                             "tags": shared_tags,
-                            "relationship_label": item.get("relationship_label")
-                            or "Srodna tema",
+                            "relationship_label": item.get("relationship_label") or "Srodna tema",
                             "shared_tags": shared_tags,
                             "shared_topics": shared_topics,
                             "shared_entities": shared_entities,
@@ -1000,9 +935,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                 match_clauses.append("a.category = ANY(%s)")
                 fallback_params.append(fallback_categories)
             if current_tags:
-                match_clauses.append(
-                    "EXISTS (SELECT 1 FROM unnest(COALESCE(m.tags, '{}')) AS tag WHERE tag = ANY(%s))"
-                )
+                match_clauses.append("EXISTS (SELECT 1 FROM unnest(COALESCE(m.tags, '{}')) AS tag WHERE tag = ANY(%s))")
                 fallback_params.append(sorted(current_tags))
 
             if len(match_clauses) > 1:
@@ -1027,11 +960,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                     limit=5,
                 )
                 related_cids = [item["cluster_id"] for item in scored_related]
-                synthesis_ids = (
-                    set(await db.async_get_synthesis_ids(related_cids))
-                    if related_cids
-                    else set()
-                )
+                synthesis_ids = set(await db.async_get_synthesis_ids(related_cids)) if related_cids else set()
                 for item in scored_related:
                     shared_tags = item.get("shared_tags", [])
                     shared_topics = item.get("shared_topics", [])
@@ -1042,8 +971,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                             "title": item["title"],
                             "image_url": item.get("image_url"),
                             "tags": shared_tags,
-                            "relationship_label": item.get("relationship_label")
-                            or "Srodna tema",
+                            "relationship_label": item.get("relationship_label") or "Srodna tema",
                             "shared_tags": shared_tags,
                             "shared_topics": shared_topics,
                             "shared_entities": shared_entities,
@@ -1056,13 +984,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
         for i, a in enumerate(chrono):
             is_major = (a.get("source_signal") or {}).get("trust_level", 0) >= 0.8
             milestone = (
-                "POCETOK"
-                if i == 0
-                else (
-                    "KONSENZUS"
-                    if i == len(chrono) - 1 and len(chrono) >= 3
-                    else "razvoj"
-                )
+                "POCETOK" if i == 0 else ("KONSENZUS" if i == len(chrono) - 1 and len(chrono) >= 3 else "razvoj")
             )
             timeline.append(
                 {
@@ -1125,10 +1047,10 @@ async def get_cluster_history(cluster_id: str, lang: Optional[str] = "sr"):
     try:
         rows = await db.async_execute(
             """
-            SELECT summary, generated_article, synthetic_headline, synthetic_standfirst, perspectives, verification_report, created_at 
-            FROM cluster_summary_history 
+            SELECT summary, generated_article, synthetic_headline, synthetic_standfirst, perspectives, verification_report, created_at
+            FROM cluster_summary_history
             WHERE cluster_id = %s AND lang = %s
-            ORDER BY created_at DESC 
+            ORDER BY created_at DESC
             LIMIT 20
         """,
             (cluster_id, lang),
@@ -1161,9 +1083,7 @@ async def get_cluster_history(cluster_id: str, lang: Optional[str] = "sr"):
         return {"status": "success", "history": history}
     except Exception as e:
         log.error(f"Cluster History Error: {e}", exc_info=True)
-        return JSONResponse(
-            status_code=500, content={"message": "Internal server error"}
-        )
+        return JSONResponse(status_code=500, content={"message": "Internal server error"})
 
 
 @router.get("/cluster/{cluster_id}/historical")
@@ -1218,7 +1138,7 @@ async def get_historical_events(cluster_id: str):
                   AND created_at < NOW() - INTERVAL '48 hours'
                   AND embedding IS NOT NULL
             )
-            SELECT DISTINCT ON (cluster_id) 
+            SELECT DISTINCT ON (cluster_id)
                    cluster_id, title, created_at, category, similarity
             FROM archive_pool
             WHERE similarity > 0.68
@@ -1245,13 +1165,9 @@ async def get_historical_events(cluster_id: str):
         return res
     except Exception as e:
         log.error(f"Historical Search Error: {e}", exc_info=True)
-        return JSONResponse(
-            status_code=500, content={"message": "Internal server error"}
-        )
+        return JSONResponse(status_code=500, content={"message": "Internal server error"})
 
 
 @router.get("/live")
 async def get_live_route(request: Request):
-    return StreamingResponse(
-        event_stream("updates", request=request), media_type="text/event-stream"
-    )
+    return StreamingResponse(event_stream("updates", request=request), media_type="text/event-stream")

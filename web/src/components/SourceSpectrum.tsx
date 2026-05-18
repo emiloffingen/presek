@@ -8,7 +8,7 @@ interface SourceSpectrumProps {
 
 const CATEGORY_MAP: Record<string, string> = {
   "MIA": "Agencijski", "Makfax": "Agencijski",
-  "MRT": "Javni Servis", 
+  "MRT": "Javni Servis",
   "Sitel": "glavni", "Kanal 5": "glavni", "Telma": "glavni", "24 vesti": "glavni", "TV21": "glavni", "Alsat-M": "glavni", "Pressing TV": "glavni",
   "Sloboden Pecat": "Nezavisni", "Fokus": "Nezavisni", "Nezavisen": "Nezavisni", "Meta": "Nezavisni", "360 Stepeni": "Nezavisni", "Antropol": "Nezavisni", "RSE": "Nezavisni", "DW": "Nezavisni", "A1on": "Nezavisni",
   "IRL": "Istraživački", "Vistinomer": "Istraživački", "Birn": "Istraživački", "Prizma": "Istraživački",
@@ -31,22 +31,22 @@ const CATEGORY_LOCALIZATION: Record<string, Record<string, string>> = {
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  "Agencijski": "#3b82f6", 
-  "Javni Servis": "#10b981", 
-  "glavni": "#f59e0b", 
-  "Nezavisni": "#8b5cf6", 
-  "Istraživački": "#ec4899", 
-  "Alternativni": "#ef4444", 
+  "Agencijski": "#3b82f6",
+  "Javni Servis": "#10b981",
+  "glavni": "#f59e0b",
+  "Nezavisni": "#8b5cf6",
+  "Istraživački": "#ec4899",
+  "Alternativni": "#ef4444",
   "Lokalni": "#0ea5e9",
-  "Regionalni": "#6366f1", 
-  "Kultura": "#14b8a6", 
+  "Regionalni": "#6366f1",
+  "Kultura": "#14b8a6",
 };
 
 export const SourceSpectrum: React.FC<SourceSpectrumProps> = ({ articles, lang = 'sr' }) => {
   const stats = React.useMemo(() => {
     const counts: Record<string, number> = {};
     const sourcesByCategory: Record<string, string[]> = {};
-    
+
     articles.forEach(art => {
       const cat = CATEGORY_MAP[art.source] || "Lokalni";
       counts[cat] = (counts[cat] || 0) + 1;
@@ -55,7 +55,7 @@ export const SourceSpectrum: React.FC<SourceSpectrumProps> = ({ articles, lang =
         sourcesByCategory[cat].push(art.source);
       }
     });
-    
+
     const total = articles.length;
     return Object.entries(counts)
       .map(([name, count]) => ({
@@ -86,7 +86,7 @@ export const SourceSpectrum: React.FC<SourceSpectrumProps> = ({ articles, lang =
         {stats.map((s) => (
           <div key={s.name} className="flex flex-col group">
             <div className="flex items-center justify-between mb-1.5">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-[var(--grid-gap)]">
                 <div className="w-2.5 h-2.5 rounded-[2px] transition-transform group-hover:scale-110" style={{ backgroundColor: s.color }}></div>
                 <span className="text-[11px] font-black uppercase tracking-tighter text-foreground/90">{s.displayName}</span>
               </div>

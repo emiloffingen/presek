@@ -31,7 +31,7 @@ function getTimeStr(dateStr: string) {
             const label = diffHours === 1 ? t('news.hour') : t('news.hours');
             return `${t('news.ago')} ${diffHours} ${label}`;
         }
-        
+
         return date.toLocaleDateString(lang === 'sr' ? 'sr-RS' : 'mk-MK', { day: 'numeric', month: 'short' }).toUpperCase();
     } catch {
         return '';
@@ -48,14 +48,14 @@ const l = (path: string) => isMK ? `/mk${path}` : path;
 
 		{historicalDates.length > 0 && (
 			<section class="sidebar-module">
-				<div class="flex items-center gap-2 mb-6 pb-2 border-b border-border">
+				<div class="flex items-center gap-[var(--grid-gap)] mb-6 pb-2 border-b border-border">
 					<Calendar size={14} className="text-foreground" />
 					<h4 class="text-[10px] font-black uppercase tracking-widest">{isMK ? 'ПРЕТХОДНИ ИЗДАНИЈА' : 'PRETHODNA IZDANJA'}</h4>
 				</div>
-				<div class="grid grid-cols-2 gap-2">
+				<div class="grid grid-cols-2 gap-[var(--grid-gap)]">
 					{historicalDates.map((d: any) => (
-						<a 
-							href={`${l('/briefing')}?date=${d.day}`} 
+						<a
+							href={`${l('/briefing')}?date=${d.day}`}
 							class={`text-[10px] font-black uppercase tracking-tighter hover:bg-secondary transition-all px-3 py-2 border border-border rounded flex items-center justify-center text-center ${briefing?.date === d.day ? 'bg-nyt-accent text-white border-nyt-accent' : 'text-muted-foreground bg-card'}`}
 						>
 							{new Date(d.day).toLocaleDateString(isMK ? 'mk-MK' : 'sr-RS', { day: 'numeric', month: 'short' })}
@@ -67,7 +67,7 @@ const l = (path: string) => isMK ? `/mk${path}` : path;
 
 		{stats?.intelligence?.pluralism && (
 			<section class="sidebar-module">
-				<div class="flex items-center gap-2 mb-6 pb-2 border-b border-border">
+				<div class="flex items-center gap-[var(--grid-gap)] mb-6 pb-2 border-b border-border">
 					<Activity size={14} className="text-emerald-600" />
 					<h4 class="text-[10px] font-black uppercase tracking-widest">{isMK ? 'СИСТЕМСКА РАМНОТЕЖА' : 'SISTEMSKA RAVNOTEŽA'}</h4>
 				</div>
@@ -96,11 +96,11 @@ const l = (path: string) => isMK ? `/mk${path}` : path;
 
 		{briefing?.subjects?.length > 0 && (
 			<section class="sidebar-module">
-				<div class="flex items-center gap-2 mb-6 pb-2 border-b border-border">
+				<div class="flex items-center gap-[var(--grid-gap)] mb-6 pb-2 border-b border-border">
 					<Users size={14} className="text-foreground" />
 					<h4 class="text-[10px] font-black uppercase tracking-widest">{isMK ? 'КЛУЧНИ АКТЕРИ ДЕНЕС' : 'KLJUČNI AKTERI DANAS'}</h4>
 				</div>
-				<div class="flex flex-col gap-3">
+				<div class="flex flex-col gap-[var(--grid-gap)]">
 					{briefing.subjects.map((subject: any) => (
 						<a href={l(`/subjekt/${encodeURIComponent(subject.name)}`)} class="flex justify-between items-center text-sm font-serif group">
 							<span class="group-hover:text-nyt-accent transition-colors">{subject.name}</span>
@@ -113,11 +113,11 @@ const l = (path: string) => isMK ? `/mk${path}` : path;
 
 		{briefing?.locations?.length > 0 && (
 			<section class="sidebar-module">
-				<div class="flex items-center gap-2 mb-6 pb-2 border-b border-border">
+				<div class="flex items-center gap-[var(--grid-gap)] mb-6 pb-2 border-b border-border">
 					<MapPin size={14} className="text-foreground" />
 					<h4 class="text-[10px] font-black uppercase tracking-widest">{isMK ? 'ФОКУС ЛОКАЦИИ' : 'FOKUS LOKACIJE'}</h4>
 				</div>
-				<div class="flex flex-wrap gap-2">
+				<div class="flex flex-wrap gap-[var(--grid-gap)]">
 					{briefing.locations.map((loc: any) => (
 						<span class="px-2 py-1 bg-secondary border border-border text-secondary-foreground text-[10px] font-sans font-black uppercase tracking-wider">
 							{loc.name}
@@ -129,7 +129,7 @@ const l = (path: string) => isMK ? `/mk${path}` : path;
 
 		{leadCluster && (
 			<section class="sidebar-module">
-				<div class="flex items-center gap-2 mb-6 pb-2 border-b border-border">
+				<div class="flex items-center gap-[var(--grid-gap)] mb-6 pb-2 border-b border-border">
 					<Zap size={14} className="text-nyt-accent" />
 					<h4 class="text-[10px] font-black uppercase tracking-widest">{isMK ? 'АКТУЕЛНО СЕГА' : 'AKTUELNO SAD'}</h4>
 				</div>

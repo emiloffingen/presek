@@ -8,7 +8,7 @@ import { sanitizeHtml } from '../lib/sanitize';
 
 /**
  * Render synthesis text with markdown formatting and citation handling.
- * 
+ *
  * Features:
  * - Strips AI placeholders like [PRETHODEN kontekst]
  * - Converts **text** to <strong>text</strong>
@@ -16,7 +16,7 @@ import { sanitizeHtml } from '../lib/sanitize';
  * - Converts (izvor: Name) or (Name) to <span class="citation-badge">Name</span>
  * - Handles footnotes if hasCitationSources is true
  * - Removes [1], [2] etc. citation markers if !hasCitationSources
- * 
+ *
  * @param text - The raw synthesis text
  * @param hasCitationSources - Whether to parse footnotes
  * @returns Sanitized HTML string

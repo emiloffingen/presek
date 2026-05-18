@@ -22,17 +22,17 @@ export default function PreferenceToggle({
   const profile = useStore($profile);
   const field = kind === 'source' ? 'followedSources' : 'followedTopics';
   const isFollowing = useMemo(() => (profile[field] || []).includes(value), [profile, field, value]);
-  
+
   const [feedback, setFeedback] = useState('');
   const feedbackTimerRef = useRef<number | null>(null);
 
   const onToggle = () => {
     const nextFollowing = !isFollowing;
     const currentList = profile[field] || [];
-    const newList = nextFollowing 
+    const newList = nextFollowing
         ? [...new Set([...currentList, value])].slice(0, 12)
         : currentList.filter(v => v !== value);
-    
+
     updateProfile({ [field]: newList });
 
     if (nextFollowing && analyticsSurface) {

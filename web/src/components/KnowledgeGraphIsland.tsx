@@ -38,7 +38,7 @@ const KnowledgeGraphIsland: React.FC<{ apiUrl: string }> = ({ apiUrl }) => {
     if (loading) return (
         <div className="animate-pulse space-y-8">
             <div className="h-64 bg-secondary/50 rounded-lg"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-[var(--grid-gap)]">
                 <div className="h-48 bg-secondary/50 rounded-lg"></div>
                 <div className="h-48 bg-secondary/50 rounded-lg"></div>
             </div>
@@ -51,14 +51,14 @@ const KnowledgeGraphIsland: React.FC<{ apiUrl: string }> = ({ apiUrl }) => {
         <div className="space-y-12">
             {/* Trending Entities */}
             <section>
-                <div className="flex items-center gap-2 mb-6 border-b border-border pb-4">
+                <div className="flex items-center gap-[var(--grid-gap)] mb-6 border-b border-border pb-4">
                     <TrendingUp size={20} className="text-nyt-accent" />
                     <h2 className="font-sans text-xs font-black uppercase tracking-widest">Aktuelni Subjekti</h2>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-[var(--grid-gap)]">
                     {data.trending.map((ent) => (
-                        <a 
-                            key={ent.name} 
+                        <a
+                            key={ent.name}
                             href={`/subjekt/${encodeURIComponent(ent.name)}`}
                             className="p-4 border border-border bg-card hover:border-nyt-accent transition-all group"
                         >
@@ -74,9 +74,9 @@ const KnowledgeGraphIsland: React.FC<{ apiUrl: string }> = ({ apiUrl }) => {
             </section>
 
             {/* Sentiment Pulse */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-[var(--grid-gap)]">
                 <section>
-                    <div className="flex items-center gap-2 mb-6 border-b border-border pb-4">
+                    <div className="flex items-center gap-[var(--grid-gap)] mb-6 border-b border-border pb-4">
                         <Heart size={20} className="text-green-600" />
                         <h2 className="font-sans text-xs font-black uppercase tracking-widest">Pozitiven Puls</h2>
                     </div>
@@ -91,7 +91,7 @@ const KnowledgeGraphIsland: React.FC<{ apiUrl: string }> = ({ apiUrl }) => {
                 </section>
 
                 <section>
-                    <div className="flex items-center gap-2 mb-6 border-b border-border pb-4">
+                    <div className="flex items-center gap-[var(--grid-gap)] mb-6 border-b border-border pb-4">
                         <Activity size={20} className="text-nyt-red" />
                         <h2 className="font-sans text-xs font-black uppercase tracking-widest">Kriticen Puls</h2>
                     </div>
@@ -108,13 +108,13 @@ const KnowledgeGraphIsland: React.FC<{ apiUrl: string }> = ({ apiUrl }) => {
 
             {/* Relationship Map */}
             <section>
-                <div className="flex items-center gap-2 mb-6 border-b border-border pb-4">
+                <div className="flex items-center gap-[var(--grid-gap)] mb-6 border-b border-border pb-4">
                     <Users size={20} className="text-nyt-accent" />
                     <h2 className="font-sans text-xs font-black uppercase tracking-widest">Mreza na Konekcii</h2>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[var(--grid-gap)]">
                     {data.relationships.map((rel, idx) => (
-                        <div key={idx} className="flex items-center justify-center gap-4 p-6 border border-border bg-secondary/10 rounded-lg italic font-serif">
+                        <div key={idx} className="flex items-center justify-center gap-[var(--grid-gap)] p-6 border border-border bg-secondary/10 rounded-lg italic font-serif">
                             <span className="font-bold">{rel.entity_a}</span>
                             <div className="flex-1 flex items-center gap-1 opacity-30">
                                 <div className="h-px flex-1 bg-foreground"></div>

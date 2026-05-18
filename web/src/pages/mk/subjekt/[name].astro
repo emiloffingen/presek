@@ -45,7 +45,7 @@ const nameIsCyrillic = isMostlyCyrillic(decodedName);
 
 <Layout
     title={`${decodedName} | ${lang === 'sr' ? 'Profil' : 'Профил'}`}
-    description={lang === 'sr' 
+    description={lang === 'sr'
         ? `Medijska analiza, ton izveštavanja i najnovije vesti za ${decodedName} na Preseku.`
         : `Mediumska analiza, ton na izvestuvanje i najnovi vesti za ${decodedName} na Presek.`}
 >
@@ -77,7 +77,7 @@ const nameIsCyrillic = isMostlyCyrillic(decodedName);
 
                     <section class="mt-16">
                         <h2 class="section-title-italic mb-8">{lang === 'sr' ? 'Povezani događaji' : 'Поврзани настани'}</h2>
-                        
+
                         <div class="broadsheet-feed">
                             {featuredClusters.map((cluster: any) => (
                                 <div class="feed-item-wrap">
@@ -109,12 +109,12 @@ const nameIsCyrillic = isMostlyCyrillic(decodedName);
                         <p class="rail-kicker">{lang === 'sr' ? 'Za profil' : 'За профилот'}</p>
                         <h3 class="rail-title">{lang === 'sr' ? 'POVEZANOST' : 'ПОВРЗАНОСТ'}</h3>
                         <p class="rail-text">
-                            {lang === 'sr' 
+                            {lang === 'sr'
                                 ? `Ovaj profil je automatski generisan kroz analizu medijskog intenziteta. Prikazujemo samo događaje gde je ${decodedName} ključni akter ili značajan deo konteksta.`
                                 : `Овој профил е автоматски генериран преку анализа на медиумскиот интензитет. Ги прикажуваме само настаните каде ${decodedName} е клучен актер или значаен дел од контекстот.`}
                         </p>
                     </section>
-                    
+
                 </aside>
             </div>
         )}

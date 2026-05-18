@@ -25,7 +25,7 @@ export default defineConfig({
     defaultStrategy: 'viewport',
   },
   integrations: [
-    react(), 
+    react(),
     sitemap(),
     partytown({
       config: {

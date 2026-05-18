@@ -11,7 +11,7 @@
 #### A. Hotlinking Blocked (HTTP 403)
 - **Symptom**: Proxy returns fallback SVG with "hotlink_blocked" reason
 - **Diagnosis**: Check proxy response headers for `X-Proxy-Fallback: hotlink_blocked_403`
-- **Solution**: 
+- **Solution**:
   ```python
   # The proxy now automatically retries with proper Referer header
   # If still blocked, you may need to:
@@ -39,10 +39,10 @@
   ```bash
   # Restart the FastAPI service
   systemctl restart presek_fastapi
-  
+
   # Check service status
   systemctl status presek_fastapi
-  
+
   # Verify port is listening
   ss -tlnp | grep 5001
   ```

@@ -1,47 +1,45 @@
-from nlp.local_analyst import analyst
-from tasks.utils import (
-    invalidate_public_data_caches,
-    invalidate_cluster_caches,
-    record_runtime_event,
-    log,
-    redis_client,
-    get_celery_queue_depth,
-)
-from utils import get_dominant_color
-from core.api_helpers import (
-    normalize_summary_text,
-    normalize_perspectives,
-    normalize_citation_sources,
+from core.api_helpers import normalize_citation_sources, normalize_perspectives, normalize_summary_text
+from core.entities import extract_entities, validate_person_names
+from core.prompts import (
+    SUMMARY_SYSTEM_PROMPT_MK,
+    SUMMARY_SYSTEM_PROMPT_SR,
+    SYNTHESIS_SYSTEM_PROMPT_MK,
+    SYNTHESIS_SYSTEM_PROMPT_SR,
 )
 from nlp import (
-    summarize_article_fallback,
-    synthesize_cluster_fallback,
+    deShout,
     extract_cluster_tags_locally,
     filter_cluster_tags,
-    deShout,
     generate_local_placeholder,
+    summarize_article_fallback,
+    synthesize_cluster_fallback,
 )
-from core.entities import extract_entities, validate_person_names
-from nlp.categories import detect_topic, detect_category
-from core.prompts import (
-    SUMMARY_SYSTEM_PROMPT_SR,
-    SYNTHESIS_SYSTEM_PROMPT_SR,
-    SUMMARY_SYSTEM_PROMPT_MK,
-    SYNTHESIS_SYSTEM_PROMPT_MK,
+from nlp.categories import detect_category, detect_topic
+from nlp.local_analyst import analyst
+from tasks.utils import (
+    get_celery_queue_depth,
+    invalidate_cluster_caches,
+    invalidate_public_data_caches,
+    log,
+    record_runtime_event,
+    redis_client,
 )
+from utils import get_dominant_color
 
 SUPPORTED_LANGS = ["sr", "mk"]
-from core.embeddings import average_embeddings, parse_embedding_value
-from core.ai_engine import sync_call_ai as _call_ai, clean_json_response, generate_cover_art
-from core.config import CLUSTER_LOOKBACK
-from core.database import db_manager as db
-from core.celery_app import celery_app
 import datetime
 import json
 import os
 import re
 import sys
 import threading
+
+from core.ai_engine import clean_json_response, generate_cover_art
+from core.ai_engine import sync_call_ai as _call_ai
+from core.celery_app import celery_app
+from core.config import CLUSTER_LOOKBACK
+from core.database import db_manager as db
+from core.embeddings import average_embeddings, parse_embedding_value
 
 _analyst_semaphore = threading.Semaphore(2)
 _BACKFILL_QUEUE_DEPTH_LIMIT = 100
@@ -73,9 +71,7 @@ def standardize_article_styles_batch_task(article_ids):
         standardize_article_style_task(article_id)
 
 
-@celery_app.task(
-    rate_limit="50/m", autoretry_for=(Exception,), retry_backoff=True, max_retries=2
-)
+@celery_app.task(rate_limit="50/m", autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
 def summarize_article_task(article_id, final_title=None):
     """Refines article content using AI summarization."""
     row = db.execute_one(
@@ -90,11 +86,7 @@ def summarize_article_task(article_id, final_title=None):
     full_content = row.get("full_content", "")
     topic = row.get("topic")
 
-    context_text = (
-        full_content
-        if len(full_content or "") > len(description or "")
-        else description
-    )
+    context_text = full_content if len(full_content or "") > len(description or "") else description
 
     # AI summarization logic
     prompt_parts = [f"Naslov: {str(title or '').strip()}"]
@@ -106,10 +98,11 @@ def summarize_article_task(article_id, final_title=None):
         )
     prompt = "\n".join(part for part in prompt_parts if part)
 
-    # Determine which prompt to use based on existing category or topic if possible, 
+    # Determine which prompt to use based on existing category or topic if possible,
     # but default to Serbian as the primary processing language for now.
     # In a full multi-lang setup, we'd summarize in the language of the source.
     from core.language import detect_language
+
     lang = detect_language(title + " " + (description or ""))
     system_prompt = SUMMARY_SYSTEM_PROMPT_MK if lang == "mk" else SUMMARY_SYSTEM_PROMPT_SR
 
@@ -161,9 +154,7 @@ def _load_cluster_articles_for_synthesis(cluster_id):
 def _build_cluster_synthesis_content(article_rows):
     rows = article_rows or []
     return "\n".join(
-        f"- [{row.get('source') or 'izvor'}]: {row.get('title') or ''}"
-        for row in rows[:10]
-        if row.get("title")
+        f"- [{row.get('source') or 'izvor'}]: {row.get('title') or ''}" for row in rows[:10] if row.get("title")
     )
 
 
@@ -236,11 +227,7 @@ def _build_synthesis_source_context(article_rows):
         summary = str(row.get("summary") or "").strip()
         full_content = str(row.get("full_content") or "").strip()
 
-        evidence = (
-            full_content
-            if len(full_content or "") > len(description or "")
-            else description
-        )
+        evidence = full_content if len(full_content or "") > len(description or "") else description
         evidence = evidence[:2200].strip()
         parts = [f"[{idx}] {source}"]
         if category:
@@ -268,9 +255,7 @@ def _cosine_dist(a, b):
     return 1 - (dot / (norm_a * norm_b)) if norm_a and norm_b else 1.0
 
 
-@celery_app.task(
-    rate_limit="10/m", autoretry_for=(Exception,), retry_backoff=True, max_retries=2
-)
+@celery_app.task(rate_limit="10/m", autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
 def standardize_article_style_task(article_id):
     """Refines article linguistic style using Gemma 2 2B (Literary Normalization)."""
     from core.config import ENABLE_EXPENSIVE_STYLE_TASKS
@@ -314,9 +299,7 @@ def standardize_article_style_task(article_id):
                 (final_title, title, article_id),
                 fetch=False,
             )
-            log.info(
-                f"[style] Standardized title for article {article_id} using Gemma 2 2B"
-            )
+            log.info(f"[style] Standardized title for article {article_id} using Gemma 2 2B")
             # Re-trigger summary if title changed significantly
             summarize_article_task.delay(article_id, final_title)
 
@@ -324,9 +307,7 @@ def standardize_article_style_task(article_id):
         log.error(f"[style] Normalization failed for {article_id}: {e}")
 
 
-@celery_app.task(
-    rate_limit="15/m", autoretry_for=(Exception,), retry_backoff=True, max_retries=2
-)
+@celery_app.task(rate_limit="15/m", autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
 def detect_global_story_task(article_id):
     """Detects if a Macedonian article is a translation of a foreign global report."""
     from core.config import LOCAL_TRANSLATION_ENABLED
@@ -339,9 +320,10 @@ def detect_global_story_task(article_id):
         return
 
     try:
+        import numpy as np
+
         from core.embeddings import generate_query_embedding
         from utils import redis_client
-        import numpy as np
 
         # Use the multilingual embedding model (MiniLM-L12) to compare Macedonian
         # directly with global English headlines
@@ -359,9 +341,7 @@ def detect_global_story_task(article_id):
         best_similarity = 0
         for head in global_heads:
             g_vec = np.array(head["vec"])
-            sim = np.dot(mk_vec, g_vec) / (
-                np.linalg.norm(mk_vec) * np.linalg.norm(g_vec)
-            )
+            sim = np.dot(mk_vec, g_vec) / (np.linalg.norm(mk_vec) * np.linalg.norm(g_vec))
             if sim > best_similarity:
                 best_similarity = sim
 
@@ -393,9 +373,7 @@ def synthesize_urgent_task(cluster_id, content=None):
     return synthesize_cluster_task(cluster_id, content, fast_mode=True)
 
 
-@celery_app.task(
-    rate_limit="60/m", autoretry_for=(Exception,), retry_backoff=True, max_retries=2
-)
+@celery_app.task(rate_limit="60/m", autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
 def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=False):
     """Generates a multi-perspective synthesis for a cluster with historical continuity."""
     article_rows = _load_cluster_articles_for_synthesis(cluster_id)
@@ -441,7 +419,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
         log.warning(f"[tasks/memory] Failed to fetch history for {cluster_id}: {e}")
 
     legacy_summary = str(content or "").strip()
-    
+
     # Track shared metrics that only need to be computed once per cluster
     shared_metrics = {
         "impact_score": 0.0,
@@ -454,7 +432,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
         "citation_sources": citation_sources,
         "pulse_score": 50,
         "pluralism_score": 50,
-        "analyst_entities": []
+        "analyst_entities": [],
     }
     shared_computed = False
 
@@ -476,9 +454,9 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 prompt_parts.append(legacy_summary)
             prompt_parts.append("</articles_context>")
             full_prompt = "\n\n".join(part for part in prompt_parts if part)
-            
+
             system_prompt = SYNTHESIS_SYSTEM_PROMPT_MK if lang == "mk" else SYNTHESIS_SYSTEM_PROMPT_SR
-            
+
             raw, provider = _call_ai(
                 full_prompt,
                 system_prompt,
@@ -493,20 +471,14 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 try:
                     res = clean_json_response(raw)
                 except Exception as e:
-                    log.error(
-                        f"[tasks/synthesis] JSON Parse Error for {cluster_id} ({lang}): {e}. Raw: {raw[:200]}"
-                    )
-                    continue # Try next language
+                    log.error(f"[tasks/synthesis] JSON Parse Error for {cluster_id} ({lang}): {e}. Raw: {raw[:200]}")
+                    continue  # Try next language
 
                 res_data = res if isinstance(res, dict) else {}
 
                 # If the AI returned a string instead of a dict, or if the dict is missing core fields,
                 # we should treat it as a partial failure and merge with local fallback
-                if (
-                    not isinstance(res, dict)
-                    or not res.get("summary")
-                    or not res.get("article")
-                ):
+                if not isinstance(res, dict) or not res.get("summary") or not res.get("article"):
                     log.info(
                         f"[tasks/synthesis] AI returned unstructured or partial response for {
                              cluster_id} ({lang}), merging with enhanced fallback."
@@ -515,20 +487,11 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
 
                     # Merge: Prefer AI summary if it exists and is long enough, otherwise fallback
                     summary = res_data.get("summary") or (
-                        res
-                        if isinstance(res, str) and len(res) > 30
-                        else fallback["summary"]
+                        res if isinstance(res, str) and len(res) > 30 else fallback["summary"]
                     )
-                    generated_article = (
-                        res_data.get("article") or fallback["generated_article"]
-                    )
-                    synthetic_headline = (
-                        res_data.get("synthetic_headline") or fallback["synthetic_headline"]
-                    )
-                    synthetic_standfirst = (
-                        res_data.get("synthetic_standfirst")
-                        or fallback["synthetic_standfirst"]
-                    )
+                    generated_article = res_data.get("article") or fallback["generated_article"]
+                    synthetic_headline = res_data.get("synthetic_headline") or fallback["synthetic_headline"]
+                    synthetic_standfirst = res_data.get("synthetic_standfirst") or fallback["synthetic_standfirst"]
                     perspectives = res_data.get("perspectives") or fallback["perspectives"]
                 else:
                     summary = res_data.get("summary", "")
@@ -545,9 +508,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 quote = validate_person_names(res_data.get("quote", ""))
 
                 if not summary or (isinstance(summary, str) and len(summary) < 20):
-                    log.warning(
-                        f"[tasks/synthesis] AI returned empty or too short summary for {cluster_id} ({lang})"
-                    )
+                    log.warning(f"[tasks/synthesis] AI returned empty or too short summary for {cluster_id} ({lang})")
                     continue
 
                 # Sanitize for name hallucinations
@@ -566,14 +527,10 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 comparison_text = (summary or "") + "\n" + (generated_article or "")
                 if (
                     not fast_mode
-                    and not _is_grounded_synthesis(
-                        comparison_text, source_context or legacy_summary
-                    )
+                    and not _is_grounded_synthesis(comparison_text, source_context or legacy_summary)
                     and retry_attempt < 2
                 ):
-                    log.warning(
-                        f"Hallucination gate failed for cluster {cluster_id} ({lang}), retrying later..."
-                    )
+                    log.warning(f"Hallucination gate failed for cluster {cluster_id} ({lang}), retrying later...")
                     # We don't return here because we might want to try other languages
                     continue
 
@@ -582,12 +539,8 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                     "tone_analysis": res_data.get("tone_analysis", {}),
                 }
 
-                summary, perspectives = _normalize_cluster_synthesis(
-                    summary, perspectives, article_rows, lang=lang
-                )
-                record_runtime_event(
-                    "synthesis_path", mode=provider or "unknown", fast_mode=fast_mode, lang=lang
-                )
+                summary, perspectives = _normalize_cluster_synthesis(summary, perspectives, article_rows, lang=lang)
+                record_runtime_event("synthesis_path", mode=provider or "unknown", fast_mode=fast_mode, lang=lang)
 
                 # Phase 3: Deep Local Analyst (SKIP in fast_mode)
                 # Only run shared cluster-wide logic once (on first successful lang, usually sr)
@@ -657,29 +610,27 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
 
                     if analyst_thread.is_alive():
                         log.warning(f"[analyst] Timeout reached for cluster {cluster_id}")
-                    
+
                     shared_metrics["deep_metadata"] = _ensure_dict(shared_metrics["deep_metadata"])
                     shared_metrics["pluralism_data"] = _ensure_dict(shared_metrics["pluralism_data"])
-                    
+
                     shared_metrics["impact_score"] = current_impact_score
                     shared_metrics["impact_reasoning"] = current_impact_reasoning
                     shared_metrics["story_so_far"] = current_story_so_far
                     shared_metrics["sentiment_data"] = current_sentiment_data
-                    
+
                     shared_metrics["pulse_score"] = shared_metrics["deep_metadata"].get("pulse", 50)
                     shared_metrics["pluralism_score"] = shared_metrics["pluralism_data"].get("score", 50)
                     shared_metrics["analyst_entities"] = shared_metrics["deep_metadata"].get("entities") or []
-                    
+
                     # Calculate Cluster Centroid (Semantic Center)
                     centroid = _compute_centroid_from_values(
                         [a.get("embedding") for a in article_rows if a.get("embedding")]
                     )
                     shared_metrics["centroid_str"] = (
-                        f"[{','.join(map(str, centroid))}]"
-                        if centroid and len(centroid) == 384
-                        else None
+                        f"[{','.join(map(str, centroid))}]" if centroid and len(centroid) == 384 else None
                     )
-                    
+
                     shared_computed = True
 
             else:
@@ -695,12 +646,12 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 verification_report = None
                 quote = ""
                 current_sentiment_data = shared_metrics["sentiment_data"]
-                
+
                 if not shared_computed:
                     shared_metrics["impact_score"] = 0.0
                     shared_metrics["impact_reasoning"] = ""
                     shared_metrics["story_so_far"] = ""
-                    shared_computed = True # Mark as computed even if fallback
+                    shared_computed = True  # Mark as computed even if fallback
 
             if summary or perspectives:
                 # Use shared metrics for DB save
@@ -712,7 +663,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                         "score": pluralism_score,
                         "verdict": "Procenkata e vo tek." if lang == "mk" else "Procena je u toku.",
                     }
-                
+
                 key_facts = res_data.get("key_facts")
                 if not key_facts or not isinstance(key_facts, list):
                     key_facts = shared_metrics["deep_metadata"].get("facts") or _fallback_key_facts(
@@ -795,11 +746,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                             datetime.datetime.now(),
                             json.dumps(shared_metrics["sentiment_data"]),
                             json.dumps(res_data.get("tone_analysis", {})),
-                            (
-                                json.dumps(verification_report)
-                                if verification_report
-                                else None
-                            ),
+                            (json.dumps(verification_report) if verification_report else None),
                             quote,
                             shared_metrics["centroid_str"],
                             json.dumps(shared_metrics["citation_sources"]),
@@ -813,7 +760,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                         fetch=False,
                     )
                 log.info(f"Successfully synthesized cluster {cluster_id} for {lang}")
-                
+
         except Exception as e:
             log.error(f"Synthesis failed for cluster {cluster_id} in {lang}: {e}", exc_info=True)
             continue
@@ -830,14 +777,16 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             (shared_metrics["impact_score"], shared_metrics["impact_reasoning"], cluster_id),
             fetch=False,
         )
-        
+
         # Publish SSE event
         try:
             from utils import publish_event
+
             is_breaking = False
             if article_rows:
-                from utils import score_cluster
                 from core.config import BREAKING_SCORE_THRESHOLD
+                from utils import score_cluster
+
                 is_breaking = score_cluster(article_rows) >= BREAKING_SCORE_THRESHOLD
 
             publish_event(
@@ -857,12 +806,17 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
         # Real-time Sports Score Alert (once)
         try:
             from nlp.categories import detect_topic
+
             all_titles = " ".join([a.get("title") or "" for a in article_rows])
             if detect_topic(all_titles) == "Sport":
-                from nlp.generation import _extract_sports_scores
                 from notifier import BreakingNewsNotifier
+
                 from core.config import NTFY_TOPIC
-                latest_scores = _extract_sports_scores(article_rows[0].get("title") or "") + _extract_sports_scores(article_rows[0].get("description") or "")
+                from nlp.generation import _extract_sports_scores
+
+                latest_scores = _extract_sports_scores(article_rows[0].get("title") or "") + _extract_sports_scores(
+                    article_rows[0].get("description") or ""
+                )
                 if latest_scores:
                     latest_score = latest_scores[0]
                     notifier = BreakingNewsNotifier(NTFY_TOPIC)
@@ -877,7 +831,9 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
         )
         if not strong_img:
             # We use first summary for placeholder generation (usually Serbian)
-            summary_row = db.execute_one("SELECT summary FROM cluster_summaries WHERE cluster_id = %s LIMIT 1", (cluster_id,))
+            summary_row = db.execute_one(
+                "SELECT summary FROM cluster_summaries WHERE cluster_id = %s LIMIT 1", (cluster_id,)
+            )
             if summary_row:
                 svg_content = generate_local_placeholder(cluster_id, summary_row["summary"])
                 img_url = generate_cover_art(cluster_id, svg_content)
@@ -912,8 +868,8 @@ def refresh_cluster_centroid_task(cluster_id):
     """
     Recalculates and updates the semantic centroid for a cluster.
     """
-    from core.embeddings import get_cluster_embedding
     from core.database import db_manager as db
+    from core.embeddings import get_cluster_embedding
 
     new_centroid = get_cluster_embedding(cluster_id)
     if new_centroid:
@@ -939,9 +895,7 @@ def extract_entities_task(*args, hours=24, target_clusters=None, **kwargs):
                 (target_clusters,),
             )
         else:
-            cutoff = datetime.datetime.now() - datetime.timedelta(
-                hours=int(hours or 24)
-            )
+            cutoff = datetime.datetime.now() - datetime.timedelta(hours=int(hours or 24))
             rows = db.execute(
                 """
                 SELECT cluster_id, array_agg(DISTINCT title) as titles, MAX(description) as desc
@@ -983,9 +937,7 @@ def classify_topics_task(*args, **kwargs):
     """Classify default 'vesti' clusters using local rule-based detection."""
     try:
         # Increased limit as local classification is nearly free
-        rows = db.execute(
-            "SELECT cluster_id, title FROM articles WHERE topic = 'vesti' LIMIT 200"
-        )
+        rows = db.execute("SELECT cluster_id, title FROM articles WHERE topic = 'vesti' LIMIT 200")
         for r in rows:
             topic = detect_topic(r["title"])
             if topic != "vesti":
@@ -1007,9 +959,7 @@ def classify_topics_task(*args, **kwargs):
 def recategorize_clusters_task(*args, **kwargs):
     """Verify if 'Srbija' articles belong in specialized categories using rule-based detection."""
     try:
-        rows = db.execute(
-            "SELECT cluster_id, title, description FROM articles WHERE category = 'Srbija' LIMIT 20"
-        )
+        rows = db.execute("SELECT cluster_id, title, description FROM articles WHERE category = 'Srbija' LIMIT 20")
         for r in rows:
             # Rule-based first (Free)
             res = detect_category(r["title"], description=r.get("description", ""))
@@ -1049,9 +999,7 @@ def generate_cluster_metadata_task(hours=24, target_clusters=None):
                 (target_clusters,),
             )
         else:
-            cutoff = datetime.datetime.now() - datetime.timedelta(
-                hours=int(hours or 24)
-            )
+            cutoff = datetime.datetime.now() - datetime.timedelta(hours=int(hours or 24))
             rows = db.execute(
                 """
                 SELECT cluster_id, array_agg(DISTINCT source) as sources, array_agg(DISTINCT title) as titles,
@@ -1080,11 +1028,7 @@ def generate_cluster_metadata_task(hours=24, target_clusters=None):
 
             # Calculate Centroid (Semantic Center)
             centroid = _compute_centroid_from_values(r.get("embeddings") or [])
-            centroid_str = (
-                f"[{','.join(map(str, centroid))}]"
-                if centroid and len(centroid) == 384
-                else None
-            )
+            centroid_str = f"[{','.join(map(str, centroid))}]" if centroid and len(centroid) == 384 else None
 
             # Smart image selection: prefer high-quality sources and non-placeholder URLs
             img_row = db.execute_one(
@@ -1126,9 +1070,7 @@ def generate_cluster_metadata_task(hours=24, target_clusters=None):
 
             if not rep_image:
                 # If we still have no image, try to generate one (AI cover art)
-                svg_content = generate_local_placeholder(
-                    r["cluster_id"], r["titles"][0] if r["titles"] else "vest"
-                )
+                svg_content = generate_local_placeholder(r["cluster_id"], r["titles"][0] if r["titles"] else "vest")
                 rep_image = generate_cover_art(r["cluster_id"], svg_content)
 
             curr_meta = db.execute_one(
@@ -1137,11 +1079,7 @@ def generate_cluster_metadata_task(hours=24, target_clusters=None):
             )
             dominant_color = curr_meta["dominant_color"] if curr_meta else None
 
-            if rep_image and (
-                not curr_meta
-                or curr_meta["representative_image"] != rep_image
-                or not dominant_color
-            ):
+            if rep_image and (not curr_meta or curr_meta["representative_image"] != rep_image or not dominant_color):
                 import asyncio
 
                 dominant_color = asyncio.run(get_dominant_color(rep_image))
@@ -1242,9 +1180,7 @@ def recluster_recent_articles_task(hours=24, limit=800):
                             if incoming_entities and candidate_entities
                             else set()
                         )
-                        phrase_overlap = clustering._cluster_title_overlap(
-                            title, candidate["title"]
-                        )
+                        phrase_overlap = clustering._cluster_title_overlap(title, candidate["title"])
                         if not shared_entities and phrase_overlap < 0.34:
                             continue
                     new_cluster_id = candidate["cid"]
@@ -1317,12 +1253,8 @@ def recluster_recent_articles_task(hours=24, limit=800):
                     fetch=False,
                 )
 
-            extract_entities_task.apply_async(
-                kwargs={"hours": hours, "target_clusters": touched}, countdown=5
-            )
-            generate_cluster_metadata_task.apply_async(
-                kwargs={"hours": hours, "target_clusters": touched}, countdown=5
-            )
+            extract_entities_task.apply_async(kwargs={"hours": hours, "target_clusters": touched}, countdown=5)
+            generate_cluster_metadata_task.apply_async(kwargs={"hours": hours, "target_clusters": touched}, countdown=5)
             auto_summarize_task.apply_async(args=(touched,), countdown=2)
             invalidate_public_data_caches()
 
@@ -1380,9 +1312,7 @@ def backfill_cover_art_task():
     cooldown_key = "ai:cover_art:pollinations:cooldown"
     try:
         if not redis_client.set(lock_key, "1", nx=True, ex=1200):
-            log.info(
-                "Cover art backfill already in progress, skipping duplicate dispatch."
-            )
+            log.info("Cover art backfill already in progress, skipping duplicate dispatch.")
             return
     except Exception as e:
         log.warning(f"Redis lock check failed for backfill_cover_art: {e}")
@@ -1587,7 +1517,7 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
         folded = transliterate(clean).casefold()
         if folded in context_entities:
             continue
-        
+
         # Check allowed_singletons with word boundary awareness or as substrings for longer phrases
         is_allowed = False
         for allowed in allowed_singletons:
@@ -1597,13 +1527,13 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
             if len(allowed) > 5 and allowed in folded:
                 is_allowed = True
                 break
-        
+
         if is_allowed:
             continue
-            
+
         if folded in source_latin:
             continue
-            
+
         # Fuzzy/partial matching for linguistic variations (e.g., Premijer vs Premierot)
         meaningful_words = [
             word.casefold()
@@ -1611,7 +1541,7 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
             if word.casefold()
             not in {"ministerkata", "ministerot", "pretsedatelot", "vladata", "premierot", "premijer"}
         ]
-        
+
         # If it's a multi-word entity, check if the "core" (longest words) are in the source
         if meaningful_words:
             # Check if all long meaningful words are present (even as substrings)
@@ -1622,13 +1552,11 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
                 mw_stem = mw[:6] if len(mw) > 7 else mw
                 if mw_stem in source_latin or any(mw_stem in s_ent for s_ent in context_entities):
                     match_count += 1
-            
+
             if match_count >= len(meaningful_words):
                 continue
 
-        log.warning(
-            f"[ai/hallucination] Hallucinated entity detected in synthesis: {clean} (folded: {folded})"
-        )
+        log.warning(f"[ai/hallucination] Hallucinated entity detected in synthesis: {clean} (folded: {folded})")
         hallucinated_count += 1
 
     # Allow 1 minor hallucination for very long syntheses to prevent infinite retry loops
@@ -1639,13 +1567,14 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
 
     return True
 
+
 @celery_app.task
 def backfill_cluster_summaries_task(days=30, lang="sr"):
     """Generate cluster summaries for all existing clusters that don't have them yet."""
     try:
         from core.config import AUTO_SUMMARIZE_MIN_SRC
         from core.database import db_manager as db
-        
+
         # Get all clusters with articles but no summaries
         rows = db.execute(
             """
@@ -1654,20 +1583,20 @@ def backfill_cluster_summaries_task(days=30, lang="sr"):
             WHERE a.cluster_id IS NOT NULL
             AND a.created_at >= NOW() - make_interval(days => %s)
             AND NOT EXISTS (
-                SELECT 1 FROM cluster_summaries cs 
+                SELECT 1 FROM cluster_summaries cs
                 WHERE cs.cluster_id = a.cluster_id AND cs.lang = %s
             )
             """,
             (days, lang),
         )
-        
+
         if not rows:
             log.info(f"[tasks] No clusters found for backfill (lang={lang})")
             return
-        
+
         cluster_ids = [row["cluster_id"] for row in rows]
         log.info(f"[tasks] Backfilling summaries for {len(cluster_ids)} clusters (lang={lang})")
-        
+
         for cluster_id in cluster_ids:
             try:
                 # Check if this cluster has enough sources
@@ -1675,31 +1604,31 @@ def backfill_cluster_summaries_task(days=30, lang="sr"):
                     "SELECT DISTINCT source FROM articles WHERE cluster_id = %s",
                     (cluster_id,),
                 )
-                
+
                 if len(src_rows) < AUTO_SUMMARIZE_MIN_SRC:
                     log.debug(f"[tasks] Skipping cluster {cluster_id} - only {len(src_rows)} source(s)")
                     continue
-                
+
                 # Load articles for this cluster
                 article_rows = db.execute(
                     "SELECT * FROM articles WHERE cluster_id = %s ORDER BY created_at ASC",
                     (cluster_id,),
                 )
-                
+
                 if not article_rows:
                     continue
-                
+
                 # Generate summary using fallback (local) synthesis
                 from nlp.generation import synthesize_cluster_fallback
-                
+
                 fallback_result = synthesize_cluster_fallback(article_rows, lang=lang)
-                
+
                 if fallback_result["summary"] or fallback_result["generated_article"]:
                     # Store the summary in database
                     db.execute(
                         """
-                        INSERT INTO cluster_summaries 
-                        (cluster_id, lang, summary, generated_article, synthetic_headline, 
+                        INSERT INTO cluster_summaries
+                        (cluster_id, lang, summary, generated_article, synthetic_headline,
                          synthetic_standfirst, created_at, perspectives, key_facts, analyst_entities)
                         VALUES (%s, %s, %s, %s, %s, %s, NOW(), %s, %s, %s)
                         ON CONFLICT (cluster_id, lang) DO UPDATE SET
@@ -1717,8 +1646,16 @@ def backfill_cluster_summaries_task(days=30, lang="sr"):
                             lang,
                             fallback_result["summary"][:4000] if fallback_result["summary"] else "",
                             fallback_result["generated_article"][:8000] if fallback_result["generated_article"] else "",
-                            fallback_result["synthetic_headline"][:200] if fallback_result["synthetic_headline"] else "",
-                            fallback_result["synthetic_standfirst"][:500] if fallback_result["synthetic_standfirst"] else "",
+                            (
+                                fallback_result["synthetic_headline"][:200]
+                                if fallback_result["synthetic_headline"]
+                                else ""
+                            ),
+                            (
+                                fallback_result["synthetic_standfirst"][:500]
+                                if fallback_result["synthetic_standfirst"]
+                                else ""
+                            ),
                             fallback_result["perspectives"][:2000] if fallback_result["perspectives"] else [],
                             fallback_result["key_facts"][:1000] if fallback_result["key_facts"] else [],
                             fallback_result["analyst_entities"][:1000] if fallback_result["analyst_entities"] else [],
@@ -1727,13 +1664,12 @@ def backfill_cluster_summaries_task(days=30, lang="sr"):
                     log.info(f"[tasks] Generated summary for cluster {cluster_id} (lang={lang})")
                 else:
                     log.debug(f"[tasks] No summary generated for cluster {cluster_id}")
-                    
+
             except Exception as e:
                 log.warning(f"[tasks] Failed to generate summary for cluster {cluster_id}: {e}")
-                
+
         log.info(f"[tasks] Completed backfill for {lang} language clusters")
-        
+
     except Exception as e:
         log.error(f"[tasks] Backfill cluster summaries failed: {e}")
         raise
-

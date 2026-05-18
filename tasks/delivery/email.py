@@ -1,36 +1,27 @@
 import datetime
-from core.celery_app import celery_app
-from core.database import db_manager as db
-from core.config import NTFY_TOPIC
-from utils import (
-    score_cluster_for_homepage,
-)
+
 from core.api_helpers import normalize_perspectives
-from tasks.utils import (
-    log,
-)
-from .core import (
-    _parse_row_datetime,
-    _record_delivery_tracking_event,
-    _tracked_delivery_url,
-    _send_ntfy_message,
-)
+from core.celery_app import celery_app
+from core.config import NTFY_TOPIC
+from core.database import db_manager as db
+from tasks.utils import log
+from utils import score_cluster_for_homepage
+
+from .briefing import _briefing_cluster_editorial_bonus, _dedupe_briefing_candidates
+from .core import _parse_row_datetime, _record_delivery_tracking_event, _send_ntfy_message, _tracked_delivery_url
 from .subscribers import (
-    _normalize_synced_profile_for_delivery,
-    _load_active_delivery_rows,
     _cluster_delivery_match,
+    _load_active_delivery_rows,
     _load_weekly_cluster_engagement,
-    _load_weekly_topic_engagement,
     _load_weekly_source_engagement,
+    _load_weekly_topic_engagement,
+    _normalize_synced_profile_for_delivery,
 )
-from .briefing import (
-    _briefing_cluster_editorial_bonus,
-    _dedupe_briefing_candidates,
-)
+
 
 def _load_weekly_digest_clusters(limit=32):
     rows = db.execute(
-        """SELECT cluster_id, title, description, summary, source, category, topic, created_at 
+        """SELECT cluster_id, title, description, summary, source, category, topic, created_at
         FROM articles WHERE created_at >= NOW() - INTERVAL '7 days' ORDER BY created_at DESC LIMIT 420"""
     )
     clusters = {}
@@ -42,7 +33,7 @@ def _load_weekly_digest_clusters(limit=32):
     if cluster_ids:
         summaries_rows = db.execute(
             """SELECT cluster_id, summary, perspectives FROM cluster_summaries WHERE cluster_id = ANY(%s)""",
-            (cluster_ids,)
+            (cluster_ids,),
         )
         summaries_map = {r["cluster_id"]: r for r in summaries_rows}
     else:
@@ -50,6 +41,7 @@ def _load_weekly_digest_clusters(limit=32):
 
     ranked_clusters = []
     from utils import rank_articles_in_cluster
+
     for cluster_id, articles in clusters.items():
         ranked = rank_articles_in_cluster(articles)
         if not ranked:
@@ -57,9 +49,7 @@ def _load_weekly_digest_clusters(limit=32):
         lead = ranked[0]
         # Use pre-fetched summary instead of individual query
         synthesis_row = summaries_map.get(cluster_id)
-        normalized_perspectives_data = normalize_perspectives(
-            (synthesis_row or {}).get("perspectives") or []
-        )
+        normalized_perspectives_data = normalize_perspectives((synthesis_row or {}).get("perspectives") or [])
         difference_point = ""
         open_point = ""
         for item in normalized_perspectives_data:
@@ -81,17 +71,13 @@ def _load_weekly_digest_clusters(limit=32):
                 "category": lead.get("category"),
                 "topic": lead.get("topic"),
                 "created_at": lead.get("created_at"),
-                "source_count": len(
-                    {a.get("source") for a in ranked if a.get("source")}
-                ),
+                "source_count": len({a.get("source") for a in ranked if a.get("source")}),
                 "difference_point": difference_point,
                 "open_point": open_point,
                 "cluster_summary": (synthesis_row or {}).get("summary") or "",
                 "score": score_cluster_for_homepage(ranked),
                 "other_titles": [
-                    str(item.get("title") or "").strip()
-                    for item in ranked[1:5]
-                    if str(item.get("title") or "").strip()
+                    str(item.get("title") or "").strip() for item in ranked[1:5] if str(item.get("title") or "").strip()
                 ],
             }
         )
@@ -99,9 +85,8 @@ def _load_weekly_digest_clusters(limit=32):
     ranked_clusters.sort(key=lambda item: item["score"], reverse=True)
     return ranked_clusters[:limit]
 
-def _build_weekly_digest_sections(
-    profile, clusters, topic_engagement=None, source_engagement=None
-):
+
+def _build_weekly_digest_sections(profile, clusters, topic_engagement=None, source_engagement=None):
     profile = _normalize_synced_profile_for_delivery(profile)
     followed_topics = [topic for topic in profile["followedTopics"] if topic]
     followed_sources = [source for source in profile["followedSources"] if source]
@@ -154,11 +139,7 @@ def _build_weekly_digest_sections(
     if followed_sources:
         for source in followed_sources[:3]:
             source_cluster = next(
-                (
-                    cluster
-                    for cluster in clusters
-                    if str(cluster.get("source") or "").strip() == source
-                ),
+                (cluster for cluster in clusters if str(cluster.get("source") or "").strip() == source),
                 None,
             )
             if source_cluster:
@@ -166,9 +147,7 @@ def _build_weekly_digest_sections(
     if source_focus:
         source_focus.sort(
             key=lambda item: (
-                float(
-                    (source_engagement.get(item[0]) or {}).get("section_score") or 0.0
-                ),
+                float((source_engagement.get(item[0]) or {}).get("section_score") or 0.0),
                 float(item[1].get("match_score") or 0.0),
                 float(item[1].get("score") or 0.0),
             ),
@@ -203,10 +182,9 @@ def _build_weekly_digest_sections(
         )
     static_lead = sections[:1]
     dynamic_sections = sections[1:]
-    dynamic_sections.sort(
-        key=lambda item: float(item.get("score") or 0.0), reverse=True
-    )
+    dynamic_sections.sort(key=lambda item: float(item.get("score") or 0.0), reverse=True)
     return (static_lead + dynamic_sections)[:4]
+
 
 def _select_profile_weekly_clusters(profile, limit=5, _cached_clusters=None, _cached_engagement=None):
     profile = _normalize_synced_profile_for_delivery(profile)
@@ -215,9 +193,7 @@ def _select_profile_weekly_clusters(profile, limit=5, _cached_clusters=None, _ca
     ranked = []
     for cluster in clusters_to_score:
         match_score, reasons, _, _ = _cluster_delivery_match(cluster, profile)
-        engagement = (
-            engagement_map.get(str(cluster.get("cluster_id") or "").strip()) or {}
-        )
+        engagement = engagement_map.get(str(cluster.get("cluster_id") or "").strip()) or {}
         engagement_bonus = 0.0
         engagement_note = ""
         sends = int(engagement.get("sends") or 0)
@@ -229,9 +205,7 @@ def _select_profile_weekly_clusters(profile, limit=5, _cached_clusters=None, _ca
         elif sends >= 2 and open_rate >= 0.55:
             engagement_bonus = 0.45
             engagement_note = "dobar odziv vo nedelnite pregledi"
-        elif (
-            sends >= 3 and open_rate < 0.25 and int(engagement.get("clicks") or 0) == 0
-        ):
+        elif sends >= 3 and open_rate < 0.25 and int(engagement.get("clicks") or 0) == 0:
             engagement_bonus = -0.35
             engagement_note = "poslab odziv vo nedelnite pregledi"
 
@@ -253,10 +227,9 @@ def _select_profile_weekly_clusters(profile, limit=5, _cached_clusters=None, _ca
         )
 
     personalized = [item for item in ranked if item["match_score"] >= 1.9]
-    personalized.sort(
-        key=lambda item: (item["match_score"], item.get("score") or 0), reverse=True
-    )
+    personalized.sort(key=lambda item: (item["match_score"], item.get("score") or 0), reverse=True)
     return _dedupe_briefing_candidates(personalized or ranked, limit=limit)
+
 
 def _build_profile_weekly_digest_message(profile, clusters):
     profile = _normalize_synced_profile_for_delivery(profile)
@@ -298,19 +271,13 @@ def _build_profile_weekly_digest_message(profile, clusters):
                 f"  {cluster.get('source') or 'izvor'} · {cluster.get('source_count') or 1} izvori · {cluster.get('match_reason') or 'nedeljni kontekst'}"
             )
             if cluster.get("cluster_summary"):
-                lines.append(
-                    f"  {str(cluster['cluster_summary']).splitlines()[0][:220]}"
-                )
+                lines.append(f"  {str(cluster['cluster_summary']).splitlines()[0][:220]}")
             elif cluster.get("description"):
                 lines.append(f"  {str(cluster['description'])[:220]}")
             if cluster.get("difference_point"):
-                lines.append(
-                    f"  glavna razlika: {str(cluster['difference_point'])[:180]}"
-                )
+                lines.append(f"  glavna razlika: {str(cluster['difference_point'])[:180]}")
             elif cluster.get("open_point"):
-                lines.append(
-                    f"  Sto ostana otvoreno: {str(cluster['open_point'])[:180]}"
-                )
+                lines.append(f"  Sto ostana otvoreno: {str(cluster['open_point'])[:180]}")
 
     lines.append("")
     lines.append(
@@ -318,13 +285,16 @@ def _build_profile_weekly_digest_message(profile, clusters):
     )
     return "\n".join(line for line in lines if line is not None).strip()
 
+
 @celery_app.task
 def send_daily_digest_task():
     try:
         import core.digest as digest_module
+
         digest_module.send_digest()
     except Exception as e:
         log.warning(f"[tasks] Daily digest skipped: {e}")
+
 
 @celery_app.task
 def send_profile_weekly_digests_task():
@@ -334,7 +304,7 @@ def send_profile_weekly_digests_task():
         rows = _load_active_delivery_rows()
         all_weekly_clusters = _load_weekly_digest_clusters(limit=28)
         engagement_map = _load_weekly_cluster_engagement()
-        
+
         for row in rows:
             if not row.get("weekly_digest"):
                 continue
@@ -343,19 +313,13 @@ def send_profile_weekly_digests_task():
             if last_sent:
                 if last_sent.tzinfo is None:
                     last_sent = last_sent.replace(tzinfo=datetime.timezone.utc)
-                if (
-                    now - last_sent.astimezone(datetime.timezone.utc)
-                ).total_seconds() < 6.5 * 24 * 3600:
+                if (now - last_sent.astimezone(datetime.timezone.utc)).total_seconds() < 6.5 * 24 * 3600:
                     continue
 
             target = str(row.get("target") or NTFY_TOPIC).strip()
-            profile = _normalize_synced_profile_for_delivery(
-                row.get("profile_data") or {}
-            )
+            profile = _normalize_synced_profile_for_delivery(row.get("profile_data") or {})
             clusters = _select_profile_weekly_clusters(
-                profile, 
-                _cached_clusters=all_weekly_clusters,
-                _cached_engagement=engagement_map
+                profile, _cached_clusters=all_weekly_clusters, _cached_engagement=engagement_map
             )
             if not clusters:
                 continue
@@ -364,9 +328,7 @@ def send_profile_weekly_digests_task():
             if not message:
                 continue
 
-            primary_cluster_id = (
-                str((clusters[0] or {}).get("cluster_id") or "").strip() or None
-            )
+            primary_cluster_id = str((clusters[0] or {}).get("cluster_id") or "").strip() or None
             send_event_id = _record_delivery_tracking_event(
                 row["sync_token"],
                 "send",
@@ -381,21 +343,9 @@ def send_profile_weekly_digests_task():
                     ]
                 },
             )
-            click_url = (
-                _tracked_delivery_url(send_event_id, "open", "/briefing")
-                if send_event_id
-                else None
-            )
-            click_track_url = (
-                _tracked_delivery_url(send_event_id, "click", "/briefing")
-                if send_event_id
-                else None
-            )
-            message_with_link = (
-                message
-                if not click_track_url
-                else f"{message}\n\nOtvori pregled: {click_track_url}"
-            )
+            click_url = _tracked_delivery_url(send_event_id, "open", "/briefing") if send_event_id else None
+            click_track_url = _tracked_delivery_url(send_event_id, "click", "/briefing") if send_event_id else None
+            message_with_link = message if not click_track_url else f"{message}\n\nOtvori pregled: {click_track_url}"
             if _send_ntfy_message(
                 target,
                 "Presek · Nedelen pregled",
@@ -415,10 +365,12 @@ def send_profile_weekly_digests_task():
         if sent:
             log.info(f"[tasks] Sent {sent} weekly profile digests.")
 
+
 @celery_app.task
 def send_newsletter_task():
     try:
         from core.digest import send_newsletter_to_all_subscribers
+
         count = send_newsletter_to_all_subscribers(days=1)
         log.info(f"[tasks] Morning briefing sent to {count} subscribers.")
     except Exception as e:

@@ -125,7 +125,7 @@ cat > /etc/nginx/sites-available/presek.conf << EOF
 server {
     listen 80;
     server_name presek.live www.presek.live;
-    
+
     # Redirect HTTP to HTTPS
     return 301 https://\$server_name\$request_uri;
 }
@@ -133,7 +133,7 @@ server {
 server {
     listen 443 ssl http2;
     server_name presek.live www.presek.live;
-    
+
     # SSL Configuration
     ssl_certificate /etc/letsencrypt/live/presek.live/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/presek.live/privkey.pem;
@@ -142,18 +142,18 @@ server {
     ssl_prefer_server_ciphers on;
     ssl_session_cache shared:SSL:10m;
     ssl_session_timeout 1h;
-    
+
     # Security Headers
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-Frame-Options "DENY" always;
     add_header X-XSS-Protection "1; mode=block" always;
     add_header Referrer-Policy "no-referrer-when-downgrade" always;
     add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-{csp_nonce}'; style-src 'self' 'nonce-{csp_nonce}'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self' wss:; frame-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; media-src 'self' data:; worker-src 'self' blob:" always;
-    
+
     # Gzip Compression
     gzip on;
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
-    
+
     # Proxy settings
     location / {
         proxy_pass http://localhost:8000;
@@ -167,20 +167,20 @@ server {
         proxy_read_timeout 300s;
         proxy_send_timeout 300s;
     }
-    
+
     # Static files
     location /static/ {
         alias $INSTALL_DIR/static/;
         expires 30d;
         add_header Cache-Control "public, max-age=2592000";
     }
-    
+
     # Health check
     location /health {
         proxy_pass http://localhost:8000/api/health;
         access_log off;
     }
-    
+
     # Error pages
     error_page 500 502 503 504 /50x.html;
     location = /50x.html {

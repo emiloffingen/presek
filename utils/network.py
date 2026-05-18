@@ -1,12 +1,14 @@
-import socket
 import ipaddress
-import urllib.parse
-from typing import List, Optional
 import logging
-from PIL import Image
+import socket
+import urllib.parse
 from io import BytesIO
+from typing import List, Optional
+
+from PIL import Image
 
 log = logging.getLogger("presek")
+
 
 def _resolve_public_ips(candidate_url: str) -> List[str]:
     parsed = urllib.parse.urlparse(candidate_url)
@@ -67,6 +69,7 @@ def _peer_ip(response) -> Optional[str]:
         log.debug(f"Failed to get peer IP: {e}")
     return None
 
+
 async def get_dominant_color(url: str) -> str:
     """Extracts the dominant hex color from an image URL (Asynchronous)."""
     if not url:
@@ -79,9 +82,7 @@ async def get_dominant_color(url: str) -> str:
         "api:5001/proxy",
     ]
     if any(marker in url for marker in internal_proxy_markers):
-        log.warning(
-            f"[utils] color extraction blocked for recursive/internal URL: {url}"
-        )
+        log.warning(f"[utils] color extraction blocked for recursive/internal URL: {url}")
         return ""
 
     if not url.startswith("http"):
@@ -90,28 +91,20 @@ async def get_dominant_color(url: str) -> str:
     try:
         import httpx
 
-
-
-        async with httpx.AsyncClient(
-            timeout=4.0, follow_redirects=True, max_redirects=2
-        ) as client:
+        async with httpx.AsyncClient(timeout=4.0, follow_redirects=True, max_redirects=2) as client:
             try:
                 safe_ips = _resolve_public_ips(url)
             except Exception as e:
                 log.debug(f"Failed to resolve public IPs for {url}: {e}")
                 return ""
 
-            async with client.stream(
-                "GET", url, headers={"User-Agent": "PresekColorBot/1.0"}
-            ) as response:
+            async with client.stream("GET", url, headers={"User-Agent": "PresekColorBot/1.0"}) as response:
                 if response.status_code != 200:
                     return ""
 
                 p_ip = _peer_ip(response)
                 if not p_ip or p_ip not in safe_ips:
-                    log.warning(
-                        f"[utils] color extraction blocked: IP mismatch/private for {url}"
-                    )
+                    log.warning(f"[utils] color extraction blocked: IP mismatch/private for {url}")
                     return ""
 
                 content = await response.aread()

@@ -1,5 +1,6 @@
-from core.database import db_manager as db
 import uuid
+
+from core.database import db_manager as db
 
 
 def fix_mixed_cluster(target_cluster_id):

@@ -16,13 +16,13 @@ SMOKE_SCRIPT="$SOURCE_ROOT/deploy/smoke_check.sh"
 # Discover services dynamically from source directory (same as install_server.sh)
 discover_app_services() {
     local SYSTEMD_DIR="$SOURCE_ROOT/deploy/systemd"
-    
+
     # Discover all unit files from the source directory
     local all_units=()
     while IFS= read -r -d '' file; do
         all_units+=("$(basename "$file")")
     done < <(find "$SYSTEMD_DIR" -maxdepth 1 -type f \( -name "*.service" -o -name "*.target" -o -name "*.timer" \) -print0 2>/dev/null || true)
-    
+
     # Filter to only service files
     local services=()
     for unit in "${all_units[@]}"; do
@@ -30,11 +30,11 @@ discover_app_services() {
             services+=("$unit")
         fi
     done
-    
+
     if [ "${#services[@]}" -eq 0 ]; then
         fail "No application services found in $SYSTEMD_DIR"
     fi
-    
+
     echo "${services[@]}"
 }
 

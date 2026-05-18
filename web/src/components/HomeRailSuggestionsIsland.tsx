@@ -17,7 +17,7 @@ export default function HomeRailSuggestionsIsland({ lang = 'sr' }: { lang?: stri
     () => buildSurfaceFollowSuggestions(profile, 'home_rail', { topicLimit: 2, sourceLimit: 1 }),
     [profile]
   );
-  
+
   const labels = {
     sr: {
       title: 'ŠTA DA PRATITE',
@@ -32,7 +32,7 @@ export default function HomeRailSuggestionsIsland({ lang = 'sr' }: { lang?: stri
       source: 'Извор'
     }
   };
-  
+
   const t = labels[lang as keyof typeof labels] || labels.sr;
 
   const followedCount = (profile?.followedTopics || []).length + (profile?.followedSources || []).length;

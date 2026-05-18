@@ -48,7 +48,7 @@ export default function BriefingDeliveryIsland({
   const prefs = useStore($deliveryPrefs);
   const syncToken = useStore($syncToken);
   const isMK = lang === 'mk';
-  
+
   const [serverDelivery, setServerDelivery] = useState(() => createDefaultServerDeliverySettings());
   const [serverStatus, setServerStatus] = useState<'idle' | 'working' | 'done' | 'error'>('idle');
   const [serverMessage, setServerMessage] = useState('');
@@ -121,7 +121,7 @@ export default function BriefingDeliveryIsland({
             if (vapidRes.ok) {
                 const vapidData = await vapidRes.json();
                 const pubKey = vapidData.key;
-                
+
                 const reg = await navigator.serviceWorker.register('/sw.js');
                 await navigator.serviceWorker.ready;
 
@@ -130,7 +130,7 @@ export default function BriefingDeliveryIsland({
                     userVisibleOnly: true,
                     applicationServerKey: decodeVapidPublicKey(pubKey)
                 });
-                
+
                 if (syncToken) {
                     const payload = {
                         ...serverDelivery,
@@ -138,7 +138,7 @@ export default function BriefingDeliveryIsland({
                         target: JSON.stringify(sub)
                     };
                     updateServerDelivery(payload);
-                    
+
                     await fetch('/api/profile/delivery', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -198,8 +198,8 @@ export default function BriefingDeliveryIsland({
       const next = normalizeServerDeliverySettings(data.subscription || {});
       setServerDelivery(next);
       setServerStatus('done');
-      setServerMessage(next.isActive 
-        ? (isMK ? 'Закажаната достава е зачувана во вашиот синхронизиран профил.' : 'Zakazana dostava je sačuvana u vašem sinhroniziranom profilu.') 
+      setServerMessage(next.isActive
+        ? (isMK ? 'Закажаната достава е зачувана во вашиот синхронизиран профил.' : 'Zakazana dostava je sačuvana u vašem sinhroniziranom profilu.')
         : (isMK ? 'Закажаната достава е зачувана, но е неактивна додека не поставите тема.' : 'Zakazana dostava je sačuvana, ali je neaktivna dok ne postavite temu.'));
     } catch {
       setServerStatus('error');
@@ -265,8 +265,8 @@ export default function BriefingDeliveryIsland({
           <span>{permissionLabel(prefs.browserPermission, lang)}</span>
         </p>
         <p className="delivery-status-copy">
-          {isMK 
-            ? 'Доставата е поврзана со темите и изворите што ги следите во овој прелистувач. Започнете со локални извештаи и верзија за споделување, а потоа додајте синхронизирана достава помеѓу уредите.' 
+          {isMK
+            ? 'Доставата е поврзана со темите и изворите што ги следите во овој прелистувач. Започнете со локални извештаи и верзија за споделување, а потоа додајте синхронизирана достава помеѓу уредите.'
             : 'Dostava je vezana za teme i izvore koje pratite u ovom pretraživaču. Započnite sa lokalnim izveštajima i verzijom za deljenje, a zatim dodajte sinhroniziranu dostavu između uređaja.'}
         </p>
       </div>
@@ -323,8 +323,8 @@ export default function BriefingDeliveryIsland({
           <span>{isMK ? 'Закажана достава' : 'Zakazana dostava'}</span>
         </p>
         <p className="scheduled-delivery-copy">
-          {isMK 
-            ? 'Зачувајте `ntfy` тема со вашиот клуч за синхронизација за да добивате серверски утрински брифинзи, неделни дигести и извештаи за следените теми или извори.' 
+          {isMK
+            ? 'Зачувајте `ntfy` тема со вашиот клуч за синхронизација за да добивате серверски утрински брифинзи, неделни дигести и извештаи за следените теми или извори.'
             : 'Sačuvajte `ntfy` temu sa vašim ključem za sinhronizaciju da biste dobijali serverske jutarnje brifinge, nedeljne digestove i izveštaje za pratene teme ili izvore.'}
         </p>
 

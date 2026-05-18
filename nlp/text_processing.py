@@ -1,5 +1,5 @@
-import re
 import math
+import re
 
 # Irregular lemmas for Serbian
 _SR_IRREGULAR_LEMMAS = {
@@ -32,6 +32,7 @@ _SR_PLURAL_SUFFIXES = [
     (re.compile(r"u$"), ""),
 ]
 
+
 def lemmatize_sr(word: str) -> str:
     """Reduces a Serbian word to its approximate lemma (base form)."""
     w = word.lower().strip()
@@ -41,10 +42,7 @@ def lemmatize_sr(word: str) -> str:
         return _SR_IRREGULAR_LEMMAS[w]
 
     # PROTECT stems that are common in news
-    if any(
-        w.startswith(p)
-        for p in ["srbij", "vučić", "amerik", "evrop", "rusij", "izrael", "ukrajin"]
-    ):
+    if any(w.startswith(p) for p in ["srbij", "vučić", "amerik", "evrop", "rusij", "izrael", "ukrajin"]):
         if w.startswith("srbij"):
             return "Srbija"
         if w.startswith("amerik"):
@@ -265,14 +263,12 @@ def rewrite_to_serbian_locally(text):
     if not text:
         return text
 
-    text = re.sub(
-        r"^\s*translate(?: the following)?\s*:\s*", "", text, flags=re.IGNORECASE
-    )
+    text = re.sub(r"^\s*translate(?: the following)?\s*:\s*", "", text, flags=re.IGNORECASE)
     text = re.sub(r"^\s*summary\s*:\s*", "", text, flags=re.IGNORECASE)
 
     # Simplified normalization - no longer enforced Macedonian Cyrillic threshold
     normalized = re.sub(r"\s+", " ", text).strip(" -–—")
-    
+
     working = f" {normalized} "
     for pattern, replacement in LOCAL_TRANSLATION_PHRASES:
         working = re.sub(pattern, replacement, working, flags=re.IGNORECASE)
@@ -295,7 +291,7 @@ def rewrite_to_serbian_locally(text):
 
     working = re.sub(r"\b[A-Za-z][A-Za-z'-]*\b", _replace_word, working)
     working = re.sub(r"\s+", " ", working).strip()
-    
+
     # Remove articles
     for w in ["the", "a", "an"]:
         working = re.sub(rf"\b{w}\b", "", working, flags=re.IGNORECASE)
@@ -315,9 +311,7 @@ def _is_noisy_summary_sentence(sentence, title_terms=None):
         return True
     lowered = text.lower()
 
-    if lowered.startswith(
-        ("foto:", "video:", "gallery:", "galerija:", "komentar:", "reklama:", "izvor:")
-    ):
+    if lowered.startswith(("foto:", "video:", "gallery:", "galerija:", "komentar:", "reklama:", "izvor:")):
         return True
     if any(phrase in lowered for phrase in JUNK_NEWS_PHRASES):
         return True
@@ -337,8 +331,8 @@ def synthesize_locally(articles, sentence_count=4, topic=None):
     """Sophisticated Local Synthesis Engine."""
     if not articles:
         return ""
-    from nlp.keywords import _sentence_tokens, _extract_capitalized_phrases
     from nlp.generation import _extract_number_tokens
+    from nlp.keywords import _extract_capitalized_phrases, _sentence_tokens
 
     all_candidates = []
     for art in articles:
@@ -389,20 +383,12 @@ def synthesize_locally(articles, sentence_count=4, topic=None):
     for _ in range(sentence_count):
         best_candidate, best_boosted_score = None, -1.0
         for cand in all_candidates:
-            if any(
-                _jaccard_similarity(cand["text"], s["text"]) > 0.4 for s in selected
-            ):
+            if any(_jaccard_similarity(cand["text"], s["text"]) > 0.4 for s in selected):
                 continue
             diversity_boost = 1.3 if cand["source"] not in used_sources else 1.0
             new_entity_boost = 1.0 + (len(cand["entities"] - used_entities) * 0.3)
-            flow_boost = (
-                1.2
-                if len(selected) == 0
-                else (1.4 if len(selected) >= 2 and cand["is_action"] else 1.0)
-            )
-            boosted_score = (
-                cand["score"] * diversity_boost * new_entity_boost * flow_boost
-            )
+            flow_boost = 1.2 if len(selected) == 0 else (1.4 if len(selected) >= 2 and cand["is_action"] else 1.0)
+            boosted_score = cand["score"] * diversity_boost * new_entity_boost * flow_boost
             if boosted_score > best_boosted_score:
                 best_boosted_score, best_candidate = boosted_score, cand
         if best_candidate:
@@ -432,13 +418,12 @@ def extract_entities_semantic(text: str) -> set[str]:
 
     if _ner_pipeline is None:
         try:
-            from transformers import pipeline
             import logging
 
+            from transformers import pipeline
+
             log = logging.getLogger("presek.nlp")
-            log.info(
-                "Loading semantic NER model in Bfloat16 (Babelscape/wikineural-multilingual-ner)..."
-            )
+            log.info("Loading semantic NER model in Bfloat16 (Babelscape/wikineural-multilingual-ner)...")
             # Using bfloat16 to cut memory usage by ~50% on CPU while maintaining range
             _ner_pipeline = pipeline(
                 "ner",

@@ -330,7 +330,7 @@ function getBriefingSnippet(content: string) {
 
         <header class="editorial-header-v2 py-16 border-b border-border/40 mb-24 bg-secondary/5">
             <div class="max-w-[1440px] mx-auto px-4 md:px-10">
-                <div class="flex flex-col gap-6">
+                <div class="flex flex-col gap-[var(--grid-gap)]">
                     <span class="text-[10px] font-black uppercase tracking-[0.3em] text-nyt-accent">
                         {lang === 'sr' ? 'PRESEK.live · Glavna Stranica' : 'ПРЕСЕК.мк · Почетна страница'}
                     </span>
@@ -361,7 +361,7 @@ function getBriefingSnippet(content: string) {
                 {!error && (
                     <div class="max-w-full overflow-hidden mb-24">
                         <div class="quick-pills-container overflow-x-auto hide-scrollbar -mx-4 px-4 pb-2">
-                            <div class="flex items-center gap-3">
+                            <div class="flex items-center gap-[var(--grid-gap)]">
                                 <span class="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground mr-4 shrink-0">{t('home.explore')}</span>
                                 {[
                                     { id: 'rs', label: lang === 'mk' ? 'Makedonija' : 'Srbija', href: l('/?category=') + encodeURIComponent(lang === 'mk' ? 'Makedonija' : 'Srbija'), active: category === (lang === 'mk' ? 'Makedonija' : 'Srbija') },

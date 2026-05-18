@@ -37,7 +37,7 @@ const renderSynthesisHtml = (text: string) => {
         <button class="narrative-toggle" id="narrative-toggle" onclick="document.getElementById('narrative-body').classList.remove('is-collapsed'); this.style.display='none';">{t('cluster.read_more')}</button>
 	) : (
 		<div class="empty-narrative-fallback italic text-muted-foreground font-serif">
-            {lang === 'sr' 
+            {lang === 'sr'
                 ? 'Detaljna sinteza za ovaj razvoj je u procesu konsolidacije. Molimo pogledajte kratak pregled iznad.'
                 : 'Деталната синтеза за овој развој е во процес на консолидација. Ве молиме погледнете го краткиот преглед погоре.'
             }
@@ -62,7 +62,7 @@ const renderSynthesisHtml = (text: string) => {
                 tooltip = document.createElement('div');
                 tooltip.className = 'entity-tooltip';
                 const loadingText = lang === 'sr' ? `Učitavam kontekst za ${name}...` : `Вчитувам контекст за ${name}...`;
-                tooltip.innerHTML = `<div class="p-4 bg-background border border-border shadow-xl rounded-lg w-64 text-sm"><div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-nyt-accent animate-pulse"></div> ${loadingText}</div></div>`;
+                tooltip.innerHTML = `<div class="p-4 bg-background border border-border shadow-xl rounded-lg w-64 text-sm"><div class="flex items-center gap-[var(--grid-gap)]"><div class="w-2 h-2 rounded-full bg-nyt-accent animate-pulse"></div> ${loadingText}</div></div>`;
                 document.body.appendChild(tooltip);
 
                 popperInstance = createPopper(entity, tooltip, {
@@ -114,7 +114,7 @@ const renderSynthesisHtml = (text: string) => {
         overflow: hidden;
         transition: max-height 0.8s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    
+
     .narrative-body.is-collapsed {
         mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
     }

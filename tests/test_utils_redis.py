@@ -1,7 +1,7 @@
 """Tests for Redis-backed utilities: caching and rate limiting."""
 
 import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 
 class TestCachedResponse:
@@ -82,12 +82,7 @@ class TestCheckRateLimit:
         pipe.execute.return_value = [0, 0, 1, True]
         mock_redis.pipeline.return_value = pipe
         mock_redis.incr.return_value = 101
-        assert (
-            check_rate_limit(
-                "1.2.3.4", path="/api/intelligence/cluster/abc123/research"
-            )
-            is False
-        )
+        assert check_rate_limit("1.2.3.4", path="/api/intelligence/cluster/abc123/research") is False
 
     @patch("utils.cache.redis_client")
     def test_ai_path_uses_tighter_window_limit(self, mock_redis):
@@ -97,7 +92,4 @@ class TestCheckRateLimit:
         pipe.execute.return_value = [0, 12, 1, True]
         mock_redis.pipeline.return_value = pipe
         mock_redis.incr.return_value = 1
-        assert (
-            check_rate_limit("1.2.3.4", path="/api/intelligence/cluster/abc123/analyst")
-            is False
-        )
+        assert check_rate_limit("1.2.3.4", path="/api/intelligence/cluster/abc123/analyst") is False

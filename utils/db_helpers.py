@@ -1,11 +1,13 @@
-import time
 import logging
-from typing import Dict, Any
-from core.config import SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY, SOURCE_CATEGORIES
+import time
+from typing import Any, Dict
+
+from core.config import DEFAULT_CREDIBILITY, SOURCE_CATEGORIES, SOURCE_CREDIBILITY
 
 log = logging.getLogger("presek")
 
 _SOURCE_REGISTRY_CACHE = {"time": 0.0, "data": {}}
+
 
 def get_source_registry(ttl_seconds: int = 300) -> Dict[str, Dict[str, Any]]:
     """
@@ -13,10 +15,7 @@ def get_source_registry(ttl_seconds: int = 300) -> Dict[str, Dict[str, Any]]:
     Prefer database values, fall back to hardcoded config.
     """
     now = time.time()
-    if (
-        _SOURCE_REGISTRY_CACHE["data"]
-        and now - _SOURCE_REGISTRY_CACHE["time"] < ttl_seconds
-    ):
+    if _SOURCE_REGISTRY_CACHE["data"] and now - _SOURCE_REGISTRY_CACHE["time"] < ttl_seconds:
         return _SOURCE_REGISTRY_CACHE["data"]
 
     registry = {}
@@ -40,17 +39,11 @@ def get_source_registry(ttl_seconds: int = 300) -> Dict[str, Dict[str, Any]]:
 
             registry[name] = {
                 "name": name,
-                "credibility": float(
-                    cred
-                    if cred is not None
-                    else SOURCE_CREDIBILITY.get(name, DEFAULT_CREDIBILITY)
-                ),
+                "credibility": float(cred if cred is not None else SOURCE_CREDIBILITY.get(name, DEFAULT_CREDIBILITY)),
                 "category": cat or SOURCE_CATEGORIES.get(name, "Lokalni"),
             }
     except Exception as e:
-        log.warning(
-            f"[source_registry] Database metadata unavailable, using hardcoded only: {e}"
-        )
+        log.warning(f"[source_registry] Database metadata unavailable, using hardcoded only: {e}")
 
     _SOURCE_REGISTRY_CACHE["time"] = now
     _SOURCE_REGISTRY_CACHE["data"] = registry

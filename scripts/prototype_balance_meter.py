@@ -1,7 +1,8 @@
 import asyncio
 import logging
-from core.database import db_manager as db
+
 from core.config import SOURCE_CATEGORIES
+from core.database import db_manager as db
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("presek.balance_prototype")
@@ -39,12 +40,12 @@ async def run_balance_prototype(limit=5):
     # Get top 5 clusters with at least 3 sources
     clusters = db.execute(
         """
-        SELECT cluster_id, COUNT(*) as source_count 
-        FROM articles 
+        SELECT cluster_id, COUNT(*) as source_count
+        FROM articles
         WHERE created_at >= NOW() - INTERVAL '48 hours'
-        GROUP BY cluster_id 
+        GROUP BY cluster_id
         HAVING COUNT(*) >= 3
-        ORDER BY source_count DESC 
+        ORDER BY source_count DESC
         LIMIT %s
     """,
         (limit,),
@@ -52,9 +53,7 @@ async def run_balance_prototype(limit=5):
 
     for c in clusters:
         cid = c["cluster_id"]
-        articles = db.execute(
-            "SELECT source, title FROM articles WHERE cluster_id = %s", (cid,)
-        )
+        articles = db.execute("SELECT source, title FROM articles WHERE cluster_id = %s", (cid,))
 
         title = articles[0]["title"][:70] + "..."
         tiers, sources = get_cluster_diversity(articles)

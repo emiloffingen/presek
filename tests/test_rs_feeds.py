@@ -1,6 +1,7 @@
 import feedparser
 import httpx
 
+
 def test_rss(url):
     print(f"Testing {url}...")
     try:
@@ -16,6 +17,7 @@ def test_rss(url):
             print(f"  Error content: {resp.text[:100]}")
     except Exception as e:
         print(f"  Exception: {e}")
+
 
 if __name__ == "__main__":
     test_rss("https://www.kurir.rs/rss/")

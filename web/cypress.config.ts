@@ -9,7 +9,7 @@ export default defineConfig({
     specPattern: 'cypress/e2e/**/*.{js,jsx,ts,tsx}',
     supportFile: 'cypress/support/index.ts',
   },
-  
+
   component: {
     devServer: {
       framework: 'react',

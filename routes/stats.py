@@ -1,35 +1,32 @@
-import logging
 import asyncio
+import logging
 import os
 import re
-from datetime import datetime, timedelta, timezone
-from pydantic import BaseModel
-from typing import Optional, Any, Dict
 from collections import defaultdict
-from fastapi import APIRouter, Request, Query, HTTPException
-from fastapi.responses import JSONResponse, HTMLResponse
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, Optional
 
+from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import HTMLResponse, JSONResponse
+from pydantic import BaseModel
+
+from core.config import API_MAX_Q_LEN, BREAKING_SCORE_THRESHOLD, DEFAULT_CREDIBILITY, SOURCE_CREDIBILITY
 from core.database import db_manager as db
+from core.health import get_source_statuses, reset_source_policy
 from utils import (
+    build_editor_analytics_payload,
+    build_source_reputation_rows,
     cached_response,
-    set_cache,
-    score_cluster,
-    rank_articles_in_cluster,
     calculate_reading_time,
     is_balanced,
-    build_editor_analytics_payload,
+    rank_articles_in_cluster,
     redis_client,
-    build_source_reputation_rows,
+    score_cluster,
+    set_cache,
 )
-from core.health import get_source_statuses, reset_source_policy
-from core.config import (
-    BREAKING_SCORE_THRESHOLD,
-    SOURCE_CREDIBILITY,
-    DEFAULT_CREDIBILITY,
-    API_MAX_Q_LEN,
-)
-from .common import _source_admin_authorized, _error_json
-from .security import validate_date, validate_string_param, validate_email
+
+from .common import _error_json, _source_admin_authorized
+from .security import validate_date, validate_email, validate_string_param
 
 log = logging.getLogger("presek")
 router = APIRouter()
@@ -138,11 +135,7 @@ async def get_archive_heatmap(lang: str = "sr"):
     rows = await db.async_execute(sql, (country_filter,))
     fmt = [
         {
-            "day": (
-                r["day"].isoformat()
-                if hasattr(r["day"], "isoformat")
-                else str(r["day"])
-            ),
+            "day": (r["day"].isoformat() if hasattr(r["day"], "isoformat") else str(r["day"])),
             "total_clusters": r["total_clusters"],
             "breaking_clusters": r["breaking_clusters"],
         }
@@ -166,17 +159,13 @@ async def get_archive(
         # Validate inputs
         validate_date(date)
         q = validate_string_param(q, "q", max_length=API_MAX_Q_LEN, allow_empty=True)
-        source = validate_string_param(
-            source, "source", max_length=200, allow_empty=True
-        )
+        source = validate_string_param(source, "source", max_length=200, allow_empty=True)
         topic = validate_string_param(topic, "topic", max_length=200, allow_empty=True)
 
         if page < 0 or page > 1000:
             raise HTTPException(status_code=400, detail="Nevaliden broj na stranica")
         if page_size < 1 or page_size > 50:
-            raise HTTPException(
-                status_code=400, detail="Nevalidna golemina na stranica (1-50)"
-            )
+            raise HTTPException(status_code=400, detail="Nevalidna golemina na stranica (1-50)")
 
         # 1. Caching - Only for historical dates (older than today)
         cache_key = f"api:archive:v4:{date}:{q}:{source}:{topic}:{lang}:{page}:{page_size}"
@@ -194,17 +183,15 @@ async def get_archive(
         # 2. Main content query
         if q:
             # Escape LIKE special characters in search query
-            escaped_q = (q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_"))
+            escaped_q = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
             base_sql = """
-                SELECT * FROM articles 
+                SELECT * FROM articles
                 WHERE created_at >= %s AND created_at < %s AND country = %s
                   AND (title ILIKE %s ESCAPE '\\' OR summary ILIKE %s ESCAPE '\\' OR description ILIKE %s ESCAPE '\\')
             """
             params = [d_start, d_end, country, f"%{escaped_q}%", f"%{escaped_q}%", f"%{escaped_q}%"]
         else:
-            base_sql = (
-                "SELECT * FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"
-            )
+            base_sql = "SELECT * FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"
             params = [d_start, d_end, country]
 
         if source:
@@ -231,7 +218,9 @@ async def get_archive(
             metrics_params.append(topic)
 
         # Groupings
-        group_source_sql = "SELECT source, COUNT(*) AS n FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"
+        group_source_sql = (
+            "SELECT source, COUNT(*) AS n FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"
+        )
         group_source_params = [d_start, d_end, country]
         if source:
             group_source_sql += " AND source = %s"
@@ -241,7 +230,9 @@ async def get_archive(
             group_source_params.append(topic)
         group_source_sql += " GROUP BY source ORDER BY n DESC LIMIT 8"
 
-        group_topic_sql = "SELECT topic, COUNT(*) AS n FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"
+        group_topic_sql = (
+            "SELECT topic, COUNT(*) AS n FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"
+        )
         group_topic_params = [d_start, d_end, country]
         if source:
             group_topic_sql += " AND source = %s"
@@ -267,8 +258,9 @@ async def get_archive(
         ranked = [rank_articles_in_cluster(arts) for arts in clusters.values()]
 
         if q:
-            from core.embeddings import generate_query_embedding, parse_embedding_value
             import numpy as np
+
+            from core.embeddings import generate_query_embedding, parse_embedding_value
 
             query_vec = generate_query_embedding(q)
             if query_vec:
@@ -277,9 +269,7 @@ async def get_archive(
                     for a in arts:
                         if a.get("embedding"):
                             a_vec = parse_embedding_value(a["embedding"])
-                            sim = np.dot(query_vec, a_vec) / (
-                                np.linalg.norm(query_vec) * np.linalg.norm(a_vec)
-                            )
+                            sim = np.dot(query_vec, a_vec) / (np.linalg.norm(query_vec) * np.linalg.norm(a_vec))
                             if sim > best_sim:
                                 best_sim = sim
                     arts[0]["match_score"] = best_sim
@@ -340,9 +330,7 @@ async def get_archive(
 
         return res
     except ValueError:
-        raise HTTPException(
-            status_code=400, detail="Nevalidan format datuma. Koristite YYYY-MM-DD"
-        )
+        raise HTTPException(status_code=400, detail="Nevalidan format datuma. Koristite YYYY-MM-DD")
     except Exception as e:
         log.error(f"Archive Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Neuspešno učitavanje arhive")
@@ -383,20 +371,20 @@ async def get_archive_daily_briefing(date: str = Query(...), lang: str = "sr"):
         bullets = [b.strip() for b in (c["summary"] or "").split("\n") if b.strip()]
         if not bullets:
             continue
-            
+
         summary = bullets[0]
         # Clean up common prefixes from the bullet
         if summary.startswith("-"):
             summary = summary[1:].strip()
         if summary.lower().startswith("sto se sluci:"):
             summary = summary[13:].strip()
-            
+
         # If the first bullet is just repeating the headline, try the next bullet
         if summary.lower() == title.lower() and len(bullets) > 1:
             summary = bullets[1]
             if summary.startswith("-"):
                 summary = summary[1:].strip()
-            
+
         briefing_parts.append(f"**{title}**: {summary}")
 
     briefing = " • ".join(briefing_parts)
@@ -459,20 +447,19 @@ async def get_stats_summary(lang: Optional[str] = "sr"):
 
     last_24h_res = await db.async_execute_one(
         f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' AND country = %s",
-        (target_country,)
+        (target_country,),
     )
     last_24h = last_24h_res["count"] if last_24h_res else 0
 
     last_1h_res = await db.async_execute_one(
         f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '1 hour' AND country = %s",
-        (target_country,)
+        (target_country,),
     )
     last_1h = last_1h_res["count"] if last_1h_res else 0
 
     total_feeds = (
         await db.async_execute_one(
-            "SELECT COUNT(*) FROM sources WHERE is_active = TRUE AND country = %s",
-            (target_country,)
+            "SELECT COUNT(*) FROM sources WHERE is_active = TRUE AND country = %s", (target_country,)
         )
     )["count"] or 0
 
@@ -501,7 +488,8 @@ async def get_stats_summary(lang: Optional[str] = "sr"):
             COALESCE((s.sentiment->'tone_analysis'->>'objectivity')::float, 0.5) DESC,
             s.created_at DESC
         LIMIT 1
-    """, (target_country, target_country, lang)
+    """,
+        (target_country, target_country, lang),
     )
     quote = _pick_quote_of_the_day(quote_row)
 
@@ -511,22 +499,15 @@ async def get_stats_summary(lang: Optional[str] = "sr"):
         if hgetall.__class__.__module__.startswith("unittest.mock"):
             bucket = datetime.now(timezone.utc).strftime("%Y-%m-%d")
             runtime_events = hgetall(f"presek:runtime_events:{bucket}") or {}
-        elif os.environ.get("REDIS_URL") and not os.environ.get(
-            "CODEX_SANDBOX_NETWORK_DISABLED"
-        ):
+        elif os.environ.get("REDIS_URL") and not os.environ.get("CODEX_SANDBOX_NETWORK_DISABLED"):
             bucket = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-            runtime_events = (
-                await asyncio.to_thread(hgetall, f"presek:runtime_events:{bucket}")
-                or {}
-            )
+            runtime_events = await asyncio.to_thread(hgetall, f"presek:runtime_events:{bucket}") or {}
     except Exception as e:
         log.warning(f"[stats] runtime event read failed: {e}")
 
     from .common import build_intelligence_summary_payload
 
-    intelligence = await build_intelligence_summary_payload(
-        last_24h, runtime_events=runtime_events
-    )
+    intelligence = await build_intelligence_summary_payload(last_24h, runtime_events=runtime_events)
 
     res = {
         "status": "success",
@@ -559,7 +540,7 @@ async def subscribe_newsletter(request: Request):
         )
     except Exception as e:
         err_msg = str(e).lower()
-        if "column \"locale\" does not exist" in err_msg:
+        if 'column "locale" does not exist' in err_msg:
             log.warning(f"[subscribe] Legacy schema detected: locale column missing. Falling back. Error: {e}")
             try:
                 # Fallback to legacy schema (without locale)
@@ -572,18 +553,27 @@ async def subscribe_newsletter(request: Request):
                 log.error(f"[subscribe] Final fallback failed: {e2}")
                 return {
                     "status": "error",
-                    "message": "Грешка при зачувување. Обидете се подоцна." if locale == "mk" else "Greška pri čuvanju. Pokušajte kasnije.",
+                    "message": (
+                        "Грешка при зачувување. Обидете се подоцна."
+                        if locale == "mk"
+                        else "Greška pri čuvanju. Pokušajte kasnije."
+                    ),
                 }
         else:
             log.warning(f"[subscribe] DB error during subscription: {e}")
             return {
                 "status": "error",
-                "message": "Грешка при зачувување. Обидете се подоцна." if locale == "mk" else "Greška pri čuvanju. Pokušajte kasnije.",
+                "message": (
+                    "Грешка при зачувување. Обидете се подоцна."
+                    if locale == "mk"
+                    else "Greška pri čuvanju. Pokušajte kasnije."
+                ),
             }
     return {
         "status": "success",
         "message": "Успешно се пријавивте!" if locale == "mk" else "Uspešno ste se prijavili!",
     }
+
 
 @router.get("/newsletter/unsubscribe")
 async def unsubscribe_newsletter(email: str, lang: str = "sr"):
@@ -599,7 +589,11 @@ async def unsubscribe_newsletter(email: str, lang: str = "sr"):
         content = "<h1>Greška pri odjavljivanju.</h1>" if lang == "sr" else "<h1>Грешка при одјавување.</h1>"
         return HTMLResponse(content=content, status_code=500)
 
-    content = "<h1>Uspešno ste se odjavili sa biltena Preseka.</h1>" if lang == "sr" else "<h1>Успешно се одјавивте од билтенот на Пресек.</h1>"
+    content = (
+        "<h1>Uspešno ste se odjavili sa biltena Preseka.</h1>"
+        if lang == "sr"
+        else "<h1>Успешно се одјавивте од билтенот на Пресек.</h1>"
+    )
     return HTMLResponse(content=content)
 
 
@@ -608,29 +602,23 @@ async def _fetch_stats_parallel():
     # Queries that don't depend on each other can run concurrently
     coroutines = [
         # Basic stats
-        db.async_execute_one(
-            f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours'"
-        ),
-        db.async_execute_one(
-            "SELECT ROUND(pg_database_size(current_database()) / 1048576.0, 1) AS mb"
-        ),
-        db.async_execute_one(
-            "SELECT MIN(created_at) AS oldest, MAX(created_at) AS newest FROM articles"
-        ),
+        db.async_execute_one(f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours'"),
+        db.async_execute_one("SELECT ROUND(pg_database_size(current_database()) / 1048576.0, 1) AS mb"),
+        db.async_execute_one("SELECT MIN(created_at) AS oldest, MAX(created_at) AS newest FROM articles"),
         db.async_execute_one("SELECT COUNT(*) FROM articles"),
         db.async_execute_one("SELECT COUNT(DISTINCT source) AS n FROM articles"),
         # Profile stats
         db.async_execute_one(
-            """SELECT COUNT(*) AS synced_profiles, COUNT(*) FILTER (WHERE updated_at >= NOW() - INTERVAL '7 days') AS active_profiles_7d, 
-           COUNT(*) FILTER (WHERE jsonb_array_length(COALESCE(profile_data->'recentClusters', '[]'::jsonb)) > 0) AS profiles_with_recent_reads, 
-           COUNT(*) FILTER (WHERE jsonb_array_length(COALESCE(profile_data->'followedTopics', '[]'::jsonb)) > 0) AS profiles_following_topics, 
+            """SELECT COUNT(*) AS synced_profiles, COUNT(*) FILTER (WHERE updated_at >= NOW() - INTERVAL '7 days') AS active_profiles_7d,
+           COUNT(*) FILTER (WHERE jsonb_array_length(COALESCE(profile_data->'recentClusters', '[]'::jsonb)) > 0) AS profiles_with_recent_reads,
+           COUNT(*) FILTER (WHERE jsonb_array_length(COALESCE(profile_data->'followedTopics', '[]'::jsonb)) > 0) AS profiles_following_topics,
            COUNT(*) FILTER (WHERE jsonb_array_length(COALESCE(profile_data->'followedSources', '[]'::jsonb)) > 0) AS profiles_following_sources FROM synced_reader_profiles"""
         ),
         # Delivery stats
         db.async_execute_one(
-            """SELECT COUNT(*) FILTER (WHERE is_active = TRUE) AS delivery_active, COUNT(*) FILTER (WHERE COALESCE(target, '') != '') AS delivery_targets, 
-           COUNT(*) FILTER (WHERE morning_briefing = TRUE) AS morning_briefings, COUNT(*) FILTER (WHERE weekly_digest = TRUE) AS weekly_digests, 
-           COUNT(*) FILTER (WHERE breaking_topics = TRUE) AS breaking_topic_alerts, COUNT(*) FILTER (WHERE breaking_sources = TRUE) AS breaking_source_alerts 
+            """SELECT COUNT(*) FILTER (WHERE is_active = TRUE) AS delivery_active, COUNT(*) FILTER (WHERE COALESCE(target, '') != '') AS delivery_targets,
+           COUNT(*) FILTER (WHERE morning_briefing = TRUE) AS morning_briefings, COUNT(*) FILTER (WHERE weekly_digest = TRUE) AS weekly_digests,
+           COUNT(*) FILTER (WHERE breaking_topics = TRUE) AS breaking_topic_alerts, COUNT(*) FILTER (WHERE breaking_sources = TRUE) AS breaking_source_alerts
            FROM synced_delivery_subscriptions"""
         ),
         # Tracking stats
@@ -654,12 +642,14 @@ async def get_stats_full(request: Request, lang: str = "sr"):
     lock_key = "lock:stats_full_generation"
     try:
         if not redis_client.set(lock_key, "1", nx=True, ex=30):
-            message = "Statistika se generiše, pokušajte ponovo uskoro." if lang == "sr" else "Статистиката се генерира, обидете се повторно за кратко."
+            message = (
+                "Statistika se generiše, pokušajte ponovo uskoro."
+                if lang == "sr"
+                else "Статистиката се генерира, обидете се повторно за кратко."
+            )
             return JSONResponse(
                 status_code=429,
-                content={
-                    "message": message
-                },
+                content={"message": message},
             )
     except Exception as e:
         log.warning(f"Redis lock check failed for stats: {e}")
@@ -670,23 +660,15 @@ async def get_stats_full(request: Request, lang: str = "sr"):
 
         # Assign results with error handling
         last_24h = (
-            (results[0] or {}).get("count")
-            if results and len(results) > 0 and isinstance(results[0], dict)
-            else 0
+            (results[0] or {}).get("count") if results and len(results) > 0 and isinstance(results[0], dict) else 0
         )
         db_size_res = results[1] if len(results) > 1 else {}
         db_size = float(db_size_res.get("mb")) if db_size_res else 0.0
         dates = results[2] if len(results) > 2 else {}
         total_articles_row = results[3] if len(results) > 3 else {}
-        total_articles = (
-            total_articles_row.get("count")
-            if isinstance(total_articles_row, dict)
-            else 0
-        )
+        total_articles = total_articles_row.get("count") if isinstance(total_articles_row, dict) else 0
         total_feeds_row = results[4] if len(results) > 4 else {}
-        total_feeds = (
-            total_feeds_row.get("n") if isinstance(total_feeds_row, dict) else 0
-        )
+        total_feeds = total_feeds_row.get("n") if isinstance(total_feeds_row, dict) else 0
         profile_stats = results[5] if len(results) > 5 else {}
         delivery_stats = results[6] if len(results) > 6 else {}
         tracking_stats = results[7] if len(results) > 7 else {}
@@ -706,9 +688,7 @@ async def get_stats_full(request: Request, lang: str = "sr"):
             db.async_execute(
                 f"SELECT source, COUNT(*) AS n FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY source ORDER BY n DESC LIMIT 10"
             ),
-            db.async_execute(
-                "SELECT category, COUNT(*) AS n FROM articles GROUP BY category ORDER BY n DESC LIMIT 8"
-            ),
+            db.async_execute("SELECT category, COUNT(*) AS n FROM articles GROUP BY category ORDER BY n DESC LIMIT 8"),
             db.async_execute(
                 f"SELECT date_trunc('hour', {_FRESHNESS_EXPR}) AS t, COUNT(*) AS n FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY t ORDER BY t"
             ),
@@ -737,21 +717,21 @@ async def get_stats_full(request: Request, lang: str = "sr"):
                 "SELECT delivery_kind, COUNT(*) FILTER (WHERE event_type = 'send') AS sends, COUNT(*) FILTER (WHERE event_type = 'open') AS opens, COUNT(*) FILTER (WHERE event_type = 'click') AS clicks FROM delivery_tracking_events WHERE created_at >= NOW() - INTERVAL '30 days' GROUP BY delivery_kind"
             ),
             db.async_execute(
-                """SELECT surface, COUNT(*) FILTER (WHERE event_type = 'impression') AS impressions, COUNT(*) FILTER (WHERE event_type = 'follow') AS follows, 
-               COUNT(*) FILTER (WHERE event_type = 'dismiss') AS dismissals, 
-               COUNT(*) FILTER (WHERE event_type = 'follow' AND suggestion_kind = 'topic') AS topic_follows, 
-               COUNT(*) FILTER (WHERE event_type = 'follow' AND suggestion_kind = 'source') AS source_follows 
+                """SELECT surface, COUNT(*) FILTER (WHERE event_type = 'impression') AS impressions, COUNT(*) FILTER (WHERE event_type = 'follow') AS follows,
+               COUNT(*) FILTER (WHERE event_type = 'dismiss') AS dismissals,
+               COUNT(*) FILTER (WHERE event_type = 'follow' AND suggestion_kind = 'topic') AS topic_follows,
+               COUNT(*) FILTER (WHERE event_type = 'follow' AND suggestion_kind = 'source') AS source_follows
                FROM suggestion_surface_events WHERE created_at >= NOW() - INTERVAL '30 days' GROUP BY surface"""
             ),
             db.async_execute(
-                """SELECT suggestion_kind, COUNT(*) FILTER (WHERE event_type = 'impression') AS impressions, COUNT(*) FILTER (WHERE event_type = 'follow') AS follows, 
-               COUNT(*) FILTER (WHERE event_type = 'dismiss') AS dismissals 
+                """SELECT suggestion_kind, COUNT(*) FILTER (WHERE event_type = 'impression') AS impressions, COUNT(*) FILTER (WHERE event_type = 'follow') AS follows,
+               COUNT(*) FILTER (WHERE event_type = 'dismiss') AS dismissals
                FROM suggestion_surface_events WHERE created_at >= NOW() - INTERVAL '30 days' AND COALESCE(suggestion_kind, '') != '' GROUP BY suggestion_kind"""
             ),
             db.async_execute(
-                """SELECT surface, COUNT(*) FILTER (WHERE event_type = 'impression' AND created_at >= NOW() - INTERVAL '7 days') AS current_impressions, 
-               COUNT(*) FILTER (WHERE event_type = 'follow' AND created_at >= NOW() - INTERVAL '7 days') AS current_follows, 
-               COUNT(*) FILTER (WHERE event_type = 'dismiss' AND created_at >= NOW() - INTERVAL '7 days') AS current_dismissals 
+                """SELECT surface, COUNT(*) FILTER (WHERE event_type = 'impression' AND created_at >= NOW() - INTERVAL '7 days') AS current_impressions,
+               COUNT(*) FILTER (WHERE event_type = 'follow' AND created_at >= NOW() - INTERVAL '7 days') AS current_follows,
+               COUNT(*) FILTER (WHERE event_type = 'dismiss' AND created_at >= NOW() - INTERVAL '7 days') AS current_dismissals
                FROM suggestion_surface_events WHERE created_at >= NOW() - INTERVAL '7 days' GROUP BY surface"""
             ),
             return_exceptions=True,
@@ -771,8 +751,7 @@ async def get_stats_full(request: Request, lang: str = "sr"):
             "new_article": dates.get("newest") if dates else None,
             "by_source": safe_result(by_source, []),
             "by_category": [
-                {"category": r["category"] or "Drugo", "n": r["n"]}
-                for r in safe_result(by_category_raw, [])
+                {"category": r["category"] or "Drugo", "n": r["n"]} for r in safe_result(by_category_raw, [])
             ],
             "velocity": [{"t": r["t"], "n": r["n"]} for r in safe_result(velocity, [])],
             "speed_leaderboard": safe_result(speed_leaderboard, []),
@@ -793,9 +772,7 @@ async def get_stats_full(request: Request, lang: str = "sr"):
     except Exception as e:
         log.error(f"Full Stats Error: {e}")
         detail = "Neuspešno generisanje statistika" if lang == "sr" else "Неуспешно генерирање на статистики"
-        raise HTTPException(
-            status_code=500, detail=detail
-        )
+        raise HTTPException(status_code=500, detail=detail)
     finally:
         try:
             redis_client.delete(lock_key)
@@ -832,9 +809,7 @@ async def control_source_route(name: str, request: Request):
     except Exception:
         raise HTTPException(status_code=400, detail="Nevaliden JSON")
     action = str(payload.get("action", "")).strip().lower()
-    source = await db.async_execute_one(
-        "SELECT credibility FROM sources WHERE name = %s", (name,)
-    )
+    source = await db.async_execute_one("SELECT credibility FROM sources WHERE name = %s", (name,))
     if not source:
         return _error_json("Source not found", 404)
     curr = float(source["credibility"])
@@ -886,7 +861,7 @@ async def get_sentiment_trends(lang: Optional[str] = "sr"):
         return cached
 
     sql = """
-        SELECT 
+        SELECT
             DATE(created_at) as day,
             AVG((sentiment->'sentiment'->>'score')::float) as avg_score,
             AVG((tone_analysis->>'objectivity')::float) as avg_objectivity,
@@ -917,11 +892,7 @@ async def get_sentiment_trends(lang: Optional[str] = "sr"):
 
             data.append(
                 {
-                    "day": (
-                        r["day"].isoformat()
-                        if hasattr(r["day"], "isoformat")
-                        else str(r["day"])
-                    ),
+                    "day": (r["day"].isoformat() if hasattr(r["day"], "isoformat") else str(r["day"])),
                     "score": round(score, 2),
                     "label": label,
                     "objectivity": round(float(r["avg_objectivity"] or 0), 2),
@@ -947,7 +918,7 @@ async def get_current_mood(lang: Optional[str] = "sr"):
         return cached
 
     sql = """
-        SELECT 
+        SELECT
             sentiment->'sentiment'->>'tone' as tone,
             (sentiment->'sentiment'->>'score')::float as score,
             (tone_analysis->>'objectivity')::float as objectivity

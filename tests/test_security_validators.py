@@ -1,6 +1,7 @@
-import pytest
-from unittest.mock import MagicMock
 import sys
+from unittest.mock import MagicMock
+
+import pytest
 
 
 # Mock fastapi.HTTPException before importing routes.security
@@ -14,15 +15,16 @@ mock_fastapi = MagicMock()
 mock_fastapi.HTTPException = FakeHTTPException
 sys.modules["fastapi"] = mock_fastapi
 
+from fastapi import HTTPException
+
 # Now we can import the validators
 from routes.security import (
     validate_cluster_id,
     validate_date,
     validate_email,
-    validate_string_param,
     validate_list_param,
+    validate_string_param,
 )
-from fastapi import HTTPException
 
 
 def test_validate_cluster_id():

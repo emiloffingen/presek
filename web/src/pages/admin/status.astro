@@ -28,7 +28,7 @@ const services = [
 <Layout title="Sostojba na sistemot" description="Administrativna sostojba na Presek" robots="noindex, nofollow">
   <main class="min-h-screen bg-zinc-950 text-zinc-100 px-6 py-10">
     <div class="mx-auto max-w-5xl">
-      <div class="mb-8 flex items-center justify-between gap-4">
+      <div class="mb-8 flex items-center justify-between gap-[var(--grid-gap)]">
         <div>
           <p class="text-xs font-mono uppercase tracking-widest text-zinc-500">Admin</p>
           <h1 class="text-3xl font-black tracking-tight">Sostojba na sistemot</h1>
@@ -42,7 +42,7 @@ const services = [
         </div>
       )}
 
-      <section class="grid gap-4 md:grid-cols-2">
+      <section class="grid gap-[var(--grid-gap)] md:grid-cols-2">
         {services.map(([label, value]) => (
           <div class="border border-zinc-800 bg-zinc-900/50 p-5">
             <p class="text-xs font-mono uppercase tracking-widest text-zinc-500">{label}</p>

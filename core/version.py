@@ -1,6 +1,6 @@
+import logging
 import os
 import subprocess
-import logging
 from pathlib import Path
 
 log = logging.getLogger("presek.version")
@@ -16,16 +16,12 @@ def _read_version_file() -> str:
         return "0.0.0"
 
 
-APP_VERSION = (
-    os.environ.get("PRESEK_VERSION") or _read_version_file()
-).strip() or "0.0.0"
+APP_VERSION = (os.environ.get("PRESEK_VERSION") or _read_version_file()).strip() or "0.0.0"
 APP_VERSION_LABEL = APP_VERSION.removesuffix(".0")
 
 
 def _git_sha() -> str | None:
-    env_sha = (
-        os.environ.get("PRESEK_GIT_SHA") or os.environ.get("GIT_COMMIT") or ""
-    ).strip()
+    env_sha = (os.environ.get("PRESEK_GIT_SHA") or os.environ.get("GIT_COMMIT") or "").strip()
     if env_sha:
         return env_sha[:12]
     try:
@@ -48,9 +44,7 @@ def version_payload() -> dict:
         "version": APP_VERSION,
         "version_label": APP_VERSION_LABEL,
     }
-    release = (
-        os.environ.get("PRESEK_RELEASE") or os.environ.get("RELEASE_ID") or ""
-    ).strip()
+    release = (os.environ.get("PRESEK_RELEASE") or os.environ.get("RELEASE_ID") or "").strip()
     if release:
         payload["release"] = release
     sha = _git_sha()

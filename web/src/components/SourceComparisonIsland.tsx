@@ -60,7 +60,7 @@ export default function SourceComparisonIsland({ allSources, lang = 'sr' }: { al
     return (
       <div className="space-y-4">
         <p className="text-[11px] font-black uppercase tracking-[0.15em] text-muted-foreground text-center" title={tooltip}>{label}</p>
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-[var(--grid-gap)]">
           <div className="flex-1 text-right">
             <span className={`font-serif font-black text-3xl tabular-nums ${isWinner1 ? 'text-nyt-accent' : 'text-foreground/40'}`}>{p1}%</span>
           </div>
@@ -89,11 +89,11 @@ export default function SourceComparisonIsland({ allSources, lang = 'sr' }: { al
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-[var(--grid-gap)] mb-12">
         <div className="space-y-2">
             <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">{isMK ? 'ПРВ ИЗВОР' : 'PRVI IZVOR'}</label>
-            <select 
-            value={s1} 
+            <select
+            value={s1}
             onChange={e => setS1(e.target.value)}
             className="w-full bg-secondary/30 border border-border rounded-lg px-4 py-3 font-serif font-black text-base focus:outline-none focus:ring-2 focus:ring-nyt-accent/20 transition-all appearance-none"
             style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'currentColor\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\' /%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1.2em' }}
@@ -103,8 +103,8 @@ export default function SourceComparisonIsland({ allSources, lang = 'sr' }: { al
         </div>
         <div className="space-y-2">
             <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">{isMK ? 'ВТОР ИЗВОР' : 'DRUGI IZVOR'}</label>
-            <select 
-            value={s2} 
+            <select
+            value={s2}
             onChange={e => setS2(e.target.value)}
             className="w-full bg-secondary/30 border border-border rounded-lg px-4 py-3 font-serif font-black text-base focus:outline-none focus:ring-2 focus:ring-nyt-red/20 transition-all appearance-none"
             style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'currentColor\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\' /%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1.2em' }}
@@ -115,7 +115,7 @@ export default function SourceComparisonIsland({ allSources, lang = 'sr' }: { al
       </div>
 
       {loading ? (
-        <div className="py-20 flex flex-col items-center gap-4">
+        <div className="py-20 flex flex-col items-center gap-[var(--grid-gap)]">
             <Loader2 className="animate-spin text-nyt-accent" size={32} />
             <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{isMK ? 'Пресметување...' : 'Izračunavanje...'}</p>
         </div>
@@ -123,11 +123,11 @@ export default function SourceComparisonIsland({ allSources, lang = 'sr' }: { al
         <div className="space-y-12">
           {renderMetric(isMK ? "Индекс на Објективност" : "Indeks Objektivnosti", m1.avg_objectivity, m2.avg_objectivity)}
           {renderMetric(isMK ? "Сензационализам" : "Senzacionalizam", m1.avg_sensationalism, m2.avg_sensationalism, true)}
-          
+
           {overlap && (
             <div className="space-y-5 pt-6 border-t border-zinc-100 dark:border-zinc-800">
               <p className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground text-center">{isMK ? 'Тематско преклопување' : 'Tematsko Preklapanje'}</p>
-              
+
               <div className="flex w-full h-10 rounded-xl overflow-hidden border-2 border-zinc-100 dark:border-zinc-800 shadow-sm p-1 gap-1">
                 {(() => {
                   const totalOverlap = Math.max(1, overlap.shared_clusters + overlap.s1_exclusive + overlap.s2_exclusive);
@@ -156,7 +156,7 @@ export default function SourceComparisonIsland({ allSources, lang = 'sr' }: { al
                   );
                 })()}
               </div>
-              
+
               <div className="flex justify-between text-[10px] font-black uppercase tracking-tighter text-zinc-500 px-1">
                   <span className="w-1/3 truncate" title={s1}>{s1} {isMK ? 'сам' : 'sam'}</span>
                   <span className="w-1/3 text-center">{isMK ? 'Заеднички интерес' : 'Zajednički interes'}</span>
@@ -165,7 +165,7 @@ export default function SourceComparisonIsland({ allSources, lang = 'sr' }: { al
             </div>
           )}
 
-          <div className="pt-8 border-t border-zinc-200 dark:border-zinc-800 flex justify-between gap-6">
+          <div className="pt-8 border-t border-zinc-200 dark:border-zinc-800 flex justify-between gap-[var(--grid-gap)]">
             <div className="text-center flex-1 p-4 bg-zinc-50 dark:bg-zinc-900 rounded-lg border border-zinc-100 dark:border-zinc-800">
                 <p className="text-[10px] font-black uppercase tracking-widest text-nyt-accent mb-2">{s1}</p>
                 <div className="flex items-baseline justify-center gap-1">

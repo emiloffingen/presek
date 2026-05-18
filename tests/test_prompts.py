@@ -1,8 +1,4 @@
-from core.prompts import (
-    SUMMARY_SYSTEM_PROMPT,
-    SYNTHESIS_SYSTEM_PROMPT,
-    DAILY_BRIEF_SYSTEM_PROMPT,
-)
+from core.prompts import DAILY_BRIEF_SYSTEM_PROMPT, SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT
 
 
 def test_synthesis_prompt_requires_angle_content_schema():

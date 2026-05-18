@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { navigate } from 'astro:transitions/client';
-import { 
-  Search, X, Zap, ArrowUpRight, LoaderCircle, Newspaper, 
-  Mic, Clock, TrendingUp, User, Layout, 
+import {
+  Search, X, Zap, ArrowUpRight, LoaderCircle, Newspaper,
+  Mic, Clock, TrendingUp, User, Layout,
   HelpCircle, Archive, Sparkles, ChevronRight,
   Globe, ShieldCheck, Activity, BookOpen, ExternalLink,
   History, Compass
@@ -118,7 +118,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    
+
     const saved = localStorage.getItem('presek_recent_searches');
     if (saved) {
       try {
@@ -324,13 +324,13 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
     }
   };
 
-  const filteredActions = SEARCH_ACTIONS.filter(a => 
-    a.label.toLowerCase().includes(query.toLowerCase()) || 
+  const filteredActions = SEARCH_ACTIONS.filter(a =>
+    a.label.toLowerCase().includes(query.toLowerCase()) ||
     a.desc.toLowerCase().includes(query.toLowerCase())
   );
 
-  const selectedItem = (entityResult && activeIndex === 0) 
-    ? { type: 'ENTITY' as const, data: entityResult } 
+  const selectedItem = (entityResult && activeIndex === 0)
+    ? { type: 'ENTITY' as const, data: entityResult }
     : (activeIndex >= (entityResult ? 1 : 0) && activeIndex < (entityResult ? 1 : 0) + suggestions.length)
       ? { type: 'CLUSTER' as const, data: suggestions[entityResult ? activeIndex - 1 : activeIndex] }
       : (activeIndex >= (entityResult ? 1 : 0) + suggestions.length)
@@ -351,7 +351,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
         onClick={(e) => e.stopPropagation()}
       >
         {/* Command Header */}
-        <div className="flex items-center gap-4 px-6 py-4 border-b border-border/40 bg-secondary/10">
+        <div className="flex items-center gap-[var(--grid-gap)] px-6 py-4 border-b border-border/40 bg-secondary/10">
           <Search className="text-nyt-accent" size={24} />
           <div className="flex-1 relative">
             <input
@@ -370,7 +370,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
               </div>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-[var(--grid-gap)]">
             <button onClick={startVoiceSearch} className={`p-2 rounded-lg hover:bg-secondary transition-colors ${isListening ? 'text-nyt-accent animate-pulse' : 'text-muted-foreground'}`}>
               <Mic size={20} />
             </button>
@@ -384,16 +384,16 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
         <div className="flex-1 overflow-hidden flex">
           {/* Left Column: Results List */}
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-8 scroll-smooth border-r border-border/40 custom-scrollbar">
-            
+
             {/* Empty State / Initial View */}
             {!query.trim() && (
               <div className="space-y-10">
                 {recentSearches.length > 0 && (
                   <section>
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4 flex items-center gap-2">
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4 flex items-center gap-[var(--grid-gap)]">
                        <History size={12} /> {lang === 'sr' ? 'POSLEDNJE PRETRAGE' : 'ПОСЛЕДНИ ПРЕБАРУВАЊА'}
                     </h3>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-[var(--grid-gap)]">
                       {recentSearches.map((s, i) => (
                         <button key={i} onClick={() => setQuery(s.query)} className="px-4 py-2 bg-secondary/50 hover:bg-secondary border border-border/50 rounded-full text-xs font-bold transition-all">
                           {s.query}
@@ -404,12 +404,12 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                 )}
 
                 <section>
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4 flex items-center gap-2">
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4 flex items-center gap-[var(--grid-gap)]">
                      <TrendingUp size={12} /> {lang === 'sr' ? 'TREND TEME' : 'ТРЕНД ТЕМИ'}
                   </h3>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-[var(--grid-gap)]">
                     {trendingItems.length > 0 ? trendingItems.map((item, i) => (
-                      <button key={i} onClick={() => setQuery(item.word)} className="flex items-center gap-3 p-3 bg-secondary/30 hover:bg-secondary/60 rounded-xl transition-all group text-left">
+                      <button key={i} onClick={() => setQuery(item.word)} className="flex items-center gap-[var(--grid-gap)] p-3 bg-secondary/30 hover:bg-secondary/60 rounded-xl transition-all group text-left">
                         <span className="text-[10px] font-black text-nyt-accent/40 group-hover:text-nyt-accent">{(i+1).toString().padStart(2, '0')}</span>
                         <span className="font-serif font-black text-sm truncate">{item.word}</span>
                       </button>
@@ -418,12 +418,12 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                 </section>
 
                 <section>
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4 flex items-center gap-2">
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4 flex items-center gap-[var(--grid-gap)]">
                      <Zap size={12} /> {lang === 'sr' ? 'BRZE AKCIJE' : 'БРЗИ АКЦИИ'}
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-[var(--grid-gap)]">
                     {SEARCH_ACTIONS.map(action => (
-                      <button key={action.id} onClick={() => { closeSearch(); navigate(action.href); }} className="flex items-center gap-4 p-4 bg-secondary/30 hover:bg-secondary/60 border border-border/50 rounded-xl transition-all group text-left">
+                      <button key={action.id} onClick={() => { closeSearch(); navigate(action.href); }} className="flex items-center gap-[var(--grid-gap)] p-4 bg-secondary/30 hover:bg-secondary/60 border border-border/50 rounded-xl transition-all group text-left">
                         <div className="p-2 bg-background rounded-lg text-muted-foreground group-hover:text-nyt-accent group-hover:bg-nyt-accent/10 transition-all">
                           <action.icon size={20} />
                         </div>
@@ -446,7 +446,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                     <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">{lang === 'sr' ? 'SUBJEKTI' : 'СУБЈЕКТИ'}</h3>
                     <button
                       onClick={() => navigateToQuery(entityResult.name)}
-                      className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left ${activeIndex === 0 ? 'bg-nyt-accent/5 border-nyt-accent/30 ring-1 ring-nyt-accent/20' : 'bg-transparent border-transparent hover:bg-secondary/30'}`}
+                      className={`w-full flex items-center gap-[var(--grid-gap)] p-4 rounded-xl border transition-all text-left ${activeIndex === 0 ? 'bg-nyt-accent/5 border-nyt-accent/30 ring-1 ring-nyt-accent/20' : 'bg-transparent border-transparent hover:bg-secondary/30'}`}
                     >
                       <div className="w-12 h-12 rounded-full overflow-hidden bg-secondary flex items-center justify-center shrink-0 border-2 border-nyt-accent/20">
                         {entityResult.image_url ? (
@@ -474,18 +474,18 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                           <button
                             key={item.cluster_id}
                             onClick={() => navigateToCluster(item.cluster_id)}
-                            className={`w-full flex items-start gap-4 p-4 rounded-xl border transition-all text-left group ${activeIndex === globalIdx ? 'bg-nyt-accent/5 border-nyt-accent/30 ring-1 ring-nyt-accent/20' : 'bg-transparent border-transparent hover:bg-secondary/30'}`}
+                            className={`w-full flex items-start gap-[var(--grid-gap)] p-4 rounded-xl border transition-all text-left group ${activeIndex === globalIdx ? 'bg-nyt-accent/5 border-nyt-accent/30 ring-1 ring-nyt-accent/20' : 'bg-transparent border-transparent hover:bg-secondary/30'}`}
                           >
                             <div className="w-16 aspect-[4/3] rounded-lg overflow-hidden bg-secondary shrink-0 border border-border/50">
                               {item.image_url && <img src={`/proxy?url=${encodeURIComponent(item.image_url)}&w=200`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2 mb-1">
+                              <div className="flex items-center gap-[var(--grid-gap)] mb-1">
                                 <span className="text-[9px] font-black uppercase tracking-wider text-nyt-accent">{item.category}</span>
                                 {item.has_synthesis && <Sparkles size={10} className="text-nyt-accent" fill="currentColor" />}
                               </div>
                               <p className="font-serif font-black text-lg leading-tight line-clamp-2 group-hover:text-nyt-accent transition-colors">{item.title}</p>
-                              <div className="flex items-center gap-3 mt-2 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
+                              <div className="flex items-center gap-[var(--grid-gap)] mt-2 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
                                 <span>{item.source}</span>
                                 <span>{item.sourceCount} {item.sourceCount === 1 ? (lang === 'sr' ? 'izvor' : 'извор') : (lang === 'sr' ? 'izvora' : 'извори')}</span>
                               </div>
@@ -500,14 +500,14 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                 {filteredActions.length > 0 && (
                   <section>
                     <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">{lang === 'sr' ? 'AKCIJE' : 'АКЦИИ'}</h3>
-                    <div className="grid grid-cols-1 gap-2">
+                    <div className="grid grid-cols-1 gap-[var(--grid-gap)]">
                       {filteredActions.map((action, idx) => {
                         const globalIdx = (entityResult ? 1 : 0) + suggestions.length + idx;
                         return (
                           <button
                             key={action.id}
                             onClick={() => { closeSearch(); navigate(action.href); }}
-                            className={`w-full flex items-center gap-4 p-3 rounded-xl border transition-all text-left ${activeIndex === globalIdx ? 'bg-nyt-accent/5 border-nyt-accent/30 ring-1 ring-nyt-accent/20' : 'bg-transparent border-transparent hover:bg-secondary/30'}`}
+                            className={`w-full flex items-center gap-[var(--grid-gap)] p-3 rounded-xl border transition-all text-left ${activeIndex === globalIdx ? 'bg-nyt-accent/5 border-nyt-accent/30 ring-1 ring-nyt-accent/20' : 'bg-transparent border-transparent hover:bg-secondary/30'}`}
                           >
                             <div className="p-2 bg-secondary rounded-lg text-muted-foreground">
                               <action.icon size={16} />
@@ -543,9 +543,9 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                     <div className="aspect-[16/9] rounded-xl overflow-hidden bg-secondary border border-border shadow-sm">
                       {selectedItem.data.image_url && <img src={`/proxy?url=${encodeURIComponent(selectedItem.data.image_url)}&w=600`} className="w-full h-full object-cover" />}
                     </div>
-                    
+
                     <div>
-                      <div className="flex items-center gap-3 mb-3">
+                      <div className="flex items-center gap-[var(--grid-gap)] mb-3">
                          <span className="px-2 py-1 bg-nyt-accent text-white text-[9px] font-black uppercase tracking-widest rounded">{selectedItem.data.category}</span>
                          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-1"><Clock size={12} /> PRE 2 ČASA</span>
                       </div>
@@ -553,7 +553,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                       <p className="text-base text-muted-foreground leading-relaxed font-nyt-body line-clamp-6">{selectedItem.data.description}</p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 py-6 border-y border-border/40">
+                    <div className="grid grid-cols-2 gap-[var(--grid-gap)] py-6 border-y border-border/40">
                       <div>
                         <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">{lang === 'sr' ? 'izvori' : 'извори'}</p>
                         <p className="text-xl font-black">{selectedItem.data.sourceCount}</p>
@@ -566,7 +566,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
 
                     <button
                       onClick={() => navigateToCluster(selectedItem.data.cluster_id)}
-                      className="w-full py-4 bg-nyt-accent text-white rounded-xl font-black uppercase tracking-[0.2em] text-xs shadow-lg shadow-nyt-accent/20 hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+                      className="w-full py-4 bg-nyt-accent text-white rounded-xl font-black uppercase tracking-[0.2em] text-xs shadow-lg shadow-nyt-accent/20 hover:scale-[1.02] transition-all flex items-center justify-center gap-[var(--grid-gap)]"
                     >
                       {lang === 'sr' ? 'OTVORI PRIČU' : 'ОТВОРИ ПРИКАЗНА'} <ChevronRight size={16} />
                     </button>
@@ -611,7 +611,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
 
                     <button
                       onClick={() => navigateToQuery(selectedItem.data.name)}
-                      className="w-full py-4 bg-foreground text-background rounded-xl font-black uppercase tracking-[0.2em] text-xs hover:bg-nyt-accent hover:text-white transition-all flex items-center justify-center gap-2"
+                      className="w-full py-4 bg-foreground text-background rounded-xl font-black uppercase tracking-[0.2em] text-xs hover:bg-nyt-accent hover:text-white transition-all flex items-center justify-center gap-[var(--grid-gap)]"
                     >
                       {lang === 'sr' ? 'VIDI SVE VESTI' : 'ВИДИ СИТЕ ВЕСТИ'} <ExternalLink size={16} />
                     </button>
@@ -650,12 +650,12 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
 
         {/* Command Footer */}
         <div className="px-6 py-3 border-t border-border/40 bg-secondary/5 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-           <div className="flex items-center gap-6">
-              <span className="flex items-center gap-2"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">ENTER</kbd> {lang === 'sr' ? 'IZABERI' : 'ИЗБЕРИ'}</span>
-              <span className="flex items-center gap-2"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">↑</kbd><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">↓</kbd> {lang === 'sr' ? 'NAVIGACIJA' : 'НАВИГАЦИЈА'}</span>
-              <span className="flex items-center gap-2"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">ESC</kbd> {lang === 'sr' ? 'ZATVORI' : 'ЗАТВОРИ'}</span>
+           <div className="flex items-center gap-[var(--grid-gap)]">
+              <span className="flex items-center gap-[var(--grid-gap)]"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">ENTER</kbd> {lang === 'sr' ? 'IZABERI' : 'ИЗБЕРИ'}</span>
+              <span className="flex items-center gap-[var(--grid-gap)]"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">↑</kbd><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">↓</kbd> {lang === 'sr' ? 'NAVIGACIJA' : 'НАВИГАЦИЈА'}</span>
+              <span className="flex items-center gap-[var(--grid-gap)]"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">ESC</kbd> {lang === 'sr' ? 'ZATVORI' : 'ЗАТВОРИ'}</span>
            </div>
-           <div className="flex items-center gap-4">
+           <div className="flex items-center gap-[var(--grid-gap)]">
               <span className="flex items-center gap-1.5"><Globe size={12} /> {lang === 'sr' ? 'GLOBALNA PRETRAGA' : 'ГЛОБАЛНО ПРЕБАРУВАЊЕ'}</span>
               <span className="w-1 h-1 rounded-full bg-border" />
               <span className="flex items-center gap-1.5"><Sparkles size={12} /> AI {lang === 'sr' ? 'ASISTENCIJA' : 'АСИСТЕНЦИЈА'}</span>
@@ -670,7 +670,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
       <button
         ref={triggerRef}
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-3 px-3 py-1.5 bg-secondary/30 hover:bg-secondary/60 border border-border/60 hover:border-nyt-accent/30 rounded-lg transition-all group w-full text-left backdrop-blur-sm"
+        className="flex items-center gap-[var(--grid-gap)] px-3 py-1.5 bg-secondary/30 hover:bg-secondary/60 border border-border/60 hover:border-nyt-accent/30 rounded-lg transition-all group w-full text-left backdrop-blur-sm"
         aria-label="Otvori komanden centar"
       >
         <Search size={14} className="text-muted-foreground group-hover:text-nyt-accent transition-colors" />

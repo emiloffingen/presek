@@ -1,11 +1,13 @@
-import redis
-import os
+import asyncio
+import datetime
 import json
 import logging
-import datetime
+import os
 import time
-import asyncio
 from typing import Any, Optional
+
+import redis
+
 from utils.time import DateTimeEncoder
 
 log = logging.getLogger("presek")
@@ -17,14 +19,11 @@ try:
     log.info(f"Redis connected: {redis_url.split('@')[-1].split('/')[0]}")
 except redis.ConnectionError as e:
     log.error(f"Redis connection failed to {redis_url}: {e}")
-    redis_client = redis.Redis.from_url(
-        "redis://localhost:6379/0", decode_responses=True
-    )
+    redis_client = redis.Redis.from_url("redis://localhost:6379/0", decode_responses=True)
 except Exception as e:
     log.error(f"Redis initialization error: {e}")
-    redis_client = redis.Redis.from_url(
-        "redis://localhost:6379/0", decode_responses=True
-    )
+    redis_client = redis.Redis.from_url("redis://localhost:6379/0", decode_responses=True)
+
 
 def cached_response(key: str, ttl: int = 60) -> Optional[Any]:
     """Read a cached JSON value from Redis."""
@@ -36,6 +35,7 @@ def cached_response(key: str, ttl: int = 60) -> Optional[Any]:
         log.warning(f"[cache] redis read error on {key}: {e}")
     return None
 
+
 def set_cache(key: str, val, ttl: int = 60):
     """Write a JSON value to Redis cache."""
     try:
@@ -44,12 +44,14 @@ def set_cache(key: str, val, ttl: int = 60):
     except Exception as e:
         log.warning(f"[cache] write error on {key}: {e}")
 
+
 def delete_cache(key: str):
     """Delete a key from Redis cache."""
     try:
         redis_client.delete(key)
     except Exception as e:
         log.warning(f"[cache] delete error on {key}: {e}")
+
 
 def delete_cache_prefix(prefix: str):
     """Delete all keys with a given prefix from Redis."""
@@ -65,18 +67,15 @@ def delete_cache_prefix(prefix: str):
     except Exception as e:
         log.warning(f"[cache] prefix delete error on {prefix}: {e}")
 
+
 def record_runtime_event(event: str, **fields):
     """Record an application event to Redis for analytics."""
     event = str(event or "").strip()
     if not event:
         return
 
-    normalized_fields = {
-        str(k): str(v) for k, v in fields.items() if v is not None and str(v) != ""
-    }
-    field_suffix = "|".join(
-        f"{k}={normalized_fields[k]}" for k in sorted(normalized_fields)
-    )
+    normalized_fields = {str(k): str(v) for k, v in fields.items() if v is not None and str(v) != ""}
+    field_suffix = "|".join(f"{k}={normalized_fields[k]}" for k in sorted(normalized_fields))
     bucket = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d")
     counter_key = f"presek:runtime_events:{bucket}"
     counter_field = event if not field_suffix else f"{event}|{field_suffix}"
@@ -87,9 +86,8 @@ def record_runtime_event(event: str, **fields):
     except Exception as e:
         log.warning(f"[runtime_event] Redis unavailable: {e}")
 
-    log.info(
-        f"[runtime_event] {event} {json.dumps(normalized_fields, ensure_ascii=False)}"
-    )
+    log.info(f"[runtime_event] {event} {json.dumps(normalized_fields, ensure_ascii=False)}")
+
 
 def check_rate_limit(ip: str, path: str = "", is_authenticated: bool = False) -> bool:
     """Sliding window rate limiter."""
@@ -129,11 +127,13 @@ def check_rate_limit(ip: str, path: str = "", is_authenticated: bool = False) ->
         log.debug(f"Rate limit check failed: {e}")
         return True
 
+
 def publish_event(channel: str, data: dict):
     try:
         redis_client.publish(channel, json.dumps(data, cls=DateTimeEncoder))
     except Exception as e:
         log.debug(f"Failed to publish event to {channel}: {e}")
+
 
 async def event_stream(channel: str, request=None):
     pubsub = redis_client.pubsub()

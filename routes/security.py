@@ -3,14 +3,15 @@ security.py - Centralized security utilities and middleware for Presek API
 """
 
 import importlib
+import logging
 import os
 import re
 import secrets
-import logging
 from typing import Callable
-from fastapi import Request, HTTPException
-from starlette.responses import Response
+
+from fastapi import HTTPException, Request
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 
 log = logging.getLogger("presek")
 
@@ -28,13 +29,14 @@ def _raise_http_error(status_code: int, detail: str):
 # Security Headers Middleware
 # =============================================================================
 
+
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Middleware to add security headers to all responses."""
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         # Generate a unique nonce for this request for CSP
-        csp_nonce = secrets.token_hex(16) 
-        
+        csp_nonce = secrets.token_hex(16)
+
         response = await call_next(request)
 
         # Add security headers
@@ -44,9 +46,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # HSTS: Only enable preload in production with HTTPS
         # In development, use shorter max-age without preload to avoid breaking local dev
         if os.environ.get("ENV") == "production":
-            response.headers["Strict-Transport-Security"] = (
-                "max-age=63072000; includeSubDomains; preload"
-            )
+            response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
         else:
             response.headers["Strict-Transport-Security"] = "max-age=300; includeSubDomains"
 
@@ -70,8 +70,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "media-src 'self' data: https:; "
             "worker-src 'self' blob:"
         )
-        response.headers["Content-Security-Policy"] = csp 
-        
+        response.headers["Content-Security-Policy"] = csp
+
         # Set nonce in a cookie so frontend can access it for inline styles/scripts
         # In production with HTTPS, secure=True prevents MITM attacks
         # In development without HTTPS, secure=False is required
@@ -82,7 +82,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             httponly=True,
             secure=is_production,
             samesite="lax",
-            max_age=300  # 5 minutes - match typical page load time
+            max_age=300,  # 5 minutes - match typical page load time
         )
 
         # Permissions Policy
@@ -101,17 +101,19 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         return response
 
+
 # =============================================================================
 # Security Headers Middleware
 # =============================================================================
+
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Middleware to add security headers to all responses."""
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         # Generate a unique nonce for this request for CSP
-        csp_nonce = secrets.token_hex(16) 
-        
+        csp_nonce = secrets.token_hex(16)
+
         response = await call_next(request)
 
         # Add security headers
@@ -121,9 +123,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # HSTS: Only enable preload in production with HTTPS
         # In development, use shorter max-age without preload to avoid breaking local dev
         if os.environ.get("ENV") == "production":
-            response.headers["Strict-Transport-Security"] = (
-                "max-age=63072000; includeSubDomains; preload"
-            )
+            response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
         else:
             response.headers["Strict-Transport-Security"] = "max-age=300; includeSubDomains"
 
@@ -147,8 +147,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "media-src 'self' data:; "
             "worker-src 'self' blob:"
         )
-        response.headers["Content-Security-Policy"] = csp 
-        
+        response.headers["Content-Security-Policy"] = csp
+
         # Set nonce in a cookie so frontend can access it for inline styles/scripts
         # In production with HTTPS, secure=True prevents MITM attacks
         # In development without HTTPS, secure=False is required
@@ -159,7 +159,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             httponly=True,
             secure=is_production,
             samesite="lax",
-            max_age=300  # 5 minutes - match typical page load time
+            max_age=300,  # 5 minutes - match typical page load time
         )
 
         # Permissions Policy
@@ -178,14 +178,13 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         return response
 
+
 # =============================================================================
 # Input Validation Helpers
 # =============================================================================
 
 CLUSTER_ID_PATTERN = re.compile(r"^[a-f0-9\-]{6,64}$")
-UUID_PATTERN = re.compile(
-    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I
-)
+UUID_PATTERN = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
 DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 EMAIL_PATTERN = re.compile(r"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$")
 
@@ -197,9 +196,7 @@ def validate_cluster_id(cluster_id: str, param_name: str = "cluster_id") -> str:
     if not isinstance(cluster_id, str):
         raise HTTPException(status_code=400, detail=f"{param_name} mora da bide tekst")
     if not CLUSTER_ID_PATTERN.match(cluster_id):
-        _raise_http_error(
-            400, f"Invalid {param_name}. Must be 6-64 character hexadecimal string."
-        )
+        _raise_http_error(400, f"Invalid {param_name}. Must be 6-64 character hexadecimal string.")
     return cluster_id
 
 
@@ -259,9 +256,7 @@ def validate_string_param(
     return value
 
 
-def validate_list_param(
-    items, param_name: str, max_items: int = 20, max_item_length: int = 100
-) -> list:
+def validate_list_param(items, param_name: str, max_items: int = 20, max_item_length: int = 100) -> list:
     """Validate a list parameter."""
     if items is None:
         return []
@@ -335,7 +330,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         # Generate a unique nonce for this request for CSP
         csp_nonce = secrets.token_hex(16)
-        
+
         response = await call_next(request)
 
         # Add security headers
@@ -345,9 +340,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # HSTS: Only enable preload in production with HTTPS
         # In development, use shorter max-age without preload to avoid breaking local dev
         if os.environ.get("ENV") == "production":
-            response.headers["Strict-Transport-Security"] = (
-                "max-age=63072000; includeSubDomains; preload"
-            )
+            response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
         else:
             response.headers["Strict-Transport-Security"] = "max-age=300; includeSubDomains"
 
@@ -372,7 +365,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "worker-src 'self' blob:"
         )
         response.headers["Content-Security-Policy"] = csp
-        
+
         # Set nonce in a cookie so frontend can access it for inline styles/scripts
         # In production with HTTPS, secure=True prevents MITM attacks
         # In development without HTTPS, secure=False is required
@@ -383,7 +376,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             httponly=True,
             secure=is_production,
             samesite="lax",
-            max_age=300  # 5 minutes - match typical page load time
+            max_age=300,  # 5 minutes - match typical page load time
         )
 
         # Permissions Policy
@@ -423,16 +416,12 @@ class RequestSizeMiddleware(BaseHTTPMiddleware):
                 if int(content_length) > MAX_REQUEST_BODY_SIZE:
                     _raise_http_error(413, "Request body exceeds maximum size")
             except ValueError:
-                raise HTTPException(
-                    status_code=400, detail="Nevaliden Content-Length naslov"
-                )
+                raise HTTPException(status_code=400, detail="Nevaliden Content-Length naslov")
 
         # Check query parameters
         for key, value in request.query_params.items():
             if len(value) > MAX_QUERY_PARAM_LENGTH:
-                _raise_http_error(
-                    400, f"Query parameter '{key}' exceeds maximum length"
-                )
+                _raise_http_error(400, f"Query parameter '{key}' exceeds maximum length")
 
         # Check headers
         for key, value in request.headers.items():
@@ -452,18 +441,15 @@ class EnhancedRateLimitMiddleware(BaseHTTPMiddleware):
     """Enhanced rate limiting with per-endpoint and per-IP tracking."""
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        from .common import _client_ip_for_request, _is_rate_limited_path
         from utils import check_rate_limit
-        from .common import _rate_limit_error_payload
+
+        from .common import _client_ip_for_request, _is_rate_limited_path, _rate_limit_error_payload
 
         client_ip = _client_ip_for_request(request)
 
         # Skip rate limiting for localhost only in development mode
         # In production, rate limit all requests including localhost
-        if (
-            client_ip in {"127.0.0.1", "::1", "::ffff:127.0.0.1"}
-            and os.environ.get("ENV") != "production"
-        ):
+        if client_ip in {"127.0.0.1", "::1", "::ffff:127.0.0.1"} and os.environ.get("ENV") != "production":
             return await call_next(request)
 
         # Check if this path should be rate limited

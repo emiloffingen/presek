@@ -33,13 +33,13 @@ function getRelativeTimeStr(dateStr: string) {
 
         if (diffMins < 1) return t('news.just_now');
         if (diffMins < 60) return `${t('news.ago')} ${diffMins} ${t('news.min_short')}`;
-        
+
         const diffHours = Math.floor(diffMins / 60);
         if (diffHours < 24) {
             const label = diffHours === 1 ? t('news.hour') : t('news.hours');
             return `${t('news.ago')} ${diffHours} ${label}`;
         }
-        
+
         const diffDays = Math.floor(diffHours / 24);
         const label = diffDays === 1 ? t('news.day') : t('news.days');
         return `${t('news.ago')} ${diffDays} ${label}`;
@@ -132,11 +132,11 @@ const synthesisItems: SynthesisItem[] = (cluster?.ai_summary_bullets?.length ? c
 const articleRows = (cluster?.articles || []).map((a: Article, idx: number, arr: Article[]) => {
     const d = new Date(a.created_at);
     const signal = a.source_signal || {};
-    
+
     // 1. Dynamic Journalistic Role (Timeline)
     let relLabel = t('cluster.rel_related');
     let relTone = 'neutral';
-    
+
     if (idx === arr.length - 1) {
         relLabel = t('cluster.rel_initial');
         relTone = 'origin';
@@ -250,8 +250,8 @@ const articleSchema = cluster ? {
 } : null;
 ---
 
-<Layout 
-	title={displayHeadline} 
+<Layout
+	title={displayHeadline}
 	description={cluster?.generated_article?.slice(0, 160) || cluster?.synthesis?.slice(0, 160) || shareDescription}
 	image={socialImageUrl}
 	type="article"
@@ -260,15 +260,15 @@ const articleSchema = cluster ? {
 >
 	<NYTHeader topic={cluster?.topics?.[0]} />
 
-	<ReaderTracker 
-        clusterId={id || ''} 
+	<ReaderTracker
+        clusterId={id || ''}
         title={displayHeadline}
         category={cluster?.articles?.[0]?.category}
         topic={cluster?.topics?.[0]}
         primarySource={cluster?.articles?.[0]?.source}
         sources={allSourcesNames}
         tags={cluster?.tags}
-        client:idle 
+        client:idle
     />
 
 	<main class="site-layout py-0">
@@ -291,9 +291,9 @@ const articleSchema = cluster ? {
 			<article class="cluster-article-container">
 				{/* 1. THE LEDE */}
 			<header class="editorial-header-v2 py-12 border-y-4 border-double border-foreground/10 mb-24">
-				<div class="flex flex-col md:flex-row md:items-end justify-between gap-8">
+				<div class="flex flex-col md:flex-row md:items-end justify-between gap-[var(--grid-gap)]">
 					<div class="header-main-info flex-grow">
-						<div class="edition-kicker flex items-center gap-4 mb-6">
+						<div class="edition-kicker flex items-center gap-[var(--grid-gap)] mb-6">
 							<span class="edition-badge bg-foreground text-background px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em]">
 								{getEditionStr(cluster.articles?.[0].created_at).split('.').pop()?.toUpperCase()} {lang === 'sr' ? 'IZDANJE' : 'ИЗДАНИЕ'}
 							</span>
@@ -305,7 +305,7 @@ const articleSchema = cluster ? {
 							{displayHeadline}
 						</h1>
 						<div class="header-meta flex flex-wrap items-center gap-x-8 gap-y-3 text-[11px] font-black uppercase tracking-widest text-muted-foreground">
-							<div class="flex items-center gap-2">
+							<div class="flex items-center gap-[var(--grid-gap)]">
 								<div class="w-3 h-3 rounded-full bg-nyt-accent"></div>
 								<span class="text-foreground">{cluster.articles?.[0].category || (lang === 'sr' ? 'GENERALNO' : 'ГЕНЕРАЛНО')}</span>
 							</div>
@@ -313,7 +313,7 @@ const articleSchema = cluster ? {
 							<span class="hidden md:inline border-l border-border pl-8">{lang === 'sr' ? 'SISTEMSKI VERIFIKOVANO' : 'СИСТЕМСКИ ВЕРИФИКУВАНО'}</span>
 						</div>
 					</div>
-					<div class="header-actions flex gap-4 pb-1">
+					<div class="header-actions flex gap-[var(--grid-gap)] pb-1">
 						<ShareIsland client:load title={displayHeadline} url={Astro.url.toString()} />
 					</div>
 				</div>
@@ -334,7 +334,7 @@ const articleSchema = cluster ? {
 							<div class="mt-12 border border-border/40 rounded-sm overflow-hidden bg-secondary/5">
 								<details class="group source-details">
 									<summary class="flex items-center justify-between p-12 cursor-pointer hover:bg-secondary/10 transition-colors list-none">
-										<div class="flex items-center gap-4">
+										<div class="flex items-center gap-[var(--grid-gap)]">
 											<div class="w-2 h-8 bg-nyt-accent"></div>
 											<h4 class="text-[11px] font-black uppercase tracking-[0.2em] text-foreground">
 												{t('cluster.source_docs')} ({mainArticle.source})
@@ -351,7 +351,7 @@ const articleSchema = cluster ? {
 											</div>
 										</div>
 										<div class="mt-12 flex justify-end">
-											<a href={mainArticle.link} target="_blank" rel="noopener noreferrer" class="text-[11px] font-black uppercase tracking-[0.2em] text-nyt-accent hover:underline flex items-center gap-2 bg-background px-6 py-3 rounded-full border border-nyt-accent/20 shadow-sm transition-all hover:shadow-md">
+											<a href={mainArticle.link} target="_blank" rel="noopener noreferrer" class="text-[11px] font-black uppercase tracking-[0.2em] text-nyt-accent hover:underline flex items-center gap-[var(--grid-gap)] bg-background px-6 py-3 rounded-full border border-nyt-accent/20 shadow-sm transition-all hover:shadow-md">
 												{lang === 'sr' ? 'Pročitaj ceo zapis na' : 'Прочитај го целиот запис на'} {mainArticle.source} <ExternalLink size={14} />
 											</a>
 										</div>
@@ -365,7 +365,7 @@ const articleSchema = cluster ? {
 						{/* EXECUTIVE SUMMARY / BRIFING */}
 						{(!hasGeneratedNarrative && (headerBriefItems.length > 0 || (cluster.key_facts && cluster.key_facts.length > 0))) && (
 							<div class="executive-summary mb-24 p-12 bg-secondary/10 border-l-4 border-nyt-accent shadow-sm">
-								<div class="flex items-center gap-3 mb-14">
+								<div class="flex items-center gap-[var(--grid-gap)] mb-14">
 									<Sparkles size={20} className="text-nyt-accent" />
 									<span class="text-[12px] font-black uppercase tracking-[0.3em] text-nyt-accent">{t('cluster.brief_overview')}</span>
 								</div>
@@ -386,7 +386,7 @@ const articleSchema = cluster ? {
 											<h4 class="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground mb-16">{t('cluster.system_data')}</h4>
 											<ul class="space-y-5">
 												{cluster.key_facts.map((fact: string) => (
-													<li class="font-sans text-base md:text-lg font-bold leading-tight text-foreground/70 flex items-start gap-4">
+													<li class="font-sans text-base md:text-lg font-bold leading-tight text-foreground/70 flex items-start gap-[var(--grid-gap)]">
 														<span class="text-nyt-accent text-xl mt-0.5">›</span>
 														{fact}
 													</li>
@@ -417,13 +417,13 @@ const articleSchema = cluster ? {
                             {/* DATA RECAP / KEY POINTS (Moved to bottom of narrative) */}
                             {hasGeneratedNarrative && (headerBriefItems.length > 0 || (cluster.key_facts && cluster.key_facts.length > 0)) && (
                                 <div class="narrative-recap mt-12 p-8 bg-secondary/10 border-t border-border/40">
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-[var(--grid-gap)]">
                                         {headerBriefItems.length > 0 && (
                                             <div>
                                                 <h4 class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">{t('cluster.key_points')}</h4>
                                                 <ul class="space-y-2">
                                                     {headerBriefItems.map(item => (
-                                                        <li class="font-sans text-[13px] leading-snug text-foreground/80 flex items-start gap-2">
+                                                        <li class="font-sans text-[13px] leading-snug text-foreground/80 flex items-start gap-[var(--grid-gap)]">
                                                             <span class="text-nyt-accent">•</span>
                                                             {item}
                                                         </li>
@@ -436,7 +436,7 @@ const articleSchema = cluster ? {
                                                 <h4 class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">{t('cluster.system_data')}</h4>
                                                 <ul class="space-y-2">
                                                     {cluster.key_facts.map((fact: string) => (
-                                                        <li class="font-sans text-[12px] font-bold leading-tight text-foreground/70 flex items-start gap-2">
+                                                        <li class="font-sans text-[12px] font-bold leading-tight text-foreground/70 flex items-start gap-[var(--grid-gap)]">
                                                             <span class="text-nyt-accent">›</span>
                                                             {fact}
                                                         </li>
@@ -453,7 +453,7 @@ const articleSchema = cluster ? {
 
 						{/* ANALYSIS SECTION: Fact Check & Comparison */}
 						{(hasFactcheck || perspectives.length > 0) && (
-							<CredibilityAnalysis 
+							<CredibilityAnalysis
 								hasFactcheck={hasFactcheck}
 								verificationReport={verificationReport}
 								perspectives={perspectives}
@@ -508,7 +508,7 @@ const articleSchema = cluster ? {
 							</section>
 						)}
                         {/* ADVANCED ANALYTICS */}
-                        <section class="editorial-section advanced-tools mb-24 bg-secondary/5 p-12 md:p-16 border-y border-border/40 shadow-inner">							
+                        <section class="editorial-section advanced-tools mb-24 bg-secondary/5 p-12 md:p-16 border-y border-border/40 shadow-inner">
                             <div class="section-eyebrow mb-16">
                                 <Radio size={24} className="text-muted-foreground" />
                                 <h2 class="section-label">{t('cluster.deep_synthesis')}</h2>
@@ -551,11 +551,11 @@ const articleSchema = cluster ? {
 
 							<NewsletterIsland client:visible />
 
-							<ClusterFollowSuggestionsIsland 
-								topic={cluster.topics?.[0] || ''} 
+							<ClusterFollowSuggestionsIsland
+								topic={cluster.topics?.[0] || ''}
 								source={cluster.articles?.[0]?.source || ''}
 								adjacentTopic={adjacentTopic}
-								client:visible 
+								client:visible
 							/>
 
 							{cluster.pluralism_score != null && (
@@ -581,7 +581,7 @@ const articleSchema = cluster ? {
 							{cluster.analyst_entities && cluster.analyst_entities.length > 0 && (
 								<div class="sidebar-module">
 									<h4 class="sidebar-label">{t('cluster.key_entities')}</h4>
-									<div class="flex flex-col gap-3 mt-4">
+									<div class="flex flex-col gap-[var(--grid-gap)] mt-4">
 											{cluster.analyst_entities.map((name: string) => (
 											<EntityContextCard name={name} client:visible />
 										))}
@@ -673,7 +673,7 @@ const articleSchema = cluster ? {
     .source-details summary::-webkit-details-marker {
         display: none;
     }
-    
+
     .source-details summary {
         list-style: none;
     }
@@ -741,7 +741,7 @@ const articleSchema = cluster ? {
 	@media (max-width: 768px) {
         .cluster-article-container { padding: 0 1rem; }
 		.headline { font-size: 2.25rem !important; line-height: 1.1; margin-bottom: 1.5rem !important; }
-        
+
         .editorial-header-v2 {
             padding-top: 1.5rem !important;
             padding-bottom: 1.5rem !important;

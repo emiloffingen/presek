@@ -10,16 +10,49 @@ Allowed categories (exactly 6, geographic):
   Svet       = everything else (Australia, Asia, Africa, Middle East, etc.)
 """
 
-import re
 import html
+import re
 
 _CYR_TO_LAT_MAP = {
-    "а": "a", "б": "b", "в": "v", "г": "g", "д": "d", "ђ": "dj", "е": "e", "ж": "zh",
-    "з": "z", "ѕ": "dz", "и": "i", "ј": "j", "к": "k", "л": "l", "љ": "lj", "м": "m",
-    "н": "n", "њ": "nj", "о": "o", "п": "p", "р": "r", "с": "s", "т": "t", "ћ": "c",
-    "у": "u", "ф": "f", "х": "h", "ц": "c", "ч": "ch", "џ": "dzh", "ш": "sh",
-    "ѓ": "gj", "ќ": "kj", "я": "ja", "ю": "ju", "щ": "sht", "ъ": "a",
+    "а": "a",
+    "б": "b",
+    "в": "v",
+    "г": "g",
+    "д": "d",
+    "ђ": "dj",
+    "е": "e",
+    "ж": "zh",
+    "з": "z",
+    "ѕ": "dz",
+    "и": "i",
+    "ј": "j",
+    "к": "k",
+    "л": "l",
+    "љ": "lj",
+    "м": "m",
+    "н": "n",
+    "њ": "nj",
+    "о": "o",
+    "п": "p",
+    "р": "r",
+    "с": "s",
+    "т": "t",
+    "ћ": "c",
+    "у": "u",
+    "ф": "f",
+    "х": "h",
+    "ц": "c",
+    "ч": "ch",
+    "џ": "dzh",
+    "ш": "sh",
+    "ѓ": "gj",
+    "ќ": "kj",
+    "я": "ja",
+    "ю": "ju",
+    "щ": "sht",
+    "ъ": "a",
 }
+
 
 def _transliterate_to_latin(text: str) -> str:
     """Simple transliteration for keyword matching."""
@@ -29,6 +62,7 @@ def _transliterate_to_latin(text: str) -> str:
     for char in text.lower():
         res.append(_CYR_TO_LAT_MAP.get(char, char))
     return "".join(res)
+
 
 ALLOWED_CATEGORIES = {
     "Srbija",
@@ -76,9 +110,7 @@ def _score_keyword_group(text: str, keywords: list[str], topic_name: str = "") -
             score += 1.0
 
     # Boost economy specifically if keywords are found
-    if topic_name == "Ekonomija" and any(
-        k in text for k in ["budzet", "inflacija", "Ekonomija", "finansii"]
-    ):
+    if topic_name == "Ekonomija" and any(k in text for k in ["budzet", "inflacija", "Ekonomija", "finansii"]):
         score += 1.0
 
     return score
@@ -1026,9 +1058,7 @@ def detect_topic(title: str, description: str = "") -> str:
             best_score = score
 
     result = best_topic if (best_topic and best_score >= 1.5) else "vesti"
-    logger.debug(
-        f"Categorizing article: title='{title}', detected_topic='{result}', score={best_score}"
-    )
+    logger.debug(f"Categorizing article: title='{title}', detected_topic='{result}', score={best_score}")
     return result
 
 
@@ -1150,8 +1180,26 @@ def normalize_headline(title: str) -> str:
     if (alpha_count >= 6 and (upper_count / alpha_count) > 0.65) or long_upper_prefix:
         # Before lower-casing, protect common Serbian/International acronyms
         acronyms = {
-            "EU", "NATO", "SAD", "MVR", "SZO", "SNS", "DS", "UJP", "OJO", "VMRO",
-            "ЕУ", "НАТО", "САД", "МВР", "СЗО", "СНС", "ДС", "УЈП", "ОЈО", "ВМРО"
+            "EU",
+            "NATO",
+            "SAD",
+            "MVR",
+            "SZO",
+            "SNS",
+            "DS",
+            "UJP",
+            "OJO",
+            "VMRO",
+            "ЕУ",
+            "НАТО",
+            "САД",
+            "МВР",
+            "СЗО",
+            "СНС",
+            "ДС",
+            "УЈП",
+            "ОЈО",
+            "ВМРО",
         }
 
         # Lowercase and capitalize only first letter
@@ -1160,9 +1208,7 @@ def normalize_headline(title: str) -> str:
 
         # Restore acronyms
         for acronym in acronyms:
-            t_normalized = re.sub(
-                rf"\b{re.escape(acronym)}\b", acronym, t_normalized, flags=re.IGNORECASE
-            )
+            t_normalized = re.sub(rf"\b{re.escape(acronym)}\b", acronym, t_normalized, flags=re.IGNORECASE)
         t = t_normalized
 
     # 5. Serbian Quote Standardization (Standard quotes „...“)

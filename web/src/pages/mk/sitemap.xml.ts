@@ -6,7 +6,7 @@ const API_URL = apiBaseUrl();
 
 export const GET: APIRoute = async () => {
     const clusterIds: string[] = [];
-    
+
     try {
         let page = 0;
         let hasMore = true;

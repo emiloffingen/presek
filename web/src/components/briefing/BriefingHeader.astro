@@ -47,7 +47,7 @@ const modelName = metadata?.model || 'Gemma 2 / Mistral';
 			<h1 class="masthead-title uppercase tracking-tighter">
                 {isMK ? 'Интелигенција' : 'Obaveštajni'} <span class="text-nyt-accent italic-serif lowercase">{isMK ? 'извештај' : 'izveštaj'}</span>
             </h1>
-            <div class="masthead-subline mt-2 flex items-center justify-center gap-4">
+            <div class="masthead-subline mt-2 flex items-center justify-center gap-[var(--grid-gap)]">
                 <div class="h-px w-12 bg-border"></div>
                 <span class="font-sans text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground">
                     {isMK ? 'ДНЕВНА СИНТЕЗА ЗА МАКЕДОНИЈА' : 'DNEVNA SINTEZA ZA SRBIJU'}
@@ -63,28 +63,28 @@ const modelName = metadata?.model || 'Gemma 2 / Mistral';
 	<div class="masthead-deck grid grid-cols-2 md:grid-cols-4 gap-0 border border-border/60 rounded-xl bg-card shadow-sm overflow-hidden mb-16">
 		<div class="deck-item flex flex-col p-6 border-r border-border/60">
             <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-3">{isMK ? 'РЕДАКЦИИ' : 'REDAKCIJE'}</span>
-            <div class="flex items-baseline gap-2">
+            <div class="flex items-baseline gap-[var(--grid-gap)]">
                 <span class="text-3xl font-black tabular-nums">{stats?.total_feeds || 0}</span>
                 <span class="w-1.5 h-1.5 rounded-full bg-nyt-accent"></span>
             </div>
         </div>
 		<div class="deck-item flex flex-col p-6 border-r border-border/60">
             <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-3">{isMK ? 'ИЗВЕШТАИ' : 'IZVEŠTAJI'}</span>
-            <div class="flex items-baseline gap-2">
+            <div class="flex items-baseline gap-[var(--grid-gap)]">
                 <span class="text-3xl font-black tabular-nums">{stats?.last_24h || 0}</span>
                 <span class="text-[10px] font-bold text-muted-foreground">/ 24h</span>
             </div>
         </div>
 		<div class="deck-item flex flex-col p-6 border-r border-border/60 bg-emerald-50/10">
             <span class="text-[9px] font-black uppercase tracking-widest text-emerald-600 mb-3">{isMK ? 'ПЛУРАЛИЗАМ' : 'PLURALIZAM'}</span>
-            <div class="flex items-baseline gap-2">
+            <div class="flex items-baseline gap-[var(--grid-gap)]">
                 <span class="text-3xl font-black tabular-nums text-emerald-600">{metadata?.stats?.pluralism_score || stats?.intelligence?.pluralism?.pluralism_pct || 0}%</span>
                 <Activity size={14} className="text-emerald-500" />
             </div>
         </div>
         <div class="deck-item flex flex-col p-6 bg-nyt-accent/5">
             <span class="text-[9px] font-black uppercase tracking-widest text-nyt-accent mb-3">{isMK ? 'ИНТЕРН. УДЕЛ' : 'INTERN. UDEO'}</span>
-            <div class="flex items-baseline gap-2">
+            <div class="flex items-baseline gap-[var(--grid-gap)]">
                 <span class="text-3xl font-black tabular-nums text-nyt-accent">{metadata?.stats?.intl_share || stats?.intelligence?.international_share_pct || 0}%</span>
                 <Timer size={14} className="text-nyt-accent" />
             </div>
@@ -94,7 +94,7 @@ const modelName = metadata?.model || 'Gemma 2 / Mistral';
 
 <style>
     .briefing-masthead { margin-bottom: 3rem; }
-    
+
     /* ── Report Status Bar ──────────────────────────── */
     .report-status-bar {
         background: var(--card);
@@ -107,10 +107,10 @@ const modelName = metadata?.model || 'Gemma 2 / Mistral';
     .divider-left { border-left: 1px solid var(--border); padding-left: 1.5rem; }
     .status-label { font-size: 0.55rem; font-weight: 900; letter-spacing: 0.1em; color: var(--muted-foreground); text-transform: uppercase; }
     .status-value { font-size: 0.6rem; font-weight: 850; letter-spacing: 0.05em; color: var(--foreground); }
-    
+
     .pulse-indicator { width: 6px; height: 6px; border-radius: 50%; }
     .pulse-emerald { background: #10b981; box-shadow: 0 0 8px #10b981; animation: pulse-glow 2s infinite; }
-    
+
     @keyframes pulse-glow {
         0%, 100% { opacity: 1; transform: scale(1); }
         50% { opacity: 0.5; transform: scale(1.2); }
@@ -131,4 +131,3 @@ const modelName = metadata?.model || 'Gemma 2 / Mistral';
         .signature-tag { width: 100%; border-top: 1px solid var(--border); padding-top: 0.5rem; margin-top: 0.25rem; }
     }
 </style>
-

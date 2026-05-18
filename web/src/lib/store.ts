@@ -1,9 +1,9 @@
 import { atom, onMount } from 'nanostores';
-import { 
-    loadReaderProfile, 
-    saveReaderProfile, 
-    subscribeToReaderProfile, 
-    loadSyncToken, 
+import {
+    loadReaderProfile,
+    saveReaderProfile,
+    subscribeToReaderProfile,
+    loadSyncToken,
     saveSyncToken,
     subscribeToSyncToken,
     loadDeliveryPreferences,
@@ -101,7 +101,7 @@ export function getStoredOnboardingProgress() {
 let syncTimeout: any = null;
 $profile.subscribe((profile) => {
     if (typeof window === 'undefined') return;
-    
+
     if (syncTimeout) {
       if (typeof clearTimeout === 'function') clearTimeout(syncTimeout);
     }
@@ -112,7 +112,7 @@ $profile.subscribe((profile) => {
         try {
             await fetch(`${apiBaseUrl()}/profile/sync`, {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
                     'X-Sync-Token': token
                 },

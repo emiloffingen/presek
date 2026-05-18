@@ -98,7 +98,7 @@ const IzvoriPage: React.FC<{ lang?: string }> = ({ lang = 'sr' }) => {
   const renderSourceRow = (source: SourceRow) => {
     const health = getHealthStatus(source.last_fetched);
     const reliabilityIndex = ((source.corroboration_rate * 0.7) + ((source.speed_first_count > 0 ? 0.3 : 0))).toFixed(2);
-    
+
     return (
       <a key={source.source} href={`${lang === 'mk' ? '/mk' : ''}/?source=${encodeURIComponent(source.source)}`} className="editorial-source-item group no-underline">
         <div className="item-main">
@@ -110,7 +110,7 @@ const IzvoriPage: React.FC<{ lang?: string }> = ({ lang = 'sr' }) => {
             )}
           </div>
           <p className="item-tendency font-nyt-body text-sm text-muted-foreground line-clamp-1 mb-3">{source.tendency}</p>
-          <div className="item-meta flex items-center gap-3">
+          <div className="item-meta flex items-center gap-[var(--grid-gap)]">
             <span className="px-2 py-0.5 bg-foreground text-background font-sans text-[9px] font-black uppercase tracking-widest">{source.country || (lang === 'mk' ? 'MK' : 'RS')}</span>
             <div className="flex gap-1.5">
                 {source.top_categories?.slice(0, 2).map(cat => (
@@ -122,8 +122,8 @@ const IzvoriPage: React.FC<{ lang?: string }> = ({ lang = 'sr' }) => {
             </span>
           </div>
         </div>
-        <div className="item-stats flex items-center justify-end gap-8 ml-auto flex-1 min-w-[200px]">
-          <div className="flex gap-6">
+        <div className="item-stats flex items-center justify-end gap-[var(--grid-gap)] ml-auto flex-1 min-w-[200px]">
+          <div className="flex gap-[var(--grid-gap)]">
             <div className="stat-box flex flex-col items-end">
               <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-0.5">{lang === 'sr' ? '24h Vesti' : '24ч Вести'}</span>
               <strong className="text-lg font-black tabular-nums leading-none">{source.recent_volume}</strong>
@@ -133,31 +133,31 @@ const IzvoriPage: React.FC<{ lang?: string }> = ({ lang = 'sr' }) => {
               <strong className="text-lg font-black tabular-nums leading-none">{reliabilityIndex}</strong>
             </div>
           </div>
-          
+
           <div className="heatmap-container flex gap-[2px] items-end h-8 shrink-0" title={lang === 'sr' ? "Aktivnost u poslednjih 30 dana" : "Активност во последните 30 дена"}>
             {Array.from({ length: 30 }).map((_, i) => {
                 const isRecent = i >= 28;
                 const avgVolume = Math.max(1, (source.recent_7d_volume || 0) / 7);
-                const noise = Math.sin((i + source.source.length) * 0.5) * 0.3 + 0.8; 
+                const noise = Math.sin((i + source.source.length) * 0.5) * 0.3 + 0.8;
                 let baseVol = isRecent ? (source.recent_volume || 0) : (source.previous_7d_volume / 7 || avgVolume);
                 baseVol = baseVol * noise * (1 + (i / 30) * 0.2);
-                
+
                 const value = Math.max(0.1, baseVol / (avgVolume * 2));
-                
+
                 let bgClass = 'bg-foreground';
                 let opacity = 'opacity-20';
                 if (value > 0.8) opacity = 'opacity-100';
                 else if (value > 0.5) opacity = 'opacity-60';
                 else if (value > 0.2) opacity = 'opacity-40';
-                
+
                 if (source.trust_tier === 'Visoko poverenje' || source.trust_tier === 'Висока доверба') bgClass = 'bg-emerald-500';
                 else if (source.trust_tier === 'Potvrden izvor' || source.trust_tier === 'Потврден извор') bgClass = 'bg-nyt-accent';
-                
+
                 const height = Math.min(100, Math.max(15, value * 100));
-                
+
                 return (
-                    <div 
-                        key={i} 
+                    <div
+                        key={i}
                         className={`w-[3px] md:w-1.5 rounded-t-[1px] ${bgClass} ${opacity} hover:opacity-100 transition-opacity cursor-crosshair`}
                         style={{ height: `${height}%` }}
                     />
@@ -178,38 +178,38 @@ const IzvoriPage: React.FC<{ lang?: string }> = ({ lang = 'sr' }) => {
         <div className="masthead-main mb-12">
           <h1 className="masthead-title font-serif text-5xl md:text-7xl font-black leading-[0.9] tracking-tighter">{lang === 'sr' ? 'Medijski' : 'Медиумски'} <span className="text-nyt-accent italic font-light">{lang === 'sr' ? 'izvori' : 'извори'}</span></h1>
           <p className="mt-6 font-serif text-xl italic text-muted-foreground leading-snug max-w-2xl">
-            {lang === 'sr' 
+            {lang === 'sr'
               ? 'Rangiranje i detaljna statistika svih medija koje Presek prati — po aktivnosti, brzini i poverenju.'
               : 'Рангирање и детална статистика на сите медиуми што Пресек ги следи — по активност, брзина и доверливост.'}
           </p>
         </div>
-        
-        <div className="masthead-controls sticky top-[72px] z-30 bg-background/80 backdrop-blur-xl border-y border-border py-4 flex flex-col md:flex-row justify-between items-center gap-6">
+
+        <div className="masthead-controls sticky top-[72px] z-30 bg-background/80 backdrop-blur-xl border-y border-border py-4 flex flex-col md:flex-row justify-between items-center gap-[var(--grid-gap)]">
           <div className="relative w-full md:w-96 group">
-            <input 
-                type="text" 
-                value={searchTerm} 
-                onChange={(e) => setSearchTerm(e.target.value)} 
-                placeholder={lang === 'sr' ? "Pretraži redakcije..." : "Пребарај редакции..."} 
+            <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder={lang === 'sr' ? "Pretraži redakcije..." : "Пребарај редакции..."}
                 className="w-full bg-secondary/20 border-b-2 border-border py-2 pl-2 pr-10 font-serif font-bold text-lg outline-none focus:border-nyt-accent placeholder:italic placeholder:font-normal placeholder:opacity-40 transition-all"
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none opacity-40">
                 <Search size={18} />
             </div>
           </div>
-          
+
           <div className="filter-group flex p-1 bg-secondary/30 rounded-lg border border-border shadow-sm">
             {[
                 { id: 'all', label: lang === 'sr' ? 'SVE' : 'СИТЕ' },
                 { id: 'high', label: lang === 'sr' ? 'Visoko poverenje' : 'Висока доверба' },
                 { id: 'verified', label: lang === 'sr' ? 'Potvrđeni' : 'Потврдени' }
             ].map(t => (
-              <button 
-                key={t.id} 
-                onClick={() => setFilterTier(t.id)} 
+              <button
+                key={t.id}
+                onClick={() => setFilterTier(t.id)}
                 className={`px-4 py-2 rounded-md font-sans text-[10px] font-black tracking-widest transition-all ${
-                    filterTier === t.id 
-                    ? 'bg-nyt-accent text-white shadow-md' 
+                    filterTier === t.id
+                    ? 'bg-nyt-accent text-white shadow-md'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >

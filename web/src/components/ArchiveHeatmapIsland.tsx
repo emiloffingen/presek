@@ -107,8 +107,8 @@ export default function ArchiveHeatmapIsland({ selectedDate, lang = 'sr' }: Prop
           </p>
         </div>
         <div className="flex gap-[var(--grid-gap)] text-xs font-bold font-sans">
-          <div className="flex items-center gap-2"><span className="w-3 h-3 bg-nyt-accent/60 rounded-sm"></span> {isMK ? 'Волумен' : 'Volumen'}</div>
-          <div className="flex items-center gap-2"><span className="w-3 h-3 bg-nyt-red/60 rounded-sm"></span> {isMK ? 'Итни развои' : 'Hitni razvoji'}</div>
+          <div className="flex items-center gap-[var(--grid-gap)]"><span className="w-3 h-3 bg-nyt-accent/60 rounded-sm"></span> {isMK ? 'Волумен' : 'Volumen'}</div>
+          <div className="flex items-center gap-[var(--grid-gap)]"><span className="w-3 h-3 bg-nyt-red/60 rounded-sm"></span> {isMK ? 'Итни развои' : 'Hitni razvoji'}</div>
         </div>
       </div>
 

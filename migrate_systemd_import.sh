@@ -26,7 +26,7 @@ fi
 
 # 4. Setup Database
 echo "Configuring PostgreSQL..."
-# Note: This creates the user/db if they don't exist. 
+# Note: This creates the user/db if they don't exist.
 # You might need to set a password later in .env
 sudo -u postgres psql -c "CREATE USER presek WITH SUPERUSER;" || true
 sudo -u postgres psql -c "ALTER USER presek WITH PASSWORD 'presek';" || true

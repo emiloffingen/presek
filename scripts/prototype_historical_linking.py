@@ -1,7 +1,9 @@
 import asyncio
 import logging
-from core.database import db_manager as db
+
 import numpy as np
+
+from core.database import db_manager as db
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("presek.historical_prototype")
@@ -15,11 +17,11 @@ async def run_historical_prototype(limit=3):
     target_clusters = db.execute(
         """
         SELECT cluster_id, COUNT(*) as source_count, MIN(title) as sample_title
-        FROM articles 
+        FROM articles
         WHERE created_at >= NOW() - INTERVAL '24 hours'
-        GROUP BY cluster_id 
+        GROUP BY cluster_id
         HAVING COUNT(*) >= 5
-        ORDER BY source_count DESC 
+        ORDER BY source_count DESC
         LIMIT %s
     """,
         (limit,),
@@ -60,7 +62,7 @@ async def run_historical_prototype(limit=3):
                   AND created_at < NOW() - INTERVAL '48 hours'
                   AND embedding IS NOT NULL
             )
-            SELECT DISTINCT ON (cluster_id) 
+            SELECT DISTINCT ON (cluster_id)
                    cluster_id, title, created_at, similarity
             FROM archive_pool
             WHERE similarity > 0.65
@@ -78,9 +80,7 @@ async def run_historical_prototype(limit=3):
             archive_results.sort(key=lambda x: x["similarity"], reverse=True)
             for res in archive_results:
                 date_str = res["created_at"].strftime("%d.%m.%Y")
-                print(
-                    f"    - [{date_str}] (Sim: {res['similarity']:.4f}) {res['title'][:70]}..."
-                )
+                print(f"    - [{date_str}] (Sim: {res['similarity']:.4f}) {res['title'][:70]}...")
 
         print("-" * 60)
 

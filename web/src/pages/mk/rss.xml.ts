@@ -49,7 +49,7 @@ export const GET: APIRoute = async () => {
             const link = `${SITE_URL}/cluster/${article.cluster_id}`;
             const pubDate = formatDate(article.created_at || article.ingested_at);
             const source = article.source || 'Presek';
-            
+
             return `
     <item>
       <title><![CDATA[${escapeXml(title)}]]></title>
@@ -64,14 +64,14 @@ export const GET: APIRoute = async () => {
 
     const siteUrl = lang === 'sr' ? SITE_URL : SITE_URL.replace('presek.live', 'presek.mk');
     const title = lang === 'sr' ? 'Presek - Srbija' : 'Пресек - Македонија';
-    const description = lang === 'sr' 
+    const description = lang === 'sr'
         ? 'Presek: Najnovije vesti iz Srbije i regiona. Nezavisno, balansirano, dubinsko.'
         : 'Пресек: Најнови вести од Македонија и регионот. Независно, балансирано, длабоко.';
     const language = lang === 'sr' ? 'sr-RS' : 'mk-MK';
     const rssPath = lang === 'sr' ? 'rss.xml' : 'mk/rss.xml';
-    
+
     const rss = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" 
+<rss version="2.0"
      xmlns:dc="http://purl.org/dc/elements/1.1/"
      xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>

@@ -20,7 +20,7 @@ The gold standard dataset helps ensure that:
 The main dataset containing test cases with:
 
 - `title_a`: First article title
-- `title_b`: Second article title  
+- `title_b`: Second article title
 - `should_cluster`: Boolean indicating if titles should cluster together
 - `reason`: Human-readable explanation of why they should/shouldn't cluster
 - `category`: Content category (politics, sports, economy, religion, etc.)
@@ -31,7 +31,7 @@ The main dataset containing test cases with:
 The dataset currently covers:
 
 ✅ **Exact Matches**: Identical titles should always cluster
-✅ **Related Stories**: Similar economic/political news should cluster  
+✅ **Related Stories**: Similar economic/political news should cluster
 ✅ **Unrelated Content**: Different topics should NOT cluster
 ✅ **Domain Separation**: Sports vs politics vs religion distinctions
 ✅ **Edge Cases**: Short titles, special characters, mixed scripts

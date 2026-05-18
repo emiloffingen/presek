@@ -35,7 +35,7 @@ const renderSynthesisHtml = (text: string) => sharedRenderSynthesisHtml(text, ha
 						))}
 					</ul>
 				</div>
-				
+
 				<div class="factcheck-col conflicts">
 					<header class="col-header">
 						<TriangleAlert size={18} className="text-nyt-red" />
@@ -63,7 +63,7 @@ const renderSynthesisHtml = (text: string) => sharedRenderSynthesisHtml(text, ha
 					</div>
 				)}
 			</div>
-			
+
 			{verificationReport.context && (
 				<div class="factcheck-context p-6 bg-muted/30 border border-border/40 mt-8 italic text-sm text-muted-foreground">
 					<p set:html={renderSynthesisHtml(verificationReport.context)}></p>

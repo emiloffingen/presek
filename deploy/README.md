@@ -89,18 +89,18 @@ sudo systemctl start presek presek-worker presek-beat nginx postgresql redis
 ### CSP (Content Security Policy)
 The production deployment uses a strict CSP:
 ```
-default-src 'self'; 
-script-src 'self' 'nonce-{csp_nonce}'; 
-style-src 'self' 'nonce-{csp_nonce}'; 
-font-src 'self'; 
-img-src 'self' data: blob:; 
-connect-src 'self' wss:; 
-frame-src 'none'; 
-frame-ancestors 'none'; 
-base-uri 'self'; 
-form-action 'self'; 
-object-src 'none'; 
-media-src 'self' data:; 
+default-src 'self';
+script-src 'self' 'nonce-{csp_nonce}';
+style-src 'self' 'nonce-{csp_nonce}';
+font-src 'self';
+img-src 'self' data: blob:;
+connect-src 'self' wss:;
+frame-src 'none';
+frame-ancestors 'none';
+base-uri 'self';
+form-action 'self';
+object-src 'none';
+media-src 'self' data:;
 worker-src 'self' blob:
 ```
 

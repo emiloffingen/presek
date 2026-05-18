@@ -11,21 +11,21 @@ const { content, date } = Astro.props;
 // Parse the content if it's markdown or has specific sections
 function parseBriefing(text: string) {
     if (!text) return null;
-    
+
     // Split by ## sections
     const sections = text.split(/(?=## )/);
     const parsed: Record<string, { lines: string[], isKey?: boolean }> = {};
-    
+
     let currentSection = 'intro';
-    
+
     sections.forEach(section => {
         const lines = section.trim().split('\n');
         const titleLine = lines[0];
-        
+
         if (titleLine.startsWith('## ')) {
             const sectionName = titleLine.replace('## ', '').trim();
             const isKey = sectionName.toLowerCase().includes('klucno') || sectionName.toLowerCase().includes('puls');
-            parsed[sectionName] = { 
+            parsed[sectionName] = {
                 lines: lines.slice(1).map(l => l.trim()).filter(Boolean),
                 isKey
             };
@@ -34,7 +34,7 @@ function parseBriefing(text: string) {
             parsed['intro'].lines.push(...lines.map(l => l.trim()).filter(Boolean));
         }
     });
-    
+
     return parsed;
 }
 
@@ -43,11 +43,11 @@ const briefingData = parseBriefing(content);
 function formatDate(dateStr: string) {
     try {
         const d = new Date(dateStr.replace("Z", ""));
-        return d.toLocaleDateString('sr-RS', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
+        return d.toLocaleDateString('sr-RS', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
         });
     } catch {
         return dateStr;
@@ -86,7 +86,7 @@ function formatDate(dateStr: string) {
                 </div>
             ))}
         </div>
-        
+
         <div class="briefing-footer">
             <p>Generisano uz pomoć Presek Sistemska Sinteza • Bazirano na današnje vodeće klastere</p>
         </div>
@@ -166,7 +166,7 @@ function formatDate(dateStr: string) {
         .briefing-content {
             grid-template-columns: repeat(2, 1fr);
         }
-        
+
         .is-key-section {
             grid-column: span 2;
             border-bottom: 1px solid color-mix(in srgb, var(--border) 40%, transparent);

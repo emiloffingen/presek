@@ -33,23 +33,23 @@ export default function SourceMapIsland({ lang = 'sr' }: { lang?: string }) {
 
   return (
     <section className="rail-module motion-rise-fast">
-      <h3 className="rail-title flex items-center gap-2">
+      <h3 className="rail-title flex items-center gap-[var(--grid-gap)]">
         <Zap size={14} className="text-nyt-accent fill-nyt-accent" /> {isMK ? 'ПОКРИЕНОСТ ВО ЖИВО' : 'POKRIVENOST UŽIVO'}
       </h3>
       <p className="rail-note mb-4">
         {isMK ? '60+ извори се скенираат на секои 5 минути.' : '60+ izvora se skenira na svakih 5 minuta.'}
       </p>
-      
+
       <div className="flex flex-wrap gap-1.5 opacity-80">
         {displaySources.map((s, idx) => {
           const intensity = Math.min(0.2 + (s.activity_score / maxScore) * 0.8, 1);
           const isHot = s.activity_score > maxScore * 0.7;
-          
+
           return (
-            <div 
+            <div
               key={s.source}
               className={`text-[9px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded-sm border border-border/50 transition-all duration-1000`}
-              style={{ 
+              style={{
                 backgroundColor: `rgba(165, 197, 255, ${intensity * 0.15})`,
                 color: isHot ? 'var(--nyt-accent)' : 'var(--muted-foreground)',
                 borderColor: isHot ? 'rgba(165, 197, 255, 0.3)' : 'transparent'
@@ -60,7 +60,7 @@ export default function SourceMapIsland({ lang = 'sr' }: { lang?: string }) {
           );
         })}
       </div>
-      
+
       <div className="mt-4 pt-3 border-t border-border flex justify-between items-center">
         <span className="text-[10px] font-bold text-muted-foreground uppercase">{isMK ? 'Системски статус' : 'Sistemski status'}</span>
         <div className="flex items-center gap-1.5">

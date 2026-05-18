@@ -133,7 +133,7 @@ After implementation:
 
 To add new feeds:
 ```sql
-INSERT INTO feed_sources (name, url, is_active) 
+INSERT INTO feed_sources (name, url, is_active)
 VALUES ('Health Feed MK', 'https://zdravje.mk/feed/', TRUE);
 ```
 

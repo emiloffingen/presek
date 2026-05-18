@@ -77,7 +77,7 @@ const StoryTimeline: React.FC<StoryTimelineProps> = ({ timeline, clusterId, apiU
 
   return (
     <div className="story-timeline py-6">
-      <div className="flex items-center gap-2 mb-10 border-b border-border pb-2">
+      <div className="flex items-center gap-[var(--grid-gap)] mb-10 border-b border-border pb-2">
         <History size={18} className="text-nyt-accent" />
         <h2 className="nyt-section-label text-nyt-accent tracking-[0.2em] mb-0">EVOLUCIJA NA PRIKAZNATA</h2>
       </div>
@@ -98,7 +98,7 @@ const StoryTimeline: React.FC<StoryTimelineProps> = ({ timeline, clusterId, apiU
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+              <div className="flex items-center gap-[var(--grid-gap)] text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                 <span className="flex items-center gap-1 font-sans"><Clock size={10} /> {getTimeStr(item.created_at)}</span>
                 <span>·</span>
                 <span className="font-sans">{getDateStr(item.created_at)}</span>
@@ -130,7 +130,7 @@ const StoryTimeline: React.FC<StoryTimelineProps> = ({ timeline, clusterId, apiU
                 <div className="absolute -left-[41px] top-1.5 z-10 h-4 w-4 rounded-full border-2 border-nyt-accent bg-background" />
 
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  <div className="flex items-center gap-[var(--grid-gap)] text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                     <span className="flex items-center gap-1 font-sans">
                       <Calendar size={10} /> {getDateStr(item.first_seen)}
                     </span>
@@ -141,7 +141,7 @@ const StoryTimeline: React.FC<StoryTimelineProps> = ({ timeline, clusterId, apiU
                     <h3 className="font-serif text-base font-bold leading-snug tracking-tight text-secondary-foreground transition-colors group-hover:text-nyt-accent">
                       {item.title}
                     </h3>
-                    <div className="mt-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-nyt-accent opacity-0 transition-opacity group-hover:opacity-100">
+                    <div className="mt-2 flex items-center gap-[var(--grid-gap)] text-[10px] font-black uppercase tracking-widest text-nyt-accent opacity-0 transition-opacity group-hover:opacity-100">
                       Vidi ga klasterot <ArrowRight size={12} />
                     </div>
                   </a>
@@ -151,9 +151,9 @@ const StoryTimeline: React.FC<StoryTimelineProps> = ({ timeline, clusterId, apiU
           </>
         )}
       </div>
-      
+
       <div className="mt-12 flex justify-center">
-        <div className="bg-secondary/30 px-6 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground border border-border rounded-full flex items-center gap-2 hover:bg-secondary/50 transition-colors cursor-default">
+        <div className="bg-secondary/30 px-6 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground border border-border rounded-full flex items-center gap-[var(--grid-gap)] hover:bg-secondary/50 transition-colors cursor-default">
           <ArrowDown size={12} /> Kraj na hronologijata
         </div>
       </div>

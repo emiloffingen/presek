@@ -11,7 +11,7 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
 ---
 <footer class="editorial-footer site-layout">
     <div class="footer-top-border"></div>
-    
+
     <div class="footer-main">
         <div class="footer-left-col">
             <div class="footer-brand-wrap mb-6">
@@ -22,16 +22,16 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
                     {t('footer.ethos')}
                 </p>
             </div>
-            
+
             <div class="footer-system-pulse p-4 bg-secondary/5 border border-border/30 rounded-lg max-w-sm">
                 <div class="flex items-center justify-between mb-3">
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-[var(--grid-gap)]">
                         <div class="status-indicator pulse-emerald"></div>
                         <span class="font-sans text-[9px] font-black uppercase tracking-[0.2em] text-foreground">{t('footer.system_signal')}</span>
                     </div>
                     <span class="font-sans text-[8px] font-black text-emerald-500 uppercase tracking-widest">{t('footer.active')}</span>
                 </div>
-                <div class="flex gap-4">
+                <div class="flex gap-[var(--grid-gap)]">
                     <div class="flex items-center gap-1.5">
                         <Zap size={10} className="text-nyt-accent" />
                         <span class="text-[9px] font-bold text-muted-foreground uppercase">{t('footer.synthesis_ok')}</span>
@@ -211,7 +211,7 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
 
     .status-indicator { width: 6px; height: 6px; border-radius: 50%; }
     .pulse-emerald { background: #10b981; box-shadow: 0 0 6px #10b981; animation: footer-pulse 2s infinite; }
-    
+
     @keyframes footer-pulse {
         0%, 100% { opacity: 1; transform: scale(1); }
         50% { opacity: 0.5; transform: scale(1.1); }

@@ -1,18 +1,19 @@
+import logging
 import os
 import re
-import logging
+import secrets
 import time
 import urllib.parse
-import secrets
 from collections import defaultdict
 from io import BytesIO
-from typing import Optional
-from fastapi import APIRouter, Request, Query, HTTPException
-from fastapi.responses import Response, FileResponse
 from pathlib import Path
-from prometheus_client import Counter
+from typing import Optional
 
 import redis as _redis_lib
+from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import FileResponse, Response
+from prometheus_client import Counter
+
 from core.database import db_manager as db
 from utils import cached_response, set_cache
 
@@ -44,14 +45,13 @@ try:
     binary_redis_client.ping()
 except Exception as e:
     log.warning(f"Binary Redis client failed to connect to {_redis_url}: {e}")
-    binary_redis_client = _redis_lib.from_url(
-        "redis://localhost:6379/0", decode_responses=False
-    )
+    binary_redis_client = _redis_lib.from_url("redis://localhost:6379/0", decode_responses=False)
 from core.health import _probe_database, _probe_redis
-from nlp import generate_local_placeholder
 from core.version import version_payload
-from utils import _resolve_public_ips, _peer_ip
-from .common import cleanAndDecode, _PROXY_ALLOWED_TYPES, _PROXY_MAX_BYTES
+from nlp import generate_local_placeholder
+from utils import _peer_ip, _resolve_public_ips
+
+from .common import _PROXY_ALLOWED_TYPES, _PROXY_MAX_BYTES, cleanAndDecode
 from .security import validate_cluster_id
 
 log = logging.getLogger("presek")
@@ -94,11 +94,7 @@ _WMO_ICON = {
 async def health(request: Request):
     admin_token = (os.environ.get("PRESEK_ADMIN_TOKEN") or "").strip()
     provided_token = (request.headers.get("X-Admin-Token") or "").strip()
-    is_admin = bool(
-        admin_token
-        and provided_token
-        and secrets.compare_digest(provided_token, admin_token)
-    )
+    is_admin = bool(admin_token and provided_token and secrets.compare_digest(provided_token, admin_token))
 
     db_s = _probe_database()
     rd_s = _probe_redis()
@@ -126,9 +122,7 @@ async def serve_sw():
 
 @router.get("/manifest.json")
 async def serve_manifest():
-    return FileResponse(
-        os.path.join("static", "manifest.json"), media_type="application/manifest+json"
-    )
+    return FileResponse(os.path.join("static", "manifest.json"), media_type="application/manifest+json")
 
 
 @router.get("/robots.txt")
@@ -206,6 +200,7 @@ async def get_navigation(lang: Optional[str] = "sr"):
 
     from core.config import BREAKING_SCORE_THRESHOLD
     from utils import score_cluster
+
     from .intelligence import get_top_entities
 
     # Localized Labels Mapping
@@ -279,28 +274,26 @@ async def get_navigation(lang: Optional[str] = "sr"):
 
     recent_clusters = await db.async_execute(
         """
-        SELECT m.cluster_id, 
+        SELECT m.cluster_id,
                (SELECT title FROM articles WHERE cluster_id = m.cluster_id AND country = %s ORDER BY created_at DESC LIMIT 1) as title,
                (SELECT COALESCE(ingested_at, created_at) FROM articles WHERE cluster_id = m.cluster_id AND country = %s ORDER BY COALESCE(ingested_at, created_at) DESC LIMIT 1) as created_at
         FROM cluster_metadata m
         WHERE EXISTS (SELECT 1 FROM articles a WHERE a.cluster_id = m.cluster_id AND a.country = %s)
           AND m.updated_at >= NOW() - INTERVAL '24 hours'
         ORDER BY m.updated_at DESC LIMIT 15
-    """, (target_country, target_country, target_country)
+    """,
+        (target_country, target_country, target_country),
     )
 
     for c in recent_clusters:
         if not c.get("title"):
             continue
-        arts = await db.async_execute(
-            "SELECT * FROM articles WHERE cluster_id = %s", (c["cluster_id"],)
-        )
+        arts = await db.async_execute("SELECT * FROM articles WHERE cluster_id = %s", (c["cluster_id"],))
         if score_cluster(arts) >= BREAKING_SCORE_THRESHOLD:
             created_at = c.get("created_at")
             breaking_items.append(
                 {
-                    "label": cleanAndDecode(c["title"])[:80]
-                    + ("..." if len(c["title"]) > 80 else ""),
+                    "label": cleanAndDecode(c["title"])[:80] + ("..." if len(c["title"]) > 80 else ""),
                     "href": f"/cluster/{c['cluster_id']}",
                     "type": "breaking",
                     "created_at": created_at.isoformat() if created_at else None,
@@ -319,18 +312,20 @@ async def get_navigation(lang: Optional[str] = "sr"):
           AND category IS NOT NULL AND category != ''
           AND topic IS NOT NULL AND topic != ''
         GROUP BY category, topic
-    """, (target_country,)
+    """,
+        (target_country,),
     )
 
     sub_activity = await db.async_execute(
         f"""
         SELECT subcategory, COUNT(DISTINCT cluster_id) as n
-        FROM articles 
+        FROM articles
         WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours'
           AND country = %s
           AND subcategory IS NOT NULL AND subcategory != ''
         GROUP BY subcategory
-    """, (target_country,)
+    """,
+        (target_country,),
     )
 
     cat_act = defaultdict(int)
@@ -438,8 +433,9 @@ async def get_cluster_share_card(cluster_id: str):
     # Validate cluster_id
     validate_cluster_id(cluster_id)
 
-    from PIL import Image, ImageDraw, ImageFont
     import textwrap
+
+    from PIL import Image, ImageDraw, ImageFont
 
     try:
         # 1. Gather Cluster Info
@@ -473,34 +469,18 @@ async def get_cluster_share_card(cluster_id: str):
                     _STATIC_ROOT.resolve(),
                     (_APP_ROOT.parent.parent / "shared" / "static").resolve(),
                 ]
-                if (
-                    any(
-                        _path_is_relative_to(local_path, root) for root in allowed_roots
-                    )
-                    and local_path.exists()
-                ):
+                if any(_path_is_relative_to(local_path, root) for root in allowed_roots) and local_path.exists():
                     bg_img = Image.open(local_path)
 
             if not bg_img and bg_url and bg_url.startswith("http"):
                 safe_ips = _resolve_public_ips(bg_url)
                 import httpx
 
-                async with httpx.AsyncClient(
-                    timeout=3.0, follow_redirects=True
-                ) as client:
+                async with httpx.AsyncClient(timeout=3.0, follow_redirects=True) as client:
                     async with client.stream("GET", bg_url) as resp:
                         p_ip = _peer_ip(resp)
-                        ctype = (
-                            str(resp.headers.get("Content-Type", ""))
-                            .split(";")[0]
-                            .strip()
-                        )
-                        if (
-                            p_ip
-                            and p_ip in safe_ips
-                            and resp.status_code == 200
-                            and ctype in _PROXY_ALLOWED_TYPES
-                        ):
+                        ctype = str(resp.headers.get("Content-Type", "")).split(";")[0].strip()
+                        if p_ip and p_ip in safe_ips and resp.status_code == 200 and ctype in _PROXY_ALLOWED_TYPES:
                             content = b""
                             async for chunk in resp.aiter_bytes(chunk_size=16384):
                                 content += chunk
@@ -521,9 +501,7 @@ async def get_cluster_share_card(cluster_id: str):
                 (int(bg_img.width * ratio), int(bg_img.height * ratio)),
                 Image.Resampling.LANCZOS,
             )
-            img.paste(
-                bg_img, (int((1200 - bg_img.width) / 2), int((630 - bg_img.height) / 2))
-            )
+            img.paste(bg_img, (int((1200 - bg_img.width) / 2), int((630 - bg_img.height) / 2)))
 
             # Add Dark Overlay
             overlay = Image.new("RGBA", (1200, 630), (0, 0, 0, 160))
@@ -562,12 +540,8 @@ async def get_cluster_share_card(cluster_id: str):
             y_text += 85
 
         # 8. Footer Info
-        draw.text(
-            (90, 550), "SITE izvori NA EDNO MESTO", fill=(156, 163, 175), font=f_footer
-        )
-        draw.text(
-            (1110, 550), "presek.live", fill=(255, 255, 255), font=f_footer, anchor="ra"
-        )
+        draw.text((90, 550), "SITE izvori NA EDNO MESTO", fill=(156, 163, 175), font=f_footer)
+        draw.text((1110, 550), "presek.live", fill=(255, 255, 255), font=f_footer, anchor="ra")
 
         out = BytesIO()
         img.save(out, format="PNG")
@@ -605,22 +579,27 @@ async def proxy_image(
     Proxy images to avoid CORS and mixed content issues.
     Highly resilient implementation that ensures a fallback is always served.
     """
+
     def serve_fallback(reason="error"):
         try:
             from nlp.generation import generate_local_placeholder
+
             svg = generate_local_placeholder(cid or "px", t or "vest", cat or "vesti")
             log.warning(f"[proxy] Serving fallback for {url or 'unknown'}: {reason}")
-            
+
             # Add diagnostic information to the SVG for debugging
-            diagnostic_svg = svg.replace("</svg>", f"""
+            diagnostic_svg = svg.replace(
+                "</svg>",
+                f"""
         <text x="40" y="430" font-family="sans-serif" font-size="12" fill="white" opacity="0.7">
             Proxy Fallback: {reason}
         </text>
         <text x="40" y="445" font-family="sans-serif" font-size="10" fill="white" opacity="0.7">
             URL: {url[:50] if url else 'unknown'}...
         </text>
-    </svg>""")
-            
+    </svg>""",
+            )
+
             return Response(
                 diagnostic_svg,
                 media_type="image/svg+xml",
@@ -671,12 +650,12 @@ async def proxy_image(
 
         if not re.match(r"^https?://", url):
             return serve_fallback("invalid_scheme")
-        
+
         try:
             parsed_url = urllib.parse.urlparse(url)
             if not parsed_url.netloc:
                 return serve_fallback("invalid_domain")
-            if parsed_url.netloc.endswith(('.localhost', 'localhost', '127.0.0.1', '0.0.0.0')):
+            if parsed_url.netloc.endswith((".localhost", "localhost", "127.0.0.1", "0.0.0.0")):
                 return serve_fallback("security_localhost_block")
         except Exception:
             return serve_fallback("parse_error")
@@ -698,7 +677,7 @@ async def proxy_image(
 
         # Core fetch and process logic
         img_data = None
-        
+
         # Check local DB cache
         try:
             local_img_row = await db.async_execute_one(
@@ -727,10 +706,12 @@ async def proxy_image(
             }
 
             try:
-                from utils.network import _resolve_public_ips, _peer_ip
+                from utils.network import _peer_ip, _resolve_public_ips
+
                 safe_ips = _resolve_public_ips(url)
-                
+
                 import httpx
+
                 async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
                     async with client.stream("GET", url, headers=headers) as resp:
                         p_ip = _peer_ip(resp)
@@ -759,15 +740,14 @@ async def proxy_image(
         # Process image
         try:
             from PIL import Image
+
             img = Image.open(BytesIO(img_data))
             if img.mode in ("RGBA", "P"):
                 img = img.convert("RGB")
 
             if img.width > target_w:
                 ratio = target_w / float(img.width)
-                img = img.resize(
-                    (target_w, int(float(img.height) * ratio)), Image.Resampling.LANCZOS
-                )
+                img = img.resize((target_w, int(float(img.height) * ratio)), Image.Resampling.LANCZOS)
 
             out = BytesIO()
             quality = 30 if target_w <= 80 else 75

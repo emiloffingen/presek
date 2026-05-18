@@ -33,4 +33,3 @@ export default function ReaderTracker({
 
   return null;
 }
-
