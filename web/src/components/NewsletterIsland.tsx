@@ -61,7 +61,7 @@ export default function NewsletterIsland({ lang = 'sr' }: { lang?: string }) {
           <span className="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent block mb-2">
             {lang === 'sr' ? 'DNEVNI PREGLED' : 'ДНЕВЕН ПРЕГЛЕД'}
           </span>
-          <h3 className="font-serif text-xl font-black leading-tight tracking-tight">
+          <h3 className="section-heading leading-tight tracking-tight">
             {lang === 'sr'
               ? 'Uređen pregled dana kroz objektiv pluralizma.'
               : 'Уреден преглед на денот низ објективот на плурализмот.'}

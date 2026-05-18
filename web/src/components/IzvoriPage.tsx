@@ -104,7 +104,7 @@ const IzvoriPage: React.FC<{ lang?: string }> = ({ lang = 'sr' }) => {
         <div className="item-main">
           <div className="item-head mb-2">
             <div className={`health-dot ${health}`} title={health === 'active' ? (lang === 'sr' ? 'Ažurirano nedavno' : 'Ажурирано неодамна') : health === 'stale' ? (lang === 'sr' ? 'Postoje kašnjenja' : 'Постојат доцнења') : (lang === 'sr' ? 'Nema svež signal' : 'Нема свеж сигнал')}></div>
-            <h3 className="item-title font-serif text-2xl font-black group-hover:text-nyt-accent transition-colors">{source.source}</h3>
+            <h3 className="section-heading group-hover:text-nyt-accent transition-colors">{source.source}</h3>
             {(source.trust_tier === 'Visoko poverenje' || source.trust_tier === 'Висока доверба') && (
                 <ShieldCheck size={14} className="text-nyt-accent" />
             )}
@@ -231,13 +231,13 @@ const IzvoriPage: React.FC<{ lang?: string }> = ({ lang = 'sr' }) => {
           ) : (
             <div className="space-y-24">
               <section>
-                <h2 className="font-serif text-3xl font-black italic mb-10 pb-3 border-b-4 border-foreground">{lang === 'mk' ? 'Македонски медиуми' : 'Srpski mediji'}</h2>
+                <h2 className="section-heading mb-10 pb-3 border-b-4 border-foreground">{lang === 'mk' ? 'Македонски медиуми' : 'Srpski mediji'}</h2>
                 <div className="flex flex-col">
                   {mkSources.map(renderSourceRow)}
                 </div>
               </section>
               <section>
-                <h2 className="font-serif text-3xl font-black italic mb-10 pb-3 border-b-4 border-foreground">{lang === 'sr' ? 'Međunarodni signali' : 'Меѓународни сигнали'}</h2>
+                <h2 className="section-heading mb-10 pb-3 border-b-4 border-foreground">{lang === 'sr' ? 'Međunarodni signali' : 'Меѓународни сигнали'}</h2>
                 <div className="flex flex-col">
                   {intSources.map(renderSourceRow)}
                 </div>
@@ -249,7 +249,7 @@ const IzvoriPage: React.FC<{ lang?: string }> = ({ lang = 'sr' }) => {
         <aside className="broadsheet-rail pl-4">
           <section className="rail-module mb-12 p-8 bg-nyt-accent/5 border border-nyt-accent/10 rounded-xl">
             <span className="block font-sans text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent mb-4">{lang === 'sr' ? 'SISTEMSKI UVID' : 'СИСТЕМСКИ УВИД'}</span>
-            <h3 className="font-serif text-2xl font-black leading-tight mb-4 tracking-tight">{lang === 'sr' ? 'KVALITATIVNI INDEKS (QI)' : 'КВАЛИТАТИВЕН ИНДЕКС (QI)'}</h3>
+            <h3 className="section-heading mb-4 leading-tight tracking-tight">{lang === 'sr' ? 'KVALITATIVNI INDEKS (QI)' : 'КВАЛИТАТИВЕН ИНДЕКС (QI)'}</h3>
             <p className="font-nyt-body text-sm leading-relaxed text-muted-foreground">
               {lang === 'sr'
                 ? 'QI spaja brzinu, tačnost i pluralizam. Izračunato putem našeg sistema za duboku analizu. Ocena 1.00 predstavlja optimalan balans na tržištu.'

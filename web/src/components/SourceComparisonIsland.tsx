@@ -83,7 +83,7 @@ export default function SourceComparisonIsland({ allSources, lang = 'sr' }: { al
   return (
     <section className="rail-module border border-zinc-200 dark:border-zinc-800 p-8 md:p-10 rounded-xl bg-background shadow-sm">
       <div className="flex items-center justify-between mb-10">
-        <h2 className="font-serif text-2xl font-black tracking-tight italic border-b-4 border-nyt-accent pb-1">{isMK ? 'Споредба на редакции' : 'Poređenje redakcija'}</h2>
+        <h2 className="section-heading border-b-4 border-nyt-accent pb-1">{isMK ? 'Споредба на редакции' : 'Poređenje redakcija'}</h2>
         <div className="p-2 bg-secondary/50 rounded-full">
             <ArrowLeftRight size={20} className="text-nyt-accent" />
         </div>
