@@ -25,22 +25,23 @@ class StoryDiscoveryEngine:
         log.info(f"Starting Story Discovery (lookback: {lookback_hours}h)")
 
         # 1. Get recent clusters that aren't already part of a storyline
-        # Enhanced query to calculate source velocity (sources in last 3 hours)
+        # OPTIMIZED: Use cluster_metadata.centroid instead of calculating AVG(embedding) on the fly
         unassigned_clusters = db.execute(
             """
             SELECT DISTINCT a.cluster_id,
-                   AVG(a.embedding) as avg_embedding,
+                   m.centroid as avg_embedding,
                    MAX(a.created_at) as latest_activity,
                    COUNT(DISTINCT a.source) as source_count,
                    COUNT(DISTINCT CASE WHEN a.created_at >= NOW() - INTERVAL '3 hours' THEN a.source END) as velocity,
                    ARRAY_AGG(DISTINCT a.title) as titles,
                    ARRAY_AGG(DISTINCT a.source) as sources
             FROM articles a
+            JOIN cluster_metadata m ON a.cluster_id = m.cluster_id
             LEFT JOIN storyline_clusters_v2 sc ON a.cluster_id = sc.cluster_id
             WHERE sc.storyline_id IS NULL
-              AND a.embedding IS NOT NULL
+              AND m.centroid IS NOT NULL
               AND a.created_at >= NOW() - %s * INTERVAL '1 hour'
-            GROUP BY a.cluster_id
+            GROUP BY a.cluster_id, m.centroid
             HAVING COUNT(DISTINCT a.source) >= 2
             ORDER BY velocity DESC, latest_activity DESC
         """,
@@ -60,16 +61,14 @@ class StoryDiscoveryEngine:
         velocity = cluster.get("velocity", 0)
 
         # 2. Try to find an existing storyline that is semantically close
-        # Stricter lookback for matching (3 days) to keep stories focused
+        # OPTIMIZED: Use stored storylines_v2.centroid with HNSW index for O(log n) lookup
         best_storyline = db.execute_one(
             """
             SELECT s.id, s.title,
-                   (SELECT AVG(a.embedding)
-                    FROM articles a
-                    JOIN storyline_clusters_v2 sc2 ON a.cluster_id = sc2.cluster_id
-                    WHERE sc2.storyline_id = s.id) <=> %s::vector as distance
+                   s.centroid <=> %s::vector as distance
             FROM storylines_v2 s
             WHERE s.status = 'active'
+              AND s.centroid IS NOT NULL
               AND s.last_activity >= NOW() - INTERVAL '3 days'
             ORDER BY distance ASC
             LIMIT 1
@@ -86,20 +85,46 @@ class StoryDiscoveryEngine:
                 (sid, cid, 1.0 - float(best_storyline["distance"])),
                 fetch=False,
             )
-            # Update storyline status based on new activity
+            # Update storyline status and centroid based on new activity
             db.execute(
                 "UPDATE storylines_v2 SET last_activity = NOW(), status = 'active' WHERE id = %s",
                 (sid,),
                 fetch=False,
             )
+            # Maintain the storyline centroid
+            self._update_storyline_centroid(sid)
         else:
             # 3. Create a new storyline if it has sufficient momentum
             if cluster["source_count"] >= 3 or velocity >= 2:
                 self._create_new_storyline(cluster)
 
+    def _update_storyline_centroid(self, storyline_id: int):
+        """
+        Recalculate the storyline centroid as the average of its cluster centroids.
+        """
+        try:
+            db.execute(
+                """
+                UPDATE storylines_v2
+                SET centroid = (
+                    SELECT AVG(m.centroid)
+                    FROM cluster_metadata m
+                    JOIN storyline_clusters_v2 sc ON m.cluster_id = sc.cluster_id
+                    WHERE sc.storyline_id = %s
+                      AND m.centroid IS NOT NULL
+                )
+                WHERE id = %s
+            """,
+                (storyline_id, storyline_id),
+                fetch=False,
+            )
+        except Exception as e:
+            log.error(f"Failed to update storyline centroid: {e}")
+
     def _create_new_storyline(self, cluster: Dict[str, Any]):
         cid = cluster["cluster_id"]
         titles = cluster["titles"]
+        emb = cluster["avg_embedding"]
 
         # Phase 4: Use Gemma 2 for Editorial Storyline Titles
         from nlp.local_analyst import analyst
@@ -123,10 +148,11 @@ class StoryDiscoveryEngine:
         log.info(f"Creating new storyline: {story_title}")
 
         try:
+            # Initialize storyline with the first cluster's centroid
             res = db.execute(
-                """INSERT INTO storylines_v2 (title, slug, last_activity, metadata)
-                   VALUES (%s, %s, NOW(), %s) RETURNING id""",
-                (story_title, slug, json.dumps({"origin_cluster": cid})),
+                """INSERT INTO storylines_v2 (title, slug, last_activity, centroid, metadata)
+                   VALUES (%s, %s, NOW(), %s, %s) RETURNING id""",
+                (story_title, slug, emb, json.dumps({"origin_cluster": cid})),
             )
             if res:
                 sid = res[0]["id"]

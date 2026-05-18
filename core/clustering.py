@@ -114,6 +114,10 @@ def stem(word: str, lang: str = "sr") -> str:
     return word
 
 
+# Backward compatibility alias for tests
+sr_stem = stem
+
+
 SR_STOPWORDS = {
     "i",
     "na",
@@ -469,38 +473,32 @@ def find_cluster_semantic(
             "Region",
             "Nemacka",
         ):
-            threshold = 0.22  # Slightly more lenient to catch related global developments
+            threshold = 0.22
 
-        # 2. EVEN STRICTER for the generic 'vesti' topic (the catch-all)
-        # Articles tagged only as 'vesti' often lack specific keywords, causing
-        # vector-based 'gravitational' pull for unrelated content.
+        # 2. EVEN STRICTER for the generic 'vesti' topic
         if topic == "vesti" or not topic:
-            threshold = min(threshold, 0.24)  # Increased for better recall on general news
+            threshold = min(threshold, 0.24)
 
         params = [str(embedding), lookback_hours]
         filters = []
         if category:
-            filters.append("a.category = %s")
+            filters.append("category = %s")
             params.append(category)
 
-        # We join with cluster_metadata to match against the Centroid (the stable center)
-        # instead of individual articles. This prevents 'outlier pull'.
         where_clause = " AND ".join(filters)
         if where_clause:
             where_clause = "AND " + where_clause
 
         params.append(str(embedding))
 
+        # OPTIMIZED: Use cluster_metadata directly with HNSW index for O(log n) lookup
         sql = f"""
-            SELECT m.cluster_id, m.centroid <=> %s::vector as distance, m.updated_at
-            FROM cluster_metadata m
-            JOIN (
-                SELECT DISTINCT cluster_id, category FROM articles
-                WHERE created_at >= NOW() - %s * INTERVAL '1 hour'
-            ) a ON a.cluster_id = m.cluster_id
-            WHERE m.centroid IS NOT NULL
+            SELECT cluster_id, centroid <=> %s::vector as distance, updated_at
+            FROM cluster_metadata
+            WHERE centroid IS NOT NULL
+              AND updated_at >= NOW() - %s * INTERVAL '1 hour'
               {where_clause}
-            ORDER BY m.centroid <=> %s::vector
+            ORDER BY centroid <=> %s::vector
             LIMIT 1
         """
         with conn.cursor() as cur:
@@ -511,26 +509,24 @@ def find_cluster_semantic(
             dist = float(row["distance"])
             cid = row["cluster_id"]
 
-            # Temporal Tightening: As a cluster gets older, we require it to be
-            # MORE similar (stricter threshold) to accept new members.
+            # Temporal Tightening
             age_hours = (datetime.datetime.now() - row["updated_at"]).total_seconds() / 3600.0
             if age_hours > 12:
-                threshold *= 0.85  # 15% stricter
+                threshold *= 0.85
             if age_hours > 24:
-                threshold *= 0.75  # 25% stricter
+                threshold *= 0.75
 
             if dist < threshold:
-                # Entity Gating: For generic topics, if the distance is borderline,
-                # require at least one shared proper noun (Entity).
+                # Entity Gating
                 if topic == "vesti" or not topic:
                     from core.database import db_manager
 
                     ents = db_manager.get_cluster_entities([cid]).get(cid, set())
                     input_ents = _extract_title_entities(title or "")
                     if ents and input_ents and not input_ents.intersection(ents):
-                        return None  # Hard block for generic-news joins without entity overlap
+                        return None
                     if dist > (threshold * 0.7) and not input_ents:
-                        return None  # Borderline generic matches need concrete evidence
+                        return None
 
                 # Final Size Check
                 with conn.cursor() as cur:
@@ -542,9 +538,7 @@ def find_cluster_semantic(
                 if size_row and int(size_row["n"]) < MAX_CLUSTER_SIZE:
                     return cid
     except Exception as e:
-        import logging
-
-        logging.getLogger("presek").error(f"[clustering] Centroid lookup failed: {e}")
+        log.error(f"[clustering] Centroid lookup failed: {e}")
     return None
 
 

@@ -93,6 +93,10 @@ LOCALES = {
     },
 }
 
+# Backward compatibility aliases for tests
+SR_MONTHS = LOCALES["sr"]["months"]
+SR_DAYS = LOCALES["sr"]["days"]
+
 
 def format_date(dt: datetime, locale: str = "sr") -> str:
     conf = LOCALES.get(locale, LOCALES["sr"])

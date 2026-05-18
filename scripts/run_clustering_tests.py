@@ -29,14 +29,15 @@ def test_clustering_suite():
     with open(suite_path, "r", encoding="utf-8") as f:
         suite = json.load(f)
 
-    print(f"Running clustering regression suite ({len(suite)} cases)...\n")
+    test_cases = suite.get("test_cases", [])
+    print(f"Running clustering regression suite ({len(test_cases)} cases)...\n")
 
     passed = 0
     failed = 0
 
-    # Patch database.db_manager which is what clustering.py imports
-    with patch("database.db_manager") as mock_db:
-        for case in suite:
+    # Patch core.database.db_manager which is what clustering.py imports
+    with patch("core.database.db_manager") as mock_db:
+        for case in test_cases:
             title_a = case["title_a"]
             title_b = case["title_b"]
             should_cluster = case["should_cluster"]
@@ -62,7 +63,7 @@ def test_clustering_suite():
             ]
 
             # Mock semantic search to focus on lexical/entity logic
-            with patch("clustering.find_cluster_semantic", return_value=None):
+            with patch("core.clustering.find_cluster_semantic", return_value=None):
                 category_b = detect_category(title_b)
                 topic_b = detect_topic(title_b)
 
