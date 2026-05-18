@@ -421,13 +421,13 @@ function getBriefingSnippet(content: string) {
 				)}
 
 				{leadCluster && supportingClusters.length > 0 && (
-					<div class="section-wrapper">
+					<LayoutSingle>
 						<SupportingBand
 							supportingFeatured={supportingFeatured}
 							supportingCompact={supportingCompact}
                             lang={lang}
 						/>
-					</div>
+					</LayoutSingle>
 				)}
 
                 {/* THE BIG PICTURE (HIGH CONSENSUS) */}
