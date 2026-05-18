@@ -4,6 +4,7 @@ import { getDisplayTitle, highlightScores, getDesignCardContext, transliterate }
 import type { NewsCluster } from '../../types';
 import { Zap, Palette, Building2, TrendingUp, Award, Cpu, Newspaper, ArrowRight } from 'lucide-react';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+import MeshGradient from './MeshGradient.astro';
 
 interface Props {
     leadCluster: NewsCluster;
@@ -73,7 +74,7 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
 ---
 
 <section class:list={["lead-hero motion-rise", { "lead-hero-filtered": filtered }]}>
-    <div class="lead-hero-tint" style={`--tint-color: ${tintColor};`}></div>
+    <MeshGradient color={tintColor} />
     <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="lead-media lead-media-mobile" aria-hidden="true" tabindex="-1">
         <div class:list={["lead-media-frame shadow-editorial", { "lead-media-frame-fallback": leadVisual?.isWeak }]}>
             {leadVisual?.proxiedUrl && !leadVisual.isWeak ? (
@@ -146,7 +147,10 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
                 {leadCluster.is_breaking && <span class="significance-badge is-breaking" aria-label={`${t('header.breaking')}: ${t('news.breaking')}`}>{t('news.breaking').toUpperCase()}</span>}
                 {leadSignal && (
                     <span class="lead-status-badge" aria-label={`Signal: ${leadSignal}`}>
-                        <span class="status-dot"></span>
+                        <div class="status-dot-wrap">
+                            <span class="status-dot"></span>
+                            <span class="status-dot-pulse"></span>
+                        </div>
                         <span>{leadSignal.toUpperCase()}</span>
                     </span>
                 )}
@@ -344,11 +348,39 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
         letter-spacing: 0.05em;
     }
 
+    .status-dot-wrap {
+        position: relative;
+        width: 10px;
+        height: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
     .status-dot {
         width: 6px;
         height: 6px;
         background: var(--nyt-accent);
         border-radius: 50%;
+        position: relative;
+        z-index: 2;
+    }
+
+    .status-dot-pulse {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: var(--nyt-accent);
+        border-radius: 50%;
+        z-index: 1;
+        opacity: 0.4;
+        animation: organic-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes organic-pulse {
+        0% { transform: scale(1); opacity: 0.4; }
+        50% { transform: scale(2.5); opacity: 0; }
+        100% { transform: scale(1); opacity: 0; }
     }
 
     .time-stamp-v2 {
@@ -360,23 +392,7 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
     }
 
 	.lead-hero-tint {
-		position: absolute;
-		top: -30%;
-		left: -10%;
-		width: 120%;
-		height: 160%;
-		background:
-            radial-gradient(circle at 20% 30%, color-mix(in srgb, var(--tint-color) 8%, transparent), transparent 50%),
-            radial-gradient(circle at 80% 70%, color-mix(in srgb, var(--tint-color) 5%, transparent), transparent 50%);
-		opacity: 0.15;
-		filter: blur(100px);
-		pointer-events: none;
-		z-index: 0;
-	}
-
-	.dark .lead-hero-tint {
-		opacity: 0.25;
-		filter: blur(140px);
+		display: none;
 	}
 
 	.lead-media-mobile {
@@ -770,7 +786,7 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
         display: flex;
         align-items: center;
         gap: 0.6rem;
-        transition: all 0.3s ease;
+        transition: all 0.4s var(--ease-editorial);
         padding: 0.5rem 1rem;
         background: rgba(255,255,255,0.1);
         border-radius: 0px;
@@ -780,7 +796,8 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
     .lead-media-frame:hover .design-card-cta {
         background: var(--nyt-accent);
         color: white;
-        transform: translateY(-4px);
+        transform: translateY(-5px) scale(1.05);
+        box-shadow: 0 10px 20px -5px rgba(0,0,0,0.3);
     }
 
 	.lead-hero-filtered {

@@ -14,6 +14,21 @@ const hostHeader = Astro.request?.headers.get('host');
 const urlLang = getLangFromUrl(Astro.url, hostHeader);
 const lang = propLang || urlLang;
 const t = useTranslations(lang);
+
+// Combine and sort by score for a true Bento experience
+const allSupporting = [...supportingFeatured, ...supportingCompact];
+
+function getBentoSpan(cluster: NewsCluster, index: number): '1x1' | '2x1' | '2x2' {
+    const score = cluster.homepage_score || 0;
+    
+    // First item if high score gets hero treatment
+    if (index === 0 && score > 0.7) return '2x2';
+    
+    // High scores get wide tiles
+    if (score > 0.8) return '2x1';
+    
+    return '1x1';
+}
 ---
 
 <section class="supporting-band motion-rise motion-delay-2">
@@ -21,16 +36,61 @@ const t = useTranslations(lang);
         <h2 class="section-title">{t('home.supporting_title')}</h2>
         <p class="section-note">{t('home.supporting_desc')}</p>
     </div>
-    <div class="supporting-featured-grid">
-        {supportingFeatured.map((cluster: NewsCluster) => (
-            <NewsCard cluster={cluster} variant="featured" lang={lang} />
+
+    <div class="bento-grid">
+        {allSupporting.map((cluster, index) => (
+            <div class={`bento-item bento-span-${getBentoSpan(cluster, index)}`}>
+                <NewsCard 
+                    cluster={cluster} 
+                    variant={getBentoSpan(cluster, index) === '1x1' ? 'compact' : 'featured'} 
+                    bentoSpan={getBentoSpan(cluster, index)}
+                    lang={lang} 
+                />
+            </div>
         ))}
     </div>
-    {supportingCompact.length > 0 && (
-        <div class="supporting-compact-grid">
-            {supportingCompact.map((cluster: NewsCluster) => (
-                <NewsCard cluster={cluster} variant="compact" lang={lang} />
-            ))}
-        </div>
-    )}
 </section>
+
+<style>
+    .supporting-band {
+        margin-top: var(--grid-gap);
+        padding-top: 1rem;
+    }
+
+    .bento-grid {
+        display: grid;
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+        gap: 1.5rem;
+    }
+
+    @media (min-width: 768px) {
+        .bento-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-auto-rows: min-content;
+        }
+
+        .bento-span-2x2 {
+            grid-column: span 2;
+            grid-row: span 2;
+        }
+
+        .bento-span-2x1 {
+            grid-column: span 2;
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .bento-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+    }
+
+    .bento-item {
+        height: 100%;
+    }
+
+    /* Asymmetric Balance & Luxury Whitespace */
+    .section-heading-row {
+        margin-bottom: 2rem;
+    }
+</style>

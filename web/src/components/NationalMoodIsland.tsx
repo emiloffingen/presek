@@ -47,39 +47,25 @@ export default function NationalMoodIsland({ lang = 'sr' }: { lang?: string }) {
 
     if (loading) {
         return (
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm opacity-70">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-[var(--grid-gap)]">
-                        <div className="w-4 h-4 rounded-full bg-muted animate-pulse"></div>
-                        <div className="h-3 w-24 bg-muted rounded animate-pulse"></div>
+            <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm opacity-60 animate-pulse">
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                        <div className="w-5 h-5 rounded-full bg-zinc-200 dark:bg-zinc-800"></div>
+                        <div className="h-3 w-32 bg-zinc-200 dark:bg-zinc-800 rounded"></div>
                     </div>
                 </div>
-                <div className="space-y-6">
-                    <div>
-                        <div className="flex justify-between mb-2">
-                            <div className="h-2 w-12 bg-muted rounded animate-pulse"></div>
-                            <div className="h-2 w-12 bg-muted rounded animate-pulse"></div>
-                            <div className="h-2 w-12 bg-muted rounded animate-pulse"></div>
+                <div className="space-y-8">
+                    <div className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-900 rounded-full"></div>
+                    <div className="grid grid-cols-2 gap-6 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                        <div className="space-y-2">
+                            <div className="h-2 w-16 bg-zinc-100 dark:bg-zinc-800 rounded"></div>
+                            <div className="h-6 w-12 bg-zinc-100 dark:bg-zinc-800 rounded"></div>
                         </div>
-                        <div className="h-2 w-full bg-muted rounded-full animate-pulse"></div>
-                        <div className="mt-3 flex items-center justify-between">
-                            <div className="flex items-center gap-[var(--grid-gap)]">
-                                <div className="w-5 h-5 rounded-full bg-muted animate-pulse"></div>
-                                <div className="h-3 w-16 bg-muted rounded animate-pulse"></div>
-                            </div>
-                            <div className="h-2 w-16 bg-muted rounded animate-pulse"></div>
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-[var(--grid-gap)] pt-2 border-t border-zinc-100 dark:border-zinc-800">
-                        <div>
-                            <div className="h-2 w-16 bg-muted rounded animate-pulse mb-2"></div>
-                            <div className="h-6 w-12 bg-muted rounded animate-pulse"></div>
-                        </div>
-                        <div className="flex flex-col items-end">
-                            <div className="h-2 w-20 bg-muted rounded animate-pulse mb-2"></div>
-                            <div className="flex gap-1.5 h-12 items-end">
-                                {[1,2,3,4,5,6,7].map(i => (
-                                    <div key={i} className="w-2.5 bg-muted rounded-t-sm animate-pulse" style={{ height: `${20 + (i * 10 % 50)}%` }}></div>
+                        <div className="flex flex-col items-end space-y-2">
+                            <div className="h-2 w-20 bg-zinc-100 dark:bg-zinc-800 rounded"></div>
+                            <div className="flex gap-1.5 h-10 items-end">
+                                {[1,2,3,4,5].map(i => (
+                                    <div key={i} className="w-2 bg-zinc-100 dark:bg-zinc-800 rounded-t-sm" style={{ height: `${20 + i*15}%` }}></div>
                                 ))}
                             </div>
                         </div>
@@ -90,20 +76,22 @@ export default function NationalMoodIsland({ lang = 'sr' }: { lang?: string }) {
     }
     if (!mood) {
         return (
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm opacity-80">
+            <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm opacity-80">
                 <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-[var(--grid-gap)]">
-                        <Activity size={18} className="text-muted-foreground" />
-                        <h3 className="font-bold text-sm uppercase tracking-tighter">{lang === 'sr' ? 'Nacionalni Puls' : 'Национален Пулс'}</h3>
+                    <div className="flex items-center gap-3">
+                        <Activity size={18} className="text-muted-foreground/40" />
+                        <h3 className="font-black text-xs uppercase tracking-widest text-muted-foreground/40">{lang === 'sr' ? 'Nacionalni Puls' : 'Национален Пулс'}</h3>
                     </div>
                 </div>
-                <div className="py-8 flex flex-col items-center justify-center text-center">
-                    <Meh size={32} className="text-muted-foreground/30 mb-3" />
-                    <p className="text-sm font-serif italic text-muted-foreground">
+                <div className="py-10 flex flex-col items-center justify-center text-center">
+                    <div className="w-12 h-12 rounded-full bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center mb-4">
+                        <Meh size={28} className="text-muted-foreground/20" />
+                    </div>
+                    <p className="text-sm font-serif italic text-muted-foreground/60 px-4">
                         {lang === 'sr' ? 'Sistemska kalibracija u toku...' : 'Системска калибрација во тек...'}
                     </p>
-                    <p className="text-[10px] uppercase font-bold text-muted-foreground/50 mt-2">
-                        {lang === 'sr' ? 'Nedostaje dovoljno podataka za analizu' : 'Недостасуваат доволно податоци за анализа'}
+                    <p className="text-[9px] uppercase font-black tracking-[0.2em] text-muted-foreground/30 mt-4">
+                        {lang === 'sr' ? 'Nedostaje dovoljno podataka' : 'Недостасуваат доволно податоци'}
                     </p>
                 </div>
             </div>
@@ -120,15 +108,22 @@ export default function NationalMoodIsland({ lang = 'sr' }: { lang?: string }) {
     const indicatorPos = ((mood.score + 1) / 2) * 100;
 
     return (
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-[var(--grid-gap)]">
-                    <Activity size={18} className="text-nyt-accent" />
-                    <h3 className="font-bold text-sm uppercase tracking-tighter">{lang === 'sr' ? 'Nacionalni Puls' : 'Национален Пулс'}</h3>
+        <div className="relative overflow-hidden bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-premium transition-all duration-500 hover:shadow-2xl group">
+            {/* Ambient Background Gradient */}
+            <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.08] pointer-events-none bg-gradient-to-br from-nyt-accent via-transparent to-emerald-500 group-hover:opacity-10 transition-opacity duration-700" />
+            
+            <div className="relative z-10 flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                    <div className="organic-pulse-wrap text-nyt-accent">
+                        <Activity size={18} className="relative z-10" />
+                        <div className="organic-pulse-ring" />
+                        <div className="organic-pulse-ring" />
+                    </div>
+                    <h3 className="font-black text-xs uppercase tracking-[0.2em] premium-kicker">{lang === 'sr' ? 'Nacionalni Puls' : 'Национален Пулс'}</h3>
                 </div>
                 <div className="group relative">
-                    <Info size={14} className="text-muted-foreground cursor-help" />
-                    <div className="absolute right-0 bottom-full mb-2 w-48 p-2 bg-black text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+                    <Info size={14} className="text-muted-foreground/60 cursor-help hover:text-nyt-accent transition-colors" />
+                    <div className="absolute right-0 bottom-full mb-3 w-56 p-3 bg-black/90 backdrop-blur-md text-white text-[11px] rounded-lg shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-all transform translate-y-1 group-hover:translate-y-0 z-50 leading-relaxed">
                         {lang === 'sr'
                           ? 'Sistemska analiza emotivnog tona i objektivnosti u medijskom prostoru za poslednjih 24 časa.'
                           : 'Системска анализа на емотивниот тон и објективноста во медиумскиот простор за последните 24 часа.'}
@@ -136,50 +131,52 @@ export default function NationalMoodIsland({ lang = 'sr' }: { lang?: string }) {
                 </div>
             </div>
 
-            <div className="space-y-6">
+            <div className="relative z-10 space-y-8">
                 {/* Mood Meter */}
                 <div>
-                    <div className="flex justify-between text-[11px] font-bold uppercase mb-2">
+                    <div className="flex justify-between text-[10px] font-black uppercase tracking-widest mb-3 opacity-60">
                         <span className="text-red-600">{lang === 'sr' ? 'Negativan' : 'Негативен'}</span>
-                        <span className="text-muted-foreground/80">{lang === 'sr' ? 'Neutralan' : 'Неутрален'}</span>
+                        <span>{lang === 'sr' ? 'Neutralan' : 'Неутрален'}</span>
                         <span className="text-emerald-600">{lang === 'sr' ? 'Pozitivan' : 'Позитивен'}</span>
                     </div>
-                    <div className="relative h-2 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                    <div className="relative h-1.5 w-full bg-zinc-100 dark:bg-zinc-900 rounded-full overflow-visible">
                         <div
-                            className="absolute top-0 bottom-0 w-1 bg-black dark:bg-white transition-all duration-1000 ease-out z-10"
-                            style={{ left: `${indicatorPos}%`, marginLeft: '-2px' }}
+                            className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white dark:bg-white border-2 border-black dark:border-nyt-accent rounded-full shadow-lg transition-all duration-1000 cubic-bezier(0.16, 1, 0.3, 1) z-20"
+                            style={{ left: `${indicatorPos}%`, marginLeft: '-6px' }}
                         />
-                        <div className="absolute inset-0 bg-gradient-to-r from-red-500/20 via-transparent to-emerald-500/20" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-red-500/20 via-zinc-200/10 dark:via-zinc-800/10 to-emerald-500/20 rounded-full" />
                     </div>
-                    <div className="mt-3 flex items-center justify-between">
-                        <div className="flex items-center gap-[var(--grid-gap)]">
+                    <div className="mt-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3 transition-transform duration-500 group-hover:translate-x-1">
                             {getMoodIcon(mood.score)}
-                            <span className="text-sm font-serif italic capitalize">{mood.mood}</span>
+                            <span className="text-base font-serif italic font-black capitalize tracking-tight">{mood.mood}</span>
                         </div>
-                        <span className="text-[10px] font-mono text-muted-foreground/90 dark:text-zinc-400">
-                            N={mood.sample_size} {lang === 'sr' ? 'događaja' : 'настани'}
+                        <span className="text-[10px] font-mono font-bold text-muted-foreground/70 tracking-tighter">
+                            N={mood.sample_size.toLocaleString()} {lang === 'sr' ? 'događaja' : 'настани'}
                         </span>
                     </div>
                 </div>
 
                 {/* Sub-metrics */}
-                <div className="grid grid-cols-2 gap-[var(--grid-gap)] pt-2 border-t border-zinc-100 dark:border-zinc-800">
-                    <div>
-                        <p className="text-[10px] uppercase font-bold text-muted-foreground/90 dark:text-zinc-400 mb-1">{lang === 'sr' ? 'Objektivnost' : 'Објективност'}</p>
-                        <div className="flex items-end gap-1">
-                            <span className="text-xl font-black tabular-nums">{(mood.objectivity * 100).toFixed(0)}%</span>
+                <div className="grid grid-cols-2 gap-6 pt-4 border-t border-zinc-100 dark:border-zinc-800/50">
+                    <div className="magnetic-item">
+                        <p className="text-[9px] uppercase font-black tracking-widest text-muted-foreground/60 mb-2">{lang === 'sr' ? 'Objektivnost' : 'Објективност'}</p>
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-2xl font-black tabular-nums tracking-tighter">{(mood.objectivity * 100).toFixed(0)}</span>
+                            <span className="text-xs font-bold opacity-40">%</span>
                         </div>
                     </div>
-                    <div className="flex flex-col items-end">
-                        <p className="text-[10px] uppercase font-bold text-muted-foreground/90 dark:text-zinc-400 mb-1 text-right">{lang === 'sr' ? 'Trendovi (7d)' : 'Трендови (7д)'}</p>
+                    <div className="flex flex-col items-end magnetic-item">
+                        <p className="text-[9px] uppercase font-black tracking-widest text-muted-foreground/60 mb-2 text-right">{lang === 'sr' ? 'Trendovi (7d)' : 'Трендови (7д)'}</p>
                         <div className="flex gap-1.5 h-12 items-end">
                             {trends.map((t, i) => (
                                 <div
                                     key={i}
-                                    className="w-2.5 rounded-t-sm transition-all hover:opacity-80"
+                                    className="w-2 rounded-t-[2px] transition-all duration-500 hover:scale-x-125 hover:brightness-110"
                                     style={{
-                                        height: `${Math.max(20, (t.objectivity * 100))}%`,
-                                        backgroundColor: t.score > 0.1 ? '#10b981' : t.score < -0.1 ? '#ef4444' : '#71717a'
+                                        height: `${Math.max(15, (t.objectivity * 100))}%`,
+                                        backgroundColor: t.score > 0.1 ? '#10b981' : t.score < -0.1 ? '#ef4444' : '#71717a',
+                                        opacity: 0.3 + (i * 0.1)
                                     }}
                                     title={`${t.day}: ${t.label} (Obj: ${t.objectivity})`}
                                 />

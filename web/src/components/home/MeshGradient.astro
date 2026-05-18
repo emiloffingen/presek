@@ -1,0 +1,62 @@
+---
+interface Props {
+    color?: string;
+    class?: string;
+}
+
+const { color = '#1e40af', class: className } = Astro.props;
+---
+
+<div class:list={["mesh-gradient-container", className]}>
+    <div class="mesh-gradient" style={`--mesh-color: ${color};`}></div>
+    <div class="mesh-noise"></div>
+</div>
+
+<style>
+    .mesh-gradient-container {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        z-index: 0;
+        pointer-events: none;
+    }
+
+    .mesh-gradient {
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background-color: var(--background);
+        background-image: 
+            radial-gradient(at 0% 0%, var(--mesh-color) 0px, transparent 50%),
+            radial-gradient(at 50% 0%, color-mix(in srgb, var(--mesh-color) 40%, #000) 0px, transparent 50%),
+            radial-gradient(at 100% 0%, var(--mesh-color) 0px, transparent 50%),
+            radial-gradient(at 0% 50%, color-mix(in srgb, var(--mesh-color) 60%, #fff) 0px, transparent 50%),
+            radial-gradient(at 100% 50%, var(--mesh-color) 0px, transparent 50%),
+            radial-gradient(at 0% 100%, var(--mesh-color) 0px, transparent 50%),
+            radial-gradient(at 50% 100%, color-mix(in srgb, var(--mesh-color) 30%, #fff) 0px, transparent 50%),
+            radial-gradient(at 100% 100%, var(--mesh-color) 0px, transparent 50%);
+        filter: blur(80px);
+        opacity: 0.12;
+        animation: mesh-float 20s ease-in-out infinite alternate;
+    }
+
+    .dark .mesh-gradient {
+        opacity: 0.25;
+        filter: blur(120px);
+    }
+
+    @keyframes mesh-float {
+        0% { transform: rotate(0deg) scale(1); }
+        50% { transform: rotate(5deg) scale(1.1); }
+        100% { transform: rotate(-5deg) scale(1); }
+    }
+
+    .mesh-noise {
+        position: absolute;
+        inset: 0;
+        opacity: 0.03;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    }
+</style>
