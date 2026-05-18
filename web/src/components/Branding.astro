@@ -28,14 +28,13 @@ const t = useTranslations(lang);
 
     {(mode === 'full' || mode === 'logo') && (
         <div class="logo-text-group">
-            <div class="logo-international-label">INTERNATIONAL</div>
-            <svg viewBox="0 0 600 110" fill="none" xmlns="http://www.w3.org/2000/svg" class="presek-logo-svg">
-                <text x="300" y="82" font-family="var(--font-serif)" font-size="98" letter-spacing="-3" fill="currentColor" text-anchor="middle">
-                    <tspan font-weight="950">{lang === 'mk' ? 'ПРЕСЕК' : 'PRESEK'}</tspan>
+            <svg viewBox="0 0 800 110" fill="none" xmlns="http://www.w3.org/2000/svg" class="presek-logo-svg">
+                <text x="400" y="82" font-family="var(--font-serif)" font-size="98" letter-spacing="-3" fill="currentColor" text-anchor="middle">
+                    <tspan font-weight="950">{lang === 'mk' ? 'ПРЕСЕК.mk' : 'PRESEK.rs'}</tspan>
                 </text>
                 {/* Precision Editorial Rules */}
-                <rect x="0" y="102" width="600" height="4" fill="currentColor" />
-                <rect x="0" y="108" width="600" height="1" fill="currentColor" />
+                <rect x="0" y="102" width="800" height="4" fill="currentColor" />
+                <rect x="0" y="108" width="800" height="1" fill="currentColor" />
             </svg>
             <span class="logo-sublabel">{t('branding.sublabel')}</span>
         </div>
@@ -63,19 +62,9 @@ const t = useTranslations(lang);
         min-width: 0;
     }
 
-    .logo-international-label {
-        font-family: var(--font-sans);
-        font-size: 0.55rem;
-        font-weight: 900;
-        letter-spacing: 0.35em;
-        color: var(--foreground);
-        text-transform: uppercase;
-        margin-bottom: -0.2rem;
-    }
-
     .presek-logo-svg {
         width: 320px;
-        height: 58px;
+        height: 44px;
     }
 
     .logo-sublabel {
