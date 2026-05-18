@@ -617,11 +617,11 @@ button:focus-visible,
 		position: relative;
         aspect-ratio: 16 / 9;
         overflow: hidden;
-        border-radius: 2px;
+        border-radius: 0px;
     }
 
     .variant-compact .image-wrap {
-        border-radius: 4px;
+        border-radius: 0px;
     }
 
 	.nyt-article.variant-wire:not(.lead-story) .image-wrap {
@@ -1074,7 +1074,7 @@ button:focus-visible,
 .skeleton-box {
     background-color: var(--secondary);
     opacity: 0.5;
-    border-radius: 4px;
+    border-radius: 0px;
     animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 

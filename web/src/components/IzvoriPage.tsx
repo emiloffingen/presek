@@ -303,7 +303,7 @@ const IzvoriPage: React.FC<{ lang?: string }> = ({ lang = 'sr' }) => {
 
       <style>{`
         .editorial-source-item { display: flex; justify-content: space-between; align-items: center; padding: 2rem 0; border-bottom: 1px solid var(--border); transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
-        .editorial-source-item:hover { background: color-mix(in srgb, var(--background) 96%, var(--nyt-accent) 4%); padding-left: 1rem; padding-right: 1rem; margin-left: -1rem; margin-right: -1rem; border-radius: 4px; border-bottom-color: var(--nyt-accent); }
+        .editorial-source-item:hover { background: color-mix(in srgb, var(--background) 96%, var(--nyt-accent) 4%); padding-left: 1rem; padding-right: 1rem; margin-left: -1rem; margin-right: -1rem; border-radius: 0px; border-bottom-color: var(--nyt-accent); }
         .item-main { flex: 1; min-width: 0; }
         .item-head { display: flex; align-items: center; gap: 0.75rem; }
         .health-dot { width: 6px; height: 6px; border-radius: 50%; }

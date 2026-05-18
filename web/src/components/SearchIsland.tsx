@@ -695,7 +695,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
           background: rgba(var(--border), 0.2);
-          border-radius: 10px;
+          border-radius: 0px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: rgba(var(--nyt-accent), 0.4);
