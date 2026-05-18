@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { apiBaseUrl } from '../lib/apiBase';
 import { Search, ShieldCheck, Zap, Activity, ChevronRight } from 'lucide-react';
+import { useTranslations } from '../i18n/utils';
+import type { ui } from '../i18n/ui';
 
 interface SourceRow {
   source: string;
@@ -56,31 +58,32 @@ function getHealthStatus(lastFetched?: string): 'active' | 'stale' | 'critical' 
   }
 }
 
-const IzvoriPage: React.FC<{ lang?: string }> = ({ lang = 'sr' }) => {
+const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
   const [sources, setSources] = useState<SourceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTier, setFilterTier] = useState<string>('all');
+  const t = useTranslations(lang);
 
   useEffect(() => {
     const load = async () => {
       try {
         const res = await fetch(`${apiBaseUrl()}/sources?t=${Date.now()}`);
         if (!res.ok) {
-          setError(lang === 'sr' ? 'Neuspešno povezivanje.' : 'Неуспешно поврзување.');
+          setError(t('sources.connection_error'));
           return;
         }
         const allRes = await res.json();
         setSources(allRes);
       } catch {
-        setError(lang === 'sr' ? 'Neuspešno povezivanje.' : 'Неуспешно поврзување.');
+        setError(t('sources.connection_error'));
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, [lang]);
+  }, [lang, t]);
 
   const filtered = useMemo(() => {
     let results = sources;
@@ -103,7 +106,7 @@ const IzvoriPage: React.FC<{ lang?: string }> = ({ lang = 'sr' }) => {
       <a key={source.source} href={`${lang === 'mk' ? '/mk' : ''}/?source=${encodeURIComponent(source.source)}`} className="editorial-source-item group no-underline">
         <div className="item-main">
           <div className="item-head mb-2">
-            <div className={`health-dot ${health}`} title={health === 'active' ? (lang === 'sr' ? 'Ažurirano nedavno' : 'Ажурирано неодамна') : health === 'stale' ? (lang === 'sr' ? 'Postoje kašnjenja' : 'Постојат доцнења') : (lang === 'sr' ? 'Nema svež signal' : 'Нема свеж сигнал')}></div>
+            <div className={`health-dot ${health}`} title={health === 'active' ? t('sources.health_active') : health === 'stale' ? t('sources.health_stale') : t('sources.health_critical')}></div>
             <h3 className="section-heading group-hover:text-nyt-accent transition-colors">{source.source}</h3>
             {(source.trust_tier === 'Visoko poverenje' || source.trust_tier === 'Висока доверба') && (
                 <ShieldCheck size={14} className="text-nyt-accent" />
@@ -118,23 +121,23 @@ const IzvoriPage: React.FC<{ lang?: string }> = ({ lang = 'sr' }) => {
                 ))}
             </div>
             <span className="font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 ml-auto flex items-center gap-1.5">
-                <Activity size={10} /> {formatLastFetched(source.last_fetched)}
+                <Activity size={10} /> {formatLastFetched(source.last_fetched, t)}
             </span>
           </div>
         </div>
         <div className="item-stats flex items-center justify-end gap-[var(--grid-gap)] ml-auto flex-1 min-w-[200px]">
           <div className="flex gap-[var(--grid-gap)]">
             <div className="stat-box flex flex-col items-end">
-              <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-0.5">{lang === 'sr' ? '24h Vesti' : '24ч Вести'}</span>
+              <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-0.5">{t('sources.news_24h')}</span>
               <strong className="text-lg font-black tabular-nums leading-none">{source.recent_volume}</strong>
             </div>
             <div className="stat-box flex flex-col items-end text-nyt-accent">
-              <span className="text-[9px] font-black uppercase tracking-widest opacity-60 mb-0.5">{lang === 'sr' ? 'Kvalitet' : 'Квалитет'}</span>
+              <span className="text-[9px] font-black uppercase tracking-widest opacity-60 mb-0.5">{t('sources.quality')}</span>
               <strong className="text-lg font-black tabular-nums leading-none">{reliabilityIndex}</strong>
             </div>
           </div>
 
-          <div className="heatmap-container flex gap-[2px] items-end h-8 shrink-0" title={lang === 'sr' ? "Aktivnost u poslednjih 30 dana" : "Активност во последните 30 дена"}>
+          <div className="heatmap-container flex gap-[2px] items-end h-8 shrink-0" title={t('sources.activity_30d')}>
             {Array.from({ length: 30 }).map((_, i) => {
                 const isRecent = i >= 28;
                 const avgVolume = Math.max(1, (source.recent_7d_volume || 0) / 7);
@@ -173,14 +176,12 @@ const IzvoriPage: React.FC<{ lang?: string }> = ({ lang = 'sr' }) => {
     <div className="broadsheet-sources pt-12">
       <header className="editorial-masthead mb-16 border-t border-foreground pt-4">
         <div className="masthead-top mb-8">
-          <span className="masthead-kicker font-sans text-[10px] font-black uppercase tracking-[0.25em] text-nyt-accent">{lang === 'sr' ? 'MEDIJSKA REPUTACIJA' : 'МЕДИУМСКА РЕПУТАЦИЈА'}</span>
+          <span className="masthead-kicker font-sans text-[10px] font-black uppercase tracking-[0.25em] text-nyt-accent">{t('sources.reputation')}</span>
         </div>
         <div className="masthead-main mb-12">
-          <h1 className="masthead-title font-serif text-5xl md:text-7xl font-black leading-[0.9] tracking-tighter">{lang === 'sr' ? 'Medijski' : 'Медиумски'} <span className="text-nyt-accent italic font-light">{lang === 'sr' ? 'izvori' : 'извори'}</span></h1>
+          <h1 className="masthead-title font-serif text-5xl md:text-7xl font-black leading-[0.9] tracking-tighter">{t('sources.title').split(' ')[0]} <span className="text-nyt-accent italic font-light">{t('sources.title').split(' ')[1]}</span></h1>
           <p className="mt-6 font-serif text-xl italic text-muted-foreground leading-snug max-w-2xl">
-            {lang === 'sr'
-              ? 'Rangiranje i detaljna statistika svih medija koje Presek prati — po aktivnosti, brzini i poverenju.'
-              : 'Рангирање и детална статистика на сите медиуми што Пресек ги следи — по активност, брзина и доверливост.'}
+            {t('sources.desc')}
           </p>
         </div>
 
@@ -190,7 +191,7 @@ const IzvoriPage: React.FC<{ lang?: string }> = ({ lang = 'sr' }) => {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder={lang === 'sr' ? "Pretraži redakcije..." : "Пребарај редакции..."}
+                placeholder={t('sources.search_placeholder')}
                 className="w-full bg-secondary/20 border-b-2 border-border py-2 pl-2 pr-10 font-serif font-bold text-lg outline-none focus:border-nyt-accent placeholder:italic placeholder:font-normal placeholder:opacity-40 transition-all"
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none opacity-40">
@@ -200,20 +201,20 @@ const IzvoriPage: React.FC<{ lang?: string }> = ({ lang = 'sr' }) => {
 
           <div className="filter-group flex p-1 bg-secondary/30 rounded-lg border border-border shadow-sm">
             {[
-                { id: 'all', label: lang === 'sr' ? 'SVE' : 'СИТЕ' },
-                { id: 'high', label: lang === 'sr' ? 'Visoko poverenje' : 'Висока доверба' },
-                { id: 'verified', label: lang === 'sr' ? 'Potvrđeni' : 'Потврдени' }
-            ].map(t => (
+                { id: 'all', label: t('sources.all') },
+                { id: 'high', label: t('sources.high_trust') },
+                { id: 'verified', label: t('sources.verified') }
+            ].map(t_tier => (
               <button
-                key={t.id}
-                onClick={() => setFilterTier(t.id)}
+                key={t_tier.id}
+                onClick={() => setFilterTier(t_tier.id)}
                 className={`px-4 py-2 rounded-md font-sans text-[10px] font-black tracking-widest transition-all ${
-                    filterTier === t.id
+                    filterTier === t_tier.id
                     ? 'bg-nyt-accent text-white shadow-md'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {t.label}
+                {t_tier.label}
               </button>
             ))}
           </div>
@@ -231,13 +232,13 @@ const IzvoriPage: React.FC<{ lang?: string }> = ({ lang = 'sr' }) => {
           ) : (
             <div className="space-y-24">
               <section>
-                <h2 className="section-heading mb-10 pb-3 border-b-4 border-foreground">{lang === 'mk' ? 'Македонски медиуми' : 'Srpski mediji'}</h2>
+                <h2 className="section-heading mb-10 pb-3 border-b-4 border-foreground">{lang === 'mk' ? t('sources.mk_media') : t('sources.sr_media')}</h2>
                 <div className="flex flex-col">
                   {mkSources.map(renderSourceRow)}
                 </div>
               </section>
               <section>
-                <h2 className="section-heading mb-10 pb-3 border-b-4 border-foreground">{lang === 'sr' ? 'Međunarodni signali' : 'Меѓународни сигнали'}</h2>
+                <h2 className="section-heading mb-10 pb-3 border-b-4 border-foreground">{t('sources.intl_signals')}</h2>
                 <div className="flex flex-col">
                   {intSources.map(renderSourceRow)}
                 </div>
@@ -248,17 +249,15 @@ const IzvoriPage: React.FC<{ lang?: string }> = ({ lang = 'sr' }) => {
 
         <aside className="broadsheet-rail pl-4">
           <section className="rail-module mb-12 p-8 bg-nyt-accent/5 border border-nyt-accent/10 rounded-xl">
-            <span className="block font-sans text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent mb-4">{lang === 'sr' ? 'SISTEMSKI UVID' : 'СИСТЕМСКИ УВИД'}</span>
-            <h3 className="section-heading mb-4 leading-tight tracking-tight">{lang === 'sr' ? 'KVALITATIVNI INDEKS (QI)' : 'КВАЛИТАТИВЕН ИНДЕКС (QI)'}</h3>
+            <span className="block font-sans text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent mb-4">{t('briefing.system_balance')}</span>
+            <h3 className="section-heading mb-4 leading-tight tracking-tight">{t('sources.qi_title')}</h3>
             <p className="font-nyt-body text-sm leading-relaxed text-muted-foreground">
-              {lang === 'sr'
-                ? 'QI spaja brzinu, tačnost i pluralizam. Izračunato putem našeg sistema za duboku analizu. Ocena 1.00 predstavlja optimalan balans na tržištu.'
-                : 'QI ги спојува брзината, точноста и плурализмот. Пресметано преку нашата длабока анализа. Оценката 1.00 претставува оптимален баланс на пазарот.'}
+              {t('sources.qi_desc')}
             </p>
           </section>
 
           <section className="rail-module mb-12">
-            <h3 className="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-foreground mb-6 pb-2 border-b-2 border-foreground">{lang === 'sr' ? 'NAJBRŽI danas' : 'НАЈБРЗИ денес'}</h3>
+            <h3 className="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-foreground mb-6 pb-2 border-b-2 border-foreground">{t('sources.fastest_today')}</h3>
             <div className="flex flex-col gap-1">
               {fastMovers.map(s => (
                 <div key={s.source} className="flex items-center justify-between py-2.5 border-b border-border/40 hover:bg-secondary/10 px-1 transition-all">
@@ -270,30 +269,24 @@ const IzvoriPage: React.FC<{ lang?: string }> = ({ lang = 'sr' }) => {
           </section>
 
           <div className="rail-methodology-module p-6 bg-secondary/10 border border-border/40 rounded-sm">
-            <h4 className="font-sans text-[10px] font-black uppercase tracking-widest border-b border-border pb-3 mb-4">{lang === 'sr' ? 'METODOLOGIJA' : 'МЕТОДОЛОГИЈА'}</h4>
+            <h4 className="font-sans text-[10px] font-black uppercase tracking-widest border-b border-border pb-3 mb-4">{t('sources.methodology')}</h4>
             <ul className="space-y-4">
               <li className="flex flex-col gap-1">
-                <span className="font-sans text-[9px] font-black uppercase tracking-widest text-foreground">{lang === 'sr' ? 'Poverenje' : 'Доверба'}</span>
+                <span className="font-sans text-[9px] font-black uppercase tracking-widest text-foreground">{t('sources.trust')}</span>
                 <span className="text-xs text-muted-foreground leading-snug">
-                  {lang === 'sr'
-                    ? 'Ponderisan udeo na osnovu istorijske tačnosti i stabilnosti izveštavanja.'
-                    : 'Пондериран удел врз основа на историската точност и стабилност на известувањето.'}
+                  {t('sources.trust_desc')}
                 </span>
               </li>
               <li className="flex flex-col gap-1">
-                <span className="font-sans text-[9px] font-black uppercase tracking-widest text-foreground">{lang === 'sr' ? 'Vođstvo' : 'Водство'}</span>
+                <span className="font-sans text-[9px] font-black uppercase tracking-widest text-foreground">{t('sources.leadership')}</span>
                 <span className="text-xs text-muted-foreground leading-snug">
-                  {lang === 'sr'
-                    ? 'Koliko često medij prvi otvara temu koja kasnije postaje dominantna.'
-                    : 'Колку често медиумот прв отвора тема што подоцна станува доминантна.'}
+                  {t('sources.leadership_desc')}
                 </span>
               </li>
               <li className="flex flex-col gap-1">
-                <span className="font-sans text-[9px] font-black uppercase tracking-widest text-foreground">{lang === 'sr' ? 'Potvrda' : 'Потврда'}</span>
+                <span className="font-sans text-[9px] font-black uppercase tracking-widest text-foreground">{t('sources.confirmation')}</span>
                 <span className="text-xs text-muted-foreground leading-snug">
-                  {lang === 'sr'
-                    ? 'Stopa prihvatanja i potvrda vesti od strane drugih nezavisnih izvora.'
-                    : 'Стапка на прифаќање и потврда на веста од други независни извори.'}
+                  {t('sources.confirmation_desc')}
                 </span>
               </li>
             </ul>

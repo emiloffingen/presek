@@ -216,7 +216,7 @@ def _build_citation_sources(article_rows):
     return normalize_citation_sources(ordered)
 
 
-def _build_synthesis_source_context(article_rows):
+def _build_synthesis_source_context(article_rows, lang: str = "sr"):
     blocks = []
     for idx, row in enumerate(article_rows or [], start=1):
         title = str(row.get("title") or "").strip()
@@ -231,15 +231,15 @@ def _build_synthesis_source_context(article_rows):
         evidence = evidence[:2200].strip()
         parts = [f"[{idx}] {source}"]
         if category:
-            parts.append(f"Kategorija: {category}")
+            parts.append(f"{'Kategorija' if lang == 'sr' else 'Категорија'}: {category}")
         if topic:
-            parts.append(f"Tema: {topic}")
+            parts.append(f"{'Tema' if lang == 'sr' else 'Тема'}: {topic}")
         if title:
-            parts.append(f"Naslov: {title}")
+            parts.append(f"{'Naslov' if lang == 'sr' else 'Наслов'}: {title}")
         if summary:
-            parts.append(f"Postoecko rezime: {summary[:500]}")
+            parts.append(f"{'Postojeće rezime' if lang == 'sr' else 'Постоечко резиме'}: {summary[:500]}")
         if evidence:
-            parts.append(f"kontekst:\n{evidence}")
+            parts.append(f"{'kontekst' if lang == 'sr' else 'контекст'}:\n{evidence}")
         blocks.append("\n".join(parts))
     return "\n\n".join(blocks)
 
@@ -378,7 +378,10 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
     """Generates a multi-perspective synthesis for a cluster with historical continuity."""
     article_rows = _load_cluster_articles_for_synthesis(cluster_id)
     citation_sources = _build_citation_sources(article_rows)
-    source_context = _build_synthesis_source_context(article_rows)
+    # We pass the default 'sr' here, but it will be overridden inside the lang loop if needed
+    # Actually, it's better to build it inside the loop for each language
+    source_context_sr = _build_synthesis_source_context(article_rows, lang="sr")
+    source_context_mk = _build_synthesis_source_context(article_rows, lang="mk")
 
     # In fast mode, we use a slightly shorter token limit but still enough for the full JSON schema
     max_tokens = 1600 if fast_mode else 3200
@@ -448,8 +451,9 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 prompt_parts.append(history_context)
 
             prompt_parts.append("novi clanci OD danas:\n<articles_context>")
-            if source_context:
-                prompt_parts.append(source_context)
+            current_context = source_context_mk if lang == "mk" else source_context_sr
+            if current_context:
+                prompt_parts.append(current_context)
             elif legacy_summary:
                 prompt_parts.append(legacy_summary)
             prompt_parts.append("</articles_context>")

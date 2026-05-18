@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { apiBaseUrl } from '../lib/apiBase';
+import { useTranslations } from '../i18n/utils';
+import type { ui } from '../i18n/ui';
 import { Mail, CheckCircle2, Loader2 } from 'lucide-react';
 
-export default function NewsletterIsland({ lang = 'sr' }: { lang?: string }) {
+export default function NewsletterIsland({ lang = 'sr' }: { lang?: keyof typeof ui }) {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
+  const t = useTranslations(lang);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,7 +32,7 @@ export default function NewsletterIsland({ lang = 'sr' }: { lang?: string }) {
       }
     } catch (err) {
       setStatus('error');
-      setMessage(lang === 'sr' ? 'Greška pri povezivanju.' : 'Грешка при поврзување.');
+      setMessage(t('newsletter.error'));
     }
   };
 
@@ -39,7 +42,7 @@ export default function NewsletterIsland({ lang = 'sr' }: { lang?: string }) {
         <div className="flex flex-col items-center text-center relative z-10">
           <CheckCircle2 className="text-nyt-accent mb-4" size={28} />
           <h3 className="font-serif font-black text-lg mb-3 tracking-tight">
-            {lang === 'sr' ? 'Uspešno ste se prijavili!' : 'Успешно се пријавивте!'}
+            {t('newsletter.success')}
           </h3>
           <p className="font-serif italic text-sm text-secondary-foreground leading-relaxed">
             {lang === 'sr'
@@ -59,7 +62,7 @@ export default function NewsletterIsland({ lang = 'sr' }: { lang?: string }) {
       <div className="relative z-10">
         <header className="mb-5 pb-4 border-b border-border/40">
           <span className="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent block mb-2">
-            {lang === 'sr' ? 'DNEVNI PREGLED' : 'ДНЕВЕН ПРЕГЛЕД'}
+            {t('newsletter.title')}
           </span>
           <h3 className="section-heading leading-tight tracking-tight">
             {lang === 'sr'
@@ -80,7 +83,7 @@ export default function NewsletterIsland({ lang = 'sr' }: { lang?: string }) {
             <input
               type="email"
               required
-              placeholder={lang === 'sr' ? 'Vaša e-pošta' : 'Вашата е-пошта'}
+              placeholder={t('newsletter.placeholder')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full pl-9 pr-4 py-2.5 bg-background border border-border focus:border-nyt-accent outline-none font-sans text-sm transition-all"
@@ -99,7 +102,7 @@ export default function NewsletterIsland({ lang = 'sr' }: { lang?: string }) {
             {status === 'loading' ? (
               <Loader2 size={14} className="animate-spin" />
             ) : (
-              lang === 'sr' ? "PRIJAVI SE" : "ПРИЈАВИ СЕ"
+              t('newsletter.button')
             )}
           </button>
         </form>

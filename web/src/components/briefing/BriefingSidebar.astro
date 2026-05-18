@@ -50,7 +50,7 @@ const l = (path: string) => isMK ? `/mk${path}` : path;
 			<section class="sidebar-module">
 				<div class="flex items-center gap-[var(--grid-gap)] mb-6 pb-2 border-b border-border">
 					<Calendar size={14} className="text-foreground" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">{isMK ? 'ПРЕТХОДНИ ИЗДАНИЈА' : 'PRETHODNA IZDANJA'}</h4>
+					<h4 class="text-[10px] font-black uppercase tracking-widest">{t('briefing.previous_editions')}</h4>
 				</div>
 				<div class="grid grid-cols-2 gap-[var(--grid-gap)]">
 					{historicalDates.map((d: any) => (
@@ -69,12 +69,12 @@ const l = (path: string) => isMK ? `/mk${path}` : path;
 			<section class="sidebar-module">
 				<div class="flex items-center gap-[var(--grid-gap)] mb-6 pb-2 border-b border-border">
 					<Activity size={14} className="text-emerald-600" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">{isMK ? 'СИСТЕМСКА РАМНОТЕЖА' : 'SISTEMSKA RAVNOTEŽA'}</h4>
+					<h4 class="text-[10px] font-black uppercase tracking-widest">{t('briefing.system_balance')}</h4>
 				</div>
 				<div class="space-y-6">
 					<div>
 						<div class="flex justify-between text-[9px] font-black uppercase mb-2 opacity-60">
-							<span>{isMK ? 'Медиумски плурализам' : 'Medijski pluralizam'}</span>
+							<span>{t('briefing.media_pluralism')}</span>
 							<span class="text-emerald-600">{stats.intelligence.pluralism.pluralism_pct}%</span>
 						</div>
 						<div class="h-1 bg-secondary rounded-full overflow-hidden">
@@ -83,7 +83,7 @@ const l = (path: string) => isMK ? `/mk${path}` : path;
 					</div>
 					<div>
 						<div class="flex justify-between text-[9px] font-black uppercase mb-2 opacity-60">
-							<span>{isMK ? 'Висок консензус' : 'Visok konsenzus'}</span>
+							<span>{t('briefing.high_consensus')}</span>
 							<span class="text-blue-600">{stats.intelligence.pluralism.high_consensus_pct}%</span>
 						</div>
 						<div class="h-1 bg-secondary rounded-full overflow-hidden">
@@ -98,7 +98,7 @@ const l = (path: string) => isMK ? `/mk${path}` : path;
 			<section class="sidebar-module">
 				<div class="flex items-center gap-[var(--grid-gap)] mb-6 pb-2 border-b border-border">
 					<Users size={14} className="text-foreground" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">{isMK ? 'КЛУЧНИ АКТЕРИ ДЕНЕС' : 'KLJUČNI AKTERI DANAS'}</h4>
+					<h4 class="text-[10px] font-black uppercase tracking-widest">{t('briefing.key_actors')}</h4>
 				</div>
 				<div class="flex flex-col gap-[var(--grid-gap)]">
 					{briefing.subjects.map((subject: any) => (
@@ -115,7 +115,7 @@ const l = (path: string) => isMK ? `/mk${path}` : path;
 			<section class="sidebar-module">
 				<div class="flex items-center gap-[var(--grid-gap)] mb-6 pb-2 border-b border-border">
 					<MapPin size={14} className="text-foreground" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">{isMK ? 'ФОКУС ЛОКАЦИИ' : 'FOKUS LOKACIJE'}</h4>
+					<h4 class="text-[10px] font-black uppercase tracking-widest">{t('briefing.focus_locations')}</h4>
 				</div>
 				<div class="flex flex-wrap gap-[var(--grid-gap)]">
 					{briefing.locations.map((loc: any) => (
@@ -131,7 +131,7 @@ const l = (path: string) => isMK ? `/mk${path}` : path;
 			<section class="sidebar-module">
 				<div class="flex items-center gap-[var(--grid-gap)] mb-6 pb-2 border-b border-border">
 					<Zap size={14} className="text-nyt-accent" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">{isMK ? 'АКТУЕЛНО СЕГА' : 'AKTUELNO SAD'}</h4>
+					<h4 class="text-[10px] font-black uppercase tracking-widest">{t('briefing.trending_now')}</h4>
 				</div>
 				<a href={l(`/cluster/${leadCluster.cluster_id}`)} class="group block">
 					<p class="font-serif font-bold text-sm leading-snug group-hover:text-nyt-accent transition-colors">

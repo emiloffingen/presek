@@ -127,9 +127,39 @@ def is_safe_url(url: str) -> bool:
 
 
 _EXTRA_NOISE = {"vesti", "vest", "izvor", "izvori", "klaster"}
-_GENERIC_ANGLES = {"perspektiva", "ugao", "tacka", "stav", "glediste"}
+_GENERIC_ANGLES = {"perspektiva", "ugao", "tacka", "stav", "glediste", "агол", "гледиште", "став"}
 _SAFE_TOPIC_RE = re.compile(r"[^A-Za-z0-9._-]+")
 
+_BACKEND_I18N = {
+    "sr": {
+        "angle.different": "razliciti akcenti",
+        "angle.common": "zajednicka linija",
+        "angle.unclear": "Sta ostaje otvoreno",
+        "angle.reaction": "reakcije i odgovori",
+        "angle.context": "siri kontekst",
+        "angle.key": "Kljucan ugao",
+        "q.development": "Sta je glavni razvoj u ovoj prici?",
+        "q.differences": "Kako se razlikuju izvori u izvestaju?",
+        "q.unconfirmed": "Sta jos uvek nije potvrdeno?",
+        "q.next": "Sta slede dalje u ovoj prici?",
+        "q.important": "Sta je najvaznija vest u ovoj prici?",
+        "q.category_dev": "Koji je najvazniji razvoj u temi {cat}?",
+    },
+    "mk": {
+        "angle.different": "различни акценти",
+        "angle.common": "заедничка линија",
+        "angle.unclear": "Што останува отворено",
+        "angle.reaction": "реакции и одговори",
+        "angle.context": "поширок контекст",
+        "angle.key": "Клучен агол",
+        "q.development": "Што е главниот развој во оваа приказна?",
+        "q.differences": "Како се разликуваат изворите во извештајот?",
+        "q.unconfirmed": "Што сè уште не е потврдено?",
+        "q.next": "Што следува понатаму во оваа приказна?",
+        "q.important": "Што е најважната вест во оваа вест?",
+        "q.category_dev": "Кој е најважниот развој во темата {cat}?",
+    }
+}
 
 def _clean_text_block(value) -> str:
     text = str(value or "").strip()
@@ -142,18 +172,21 @@ def _clean_text_block(value) -> str:
     return text
 
 
-def _infer_perspective_angle(content: str, fallback: str = "Kljucan ugao") -> str:
+def _infer_perspective_angle(content: str, lang: str = "sr", fallback: str = None) -> str:
     lowered = content.lower()
-    if any(token in lowered for token in ("razlik", "akcenat", "formulac", "naglas")):
-        return "razliciti akcenti"
-    if any(token in lowered for token in ("zajednick", "vecina izvori", "ista linija", "svi izvori")):
-        return "zajednicka linija"
-    if any(token in lowered for token in ("otvoreno", "nejasno", "nepotvrdeno", "jos uvek ne", "ostaje")):
-        return "Sta ostaje otvoreno"
-    if any(token in lowered for token in ("reakcija", "odgovor", "komentar", "osuda")):
-        return "reakcije i odgovori"
-    if any(token in lowered for token in ("kontekst", "pozadina", "siri")):
-        return "siri kontekst"
+    L = _BACKEND_I18N.get(lang, _BACKEND_I18N["sr"])
+    fallback = fallback or L["angle.key"]
+    
+    if any(token in lowered for token in ("razlik", "akcenat", "formulac", "naglas", "разлик", "акцент")):
+        return L["angle.different"]
+    if any(token in lowered for token in ("zajednick", "vecina izvori", "ista linija", "svi izvori", "заедничк", "иста линија")):
+        return L["angle.common"]
+    if any(token in lowered for token in ("otvoreno", "nejasno", "nepotvrdeno", "jos uvek ne", "ostaje", "отворено", "нејасно", "непотврдено")):
+        return L["angle.unclear"]
+    if any(token in lowered for token in ("reakcija", "odgovor", "komentar", "osuda", "реакција", "одговор")):
+        return L["angle.reaction"]
+    if any(token in lowered for token in ("kontekst", "pozadina", "siri", "контекст", "позадина", "поширок")):
+        return L["angle.context"]
     return fallback
 
 
@@ -189,7 +222,7 @@ def normalize_summary_text(raw_summary) -> str:
     return "\n".join(f"• {line}" for line in lines[:4])
 
 
-def normalize_perspectives(raw_perspectives) -> list[dict]:
+def normalize_perspectives(raw_perspectives, lang: str = "sr") -> list[dict]:
     """
     Normalise a raw perspectives value into a clean list of {angle, content} dicts.
 
@@ -211,11 +244,12 @@ def normalize_perspectives(raw_perspectives) -> list[dict]:
 
     result = []
     seen = set()
+    L = _BACKEND_I18N.get(lang, _BACKEND_I18N["sr"])
     for item in raw_perspectives:
         if isinstance(item, str):
             content = _clean_text_block(item)
             if content:
-                angle = _infer_perspective_angle(content)
+                angle = _infer_perspective_angle(content, lang=lang)
                 key = content.casefold()
                 if key not in seen:
                     seen.add(key)
@@ -228,12 +262,12 @@ def normalize_perspectives(raw_perspectives) -> list[dict]:
         if not content:
             continue
         if not angle or angle.casefold() in _GENERIC_ANGLES:
-            angle = _infer_perspective_angle(content)
+            angle = _infer_perspective_angle(content, lang=lang)
         key = content.casefold()
         if key in seen:
             continue
         seen.add(key)
-        result.append({"angle": angle or "Kljucan ugao", "content": content})
+        result.append({"angle": angle or L["angle.key"], "content": content})
 
     return result[:4]
 
@@ -301,14 +335,15 @@ def normalize_server_delivery_subscription(payload) -> dict:
     }
 
 
-def default_related_questions(question: str, category: Optional[str] = None) -> list[str]:
+def default_related_questions(question: str, category: Optional[str] = None, lang: str = "sr") -> list[str]:
+    L = _BACKEND_I18N.get(lang, _BACKEND_I18N["sr"])
     fallback = [
-        "Sta je glavni razvoj u ovoj prici?",
-        "Kako se razlikuju izvori u izvestaju?",
-        "Sta jos uvek nije potvrdeno?",
+        L["q.development"],
+        L["q.differences"],
+        L["q.unconfirmed"],
     ]
     if category:
-        fallback[0] = f"Koji je najvazniji razvoj u temi {str(category).lower()}?"
+        fallback[0] = L["q.category_dev"].format(cat=str(category).lower())
     return [q for q in fallback if q.strip() and q.strip() != question.strip()][:3]
 
 
@@ -319,7 +354,9 @@ def related_questions_from_context(
     has_perspectives: bool = False,
     has_multiple_sources: bool = False,
     has_unclear_points: bool = False,
+    lang: str = "sr",
 ) -> list[str]:
+    L = _BACKEND_I18N.get(lang, _BACKEND_I18N["sr"])
     suggestions = []
     lowered = (question or "").strip().lower()
 
@@ -328,22 +365,22 @@ def related_questions_from_context(
         if text and text.casefold() != lowered and text not in suggestions:
             suggestions.append(text)
 
-    if not any(token in lowered for token in ("razliku", "izvor", "perspektive")) and (
+    if not any(token in lowered for token in ("razliku", "izvor", "perspektive", "разлик", "извор", "перспектива")) and (
         has_perspectives or has_multiple_sources
     ):
-        add("Kako se razlikuju izvori u izvestaju?")
-    if not any(token in lowered for token in ("nejasno", "nepotvrdeno", "otvoreno")):
-        add("Sta ostaje nejasno ili nepotvrdeno?")
-    if not any(token in lowered for token in ("sledece", "dalje", "posledice", "reakcija")):
-        add("Sta slede dalje u ovoj prici?")
-    if has_multiple_sources and not any(token in lowered for token in ("najvazniji", "novo", "glavno")):
-        add("Sta je najvaznija vest u ovoj vest?")
+        add(L["q.differences"])
+    if not any(token in lowered for token in ("nejasno", "nepotvrdeno", "otvoreno", "нејасно", "непотврдено", "отворено")):
+        add(L["q.unconfirmed"])
+    if not any(token in lowered for token in ("sledece", "dalje", "posledice", "reakcija", "следува", "понатаму", "последица", "реакција")):
+        add(L["q.next"])
+    if has_multiple_sources and not any(token in lowered for token in ("najvazniji", "novo", "glavno", "најважно", "ново", "главно")):
+        add(L["q.important"])
 
-    for item in default_related_questions(question, category):
+    for item in default_related_questions(question, category, lang=lang):
         add(item)
 
     if has_unclear_points:
-        add("Koji detalji jos uvek zavise od sledecih potvrda?")
+        add(L["q.unconfirmed"])
 
     return suggestions[:3]
 

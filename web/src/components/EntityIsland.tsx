@@ -9,6 +9,8 @@ import {
   User,
 } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
+import { useTranslations } from '../i18n/utils';
+import type { ui } from '../i18n/ui';
 
 interface EntityProfile {
   name: string;
@@ -51,8 +53,8 @@ interface EntityPayload {
   clusters: NewsCluster[];
 }
 
-function formatDate(value?: string, lang = 'sr') {
-  if (!value) return lang === 'sr' ? 'Nepoznato' : 'Непознато';
+function formatDate(value: string | undefined, lang: keyof typeof ui, t: any) {
+  if (!value) return t('entity.unknown');
   try {
     return new Date(value).toLocaleDateString(lang === 'sr' ? 'sr-RS' : 'mk-MK', {
       day: '2-digit',
@@ -60,29 +62,29 @@ function formatDate(value?: string, lang = 'sr') {
       year: 'numeric',
     });
   } catch {
-    return lang === 'sr' ? 'Nepoznato' : 'Непознато';
+    return t('entity.unknown');
   }
 }
 
-function formatRelative(value?: string, lang = 'sr') {
-  if (!value) return lang === 'sr' ? 'nedavno' : 'неодамна';
+function formatRelative(value: string | undefined, lang: keyof typeof ui, t: any) {
+  if (!value) return t('entity.recently');
   const now = new Date();
   const date = new Date(value);
   const diff = now.getTime() - date.getTime();
   const days = Math.max(0, Math.floor(diff / 86400000));
-  if (days === 0) return lang === 'sr' ? 'danas' : 'денес';
-  if (days === 1) return lang === 'sr' ? 'juče' : 'вчера';
-  if (days < 7) return lang === 'sr' ? `pre ${days} dana` : `пред ${days} дена`;
-  return formatDate(value, lang);
+  if (days === 0) return t('entity.today');
+  if (days === 1) return t('entity.yesterday');
+  if (days < 7) return t('entity.days_ago').replace('{n}', String(days));
+  return formatDate(value, lang, t);
 }
 
-function sentimentLabel(score: number, lang = 'sr') {
-  if (score >= 0.2) return lang === 'sr' ? 'Pretežno pozitivan' : 'Претежно позитивен';
-  if (score <= -0.2) return lang === 'sr' ? 'Pretežno kritičan' : 'Претежно критичен';
-  return lang === 'sr' ? 'uglavnom neutralan' : 'главно неутрален';
+function sentimentLabel(score: number, t: any) {
+  if (score >= 0.2) return t('entity.tone_pos');
+  if (score <= -0.2) return t('entity.tone_crit');
+  return t('entity.tone_neut');
 }
 
-function buildTimeline(history: SentimentPoint[], lang = 'sr') {
+function buildTimeline(history: SentimentPoint[], lang: keyof typeof ui) {
   if (!history || !history.length) return [];
   const max = Math.max(1, ...history.map((item) => item.volume || 0));
   return history.map((item) => {
@@ -121,7 +123,7 @@ function splitRelated(related: Relationship[]) {
   return { strongest, broader };
 }
 
-function buildWhyItMatters(profile: EntityProfile, clusters: NewsCluster[], related: Relationship[], lang = 'sr') {
+function buildWhyItMatters(profile: EntityProfile, clusters: NewsCluster[], related: Relationship[], lang: keyof typeof ui) {
   const recentCount = clusters.length;
   if (lang === 'sr') {
     if (recentCount >= 5) {
@@ -165,10 +167,11 @@ export default function EntityIsland({
 }: {
   name: string;
   initialData?: EntityPayload | null;
-  lang?: string;
+  lang?: keyof typeof ui;
 }) {
   const [data, setData] = useState<EntityPayload | null>(initialData);
   const [loading, setLoading] = useState(!initialData);
+  const t = useTranslations(lang);
 
   useEffect(() => {
     if (initialData) return;
@@ -184,7 +187,7 @@ export default function EntityIsland({
     return (
       <div className="flex flex-col items-center py-20">
         <Loader2 className="animate-spin text-nyt-accent mb-4" size={32} />
-        <p className="nyt-section-label text-muted-foreground">{lang === 'sr' ? 'Pripremam podatke...' : 'Подготовка на податоци...'}</p>
+        <p className="nyt-section-label text-muted-foreground">{t('entity.preparing')}</p>
       </div>
     );
   }
@@ -207,7 +210,7 @@ export default function EntityIsland({
             {profile.type === 'PERSON' ? <User size={32} className="text-nyt-accent" /> : <Building2 size={32} className="text-nyt-accent" />}
           </div>
           <div className="entity-copy">
-            <span className="entity-type">{profile.type === 'ORG' ? (lang === 'sr' ? 'Organizacija' : 'Организација') : (lang === 'sr' ? 'Subjekt' : 'Субјект')}</span>
+            <span className="entity-type">{profile.type === 'ORG' ? t('entity.org') : t('entity.person')}</span>
             <h1 className="entity-name">{profile.name}</h1>
             <p className="entity-summary-copy">
               {lang === 'sr'
@@ -219,30 +222,28 @@ export default function EntityIsland({
 
         <div className="entity-metrics">
           <div className="entity-metric">
-            <p>{lang === 'sr' ? 'Ukupno pominjanja' : 'Вкупно споменувања'}</p>
+            <p>{t('entity.total_mentions')}</p>
             <strong>{profile.total_mentions || clusters.length}</strong>
           </div>
           <div className="entity-metric">
-            <p>{lang === 'sr' ? 'Poslednji put viđen' : 'Последен пат виден'}</p>
-            <strong>{formatRelative(profile.last_seen || (clusters[0] as any)?.created_at, lang)}</strong>
+            <p>{t('entity.last_seen')}</p>
+            <strong>{formatRelative(profile.last_seen || (clusters[0] as any)?.created_at, lang, t)}</strong>
           </div>
           <div className="entity-metric">
-            <p>{lang === 'sr' ? 'Medijski ton' : 'Медиумски тон'}</p>
+            <p>{t('entity.media_tone')}</p>
             <div className="flex flex-col">
                 <strong className={profile.sentiment_score > 0.2 ? 'text-green-600' : profile.sentiment_score < -0.2 ? 'text-nyt-red' : 'text-nyt-accent'}>
-                {sentimentLabel(profile.sentiment_score, lang)}
+                {sentimentLabel(profile.sentiment_score, t)}
                 </strong>
                 {trend !== 'stable' && (
                     <span className={`text-[9px] font-black uppercase tracking-tighter ${trend === 'improving' ? 'text-green-600' : 'text-nyt-red'}`}>
-                        {trend === 'improving'
-                          ? (lang === 'sr' ? '↑ Pozitivan trend' : '↑ Позитивен тренд')
-                          : (lang === 'sr' ? '↓ Kritičan trend' : '↓ Критичен тренд')}
+                        {trend === 'improving' ? t('entity.trend_pos') : t('entity.trend_crit')}
                     </span>
                 )}
             </div>
           </div>
           <div className="entity-metric">
-            <p>{lang === 'sr' ? 'Povezani subjekti' : 'Поврзани субјекти'}</p>
+            <p>{t('entity.related_subjects')}</p>
             <strong>{related.length}</strong>
           </div>
         </div>
@@ -251,13 +252,13 @@ export default function EntityIsland({
       <div className="entity-grid">
         <div className="sources-main">
           <section className="entity-summary entity-featured">
-            <h2 className="entity-section-title flex items-center gap-[var(--grid-gap)]"><Sparkles size={14} /> {lang === 'sr' ? 'Medijski Presek' : 'Медиумски Пресек'}</h2>
+            <h2 className="entity-section-title flex items-center gap-[var(--grid-gap)]"><Sparkles size={14} /> {t('entity.media_cross_section')}</h2>
             <p className="entity-summary-copy">{whyItMatters}</p>
             <div className="entity-chip-list">
-              <span className="entity-chip">{clusters.length} {lang === 'sr' ? 'aktivnih tema' : 'активни теми'}</span>
-              <span className="entity-chip">{media.length} {lang === 'sr' ? 'vodećih medija' : 'водечки медиуми'}</span>
+              <span className="entity-chip">{clusters.length} {t('entity.active_topics')}</span>
+              <span className="entity-chip">{media.length} {t('entity.leading_media')}</span>
               {categories && categories.length > 0 && (
-                  <span className="entity-chip">{lang === 'sr' ? 'Fokus' : 'Фокус'}: {categories[0].category}</span>
+                  <span className="entity-chip">{t('entity.focus')}: {categories[0].category}</span>
               )}
             </div>
           </section>
@@ -265,8 +266,8 @@ export default function EntityIsland({
           <div className="entity-insight-grid">
             <section className="entity-summary">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="entity-section-title flex items-center gap-[var(--grid-gap)] m-0"><TrendingUp size={14} /> {lang === 'sr' ? 'Dinamika' : 'Динамика'}</h2>
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{lang === 'sr' ? 'Poslednjih 14 dana' : 'Последните 14 дена'}</span>
+                <h2 className="entity-section-title flex items-center gap-[var(--grid-gap)] m-0"><TrendingUp size={14} /> {t('entity.dynamics')}</h2>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('entity.last_14_days')}</span>
               </div>
               <div className="entity-pulse h-32 flex items-end gap-1 px-2">
                 {timeline.map((item) => (
@@ -276,7 +277,7 @@ export default function EntityIsland({
                         style={{ height: `${item.percent}%`, opacity: 0.7 }}
                     />
                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-foreground text-background text-[9px] font-bold py-1 px-2 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity z-10">
-                        {item.count} {lang === 'sr' ? 'objave' : 'објави'} • {item.label}
+                        {item.count} {t('entity.publications')} • {item.label}
                     </div>
                   </div>
                 ))}
@@ -289,7 +290,7 @@ export default function EntityIsland({
             </section>
 
             <section className="entity-summary">
-              <h2 className="entity-section-title flex items-center gap-[var(--grid-gap)]"><Newspaper size={14} /> {lang === 'sr' ? 'Tematski profil' : 'Тематски профил'}</h2>
+              <h2 className="entity-section-title flex items-center gap-[var(--grid-gap)]"><Newspaper size={14} /> {t('entity.thematic_profile')}</h2>
               <div className="space-y-3 mt-4">
                 {leadingCategories.map((c) => (
                   <div key={c.category} className="flex items-center justify-between">
@@ -305,7 +306,7 @@ export default function EntityIsland({
                     </div>
                   </div>
                 ))}
-                {leadingCategories.length === 0 && <p className="text-xs text-muted italic">{lang === 'sr' ? 'Nema dovoljno podataka za teme.' : 'Нема доволно податоци за теми.'}</p>}
+                {leadingCategories.length === 0 && <p className="text-xs text-muted italic">{t('entity.no_thematic_data')}</p>}
                 {categories && categories.length > leadingCategories.length && (
                   <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pt-1">
                     {lang === 'sr'
@@ -318,7 +319,7 @@ export default function EntityIsland({
           </div>
 
           <section className="entity-summary">
-            <h2 className="entity-section-title flex items-center gap-[var(--grid-gap)]"><Link2 size={14} /> {lang === 'sr' ? 'Isti kontekst' : 'Ист контекст'}</h2>
+            <h2 className="entity-section-title flex items-center gap-[var(--grid-gap)]"><Link2 size={14} /> {t('entity.same_context')}</h2>
             <p className="entity-summary-copy">
               {lang === 'sr'
                 ? `Ova imena se najčešće pojavljuju zajedno sa ${profile.name} u istim klasterima i pomažu da se vidi šira mreža oko priče.`
@@ -345,7 +346,7 @@ export default function EntityIsland({
 
         <aside className="sources-rail">
           <div className="rail-card">
-            <h3 className="rail-card-title flex items-center gap-[var(--grid-gap)]"><Link2 size={14} /> {lang === 'sr' ? 'Najbliže povezani' : 'Најблиску поврзани'}</h3>
+            <h3 className="rail-card-title flex items-center gap-[var(--grid-gap)]"><Link2 size={14} /> {t('entity.closest_connected')}</h3>
             <p className="rail-copy">
               {lang === 'sr'
                 ? `Ovde su prikazani subjekti koji najčešće ulaze u isti kontekst sa ${profile.name}, sa najjačim vezama na vrhu.`
@@ -356,7 +357,7 @@ export default function EntityIsland({
                 <a key={rel.related_entity} href={lang === 'sr' ? `/subjekt/${encodeURIComponent(rel.related_entity)}` : `/mk/subjekt/${encodeURIComponent(rel.related_entity)}`} className="entity-related-link">
                   <div>
                     <span className="entity-related-name">{rel.related_entity}</span>
-                    <p className="entity-related-band">{lang === 'sr' ? 'Tesna veza' : 'Тисна врска'}</p>
+                    <p className="entity-related-band">{t('entity.tight_bond')}</p>
                   </div>
                   <div className="flex items-center gap-[var(--grid-gap)]">
                     <div className="entity-related-track">
@@ -366,12 +367,12 @@ export default function EntityIsland({
                   </div>
                 </a>
               ))}
-              {relationBands.strongest.length === 0 && <p className="text-xs text-muted italic">{lang === 'sr' ? 'Nema pronađenih snažnih veza.' : 'Нема пронајдени силни врски.'}</p>}
+              {relationBands.strongest.length === 0 && <p className="text-xs text-muted italic">{t('entity.no_strong_connections')}</p>}
             </div>
           </div>
 
           <div className="rail-card rail-card-accent">
-            <h3 className="rail-card-title">{lang === 'sr' ? 'Kako se čita' : 'Како се чита'}</h3>
+            <h3 className="rail-card-title">{t('entity.how_to_read')}</h3>
             <p className="rail-copy">
               {lang === 'sr'
                 ? `Ton pokazuje kako se menja medijski okvir, a povezani subjekti pokazuju sa kim se najčešće vezuje priča oko ${profile.name}.`
@@ -380,11 +381,11 @@ export default function EntityIsland({
           </div>
 
           <div className="rail-card">
-            <h3 className="rail-card-title uppercase tracking-widest text-[10px]">{lang === 'sr' ? 'dalje' : 'понатаму'}</h3>
+            <h3 className="rail-card-title uppercase tracking-widest text-[10px]">{t('entity.further')}</h3>
             <div className="flex flex-col gap-[var(--grid-gap)]">
-              <a href={lang === 'sr' ? "/archive" : "/mk/archive"} className="entity-related-jump">{lang === 'sr' ? 'Otvori arhivu' : 'Отвори архива'}</a>
-              <a href={lang === 'sr' ? "/izvori" : "/mk/izvori"} className="entity-related-jump">{lang === 'sr' ? 'Otvori izvore' : 'Отвори извори'}</a>
-              <a href={lang === 'sr' ? "/pulse" : "/mk/pulse"} className="entity-related-jump">{lang === 'sr' ? 'Uporedi medije' : 'Спореди медиуми'}</a>
+              <a href={lang === 'sr' ? "/archive" : "/mk/archive"} className="entity-related-jump">{t('entity.open_archive')}</a>
+              <a href={lang === 'sr' ? "/izvori" : "/mk/izvori"} className="entity-related-jump">{t('entity.open_sources')}</a>
+              <a href={lang === 'sr' ? "/pulse" : "/mk/pulse"} className="entity-related-jump">{t('entity.compare_media')}</a>
             </div>
           </div>
         </aside>
