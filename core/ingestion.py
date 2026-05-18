@@ -222,6 +222,22 @@ def clean_rss_footer(text: str) -> str:
     text = re.sub(r"This article was originally published on .*", "", text)
     text = re.sub(r"Source: https?://.*", "", text)
 
+    # Filter boilerplate lines commonly found in scraped text
+    boilerplate_lines = {
+        "oglas",
+        "najčitanije",
+        "najnovije",
+        "koje je vaše mišljenje o ovoj temi?",
+        "pridružite se diskusiji ili pročitajte komentare",
+    }
+    
+    cleaned_lines = []
+    for line in text.split("\n"):
+        if line.strip().lower() not in boilerplate_lines:
+            cleaned_lines.append(line)
+            
+    text = "\n".join(cleaned_lines)
+
     # Generic 'Read More' artifacts
     text = re.sub(r"Read More\s*»?\s*$", "", text, flags=re.IGNORECASE)
     text = re.sub(r"Procitaj povece\s*$", "", text, flags=re.IGNORECASE)
