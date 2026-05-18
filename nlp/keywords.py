@@ -39,6 +39,17 @@ def _get_keybert():
 
 
 ENTITY_NOISE_WORDS = {
+    "najbolj",
+    "najbolji",
+    "najbolje",
+    "najbolja",
+    "najgori",
+    "najgore",
+    "najgora",
+    "najveci",
+    "najmanji",
+    "dobar",
+    "bolji",
     "cas",
     "casa",
     "casot",
@@ -140,6 +151,17 @@ ENTITY_NOISE_WORDS = {
 }
 
 TAG_NOISE_WORDS = {
+    "najbolj",
+    "najbolji",
+    "najbolje",
+    "najbolja",
+    "najgori",
+    "najgore",
+    "najgora",
+    "najveci",
+    "najmanji",
+    "dobar",
+    "bolji",
     "vesti",
     "vest",
     "izvor",
