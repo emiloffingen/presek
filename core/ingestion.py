@@ -217,6 +217,10 @@ def clean_rss_footer(text: str) -> str:
     if not text:
         return ""
     text = html.unescape(text)
+    
+    # Remove source text extraction boilerplate from the beginning
+    text = re.sub(r"^\s*IZVORNI ZAPIS\s*(?:\([^)]+\))?\s*", "", text, flags=re.IGNORECASE)
+    
     text = re.sub(r"The post .* appeared first on .*", "", text)
     text = re.sub(r"Procitajte povece na .*", "", text)
     text = re.sub(r"This article was originally published on .*", "", text)
@@ -229,6 +233,8 @@ def clean_rss_footer(text: str) -> str:
         "najnovije",
         "koje je vaše mišljenje o ovoj temi?",
         "pridružite se diskusiji ili pročitajte komentare",
+        "izvorni tekst",
+        "izvorni zapis",
     }
     
     cleaned_lines = []

@@ -225,6 +225,8 @@ JUNK_NEWS_PHRASES = [
     "oglas",
     "koje je vaše mišljenje o ovoj temi?",
     "pridružite se diskusiji ili pročitajte komentare",
+    "izvorni tekst",
+    "izvorni zapis",
     "exclusive:",
     "breaking:",
     "read more",
