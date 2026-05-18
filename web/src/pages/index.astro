@@ -328,22 +328,6 @@ function getBriefingSnippet(content: string) {
 
 	<main class="site-layout broadsheet-layout py-0 overflow-x-hidden max-w-full">
 
-        <header class="editorial-header-v2 py-16 border-b border-border/40 mb-24 bg-secondary/5">
-            <div class="max-w-[1440px] mx-auto px-4 md:px-10">
-                <div class="flex flex-col gap-[var(--grid-gap)]">
-                    <span class="text-[10px] font-black uppercase tracking-[0.3em] text-nyt-accent">
-                        {lang === 'sr' ? 'PRESEK.live · Glavna Stranica' : 'ПРЕСЕК.мк · Почетна страница'}
-                    </span>
-                    <h1 class="font-serif text-5xl md:text-8xl font-black tracking-tighter text-foreground leading-[0.9]">
-                        {lang === 'sr' ? 'DNEVNI PRESEK' : 'ДНЕВЕН ПРЕСЕК'}
-                    </h1>
-                    <p class="max-w-2xl text-lg md:text-xl font-serif italic text-muted-foreground">
-                        {t('layout.home_description')}
-                    </p>
-                </div>
-            </div>
-        </header>
-
 		{/* Filtering Status */}
 		{(q || category || topic || entity || subcategory) && (
 			<FilterHeader q={q} category={category} topic={topic} entity={entity} subcategory={subcategory} />
