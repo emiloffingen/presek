@@ -232,6 +232,32 @@ function getRelativeTimeStr(dateStr?: string) {
             <div class="nav-fade right"></div>
         </div>
     </nav>
+
+    <!-- Sections Menu Overlay -->
+    <div class="sections-menu-overlay" id="sections-overlay">
+        <div class="sections-menu-content">
+            <div class="sections-menu-header">
+                <h3>{t('nav.all_sections') || 'All Sections'}</h3>
+                <button class="close-sections-btn" id="close-sections" aria-label={t('nav.close') || 'Close'}>
+                    &times;
+                </button>
+            </div>
+            <div class="sections-menu-body">
+                {visibleSections.map((section: any) => (
+                    <div class="section-group">
+                        <h4>{section.label || t('nav.section')}</h4>
+                        <div class="section-items">
+                            {section.items.map((item: any) => (
+                                <a href={l(item.href)} class="section-item-link">
+                                    {item.label.replace('#', '')}
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    </div>
 </div>
 
 <style>
@@ -591,75 +617,26 @@ function getRelativeTimeStr(dateStr?: string) {
 
         const initSectionsMenu = () => {
             const sectionsBtn = document.querySelector('.sections-btn');
-            if (!sectionsBtn) return;
+            const sectionsOverlay = document.getElementById('sections-overlay');
+            const closeBtn = document.getElementById('close-sections');
+            
+            if (!sectionsBtn || !sectionsOverlay || !closeBtn) return;
 
-            // Create sections menu container
-            const sectionsMenu = document.createElement('div');
-            sectionsMenu.className = 'sections-menu-overlay';
-            sectionsMenu.innerHTML = `
-                <div class="sections-menu-content">
-                    <div class="sections-menu-header">
-                        <h3>${t('nav.all_sections') || 'All Sections'}</h3>
-                        <button class="close-sections-btn" aria-label="${t('nav.close') || 'Close'}">
-                            &times;
-                        </button>
-                    </div>
-                    <div class="sections-menu-body">
-                        <!-- Sections will be populated here -->
-                    </div>
-                </div>
-            `;
-
-            // Add to body
-            document.body.appendChild(sectionsMenu);
-
-            // Close button handler
-            const closeBtn = sectionsMenu.querySelector('.close-sections-btn');
-            if (closeBtn) {
-                closeBtn.addEventListener('click', () => {
-                    sectionsMenu.style.display = 'none';
-                });
-            }
-
-            // Click outside to close
-            sectionsMenu.addEventListener('click', (e) => {
-                if (e.target === sectionsMenu) {
-                    sectionsMenu.style.display = 'none';
-                }
+            sectionsBtn.addEventListener('click', () => {
+                sectionsOverlay.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
             });
 
-            // Sections button click handler
-            sectionsBtn.addEventListener('click', () => {
-                // Populate sections
-                const menuBody = sectionsMenu.querySelector('.sections-menu-body');
-                if (menuBody) {
-                    menuBody.innerHTML = '';
-                    
-                    visibleSections.forEach((section) => {
-                        const sectionDiv = document.createElement('div');
-                        sectionDiv.className = 'section-group';
-                        
-                        const sectionTitle = document.createElement('h4');
-                        sectionTitle.textContent = section.label || t('nav.section');
-                        sectionDiv.appendChild(sectionTitle);
-                        
-                        const itemsList = document.createElement('div');
-                        itemsList.className = 'section-items';
-                        
-                        section.items.forEach((item) => {
-                            const itemLink = document.createElement('a');
-                            itemLink.href = l(item.href);
-                            itemLink.textContent = item.label.replace('#', '');
-                            itemLink.className = 'section-item-link';
-                            itemsList.appendChild(itemLink);
-                        });
-                        
-                        sectionDiv.appendChild(itemsList);
-                        menuBody.appendChild(sectionDiv);
-                    });
+            closeBtn.addEventListener('click', () => {
+                sectionsOverlay.style.display = 'none';
+                document.body.style.overflow = '';
+            });
+
+            sectionsOverlay.addEventListener('click', (e) => {
+                if (e.target === sectionsOverlay) {
+                    sectionsOverlay.style.display = 'none';
+                    document.body.style.overflow = '';
                 }
-                
-                sectionsMenu.style.display = 'flex';
             });
         };
 
