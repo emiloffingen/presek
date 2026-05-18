@@ -79,17 +79,16 @@ const uniqueEntities = Array.from(uniqueEntitiesMap.values())
 
 <aside class="broadsheet-rail">
 
-	<section class="rail-block rail-priority-block">
-		<p class="rail-kicker">{t('rail.desk')}</p>
+	<section class="rail-block">
 		<div class="rail-head-red">
 			<Activity size={12} strokeWidth={1.5} />
 			<h3 class="flex items-center gap-1.5">
 				{t('home.wire_title')}
-				<span class="w-1.5 h-1.5 bg-white rounded-full animate-pulse shadow-[0_0_8px_rgba(255,255,255,0.8)]"></span>
+				<span class="w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"></span>
 			</h3>
 		</div>
 		<div class="rail-wire-list">
-			{railWireArticles.slice(0, 10).map((art: any) => (
+			{railWireArticles.slice(0, 8).map((art: any) => (
 				<a href={l(`/cluster/${art.cluster_id}`)} class="rail-wire-item">
 					<p>{getDisplayTitle(art)}</p>
 					<div class="rail-wire-meta">{art.source} <span>·</span> {getTimeStr(art.ingested_at || art.created_at)}</div>
@@ -100,9 +99,8 @@ const uniqueEntities = Array.from(uniqueEntitiesMap.values())
 	</section>
 
 	{briefing && briefing.content && (
-		<section class="rail-block rail-block-alt rail-priority-block">
-			<p class="rail-kicker">{t('nav.briefing')}</p>
-			<h3 class="rail-title">{t('rail.key_today')}</h3>
+		<section class="rail-block">
+			<h3 class="rail-section-title">{t('nav.briefing')}</h3>
 			<p class="rail-brief-text">
 				{getBriefingSnippet(briefing.content)}
 			</p>
@@ -120,7 +118,7 @@ const uniqueEntities = Array.from(uniqueEntitiesMap.values())
 
 	{stats?.quote_of_the_day && (
 		<section class="rail-block">
-			<p class="rail-kicker">{t('cluster.quote_of_day')}</p>
+			<h3 class="rail-section-title">{t('cluster.quote_of_day')}</h3>
 			<blockquote class="rail-quote-block">
 				<p>„{stats.quote_of_the_day.quote}“</p>
 				<cite>
@@ -134,7 +132,7 @@ const uniqueEntities = Array.from(uniqueEntitiesMap.values())
 	)}
 
 	<section class="rail-block rail-block-quiet">
-		<p class="rail-kicker">{t('rail.focus_topics')}</p>
+		<h3 class="rail-section-title">{t('rail.focus_topics')}</h3>
 		<div class="rail-tag-cloud">
 			{uniqueEntities.map((ent: any) => (
 				<a href={l(`/subjekt/${encodeURIComponent(ent.name)}`)}>
@@ -146,50 +144,57 @@ const uniqueEntities = Array.from(uniqueEntitiesMap.values())
 </aside>
 
 <style>
-    .broadsheet-rail { position: sticky; top: 7rem; align-self: start; height: auto; }
+    .broadsheet-rail { position: sticky; top: 8rem; align-self: start; height: auto; }
 
-    .rail-block { margin-bottom: 2.5rem; }
-    .rail-block-alt { padding: 1.5rem; background: var(--secondary); border-radius: 0px; }
+    .rail-block { margin-bottom: 2rem; padding-bottom: 2rem; border-bottom: 1px solid var(--border); }
+    .rail-block:last-child { border-bottom: none; }
     .rail-block-quiet { opacity: 0.85; }
-    .rail-priority-block { padding: 1.25rem 1.4rem; border: 1px solid var(--border); background: color-mix(in srgb, var(--background) 95%, #efe5d6 5%); }
 
-    .rail-head-red { display: flex; align-items: center; gap: 0.6rem; color: var(--nyt-red); margin-bottom: 1.5rem; padding-bottom: 0.6rem; border-bottom: 2px solid var(--nyt-red); }
+    .rail-section-title {
+        font-family: var(--font-sans);
+        font-size: 0.65rem;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--foreground);
+        margin-bottom: 1rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--foreground);
+    }
+
+    .rail-head-red { display: flex; align-items: center; gap: 0.6rem; color: var(--nyt-red); margin-bottom: 1.25rem; padding-bottom: 0.6rem; border-bottom: 2px solid var(--nyt-red); }
     .rail-head-red h3 { font-family: var(--font-sans); font-size: 0.68rem; font-weight: 950; letter-spacing: 0.12em; text-transform: uppercase; }
 
-    .rail-wire-item { display: block; padding: 1rem 0; border-bottom: 1px solid var(--border); text-decoration: none; color: var(--foreground); transition: var(--transition-base); }
+    .rail-wire-item { display: block; padding: 0.85rem 0; border-bottom: 1px solid var(--border); text-decoration: none; color: var(--foreground); }
     .rail-wire-item:last-child { border-bottom: none; }
     .rail-wire-item p {
         font-family: var(--font-serif);
-        font-size: 0.92rem;
-        font-weight: 800;
-        line-height: 1.35;
-        margin-bottom: 0.4rem;
-        transition: color 0.2s ease;
+        font-size: 0.9rem;
+        font-weight: 850;
+        line-height: 1.3;
+        margin-bottom: 0.35rem;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
     }
-    .rail-wire-meta { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.04em; }
-    .rail-wire-meta span { opacity: 0.5; margin: 0 0.3rem; }
-    .rail-wire-item:hover { transform: translateX(4px); }
-    .rail-wire-item:hover p { color: var(--nyt-accent); }
+    .rail-wire-meta { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.04em; }
+    .rail-wire-meta span { opacity: 0.5; margin: 0 0.2rem; }
+    .rail-wire-item:hover p { color: var(--nyt-accent); text-decoration: underline; }
 
-    .rail-kicker { margin-bottom: 0.6rem; }
-    .rail-title { font-family: var(--font-sans); font-size: 0.8rem; font-weight: 950; letter-spacing: 0.06em; margin-bottom: 0.85rem; text-transform: uppercase; }
-    .rail-brief-text { font-family: var(--font-serif); font-size: 0.94rem; line-height: 1.6; color: var(--secondary-foreground); font-style: italic; margin-bottom: 1.15rem; }
-    .rail-cta { display: inline-flex; align-items: center; gap: 0.35rem; font-family: var(--font-sans); font-size: 0.68rem; font-weight: 900; color: var(--nyt-accent); text-decoration: none; border-bottom: 1px solid transparent; letter-spacing: 0.05em; transition: var(--transition-base); }
-    .rail-cta:hover { border-bottom-color: var(--nyt-accent); transform: translateX(2px); }
-    .rail-cta-plain { display: block; text-align: center; padding: 0.6rem; font-family: var(--font-sans); font-size: 0.68rem; font-weight: 900; color: var(--muted-foreground); text-decoration: none; letter-spacing: 0.05em; opacity: 0.7; transition: opacity 0.2s; }
-    .rail-cta-plain:hover { opacity: 1; }
+    .rail-brief-text { font-family: var(--font-serif); font-size: 0.92rem; line-height: 1.5; color: var(--secondary-foreground); font-style: italic; margin-bottom: 1rem; }
+    .rail-cta { display: inline-flex; align-items: center; gap: 0.35rem; font-family: var(--font-sans); font-size: 0.65rem; font-weight: 950; color: var(--nyt-accent); text-decoration: none; letter-spacing: 0.05em; }
+    .rail-cta:hover { text-decoration: underline; }
+    .rail-cta-plain { display: block; text-align: center; padding: 0.5rem; font-family: var(--font-sans); font-size: 0.65rem; font-weight: 950; color: var(--muted-foreground); text-decoration: none; letter-spacing: 0.05em; opacity: 0.7; }
+    .rail-cta-plain:hover { opacity: 1; text-decoration: underline; }
 
-    .rail-quote-block p { font-family: var(--font-serif); font-size: 1.05rem; font-weight: 700; font-style: italic; line-height: 1.5; margin-bottom: 1.25rem; color: var(--foreground); }
-    .rail-quote-block cite { display: block; border-top: 1px solid var(--border); padding-top: 0.85rem; font-style: normal; }
-    .rail-quote-block cite span { font-family: var(--font-sans); font-size: 0.62rem; font-weight: 800; text-transform: uppercase; display: block; color: var(--muted-foreground); margin-bottom: 0.35rem; letter-spacing: 0.08em; }
-    .rail-quote-block cite a { font-family: var(--font-serif); font-size: 0.72rem; font-weight: 800; color: var(--foreground); text-decoration: none; line-height: 1.2; display: block; transition: color 0.2s; }
-    .rail-quote-block cite a:hover { color: var(--nyt-accent); }
+    .rail-quote-block p { font-family: var(--font-serif); font-size: 1rem; font-weight: 750; font-style: italic; line-height: 1.4; margin-bottom: 1rem; color: var(--foreground); }
+    .rail-quote-block cite { display: block; border-top: 1px solid var(--border); padding-top: 0.75rem; font-style: normal; }
+    .rail-quote-block cite span { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; text-transform: uppercase; display: block; color: var(--muted-foreground); margin-bottom: 0.3rem; letter-spacing: 0.08em; }
+    .rail-quote-block cite a { font-family: var(--font-serif); font-size: 0.75rem; font-weight: 850; color: var(--foreground); text-decoration: none; line-height: 1.2; display: block; }
+    .rail-quote-block cite a:hover { color: var(--nyt-accent); text-decoration: underline; }
 
-    .rail-tag-cloud { display: flex; flex-wrap: wrap; gap: 0.5rem; line-height: 1.8; }
-    .rail-tag-cloud a { padding: 0.4rem 0.65rem; border: 1px solid var(--border); font-family: var(--font-sans); font-size: 0.6rem; font-weight: 850; text-transform: uppercase; color: var(--foreground); text-decoration: none; transition: all 0.2s; white-space: nowrap; border-radius: 0px; }
+    .rail-tag-cloud { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .rail-tag-cloud a { padding: 0.35rem 0.6rem; border: 1px solid var(--border); font-family: var(--font-sans); font-size: 0.58rem; font-weight: 900; text-transform: uppercase; color: var(--foreground); text-decoration: none; white-space: nowrap; border-radius: 0px; }
     .rail-tag-cloud a:hover { background: var(--foreground); color: var(--background); border-color: var(--foreground); }
 </style>

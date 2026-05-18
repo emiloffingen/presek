@@ -421,11 +421,12 @@ button:focus-visible,
 @layer components {
 	.nyt-article {
 		display: flex;
-		flex-direction: column; /* Mobile first: Image top, then body */
+		flex-direction: column;
 		gap: 0.5rem;
-		padding-bottom: 1rem;
+		padding-bottom: 1.25rem;
 		border-bottom: 1px solid var(--border);
-        transition: transform 0.6s var(--ease-editorial), box-shadow 0.6s var(--ease-editorial), background 0.4s ease, border-color 0.4s ease;
+        transition: transform 0.4s var(--ease-editorial), background 0.4s ease;
+        position: relative;
 	}
 
     /* Standard card logic */

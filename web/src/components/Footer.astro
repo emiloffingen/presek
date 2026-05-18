@@ -10,35 +10,38 @@ const t = useTranslations(lang);
 const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
 ---
 <footer class="editorial-footer site-layout">
-    <div class="footer-top-border"></div>
+    <div class="footer-precision-rules">
+        <div class="rule-thick"></div>
+        <div class="rule-thin"></div>
+    </div>
 
     <div class="footer-main">
         <div class="footer-left-col">
-            <div class="footer-brand-wrap mb-6">
+            <div class="footer-brand-wrap mb-8">
                 <a href={l('/')} class="brand-link">
                     <Branding mode="full" class="footer-logo-premium" />
                 </a>
-                <p class="brand-ethos font-serif italic text-base md:text-lg leading-relaxed text-muted-foreground/90 mt-4 max-w-xl">
+                <p class="brand-ethos font-serif italic text-base leading-relaxed text-foreground mt-4 max-w-xl">
                     {t('footer.ethos')}
                 </p>
             </div>
 
-            <div class="footer-system-pulse p-4 bg-secondary/5 border border-border/30 rounded-lg max-w-sm">
-                <div class="flex items-center justify-between mb-3">
-                    <div class="flex items-center gap-[var(--grid-gap)]">
+            <div class="footer-system-pulse p-5 border border-border">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-3">
                         <div class="status-indicator pulse-emerald"></div>
-                        <span class="font-sans text-[9px] font-black uppercase tracking-[0.2em] text-foreground">{t('footer.system_signal')}</span>
+                        <span class="font-sans text-[10px] font-black uppercase tracking-[0.25em] text-foreground">{t('footer.system_signal')}</span>
                     </div>
-                    <span class="font-sans text-[8px] font-black text-emerald-500 uppercase tracking-widest">{t('footer.active')}</span>
+                    <span class="font-sans text-[9px] font-black text-emerald-600 uppercase tracking-widest">{t('footer.active')}</span>
                 </div>
-                <div class="flex gap-[var(--grid-gap)]">
+                <div class="flex gap-4">
                     <div class="flex items-center gap-1.5">
-                        <Zap size={10} className="text-nyt-accent" />
-                        <span class="text-[9px] font-bold text-muted-foreground uppercase">{t('footer.synthesis_ok')}</span>
+                        <Zap size={11} className="text-nyt-accent" />
+                        <span class="text-[10px] font-bold text-muted-foreground uppercase">{t('footer.synthesis_ok')}</span>
                     </div>
                     <div class="flex items-center gap-1.5">
-                        <Globe size={10} className="text-nyt-accent" />
-                        <span class="text-[9px] font-bold text-muted-foreground uppercase">{t('footer.ingestion')}</span>
+                        <Globe size={11} className="text-nyt-accent" />
+                        <span class="text-[10px] font-bold text-muted-foreground uppercase">{t('footer.ingestion')}</span>
                     </div>
                 </div>
             </div>
@@ -85,16 +88,16 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
 
     <div class="footer-legal">
         <div class="legal-left">
-            <p class="copyright mb-2">© {new Date().getFullYear()} PRESEK.{lang === 'mk' ? 'MK' : 'RS'} · {t('footer.copyright_suffix')}</p>
-            <p class="legal-note font-sans text-[8px] text-muted-foreground uppercase tracking-widest opacity-60 max-w-3xl">
+            <p class="copyright mb-3">© {new Date().getFullYear()} PRESEK.{lang === 'mk' ? 'MK' : 'RS'} · {t('footer.copyright_suffix')}</p>
+            <p class="legal-note font-sans text-[9px] text-muted-foreground uppercase tracking-widest opacity-80 max-w-3xl">
                 {t('footer.legal_note')}
             </p>
         </div>
         <div class="legal-right">
             <a href="#top" class="scroll-top-premium">
                 <span class="font-black">{t('nav.top')}</span>
-                <div class="p-2 bg-foreground text-background rounded-full">
-                    <ArrowUpRight size={12} className="-rotate-45" />
+                <div class="p-2 bg-foreground text-background">
+                    <ArrowUpRight size={13} className="-rotate-45" />
                 </div>
             </a>
         </div>
@@ -103,18 +106,16 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
 
 <style>
     .editorial-footer {
-        padding-top: 5rem;
-        padding-bottom: 3rem;
-        margin-top: 5rem;
-        border-top: 1px solid var(--border);
+        padding-top: 4rem;
+        padding-bottom: 4rem;
+        margin-top: 4rem;
     }
 
-    .footer-top-border {
-        height: 4px;
-        border-top: 1px solid var(--foreground);
-        border-bottom: 2px solid var(--foreground);
-        margin-bottom: 5rem;
+    .footer-precision-rules {
+        margin-bottom: 4rem;
     }
+    .rule-thick { height: 4px; background: var(--foreground); margin-bottom: 2px; }
+    .rule-thin { height: 1px; background: var(--foreground); }
 
     .footer-main {
         display: grid;
@@ -125,7 +126,7 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
 
     .footer-left-col {
         padding-right: 2rem;
-        border-right: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+        border-right: 1px solid var(--border);
     }
 
     .footer-directory {

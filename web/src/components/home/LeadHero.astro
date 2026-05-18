@@ -168,36 +168,25 @@ const consensusSuffix = (() => {
         )}
 
         {leadCluster.key_facts && leadCluster.key_facts.length > 0 && (
-            <div class="lead-analyst-box" aria-label={t('lead.system_insight')}>
-                <div class="analyst-header">
-                    <div class="flex items-center gap-[var(--grid-gap)]">
-                        <Zap size={14} class="text-nyt-accent fill-nyt-accent/20" aria-hidden="true" />
-                        <span class="analyst-label">{t('lead.system_insight')}</span>
-                    </div>
-                    <div class="flex items-center gap-[var(--grid-gap)]">
+            <div class="editorial-insight-panel" aria-label={t('lead.system_insight')}>
+                <div class="insight-header">
+                    <span class="insight-label">{t('lead.system_insight').toUpperCase()}</span>
+                    <div class="insight-meta">
                         {leadCluster.pulse_score && (
-                            <div class="pulse-indicator" aria-label={`${t('nav.pulse')}: ${leadCluster.pulse_score}%`}>
-                                <span class="pulse-text">{t('nav.pulse').toUpperCase()}</span>
-                                <div class="pulse-bar-bg">
-                                    <div class="pulse-bar-fill" style={`width: ${leadCluster.pulse_score}%`}></div>
-                                </div>
-                            </div>
+                            <span class="meta-tag">PULSE {leadCluster.pulse_score}%</span>
                         )}
                         {leadCluster.pluralism_score !== undefined && (
-                            <div class="pluralism-indicator hidden sm:flex" aria-label={`${t('lead.pluralism')}: ${leadCluster.pluralism_score}%`}>
-                                <span class="pulse-text">{t('lead.pluralism')}</span>
-                                <div class="pulse-bar-bg">
-                                    <div class="pulse-bar-fill bg-emerald-500" style={`width: ${leadCluster.pluralism_score}%`}></div>
-                                </div>
-                            </div>
+                            <span class="meta-tag">PLURALISM {leadCluster.pluralism_score}%</span>
                         )}
                     </div>
                 </div>
-                <ul class="analyst-facts">
-                    {leadCluster.key_facts.map((fact: string) => (
-                        <li set:html={sanitizeHtml(fact)}></li>
-                    ))}
-                </ul>
+                <div class="insight-body">
+                    <ul class="insight-facts">
+                        {leadCluster.key_facts.map((fact: string) => (
+                            <li set:html={sanitizeHtml(fact)}></li>
+                        ))}
+                    </ul>
+                </div>
             </div>
         )}
         <div class="lead-meta border-t border-border/50 pt-4 mt-4 flex justify-between items-center">
@@ -430,58 +419,42 @@ const consensusSuffix = (() => {
         letter-spacing: 0.01em;
 	}
 
-    .lead-analyst-box {
-        margin-top: 1.2rem;
-        padding: 1.25rem;
-        background: color-mix(in srgb, var(--nyt-accent) 4%, var(--background) 96%);
-        border: 1px solid color-mix(in srgb, var(--nyt-accent) 15%, var(--border) 85%);
-        border-radius: 0px;
+    .editorial-insight-panel {
+        margin-top: 1.5rem;
+        padding: 1rem 0;
+        border-top: 1px solid var(--foreground);
+        border-bottom: 1px solid var(--border);
     }
 
-    .dark .lead-analyst-box {
-        background: color-mix(in srgb, var(--nyt-accent) 6%, var(--background) 94%);
-    }
-
-    .analyst-header {
+    .insight-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 0.85rem;
-        padding-bottom: 0.6rem;
-        border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+        margin-bottom: 0.75rem;
     }
 
-    .analyst-label {
+    .insight-label {
         font-family: var(--font-sans);
-        font-size: 0.6rem;
+        font-size: 0.65rem;
         font-weight: 950;
         letter-spacing: 0.15em;
-        color: var(--nyt-accent);
-        text-transform: uppercase;
-    }
-
-    .pulse-text {
-        font-family: var(--font-sans);
-        font-size: 0.56rem;
-        font-weight: 950;
         color: var(--foreground);
     }
 
-    .pulse-bar-bg {
-        width: 40px;
-        height: 4px;
-        background: var(--border);
-        border-radius: 999px;
-        overflow: hidden;
+    .insight-meta {
+        display: flex;
+        gap: 0.75rem;
     }
 
-    .pulse-bar-fill {
-        height: 100%;
-        background: var(--nyt-accent);
-        border-radius: 999px;
+    .meta-tag {
+        font-family: var(--font-sans);
+        font-size: 0.55rem;
+        font-weight: 900;
+        color: var(--muted-foreground);
+        letter-spacing: 0.05em;
     }
 
-    .analyst-facts {
+    .insight-facts {
         list-style: none;
         padding: 0;
         margin: 0;
@@ -490,24 +463,21 @@ const consensusSuffix = (() => {
         gap: 0.5rem;
     }
 
-    .analyst-facts li {
-        font-family: var(--font-nyt-body);
-        font-size: 0.9rem;
+    .insight-facts li {
+        font-family: var(--font-serif);
+        font-size: 0.94rem;
         line-height: 1.4;
         color: var(--foreground);
         position: relative;
-        padding-left: 1.25rem;
+        padding-left: 1rem;
     }
 
-    .analyst-facts li::before {
-        content: "";
+    .insight-facts li::before {
+        content: "•";
         position: absolute;
         left: 0;
-        top: 0.5rem;
-        width: 4px;
-        height: 4px;
-        background: var(--nyt-accent);
-        border-radius: 50%;
+        color: var(--nyt-accent);
+        font-weight: 900;
     }
 
 	.lead-meta {
