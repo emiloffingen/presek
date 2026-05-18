@@ -231,7 +231,7 @@ const consensusSuffix = (() => {
     <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="lead-media lead-media-desktop" aria-hidden="true" tabindex="-1">
         <div class:list={["lead-media-frame shadow-editorial", { "lead-media-frame-fallback": leadVisual?.isWeak }]}>
             {leadVisual?.proxiedUrl && !leadVisual.isWeak ? (
-                                <Fragment>
+                <Fragment>
                     <img
                         src={leadVisual.proxiedUrl}
                         srcset={`${leadVisual.proxiedUrl.replace('w=1200', 'w=600')} 600w, ${leadVisual.proxiedUrl} 1200w`}
@@ -313,30 +313,12 @@ const consensusSuffix = (() => {
         letter-spacing: 0.05em;
         text-transform: uppercase;
         border-radius: 0px;
-        white-space: normal;
-        word-break: break-word;
-        line-height: 1.2;
-    }
-
-    .significance-badge {
-        font-family: var(--font-sans);
-        font-size: 0.55rem;
-        font-weight: 950;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--muted-foreground);
-        padding: 0.15rem 0.4rem;
-        background: var(--secondary);
-        border-radius: 0px;
-        opacity: 0.8;
-        white-space: normal;
-        word-break: break-word;
         line-height: 1.2;
     }
 
     .significance-badge.is-breaking {
         color: white;
-        background: var(--nyt-red, #d0021b);
+        background: var(--nyt-red);
         opacity: 1;
     }
 
@@ -377,7 +359,7 @@ const consensusSuffix = (() => {
         border-radius: 50%;
         z-index: 1;
         opacity: 0.4;
-        animation: organic-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        animation: organic-pulse 2s var(--ease-editorial) infinite;
     }
 
     @keyframes organic-pulse {
@@ -394,17 +376,8 @@ const consensusSuffix = (() => {
         opacity: 0.8;
     }
 
-	.lead-hero-tint {
-		display: none;
-	}
-
-	.lead-media-mobile {
-		display: block;
-	}
-
-	.lead-media-desktop {
-		display: none;
-	}
+	.lead-media-mobile { display: block; }
+	.lead-media-desktop { display: none; }
 
 	.lead-copy {
 		display: flex;
@@ -453,6 +426,7 @@ const consensusSuffix = (() => {
 
 	.lead-summary-cyrillic {
 		line-height: 1.65;
+        letter-spacing: 0.01em;
 	}
 
     .lead-analyst-box {
@@ -483,12 +457,6 @@ const consensusSuffix = (() => {
         letter-spacing: 0.15em;
         color: var(--nyt-accent);
         text-transform: uppercase;
-    }
-
-    .pulse-indicator, .pluralism-indicator {
-        display: flex;
-        align-items: center;
-        gap: 0.4rem;
     }
 
     .pulse-text {
@@ -624,7 +592,7 @@ const consensusSuffix = (() => {
 		height: 100%;
 		object-fit: contain;
 		object-position: center;
-        background-color: #171717; /* bg-neutral-900 */
+        background-color: #171717;
 		opacity: 0;
 		transition: opacity 0.45s ease-out, transform 0.6s var(--ease-editorial);
         max-height: 70vh;
@@ -652,13 +620,8 @@ const consensusSuffix = (() => {
         z-index: 2;
     }
 
-    .lead-media-mobile .lead-media-overlay {
-        opacity: 1;
-    }
-
-    .lead-media-desktop:hover .lead-media-overlay {
-        opacity: 1;
-    }
+    .lead-media-mobile .lead-media-overlay { opacity: 1; }
+    .lead-media-desktop:hover .lead-media-overlay { opacity: 1; }
 
     .overlay-headline {
         color: white;
@@ -715,11 +678,6 @@ const consensusSuffix = (() => {
         text-transform: uppercase;
         z-index: 3;
         box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        min-width: max-content;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
     }
 
     .design-card-main {
@@ -742,7 +700,6 @@ const consensusSuffix = (() => {
         border: 1px solid rgba(255, 255, 255, 0.15);
         border-radius: 50%;
         backdrop-filter: blur(8px);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     }
 
     .lead-media-placeholder h2 {
@@ -792,7 +749,6 @@ const consensusSuffix = (() => {
         transition: all 0.4s var(--ease-editorial);
         padding: 0.5rem 1rem;
         background: rgba(255,255,255,0.1);
-        border-radius: 0px;
         backdrop-filter: blur(4px);
     }
 
@@ -803,42 +759,10 @@ const consensusSuffix = (() => {
         box-shadow: 0 10px 20px -5px rgba(0,0,0,0.3);
     }
 
-	.lead-hero-filtered {
-		gap: 1rem;
-	}
-
-	.lead-hero-filtered .lead-copy {
-		order: 1;
-	}
-
-	.lead-hero-filtered .lead-media-mobile {
-		order: 2;
-	}
-
-	.lead-hero-filtered .lead-media-desktop {
-		order: 2;
-	}
-
 	.lead-hero-filtered .headline-lead {
 		font-size: 2.75rem;
 		line-height: 1.02;
 		max-width: 18ch;
-	}
-
-	.lead-hero-filtered .lead-media-frame {
-		aspect-ratio: 16 / 10;
-	}
-
-	.lead-media-fallback-source {
-		position: relative;
-		z-index: 1;
-		margin: 0.1rem 0 0;
-		font-family: var(--font-sans);
-		font-size: 0.62rem;
-		font-weight: 900;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		color: rgba(255,255,255,0.72);
 	}
 
 	@media (min-width: 960px) {
@@ -848,17 +772,9 @@ const consensusSuffix = (() => {
 			gap: 1.35rem;
 		}
 
-		.lead-media-mobile {
-			display: none;
-		}
-
-		.lead-media-desktop {
-			display: block;
-		}
-
-		.lead-media-frame {
-			height: 400px;
-		}
+		.lead-media-mobile { display: none; }
+		.lead-media-desktop { display: block; }
+		.lead-media-frame { height: 400px; }
 
 		.lead-hero-filtered {
 			grid-template-columns: minmax(0, 0.95fr) minmax(18rem, 0.78fr);
@@ -866,32 +782,13 @@ const consensusSuffix = (() => {
 			gap: 1.5rem;
 		}
 
-		.lead-hero-filtered .lead-media-frame {
-			height: 300px;
-		}
-
-		.lead-hero-filtered .lead-media-placeholder {
-			padding: 1.65rem;
-		}
-
-		.lead-media img {
-			height: 100%;
-			object-fit: contain;
-			object-position: center;
-            background-color: #171717; /* bg-neutral-900 */
-		}
+		.lead-hero-filtered .lead-media-frame { height: 300px; }
+		.lead-hero-filtered .lead-media-placeholder { padding: 1.65rem; }
 	}
 
 	@media (max-width: 639px) {
-		.lead-hero {
-			gap: 0.75rem;
-		}
-
-		.lead-copy {
-			display: flex;
-            flex-direction: column;
-			gap: 0.4rem;
-		}
+		.lead-hero { gap: 0.75rem; }
+		.lead-copy { gap: 0.4rem; }
 
 		.lead-media-frame {
 			aspect-ratio: 16 / 10;
@@ -905,44 +802,23 @@ const consensusSuffix = (() => {
             line-height: 1.1;
         }
 
-		.lead-hero-filtered .lead-media-frame {
-			aspect-ratio: 16 / 9;
-		}
-
 		.lead-hero-filtered .headline-lead {
 			font-size: 2.1rem !important;
 			line-height: 1.08 !important;
-			max-width: 100%;
 		}
 
-		.lead-media-placeholder {
-			padding: 1rem;
-		}
-
-		.lead-media-placeholder h2 {
-			font-size: 1.25rem;
-		}
+		.lead-media-placeholder { padding: 1rem; }
+		.lead-media-placeholder h2 { font-size: 1.25rem; }
 
 		.lead-summary {
 			font-size: 0.94rem;
 			line-height: 1.5;
-			-webkit-line-clamp: 3;
             margin-bottom: 0.5rem;
 		}
 
-		.lead-meta {
-			margin-top: 0.1rem;
-			font-size: 0.65rem;
-		}
-
-		.lead-edition-bar {
-			margin-bottom: 0.65rem;
-			padding-bottom: 0.55rem;
-		}
-
-		.lead-follow-strip {
-            display: none;
-		}
+		.lead-meta { font-size: 0.65rem; }
+		.lead-edition-bar { margin-bottom: 0.65rem; padding-bottom: 0.55rem; }
+		.lead-follow-strip { display: none; }
 
         .lead-analyst-box {
             margin-top: 0.85rem;
@@ -950,18 +826,9 @@ const consensusSuffix = (() => {
             gap: 0.65rem;
         }
 
-        .analyst-header {
-            margin-bottom: 0.5rem;
-            padding-bottom: 0.35rem;
-        }
-
-        .analyst-label {
-            font-size: 0.5rem;
-        }
-
-        .pulse-text {
-            font-size: 0.48rem;
-        }
+        .analyst-header { margin-bottom: 0.5rem; padding-bottom: 0.35rem; }
+        .analyst-label { font-size: 0.5rem; }
+        .pulse-text { font-size: 0.48rem; }
 
         .analyst-facts li {
             font-size: 0.82rem;

@@ -33,8 +33,8 @@ function getBentoSpan(cluster: NewsCluster, index: number): '1x1' | '2x1' | '2x2
 
 <section class="supporting-band motion-rise motion-delay-2">
     <div class="section-heading-row masthead-double-rule">
-        <h2 class="section-title">{t('home.supporting_title')}</h2>
-        <p class="section-note">{t('home.supporting_desc')}</p>
+        <h2 class="section-heading">{t('home.supporting_title')}</h2>
+        <p class="section-note mt-2 text-xs font-bold uppercase tracking-widest text-muted-foreground/80">{t('home.supporting_desc')}</p>
     </div>
 
     <div class="bento-grid">
@@ -87,10 +87,6 @@ function getBentoSpan(cluster: NewsCluster, index: number): '1x1' | '2x1' | '2x2
 
     .bento-item {
         height: 100%;
-    }
-
-    /* Asymmetric Balance & Luxury Whitespace */
-    .section-heading-row {
-        margin-bottom: 2rem;
+        transition: var(--transition-base);
     }
 </style>
