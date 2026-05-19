@@ -1,46 +1,43 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import { useStore } from '@nanostores/react';
 import { Moon, Sun } from 'lucide-react';
+import { $theme, updateTheme } from '../lib/store';
 
 export default function ThemeIsland({ fixed = false }: { fixed?: boolean }) {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const theme = useStore($theme);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    // Sync with actual class if it changed from OS or other script
-    const isDark = document.documentElement.classList.contains('dark');
-    const initialTheme = isDark ? 'dark' : 'light';
-    setTheme(initialTheme);
-
-    // Also check localStorage for user preference
+    
+    // Initial sync with localStorage
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
-    if (savedTheme && savedTheme !== initialTheme) {
-      setTheme(savedTheme);
+    if (savedTheme) {
+      updateTheme(savedTheme);
+    } else {
+        const isDark = document.documentElement.classList.contains('dark');
+        updateTheme(isDark ? 'dark' : 'light');
     }
   }, []);
 
   const toggleTheme = () => {
-    if (typeof document === 'undefined') return;
-    setTheme(prev => {
-      const next = prev === 'light' ? 'dark' : 'light';
-      const root = document.documentElement;
-      if (next === 'dark') {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-      }
+    const next = theme === 'light' ? 'dark' : 'light';
+    updateTheme(next);
 
-      // Update theme-color meta tags for immediate effect
-      const lightMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: light)"]');
-      const darkMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: dark)"]');
-      if (lightMeta) lightMeta.setAttribute('content', next === 'dark' ? '#000000' : '#fafafb');
-      if (darkMeta) darkMeta.setAttribute('content', next === 'dark' ? '#000000' : '#1a1715');
+    if (typeof document !== 'undefined') {
+        const root = document.documentElement;
+        if (next === 'dark') {
+            root.classList.add('dark');
+        } else {
+            root.classList.remove('dark');
+        }
 
-      localStorage.setItem('theme', next);
-      return next;
-    });
+        // Update theme-color meta tags
+        const lightMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: light)"]');
+        const darkMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: dark)"]');
+        if (lightMeta) lightMeta.setAttribute('content', next === 'dark' ? '#000000' : '#fafafb');
+        if (darkMeta) darkMeta.setAttribute('content', next === 'dark' ? '#000000' : '#1a1715');
+    }
   };
-
-
 
   const baseClasses = "flex items-center justify-center transition-all duration-300 group";
   const fixedClasses = "fixed top-4 right-4 z-[200] h-10 w-10 rounded-full border border-border bg-secondary shadow-sm hover:scale-110";

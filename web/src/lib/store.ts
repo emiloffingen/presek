@@ -124,4 +124,11 @@ $profile.subscribe((profile) => {
     }, 2000);
 });
 
-export const $error = atom<string | null>(null);
+export const $theme = atom<'light' | 'dark'>('light');
+
+export function updateTheme(newTheme: 'light' | 'dark') {
+    $theme.set(newTheme);
+    if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('theme', newTheme);
+    }
+}
