@@ -535,6 +535,9 @@ function getBriefingSnippet(content: string) {
     /* ── Consensus Carousel (Mobile) ─────────────────── */
     .consensus-carousel-wrap {
         position: relative;
+        margin: 0 -1rem;
+        padding: 0 1rem;
+        overflow: hidden;
     }
 
     .consensus-grid {
@@ -542,21 +545,24 @@ function getBriefingSnippet(content: string) {
         overflow-x: auto;
         scroll-snap-type: x mandatory;
         gap: 1.25rem;
-        padding-bottom: 0.5rem;
+        padding-bottom: 0.75rem;
         -webkit-overflow-scrolling: touch;
+        margin-bottom: -0.5rem;
     }
 
     .consensus-item {
         scroll-snap-align: start;
+        flex: 0 0 85%;
+        min-width: 270px;
     }
 
     .carousel-fade-hint.right {
         position: absolute;
         top: 0;
-        right: -1rem;
-        bottom: 0;
+        right: 0;
+        bottom: 0.75rem;
         width: 3rem;
-        background: linear-gradient(to left, color-mix(in srgb, var(--background) 50%, var(--secondary)), transparent);
+        background: linear-gradient(to left, var(--background), transparent);
         pointer-events: none;
         z-index: 5;
     }
