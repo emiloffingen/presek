@@ -25,7 +25,7 @@ from utils import (
     set_cache,
 )
 
-from .common import _error_json, _source_admin_authorized
+# Cleanup: removed _source_admin_authorized
 from .security import validate_date, validate_email, validate_string_param
 
 log = logging.getLogger("presek")
@@ -630,14 +630,14 @@ async def _fetch_stats_parallel():
     return await asyncio.gather(*coroutines, return_exceptions=True)
 
 
+from routes.security import admin_auth
+
 @router.get("/stats/full")
-async def get_stats_full(request: Request, lang: str = "sr"):
-    if not _source_admin_authorized(request):
-        detail = "Zabranjeno" if lang == "sr" else "Забрането"
-        raise HTTPException(status_code=403, detail=detail)
-    cached = cached_response(f"stats:full:{lang}", ttl=120)
+async def get_stats_full(request: Request, authorized: str = Depends(admin_auth)):
+    cached = cached_response(f"stats:full:sr", ttl=120)
     if cached:
         return cached
+    # ... (rest of the logic remains unchanged)
 
     lock_key = "lock:stats_full_generation"
     try:
