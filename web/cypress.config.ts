@@ -1,4 +1,5 @@
 import { defineConfig } from 'cypress'
+import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   e2e: {
@@ -14,7 +15,11 @@ export default defineConfig({
     devServer: {
       framework: 'react',
       bundler: 'vite',
+      viteConfig: {
+        plugins: [tailwindcss()],
+      }
     },
-    specPattern: 'cypress/component/**/*.{js,jsx,ts,tsx}',
+    specPattern: 'src/components/**/*.cy.{js,jsx,ts,tsx}',
+    supportFile: 'cypress/support/component.ts',
   },
 })

@@ -556,13 +556,21 @@ def clean_json_response(text: str) -> dict | str | None:
 
     # 3. Aggressive Regex Extraction (if JSON parse failed)
     # This handles cases where the model returns broken JSON or text with JSON inside
-    # Look for "answer": "..." OR "report": "..." OR "summary": "..."
+    # We look for "answer" or "report" or "summary" followed by the content
+    # This is more robust against multiline and unescaped content
     for key in ("answer", "report", "summary"):
-        pattern = rf'"{key}"\s*:\s*"(.*?)"(?=\s*[,}}])'
-        match = re.search(pattern, text, re.DOTALL)
+        # Match "key": ... up to the next key or end of structure
+        pattern = rf'"{key}"\s*:\s*["\'](.*?)["\'](?=\s*[,}}])'
+        match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
         if match:
             clean_text = match.group(1).replace("\\n", "\n").replace('\\"', '"').replace("\\'", "'")
-            return {"answer": clean_text, "suggestions": []}
+            # Attempt to find suggestions if they exist in the text
+            suggestions = []
+            sugg_match = re.search(r'"suggestions"\s*:\s*\[(.*?)\]', text, re.DOTALL | re.IGNORECASE)
+            if sugg_match:
+                sugg_str = sugg_match.group(1)
+                suggestions = [s.strip().strip('"').strip("'") for s in sugg_str.split(',')]
+            return {"answer": clean_text, "suggestions": [s for s in suggestions if s]}
 
     # 4. Brute force: find the first { and last } and try parsing that
     try:
