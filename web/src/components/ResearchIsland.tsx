@@ -132,10 +132,14 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
       }
 
       // Headers (robust: matches '# Header' or '1. # Header')
-      if (trimmed.includes('#')) {
-          const headerText = trimmed.split('#')[1].trim();
-          return <h3 key={i} className={`font-serif font-black text-2xl md:text-3xl mt-12 mb-6 border-b-2 border-border pb-3 text-foreground tracking-tight text-left ${animClass}`} style={animStyle}>{parseBoldText(headerText)}</h3>;
-      }
+      import { tokens } from '../lib/design-tokens';
+
+      // ... (in the renderer)
+            // Headers
+            if (trimmed.includes('#')) {
+                const headerText = trimmed.split('#')[1].trim();
+                return <h3 key={i} className={`font-serif font-black text-[${tokens.typography.scale.xl}] mt-[${tokens.spacing.xl}] mb-[${tokens.spacing.lg}] border-b-2 border-border pb-3 text-foreground tracking-tight text-left ${animClass}`} style={animStyle}>{parseBoldText(headerText)}</h3>;
+            }
 
       // List items (robust: matches '-', '•', '*', '1. ', etc.)
       if (/^([-•*]|\d+\.)\s+/.test(trimmed)) {
