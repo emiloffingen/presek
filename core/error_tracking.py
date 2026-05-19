@@ -8,7 +8,7 @@ local error logging for development.
 import logging
 import os
 import traceback
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 # Configure logging
@@ -112,7 +112,7 @@ def log_error(error: Exception, context: Optional[Dict[str, Any]] = None):
     error_data = {
         "error_type": type(error).__name__,
         "error_message": str(error),
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
     if context:

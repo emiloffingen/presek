@@ -75,7 +75,7 @@ def test_admin_endpoint_with_jwt():
     admin_token = create_admin_jwt()
 
     # Test admin dashboard access
-    response = client.get("/admin/dashboard", headers={"Authorization": f"Bearer {admin_token}"})
+    response = client.get("/api/admin/dashboard", headers={"Authorization": f"Bearer {admin_token}"})
 
     # Should return 200 for valid admin token
     assert response.status_code == 200
@@ -91,7 +91,7 @@ def test_admin_endpoint_without_auth():
     client = TestClient(app)
 
     # Test admin dashboard access without auth
-    response = client.get("/admin/dashboard")
+    response = client.get("/api/admin/dashboard")
 
     # Should return 403 for unauthorized access
     assert response.status_code == 403
@@ -104,7 +104,7 @@ def test_admin_endpoint_with_invalid_token():
     client = TestClient(app)
 
     # Test admin dashboard access with invalid token
-    response = client.get("/admin/dashboard", headers={"Authorization": "Bearer invalid.token.here"})
+    response = client.get("/api/admin/dashboard", headers={"Authorization": "Bearer invalid.token.here"})
 
     # Should return 403 for invalid token
     assert response.status_code == 403

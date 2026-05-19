@@ -419,13 +419,26 @@ class DatabaseManager:
     ):
         # Validate inputs to prevent SQL injection
         time_filter = _validate_timespan(timespan)
+        
+        # Security: Use parameter binding for country if provided
+        params = [query_text, query_text]
         if country:
-            time_filter += f" AND country = '{country}'"
-        validated_sort_by = _validate_sort_by(sort_by)
-
+            # We need to add the parameter twice because time_filter is used twice in the hybrid search SQL
+            time_filter += " AND country = %s"
+            params.append(country)
+            
         vec_str = "[" + ",".join(map(str, query_embedding)) + "]"
+        params.append(vec_str)
+        
+        if country:
+            # Second occurrence of time_filter in semantic_results
+            params.append(country)
+            
+        params.append(limit)
+        
+        validated_sort_by = _validate_sort_by(sort_by)
         sql = _build_hybrid_search_sql(time_filter, validated_sort_by)
-        return await self.async_execute(sql, (query_text, query_text, vec_str, limit))
+        return await self.async_execute(sql, tuple(params))
 
     async def async_search_articles(
         self,
@@ -436,15 +449,20 @@ class DatabaseManager:
     ):
         # Validate timespan to prevent SQL injection
         time_filter = _validate_timespan(timespan)
+        params = [query, query, None]
+        
         if country:
-            time_filter += f" AND country = '{country}'"
+            time_filter += " AND country = %s"
+            params.append(country)
+            
+        params.append(limit)
 
         # Remove leading "AND " for this query format if it's the only filter
         if time_filter.startswith("AND "):
             time_filter = time_filter[4:]
 
         sql = SQL_ARTICLE_SEARCH.format(time_filter=time_filter)
-        return await self.async_execute(sql, (query, query, None, limit))
+        return await self.async_execute(sql, tuple(params))
 
     async def async_get_synthesis_ids(self, cluster_ids: list[str], lang: str = None):
         if not cluster_ids:

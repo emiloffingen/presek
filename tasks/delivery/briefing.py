@@ -824,7 +824,6 @@ def generate_daily_brief_task(retry_attempt=0, lang="sr"):
                 nar_raw, _ = _call_ai(
                     f"<briefing>\n{final_brief}\n</briefing>", narrative_prompt, task_type="extraction", max_tokens=1000
                 )
-                import json
 
                 if nar_raw:
                     # Clean potential markdown
