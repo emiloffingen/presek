@@ -11,7 +11,7 @@ from typing import AsyncGenerator
 import httpx
 from prometheus_client import REGISTRY, Counter, Histogram
 
-from core.config import PROVIDER_FALLBACK_ORDER, PROVIDER_FALLBACK_ORDER_RESEARCH, PROVIDER_FALLBACK_ORDER_SUMMARY
+from core.config import PROVIDER_FALLBACK_ORDER, PROVIDER_FALLBACK_ORDER_SUMMARY
 
 log = logging.getLogger("presek")
 
@@ -529,8 +529,6 @@ def _call_ai(
     return None, None
 
 
-import asyncio
-import time
 # ... (existing imports)
 
 async def async_call_ai(

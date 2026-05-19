@@ -1,7 +1,6 @@
 import logging
 import os
 import re
-import secrets
 import time
 import urllib.parse
 from collections import defaultdict
@@ -48,7 +47,6 @@ except Exception as e:
     binary_redis_client = _redis_lib.from_url("redis://localhost:6379/0", decode_responses=False)
 from core.health import _probe_database, _probe_redis
 from core.version import version_payload
-from nlp import generate_local_placeholder
 from utils import _peer_ip, _resolve_public_ips
 
 from .common import _PROXY_ALLOWED_TYPES, _PROXY_MAX_BYTES, cleanAndDecode

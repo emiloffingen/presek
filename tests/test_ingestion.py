@@ -353,7 +353,8 @@ def test_fill_missing_og_images_only_updates_missing_candidates():
     async def _fake_fetch(_client, url):
         return f"{url}/og.jpg" if url.endswith("/3") else None
 
-    with patch("core.ingestion.fetch_og_image", side_effect=_fake_fetch):        filled = asyncio.run(fill_missing_og_images(object(), candidates))
+    with patch("core.ingestion.fetch_og_image", side_effect=_fake_fetch):
+        filled = asyncio.run(fill_missing_og_images(object(), candidates))
 
     assert filled == 1
     assert candidates[0]["image_url"] is None

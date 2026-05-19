@@ -71,7 +71,7 @@ main() {
 
   [ -d "$APP_ROOT/venv" ] || { echo "Missing Python virtualenv at $APP_ROOT/venv" >&2; exit 1; }
   [ -f "$SHARED_ROOT/.env" ] || { echo "Missing shared env file at $SHARED_ROOT/.env" >&2; exit 1; }
-  if [ -f "$CURRENT_ROOT/api_fast.py" ] && [ -f "$CURRENT_ROOT/web/dist/server/entry.mjs" ]; then
+  if [ -f "$CURRENT_ROOT/core/api_fast.py" ] && [ -f "$CURRENT_ROOT/web/dist/server/entry.mjs" ]; then
     HAS_CURRENT_RELEASE=1
   fi
 

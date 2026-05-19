@@ -1143,31 +1143,31 @@ def generate_local_placeholder(cluster_id, title, category="vesti"):
 
     # 5. Generative SVG Construction
     svg = [
-        f'<svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">',
-        f"<defs>",
+        '<svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">',
+        "<defs>",
         # Main Linear Gradient
         f'  <linearGradient id="grad_{cluster_id}" x1="0%" y1="0%" x2="100%" y2="100%" gradientTransform="rotate({angle})">',
         f'    <stop offset="0%" style="stop-color:{c1};stop-opacity:1" />',
         f'    <stop offset="100%" style="stop-color:{c2};stop-opacity:1" />',
-        f"  </linearGradient>",
+        "  </linearGradient>",
         # Radial Accent (The "Mesh" feel)
         f'  <radialGradient id="mesh_{cluster_id}" cx="{20 + (seed%60)}%" cy="{20 + (seed%60)}%" r="80%">',
         f'    <stop offset="0%" style="stop-color:{c3};stop-opacity:0.4" />',
         f'    <stop offset="100%" style="stop-color:{c2};stop-opacity:0" />',
-        f"  </radialGradient>",
+        "  </radialGradient>",
         # Filter for subtle noise/texture
-        f'  <filter id="noise" x="0" y="0" width="100%" height="100%">',
-        f'    <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" />',
-        f'    <feColorMatrix type="saturate" values="0" />',
-        f'    <feComponentTransfer><feFuncA type="linear" slope="0.03" /></feComponentTransfer>',
-        f'    <feComposite operator="in" in2="SourceGraphic" />',
-        f"  </filter>",
-        f"</defs>",
+        '  <filter id="noise" x="0" y="0" width="100%" height="100%">',
+        '    <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" />',
+        '    <feColorMatrix type="saturate" values="0" />',
+        '    <feComponentTransfer><feFuncA type="linear" slope="0.03" /></feComponentTransfer>',
+        '    <feComposite operator="in" in2="SourceGraphic" />',
+        "  </filter>",
+        "</defs>",
         # Background Layers
         f'<rect width="100%" height="100%" fill="url(#grad_{cluster_id})" />',
         f'<rect width="100%" height="100%" fill="url(#mesh_{cluster_id})" />',
         # Subtle Geometric Overlay (Dots or Lines)
-        f'<rect width="100%" height="100%" fill="white" opacity="0.03" filter="url(#noise)" />',
+        '<rect width="100%" height="100%" fill="white" opacity="0.03" filter="url(#noise)" />',
     ]
 
     # Optional Geometric Detail based on ID
@@ -1183,14 +1183,14 @@ def generate_local_placeholder(cluster_id, title, category="vesti"):
     # Typography
     svg.extend(
         [
-            f'<text font-family="serif" text-anchor="middle" font-size="38" font-weight="800" fill="white" style="text-shadow: 0 4px 12px rgba(0,0,0,0.3)">',
+            '<text font-family="serif" text-anchor="middle" font-size="38" font-weight="800" fill="white" style="text-shadow: 0 4px 12px rgba(0,0,0,0.3)">',
             f"{tspans}",
-            f"</text>",
+            "</text>",
             # Branding
-            f'<rect x="40" y="385" width="120" height="2" fill="white" opacity="0.3" />',
-            f'<text x="40" y="415" font-family="sans-serif" font-size="16" font-weight="900" fill="white" opacity="0.6" letter-spacing="4">PRESEK</text>',
+            '<rect x="40" y="385" width="120" height="2" fill="white" opacity="0.3" />',
+            '<text x="40" y="415" font-family="sans-serif" font-size="16" font-weight="900" fill="white" opacity="0.6" letter-spacing="4">PRESEK</text>',
             f'<text x="760" y="415" text-anchor="end" font-family="sans-serif" font-size="12" font-weight="700" fill="white" opacity="0.4" letter-spacing="1">{category.upper()}</text>',
-            f"</svg>",
+            "</svg>",
         ]
     )
 

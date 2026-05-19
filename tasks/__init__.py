@@ -24,7 +24,7 @@ from tasks.intelligence import (
     summarize_article_task,
     synthesize_cluster_task,
 )
-from tasks.maintenance import refresh_global_headlines_task, run_prune_db
+from tasks.maintenance import run_prune_db
 
 # Explicitly re-export for clarity and auto-discovery
 __all__ = [
@@ -39,7 +39,6 @@ __all__ = [
     "extract_entities_task",
     "classify_topics_task",
     "recluster_recent_articles_task",
-    "refresh_global_headlines_task",
     "generate_cluster_metadata_task",
     "backfill_cover_art_single_task",
     "backfill_cover_art_task",

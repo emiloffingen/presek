@@ -1,7 +1,6 @@
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from core.topic_discovery import StoryDiscoveryEngine
-import json
 
 @pytest.fixture
 def discovery_engine():

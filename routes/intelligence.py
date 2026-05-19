@@ -9,13 +9,11 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, Request, Depends
 from pydantic import BaseModel
 
-from core.ai_engine import clean_json_response, sync_call_ai
 from core.database import db_manager as db
 from core.embeddings import generate_query_embedding
 from core.entities import normalize_entity_name, normalize_person_surface_name
 from core.language import transliterate_lat_to_cyr
 from core.limiter import custom_rate_limit
-from core.prompts import RESEARCH_SYSTEM_PROMPT, RESEARCH_SYSTEM_PROMPT_MK
 from nlp import normalize_tag_name
 from utils import cached_response, score_cluster, set_cache
 
@@ -1103,7 +1101,7 @@ async def get_latest_briefing(date: Optional[str] = None, lang: str = "sr"):
     async def fetch_briefing_entities(entity_type, limit):
         # We look at tags in clusters created on that day for that country
         rows = await db.async_execute(
-            f"""
+            """
             SELECT t.name, COUNT(DISTINCT t.cluster_id) as daily_mentions
             FROM (
                 SELECT UNNEST(cm.tags) as name, cm.cluster_id

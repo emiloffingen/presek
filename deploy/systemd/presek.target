@@ -1,6 +1,6 @@
 [Unit]
 Description=Presek application stack
-Wants=presek-worker.service presek-worker-ingestion.service presek-worker-fasttrack.service presek-worker-delivery.service presek-beat.service presek-fastapi.service presek-astro.service
+Wants=presek-worker.service presek-worker-ingestion.service presek-worker-fasttrack.service presek-worker-delivery.service presek-beat.service presek-fastapi-unified.service presek-astro.service
 After=network-online.target
 
 [Install]

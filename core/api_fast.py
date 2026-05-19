@@ -280,14 +280,6 @@ async def get_generated_image(filename: str):
     return FileResponse(os.path.join("static", "generated", filename))
 
 
-@app.get("/metrics")
-async def metrics():
-    """Expose Prometheus metrics for monitoring."""
-    from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
-
-    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
-
-
 @app.get("/api/delivery/track/{event_type}")
 @exempt_from_rate_limit
 async def track_delivery_event(event_type: str, event_id: int, redirect: str = "/briefing"):

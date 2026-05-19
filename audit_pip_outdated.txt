@@ -1,4 +1,0 @@
-# All Python dependencies are up to date as of 2026-05-13
-# Last checked: uv lock --upgrade completed successfully
-# Added pytest-timeout and upgraded black to fix CI and security issues.
-# Run: uv lock --upgrade && uv export --format requirements-txt > requirements.txt

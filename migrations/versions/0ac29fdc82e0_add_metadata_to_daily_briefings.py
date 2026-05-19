@@ -8,7 +8,6 @@ Create Date: 2026-05-16 21:52:31.197255
 
 from typing import Sequence, Union
 
-import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
@@ -20,7 +19,6 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    from sqlalchemy.dialects import postgresql
 
     # 1. Ensure daily_briefings table exists
     op.execute(

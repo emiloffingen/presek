@@ -96,7 +96,7 @@ class TestDatabaseManagerExecute:
 
         manager = DatabaseManager.__new__(DatabaseManager)
         manager._pool = mock_pool
-        result = manager.execute("INSERT INTO foo VALUES (1)", fetch=False)
+        manager.execute("INSERT INTO foo VALUES (1)", fetch=False)
         mock_conn.commit.assert_called_once()
 
     def test_execute_rolls_back_on_error(self):

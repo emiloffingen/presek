@@ -7,7 +7,6 @@ from core.config import PROVIDER_FALLBACK_ORDER
 from core.database import db_manager as db
 from core.health import _probe_database, _probe_redis, get_source_statuses
 from core.version import version_payload
-from utils import redis_client
 
 log = logging.getLogger("presek.api.admin")
 router = APIRouter()

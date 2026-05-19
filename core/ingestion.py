@@ -637,7 +637,7 @@ async def fetch_feed_async(client: httpx.AsyncClient, source: Dict[str, Any]) ->
             timeout = base_timeout + (attempt * 5.0)
             jitter = random.uniform(0.8, 1.2)  # 20% jitter
             actual_timeout = timeout * jitter
-            resp = await client.get(url, timeout=timeout, follow_redirects=True)
+            resp = await client.get(url, timeout=actual_timeout, follow_redirects=True)
 
             # Handle Cloudflare challenge
             is_cf_challenge = (

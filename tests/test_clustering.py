@@ -163,7 +163,7 @@ def test_cluster_age_decay():
             "created_at": recent_time,
         },
     ]
-    cid_old = find_or_create_cluster(MagicMock(), title, recent_articles)
+    find_or_create_cluster(MagicMock(), title, recent_articles)
     cid_new = find_or_create_cluster(MagicMock(), title, fresh_articles)
     assert cid_new == "c-new"
 

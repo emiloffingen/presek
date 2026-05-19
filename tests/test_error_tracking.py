@@ -114,7 +114,7 @@ def test_transaction_start():
     from core.error_tracking import start_transaction
 
     # Start a transaction
-    transaction = start_transaction("test_transaction", "test_operation")
+    start_transaction("test_transaction", "test_operation")
 
     # Transaction might be None if Sentry is not available
     # Should not raise an exception

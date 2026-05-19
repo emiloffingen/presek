@@ -1,14 +1,11 @@
 import logging
 import time
-import json
-import numpy as np
 from prometheus_client import Histogram
 from core.ai_engine import async_call_ai, clean_json_response
 from core.prompts import RESEARCH_SYSTEM_PROMPT, RESEARCH_SYSTEM_PROMPT_MK
 from routes.intelligence import _RESEARCH_MODE_QUERIES, _build_gemma_research_context
 from core.entities import extract_entities
 from core.embeddings import get_query_embedding_async
-from utils import redis_client
 
 log = logging.getLogger(__name__)
 

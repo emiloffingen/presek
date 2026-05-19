@@ -1,6 +1,6 @@
 [Unit]
 Description=Presek Astro frontend
-After=network-online.target presek-fastapi.service
+After=network-online.target presek-fastapi-unified.service
 Wants=network-online.target
 PartOf=presek.target
 StartLimitIntervalSec=60
