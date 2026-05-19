@@ -542,18 +542,25 @@ function getBriefingSnippet(content: string) {
 
     .consensus-grid {
         display: flex;
+        flex-wrap: nowrap;
         overflow-x: auto;
         scroll-snap-type: x mandatory;
         gap: 1.25rem;
         padding-bottom: 0.75rem;
         -webkit-overflow-scrolling: touch;
         margin-bottom: -0.5rem;
+        align-items: stretch;
     }
 
     .consensus-item {
         scroll-snap-align: start;
         flex: 0 0 85%;
         min-width: 270px;
+        display: flex;
+    }
+    
+    .consensus-item > * {
+        width: 100%;
     }
 
     .carousel-fade-hint.right {
