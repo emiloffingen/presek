@@ -64,10 +64,10 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
         const report = result.report || result.answer || '';
         const suggestions = result.suggestions || [];
         const mode_actual = result.mode || mode;
-
-        setData({
-            report,
-            suggestions,
+        
+        setData({ 
+            report, 
+            suggestions, 
             mode: mode_actual,
             provider: result.provider,
             sources: result.sources || sources,
@@ -114,12 +114,12 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
   const formatText = (text: string) => {
     if (!text) return '';
     const lines = text.split('\n').filter(l => l.trim() !== '');
-
+    
     return lines.map((line, i) => {
       const trimmed = line.trim();
       const animStyle = { animationDelay: `${i * 150}ms` };
       const animClass = "animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both break-words";
-
+      
       // Pull Quotes Detection
       if ((trimmed.startsWith('„') && trimmed.endsWith('“')) || (trimmed.startsWith('"') && trimmed.endsWith('"'))) {
           return (
@@ -132,20 +132,16 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
       }
 
       // Headers (robust: matches '# Header' or '1. # Header')
-      import { tokens } from '../lib/design-tokens';
-
-      // ... (in the renderer)
-            // Headers
-            if (trimmed.includes('#')) {
-                const headerText = trimmed.split('#')[1].trim();
-                return <h3 key={i} className={`font-serif font-black text-[${tokens.typography.scale.xl}] mt-[${tokens.spacing.xl}] mb-[${tokens.spacing.lg}] border-b-2 border-border pb-3 text-foreground tracking-tight text-left ${animClass}`} style={animStyle}>{parseBoldText(headerText)}</h3>;
-            }
-
+      if (trimmed.includes('#')) {
+          const headerText = trimmed.split('#')[1].trim();
+          return <h3 key={i} className={`font-serif font-black text-2xl md:text-3xl mt-12 mb-6 border-b-2 border-border pb-3 text-foreground tracking-tight text-left ${animClass}`} style={animStyle}>{parseBoldText(headerText)}</h3>;
+      }
+      
       // List items (robust: matches '-', '•', '*', '1. ', etc.)
       if (/^([-•*]|\d+\.)\s+/.test(trimmed)) {
           const cleanItem = trimmed.replace(/^([-•*]|\d+\.)\s+/, '');
           return (
-            <div key={i} className={`flex gap-[var(--grid-gap)] md:gap-5 mb-5 items-start pl-1 md:pl-2 text-left ${animClass}`} style={animStyle}>
+            <div key={i} className={`flex gap-4 md:gap-5 mb-5 items-start pl-1 md:pl-2 text-left ${animClass}`} style={animStyle}>
               <span className="text-nyt-accent mt-1.5 flex-shrink-0"><CheckCircle2 size={16} strokeWidth={1.5} /></span>
               <span className="text-lg md:text-2xl text-foreground font-nyt-body leading-relaxed">{parseBoldText(cleanItem)}</span>
             </div>
@@ -177,9 +173,9 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
 
   return (
     <section className="research-analyst-container mt-8 mb-10 border border-border bg-secondary/5 p-4 md:p-6 relative overflow-hidden break-words">
-      <div className="relative z-10 mb-6 flex flex-col gap-[var(--grid-gap)]">
+      <div className="relative z-10 mb-6 flex flex-col gap-2">
         <div className="max-w-full md:max-w-3xl">
-          <p className="mb-2 flex items-center gap-[var(--grid-gap)] font-sans text-[9px] font-black uppercase tracking-[0.2em] text-nyt-accent">
+          <p className="mb-2 flex items-center gap-2 font-sans text-[9px] font-black uppercase tracking-[0.2em] text-nyt-accent">
             <span className="w-4 h-[2px] bg-nyt-accent"></span>
             {t('cluster.researcher')}
           </p>
@@ -190,7 +186,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
         </div>
       </div>
 
-      <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-[var(--grid-gap)]">
+      <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-4">
         {modes.map((m) => (
           <div
             key={m.id}
@@ -199,11 +195,11 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
             <div className={`w-10 h-10 flex items-center justify-center rounded-full mb-4 transition-all bg-secondary text-muted-foreground group-hover:bg-nyt-accent group-hover:text-white`}>
               {loading === m.id ? <Loader2 className="animate-spin" size={20} /> : <m.icon size={18} />}
             </div>
-
+            
             <h4 className="font-black text-xs mb-1 uppercase tracking-[0.14em] text-foreground group-hover:text-nyt-accent transition-colors">{m.label}</h4>
-
+            
             <p className="text-xs text-muted-foreground leading-snug font-medium mb-4 flex-grow">{m.desc}</p>
-
+            
             <button
                 onClick={() => performResearch(m.id)}
                 disabled={!!loading}
@@ -219,11 +215,11 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
 
       {/* Custom Research Input */}
       <div className="relative z-10 mt-6 bg-background p-1.5 border border-border focus-within:border-nyt-accent/50 shadow-inner">
-        <div className="flex flex-col md:flex-row gap-[var(--grid-gap)]">
+        <div className="flex flex-col md:flex-row gap-2">
             <div className="relative flex-grow">
                 <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground opacity-50" size={22} />
-                <input
-                    type="text"
+                <input 
+                    type="text" 
                     placeholder={placeholders[placeholderIdx]}
                     value={customQuery}
                     onChange={(e) => setCustomQuery(e.target.value)}
@@ -231,11 +227,11 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
                     onKeyDown={(e) => e.key === 'Enter' && customQuery.trim() && performResearch('custom', customQuery.trim())}
                 />
             </div>
-            <button
+            <button 
                 onClick={() => performResearch('custom', customQuery.trim())}
                 disabled={!customQuery.trim() || !!loading}
                 aria-busy={loading === 'custom'}
-                className="w-full md:w-auto px-12 py-5 bg-foreground text-background font-black uppercase tracking-[0.2em] text-[11px] hover:bg-nyt-accent transition-all disabled:opacity-30 flex items-center justify-center gap-[var(--grid-gap)]"
+                className="w-full md:w-auto px-12 py-5 bg-foreground text-background font-black uppercase tracking-[0.2em] text-[11px] hover:bg-nyt-accent transition-all disabled:opacity-30 flex items-center justify-center gap-2"
             >
                 {loading === 'custom' ? (
                     <><Loader2 className="animate-spin" size={18} /> {t('cluster.research_loading_custom')}</>
@@ -247,8 +243,8 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
       </div>
 
       {error && (
-        <div className="mt-8 p-5 border-2 border-red-500/20 bg-red-500/5 text-red-600 dark:text-red-400 text-sm font-bold rounded-xl flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-[var(--grid-gap)]">
-          <div className="flex items-center gap-[var(--grid-gap)]">
+        <div className="mt-8 p-5 border-2 border-red-500/20 bg-red-500/5 text-red-600 dark:text-red-400 text-sm font-bold rounded-xl flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4">
+          <div className="flex items-center gap-3">
              <X size={18} className="flex-shrink-0" />
              <span>{error}</span>
           </div>
@@ -258,8 +254,8 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
 
       {data && (
         <div ref={resultsRef} className="mt-8 editorial-panel p-0 overflow-hidden border border-nyt-accent/20 bg-background motion-rise w-full">
-          <div className="border-b border-nyt-accent/20 bg-nyt-accent/8 px-4 md:px-6 py-4 flex flex-wrap items-center justify-between gap-[var(--grid-gap)]">
-            <div className="flex items-center gap-[var(--grid-gap)]">
+          <div className="border-b border-nyt-accent/20 bg-nyt-accent/8 px-4 md:px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
               <Sparkles size={16} className="text-nyt-accent" fill="currentColor" />
               <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.18em] text-foreground">
                 {data.mode === 'custom' ? t('cluster.research_response_label') : modes.find(m => m.id === data.mode)?.label}
@@ -274,7 +270,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
                 <X size={20} />
             </button>
           </div>
-
+          
           <div className="p-4 md:p-8 relative">
              <div className="max-w-full md:max-w-3xl">
                 {formatText(data.report)}
@@ -282,12 +278,12 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
                 {/* Follow-up Suggestions */}
                 {data.mode === 'custom' && data.suggestions && data.suggestions.length > 0 && (
                   <div className="mt-12 pt-8 border-t border-border/40">
-                    <p className="font-sans text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent mb-6 flex items-center gap-[var(--grid-gap)]">
+                    <p className="font-sans text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent mb-6 flex items-center gap-2">
                       <ChevronRight size={12} strokeWidth={1.5} /> {t('cluster.research_next')}
                     </p>
-                    <div className="flex flex-col gap-[var(--grid-gap)]">
+                    <div className="flex flex-col gap-3">
                       {data.suggestions.map((s: string, idx: number) => (
-                        <button
+                        <button 
                           key={idx}
                           onClick={() => {
                             setCustomQuery(s);
@@ -304,9 +300,9 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
                 )}
 
              </div>
-
-             <div className="mt-8 pt-6 border-t border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-[var(--grid-gap)] opacity-40">
-                <div className="flex items-center gap-[var(--grid-gap)] text-[9px] font-bold uppercase tracking-widest text-left">
+             
+             <div className="mt-8 pt-6 border-t border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 opacity-40">
+                <div className="flex items-center gap-3 text-[9px] font-bold uppercase tracking-widest text-left">
                    <div className="w-2 h-2 rounded-full bg-nyt-accent animate-pulse flex-shrink-0"></div>
                    {t('cluster.research_footer_note')}
                 </div>
