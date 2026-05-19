@@ -395,11 +395,17 @@ async def _call_ai_async(
         AI_CALLS.labels(provider="sanitization", task_type=task_type, status="blocked").inc()
         return None, None
 
-    fallback_order = list(PROVIDER_FALLBACK_ORDER)
+    # Budget-based routing heuristic
     if task_type == "research":
-        fallback_order = list(PROVIDER_FALLBACK_ORDER_RESEARCH)
+        # If query is short, assume simple fact-check and favor faster providers
+        if len(prompt) < 150: 
+            fallback_order = ["mistral_small", "gemini", "nvidia"]
+        else:
+            fallback_order = ["gemini", "mistral_large", "nvidia"]
     elif task_type in ("summarize", "synthesis"):
         fallback_order = list(PROVIDER_FALLBACK_ORDER_SUMMARY)
+    else:
+        fallback_order = list(PROVIDER_FALLBACK_ORDER)
     
     # Always ensure local is the absolute final fallback if not already present
     if "local" not in fallback_order:
@@ -474,11 +480,17 @@ def _call_ai(
         AI_CALLS.labels(provider="sanitization", task_type=task_type, status="blocked").inc()
         return None, None
 
-    fallback_order = list(PROVIDER_FALLBACK_ORDER)
+    # Budget-based routing heuristic
     if task_type == "research":
-        fallback_order = list(PROVIDER_FALLBACK_ORDER_RESEARCH)
+        # If query is short, assume simple fact-check and favor faster providers
+        if len(prompt) < 150: 
+            fallback_order = ["mistral_small", "gemini", "nvidia"]
+        else:
+            fallback_order = ["gemini", "mistral_large", "nvidia"]
     elif task_type in ("summarize", "synthesis"):
         fallback_order = list(PROVIDER_FALLBACK_ORDER_SUMMARY)
+    else:
+        fallback_order = list(PROVIDER_FALLBACK_ORDER)
     
     # Always ensure local is the absolute final fallback if not already present
     if "local" not in fallback_order:
@@ -489,6 +501,12 @@ def _call_ai(
         start_time = time.time()
         try:
             res = provider.call(prompt, system, max_tokens, json_mode, topic=topic, task_type=task_type, lang=lang)
+            
+            # Self-Correction Loop: If json_mode is requested but output is malformed, re-prompt once
+            if json_mode and res and not clean_json_response(res):
+                log.warning(f"[ai/cascade] Provider {provider_name} returned malformed JSON, retrying once...")
+                res = provider.call(prompt + "\n\nCRITICAL: Return valid JSON only.", system, max_tokens, json_mode, topic=topic, task_type=task_type, lang=lang)
+
             if res:
                 AI_LATENCY.labels(provider=provider_name, task_type=task_type).observe(time.time() - start_time)
                 AI_CALLS.labels(provider=provider_name, task_type=task_type, status="success").inc()

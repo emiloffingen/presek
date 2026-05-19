@@ -49,11 +49,16 @@ class ResearchService:
 
         context, sources = await _build_gemma_research_context(cluster_id, clean_mode, query)
 
+        # Step 1: Chain-of-Thought (Extract plan/topics)
+        plan_prompt = f"Identify 3 key areas of focus for this query: '{research_query}'. Context: {context[:2000]}"
+        plan_raw, _ = await async_call_ai(plan_prompt, "You are a research planner. Return 3 bullet points.", task_type="research", lang=lang)
+        
+        # Step 2: Final Report Generation
         research_system_prompt = RESEARCH_SYSTEM_PROMPT_MK if lang == "mk" else RESEARCH_SYSTEM_PROMPT
         prompt = (
-            f"PITANJE: {research_query}\n\nKONTEKST ZA ANALIZU:\n{context}"
+            f"Query: {research_query}\nPlan: {plan_raw}\nContext: {context}"
             if lang == "sr"
-            else f"PRASANjE: {research_query}\n\nKONTEKST ZA ANALIZA:\n{context}"
+            else f"Prasanje: {research_query}\nPlan: {plan_raw}\nKontekst: {context}"
         )
 
         raw, provider = await async_call_ai(
@@ -61,23 +66,20 @@ class ResearchService:
             research_system_prompt,
             task_type="research",
             json_mode=True,
-            max_tokens=800,
+            max_tokens=1000,
             lang=lang,
         )
 
         RESEARCH_LATENCY.labels(mode=clean_mode).observe(time.time() - start_time)
-
         if not raw:
             return None
 
         response = clean_json_response(raw)
         
-        # Augment with entities if answer exists
         if isinstance(response, dict) and "answer" in response:
             augmented = await ResearchService._augment_report_with_entities(response["answer"])
             response["entities"] = augmented["entities"]
             
-        # 2. Store in Semantic Cache
         if response:
             await ResearchService._set_semantic_cache(cluster_id, query_embedding, clean_mode, lang, response)
             
