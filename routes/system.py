@@ -90,16 +90,16 @@ _WMO_ICON = {
 }
 
 
-@router.get("/health")
-async def health(request: Request):
-    admin_token = (os.environ.get("PRESEK_ADMIN_TOKEN") or "").strip()
-    provided_token = (request.headers.get("X-Admin-Token") or "").strip()
-    is_admin = bool(admin_token and provided_token and secrets.compare_digest(provided_token, admin_token))
+from routes.security import admin_auth
 
+@router.get("/health")
+async def health(request: Request, authorized: bool = Depends(admin_auth, use_cache=False)):
+    """Health check endpoint. Admin token required for sensitive details."""
+    # Note: `authorized` is now managed by JWT auth
     db_s = _probe_database()
     rd_s = _probe_redis()
 
-    if not is_admin:
+    if not authorized:
         # Omit sensitive details for public status
         for probe in [db_s, rd_s]:
             probe.pop("url", None)
@@ -113,6 +113,7 @@ async def health(request: Request):
         "database": db_s,
         "redis": rd_s,
     }
+
 
 
 @router.get("/sw.js")

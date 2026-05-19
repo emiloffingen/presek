@@ -290,28 +290,6 @@ def validate_list_param(items, param_name: str, max_items: int = 20, max_item_le
 # =============================================================================
 
 
-def get_admin_token() -> str:
-    """Get the configured admin token."""
-    return (os.environ.get("PRESEK_ADMIN_TOKEN") or "").strip()
-
-
-def verify_admin_token(request: Request) -> bool:
-    """Verify the X-Admin-Token header matches the configured token."""
-    token = (request.headers.get("X-Admin-Token") or "").strip()
-    expected = get_admin_token()
-    if not expected:
-        return False
-    if not token:
-        return False
-    return secrets.compare_digest(token, expected)
-
-
-def require_admin_token(request: Request) -> None:
-    """Raise 403 if not authenticated as admin."""
-    if not verify_admin_token(request):
-        raise HTTPException(status_code=403, detail="Zabraneto")
-
-
 def verify_sync_token(request: Request) -> str:
     """Extract and validate sync token from request."""
     from .common import _extract_sync_token, _validate_sync_token_value
