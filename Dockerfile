@@ -49,4 +49,4 @@ USER presek
 EXPOSE 8000
 
 # Set entrypoint (will be overridden in docker-compose for specific services)
-CMD ["python", "api_fast.py"]
+CMD ["uvicorn", "core.api_fast:app", "--host", "0.0.0.0", "--port", "8000"]

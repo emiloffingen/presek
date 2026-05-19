@@ -37,7 +37,7 @@ services:
 
   api:
     build: .
-    command: python api_fast.py
+    command: uvicorn core.api_fast:app --host 0.0.0.0 --port 8000
     volumes:
       - .:/app
     environment:
@@ -51,7 +51,7 @@ services:
 
   worker:
     build: .
-    command: celery -A celery_app worker --loglevel=info
+    command: celery -A core.celery_app worker --loglevel=info
     volumes:
       - .:/app
     environment:

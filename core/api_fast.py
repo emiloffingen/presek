@@ -4,7 +4,7 @@ import os
 import time
 
 import fastapi
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import Response
 
 if not hasattr(fastapi, "responses"):
@@ -315,8 +315,7 @@ API_VERSION = "v1"
 
 # Clustering Control Endpoints - Manual triggers for debugging/emergency use
 @app.post("/api/admin/trigger-reclustering")
-@exempt_from_rate_limit
-def trigger_reclustering(hours: int = 6, limit: int = 500):
+def trigger_reclustering(hours: int = 6, limit: int = 500, authorized: str = Depends(admin.verify_admin)):
     """
     Manually trigger reclustering of recent articles.
     Used when automatic clustering fails or for emergency recovery.
@@ -337,8 +336,7 @@ def trigger_reclustering(hours: int = 6, limit: int = 500):
 
 
 @app.post("/api/admin/trigger-storyline-discovery")
-@exempt_from_rate_limit
-def trigger_storyline_discovery():
+def trigger_storyline_discovery(authorized: str = Depends(admin.verify_admin)):
     """
     Manually trigger storyline discovery.
     Used when storylines aren't being created automatically.
@@ -355,8 +353,7 @@ def trigger_storyline_discovery():
 
 
 @app.get("/api/admin/clustering-status")
-@exempt_from_rate_limit
-def get_clustering_status():
+def get_clustering_status(authorized: str = Depends(admin.verify_admin)):
     """
     Get current clustering system status.
     """

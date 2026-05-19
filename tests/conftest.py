@@ -148,6 +148,13 @@ _install_pil_stub()
 
 
 def _install_starlette_stub():
+    try:
+        importlib.import_module("starlette.responses")
+        importlib.import_module("starlette.middleware.base")
+        return
+    except ImportError:
+        pass
+
     if "starlette" in sys.modules:
         return
 

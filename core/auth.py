@@ -15,7 +15,11 @@ from fastapi import HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 # Configuration
-JWT_SECRET = os.environ.get("JWT_SECRET", secrets.token_urlsafe(32))
+JWT_SECRET = os.environ.get("JWT_SECRET")
+if not JWT_SECRET:
+    if os.environ.get("ENV") == "production":
+        raise RuntimeError("JWT_SECRET must be set in production")
+    JWT_SECRET = secrets.token_urlsafe(32)
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_MINUTES = int(os.environ.get("JWT_EXPIRE_MINUTES", "60"))
 

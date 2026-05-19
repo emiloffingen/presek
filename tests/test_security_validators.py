@@ -1,19 +1,4 @@
-import sys
-from unittest.mock import MagicMock
-
 import pytest
-
-
-# Mock fastapi.HTTPException before importing routes.security
-class FakeHTTPException(Exception):
-    def __init__(self, status_code, detail=None):
-        self.status_code = status_code
-        self.detail = detail
-
-
-mock_fastapi = MagicMock()
-mock_fastapi.HTTPException = FakeHTTPException
-sys.modules["fastapi"] = mock_fastapi
 
 from fastapi import HTTPException
 

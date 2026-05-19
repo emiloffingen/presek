@@ -11,28 +11,35 @@ from typing import Optional
 import redis as _redis_lib
 from fastapi import APIRouter, HTTPException, Query, Request, Depends
 from fastapi.responses import FileResponse, Response
-from prometheus_client import Counter
+from prometheus_client import REGISTRY, Counter
 
 from core.database import db_manager as db
 from utils import cached_response, set_cache
 
 log = logging.getLogger("presek.routes.system")
 
+def _counter_once(name: str, documentation: str, labelnames=()):
+    try:
+        return Counter(name, documentation, labelnames)
+    except ValueError:
+        return REGISTRY._names_to_collectors[name]
+
+
 # Prometheus metrics
-PROXY_REQUESTS = Counter(
+PROXY_REQUESTS = _counter_once(
     "proxy_requests_total",
     "Total number of proxy requests",
     ["status", "reason"],
 )
-PROXY_BYTES = Counter(
+PROXY_BYTES = _counter_once(
     "proxy_bytes_total",
     "Total bytes transferred through proxy",
 )
-PROXY_CACHE_HITS = Counter(
+PROXY_CACHE_HITS = _counter_once(
     "proxy_cache_hits_total",
     "Total number of proxy cache hits",
 )
-PROXY_CACHE_MISSES = Counter(
+PROXY_CACHE_MISSES = _counter_once(
     "proxy_cache_misses_total",
     "Total number of proxy cache misses",
 )
@@ -90,10 +97,21 @@ _WMO_ICON = {
 
 from routes.security import admin_auth
 
+async def optional_admin_auth(request: Request) -> bool:
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        return False
+    try:
+        await admin_auth(request)
+        return True
+    except HTTPException:
+        return False
+
+
 @router.get("/health")
-async def health(request: Request, authorized: bool = Depends(admin_auth, use_cache=False)):
+async def health(request: Request, authorized: bool = Depends(optional_admin_auth, use_cache=False)):
     """Health check endpoint. Admin token required for sensitive details."""
-    # Note: `authorized` is now managed by JWT auth
+    authorized = authorized is True
     db_s = _probe_database()
     rd_s = _probe_redis()
 

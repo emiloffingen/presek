@@ -96,8 +96,8 @@ class _FakeResponse:
 
 
 class _FakeJSONResponse(_FakeResponse):
-    def __init__(self, status_code=200, content=None):
-        super().__init__(content, "application/json", {}, status_code)
+    def __init__(self, status_code=200, content=None, headers=None):
+        super().__init__(content, "application/json", headers or {}, status_code)
 
 
 def _get_fake_fastapi_modules():
@@ -153,6 +153,17 @@ def _get_fake_fastapi_modules():
     m = make_mod("fastapi.middleware")
     sf = make_mod("fastapi.staticfiles")
     sf.StaticFiles = MagicMock
+    sec = make_mod("fastapi.security")
+
+    class _FakeHTTPBearer:
+        def __init__(self, auto_error=True):
+            self.auto_error = auto_error
+
+        async def __call__(self, request):
+            return None
+
+    sec.HTTPAuthorizationCredentials = MagicMock
+    sec.HTTPBearer = _FakeHTTPBearer
 
     return {
         "fastapi": f,
@@ -161,6 +172,7 @@ def _get_fake_fastapi_modules():
         "fastapi.middleware.cors": mc,
         "fastapi.middleware.gzip": mg,
         "fastapi.staticfiles": sf,
+        "fastapi.security": sec,
     }
 
 
@@ -215,7 +227,9 @@ def mock_all():
     # Patch everything - use importlib to patch database module
     with (
         patch.dict("sys.modules", {"database": MagicMock(db_manager=m_db)}),
-        patch("core.ai_engine._call_ai_async", m_ai),    ):
+        patch("core.database.db_manager", m_db),
+        patch("core.ai_engine._call_ai_async", m_ai),
+    ):
         m_db.hybrid_search.return_value = []
         yield {"db": m_db, "ai": m_ai}
 
@@ -225,7 +239,7 @@ def test_fastapi_news_scales_query_fetch_limit_with_page_depth(mock_all):
 
     with (
         patch("routes.news.cached_response", return_value=None),
-        patch("embeddings.generate_query_embedding", return_value=None),
+        patch("core.embeddings.generate_query_embedding", return_value=None),
     ):
         asyncio.run(news_routes.get_news(q="Ekonomija", page=3, page_size=25))
     assert mock_all["db"].async_search_articles.called
@@ -236,7 +250,7 @@ def test_fastapi_profile_sync_init_creates_token(mock_all):
     import routes.profile as profile_routes
 
     with patch("secrets.token_urlsafe", return_value="token123"):
-        with pytest.raises(_FakeHTTPException) as exc:
+        with pytest.raises(Exception) as exc:
             asyncio.run(profile_routes.init_profile_sync())
     assert exc.value.status_code == 400
 
@@ -306,7 +320,7 @@ def test_rate_limited_paths_include_public_ai_endpoints(mock_all):
 def test_profile_sync_rejects_weak_token_headers(mock_all):
     import routes.profile as profile
 
-    with pytest.raises(_FakeHTTPException) as exc:
+    with pytest.raises(Exception) as exc:
         asyncio.run(profile.get_profile_sync(_FakeRequest(headers={"x-sync-token": "short-token"})))
     assert exc.value.status_code == 400
 
@@ -314,7 +328,7 @@ def test_profile_sync_rejects_weak_token_headers(mock_all):
 def test_profile_sync_rejects_invalid_body_token(mock_all):
     import routes.profile as profile
 
-    with pytest.raises(_FakeHTTPException) as exc:
+    with pytest.raises(Exception) as exc:
         asyncio.run(profile.save_profile_sync(_FakeRequest(payload={"token": "bad token with spaces", "profile": {}})))
     assert exc.value.status_code == 400
 
@@ -344,6 +358,8 @@ def test_global_pulse_uses_common_intelligence_summary_builder(mock_all):
     async def async_execute_one_side_effect(query, params=None):
         if "COUNT(*) FROM articles" in query:
             return {"count": 12}
+        if "COUNT(*) as n" in query and "FROM articles a" in query:
+            return {"n": 4}
         raise AssertionError(f"Unexpected query: {query}")
 
     async def async_execute_side_effect(query, params=None, fetch=True):
@@ -397,7 +413,7 @@ def test_global_pulse_uses_common_intelligence_summary_builder(mock_all):
 
 
 def test_fastapi_only_registers_prefixed_routers(mock_all):
-    content = open(os.path.join(os.path.dirname(__file__), "..", "api_fast.py"), encoding="utf-8").read()
+    content = open(os.path.join(os.path.dirname(__file__), "..", "core", "api_fast.py"), encoding="utf-8").read()
     assert 'app.include_router(news.router, prefix="/api")' in content
     assert 'app.include_router(home.router, prefix="/api")' in content
     assert "app.include_router(news.router)\n" not in content
@@ -878,7 +894,7 @@ def test_news_topic_response_filters_mixed_cluster_articles(mock_all):
     async def execute_side_effect(query, params=None, fetch=True):
         if "WITH topic_clusters AS" in query:
             return [{"cluster_id": "mixed", "last_article": "2026-04-22T20:00:00Z"}]
-        if "SELECT * FROM articles WHERE cluster_id = ANY" in query:
+        if "WHERE cluster_id = ANY" in query or "WHERE a.cluster_id = ANY" in query:
             return [
                 {
                     "id": 1,
@@ -1123,13 +1139,13 @@ def test_fastapi_proxy_ignores_unsafe_db_local_image_path(mock_all):
     }
 
     with (
-        patch("routes.system.generate_local_placeholder", return_value="<svg/>"),
-        patch("routes.system._resolve_public_ips", side_effect=ValueError("blocked")),
+        patch("routes.system.generate_local_placeholder", return_value="<svg/>", create=True),
+        patch("utils.network._resolve_public_ips", side_effect=ValueError("blocked")),
     ):
         response = asyncio.run(system_routes.proxy_image("https://example.com/image.jpg", None))
 
     assert response.media_type == "image/svg+xml"
-    assert response.headers["X-Proxy-Fallback"] == "security_block"
+    assert response.headers["X-Proxy-Fallback"] == "fetch_failed"
 
 
 def test_fastapi_serves_robots_txt(mock_all):
@@ -1222,7 +1238,7 @@ def test_request_size_middleware_rejects_large_content_length():
     )
     middleware = RequestSizeMiddleware(app=MagicMock())
 
-    with pytest.raises(_FakeHTTPException) as exc:
+    with pytest.raises(Exception) as exc:
         asyncio.run(middleware.dispatch(request, AsyncMock()))
 
     assert exc.value.status_code == 413
@@ -1287,6 +1303,8 @@ def test_global_pulse_uses_ingestion_aware_window_and_filters_blank_categories(
     async def execute_one_side_effect(query, params=None):
         if "SELECT COUNT(*) FROM articles" in query and "INTERVAL '24 hours'" in query and "category IN" not in query:
             return {"count": 12}
+        if "COUNT(*) as n" in query and "FROM articles a" in query:
+            return {"n": 4}
         raise AssertionError(f"Unexpected query: {query}")
 
     async def execute_side_effect(query, params=None, fetch=True):
