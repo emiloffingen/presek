@@ -252,7 +252,7 @@ class TestAstroFrontendIntegrity:
 
 class TestDeploymentIntegrity:
     def test_systemd_targets_fastapi_and_astro_runtime(self):
-        fastapi_service = _read("deploy/systemd/presek-fastapi.service")
+        fastapi_service = _read("deploy/systemd/presek-fastapi-unified.service")
         astro_service = _read("deploy/systemd/presek-astro.service")
         
         # Check for service runtime components
@@ -262,7 +262,7 @@ class TestDeploymentIntegrity:
 
     def test_systemd_services_have_security_hardening(self):
         for svc in (
-            "deploy/systemd/presek-fastapi.service",
+            "deploy/systemd/presek-fastapi-unified.service",
             "deploy/systemd/presek-astro.service",
             "deploy/systemd/presek-beat.service",
             "deploy/systemd/presek-worker.service",
@@ -276,7 +276,7 @@ class TestDeploymentIntegrity:
 
     def test_systemd_services_have_memory_limits(self):
         for svc in (
-            "deploy/systemd/presek-fastapi.service",
+            "deploy/systemd/presek-fastapi-unified.service",
             "deploy/systemd/presek-astro.service",
             "deploy/systemd/presek-beat.service",
             "deploy/systemd/presek-worker.service",
@@ -339,7 +339,7 @@ class TestDeploymentIntegrity:
     def test_deploy_restarts_explicit_services_in_order(self):
         deploy_script = _read("deploy/deploy_release.sh")
         assert "restart_services_in_order" in deploy_script
-        assert "presek-fastapi.service" in deploy_script
+        assert "presek-fastapi-unified.service" in deploy_script
         assert "presek-astro.service" in deploy_script
 
     def test_runtime_config_does_not_embed_seed_source_catalog(self):
@@ -354,9 +354,9 @@ class TestDeploymentIntegrity:
         assert "source_catalog" in seed_script
         assert "Lokalno" not in source_catalog
 
-    def test_health_route_uses_constant_time_admin_token_compare(self):
+    def test_health_route_uses_jwt_admin_auth(self):
         system_route = _read("routes/system.py")
-        assert "secrets.compare_digest" in system_route
+        assert "admin_auth" in system_route
         assert "provided_token == admin_token" not in system_route
 
     def test_live_route_uses_request_aware_event_stream(self):
