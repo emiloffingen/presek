@@ -592,13 +592,9 @@ class DatabaseManager:
             result[r["cluster_id"]].add(r["entity_name"])
         return result
 
-    def get_db_size(self):
-        db_name = DATABASE_URL.split("/")[-1].split("?")[0]
-        row = self.execute_one("SELECT pg_database_size(%s)", (db_name,))
-        if row:
-            size_bytes = list(row.values())[0]
-            return round(size_bytes / (1024 * 1024), 2)
-        return 0.0
+    def refresh_stats_view(self):
+        """Refreshes the article stats materialized view."""
+        self.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_article_stats", fetch=False)
 
     def get_stats(self):
         try:

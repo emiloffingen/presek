@@ -520,7 +520,10 @@ async def get_stats_summary(lang: Optional[str] = "sr"):
         "intelligence": intelligence,
     }
     set_cache(cache_key, res, ttl=300)
-    return res
+    return JSONResponse(
+        content=res,
+        headers={"Cache-Control": "public, s-maxage=60, stale-while-revalidate=300"}
+    )
 
 
 @router.post("/newsletter/subscribe")
