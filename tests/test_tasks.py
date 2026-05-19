@@ -332,8 +332,8 @@ class TestDailyBriefTaskQuality:
             "Zaklucok.\n"
         )
 
-        assert tasks.delivery.briefing._has_valid_daily_brief_structure(malformed) is False
-        assert tasks.delivery.briefing._has_valid_daily_brief_structure(valid) is True
+        assert tasks.delivery.briefing._has_valid_daily_brief_structure(malformed, lang="mk") is False
+        assert tasks.delivery.briefing._has_valid_daily_brief_structure(valid, lang="mk") is True
 
     def test_daily_brief_penalizes_press_release_style_titles(self):
 
@@ -587,6 +587,8 @@ class TestProfileDeliveryTasks:
 
         with (
             patch("tasks.delivery.email._load_active_delivery_rows", return_value=rows),
+            patch("tasks.delivery.email._load_weekly_digest_clusters", return_value=[]),
+            patch("tasks.delivery.email._load_weekly_cluster_engagement", return_value={}),
             patch(
                 "tasks.delivery.email._select_profile_weekly_clusters",
                 return_value=[
@@ -821,7 +823,7 @@ class TestProfileDeliveryTasks:
                 "tasks.delivery.email._load_weekly_topic_engagement",
                 return_value={"Politika": {"section_score": 0.8}},
             ),
-            patch("tasks.delivery.subscribers._load_weekly_source_engagement", return_value={}),
+            patch("tasks.delivery.email._load_weekly_source_engagement", return_value={}),
             patch(
                 "tasks.delivery.email._build_weekly_digest_sections",
                 return_value=[
@@ -877,7 +879,7 @@ class TestProfileDeliveryTasks:
 
         with (
             patch("tasks.delivery.email._load_weekly_digest_clusters", return_value=clusters),
-            patch("tasks.delivery.subscribers._load_weekly_cluster_engagement", return_value={}),
+            patch("tasks.delivery.email._load_weekly_cluster_engagement", return_value={}),
         ):
             result = tasks.delivery.email._select_profile_weekly_clusters(profile, limit=3)
 
@@ -955,6 +957,9 @@ class TestProfileDeliveryTasks:
             patch("tasks.delivery.briefing.release_task_lock"),
             patch("tasks.delivery.briefing.get_celery_queue_depth", return_value=0),
             patch("tasks.delivery.briefing._load_active_delivery_rows", return_value=rows),
+            patch("tasks.delivery.briefing._load_recent_breaking_clusters", return_value=[]),
+            patch("tasks.delivery.briefing._load_delivery_kind_performance", return_value={}),
+            patch("tasks.delivery.briefing._load_breaking_target_performance", return_value={}),
             patch(
                 "tasks.delivery.briefing._select_breaking_cluster_for_profile",
                 return_value=candidate,
@@ -1025,9 +1030,9 @@ class TestProfileDeliveryTasks:
                     now,
                 ),
             ),
-            patch("tasks.delivery.core._load_delivery_kind_performance", return_value={}),
+            patch("tasks.delivery.briefing._load_delivery_kind_performance", return_value={}),
             patch(
-                "tasks.delivery.core._load_breaking_target_performance",
+                "tasks.delivery.briefing._load_breaking_target_performance",
                 return_value={"topics": {}, "sources": {}},
             ),
             patch(
@@ -1080,9 +1085,9 @@ class TestProfileDeliveryTasks:
                     older,
                 ),
             ),
-            patch("tasks.delivery.core._load_delivery_kind_performance", return_value={}),
+            patch("tasks.delivery.briefing._load_delivery_kind_performance", return_value={}),
             patch(
-                "tasks.delivery.core._load_breaking_target_performance",
+                "tasks.delivery.briefing._load_breaking_target_performance",
                 return_value={"topics": {}, "sources": {}},
             ),
             patch(

@@ -36,11 +36,8 @@ def test_language_filtering():
     print(f"   Macedonian cluster IDs: {list(mk_cluster_ids)[:5]}...")  # Show first 5
     print(f"   Overlapping clusters: {len(overlap)} (should be 0)")
 
-    if len(overlap) == 0:
-        print("   ✅ SUCCESS: No overlap between languages!")
-    else:
-        print("   ❌ FAILURE: Found overlapping clusters!")
-        return False
+    assert len(overlap) == 0, f"Found {len(overlap)} overlapping clusters between sr and mk"
+    print("   ✅ SUCCESS: No overlap between languages!")
 
     # Test country filtering in database
     print("\n4. Testing direct database filtering...")
@@ -54,7 +51,6 @@ def test_language_filtering():
     print(f"   Serbian articles (last 24h): {sr_count}")
     print(f"   Macedonian articles (last 24h): {mk_count}")
 
-    return True
 
 
 if __name__ == "__main__":

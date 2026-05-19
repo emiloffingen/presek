@@ -611,7 +611,7 @@ def compare_cluster_sources(articles, lang="mk"):
     if not articles:
         return {"common_line": "", "difference_points": [], "open_points": []}
 
-    cache_key = _articles_cache_key(articles) + f":{lang}"
+    cache_key = (_articles_cache_key(articles), lang)
     cached = _cache_get(_comparison_cache, cache_key)
     if cached is not None:
         record_runtime_event("local_compare_cache", mode="hit")

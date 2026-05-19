@@ -332,6 +332,8 @@ def _has_valid_daily_brief_structure(brief: str, lang: str = "sr") -> bool:
             # Fallback to Latin just in case
             "Golemata Slika",
             "Globalni i Lokalni Oski",
+            "Mediumski Radar",
+            "Sto da se sledi",
         ]
 
     found_count = 0
