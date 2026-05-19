@@ -264,7 +264,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
 
       {data && (
         <div ref={resultsRef} className="mt-8 editorial-panel p-0 overflow-hidden border border-nyt-accent/20 bg-background motion-rise w-full">
-          <div className="border-b border-nyt-accent/20 bg-nyt-accent/8 px-4 md:px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+          <div className="border-b border-nyt-accent/20 bg-nyt-accent/5 px-4 md:px-6 py-4 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Sparkles size={16} className="text-nyt-accent" fill="currentColor" />
               <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.18em] text-foreground">
@@ -286,7 +286,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
                 {formatText(data.report)}
 
                 {/* Follow-up Suggestions */}
-                {data.mode === 'custom' && data.suggestions && data.suggestions.length > 0 && (
+                {data.suggestions && data.suggestions.length > 0 && (
                   <div className="mt-12 pt-8 border-t border-border/40">
                     <p className="font-sans text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent mb-6 flex items-center gap-2">
                       <ChevronRight size={12} strokeWidth={1.5} /> {t('cluster.research_next')}

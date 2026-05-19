@@ -644,9 +644,9 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 fallback = synthesize_cluster_fallback(article_rows, lang=lang)
                 summary = fallback["summary"]
                 perspectives = fallback["perspectives"]
-                synthetic_headline = deShout(article_rows[0]["title"])
-                synthetic_standfirst = ""
-                generated_article = ""
+                synthetic_headline = fallback["synthetic_headline"]
+                synthetic_standfirst = fallback["synthetic_standfirst"]
+                generated_article = fallback["generated_article"]
                 verification_report = None
                 quote = ""
                 current_sentiment_data = shared_metrics["sentiment_data"]
@@ -1661,8 +1661,8 @@ def backfill_cluster_summaries_task(days=30, lang="sr"):
                                 else ""
                             ),
                             fallback_result["perspectives"][:2000] if fallback_result["perspectives"] else [],
-                            fallback_result["key_facts"][:1000] if fallback_result["key_facts"] else [],
-                            fallback_result["analyst_entities"][:1000] if fallback_result["analyst_entities"] else [],
+                            fallback_result.get("key_facts")[:1000] if fallback_result.get("key_facts") else [],
+                            fallback_result.get("analyst_entities")[:1000] if fallback_result.get("analyst_entities") else [],
                         ),
                     )
                     log.info(f"[tasks] Generated summary for cluster {cluster_id} (lang={lang})")

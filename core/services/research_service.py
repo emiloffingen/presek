@@ -72,7 +72,11 @@ class ResearchService:
             return None
 
         response = clean_json_response(raw)
-        
+
+        # Normalize: clean_json_response can return a plain string on fallback
+        if isinstance(response, str):
+            response = {"answer": response, "suggestions": []}
+
         if isinstance(response, dict) and "answer" in response:
             augmented = await ResearchService._augment_report_with_entities(response["answer"])
             response["entities"] = augmented["entities"]

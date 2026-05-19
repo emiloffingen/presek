@@ -394,6 +394,10 @@ async def get_deep_research(request: Request, cluster_id: str, mode: str = "fact
             ),
         }
 
+    # Normalize response: clean_json_response may return a plain string
+    if isinstance(response, str):
+        response = {"answer": response, "suggestions": []}
+
     # Final result structure
     result = {
         "status": "success",
@@ -431,6 +435,9 @@ async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts", lang:
     
     if not response:
         return {"status": "error", "message": "Greška pri generisanju izveštaja."}
+
+    if isinstance(response, str):
+        response = {"answer": response, "suggestions": []}
 
     return {
         "status": "success",
