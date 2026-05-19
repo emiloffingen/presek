@@ -8,7 +8,7 @@ export const GET: APIRoute = async ({ request }) => {
     const SITE_URL = isMk ? 'https://presek.mk' : 'https://presek.live';
     const API_URL = apiBaseUrl();
     
-    const clusterIds: string[] = [];
+    const clusterData: {id: string, title: string, image: string | null}[] = [];
 
     try {
         let page = 0;
@@ -23,7 +23,11 @@ export const GET: APIRoute = async ({ request }) => {
                     const filtered = data.clusters.filter((c: any) => 
                         c.articles && c.articles.some((a: any) => a.country === country)
                     );
-                    clusterIds.push(...filtered.map((c: any) => c.cluster_id));
+                    clusterData.push(...filtered.map((c: any) => ({
+                        id: c.cluster_id,
+                        title: c.synthetic_headline || c.title || '',
+                        image: c.representative_image || null
+                    })));
                     hasMore = data.has_more;
                 } else {
                     hasMore = false;
@@ -41,18 +45,23 @@ export const GET: APIRoute = async ({ request }) => {
     const now = new Date().toISOString();
 
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 ${staticPages.map(page => `  <url>
     <loc>${SITE_URL}${page}</loc>
     <lastmod>${now}</lastmod>
     <changefreq>${page === '' ? 'always' : 'daily'}</changefreq>
     <priority>${page === '' ? '1.0' : '0.8'}</priority>
   </url>`).join('\n')}
-${clusterIds.map(id => `  <url>
-    <loc>${SITE_URL}/cluster/${id}</loc>
+${clusterData.map(cluster => `  <url>
+    <loc>${SITE_URL}/cluster/${cluster.id}</loc>
     <lastmod>${now}</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.6</priority>${cluster.image ? `
+    <image:image>
+      <image:loc>${cluster.image}</image:loc>
+      <image:title><![CDATA[${cluster.title || 'Presek News'}]]></image:title>
+    </image:image>` : ''}
   </url>`).join('\n')}
 </urlset>`;
 
