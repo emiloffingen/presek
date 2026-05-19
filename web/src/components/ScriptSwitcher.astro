@@ -1,5 +1,16 @@
+---
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
+
+const requestUrl = Astro.request ? new URL(Astro.request.url) : Astro.url;
+const hostHeader = Astro.request?.headers.get('host') || requestUrl.hostname;
+const effectiveUrl = new URL(requestUrl);
+effectiveUrl.hostname = hostHeader;
+const lang = getLangFromUrl(effectiveUrl);
+const t = useTranslations(lang);
+---
+
 <button id="script-toggle" class="text-[9px] font-black uppercase tracking-widest text-nyt-accent hover:text-foreground transition-colors">
-    КИР/ЛАТ
+    {t('script.toggle')}
 </button>
 
 <script>

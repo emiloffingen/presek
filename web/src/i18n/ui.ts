@@ -281,6 +281,7 @@ export const ui = {
     'narrative.no_details': 'Nema dostupnih detalja.',
     'error.title': 'Došlo je do greške. Pokušajte ponovo.',
     'error.restart': 'Restartuj',
+    'script.toggle': 'ĆIR/LAT',
   },
   mk: {
     'nav.home': 'Почетна',
@@ -570,5 +571,6 @@ export const ui = {
     'narrative.no_details': 'Нема достапни детали.',
     'error.title': 'Се појави грешка. Обидете се повторно.',
     'error.restart': 'Рестартирај',
+    'script.toggle': 'КИР/ЛАТ',
   },
 } as const;
