@@ -127,7 +127,7 @@ class TestClusterComparison:
 
         result = compare_cluster_sources(articles)
 
-        assert "vo fokus" in result["common_line"].lower()
+        assert "во фокус" in result["common_line"].lower()
         assert "energetska poddrska" in result["common_line"].lower()
 
     def test_compare_cluster_sources_surfaces_unique_entities_by_source(self):
@@ -213,9 +213,9 @@ class TestClusterComparison:
 
         result = synthesize_cluster_fallback(articles)
 
-        assert any(item["angle"] == "Nijansi" for item in result["perspectives"])
-        assert any(item["angle"] == "otvoreno" for item in result["perspectives"])
-        assert "Klucen razvoj" in result["summary"] or "Nastan" in result["summary"]
+        assert any(item["angle"] == "Нијанси" for item in result["perspectives"])
+        assert any(item["angle"] == "отворено" for item in result["perspectives"])
+        assert "Клучен развој" in result["summary"] or "Настан" in result["summary"]
 
     def test_synthesize_cluster_fallback_uses_confirmed_section(self):
         articles = [
@@ -251,7 +251,7 @@ class TestClusterComparison:
 
         result = synthesize_cluster_fallback(articles)
 
-        assert "Nastan" in result["summary"]
+        assert "Настан" in result["summary"]
         assert "Paketot" in result["summary"]
 
     def test_synthesize_cluster_fallback_records_mode(self, monkeypatch):
@@ -337,8 +337,8 @@ class TestLocalSerbianRewrite:
 
         result = synthesize_cluster_fallback(articles)
 
-        assert "Klucen razvoj" in result["summary"]
-        assert "Sledeno od 2 izvori" in result["summary"]
+        assert "Клучен развој" in result["summary"]
+        assert "Следено од 2 извори" in result["summary"]
 
     def test_synthesize_cluster_fallback_uses_cleaner_open_line_label(self):
         articles = [
@@ -355,8 +355,8 @@ class TestLocalSerbianRewrite:
         ]
 
         result = synthesize_cluster_fallback(articles)
-        assert any(p["angle"] == "Nijansi" for p in result["perspectives"])
-        assert any(p["angle"] == "otvoreno" for p in result["perspectives"])
+        assert any(p["angle"] == "Нијанси" for p in result["perspectives"])
+        assert any(p["angle"] == "отворено" for p in result["perspectives"])
 
 
 class TestLocalBriefingFallback:
@@ -382,9 +382,9 @@ class TestLocalBriefingFallback:
 
         result = generate_daily_brief_fallback(clusters)
 
-        assert "## Dinamika na denot" in result
-        assert "## kontekst i razliki" in result
-        assert "- Klucen aspekt:" in result or "- Zosto e vazno:" in result
+        assert "## Динамика на денот" in result
+        assert "## Контекст и разлики" in result
+        assert "- Клучен аспект:" in result or "- Зошто е важно:" in result
 
     def test_generate_daily_brief_fallback_prefers_cluster_synthesis_text(self):
         clusters = [
@@ -469,7 +469,7 @@ class TestLocalBriefingFallback:
 
         result = generate_daily_brief_fallback(clusters)
 
-        assert "## kontekst i razliki" in result
+        assert "## Контекст и разлики" in result
         assert "### 1. Bugarija" in result
         assert "Temata se pojavuva niz" not in result
 
@@ -578,8 +578,8 @@ class TestLocalBriefingFallback:
 
         result = generate_daily_brief_fallback(clusters)
 
-        assert "Dinamika na denot" in result
-        assert "kontekst i razliki" in result
+        assert "Динамика на денот" in result
+        assert "Контекст и разлики" in result
 
     def test_generate_daily_brief_fallback_keeps_election_importance_outcome_oriented(
         self,
@@ -596,7 +596,7 @@ class TestLocalBriefingFallback:
 
         result = generate_daily_brief_fallback(clusters)
 
-        assert "Dinamika na denot" in result
+        assert "Динамика на денот" in result
         assert "Bugarija" in result or "izbori" in result
 
 

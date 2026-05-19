@@ -37,9 +37,6 @@ log = logging.getLogger("presek")
 
 # Feeds known to have persistent fetch issues
 _PROBLEMATIC_FEEDS = {
-    "Denar": "Cloudflare challenge",
-    "Kapital": "403 Forbidden",
-    "Sportmanija": "403 Forbidden",
     "Vreme": "Connection error",
     "Vecer": "Connection error",
     "Espreso": "Connection error",
@@ -101,19 +98,23 @@ def _fetch_with_cloudscraper(url: str, timeout: int = 30) -> bytes:
     try:
         # Add common headers to mimic real browser
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.5",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9,mk;q=0.8",
             "Accept-Encoding": "gzip, deflate, br",
             "Connection": "keep-alive",
             "Upgrade-Insecure-Requests": "1",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Sec-Fetch-User": "?1",
             "Cache-Control": "max-age=0",
         }
         resp = scraper.get(url, timeout=timeout, headers=headers)
         resp.raise_for_status()
         return resp.content
     except Exception as e:
-        log.debug(f"Cloudscraper detailed error for {url}: {e}")
+        log.debug(f"[ingest] Cloudscraper detailed error for {url}: {e}")
         raise
     finally:
         scraper.close()
@@ -644,20 +645,16 @@ async def fetch_feed_async(client: httpx.AsyncClient, source: Dict[str, Any]) ->
                 resp.status_code == 403 and str(resp.headers.get("cf-mitigated", "")).lower() == "challenge"
             )
 
-            # For known problematic feeds, log and continue
-            if is_cf_challenge and name in _PROBLEMATIC_FEEDS:
-                reason = _PROBLEMATIC_FEEDS.get(name, "Unknown")
-                log.debug(f"[ingest] {name}: Known problematic feed ({reason}), skipping retries")
-                return name, [], f"Blocked ({reason}): {url}"
+            # Handle Cloudflare challenge or 403 - try cloudscraper
+            if is_cf_challenge or resp.status_code == 403:
+                # For known problematic feeds that aren't fixed by cloudscraper, log and continue
+                if name in _PROBLEMATIC_FEEDS:
+                    reason = _PROBLEMATIC_FEEDS.get(name, "Unknown")
+                    log.debug(f"[ingest] {name}: Known problematic feed ({reason}), skipping retries")
+                    return name, [], f"Blocked ({reason}): {url}"
 
-            # Handle Cloudflare challenge for other feeds
-            if is_cf_challenge:
-                raise RuntimeError(f"Cloudflare challenge blocked feed: {url}")
-
-            # Handle other 403 errors - retry
-            if resp.status_code == 403:
                 if attempt < max_retries - 1:
-                    log.debug(f"[ingest] {name}: got 403, trying cloudscraper (attempt {attempt + 1})")
+                    log.debug(f"[ingest] {name}: got {'CF challenge' if is_cf_challenge else '403'}, trying cloudscraper (attempt {attempt + 1})")
                     loop = asyncio.get_event_loop()
                     try:
                         content = await loop.run_in_executor(None, _fetch_with_cloudscraper, url, timeout)
@@ -669,6 +666,11 @@ async def fetch_feed_async(client: httpx.AsyncClient, source: Dict[str, Any]) ->
                         log.debug(f"[ingest] {name}: cloudscraper failed: {e}, retrying with httpx...")
                         await asyncio.sleep(1.0 * (attempt + 1))
                         continue
+                else:
+                    if is_cf_challenge:
+                        raise RuntimeError(f"Cloudflare challenge blocked feed: {url}")
+                    else:
+                        raise RuntimeError(f"Repeated 403, giving up: {url}")
 
             resp.raise_for_status()
 

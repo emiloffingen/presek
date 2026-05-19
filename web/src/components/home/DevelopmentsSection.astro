@@ -26,6 +26,9 @@ function getBentoSpan(cluster: NewsCluster) {
 ---
 
 <section class:list={["feed-section motion-rise motion-delay-3", `feed-tone-${tone}`]}>
+    <div class="editorial-divider">
+        <span class="editorial-ornament">◆</span>
+    </div>
     <div class="section-heading-row masthead-double-rule">
         <p class="section-kicker">
             {tone === 'global' ? t('home.tone_global') : tone === 'wire' ? t('home.tone_wire') : tone === 'developing' ? t('home.tone_developing') : t('home.tone_default')}
@@ -39,8 +42,10 @@ function getBentoSpan(cluster: NewsCluster) {
     {variant === "wire" ? (
         developmentsFeatured.length > 0 && (
             <div class="news-feed-grid wire-stack">
-                {developmentsFeatured.map((cluster: NewsCluster) => (
-                    <NewsCard cluster={cluster} variant="wire" lang={lang} />
+                {developmentsFeatured.map((cluster: NewsCluster, idx: number) => (
+                    <div class="developments-card" style={`animation-delay: ${idx * 0.06}s`}>
+                        <NewsCard cluster={cluster} variant="wire" lang={lang} />
+                    </div>
                 ))}
             </div>
         )
@@ -48,15 +53,19 @@ function getBentoSpan(cluster: NewsCluster) {
         <Fragment>
             {developmentsFeatured.length > 0 && (
                 <div class="bento-box-grid">
-                    {developmentsFeatured.map((cluster: NewsCluster) => (
-                        <NewsCard cluster={cluster} variant="featured" bentoSpan={getBentoSpan(cluster)} lang={lang} />
+                    {developmentsFeatured.map((cluster: NewsCluster, idx: number) => (
+                        <div class="developments-card" style={`animation-delay: ${idx * 0.08}s`}>
+                            <NewsCard cluster={cluster} variant="featured" bentoSpan={getBentoSpan(cluster)} lang={lang} />
+                        </div>
                     ))}
                 </div>
             )}
             {developmentsCompact.length > 0 && (
                 <div class="news-feed-grid news-feed-grid-compact mt-8">
-                    {developmentsCompact.map((cluster: NewsCluster) => (
-                        <NewsCard cluster={cluster} variant="compact" lang={lang} />
+                    {developmentsCompact.map((cluster: NewsCluster, idx: number) => (
+                        <div class="developments-card" style={`animation-delay: ${(developmentsFeatured.length + idx) * 0.06}s`}>
+                            <NewsCard cluster={cluster} variant="compact" lang={lang} />
+                        </div>
                     ))}
                 </div>
             )}
@@ -65,23 +74,57 @@ function getBentoSpan(cluster: NewsCluster) {
 </section>
 
 <style>
+    /* ── Editorial Divider ──────────────────────────── */
+    .editorial-divider {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .editorial-divider::before,
+    .editorial-divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+    }
+    .editorial-ornament {
+        font-size: 0.45rem;
+        color: var(--muted-foreground);
+        opacity: 0.4;
+    }
+
+    /* ── Section Heading ────────────────────────────── */
     .feed-section .section-heading-row {
         margin-bottom: 1rem;
         position: relative;
     }
 
+    /* ── Tone Variants ──────────────────────────────── */
     .feed-tone-global {
         background: color-mix(in srgb, #0f766e 3%, transparent);
-        padding: 1rem 0.5rem;
-        border-y: 1px solid color-mix(in srgb, #0f766e 10%, transparent);
+        padding: 1.5rem 1rem;
+        border-left: 4px solid #0f766e;
+        border-top: 1px solid color-mix(in srgb, #0f766e 10%, transparent);
+        border-bottom: 1px solid color-mix(in srgb, #0f766e 10%, transparent);
     }
 
     .feed-tone-developing {
         background: color-mix(in srgb, #9a3412 3%, transparent);
-        padding: 1rem 0.5rem;
-        border-y: 1px solid color-mix(in srgb, #9a3412 10%, transparent);
+        padding: 1.5rem 1rem;
+        border-left: 4px solid #9a3412;
+        border-top: 1px solid color-mix(in srgb, #9a3412 10%, transparent);
+        border-bottom: 1px solid color-mix(in srgb, #9a3412 10%, transparent);
     }
 
+    .feed-tone-wire {
+        padding: 1.5rem 1rem;
+        border-left: 4px solid var(--nyt-red);
+        border-top: 1px solid color-mix(in srgb, var(--nyt-red) 10%, transparent);
+        border-bottom: 1px solid color-mix(in srgb, var(--nyt-red) 10%, transparent);
+    }
+
+    /* ── Kickers ────────────────────────────────────── */
     .section-kicker {
         margin: 0 0 0.15rem;
         font-family: var(--font-sans);
@@ -112,16 +155,26 @@ function getBentoSpan(cluster: NewsCluster) {
         color: var(--muted-foreground);
     }
 
-    .feed-tone-global .section-kicker {
-        color: #0f766e;
+    .feed-tone-global .section-kicker { color: #0f766e; }
+    .feed-tone-wire .section-kicker { color: var(--nyt-red); }
+    .feed-tone-developing .section-kicker { color: #9a3412; }
+
+    .feed-tone-global .editorial-ornament { color: #0f766e; opacity: 0.6; }
+    .feed-tone-developing .editorial-ornament { color: #9a3412; opacity: 0.6; }
+    .feed-tone-wire .editorial-ornament { color: var(--nyt-red); opacity: 0.6; }
+
+    /* ── Card Entrance Animations ───────────────────── */
+    .developments-card {
+        opacity: 0;
+        transform: translateY(8px);
+        animation: cardReveal 0.5s var(--ease-editorial, ease) forwards;
     }
 
-    .feed-tone-wire .section-kicker {
-        color: var(--nyt-red);
-    }
-
-    .feed-tone-developing .section-kicker {
-        color: #9a3412;
+    @keyframes cardReveal {
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     @media (max-width: 640px) {
@@ -140,3 +193,4 @@ function getBentoSpan(cluster: NewsCluster) {
         }
     }
 </style>
+

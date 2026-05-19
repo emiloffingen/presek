@@ -360,7 +360,8 @@ class DatabaseManager:
             with conn.cursor() as cur:
                 cur.execute(sql, params)
                 results = None
-                if fetch:
+                # Only fetch if requested AND there are results to fetch
+                if fetch and cur.description:
                     results = cur.fetchall()
                 conn.commit()
                 return results if fetch else cur.rowcount

@@ -79,6 +79,11 @@ const uniqueEntities = Array.from(uniqueEntitiesMap.values())
 
 <aside class="broadsheet-rail">
 
+	<div class="rail-header">
+		<span class="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground">Latest Wire</span>
+		<div class="w-full h-px bg-border mt-2"></div>
+	</div>
+
 	<section class="rail-block">
 		<div class="rail-head-red">
 			<Activity size={12} strokeWidth={1.5} />
@@ -170,6 +175,27 @@ const uniqueEntities = Array.from(uniqueEntitiesMap.values())
         .broadsheet-rail {
             grid-template-columns: repeat(4, 1fr);
         }
+    }
+
+    /* When inside a sidebar, stack vertically with dividers */
+    :global(.broadsheet-sidebar) .broadsheet-rail {
+        grid-template-columns: 1fr !important;
+        border-top: none;
+        margin-top: 0;
+        padding-top: 0;
+    }
+
+    :global(.broadsheet-sidebar) .broadsheet-rail > :global(*) {
+        border-right: none !important;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    :global(.broadsheet-sidebar) .broadsheet-rail > :global(*:last-child) {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
     }
 
     .rail-block { margin-bottom: 0; padding-bottom: 2rem; border-bottom: 1px solid var(--border); }

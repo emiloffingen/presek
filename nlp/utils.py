@@ -91,8 +91,9 @@ def deShout(text: str) -> str:
         return ""
     s = str(text)
     # If text doesn't have many lowercase letters, it's probably shouting
-    lowerCount = len(re.findall(r"[a-za-s]", s))
-    totalAlpha = len(re.findall(r"[a-zA-Za-sA-S]", s))
+    # Full Latin a-z + Cyrillic lowercase а-я plus special chars: ёѓќџљњћжшђч
+    lowerCount = len(re.findall(r"[a-zа-яёѓќџљњћжшђч]", s))
+    totalAlpha = len(re.findall(r"[a-zA-Zа-яА-ЯёЁѓЃќЌџЏљЉњЊћЋжЖшШђЂчЧ]", s))
 
     if totalAlpha > 5 and lowerCount < totalAlpha * 0.2:
         return s.lower().capitalize()
