@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Optional
 
 import redis as _redis_lib
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request, Depends
 from fastapi.responses import FileResponse, Response
 from prometheus_client import Counter
 
