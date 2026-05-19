@@ -62,6 +62,11 @@ function buildCanonicalUrl(pathname: string): string {
 
 const canonicalUrl = canonical || buildCanonicalUrl(requestUrl.pathname);
 const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.startsWith("/") ? image : `/${image}`}`;
+
+// Generate hreflang URLs for cross-domain SEO
+const alternatePath = lang === 'mk' ? requestUrl.pathname.replace(/^\/mk/, '') : requestUrl.pathname;
+const srHref = `https://presek.live${alternatePath.replace(/\/+$/, "") || ""}`;
+const mkHref = `https://presek.mk${alternatePath.replace(/\/+$/, "") || ""}`;
 ---
 
 <!doctype html>
@@ -89,7 +94,16 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 		<meta name="generator" content={Astro.generator} />
 		<meta name="description" content={description || defaultDescription} />
 		{robots && <meta name="robots" content={robots} />}
+		
 		<link rel="canonical" href={canonicalUrl} />
+		<link rel="alternate" hreflang="sr-Latn-RS" href={srHref} />
+		<link rel="alternate" hreflang="mk-MK" href={mkHref} />
+		<link rel="alternate" hreflang="x-default" href={srHref} />
+
+		{image && !image.includes('presek_emblem') && (
+			<link rel="preload" as="image" href={imageUrl} fetchpriority="high" />
+		)}
+
 		<meta property="og:site_name" content={siteName} />
 		<meta property="og:locale" content={lang === 'sr' ? "sr_RS" : "mk_MK"} />
 		<meta property="og:type" content={type} />
@@ -278,15 +292,37 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 
     /* Ensure serif fonts are applied to all broadsheet text */
     .nyt-serif {
-        font-family: var(--font-serif);
+    font-family: var(--font-serif);
     }
 
     .nyt-sans {
-        font-family: var(--font-sans);
+    font-family: var(--font-sans);
     }
 
-    /* Skeleton Loading */
-    .skeleton {
+    h1, h2, h3, .headline, .editorial-headline {
+    text-wrap: balance;
+    letter-spacing: -0.015em;
+    }
+
+    p, .summary {
+    text-wrap: pretty;
+    }
+
+    /* Cyrillic Readability Polish */
+    .script-cyrillic {
+    --font-serif: "Georgia", serif; /* Georgia handles Cyrillic italics beautifully */
+    line-height: 1.55;
+    }
+
+    .script-cyrillic h1, 
+    .script-cyrillic h2, 
+    .script-cyrillic h3, 
+    .script-cyrillic .headline {
+    letter-spacing: -0.01em; /* Cyrillic needs slightly more air than Latin */
+    line-height: 1.15;
+    }
+
+    /* Skeleton Loading */    .skeleton {
         position: relative;
         overflow: hidden;
         background-color: var(--muted);

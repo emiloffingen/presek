@@ -90,7 +90,7 @@ ${items}
     return new Response(rss, {
         headers: {
             'Content-Type': 'application/xml; charset=utf-8',
-            'Cache-Control': 'public, max-age=300',
+            'Cache-Control': 'public, max-age=600, s-maxage=3600, stale-while-revalidate=1800',
         },
     });
 };

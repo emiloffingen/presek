@@ -323,6 +323,7 @@ function getBriefingSnippet(content: string) {
 	description={q || entity || subcategory || category || topic
 		? t('layout.filtered_description')
 		: t('layout.home_description')}
+    image={leadVisual?.proxiedUrl}
 >
     <NYTHeader q={q} category={category} topic={topic} entity={entity} subcategory={subcategory} stats={stats} />
 
@@ -417,7 +418,7 @@ function getBriefingSnippet(content: string) {
                         <div class="consensus-section bg-secondary/10 p-12 border-y border-border/40">
                             <div class="section-heading-row mb-8">
                                 <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent block mb-2">{t('home.consensus_title')}</span>
-                                <h2 class="font-serif text-3xl font-black italic">{t('home.consensus_subtitle')}</h2>
+                                <h2 class="font-serif text-3xl font-black italic" style="text-wrap: balance;">{t('home.consensus_subtitle')}</h2>
                                 <p class="text-sm text-muted-foreground mt-2">{t('home.consensus_desc')}</p>
                             </div>
                             <div class="consensus-carousel-wrap">
