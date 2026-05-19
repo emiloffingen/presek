@@ -353,9 +353,8 @@ async def get_deep_research(request: Request, cluster_id: str, mode: str = "fact
     """
     validate_cluster_id(cluster_id)
     clean_mode = (mode or "facts").strip().lower()
-    if clean_mode not in {"facts", "perspectives", "context", "custom"}:
-        clean_mode = "facts"
     clean_query = validate_string_param(q, "q", max_length=300, allow_empty=True).strip()
+    
     if clean_mode == "custom" and not clean_query:
         return {
             "status": "error",
@@ -366,6 +365,7 @@ async def get_deep_research(request: Request, cluster_id: str, mode: str = "fact
             ),
         }
 
+    # Caching check
     query = clean_query if clean_mode == "custom" else _RESEARCH_MODE_QUERIES[clean_mode]
     query_hash = hashlib.sha1(query.encode("utf-8")).hexdigest()[:12]
     cache_key = f"api:intelligence:research:cascade:{cluster_id}:{clean_mode}:{query_hash}:{lang}:v1"
@@ -373,166 +373,64 @@ async def get_deep_research(request: Request, cluster_id: str, mode: str = "fact
     if cached:
         return cached
 
-    try:
-        context, sources = await _build_gemma_research_context(cluster_id, clean_mode, clean_query)
+    # Delegate to service
+    from core.services.research_service import ResearchService
+    response = await ResearchService.get_cluster_research(cluster_id, clean_mode, clean_query, lang)
 
-        # Adjust research prompt based on language
-        research_system_prompt = RESEARCH_SYSTEM_PROMPT_MK if lang == "mk" else RESEARCH_SYSTEM_PROMPT
-
-        prompt = (
-            f"PITANJE: {query}\n\nKONTEKST ZA ANALIZU:\n{context}"
-            if lang == "sr"
-            else f"PRASANjE: {query}\n\nKONTEKST ZA ANALIZA:\n{context}"
-        )
-
-        # Use cascading AI engine
-        raw, provider = sync_call_ai(
-            prompt,
-            research_system_prompt,
-            task_type="research",
-            json_mode=True,
-            max_tokens=800,
-            lang=lang,
-        )
-
-        if not raw:
-            # Handle rate-limiting or provider failure explicitly
-            return {
-                "status": "error",
-                "message": (
-                    "Sistemot e preoptereten, obidete se povtorno za nekolku minuti."
-                    if lang == "mk"
-                    else "Sistem je trenutno preopterećen, pokušajte ponovo za nekoliko minuta."
-                ),
-            }
-
-        # Parse structured response
-        response = clean_json_response(raw)
-        answer = response.get("answer") if isinstance(response, dict) else str(response or "")
-        suggestions = response.get("suggestions", []) if isinstance(response, dict) else []
-
-        # Emergency cleanup: If we still have raw JSON string as answer, strip it
-        if isinstance(answer, str) and answer.strip().startswith("{"):
-            # If it failed all parsing but is clearly JSON, don't show it to user
-            log.warning(f"[research] Model returned raw JSON string that failed all cleaning: {answer[:100]}...")
-            if '"answer":' in answer:
-                # One last attempt to grab the text inside answer key
-                m = re.search(r'"answer":\s*"(.*?)"', answer, re.DOTALL)
-                if m:
-                    answer = m.group(1).replace("\\n", "\n")
-            else:
-                return {
-                    "status": "error",
-                    "message": (
-                        "Sistemot vrati nevaliden format." if lang == "mk" else "Sistem je vratio nevalidan format."
-                    ),
-                }
-
-        # Additional cleanup for system prompt leakage and commands
-        if isinstance(answer, str):
-            # First, try to remove complete system prompt blocks that might have leaked
-            system_prompt_patterns = [
-                r'^PITANJE:\s*.*?\n\nKONTEKST ZA ANALIZU:\s*.*?\n\n',
-                r'^PRASANjE:\s*.*?\n\nKONTEKST ZA ANALIZA:\s*.*?\n\n',
-                r'^\*\*\*\s*Presek.*?\*\*\*\s*\n\n',
-                r'^\*\*\*\s*Пресек.*?\*\*\*\s*\n\n'
-            ]
-            
-            for pattern in system_prompt_patterns:
-                match = re.match(pattern, answer, flags=re.IGNORECASE | re.DOTALL)
-                if match:
-                    answer = answer[match.end():].strip()
-                    break
-
-            # Remove individual command patterns from the beginning
-            answer = re.sub(r'^(?:PITANJE|PRASANjE|KONTEKST|ODGOVOR|ANSWER|REPORT):\s*', '', answer, flags=re.IGNORECASE)
-            
-            # Remove any remaining asterisk-delimited patterns
-            answer = re.sub(r'^\*\*\*\s*[^\*]+\*\*\*\s*', '', answer, flags=re.DOTALL)
-            
-            # Final cleanup: trim
-            answer = answer.strip()
-
-        if not answer:
-            return {
-                "status": "error",
-                "message": "Ne uspeav da generiram odgovor." if lang == "mk" else "Neuspeh pri generisanju odgovora.",
-            }
-
-        result = {
-            "status": "success",
-            "report": answer,
-            "answer": answer,
-            "suggestions": suggestions,
-            "mode": clean_mode,
-            "label": _RESEARCH_MODE_LABELS[clean_mode],
-            "provider": provider,
-            "sources": sources,
-            "timestamp": datetime.datetime.now(),
+    if not response:
+        return {
+            "status": "error",
+            "message": (
+                "Sistemot e preoptereten, obidete se povtorno za nekolku minuti."
+                if lang == "mk"
+                else "Sistem je trenutno preopterećen, pokušajte ponovo za nekoliko minuta."
+            ),
         }
 
+    # Final result structure
+    result = {
+        "status": "success",
+        "report": response.get("answer"),
+        "answer": response.get("answer"),
+        "suggestions": response.get("suggestions", []),
+        "mode": clean_mode,
+        "label": _RESEARCH_MODE_LABELS[clean_mode],
+    }
+    # ... (store in cache) ...
+    try:
         set_cache(cache_key, result, ttl=3600)
         return result
-
     except Exception as e:
         log.error(f"Deep research error: {e}", exc_info=True)
         return {
             "status": "error",
-            "message": "Greska pri prebaruvanjeto." if lang == "mk" else "Greška pri pretraživanju.",
+            "message": "Greška pri pretraživanju."
         }
+
+
 
 
 @router.get("/intelligence/cluster/{cluster_id}/analyst")
 async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts", lang: str = "sr"):
     """
     Internal 'Deep Intel' Analyst.
-    Compatibility wrapper for the Gemma-only research endpoint.
-    Modes: 'facts', 'perspectives', 'context'
+    Refactored to use ResearchService for unified research logic.
     """
     validate_cluster_id(cluster_id)
     clean_mode = (mode or "facts").strip().lower()
-    if clean_mode not in _RESEARCH_MODE_QUERIES:
-        clean_mode = "facts"
-    cache_key = f"api:intelligence:analyst:gemma:{cluster_id}:{clean_mode}:{lang}:v1"
-    cached = cached_response(cache_key)
-    if cached:
-        return cached
+    
+    from core.services.research_service import ResearchService
+    response = await ResearchService.get_cluster_research(cluster_id, clean_mode, "", lang)
+    
+    if not response:
+        return {"status": "error", "message": "Greška pri generisanju izveštaja."}
 
-    try:
-        from nlp.local_analyst import analyst
-
-        log.info(f"[analyst] Generating Gemma report for {cluster_id} (mode={clean_mode}, lang={lang})")
-        context, sources = await _build_gemma_research_context(cluster_id, clean_mode)
-        response = await asyncio.to_thread(
-            analyst.research_query, _RESEARCH_MODE_QUERIES[clean_mode], context, lang=lang
-        )
-        report = response.get("answer") if isinstance(response, dict) else str(response or "")
-
-        if not report:
-            return {
-                "status": "error",
-                "message": "Analiticarot e zafaten." if lang == "mk" else "Analitičar je zauzet.",
-            }
-
-        # Apply final name validation on the report
-        from core.entities import validate_person_names
-
-        report = validate_person_names(report)
-
-        result = {
-            "status": "success",
-            "report": report,
-            "mode": clean_mode,
-            "provider": "local_gemma",
-            "sources": sources,
-        }
-
-        set_cache(cache_key, result, ttl=7200)
-        return result
-
-    except Exception as e:
-        log.error(f"[analyst] Unexpected error for {cluster_id}: {e}", exc_info=True)
-        return {"status": "error", "message": "Грешка при анализата." if lang == "mk" else "Greška pri analizi."}
+    return {
+        "status": "success",
+        "report": response.get("answer"),
+        "answer": response.get("answer"),
+        "suggestions": response.get("suggestions", []),
+    }
 
 
 @router.get("/intelligence/source-pulse")

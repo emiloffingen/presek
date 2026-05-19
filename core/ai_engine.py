@@ -511,6 +511,25 @@ def _call_ai(
     return None, None
 
 
+import asyncio
+import time
+# ... (existing imports)
+
+async def async_call_ai(
+    prompt: str,
+    system: str,
+    task_type: str = "default",
+    max_tokens: int = 2000,
+    json_mode: bool = False,
+    topic: str = None,
+    lang: str = "sr",
+):
+    """
+    Asynchronous version of the AI provider cascade.
+    Wraps blocking provider calls in a thread executor to keep the event loop free.
+    """
+    return await asyncio.to_thread(_call_ai, prompt, system, task_type, max_tokens, json_mode, topic, lang)
+
 def sync_call_ai(
     prompt: str,
     system: str,
@@ -522,6 +541,7 @@ def sync_call_ai(
 ):
     """Backwards-compatible alias for synchronous callers."""
     return _call_ai(prompt, system, task_type, max_tokens, json_mode, topic=topic, lang=lang)
+
 
 
 def clean_json_response(text: str) -> dict | str | None:

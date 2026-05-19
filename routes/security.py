@@ -506,9 +506,19 @@ def create_security_middleware(app):
 # =============================================================================
 
 
-async def admin_user(request: Request) -> bool:
-    """Dependency for admin-only endpoints."""
-    return verify_admin_token(request)
+from core.auth import verify_admin_jwt
+
+async def admin_auth(request: Request) -> str:
+    """Dependency for JWT-based admin authentication."""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid token")
+    
+    token = auth_header.split("Bearer ")[1]
+    if not verify_admin_jwt(token):
+        raise HTTPException(status_code=403, detail="Not authorized")
+    return "admin"
+
 
 
 async def valid_cluster_id(cluster_id: str) -> str:
