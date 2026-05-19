@@ -258,42 +258,30 @@ def repair_knowledge_graph_task():
 
 
 @celery_app.task
-def refresh_global_headlines_task():
-    """Fetches top global headlines (English) and caches their embeddings for comparison."""
-    import json
+def prune_system_logs_and_releases():
+    """Prunes logs older than 30 days and removes old deployments."""
+    import time
+    from pathlib import Path
 
-    import feedparser
-    import httpx
+    # 1. Prune Logs
+    log_dir = Path(_ROOT) / "logs"
+    if log_dir.exists():
+        now = time.time()
+        for f in log_dir.glob("*.log*"):
+            if f.stat().st_mtime < now - (30 * 86400):
+                log.info(f"[maintenance] Deleting old log: {f}")
+                f.unlink()
 
-    from core.embeddings import generate_query_embedding
-    from utils import redis_client
-
-    FEEDS = [
-        "https://www.reutersagency.com/feed/?best-topics=world-news&post_type=best",
-        "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
-        "http://feeds.bbci.co.uk/news/world/rss.xml",
-    ]
-
-    log.info("[maintenance] Refreshing global headlines cache...")
-    all_heads = []
-
-    try:
-        with httpx.Client(timeout=15.0) as client:
-            for url in FEEDS:
-                try:
-                    resp = client.get(url)
-                    feed = feedparser.parse(resp.text)
-                    for entry in feed.entries[:15]:
-                        title = entry.title
-                        vec = generate_query_embedding(title)
-                        if vec:
-                            all_heads.append({"title": title, "vec": vec})
-                except Exception as e:
-                    log.warning(f"[maintenance] Failed to fetch global feed {url}: {e}")
-
-        if all_heads:
-            redis_client.setex("presek:global_headlines:v1", 7200, json.dumps(all_heads))
-            log.info(f"[maintenance] Cached {len(all_heads)} global headlines.")
-
-    except Exception as e:
-        log.error(f"[maintenance] refresh_global_headlines failed: {e}")
+    # 2. Prune old releases (keep latest 5)
+    app_root = Path(os.environ.get("APP_ROOT", "/home/emiloffingen/presek-runtime"))
+    releases_dir = app_root / "releases"
+    if releases_dir.exists():
+        all_releases = sorted(
+            [d for d in releases_dir.iterdir() if d.is_dir()],
+            key=lambda x: x.stat().st_mtime,
+            reverse=True
+        )
+        for old_rel in all_releases[5:]:
+            log.info(f"[maintenance] Deleting old release: {old_rel}")
+            import shutil
+            shutil.rmtree(old_rel)
