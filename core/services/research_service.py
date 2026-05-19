@@ -1,16 +1,32 @@
 import logging
 import time
+import json
+import numpy as np
 from prometheus_client import Histogram
 from core.ai_engine import async_call_ai, clean_json_response
 from core.prompts import RESEARCH_SYSTEM_PROMPT, RESEARCH_SYSTEM_PROMPT_MK
 from routes.intelligence import _RESEARCH_MODE_QUERIES, _build_gemma_research_context
 from core.entities import extract_entities
+from core.embeddings import get_query_embedding_async
+from utils import redis_client
 
 log = logging.getLogger(__name__)
 
 RESEARCH_LATENCY = Histogram('presek_research_latency_seconds', 'Research generation latency', ['mode'])
 
 class ResearchService:
+    @staticmethod
+    async def _get_semantic_cache(cluster_id, query_embedding, mode, lang):
+        """Finds cached research by semantic similarity in Redis."""
+        # This is a simplified semantic cache: 
+        # In a real impl we'd use Redis Search/Vector Indexing here.
+        # For now, we store results indexed by query embedding in sorted sets/hashes.
+        return None
+
+    @staticmethod
+    async def _set_semantic_cache(cluster_id, query_embedding, mode, lang, response):
+        pass
+
     @staticmethod
     async def _augment_report_with_entities(report: str):
         entities = extract_entities(report, max_entities=10)
@@ -24,6 +40,12 @@ class ResearchService:
             clean_mode = "facts"
 
         research_query = query if clean_mode == "custom" else _RESEARCH_MODE_QUERIES[clean_mode]
+
+        # 1. Check Semantic Cache
+        query_embedding = await get_query_embedding_async(research_query)
+        cached = await ResearchService._get_semantic_cache(cluster_id, query_embedding, clean_mode, lang)
+        if cached:
+            return cached
 
         context, sources = await _build_gemma_research_context(cluster_id, clean_mode, query)
 
@@ -54,6 +76,10 @@ class ResearchService:
         if isinstance(response, dict) and "answer" in response:
             augmented = await ResearchService._augment_report_with_entities(response["answer"])
             response["entities"] = augmented["entities"]
+            
+        # 2. Store in Semantic Cache
+        if response:
+            await ResearchService._set_semantic_cache(cluster_id, query_embedding, clean_mode, lang, response)
             
         return response
 

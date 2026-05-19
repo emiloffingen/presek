@@ -1182,3 +1182,23 @@ async def get_latest_briefing(date: Optional[str] = None, lang: str = "sr"):
         "lead_cluster": lead_cluster,
         "day_stats": stats_res,
     }
+
+from routes.security import admin_auth
+
+@router.post("/intelligence/save-insight")
+async def save_insight(request: Request, authorized: str = Depends(admin_auth)):
+    """Saves a research insight for an authenticated user."""
+    data = await request.json()
+    cluster_id = data.get("cluster_id")
+    title = data.get("title")
+    report = data.get("report")
+    
+    from core.database import db_manager as db
+    
+    db.execute(
+        "INSERT INTO saved_insights (user_id, cluster_id, title, report) VALUES (%s, %s, %s, %s)",
+        (authorized, cluster_id, title, report),
+        fetch=False
+    )
+    
+    return {"status": "success", "message": "Insight saved successfully."}
