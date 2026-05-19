@@ -11,7 +11,11 @@ from typing import AsyncGenerator
 import httpx
 from prometheus_client import REGISTRY, Counter, Histogram
 
-from core.config import PROVIDER_FALLBACK_ORDER, PROVIDER_FALLBACK_ORDER_SUMMARY
+from core.config import (
+    PROVIDER_FALLBACK_ORDER,
+    PROVIDER_FALLBACK_ORDER_RESEARCH,
+    PROVIDER_FALLBACK_ORDER_SUMMARY,
+)
 
 log = logging.getLogger("presek")
 
@@ -296,7 +300,7 @@ class NvidiaProvider(OpenAICompatibleProvider):
 
 class GeminiProvider(AIProvider):
     def __init__(self, api_key: str, model: str):
-        self.api_key = api_key or os.environ.get("GOOGLE_API_KEY")
+        self.api_key = api_key or os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
         self.model_name = model
         if not self.api_key:
             return
@@ -358,8 +362,8 @@ PROVIDERS = {
         model=os.environ.get("MISTRAL_SMALL_MODEL", "mistral-small-latest"),
     ),
     "gemini": GeminiProvider(
-        api_key=os.environ.get("GEMINI_API_KEY", ""),
-        model=os.environ.get("GEMINI_MODEL", "gemini-flash-latest"),
+        api_key=os.environ.get("GEMINI_API_KEY", "") or os.environ.get("GOOGLE_API_KEY", ""),
+        model=os.environ.get("GEMINI_MODEL", "gemini-2.5-flash"),
     ),
     "local": LocalProvider(),
 }
@@ -395,13 +399,8 @@ async def _call_ai_async(
         AI_CALLS.labels(provider="sanitization", task_type=task_type, status="blocked").inc()
         return None, None
 
-    # Budget-based routing heuristic
     if task_type == "research":
-        # If query is short, assume simple fact-check and favor faster providers
-        if len(prompt) < 150: 
-            fallback_order = ["mistral_small", "gemini", "nvidia"]
-        else:
-            fallback_order = ["gemini", "mistral_large", "nvidia"]
+        fallback_order = list(PROVIDER_FALLBACK_ORDER_RESEARCH)
     elif task_type in ("summarize", "synthesis"):
         fallback_order = list(PROVIDER_FALLBACK_ORDER_SUMMARY)
     else:
@@ -480,13 +479,8 @@ def _call_ai(
         AI_CALLS.labels(provider="sanitization", task_type=task_type, status="blocked").inc()
         return None, None
 
-    # Budget-based routing heuristic
     if task_type == "research":
-        # If query is short, assume simple fact-check and favor faster providers
-        if len(prompt) < 150: 
-            fallback_order = ["mistral_small", "gemini", "nvidia"]
-        else:
-            fallback_order = ["gemini", "mistral_large", "nvidia"]
+        fallback_order = list(PROVIDER_FALLBACK_ORDER_RESEARCH)
     elif task_type in ("summarize", "synthesis"):
         fallback_order = list(PROVIDER_FALLBACK_ORDER_SUMMARY)
     else:

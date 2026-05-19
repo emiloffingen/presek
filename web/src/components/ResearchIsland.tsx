@@ -13,6 +13,7 @@ type ResearchMode = 'facts' | 'perspectives' | 'context';
 
 export default function ResearchIsland({ clusterId, initialHeadline, sources = [], lang = 'sr' }: ResearchIslandProps) {
   const t = useTranslations(lang || 'sr');
+  const headline = initialHeadline?.trim();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState<ResearchMode | 'custom' | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +49,10 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
     setError(null);
     try {
       const params = new URLSearchParams({ mode, lang });
-      if (mode === 'custom') params.set('q', query || '');
+      if (mode === 'custom') {
+        const custom = query?.trim() || '';
+        params.set('q', headline ? `${custom}\n\nTema: ${headline}` : custom);
+      }
       const url = `/api/intelligence/cluster/${clusterId}/research?${params.toString()}`;
 
       const controller = new AbortController();
@@ -131,9 +135,10 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
           );
       }
 
-      // Headers (robust: matches '# Header' or '1. # Header')
-      if (trimmed.includes('#')) {
-          const headerText = trimmed.split('#')[1].trim();
+      // Headers: only markdown heading syntax, with optional numbered prefix.
+      const headerMatch = trimmed.match(/^(?:\d+\.\s*)?#{1,3}\s+(.+)$/);
+      if (headerMatch) {
+          const headerText = headerMatch[1].trim();
           return <h3 key={i} className={`font-serif font-black text-2xl md:text-3xl mt-12 mb-6 border-b-2 border-border pb-3 text-foreground tracking-tight text-left ${animClass}`} style={animStyle}>{parseBoldText(headerText)}</h3>;
       }
       
@@ -183,6 +188,11 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
           <p className="font-serif text-sm md:text-base leading-relaxed text-secondary-foreground italic opacity-90">
             {t('cluster.research_prompt')}
           </p>
+          {headline && (
+            <p className="mt-3 max-w-full font-sans text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground line-clamp-2">
+              {headline}
+            </p>
+          )}
         </div>
       </div>
 

@@ -559,8 +559,10 @@ DATABASE_READ_REPLICA_URL = os.environ.get("DATABASE_READ_REPLICA_URL", "")
 USE_READ_REPLICA = bool(DATABASE_READ_REPLICA_URL)
 
 # ── AI Routing Configuration ────────────────────────────────────
-# Use Mistral large (free) first, then small (paid)
-PROVIDER_FALLBACK_ORDER_RESEARCH = ["mistral_large", "nvidia", "mistral_small", "gemini"]
+# Research should prefer providers that are currently reliable and produce
+# grounded long-form answers. Keep local before degraded/optional providers so
+# interactive research does not stall behind invalid or rate-limited APIs.
+PROVIDER_FALLBACK_ORDER_RESEARCH = ["mistral_large", "nvidia", "local", "mistral_small", "gemini"]
 PROVIDER_FALLBACK_ORDER_SUMMARY = ["mistral_large", "mistral_small", "gemini"]
 PROVIDER_FALLBACK_ORDER = ["mistral_large", "nvidia", "mistral_small", "gemini"]  # default
 

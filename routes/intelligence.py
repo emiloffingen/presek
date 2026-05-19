@@ -352,6 +352,15 @@ async def get_deep_research(request: Request, cluster_id: str, mode: str = "fact
     validate_cluster_id(cluster_id)
     clean_mode = (mode or "facts").strip().lower()
     clean_query = validate_string_param(q, "q", max_length=300, allow_empty=True).strip()
+    if clean_mode not in {"facts", "perspectives", "context", "custom"}:
+        return {
+            "status": "error",
+            "message": (
+                "Nevaliden tip na istrazuvanje."
+                if lang == "mk"
+                else "Nevalidan tip istraživanja."
+            ),
+        }
     
     if clean_mode == "custom" and not clean_query:
         return {
