@@ -1,10 +1,6 @@
 import type { APIRoute } from 'astro';
 import { apiBaseUrl } from '../lib/apiBase';
 
-const SITE_URL = (import.meta.env.PUBLIC_SITE_URL || 'https://presek.live').replace(/\/+$/, '');
-const lang = 'sr'; // Serbian RSS feed
-const API_URL = apiBaseUrl();
-
 function escapeXml(str: string): string {
     return str
         .replace(/&/g, '&amp;')
@@ -20,12 +16,17 @@ function formatDate(dateString: string | undefined): string {
     return date.toUTCString();
 }
 
-export const GET: APIRoute = async () => {
+export const GET: APIRoute = async ({ request }) => {
+    const url = new URL(request.url);
+    const host = request.headers.get('host') || url.hostname;
+    const isMk = host.includes('presek.mk');
+    const SITE_URL = isMk ? 'https://presek.mk' : 'https://presek.live';
+    const API_URL = apiBaseUrl();
+    
     const clusters: any[] = [];
     const now = new Date().toUTCString();
 
     try {
-        // Fetch Serbian news
         const res = await fetch(`${API_URL}/news?page_size=50&page=0`);
         if (res.ok) {
             const data = await res.json();
@@ -37,10 +38,10 @@ export const GET: APIRoute = async () => {
         console.error("RSS fetch error:", e);
     }
 
-    // Build RSS feed items - filter to only RS articles
+    const countryFilter = isMk ? 'MK' : 'RS';
     const items = clusters
         .filter(c => c.articles && c.articles.length > 0)
-        .flatMap(cluster => cluster.articles.filter((a: any) => a.country === 'RS'))
+        .flatMap(cluster => cluster.articles.filter((a: any) => a.country === countryFilter))
         .filter(a => a)
         .map(article => {
             const cluster = clusters.find(c => c.cluster_id === article.cluster_id) || {};
@@ -62,13 +63,11 @@ export const GET: APIRoute = async () => {
         })
         .join('\n');
 
-    const siteUrl = lang === 'sr' ? SITE_URL : SITE_URL.replace('presek.live', 'presek.mk');
-    const title = lang === 'sr' ? 'Presek - Srbija' : 'Пресек - Македонија';
-    const description = lang === 'sr'
-        ? 'Presek: Najnovije vesti iz Srbije i regiona. Nezavisno, balansirano, dubinsko.'
-        : 'Пресек: Најнови вести од Македонија и регионот. Независно, балансирано, длабоко.';
-    const language = lang === 'sr' ? 'sr-RS' : 'mk-MK';
-    const rssPath = lang === 'sr' ? 'rss.xml' : 'mk/rss.xml';
+    const title = isMk ? 'Пресек - Македонија' : 'Presek - Srbija';
+    const description = isMk
+        ? 'Пресек: Најнови вести од Македонија и регионот. Независно, балансирано, длабоко.'
+        : 'Presek: Najnovije vesti iz Srbije i regiona. Nezavisno, balansirano, dubinsko.';
+    const language = isMk ? 'mk-MK' : 'sr-RS';
 
     const rss = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0"
@@ -76,14 +75,14 @@ export const GET: APIRoute = async () => {
      xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title><![CDATA[${title}]]></title>
-    <link>${escapeXml(siteUrl)}</link>
+    <link>${escapeXml(SITE_URL)}</link>
     <description><![CDATA[${description}]]></description>
     <language>${language}</language>
     <pubDate>${now}</pubDate>
     <lastBuildDate>${now}</lastBuildDate>
     <managingEditor>editor@presek.live</managingEditor>
     <webMaster>webmaster@presek.live</webMaster>
-    <atom:link href="${escapeXml(siteUrl)}/${rssPath}" rel="self" type="application/rss+xml" />
+    <atom:link href="${escapeXml(SITE_URL)}/rss.xml" rel="self" type="application/rss+xml" />
 ${items}
   </channel>
 </rss>`;

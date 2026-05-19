@@ -1,10 +1,13 @@
 import type { APIRoute } from 'astro';
 import { apiBaseUrl } from '../lib/apiBase';
 
-const SITE_URL = (import.meta.env.PUBLIC_SITE_URL || 'https://presek.live').replace(/\/+$/, '');
-const API_URL = apiBaseUrl();
-
-export const GET: APIRoute = async () => {
+export const GET: APIRoute = async ({ request }) => {
+    const url = new URL(request.url);
+    const host = request.headers.get('host') || url.hostname;
+    const isMk = host.includes('presek.mk');
+    const SITE_URL = isMk ? 'https://presek.mk' : 'https://presek.live';
+    const API_URL = apiBaseUrl();
+    
     const clusterIds: string[] = [];
 
     try {
@@ -15,7 +18,12 @@ export const GET: APIRoute = async () => {
             if (res.ok) {
                 const data = await res.json();
                 if (data && Array.isArray(data.clusters)) {
-                    clusterIds.push(...data.clusters.map((c: any) => c.cluster_id));
+                    // Filter clusters by country to ensure correct sitemap content per domain
+                    const country = isMk ? 'MK' : 'RS';
+                    const filtered = data.clusters.filter((c: any) => 
+                        c.articles && c.articles.some((a: any) => a.country === country)
+                    );
+                    clusterIds.push(...filtered.map((c: any) => c.cluster_id));
                     hasMore = data.has_more;
                 } else {
                     hasMore = false;
