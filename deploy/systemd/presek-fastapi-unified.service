@@ -1,5 +1,5 @@
 [Unit]
-Description=Presek FastAPI service (Macedonian)
+Description=Presek Unified FastAPI service
 After=network-online.target postgresql.service redis.service
 Wants=network-online.target
 PartOf=presek.target
@@ -13,16 +13,17 @@ Environment=HF_HOME=/home/emiloffingen/presek-runtime/shared/huggingface
 Environment=HF_HUB_CACHE=/home/emiloffingen/presek-runtime/shared/huggingface/hub
 Environment=SENTENCE_TRANSFORMERS_HOME=/home/emiloffingen/presek-runtime/shared/huggingface/sentence_transformers
 WorkingDirectory=/home/emiloffingen/presek-runtime/current
-ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && set -a && source /home/emiloffingen/presek-runtime/shared/.env && set +a && exec /home/emiloffingen/presek-runtime/venv/bin/uvicorn core.api_fast:app --host 127.0.0.1 --port 5002 --workers 1'
+# Unified service running on port 5001, handles both SR and MK traffic
+ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && set -a && source /home/emiloffingen/presek-runtime/shared/.env && set +a && exec /home/emiloffingen/presek-runtime/venv/bin/uvicorn core.api_fast:app --host 127.0.0.1 --port 5001 --workers 2'
 Restart=always
 RestartSec=5
 TimeoutStartSec=180
 TimeoutStopSec=30
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=presek-fastapi-mk
-MemoryHigh=1600M
-MemoryMax=2000M
+SyslogIdentifier=presek-fastapi-unified
+MemoryHigh=3000M
+MemoryMax=4000M
 ProtectSystem=strict
 ProtectHome=read-only
 NoNewPrivileges=yes

@@ -119,26 +119,21 @@ restart_services_in_order() {
     local remaining_services=()
     local service
 
-    info "Restarting FastAPI services first"
-    if has_service "presek-fastapi.service"; then
-        sudo systemctl restart presek-fastapi.service
-        wait_http_status "FastAPI" "http://127.0.0.1:5001/api/health"
-    fi
-    if has_service "presek-fastapi-mk.service"; then
-        sudo systemctl restart presek-fastapi-mk.service
-        wait_http_status "FastAPI MK" "http://127.0.0.1:5002/api/health"
+    info "Restarting unified FastAPI service"
+    if has_service "presek-fastapi-unified.service"; then
+        sudo systemctl restart presek-fastapi-unified.service
+        wait_http_status "FastAPI Unified" "http://127.0.0.1:5001/api/health"
     fi
 
     if has_service "presek-astro.service"; then
-        info "Restarting Astro after FastAPI is ready"
+        info "Restarting Astro"
         sudo systemctl restart presek-astro.service
         wait_http_status "Astro" "http://127.0.0.1:3000"
-        wait_http_status "Astro MK" "http://127.0.0.1:3000/mk"
     fi
 
     for service in "${APP_SERVICES[@]}"; do
         case "$service" in
-            presek-fastapi.service|presek-fastapi-mk.service|presek-astro.service)
+            presek-fastapi-unified.service|presek-astro.service)
                 ;;
             *)
                 remaining_services+=("$service")
