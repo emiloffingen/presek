@@ -1085,7 +1085,7 @@ button:focus-visible,
 
 /* Fluid Site Layout - Filling empty space on desktop */
 .site-layout {
-    max-width: 1800px;
+    max-width: 1600px;
     margin: 0 auto;
     padding: 0 clamp(0.75rem, 2vw, 2.5rem);
     width: 96%;
@@ -1095,7 +1095,7 @@ button:focus-visible,
 @media (min-width: 1600px) {
     .site-layout {
         width: 98%;
-        max-width: 2200px;
+        max-width: 1600px;
     }
 }
 
