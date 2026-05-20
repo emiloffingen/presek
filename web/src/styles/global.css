@@ -409,6 +409,11 @@ button:focus-visible,
     filter: blur(0);
 }
 
+.nyt-article:hover .article-image.is-loaded,
+.nyt-article:hover .cluster-visual-image.is-loaded {
+    transform: scale(1.05);
+}
+
 .shadow-editorial {
     box-shadow: var(--shadow-lg);
 }
