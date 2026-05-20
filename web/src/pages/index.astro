@@ -221,8 +221,9 @@ const trendingPreviewClusters = clusters
         return scoreB - scoreA;
     })
     .slice(0, 10);
+const displayedTrendingClusters = trendingPreviewClusters.slice(0, 6);
 
-trendingPreviewClusters.forEach(c => usedIds.add(c.cluster_id));
+displayedTrendingClusters.forEach(c => usedIds.add(c.cluster_id));
 
 if (!isHomepage) {
     supportingClusters = clusters.slice(1, 5);
@@ -409,7 +410,7 @@ const leadEvidenceItems = leadCluster ? [
 	description={q || entity || subcategory || category || topic
 		? t('layout.filtered_description')
 		: t('layout.home_description')}
-    image={leadVisual?.proxiedUrl}
+    image={leadVisual?.proxiedUrl || undefined}
 >
     <NYTHeader q={q} category={category} topic={topic} entity={entity} subcategory={subcategory} stats={stats} />
 
@@ -529,7 +530,7 @@ const leadEvidenceItems = leadCluster ? [
                     </section>
                 )}
 
-                {!error && trendingPreviewClusters.length > 0 && isHomepage && (
+                {!error && displayedTrendingClusters.length > 0 && isHomepage && (
                     <div class="trending-strip">
                         <div class="trending-strip-header">
                             <span class="trending-label">
@@ -541,7 +542,7 @@ const leadEvidenceItems = leadCluster ? [
                             </span>
                         </div>
                         <div class="trending-row hide-scrollbar" aria-label={t('home.trending')}>
-                            {trendingPreviewClusters.slice(0, 6).map((cluster: NewsCluster) => (
+                            {displayedTrendingClusters.map((cluster: NewsCluster) => (
                                 <div class="trending-card">
                                     <NewsCard cluster={cluster} variant="compact" lang={lang} />
                                 </div>
@@ -587,7 +588,7 @@ const leadEvidenceItems = leadCluster ? [
                         </div>
                 )}
 
-				{feedClusters.length > 0 && (
+				{(developmentsFeatured.length > 0 || developmentsCompact.length > 0) && (
 					<div class="section-wrapper">
 						<DevelopmentsSection
 							title={t('home.developing_title')}

@@ -469,10 +469,9 @@ const articleSchema = cluster ? {
 						</details>
 					</div>
 				)}
-					</div><div class="editorial-grid">
-	{/* 3. MAIN COLUMN */}
-	<div class="editorial-main-col">
-						{/* EXECUTIVE SUMMARY / BRIFING */}
+					</div>
+
+						{/* EXECUTIVE SUMMARY / BRIFING - Wider Layout */}
 						{(!hasGeneratedNarrative && (headerBriefItems.length > 0 || (cluster.key_facts && cluster.key_facts.length > 0))) && (
 							<div class="executive-summary mb-24 p-12 bg-secondary/10 border-l-4 border-nyt-accent shadow-sm">
 								<div class="flex items-center gap-[var(--grid-gap)] mb-14">
@@ -507,6 +506,10 @@ const articleSchema = cluster ? {
 								</div>
 							</div>
 						)}
+
+					<div class="editorial-grid">
+					{/* 3. MAIN COLUMN */}
+					<div class="editorial-main-col">
 
 						{/* NARRATIVE SECTION */}
 						{(hasGeneratedNarrative || synthesisItems.length > 0) && (

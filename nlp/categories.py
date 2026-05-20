@@ -163,8 +163,16 @@ CATEGORIES = [
             "mickoski",
             "siljanovska",
             "filipce",
+            "kovacevski",
+            "taravari",
+            "kasami",
+            "apasiev",
+            "ahmeti",
+            "grubi",
+            "bujar osmani",
             "macedonia",
-            "skopje",
+            "sobranie",
+            "vlada na rm",
         ],
     ),
     (
@@ -179,8 +187,16 @@ CATEGORIES = [
             "brnabic",
             "nis",
             "novi sad",
+            "vulin",
+            "gasic",
+            "vesic",
+            "djilas",
+            "marinika",
+            "aleksic",
+            "savo manojlovic",
             "serbia",
             "belgrade",
+            "skupstina srbije",
         ],
     ),
     (
@@ -214,6 +230,7 @@ CATEGORIES = [
             "milanovic",
             "plenkovic",
             "bosna",
+            "bih",
             "saraevo",
             "dodik",
             "becirovic",
@@ -223,6 +240,9 @@ CATEGORIES = [
             "spajic",
             "milatovic",
             "abazovic",
+            "slovenija",
+            "ljubljana",
+            "golob",
             "turcija",
             "turski",
             "ankara",
@@ -237,6 +257,7 @@ CATEGORIES = [
             "kosovo",
             "croatia",
             "turkey",
+            "slovenia",
         ],
     ),
     (
@@ -572,11 +593,72 @@ SUB_CATEGORIES = [
         "Beograd",
         [
             "Beograd",
-            "skopski",
             "grad Beograd",
+            "aerodrom Beograd",
+            "pobednik",
+            "kalemegdan",
+            "vracar",
+            "stari grad",
+            "savski venac",
+            "palilula",
+            "zvezdara",
+            "vozdovac",
+            "cukarica",
+            "rakovica",
+            "novi beograd",
+            "zemun",
+            "obrenovac",
+            "lazarevac",
+            "mladenovac",
+            "grocka",
+            "barajevo",
+            "sopot",
+            "surcin",
+            "belgrade",
+        ],
+    ),
+    (
+        "Novi Sad",
+        [
+            "Novi Sad",
+            "Novom Sadu",
+            "Novog Sada",
+            "Novosadski",
+            "grad Novi Sad",
+            "vojvodina",
+            "liman",
+            "strand",
+            "petrovaradin",
+            "spens",
+            "detelinara",
+            "telep",
+            "sremska kamenica",
+            "fruska gora",
+        ],
+    ),
+    (
+        "Nis",
+        [
+            "Nis",
+            "Nisu",
+            "Nisa",
+            "niski",
+            "grad Nis",
+            "niska banja",
+            "mediana",
+            "pantelej",
+            "crveni krst",
+            "palilula nis",
+            "konstantin veliki",
+        ],
+    ),
+    (
+        "Skopje",
+        [
+            "Skopje",
+            "skopski",
             "gradonacalnik",
             "arsovska",
-            "aerodrom Beograd",
             "karpos",
             "centar",
             "gazi baba",
@@ -589,12 +671,17 @@ SUB_CATEGORIES = [
             "suto orizari",
             "saraj",
             "aracinovo",
-            "kisela voda",
             "volkovo",
             "dracevo",
             "lisice",
             "avtokomanda",
             "zelezara",
+            "madzari",
+            "pintija",
+            "sopiste",
+            "petrovec",
+            "ilinden",
+            "zlostrub",
         ],
     ),
     (
@@ -633,16 +720,26 @@ SUB_CATEGORIES = [
             "pehcevo",
             "dojran",
             "mavrovo",
+            "valandovo",
+            "bogdanci",
+            "makpetrol",
         ],
     ),
 ]
 
 
-def detect_subcategory(title: str, description: str = "") -> str | None:
+def detect_subcategory(title: str, description: str = "", country: str = "RS") -> str | None:
     """Detect optional sub-category (regional). Returns None if no match."""
     raw_text = (title + " " + description).lower()
     text = _transliterate_to_latin(raw_text)
+
+    # Filter subcategories by country to avoid cross-border misclassification
+    # (e.g., 'gradonacalnik' is common to both but usually refers to the capital)
+    allowed = ["Republika", "Skopje"] if country == "MK" else ["Beograd", "Novi Sad", "Nis"]
+
     for sub_name, keywords in SUB_CATEGORIES:
+        if sub_name not in allowed:
+            continue
         if any(_keyword_matches(text, kw) for kw in keywords):
             return sub_name
     return None
@@ -1122,8 +1219,8 @@ def normalize_headline(title: str) -> str:
     prefix_pattern = r"^(" + "|".join(sensationalist) + r")[\s\|:–—-]+"
     t = re.sub(prefix_pattern, "", t, count=1, flags=re.IGNORECASE)
 
-    # Strip any remaining all-caps prefix followed by colon (e.g. "Beograd: ...")
-    t = re.sub(r"^[A-ZА-Я\s\-]{3,}:", "", t).strip()
+    # Strip any remaining prefix followed by colon (e.g. "Beograd: ...", "Manasievski: ...")
+    t = re.sub(r"^[A-ZА-Яa-zа-я\s\-]{3,}:", "", t).strip()
 
     # 3. Suffix / Source Attribution Cleanup
     sources = [

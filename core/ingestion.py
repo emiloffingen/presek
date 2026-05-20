@@ -959,7 +959,7 @@ async def ingest_all_sources_async():
                     )
                     or c["category"]
                 )
-                subcategory = detect_subcategory(c["title"], description=c["desc"]) or ""
+                subcategory = detect_subcategory(c["title"], description=c["desc"], country=c["country"]) or ""
                 topic = detect_topic(c["title"], description=c["desc"])
 
                 is_intl = c["country"] != "RS"

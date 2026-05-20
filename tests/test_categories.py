@@ -121,18 +121,35 @@ class TestDetectCategory:
 
 class TestDetectSubcategory:
     def test_skopje(self):
-        assert detect_subcategory("Nastan vo Beograd") == "Beograd"
-        assert detect_subcategory("Karpos dobi nov park") == "Beograd"
+        # Skopje keywords with MK country
+        assert detect_subcategory("Nastan vo Skopje", country="MK") == "Skopje"
+        assert detect_subcategory("Karpos dobi nov park", country="MK") == "Skopje"
+        # Skopje keywords with RS country should NOT match
+        assert detect_subcategory("Karpos dobi nov park", country="RS") is None
+
+    def test_beograd(self):
+        # Beograd keywords with RS country
+        assert detect_subcategory("Nastan vo Beograd", country="RS") == "Beograd"
+        # Beograd keywords with MK country should NOT match (currently)
+        assert detect_subcategory("Nastan vo Beograd", country="MK") is None
+
+    def test_novi_sad(self):
+        assert detect_subcategory("Festival u Novom Sadu", country="RS") == "Novi Sad"
+        assert detect_subcategory("Vojvodina dobija nove investicije", country="RS") == "Novi Sad"
+
+    def test_nis(self):
+        assert detect_subcategory("Nis dostiže rekorde u turizmu", country="RS") == "Nis"
+        assert detect_subcategory("Mediana je opština u Nišu", country="RS") == "Nis"
 
     def test_republika(self):
-        assert detect_subcategory("Festival vo Ohrid") == "Republika"
-        assert detect_subcategory("Bitola dobiva nova bolnica") == "Republika"
+        assert detect_subcategory("Festival vo Ohrid", country="MK") == "Republika"
+        assert detect_subcategory("Bitola dobiva nova bolnica", country="MK") == "Republika"
 
     def test_no_match(self):
-        assert detect_subcategory("Vladata donese odluka") is None
+        assert detect_subcategory("Vladata donese odluka", country="MK") is None
 
     def test_description_helps(self):
-        assert detect_subcategory("Nov proekt", description="izgradba vo Beograd") == "Beograd"
+        assert detect_subcategory("Nov proekt", description="izgradba vo Beograd", country="RS") == "Beograd"
 
 
 # ── detect_country ────────────────────────────────────────────────

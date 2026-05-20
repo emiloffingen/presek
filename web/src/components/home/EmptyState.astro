@@ -9,6 +9,7 @@ const { trending } = Astro.props;
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
+const l = (path: string) => (lang === 'mk' ? `/mk${path}` : path);
 ---
 
 <div class="empty-state">
