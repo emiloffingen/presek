@@ -15,75 +15,77 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
         <div class="rule-thin"></div>
     </div>
 
-    <div class="footer-main">
-        <div class="footer-left-col">
-            <div class="footer-brand-wrap mb-8">
-                <a href={l('/')} class="brand-link">
-                    <Branding mode="full" class="footer-logo-premium" />
-                </a>
-                <p class="brand-ethos font-serif italic text-base leading-relaxed text-foreground mt-4 max-w-xl">
-                    {t('footer.ethos')}
-                </p>
+    <div class="feed-section-container">
+        <div class="footer-main">
+            <div class="footer-left-col">
+                <div class="footer-brand-wrap mb-8">
+                    <a href={l('/')} class="brand-link">
+                        <Branding mode="full" class="footer-logo-premium" />
+                    </a>
+                    <p class="brand-ethos font-serif italic text-base leading-relaxed text-foreground mt-4 max-w-xl">
+                        {t('footer.ethos')}
+                    </p>
+                </div>
+
+                <div class="footer-system-pulse p-5 border border-border">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="status-indicator pulse-emerald"></div>
+                            <span class="font-sans text-[10px] font-black uppercase tracking-[0.25em] text-foreground">{t('footer.system_signal')}</span>
+                        </div>
+                        <span class="font-sans text-[9px] font-black text-emerald-600 uppercase tracking-widest">{t('footer.active')}</span>
+                    </div>
+                    <div class="flex gap-4">
+                        <div class="flex items-center gap-1.5">
+                            <Zap size={11} className="text-nyt-accent" />
+                            <span class="text-[10px] font-bold text-muted-foreground uppercase">{t('footer.synthesis_ok')}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <Globe size={11} className="text-nyt-accent" />
+                            <span class="text-[10px] font-bold text-muted-foreground uppercase">{t('footer.ingestion')}</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="footer-system-pulse p-5 border border-border">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center gap-3">
-                        <div class="status-indicator pulse-emerald"></div>
-                        <span class="font-sans text-[10px] font-black uppercase tracking-[0.25em] text-foreground">{t('footer.system_signal')}</span>
-                    </div>
-                    <span class="font-sans text-[9px] font-black text-emerald-600 uppercase tracking-widest">{t('footer.active')}</span>
-                </div>
-                <div class="flex gap-4">
-                    <div class="flex items-center gap-1.5">
-                        <Zap size={11} className="text-nyt-accent" />
-                        <span class="text-[10px] font-bold text-muted-foreground uppercase">{t('footer.synthesis_ok')}</span>
-                    </div>
-                    <div class="flex items-center gap-1.5">
-                        <Globe size={11} className="text-nyt-accent" />
-                        <span class="text-[10px] font-bold text-muted-foreground uppercase">{t('footer.ingestion')}</span>
+            <nav class="footer-directory">
+                <div class="dir-group">
+                    <h4 class="dir-title">{t('nav.editorial')}</h4>
+                    <div class="dir-links-stack">
+                        <a href={l('/about')}>{t('nav.mission')}</a>
+                        <a href={l('/editorial')}>{t('nav.standards')}</a>
+                        <a href={l('/pulse')}>{t('nav.pulse')}</a>
+                        <a href={l('/izvori')}>{t('nav.sources')}</a>
                     </div>
                 </div>
-            </div>
+                <div class="dir-group">
+                    <h4 class="dir-title">{t('nav.resources')}</h4>
+                    <div class="dir-links-stack">
+                        <a href={l('/archive')}>{t('nav.archive')}</a>
+                        <a href={l('/briefing')}>{t('nav.briefing')}</a>
+                        <a href={l('/for-you')}>{t('nav.for_you')}</a>
+                        <a href={l('/settings')}>{t('nav.personalization')}</a>
+                        <a href={l('/support')} class="font-black text-nyt-accent">{t('nav.support')}</a>
+                    </div>
+                </div>
+                <div class="dir-group">
+                    <h4 class="dir-title">{t('nav.contact')}</h4>
+                    <div class="dir-links-stack">
+                        <a href={l('/contact')}>{t('nav.contact')}</a>
+                        <a href={l('/privacy')}>{t('nav.privacy')}</a>
+                        <a href={l('/terms')}>{t('nav.terms')}</a>
+                    </div>
+                </div>
+                <div class="dir-group">
+                    <h4 class="dir-title">{t('nav.follow_us')}</h4>
+                    <div class="dir-links-stack">
+                        <a href="https://twitter.com/presek_rs" target="_blank" rel="noopener noreferrer">Twitter / X</a>
+                        <a href="https://instagram.com/presek.rs" target="_blank" rel="noopener noreferrer">Instagram</a>
+                        <a href="https://facebook.com/presek.rs" target="_blank" rel="noopener noreferrer">Facebook</a>
+                    </div>
+                </div>
+            </nav>
         </div>
-
-        <nav class="footer-directory">
-            <div class="dir-group">
-                <h4 class="dir-title">{t('nav.editorial')}</h4>
-                <div class="dir-links-stack">
-                    <a href={l('/about')}>{t('nav.mission')}</a>
-                    <a href={l('/editorial')}>{t('nav.standards')}</a>
-                    <a href={l('/pulse')}>{t('nav.pulse')}</a>
-                    <a href={l('/izvori')}>{t('nav.sources')}</a>
-                </div>
-            </div>
-            <div class="dir-group">
-                <h4 class="dir-title">{t('nav.resources')}</h4>
-                <div class="dir-links-stack">
-                    <a href={l('/archive')}>{t('nav.archive')}</a>
-                    <a href={l('/briefing')}>{t('nav.briefing')}</a>
-                    <a href={l('/for-you')}>{t('nav.for_you')}</a>
-                    <a href={l('/settings')}>{t('nav.personalization')}</a>
-                    <a href={l('/support')} class="font-black text-nyt-accent">{t('nav.support')}</a>
-                </div>
-            </div>
-            <div class="dir-group">
-                <h4 class="dir-title">{t('nav.contact')}</h4>
-                <div class="dir-links-stack">
-                    <a href={l('/contact')}>{t('nav.contact')}</a>
-                    <a href={l('/privacy')}>{t('nav.privacy')}</a>
-                    <a href={l('/terms')}>{t('nav.terms')}</a>
-                </div>
-            </div>
-            <div class="dir-group">
-                <h4 class="dir-title">{t('nav.follow_us')}</h4>
-                <div class="dir-links-stack">
-                    <a href="https://twitter.com/presek_rs" target="_blank" rel="noopener noreferrer">Twitter / X</a>
-                    <a href="https://instagram.com/presek.rs" target="_blank" rel="noopener noreferrer">Instagram</a>
-                    <a href="https://facebook.com/presek.rs" target="_blank" rel="noopener noreferrer">Facebook</a>
-                </div>
-            </div>
-        </nav>
     </div>
 
     <div class="footer-legal">
