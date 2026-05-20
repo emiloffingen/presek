@@ -392,7 +392,7 @@ LANGUAGE_CONFIG = {
     },
 }
 
-AUTO_SUMMARIZE_TOP_N = 15  # summarize the top N clusters each cycle
+AUTO_SUMMARIZE_TOP_N = 40  # summarize the top N clusters each cycle
 AUTO_SUMMARIZE_MIN_SRC = 2  # only clusters with 2+ sources get synthesis
 AUTO_SUMMARIZE_DELAY = 1.5  # seconds between API calls (rate limit protection)
 

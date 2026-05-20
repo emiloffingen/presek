@@ -192,7 +192,10 @@ function getLeadVisual(c: ClusterDetail | null) {
 const leadVisual = getLeadVisual(cluster);
 const imageUrl = leadVisual && !leadVisual.isWeak ? leadVisual.src : '/img/presek_emblem.png';
 
-const headerBriefItems = synthesisItems.map((item: SynthesisItem) => item.content).filter((line: string) => line.trim().length > 4).slice(0, 4);
+const headerBriefItems = synthesisItems.length > 0 
+    ? synthesisItems.map((item: SynthesisItem) => item.content).filter((line: string) => line.trim().length > 4).slice(0, 4)
+    : (mainArticle?.description ? [mainArticle.description] : []);
+
 const hasGeneratedNarrative = Boolean(generatedArticle && generatedArticle.trim());
 const hasSublimat = synthesisItems.length > 0;
 const hasFactcheck = Boolean(verificationReport && (verificationReport.agreements?.length > 0 || verificationReport.conflicts?.length > 0));

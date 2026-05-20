@@ -13,8 +13,12 @@ const l = (path: string) => isMK ? `/mk${path}` : path;
             {homeData.developing.slice(0, 6).map((c: any) => (
                 <a href={l(`/cluster/${c.cluster_id}`)} class="block p-6 bg-secondary/50 border border-border hover:border-nyt-accent transition-all group">
                     <p class="font-sans text-[10px] font-black uppercase text-nyt-accent mb-3 tracking-widest">{isMK ? 'ВО ТРЕНД' : 'U TRENDU'}</p>
-                    <h4 class="font-serif font-black text-xl leading-tight group-hover:underline decoration-2 underline-offset-4 decoration-nyt-accent/30">{c.synthetic_headline || c.articles?.[0]?.title}</h4>
-                    {c.summary && <p class="font-serif text-sm mt-3 text-muted-foreground line-clamp-3">{c.summary}</p>}
+                    <h4 class="font-serif font-black text-xl leading-tight group-hover:underline decoration-2 underline-offset-4 decoration-nyt-accent/30">{c.synthetic_headline || (c.articles?.[0] ? c.articles[0].title : '')}</h4>
+                    {(() => {
+                        const summaryText = c.synthetic_standfirst || (c.articles?.[0] ? (c.articles[0].summary || c.articles[0].description) : '');
+                        if (!summaryText) return null;
+                        return <p class="font-serif text-sm mt-3 text-muted-foreground line-clamp-3">{summaryText}</p>;
+                    })()}
                 </a>
             ))}
         </div>

@@ -176,6 +176,8 @@ const focusEntities = topEntities
     .filter((ent: { name: string }) => ent.name && ent.name.length >= 3)
     .slice(0, 10);
 
+const leadCluster = clusters[0] ?? null;
+
 // --- GLOBAL DEDUPLICATION ---
 const usedIds = new Set<string>();
 if (leadCluster) usedIds.add(leadCluster.cluster_id);

@@ -235,9 +235,13 @@ def _build_lead_display(cluster):
         signal = "Tema sto brzo se siri niz redakciite"
     else:
         signal = "razvoj sto vredi da se sledi"
+    
+    # Prefer the synthetic standfirst if it exists, otherwise fall back to article summary
+    summary = cluster.get("synthetic_standfirst") or _extract_preview_summary(article)
+    
     return {
-        "title": cleanAndDecode(article.get("title") or ""),
-        "summary": _extract_preview_summary(article),
+        "title": cluster.get("synthetic_headline") or cleanAndDecode(article.get("title") or ""),
+        "summary": summary,
         "signal": signal,
     }
 
