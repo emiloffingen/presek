@@ -219,9 +219,10 @@ const trendingPreviewClusters = clusters
         const scoreA = Number(a.homepage_score || 0) + (a.is_breaking ? 100 : 0) + Math.min(a.articles?.length || 0, 8) * 5;
         const scoreB = Number(b.homepage_score || 0) + (b.is_breaking ? 100 : 0) + Math.min(b.articles?.length || 0, 8) * 5;
         return scoreB - scoreA;
-    })
-    .slice(0, 10);
-const displayedTrendingClusters = trendingPreviewClusters.slice(0, 6);
+    });
+
+const uniqueTrendingPreviewClusters = Array.from(new Map(trendingPreviewClusters.map(item => [item.cluster_id, item])).values());
+const displayedTrendingClusters = uniqueTrendingPreviewClusters.slice(0, 6);
 
 displayedTrendingClusters.forEach(c => usedIds.add(c.cluster_id));
 
@@ -993,7 +994,6 @@ const leadEvidenceItems = leadCluster ? [
         margin-bottom: 2rem;
         padding: 0 0 1rem;
         max-width: 100%;
-        overflow: hidden;
     }
     .trending-strip-header {
         display: flex;
@@ -1008,8 +1008,8 @@ const leadEvidenceItems = leadCluster ? [
         gap: 1rem;
         max-width: 100%;
         overflow-x: auto;
-        overflow-y: hidden;
-        padding: 0.75rem 0 0.25rem;
+        overflow-y: visible;
+        padding: 0.75rem 0 2rem;
         scroll-snap-type: x proximity;
         -webkit-overflow-scrolling: touch;
     }

@@ -221,7 +221,23 @@ function getTimeStr(dateStr: string) {
 		min-width: 0;
 		max-width: 100%;
         padding-bottom: 0.75rem;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
 	}
+
+    .article-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 0;
+        min-width: 0;
+    }
+
+    .card-content-stack {
+        flex-grow: 1;
+    }
 
 	.headline-link {
 	    display: block;
@@ -361,9 +377,11 @@ function getTimeStr(dateStr: string) {
     }
 
     .image-wrap {
+        aspect-ratio: 3 / 2;
         border-radius: 0px !important;
         overflow: hidden;
         border: 1px solid var(--border);
+        background: var(--secondary);
     }
 
     .article-image {

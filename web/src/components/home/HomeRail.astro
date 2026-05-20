@@ -249,7 +249,7 @@ const uniqueEntities = Array.from(uniqueEntitiesMap.values())
     .rail-quote-block cite a { font-family: var(--font-sans); font-size: 0.85rem; font-weight: 850; color: var(--foreground); text-decoration: none; line-height: 1.2; display: block; }
     .rail-quote-block cite a:hover { color: var(--nyt-accent); text-decoration: underline; }
 
-    .rail-tag-cloud { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-    .rail-tag-cloud a { padding: 0.35rem 0.6rem; border: 1px solid var(--border); font-family: var(--font-sans); font-size: 0.58rem; font-weight: 900; text-transform: uppercase; color: var(--foreground); text-decoration: none; white-space: nowrap; border-radius: 0px; }
-    .rail-tag-cloud a:hover { background: var(--foreground); color: var(--background); border-color: var(--foreground); }
+    .rail-tag-cloud { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; padding-top: 0.75rem; }
+    .rail-tag-cloud a { padding: 0.35rem 0.75rem; border: 1px solid var(--border); font-family: var(--font-sans); font-size: 0.58rem; font-weight: 900; text-transform: uppercase; color: var(--foreground); text-decoration: none; white-space: nowrap; border-radius: 0px; background: color-mix(in srgb, var(--secondary) 30%, transparent); transition: all 0.2s ease; }
+    .rail-tag-cloud a:hover { background: var(--foreground); color: var(--background); border-color: var(--foreground); transform: translateY(-1px); }
 </style>
