@@ -67,11 +67,6 @@ let wireArticles = [];
 let excludedClusterIds: string[] = [];
 let homepageLeadDisplay: { title?: string; summary?: string; signal?: string } | null = null;
 
-function getTrendingLabel(item: any) {
-    if (typeof item === 'string') return item.trim();
-    return String(item?.word || item?.term || item?.name || item?.label || '').trim();
-}
-
 async function fetchJson(url: string) {
     const response = await fetch(url);
     if (!response.ok) {
@@ -180,9 +175,16 @@ const focusEntities = topEntities
     }))
     .filter((ent: { name: string }) => ent.name && ent.name.length >= 3)
     .slice(0, 10);
-const trendingTerms = trending.map(getTrendingLabel).filter(Boolean).slice(0, 12);
 
 const leadCluster = clusters[0] ?? null;
+const trendingPreviewClusters = clusters
+    .filter((cluster: NewsCluster) => cluster?.cluster_id && cluster.cluster_id !== leadCluster?.cluster_id && (cluster.articles?.length || 0) > 0)
+    .sort((a: NewsCluster, b: NewsCluster) => {
+        const scoreA = Number(a.homepage_score || 0) + (a.is_breaking ? 100 : 0) + Math.min(a.articles?.length || 0, 8) * 5;
+        const scoreB = Number(b.homepage_score || 0) + (b.is_breaking ? 100 : 0) + Math.min(b.articles?.length || 0, 8) * 5;
+        return scoreB - scoreA;
+    })
+    .slice(0, 10);
 if (!isHomepage) {
     supportingClusters = clusters.slice(1, 5);
 }
@@ -388,20 +390,22 @@ function getBriefingSnippet(content: string) {
                     </script>
                 )}
 
-{!error && trendingTerms.length > 0 && isHomepage && (
+{!error && trendingPreviewClusters.length > 0 && isHomepage && (
     <div class="trending-strip">
-        <div class="trending-row hide-scrollbar">
+        <div class="trending-strip-header">
             <span class="trending-label">
                 <TrendingUp size={14} />
                 {t('home.trending') || 'Trending'}
             </span>
-            {trendingTerms.map((term: string) => (
-                <a
-                    href={l('/?q=') + encodeURIComponent(term)}
-                    class="trending-tag"
-                >
-                    {term}
-                </a>
+            <span class="trending-hint">
+                {lang === 'sr' ? 'Prevucite za brzi pregled' : 'Повлечете за брз преглед'}
+            </span>
+        </div>
+        <div class="trending-row hide-scrollbar" aria-label={lang === 'sr' ? 'Trending vesti' : 'Трендинг вести'}>
+            {trendingPreviewClusters.map((cluster: NewsCluster) => (
+                <div class="trending-card">
+                    <NewsCard cluster={cluster} variant="compact" lang={lang} />
+                </div>
             ))}
         </div>
     </div>
@@ -681,21 +685,27 @@ function getBriefingSnippet(content: string) {
     .trending-strip {
         border-bottom: 1px solid var(--border);
         margin-bottom: 2rem;
-        padding: 0 0 0.25rem;
+        padding: 0 0 1rem;
         max-width: 100%;
         overflow: hidden;
     }
-    .trending-row {
+    .trending-strip-header {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.75rem 0 0.25rem;
+    }
+    .trending-row {
+        display: flex;
+        align-items: stretch;
+        gap: 1rem;
         max-width: 100%;
         overflow-x: auto;
         overflow-y: hidden;
-        padding: 0.75rem 0;
+        padding: 0.75rem 0 0.25rem;
         scroll-snap-type: x proximity;
         -webkit-overflow-scrolling: touch;
-        white-space: nowrap;
     }
     .trending-label {
         display: inline-flex;
@@ -709,25 +719,37 @@ function getBriefingSnippet(content: string) {
         letter-spacing: 0.2em;
         text-transform: uppercase;
     }
-    .trending-tag {
-        display: inline-flex;
-        flex: 0 0 auto;
-        scroll-snap-align: start;
-        padding: 0.3rem 0.75rem;
-        background: transparent;
-        border: 1px solid var(--border);
-        font-family: var(--font-sans);
-        font-size: 0.6rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        text-decoration: none;
+    .trending-hint {
         color: var(--muted-foreground);
-        transition: all 0.2s ease;
-        white-space: nowrap;
+        font-family: var(--font-sans);
+        font-size: 0.62rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
     }
-    .trending-tag:hover {
-        color: var(--nyt-red);
+    .trending-card {
+        flex: 0 0 auto;
+        width: min(82vw, 22rem);
+        scroll-snap-align: start;
+        background: var(--background);
+        border: 1px solid var(--border);
+        padding: 1rem;
+        transition: all 0.2s ease;
+    }
+    .trending-card:hover {
         border-color: var(--nyt-red);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        transform: translateY(-1px);
+    }
+    .trending-card :global(.nyt-article) {
+        height: 100%;
+        padding-bottom: 0;
+    }
+    @media (max-width: 640px) {
+        .trending-strip-header {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
     }
 </style>
