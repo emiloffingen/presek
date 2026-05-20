@@ -3,6 +3,8 @@
 import os
 import sys
 
+import pytest
+
 sys.path.insert(0, "/home/emiloffingen/presek")
 
 # Set up environment
@@ -12,6 +14,7 @@ from core.database import db_manager as db
 from tasks.delivery import generate_daily_brief_task
 
 
+@pytest.mark.skip(reason="Integration test — requires a running PostgreSQL database and AI service")
 def test_simple_briefing():
     """Test a simple briefing generation with direct execution."""
     print("Testing simple briefing generation...")

@@ -1,25 +1,50 @@
-import feedparser
-import httpx
+"""
+Test feed functionality.
+"""
+
+import pytest
+from unittest.mock import patch, MagicMock, AsyncMock
+from routes.home import get_home
 
 
-def test_rss(url):
-    print(f"Testing {url}...")
-    try:
-        resp = httpx.get(url, timeout=15.0, follow_redirects=True)
-        print(f"  Status: {resp.status_code}")
-        if resp.status_code == 200:
-            feed = feedparser.parse(resp.content)
-            print(f"  Bozo: {feed.bozo}")
-            print(f"  Entries: {len(feed.entries)}")
-            if feed.entries:
-                print(f"  Latest title: {feed.entries[0].title}")
-        else:
-            print(f"  Error content: {resp.text[:100]}")
-    except Exception as e:
-        print(f"  Exception: {e}")
+@pytest.mark.asyncio
+async def test_get_home_returns_dict():
+    """Test that get_home returns a dictionary."""
+    # Mock the database to avoid real calls
+    with patch('core.database.db_manager.async_execute', return_value=[]):
+        result = await get_home('sr')
+        
+        # Should return a dictionary
+        assert isinstance(result, dict)
+        
+        # Should have expected keys
+        assert 'developing' in result
+        assert 'for_you_pool' in result
+        assert 'focus_entities' in result
+        assert 'excluded_cluster_ids' in result
 
 
-if __name__ == "__main__":
-    test_rss("https://www.kurir.rs/rss/")
-    test_rss("https://www.danas.rs/feed/")
-    test_rss("https://n1info.rs/feed/")
+@pytest.mark.asyncio
+async def test_get_home_language_support():
+    """Test that get_home supports different languages."""
+    with patch('core.database.db_manager.async_execute', return_value=[]):
+        # Test Serbian
+        result_sr = await get_home('sr')
+        assert isinstance(result_sr, dict)
+        
+        # Test Macedonian
+        result_mk = await get_home('mk')
+        assert isinstance(result_mk, dict)
+
+
+@pytest.mark.asyncio
+async def test_get_home_error_handling():
+    """Test that get_home handles database errors gracefully."""
+    with patch('core.database.db_manager.async_execute', side_effect=Exception("DB error")):
+        result = await get_home('sr')
+        
+        # Should still return a dict even on error
+        assert isinstance(result, dict)
+        # Should have empty lists on error
+        assert result.get('developing', []) == []
+        assert result.get('for_you_pool', []) == []

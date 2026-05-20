@@ -68,9 +68,21 @@ def _get_fake_fastapi_modules():
     s.middleware.base = s_middleware_base
     s.status = MagicMock
 
+    fs = make_mod("fastapi.security")
+    fs.HTTPAuthorizationCredentials = MagicMock
+    fs.HTTPBearer = MagicMock
+    fs.OAuth2PasswordBearer = MagicMock
+
+    fm = make_mod("fastapi.middleware")
+    fm_cors = make_mod("fastapi.middleware.cors")
+    fm_cors.CORSMiddleware = MagicMock
+
     return {
         "fastapi": f,
         "fastapi.responses": r,
+        "fastapi.security": fs,
+        "fastapi.middleware": fm,
+        "fastapi.middleware.cors": fm_cors,
         "starlette": s,
         "starlette.responses": s_resp,
         "starlette.middleware": s_middleware,
@@ -82,6 +94,7 @@ def _get_fake_fastapi_modules():
 mock_db_manager = MagicMock()
 mock_db_manager.async_execute = AsyncMock(return_value=[])
 mock_db_manager.async_get_synthesis_ids = AsyncMock(return_value=[])
+mock_db_manager.execute = AsyncMock(return_value=[])
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -119,6 +132,7 @@ def test_get_personalized_news_sync_empty_profile():
 
 
 def test_get_personalized_news_sync_with_history():
+    import routes.news  # noqa: F401 — imported for side-effect: registers module in sys.modules so patch() can resolve it
     from routes.profile import get_personalized_news_sync
 
     # Mock data
@@ -143,8 +157,13 @@ def test_get_personalized_news_sync_with_history():
                 "dominant_color": "#fff",
             }
         ],
+        # 5. Check if clusters have summaries (async_get_synthesis_ids calls async_execute)
+        [{"cluster_id": "c2"}],
+        # 6. Any additional calls return empty
+        [],
     ]
     mock_db_manager.async_get_synthesis_ids.return_value = ["c2"]
+    mock_db_manager.execute.side_effect = mock_db_manager.async_execute.side_effect
 
     request = MagicMock()
     request.json = AsyncMock(return_value={"profile": {"recentClusters": recent}, "limit": 5})
@@ -155,6 +174,7 @@ def test_get_personalized_news_sync_with_history():
         patch("routes.profile.is_balanced", return_value=True),
         patch("routes.profile.score_cluster_for_homepage", return_value=4.0),
         patch("routes.news._public_article_payload", side_effect=lambda x: x),
+        patch("core.database.async_db", mock_db_manager),
     ):
         response = asyncio.run(get_personalized_news_sync(request))
 

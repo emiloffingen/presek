@@ -63,6 +63,43 @@ let wireArticles = [];
 let excludedClusterIds: string[] = [];
 let homepageLeadDisplay: { title?: string; summary?: string; signal?: string } | null = null;
 
+async function loadHomepageFallback() {
+    const fallbackNewsUrl = new URL(`${API_URL}/news`);
+    fallbackNewsUrl.searchParams.set('page_size', '24');
+    fallbackNewsUrl.searchParams.set('lang', lang);
+
+    const [newsResult, trendResult, entityResult, statsResult, briefingResult, wireResult] = await Promise.allSettled([
+        fetchJson(fallbackNewsUrl.toString()),
+        fetchJson(`${API_URL}/trending?lang=${lang}`),
+        fetchJson(`${API_URL}/intelligence/top-entities?limit=12&lang=${lang}`),
+        fetchJson(`${API_URL}/stats/summary?lang=${lang}`),
+        fetchJson(`${API_URL}/briefing?lang=${lang}`),
+        fetchJson(`${API_URL}/home/latest-wire?limit=15&lang=${lang}`),
+    ]);
+
+    if (newsResult.status === 'fulfilled') {
+        clusters = Array.isArray(newsResult.value?.clusters) ? newsResult.value.clusters : [];
+        globalClusters = Array.isArray(newsResult.value?.global_clusters) ? newsResult.value.global_clusters : [];
+        supportingClusters = clusters.slice(1, 5);
+        feedClusters = clusters.slice(5);
+    }
+
+    if (wireResult.status === 'fulfilled') {
+        wireArticles = Array.isArray(wireResult.value?.articles) ? wireResult.value.articles : [];
+    }
+
+    trending = trendResult.status === 'fulfilled' && Array.isArray(trendResult.value)
+        ? trendResult.value
+        : [];
+    topEntities = entityResult.status === 'fulfilled' && Array.isArray(entityResult.value)
+        ? entityResult.value
+        : [];
+    stats = statsResult.status === 'fulfilled' ? statsResult.value : null;
+    briefing = briefingResult.status === 'fulfilled' ? briefingResult.value : null;
+
+    return clusters.length > 0 || wireArticles.length > 0 || trending.length > 0;
+}
+
 async function fetchJson(url: string) {
     const response = await fetch(url);
     if (!response.ok) {
@@ -117,8 +154,11 @@ if (isHomepage) {
         clusters = [...lead, ...supportingClusters, ...(Array.isArray(home?.for_you_pool) ? home.for_you_pool : []), ...feedClusters];
     } else {
         console.error('Home fetch error:', homePayload.status === 'rejected' ? homePayload.reason : homePayload.value);
-        error = t('home.error');
-        Astro.response.status = 500;
+        const recovered = await loadHomepageFallback();
+        if (!recovered) {
+            error = t('home.error');
+            Astro.response.status = 500;
+        }
     }
 } else {
     const newsUrl = new URL(`${API_URL}/news`);
@@ -432,27 +472,29 @@ const leadEvidenceItems = leadCluster ? [
 
                 {/* THEMATIC QUICK PILLS */}
                 {!error && (
-                    <div class="max-w-full overflow-hidden mb-24">
+                    <div class="home-explore-strip max-w-full overflow-hidden">
                         <div class="quick-pills-container overflow-x-auto hide-scrollbar -mx-4 px-4 pb-2">
-                            <div class="flex items-center gap-[var(--grid-gap)]">
-                                <span class="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground mr-4 shrink-0">{t('home.explore')}</span>
-                                {[
-                                    { id: 'rs', label: lang === 'mk' ? 'Makedonija' : 'Srbija', href: l('/?category=') + encodeURIComponent(lang === 'mk' ? 'Makedonija' : 'Srbija'), active: category === (lang === 'mk' ? 'Makedonija' : 'Srbija') },
-                                    { id: 'pol', label: 'Politika', href: l('/?topic=') + encodeURIComponent('Politika'), active: topic === 'Politika' },
-                                    { id: 'eco', label: 'Ekonomija', href: l('/?topic=') + encodeURIComponent('Ekonomija'), active: topic === 'Ekonomija' },
-                                    { id: 'spo', label: 'Sport', href: l('/?topic=') + encodeURIComponent('Sport'), active: topic === 'Sport' },
-                                    { id: 'cul', label: 'Kultura', href: l('/?topic=') + encodeURIComponent('Kultura'), active: topic === 'Kultura' },
-                                    { id: 'tech', label: 'Tehnologija', href: l('/?topic=') + encodeURIComponent('Tehnologija'), active: topic === 'Tehnologija' },
-                                    { id: 'bg', label: lang === 'mk' ? 'Skopje' : 'Beograd', href: l('/?subcategory=') + encodeURIComponent(lang === 'mk' ? 'Skopje' : 'Beograd'), active: subcategory === (lang === 'mk' ? 'Skopje' : 'Beograd') }
-                                ].map(pill => (
-                                    <a
-                                        href={pill.href}
-                                        class:list={["quick-pill shrink-0", { "is-active": pill.active }]}
-                                        data-track-pill={pill.id}
-                                    >
-                                        {pill.label}
-                                    </a>
-                                ))}
+                            <div class="quick-pills-row flex items-center gap-[var(--grid-gap)]">
+                                <span class="quick-pills-label text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground mr-4 shrink-0">{t('home.explore')}</span>
+                                <div class="quick-pills-track">
+                                    {[
+                                        { id: 'rs', label: lang === 'mk' ? 'Makedonija' : 'Srbija', href: l('/?category=') + encodeURIComponent(lang === 'mk' ? 'Makedonija' : 'Srbija'), active: category === (lang === 'mk' ? 'Makedonija' : 'Srbija') },
+                                        { id: 'pol', label: 'Politika', href: l('/?topic=') + encodeURIComponent('Politika'), active: topic === 'Politika' },
+                                        { id: 'eco', label: 'Ekonomija', href: l('/?topic=') + encodeURIComponent('Ekonomija'), active: topic === 'Ekonomija' },
+                                        { id: 'spo', label: 'Sport', href: l('/?topic=') + encodeURIComponent('Sport'), active: topic === 'Sport' },
+                                        { id: 'cul', label: 'Kultura', href: l('/?topic=') + encodeURIComponent('Kultura'), active: topic === 'Kultura' },
+                                        { id: 'tech', label: 'Tehnologija', href: l('/?topic=') + encodeURIComponent('Tehnologija'), active: topic === 'Tehnologija' },
+                                        { id: 'bg', label: lang === 'mk' ? 'Skopje' : 'Beograd', href: l('/?subcategory=') + encodeURIComponent(lang === 'mk' ? 'Skopje' : 'Beograd'), active: subcategory === (lang === 'mk' ? 'Skopje' : 'Beograd') }
+                                    ].map(pill => (
+                                        <a
+                                            href={pill.href}
+                                            class:list={["quick-pill shrink-0", { "is-active": pill.active }]}
+                                            data-track-pill={pill.id}
+                                        >
+                                            {pill.label}
+                                        </a>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -673,6 +715,17 @@ const leadEvidenceItems = leadCluster ? [
     @media (max-width: 768px) {
         .section-wrapper { padding-bottom: 1.25rem; margin-bottom: 1.25rem; }
         .lead-wrapper { padding-bottom: 1.25rem; margin-bottom: 1.25rem; }
+    }
+
+    @media (max-width: 639px) {
+        .section-wrapper {
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
+        .lead-wrapper {
+            padding-bottom: 1rem;
+            margin-bottom: 0.9rem;
+        }
     }
 
     /* ── Homepage Evidence ──────────────────────────── */
@@ -952,6 +1005,22 @@ const leadEvidenceItems = leadCluster ? [
     .editorial-briefing-wrap { padding-bottom: 2.25rem; }
 
     /* ── Quick Pills ─────────────────────────────────── */
+    .home-explore-strip {
+        margin-bottom: 3rem;
+    }
+
+    .quick-pills-row {
+        min-width: max-content;
+    }
+
+    .quick-pills-track {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        min-width: max-content;
+        scroll-snap-type: x proximity;
+    }
+
     .quick-pill {
         display: inline-block;
         padding: 0.5rem 1.1rem;
@@ -988,6 +1057,43 @@ const leadEvidenceItems = leadCluster ? [
         background: var(--nyt-accent);
     }
 
+    @media (max-width: 768px) {
+        .home-explore-strip {
+            margin-bottom: 1.5rem;
+        }
+
+        .quick-pills-container {
+            margin-left: -0.5rem;
+            margin-right: -0.5rem;
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+        }
+
+        .quick-pills-row {
+            display: grid;
+            align-items: start;
+            gap: 0.6rem;
+            min-width: 0;
+        }
+
+        .quick-pills-label {
+            margin-right: 0;
+            font-size: 0.54rem;
+            letter-spacing: 0.18em;
+        }
+
+        .quick-pills-track {
+            gap: 0.55rem;
+            padding-right: 0.5rem;
+        }
+
+        .quick-pill {
+            padding: 0.42rem 0.82rem;
+            font-size: 0.62rem;
+            scroll-snap-align: start;
+        }
+    }
+
     /* ── Trending Strip ─────────────────────────────── */
     .trending-strip {
         border-bottom: 1px solid var(--border);
@@ -1012,6 +1118,72 @@ const leadEvidenceItems = leadCluster ? [
         padding: 0.75rem 0 2rem;
         scroll-snap-type: x proximity;
         -webkit-overflow-scrolling: touch;
+    }
+
+    @media (max-width: 639px) {
+        .home-evidence-strip {
+            grid-template-columns: 1fr;
+            margin-top: 1rem;
+        }
+
+        .home-evidence-status,
+        .home-evidence-item {
+            padding: 0.8rem;
+        }
+
+        .home-evidence-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .home-live-strip {
+            margin-bottom: 1rem;
+            padding: 0.8rem 0 0.9rem;
+        }
+
+        .home-live-head {
+            gap: 0.35rem;
+            margin-bottom: 0.55rem;
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .home-live-head span,
+        .home-live-head a {
+            font-size: 0.54rem;
+            letter-spacing: 0.12em;
+        }
+
+        .trending-strip {
+            margin-bottom: 1.15rem;
+            padding-bottom: 0.75rem;
+        }
+
+        .trending-strip-header {
+            gap: 0.35rem;
+            padding: 0.45rem 0 0.2rem;
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .trending-row {
+            gap: 0.75rem;
+            padding: 0.55rem 0 1rem;
+        }
+
+        .supporting-featured-grid,
+        .news-feed-grid-featured {
+            gap: 1rem;
+            margin-bottom: 1.15rem;
+        }
+
+        .supporting-compact-grid,
+        .news-feed-grid-compact {
+            gap: 0.9rem;
+        }
+
+        .consensus-section {
+            padding: 1rem 0.85rem;
+        }
     }
     .trending-label {
         display: inline-flex;

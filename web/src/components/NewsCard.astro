@@ -422,6 +422,125 @@ function getTimeStr(dateStr: string) {
 	}
 
 	@media (max-width: 640px) {
+		.nyt-article.variant-compact,
+		.nyt-article.variant-wire {
+			padding-bottom: 0.45rem;
+		}
+
+		.nyt-article.variant-compact .article-meta-v2,
+		.nyt-article.variant-wire .article-meta-v2 {
+			margin-bottom: 0.3rem;
+		}
+
+		.nyt-article.variant-compact .headline-link,
+		.nyt-article.variant-wire .headline-link {
+			min-height: 3.35rem;
+		}
+
+		.nyt-article.variant-compact .headline-compact,
+		.nyt-article.variant-wire .headline-compact {
+			font-size: 1rem;
+			line-height: 1.08;
+			letter-spacing: -0.015em;
+		}
+
+		.nyt-article.variant-compact .summary,
+		.nyt-article.variant-wire .summary {
+			font-size: 0.8rem;
+			line-height: 1.34;
+			margin-top: 0.25rem;
+			min-height: 3.2rem;
+			-webkit-line-clamp: 2;
+		}
+
+		.nyt-article.variant-compact .cluster-signal-row,
+		.nyt-article.variant-wire .cluster-signal-row {
+			gap: 0.25rem;
+			margin-top: 0.45rem;
+		}
+
+		.nyt-article.variant-compact .cluster-signal-row span,
+		.nyt-article.variant-wire .cluster-signal-row span {
+			padding: 0.14rem 0.32rem;
+			font-size: 0.46rem;
+		}
+
+		.nyt-article.variant-compact .article-footer-meta,
+		.nyt-article.variant-wire .article-footer-meta {
+			gap: 0.3rem;
+			font-size: 0.5rem;
+			margin-top: 0.35rem;
+		}
+
+		.nyt-article.variant-compact .kicker,
+		.nyt-article.variant-wire .kicker {
+			font-size: 0.54rem;
+			letter-spacing: 0.08em;
+		}
+
+		.nyt-article.variant-compact .image-wrap,
+		.nyt-article.variant-wire .image-wrap {
+			border-width: 1px;
+			aspect-ratio: 16 / 9;
+			max-height: 8.5rem;
+		}
+
+		.nyt-article.variant-compact .article-image,
+		.nyt-article.variant-wire .article-image {
+			aspect-ratio: 16 / 9;
+			max-height: 8.5rem;
+			object-position: center;
+		}
+
+		.nyt-article.variant-compact .article-image-placeholder,
+		.nyt-article.variant-wire .article-image-placeholder {
+			padding: 0.7rem;
+			box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+		}
+
+		.nyt-article.variant-compact .design-card-ribbon,
+		.nyt-article.variant-wire .design-card-ribbon {
+			padding: 0.28rem 0.7rem;
+			font-size: 0.46rem;
+			letter-spacing: 0.1em;
+		}
+
+		.nyt-article.variant-compact .design-card-main,
+		.nyt-article.variant-wire .design-card-main {
+			gap: 0.65rem;
+		}
+
+		.nyt-article.variant-compact .design-card-icon-wrap,
+		.nyt-article.variant-wire .design-card-icon-wrap {
+			width: 2.25rem;
+			height: 2.25rem;
+		}
+
+		.nyt-article.variant-compact .article-image-placeholder h3,
+		.nyt-article.variant-wire .article-image-placeholder h3 {
+			font-size: 0.85rem;
+			line-height: 1.05;
+			max-width: 16ch;
+		}
+
+		.nyt-article.variant-compact .design-card-sub,
+		.nyt-article.variant-wire .design-card-sub {
+			font-size: 0.52rem;
+			letter-spacing: 0.14em;
+		}
+
+		.nyt-article.variant-compact .design-card-footer,
+		.nyt-article.variant-wire .design-card-footer {
+			bottom: 0.7rem;
+		}
+
+		.nyt-article.variant-compact .design-card-cta,
+		.nyt-article.variant-wire .design-card-cta {
+			padding: 0.32rem 0.55rem;
+			font-size: 0.44rem;
+			gap: 0.28rem;
+		}
+
 		.article-image {
 			aspect-ratio: 16 / 10;
 			max-height: 14rem;

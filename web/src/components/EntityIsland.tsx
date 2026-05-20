@@ -252,7 +252,7 @@ export default function EntityIsland({
       <div className="entity-grid">
         <div className="sources-main">
           <section className="entity-summary entity-featured">
-            <h2 className="entity-section-title flex items-center gap-[var(--grid-gap)]"><Sparkles size={14} /> {t('entity.media_cross_section')}</h2>
+            <h2 className="entity-section-title flex items-center gap-2 md:gap-[var(--grid-gap)]"><Sparkles size={14} /> {t('entity.media_cross_section')}</h2>
             <p className="entity-summary-copy">{whyItMatters}</p>
             <div className="entity-chip-list">
               <span className="entity-chip">{clusters.length} {t('entity.active_topics')}</span>
@@ -265,11 +265,11 @@ export default function EntityIsland({
 
           <div className="entity-insight-grid">
             <section className="entity-summary">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="entity-section-title flex items-center gap-[var(--grid-gap)] m-0"><TrendingUp size={14} /> {t('entity.dynamics')}</h2>
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('entity.last_14_days')}</span>
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:justify-between mb-3 md:mb-4">
+                <h2 className="entity-section-title flex items-center gap-2 md:gap-[var(--grid-gap)] m-0"><TrendingUp size={14} /> {t('entity.dynamics')}</h2>
+                <span className="text-[9px] md:text-[10px] font-bold text-muted-foreground uppercase tracking-[0.14em] md:tracking-widest">{t('entity.last_14_days')}</span>
               </div>
-              <div className="entity-pulse h-32 flex items-end gap-1 px-2">
+              <div className="entity-pulse h-28 md:h-32 flex items-end gap-1 px-1 md:px-2">
                 {timeline.map((item) => (
                   <div key={item.key} className="flex-1 group relative">
                     <div
@@ -282,7 +282,7 @@ export default function EntityIsland({
                   </div>
                 ))}
               </div>
-              <div className="flex justify-between mt-2 px-1 text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">
+              <div className="flex justify-between mt-2 px-1 text-[8px] md:text-[9px] font-bold text-muted-foreground uppercase tracking-tight">
                   <span>{timeline[0]?.label}</span>
                   <span>{timeline[Math.floor(timeline.length/2)]?.label}</span>
                   <span>{timeline[timeline.length-1]?.label}</span>
@@ -290,25 +290,25 @@ export default function EntityIsland({
             </section>
 
             <section className="entity-summary">
-              <h2 className="entity-section-title flex items-center gap-[var(--grid-gap)]"><Newspaper size={14} /> {t('entity.thematic_profile')}</h2>
+              <h2 className="entity-section-title flex items-center gap-2 md:gap-[var(--grid-gap)]"><Newspaper size={14} /> {t('entity.thematic_profile')}</h2>
               <div className="space-y-3 mt-4">
                 {leadingCategories.map((c) => (
                   <div key={c.category} className="flex items-center justify-between">
-                    <span className="font-sans font-bold text-[11px] uppercase tracking-wide">{c.category}</span>
-                    <div className="flex items-center gap-[var(--grid-gap)]">
-                      <div className="w-24 h-1.5 bg-secondary rounded-full overflow-hidden">
+                    <span className="font-sans font-bold text-[10px] md:text-[11px] uppercase tracking-wide">{c.category}</span>
+                    <div className="flex items-center gap-2 md:gap-[var(--grid-gap)]">
+                      <div className="w-20 md:w-24 h-1.5 bg-secondary rounded-full overflow-hidden">
                         <div
                           className="h-full bg-foreground opacity-80"
                           style={{ width: `${Math.min((c.count / (clusters.length || 1)) * 100, 100)}%` }}
                         />
                       </div>
-                      <span className="font-sans text-[10px] font-black w-8 text-right">{Math.round((c.count / (clusters.length || 1)) * 100)}%</span>
+                      <span className="font-sans text-[9px] md:text-[10px] font-black w-7 md:w-8 text-right">{Math.round((c.count / (clusters.length || 1)) * 100)}%</span>
                     </div>
                   </div>
                 ))}
                 {leadingCategories.length === 0 && <p className="text-xs text-muted italic">{t('entity.no_thematic_data')}</p>}
                 {categories && categories.length > leadingCategories.length && (
-                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pt-1">
+                  <p className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground pt-1">
                     {lang === 'sr'
                       ? `Prikazani su vodeći ${leadingCategories.length} tematski pravci.`
                       : `Прикажани се водечките ${leadingCategories.length} тематски правци.`}
@@ -319,7 +319,7 @@ export default function EntityIsland({
           </div>
 
           <section className="entity-summary">
-            <h2 className="entity-section-title flex items-center gap-[var(--grid-gap)]"><Link2 size={14} /> {t('entity.same_context')}</h2>
+            <h2 className="entity-section-title flex items-center gap-2 md:gap-[var(--grid-gap)]"><Link2 size={14} /> {t('entity.same_context')}</h2>
             <p className="entity-summary-copy">
               {lang === 'sr'
                 ? `Ova imena se najčešće pojavljuju zajedno sa ${profile.name} u istim klasterima i pomažu da se vidi šira mreža oko priče.`
@@ -346,7 +346,7 @@ export default function EntityIsland({
 
         <aside className="sources-rail">
           <div className="rail-card">
-            <h3 className="rail-card-title flex items-center gap-[var(--grid-gap)]"><Link2 size={14} /> {t('entity.closest_connected')}</h3>
+            <h3 className="rail-card-title flex items-center gap-2 md:gap-[var(--grid-gap)]"><Link2 size={14} /> {t('entity.closest_connected')}</h3>
             <p className="rail-copy">
               {lang === 'sr'
                 ? `Ovde su prikazani subjekti koji najčešće ulaze u isti kontekst sa ${profile.name}, sa najjačim vezama na vrhu.`
@@ -359,7 +359,7 @@ export default function EntityIsland({
                     <span className="entity-related-name">{rel.related_entity}</span>
                     <p className="entity-related-band">{t('entity.tight_bond')}</p>
                   </div>
-                  <div className="flex items-center gap-[var(--grid-gap)]">
+                  <div className="flex items-center gap-2 md:gap-[var(--grid-gap)]">
                     <div className="entity-related-track">
                       <div className="h-full bg-nyt-accent" style={{ width: `${Math.min(rel.weight * 10, 100)}%` }} />
                     </div>
@@ -381,8 +381,8 @@ export default function EntityIsland({
           </div>
 
           <div className="rail-card">
-            <h3 className="rail-card-title uppercase tracking-widest text-[10px]">{t('entity.further')}</h3>
-            <div className="flex flex-col gap-[var(--grid-gap)]">
+            <h3 className="rail-card-title uppercase tracking-[0.14em] md:tracking-widest text-[9px] md:text-[10px]">{t('entity.further')}</h3>
+            <div className="flex flex-col gap-2 md:gap-[var(--grid-gap)]">
               <a href={lang === 'sr' ? "/archive" : "/mk/archive"} className="entity-related-jump">{t('entity.open_archive')}</a>
               <a href={lang === 'sr' ? "/izvori" : "/mk/izvori"} className="entity-related-jump">{t('entity.open_sources')}</a>
               <a href={lang === 'sr' ? "/pulse" : "/mk/pulse"} className="entity-related-jump">{t('entity.compare_media')}</a>

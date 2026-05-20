@@ -133,4 +133,131 @@ import { Heart, Coffee, ShieldCheck, Cpu, Globe } from 'lucide-react';
     .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
     .rail-text { font-family: var(--font-nyt-body); font-size: 0.9rem; line-height: 1.5; color: var(--secondary-foreground); }
     .rail-meta-box { padding: 1.5rem; border: 1px solid var(--border); border-radius: 0px; }
+
+    @media (max-width: 639.98px) {
+        .editorial-masthead {
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            border-bottom-width: 3px;
+        }
+
+        .masthead-kicker {
+            font-size: 0.52rem;
+            letter-spacing: 0.12em;
+        }
+
+        .masthead-title {
+            font-size: clamp(1.95rem, 9vw, 2.7rem);
+            line-height: 0.95;
+            margin: 0.75rem 0;
+        }
+
+        .masthead-intro {
+            font-size: 0.96rem;
+            line-height: 1.5;
+        }
+
+        .broadsheet-grid {
+            gap: 1.5rem;
+        }
+
+        .prose-editorial {
+            font-size: 0.96rem;
+            line-height: 1.6;
+        }
+
+        .first-paragraph::first-letter {
+            font-size: 3.4rem;
+            padding-top: 0.2rem;
+            padding-right: 0.45rem;
+        }
+
+        .support-pillars {
+            gap: 1rem;
+            margin-top: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .pillar h3 {
+            font-size: 0.6rem;
+            letter-spacing: 0.08em;
+            margin: 0.75rem 0 0.35rem;
+        }
+
+        .pillar p {
+            font-size: 0.86rem;
+            line-height: 1.42;
+        }
+
+        .support-box {
+            margin-top: 1.5rem;
+            padding: 1.5rem 1rem;
+        }
+
+        .support-box-content svg {
+            width: 1.9rem;
+            height: 1.9rem;
+            margin-bottom: 0.9rem !important;
+        }
+
+        .support-box h2 {
+            font-size: 1.5rem !important;
+            margin-bottom: 0.6rem !important;
+        }
+
+        .support-box p.text-lg {
+            font-size: 0.94rem !important;
+            line-height: 1.45 !important;
+            margin-bottom: 1.25rem !important;
+        }
+
+        .support-cta {
+            gap: 0.65rem;
+            padding: 0.85rem 1rem;
+            font-size: 0.62rem;
+            letter-spacing: 0.08em;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .support-cta img {
+            height: 1.1rem;
+        }
+
+        .rail-block {
+            margin-bottom: 1rem;
+        }
+
+        .rail-block-alt,
+        .rail-meta-box {
+            padding: 1rem;
+        }
+
+        .rail-kicker {
+            font-size: 0.54rem;
+            margin-bottom: 0.35rem;
+        }
+
+        .rail-title {
+            font-size: 0.68rem;
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.7rem;
+        }
+
+        .rail-text {
+            font-size: 0.88rem;
+            line-height: 1.42;
+        }
+
+        .rail-meta-box p.text-\[10px\] {
+            font-size: 0.56rem !important;
+            letter-spacing: 0.12em !important;
+            margin-bottom: 0.6rem !important;
+        }
+
+        .rail-meta-box p.text-xs {
+            font-size: 0.82rem !important;
+            line-height: 1.42 !important;
+        }
+    }
 </style>

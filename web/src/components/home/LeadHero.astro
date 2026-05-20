@@ -88,24 +88,28 @@ const consensusSuffix = (() => {
     <MeshGradient color={tintColor} />
     <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="lead-media lead-media-mobile" aria-hidden="true" tabindex="-1">
         <div class:list={["lead-media-frame shadow-editorial", { "lead-media-frame-fallback": leadVisual?.isWeak }]}>
-            {leadVisual?.proxiedUrl && !leadVisual.isWeak ? (
-                <Fragment>
-                    <img
-                        src={leadVisual.proxiedUrl}
-                        alt={primaryDisplayTitle || leadTitle}
-                        width="1200"
-                        height="1000"
-                        loading="eager"
-                        fetchpriority="high"
-                        decoding="async"
-                        class="lead-media-image"
-                        transition:name={`cluster-image-${leadCluster.cluster_id}`}
-                        onload="this.classList.add('is-loaded')"
-                        onerror="this.style.opacity='0'; this.parentElement.querySelector('.lead-media-placeholder-error').style.display='grid';"
-                    />
-                    <div class="lead-media-overlay">
-                        <div class="overlay-content">
-                            <h2 class:list={["overlay-headline", { "headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(finalLeadTitle)}></h2>
+	            {leadVisual?.proxiedUrl && !leadVisual.isWeak ? (
+	                <Fragment>
+	                    <div class="lead-media-loading-shell" aria-hidden="true">
+	                        <div class="lead-media-loading-kicker">{mediaLabel}</div>
+	                        <h2 class:list={["lead-media-loading-title", { "headline-cyrillic": leadTitleIsCyrillic }]}>{finalLeadTitle}</h2>
+	                    </div>
+	                    <img
+	                        src={leadVisual.proxiedUrl}
+	                        alt={primaryDisplayTitle || leadTitle}
+	                        width="1200"
+	                        height="1000"
+	                        loading="eager"
+	                        fetchpriority="high"
+	                        decoding="async"
+	                        class="lead-media-image"
+	                        transition:name={`cluster-image-${leadCluster.cluster_id}`}
+	                        onload="this.classList.add('is-loaded'); this.parentElement.classList.add('media-ready');"
+	                        onerror="this.style.opacity='0'; this.parentElement.querySelector('.lead-media-placeholder-error').style.display='grid';"
+	                    />
+	                    <div class="lead-media-overlay">
+	                        <div class="overlay-content">
+	                            <h2 class:list={["overlay-headline", { "headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(finalLeadTitle)}></h2>
                         </div>
                     </div>
                     <div class="lead-media-placeholder lead-media-placeholder-error design-card absolute inset-0" style="display: none; --placeholder-bg: #27272a;">
@@ -146,7 +150,7 @@ const consensusSuffix = (() => {
         </div>
         <div class="lead-kicker-v2 mb-4">
             <span class="source-badge" aria-label={t('lead.title_prefix')}>{leadCluster.articles?.[0].source}</span>
-            <div class="flex items-center gap-[var(--grid-gap)]">
+            <div class="lead-kicker-meta flex items-center gap-[var(--grid-gap)]">
                 {leadCluster.is_breaking && <span class="significance-badge is-breaking" aria-label={`${t('header.breaking')}: ${t('news.breaking')}`}>{t('news.breaking').toUpperCase()}</span>}
                 {leadSignal && (
                     <span class="lead-status-badge" aria-label={`Signal: ${leadSignal}`}>
@@ -190,12 +194,12 @@ const consensusSuffix = (() => {
             </div>
         )}
         <div class="lead-meta border-t border-border/50 pt-4 mt-4 flex justify-between items-center">
-            <div class="flex items-center gap-[var(--grid-gap)] text-[10px] font-bold uppercase tracking-tight text-muted-foreground">
+            <div class="lead-meta-primary flex items-center gap-[var(--grid-gap)] text-[10px] font-bold uppercase tracking-tight text-muted-foreground">
                 <span>{getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)}</span>
                 <span class="opacity-30">·</span>
                 <span>{leadCluster.articles.length} {leadCluster.articles.length === 1 ? t('news.source') : t('news.sources')}</span>
             </div>
-            <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="text-[10px] font-black uppercase tracking-widest text-nyt-accent hover:underline decoration-2 underline-offset-4">{t('lead.full_synthesis')}</a>
+            <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="lead-meta-link text-[10px] font-black uppercase tracking-widest text-nyt-accent hover:underline decoration-2 underline-offset-4">{t('lead.full_synthesis')}</a>
         </div>
 
         {relatedArticles.length > 0 && (
@@ -219,25 +223,29 @@ const consensusSuffix = (() => {
 
     <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="lead-media lead-media-desktop" aria-hidden="true" tabindex="-1">
         <div class:list={["lead-media-frame shadow-editorial", { "lead-media-frame-fallback": leadVisual?.isWeak }]}>
-            {leadVisual?.proxiedUrl && !leadVisual.isWeak ? (
-                <Fragment>
-                    <img
-                        src={leadVisual.proxiedUrl}
-                        srcset={`${leadVisual.proxiedUrl.replace('w=1200', 'w=600')} 600w, ${leadVisual.proxiedUrl} 1200w`}
-                        sizes="(max-width: 768px) 100vw, 1200px"
-                        alt={primaryDisplayTitle}
+	            {leadVisual?.proxiedUrl && !leadVisual.isWeak ? (
+	                <Fragment>
+	                    <div class="lead-media-loading-shell" aria-hidden="true">
+	                        <div class="lead-media-loading-kicker">{mediaLabel}</div>
+	                        <h2 class:list={["lead-media-loading-title", { "headline-cyrillic": leadTitleIsCyrillic }]}>{finalLeadTitle}</h2>
+	                    </div>
+	                    <img
+	                        src={leadVisual.proxiedUrl}
+	                        srcset={`${leadVisual.proxiedUrl.replace('w=1200', 'w=600')} 600w, ${leadVisual.proxiedUrl} 1200w`}
+	                        sizes="(max-width: 768px) 100vw, 1200px"
+	                        alt={primaryDisplayTitle}
                         width="1200"
                         height="1000"
-                        loading="eager"
-                        fetchpriority="high"
-                        decoding="async"
-                        class="lead-media-image"
-                        onload="this.classList.add('is-loaded')"
-                        onerror="this.style.opacity='0'; this.parentElement.querySelector('.lead-media-placeholder-error').style.display='grid';"
-                    />
-                    <div class="lead-media-overlay">
-                        <div class="overlay-content">
-                            <h2 class:list={["overlay-headline", { "headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(finalLeadTitle)}></h2>
+	                        loading="eager"
+	                        fetchpriority="high"
+	                        decoding="async"
+	                        class="lead-media-image"
+	                        onload="this.classList.add('is-loaded'); this.parentElement.classList.add('media-ready');"
+	                        onerror="this.style.opacity='0'; this.parentElement.querySelector('.lead-media-placeholder-error').style.display='grid';"
+	                    />
+	                    <div class="lead-media-overlay">
+	                        <div class="overlay-content">
+	                            <h2 class:list={["overlay-headline", { "headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(finalLeadTitle)}></h2>
                         </div>
                     </div>
                     <div class="lead-media-placeholder lead-media-placeholder-error design-card absolute inset-0" style="display: none; --placeholder-bg: #27272a;">
@@ -541,20 +549,60 @@ const consensusSuffix = (() => {
 		color: var(--muted-foreground);
 	}
 
-	.lead-media-frame {
-		position: relative;
-		aspect-ratio: 3 / 2;
-		width: 100%;
+		.lead-media-frame {
+			position: relative;
+			aspect-ratio: 3 / 2;
+			width: 100%;
 		border: 1px solid var(--border);
 		overflow: hidden;
 		background:
-			radial-gradient(circle at top right, color-mix(in srgb, var(--nyt-accent) 8%, transparent), transparent 40%),
-			linear-gradient(135deg, var(--secondary) 0%, color-mix(in srgb, var(--background) 84%, var(--secondary) 16%) 100%);
-	}
+				radial-gradient(circle at top right, color-mix(in srgb, var(--nyt-accent) 8%, transparent), transparent 40%),
+				linear-gradient(135deg, var(--secondary) 0%, color-mix(in srgb, var(--background) 84%, var(--secondary) 16%) 100%);
+		}
 
-	.lead-media-frame-fallback {
-		padding: 0.4rem;
-		border-color: color-mix(in srgb, var(--border) 78%, var(--foreground) 22%);
+		.lead-media-loading-shell {
+			position: absolute;
+			inset: 0;
+			display: flex;
+			flex-direction: column;
+			justify-content: flex-end;
+			gap: 0.55rem;
+			padding: 1.25rem;
+			background:
+				radial-gradient(circle at top right, color-mix(in srgb, var(--nyt-accent) 10%, transparent), transparent 38%),
+				linear-gradient(135deg, color-mix(in srgb, var(--background) 92%, var(--secondary) 8%) 0%, color-mix(in srgb, var(--secondary) 72%, var(--background) 28%) 100%);
+			transition: opacity 0.28s ease;
+			z-index: 0;
+		}
+
+		.lead-media-frame.media-ready .lead-media-loading-shell {
+			opacity: 0;
+			pointer-events: none;
+		}
+
+		.lead-media-loading-kicker {
+			font-family: var(--font-sans);
+			font-size: 0.58rem;
+			font-weight: 950;
+			letter-spacing: 0.16em;
+			text-transform: uppercase;
+			color: var(--nyt-accent);
+		}
+
+		.lead-media-loading-title {
+			margin: 0;
+			max-width: 18ch;
+			font-family: var(--font-serif);
+			font-size: clamp(1.4rem, 4vw, 2.2rem);
+			font-weight: 900;
+			line-height: 1.02;
+			color: var(--foreground);
+			text-wrap: balance;
+		}
+
+		.lead-media-frame-fallback {
+			padding: 0.4rem;
+			border-color: color-mix(in srgb, var(--border) 78%, var(--foreground) 22%);
 	}
 
 	.lead-media-image {
@@ -591,8 +639,8 @@ const consensusSuffix = (() => {
         z-index: 2;
     }
 
-    .lead-media-mobile .lead-media-overlay { opacity: 1; }
-    .lead-media-desktop:hover .lead-media-overlay { opacity: 1; }
+	    .lead-media-mobile .lead-media-frame.media-ready .lead-media-overlay { opacity: 1; }
+	    .lead-media-desktop:hover .lead-media-frame.media-ready .lead-media-overlay { opacity: 1; }
 
     .overlay-headline {
         color: white;
@@ -757,39 +805,119 @@ const consensusSuffix = (() => {
 		.lead-hero-filtered .lead-media-placeholder { padding: 1.65rem; }
 	}
 
-	@media (max-width: 639px) {
-		.lead-hero { gap: 0.75rem; }
-		.lead-copy { gap: 0.4rem; }
+		@media (max-width: 639px) {
+			.lead-hero { gap: 0.75rem; }
+			.lead-copy { order: 1; }
+			.lead-media-mobile { order: 2; }
+			.lead-copy { gap: 0.3rem; }
 
-		.lead-media-frame {
-			aspect-ratio: 16 / 10;
-			height: auto;
-            max-height: 45vh;
-		}
+			.headline-lead {
+				font-size: 1.95rem !important;
+				line-height: 0.98 !important;
+				letter-spacing: -0.025em !important;
+				margin-bottom: 0.7rem;
+				-webkit-line-clamp: 3;
+			}
 
-        .overlay-headline {
-            font-size: 1.35rem;
-            max-width: 25ch;
-            line-height: 1.1;
-        }
+			.lead-media-frame {
+				aspect-ratio: 21 / 8;
+				height: auto;
+	            max-height: 22vh;
+				min-height: 7.75rem;
+			}
 
-		.lead-hero-filtered .headline-lead {
-			font-size: 2.1rem !important;
+			.lead-media-image {
+				object-fit: cover;
+				object-position: center;
+				max-height: none;
+			}
+
+		        .overlay-headline {
+		            font-size: 1.05rem;
+		            max-width: 18ch;
+		            line-height: 1.1;
+		        }
+
+				.lead-media-loading-shell {
+					padding: 0.7rem;
+					gap: 0.25rem;
+					justify-content: flex-start;
+					background:
+						linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.78) 100%),
+						radial-gradient(circle at top right, color-mix(in srgb, var(--nyt-accent) 10%, transparent), transparent 40%);
+				}
+
+				.lead-media-loading-kicker {
+					font-size: 0.48rem;
+					letter-spacing: 0.12em;
+				}
+
+				.lead-media-loading-title {
+					font-size: 0.88rem;
+					max-width: 13ch;
+					line-height: 1.05;
+				}
+
+			.lead-hero-filtered .headline-lead {
+				font-size: 2.1rem !important;
 			line-height: 1.08 !important;
 		}
 
-		.lead-media-placeholder { padding: 1rem; }
-		.lead-media-placeholder h2 { font-size: 1.25rem; }
+		.lead-media-placeholder { padding: 0.75rem; }
+		.lead-media-placeholder h2 { font-size: 1.08rem; }
 
-		.lead-summary {
-			font-size: 0.94rem;
-			line-height: 1.5;
-            margin-bottom: 0.5rem;
-		}
+			.lead-summary {
+				font-size: 0.9rem;
+				line-height: 1.42;
+	            margin-bottom: 0.35rem;
+				display: -webkit-box;
+				-webkit-line-clamp: 3;
+				-webkit-box-orient: vertical;
+				overflow: hidden;
+			}
 
-		.lead-meta { font-size: 0.65rem; }
-		.lead-edition-bar { margin-bottom: 0.65rem; padding-bottom: 0.55rem; }
-		.lead-follow-strip { display: none; }
+			.lead-kicker-v2 {
+				gap: 0.4rem;
+				margin-bottom: 0.7rem !important;
+			}
+
+			.lead-kicker-meta {
+				flex-wrap: wrap;
+				gap: 0.35rem 0.55rem;
+			}
+
+			.lead-edition-bar {
+				margin-bottom: 0.45rem;
+				padding-bottom: 0.4rem;
+				gap: 0.3rem 0.5rem;
+			}
+
+			.lead-edition-label,
+			.lead-edition-note,
+			.source-badge,
+			.time-stamp-v2,
+			.lead-status-badge {
+				font-size: 0.54rem;
+			}
+
+			.lead-meta {
+				font-size: 0.65rem;
+				margin-top: 0.2rem;
+				padding-top: 0.65rem;
+				flex-direction: column;
+				align-items: flex-start;
+				gap: 0.45rem;
+			}
+
+			.lead-meta-primary {
+				gap: 0.35rem;
+			}
+
+			.lead-meta-link {
+				font-size: 0.58rem;
+				letter-spacing: 0.12em;
+			}
+			.lead-follow-strip { display: none; }
 
         .lead-analyst-box {
             margin-top: 0.85rem;

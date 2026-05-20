@@ -75,8 +75,8 @@ const nameIsCyrillic = isMostlyCyrillic(decodedName);
                     </div>
 
 
-                    <section class="mt-16">
-                        <h2 class="section-title-italic mb-8">{lang === 'sr' ? 'Povezani događaji' : 'Поврзани настани'}</h2>
+                    <section class="mt-10 md:mt-16">
+                        <h2 class="section-title-italic mb-5 md:mb-8">{lang === 'sr' ? 'Povezani događaji' : 'Поврзани настани'}</h2>
 
                         <div class="broadsheet-feed">
                             {featuredClusters.map((cluster: any) => (
@@ -87,7 +87,7 @@ const nameIsCyrillic = isMostlyCyrillic(decodedName);
                         </div>
 
                         {compactClusters.length > 0 && (
-                            <div class="broadsheet-feed mt-8">
+                            <div class="broadsheet-feed mt-5 md:mt-8">
                                 {compactClusters.map((cluster: any) => (
                                     <div class="feed-item-wrap">
                                         <NewsCard cluster={cluster} variant="compact" />
@@ -156,4 +156,68 @@ const nameIsCyrillic = isMostlyCyrillic(decodedName);
     .empty-state { text-align: center; padding: 4rem 1rem; border: 1px dashed var(--border); }
     .empty-kicker { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 950; color: var(--nyt-accent); margin-bottom: 1rem; }
     .clear-filter { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 900; text-decoration: underline; color: var(--foreground); }
+
+    @media (max-width: 639.98px) {
+        .editorial-masthead {
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            border-bottom-width: 3px;
+        }
+
+        .masthead-kicker {
+            font-size: 0.52rem;
+            letter-spacing: 0.12em;
+        }
+
+        .masthead-title {
+            font-size: clamp(1.9rem, 9vw, 2.7rem);
+            line-height: 0.95;
+            margin: 0.8rem 0 0;
+        }
+
+        .broadsheet-grid {
+            gap: 1.5rem;
+        }
+
+        .section-title-italic {
+            font-size: 1.45rem;
+            padding-bottom: 0.55rem;
+        }
+
+        .broadsheet-feed {
+            gap: 1rem;
+        }
+
+        .feed-item-wrap {
+            padding-bottom: 1rem;
+        }
+
+        .rail-block {
+            margin-bottom: 1.25rem;
+        }
+
+        .rail-block-alt {
+            padding: 1rem;
+        }
+
+        .rail-kicker {
+            font-size: 0.54rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .rail-title {
+            font-size: 0.68rem;
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .rail-text {
+            font-size: 0.88rem;
+            line-height: 1.45;
+        }
+
+        .empty-state {
+            padding: 2.5rem 0.9rem;
+        }
+    }
 </style>

@@ -112,28 +112,28 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                 <ShieldCheck size={14} className="text-nyt-accent" />
             )}
           </div>
-          <p className="item-tendency font-nyt-body text-sm text-muted-foreground line-clamp-1 mb-3">{source.tendency}</p>
-          <div className="item-meta flex items-center gap-[var(--grid-gap)]">
-            <span className="px-2 py-0.5 bg-foreground text-background font-sans text-[9px] font-black uppercase tracking-widest">{source.country || (lang === 'mk' ? 'MK' : 'RS')}</span>
+          <p className="item-tendency font-nyt-body text-sm text-muted-foreground line-clamp-1 mb-2 md:mb-3">{source.tendency}</p>
+          <div className="item-meta flex items-center gap-2 md:gap-[var(--grid-gap)]">
+            <span className="px-2 py-0.5 bg-foreground text-background font-sans text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] md:tracking-widest">{source.country || (lang === 'mk' ? 'MK' : 'RS')}</span>
             <div className="flex gap-1.5">
                 {source.top_categories?.slice(0, 2).map(cat => (
-                    <span key={cat} className="px-2 py-0.5 border border-border rounded-sm font-sans text-[9px] font-black uppercase tracking-widest text-muted-foreground/80">{cat}</span>
+                    <span key={cat} className="px-2 py-0.5 border border-border rounded-sm font-sans text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground/80">{cat}</span>
                 ))}
             </div>
-            <span className="font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 ml-auto flex items-center gap-1.5">
+            <span className="font-sans text-[9px] md:text-[10px] font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground/40 ml-auto flex items-center gap-1.5">
                 <Activity size={10} /> {formatLastFetched(source.last_fetched, t)}
             </span>
           </div>
         </div>
-        <div className="item-stats flex items-center justify-end gap-[var(--grid-gap)] ml-auto flex-1 min-w-[200px]">
-          <div className="flex gap-[var(--grid-gap)]">
+        <div className="item-stats flex items-center justify-end gap-3 md:gap-[var(--grid-gap)] ml-auto flex-1 min-w-[200px]">
+          <div className="flex gap-3 md:gap-[var(--grid-gap)]">
             <div className="stat-box flex flex-col items-end">
-              <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-0.5">{t('sources.news_24h')}</span>
-              <strong className="text-lg font-black tabular-nums leading-none">{source.recent_volume}</strong>
+              <span className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground mb-0.5">{t('sources.news_24h')}</span>
+              <strong className="text-base md:text-lg font-black tabular-nums leading-none">{source.recent_volume}</strong>
             </div>
             <div className="stat-box flex flex-col items-end text-nyt-accent">
-              <span className="text-[9px] font-black uppercase tracking-widest opacity-60 mb-0.5">{t('sources.quality')}</span>
-              <strong className="text-lg font-black tabular-nums leading-none">{reliabilityIndex}</strong>
+              <span className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] md:tracking-widest opacity-60 mb-0.5">{t('sources.quality')}</span>
+              <strong className="text-base md:text-lg font-black tabular-nums leading-none">{reliabilityIndex}</strong>
             </div>
           </div>
 
@@ -173,33 +173,33 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
   };
 
   return (
-    <div className="broadsheet-sources pt-12">
-      <header className="editorial-masthead mb-16 border-t border-foreground pt-4">
-        <div className="masthead-top mb-8">
+    <div className="broadsheet-sources pt-8 md:pt-12">
+      <header className="editorial-masthead mb-10 md:mb-16 border-t border-foreground pt-4">
+        <div className="masthead-top mb-6 md:mb-8">
           <span className="masthead-kicker font-sans text-[10px] font-black uppercase tracking-[0.25em] text-nyt-accent">{t('sources.reputation')}</span>
         </div>
-        <div className="masthead-main mb-12">
-          <h1 className="masthead-title font-serif text-5xl md:text-7xl font-black leading-[0.9] tracking-tighter">{t('sources.title').split(' ')[0]} <span className="text-nyt-accent italic font-light">{t('sources.title').split(' ')[1]}</span></h1>
-          <p className="mt-6 font-serif text-xl italic text-muted-foreground leading-snug max-w-2xl">
+        <div className="masthead-main mb-8 md:mb-12">
+          <h1 className="masthead-title font-serif text-4xl md:text-7xl font-black leading-[0.92] tracking-tighter">{t('sources.title').split(' ')[0]} <span className="text-nyt-accent italic font-light">{t('sources.title').split(' ')[1]}</span></h1>
+          <p className="mt-4 md:mt-6 font-serif text-lg md:text-xl italic text-muted-foreground leading-snug max-w-2xl">
             {t('sources.desc')}
           </p>
         </div>
 
-        <div className="masthead-controls sticky top-[72px] z-30 bg-background/80 backdrop-blur-xl border-y border-border py-4 flex flex-col md:flex-row justify-between items-center gap-[var(--grid-gap)]">
+        <div className="masthead-controls sticky top-[72px] z-30 bg-background/80 backdrop-blur-xl border-y border-border py-3 md:py-4 flex flex-col md:flex-row justify-between items-center gap-3 md:gap-[var(--grid-gap)]">
           <div className="relative w-full md:w-96 group">
             <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder={t('sources.search_placeholder')}
-                className="w-full bg-secondary/20 border-b-2 border-border py-2 pl-2 pr-10 font-serif font-bold text-lg outline-none focus:border-nyt-accent placeholder:italic placeholder:font-normal placeholder:opacity-40 transition-all"
+                className="w-full bg-secondary/20 border-b-2 border-border py-2 pl-2 pr-10 font-serif font-bold text-base md:text-lg outline-none focus:border-nyt-accent placeholder:italic placeholder:font-normal placeholder:opacity-40 transition-all"
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none opacity-40">
                 <Search size={18} />
             </div>
           </div>
 
-          <div className="filter-group flex p-1 bg-secondary/30 rounded-lg border border-border shadow-sm">
+          <div className="filter-group flex w-full md:w-auto p-1 bg-secondary/30 rounded-lg border border-border shadow-sm">
             {[
                 { id: 'all', label: t('sources.all') },
                 { id: 'high', label: t('sources.high_trust') },
@@ -208,7 +208,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
               <button
                 key={t_tier.id}
                 onClick={() => setFilterTier(t_tier.id)}
-                className={`px-4 py-2 rounded-md font-sans text-[10px] font-black tracking-widest transition-all ${
+                className={`flex-1 md:flex-none px-3 md:px-4 py-2 rounded-md font-sans text-[9px] md:text-[10px] font-black tracking-[0.14em] md:tracking-widest transition-all ${
                     filterTier === t_tier.id
                     ? 'bg-nyt-accent text-white shadow-md'
                     : 'text-muted-foreground hover:text-foreground'
@@ -230,15 +230,15 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                 <h2 className="font-serif text-2xl italic text-muted-foreground">{error}</h2>
             </div>
           ) : (
-            <div className="space-y-24">
+            <div className="space-y-14 md:space-y-24">
               <section>
-                <h2 className="section-heading mb-10 pb-3 border-b-4 border-foreground">{lang === 'mk' ? t('sources.mk_media') : t('sources.sr_media')}</h2>
+                <h2 className="section-heading mb-6 md:mb-10 pb-2 md:pb-3 border-b-4 border-foreground">{lang === 'mk' ? t('sources.mk_media') : t('sources.sr_media')}</h2>
                 <div className="flex flex-col">
                   {mkSources.map(renderSourceRow)}
                 </div>
               </section>
               <section>
-                <h2 className="section-heading mb-10 pb-3 border-b-4 border-foreground">{t('sources.intl_signals')}</h2>
+                <h2 className="section-heading mb-6 md:mb-10 pb-2 md:pb-3 border-b-4 border-foreground">{t('sources.intl_signals')}</h2>
                 <div className="flex flex-col">
                   {intSources.map(renderSourceRow)}
                 </div>
@@ -247,44 +247,44 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
           )}
         </div>
 
-        <aside className="broadsheet-rail pl-4">
-          <section className="rail-module mb-12 p-8 bg-nyt-accent/5 border border-nyt-accent/10 rounded-xl">
-            <span className="block font-sans text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent mb-4">{t('briefing.system_balance')}</span>
+        <aside className="broadsheet-rail pl-0 md:pl-4">
+          <section className="rail-module mb-8 md:mb-12 p-4 md:p-8 bg-nyt-accent/5 border border-nyt-accent/10 rounded-xl">
+            <span className="block font-sans text-[9px] md:text-[10px] font-black uppercase tracking-[0.16em] md:tracking-[0.2em] text-nyt-accent mb-3 md:mb-4">{t('briefing.system_balance')}</span>
             <h3 className="section-heading mb-4 leading-tight tracking-tight">{t('sources.qi_title')}</h3>
             <p className="font-nyt-body text-sm leading-relaxed text-muted-foreground">
               {t('sources.qi_desc')}
             </p>
           </section>
 
-          <section className="rail-module mb-12">
-            <h3 className="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-foreground mb-6 pb-2 border-b-2 border-foreground">{t('sources.fastest_today')}</h3>
+          <section className="rail-module mb-8 md:mb-12">
+            <h3 className="font-sans text-[10px] md:text-[11px] font-black uppercase tracking-[0.16em] md:tracking-[0.2em] text-foreground mb-4 md:mb-6 pb-2 border-b-2 border-foreground">{t('sources.fastest_today')}</h3>
             <div className="flex flex-col gap-1">
               {fastMovers.map(s => (
-                <div key={s.source} className="flex items-center justify-between py-2.5 border-b border-border/40 hover:bg-secondary/10 px-1 transition-all">
-                  <span className="font-serif font-bold text-base">{s.source}</span>
-                  <span className="font-sans text-[11px] font-black text-nyt-accent bg-nyt-accent/10 px-2 py-0.5 rounded">+{s.speed_first_count}</span>
+                <div key={s.source} className="flex items-center justify-between py-2 border-b border-border/40 hover:bg-secondary/10 px-1 transition-all gap-2">
+                  <span className="font-serif font-bold text-sm md:text-base">{s.source}</span>
+                  <span className="font-sans text-[10px] md:text-[11px] font-black text-nyt-accent bg-nyt-accent/10 px-2 py-0.5 rounded">+{s.speed_first_count}</span>
                 </div>
               ))}
             </div>
           </section>
 
-          <div className="rail-methodology-module p-6 bg-secondary/10 border border-border/40 rounded-sm">
-            <h4 className="font-sans text-[10px] font-black uppercase tracking-widest border-b border-border pb-3 mb-4">{t('sources.methodology')}</h4>
-            <ul className="space-y-4">
+          <div className="rail-methodology-module p-4 md:p-6 bg-secondary/10 border border-border/40 rounded-sm">
+            <h4 className="font-sans text-[9px] md:text-[10px] font-black uppercase tracking-[0.14em] md:tracking-widest border-b border-border pb-3 mb-4">{t('sources.methodology')}</h4>
+            <ul className="space-y-3 md:space-y-4">
               <li className="flex flex-col gap-1">
-                <span className="font-sans text-[9px] font-black uppercase tracking-widest text-foreground">{t('sources.trust')}</span>
+                <span className="font-sans text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] md:tracking-widest text-foreground">{t('sources.trust')}</span>
                 <span className="text-xs text-muted-foreground leading-snug">
                   {t('sources.trust_desc')}
                 </span>
               </li>
               <li className="flex flex-col gap-1">
-                <span className="font-sans text-[9px] font-black uppercase tracking-widest text-foreground">{t('sources.leadership')}</span>
+                <span className="font-sans text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] md:tracking-widest text-foreground">{t('sources.leadership')}</span>
                 <span className="text-xs text-muted-foreground leading-snug">
                   {t('sources.leadership_desc')}
                 </span>
               </li>
               <li className="flex flex-col gap-1">
-                <span className="font-sans text-[9px] font-black uppercase tracking-widest text-foreground">{t('sources.confirmation')}</span>
+                <span className="font-sans text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] md:tracking-widest text-foreground">{t('sources.confirmation')}</span>
                 <span className="text-xs text-muted-foreground leading-snug">
                   {t('sources.confirmation_desc')}
                 </span>
@@ -295,7 +295,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
       </div>
 
       <style>{`
-        .editorial-source-item { display: flex; justify-content: space-between; align-items: center; padding: 2rem 0; border-bottom: 1px solid var(--border); transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+        .editorial-source-item { display: flex; justify-content: space-between; align-items: center; padding: 1.35rem 0; border-bottom: 1px solid var(--border); transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
         .editorial-source-item:hover { background: color-mix(in srgb, var(--background) 96%, var(--nyt-accent) 4%); padding-left: 1rem; padding-right: 1rem; margin-left: -1rem; margin-right: -1rem; border-radius: 0px; border-bottom-color: var(--nyt-accent); }
         .item-main { flex: 1; min-width: 0; }
         .item-head { display: flex; align-items: center; gap: 0.75rem; }
@@ -311,9 +311,21 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
         }
 
         @media (max-width: 768px) {
-          .editorial-source-item { flex-direction: column; align-items: flex-start; gap: 1.5rem; }
-          .item-stats { margin-left: 0 !important; width: 100%; border-top: 1px solid var(--border); padding-top: 1rem; }
-          .masthead-controls { flex-direction: column; align-items: stretch; gap: 1.5rem; }
+          .editorial-source-item { flex-direction: column; align-items: flex-start; gap: 1rem; }
+          .editorial-source-item:hover { padding-left: 0.5rem; padding-right: 0.5rem; margin-left: -0.5rem; margin-right: -0.5rem; }
+          .item-head { gap: 0.5rem; }
+          .item-meta { flex-wrap: wrap; }
+          .item-meta > span:last-child { width: 100%; margin-left: 0 !important; }
+          .item-stats { margin-left: 0 !important; width: 100%; border-top: 1px solid var(--border); padding-top: 0.8rem; min-width: 0; justify-content: space-between; }
+          .masthead-controls { flex-direction: column; align-items: stretch; gap: 0.75rem; }
+          .filter-group { width: 100%; }
+        }
+
+        @media (max-width: 639px) {
+          .broadsheet-grid { gap: 1.5rem; }
+          .section-heading { font-size: 1.25rem; line-height: 1.05; }
+          .item-tendency { font-size: 0.88rem; }
+          .heatmap-container { height: 1.6rem; }
         }
       `}</style>
     </div>

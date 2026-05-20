@@ -150,4 +150,26 @@ const l = (path: string) => isMK ? `/mk${path}` : path;
     .briefing-sidebar { display: flex; flex-direction: column; gap: 2rem; }
     .sidebar-module { border-top: 1px solid var(--border); padding-top: 1.5rem; }
     .sidebar-module:first-child { border-top: none; padding-top: 0; }
+
+    @media (max-width: 639.98px) {
+        .briefing-sidebar {
+            gap: 1.25rem;
+        }
+
+        .sidebar-module {
+            padding-top: 1rem;
+        }
+
+        .sidebar-module :global(.p-6) {
+            padding: 1rem;
+        }
+
+        .sidebar-module :global(.mb-6) {
+            margin-bottom: 0.9rem;
+        }
+
+        .sidebar-module :global(.space-y-6 > *) + :global(*) {
+            margin-top: 1rem;
+        }
+    }
 </style>

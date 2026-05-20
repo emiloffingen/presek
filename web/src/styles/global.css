@@ -2578,6 +2578,129 @@ button:active,
     }
 }
 
+@media (max-width: 639.98px) {
+    .entity-flow {
+        gap: 1rem;
+    }
+
+    .entity-hero {
+        padding-bottom: 1rem;
+        margin-bottom: 1.4rem;
+    }
+
+    .entity-hero-main {
+        align-items: flex-start;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .entity-badge {
+        width: 2.9rem;
+        height: 2.9rem;
+    }
+
+    .entity-badge svg {
+        width: 1.35rem;
+        height: 1.35rem;
+    }
+
+    .entity-type {
+        margin-bottom: 0.55rem;
+        padding: 0.18rem 0.42rem;
+        font-size: 0.58rem;
+        letter-spacing: 0.08em;
+    }
+
+    .entity-name {
+        font-size: clamp(1.95rem, 9vw, 2.65rem);
+        line-height: 0.96;
+        margin-bottom: 0.7rem;
+        max-width: 100%;
+    }
+
+    .entity-summary-copy,
+    .rail-copy {
+        font-size: 0.93rem;
+        line-height: 1.52;
+    }
+
+    .entity-grid,
+    .sources-main,
+    .sources-rail,
+    .entity-insight-grid {
+        gap: 1rem;
+    }
+
+    .entity-summary,
+    .rail-card {
+        padding: 1rem;
+    }
+
+    .entity-section-title,
+    .rail-card-title {
+        margin-bottom: 0.85rem;
+        padding-bottom: 0.55rem;
+        font-size: 1.05rem;
+    }
+
+    .entity-metrics {
+        gap: 0.75rem;
+    }
+
+    .entity-metric {
+        padding-top: 0.7rem;
+    }
+
+    .entity-metric p,
+    .entity-related-weight,
+    .entity-pulse-count,
+    .entity-pulse-label,
+    .entity-related-band,
+    .entity-highlight-meta,
+    .entity-stat-row span {
+        font-size: 0.58rem;
+        letter-spacing: 0.05em;
+    }
+
+    .entity-metric strong {
+        font-size: 1.35rem;
+    }
+
+    .entity-chip-list {
+        gap: 0.45rem;
+        margin-top: 0.8rem;
+    }
+
+    .entity-chip {
+        padding: 0.28rem 0.45rem;
+        font-size: 0.58rem;
+    }
+
+    .entity-pulse {
+        gap: 0.5rem;
+        min-height: 8rem;
+    }
+
+    .entity-related-link {
+        align-items: flex-start;
+        gap: 0.7rem;
+        padding: 0.65rem 0;
+    }
+
+    .entity-related-name {
+        font-size: 0.9rem;
+    }
+
+    .entity-related-track {
+        width: 2.6rem;
+    }
+
+    .entity-related-jump {
+        font-size: 0.64rem;
+        letter-spacing: 0.06em;
+    }
+}
+
 .reader-pref-toggle {
     display: inline-flex;
     align-items: center;
@@ -3478,6 +3601,127 @@ button:active,
 @media (max-width: 640px) {
     .settings-stat-grid {
         grid-template-columns: 1fr;
+    }
+
+    .onboarding-card {
+        gap: 0.7rem;
+        padding: 0.8rem;
+    }
+
+    .onboarding-head {
+        gap: 0.7rem;
+    }
+
+    .onboarding-kicker,
+    .settings-kicker,
+    .delivery-status-kicker,
+    .delivery-digest-kicker,
+    .scheduled-delivery-kicker,
+    .scheduled-delivery-label span,
+    .account-sync-kicker,
+    .account-sync-label span {
+        font-size: 0.58rem;
+        letter-spacing: 0.05em;
+    }
+
+    .onboarding-head h2,
+    .settings-module-head h2,
+    .settings-module-head h3 {
+        font-size: 1.15rem;
+        line-height: 1.05;
+    }
+
+    .onboarding-copy,
+    .settings-copy,
+    .settings-empty,
+    .settings-recent-source,
+    .delivery-status-copy,
+    .scheduled-delivery-copy,
+    .account-sync-copy,
+    .account-sync-message {
+        font-size: 0.88rem;
+        line-height: 1.42;
+    }
+
+    .onboarding-progress strong,
+    .settings-stat-card strong {
+        font-size: 1.3rem;
+    }
+
+    .onboarding-progress span,
+    .settings-stat-card span,
+    .settings-recent-topic,
+    .delivery-toggle strong {
+        font-size: 0.56rem;
+        letter-spacing: 0.05em;
+    }
+
+    .onboarding-step {
+        gap: 0.55rem;
+        padding: 0.55rem 0.65rem;
+        font-size: 0.7rem;
+    }
+
+    .onboarding-action,
+    .delivery-toggle,
+    .delivery-action {
+        padding: 0.62rem 0.7rem;
+        font-size: 0.6rem;
+        letter-spacing: 0.05em;
+        min-height: 3rem;
+    }
+
+    .settings-island,
+    .settings-module,
+    .settings-grid,
+    .settings-chip-list,
+    .settings-suggestion-list,
+    .settings-recent-list,
+    .delivery-panel,
+    .delivery-toggle-list,
+    .delivery-actions,
+    .account-sync-controls,
+    .account-sync-import {
+        gap: 0.7rem;
+    }
+
+    .settings-stat-card,
+    .settings-suggestion,
+    .settings-recent-item,
+    .delivery-digest {
+        padding: 0.75rem;
+    }
+
+    .settings-chip {
+        padding: 0.48rem 0.58rem;
+        font-size: 0.62rem;
+    }
+
+    .settings-suggestion-value {
+        font-size: 0.68rem;
+        letter-spacing: 0.04em;
+    }
+
+    .settings-suggestion-reason,
+    .delivery-toggle-meta,
+    .delivery-action-note,
+    .delivery-digest pre {
+        font-size: 0.82rem;
+        line-height: 1.38;
+    }
+
+    .settings-recent-item h4 {
+        font-size: 0.95rem;
+    }
+
+    .account-sync-input {
+        padding: 0.58rem 0.68rem;
+        font-size: 0.76rem;
+    }
+
+    .account-sync-token code {
+        padding: 0.55rem 0.68rem;
+        font-size: 0.74rem;
     }
 }
 

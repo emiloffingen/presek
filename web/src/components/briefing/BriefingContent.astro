@@ -81,4 +81,86 @@ const safeBriefing = sanitizeHtml(formattedBriefing);
         text-transform: uppercase;
     }
     .briefing-inline-badge:hover { background: var(--nyt-accent); color: white; transform: translateY(-2px) scale(1.05); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+    @media (max-width: 639.98px) {
+        .briefing-content-container {
+            padding: 0 0.25rem;
+        }
+
+        .briefing-body {
+            font-size: 1rem;
+            line-height: 1.72;
+            letter-spacing: 0;
+        }
+
+        .briefing-section-title {
+            font-size: 1.95rem;
+            margin: 3rem 0 1rem;
+            padding-bottom: 0.8rem;
+            border-bottom-width: 3px;
+            line-height: 0.98;
+        }
+
+        .briefing-paragraph {
+            margin-bottom: 1.4rem;
+        }
+
+        .briefing-paragraph.drop-cap {
+            min-height: 0;
+        }
+
+        .briefing-paragraph.drop-cap::first-letter {
+            font-size: 3.8rem;
+            margin-right: 0.12em;
+            padding-left: 0;
+        }
+
+        .briefing-pull-quote {
+            font-size: 1.35rem;
+            border-left-width: 4px;
+            padding: 1rem 1rem 1rem 1.1rem;
+            margin: 2rem 0;
+            line-height: 1.22;
+        }
+
+        .briefing-pull-quote::before {
+            left: 0.45rem;
+            font-size: 4.5rem;
+        }
+
+        .briefing-kicker {
+            font-size: 0.62rem;
+            letter-spacing: 0.12em;
+            margin-bottom: 0.35rem;
+        }
+
+        .briefing-item-title {
+            font-size: 1.45rem;
+            margin: 2.25rem 0 0.9rem;
+            line-height: 1.12;
+        }
+
+        .briefing-ul {
+            gap: 0.95rem;
+            margin-bottom: 2rem;
+        }
+
+        .briefing-li {
+            padding-left: 1.25rem;
+            font-size: 0.98rem;
+            line-height: 1.52;
+        }
+
+        .briefing-li::before {
+            font-size: 1.1rem;
+            top: 0.02rem;
+        }
+
+        .briefing-inline-badge {
+            margin-left: 0.5rem;
+            padding: 0.18rem 0.5rem;
+            font-size: 0.5rem;
+            letter-spacing: 0.06em;
+        }
+    }
 </style>

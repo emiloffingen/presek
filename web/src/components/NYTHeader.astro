@@ -128,6 +128,14 @@ function getRelativeTimeStr(dateStr?: string) {
                 </span>
                 <span class="ticker-label">{t('header.live')}</span>
             </div>
+            <div class="mobile-ticker-compact">
+                {breakingItems[0] && (
+                    <a href={breakingItems[0].href} class="mobile-live-ticker-headline">
+                        {breakingItems[0].created_at && <span class="ticker-time">{getRelativeTimeStr(breakingItems[0].created_at)}</span>}
+                        <span class="ticker-title">{breakingItems[0].label}</span>
+                    </a>
+                )}
+            </div>
             <div class="unified-ticker-track-wrap">
                 <div class="unified-ticker-track">
                     <div class="ticker-content-segment">
@@ -246,6 +254,7 @@ function getRelativeTimeStr(dateStr?: string) {
     .unified-ticker-track { display: flex; width: max-content; animation: unified-ticker-scroll 80s linear infinite; }
     @keyframes unified-ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
     .unified-ticker-track:hover { animation-play-state: paused; }
+    .mobile-ticker-compact { display: none; }
 
     .ticker-content-segment { display: flex; align-items: center; gap: 3rem; padding-right: 3rem; }
 
@@ -309,6 +318,7 @@ function getRelativeTimeStr(dateStr?: string) {
         -webkit-overflow-scrolling: touch;
         display: flex;
         align-items: center;
+        scroll-snap-type: x proximity;
         scrollbar-width: none;
         -ms-overflow-style: none;
     }
@@ -322,7 +332,7 @@ function getRelativeTimeStr(dateStr?: string) {
     .nav-fade.left { left: 0; background: linear-gradient(to right, color-mix(in srgb, var(--background) 90%, transparent), transparent); }
     .nav-fade.right { right: 0; background: linear-gradient(to left, color-mix(in srgb, var(--background) 90%, transparent), transparent); }
 
-    .nav-rail-group { border-right: 1px solid color-mix(in srgb, var(--border) 40%, transparent); padding: 0 1.25rem; display: flex; align-items: center; height: 100%; flex-shrink: 0; }
+    .nav-rail-group { border-right: 1px solid color-mix(in srgb, var(--border) 40%, transparent); padding: 0 1.25rem; display: flex; align-items: center; height: 100%; flex-shrink: 0; scroll-snap-align: start; }
     .nav-rail-group:last-child { border-right: none; }
 
     .group-links { display: flex; align-items: center; gap: 0.25rem; }
@@ -368,14 +378,171 @@ function getRelativeTimeStr(dateStr?: string) {
     @media (max-width: 768px) {
         .topbar-main { gap: 0.75rem; }
         .search-entry-wrap { width: 120px; }
+        .nav-fade { width: 28px; }
+        .nav-rail-content { padding: 0.25rem 0; }
+        .nav-rail-group { padding: 0 0.75rem; }
+        .nav-rail-link { font-size: 0.62rem; padding: 0.35rem 0.55rem; }
+    }
+
+    @media (max-width: 640px) {
+        .dispatch-container { min-width: 0; }
+        .unified-dispatch-bar {
+            height: 2.15rem;
+            background: color-mix(in srgb, var(--background) 94%, transparent);
+        }
+        .ticker-prefix {
+            flex-shrink: 0;
+            gap: 0.3rem;
+            padding: 0 0.6rem 0 0.75rem;
+            border-right: none;
+        }
+        .ticker-label {
+            font-size: 0.46rem;
+            letter-spacing: 0.1em;
+            white-space: nowrap;
+        }
+        .unified-ticker-track-wrap { display: none; }
+        .mobile-ticker-compact {
+            display: flex;
+            align-items: center;
+            min-width: 0;
+            flex: 1;
+            overflow: hidden;
+            padding: 0 0.75rem 0 0.2rem;
+        }
+        .mobile-live-ticker-headline {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            align-items: center;
+            gap: 0.55rem;
+            min-width: 0;
+            max-width: 100%;
+            color: var(--foreground);
+            text-decoration: none;
+            width: 100%;
+        }
+        .mobile-live-ticker-headline .ticker-title {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-family: var(--font-serif);
+            font-size: 0.82rem;
+            font-weight: 780;
+            line-height: 1;
+        }
+        .mobile-live-ticker-headline .ticker-time {
+            flex-shrink: 0;
+            font-size: 0.5rem;
+            font-weight: 900;
+            letter-spacing: 0.03em;
+            padding-right: 0.5rem;
+            border-right: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+            opacity: 0.8;
+        }
+        .editorial-topbar { padding: 0.55rem 0.5rem; }
+        .topbar-main {
+            grid-template-columns: 3.25rem minmax(0, 1fr) 5.5rem;
+            gap: 0.35rem;
+        }
+        .topbar-left-stack,
+        .topbar-actions {
+            min-width: 0;
+        }
+        .topbar-left-stack {
+            justify-content: flex-start;
+        }
+        .topbar-branding {
+            min-width: 0;
+            align-items: center;
+        }
+        .topbar-actions {
+            justify-content: flex-end;
+        }
+        .search-entry-wrap { width: 3rem; }
+        .topbar-util {
+            gap: 0.2rem;
+            justify-content: flex-end;
+        }
+        :global(#script-toggle) {
+            min-width: 3rem;
+            padding: 0.2rem 0.35rem;
+            font-size: 0.46rem;
+            letter-spacing: 0.08em;
+            line-height: 1;
+            text-align: center;
+            border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+            border-radius: 9999px;
+            background: color-mix(in srgb, var(--secondary) 72%, transparent);
+        }
+        :global(#script-toggle:hover) {
+            background: color-mix(in srgb, var(--secondary) 92%, transparent);
+        }
+        :global(.topbar-actions button[aria-label="Promeni tema"]) {
+            height: 2rem;
+            width: 2rem;
+            padding: 0;
+        }
+        :global(.topbar-actions button[aria-label="Promeni tema"] svg) {
+            width: 1rem;
+            height: 1rem;
+        }
+        .nav-rail-wrapper { border-top: 1px solid color-mix(in srgb, var(--border) 28%, transparent); }
+        .nav-rail-scroll { padding: 0 0.25rem; scroll-padding-left: 0.65rem; }
+        .nav-rail-content { padding: 0.15rem 0; }
+        .nav-rail-group {
+            padding: 0 0.3rem;
+            border-right: none;
+        }
+        .group-links { gap: 0.15rem; }
+        .nav-rail-link {
+            font-size: 0.56rem;
+            padding: 0.42rem 0.48rem;
+            color: color-mix(in srgb, var(--muted-foreground) 92%, var(--foreground) 8%);
+        }
     }
 
     @media (max-width: 480px) {
         .editorial-topbar { padding: 0.4rem 0.5rem; }
-        .topbar-main { gap: 0.5rem; }
-        .search-entry-wrap { width: 100px; }
-        .topbar-util { gap: 0.5rem; }
+        .topbar-main {
+            grid-template-columns: 2.8rem minmax(0, 1fr) 5rem;
+            gap: 0.25rem;
+        }
+        .search-entry-wrap { width: 2.75rem; }
+        .topbar-util { gap: 0.15rem; }
         .user-action-link { display: none; }
+        :global(#script-toggle) {
+            min-width: 2.7rem;
+            padding: 0.18rem 0.25rem;
+            font-size: 0.42rem;
+        }
+        .ticker-prefix {
+            padding-left: 0.55rem;
+            padding-right: 0.45rem;
+        }
+        .ticker-label {
+            font-size: 0.42rem;
+            letter-spacing: 0.08em;
+        }
+        .mobile-ticker-compact {
+            padding-right: 0.55rem;
+        }
+        .mobile-live-ticker-headline {
+            gap: 0.4rem;
+        }
+        .mobile-live-ticker-headline .ticker-time {
+            font-size: 0.46rem;
+            padding-right: 0.35rem;
+        }
+        .mobile-live-ticker-headline .ticker-title {
+            font-size: 0.76rem;
+        }
+        :global(.topbar-actions button[aria-label="Promeni tema"]) {
+            height: 1.9rem;
+            width: 1.9rem;
+        }
+        .nav-rail-scroll { padding: 0 0.1rem; }
+        .nav-rail-link { font-size: 0.54rem; padding: 0.4rem 0.45rem; }
     }
 
     @media (max-width: 768px) {

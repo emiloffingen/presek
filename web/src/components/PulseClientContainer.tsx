@@ -116,10 +116,10 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
     return (
         <div className="pulse-client-container w-full max-w-full overflow-x-hidden">
             {/* Category Filter Bar */}
-            <nav className="flex items-center gap-[var(--grid-gap)] mb-12 border-b border-border pb-4 overflow-x-auto hide-scrollbar sticky top-[72px] bg-background/80 backdrop-blur-md z-30 py-2">
+            <nav className="flex items-center gap-2 md:gap-[var(--grid-gap)] mb-8 md:mb-12 border-b border-border pb-3 md:pb-4 overflow-x-auto hide-scrollbar sticky top-[72px] bg-background/80 backdrop-blur-md z-30 py-2">
                 <button
                     onClick={() => setCategory(null)}
-                    className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${category === null ? 'bg-nyt-accent text-white' : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'}`}
+                    className={`px-3 py-1.5 md:px-4 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-[0.14em] md:tracking-widest transition-all whitespace-nowrap ${category === null ? 'bg-nyt-accent text-white' : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'}`}
                 >
                     {isMK ? 'СИТЕ КАТЕГОРИИ' : 'SVE KATEGORIJE'}
                 </button>
@@ -127,7 +127,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                     <button
                         key={cat}
                         onClick={() => setCategory(cat)}
-                        className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${category === cat ? 'bg-nyt-accent text-white' : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'}`}
+                        className={`px-3 py-1.5 md:px-4 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-[0.14em] md:tracking-widest transition-all whitespace-nowrap ${category === cat ? 'bg-nyt-accent text-white' : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'}`}
                     >
                         {cat}
                     </button>
@@ -136,7 +136,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
             </nav>
 
             {/* NEW: COMMAND CENTER GRID */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-[var(--grid-gap)] mb-16">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-[var(--grid-gap)] mb-10 md:mb-16">
                 <div className="lg:col-span-2">
                     <PulseHeatmapIsland lang={lang} />
                 </div>
@@ -150,7 +150,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                 </div>
             </div>
 
-            <div className={`pulse-stats-grid mb-12 transition-opacity duration-300 ${loading ? 'opacity-50' : 'opacity-100'}`}>
+            <div className={`pulse-stats-grid mb-8 md:mb-12 transition-opacity duration-300 ${loading ? 'opacity-50' : 'opacity-100'}`}>
                 <div className="pulse-card" title={isMK ? "Вкупен број на обработени објави во последните 24 часа." : "Ukupan broj obrađenih objava u poslednja 24 časa."}>
                     <p className="card-label"><Activity size={12}/> {isMK ? 'ИНФОРМАТИВЕН РИТАМ' : 'INFORMATIVNI RITAM'}</p>
                     <p className="card-value">{globalPulse?.last_24h?.toLocaleString(isMK ? 'mk-MK' : 'sr-RS') || '–'}</p>
@@ -189,7 +189,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                 </div>
 
                 <div className="pulse-card" title={isMK ? "Субјекти кои се моментално најзастапени." : "Subjekti koji su trenutno najzastupljeniji u vestima."}>
-                    <p className="card-label"><Zap size={12}/> TRENDING {category && <span className="text-[8px] opacity-60">{isMK ? `ВО ${category}` : `U ${category}`}</span>}</p>
+                    <p className="card-label"><Zap size={12}/> TRENDING {category && <span className="text-[7px] md:text-[8px] opacity-60">{isMK ? `ВО ${category}` : `U ${category}`}</span>}</p>
                     <div className="card-list">
                         {topEntities.length > 0 ? topEntities.slice(0, 3).map((e: any, i: number) => (
                             <a key={i} href={`/subjekt/${encodeURIComponent(e.name)}`} className="list-item group/item">
@@ -200,20 +200,20 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                                 </strong>
                             </a>
                         )) : (
-                            <p className="text-[10px] text-muted-foreground italic py-2">{isMK ? 'Нема доволно податоци' : 'Nema dovoljno podataka'}</p>
+                            <p className="text-[9px] md:text-[10px] text-muted-foreground italic py-2">{isMK ? 'Нема доволно податоци' : 'Nema dovoljno podataka'}</p>
                         )}
                     </div>
                 </div>
             </div>
 
             {/* Quick Insights Deck */}
-            <div className="bg-secondary/10 border border-border p-6 rounded-lg mb-20 flex flex-col md:flex-row gap-[var(--grid-gap)] md:gap-[var(--grid-gap)] items-start md:items-center border-l-4 border-l-nyt-accent shadow-sm">
+            <div className="bg-secondary/10 border border-border p-4 md:p-6 rounded-lg mb-12 md:mb-20 flex flex-col md:flex-row gap-3 md:gap-[var(--grid-gap)] items-start md:items-center border-l-4 border-l-nyt-accent shadow-sm">
                 <div className="flex-1 w-full">
-                    <div className="flex items-center gap-[var(--grid-gap)] mb-2">
-                         <h3 className="text-[11px] font-black uppercase tracking-widest text-nyt-accent">{isMK ? 'Клучни увиди' : 'Ključni uvidi'}</h3>
+                    <div className="flex items-center gap-2 md:gap-[var(--grid-gap)] mb-2">
+                         <h3 className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.14em] md:tracking-widest text-nyt-accent">{isMK ? 'Клучни увиди' : 'Ključni uvidi'}</h3>
                          <span className="h-px flex-1 bg-nyt-accent/10"></span>
                     </div>
-                    <p className="font-serif italic text-lg md:text-xl leading-snug">
+                    <p className="font-serif italic text-base md:text-xl leading-snug">
                         {intelligence.pluralism?.pluralism_pct > 50
                             ? (isMK ? "Забележан е висок степен на медиумски консензус кај водечките приказни денес." : "Zabeležen je visok stepen medijskog konsenzusa kod vodećih priča danas.")
                             : intelligence.pluralism?.pluralism_pct > 0
@@ -222,21 +222,21 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                         }
                     </p>
                 </div>
-                <div className="flex-1 w-full grid grid-cols-2 gap-[var(--grid-gap)] md:gap-[var(--grid-gap)] border-t md:border-t-0 md:border-l border-border pt-6 md:pt-0 md:pl-8">
+                <div className="flex-1 w-full grid grid-cols-2 gap-3 md:gap-[var(--grid-gap)] border-t md:border-t-0 md:border-l border-border pt-4 md:pt-0 md:pl-8">
                     <div className="group cursor-help relative">
                         <div className="flex items-center gap-1.5 mb-1">
-                            <span className="block text-[9px] font-black uppercase text-muted-foreground">{isMK ? 'Транспарентност' : 'Transparentnost'}</span>
+                            <span className="block text-[8px] md:text-[9px] font-black uppercase text-muted-foreground">{isMK ? 'Транспарентност' : 'Transparentnost'}</span>
                             <Info size={8} className="opacity-40 group-hover:opacity-100" />
                         </div>
-                        <span className="text-xl font-black">{intelligence.synthesis_transparency?.systemic_ratio > 0 ? `${intelligence.synthesis_transparency?.systemic_ratio}%` : '–'}</span>
+                        <span className="text-lg md:text-xl font-black">{intelligence.synthesis_transparency?.systemic_ratio > 0 ? `${intelligence.synthesis_transparency?.systemic_ratio}%` : '–'}</span>
                         <div className="absolute hidden group-hover:block bg-foreground text-background text-[10px] p-2 rounded shadow-xl mt-1 z-50 w-48 font-sans left-0 md:left-auto">
                             {isMK ? 'Процент на објави чија содржина е потврдена преку системот.' : 'Procenat objava čija je sadržina potvrđena kroz sistem.'}
                         </div>
                     </div>
                     <div>
-                        <span className="block text-[9px] font-black uppercase text-muted-foreground mb-1">{isMK ? 'Стабилност' : 'Stabilnost'}</span>
-                        <div className="flex items-center gap-[var(--grid-gap)]">
-                             <span className="text-xl font-black text-emerald-600">{isMK ? 'Оптимална' : 'Optimalna'}</span>
+                        <span className="block text-[8px] md:text-[9px] font-black uppercase text-muted-foreground mb-1">{isMK ? 'Стабилност' : 'Stabilnost'}</span>
+                        <div className="flex items-center gap-2 md:gap-[var(--grid-gap)]">
+                             <span className="text-lg md:text-xl font-black text-emerald-600">{isMK ? 'Оптимална' : 'Optimalna'}</span>
                              <div className="flex gap-0.5">
                                  <div className="w-1 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
                                  <div className="w-1 h-3 bg-emerald-500/60 rounded-full animate-pulse delay-75"></div>
@@ -250,10 +250,10 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
             <div className="broadsheet-grid">
                 <div className="broadsheet-main">
                     {/* 1. HORIZON ANALYSIS */}
-                    <section className="mb-16">
-                        <div className="flex items-center justify-between mb-8 border-b border-border pb-4">
-                            <h2 className="section-title-italic !mb-0 text-3xl">{isMK ? 'Редакциски Хоризонт' : 'Redakcijski Horizont'}</h2>
-                            <div className="flex items-center gap-[var(--grid-gap)] text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                    <section className="mb-12 md:mb-16">
+                        <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:justify-between mb-5 md:mb-8 border-b border-border pb-3 md:pb-4">
+                            <h2 className="section-title-italic !mb-0 text-[1.45rem] md:text-3xl">{isMK ? 'Редакциски Хоризонт' : 'Redakcijski Horizont'}</h2>
+                            <div className="flex items-center gap-2 md:gap-[var(--grid-gap)] text-[9px] md:text-[10px] font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground">
                                 <BarChart3 size={12} /> {isMK ? 'Аналитика по теми' : 'Analitika po temama'}
                             </div>
                         </div>
@@ -264,10 +264,10 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                     </section>
 
                     {/* 2. KEY ACTORS GRID */}
-                    <section className="mb-20">
-                        <div className="flex items-center justify-between mb-8 border-b border-border pb-4">
-                            <h2 className="section-title-italic !mb-0 text-3xl">{isMK ? 'Клучни актери' : 'Ključni akteri'}</h2>
-                            <div className="flex items-center gap-[var(--grid-gap)] text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                    <section className="mb-14 md:mb-20">
+                        <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:justify-between mb-5 md:mb-8 border-b border-border pb-3 md:pb-4">
+                            <h2 className="section-title-italic !mb-0 text-[1.45rem] md:text-3xl">{isMK ? 'Клучни актери' : 'Ključni akteri'}</h2>
+                            <div className="flex items-center gap-2 md:gap-[var(--grid-gap)] text-[9px] md:text-[10px] font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground">
                                 <Users size={12} /> {isMK ? 'во фокус' : 'u fokusu'}
                             </div>
                         </div>
@@ -279,27 +279,27 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                                 ))}
                             </div>
                         ) : topEntities.length > 0 ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[var(--grid-gap)]">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-[var(--grid-gap)]">
                                 {topEntities.map((ent: any) => (
                                     <a
                                         key={ent.name}
                                         href={`/subjekt/${encodeURIComponent(ent.name)}`}
-                                        className="p-6 border border-border bg-card hover:border-nyt-accent hover:shadow-xl transition-all group relative overflow-hidden flex flex-col"
+                                        className="p-4 md:p-6 border border-border bg-card hover:border-nyt-accent hover:shadow-xl transition-all group relative overflow-hidden flex flex-col"
                                     >
                                         <div className="absolute top-0 left-0 w-1 h-full bg-nyt-accent/10 group-hover:bg-nyt-accent transition-colors"></div>
-                                        <div className="flex justify-between items-start mb-4">
-                                            <span className="text-[9px] font-black uppercase text-nyt-accent tracking-widest bg-nyt-accent/5 px-2 py-0.5 rounded">
+                                        <div className="flex justify-between items-start mb-3 md:mb-4">
+                                            <span className="text-[8px] md:text-[9px] font-black uppercase text-nyt-accent tracking-[0.14em] md:tracking-widest bg-nyt-accent/5 px-2 py-0.5 rounded">
                                                 {getTypeLabel(ent.type)}
                                             </span>
-                                            <span className="text-xl group-hover:scale-125 transition-transform">{ent.sentiment_score > 0.1 ? '😊' : ent.sentiment_score < -0.1 ? '😤' : '😐'}</span>
+                                            <span className="text-lg md:text-xl group-hover:scale-125 transition-transform">{ent.sentiment_score > 0.1 ? '😊' : ent.sentiment_score < -0.1 ? '😤' : '😐'}</span>
                                         </div>
-                                        <h3 className="font-serif font-black text-xl leading-tight group-hover:text-nyt-accent mb-6">{ent.name}</h3>
-                                        <div className="mt-auto pt-4 border-t border-border/40 flex items-center justify-between">
+                                        <h3 className="font-serif font-black text-lg md:text-xl leading-tight group-hover:text-nyt-accent mb-4 md:mb-6">{ent.name}</h3>
+                                        <div className="mt-auto pt-3 md:pt-4 border-t border-border/40 flex items-center justify-between">
                                             <div className="flex flex-col">
-                                                <span className="text-[10px] font-bold text-muted-foreground uppercase">{isMK ? 'Споменувања' : 'Pominjanja'}</span>
-                                                <span className="text-xl font-black tabular-nums">{ent.total_mentions > 0 ? ent.total_mentions : '–'}</span>
+                                                <span className="text-[9px] md:text-[10px] font-bold text-muted-foreground uppercase">{isMK ? 'Споменувања' : 'Pominjanja'}</span>
+                                                <span className="text-lg md:text-xl font-black tabular-nums">{ent.total_mentions > 0 ? ent.total_mentions : '–'}</span>
                                             </div>
-                                            <div className={`text-[10px] font-black uppercase tracking-tighter ${ent.sentiment_score > 0.1 ? 'text-green-600' : ent.sentiment_score < -0.1 ? 'text-red-600' : 'text-muted-foreground'}`}>
+                                            <div className={`text-[9px] md:text-[10px] font-black uppercase tracking-tight ${ent.sentiment_score > 0.1 ? 'text-green-600' : ent.sentiment_score < -0.1 ? 'text-red-600' : 'text-muted-foreground'}`}>
                                                 {ent.sentiment_score > 0.1 ? (isMK ? 'Позитивен' : 'Pozitivan') : ent.sentiment_score < -0.1 ? (isMK ? 'Критичен' : 'Kritičan') : (isMK ? 'Неутрален' : 'Neutralan')}
                                             </div>
                                         </div>
@@ -326,7 +326,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                         </p>
                     </section>
 
-                    <div className="sidebar-module mt-12">
+                    <div className="sidebar-module mt-8 md:mt-12">
                         <h4 className="sidebar-label">{isMK ? 'СПОРЕДБА НА ИЗВОРИ' : 'POREĐENJE IZVORA'}</h4>
                         <div className="mt-4">
                             <SourceComparisonIsland allSources={pulseData.map((r: PulseRow) => r.source)} />
@@ -336,29 +336,29 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
             </div>
 
             {/* Transparency Scoreboard */}
-            <section className="mt-20">
-                <div className="section-heading-row masthead-double-rule mb-8">
+            <section className="mt-14 md:mt-20">
+                <div className="section-heading-row masthead-double-rule mb-5 md:mb-8">
                     <h2 className="section-title-italic !mb-0">{isMK ? 'Индекс на Транспарентност' : 'Indeks Transparentnosti'}</h2>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-[var(--grid-gap)]">
-                    <div className="border border-border p-6 bg-emerald-50/50 dark:bg-emerald-950/10 border-l-4 border-l-emerald-500">
-                        <h4 className="sidebar-label !border-emerald-500 !text-emerald-700 dark:!text-emerald-400 mb-6">{isMK ? 'Најобјективни извори (24ч)' : 'Najobjektivniji izvori (24h)'}</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-[var(--grid-gap)]">
+                    <div className="border border-border p-4 md:p-6 bg-emerald-50/50 dark:bg-emerald-950/10 border-l-4 border-l-emerald-500">
+                        <h4 className="sidebar-label !border-emerald-500 !text-emerald-700 dark:!text-emerald-400 mb-4 md:mb-6">{isMK ? 'Најобјективни извори (24ч)' : 'Najobjektivniji izvori (24h)'}</h4>
                         <div className="flex flex-col gap-[var(--grid-gap)]">
                             {[...pulseLeaders].sort((a,b) => b.avg_objectivity - a.avg_objectivity).slice(0, 3).map(s => (
                                 <div key={s.source} className="flex justify-between items-center group">
                                     <span className="font-bold text-sm group-hover:text-emerald-600 transition-colors">{s.source}</span>
-                                    <span className="text-xs font-black text-emerald-600">{s.avg_objectivity > 0 ? (s.avg_objectivity * 100).toFixed(0) + (isMK ? '% Објективност' : '% Objektivnost') : '–'}</span>
+                                    <span className="text-[11px] md:text-xs font-black text-emerald-600">{s.avg_objectivity > 0 ? (s.avg_objectivity * 100).toFixed(0) + (isMK ? '% Објективност' : '% Objektivnost') : '–'}</span>
                                 </div>
                             ))}
                         </div>
                     </div>
-                    <div className="border border-border p-6 bg-red-50/50 dark:bg-red-950/10 border-l-4 border-l-red-500">
-                        <h4 className="sidebar-label !border-red-500 !text-red-700 dark:!text-red-400 mb-6">{isMK ? 'Најнизок сензационализам' : 'Najniži senzacionalizam'}</h4>
+                    <div className="border border-border p-4 md:p-6 bg-red-50/50 dark:bg-red-950/10 border-l-4 border-l-red-500">
+                        <h4 className="sidebar-label !border-red-500 !text-red-700 dark:!text-red-400 mb-4 md:mb-6">{isMK ? 'Најнизок сензационализам' : 'Najniži senzacionalizam'}</h4>
                         <div className="flex flex-col gap-[var(--grid-gap)]">
                             {[...pulseLeaders].sort((a,b) => a.avg_sensationalism - b.avg_sensationalism).slice(0, 3).map(s => (
                                 <div key={s.source} className="flex justify-between items-center group">
                                     <span className="font-bold text-sm group-hover:text-red-600 transition-colors">{s.source}</span>
-                                    <span className="text-xs font-black text-red-600">{s.avg_sensationalism > 0 ? (s.avg_sensationalism * 100).toFixed(0) + (isMK ? '% Сензација' : '% Senzacija') : '–'}</span>
+                                    <span className="text-[11px] md:text-xs font-black text-red-600">{s.avg_sensationalism > 0 ? (s.avg_sensationalism * 100).toFixed(0) + (isMK ? '% Сензација' : '% Senzacija') : '–'}</span>
                                 </div>
                             ))}
                         </div>
@@ -367,8 +367,8 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
             </section>
 
             {(!loading || pulseLeaders.length > 0) && (
-                <section id="leaderboard" className={`mt-24 transition-opacity duration-300 ${loading ? 'opacity-50' : 'opacity-100'}`}>
-                    <div className="section-heading-row masthead-double-rule mb-8">
+                <section id="leaderboard" className={`mt-16 md:mt-24 transition-opacity duration-300 ${loading ? 'opacity-50' : 'opacity-100'}`}>
+                    <div className="section-heading-row masthead-double-rule mb-5 md:mb-8">
                         <h2 className="section-title-italic !mb-0">{isMK ? 'Ранг листа на редакции (24ч)' : 'Rang lista redakcija (24h)'}</h2>
                     </div>
                     <div className="broadsheet-table-wrapper">

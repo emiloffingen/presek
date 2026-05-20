@@ -83,15 +83,15 @@ const ArchiveFeedIsland: React.FC<ArchiveFeedIslandProps> = ({
 
   return (
     <div className="archive-feed-container">
-      <div className="archive-clusters flex flex-col gap-10">
+      <div className="archive-clusters flex flex-col gap-6 md:gap-10">
         {clusters.map((cluster: any, index: number) => (
-          <div key={`${cluster.cluster_id}-${index}`} className="archive-cluster-row border-b border-foreground/5 pb-10 last:border-0">
-            <div className="flex flex-col md:flex-row gap-[var(--grid-gap)]">
-              <div className="archive-cluster-index-col w-full md:w-20 pt-2 flex-shrink-0">
-                <div className="sticky top-24 flex md:block items-baseline gap-[var(--grid-gap)]">
+          <div key={`${cluster.cluster_id}-${index}`} className="archive-cluster-row border-b border-foreground/5 pb-6 md:pb-10 last:border-0">
+            <div className="flex flex-col md:flex-row gap-3 md:gap-[var(--grid-gap)]">
+              <div className="archive-cluster-index-col w-full md:w-20 pt-1 md:pt-2 flex-shrink-0">
+                <div className="sticky top-24 flex md:block items-baseline gap-2 md:gap-[var(--grid-gap)]">
                   <span className="font-sans text-[10px] font-black uppercase tracking-widest text-nyt-accent block mb-1 hidden md:block">{isMK ? 'Издание' : 'Izdanje'}</span>
-                  <strong className="font-serif text-lg md:text-3xl font-black block leading-none opacity-20 md:opacity-40">{String(index + 1).padStart(2, '0')}</strong>
-                  <span className="font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground md:hidden opacity-40">{isMK ? 'Поз' : 'Poz'}</span>
+                  <strong className="font-serif text-base md:text-3xl font-black block leading-none opacity-20 md:opacity-40">{String(index + 1).padStart(2, '0')}</strong>
+                  <span className="font-sans text-[9px] md:text-[10px] font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground md:hidden opacity-40">{isMK ? 'Поз' : 'Poz'}</span>
                 </div>
               </div>
               <div className="flex-1 min-w-0">
@@ -102,9 +102,9 @@ const ArchiveFeedIsland: React.FC<ArchiveFeedIslandProps> = ({
         ))}
 
         {isLoading && (
-            <div className="flex flex-col gap-10 opacity-50">
+            <div className="flex flex-col gap-6 md:gap-10 opacity-50">
                 {[1, 2, 3].map(i => (
-                    <div key={i} className="flex flex-col md:flex-row gap-[var(--grid-gap)] border-b border-foreground/5 pb-10">
+                    <div key={i} className="flex flex-col md:flex-row gap-3 md:gap-[var(--grid-gap)] border-b border-foreground/5 pb-6 md:pb-10">
                         <div className="w-20 shrink-0">
                              <div className="h-8 w-12 bg-muted rounded"></div>
                         </div>
@@ -116,10 +116,10 @@ const ArchiveFeedIsland: React.FC<ArchiveFeedIslandProps> = ({
       </div>
 
       {hasMore && !isLoading && (
-        <div className="archive-load-more-wrap mt-16 text-center border-t border-foreground pt-10">
+        <div className="archive-load-more-wrap mt-10 md:mt-16 text-center border-t border-foreground pt-6 md:pt-10">
           <button
             onClick={loadMore}
-            className="archive-page-link editorial-action px-12 py-4 border border-foreground font-sans text-xs font-black uppercase tracking-widest hover:bg-foreground hover:text-background transition-colors"
+            className="archive-page-link editorial-action px-8 md:px-12 py-3 md:py-4 border border-foreground font-sans text-[11px] md:text-xs font-black uppercase tracking-[0.14em] md:tracking-widest hover:bg-foreground hover:text-background transition-colors"
           >
             {isMK ? 'Вчитај уште теми' : 'Učitaj još tema'}
           </button>
@@ -127,7 +127,7 @@ const ArchiveFeedIsland: React.FC<ArchiveFeedIslandProps> = ({
       )}
 
       {!hasMore && clusters.length > 0 && (
-        <p className="archive-end-note mt-12 text-center font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
+        <p className="archive-end-note mt-8 md:mt-12 text-center font-sans text-[9px] md:text-[10px] font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground opacity-60">
           {isMK ? 'Крај на архивата за овој ден' : 'Kraj arhive za ovaj dan'}
         </p>
       )}

@@ -199,4 +199,28 @@ const displayDate = briefingData?.date
             position: static;
         }
     }
+
+    @media (max-width: 639.98px) {
+        .briefing-page-container {
+            padding: 0 0.85rem;
+        }
+
+        .briefing-layout-grid {
+            gap: 2.25rem;
+        }
+
+        .editorial-divider {
+            margin-bottom: 2.5rem !important;
+        }
+
+        .editorial-divider::after {
+            padding: 0 1rem;
+            font-size: 0.65rem;
+            letter-spacing: 0.32em;
+        }
+
+        .briefing-sidebar-col {
+            padding-top: 1.5rem;
+        }
+    }
 </style>

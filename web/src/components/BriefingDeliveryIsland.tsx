@@ -271,20 +271,20 @@ export default function BriefingDeliveryIsland({
         </p>
       </div>
 
-      <div className="delivery-toggle-list space-y-4">
-        <button type="button" className={`flex w-full items-center justify-between p-4 rounded-xl border transition ${prefs.morningBriefing ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => togglePref('morningBriefing')}>
+      <div className="delivery-toggle-list space-y-3 md:space-y-4">
+        <button type="button" className={`flex w-full items-center justify-between p-3 md:p-4 rounded-lg md:rounded-xl border transition ${prefs.morningBriefing ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => togglePref('morningBriefing')}>
           <span className="text-left">
             <span className="block font-sans font-bold text-sm">{isMK ? 'Утрински брифинг' : 'Jutarnji brifing'}</span>
-            <span className="block text-[11px] text-muted-foreground mt-0.5">{isMK ? 'Локален преглед на денот во овој прелистувач.' : 'Lokalni pregled dana u ovom pretraživaču.'}</span>
+            <span className="block text-[10px] md:text-[11px] text-muted-foreground mt-0.5">{isMK ? 'Локален преглед на денот во овој прелистувач.' : 'Lokalni pregled dana u ovom pretraživaču.'}</span>
           </span>
-          <strong className={`text-[10px] font-black uppercase tracking-widest ${prefs.morningBriefing ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{prefs.morningBriefing ? (isMK ? 'Овозможено' : 'Omogućeno') : (isMK ? 'Оневозможено' : 'Onemogućeno')}</strong>
+          <strong className={`text-[9px] md:text-[10px] font-black uppercase tracking-[0.14em] md:tracking-widest ${prefs.morningBriefing ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{prefs.morningBriefing ? (isMK ? 'Овозможено' : 'Omogućeno') : (isMK ? 'Оневозможено' : 'Onemogućeno')}</strong>
         </button>
-        <button type="button" className={`flex w-full items-center justify-between p-4 rounded-xl border transition ${prefs.breakingAlerts ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => togglePref('breakingAlerts')}>
+        <button type="button" className={`flex w-full items-center justify-between p-3 md:p-4 rounded-lg md:rounded-xl border transition ${prefs.breakingAlerts ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => togglePref('breakingAlerts')}>
           <span className="text-left">
             <span className="block font-sans font-bold text-sm">{isMK ? 'Итни извештаи' : 'Hitna izveštaja'}</span>
-            <span className="block text-[11px] text-muted-foreground mt-0.5">{isMK ? 'Брзи сигнали кога следената приказна ќе забрза.' : 'Brzi signali kada pratena priča ubrza.'}</span>
+            <span className="block text-[10px] md:text-[11px] text-muted-foreground mt-0.5">{isMK ? 'Брзи сигнали кога следената приказна ќе забрза.' : 'Brzi signali kada pratena priča ubrza.'}</span>
           </span>
-          <strong className={`text-[10px] font-black uppercase tracking-widest ${prefs.breakingAlerts ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{prefs.breakingAlerts ? (isMK ? 'Овозможено' : 'Omogućeno') : (isMK ? 'Оневозможено' : 'Onemogućeno')}</strong>
+          <strong className={`text-[9px] md:text-[10px] font-black uppercase tracking-[0.14em] md:tracking-widest ${prefs.breakingAlerts ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{prefs.breakingAlerts ? (isMK ? 'Овозможено' : 'Omogućeno') : (isMK ? 'Оневозможено' : 'Onemogućeno')}</strong>
         </button>
       </div>
 
@@ -340,40 +340,40 @@ export default function BriefingDeliveryIsland({
         </label>
 
         <div className="delivery-toggle-list space-y-4">
-          <button type="button" className={`flex w-full items-center justify-between p-4 rounded-xl border transition ${serverDelivery.morningBriefing ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => updateServerDelivery({ morningBriefing: !serverDelivery.morningBriefing })}>
+          <button type="button" className={`flex w-full items-center justify-between p-3 md:p-4 rounded-lg md:rounded-xl border transition ${serverDelivery.morningBriefing ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => updateServerDelivery({ morningBriefing: !serverDelivery.morningBriefing })}>
             <span className="text-left">
               <span className="block font-sans font-bold text-sm">{isMK ? 'Утрински ntfy брифинг' : 'Jutarnji ntfy brifing'}</span>
-              <span className="block text-[11px] text-muted-foreground mt-0.5">{isMK ? 'Серверски испорачан преглед во вашата `ntfy` тема.' : 'Serverski isporučen pregled u vašu `ntfy` temu.'}</span>
+              <span className="block text-[10px] md:text-[11px] text-muted-foreground mt-0.5">{isMK ? 'Серверски испорачан преглед во вашата `ntfy` тема.' : 'Serverski isporučen pregled u vašu `ntfy` temu.'}</span>
             </span>
-            <strong className={`text-[10px] font-black uppercase tracking-widest ${serverDelivery.morningBriefing ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{serverDelivery.morningBriefing ? (isMK ? 'Овозможено' : 'Omogućeno') : (isMK ? 'Оневозможено' : 'Onemogućeno')}</strong>
+            <strong className={`text-[9px] md:text-[10px] font-black uppercase tracking-[0.14em] md:tracking-widest ${serverDelivery.morningBriefing ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{serverDelivery.morningBriefing ? (isMK ? 'Овозможено' : 'Omogućeno') : (isMK ? 'Оневозможено' : 'Onemogućeno')}</strong>
           </button>
-          <button type="button" className={`flex w-full items-center justify-between p-4 rounded-xl border transition ${serverDelivery.weeklyDigest ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => updateServerDelivery({ weeklyDigest: !serverDelivery.weeklyDigest })}>
+          <button type="button" className={`flex w-full items-center justify-between p-3 md:p-4 rounded-lg md:rounded-xl border transition ${serverDelivery.weeklyDigest ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => updateServerDelivery({ weeklyDigest: !serverDelivery.weeklyDigest })}>
             <span className="text-left">
               <span className="block font-sans font-bold text-sm">{isMK ? 'Неделен дигест' : 'Nedeljni digest'}</span>
-              <span className="block text-[11px] text-muted-foreground mt-0.5">{isMK ? 'Подобар резиме-преглед на темите што сте ги следеле.' : 'Pobolignan rezime-pregled tema koje ste pratili.'}</span>
+              <span className="block text-[10px] md:text-[11px] text-muted-foreground mt-0.5">{isMK ? 'Подобар резиме-преглед на темите што сте ги следеле.' : 'Pobolignan rezime-pregled tema koje ste pratili.'}</span>
             </span>
-            <strong className={`text-[10px] font-black uppercase tracking-widest ${serverDelivery.weeklyDigest ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{serverDelivery.weeklyDigest ? (isMK ? 'Овозможено' : 'Omogućeno') : (isMK ? 'Оневозможено' : 'Onemogućeno')}</strong>
+            <strong className={`text-[9px] md:text-[10px] font-black uppercase tracking-[0.14em] md:tracking-widest ${serverDelivery.weeklyDigest ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{serverDelivery.weeklyDigest ? (isMK ? 'Овозможено' : 'Omogućeno') : (isMK ? 'Оневозможено' : 'Onemogućeno')}</strong>
           </button>
-          <button type="button" className={`flex w-full items-center justify-between p-4 rounded-xl border transition ${serverDelivery.breakingTopics ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => updateServerDelivery({ breakingTopics: !serverDelivery.breakingTopics })}>
+          <button type="button" className={`flex w-full items-center justify-between p-3 md:p-4 rounded-lg md:rounded-xl border transition ${serverDelivery.breakingTopics ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => updateServerDelivery({ breakingTopics: !serverDelivery.breakingTopics })}>
             <span className="text-left">
               <span className="block font-sans font-bold text-sm">{isMK ? 'Извештаи за следени теми' : 'Izveštaji za pratene teme'}</span>
-              <span className="block text-[11px] text-muted-foreground mt-0.5">{isMK ? 'Се активира кога вашите теми ќе добијат нов силен кластер.' : 'Aktivira se kada vaše teme dobiju novi snažan klaster.'}</span>
+              <span className="block text-[10px] md:text-[11px] text-muted-foreground mt-0.5">{isMK ? 'Се активира кога вашите теми ќе добијат нов силен кластер.' : 'Aktivira se kada vaše teme dobiju novi snažan klaster.'}</span>
             </span>
-            <strong className={`text-[10px] font-black uppercase tracking-widest ${serverDelivery.breakingTopics ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{serverDelivery.breakingTopics ? (isMK ? 'Овозможено' : 'Omogućeno') : (isMK ? 'Оневозможено' : 'Onemogućeno')}</strong>
+            <strong className={`text-[9px] md:text-[10px] font-black uppercase tracking-[0.14em] md:tracking-widest ${serverDelivery.breakingTopics ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{serverDelivery.breakingTopics ? (isMK ? 'Овозможено' : 'Omogućeno') : (isMK ? 'Оневозможено' : 'Onemogućeno')}</strong>
           </button>
-          <button type="button" className={`flex w-full items-center justify-between p-4 rounded-xl border transition ${serverDelivery.breakingSources ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => updateServerDelivery({ breakingSources: !serverDelivery.breakingSources })}>
+          <button type="button" className={`flex w-full items-center justify-between p-3 md:p-4 rounded-lg md:rounded-xl border transition ${serverDelivery.breakingSources ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => updateServerDelivery({ breakingSources: !serverDelivery.breakingSources })}>
             <span className="text-left">
               <span className="block font-sans font-bold text-sm">{isMK ? 'Извештаи за следени извори' : 'Izveštaji za praćene izvore'}</span>
-              <span className="block text-[11px] text-muted-foreground mt-0.5">{isMK ? 'Следи кога избраниот извор прв ќе отвори Важна приказна.' : 'Prati kada izabrani izvor prvo otvori Važnu priču.'}</span>
+              <span className="block text-[10px] md:text-[11px] text-muted-foreground mt-0.5">{isMK ? 'Следи кога избраниот извор прв ќе отвори Важна приказна.' : 'Prati kada izabrani izvor prvo otvori Važnu priču.'}</span>
             </span>
-            <strong className={`text-[10px] font-black uppercase tracking-widest ${serverDelivery.breakingSources ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{serverDelivery.breakingSources ? (isMK ? 'Овозможено' : 'Omogućeno') : (isMK ? 'Оневозможено' : 'Onemogućeno')}</strong>
+            <strong className={`text-[9px] md:text-[10px] font-black uppercase tracking-[0.14em] md:tracking-widest ${serverDelivery.breakingSources ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{serverDelivery.breakingSources ? (isMK ? 'Овозможено' : 'Omogućeno') : (isMK ? 'Оневозможено' : 'Onemogućeno')}</strong>
           </button>
-          <button type="button" className={`flex w-full items-center justify-between p-4 rounded-xl border transition ${serverDelivery.isActive ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => updateServerDelivery({ isActive: !serverDelivery.isActive })}>
+          <button type="button" className={`flex w-full items-center justify-between p-3 md:p-4 rounded-lg md:rounded-xl border transition ${serverDelivery.isActive ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => updateServerDelivery({ isActive: !serverDelivery.isActive })}>
             <span className="text-left">
               <span className="block font-sans font-bold text-sm">{isMK ? 'Закажаната достава е активна' : 'Zakazana dostava je aktivna'}</span>
-              <span className="block text-[11px] text-muted-foreground mt-0.5">{isMK ? 'главен прекинувач за серверска достава на овој профил.' : 'glavni prekidač za serversku dostavu na ovom profilu.'}</span>
+              <span className="block text-[10px] md:text-[11px] text-muted-foreground mt-0.5">{isMK ? 'главен прекинувач за серверска достава на овој профил.' : 'glavni prekidač za serversku dostavu na ovom profilu.'}</span>
             </span>
-            <strong className={`text-[10px] font-black uppercase tracking-widest ${serverDelivery.isActive ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{serverDelivery.isActive ? (isMK ? 'Овозможено' : 'Omogućeno') : (isMK ? 'Оневозможено' : 'Onemogućeno')}</strong>
+            <strong className={`text-[9px] md:text-[10px] font-black uppercase tracking-[0.14em] md:tracking-widest ${serverDelivery.isActive ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{serverDelivery.isActive ? (isMK ? 'Овозможено' : 'Omogućeno') : (isMK ? 'Оневозможено' : 'Onemogućeno')}</strong>
           </button>
         </div>
 
