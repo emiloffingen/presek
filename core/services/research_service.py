@@ -232,7 +232,8 @@ class ResearchService:
         if clean_mode not in {"facts", "perspectives", "context", "custom"}:
             clean_mode = "facts"
 
-        research_query = query if clean_mode == "custom" else _RESEARCH_MODE_QUERIES[clean_mode]
+        effective_lang = lang if lang in _RESEARCH_MODE_QUERIES else "sr"
+        research_query = query if clean_mode == "custom" else _RESEARCH_MODE_QUERIES[effective_lang][clean_mode]
 
         # 1. Check Semantic Cache
         query_embedding = await get_query_embedding_async(research_query)
@@ -264,13 +265,22 @@ class ResearchService:
             context = f"{context}\n\n{public_context}"
 
         # Step 1: Chain-of-Thought (Extract plan/topics)
-        plan_prompt = f"Identify 3 key areas of focus for this query: '{research_query}'. Context: {context[:2000]}"
-        plan_raw, _ = await async_call_ai(plan_prompt, "You are a research planner. Return 3 bullet points.", task_type="research", lang=lang)
+        plan_system_prompt = (
+            "Ti si planer istraživanja. Vrati 3 kratke teze za fokus."
+            if lang == "sr"
+            else "Ти си планер на истражување. Врати 3 кратки тези за фокус."
+        )
+        plan_prompt = (
+            f"Identifikuj 3 ključne oblasti fokusa za ovaj upit: '{research_query}'. Kontekst: {context[:2000]}"
+            if lang == "sr"
+            else f"Идентификувај 3 клучни области на фокус за ова прашање: '{research_query}'. Контекст: {context[:2000]}"
+        )
+        plan_raw, _ = await async_call_ai(plan_prompt, plan_system_prompt, task_type="research", lang=lang)
         
         # Step 2: Final Report Generation
         research_system_prompt = RESEARCH_SYSTEM_PROMPT_MK if lang == "mk" else RESEARCH_SYSTEM_PROMPT
         prompt = (
-            f"Query: {research_query}\nPlan: {plan_raw}\nContext: {context}"
+            f"Pitanje: {research_query}\nPlan: {plan_raw}\nContext: {context}"
             if lang == "sr"
             else f"Prasanje: {research_query}\nPlan: {plan_raw}\nKontekst: {context}"
         )

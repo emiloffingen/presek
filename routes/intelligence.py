@@ -52,18 +52,34 @@ _CASE_INSENSITIVE_TAG_EXISTS = (
 )
 
 _RESEARCH_MODE_QUERIES = {
-    "facts": (
-        "Izvleci im najvaznite brojki, datumi, fakti i vremenska ramka od ova prica. "
-        "Ne dodavaj brojki sto ne postojat vo kontekstot."
-    ),
-    "perspectives": (
-        "Identifikuvaj im klucnite akteri, nivnite stavovi, izjavi i razlicnite agli vo prikaznata. "
-        "Ne izmisluvaj izjavi sto ne se vo kontekstot."
-    ),
-    "context": (
-        "Objasni ga posirokiot kontekst, prethodnite povrzani slucuvanja i moznite posledice od ova prica. "
-        "Jasno oddeli sto e vo izvorite od analitickata ramka."
-    ),
+    "sr": {
+        "facts": (
+            "Izvuci najvažnije brojke, datume, činjenice i vremenski okvir iz ove priče. "
+            "Ne dodaj brojke koje ne postoje u kontekstu."
+        ),
+        "perspectives": (
+            "Identifikuj ključne aktere, njihove stavove, izjave i različite uglove u priči. "
+            "Ne izmišljaj izjave koje nisu u kontekstu."
+        ),
+        "context": (
+            "Objasni širi kontekst, prethodna povezana dešavanja i moguće posledice ove priče. "
+            "Jasno odvoji ono što je u izvorima od analitičkog okvira."
+        ),
+    },
+    "mk": {
+        "facts": (
+            "Izvleci im najvaznite brojki, datumi, fakti i vremenska ramka od ova prica. "
+            "Ne dodavaj brojki sto ne postojat vo kontekstot."
+        ),
+        "perspectives": (
+            "Identifikuvaj im klucnite akteri, nivnite stavovi, izjavi i razlicnite agli vo prikaznata. "
+            "Ne izmisluvaj izjavi sto ne se vo kontekstot."
+        ),
+        "context": (
+            "Objasni ga posirokiot kontekst, prethodnite povrzani slucuvanja i moznite posledice od ova prica. "
+            "Jasno oddeli sto e vo izvorite od analitickata ramka."
+        ),
+    }
 }
 
 _RESEARCH_MODE_LABELS = {
@@ -351,7 +367,7 @@ async def get_deep_research(request: Request, cluster_id: str, mode: str = "fact
     """
     validate_cluster_id(cluster_id)
     clean_mode = (mode or "facts").strip().lower()
-    clean_query = validate_string_param(q, "q", max_length=300, allow_empty=True).strip()
+    clean_query = validate_string_param(q, "q", max_length=1000, allow_empty=True).strip()
     if clean_mode not in {"facts", "perspectives", "context", "custom"}:
         return {
             "status": "error",
@@ -373,7 +389,8 @@ async def get_deep_research(request: Request, cluster_id: str, mode: str = "fact
         }
 
     # Caching check
-    query = clean_query if clean_mode == "custom" else _RESEARCH_MODE_QUERIES[clean_mode]
+    effective_lang = lang if lang in _RESEARCH_MODE_QUERIES else "sr"
+    query = clean_query if clean_mode == "custom" else _RESEARCH_MODE_QUERIES[effective_lang][clean_mode]
     query_hash = hashlib.sha1(query.encode("utf-8")).hexdigest()[:12]
     cache_key = f"api:intelligence:research:cascade:{cluster_id}:{clean_mode}:{query_hash}:{lang}:v3"
     cached = cached_response(cache_key)
