@@ -473,7 +473,7 @@ const articleSchema = cluster ? {
 
 						{/* EXECUTIVE SUMMARY / BRIFING - Wider Layout */}
 						{(!hasGeneratedNarrative && (headerBriefItems.length > 0 || (cluster.key_facts && cluster.key_facts.length > 0))) && (
-							<div class="executive-summary mb-24 p-12 bg-secondary/10 border-l-4 border-nyt-accent shadow-sm">
+							<div class="executive-summary mb-24 p-8 md:p-12 bg-secondary/10 border-l-4 border-nyt-accent shadow-sm">
 								<div class="flex items-center gap-[var(--grid-gap)] mb-14">
 									<Sparkles size={20} className="text-nyt-accent" />
 									<span class="text-[12px] font-black uppercase tracking-[0.3em] text-nyt-accent">{t('cluster.brief_overview')}</span>
@@ -481,11 +481,11 @@ const articleSchema = cluster ? {
 								<div class="grid grid-cols-1 md:grid-cols-2 gap-12">
 									<div>
 										<h4 class="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground mb-16">{t('cluster.key_points')}</h4>
-										<ul class="space-y-5">
+										<ul class="space-y-6">
 											{headerBriefItems.map(item => (
-												<li class="font-serif text-xl md:text-2xl leading-snug italic text-foreground/90 relative pl-8">
-													<span class="absolute left-0 top-3.5 w-2 h-2 rounded-full bg-nyt-accent/60"></span>
-													{item}
+												<li class="flex items-start gap-4 font-sans text-base md:text-lg leading-relaxed text-foreground/90 not-italic">
+													<span class="flex-shrink-0 mt-2 w-2 h-2 rounded-full bg-nyt-accent/60"></span>
+													<span class="flex-1">{item}</span>
 												</li>
 											))}
 										</ul>
