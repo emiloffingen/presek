@@ -638,7 +638,7 @@ async def get_entity_profile(name: str, lang: Optional[str] = "sr"):
         (name, lang),
     )
     recent = await db.async_execute(
-        f"SELECT c.cluster_id, (SELECT title FROM articles WHERE cluster_id = c.cluster_id ORDER BY COALESCE(ingested_at, created_at) DESC LIMIT 1) as title, c.updated_at as created_at, s.summary, s.sentiment FROM cluster_metadata c LEFT JOIN cluster_summaries s ON c.cluster_id = s.cluster_id AND s.lang = %s WHERE EXISTS (SELECT 1 FROM unnest(COALESCE(c.tags, '{{}}')) AS tag WHERE LOWER(tag) = LOWER(%s)) ORDER BY c.updated_at DESC LIMIT 10",
+        "SELECT c.cluster_id, (SELECT title FROM articles WHERE cluster_id = c.cluster_id ORDER BY COALESCE(ingested_at, created_at) DESC LIMIT 1) as title, c.updated_at as created_at, s.summary, s.sentiment FROM cluster_metadata c LEFT JOIN cluster_summaries s ON c.cluster_id = s.cluster_id AND s.lang = %s WHERE EXISTS (SELECT 1 FROM unnest(COALESCE(c.tags, '{}')) AS tag WHERE LOWER(tag) = LOWER(%s)) ORDER BY c.updated_at DESC LIMIT 10",
         (lang, name),
     )
 

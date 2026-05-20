@@ -44,6 +44,7 @@ __all__ = [
     "backfill_cover_art_task",
     "generate_embeddings_task",
     "discover_storylines_task",
+    "generate_all_daily_briefs_task",
     "generate_daily_brief_task",
     "send_daily_digest_task",
     "send_profile_briefings_task",

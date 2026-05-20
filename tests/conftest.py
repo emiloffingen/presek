@@ -95,7 +95,7 @@ def _install_httpx_stub():
 
 def _install_pil_stub():
     try:
-        import PIL.Image
+        import PIL.Image  # noqa: F401
 
         return
     except ImportError:

@@ -19,8 +19,6 @@ def test_extract_number_tokens_excludes_time():
 
 
 def test_compare_cluster_sources_sports_conflict():
-    from nlp.categories import detect_topic
-
     articles = [
         {
             "source": "S1",
@@ -33,8 +31,6 @@ def test_compare_cluster_sources_sports_conflict():
             "description": "Razlicen rezultat",
         },
     ]
-    all_titles = " ".join([a.get("title") or "" for a in articles])
-    topic = detect_topic(all_titles)
     result = compare_cluster_sources(articles)
     assert any(("2-0" in item or "1-0" in item) for item in result["difference_points"])
 

@@ -34,7 +34,7 @@ async def test():
                 return super().default(obj)
 
         print("Testing JSON serialization...")
-        json_str = json.dumps(data, cls=DateEncoder)
+        json.dumps(data, cls=DateEncoder)
         print("Success!")
 
     except Exception as e:

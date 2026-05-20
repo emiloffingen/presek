@@ -46,7 +46,7 @@ async def repair_sources(dry_run=True):
     for name, new_url in REPLACEMENTS.items():
         log.info(f"Checking replacement for {name} -> {new_url}")
         if not dry_run:
-            result = await db.async_execute(
+            await db.async_execute(
                 "UPDATE feed_sources SET url = %s, is_active = TRUE WHERE name = %s", (new_url, name), fetch=False
             )
             log.info(f"Updated {name}")

@@ -98,7 +98,6 @@ class TestAstroFrontendIntegrity:
 
     def test_homepage_focus_entities_preserve_raw_slug_and_display_name(self):
         home_route = _read("routes/home.py")
-        homepage = _read("web/src/pages/index.astro")
         entity_route = _read("routes/intelligence.py")
 
         assert 'normalized["display_name"] = _display_entity_name(raw_name)' in home_route
