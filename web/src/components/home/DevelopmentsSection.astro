@@ -26,54 +26,60 @@ function getBentoSpan(cluster: NewsCluster) {
 ---
 
 <section class:list={["feed-section motion-rise motion-delay-3", `feed-tone-${tone}`]}>
-    <div class="editorial-divider">
-        <span class="editorial-ornament">◆</span>
-    </div>
-    <div class="section-heading-row masthead-double-rule">
-        <p class="section-kicker">
-            {tone === 'global' ? t('home.tone_global') : tone === 'wire' ? t('home.tone_wire') : tone === 'developing' ? t('home.tone_developing') : t('home.tone_default')}
-        </p>
-        <h2 class="section-title">
-            {variant === 'wire' && <span class="inline-block w-2.5 h-2.5 bg-nyt-red rounded-full mr-2 mb-0.5 animate-pulse" title={t('home.wire_live_updates')}></span>}
-            {title}
-        </h2>
-        <p class="section-note">{note}</p>
-    </div>
-    {variant === "wire" ? (
-        developmentsFeatured.length > 0 && (
-            <div class="news-feed-grid wire-stack">
-                {developmentsFeatured.map((cluster: NewsCluster, idx: number) => (
-                    <div class="developments-card" style={`animation-delay: ${idx * 0.06}s`}>
-                        <NewsCard cluster={cluster} variant="wire" lang={lang} />
-                    </div>
-                ))}
-            </div>
-        )
-    ) : (
-        <Fragment>
-            {developmentsFeatured.length > 0 && (
-                <div class="bento-box-grid">
+    <div class="feed-section-container">
+        <div class="editorial-divider">
+            <span class="editorial-ornament">◆</span>
+        </div>
+        <div class="section-heading-row masthead-double-rule">
+            <p class="section-kicker">
+                {tone === 'global' ? t('home.tone_global') : tone === 'wire' ? t('home.tone_wire') : tone === 'developing' ? t('home.tone_developing') : t('home.tone_default')}
+            </p>
+            <h2 class="section-title">
+                {variant === 'wire' && <span class="inline-block w-2.5 h-2.5 bg-nyt-red rounded-full mr-2 mb-0.5 animate-pulse" title={t('home.wire_live_updates')}></span>}
+                {title}
+            </h2>
+            <p class="section-note">{note}</p>
+        </div>
+        {variant === "wire" ? (
+            developmentsFeatured.length > 0 && (
+                <div class="news-feed-grid wire-stack">
                     {developmentsFeatured.map((cluster: NewsCluster, idx: number) => (
-                        <div class="developments-card" style={`animation-delay: ${idx * 0.08}s`}>
-                            <NewsCard cluster={cluster} variant="featured" bentoSpan={getBentoSpan(cluster)} lang={lang} />
+                        <div class="developments-card" style={`animation-delay: ${idx * 0.06}s`}>
+                            <NewsCard cluster={cluster} variant="wire" lang={lang} />
                         </div>
                     ))}
                 </div>
-            )}
-            {developmentsCompact.length > 0 && (
-                <div class="news-feed-grid news-feed-grid-compact mt-8">
-                    {developmentsCompact.map((cluster: NewsCluster, idx: number) => (
-                        <div class="developments-card" style={`animation-delay: ${(developmentsFeatured.length + idx) * 0.06}s`}>
-                            <NewsCard cluster={cluster} variant="compact" lang={lang} />
-                        </div>
-                    ))}
-                </div>
-            )}
-        </Fragment>
-    )}
+            )
+        ) : (
+            <Fragment>
+                {developmentsFeatured.length > 0 && (
+                    <div class="bento-box-grid">
+                        {developmentsFeatured.map((cluster: NewsCluster, idx: number) => (
+                            <div class="developments-card" style={`animation-delay: ${idx * 0.08}s`}>
+                                <NewsCard cluster={cluster} variant="featured" bentoSpan={getBentoSpan(cluster)} lang={lang} />
+                            </div>
+                        ))}
+                    </div>
+                )}
+                {developmentsCompact.length > 0 && (
+                    <div class="news-feed-grid news-feed-grid-compact mt-8">
+                        {developmentsCompact.map((cluster: NewsCluster, idx: number) => (
+                            <div class="developments-card" style={`animation-delay: ${(developmentsFeatured.length + idx) * 0.06}s`}>
+                                <NewsCard cluster={cluster} variant="compact" lang={lang} />
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </Fragment>
+        )}
+    </div>
 </section>
 
 <style>
+    .feed-section-container {
+        padding: 2rem 1.5rem;
+    }
+
     /* ── Editorial Divider ──────────────────────────── */
     .editorial-divider {
         display: flex;
@@ -103,7 +109,6 @@ function getBentoSpan(cluster: NewsCluster) {
     /* ── Tone Variants ──────────────────────────────── */
     .feed-tone-global {
         background: color-mix(in srgb, #0f766e 3%, transparent);
-        padding: 1.5rem 1rem;
         border-left: 4px solid #0f766e;
         border-top: 1px solid color-mix(in srgb, #0f766e 10%, transparent);
         border-bottom: 1px solid color-mix(in srgb, #0f766e 10%, transparent);
@@ -111,14 +116,12 @@ function getBentoSpan(cluster: NewsCluster) {
 
     .feed-tone-developing {
         background: color-mix(in srgb, #9a3412 3%, transparent);
-        padding: 1.5rem 1rem;
         border-left: 4px solid #9a3412;
         border-top: 1px solid color-mix(in srgb, #9a3412 10%, transparent);
         border-bottom: 1px solid color-mix(in srgb, #9a3412 10%, transparent);
     }
 
     .feed-tone-wire {
-        padding: 1.5rem 1rem;
         border-left: 4px solid var(--nyt-red);
         border-top: 1px solid color-mix(in srgb, var(--nyt-red) 10%, transparent);
         border-bottom: 1px solid color-mix(in srgb, var(--nyt-red) 10%, transparent);
