@@ -170,6 +170,21 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
     });
   };
 
+  const sourceItems = Array.isArray(data?.sources)
+    ? data.sources
+        .map((source: any) => {
+          if (typeof source === 'string') return { title: source, url: '' };
+          return {
+            title: String(source?.title || source?.name || source?.url || '').trim(),
+            url: String(source?.url || source?.uri || '').trim(),
+          };
+        })
+        .filter((source: { title: string; url: string }) => source.title || source.url)
+        .slice(0, 6)
+    : [];
+  const isGoogleGrounded = data?.provider === 'gemini_google_search';
+  const isPublicWebSearch = typeof data?.provider === 'string' && data.provider.startsWith('public_web_search');
+
   const modes = [
     { id: 'facts' as const, label: t('cluster.research_modes.facts'), icon: BarChart3, desc: t('cluster.research_modes.facts_desc') },
     { id: 'perspectives' as const, label: t('cluster.research_modes.perspectives'), icon: Users, desc: t('cluster.research_modes.perspectives_desc') },
@@ -285,6 +300,41 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
              <div className="max-w-full md:max-w-3xl">
                 {formatText(data.report)}
 
+                {sourceItems.length > 0 && (
+                  <div className="mt-10 border-t border-border/40 pt-6">
+                    <p className="mb-4 flex items-center gap-2 font-sans text-[10px] font-black uppercase tracking-[0.18em] text-nyt-accent">
+                      <Search size={13} />
+                      {isGoogleGrounded
+                        ? (lang === 'sr' ? 'Google Search izvori' : 'Google Search извори')
+                        : isPublicWebSearch
+                          ? (lang === 'sr' ? 'Web search izvori' : 'Web search извори')
+                        : (lang === 'sr' ? 'Izvori' : 'Извори')}
+                    </p>
+                    <div className="grid gap-2">
+                      {sourceItems.map((source: { title: string; url: string }, idx: number) => (
+                        source.url ? (
+                          <a
+                            key={`${source.url}-${idx}`}
+                            href={source.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="break-words border border-border/70 bg-secondary/5 px-3 py-2 font-sans text-xs font-bold text-muted-foreground transition-colors hover:border-nyt-accent hover:text-foreground"
+                          >
+                            {source.title || source.url}
+                          </a>
+                        ) : (
+                          <span
+                            key={`${source.title}-${idx}`}
+                            className="break-words border border-border/70 bg-secondary/5 px-3 py-2 font-sans text-xs font-bold text-muted-foreground"
+                          >
+                            {source.title}
+                          </span>
+                        )
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Follow-up Suggestions */}
                 {data.suggestions && data.suggestions.length > 0 && (
                   <div className="mt-12 pt-8 border-t border-border/40">
@@ -314,7 +364,11 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
              <div className="mt-8 pt-6 border-t border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 opacity-40">
                 <div className="flex items-center gap-3 text-[9px] font-bold uppercase tracking-widest text-left">
                    <div className="w-2 h-2 rounded-full bg-nyt-accent animate-pulse flex-shrink-0"></div>
-                   {t('cluster.research_footer_note')}
+                   {isGoogleGrounded
+                    ? (lang === 'sr' ? 'odgovor generisan uz Google Search grounding' : 'одговор генериран со Google Search grounding')
+                    : isPublicWebSearch
+                      ? (lang === 'sr' ? 'odgovor dopunjen javnim web search signalima' : 'одговор дополнет со јавни web search сигнали')
+                    : t('cluster.research_footer_note')}
                 </div>
              </div>
           </div>

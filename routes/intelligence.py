@@ -375,7 +375,7 @@ async def get_deep_research(request: Request, cluster_id: str, mode: str = "fact
     # Caching check
     query = clean_query if clean_mode == "custom" else _RESEARCH_MODE_QUERIES[clean_mode]
     query_hash = hashlib.sha1(query.encode("utf-8")).hexdigest()[:12]
-    cache_key = f"api:intelligence:research:cascade:{cluster_id}:{clean_mode}:{query_hash}:{lang}:v1"
+    cache_key = f"api:intelligence:research:cascade:{cluster_id}:{clean_mode}:{query_hash}:{lang}:v3"
     cached = cached_response(cache_key)
     if cached:
         return cached
@@ -406,6 +406,9 @@ async def get_deep_research(request: Request, cluster_id: str, mode: str = "fact
         "suggestions": response.get("suggestions", []),
         "mode": clean_mode,
         "label": _RESEARCH_MODE_LABELS[clean_mode],
+        "provider": response.get("provider"),
+        "sources": response.get("sources", []),
+        "search_queries": response.get("search_queries", []),
     }
     # ... (store in cache) ...
     try:
