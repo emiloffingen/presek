@@ -337,11 +337,16 @@ function getTimeStr(dateStr: string) {
         height: 100%;
         object-fit: cover;
         opacity: 0;
-        transition: opacity 0.5s ease;
+        transition: opacity 0.5s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), filter 0.8s ease;
     }
 
     .article-image.is-loaded {
         opacity: 1;
+    }
+
+    .nyt-article:hover .article-image.is-loaded {
+        transform: scale(1.04);
+        filter: brightness(0.95);
     }
 
     .image-caption {
