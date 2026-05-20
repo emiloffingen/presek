@@ -331,35 +331,35 @@ const articleSchema = cluster ? {
 							articlesCount={cluster.articles?.length || 0}
 						/>
 						{mainArticle?.full_content && (
-							<div class="mt-12 border border-border/40 rounded-sm overflow-hidden bg-secondary/5">
-									<details class="group source-details">
-											<summary class="flex items-center justify-between p-12 cursor-pointer hover:bg-secondary/10 transition-colors list-none">
-													<div class="flex items-center gap-[var(--grid-gap)]">
-															<div class="w-2 h-8 bg-nyt-accent"></div>
-															<h4 class="text-[11px] font-black uppercase tracking-[0.2em] text-foreground">
-																	{t('cluster.source_docs')} ({mainArticle.source})
-															</h4>
-													</div>
-													<div class="text-muted-foreground group-open:rotate-180 transition-transform">
-															<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-													</div>
-											</summary>
-											<div class="px-12 pb-12">
-													<div class="prose-editorial max-w-none pt-6 border-t border-border/20">
-															<div class="font-nyt-body text-lg md:text-xl text-foreground/80 leading-[1.8] whitespace-pre-wrap">
-																	{mainArticle.full_content.replace(/<[^>]*>?/gm, '').trim()}
-															</div>
-													</div>
-													<div class="mt-10 flex justify-end">
-															<a href={mainArticle.link} target="_blank" rel="noopener noreferrer" class="text-[11px] font-black uppercase tracking-[0.2em] text-nyt-accent hover:underline flex items-center gap-[var(--grid-gap)] bg-background px-5 py-2.5 rounded-full border border-nyt-accent/20 shadow-sm transition-all hover:shadow-md">
-																	{lang === 'mk' ? `Прочитај го целиот запис на ${mainArticle.source}` : `Pročitaj ceo zapis na ${mainArticle.source}`} <ExternalLink size={14} />
-															</a>
-													</div>
-											</div>
-									</details>
+					<div class="mt-12 source-doc-wrapper">
+						<details class="group source-details">
+							<summary class="flex items-center justify-between p-8 md:p-12 cursor-pointer hover:bg-secondary/10 transition-colors list-none">
+								<div class="flex items-center gap-[var(--grid-gap)]">
+									<div class="w-2 h-8 bg-nyt-accent"></div>
+									<h4 class="text-[11px] font-black uppercase tracking-[0.2em] text-foreground">
+										{t('cluster.source_docs')} ({mainArticle.source})
+									</h4>
+								</div>
+								<div class="text-muted-foreground group-open:rotate-180 transition-transform duration-300">
+									<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+								</div>
+							</summary>
+							<div class="px-8 md:px-12 pb-12">
+								<div class="prose-editorial max-w-none pt-6 border-t border-border/20 max-h-[400px] overflow-y-auto custom-editorial-scrollbar">
+									<div class="font-nyt-body text-lg md:text-xl text-foreground/80 leading-[1.8] whitespace-pre-wrap">
+										{mainArticle.full_content.replace(/<[^>]*>?/gm, '').trim()}
+									</div>
+								</div>
+								<div class="mt-12 flex justify-end">
+									<a href={mainArticle.link} target="_blank" rel="noopener noreferrer" class="text-[11px] font-black uppercase tracking-[0.2em] text-nyt-accent hover:underline flex items-center gap-[var(--grid-gap)] bg-background px-6 py-3 rounded-full border border-nyt-accent/20 shadow-sm transition-all hover:shadow-md">
+										{lang === 'mk' ? `Прочитај го целиот запис на ${mainArticle.source}` : `Pročitaj ceo zapis na ${mainArticle.source}`} <ExternalLink size={14} />
+									</a>
+								</div>
 							</div>
-						)}
-					</div><div class="editorial-grid">
+						</details>
+					</div>
+				)}
+				</div><div class="editorial-grid">
 	{/* 3. MAIN COLUMN */}
 	<div class="editorial-main-col">
 						{/* EXECUTIVE SUMMARY / BRIFING */}
@@ -648,12 +648,48 @@ const articleSchema = cluster ? {
 
 	@media (min-width: 1024px) {
 		.editorial-grid {
-			grid-template-columns: 1fr;
-            gap: 5rem;
+			grid-template-columns: 2.2fr 1fr;
+            gap: 3.5rem;
+            align-items: start;
 		}
 	}
 
     .editorial-main-col { min-width: 0; width: 100%; }
+
+    .editorial-sidebar-col {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .sticky-sidebar {
+        position: sticky;
+        top: calc(var(--header-height) + 2rem);
+    }
+
+    .executive-summary {
+        background: color-mix(in srgb, var(--card) 60%, transparent);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+        border-left: 4px solid var(--nyt-accent);
+        border-radius: 4px;
+        padding: 2.5rem;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.02);
+    }
+
+    .custom-editorial-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+    .custom-editorial-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .custom-editorial-scrollbar::-webkit-scrollbar-thumb {
+        background: color-mix(in srgb, var(--foreground) 10%, transparent);
+        border-radius: 3px;
+    }
+    .custom-editorial-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: color-mix(in srgb, var(--foreground) 20%, transparent);
+    }
 
 	.section-label {
 		font-family: var(--font-sans);
@@ -669,6 +705,30 @@ const articleSchema = cluster ? {
 		background: var(--border);
 		opacity: 0.4;
 	}
+
+    /* --- SOURCE RECORD EXPANDABLE --- */
+    .source-doc-wrapper {
+        background: color-mix(in srgb, var(--card) 50%, transparent);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+        border-radius: 4px;
+        overflow: hidden;
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .source-doc-wrapper:hover {
+        border-color: color-mix(in srgb, var(--nyt-accent) 40%, transparent);
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.04);
+    }
+
+    .source-details summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .source-details summary {
+        list-style: none;
+    }
 
 	/* Sidebar Module Premium Glassmorphism */
 	.sidebar-module {
@@ -714,14 +774,15 @@ const articleSchema = cluster ? {
 		display: block;
 		padding: 1.5rem;
 		border: 1px solid var(--border);
-		transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+		transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 		background: var(--card);
+        border-radius: 4px;
 	}
 
 	.related-card:hover {
 		border-color: var(--nyt-red);
-		transform: translateX(4px);
-		box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+		transform: translateY(-4px) scale(1.02);
+		box-shadow: 0 12px 30px rgba(0, 0, 0, 0.06);
 	}
 
 	.related-editorial-grid {
