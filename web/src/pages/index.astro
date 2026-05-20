@@ -179,6 +179,36 @@ const focusEntities = topEntities
 const leadCluster = clusters[0] ?? null;
 const leadVisual = leadCluster ? chooseClusterImage(leadCluster, 'hero') : null;
 
+function getLeadSignal(cluster: NewsCluster) {
+	const count = cluster?.articles?.length || 0;
+	if (cluster?.is_breaking) return t('home.lead_breaking');
+	if (count >= 6) return t('home.lead_agenda');
+	if (count >= 4) return t('home.lead_spreading');
+	return t('home.lead_follow');
+}
+
+function getLeadSummary(cluster: NewsCluster) {
+	const article = cluster?.articles?.[0];
+	return extractCleanSummaryText(article?.summary || article?.description || '');
+}
+
+const leadSignal = leadCluster ? getLeadSignal(leadCluster) : '';
+const leadSummary = isHomepage
+    ? String(homepageLeadDisplay?.summary || '')
+    : (leadCluster ? getLeadSummary(leadCluster) : '');
+const leadTitle = highlightScores(isHomepage
+    ? String(homepageLeadDisplay?.title || '')
+    : (leadCluster?.articles?.[0] ? cleanAndDecode(leadCluster.articles[0].title) : ''));
+const effectiveLeadSignal = isHomepage
+    ? String(homepageLeadDisplay?.signal || leadSignal)
+    : leadSignal;
+
+// Remove the verbose development signal if it matches the default
+const finalLeadSignal = (effectiveLeadSignal === 'razvoj sto vredi da se sledi' || effectiveLeadSignal === 'развој што вреди да се следи' || effectiveLeadSignal === t('home.lead_follow')) ? '' : effectiveLeadSignal;
+const leadTitleIsCyrillic = isMostlyCyrillic(leadTitle);
+const leadSummaryIsCyrillic = isMostlyCyrillic(leadSummary);
+const activeFilterLabel = subcategory || entity || category || topic || q || null;
+
 // --- GLOBAL DEDUPLICATION ---
 const usedIds = new Set<string>();
 if (leadCluster) usedIds.add(leadCluster.cluster_id);
