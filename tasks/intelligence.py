@@ -551,7 +551,6 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 if not fast_mode and not shared_computed:
 
                     def _run_analyst_logic():
-                        nonlocal shared_metrics
                         try:
                             # Use semaphore to limit concurrent heavy CPU tasks
                             with _analyst_semaphore:

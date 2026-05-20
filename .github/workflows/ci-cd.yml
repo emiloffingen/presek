@@ -111,9 +111,9 @@ jobs:
         working-directory: web
         run: npm test
 
-      - name: Run TypeScript check
+      - name: Build frontend
         working-directory: web
-        run: npx tsc --noEmit
+        run: npm run build
 
   # ============================================================================
   # Build
