@@ -320,6 +320,14 @@ async def get_home(lang: Optional[str] = "sr"):
         if isinstance(stats, Exception):
             stats = {}
 
+        if hasattr(stats, "body") and hasattr(stats, "status_code"):
+            import json
+            try:
+                stats = json.loads(stats.body.decode())
+            except Exception as e:
+                log.error(f"Failed to decode stats JSONResponse: {e}")
+                stats = {}
+
         clusters = news_result.get("clusters") or []
         global_clusters = news_result.get("global_clusters") or []
 
