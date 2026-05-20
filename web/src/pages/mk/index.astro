@@ -223,6 +223,7 @@ const activeFilterLabel = subcategory || entity || category || topic || q || nul
 // --- DEDUPLICATION LOGIC ---
 const usedIds = new Set<string>();
 if (leadCluster) usedIds.add(leadCluster.cluster_id);
+trendingPreviewClusters.forEach(c => usedIds.add(c.cluster_id));
 
 const filteredSupporting = supportingClusters.filter(c => !usedIds.has(c.cluster_id));
 const supportingFeatured = filteredSupporting.slice(0, 2);
@@ -396,10 +397,10 @@ function getBriefingSnippet(content: string) {
                                 {t('home.trending') || 'Trending'}
                             </span>
                             <span class="trending-hint">
-                                {lang === 'sr' ? 'Prevucite za brzi pregled' : 'Повлечете за брз преглед'}
+                                {t('home.trending_hint')}
                             </span>
                         </div>
-                        <div class="trending-row hide-scrollbar" aria-label={lang === 'sr' ? 'Trending vesti' : 'Трендинг вести'}>
+                        <div class="trending-row hide-scrollbar" aria-label={t('home.trending')}>
                             {trendingPreviewClusters.map((cluster: NewsCluster) => (
                                 <div class="trending-card">
                                     <NewsCard cluster={cluster} variant="compact" lang={lang} />
