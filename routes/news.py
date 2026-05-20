@@ -748,7 +748,7 @@ async def semantic_search(
 async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
     # Validate cluster_id
     validate_cluster_id(cluster_id)
-    cache_key = f"api:cluster:detail:v2:{cluster_id}:{lang}"
+    cache_key = f"api:cluster:detail:v3:{cluster_id}:{lang}"
     cached = cached_response(cache_key, ttl=3600)
     if cached:
         return cached
@@ -901,9 +901,12 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                             "image_url": item.get("image_url"),
                             "tags": shared_tags,
                             "relationship_label": item.get("relationship_label") or "Srodna tema",
+                            "relationship_note": item.get("relationship_note"),
                             "shared_tags": shared_tags,
                             "shared_topics": shared_topics,
                             "shared_entities": shared_entities,
+                            "source": item.get("source"),
+                            "created_at": item.get("created_at"),
                             "has_synthesis": item["cluster_id"] in synthesis_ids,
                         }
                     )
@@ -972,9 +975,12 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                             "image_url": item.get("image_url"),
                             "tags": shared_tags,
                             "relationship_label": item.get("relationship_label") or "Srodna tema",
+                            "relationship_note": item.get("relationship_note"),
                             "shared_tags": shared_tags,
                             "shared_topics": shared_topics,
                             "shared_entities": shared_entities,
+                            "source": item.get("source"),
+                            "created_at": item.get("created_at"),
                             "has_synthesis": item["cluster_id"] in synthesis_ids,
                         }
                     )

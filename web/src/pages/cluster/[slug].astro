@@ -7,7 +7,6 @@ import ShareIsland from '../../components/ShareIsland.tsx';
 import ReaderTracker from '../../components/ReaderTracker.tsx';
 import PreferenceToggle from '../../components/PreferenceToggle.tsx';
 import { MediaPulseRadar } from '../../components/MediaPulseRadar.tsx';
-import ResearchIsland from '../../components/ResearchIsland.tsx';
 import StorylineHistoryIsland from '../../components/StorylineHistoryIsland.tsx';
 import ClusterHistoryIsland from '../../components/ClusterHistoryIsland.tsx';
 import { SourceSpectrum } from '../../components/SourceSpectrum.tsx';
@@ -54,7 +53,7 @@ import EntityContextCard from '../../components/EntityContextCard.tsx';
 import ClusterHeader from '../../components/Cluster/ClusterHeader.astro';
 import HeroVisual from '../../components/Cluster/HeroVisual.astro';
 
-import CitationSources from '../../components/CitationSources.astro';
+import CitationSources from '../../components/Cluster/CitationSources.astro';
 import CredibilityAnalysis from '../../components/Cluster/CredibilityAnalysis.astro';
 import ArticleItem from '../../components/Cluster/ArticleItem.astro';
 import EditorialNarrative from '../../components/Cluster/EditorialNarrative.astro';
@@ -108,6 +107,7 @@ const headlineIsCyrillic = isMostlyCyrillic(displayHeadline);
 
 const allSourcesNames: string[] = Array.from(new Set((cluster?.articles || []).map((a: Article) => a.source)));
 const sourcePreview = allSourcesNames.slice(0, 5);
+const uniqueSourcesCount = allSourcesNames.length;
 const hasCitationSources = false; // Feature disabled as per user request
 
 const synthesisUpdatedAt = cluster?.synthesis_updated_at;
@@ -132,17 +132,24 @@ const synthesisItems: SynthesisItem[] = (cluster?.ai_summary_bullets?.length ? c
 const articleRows = (cluster?.articles || []).map((a: Article, idx: number, arr: Article[]) => {
     const d = new Date(a.created_at);
     const signal = a.source_signal || {};
+    const timelineEntry = (cluster?.timeline || []).find((item) => item.article_id === a.id);
 
     // 1. Dynamic Journalistic Role (Timeline)
     let relLabel = t('cluster.rel_related');
     let relTone = 'neutral';
 
-    if (idx === arr.length - 1) {
+    if (timelineEntry?.is_first) {
         relLabel = t('cluster.rel_initial');
         relTone = 'origin';
     } else if (idx === 0 && !synthesisFreshness.is_stale) {
         relLabel = t('cluster.rel_latest');
         relTone = 'latest';
+    } else if (timelineEntry?.milestone?.toLowerCase() === 'konsenzus') {
+        relLabel = lang === 'sr' ? 'KONSENZUS' : 'КОНСЕНЗУС';
+        relTone = 'deep';
+    } else if (timelineEntry?.is_major) {
+        relLabel = lang === 'sr' ? 'GLAVNA POTVRDA' : 'ГЛАВНА ПОТВРДА';
+        relTone = 'deep';
     } else if (signal.role_label) {
         relLabel = signal.role_label.toUpperCase();
         relTone = signal.role_tone || 'deep';
@@ -202,14 +209,99 @@ const hasFactcheck = Boolean(verificationReport && (verificationReport.agreement
 const hasStrongLeadNarrative = hasGeneratedNarrative && (cluster?.articles?.length || 0) >= 3;
 const primaryNarrativeLabel = 'SINTEZA';
 const primaryNarrativeEyebrow = 'REDAKCISKI PREGLED';
+const conflictsCount = verificationReport?.conflicts?.length || 0;
 
 const sentimentData = cluster?.sentiment ? {
     sentiment: cluster.sentiment.sentiment || { score: 0, tone: 'neutralno' },
     tone_analysis: cluster.sentiment.tone_analysis || { sensationalism: 0, objectivity: 0, emotional_charge: 0 }
 } : null;
 
+const firstArticle = cluster?.articles?.length
+    ? [...cluster.articles].sort((left: Article, right: Article) => new Date(left.created_at).getTime() - new Date(right.created_at).getTime())[0]
+    : null;
+const latestArticle = cluster?.articles?.[0] || null;
+const sharedEntities = Array.from(new Set([
+    ...(cluster?.analyst_entities || []),
+    ...(cluster?.entities || []),
+    ...(cluster?.tags || []),
+])).filter(Boolean).slice(0, 4);
+const primaryTopics = Array.from(new Set([
+    ...(cluster?.topics || []),
+    ...(cluster?.articles || []).map((article: Article) => article.topic).filter(Boolean),
+])).slice(0, 3);
+const hasConflicts = conflictsCount > 0;
+const isSingleSource = uniqueSourcesCount <= 1;
+const clusterStatus = (() => {
+    if (synthesisFreshness.is_stale) {
+        return {
+            label: lang === 'sr' ? 'SINTEZA ZASTARELA' : 'СИНТЕЗАТА Е ЗАСТАРЕНА',
+            description: lang === 'sr'
+                ? 'Stigli su noviji izvori; pregled treba čitati uz izvorni zapis.'
+                : 'Пристигнале понови извори; прегледот треба да се чита со изворниот запис.',
+            tone: 'stale',
+        };
+    }
+    if (isSingleSource) {
+        return {
+            label: lang === 'sr' ? 'JEDAN IZVOR' : 'ЕДЕН ИЗВОР',
+            description: lang === 'sr'
+                ? 'Klaster trenutno ima jednu redakciju; tretirajte ga kao rani signal.'
+                : 'Кластерот моментално има една редакција; третирајте го како ран сигнал.',
+            tone: 'early',
+        };
+    }
+    if (hasConflicts) {
+        return {
+            label: lang === 'sr' ? 'VIŠE IZVORA, RAZLIKE' : 'ПОВЕЌЕ ИЗВОРИ, РАЗЛИКИ',
+            description: lang === 'sr'
+                ? 'Izvori pokrivaju istu priču, ali se razlikuju u detaljima ili naglasku.'
+                : 'Изворите ја покриваат истата приказна, но се разликуваат во детали или нагласок.',
+            tone: 'mixed',
+        };
+    }
+    return {
+        label: lang === 'sr' ? 'VIŠE IZVORA' : 'ПОВЕЌЕ ИЗВОРИ',
+        description: lang === 'sr'
+            ? 'Grupisano po zajedničkoj temi, akterima i bliskom vremenu objave.'
+            : 'Групирано според заедничка тема, актери и блиско време на објава.',
+        tone: 'verified',
+    };
+})();
+
+const evidenceItems = [
+    {
+        label: lang === 'sr' ? 'Redakcije' : 'Редакции',
+        value: String(uniqueSourcesCount),
+        detail: sourcePreview.join(' · '),
+    },
+    {
+        label: lang === 'sr' ? 'Prva objava' : 'Прва објава',
+        value: firstArticle?.source || '—',
+        detail: firstArticle?.created_at ? getRelativeTimeStr(firstArticle.created_at) : '',
+    },
+    {
+        label: lang === 'sr' ? 'Poslednji razvoj' : 'Последен развој',
+        value: latestArticle?.source || '—',
+        detail: latestArticle?.created_at ? getRelativeTimeStr(latestArticle.created_at) : '',
+    },
+    {
+        label: lang === 'sr' ? 'Veze u klasteru' : 'Врски во кластерот',
+        value: sharedEntities.length ? sharedEntities.slice(0, 2).join(', ') : (primaryTopics[0] || cluster?.articles?.[0]?.category || '—'),
+        detail: primaryTopics.join(' · '),
+    },
+].filter((item) => item.value && item.value !== '—');
+
+const describeRelatedEvidence = (rel: any) => {
+    const pieces = [
+        ...(rel.shared_entities || []).slice(0, 2),
+        ...(rel.shared_topics || []).slice(0, 2),
+        ...(rel.shared_tags || []).slice(0, 2),
+    ].filter(Boolean);
+    if (pieces.length) return pieces.join(' · ');
+    return rel.relationship_note || '';
+};
+
 // --- Momentum Kicker Logic ---
-const conflictsCount = verificationReport?.conflicts?.length || 0;
 const totalSourcesCount = cluster?.articles?.length || 0;
 const isBreakingFlag = cluster?.articles?.some((a: Article) => a.is_breaking) || false;
 
@@ -312,12 +404,27 @@ const articleSchema = cluster ? {
 								<div class="w-3 h-3 rounded-full bg-nyt-accent"></div>
 								<span class="text-foreground">{cluster.articles?.[0].category || (lang === 'sr' ? 'GENERALNO' : 'ГЕНЕРАЛНО')}</span>
 							</div>
-							<span class="border-l border-border pl-8">{cluster.articles?.length || 0} {lang === 'sr' ? 'IZVORA ANALIZIRANO' : 'ИЗВОРИ АНАЛИЗИРАНИ'}</span>
-							<span class="hidden md:inline border-l border-border pl-8">{lang === 'sr' ? 'SISTEMSKI VERIFIKOVANO' : 'СИСТЕМСКИ ВЕРИФИКУВАНО'}</span>
+							<span class="border-l border-border pl-8">{uniqueSourcesCount} {lang === 'sr' ? 'REDAKCIJA' : 'РЕДАКЦИИ'}</span>
+							<span class:list={["hidden md:inline border-l border-border pl-8 cluster-status-text", `tone-${clusterStatus.tone}`]}>{clusterStatus.label}</span>
 						</div>
 					</div>
 					<div class="header-actions flex gap-[var(--grid-gap)] pb-1">
 						<ShareIsland client:load title={displayHeadline} url={Astro.url.toString()} />
+					</div>
+				</div>
+				<div class:list={["cluster-evidence-strip mt-10", `tone-${clusterStatus.tone}`]}>
+					<div class="cluster-evidence-status">
+						<span>{clusterStatus.label}</span>
+						<p>{clusterStatus.description}</p>
+					</div>
+					<div class="cluster-evidence-grid">
+						{evidenceItems.map((item) => (
+							<div class="cluster-evidence-item">
+								<span>{item.label}</span>
+								<strong>{item.value}</strong>
+								{item.detail && <p>{item.detail}</p>}
+							</div>
+						))}
 					</div>
 				</div>
 			</header>
@@ -492,17 +599,24 @@ const articleSchema = cluster ? {
 									{filteredRelated.map((rel: any) => {
 						const relSlug = slugify(rel.title);
 						const relUrl = `/cluster/${rel.cluster_id}-${relSlug}`;
+						const evidence = describeRelatedEvidence(rel);
 						return (
 											<a href={relUrl} class="related-card group">
 												<div class="related-card-content">
 													<div class="flex justify-between items-center mb-4">
 														<span class="related-source text-[9px] font-black uppercase tracking-[0.15em] text-nyt-red">
-														                                                                                                               {t('cluster.related_topic')}
-														                                                                                                               </span>														<span class="text-[9px] font-bold text-muted-foreground uppercase">{getRelativeTimeStr(rel.created_at)}</span>
+															{rel.relationship_label || t('cluster.related_topic')}
+														</span>
+														{rel.created_at && <span class="text-[9px] font-bold text-muted-foreground uppercase">{getRelativeTimeStr(rel.created_at)}</span>}
 													</div>
 													<h3 class="related-title font-serif text-lg md:text-xl font-bold leading-tight group-hover:text-nyt-red transition-colors">
 														{deShout(cleanAndDecode(rel.title))}
 													</h3>
+													{evidence && (
+														<p class="related-evidence mt-4 text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+															{evidence}
+														</p>
+													)}
 												</div>
 											</a>
 										);
@@ -517,10 +631,24 @@ const articleSchema = cluster ? {
                                 <h2 class="section-label">{t('cluster.deep_synthesis')}</h2>
                                 <div class="section-divider"></div>
                             </div>
-                            <div class="space-y-20">
-                                <ResearchIsland client:visible clusterId={id || ''} initialHeadline={displayHeadline || ''} sources={allSourcesNames} lang={lang} />
-                                <StorylineHistoryIsland client:visible clusterId={id || ''} apiUrl={API_URL} lang={lang} />
-                                <ClusterHistoryIsland client:visible clusterId={id || ''} lang={lang} />
+                            <div class="deep-dive-tabs">
+                                <input type="radio" name="deep-dive-tabs" id="deep-tab-history" checked />
+                                {allSourcesNames.length >= 2 && <input type="radio" name="deep-dive-tabs" id="deep-tab-sources" />}
+
+                                <div class="deep-tab-list" role="tablist" aria-label={t('cluster.deep_synthesis')}>
+                                    <label for="deep-tab-history" class="deep-tab-trigger">{lang === 'sr' ? 'Razvoj priče' : 'Развој на приказната'}</label>
+                                    {allSourcesNames.length >= 2 && <label for="deep-tab-sources" class="deep-tab-trigger">{lang === 'sr' ? 'Izvori' : 'Извори'}</label>}
+                                </div>
+
+                                <div class="deep-tab-panel deep-tab-history">
+                                    <StorylineHistoryIsland client:visible clusterId={id || ''} apiUrl={API_URL} lang={lang} />
+                                    <ClusterHistoryIsland client:visible clusterId={id || ''} lang={lang} />
+                                </div>
+                                {allSourcesNames.length >= 2 && (
+                                    <div class="deep-tab-panel deep-tab-sources">
+                                        <SourceComparisonIsland allSources={allSourcesNames} lang={lang} client:visible />
+                                    </div>
+                                )}
                             </div>
                         </section>
 
@@ -545,12 +673,6 @@ const articleSchema = cluster ? {
                                     <SourceSpectrum articles={cluster.articles.map((a: Article) => ({ source: a.source })) as any} client:visible />
                                 </div>
                             </div>
-
-                            {allSourcesNames.length >= 2 && (
-                                <div class="sidebar-module">
-                                    <SourceComparisonIsland allSources={allSourcesNames} client:visible />
-                                </div>
-                            )}
 
 							<NewsletterIsland client:visible />
 
@@ -640,6 +762,71 @@ const articleSchema = cluster ? {
 		letter-spacing: -0.04em;
         text-wrap: balance;
 	}
+
+    .cluster-status-text.tone-verified { color: #047857; }
+    .cluster-status-text.tone-mixed { color: #b45309; }
+    .cluster-status-text.tone-early,
+    .cluster-status-text.tone-stale { color: var(--nyt-red); }
+
+    .cluster-evidence-strip {
+        display: grid;
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 2.2fr);
+        gap: 1px;
+        background: var(--border);
+        border: 1px solid var(--border);
+    }
+
+    .cluster-evidence-status,
+    .cluster-evidence-item {
+        background: var(--background);
+        padding: 1.25rem;
+    }
+
+    .cluster-evidence-status {
+        border-left: 4px solid var(--nyt-accent);
+    }
+
+    .cluster-evidence-strip.tone-verified .cluster-evidence-status { border-left-color: #059669; }
+    .cluster-evidence-strip.tone-mixed .cluster-evidence-status { border-left-color: #d97706; }
+    .cluster-evidence-strip.tone-early .cluster-evidence-status,
+    .cluster-evidence-strip.tone-stale .cluster-evidence-status { border-left-color: var(--nyt-red); }
+
+    .cluster-evidence-status span,
+    .cluster-evidence-item span {
+        display: block;
+        font-family: var(--font-sans);
+        font-size: 0.58rem;
+        font-weight: 950;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--muted-foreground);
+        margin-bottom: 0.5rem;
+    }
+
+    .cluster-evidence-status p,
+    .cluster-evidence-item p {
+        font-family: var(--font-nyt-body);
+        font-size: 0.82rem;
+        line-height: 1.45;
+        color: var(--secondary-foreground);
+        margin: 0;
+    }
+
+    .cluster-evidence-item strong {
+        display: block;
+        font-family: var(--font-serif);
+        font-size: 1.2rem;
+        line-height: 1.1;
+        color: var(--foreground);
+        margin-bottom: 0.45rem;
+    }
+
+    .cluster-evidence-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1px;
+        background: var(--border);
+    }
 
 	/* --- 3. EDITORIAL GRID --- */
 	.editorial-grid {
@@ -769,6 +956,51 @@ const articleSchema = cluster ? {
         box-shadow: inset 0 0 60px rgba(0,0,0,0.02);
     }
 
+    .deep-dive-tabs > input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .deep-tab-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 1.5rem;
+    }
+
+    .deep-tab-trigger {
+        cursor: pointer;
+        border: 1px solid var(--border);
+        background: var(--background);
+        padding: 0.75rem 1rem;
+        font-family: var(--font-sans);
+        font-size: 0.65rem;
+        font-weight: 950;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--muted-foreground);
+        transition: all 0.2s ease;
+    }
+
+    .deep-tab-panel {
+        display: none;
+    }
+
+    #deep-tab-history:checked ~ .deep-tab-list label[for="deep-tab-history"],
+    #deep-tab-sources:checked ~ .deep-tab-list label[for="deep-tab-sources"] {
+        background: var(--foreground);
+        border-color: var(--foreground);
+        color: var(--background);
+    }
+
+    #deep-tab-history:checked ~ .deep-tab-history,
+    #deep-tab-sources:checked ~ .deep-tab-sources {
+        display: block;
+    }
+
 	/* --- RELATED CARDS --- */
 	.related-card {
 		text-decoration: none;
@@ -787,6 +1019,11 @@ const articleSchema = cluster ? {
 		box-shadow: 0 12px 30px rgba(0, 0, 0, 0.06);
 	}
 
+    .related-evidence {
+        border-top: 1px solid var(--border);
+        padding-top: 0.75rem;
+    }
+
 	.related-editorial-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -796,6 +1033,14 @@ const articleSchema = cluster ? {
 	@media (max-width: 768px) {
         .cluster-article-container { padding: 0 1rem; }
 		.headline { font-size: 2.25rem !important; line-height: 1.1; margin-bottom: 1.5rem !important; }
+
+        .cluster-evidence-strip {
+            grid-template-columns: 1fr;
+        }
+
+        .cluster-evidence-grid {
+            grid-template-columns: 1fr 1fr;
+        }
 
         .editorial-header-v2 {
             padding-top: 1.5rem !important;
