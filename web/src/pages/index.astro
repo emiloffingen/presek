@@ -176,54 +176,28 @@ const focusEntities = topEntities
     .filter((ent: { name: string }) => ent.name && ent.name.length >= 3)
     .slice(0, 10);
 
-const leadCluster = clusters[0] ?? null;
+// --- GLOBAL DEDUPLICATION ---
+const usedIds = new Set<string>();
+if (leadCluster) usedIds.add(leadCluster.cluster_id);
+
 const trendingPreviewClusters = clusters
-    .filter((cluster: NewsCluster) => cluster?.cluster_id && cluster.cluster_id !== leadCluster?.cluster_id && (cluster.articles?.length || 0) > 0)
+    .filter((cluster: NewsCluster) => 
+        cluster?.cluster_id && 
+        !usedIds.has(cluster.cluster_id) && 
+        (cluster.articles?.length || 0) > 0
+    )
     .sort((a: NewsCluster, b: NewsCluster) => {
         const scoreA = Number(a.homepage_score || 0) + (a.is_breaking ? 100 : 0) + Math.min(a.articles?.length || 0, 8) * 5;
         const scoreB = Number(b.homepage_score || 0) + (b.is_breaking ? 100 : 0) + Math.min(b.articles?.length || 0, 8) * 5;
         return scoreB - scoreA;
     })
     .slice(0, 10);
+
+trendingPreviewClusters.forEach(c => usedIds.add(c.cluster_id));
+
 if (!isHomepage) {
     supportingClusters = clusters.slice(1, 5);
 }
-
-function getLeadSignal(cluster: NewsCluster) {
-	const count = cluster?.articles?.length || 0;
-	if (cluster?.is_breaking) return t('home.lead_breaking');
-	if (count >= 6) return t('home.lead_agenda');
-	if (count >= 4) return t('home.lead_spreading');
-	return t('home.lead_follow');
-}
-
-function getLeadSummary(cluster: NewsCluster) {
-	const article = cluster?.articles?.[0];
-	return extractCleanSummaryText(article?.summary || article?.description || '');
-}
-
-const leadSignal = leadCluster ? getLeadSignal(leadCluster) : '';
-const leadSummary = isHomepage
-    ? String(homepageLeadDisplay?.summary || '')
-    : (leadCluster ? getLeadSummary(leadCluster) : '');
-const leadTitle = highlightScores(isHomepage
-    ? String(homepageLeadDisplay?.title || '')
-    : (leadCluster?.articles?.[0] ? cleanAndDecode(leadCluster.articles[0].title) : ''));
-const effectiveLeadSignal = isHomepage
-    ? String(homepageLeadDisplay?.signal || leadSignal)
-    : leadSignal;
-
-// Remove the verbose development signal if it matches the default
-const finalLeadSignal = effectiveLeadSignal === 'razvoj sto vredi da se sledi' ? '' : effectiveLeadSignal;
-const leadTitleIsCyrillic = isMostlyCyrillic(leadTitle);
-const leadSummaryIsCyrillic = isMostlyCyrillic(leadSummary);
-const leadVisual = leadCluster ? chooseClusterImage(leadCluster, 'hero') : null;
-const activeFilterLabel = subcategory || entity || category || topic || q || null;
-
-// --- DEDUPLICATION LOGIC ---
-const usedIds = new Set<string>();
-if (leadCluster) usedIds.add(leadCluster.cluster_id);
-trendingPreviewClusters.forEach(c => usedIds.add(c.cluster_id));
 
 const filteredSupporting = supportingClusters.filter(c => !usedIds.has(c.cluster_id));
 const supportingFeatured = filteredSupporting.slice(0, 2);
