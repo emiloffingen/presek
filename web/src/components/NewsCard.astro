@@ -50,6 +50,11 @@ const clusterSlug = slugify(cluster.synthetic_headline || getDisplayTitle(main))
 const clusterUrl = `${l('/cluster/')}${cluster.cluster_id}-${clusterSlug}`;
 
 const uniqueSources = new Set(cluster.articles.map(a => a.source)).size;
+const cardSignals = [
+    cluster.pluralism_score != null ? `${t('cluster.media_pluralism')} ${cluster.pluralism_score}%` : '',
+    cluster.pulse_score != null ? `PULSE ${cluster.pulse_score}%` : '',
+    cluster.topics?.[0] || main.topic || main.category || '',
+].filter(Boolean).slice(0, 2);
 
 const cardContext = getDesignCardContext(cluster);
 const cardLabel = cardContext.labelKey ? t(cardContext.labelKey as any) : '';
@@ -145,6 +150,14 @@ function getTimeStr(dateStr: string) {
                     </li>
                 ))}
             </ul>
+        )}
+
+        {cardSignals.length > 0 && variant !== 'wire' && (
+            <div class="cluster-signal-row" aria-label={lang === 'sr' ? 'Signali klastera' : 'Сигнали на кластерот'}>
+                {cardSignals.map((signal) => (
+                    <span>{signal}</span>
+                ))}
+            </div>
         )}
 
         <div class="article-footer-meta mt-auto">
@@ -274,6 +287,26 @@ function getTimeStr(dateStr: string) {
     }
 
     .meta-dot { opacity: 0.4; }
+
+    .cluster-signal-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        margin-top: 0.65rem;
+    }
+
+    .cluster-signal-row span {
+        border: 1px solid var(--border);
+        padding: 0.16rem 0.4rem;
+        font-family: var(--font-sans);
+        font-size: 0.52rem;
+        font-weight: 950;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted-foreground);
+        background: color-mix(in srgb, var(--secondary) 45%, transparent);
+        line-height: 1.2;
+    }
 
     .summary {
         font-family: var(--font-nyt-body);

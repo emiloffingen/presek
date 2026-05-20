@@ -6,9 +6,6 @@ import NYTHeader from '../../components/NYTHeader.astro';
 import Footer from '../../components/Footer.astro';
 
 import ForYouIsland from '../../components/ForYouIsland.tsx';
-import HomeRailSuggestionsIsland from '../../components/HomeRailSuggestionsIsland.tsx';
-import NationalMoodIsland from '../../components/NationalMoodIsland.tsx';
-import NewsletterIsland from '../../components/NewsletterIsland.tsx';
 import LeadHero from '../../components/home/LeadHero.astro';
 import SupportingBand from '../../components/home/SupportingBand.astro';
 import DevelopmentsSection from '../../components/home/DevelopmentsSection.astro';
@@ -17,9 +14,8 @@ import HomeRail from '../../components/home/HomeRail.astro';
 import EmptyState from '../../components/home/EmptyState.astro';
 import { chooseClusterImage } from '../../utils/imageSelection';
 import { cleanAndDecode, extractCleanSummaryText, getDisplayTitle, highlightScores, isMostlyCyrillic } from '../../utils/textUtils';
-import { sanitizeHtml } from '../../lib/sanitize';
 import { apiBaseUrl } from '../../lib/apiBase';
-import { TrendingUp, Zap, ChevronRight, Activity } from 'lucide-react';
+import { TrendingUp, ChevronRight, Activity } from 'lucide-react';
 import type { NewsCluster } from '../../types';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 
@@ -286,8 +282,9 @@ const railWireArticles = [...dedupedRailArticles].sort((a: any, b: any) => {
     const bTime = (b?.ingested_at || b?.created_at) ? new Date(b.ingested_at || b.created_at).getTime() : 0;
     return bTime - aTime;
 });
-
-const consensusIds = new Set(consensusClusters.map(c => c.cluster_id));
+const topWireArticles = railWireArticles
+    .filter((art: any) => art?.cluster_id && art.cluster_id !== leadCluster?.cluster_id)
+    .slice(0, 5);
 
 if (!isHomepage) {
     excludedClusterIds = [
@@ -325,6 +322,79 @@ function getBriefingSnippet(content: string) {
     }
     return '';
 }
+
+function getFirstArticle(cluster: NewsCluster | null) {
+    if (!cluster?.articles?.length) return null;
+    return [...cluster.articles].sort((left, right) => {
+        const leftTime = new Date(left.ingested_at || left.created_at).getTime();
+        const rightTime = new Date(right.ingested_at || right.created_at).getTime();
+        return leftTime - rightTime;
+    })[0];
+}
+
+const leadUniqueSources = leadCluster ? new Set(leadCluster.articles.map((article) => article.source).filter(Boolean)).size : 0;
+const leadFirstArticle = getFirstArticle(leadCluster);
+const leadLatestArticle = leadCluster?.articles?.[0] || null;
+const leadSignals = Array.from(new Set([
+    ...(leadCluster?.analyst_entities || []),
+    ...(leadCluster?.tags || []),
+    ...(leadCluster?.topics || []),
+    leadLatestArticle?.topic,
+    leadLatestArticle?.category,
+].filter(Boolean))).slice(0, 3);
+
+const leadStatus = (() => {
+    if (!leadCluster) return null;
+    if (leadCluster.is_breaking) {
+        return {
+            label: lang === 'sr' ? 'UŽIVO SE RAZVIJA' : 'СЕ РАЗВИВА ВО ЖИВО',
+            note: lang === 'sr' ? 'Priča ima najjači trenutni signal u redakcijskom poretku.' : 'Приказната има најсилен тековен сигнал во уредничкиот редослед.',
+            tone: 'live',
+        };
+    }
+    if (leadUniqueSources <= 1) {
+        return {
+            label: lang === 'sr' ? 'RANI SIGNAL' : 'РАН СИГНАЛ',
+            note: lang === 'sr' ? 'Trenutno dolazi iz jedne redakcije; pratimo da li se širi.' : 'Моментално доаѓа од една редакција; следиме дали ќе се прошири.',
+            tone: 'early',
+        };
+    }
+    if (leadUniqueSources >= 5) {
+        return {
+            label: lang === 'sr' ? 'ŠIROK KONSENZUS' : 'ШИРОК КОНСЕНЗУС',
+            note: lang === 'sr' ? 'Više redakcija prati istu priču, što je čini glavnim signalom dana.' : 'Повеќе редакции ја следат истата приказна, што ја прави главен сигнал на денот.',
+            tone: 'consensus',
+        };
+    }
+    return {
+        label: lang === 'sr' ? 'POTVRĐENO IZ VIŠE IZVORA' : 'ПОТВРДЕНО ОД ПОВЕЌЕ ИЗВОРИ',
+        note: lang === 'sr' ? 'Klaster je povezan zajedničkom temom, akterima i vremenom objave.' : 'Кластерот е поврзан со заедничка тема, актери и време на објава.',
+        tone: 'confirmed',
+    };
+})();
+
+const leadEvidenceItems = leadCluster ? [
+    {
+        label: lang === 'sr' ? 'Redakcije' : 'Редакции',
+        value: String(leadUniqueSources),
+        detail: leadCluster.articles.slice(0, 4).map((article) => article.source).filter(Boolean).join(' · '),
+    },
+    {
+        label: lang === 'sr' ? 'Prva objava' : 'Прва објава',
+        value: leadFirstArticle?.source || '',
+        detail: leadFirstArticle ? getTimeStr(leadFirstArticle.ingested_at || leadFirstArticle.created_at) : '',
+    },
+    {
+        label: lang === 'sr' ? 'Najnovije' : 'Најново',
+        value: leadLatestArticle?.source || '',
+        detail: leadLatestArticle ? getTimeStr(leadLatestArticle.ingested_at || leadLatestArticle.created_at) : '',
+    },
+    {
+        label: lang === 'sr' ? 'Signal' : 'Сигнал',
+        value: leadSignals[0] || leadLatestArticle?.category || '',
+        detail: leadSignals.slice(1).join(' · '),
+    },
+].filter((item) => item.value) : [];
 ---
 
 <Layout
@@ -389,27 +459,6 @@ function getBriefingSnippet(content: string) {
                     </script>
                 )}
 
-                {!error && trendingPreviewClusters.length > 0 && isHomepage && (
-                    <div class="trending-strip">
-                        <div class="trending-strip-header">
-                            <span class="trending-label">
-                                <TrendingUp size={14} />
-                                {t('home.trending') || 'Trending'}
-                            </span>
-                            <span class="trending-hint">
-                                {t('home.trending_hint')}
-                            </span>
-                        </div>
-                        <div class="trending-row hide-scrollbar" aria-label={t('home.trending')}>
-                            {trendingPreviewClusters.map((cluster: NewsCluster) => (
-                                <div class="trending-card">
-                                    <NewsCard cluster={cluster} variant="compact" lang={lang} />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
                 {!error && clusters.length === 0 && (
                     <EmptyState trending={trending} />
                 )}
@@ -430,7 +479,72 @@ function getBriefingSnippet(content: string) {
 							filterLabel={activeFilterLabel}
                             lang={lang}
 						/>
+                        {leadStatus && leadEvidenceItems.length > 0 && (
+                            <div class:list={["home-evidence-strip", `tone-${leadStatus.tone}`]}>
+                                <div class="home-evidence-status">
+                                    <span>{leadStatus.label}</span>
+                                    <p>{leadStatus.note}</p>
+                                </div>
+                                <div class="home-evidence-grid">
+                                    {leadEvidenceItems.map((item) => (
+                                        <div class="home-evidence-item">
+                                            <span>{item.label}</span>
+                                            <strong>{item.value}</strong>
+                                            {item.detail && <p>{item.detail}</p>}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 					</div>
+				)}
+
+                {!error && isHomepage && topWireArticles.length > 0 && (
+                    <section class="home-live-strip" aria-label={t('home.wire_title')}>
+                        <div class="home-live-head">
+                            <span>
+                                <Activity size={13} />
+                                {t('home.wire_title')}
+                            </span>
+                            <a href={l('/pulse')}>{t('rail.all_news')} <ChevronRight size={11} /></a>
+                        </div>
+                        <div class="home-live-row hide-scrollbar">
+                            {topWireArticles.map((art: any) => (
+                                <a href={l(`/cluster/${art.cluster_id}`)} class="home-live-item">
+                                    <span>{getTimeStr(art.ingested_at || art.created_at)}</span>
+                                    <strong>{art.source}</strong>
+                                    <p>{getDisplayTitle(art)}</p>
+                                </a>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
+                {!error && trendingPreviewClusters.length > 0 && isHomepage && (
+                    <div class="trending-strip">
+                        <div class="trending-strip-header">
+                            <span class="trending-label">
+                                <TrendingUp size={14} />
+                                {t('home.trending') || 'Trending'}
+                            </span>
+                            <span class="trending-hint">
+                                {t('home.trending_hint')}
+                            </span>
+                        </div>
+                        <div class="trending-row hide-scrollbar" aria-label={t('home.trending')}>
+                            {trendingPreviewClusters.slice(0, 6).map((cluster: NewsCluster) => (
+                                <div class="trending-card">
+                                    <NewsCard cluster={cluster} variant="compact" lang={lang} />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {clusters.length > 4 && (
+					<div class="section-wrapper for-you-wrapper">
+					    <ForYouIsland client:visible clusters={forYouClusters} excludeClusterIds={excludedClusterIds} lang={lang} />
+                    </div>
 				)}
 
 				{leadCluster && supportingClusters.length > 0 && (
@@ -474,12 +588,6 @@ function getBriefingSnippet(content: string) {
                             tone="developing"
 						/>
 					</div>
-				)}
-
-                {clusters.length > 4 && (
-					<div class="section-wrapper for-you-wrapper">
-					    <ForYouIsland client:visible clusters={forYouClusters} excludeClusterIds={excludedClusterIds} lang={lang} />
-                    </div>
 				)}
 
 				{globalClusters.length > 0 && (
@@ -551,6 +659,165 @@ function getBriefingSnippet(content: string) {
     @media (max-width: 768px) {
         .section-wrapper { padding-bottom: 1.25rem; margin-bottom: 1.25rem; }
         .lead-wrapper { padding-bottom: 1.25rem; margin-bottom: 1.25rem; }
+    }
+
+    /* ── Homepage Evidence ──────────────────────────── */
+    .home-evidence-strip {
+        display: grid;
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 2.4fr);
+        gap: 1px;
+        margin-top: 1.5rem;
+        background: var(--border);
+        border: 1px solid var(--border);
+    }
+
+    .home-evidence-status,
+    .home-evidence-item {
+        background: var(--background);
+        padding: 1rem;
+    }
+
+    .home-evidence-status {
+        border-left: 4px solid var(--nyt-accent);
+    }
+
+    .home-evidence-strip.tone-live .home-evidence-status { border-left-color: var(--nyt-red); }
+    .home-evidence-strip.tone-consensus .home-evidence-status { border-left-color: #059669; }
+    .home-evidence-strip.tone-early .home-evidence-status { border-left-color: #d97706; }
+
+    .home-evidence-status span,
+    .home-evidence-item span {
+        display: block;
+        margin-bottom: 0.45rem;
+        font-family: var(--font-sans);
+        font-size: 0.58rem;
+        font-weight: 950;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--muted-foreground);
+    }
+
+    .home-evidence-status p,
+    .home-evidence-item p {
+        margin: 0;
+        font-family: var(--font-nyt-body);
+        font-size: 0.78rem;
+        line-height: 1.45;
+        color: var(--secondary-foreground);
+    }
+
+    .home-evidence-item strong {
+        display: block;
+        margin-bottom: 0.35rem;
+        font-family: var(--font-serif);
+        font-size: 1.08rem;
+        line-height: 1.1;
+        color: var(--foreground);
+    }
+
+    .home-evidence-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1px;
+        background: var(--border);
+    }
+
+    /* ── Live Wire Near Lead ────────────────────────── */
+    .home-live-strip {
+        margin: 0 0 1.5rem;
+        padding: 1rem 0 1.15rem;
+        border-top: 2px solid var(--nyt-red);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .home-live-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .home-live-head span,
+    .home-live-head a {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        font-family: var(--font-sans);
+        font-size: 0.62rem;
+        font-weight: 950;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+    }
+
+    .home-live-head span {
+        color: var(--nyt-red);
+    }
+
+    .home-live-head a {
+        color: var(--muted-foreground);
+        text-decoration: none;
+    }
+
+    .home-live-head a:hover {
+        color: var(--nyt-accent);
+        text-decoration: underline;
+    }
+
+    .home-live-row {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(220px, 1fr);
+        gap: 1px;
+        overflow-x: auto;
+        background: var(--border);
+        border: 1px solid var(--border);
+        scroll-snap-type: x proximity;
+    }
+
+    .home-live-item {
+        min-width: 0;
+        padding: 0.9rem;
+        background: var(--background);
+        color: var(--foreground);
+        text-decoration: none;
+        scroll-snap-align: start;
+    }
+
+    .home-live-item span,
+    .home-live-item strong {
+        display: inline-block;
+        margin-right: 0.4rem;
+        font-family: var(--font-sans);
+        font-size: 0.56rem;
+        font-weight: 950;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+    }
+
+    .home-live-item span {
+        color: var(--nyt-red);
+    }
+
+    .home-live-item strong {
+        color: var(--muted-foreground);
+    }
+
+    .home-live-item p {
+        margin: 0.4rem 0 0;
+        font-family: var(--font-serif);
+        font-size: 0.95rem;
+        font-weight: 850;
+        line-height: 1.22;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .home-live-item:hover p {
+        color: var(--nyt-accent);
+        text-decoration: underline;
     }
 
     /* ── Supporting Band & Developments Grids ────────── */
@@ -636,13 +903,20 @@ function getBriefingSnippet(content: string) {
     .for-you-wrapper {
         background: color-mix(in srgb, var(--nyt-accent) 4%, transparent);
         padding: 1.5rem 1rem;
-        border-y: 1px solid color-mix(in srgb, var(--nyt-accent) 15%, transparent);
+        border-top: 1px solid color-mix(in srgb, var(--nyt-accent) 15%, transparent);
+        border-bottom: 1px solid color-mix(in srgb, var(--nyt-accent) 15%, transparent);
         margin-bottom: 1.5rem;
     }
 
     @media (max-width: 768px) {
         .consensus-section {
             padding: 1.5rem 1rem !important;
+        }
+        .home-evidence-strip {
+            grid-template-columns: 1fr;
+        }
+        .home-evidence-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
         .for-you-wrapper {
             padding: 1.5rem 1rem;
