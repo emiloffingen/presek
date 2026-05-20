@@ -15,11 +15,13 @@ export interface Article {
   credibility?: number;
   reading_time: number;
   summary?: string;
+  full_content?: string;
   is_translated: number;
   source_signal?: {
     trust_label?: string;
     role_label?: string;
     trust_level?: number;
+    role_tone?: string;
   };
   is_breaking?: boolean;
   is_fact_check?: boolean;
@@ -93,8 +95,23 @@ export interface ClusterDetail extends NewsCluster {
     cluster_id: string;
     title: string;
     image_url: string | null;
+    source?: string;
+    created_at?: string;
     tags?: string[];
     relationship_label?: string;
+    relationship_note?: string;
+    shared_tags?: string[];
+    shared_topics?: string[];
+    shared_entities?: string[];
+  }>;
+  timeline?: Array<{
+    article_id: number;
+    title: string;
+    source: string;
+    created_at: string;
+    is_first: boolean;
+    is_major: boolean;
+    milestone: string;
   }>;
   total_reading_time: number;
   narrative_diversity?: {
