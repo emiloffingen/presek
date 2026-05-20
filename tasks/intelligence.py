@@ -609,7 +609,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
 
                     analyst_thread = threading.Thread(target=_run_analyst_logic)
                     analyst_thread.start()
-                    analyst_thread.join(timeout=240)  # 4 minute limit for low-core CPUs
+                    analyst_thread.join(timeout=600)  # 10 minute limit for low-core CPUs
 
                     if analyst_thread.is_alive():
                         log.warning(f"[analyst] Timeout reached for cluster {cluster_id}")
@@ -799,7 +799,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                     "cluster_id": cluster_id,
                     "is_breaking": is_breaking,
                     "impact_score": shared_metrics["impact_score"],
-                    "headline": article_rows[0].get("title", ""),
+                    "headline": article_rows[0].get("title", "") if article_rows else "",
                     "time": datetime.datetime.now().isoformat(),
                 },
             )
@@ -1562,10 +1562,11 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
         log.warning(f"[ai/hallucination] Hallucinated entity detected in synthesis: {clean} (folded: {folded})")
         hallucinated_count += 1
 
-    # Allow 1 minor hallucination for very long syntheses to prevent infinite retry loops
-    if hallucinated_count > 1:
+    # Allow more minor hallucinations for long syntheses to prevent infinite retry loops
+    # especially for Macedonian where capitalization patterns differ
+    if hallucinated_count > 3:
         return False
-    if hallucinated_count == 1 and len(synthesis_text) < 1500:
+    if hallucinated_count >= 1 and len(synthesis_text) < 1000:
         return False
 
     return True
@@ -1659,9 +1660,9 @@ def backfill_cluster_summaries_task(days=30, lang="sr"):
                                 if fallback_result["synthetic_standfirst"]
                                 else ""
                             ),
-                            fallback_result["perspectives"][:2000] if fallback_result["perspectives"] else [],
-                            fallback_result.get("key_facts")[:1000] if fallback_result.get("key_facts") else [],
-                            fallback_result.get("analyst_entities")[:1000] if fallback_result.get("analyst_entities") else [],
+                            json.dumps(fallback_result["perspectives"][:2000] if fallback_result["perspectives"] else []),
+                            json.dumps(fallback_result.get("key_facts")[:1000] if fallback_result.get("key_facts") else []),
+                            json.dumps(fallback_result.get("analyst_entities")[:1000] if fallback_result.get("analyst_entities") else []),
                         ),
                     )
                     log.info(f"[tasks] Generated summary for cluster {cluster_id} (lang={lang})")
