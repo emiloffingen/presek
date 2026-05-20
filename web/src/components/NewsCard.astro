@@ -114,7 +114,7 @@ function getTimeStr(dateStr: string) {
 }
 ---
 
-<article class:list={["nyt-article", `variant-${variant}`, { "lead-story": isLead, "has-image": !!thumbSrc }, bentoSpan ? `bento-${bentoSpan}` : ""]} data-cluster={JSON.stringify(slimCluster)}>
+<article class:list={["nyt-article", "premium-spotlight", `variant-${variant}`, { "lead-story": isLead, "has-image": !!thumbSrc }, bentoSpan ? `bento-${bentoSpan}` : ""]} data-cluster={JSON.stringify(slimCluster)}>
 	<div class="article-body">
         <div class="article-meta-v2">
             <div class="kicker-group">
