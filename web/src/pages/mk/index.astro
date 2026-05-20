@@ -501,20 +501,24 @@ const leadEvidenceItems = leadCluster ? [
 				)}
 
                 {!error && isHomepage && topWireArticles.length > 0 && (
-                    <section class="home-live-strip" aria-label={t('home.wire_title')}>
-                        <div class="home-live-head">
-                            <span>
+                    <section class="home-live-strip w-full max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-8" aria-label={t('home.wire_title')}>
+                        <div class="home-live-head lg:col-span-1 flex flex-col justify-start">
+                            <span class="flex items-center gap-2 text-nyt-red font-sans text-[0.62rem] font-black uppercase tracking-[0.16em]">
                                 <Activity size={13} />
                                 {t('home.wire_title')}
                             </span>
-                            <a href={l('/pulse')}>{t('rail.all_news')} <ChevronRight size={11} /></a>
+                            <a href={l('/pulse')} class="mt-4 text-muted-foreground hover:text-nyt-accent hover:underline font-sans text-[0.62rem] font-black uppercase tracking-[0.16em] inline-flex items-center gap-1">
+                                {t('rail.all_news')} <ChevronRight size={11} />
+                            </a>
                         </div>
-                        <div class="home-live-row hide-scrollbar">
+                        <div class="lg:col-span-3 flex flex-col gap-6">
                             {topWireArticles.map((art: any) => (
-                                <a href={l(`/cluster/${art.cluster_id}`)} class="home-live-item">
-                                    <span>{getTimeStr(art.ingested_at || art.created_at)}</span>
-                                    <strong>{art.source}</strong>
-                                    <p>{getDisplayTitle(art)}</p>
+                                <a href={l(`/cluster/${art.cluster_id}`)} class="flex flex-col gap-1 border-b border-border/40 pb-4 last:border-0 hover:opacity-80 transition-opacity">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-nyt-red font-sans text-[0.56rem] font-black uppercase tracking-[0.1em]">{getTimeStr(art.ingested_at || art.created_at)}</span>
+                                        <strong class="text-muted-foreground font-sans text-[0.56rem] font-black uppercase tracking-[0.1em]">{art.source}</strong>
+                                    </div>
+                                    <p class="font-serif text-lg font-bold leading-snug text-foreground hover:text-nyt-accent hover:underline line-clamp-2">{getDisplayTitle(art)}</p>
                                 </a>
                             ))}
                         </div>
