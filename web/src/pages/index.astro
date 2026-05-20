@@ -177,6 +177,7 @@ const focusEntities = topEntities
     .slice(0, 10);
 
 const leadCluster = clusters[0] ?? null;
+const leadVisual = leadCluster ? chooseClusterImage(leadCluster, 'hero') : null;
 
 // --- GLOBAL DEDUPLICATION ---
 const usedIds = new Set<string>();
