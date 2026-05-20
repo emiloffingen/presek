@@ -928,7 +928,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                 }
             )
             match_clauses = ["a.country = %s"]
-            fallback_params = [country_filter, cluster_id]
+            fallback_params = [cluster_id, country_filter]
             if fallback_topics:
                 match_clauses.append(
                     "(a.topic = ANY(%s) OR EXISTS (SELECT 1 FROM unnest(COALESCE(m.topics, '{}')) AS topic WHERE topic = ANY(%s)))"
