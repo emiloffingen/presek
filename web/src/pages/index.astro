@@ -674,19 +674,28 @@ function getBriefingSnippet(content: string) {
         letter-spacing: 0.06em;
         text-decoration: none;
         color: var(--foreground);
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         white-space: nowrap;
+        border-radius: 4px;
     }
     .quick-pill:hover {
         background: var(--nyt-accent);
         color: white;
         border-color: var(--nyt-accent);
-        transform: translateY(-1px);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px color-mix(in srgb, var(--nyt-accent) 25%, transparent);
     }
     .quick-pill.is-active {
         background: var(--nyt-accent);
         color: white;
         border-color: var(--nyt-accent);
+        box-shadow: 0 4px 12px color-mix(in srgb, var(--nyt-accent) 25%, transparent);
+    }
+    .dark .quick-pill {
+        background: var(--card);
+    }
+    .dark .quick-pill.is-active {
+        background: var(--nyt-accent);
     }
 
     /* ── Trending Strip ─────────────────────────────── */

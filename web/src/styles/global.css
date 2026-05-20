@@ -80,26 +80,26 @@
     }
 
     :root {
-        /* 60% Dominant: Background (Pure Editorial White) */
-        --background: #ffffff;
-        --foreground: #111111; /* Rule 2: Near Black for sharp text */
+        /* 60% Dominant: Background (Luxurious Editorial Warm Parchment) */
+        --background: #fdfdfa;
+        --foreground: #121315; /* Rule 2: Near Black for sharp text */
 
         /* 30% Secondary: Structural Elements */
         --card: #ffffff;
-        --secondary: #f3f4f6;
-        --secondary-foreground: #2f3b4c;
-        --border: #e5e7eb;
-        --muted: #f9fafb;
-        --muted-foreground: #4b5563; /* Improved contrast for light mode */
-        --surface-soft: #f3f4f2;
-        --surface-strong: #e7e9e4;
+        --secondary: #f6f5f0;
+        --secondary-foreground: #222935;
+        --border: #e6e5dd;
+        --muted: #fafaf7;
+        --muted-foreground: #5a6472; /* Improved contrast for light mode */
+        --surface-soft: #f7f6f1;
+        --surface-strong: #eeede6;
 
         /* 10% Accent: Trust Blue (Primary Brand) */
-        --nyt-accent: #1e40af; /* Deep Trust Blue */
-        --nyt-red: #b91c1c;    /* Subdued Journalist Red (used sparingly) */
-        --nyt-black: #111827;
+        --nyt-accent: #1e3a8a; /* Deep Trust Blue */
+        --nyt-red: #991b1b;    /* Richer Journalist Crimson */
+        --nyt-black: #121315;
         --link: #1e3a8a;
-        --link-hover: #1d4ed8;
+        --link-hover: #2563eb;
 
         /* --- Premium Shadow System (Layered) --- */
         --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
@@ -142,33 +142,33 @@
     }
 
     .dark {
-        /* Core Palette (Dark - Deep Midnight Blue) */
-        --background: #07090e;
+        /* Core Palette (Dark - Deep Midnight Obsidian) */
+        --background: #0b0d13;
         --foreground: #f8fafc;
-        --card: #0d1117;
+        --card: #111420;
         --card-foreground: #f8fafc;
         --primary: #f8fafc;
         --primary-foreground: #000000;
-        --secondary: #111827;
-        --secondary-foreground: #e2e8f0;
-        --muted: #0d1117;
+        --secondary: #161a29;
+        --secondary-foreground: #cbd5e1;
+        --muted: #0f121d;
         --muted-foreground: #94a3b8;
         --accent: #f8fafc;
         --accent-foreground: #000000;
-        --border: #1e293b;
-        --input: #1e293b;
+        --border: #1d2335;
+        --input: #1d2335;
         --ring: #3b82f6;
-        --surface-soft: #0a0c12;
-        --surface-strong: #111827;
+        --surface-soft: #121522;
+        --surface-strong: #171c2e;
 
         /* Luminescent Shadows for Dark Mode */
         --shadow-premium: 0 30px 60px -12px rgba(0,0,0,0.6), 0 0 1px rgba(255,255,255,0.1);
 
         /* NYT Smart Colors (Dark Mode - Automated Inversion) */
         --nyt-black: #f8fafc;
-        --nyt-gray-100: #0a0a0a;
-        --nyt-gray-200: #141414;
-        --nyt-gray-300: #1e293b;
+        --nyt-gray-100: #0a0e17;
+        --nyt-gray-200: #121824;
+        --nyt-gray-300: #1d2335;
         --nyt-gray-500: #64748b;
         --nyt-gray-600: #94a3b8;
         --nyt-accent: #60a5fa;
