@@ -497,8 +497,8 @@ function getBriefingSnippet(content: string) {
 				)}
 
 			</div>
-
-			<aside class="broadsheet-sidebar">
+			{/* HomeRail rendered horizontally at the bottom of the main feed */}
+			<div class="w-full border-t border-border mt-16 pt-12">
 				<HomeRail
 					railWireArticles={railWireArticles}
 					briefing={briefing}
@@ -507,7 +507,7 @@ function getBriefingSnippet(content: string) {
 					getTimeStr={getTimeStr}
 					getBriefingSnippet={getBriefingSnippet}
 				/>
-			</aside>
+			</div>
 		</div>
 	</main>
 
@@ -519,30 +519,17 @@ function getBriefingSnippet(content: string) {
     .broadsheet-layout { background: var(--background); }
     .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: var(--grid-gap); }
 
-    .broadsheet-sidebar { display: none; }
-
     @media (min-width: 768px) {
         .broadsheet-grid { grid-template-columns: 1fr; gap: calc(var(--grid-gap) * 1.25); }
     }
 
     @media (min-width: 1280px) {
-        .broadsheet-grid { grid-template-columns: 1fr 340px; gap: calc(var(--grid-gap) * 1.5); }
-        .broadsheet-sidebar {
-            display: block;
-            position: sticky;
-            top: 5rem;
-            max-height: calc(100vh - 6rem);
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: var(--border) transparent;
-        }
-        .broadsheet-sidebar::-webkit-scrollbar { width: 4px; }
-        .broadsheet-sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+        .broadsheet-grid { grid-template-columns: 1fr; gap: calc(var(--grid-gap) * 1.5); }
     }
 
     @media (min-width: 1440px) {
         :global(.site-layout) { max-width: 100%; }
-        .broadsheet-grid { grid-template-columns: 1fr 380px; gap: calc(var(--grid-gap) * 2); }
+        .broadsheet-grid { grid-template-columns: 1fr; gap: calc(var(--grid-gap) * 2); }
     }
 
     /* ── Section Dividers ────────────────────────────── */
