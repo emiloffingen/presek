@@ -135,7 +135,7 @@ const articleRows = (cluster?.articles || []).map((a: Article, idx: number, arr:
     const timelineEntry = (cluster?.timeline || []).find((item) => item.article_id === a.id);
 
     // 1. Dynamic Journalistic Role (Timeline)
-    let relLabel = t('cluster.rel_related');
+    let relLabel: string = t('cluster.rel_related');
     let relTone = 'neutral';
 
     if (timelineEntry?.is_first) {

@@ -121,7 +121,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                 ))}
             </div>
             <span className="font-sans text-[9px] md:text-[10px] font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground/40 ml-auto flex items-center gap-1.5">
-                <Activity size={10} /> {formatLastFetched(source.last_fetched, t)}
+                <Activity size={10} /> {formatLastFetched(source.last_fetched)}
             </span>
           </div>
         </div>

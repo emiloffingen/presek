@@ -22,14 +22,14 @@ const t = useTranslations(lang);
 
         let isCyrillic = false;
 
-        function traverse(node) {
+        function traverse(node: Node) {
             if (node.nodeType === Node.TEXT_NODE) {
-                if (node.textContent.trim().length > 0) {
+                if (node.textContent?.trim().length) {
                     node.textContent = isCyrillic
                         ? cyrToLat(node.textContent)
                         : latToCyr(node.textContent);
                 }
-            } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName !== 'SCRIPT' && node.tagName !== 'STYLE') {
+            } else if (node.nodeType === Node.ELEMENT_NODE && (node as Element).tagName !== 'SCRIPT' && (node as Element).tagName !== 'STYLE') {
                 node.childNodes.forEach(traverse);
             }
         }

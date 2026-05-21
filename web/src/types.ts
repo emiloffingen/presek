@@ -67,6 +67,7 @@ export interface NewsCluster {
   pulse_score?: number;
   pluralism_score?: number;
   homepage_score?: number;
+  importance_score?: number;
   created_at?: string;
   display_name?: string;
   tags?: string[];

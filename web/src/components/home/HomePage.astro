@@ -1,0 +1,931 @@
+---
+/* Cache-bust marker for homepage stylesheet hashing. */
+import Layout from '../../layouts/Layout.astro';
+import NewsCard from '../NewsCard.astro';
+import NYTHeader from '../NYTHeader.astro';
+import Footer from '../Footer.astro';
+
+import ForYouIsland from '../ForYouIsland.tsx';
+import LeadHero from './LeadHero.astro';
+import SupportingBand from './SupportingBand.astro';
+import DevelopmentsSection from './DevelopmentsSection.astro';
+import FilterHeader from './FilterHeader.astro';
+import HomeRail from './HomeRail.astro';
+import EmptyState from './EmptyState.astro';
+import HomeLiveStrip from './HomeLiveStrip.astro';
+import TrendingPreviewRail from './TrendingPreviewRail.astro';
+import { chooseClusterImage } from '../../utils/imageSelection';
+import { cleanAndDecode, extractCleanSummaryText, highlightScores, isMostlyCyrillic } from '../../utils/textUtils';
+import { apiBaseUrl } from '../../lib/apiBase';
+import type { NewsCluster } from '../../types';
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+import { buildHomepageSections } from '../../lib/homepageSections';
+
+const requestUrl = Astro.request ? new URL(Astro.request.url) : Astro.url;
+const hostHeader = Astro.request?.headers.get('host') || requestUrl.hostname;
+const effectiveUrl = new URL(requestUrl);
+effectiveUrl.hostname = hostHeader;
+const lang = getLangFromUrl(effectiveUrl);
+const t = useTranslations(lang);
+const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
+
+const API_URL = apiBaseUrl();
+
+// Get search params for SSR filtering
+const { searchParams } = Astro.url;
+function cleanFilterParam(value: string | null) {
+    if (!value) return null;
+    const cleaned = value
+        .trim()
+        .replace(/^[#\s]+/, '')
+        .replace(/(?:\.{2,}|…)+$/u, '')
+        .trim();
+    return cleaned || null;
+}
+
+const category = cleanFilterParam(searchParams.get('category'));
+const topic = cleanFilterParam(searchParams.get('topic'));
+const entity = cleanFilterParam(searchParams.get('entity'));
+const subcategory = cleanFilterParam(searchParams.get('subcategory'));
+const q = searchParams.get('q')?.trim() || null;
+const timespan = searchParams.get('timespan')?.trim() || null;
+
+let clusters: NewsCluster[] = [];
+let globalClusters: NewsCluster[] = [];
+let trending = [];
+let topEntities = [];
+let stats = null;
+let briefing = null;
+let error = null;
+let supportingClusters: NewsCluster[] = [];
+let forYouClusters = [];
+let feedClusters: NewsCluster[] = [];
+let wireClusters: NewsCluster[] = [];
+let wireArticles = [];
+let excludedClusterIds: string[] = [];
+let homepageLeadDisplay: { title?: string; summary?: string; signal?: string } | null = null;
+
+async function loadHomepageFallback() {
+    const fallbackNewsUrl = new URL(`${API_URL}/news`);
+    fallbackNewsUrl.searchParams.set('page_size', '24');
+    fallbackNewsUrl.searchParams.set('lang', lang);
+
+    const [newsResult, trendResult, entityResult, statsResult, briefingResult, wireResult] = await Promise.allSettled([
+        fetchJson(fallbackNewsUrl.toString()),
+        fetchJson(`${API_URL}/trending?lang=${lang}`),
+        fetchJson(`${API_URL}/intelligence/top-entities?limit=12&lang=${lang}`),
+        fetchJson(`${API_URL}/stats/summary?lang=${lang}`),
+        fetchJson(`${API_URL}/briefing?lang=${lang}`),
+        fetchJson(`${API_URL}/home/latest-wire?limit=15&lang=${lang}`),
+    ]);
+
+    if (newsResult.status === 'fulfilled') {
+        clusters = Array.isArray(newsResult.value?.clusters) ? newsResult.value.clusters : [];
+        globalClusters = Array.isArray(newsResult.value?.global_clusters) ? newsResult.value.global_clusters : [];
+        supportingClusters = clusters.slice(1, 5);
+        feedClusters = clusters.slice(5);
+    }
+
+    if (wireResult.status === 'fulfilled') {
+        wireArticles = Array.isArray(wireResult.value?.articles) ? wireResult.value.articles : [];
+    }
+
+    trending = trendResult.status === 'fulfilled' && Array.isArray(trendResult.value)
+        ? trendResult.value
+        : [];
+    topEntities = entityResult.status === 'fulfilled' && Array.isArray(entityResult.value)
+        ? entityResult.value
+        : [];
+    stats = statsResult.status === 'fulfilled' ? statsResult.value : null;
+    briefing = briefingResult.status === 'fulfilled' ? briefingResult.value : null;
+
+    return clusters.length > 0 || wireArticles.length > 0 || trending.length > 0;
+}
+
+async function fetchJson(url: string) {
+    const response = await fetch(url);
+    if (!response.ok) {
+        const err: any = new Error(`Request failed: ${response.status} ${url}`);
+        err.status = response.status;
+        throw err;
+    }
+    return response.json();
+}
+
+const isHomepage = !(category || topic || entity || subcategory || q);
+
+if (isHomepage) {
+    const homeResult = await Promise.allSettled([
+        fetchJson(`${API_URL}/home?lang=${lang}`),
+    ]);
+    const homePayload = homeResult[0];
+
+    if (homePayload.status === 'fulfilled' && homePayload.value?.status === 'success') {
+        const home = homePayload.value;
+        const lead = home?.lead ? [home.lead] : [];
+        supportingClusters = Array.isArray(home?.supporting) ? home.supporting : [];
+        forYouClusters = Array.isArray(home?.for_you_pool) ? home.for_you_pool.map((c: any) => {
+            const a = c.articles?.[0] || {};
+            return {
+                cluster_id: c.cluster_id,
+                is_breaking: c.is_breaking,
+                topics: c.topics,
+                tags: c.tags,
+                homepage_score: c.homepage_score,
+                articles: [{
+                    title: a.title,
+                    source: a.source,
+                    summary: a.summary,
+                    description: a.description,
+                    category: a.category,
+                }],
+                sources_count: c.articles?.length || 0,
+            };
+        }) : [];
+        const developingClusters = Array.isArray(home?.developing) ? home.developing : [];
+        wireClusters = Array.isArray(home?.wire) ? home.wire : [];
+        wireArticles = Array.isArray(home?.latest_wire) ? home.latest_wire : [];
+        globalClusters = Array.isArray(home?.global) ? home.global : [];
+        trending = Array.isArray(home?.trending) ? home.trending : [];
+        topEntities = Array.isArray(home?.focus_entities) ? home.focus_entities : [];
+        stats = home?.stats || null;
+        briefing = home?.briefing || null;
+        homepageLeadDisplay = home?.lead_display && typeof home.lead_display === 'object' ? home.lead_display : null;
+        excludedClusterIds = Array.isArray(home?.excluded_cluster_ids) ? home.excluded_cluster_ids : [];
+        feedClusters = [...developingClusters, ...wireClusters];
+        clusters = [...lead, ...supportingClusters, ...(Array.isArray(home?.for_you_pool) ? home.for_you_pool : []), ...feedClusters];
+    } else {
+        console.error('Home fetch error:', homePayload.status === 'rejected' ? homePayload.reason : homePayload.value);
+        const recovered = await loadHomepageFallback();
+        if (!recovered) {
+            error = t('home.error');
+            Astro.response.status = 500;
+        }
+    }
+} else {
+    const newsUrl = new URL(`${API_URL}/news`);
+    newsUrl.searchParams.set('page_size', '48');
+    newsUrl.searchParams.set('lang', lang);
+    if (category) newsUrl.searchParams.set('category', category);
+    if (topic) newsUrl.searchParams.set('topic', topic);
+    if (entity) newsUrl.searchParams.set('entity', entity);
+    if (subcategory) newsUrl.searchParams.set('subcategory', subcategory);
+    if (q) newsUrl.searchParams.set('q', q);
+    if (timespan) newsUrl.searchParams.set('timespan', timespan);
+
+    const [newsResult, trendResult, entityResult, statsResult, briefingResult, wireResult] = await Promise.allSettled([
+        fetchJson(newsUrl.toString()),
+        fetchJson(`${API_URL}/trending?lang=${lang}`),
+        fetchJson(`${API_URL}/intelligence/top-entities?limit=12&lang=${lang}`),
+        fetchJson(`${API_URL}/stats/summary?lang=${lang}`),
+        fetchJson(`${API_URL}/briefing?lang=${lang}`),
+        fetchJson(`${API_URL}/home/latest-wire?limit=15&lang=${lang}`),
+    ]);
+
+    if (wireResult.status === 'fulfilled') {
+        wireArticles = Array.isArray(wireResult.value?.articles) ? wireResult.value.articles : [];
+    }
+
+    if (newsResult.status === 'fulfilled') {
+        clusters = newsResult.value?.clusters || [];
+        globalClusters = newsResult.value?.global_clusters || [];
+    } else {
+        console.error('News fetch error:', newsResult.reason);
+        error = t('home.error');
+        Astro.response.status = 500;
+    }
+
+    trending = trendResult.status === 'fulfilled' && Array.isArray(trendResult.value)
+        ? trendResult.value
+        : [];
+    topEntities = entityResult.status === 'fulfilled' && Array.isArray(entityResult.value)
+        ? entityResult.value
+        : [];
+    stats = statsResult.status === 'fulfilled' ? statsResult.value : null;
+    briefing = briefingResult.status === 'fulfilled' ? briefingResult.value : null;
+}
+
+const focusEntities = topEntities
+    .map((ent: { name: string; display_name?: string; total_mentions: number }) => ({
+        ...ent,
+        name: String(ent?.name || '').trim(),
+        display_name: String(ent?.display_name || ent?.name || '').trim(),
+    }))
+    .filter((ent: { name: string }) => ent.name && ent.name.length >= 3)
+    .slice(0, 10);
+
+const leadCluster = clusters[0] ?? null;
+const leadVisual = leadCluster ? chooseClusterImage(leadCluster, 'hero') : null;
+
+function getLeadSignal(cluster: NewsCluster) {
+	const count = cluster?.articles?.length || 0;
+	if (cluster?.is_breaking) return t('home.lead_breaking');
+	if (count >= 6) return t('home.lead_agenda');
+	if (count >= 4) return t('home.lead_spreading');
+	return t('home.lead_follow');
+}
+
+function getLeadSummary(cluster: NewsCluster) {
+	const article = cluster?.articles?.[0];
+	return extractCleanSummaryText(article?.summary || article?.description || '');
+}
+
+const leadSignal = leadCluster ? getLeadSignal(leadCluster) : '';
+const leadSummary = isHomepage
+    ? String(homepageLeadDisplay?.summary || '')
+    : (leadCluster ? getLeadSummary(leadCluster) : '');
+const leadTitle = highlightScores(isHomepage
+    ? String(homepageLeadDisplay?.title || '')
+    : (leadCluster?.articles?.[0] ? cleanAndDecode(leadCluster.articles[0].title) : ''));
+const effectiveLeadSignal = isHomepage
+    ? String(homepageLeadDisplay?.signal || leadSignal)
+    : leadSignal;
+
+// Remove the verbose development signal if it matches the default
+const finalLeadSignal = (effectiveLeadSignal === 'razvoj sto vredi da se sledi' || effectiveLeadSignal === 'развој што вреди да се следи' || effectiveLeadSignal === t('home.lead_follow')) ? '' : effectiveLeadSignal;
+const leadTitleIsCyrillic = isMostlyCyrillic(leadTitle);
+const leadSummaryIsCyrillic = isMostlyCyrillic(leadSummary);
+const activeFilterLabel = subcategory || entity || category || topic || q || null;
+
+const homepageSections = buildHomepageSections({
+    clusters,
+    leadCluster,
+    supportingClusters,
+    forYouClusters,
+    feedClusters,
+    wireClusters,
+    wireArticles,
+    excludedClusterIds,
+    isHomepage,
+});
+
+({
+    supportingClusters,
+    forYouClusters,
+    feedClusters,
+    wireClusters,
+    excludedClusterIds,
+} = homepageSections);
+
+const {
+    displayedTrendingClusters,
+    supportingFeatured,
+    supportingCompact,
+    consensusClusters,
+    developmentsFeatured,
+    developmentsCompact,
+    railWireArticles,
+    topWireArticles,
+} = homepageSections;
+
+function getTimeStr(dateStr: string) {
+    try {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffMins = Math.floor(diffMs / (1000 * 60));
+
+        if (diffMins < 1) return t('news.just_now');
+        if (diffMins < 60) return `${t('news.ago')} ${diffMins} ${t('news.min_short')}`;
+
+        return date.toLocaleTimeString(lang === 'sr' ? 'sr-RS' : 'mk-MK', {
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: 'Europe/Belgrade'
+        });
+    } catch {
+        return '';
+    }
+}
+
+function getBriefingSnippet(content: string) {
+    if (!content) return '';
+    const match = content.match(/## Šta pokreće dan\n+([^#]+)/) || content.match(/^([^#]+)/);
+    if (match && match[1]) {
+        const text = match[1].trim().split('\n')[0];
+        return text.length > 150 ? text.substring(0, 147) + '...' : text;
+    }
+    return '';
+}
+
+function getFirstArticle(cluster: NewsCluster | null) {
+    if (!cluster?.articles?.length) return null;
+    return [...cluster.articles].sort((left, right) => {
+        const leftTime = new Date(left.ingested_at || left.created_at).getTime();
+        const rightTime = new Date(right.ingested_at || right.created_at).getTime();
+        return leftTime - rightTime;
+    })[0];
+}
+
+const leadUniqueSources = leadCluster ? new Set(leadCluster.articles.map((article) => article.source).filter(Boolean)).size : 0;
+const leadFirstArticle = getFirstArticle(leadCluster);
+const leadLatestArticle = leadCluster?.articles?.[0] || null;
+const leadSignals = Array.from(new Set([
+    ...(leadCluster?.analyst_entities || []),
+    ...(leadCluster?.tags || []),
+    ...(leadCluster?.topics || []),
+    leadLatestArticle?.topic,
+    leadLatestArticle?.category,
+].filter(Boolean))).slice(0, 3);
+
+const leadStatus = (() => {
+    if (!leadCluster) return null;
+    if (leadCluster.is_breaking) {
+        return {
+            label: lang === 'sr' ? 'UŽIVO SE RAZVIJA' : 'СЕ РАЗВИВА ВО ЖИВО',
+            note: lang === 'sr' ? 'Priča ima najjači trenutni signal u redakcijskom poretku.' : 'Приказната има најсилен тековен сигнал во уредничкиот редослед.',
+            tone: 'live',
+        };
+    }
+    if (leadUniqueSources <= 1) {
+        return {
+            label: lang === 'sr' ? 'RANI SIGNAL' : 'РАН СИГНАЛ',
+            note: lang === 'sr' ? 'Trenutno dolazi iz jedne redakcije; pratimo da li se širi.' : 'Моментално доаѓа од една редакција; следиме дали ќе се прошири.',
+            tone: 'early',
+        };
+    }
+    if (leadUniqueSources >= 5) {
+        return {
+            label: lang === 'sr' ? 'ŠIROK KONSENZUS' : 'ШИРОК КОНСЕНЗУС',
+            note: lang === 'sr' ? 'Više redakcija prati istu priču, što je čini glavnim signalom dana.' : 'Повеќе редакции ја следат истата приказна, што ја прави главен сигнал на денот.',
+            tone: 'consensus',
+        };
+    }
+    return {
+        label: lang === 'sr' ? 'POTVRĐENO IZ VIŠE IZVORA' : 'ПОТВРДЕНО ОД ПОВЕЌЕ ИЗВОРИ',
+        note: lang === 'sr' ? 'Klaster je povezan zajedničkom temom, akterima i vremenom objave.' : 'Кластерот е поврзан со заедничка тема, актери и време на објава.',
+        tone: 'confirmed',
+    };
+})();
+
+const leadEvidenceItems = leadCluster ? [
+    {
+        label: lang === 'sr' ? 'Redakcije' : 'Редакции',
+        value: String(leadUniqueSources),
+        detail: leadCluster.articles.slice(0, 4).map((article) => article.source).filter(Boolean).join(' · '),
+    },
+    {
+        label: lang === 'sr' ? 'Prva objava' : 'Прва објава',
+        value: leadFirstArticle?.source || '',
+        detail: leadFirstArticle ? getTimeStr(leadFirstArticle.ingested_at || leadFirstArticle.created_at) : '',
+    },
+    {
+        label: lang === 'sr' ? 'Najnovije' : 'Најново',
+        value: leadLatestArticle?.source || '',
+        detail: leadLatestArticle ? getTimeStr(leadLatestArticle.ingested_at || leadLatestArticle.created_at) : '',
+    },
+    {
+        label: lang === 'sr' ? 'Signal' : 'Сигнал',
+        value: leadSignals[0] || leadLatestArticle?.category || '',
+        detail: leadSignals.slice(1).join(' · '),
+    },
+].filter((item) => item.value) : [];
+---
+
+<Layout
+	title={q || entity || subcategory || category || topic || t('layout.title')}
+	description={q || entity || subcategory || category || topic
+		? t('layout.filtered_description')
+		: t('layout.home_description')}
+    image={leadVisual?.proxiedUrl || undefined}
+>
+    <NYTHeader q={q} category={category} topic={topic} entity={entity} subcategory={subcategory} stats={stats} />
+
+	<main class="site-layout broadsheet-layout py-0 overflow-x-hidden max-w-full">
+
+		{/* Filtering Status */}
+		{(q || category || topic || entity || subcategory) && (
+			<FilterHeader q={q} category={category} topic={topic} entity={entity} subcategory={subcategory} />
+		)}
+
+		<div class="broadsheet-grid site-layout px-4 md:px-10">
+			<div class="broadsheet-main">
+                {error && (
+                    <div class="error-panel">
+                        <p>{error}</p>
+                    </div>
+                )}
+
+                {/* THEMATIC QUICK PILLS */}
+                {!error && (
+                    <div class="home-explore-strip max-w-full overflow-hidden">
+                        <div class="quick-pills-container overflow-x-auto hide-scrollbar -mx-4 px-4 pb-2">
+                            <div class="quick-pills-row flex items-center gap-[var(--grid-gap)]">
+                                <span class="quick-pills-label text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground mr-4 shrink-0">{t('home.explore')}</span>
+                                <div class="quick-pills-track">
+                                    {[
+                                        { id: 'rs', label: lang === 'mk' ? 'Makedonija' : 'Srbija', href: l('/?category=') + encodeURIComponent(lang === 'mk' ? 'Makedonija' : 'Srbija'), active: category === (lang === 'mk' ? 'Makedonija' : 'Srbija') },
+                                        { id: 'pol', label: 'Politika', href: l('/?topic=') + encodeURIComponent('Politika'), active: topic === 'Politika' },
+                                        { id: 'eco', label: 'Ekonomija', href: l('/?topic=') + encodeURIComponent('Ekonomija'), active: topic === 'Ekonomija' },
+                                        { id: 'spo', label: 'Sport', href: l('/?topic=') + encodeURIComponent('Sport'), active: topic === 'Sport' },
+                                        { id: 'cul', label: 'Kultura', href: l('/?topic=') + encodeURIComponent('Kultura'), active: topic === 'Kultura' },
+                                        { id: 'tech', label: 'Tehnologija', href: l('/?topic=') + encodeURIComponent('Tehnologija'), active: topic === 'Tehnologija' },
+                                        { id: 'bg', label: lang === 'mk' ? 'Skopje' : 'Beograd', href: l('/?subcategory=') + encodeURIComponent(lang === 'mk' ? 'Skopje' : 'Beograd'), active: subcategory === (lang === 'mk' ? 'Skopje' : 'Beograd') }
+                                    ].map(pill => (
+                                        <a
+                                            href={pill.href}
+                                            class:list={["quick-pill shrink-0", { "is-active": pill.active }]}
+                                            data-track-pill={pill.id}
+                                        >
+                                            {pill.label}
+                                        </a>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <script is:inline>
+                        document.addEventListener('astro:page-load', () => {
+                            document.querySelectorAll('.quick-pill').forEach(pill => {
+                                pill.addEventListener('click', (e) => {
+                                    const id = e.currentTarget.getAttribute('data-track-pill');
+                                    if (window.dataLayer) {
+                                        window.dataLayer.push({ event: 'pill_click', pill_id: id });
+                                    }
+                                });
+                            });
+                        });
+                    </script>
+                )}
+
+                {!error && clusters.length === 0 && (
+                    <EmptyState trending={trending} />
+                )}
+
+				{leadCluster && (
+					<div class="section-wrapper lead-wrapper">
+						<LeadHero
+							leadCluster={leadCluster}
+							leadTitle={leadTitle}
+							leadTitleIsCyrillic={leadTitleIsCyrillic}
+							leadSignal={finalLeadSignal}
+							leadSummary={leadSummary}
+							leadSummaryIsCyrillic={leadSummaryIsCyrillic}
+							leadVisual={leadVisual}
+							dominantColor={leadCluster.dominant_color}
+							getTimeStr={getTimeStr}
+							filtered={!isHomepage}
+							filterLabel={activeFilterLabel}
+                            lang={lang}
+						/>
+                        {leadStatus && leadEvidenceItems.length > 0 && (
+                            <div class:list={["home-evidence-strip", `tone-${leadStatus.tone}`]}>
+                                <div class="home-evidence-status">
+                                    <span>{leadStatus.label}</span>
+                                    <p>{leadStatus.note}</p>
+                                </div>
+                                <div class="home-evidence-grid">
+                                    {leadEvidenceItems.map((item) => (
+                                        <div class="home-evidence-item">
+                                            <span>{item.label}</span>
+                                            <strong>{item.value}</strong>
+                                            {item.detail && <p>{item.detail}</p>}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+					</div>
+				)}
+
+                {!error && isHomepage && (
+                    <HomeLiveStrip articles={topWireArticles} getTimeStr={getTimeStr} lang={lang} />
+                )}
+
+                {!error && isHomepage && (
+                    <TrendingPreviewRail clusters={displayedTrendingClusters} lang={lang} />
+                )}
+
+				{leadCluster && supportingClusters.length > 0 && (
+					<div class="section-wrapper">
+						<SupportingBand
+							supportingFeatured={supportingFeatured}
+							supportingCompact={supportingCompact}
+                            lang={lang}
+						/>
+					</div>
+				)}
+
+                {/* THE BIG PICTURE (HIGH CONSENSUS) */}
+                {isHomepage && consensusClusters.length > 0 && (
+                    <div class="section-wrapper consensus-section bg-secondary/10 p-8 border-y border-border/40">
+                            <div class="section-heading-row mb-8">
+                                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent block mb-2">{t('home.consensus_title')}</span>
+                                <h2 class="font-serif text-3xl font-black italic">{t('home.consensus_subtitle')}</h2>
+                                <p class="text-sm text-muted-foreground mt-2">{t('home.consensus_desc')}</p>
+                            </div>
+                            <div class="consensus-carousel-wrap">
+                                <div class="consensus-grid hide-scrollbar">
+                                    {consensusClusters.map((cluster: NewsCluster) => (
+                                        <div class="consensus-item">
+                                            <NewsCard cluster={cluster} variant="compact" lang={lang} />
+                                        </div>
+                                    ))}
+                                </div>
+                                <div class="carousel-fade-hint right md:hidden"></div>
+                            </div>
+	                        </div>
+                )}
+
+                {clusters.length > 4 && (
+					<div class="section-wrapper for-you-wrapper">
+					    <ForYouIsland client:visible clusters={forYouClusters} excludeClusterIds={excludedClusterIds} lang={lang} />
+                    </div>
+				)}
+
+				{(developmentsFeatured.length > 0 || developmentsCompact.length > 0) && (
+					<div class="section-wrapper">
+						<DevelopmentsSection
+							title={t('home.developing_title')}
+							note={t('home.developing_desc')}
+							developmentsFeatured={developmentsFeatured}
+							developmentsCompact={developmentsCompact}
+                            tone="developing"
+						/>
+					</div>
+				)}
+
+				{globalClusters.length > 0 && (
+					<div class="section-wrapper">
+						<DevelopmentsSection
+							title={t('home.global_title')}
+							note={t('home.global_desc')}
+							developmentsFeatured={globalClusters.slice(0, 2)}
+							developmentsCompact={globalClusters.slice(2)}
+                            tone="global"
+						/>
+					</div>
+				)}
+
+				{wireClusters.length > 0 && (
+					<div class="section-wrapper">
+						<DevelopmentsSection
+							title={t('home.wire_title')}
+							note={t('home.wire_desc')}
+							developmentsFeatured={wireClusters}
+							developmentsCompact={[]}
+							variant="wire"
+                            tone="wire"
+						/>
+					</div>
+				)}
+			</div>
+			{/* HomeRail rendered horizontally at the bottom of the main feed */}
+			<div class="w-full mt-16 pt-12">
+				<div class="masthead-double-rule mb-12"></div>
+				<HomeRail
+					railWireArticles={railWireArticles}
+					briefing={briefing}
+					stats={stats}
+					focusEntities={focusEntities}
+					getTimeStr={getTimeStr}
+					getBriefingSnippet={getBriefingSnippet}
+				/>
+			</div>
+		</div>
+	</main>
+
+	<Footer />
+</Layout>
+
+<style>
+    /* ── Broadsheet Layout ───────────────────────────── */
+    .broadsheet-layout { background: var(--background); }
+    .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: var(--grid-gap); }
+
+    @media (min-width: 768px) {
+        .broadsheet-grid { grid-template-columns: 1fr; gap: calc(var(--grid-gap) * 1.25); }
+    }
+
+    @media (min-width: 1280px) {
+        .broadsheet-grid { grid-template-columns: 1fr; gap: calc(var(--grid-gap) * 1.5); }
+    }
+
+    @media (min-width: 1440px) {
+        .broadsheet-grid { grid-template-columns: 1fr; gap: calc(var(--grid-gap) * 2); }
+    }
+
+    /* ── Section Dividers ────────────────────────────── */
+    .section-wrapper { border-bottom: 1px solid var(--border); padding-bottom: 1.5rem; margin-bottom: 1.5rem; }
+    .section-wrapper:last-child { border-bottom: none; }
+    .lead-wrapper { padding-bottom: 1.1rem; margin-bottom: 0.9rem; }
+
+    @media (max-width: 768px) {
+        .section-wrapper { padding-bottom: 1.25rem; margin-bottom: 1.25rem; }
+        .lead-wrapper { padding-bottom: 1.25rem; margin-bottom: 1.25rem; }
+    }
+
+    @media (max-width: 639px) {
+        .section-wrapper {
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
+        .lead-wrapper {
+            padding-bottom: 1rem;
+            margin-bottom: 0.9rem;
+        }
+    }
+
+    /* ── Homepage Evidence ──────────────────────────── */
+    .home-evidence-strip {
+        display: grid;
+        grid-template-columns: minmax(0, 0.78fr) minmax(0, 2.8fr);
+        gap: 1px;
+        margin-top: -0.55rem;
+        background: var(--border);
+        border: 1px solid var(--border);
+        border-top: 0;
+    }
+
+    .home-evidence-status,
+    .home-evidence-item {
+        background: var(--background);
+        padding: 0.74rem 0.9rem;
+    }
+
+    .home-evidence-status {
+        border-left: 4px solid var(--nyt-accent);
+    }
+
+    .home-evidence-strip.tone-live .home-evidence-status { border-left-color: var(--nyt-red); }
+    .home-evidence-strip.tone-consensus .home-evidence-status { border-left-color: #059669; }
+    .home-evidence-strip.tone-early .home-evidence-status { border-left-color: #d97706; }
+
+    .home-evidence-status span,
+    .home-evidence-item span {
+        display: block;
+        margin-bottom: 0.28rem;
+        font-family: var(--font-sans);
+        font-size: 0.52rem;
+        font-weight: 950;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted-foreground);
+    }
+
+    .home-evidence-status p,
+    .home-evidence-item p {
+        margin: 0;
+        font-family: var(--font-nyt-body);
+        font-size: 0.7rem;
+        line-height: 1.28;
+        color: var(--secondary-foreground);
+    }
+
+    .home-evidence-item strong {
+        display: block;
+        margin-bottom: 0.24rem;
+        font-family: var(--font-serif);
+        font-size: 0.92rem;
+        line-height: 1.1;
+        color: var(--foreground);
+    }
+
+    .home-evidence-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1px;
+        background: var(--border);
+    }
+
+    /* ── Supporting Band & Developments Grids ────────── */
+    .supporting-featured-grid,
+    .news-feed-grid-featured {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+        align-items: start;
+    }
+
+    .supporting-compact-grid,
+    .news-feed-grid-compact {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1.25rem;
+        align-items: start;
+    }
+
+    /* ── Consensus Carousel (Mobile) ─────────────────── */
+    .consensus-carousel-wrap {
+        position: relative;
+        margin: 0 -1rem;
+        padding: 0 1rem;
+        overflow: hidden;
+    }
+
+    .consensus-grid {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        gap: 1.25rem;
+        padding-bottom: 0.75rem;
+        -webkit-overflow-scrolling: touch;
+        margin-bottom: -0.5rem;
+        align-items: stretch;
+    }
+
+    .consensus-item {
+        scroll-snap-align: start;
+        flex: 0 0 85%;
+        min-width: 270px;
+        display: flex;
+    }
+    
+    .consensus-item > * {
+        width: 100%;
+    }
+
+    .carousel-fade-hint.right {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0.75rem;
+        width: 3rem;
+        background: linear-gradient(to left, var(--background), transparent);
+        pointer-events: none;
+        z-index: 5;
+    }
+
+    @media (min-width: 640px) {
+        .consensus-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            overflow-x: visible;
+            scroll-snap-type: none;
+            padding-bottom: 0;
+        }
+        .consensus-item {
+            width: auto;
+        }
+    }
+
+    @media (min-width: 768px) {
+        .supporting-featured-grid,
+        .news-feed-grid-featured {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1rem;
+        }
+
+        .supporting-compact-grid,
+        .news-feed-grid-compact {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.75rem;
+        }
+
+        /* Remove orphaned items spanning two columns for a denser look */
+        .supporting-compact-grid > :last-child:nth-of-type(odd),
+        .news-feed-grid-compact > :last-child:nth-of-type(odd) {
+            grid-column: span 1;
+        }
+    }
+
+    .for-you-wrapper {
+        background: color-mix(in srgb, var(--nyt-accent) 4%, transparent);
+        padding: 1.5rem 1rem;
+        border-top: 1px solid color-mix(in srgb, var(--nyt-accent) 15%, transparent);
+        border-bottom: 1px solid color-mix(in srgb, var(--nyt-accent) 15%, transparent);
+        margin-bottom: 1.5rem;
+    }
+
+    @media (max-width: 768px) {
+        .consensus-section {
+            padding: 1.5rem 1rem !important;
+        }
+        .home-evidence-strip {
+            grid-template-columns: 1fr;
+        }
+        .home-evidence-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .for-you-wrapper {
+            padding: 1.5rem 1rem;
+        }
+    }
+    .editorial-briefing-wrap { padding-bottom: 2.25rem; }
+
+    /* ── Quick Pills ─────────────────────────────────── */
+    .home-explore-strip {
+        margin-bottom: 1.35rem;
+        padding: 0.45rem 0 0.35rem;
+        border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+    }
+
+    .quick-pills-row {
+        min-width: max-content;
+    }
+
+    .quick-pills-track {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        min-width: max-content;
+        scroll-snap-type: x proximity;
+    }
+
+    .quick-pill {
+        display: inline-block;
+        padding: 0.42rem 0.95rem;
+        background: var(--secondary);
+        border: 1px solid var(--border);
+        font-family: var(--font-sans);
+        font-size: 0.68rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        text-decoration: none;
+        color: var(--foreground);
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        white-space: nowrap;
+        border-radius: 4px;
+    }
+    .quick-pill:hover {
+        background: var(--nyt-accent);
+        color: white;
+        border-color: var(--nyt-accent);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px color-mix(in srgb, var(--nyt-accent) 25%, transparent);
+    }
+    .quick-pill.is-active {
+        background: var(--nyt-accent);
+        color: white;
+        border-color: var(--nyt-accent);
+        box-shadow: 0 4px 12px color-mix(in srgb, var(--nyt-accent) 25%, transparent);
+    }
+    .dark .quick-pill {
+        background: var(--card);
+    }
+    .dark .quick-pill.is-active {
+        background: var(--nyt-accent);
+    }
+
+    @media (max-width: 768px) {
+        .home-explore-strip {
+            margin-bottom: 1rem;
+            padding-top: 0.2rem;
+        }
+
+        .quick-pills-container {
+            margin-left: -0.5rem;
+            margin-right: -0.5rem;
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+        }
+
+        .quick-pills-row {
+            display: grid;
+            align-items: start;
+            gap: 0.6rem;
+            min-width: 0;
+        }
+
+        .quick-pills-label {
+            margin-right: 0;
+            font-size: 0.54rem;
+            letter-spacing: 0.18em;
+        }
+
+        .quick-pills-track {
+            gap: 0.55rem;
+            padding-right: 0.5rem;
+        }
+
+        .quick-pill {
+            padding: 0.42rem 0.82rem;
+            font-size: 0.62rem;
+            scroll-snap-align: start;
+        }
+    }
+
+    @media (max-width: 639px) {
+        .home-evidence-strip {
+            grid-template-columns: 1fr;
+            margin-top: 1rem;
+        }
+
+        .home-evidence-status,
+        .home-evidence-item {
+            padding: 0.8rem;
+        }
+
+        .home-evidence-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .supporting-featured-grid,
+        .news-feed-grid-featured {
+            gap: 1rem;
+            margin-bottom: 1.15rem;
+        }
+
+        .supporting-compact-grid,
+        .news-feed-grid-compact {
+            gap: 0.9rem;
+        }
+
+        .consensus-section {
+            padding: 1rem 0.85rem;
+        }
+    }
+</style>

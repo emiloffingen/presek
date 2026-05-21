@@ -1,0 +1,176 @@
+---
+import { TrendingUp } from 'lucide-react';
+import NewsCard from '../NewsCard.astro';
+import type { NewsCluster } from '../../types';
+import { useTranslations } from '../../i18n/utils';
+import type { ui } from '../../i18n/ui';
+
+interface Props {
+    clusters: NewsCluster[];
+    lang: keyof typeof ui;
+}
+
+const { clusters, lang } = Astro.props;
+const t = useTranslations(lang);
+---
+
+{clusters.length > 0 && (
+    <div class="trending-strip">
+        <div class="trending-strip-header">
+            <span class="trending-label">
+                <TrendingUp size={14} />
+                {t('home.trending') || 'Trending'}
+            </span>
+            <span class="trending-hint">
+                {t('home.trending_hint')}
+            </span>
+        </div>
+        <div class="trending-row hide-scrollbar" aria-label={t('home.trending')}>
+            {clusters.map((cluster: NewsCluster, index: number) => (
+                <div class="trending-card">
+                    <span class="trend-rank">{String(index + 1).padStart(2, '0')}</span>
+                    <NewsCard cluster={cluster} variant="compact" lang={lang} />
+                </div>
+            ))}
+        </div>
+    </div>
+)}
+
+<style>
+    .trending-strip {
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 1.25rem;
+        padding: 0 0 0.55rem;
+        max-width: 100%;
+    }
+
+    .trending-strip-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.5rem 0 0.1rem;
+    }
+
+    .trending-row {
+        display: flex;
+        align-items: stretch;
+        gap: 1rem;
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: visible;
+        padding: 0.55rem 0 1rem;
+        scroll-snap-type: x proximity;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .trending-label {
+        display: inline-flex;
+        align-items: center;
+        flex: 0 0 auto;
+        gap: 0.5rem;
+        color: var(--nyt-red);
+        font-family: var(--font-sans);
+        font-size: 0.56rem;
+        font-weight: 900;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+    }
+
+    .trending-hint {
+        color: var(--muted-foreground);
+        font-family: var(--font-sans);
+        font-size: 0.62rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+
+    .trending-card {
+        position: relative;
+        flex: 0 0 auto;
+        width: min(78vw, 18rem);
+        scroll-snap-align: start;
+        background: var(--background);
+        border: 1px solid var(--border);
+        padding: 1.85rem 0.82rem 0.82rem;
+        transition: all 0.2s ease;
+    }
+
+    .trend-rank {
+        position: absolute;
+        top: 0.72rem;
+        right: 0.82rem;
+        font-family: var(--font-serif);
+        font-size: 1.5rem;
+        font-weight: 900;
+        line-height: 0.8;
+        color: color-mix(in srgb, var(--foreground) 12%, transparent);
+        pointer-events: none;
+    }
+
+    .trending-card:hover {
+        border-color: var(--nyt-red);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        transform: translateY(-1px);
+    }
+
+    .trending-card :global(.nyt-article) {
+        height: 100%;
+        padding-bottom: 0;
+    }
+
+    .trending-card :global(.image-wrap) {
+        display: none;
+    }
+
+    .trending-card :global(.article-body) {
+        justify-content: flex-start;
+    }
+
+    .trending-card :global(.headline-link) {
+        min-height: 3.8rem;
+    }
+
+    .trending-card :global(.headline-compact) {
+        font-size: 1.08rem;
+        line-height: 1.08;
+    }
+
+    .trending-card :global(.summary) {
+        min-height: 0;
+        -webkit-line-clamp: 2;
+    }
+
+    @media (max-width: 639px) {
+        .trending-strip {
+            margin-bottom: 0.95rem;
+            padding-bottom: 0.5rem;
+        }
+
+        .trending-strip-header {
+            gap: 0.35rem;
+            padding: 0.45rem 0 0.2rem;
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .trending-row {
+            gap: 0.75rem;
+            padding: 0.5rem 0 0.78rem;
+        }
+
+        .trending-card {
+            width: min(82vw, 16.5rem);
+            padding-top: 1.6rem;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .trending-strip-header {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+    }
+</style>

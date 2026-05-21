@@ -63,8 +63,8 @@ const renderSynthesisHtml = (text: string) => {
             const name = entity.getAttribute('data-entity');
             if (!name) return;
 
-            let popperInstance = null;
-            let tooltip = null;
+                let popperInstance: ReturnType<typeof createPopper> | null = null;
+                let tooltip: HTMLDivElement | null = null;
 
             entity.addEventListener('mouseenter', async () => {
                 // Create tooltip element
@@ -82,7 +82,7 @@ const renderSynthesisHtml = (text: string) => {
                 tooltip.replaceChildren(shell);
                 document.body.appendChild(tooltip);
 
-                popperInstance = createPopper(entity, tooltip, {
+                popperInstance = createPopper(entity as HTMLElement, tooltip, {
                     placement: 'top',
                     modifiers: [{ name: 'offset', options: { offset: [0, 8] } }]
                 });

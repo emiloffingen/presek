@@ -1,0 +1,182 @@
+---
+import { Activity, ChevronRight } from 'lucide-react';
+import { getDisplayTitle } from '../../utils/textUtils';
+import { useTranslations } from '../../i18n/utils';
+import type { ui } from '../../i18n/ui';
+
+interface Props {
+    articles: any[];
+    getTimeStr: (date: string) => string;
+    lang: keyof typeof ui;
+}
+
+const { articles, getTimeStr, lang } = Astro.props;
+const t = useTranslations(lang);
+const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
+---
+
+{articles.length > 0 && (
+    <section class="home-live-strip" aria-label={t('home.wire_title')}>
+        <div class="home-live-head">
+            <span>
+                <Activity size={13} />
+                {t('home.wire_title')}
+            </span>
+            <a href={l('/pulse')}>
+                {t('rail.all_news')} <ChevronRight size={11} />
+            </a>
+        </div>
+        <div class="home-live-items hide-scrollbar">
+            {articles.map((article: any) => (
+                <a href={l(`/cluster/${article.cluster_id}`)} class="home-live-item">
+                    <div class="home-live-meta">
+                        <span>{getTimeStr(article.ingested_at || article.created_at)}</span>
+                        <strong>{article.source}</strong>
+                    </div>
+                    <p>{getDisplayTitle(article)}</p>
+                </a>
+            ))}
+        </div>
+    </section>
+)}
+
+<style>
+    .home-live-strip {
+        display: grid;
+        grid-template-columns: minmax(7rem, 0.65fr) minmax(0, 3.35fr);
+        gap: 1px;
+        margin: 0 0 0.95rem;
+        background: var(--border);
+        border-top: 1px solid var(--nyt-red);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .home-live-head {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.55rem;
+        padding: 0.72rem 0.82rem;
+        background: var(--background);
+    }
+
+    .home-live-head span,
+    .home-live-head a {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-family: var(--font-sans);
+        font-size: 0.54rem;
+        font-weight: 950;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        line-height: 1.1;
+    }
+
+    .home-live-head span {
+        color: var(--nyt-red);
+    }
+
+    .home-live-head a {
+        color: var(--muted-foreground);
+        text-decoration: none;
+    }
+
+    .home-live-head a:hover {
+        color: var(--nyt-accent);
+        text-decoration: underline;
+    }
+
+    .home-live-items {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(15rem, 1fr);
+        gap: 1px;
+        overflow-x: auto;
+        background: var(--border);
+        scroll-snap-type: x proximity;
+    }
+
+    .home-live-item {
+        display: block;
+        min-width: 0;
+        padding: 0.72rem 0.85rem;
+        background: var(--background);
+        color: var(--foreground);
+        text-decoration: none;
+        scroll-snap-align: start;
+    }
+
+    .home-live-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        margin-bottom: 0.3rem;
+    }
+
+    .home-live-meta span,
+    .home-live-meta strong {
+        font-family: var(--font-sans);
+        font-size: 0.5rem;
+        font-weight: 950;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+    }
+
+    .home-live-meta span {
+        color: var(--nyt-red);
+    }
+
+    .home-live-meta strong {
+        color: var(--muted-foreground);
+    }
+
+    .home-live-item p {
+        margin: 0;
+        font-family: var(--font-serif);
+        font-size: 0.9rem;
+        font-weight: 850;
+        line-height: 1.16;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .home-live-item:hover p {
+        color: var(--nyt-accent);
+        text-decoration: underline;
+    }
+
+    @media (max-width: 639px) {
+        .home-live-strip {
+            grid-template-columns: 1fr;
+            margin-bottom: 0.85rem;
+        }
+
+        .home-live-head {
+            gap: 0.35rem;
+            padding: 0.62rem 0.72rem;
+            flex-direction: row;
+        }
+
+        .home-live-head span,
+        .home-live-head a {
+            font-size: 0.54rem;
+            letter-spacing: 0.12em;
+        }
+
+        .home-live-items {
+            grid-auto-columns: minmax(78vw, 1fr);
+        }
+
+        .home-live-item {
+            padding: 0.68rem 0.72rem;
+        }
+
+        .home-live-item p {
+            font-size: 0.88rem;
+        }
+    }
+</style>

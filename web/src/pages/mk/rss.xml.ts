@@ -2,7 +2,6 @@ import type { APIRoute } from 'astro';
 import { apiBaseUrl } from '../../lib/apiBase';
 
 const SITE_URL = (import.meta.env.PUBLIC_SITE_URL || 'https://presek.live').replace(/\/+$/, '');
-const lang = 'mk'; // Macedonian RSS feed
 const API_URL = apiBaseUrl();
 
 function escapeXml(str: string): string {
@@ -62,13 +61,11 @@ export const GET: APIRoute = async () => {
         })
         .join('\n');
 
-    const siteUrl = lang === 'sr' ? SITE_URL : SITE_URL.replace('presek.live', 'presek.mk');
-    const title = lang === 'sr' ? 'Presek - Srbija' : 'Пресек - Македонија';
-    const description = lang === 'sr'
-        ? 'Presek: Najnovije vesti iz Srbije i regiona. Nezavisno, balansirano, dubinsko.'
-        : 'Пресек: Најнови вести од Македонија и регионот. Независно, балансирано, длабоко.';
-    const language = lang === 'sr' ? 'sr-RS' : 'mk-MK';
-    const rssPath = lang === 'sr' ? 'rss.xml' : 'mk/rss.xml';
+    const siteUrl = SITE_URL.replace('presek.live', 'presek.mk');
+    const title = 'Пресек - Македонија';
+    const description = 'Пресек: Најнови вести од Македонија и регионот. Независно, балансирано, длабоко.';
+    const language = 'mk-MK';
+    const rssPath = 'mk/rss.xml';
 
     const rss = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0"

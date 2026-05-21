@@ -75,11 +75,12 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
 const consensusSuffix = (() => {
     const count = leadCluster.articles.length;
     if (lang === 'sr') {
-        if (count === 1 || (count >= 2 && count <= 4)) return t('lead.consensus_suffix_1');
+        if (count === 1) return t('lead.consensus_suffix_1');
+        if (count >= 2 && count <= 4) return t('lead.consensus_suffix_2_4');
         return t('lead.consensus_suffix_5plus');
     } else {
         if (count === 1) return t('lead.consensus_suffix_1');
-        return t('lead.consensus_suffix_2plus');
+        return t('lead.consensus_suffix_2_4');
     }
 })();
 ---
@@ -115,7 +116,7 @@ const consensusSuffix = (() => {
                     <div class="lead-media-placeholder lead-media-placeholder-error design-card absolute inset-0" style="display: none; --placeholder-bg: #27272a;">
                         <div class="design-card-pattern opacity-5"></div>
                         <div class="design-card-main p-8 flex items-center justify-center h-full">
-                            <Newspaper size={48} class="text-white/10" />
+                            <Newspaper size={48} className="text-white/10" />
                         </div>
                     </div>
                 </Fragment>
@@ -128,14 +129,14 @@ const consensusSuffix = (() => {
 
                     <div class="design-card-main">
                         <div class="design-card-icon-wrap">
-                            <IconComponent size={48} strokeWidth={1.5} class="text-white/90" />
+                            <IconComponent size={48} strokeWidth={1.5} className="text-white/90" />
                         </div>
                         <h2 class:list={[{ "headline-cyrillic": leadTitleIsCyrillic }]}>{finalLeadTitle}</h2>
                         <p class="design-card-sub">{cardSub}</p>
                     </div>
 
                     <div class="design-card-footer">
-                        <span class="design-card-cta">{t('news.go_to_article')} <ArrowRight size={14} class="ml-1" /></span>
+                        <span class="design-card-cta">{t('news.go_to_article')} <ArrowRight size={14} className="ml-1" /></span>
                     </div>
                 </div>
             )}
@@ -251,23 +252,28 @@ const consensusSuffix = (() => {
                     <div class="lead-media-placeholder lead-media-placeholder-error design-card absolute inset-0" style="display: none; --placeholder-bg: #27272a;">
                         <div class="design-card-pattern opacity-5"></div>
                         <div class="design-card-main p-8 flex items-center justify-center h-full">
-                            <Newspaper size={48} class="text-white/10" />
+                            <Newspaper size={48} className="text-white/10" />
                         </div>
                     </div>
                 </Fragment>
             ) : (
-                <div class="lead-media-placeholder" style={`--placeholder-bg: ${tintColor};`}>
-                    <div class="lead-media-placeholder-bg-text" set:html={sanitizeHtml(finalLeadTitle)}></div>
+                <div class="lead-media-placeholder lead-media-editorial-card" style={`--placeholder-bg: ${tintColor};`}>
                     <div class="lead-media-topline">
-                        <p class="lead-media-kicker">{t('lead.site_preview')}</p>
+                        <p class="lead-media-kicker">{mediaLabel}</p>
                         <div class="lead-media-status">
                            {leadCluster.is_breaking && <Zap size={10} fill="currentColor" />}
                            <p class="lead-media-chip">{leadCluster.articles.length} {leadCluster.articles.length === 1 ? t('news.source') : t('news.sources')}</p>
                         </div>
                     </div>
                     <div class="lead-media-content">
-                        <h2 class:list={[{ "headline-cyrillic": leadTitleIsCyrillic }]}>{mediaLabel}</h2>
-                        <p class="lead-media-fallback-source">{leadCluster.articles?.[0].source}</p>
+                        <h2 class:list={[{ "headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(finalLeadTitle)}></h2>
+                        {finalLeadSummary && (
+                            <p class:list={["lead-media-summary", { "lead-summary-cyrillic": leadSummaryIsCyrillic }]} set:html={sanitizeHtml(finalLeadSummary)}></p>
+                        )}
+                    </div>
+                    <div class="lead-media-source-row">
+                        <span>{leadCluster.articles?.[0].source}</span>
+                        <span>{t('lead.full_synthesis')} →</span>
                     </div>
                 </div>
             )}
@@ -377,12 +383,25 @@ const consensusSuffix = (() => {
 	.lead-media-mobile { display: block; }
 	.lead-media-desktop { display: none; }
 
-	.lead-copy {
-		display: flex;
-		flex-direction: column;
-		position: relative;
-		z-index: 1;
-	}
+		.lead-copy {
+			display: flex;
+			flex-direction: column;
+			position: relative;
+			z-index: 1;
+		}
+
+		.lead-copy .headline-lead {
+			margin: 0 0 0.85rem;
+			max-width: 17ch;
+			color: var(--foreground);
+			background: none;
+			-webkit-background-clip: initial;
+			background-clip: initial;
+			-webkit-text-fill-color: currentColor;
+			filter: none;
+			opacity: 1;
+			transform: none;
+		}
 
 	.lead-edition-bar {
 		display: flex;
@@ -639,8 +658,8 @@ const consensusSuffix = (() => {
         z-index: 2;
     }
 
-	    .lead-media-mobile .lead-media-frame.media-ready .lead-media-overlay { opacity: 1; }
-	    .lead-media-desktop:hover .lead-media-frame.media-ready .lead-media-overlay { opacity: 1; }
+	    .lead-media-mobile .lead-media-frame.media-ready .lead-media-overlay,
+	    .lead-media-desktop .lead-media-frame.media-ready .lead-media-overlay { opacity: 1; }
 
     .overlay-headline {
         color: white;
@@ -736,6 +755,87 @@ const consensusSuffix = (() => {
         text-shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
 
+    .lead-media-editorial-card {
+        align-content: stretch;
+        gap: 1.5rem;
+        padding: clamp(1.35rem, 2.4vw, 2.4rem);
+        background:
+            radial-gradient(circle at top right, color-mix(in srgb, var(--placeholder-bg) 16%, transparent), transparent 36%),
+            linear-gradient(135deg, color-mix(in srgb, var(--background) 96%, var(--placeholder-bg) 4%) 0%, color-mix(in srgb, var(--secondary) 72%, var(--background) 28%) 100%);
+        box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.72),
+            0 22px 48px rgba(8, 14, 28, 0.08);
+    }
+
+    .lead-media-topline,
+    .lead-media-source-row {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        font-family: var(--font-sans);
+        text-transform: uppercase;
+    }
+
+    .lead-media-kicker,
+    .lead-media-chip,
+    .lead-media-source-row {
+        margin: 0;
+        font-size: 0.58rem;
+        font-weight: 950;
+        letter-spacing: 0.12em;
+    }
+
+    .lead-media-kicker {
+        color: var(--nyt-accent);
+    }
+
+    .lead-media-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        color: var(--muted-foreground);
+    }
+
+    .lead-media-content {
+        position: relative;
+        z-index: 1;
+        align-self: end;
+        max-width: 34rem;
+    }
+
+    .lead-media-editorial-card h2 {
+        max-width: 13ch;
+        color: var(--foreground);
+        font-size: clamp(2.1rem, 4.2vw, 3.8rem);
+        line-height: 0.96;
+        letter-spacing: -0.045em;
+        text-shadow: none;
+    }
+
+    .lead-media-summary {
+        margin: 0.9rem 0 0;
+        max-width: 42ch;
+        color: var(--muted-foreground);
+        font-family: var(--font-nyt-body);
+        font-size: 0.98rem;
+        line-height: 1.45;
+        display: -webkit-box;
+        -webkit-line-clamp: 4;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .lead-media-source-row {
+        align-self: end;
+        width: 100%;
+        padding-top: 0.9rem;
+        border-top: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+        color: var(--muted-foreground);
+    }
+
     .design-card-sub {
         font-family: var(--font-sans);
         font-size: 0.75rem;
@@ -784,22 +884,46 @@ const consensusSuffix = (() => {
 		max-width: 18ch;
 	}
 
-	@media (min-width: 960px) {
-		.lead-hero {
-			grid-template-columns: 1fr;
-			align-items: start;
-			gap: 1.35rem;
-		}
+		@media (min-width: 960px) {
+			.lead-hero {
+				grid-template-columns: minmax(0, 1.04fr) minmax(340px, 0.96fr);
+				align-items: stretch;
+				gap: clamp(1.25rem, 2vw, 2rem);
+				padding-bottom: 1.6rem;
+			}
 
-		.lead-media-mobile { display: none; }
-		.lead-media-desktop { display: block; }
-		.lead-media-frame { height: 400px; }
+			.lead-media-mobile { display: none; }
+			.lead-media-desktop { display: block; }
 
-		.lead-hero-filtered {
-			grid-template-columns: 1fr;
-			align-items: start;
-			gap: 1.5rem;
-		}
+			.lead-copy {
+				justify-content: center;
+				min-height: clamp(310px, 34vw, 420px);
+			}
+
+			.lead-copy .headline-lead {
+				font-size: clamp(2.45rem, 4.6vw, 4.6rem);
+				line-height: 0.94;
+				letter-spacing: -0.045em;
+			}
+
+			.lead-summary {
+				max-width: 54ch;
+			}
+
+			.lead-media-frame {
+				height: 100%;
+				min-height: clamp(310px, 34vw, 420px);
+			}
+
+			.lead-media-image {
+				object-fit: cover;
+			}
+
+			.lead-hero-filtered {
+				grid-template-columns: 1fr;
+				align-items: start;
+				gap: 1.5rem;
+			}
 
 		.lead-hero-filtered .lead-media-frame { height: 300px; }
 		.lead-hero-filtered .lead-media-placeholder { padding: 1.65rem; }

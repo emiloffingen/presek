@@ -8,6 +8,7 @@ import { getLangFromUrl, useTranslations } from '../i18n/utils';
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
+const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
 ---
 
 <Layout
