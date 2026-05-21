@@ -1310,7 +1310,30 @@ def normalize_headline(title: str) -> str:
 
     # 5. Serbian Quote Standardization (Standard quotes „...“)
     t = t.replace("''", '"')
-    t = re.sub(r'["\']([^"\']+)["\']', r"„\1“", t)
+    t = t.replace("”", '"')  # English closing quote -> standard double quote
+    t = re.sub(r'(?<!\w)["\']([^"\']+)["\'](?!\w)', r"„\1“", t)
+
+    # 5b. Typographical and Mathematical Normalization
+    # Ellipses (three or more dots -> …)
+    t = re.sub(r'\.{3,}', '…', t)
+    
+    # Numeric Ranges (e.g., 10-15 or 10 - 15 -> 10–15)
+    t = re.sub(r'(\d+)\s*[-–—]\s*(\d+)', r'\1–\2', t)
+    
+    # Spaced hyphens/dashes separating clauses -> spaced En-dash ( – )
+    t = re.sub(r'\s+[-–—]+\s+', ' – ', t)
+    
+    # Mathematical Multiplication (e.g., 3x4 or 3*4 -> 3 × 4)
+    t = re.sub(r'(\d+)\s*[x*×]\s*(\d+)', r'\1 × \2', t)
+    
+    # Punctuation spacing: no space before, exactly one space after
+    # Strip spaces before punctuation
+    t = re.sub(r'\s+([.,;:!?…])', r'\1', t)
+    # Add space after punctuation if followed directly by a letter (exclude digits to preserve time formats and decimal numbers)
+    t = re.sub(r'([,;:!?…])(?=[A-Za-zА-Яа-я])', r'\1 ', t)
+    t = re.sub(r'\.(?=[A-ZА-Я])', r'. ', t)
+
+
 
     # 6. Technical Polish
     # Remove common clickbait fillers
