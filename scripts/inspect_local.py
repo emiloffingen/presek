@@ -25,8 +25,8 @@ async def main():
     os.makedirs("screenshots", exist_ok=True)
     async with async_playwright() as p:
         browser = await p.chromium.launch()
-        await capture(browser, "http://localhost:4321", "local_desktop")
-        await capture(browser, "http://localhost:4321/mk", "local_mk_desktop")
+        await capture(browser, "http://localhost:3000", "local_desktop")
+        await capture(browser, "http://localhost:3000/mk", "local_mk_desktop")
         await browser.close()
 
 if __name__ == "__main__":

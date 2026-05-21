@@ -4583,3 +4583,58 @@ body.zen-mode .section-eyebrow {
     scrollbar-width: thin;
     scrollbar-color: color-mix(in srgb, var(--foreground) 15%, transparent) transparent;
 }
+
+/* ── Premium UI Upgrade Enhancements ──────────────── */
+
+/* Pulse glow for live indicators */
+@keyframes pulse-glow {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 4px var(--nyt-red);
+    }
+    50% {
+        transform: scale(1.15);
+        box-shadow: 0 0 12px var(--nyt-red), 0 0 20px var(--nyt-red);
+    }
+}
+
+.live-glow-indicator {
+    animation: pulse-glow 1.8s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Card hover scaling and transition */
+.editorial-hover-card {
+    transition: transform 0.4s var(--ease-editorial), box-shadow 0.4s var(--ease-editorial), border-color 0.4s var(--ease-editorial);
+}
+
+.editorial-hover-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--nyt-accent);
+    box-shadow: var(--shadow-lg), 0 10px 30px rgba(0, 0, 0, 0.04);
+}
+
+.dark .editorial-hover-card:hover {
+    box-shadow: var(--shadow-premium);
+}
+
+/* Center-expanding underline for title links */
+.progressive-underline-link {
+    position: relative;
+    text-decoration: none;
+}
+
+.progressive-underline-link::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background-color: var(--nyt-accent);
+    transition: width 0.4s var(--ease-editorial), left 0.4s var(--ease-editorial);
+}
+
+.progressive-underline-link:hover::after {
+    width: 100%;
+    left: 0;
+}

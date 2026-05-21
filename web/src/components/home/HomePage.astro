@@ -391,7 +391,7 @@ const leadEvidenceItems = leadCluster ? [
 >
     <NYTHeader q={q} category={category} topic={topic} entity={entity} subcategory={subcategory} stats={stats} />
 
-	<main class="site-layout broadsheet-layout py-0 overflow-x-hidden max-w-full">
+	<main class="site-layout broadsheet-layout py-0 overflow-x-hidden max-w-full" data-testid="news-feed">
 
 		{/* Filtering Status */}
 		{(q || category || topic || entity || subcategory) && (
@@ -731,10 +731,30 @@ const leadEvidenceItems = leadCluster ? [
         flex: 0 0 85%;
         min-width: 270px;
         display: flex;
+        transition: transform 0.4s var(--ease-editorial);
     }
     
     .consensus-item > * {
         width: 100%;
+    }
+
+    .consensus-section {
+        background: linear-gradient(135deg, color-mix(in srgb, var(--secondary) 40%, transparent) 0%, color-mix(in srgb, var(--card) 20%, transparent) 100%) !important;
+    }
+
+    .consensus-section :global(.nyt-article) {
+        background: var(--card) !important;
+        padding: 1.15rem !important;
+        border: 1px solid var(--border) !important;
+        border-bottom: 1px solid var(--border) !important;
+        box-shadow: var(--shadow-sm);
+        transition: transform 0.4s var(--ease-editorial), box-shadow 0.4s var(--ease-editorial), border-color 0.4s var(--ease-editorial) !important;
+    }
+
+    .consensus-section :global(.nyt-article:hover) {
+        transform: translateY(-4px) !important;
+        box-shadow: var(--shadow-md), 0 12px 24px rgba(0, 0, 0, 0.04) !important;
+        border-color: var(--nyt-accent) !important;
     }
 
     .carousel-fade-hint.right {
@@ -836,22 +856,35 @@ const leadEvidenceItems = leadCluster ? [
         letter-spacing: 0.06em;
         text-decoration: none;
         color: var(--foreground);
-        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        transition: transform 0.3s var(--ease-editorial), background-color 0.3s var(--ease-editorial), border-color 0.3s var(--ease-editorial), box-shadow 0.3s var(--ease-editorial), color 0.3s var(--ease-editorial);
         white-space: nowrap;
         border-radius: 4px;
+        position: relative;
     }
     .quick-pill:hover {
         background: var(--nyt-accent);
         color: white;
         border-color: var(--nyt-accent);
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px color-mix(in srgb, var(--nyt-accent) 25%, transparent);
+        box-shadow: 0 4px 12px color-mix(in srgb, var(--nyt-accent) 30%, transparent);
     }
     .quick-pill.is-active {
         background: var(--nyt-accent);
         color: white;
         border-color: var(--nyt-accent);
-        box-shadow: 0 4px 12px color-mix(in srgb, var(--nyt-accent) 25%, transparent);
+        box-shadow: 0 4px 12px color-mix(in srgb, var(--nyt-accent) 35%, transparent);
+        padding-bottom: 0.58rem;
+    }
+    .quick-pill.is-active::after {
+        content: '';
+        position: absolute;
+        bottom: 4px;
+        left: 50%;
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background-color: currentColor;
+        transform: translateX(-50%);
     }
     .dark .quick-pill {
         background: var(--card);

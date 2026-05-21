@@ -357,6 +357,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
             <input
               ref={inputRef}
               type="text"
+              data-testid="search-input"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={lang === 'sr' ? "Pretražite vesti, teme ili subjekte..." : "Пребарај вести, теми или субјекти..."}
@@ -670,6 +671,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
       <button
         ref={triggerRef}
         onClick={() => setIsOpen(true)}
+        data-testid="search-trigger"
         className="flex items-center gap-[var(--grid-gap)] px-3 py-1.5 bg-secondary/30 hover:bg-secondary/60 border border-border/60 hover:border-nyt-accent/30 rounded-lg transition-all group w-full text-left backdrop-blur-sm"
         aria-label="Otvori komanden centar"
       >

@@ -87,7 +87,7 @@ const consensusSuffix = (() => {
 
 <section class:list={["lead-hero motion-rise", { "lead-hero-filtered": filtered }]}>
     <MeshGradient color={tintColor} />
-    <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="lead-media lead-media-mobile" aria-hidden="true" tabindex="-1">
+    <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="lead-media lead-media-mobile" aria-hidden="true" tabindex="-1" data-testid="cluster-link">
         <div class:list={["lead-media-frame shadow-editorial", { "lead-media-frame-fallback": leadVisual?.isWeak }]}>
 	            {leadVisual?.proxiedUrl && !leadVisual.isWeak ? (
 	                <Fragment>
@@ -165,7 +165,7 @@ const consensusSuffix = (() => {
                 <span class="time-stamp-v2" aria-label={t('header.latest')}>{getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)}</span>
             </div>
         </div>
-        <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="no-underline group">
+        <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="no-underline group" data-testid="cluster-link">
             <h1 class:list={["headline headline-lead transition-transform duration-500 group-hover:translate-x-1", { "headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(finalLeadTitle)}></h1>
         </a>
         {finalLeadSummary && (
@@ -200,7 +200,7 @@ const consensusSuffix = (() => {
                 <span class="opacity-30">·</span>
                 <span>{leadCluster.articles.length} {leadCluster.articles.length === 1 ? t('news.source') : t('news.sources')}</span>
             </div>
-            <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="lead-meta-link text-[10px] font-black uppercase tracking-widest text-nyt-accent hover:underline decoration-2 underline-offset-4">{t('lead.full_synthesis')}</a>
+            <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="lead-meta-link text-[10px] font-black uppercase tracking-widest text-nyt-accent hover:underline decoration-2 underline-offset-4" data-testid="cluster-link">{t('lead.full_synthesis')}</a>
         </div>
 
         {relatedArticles.length > 0 && (
@@ -211,6 +211,7 @@ const consensusSuffix = (() => {
                         <li>
                             <a
                                 href={l(`/cluster/${leadCluster.cluster_id}`)}
+                                data-testid="cluster-link"
                                 set:html={sanitizeHtml(highlightScores(getDisplayTitle(article, '', lang)))}
                             >
                             </a>
@@ -222,7 +223,7 @@ const consensusSuffix = (() => {
         )}
     </div>
 
-    <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="lead-media lead-media-desktop" aria-hidden="true" tabindex="-1">
+    <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="lead-media lead-media-desktop" aria-hidden="true" tabindex="-1" data-testid="cluster-link">
         <div class:list={["lead-media-frame shadow-editorial", { "lead-media-frame-fallback": leadVisual?.isWeak }]}>
 	            {leadVisual?.proxiedUrl && !leadVisual.isWeak ? (
 	                <Fragment>
@@ -681,14 +682,21 @@ const consensusSuffix = (() => {
 		position: relative;
 		overflow: hidden;
 		background:
+            radial-gradient(circle at top right, color-mix(in srgb, var(--placeholder-bg, #1e40af) 20%, transparent), transparent 60%),
             linear-gradient(135deg,
-                color-mix(in srgb, var(--placeholder-bg, #070c16) 100%, black) 0%,
-                color-mix(in srgb, var(--placeholder-bg, #132a4f) 60%, black) 100%
+                color-mix(in srgb, var(--placeholder-bg, #070c16) 90%, #000000) 0%,
+                color-mix(in srgb, var(--placeholder-bg, #132a4f) 70%, #000000) 50%,
+                #070a13 100%
             );
 		box-shadow:
-			inset 0 1px 0 rgba(255,255,255,0.1),
-			0 22px 48px rgba(8, 14, 28, 0.2);
+			inset 0 1px 0 rgba(255,255,255,0.15),
+			0 22px 48px rgba(8, 14, 28, 0.3);
+        transition: transform 0.8s var(--ease-editorial);
 	}
+
+    .lead-media-frame:hover .lead-media-placeholder {
+        transform: scale(1.04);
+    }
 
     .design-card-pattern {
         position: absolute;

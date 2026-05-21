@@ -131,7 +131,7 @@ const renderSynthesisHtml = (text: string) => {
     .entity-tooltip {
         z-index: 1000;
     }
-...
+
     .narrative-body.is-collapsible {
         max-height: 1000px;
         overflow: hidden;
@@ -140,6 +140,39 @@ const renderSynthesisHtml = (text: string) => {
 
     .narrative-body.is-collapsed {
         mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+    }
+
+    .narrative-toggle {
+        display: block;
+        margin: -2.5rem auto 2rem;
+        position: relative;
+        z-index: 10;
+        padding: 0.75rem 2rem;
+        background: color-mix(in srgb, var(--background) 75%, transparent);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--border);
+        font-family: var(--font-sans);
+        font-size: 0.72rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--nyt-accent);
+        cursor: pointer;
+        transition: all 0.3s var(--ease-editorial);
+        box-shadow: var(--shadow-sm), 0 8px 24px rgba(0, 0, 0, 0.02);
+    }
+
+    .narrative-toggle:hover {
+        background: var(--nyt-accent);
+        color: white;
+        border-color: var(--nyt-accent);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px color-mix(in srgb, var(--nyt-accent) 20%, transparent);
+    }
+
+    .narrative-toggle:active {
+        transform: translateY(0);
     }
 
 	.narrative-p {
@@ -155,13 +188,14 @@ const renderSynthesisHtml = (text: string) => {
 	.narrative-p.drop-cap::first-letter {
 		float: left;
 		font-family: var(--font-serif);
-		font-size: clamp(4.5rem, 15vw, 6rem);
-		line-height: 0.75;
-		padding-top: 10px;
-		padding-right: 16px;
-		padding-left: 4px;
+		font-size: clamp(4.5rem, 12vw, 5.8rem);
+		line-height: 0.82;
+		padding-top: 4px;
+		padding-right: 12px;
+		padding-left: 2px;
 		font-weight: 950;
-		color: var(--foreground);
+		color: var(--nyt-accent);
+        text-shadow: 1px 1px 0 var(--background), 3px 3px 0 color-mix(in srgb, var(--nyt-accent) 15%, transparent);
 	}
 
     .narrative-facts-box {

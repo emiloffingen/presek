@@ -19,14 +19,14 @@ describe('Presek Smoke Tests', () => {
   })
 
   it('search functionality works', () => {
-    cy.get('[data-testid="search-input"]').type('Srbija')
-    cy.get('[data-testid="search-button"]').click()
-    cy.url().should('include', '/search')
-    cy.contains('Srbija').should('be.visible')
+    cy.get('[data-testid="search-trigger"]').click()
+    cy.get('[data-testid="search-input"]').should('be.visible').type('Srbija{enter}')
+    cy.get('.filter-title', { timeout: 10000 }).should('be.visible').and('contain', 'Srbija')
+    cy.url().should('include', 'q=Srbija')
   })
 
   it('cluster page loads', () => {
-    cy.get('[data-testid="cluster-link"]').first().click()
+    cy.get('[data-testid="cluster-link"]').filter(':visible').first().click()
     cy.url().should('include', '/cluster/')
     cy.contains('klaster').should('be.visible')
   })
