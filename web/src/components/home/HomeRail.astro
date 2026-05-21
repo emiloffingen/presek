@@ -1,5 +1,5 @@
 ---
-import { Activity, TrendingUp } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 import NationalMoodIsland from '../NationalMoodIsland.tsx';
 import HomeRailSuggestionsIsland from '../HomeRailSuggestionsIsland.tsx';
 import SourceMapIsland from '../SourceMapIsland.tsx';
@@ -9,7 +9,6 @@ import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 
 
 interface Props {
-	railWireArticles: any[];
 	briefing: any;
 	stats: any;
 	focusEntities: any[];
@@ -17,7 +16,7 @@ interface Props {
 	getBriefingSnippet: (content: string) => string;
 }
 
-const { railWireArticles, briefing, stats, focusEntities, getTimeStr, getBriefingSnippet } = Astro.props;
+const { briefing, stats, focusEntities, getTimeStr, getBriefingSnippet } = Astro.props;
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
@@ -78,30 +77,6 @@ const uniqueEntities = Array.from(uniqueEntitiesMap.values())
 ---
 
 <aside class="broadsheet-rail">
-
-	<div class="rail-header">
-		<span class="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground">Latest Wire</span>
-		<div class="w-full h-px bg-border mt-2"></div>
-	</div>
-
-	<section class="rail-block">
-		<div class="rail-head-red">
-			<Activity size={12} strokeWidth={1.5} />
-			<h3 class="flex items-center gap-1.5">
-				{t('home.wire_title')}
-				<span class="w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"></span>
-			</h3>
-		</div>
-		<div class="rail-wire-list">
-			{railWireArticles.slice(0, 8).map((art: any) => (
-				<a href={l(`/cluster/${art.cluster_id}`)} class="rail-wire-item">
-					<p>{getDisplayTitle(art)}</p>
-					<div class="rail-wire-meta">{art.source} <span>·</span> {getTimeStr(art.ingested_at || art.created_at)}</div>
-				</a>
-			))}
-		</div>
-		<a href={l('/pulse')} class="rail-cta-plain">{t('rail.all_news')}</a>
-	</section>
 
 	{briefing && briefing.content && (
 		<section class="rail-block">
