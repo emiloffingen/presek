@@ -133,20 +133,22 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
 
   if (!hasPersonalizationSignal(profile)) {
     return (
-      <div className="max-w-4xl mx-auto py-20">
-        <header className="mb-12 text-center">
-            <div className="inline-flex items-center justify-center p-3 bg-nyt-accent/10 rounded-full mb-4">
-                <Compass className="text-nyt-accent" size={24} />
-            </div>
-            <h1 className="font-serif text-4xl md:text-5xl font-black mb-4 tracking-tight">{isMK ? 'Вашиот личен простор' : 'Vaš lični prostor'}</h1>
-            <p className="text-lg md:text-xl text-secondary-foreground max-w-xl mx-auto italic font-serif">
-                {isMK
-                  ? 'оваа страница е место каде што Пресек го прилагодува вашиот ритам. Изберете теми што ве интересираат за да започнете.'
-                  : 'ova stranica je mesto gde Presek prilagođava vaš ritam. Izaberite teme koje vas interesuju da biste započeli.'}
-            </p>
-        </header>
-        <div className="bg-secondary/5 border border-border p-8 md:p-12 rounded-3xl shadow-inner">
-            <OnboardingIsland lang={lang} />
+      <div className="max-w-4xl mx-auto py-20 px-4">
+        <div className="cold-start-banner backdrop-blur-xl">
+          <header className="mb-8 text-center">
+              <div className="cold-start-icon-box">
+                  <Compass size={28} />
+              </div>
+              <h1 className="font-serif text-4xl md:text-5xl font-black mb-4 tracking-tight">{isMK ? 'Вашиот личен простор' : 'Vaš lični prostor'}</h1>
+              <p className="text-lg md:text-xl text-secondary-foreground max-w-xl mx-auto italic font-serif">
+                  {isMK
+                    ? 'Оваа страница е место каде што Пресек го прилагодува вашиот ритам. Изберете теми што ве интересираат за да започнете.'
+                    : 'Ova stranica je mesto gde Presek prilagođava vaš ritam. Izaberite teme koje vas interesuju da biste započeli.'}
+              </p>
+          </header>
+          <div className="w-full max-w-2xl bg-card/45 border border-border/70 p-6 md:p-10 rounded-2xl shadow-premium backdrop-blur-md">
+              <OnboardingIsland lang={lang} />
+          </div>
         </div>
       </div>
     );
@@ -156,9 +158,15 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
     <div className="for-you-page-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[var(--grid-gap)] items-stretch mt-12">
       <div className="lg:col-span-2 space-y-12">
         <header className="pb-10 border-b border-border">
-          <div className="flex items-center gap-[var(--grid-gap)] mb-3">
-            <Sparkles className="text-nyt-accent" size={16} />
-            <span className="font-sans text-[10px] font-black uppercase tracking-[0.25em] text-nyt-accent">{isMK ? 'УРЕДНИЧКА СИНТЕЗА' : 'UREDNIČKA SINTEZA'}</span>
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="text-nyt-accent animate-pulse" size={16} />
+              <span className="font-sans text-[10px] font-black uppercase tracking-[0.25em] text-nyt-accent">{isMK ? 'УРЕДНИЧКА СИНТЕЗА' : 'UREDNIČKA SINTEZA'}</span>
+            </div>
+            <div className="status-pill">
+              <span className="status-dot active"></span>
+              <span>{isMK ? 'СИНХРОНИЗАЦИЈА ВО ЖИВО' : 'SINHRONIZACIJA UŽIVO'}</span>
+            </div>
           </div>
           <h1 className="font-serif text-[clamp(2rem,6vw,4rem)] font-black leading-[0.9] mb-6 italic">{isMK ? 'Личен' : 'Lični'} <span className="serif-display font-light not-italic">{isMK ? 'Пресек' : 'Presek'}</span></h1>
           <p className="mt-4 font-nyt-body text-[clamp(1rem,2vw,1.25rem)] text-secondary-foreground leading-relaxed italic max-w-2xl">
@@ -166,6 +174,21 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
                ? 'Вашиот дневен преглед, синтетизиран според темите, личностите и изворите што ги следите.'
                : 'Vaš dnevni pregled, sintetisan prema temama, ličnostima i izvorima koje pratite.'}
           </p>
+          
+          <div className="dashboard-metrics-row">
+            <span className="metric-pill">
+              {isMK ? 'СЛЕДЕНИ ТЕМИ: ' : 'PRAĆENE TEME: '}
+              <strong>{profile.followedTopics.length}</strong>
+            </span>
+            <span className="metric-pill">
+              {isMK ? 'СЛЕДЕНИ ИЗВОРИ: ' : 'PRAĆENI IZVORI: '}
+              <strong>{profile.followedSources.length}</strong>
+            </span>
+            <span className="metric-pill">
+              {isMK ? 'ПРЕПОРАКИ: ' : 'PREPORUKE: '}
+              <strong>{mergedClusters.length}</strong>
+            </span>
+          </div>
         </header>
 
         {pageError && mergedClusters.length === 0 && (
@@ -179,10 +202,9 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
           <div className="space-y-16">
             {mergedClusters.map((cluster, idx) => (
               <div key={cluster.cluster_id} className="relative group">
-                <div className="mb-4 flex items-center gap-[var(--grid-gap)]">
-                    <div className="w-8 h-[1px] bg-nyt-accent/30"></div>
-                    <BrainCircuit size={13} className="text-nyt-accent" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground group-hover:text-nyt-accent transition-colors">
+                <div className="mb-4 flex items-center gap-2">
+                    <span className="inference-badge">
+                        <BrainCircuit size={11} className="text-nyt-accent animate-pulse" />
                         {cluster.reason || (isMK ? 'За Вас' : 'Za Vas')}
                     </span>
                 </div>
@@ -206,8 +228,8 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
 
       <aside className="space-y-12">
         {/* Following Section */}
-        <section className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-6 lg:p-8 shadow-sm">
-          <h3 className="font-sans text-[10px] font-black uppercase tracking-widest text-foreground mb-8 pb-3 border-b border-zinc-100 dark:border-zinc-800">{isMK ? 'Ваши интереси' : 'Vaši interesi'}</h3>
+        <section className="premium-card">
+          <h3 className="sidebar-section-title">{isMK ? 'Ваши интереси' : 'Vaši interesi'}</h3>
 
           <div className="space-y-10">
             {profile.followedTopics.length > 0 && (
@@ -240,14 +262,14 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
 
         {/* Discovery Suggestions */}
         {followSuggestions.length > 0 && (
-            <section className="bg-secondary/10 border border-border rounded-lg p-6 lg:p-8">
-                <h3 className="font-sans text-[10px] font-black uppercase tracking-widest text-nyt-accent mb-8">{isMK ? 'Откријте повеќе' : 'Otkrijte više'}</h3>
+            <section className="premium-card">
+                <h3 className="sidebar-section-title !text-nyt-accent">{isMK ? 'Откријте повеќе' : 'Otkrijte više'}</h3>
                 <div className="space-y-4">
                     {followSuggestions.map(item => (
-                        <div key={item.value} className="flex items-center justify-between gap-[var(--grid-gap)] p-3 bg-background border border-border rounded-lg group hover:border-nyt-accent/30 transition-all">
-                            <div className="min-w-0 flex-1">
-                                <p className="text-[10px] font-black uppercase tracking-tighter leading-tight whitespace-normal break-words line-clamp-3 overflow-hidden text-ellipsis h-auto min-h-[4.5rem]">{item.value}</p>
-                                <p className="text-[8px] text-muted-foreground uppercase font-black mt-0.5">{item.kind === 'topic' ? (isMK ? 'Тема' : 'Tema') : (isMK ? 'извор' : 'izvor')}</p>
+                        <div key={item.value} className="discover-item-row">
+                            <div className="discover-item-info min-w-0 flex-1 pr-2">
+                                <p className="line-clamp-2">{item.value}</p>
+                                <span>{item.kind === 'topic' ? (isMK ? 'Тема' : 'Tema') : (isMK ? 'извор' : 'izvor')}</span>
                             </div>
                             <PreferenceToggle
                                 kind={item.kind as any}
