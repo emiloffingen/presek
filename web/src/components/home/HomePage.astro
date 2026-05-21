@@ -69,6 +69,7 @@ async function loadHomepageFallback() {
     const fallbackNewsUrl = new URL(`${API_URL}/news`);
     fallbackNewsUrl.searchParams.set('page_size', '24');
     fallbackNewsUrl.searchParams.set('lang', lang);
+    fallbackNewsUrl.searchParams.set('sort', 'score');
 
     const [newsResult, trendResult, entityResult, statsResult, briefingResult, wireResult] = await Promise.allSettled([
         fetchJson(fallbackNewsUrl.toString()),

@@ -1418,3 +1418,68 @@ def test_editorial_signals_prefer_ingested_at_for_freshness(mock_all):
 
     assert signals["story_state"] in {"breaking", "confirmed", "developing", "stale"}
     assert signals["live_now_fit"] in (True, False)
+
+
+def test_synthesis_homepage_boost(mock_all):
+    import routes.news as news
+
+    async def execute_side_effect(query, params=None, fetch=True):
+        if "FROM cluster_metadata m" in query:
+            return [
+                {"cluster_id": "c1", "last_article": "2026-04-22T18:10:00Z"},
+                {"cluster_id": "c2", "last_article": "2026-04-22T18:09:00Z"},
+            ]
+        if "FROM cluster_metadata" in query:
+            return [
+                {"cluster_id": "c1", "representative_image": None, "dominant_color": None},
+                {"cluster_id": "c2", "representative_image": None, "dominant_color": None},
+            ]
+        if "FROM articles" in query:
+            return [
+                {
+                    "cluster_id": "c1",
+                    "title": "Cluster 1 main",
+                    "source": "A",
+                    "created_at": "2026-04-22T18:10:00Z",
+                    "category": "Srbija",
+                },
+                {
+                    "cluster_id": "c2",
+                    "title": "Cluster 2 main",
+                    "source": "B",
+                    "created_at": "2026-04-22T18:09:00Z",
+                    "category": "Srbija",
+                },
+            ]
+        if "FROM cluster_summaries" in query:
+            return []
+        raise AssertionError(f"Unexpected query: {query}")
+
+    mock_all["db"].async_execute.side_effect = execute_side_effect
+    # Mock c2 to have an active synthesis, and c1 to not have one
+    async def get_synthesis_ids(cluster_ids, lang=None):
+        return ["c2"] if "c2" in cluster_ids else []
+    mock_all["db"].async_get_synthesis_ids.side_effect = get_synthesis_ids
+
+    with (
+        patch("routes.news.cached_response", return_value=None),
+        patch("routes.news.set_cache"),
+        patch("routes.news.score_cluster", return_value=1.0),
+        # Give both clusters the same base score of 10.0
+        patch("routes.news.score_cluster_for_homepage", return_value=10.0),
+    ):
+        data = asyncio.run(news.get_news(sort="score", page_size=10))
+
+    assert data["status"] == "success"
+    # c2 must have bubbled to the top (index 0) due to 1.25x synthesis boost
+    clusters = data["clusters"]
+    assert len(clusters) == 2
+    assert clusters[0]["cluster_id"] == "c2"
+    assert clusters[0]["has_synthesis"] is True
+    # homepage_score must be boosted to 12.5
+    assert clusters[0]["homepage_score"] == 12.5
+
+    assert clusters[1]["cluster_id"] == "c1"
+    assert clusters[1]["has_synthesis"] is False
+    assert clusters[1]["homepage_score"] == 10.0
+

@@ -570,7 +570,19 @@ async def get_news(
                 reverse=True,
             )
         else:
-            ranked_clusters.sort(key=score_cluster_for_homepage, reverse=True)
+            candidate_cids = [arts[0]["cluster_id"] for arts in ranked_clusters if arts]
+            candidate_synthesis_ids = set(await db.async_get_synthesis_ids(candidate_cids, lang=lang)) if candidate_cids else set()
+
+            def homepage_sort_key(arts):
+                if not arts:
+                    return 0.0
+                cid = arts[0]["cluster_id"]
+                score = score_cluster_for_homepage(arts)
+                if cid in candidate_synthesis_ids:
+                    score *= 1.25
+                return score
+
+            ranked_clusters.sort(key=homepage_sort_key, reverse=True)
 
         start = page * page_size
         paged_clusters = ranked_clusters[start : start + page_size]
@@ -595,7 +607,19 @@ async def get_news(
                 for r in g_rows:
                     g_grouped[r["cluster_id"]].append(r)
                 g_ranked = [annotate_cluster_articles(arts) for arts in g_grouped.values()]
-                g_ranked.sort(key=score_cluster_for_homepage, reverse=True)
+                g_cids = [arts[0]["cluster_id"] for arts in g_ranked if arts]
+                g_synthesis_ids = set(await db.async_get_synthesis_ids(g_cids, lang=lang)) if g_cids else set()
+
+                def global_sort_key(arts):
+                    if not arts:
+                        return 0.0
+                    cid = arts[0]["cluster_id"]
+                    score = score_cluster_for_homepage(arts)
+                    if cid in g_synthesis_ids:
+                        score *= 1.25
+                    return score
+
+                g_ranked.sort(key=global_sort_key, reverse=True)
                 global_clusters_raw = g_ranked[:6]  # Top 6 global stories
 
         all_cids = cid_list + [c[0]["cluster_id"] for c in global_clusters_raw]
@@ -629,6 +653,8 @@ async def get_news(
             cid = main["cluster_id"]
             s = score_cluster(arts)
             homepage_score = score_cluster_for_homepage(arts)
+            if cid in synthesis_ids:
+                homepage_score *= 1.25
             editorial = _compute_editorial_signals(arts, s, homepage_score)
             meta = meta_map.get(cid, {})
             summary = summary_map.get(cid, {})

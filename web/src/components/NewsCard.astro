@@ -120,13 +120,19 @@ function getTimeStr(dateStr: string) {
 }
 ---
 
-<article class:list={["nyt-article", "premium-spotlight", `variant-${variant}`, { "lead-story": isLead, "has-image": !!thumbSrc }, bentoSpan ? `bento-${bentoSpan}` : ""]} data-cluster={JSON.stringify(slimCluster)} data-testid="article-card">
+<article class:list={["nyt-article", "premium-spotlight", `variant-${variant}`, { "lead-story": isLead, "has-image": !!thumbSrc, "has-synthesis": hasSynthesis }, bentoSpan ? `bento-${bentoSpan}` : ""]} data-cluster={JSON.stringify(slimCluster)} data-testid="article-card">
 	<div class="article-body">
         <div class="article-meta-v2">
             <div class="kicker-group">
                 <span class="kicker">{main.source}</span>
                 {cluster.is_breaking && (
                     <span class="significance-badge is-breaking">{t('news.breaking').toUpperCase()}</span>
+                )}
+                {hasSynthesis && (
+                    <span class="premium-synthesis-badge">
+                        <Sparkles size={10} className="inline-block mr-1 align-middle text-amber-500" />
+                        {t('cluster.synthesis_badge').toUpperCase()}
+                    </span>
                 )}
             </div>
         </div>
@@ -229,6 +235,12 @@ function getTimeStr(dateStr: string) {
         border-bottom: 1px solid var(--border);
 	}
 
+    .nyt-article.has-synthesis {
+        border-top: 2px solid #fbbf24;
+        padding-top: 0.5rem;
+        background: color-mix(in srgb, var(--card) 97%, #fbbf24 3%);
+    }
+
     @media (hover: hover) {
         .nyt-article:not(.lead-story):hover {
             transform: translateY(-2px);
@@ -236,6 +248,17 @@ function getTimeStr(dateStr: string) {
             box-shadow: var(--shadow-md);
             background: color-mix(in srgb, var(--card) 98%, var(--nyt-accent) 2%);
             z-index: 10;
+        }
+        .nyt-article.has-synthesis:not(.lead-story):hover {
+            transform: translateY(-3px);
+            border-color: #f59e0b;
+            box-shadow: 0 12px 24px -10px color-mix(in srgb, #f59e0b 20%, transparent);
+            background: color-mix(in srgb, var(--card) 95%, #f59e0b 5%);
+        }
+        .nyt-article.has-synthesis.lead-story:hover {
+            border-color: #f59e0b;
+            box-shadow: 0 12px 24px -10px color-mix(in srgb, #f59e0b 20%, transparent);
+            background: color-mix(in srgb, var(--card) 95%, #f59e0b 5%);
         }
     }
 
@@ -309,6 +332,30 @@ function getTimeStr(dateStr: string) {
     .significance-badge.is-breaking {
         color: white;
         background: var(--nyt-red);
+    }
+
+    .premium-synthesis-badge {
+        font-family: var(--font-sans);
+        font-size: 0.52rem;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #d97706;
+        background: color-mix(in srgb, #f59e0b 8%, transparent);
+        border: 1px solid color-mix(in srgb, #f59e0b 35%, transparent);
+        padding: 0.1rem 0.4rem;
+        line-height: 1.1;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+        border-radius: 2px;
+        box-shadow: 0 1px 2px rgba(245, 158, 11, 0.04);
+    }
+
+    :global(.dark) .premium-synthesis-badge {
+        color: #fbbf24;
+        background: color-mix(in srgb, #fbbf24 12%, transparent);
+        border-color: color-mix(in srgb, #fbbf24 40%, transparent);
     }
 
     .article-footer-meta {
