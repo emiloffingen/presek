@@ -211,7 +211,18 @@ else
 fi
 npm run build --silent
 
-# 4. Update Backend migrations
+# 4. Backup database & Update Backend migrations
+DB_BACKUP_CREATED=0
+info "Backing up database..."
+if [ -f "$SOURCE_ROOT/deploy/backup_postgres.sh" ]; then
+    if APP_ROOT="$APP_ROOT" ENV_FILE="$SHARED_DIR/.env" bash "$SOURCE_ROOT/deploy/backup_postgres.sh" >/dev/null 2>&1; then
+        DB_BACKUP_CREATED=1
+        ok "Automatic database backup created successfully"
+    else
+        info "Database backup skipped or failed (unconfigured environment or missing utility)"
+    fi
+fi
+
 info "Running migrations..."
 cd "$RELEASE_DIR"
 if [ -f "$SHARED_DIR/.env" ]; then
@@ -219,7 +230,23 @@ if [ -f "$SHARED_DIR/.env" ]; then
     source "$SHARED_DIR/.env"
     set +a
 fi
-"$VENV_DIR/bin/alembic" upgrade head || info "Alembic migrations failed or not configured, skipping..."
+
+SCHEMA_UPDATED=0
+if "$VENV_DIR/bin/alembic" upgrade head; then
+    SCHEMA_UPDATED=1
+    ok "Database migrations applied successfully"
+else
+    info "Alembic migrations failed or not configured, skipping..."
+fi
+
+# Write runtime metadata for rollback support
+info "Writing release runtime metadata..."
+cat > "$RELEASE_DIR/.runtime-meta" <<EOF
+VENV_TARGET=$(readlink -f "$VENV_DIR")
+WEB_NODE_MODULES_TARGET=$(readlink -f "$SHARED_WEB_NODE_MODULES")
+SCHEMA_UPDATED=$SCHEMA_UPDATED
+DB_BACKUP_CREATED=$DB_BACKUP_CREATED
+EOF
 
 # 5. Switch Release
 switch_current_release
