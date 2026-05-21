@@ -75,20 +75,6 @@ export function buildHomepageSections(input: HomepageSectionsInput) {
     const leadId = input.leadCluster?.cluster_id;
     if (leadId) usedIds.add(leadId);
 
-    const displayedTrendingClusters = Array.from(
-        new Map(
-            input.clusters
-                .filter((cluster) =>
-                    cluster?.cluster_id &&
-                    !usedIds.has(cluster.cluster_id) &&
-                    (cluster.articles?.length || 0) > 0
-                )
-                .sort((left, right) => clusterTrendScore(right) - clusterTrendScore(left))
-                .map((cluster) => [cluster.cluster_id, cluster])
-        ).values()
-    ).slice(0, 6);
-    displayedTrendingClusters.forEach((cluster) => usedIds.add(cluster.cluster_id));
-
     let supportingClusters = input.supportingClusters;
     let forYouClusters = input.forYouClusters;
     let feedClusters = input.feedClusters;
@@ -133,6 +119,21 @@ export function buildHomepageSections(input: HomepageSectionsInput) {
 
     const developmentsCompact = continuingClusters.slice(6, 18).filter((cluster) => !usedIds.has(cluster.cluster_id));
     developmentsCompact.forEach((cluster) => usedIds.add(cluster.cluster_id));
+
+    // Pick Trending clusters AFTER main sections are filled to ensure they get content in small locales
+    const displayedTrendingClusters = Array.from(
+        new Map(
+            input.clusters
+                .filter((cluster) =>
+                    cluster?.cluster_id &&
+                    !usedIds.has(cluster.cluster_id) &&
+                    (cluster.articles?.length || 0) > 0
+                )
+                .sort((left, right) => clusterTrendScore(right) - clusterTrendScore(left))
+                .map((cluster) => [cluster.cluster_id, cluster])
+        ).values()
+    ).slice(0, 6);
+    displayedTrendingClusters.forEach((cluster) => usedIds.add(cluster.cluster_id));
 
     const railWireArticles = dedupeWireArticles(input.wireArticles);
     const topWireArticles = railWireArticles

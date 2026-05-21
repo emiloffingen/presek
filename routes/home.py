@@ -333,7 +333,7 @@ async def get_home(lang: Optional[str] = "sr"):
 
         lead = clusters[0] if clusters else None
         supporting = clusters[1:5]
-        for_you_pool = [c for c in clusters[5:] if _is_live_now_candidate(c)][:6]
+        for_you_pool = [c for c in clusters[5:11] if _is_live_now_candidate(c)]
         feed_clusters = clusters[11:]
         developing = [
             cluster
