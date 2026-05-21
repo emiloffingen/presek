@@ -348,12 +348,11 @@ async def get_cluster_storyline_history(cluster_id: str):
           AND a.cluster_id != %s
           AND a.created_at >= NOW() - INTERVAL '30 days'
         GROUP BY a.cluster_id
-        HAVING (1 - (MIN(a.embedding <=> %s::vector))) > 0.72
-           AND MAX(a.category) = (SELECT category FROM articles WHERE cluster_id = %s LIMIT 1)
+        HAVING (1 - (MIN(a.embedding <=> %s::vector))) > 0.65
         ORDER BY first_seen DESC
         LIMIT 10
     """,
-        (vec_str, cluster_id, vec_str, cluster_id),
+        (vec_str, cluster_id, vec_str),
     )
 
     return {"history": related_clusters}
