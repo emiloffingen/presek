@@ -1,0 +1,204 @@
+/* Premium For You Dashboard Stylesheet */
+
+/* Live Sync Status Indicator */
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--background) 90%, var(--nyt-accent) 10%);
+    border: 1px solid color-mix(in srgb, var(--border) 60%, var(--nyt-accent) 40%);
+    font-family: var(--font-sans);
+    font-size: 0.65rem;
+    font-weight: 850;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--foreground);
+    box-shadow: var(--shadow-sm);
+}
+
+.status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    display: inline-block;
+}
+
+.status-dot.active {
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+    animation: status-pulse-active 2s infinite;
+}
+
+@keyframes status-pulse-active {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.25); }
+}
+
+/* Dashboard Metric Headers */
+.dashboard-metrics-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+.metric-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--card) 40%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+    font-family: var(--font-sans);
+    font-size: 0.6rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted-foreground);
+}
+
+.metric-pill strong {
+    color: var(--foreground);
+}
+
+/* Glassmorphic Premium Cards */
+.premium-card {
+    background: color-mix(in srgb, var(--card) 60%, transparent);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    border-radius: 20px;
+    padding: 1.75rem;
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.premium-card:hover {
+    box-shadow: var(--shadow-lg);
+    border-color: var(--border);
+    transform: translateY(-2px);
+}
+
+/* Feed Reason Inference Banner */
+.inference-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--card) 30%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border) 40%, var(--nyt-accent) 60%);
+    font-family: var(--font-sans);
+    font-size: 0.6rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--nyt-accent);
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--nyt-accent) 15%, transparent);
+}
+
+.relative.group:hover .inference-badge {
+    border-color: var(--nyt-accent);
+    background: color-mix(in srgb, var(--nyt-accent) 8%, transparent);
+    box-shadow: 0 4px 12px -2px color-mix(in srgb, var(--nyt-accent) 25%, transparent);
+}
+
+/* Sidebar Sections */
+.sidebar-section-title {
+    font-family: var(--font-sans);
+    font-size: 0.65rem;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--foreground);
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+/* Premium Tags/Chips */
+.premium-interest-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.8rem;
+    background: color-mix(in srgb, var(--card) 50%, transparent);
+    border: 1px solid var(--border);
+    border-radius: 9999px;
+    font-family: var(--font-sans);
+    font-size: 0.7rem;
+    font-weight: 850;
+    color: var(--foreground);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.premium-interest-chip:hover {
+    background: color-mix(in srgb, var(--background) 90%, var(--foreground) 10%);
+    border-color: var(--nyt-accent);
+    transform: translateY(-1px);
+}
+
+/* Discover Card Style */
+.discover-item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: color-mix(in srgb, var(--card) 40%, transparent);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    transition: all 0.2s ease;
+}
+
+.discover-item-row:hover {
+    border-color: color-mix(in srgb, var(--border) 50%, var(--nyt-accent) 50%);
+    background: color-mix(in srgb, var(--card) 60%, transparent);
+}
+
+.discover-item-info p {
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    color: var(--foreground);
+}
+
+.discover-item-info span {
+    font-family: var(--font-sans);
+    font-size: 0.55rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+}
+
+/* Cold Start Layout Improvements */
+.cold-start-banner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 3.5rem 2rem;
+    border-radius: 24px;
+    background: radial-gradient(circle at center, color-mix(in srgb, var(--card) 80%, transparent), color-mix(in srgb, var(--background) 90%, transparent));
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+}
+
+.cold-start-icon-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 20px;
+    background: color-mix(in srgb, var(--nyt-accent) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border) 40%, var(--nyt-accent) 60%);
+    color: var(--nyt-accent);
+    margin-bottom: 1.5rem;
+    box-shadow: 0 8px 24px -6px color-mix(in srgb, var(--nyt-accent) 20%, transparent);
+}

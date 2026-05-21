@@ -1,0 +1,330 @@
+/* Premium Pulse Dashboard Stylesheet */
+
+/* System Status Bar Command Deck */
+.pulse-status-deck {
+    background: color-mix(in srgb, var(--foreground) 95%, var(--background) 5%);
+    color: var(--background);
+    padding: 0.65rem 1.25rem;
+    border-radius: 12px;
+    font-family: var(--font-sans);
+    box-shadow: var(--shadow-md), 0 4px 20px -8px rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+.dark .pulse-status-deck {
+    background: color-mix(in srgb, var(--card) 85%, transparent);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border-color: rgba(255,255,255,0.05);
+    color: var(--foreground);
+}
+
+.pulse-status-inner {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+}
+
+.pulse-status-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+}
+
+.pulse-status-group.divider-left {
+    border-left: 1px solid rgba(255,255,255,0.12);
+    padding-left: 1.5rem;
+}
+
+.dark .pulse-status-group.divider-left {
+    border-left-color: var(--border);
+}
+
+.pulse-status-label {
+    font-size: 0.55rem;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    opacity: 0.6;
+}
+
+.pulse-status-value {
+    font-size: 0.65rem;
+    font-weight: 850;
+    letter-spacing: 0.05em;
+}
+
+.pulse-status-indicator-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+
+.pulse-status-indicator-dot.active {
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+    animation: status-pulse-glow 2s infinite;
+}
+
+@keyframes status-pulse-glow {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+@media (max-width: 767.98px) {
+    .pulse-status-deck {
+        border-radius: 0;
+        margin-left: calc(-1 * var(--site-px));
+        margin-right: calc(-1 * var(--site-px));
+        padding: 0.6rem var(--site-px);
+    }
+    .pulse-status-group.divider-left {
+        border-left: none;
+        padding-left: 0;
+    }
+}
+
+/* Category Filter Bar */
+.pulse-category-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.75rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    position: sticky;
+    top: 72px;
+    background: color-mix(in srgb, var(--background) 85%, transparent);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    z-index: 30;
+    padding-top: 0.5rem;
+}
+
+.pulse-category-nav::-webkit-scrollbar {
+    display: none;
+}
+
+.pulse-category-pill {
+    padding: 0.45rem 1rem;
+    border-radius: 9999px;
+    font-family: var(--font-sans);
+    font-size: 0.65rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap;
+}
+
+.pulse-category-pill.inactive {
+    background: color-mix(in srgb, var(--card) 50%, transparent);
+    border-color: var(--border);
+    color: var(--muted-foreground);
+}
+
+.pulse-category-pill.inactive:hover {
+    color: var(--foreground);
+    background: color-mix(in srgb, var(--card) 80%, transparent);
+    border-color: color-mix(in srgb, var(--border) 50%, var(--foreground) 50%);
+}
+
+.pulse-category-pill.active {
+    background: var(--nyt-accent);
+    color: white;
+    border-color: var(--nyt-accent);
+    box-shadow: 0 4px 12px -4px color-mix(in srgb, var(--nyt-accent) 40%, transparent);
+}
+
+/* Glassmorphic Command & Chart Cards */
+.pulse-premium-card {
+    background: color-mix(in srgb, var(--card) 60%, transparent);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pulse-premium-card:hover {
+    box-shadow: var(--shadow-lg);
+    border-color: var(--border);
+}
+
+/* Glowing Metrics Widgets */
+.pulse-glow-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1.5rem;
+    border-radius: 20px;
+    background: color-mix(in srgb, var(--card) 45%, transparent);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+    transition: all 0.3s var(--ease-editorial);
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.pulse-glow-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle at top right, color-mix(in srgb, var(--nyt-accent) 8%, transparent), transparent 70%);
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+.pulse-glow-card:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--border) 50%, var(--nyt-accent) 50%);
+    box-shadow: var(--shadow-md);
+}
+
+.pulse-glow-card.accent-border {
+    border-top: 4px solid var(--nyt-accent);
+}
+
+/* Key Actors Polish */
+.actor-grid-box {
+    display: grid;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+@media (min-width: 640px) {
+    .actor-grid-box { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1024px) {
+    .actor-grid-box { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.actor-card {
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem;
+    background: color-mix(in srgb, var(--card) 50%, transparent);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    border-radius: 16px;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.actor-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background: color-mix(in srgb, var(--nyt-accent) 30%, transparent);
+    transition: background 0.3s ease;
+}
+
+.actor-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--nyt-accent);
+    box-shadow: var(--shadow-md);
+}
+
+.actor-card:hover::before {
+    background: var(--nyt-accent);
+}
+
+/* Sleek Leaderboard & Index Tables */
+.pulse-table-wrapper {
+    overflow-x: auto;
+    border-top: 2px solid var(--foreground);
+    border-radius: 8px 8px 0 0;
+    box-shadow: var(--shadow-sm);
+}
+
+.pulse-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 650px;
+}
+
+.pulse-table th {
+    text-align: left;
+    padding: 0.85rem 1rem;
+    font-family: var(--font-sans);
+    font-size: 0.6rem;
+    font-weight: 950;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted-foreground);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: color-mix(in srgb, var(--card) 40%, var(--background) 60%);
+}
+
+.pulse-table td {
+    padding: 1.1rem 1rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+    background: transparent;
+    transition: background 0.2s ease;
+}
+
+.pulse-table tr:hover td {
+    background: color-mix(in srgb, var(--foreground) 2%, transparent);
+}
+
+.pulse-table-source-info strong {
+    font-family: var(--font-serif);
+    font-size: 1.1rem;
+    font-weight: 900;
+    display: block;
+    line-height: 1.15;
+    margin-bottom: 0.2rem;
+    color: var(--foreground);
+}
+
+.pulse-table-source-info span {
+    font-family: var(--font-sans);
+    font-size: 0.55rem;
+    font-weight: 850;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+    letter-spacing: 0.05em;
+}
+
+/* Glowing table progress bars */
+.pulse-bar-track {
+    height: 6px;
+    width: 80px;
+    background: color-mix(in srgb, var(--border) 60%, transparent);
+    overflow: hidden;
+    border-radius: 999px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.pulse-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--nyt-accent), color-mix(in srgb, var(--nyt-accent) 70%, var(--foreground) 30%));
+    border-radius: 999px;
+    transition: width 0.8s ease;
+}
+
+.pulse-bar-track.bar-red .pulse-bar-fill {
+    background: linear-gradient(90deg, var(--nyt-red), color-mix(in srgb, var(--nyt-red) 70%, var(--foreground) 30%));
+}

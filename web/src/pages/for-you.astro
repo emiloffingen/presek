@@ -7,6 +7,7 @@ import ForYouPageIsland from '../components/ForYouPageIsland.tsx';
 import { ErrorBoundary } from '../components/ui/ErrorBoundary.tsx';
 import { apiBaseUrl } from '../lib/apiBase';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
+import '../styles/for-you-premium.css';
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
