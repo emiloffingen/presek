@@ -111,9 +111,17 @@ export default function OnboardingIsland({ compact = false, lang = 'sr' }: { com
           : 'Izaberite nekoliko tema ili izvora da biste personalizovali vaš sadržaj. Ovi signali pomažu modulu „Za Vas“, dnevni brifing i izveštaji da budu precizniji.'}
       </p>
 
-      <div className="onboarding-progress">
-        <strong>{progress.doneCount}/{progress.total}</strong>
-        <span> {isMK ? ' чекори завршени' : ' koraka završeno'}</span>
+      <div className="onboarding-progress mt-4 mb-6">
+        <div className="flex justify-between items-center text-[10px] font-black tracking-wider uppercase text-muted-foreground mb-1.5">
+          <span>{isMK ? 'Напредок на запознавање' : 'Napredak upoznavanja'}</span>
+          <strong>{progress.doneCount}/{progress.total}</strong>
+        </div>
+        <div className="premium-progress-track">
+          <div 
+            className="premium-progress-fill" 
+            style={{ width: `${(progress.doneCount / (progress.total || 1)) * 100}%` }}
+          />
+        </div>
       </div>
 
       <div className="onboarding-steps">

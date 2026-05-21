@@ -8,6 +8,7 @@ import SettingsProfileIsland from '../components/SettingsProfileIsland.tsx';
 import AccountSyncIsland from '../components/AccountSyncIsland.tsx';
 import OnboardingIsland from '../components/OnboardingIsland.tsx';
 import { KeyRound, Radio, ShieldCheck, UserCircle2, Sparkles, ArrowUpRight } from 'lucide-react';
+import '../styles/settings-premium.css';
 ---
 
 <Layout title="Podešavanja — Presek" description="Upravljajte sinhronizacijom, praćenjem i dostavom brifinga u Preseku.">
@@ -16,8 +17,8 @@ import { KeyRound, Radio, ShieldCheck, UserCircle2, Sparkles, ArrowUpRight } fro
   <main class="site-layout py-[var(--page-py)]">
     <Breadcrumbs items={[{ label: "Podešavanja" }]} />
 
-    <div class="settings-shell editorial-shell mt-12">
-      <header class="settings-header editorial-header mb-[clamp(2rem, 5vw, 4rem)] motion-rise">
+    <div class="max-w-[1200px] mx-auto mt-12">
+      <header class="settings-header editorial-header mb-[clamp(2rem, 4vw, 3.5rem)] motion-rise">
         <div class="flex items-center gap-[var(--grid-gap)] mb-4">
             <div class="w-10 h-[1px] bg-nyt-accent"></div>
             <span class="page-kicker !mb-0 text-[var(--text-xs)]">KONTROLNI CENTAR</span>
@@ -28,57 +29,106 @@ import { KeyRound, Radio, ShieldCheck, UserCircle2, Sparkles, ArrowUpRight } fro
         </p>
       </header>
 
-      <div class="settings-page-grid grid grid-cols-1 lg:grid-cols-3 gap-[var(--grid-gap)]">
-        <div class="lg:col-span-2 space-y-[clamp(2rem, 4vw, 4rem)] motion-rise">
-            {/* 1. INTERESTS SECTION */}
-            <section class="settings-section">
-                <div class="section-eyebrow mb-8 flex items-center gap-[var(--grid-gap)]">
-                    <ShieldCheck size={18} className="text-nyt-accent" />
-                    <h2 class="section-label font-sans text-[var(--text-sm)] font-black uppercase tracking-widest text-foreground">VAŠA INTERESOVANJA</h2>
-                    <div class="section-divider flex-1 h-[1px] bg-border ml-4"></div>
-                </div>
-                <SettingsProfileIsland lang="sr" client:visible />
-            </section>
+      <div class="settings-shell mt-8 motion-rise">
+        <!-- Left sidebar: Tab navigation and Status widget -->
+        <aside class="settings-nav-sidebar">
+          <button class="settings-tab-btn active" data-tab="profil">
+            <UserCircle2 size={16} />
+            <span>Profil & Teme</span>
+          </button>
+          <button class="settings-tab-btn" data-tab="dostava">
+            <Radio size={16} />
+            <span>Dostava</span>
+          </button>
+          <button class="settings-tab-btn" data-tab="sinhronizacija">
+            <KeyRound size={16} />
+            <span>Sinhronizacija</span>
+            <span class="ml-auto text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-wider bg-amber-500/10 text-amber-500 border border-amber-500/20" id="sync-tab-badge">Lokalno</span>
+          </button>
+          <button class="settings-tab-btn" data-tab="vodic">
+            <Sparkles size={16} />
+            <span>Vodič</span>
+            <span class="ml-auto text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-wider bg-nyt-accent/10 text-nyt-accent border border-nyt-accent/20" id="guide-tab-badge">0/4</span>
+          </button>
 
-            {/* 2. ONBOARDING / DISCOVERY */}
-            <section class="settings-section border-t border-border pt-16">
-                <div class="section-eyebrow mb-8 flex items-center gap-[var(--grid-gap)]">
-                    <Sparkles size={18} className="text-nyt-accent" />
-                    <h2 class="section-label font-sans text-[var(--text-sm)] font-black uppercase tracking-widest text-foreground">OTKRIJTE VIŠE</h2>
-                    <div class="section-divider flex-1 h-[1px] bg-border ml-4"></div>
-                </div>
-                <div class="bg-secondary/20 p-8 rounded-sm border border-border">
-                    <OnboardingIsland lang="sr" client:visible />
-                </div>
-            </section>
-        </div>
-
-        <aside class="settings-rail space-y-12 motion-rise">
-          {/* DIGITAL PASSPORT - SYNC */}
-          <div class="sidebar-module">
-            <h3 class="sidebar-label flex items-center gap-[var(--grid-gap)] font-sans text-[var(--text-xs)] font-black uppercase tracking-widest text-muted-foreground"><KeyRound size={14} /> DIGITALNI PASOŠ</h3>
-            <div class="mt-6">
-                <AccountSyncIsland lang="sr" client:visible />
+          <!-- Status Indicator Card -->
+          <div class="sidebar-identity-status hidden lg:block">
+            <div class="flex items-center gap-2">
+              <span class="status-dot inactive" id="sync-status-dot"></span>
+              <span class="text-xs font-black uppercase tracking-wider text-muted-foreground" id="sync-status-text">LOKALNI PROFIL</span>
             </div>
+            <p class="text-[10px] text-muted-foreground mt-2 leading-relaxed" id="sync-status-desc">
+              Vaš profil se čuva u ovom pretraživaču. Povežite digitalni pasoš da biste ga sinhronizovali.
+            </p>
           </div>
 
-          {/* SUBSCRIPTIONS */}
-          <div class="sidebar-module border-t border-border pt-12">
-            <h3 class="sidebar-label flex items-center gap-[var(--grid-gap)] font-sans text-[var(--text-xs)] font-black uppercase tracking-widest text-muted-foreground"><Radio size={14} /> DOSTAVA</h3>
-            <div class="mt-6 bg-secondary/20 border border-border p-6 rounded-sm">
-                <BriefingDeliveryIsland lang="sr" client:visible variant="full" />
-            </div>
-          </div>
-
-          <div class="sidebar-module border-t border-border pt-12">
-            <h4 class="sidebar-label font-sans text-[var(--text-xs)] font-black uppercase tracking-widest text-muted-foreground">POMOĆ I PODRŠKA</h4>
-            <div class="settings-rail-links mt-6 flex flex-col gap-[var(--grid-gap)] text-[var(--text-sm)] font-medium text-foreground">
-              <a href="/briefing" class="flex justify-between items-center group">Otvorite brifing <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-all" /></a>
-              <a href="/izvori" class="flex justify-between items-center group">Uredite izvore <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-all" /></a>
-              <a href="/contact" class="flex justify-between items-center group">Korespondencija <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-all" /></a>
+          <!-- Desktop Quick Support links -->
+          <div class="sidebar-help-links hidden lg:block mt-8 pt-6 border-t border-border/40">
+            <h4 class="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-4">Pomoć i Podrška</h4>
+            <div class="flex flex-col gap-2.5 text-xs font-semibold text-muted-foreground">
+              <a href="/briefing" class="flex justify-between items-center hover:text-nyt-accent transition-colors">Otvorite brifing <ArrowUpRight size={12} /></a>
+              <a href="/izvori" class="flex justify-between items-center hover:text-nyt-accent transition-colors">Uredite izvore <ArrowUpRight size={12} /></a>
+              <a href="/contact" class="flex justify-between items-center hover:text-nyt-accent transition-colors">Korespondencija <ArrowUpRight size={12} /></a>
             </div>
           </div>
         </aside>
+
+        <!-- Right Content Wrapper -->
+        <div class="settings-content-wrapper space-y-8">
+          <!-- 1. PROFILE & INTERESTS -->
+          <div id="tab-profil" class="settings-tab-content active">
+            <div class="section-eyebrow mb-6 flex items-center gap-4">
+              <ShieldCheck size={18} className="text-nyt-accent" />
+              <h2 class="section-label font-sans text-xs font-black uppercase tracking-widest text-foreground">PROFIL & INTERESOVANJA</h2>
+              <div class="section-divider flex-1 h-[1px] bg-border/40 ml-4"></div>
+            </div>
+            <SettingsProfileIsland lang="sr" client:visible />
+          </div>
+
+          <!-- 2. DELIVERY -->
+          <div id="tab-dostava" class="settings-tab-content">
+            <div class="section-eyebrow mb-6 flex items-center gap-4">
+              <Radio size={18} className="text-nyt-accent" />
+              <h2 class="section-label font-sans text-xs font-black uppercase tracking-widest text-foreground">PODEŠAVANJA DOSTAVE</h2>
+              <div class="section-divider flex-1 h-[1px] bg-border/40 ml-4"></div>
+            </div>
+            <div class="premium-card">
+              <BriefingDeliveryIsland lang="sr" client:visible variant="full" />
+            </div>
+          </div>
+
+          <!-- 3. SYNC & DIGITAL PASSPORT -->
+          <div id="tab-sinhronizacija" class="settings-tab-content">
+            <div class="section-eyebrow mb-6 flex items-center gap-4">
+              <KeyRound size={18} className="text-nyt-accent" />
+              <h2 class="section-label font-sans text-xs font-black uppercase tracking-widest text-foreground">DIGITALNI PASOŠ</h2>
+              <div class="section-divider flex-1 h-[1px] bg-border/40 ml-4"></div>
+            </div>
+            <AccountSyncIsland lang="sr" client:visible />
+          </div>
+
+          <!-- 4. ONBOARDING GUIDE -->
+          <div id="tab-vodic" class="settings-tab-content">
+            <div class="section-eyebrow mb-6 flex items-center gap-4">
+              <Sparkles size={18} className="text-nyt-accent" />
+              <h2 class="section-label font-sans text-xs font-black uppercase tracking-widest text-foreground">VODIČ ZA UPOZNAVANJE</h2>
+              <div class="section-divider flex-1 h-[1px] bg-border/40 ml-4"></div>
+            </div>
+            <div class="premium-card">
+              <OnboardingIsland lang="sr" client:visible />
+            </div>
+          </div>
+
+          <!-- Mobile Help Links Footer (fallback) -->
+          <div class="block lg:hidden mt-12 pt-6 border-t border-border/40">
+            <h4 class="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-4">Pomoć i Podrška</h4>
+            <div class="grid grid-cols-3 gap-4 text-xs font-semibold text-muted-foreground">
+              <a href="/briefing" class="flex justify-between items-center hover:text-nyt-accent transition-colors">Brifing <ArrowUpRight size={12} /></a>
+              <a href="/izvori" class="flex justify-between items-center hover:text-nyt-accent transition-colors">Izvori <ArrowUpRight size={12} /></a>
+              <a href="/contact" class="flex justify-between items-center hover:text-nyt-accent transition-colors">Kontakt <ArrowUpRight size={12} /></a>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </main>
@@ -86,24 +136,81 @@ import { KeyRound, Radio, ShieldCheck, UserCircle2, Sparkles, ArrowUpRight } fro
   <Footer />
 </Layout>
 
+<script>
+  import { $syncToken, $profile, $onboarding, getStoredOnboardingProgress } from '../lib/store.ts';
+
+  // Tabs Controller
+  const tabButtons = document.querySelectorAll('.settings-tab-btn');
+  const tabContents = document.querySelectorAll('.settings-tab-content');
+
+  tabButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetTab = btn.getAttribute('data-tab');
+      if (!targetTab) return;
+
+      // Update buttons
+      tabButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      // Update contents
+      tabContents.forEach(content => {
+        if (content.id === `tab-${targetTab}`) {
+          content.classList.add('active');
+        } else {
+          content.classList.remove('active');
+        }
+      });
+    });
+  });
+
+  // Sync token status dynamic updates
+  $syncToken.subscribe(token => {
+    const dot = document.getElementById('sync-status-dot');
+    const text = document.getElementById('sync-status-text');
+    const desc = document.getElementById('sync-status-desc');
+    const badge = document.getElementById('sync-tab-badge');
+    
+    const isMK = window.location.pathname.includes('/mk/');
+
+    if (token) {
+      if (dot) dot.className = 'status-dot active';
+      if (text) text.innerText = isMK ? 'СИНХРОНИЗИРАН ПРОФИЛ' : 'SINHRONIZOVAN PROFIL';
+      if (desc) desc.innerText = isMK 
+        ? 'Вашиот профил е поврзан со дигитален пасош и се синхронизира со серверот.' 
+        : 'Vaš profil je povezan sa digitalnim pasošem i sinhronizuje se sa serverom.';
+      
+      if (badge) {
+        badge.innerText = isMK ? 'Активен' : 'Aktivan';
+        badge.className = 'ml-auto text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-500 border border-emerald-500/20';
+      }
+    } else {
+      if (dot) dot.className = 'status-dot inactive';
+      if (text) text.innerText = isMK ? 'ЛОКАЛЕН ПРОФИЛ' : 'LOKALNI PROFIL';
+      if (desc) desc.innerText = isMK 
+        ? 'Вашиот профил се чува во овој прелистувач. Поврзете дигитален пасош за да го синхронизирате.' 
+        : 'Vaš profil se čuva u ovom pretraživaču. Povežite digitalni pasoš da biste ga sinhronizovali.';
+      
+      if (badge) {
+        badge.innerText = isMK ? 'Локално' : 'Lokalno';
+        badge.className = 'ml-auto text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-wider bg-amber-500/10 text-amber-500 border border-amber-500/20';
+      }
+    }
+  });
+
+  // Guide badge dynamic updates
+  function updateGuideBadge() {
+    const badge = document.getElementById('guide-tab-badge');
+    if (!badge) return;
+    const progress = getStoredOnboardingProgress();
+    badge.innerText = `${progress.doneCount}/${progress.total}`;
+  }
+  $profile.subscribe(updateGuideBadge);
+  $onboarding.subscribe(updateGuideBadge);
+</script>
+
 <style>
-    .editorial-shell { max-width: 1200px; margin-left: auto; margin-right: auto; }
     .page-kicker { font-family: var(--font-sans); font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 1rem; display: block; }
     .editorial-headline span { font-weight: 400; }
-
-    .sidebar-label { letter-spacing: 0.15em; }
-
-    .settings-rail-links a {
-        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-        padding-bottom: 0.5rem;
-        border-bottom: 1px solid var(--border);
-    }
-
-    .settings-rail-links a:hover {
-        color: var(--nyt-accent);
-        border-color: var(--nyt-accent);
-        padding-left: 4px;
-    }
 
     .motion-rise {
         animation: rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -115,23 +222,6 @@ import { KeyRound, Radio, ShieldCheck, UserCircle2, Sparkles, ArrowUpRight } fro
     }
 
     @media (max-width: 639.98px) {
-        .settings-shell {
-            margin-top: 1.25rem !important;
-        }
-
-        .settings-header {
-            margin-bottom: 1.5rem !important;
-        }
-
-        .settings-header .flex.items-center {
-            gap: 0.6rem !important;
-            margin-bottom: 0.75rem !important;
-        }
-
-        .settings-header .w-10 {
-            width: 1.75rem;
-        }
-
         .page-kicker {
             font-size: 0.58rem !important;
             letter-spacing: 0.12em;
@@ -146,45 +236,6 @@ import { KeyRound, Radio, ShieldCheck, UserCircle2, Sparkles, ArrowUpRight } fro
             margin-top: 0.9rem !important;
             font-size: 1rem !important;
             line-height: 1.45 !important;
-        }
-
-        .settings-page-grid {
-            gap: 1.5rem !important;
-        }
-
-        .settings-section .section-eyebrow {
-            gap: 0.55rem !important;
-            margin-bottom: 1rem !important;
-        }
-
-        .settings-section .section-label,
-        .sidebar-label {
-            font-size: 0.62rem !important;
-            letter-spacing: 0.12em !important;
-        }
-
-        .settings-section.border-t,
-        .sidebar-module.border-t {
-            padding-top: 1.25rem !important;
-        }
-
-        .settings-section .bg-secondary\/20,
-        .sidebar-module .bg-secondary\/20 {
-            padding: 1rem !important;
-        }
-
-        .settings-rail {
-            gap: 1rem !important;
-        }
-
-        .sidebar-module .mt-6,
-        .settings-rail-links {
-            margin-top: 0.9rem !important;
-        }
-
-        .settings-rail-links {
-            gap: 0.7rem !important;
-            font-size: 0.92rem !important;
         }
     }
 </style>
