@@ -268,6 +268,10 @@ _CYR_LAT_MAP = {
     "ч": "ch",
     "џ": "dzh",
     "ш": "sh",
+    "ћ": "c",
+    "Ћ": "C",
+    "ђ": "dj",
+    "Ђ": "Dj",
 }
 
 
@@ -291,7 +295,7 @@ def transliterate_lat_to_cyr(text: str) -> str:
     # Build reverse map, sorting by length descending to handle multi-char sequences like 'Dzh'
     lat_to_cyr_map = {v: k for k, v in _CYR_LAT_MAP.items()}
     
-    res = text
+    res = text.replace("ć", "c").replace("č", "ch").replace("š", "sh").replace("ž", "zh").replace("đ", "dj").replace("Ć", "C").replace("Č", "Ch").replace("Š", "Sh").replace("Ž", "Zh").replace("Đ", "Dj")
     for k in sorted(lat_to_cyr_map.keys(), key=len, reverse=True):
         res = res.replace(k, lat_to_cyr_map[k])
     return res

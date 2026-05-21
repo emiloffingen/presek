@@ -9,6 +9,7 @@ to group related news articles while maintaining topic separation.
 KEY DESIGN DECISIONS:
 --------------------
 
+
 1. HYBRID APPROACH:
    - Uses both semantic similarity (cosine distance) and structural similarity
    - Balances precision (avoiding false merges) with recall (capturing follow-ups)
@@ -74,6 +75,8 @@ Key metrics to watch:
 """
 
 import datetime
+from core.language import transliterate_cyr_to_lat
+
 import logging
 import math
 import os
@@ -98,7 +101,7 @@ def stem(word: str, lang: str = "sr") -> str:
     if len(word) < 4:
         return word
     # Don't stem proper nouns (starts with capital) unless it's the very start of a sentence
-    if word[0].isupper():
+    if word[0].isupper() and word.lower() not in ["vucic", "vuchic", "vuc", "vuch"]:
         return word
     word = re.sub(r"[^\w\s]", "", word)
 
@@ -361,16 +364,16 @@ def _entity_token_overlap(left_entities: set[str], right_entities: set[str], lan
     # Use lowercase stemmed tokens and apply synonyms to improve overlap detection
     # (e.g., "Vlada" and "Ministarstvo" -> "vlad")
     left_tokens = {
-        _apply_synonyms([stem(token.strip().lower(), lang=lang)])[0]
+        _apply_synonyms([stem(transliterate_cyr_to_lat(token.strip().lower().replace("ć", "c").replace("č", "c").replace("š", "s").replace("ž", "z").replace("đ", "dj")).replace("ch", "c").replace("sh", "s").replace("zh", "z").replace("dj", "d"), lang=lang)])[0]
         for entity in (left_entities or set())
         for token in str(entity).split()
-        if len(token.strip()) >= 4
+        if len(token.strip()) >= 3
     }
     right_tokens = {
-        _apply_synonyms([stem(token.strip().lower(), lang=lang)])[0]
+        _apply_synonyms([stem(transliterate_cyr_to_lat(token.strip().lower().replace("ć", "c").replace("č", "c").replace("š", "s").replace("ž", "z").replace("đ", "dj")).replace("ch", "c").replace("sh", "s").replace("zh", "z").replace("dj", "d"), lang=lang)])[0]
         for entity in (right_entities or set())
         for token in str(entity).split()
-        if len(token.strip()) >= 4
+        if len(token.strip()) >= 3
     }
     res = left_tokens & right_tokens
     return res
@@ -526,7 +529,7 @@ def find_cluster_semantic(
 
                     ents = db_manager.get_cluster_entities([cid]).get(cid, set())
                     input_ents = _extract_title_entities(title or "")
-                    if ents and input_ents and not input_ents.intersection(ents):
+                    if ents and input_ents and not _entity_token_overlap(ents, input_ents):
                         return None
                     if dist > (threshold * 0.7) and not input_ents:
                         return None
