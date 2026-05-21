@@ -390,7 +390,7 @@ const articleSchema = cluster ? {
 					<div class="header-main-info flex-grow">
 						<div class="edition-kicker flex items-center gap-[var(--grid-gap)] mb-6">
 							<span class="edition-badge bg-foreground text-background px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em]">
-								{getEditionStr(cluster.articles?.[0].created_at).split('.').pop()?.toUpperCase()} {lang === 'sr' ? 'IZDANJE' : 'ИЗДАНИЕ'}
+								{t(getEditionStr(cluster.articles?.[0].created_at) as any)}
 							</span>
 							<span class="header-date text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground border-l border-border pl-4">
 								{new Date(cluster.articles?.[0].created_at || '').toLocaleDateString(lang === 'sr' ? 'sr-RS' : 'mk-MK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
