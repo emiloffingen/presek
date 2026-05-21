@@ -5,6 +5,7 @@ import feedparser
 import httpx
 
 from core.database import db_manager as db
+from core.ingestion import cleanup_rss_xml
 
 log = logging.getLogger("presek.check_feeds")
 
@@ -15,7 +16,8 @@ async def check_feed(client, name, url):
         if resp.status_code != 200:
             return name, url, f"HTTP {resp.status_code}"
 
-        feed = feedparser.parse(resp.content)
+        cleaned_content = cleanup_rss_xml(resp.content)
+        feed = feedparser.parse(cleaned_content)
         if feed.bozo:
             # Bozo errors aren't always fatal, but useful to know
             return name, url, f"Bozo error: {feed.bozo_exception}"
@@ -38,7 +40,11 @@ async def main():
     sources = db.execute("SELECT name, url FROM sources WHERE is_active = TRUE")
     log.info(f"Checking {len(sources)} active feeds...")
 
-    async with httpx.AsyncClient(headers={"User-Agent": "Presek/1.0 (Audit)"}) as client:
+    async with httpx.AsyncClient(
+        headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+    ) as client:
         # Check in batches of 10 to avoid overwhelming local resources/DNS
         batch_size = 10
         for i in range(0, len(sources), batch_size):

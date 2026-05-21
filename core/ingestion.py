@@ -90,6 +90,51 @@ _TRACKING_PARAMS = {
 }
 
 
+def cleanup_rss_xml(content: bytes) -> bytes:
+    """Cleans up common XML/RSS malformations before parsing."""
+    if not content:
+        return b""
+
+    # Try to decode to string for regex operations
+    try:
+        text = content.decode("utf-8", errors="replace")
+    except Exception:
+        text = content.decode("iso-8859-1", errors="replace")
+
+    # 1. Fix "junk after document element" (OhridNews style)
+    # Truncate after the final closing tag
+    last_tags = ["</rss>", "</feed>", "</rdf:RDF>", "</xml>"]
+    pos = -1
+    for tag in last_tags:
+        found_pos = text.rfind(tag)
+        if found_pos > pos:
+            pos = found_pos + len(tag)
+
+    if pos != -1:
+        text = text[:pos]
+
+    # 2. Fix "unbound prefix" (HotSport style)
+    # Inject missing common namespaces if they are used but not declared
+    if "<rss" in text:
+        ns_to_add = []
+        if "media:" in text and "xmlns:media" not in text:
+            ns_to_add.append('xmlns:media="http://search.yahoo.com/mrss/"')
+        if "content:" in text and "xmlns:content" not in text:
+            ns_to_add.append('xmlns:content="http://purl.org/rss/1.0/modules/content/"')
+        if "dc:" in text and "xmlns:dc" not in text:
+            ns_to_add.append('xmlns:dc="http://purl.org/dc/elements/1.1/"')
+
+        if ns_to_add:
+            # Add to the <rss tag
+            text = re.sub(r"<rss\b", "<rss " + " ".join(ns_to_add), text, count=1)
+
+    # 3. Handle common invalid tokens/unescaped characters
+    # Remove control characters that often break XML parsers (except tab, cr, lf)
+    text = "".join(c for c in text if ord(c) >= 32 or c in "\n\r\t")
+
+    return text.encode("utf-8", errors="replace")
+
+
 def _fetch_with_cloudscraper(url: str, timeout: int = 30) -> bytes:
     """Fetch URL content using cloudscraper to bypass Cloudflare protection."""
     if cloudscraper is None:
@@ -658,7 +703,8 @@ async def fetch_feed_async(client: httpx.AsyncClient, source: Dict[str, Any]) ->
                     loop = asyncio.get_event_loop()
                     try:
                         content = await loop.run_in_executor(None, _fetch_with_cloudscraper, url, timeout)
-                        feed = feedparser.parse(content)
+                        cleaned_content = cleanup_rss_xml(content)
+                        feed = feedparser.parse(cleaned_content)
                         entries = feed.entries[:limit]
                         log.debug(f"[ingest] {name}: fetched {len(entries)} articles via cloudscraper")
                         return name, entries, None
@@ -676,7 +722,8 @@ async def fetch_feed_async(client: httpx.AsyncClient, source: Dict[str, Any]) ->
 
             # Parse RSS in a thread pool since feedparser is blocking/CPU heavy
             loop = asyncio.get_event_loop()
-            feed = await loop.run_in_executor(None, feedparser.parse, resp.content)
+            cleaned_content = cleanup_rss_xml(resp.content)
+            feed = await loop.run_in_executor(None, feedparser.parse, cleaned_content)
 
             entries = feed.entries[:limit]
             log.debug(f"[ingest] {name}: fetched {len(entries)} articles")
