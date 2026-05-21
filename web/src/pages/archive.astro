@@ -4,6 +4,7 @@ import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import ArchiveFeedIsland from '../components/ArchiveFeedIsland.tsx';
 import ArchiveHeatmapIsland from '../components/ArchiveHeatmapIsland.tsx';
+import '../styles/archive-premium.css';
 
 import { apiBaseUrl } from '../lib/apiBase';
 import { sanitizeHtml } from '../lib/sanitize';
@@ -93,23 +94,23 @@ function formatBriefingItem(item: string) {
             </div>
         </div>
 
-        <div class="masthead-main flex flex-col md:flex-row justify-between items-start md:items-end gap-12 mb-12">
+        <div class="masthead-main flex flex-col md:flex-row justify-between items-start md:items-end gap-12 mb-12 animate-rise">
             <div class="max-w-3xl">
                 <h1 class="masthead-title font-serif text-5xl md:text-7xl font-black leading-[0.9] tracking-tighter mb-4">{t('nav.archive')} <span class="text-nyt-accent italic font-light">{isMK ? 'Изданија' : 'Izdanja'}</span></h1>
                 <p class="font-serif text-xl italic text-muted-foreground leading-snug max-w-2xl">
                     {t('archive.masthead_desc')}
                 </p>
             </div>
-            <div class="masthead-data-deck grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[var(--grid-gap)] border border-border/60 bg-secondary/10 overflow-hidden rounded-sm w-full md:w-auto">
-                <div class="deck-stat p-6 border-r border-border/60 text-center">
+            <div class="archive-premium-deck w-full md:w-auto">
+                <div class="archive-deck-stat">
                     <span class="block text-2xl font-black tabular-nums">{archive.total.toLocaleString(isMK ? 'mk-MK' : 'sr-RS')}</span>
                     <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{t('archive.objava')}</span>
                 </div>
-                <div class="deck-stat p-6 border-r border-border/60 text-center">
+                <div class="archive-deck-stat">
                     <span class="block text-2xl font-black tabular-nums">{archive.sources}</span>
                     <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{t('archive.redakcija')}</span>
                 </div>
-                <div class="deck-stat p-6 bg-nyt-accent/5 text-center">
+                <div class="archive-deck-stat accent-total-themes">
                     <span class="block text-2xl font-black tabular-nums text-nyt-accent">{archive.total_clusters}</span>
                     <span class="text-[9px] font-black uppercase tracking-widest text-nyt-accent/70">{t('archive.tema')}</span>
                 </div>
@@ -117,7 +118,7 @@ function formatBriefingItem(item: string) {
         </div>
 
         {briefingItems.length > 0 && (
-            <div class="daily-briefing-highlight mb-16 p-8 bg-background border-l-4 border-nyt-accent shadow-editorial">
+            <div class="archive-briefing-glow-panel mb-16 shadow-editorial">
                 <div class="flex items-center gap-[var(--grid-gap)] mb-6">
                     <Sparkles size={14} className="text-nyt-accent" />
                     <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent">{t('archive.briefing_kicker')}</span>
@@ -133,7 +134,7 @@ function formatBriefingItem(item: string) {
             </div>
         )}
 
-        <div class="archive-nav-bar sticky top-[72px] z-30 bg-background/80 backdrop-blur-xl border-y border-border py-4 mb-16">
+        <div class="archive-sticky-navbar">
             <div class="flex flex-col md:flex-row justify-between items-center gap-[var(--grid-gap)]">
                 <div class="flex items-center gap-[var(--grid-gap)] flex-wrap">
                     <form method="get" class="date-select-form">
@@ -143,7 +144,7 @@ function formatBriefingItem(item: string) {
                                 name="date"
                                 value={date}
                                 onchange="this.form.submit()"
-                                class="bg-secondary/40 border border-border px-4 py-2 rounded font-sans text-xs font-black uppercase tracking-widest outline-none focus:border-nyt-accent transition-all cursor-pointer"
+                                class="archive-date-input"
                             />
                             <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none opacity-40 group-hover:opacity-100 transition-opacity">
                                 <CalendarDays size={14} />
@@ -154,14 +155,14 @@ function formatBriefingItem(item: string) {
                     <div class="flex items-center gap-1">
                         <a
                             href={`${isMK ? '/mk' : ''}/archive?date=${new Date(new Date(date).getTime() - 86400000).toISOString().split('T')[0]}`}
-                            class="px-4 py-2 bg-secondary/50 border border-border/60 rounded font-sans text-[10px] font-black uppercase tracking-widest hover:bg-foreground hover:text-background transition-all"
+                            class="archive-nav-btn"
                         >
                             ← {isMK ? 'ПРЕТХОДЕН' : 'PRETHODNI'}
                         </a>
                         {new Date(date) < new Date(new Date().toISOString().split('T')[0]) && (
                             <a
-                                href={`${isMK ? '/mk' : ''}/archive?date=${new Date(new Date(date).getTime() + 86400000).toISOString().split('T')[0]}`}
-                                class="px-4 py-2 bg-secondary/50 border border-border/60 rounded font-sans text-[10px] font-black uppercase tracking-widest hover:bg-foreground hover:text-background transition-all"
+                                  href={`${isMK ? '/mk' : ''}/archive?date=${new Date(new Date(date).getTime() + 86400000).toISOString().split('T')[0]}`}
+                                  class="archive-nav-btn"
                             >
                                 {isMK ? 'СЛЕДЕН' : 'SLEDEĆI'} →
                             </a>
@@ -177,7 +178,7 @@ function formatBriefingItem(item: string) {
                             name="q"
                             value={q}
                             placeholder={isMK ? "Пребарај го овој ден..." : "Pretraži ovaj dan..."}
-                            class="w-full bg-secondary/20 border-b-2 border-border py-2 pl-2 pr-10 font-serif font-bold text-lg outline-none focus:border-nyt-accent placeholder:italic placeholder:font-normal placeholder:opacity-40 transition-all"
+                            class="archive-search-input"
                         />
                         <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none opacity-40">
                             <Search size={18} />
@@ -188,7 +189,7 @@ function formatBriefingItem(item: string) {
         </div>
     </header>
 
-    <details class="archive-pulse-toggle mb-20 group border border-border rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md">
+    <details class="archive-pulse-deck-toggle mb-20 group">
         <summary class="list-none p-6 bg-secondary/5 cursor-pointer flex justify-between items-center group-open:bg-secondary/10">
             <div class="flex items-center gap-[var(--grid-gap)]">
                 <div class="p-2 bg-nyt-accent/10 rounded-lg text-nyt-accent">
@@ -249,7 +250,7 @@ function formatBriefingItem(item: string) {
             </div>
 
             {onThisDay && onThisDay.cluster_id && (
-                <div class="rail-module mb-12 p-6 bg-secondary/10 border border-border/40 rounded-xl relative overflow-hidden">
+                <div class="archive-otd-card mb-12">
                     <div class="absolute top-0 right-0 p-4 opacity-10">
                         <CalendarDays size={64} />
                     </div>
@@ -275,9 +276,9 @@ function formatBriefingItem(item: string) {
                 <h3 class="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-foreground mb-6 pb-2 border-b-2 border-foreground">{t('archive.focus_topics')}</h3>
                 <div class="flex flex-col gap-1">
                     {archive.top_topics?.slice(0, 15).map((item: any) => (
-                        <a href={buildFilterHref('topic', item.topic)} class="group flex items-center justify-between py-2 border-b border-border/40 hover:bg-secondary/20 transition-all px-1">
+                        <a href={buildFilterHref('topic', item.topic)} class="archive-sidebar-item group">
                             <span class="font-serif font-bold text-base group-hover:text-nyt-accent transition-colors">{item.topic}</span>
-                            <span class="font-sans text-[10px] font-black text-muted-foreground bg-secondary/50 px-1.5 py-0.5 rounded">{item.n}</span>
+                            <span class="archive-sidebar-count">{item.n}</span>
                         </a>
                     ))}
                 </div>
@@ -287,12 +288,12 @@ function formatBriefingItem(item: string) {
                 <h3 class="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-foreground mb-6 pb-2 border-b-2 border-foreground">{t('archive.leading_channels')}</h3>
                 <div class="flex flex-col gap-1">
                     {archive.top_sources?.slice(0, 15).map((item: any) => (
-                        <a href={buildFilterHref('source', item.source)} class="group flex items-center justify-between py-2 border-b border-border/40 hover:bg-secondary/20 transition-all px-1">
+                        <a href={buildFilterHref('source', item.source)} class="archive-sidebar-item group">
                             <span class="font-serif font-bold text-base group-hover:text-nyt-accent transition-colors flex items-center gap-[var(--grid-gap)]">
                                 <Building2 size={12} className="opacity-30 group-hover:opacity-100 transition-opacity" />
                                 {item.source}
                             </span>
-                            <span class="font-sans text-[10px] font-black text-muted-foreground bg-secondary/50 px-1.5 py-0.5 rounded">{item.n}</span>
+                            <span class="archive-sidebar-count">{item.n}</span>
                         </a>
                     ))}
                 </div>

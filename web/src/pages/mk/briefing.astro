@@ -7,6 +7,7 @@ import BriefingContent from '../../components/briefing/BriefingContent.astro';
 import BriefingSidebar from '../../components/briefing/BriefingSidebar.astro';
 import BriefingDigest from '../../components/briefing/BriefingDigest.astro';
 import NarrativeList from '../../components/briefing/NarrativeList';
+import '../../styles/briefing-premium.css';
 
 import { apiBaseUrl } from '../../lib/apiBase';
 import { formatBriefing } from '../../utils/briefingFormatter';
@@ -89,7 +90,7 @@ const displayDate = briefingData?.date
                             <NarrativeList narratives={briefingData.metadata.key_narratives} lang={lang} client:load />
                         )}
 
-                        <div class="editorial-divider mb-16"></div>
+                        <div class="briefing-divider"></div>
 
                         <div class="briefing-editorial-wrapper max-w-[800px] mx-auto">
                             <BriefingContent formattedBriefing={formattedBriefing} />

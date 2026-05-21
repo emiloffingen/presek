@@ -1,0 +1,240 @@
+/* Premium Glassmorphic Archive Page Styles */
+
+/* 1. Hero Summary Stats Card Grid */
+.archive-premium-deck {
+    display: grid;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    background: color-mix(in srgb, var(--card) 45%, transparent);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (min-width: 640px) {
+    .archive-premium-deck {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1024px) {
+    .archive-premium-deck {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+.archive-premium-deck:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--border);
+}
+
+.archive-deck-stat {
+    padding: 1.25rem;
+    text-align: center;
+    background: transparent;
+    transition: all 0.3s ease;
+    border-right: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+
+.archive-deck-stat:last-child {
+    border-right: none;
+}
+
+.archive-deck-stat:hover {
+    background: color-mix(in srgb, var(--card) 65%, transparent);
+}
+
+.archive-deck-stat.accent-total-themes {
+    background: color-mix(in srgb, var(--nyt-accent) 4%, transparent);
+}
+
+.archive-deck-stat.accent-total-themes:hover {
+    background: color-mix(in srgb, var(--nyt-accent) 8%, transparent);
+}
+
+/* 2. Floating Sticky Navigation Bar */
+.archive-sticky-navbar {
+    position: sticky;
+    top: 72px;
+    z-index: 30;
+    background: color-mix(in srgb, var(--background) 80%, transparent);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 0.85rem 1.25rem;
+    margin-bottom: 3.5rem;
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+}
+
+.archive-sticky-navbar:hover {
+    box-shadow: var(--shadow-md);
+    border-color: color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+/* 3. Sleek Inputs & Buttons */
+.archive-date-input {
+    background: color-mix(in srgb, var(--card) 60%, transparent);
+    border: 1px solid var(--border);
+    padding: 0.5rem 2.2rem 0.5rem 1rem;
+    border-radius: 8px;
+    font-family: var(--font-sans);
+    font-size: 0.7rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.archive-date-input:focus, .archive-date-input:hover {
+    border-color: var(--nyt-accent);
+    background: color-mix(in srgb, var(--card) 90%, transparent);
+    box-shadow: 0 0 10px -2px color-mix(in srgb, var(--nyt-accent) 15%, transparent);
+}
+
+.archive-nav-btn {
+    padding: 0.5rem 1rem;
+    background: color-mix(in srgb, var(--card) 50%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+    border-radius: 8px;
+    font-family: var(--font-sans);
+    font-size: 0.65rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.archive-nav-btn:hover {
+    background: var(--foreground);
+    color: var(--background);
+    border-color: var(--foreground);
+}
+
+.archive-search-input {
+    width: 100%;
+    background: transparent;
+    border-bottom: 2px solid var(--border);
+    padding: 0.5rem 2.5rem 0.5rem 0.5rem;
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: 1.1rem;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.archive-search-input:focus {
+    border-color: var(--nyt-accent);
+    box-shadow: 0 4px 12px -8px color-mix(in srgb, var(--nyt-accent) 30%, transparent);
+}
+
+/* 4. Pulse Dashboard Expansion */
+.archive-pulse-deck-toggle {
+    border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+    background: color-mix(in srgb, var(--card) 35%, transparent);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+}
+
+.archive-pulse-deck-toggle:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--border);
+}
+
+/* 5. "On This Day" Premium Panel */
+.archive-otd-card {
+    position: relative;
+    overflow: hidden;
+    padding: 1.5rem;
+    background: color-mix(in srgb, var(--card) 50%, transparent);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.archive-otd-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--nyt-accent);
+}
+
+.archive-otd-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 120px;
+    height: 120px;
+    background: radial-gradient(circle at top right, color-mix(in srgb, var(--nyt-accent) 8%, transparent), transparent 70%);
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+/* 6. Sidebar Lists Upgrade */
+.archive-sidebar-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+    background: transparent;
+    transition: all 0.2s ease;
+}
+
+.archive-sidebar-item:hover {
+    background: color-mix(in srgb, var(--card) 70%, transparent);
+    padding-left: 0.95rem;
+}
+
+.archive-sidebar-item:last-child {
+    border-bottom: none;
+}
+
+.archive-sidebar-count {
+    font-family: var(--font-sans);
+    font-size: 0.55rem;
+    font-weight: 900;
+    color: var(--muted-foreground);
+    background: color-mix(in srgb, var(--border) 50%, transparent);
+    padding: 0.15rem 0.4rem;
+    border-radius: 99px;
+}
+
+.archive-sidebar-item:hover .archive-sidebar-count {
+    color: var(--foreground);
+    background: color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+/* 7. Briefing Highlight Panel */
+.archive-briefing-glow-panel {
+    background: color-mix(in srgb, var(--card) 40%, transparent);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+    border-left: 4px solid var(--nyt-accent);
+    padding: 1.75rem;
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm), 0 4px 20px -8px color-mix(in srgb, var(--nyt-accent) 10%, transparent);
+    transition: all 0.3s ease;
+}
+
+.archive-briefing-glow-panel:hover {
+    box-shadow: var(--shadow-md), 0 4px 25px -6px color-mix(in srgb, var(--nyt-accent) 15%, transparent);
+    border-color: color-mix(in srgb, var(--border) 85%, transparent);
+    border-left-color: var(--nyt-accent);
+}
