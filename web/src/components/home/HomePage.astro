@@ -20,6 +20,7 @@ import { apiBaseUrl } from '../../lib/apiBase';
 import type { NewsCluster } from '../../types';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import { buildHomepageSections } from '../../lib/homepageSections';
+import { fetchJsonCached } from '../../lib/apiCache';
 
 const requestUrl = Astro.request ? new URL(Astro.request.url) : Astro.url;
 const hostHeader = Astro.request?.headers.get('host') || requestUrl.hostname;
@@ -73,11 +74,11 @@ async function loadHomepageFallback() {
 
     const [newsResult, trendResult, entityResult, statsResult, briefingResult, wireResult] = await Promise.allSettled([
         fetchJson(fallbackNewsUrl.toString()),
-        fetchJson(`${API_URL}/trending?lang=${lang}`),
-        fetchJson(`${API_URL}/intelligence/top-entities?limit=12&lang=${lang}`),
-        fetchJson(`${API_URL}/stats/summary?lang=${lang}`),
-        fetchJson(`${API_URL}/briefing?lang=${lang}`),
-        fetchJson(`${API_URL}/home/latest-wire?limit=15&lang=${lang}`),
+        fetchJsonCached(`${API_URL}/trending?lang=${lang}`),
+        fetchJsonCached(`${API_URL}/intelligence/top-entities?limit=12&lang=${lang}`),
+        fetchJsonCached(`${API_URL}/stats/summary?lang=${lang}`),
+        fetchJsonCached(`${API_URL}/briefing?lang=${lang}`),
+        fetchJsonCached(`${API_URL}/home/latest-wire?limit=15&lang=${lang}`),
     ]);
 
     if (newsResult.status === 'fulfilled') {
@@ -174,18 +175,13 @@ if (isHomepage) {
     if (q) newsUrl.searchParams.set('q', q);
     if (timespan) newsUrl.searchParams.set('timespan', timespan);
 
-    const [newsResult, trendResult, entityResult, statsResult, briefingResult, wireResult] = await Promise.allSettled([
+    const [newsResult, trendResult, entityResult, statsResult, briefingResult] = await Promise.allSettled([
         fetchJson(newsUrl.toString()),
-        fetchJson(`${API_URL}/trending?lang=${lang}`),
-        fetchJson(`${API_URL}/intelligence/top-entities?limit=12&lang=${lang}`),
-        fetchJson(`${API_URL}/stats/summary?lang=${lang}`),
-        fetchJson(`${API_URL}/briefing?lang=${lang}`),
-        fetchJson(`${API_URL}/home/latest-wire?limit=15&lang=${lang}`),
+        fetchJsonCached(`${API_URL}/trending?lang=${lang}`),
+        fetchJsonCached(`${API_URL}/intelligence/top-entities?limit=12&lang=${lang}`),
+        fetchJsonCached(`${API_URL}/stats/summary?lang=${lang}`),
+        fetchJsonCached(`${API_URL}/briefing?lang=${lang}`),
     ]);
-
-    if (wireResult.status === 'fulfilled') {
-        wireArticles = Array.isArray(wireResult.value?.articles) ? wireResult.value.articles : [];
-    }
 
     if (newsResult.status === 'fulfilled') {
         clusters = newsResult.value?.clusters || [];
@@ -275,7 +271,6 @@ const {
     consensusClusters,
     developmentsFeatured,
     developmentsCompact,
-    railWireArticles,
     topWireArticles,
 } = homepageSections;
 
