@@ -212,6 +212,7 @@ export const ui = {
     'lead.consensus_prefix': 'Konsenzus između',
     'lead.consensus_suffix_1': 'redakcije',
     'lead.consensus_suffix_2_4': 'redakcije',
+    'lead.consensus_suffix_2plus': 'redakcije',
     'lead.consensus_suffix_5plus': 'redakcija',
     'nav.follow_us': 'Pratite nas',
     'entity.unknown': 'Nepoznato',
