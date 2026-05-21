@@ -1,8 +1,20 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Compass, Sparkles, BrainCircuit, Loader2 } from 'lucide-react';
+import {
+  ArrowUpRight,
+  BellRing,
+  BrainCircuit,
+  Compass,
+  Gauge,
+  Layers,
+  ListChecks,
+  Loader2,
+  Radio,
+  SlidersHorizontal,
+  Sparkles,
+  TrendingUp,
+} from 'lucide-react';
 import { useStore } from '@nanostores/react';
-import { $profile, updateProfile } from '../lib/store.ts';
-import { ErrorBoundary } from './ui/ErrorBoundary.tsx';
+import { $profile } from '../lib/store.ts';
 import PreferenceToggle from './PreferenceToggle.tsx';
 import { NewsCard } from './NewsCard.tsx';
 import OnboardingIsland from './OnboardingIsland.tsx';
@@ -20,14 +32,37 @@ interface ForYouPageIslandProps {
   lang?: string;
 }
 
+type PersonalizedCluster = NewsCluster & { reason?: string };
+
+function clusterTitle(cluster: PersonalizedCluster) {
+  return cluster.synthetic_headline || cluster.articles?.[0]?.title || '';
+}
+
+function clusterTime(cluster: PersonalizedCluster) {
+  return cluster.articles?.[0]?.ingested_at || cluster.articles?.[0]?.created_at || cluster.created_at || '';
+}
+
+function formatTime(value: string, lang: string) {
+  if (!value) return '';
+  try {
+    return new Intl.DateTimeFormat(lang === 'mk' ? 'mk-MK' : 'sr-RS', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Europe/Skopje',
+    }).format(new Date(value.replace('Z', '')));
+  } catch {
+    return '';
+  }
+}
+
 export default function ForYouPageIsland({ initialClusters, initialError = null, lang = 'sr' }: ForYouPageIslandProps) {
   const profile = useStore($profile);
   const [semanticResults, setSemanticResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [semanticError, setSemanticError] = useState<string | null>(null);
   const isMK = lang === 'mk';
+  const hasSignals = hasPersonalizationSignal(profile);
 
-  // 2. Fetch semantic recommendations whenever personalization signals change.
   useEffect(() => {
     let cancelled = false;
 
@@ -53,7 +88,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
           body: JSON.stringify({
             profile,
             limit: 36,
-            lang: lang
+            lang: lang,
           }),
         });
 
@@ -84,204 +119,257 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
     };
   }, [profile, lang, isMK]);
 
-  // 3. Hybrid Merging
-  const mergedClusters = useMemo(() => {
+  const mergedClusters = useMemo<PersonalizedCluster[]>(() => {
     const local = buildPersonalizedClusters(initialClusters, profile, 48);
-    const seen = new Set(semanticResults.map(r => r.cluster_id));
+    const seen = new Set(semanticResults.map((r) => r.cluster_id));
 
-    // Combine semantic results (server-side brain) with local keyword matches
     const combined = [
       ...semanticResults,
-      ...local.filter(item => item && item.cluster && !seen.has(item.cluster.cluster_id)).map(item => ({
+      ...local.filter((item) => item && item.cluster && !seen.has(item.cluster.cluster_id)).map((item) => ({
         ...item!.cluster,
         reason: item!.reason,
         has_synthesis: item!.cluster.has_synthesis,
-        has_balanced: item!.cluster.has_balanced
-      }))
-    ];
+        has_balanced: item!.cluster.has_balanced,
+      })),
+    ] as PersonalizedCluster[];
 
-    // COLD START FALLBACK: If we have followed topics but NO matches,
-    // provide the top 10 most relevant from the initial set anyway
     if (combined.length === 0 && hasPersonalizationSignal(profile)) {
-        return initialClusters.slice(0, 10).map(c => ({
-            ...c,
-            reason: isMK ? 'Актуелно денес' : 'Aktuelno danas'
-        }));
+      return initialClusters.slice(0, 10).map((cluster) => ({
+        ...cluster,
+        reason: isMK ? 'Актуелно денес' : 'Aktuelno danas',
+      }));
     }
 
     return combined;
   }, [initialClusters, semanticResults, profile, isMK]);
 
   const followSuggestions = useMemo(() => {
-    const suggestions = buildSurfaceFollowSuggestions(profile, 'for_you', { topicLimit: 4, sourceLimit: 2 });
+    const suggestions = buildSurfaceFollowSuggestions(profile, 'for_you', { topicLimit: 5, sourceLimit: 3 });
     return [
-      ...suggestions.topics.map((t: any) => ({ ...t, kind: 'topic' })),
-      ...suggestions.sources.map((s: any) => ({ ...s, kind: 'source' }))
+      ...suggestions.topics.map((topic: any) => ({ ...topic, kind: 'topic' })),
+      ...suggestions.sources.map((source: any) => ({ ...source, kind: 'source' })),
     ];
   }, [profile]);
 
+  const followedTopics = profile.followedTopics || [];
+  const followedSources = profile.followedSources || [];
+  const recentCount = profile.recentClusters?.length || 0;
+  const signalStrength = Math.min(100, Math.round(followedTopics.length * 12 + followedSources.length * 16 + recentCount * 2));
+  const priorityClusters = mergedClusters.slice(0, 3);
+  const feedClusters = mergedClusters.slice(3, 15);
+  const queueClusters = mergedClusters.slice(15, 21);
+  const sourceCount = new Set(mergedClusters.flatMap((cluster) => cluster.articles?.map((article) => article.source) || [])).size;
+  const synthesisCount = mergedClusters.filter((cluster) => cluster.has_synthesis).length;
   const pageError = semanticError || initialError;
+
+  const categoryLeaders = useMemo(() => {
+    const counts = new Map<string, number>();
+    mergedClusters.forEach((cluster) => {
+      const category = cluster.articles?.[0]?.category || cluster.articles?.[0]?.topic;
+      if (!category) return;
+      counts.set(category, (counts.get(category) || 0) + 1);
+    });
+    return Array.from(counts.entries())
+      .sort((left, right) => right[1] - left[1])
+      .slice(0, 4);
+  }, [mergedClusters]);
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-40">
-        <Loader2 className="animate-spin text-nyt-accent mb-4" size={32} />
-        <p className="font-serif italic text-muted-foreground">{isMK ? 'Го генерираме вашиот персонализиран преглед...' : 'Generišemo vaš personalizovan pregled...'}</p>
+      <div className="for-you-loading">
+        <Loader2 className="animate-spin" size={30} />
+        <p>{isMK ? 'Го подготвуваме вашиот пресек...' : 'Pripremamo vaš Presek...'}</p>
       </div>
     );
   }
 
-  if (!hasPersonalizationSignal(profile)) {
+  if (!hasSignals) {
     return (
-      <div className="max-w-4xl mx-auto py-20 px-4">
-        <div className="cold-start-banner backdrop-blur-xl">
-          <header className="mb-8 text-center">
-              <div className="cold-start-icon-box">
-                  <Compass size={28} />
-              </div>
-              <h1 className="font-serif text-4xl md:text-5xl font-black mb-4 tracking-tight">{isMK ? 'Вашиот личен простор' : 'Vaš lični prostor'}</h1>
-              <p className="text-lg md:text-xl text-secondary-foreground max-w-xl mx-auto italic font-serif">
-                  {isMK
-                    ? 'Оваа страница е место каде што Пресек го прилагодува вашиот ритам. Изберете теми што ве интересираат за да започнете.'
-                    : 'Ova stranica je mesto gde Presek prilagođava vaš ritam. Izaberite teme koje vas interesuju da biste započeli.'}
-              </p>
-          </header>
-          <div className="w-full max-w-2xl bg-card/45 border border-border/70 p-6 md:p-10 rounded-2xl shadow-premium backdrop-blur-md">
-              <OnboardingIsland lang={lang} />
+      <div className="for-you-dashboard">
+        <section className="for-you-cold-start">
+          <div className="cold-start-copy">
+            <span className="for-you-kicker-line"><Compass size={16} /> {isMK ? 'Почеток' : 'Početak'}</span>
+            <h1>{isMK ? 'Направете свој Пресек' : 'Napravite svoj Presek'}</h1>
+            <p>
+              {isMK
+                ? 'Изберете неколку теми или извори. Страницата потоа ќе ги подреди вестите според вашите сигнали, без регистрација.'
+                : 'Izaberite nekoliko tema ili izvora. Stranica zatim slaže vesti prema vašim signalima, bez registracije.'}
+            </p>
           </div>
-        </div>
+          <div className="cold-start-panel">
+            <OnboardingIsland lang={lang} />
+          </div>
+        </section>
       </div>
     );
   }
 
   return (
-    <div className="for-you-page-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[var(--grid-gap)] items-stretch mt-12">
-      <div className="lg:col-span-2 space-y-12">
-        <header className="pb-10 border-b border-border">
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-            <div className="flex items-center gap-2">
-              <Sparkles className="text-nyt-accent animate-pulse" size={16} />
-              <span className="font-sans text-[10px] font-black uppercase tracking-[0.25em] text-nyt-accent">{isMK ? 'УРЕДНИЧКА СИНТЕЗА' : 'UREDNIČKA SINTEZA'}</span>
-            </div>
-            <div className="status-pill">
-              <span className="status-dot active"></span>
-              <span>{isMK ? 'СИНХРОНИЗАЦИЈА ВО ЖИВО' : 'SINHRONIZACIJA UŽIVO'}</span>
-            </div>
-          </div>
-          <h1 className="font-serif text-[clamp(2rem,6vw,4rem)] font-black leading-[0.9] mb-6 italic">{isMK ? 'Личен' : 'Lični'} <span className="serif-display font-light not-italic">{isMK ? 'Пресек' : 'Presek'}</span></h1>
-          <p className="mt-4 font-nyt-body text-[clamp(1rem,2vw,1.25rem)] text-secondary-foreground leading-relaxed italic max-w-2xl">
-             {isMK
-               ? 'Вашиот дневен преглед, синтетизиран според темите, личностите и изворите што ги следите.'
-               : 'Vaš dnevni pregled, sintetisan prema temama, ličnostima i izvorima koje pratite.'}
+    <div className="for-you-dashboard">
+      <section className="for-you-hero">
+        <div className="for-you-hero-copy">
+          <span className="for-you-kicker-line">
+            <Sparkles size={16} /> {isMK ? 'За Вас' : 'Za Vas'}
+          </span>
+          <h1>{isMK ? 'Личен дневен пресек' : 'Lični dnevni presek'}</h1>
+          <p>
+            {isMK
+              ? 'Приоритети, нови агли и следни теми од вестите што најдобро се совпаѓаат со вашето читање.'
+              : 'Prioriteti, novi uglovi i sledeće teme iz vesti koje se najbolje poklapaju sa vašim čitanjem.'}
           </p>
-          
-          <div className="dashboard-metrics-row">
-            <span className="metric-pill">
-              {isMK ? 'СЛЕДЕНИ ТЕМИ: ' : 'PRAĆENE TEME: '}
-              <strong>{profile.followedTopics.length}</strong>
-            </span>
-            <span className="metric-pill">
-              {isMK ? 'СЛЕДЕНИ ИЗВОРИ: ' : 'PRAĆENI IZVORI: '}
-              <strong>{profile.followedSources.length}</strong>
-            </span>
-            <span className="metric-pill">
-              {isMK ? 'ПРЕПОРАКИ: ' : 'PREPORUKE: '}
-              <strong>{mergedClusters.length}</strong>
-            </span>
+        </div>
+
+        <div className="for-you-signal-panel" aria-label={isMK ? 'Состојба на профилот' : 'Stanje profila'}>
+          <div className="signal-head">
+            <Gauge size={18} />
+            <span>{isMK ? 'Сигнал профила' : 'Signal profila'}</span>
+            <strong>{signalStrength}%</strong>
           </div>
-        </header>
-
-        {pageError && mergedClusters.length === 0 && (
-          <div className="py-12 text-center border border-dashed border-border rounded-xl bg-secondary/5">
-            <p className="font-serif text-2xl font-bold mb-3">{isMK ? 'Не можеме да вчитаме „За Вас“' : 'Ne možemo da učitamo „Za Vas“'}</p>
-            <p className="text-muted-foreground">{pageError}</p>
+          <div className="signal-meter" aria-hidden="true">
+            <span style={{ width: `${signalStrength}%` }}></span>
           </div>
-        )}
-
-        {mergedClusters.length > 0 ? (
-          <div className="space-y-16">
-            {mergedClusters.map((cluster, idx) => (
-              <div key={cluster.cluster_id} className="relative group">
-                <div className="mb-4 flex items-center gap-2">
-                    <span className="inference-badge">
-                        <BrainCircuit size={11} className="text-nyt-accent animate-pulse" />
-                        {cluster.reason || (isMK ? 'За Вас' : 'Za Vas')}
-                    </span>
-                </div>
-                <NewsCard
-                  cluster={cluster}
-                  variant={idx === 0 ? 'featured' : 'standard'}
-                  isLead={idx === 0}
-                  lang={lang}
-                />
-              </div>
-            ))}
+          <div className="signal-metrics">
+            <span><BellRing size={13} /> {followedTopics.length + followedSources.length}</span>
+            <span><Layers size={13} /> {mergedClusters.length}</span>
+            <span><Radio size={13} /> {sourceCount}</span>
           </div>
-        ) : (
-          <div className="py-20 text-center border border-dashed border-border rounded-xl">
-             <p className="font-serif italic text-muted-foreground text-xl">
-               {pageError || (isMK ? 'Немаме нови вести за вашите специфични интереси во овој момент.' : 'Nemamo novih vesti za vaše specifične interese u ovom trenutku.')}
-             </p>
-          </div>
-        )}
-      </div>
+        </div>
+      </section>
 
-      <aside className="space-y-12">
-        {/* Following Section */}
-        <section className="premium-card">
-          <h3 className="sidebar-section-title">{isMK ? 'Ваши интереси' : 'Vaši interesi'}</h3>
+      {pageError && (
+        <div className="for-you-alert">
+          <BrainCircuit size={16} />
+          <span>{pageError}</span>
+        </div>
+      )}
 
-          <div className="space-y-10">
-            {profile.followedTopics.length > 0 && (
-                <div>
-                    <p className="text-[9px] font-black uppercase text-muted-foreground mb-4 tracking-widest">{isMK ? 'Теми' : 'Teme'}</p>
-                    <div className="flex flex-wrap gap-[var(--grid-gap)]">
-                        {profile.followedTopics.map((t: string) => (
-                            <PreferenceToggle key={t} kind="topic" value={t} analyticsSurface="for_you_page" />
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {profile.followedSources.length > 0 && (
-                <div>
-                    <p className="text-[9px] font-black uppercase text-muted-foreground mb-4 tracking-widest">{isMK ? 'извори' : 'izvori'}</p>
-                    <div className="flex flex-wrap gap-[var(--grid-gap)]">
-                        {profile.followedSources.map((s: string) => (
-                            <PreferenceToggle key={s} kind="source" value={s} analyticsSurface="for_you_page" />
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            <a href={isMK ? "/mk/settings" : "/settings"} className="block text-center py-3 bg-secondary/50 rounded-lg text-[10px] font-black uppercase tracking-widest text-nyt-accent hover:bg-nyt-accent hover:text-white transition-all">
-                {isMK ? 'Уредете ги вашите интереси →' : 'Uredite sva svoja interesovanja →'}
+      <div className="for-you-layout">
+        <main className="for-you-main">
+          <section className="for-you-section-head">
+            <div>
+              <span>{isMK ? 'Приоритет' : 'Prioritet'}</span>
+              <h2>{isMK ? 'Најрелевантно сега' : 'Najrelevantnije sada'}</h2>
+            </div>
+            <a href={isMK ? '/mk/settings' : '/settings'} className="for-you-text-link">
+              <SlidersHorizontal size={14} /> {isMK ? 'Подеси' : 'Podesi'}
             </a>
-          </div>
-        </section>
+          </section>
 
-        {/* Discovery Suggestions */}
-        {followSuggestions.length > 0 && (
-            <section className="premium-card">
-                <h3 className="sidebar-section-title !text-nyt-accent">{isMK ? 'Откријте повеќе' : 'Otkrijte više'}</h3>
-                <div className="space-y-4">
-                    {followSuggestions.map(item => (
-                        <div key={item.value} className="discover-item-row">
-                            <div className="discover-item-info min-w-0 flex-1 pr-2">
-                                <p className="line-clamp-2">{item.value}</p>
-                                <span>{item.kind === 'topic' ? (isMK ? 'Тема' : 'Tema') : (isMK ? 'извор' : 'izvor')}</span>
-                            </div>
-                            <PreferenceToggle
-                                kind={item.kind as any}
-                                value={item.value}
-                                analyticsSurface="for_you_page_discover"
-                            />
-                        </div>
-                    ))}
+          {priorityClusters.length > 0 ? (
+            <div className="priority-lane">
+              {priorityClusters.map((cluster, index) => (
+                <article key={cluster.cluster_id} className={`priority-story ${index === 0 ? 'is-primary' : ''}`}>
+                  <div className="story-reason">
+                    <BrainCircuit size={12} />
+                    <span>{cluster.reason || (isMK ? 'Совпаѓање со профилот' : 'Poklapanje sa profilom')}</span>
+                  </div>
+                  <NewsCard
+                    cluster={cluster}
+                    variant={index === 0 ? 'featured' : 'standard'}
+                    isLead={index === 0}
+                    lang={lang}
+                  />
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="for-you-empty">
+              <p>{isMK ? 'Немаме нови вести за вашите специфични интереси во овој момент.' : 'Nemamo novih vesti za vaše specifične interese u ovom trenutku.'}</p>
+            </div>
+          )}
+
+          {feedClusters.length > 0 && (
+            <>
+              <section className="for-you-section-head is-secondary">
+                <div>
+                  <span>{isMK ? 'Продолжете' : 'Nastavite'}</span>
+                  <h2>{isMK ? 'Уште препораки' : 'Još preporuka'}</h2>
                 </div>
+              </section>
+              <div className="recommendation-grid">
+                {feedClusters.map((cluster) => (
+                  <article key={cluster.cluster_id} className="recommendation-tile">
+                    <div className="story-reason">
+                      <TrendingUp size={12} />
+                      <span>{cluster.reason || (isMK ? 'Блиску до вашите интереси' : 'Blizu vaših interesovanja')}</span>
+                    </div>
+                    <NewsCard cluster={cluster} variant="compact" lang={lang} />
+                  </article>
+                ))}
+              </div>
+            </>
+          )}
+        </main>
+
+        <aside className="for-you-rail">
+          <section className="rail-panel">
+            <h3><ListChecks size={16} /> {isMK ? 'Ваш профил' : 'Vaš profil'}</h3>
+            <div className="profile-stat-grid">
+              <span><strong>{followedTopics.length}</strong>{isMK ? 'теми' : 'tema'}</span>
+              <span><strong>{followedSources.length}</strong>{isMK ? 'извори' : 'izvora'}</span>
+              <span><strong>{synthesisCount}</strong>{isMK ? 'синтези' : 'sinteza'}</span>
+            </div>
+            <div className="followed-stack">
+              {followedTopics.slice(0, 8).map((topic: string) => (
+                <PreferenceToggle key={`topic:${topic}`} kind="topic" value={topic} analyticsSurface="for_you_page" />
+              ))}
+              {followedSources.slice(0, 6).map((source: string) => (
+                <PreferenceToggle key={`source:${source}`} kind="source" value={source} analyticsSurface="for_you_page" />
+              ))}
+            </div>
+          </section>
+
+          {categoryLeaders.length > 0 && (
+            <section className="rail-panel">
+              <h3><Layers size={16} /> {isMK ? 'Фокус денес' : 'Fokus danas'}</h3>
+              <div className="category-bars">
+                {categoryLeaders.map(([category, count]) => (
+                  <div key={category} className="category-row">
+                    <span>{category}</span>
+                    <strong>{count}</strong>
+                  </div>
+                ))}
+              </div>
             </section>
-        )}
-      </aside>
+          )}
+
+          {followSuggestions.length > 0 && (
+            <section className="rail-panel">
+              <h3><Compass size={16} /> {isMK ? 'Додај сигнал' : 'Dodaj signal'}</h3>
+              <div className="discover-stack">
+                {followSuggestions.map((item: any) => (
+                  <div key={`${item.kind}:${item.value}`} className="discover-suggestion">
+                    <div>
+                      <strong>{item.value}</strong>
+                      <span>{item.kind === 'topic' ? (isMK ? 'тема' : 'tema') : (isMK ? 'извор' : 'izvor')}</span>
+                    </div>
+                    <PreferenceToggle
+                      kind={item.kind as any}
+                      value={item.value}
+                      analyticsSurface="for_you_page_discover"
+                    />
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {queueClusters.length > 0 && (
+            <section className="rail-panel">
+              <h3><Radio size={16} /> {isMK ? 'Следно' : 'Sledeće'}</h3>
+              <div className="next-stack">
+                {queueClusters.map((cluster) => (
+                  <a key={cluster.cluster_id} href={isMK ? `/mk/cluster/${cluster.cluster_id}` : `/cluster/${cluster.cluster_id}`} className="next-item">
+                    <span>{formatTime(clusterTime(cluster), lang)}</span>
+                    <strong>{clusterTitle(cluster)}</strong>
+                    <ArrowUpRight size={13} />
+                  </a>
+                ))}
+              </div>
+            </section>
+          )}
+        </aside>
+      </div>
     </div>
   );
 }

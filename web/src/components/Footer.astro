@@ -6,6 +6,7 @@ import { getLangFromUrl, useTranslations } from '../i18n/utils';
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
+const { hideSystemPulse = false } = Astro.props;
 
 const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
 ---
@@ -27,7 +28,7 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
                     </p>
                 </div>
 
-                <div class="footer-system-pulse p-5 border border-border">
+                {!hideSystemPulse && <div class="footer-system-pulse p-5 border border-border">
                     <div class="flex items-center justify-between mb-4">
                         <div class="flex items-center gap-3">
                             <div class="status-indicator pulse-emerald"></div>
@@ -45,7 +46,7 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
                             <span class="text-[10px] font-bold text-muted-foreground uppercase">{t('footer.ingestion')}</span>
                         </div>
                     </div>
-                </div>
+                </div>}
             </div>
 
             <nav class="footer-directory">

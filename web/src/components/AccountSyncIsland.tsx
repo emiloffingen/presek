@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { $syncToken, updateSyncToken } from '../lib/store';
+import { buildSyncTokenHeaders } from '../lib/personalization.js';
 import { KeyRound, ShieldCheck, RefreshCw, Copy, Upload, Download, AlertCircle, Check } from 'lucide-react';
 
 export default function AccountSyncIsland({ lang = 'sr' }: { lang?: string }) {
@@ -37,8 +38,14 @@ export default function AccountSyncIsland({ lang = 'sr' }: { lang?: string }) {
     try {
       const res = await fetch('/api/profile/sync', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${nextToken}` },
-        body: JSON.stringify({ profile: JSON.parse(localStorage.getItem('presek_profile_v2') || '{}') })
+        headers: {
+          'Content-Type': 'application/json',
+          ...buildSyncTokenHeaders(nextToken),
+        },
+        body: JSON.stringify({
+          token: nextToken,
+          profile: JSON.parse(localStorage.getItem('presek_profile_v2') || '{}'),
+        })
       });
       if (res.ok) {
         setStatus('success');
@@ -58,7 +65,7 @@ export default function AccountSyncIsland({ lang = 'sr' }: { lang?: string }) {
     setStatus('working');
     try {
       const res = await fetch('/api/profile/sync', {
-        headers: { 'Authorization': `Bearer ${nextToken}` }
+        headers: buildSyncTokenHeaders(nextToken) as Record<string, string>,
       });
       if (res.ok) {
         const data = await res.json();

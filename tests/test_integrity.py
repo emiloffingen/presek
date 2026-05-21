@@ -47,7 +47,7 @@ class TestAstroFrontendIntegrity:
         # centralises PUBLIC_API_URL + SSR/client fallback logic) or inline
         # the env lookup directly. Either pattern is acceptable.
         for rel_path in (
-            "web/src/pages/index.astro",
+            "web/src/components/home/HomePage.astro",
             "web/src/pages/briefing.astro",
             "web/src/pages/stats.astro",
             "web/src/pages/cluster/[slug].astro",
@@ -76,7 +76,7 @@ class TestAstroFrontendIntegrity:
     def test_header_fetches_stats_summary_when_page_does_not_supply_stats(self):
         header = _read("web/src/components/NYTHeader.astro")
         assert "shouldFetchStats" in header
-        assert "fetch(`${API_URL}/stats/summary`)" in header
+        assert "fetch(`${API_URL}/stats/summary?lang=${lang}`)" in header
         assert "const hasDispatchStats = Boolean(stats && intel?.pluralism);" in header
 
     def test_schema_and_ingestion_track_ingestion_time(self):
@@ -113,7 +113,7 @@ class TestAstroFrontendIntegrity:
 
         assert "getTimeStr(main.ingested_at || main.created_at)" in homepage
         assert "getTimeStr(main.ingested_at || main.created_at)" in interactive_card
-        assert "getTimeStr(article.ingested_at || article.created_at)" in live_updates
+        assert "getTimeStr(article.ingested_at || article.created_at, lang)" in live_updates
         assert "getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)" in lead
 
     def test_generated_article_footnotes_are_sanitized_before_html_rendering(self):
@@ -154,9 +154,9 @@ class TestAstroFrontendIntegrity:
         profile_route = _read("routes/profile.py")
 
         assert "let initialError: string | null = null;" in for_you_page
-        assert 'initialError = "Ne možemo da učitamo početne preporuke u ovom trenutku."' in for_you_page
+        assert '"Ne možemo da učitamo početne preporuke u ovom trenutku."' in for_you_page
         assert (
-            "<ForYouPageIsland client:load initialClusters={initialClusters} initialError={initialError} />"
+            "<ForYouPageIsland client:load initialClusters={initialClusters} initialError={initialError} lang={lang} />"
             in for_you_page
         )
         assert "const [semanticError, setSemanticError] = useState<string | null>(null);" in for_you_island
@@ -177,7 +177,7 @@ class TestAstroFrontendIntegrity:
 
         assert '_FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"' in intelligence
         assert "WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '48 hours'" in intelligence
-        assert "WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY a.source" in intelligence
+        assert "WHERE a.country = %s AND {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY a.source" in intelligence
         assert (
             "EXISTS (SELECT 1 FROM unnest(COALESCE(m.tags, '{}')) AS tag WHERE LOWER(tag) = LOWER(%s))" in intelligence
         )
@@ -190,7 +190,7 @@ class TestAstroFrontendIntegrity:
         assert "FROM articles" in system
 
     def test_homepage_maps_category_filter_to_api_category_param(self):
-        homepage = _read("web/src/pages/index.astro")
+        homepage = _read("web/src/components/home/HomePage.astro")
         assert "newsUrl.searchParams.set('category', category);" in homepage
         assert "newsUrl.searchParams.set('topic', category);" not in homepage
 

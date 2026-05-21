@@ -11,7 +11,7 @@ import '../styles/pulse-premium.css';
 
 import { apiBaseUrl } from '../lib/apiBase';
 import { getLangFromUrl } from '../i18n/utils';
-import { Activity, Timer, Zap, Cpu } from 'lucide-react';
+import { Activity, Timer, Zap } from 'lucide-react';
 
 const API_URL = apiBaseUrl();
 const lang = getLangFromUrl(Astro.url);
@@ -65,6 +65,7 @@ const currentDate = new Date().toLocaleDateString(lang === 'mk' ? 'mk-MK' : 'sr-
 });
 
 const siteTitle = isMK ? 'Медиумски Пулс' : 'Medijski Puls';
+const formatCount = (value: number | null | undefined) => value ? String(Math.round(value)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : '–';
 ---
 
 <Layout
@@ -73,31 +74,6 @@ const siteTitle = isMK ? 'Медиумски Пулс' : 'Medijski Puls';
 >
     <NYTHeader />
     <main class="site-layout broadsheet-layout pt-24 pb-[var(--page-py)] overflow-x-hidden">
-
-        {/* 1. SYSTEM STATUS BAR (REAL-TIME COMMAND CENTER) */}
-        <div class="pulse-status-deck mb-12">
-            <div class="pulse-status-inner">
-                <div class="pulse-status-group">
-                    <div class="pulse-status-indicator-dot active"></div>
-                    <span class="pulse-status-label">{isMK ? 'СИСТЕМСКИ СИГНАЛ' : 'SISTEMSKI SIGNAL'}</span>
-                    <span class="pulse-status-value">{isMK ? 'АКТИВЕН' : 'AKTIVAN'}</span>
-                </div>
-                <div class="pulse-status-group divider-left">
-                    <Cpu size={10} className="text-muted-foreground" />
-                    <span class="pulse-status-label">{isMK ? 'AI МОДЕЛИ' : 'AI MODELI'}</span>
-                    <span class="pulse-status-value">Gemma 2 / Mistral</span>
-                </div>
-                <div class="pulse-status-group divider-left hide-mobile">
-                    <Zap size={10} className="text-nyt-accent" />
-                    <span class="pulse-status-label">{isMK ? 'ИНГЕСТИЈА' : 'INGESTIJA'}</span>
-                    <span class="pulse-status-value">{globalPulse?.ingestion_rate || '0.0'} {isMK ? 'арт/мин' : 'art/min'}</span>
-                </div>
-                <div class="pulse-status-group divider-left ml-auto">
-                    <Timer size={10} className="text-muted-foreground" />
-                    <span class="pulse-status-value tabular-nums" id="system-time">00:00:00</span>
-                </div>
-            </div>
-        </div>
 
         <header class="editorial-masthead motion-rise masthead-double-rule">
             <div class="masthead-top">
@@ -151,7 +127,7 @@ const siteTitle = isMK ? 'Медиумски Пулс' : 'Medijski Puls';
             <div class="masthead-deck mt-8">
                 <span class="deck-item"><strong class="mr-1.5">{categories.length || '–'}</strong> {isMK ? 'Категории' : 'Kategorije'}</span>
                 <span class="deck-item"><strong class="mr-1.5">{globalPulse?.intelligence?.pluralism?.pluralism_pct > 0 ? globalPulse?.intelligence?.pluralism?.pluralism_pct + '%' : '–'}</strong> {isMK ? 'Диверзитет' : 'Diverzitet'}</span>
-                <span class="deck-item"><strong class="mr-1.5">{globalPulse?.last_24h?.toLocaleString(isMK ? 'mk-MK' : 'sr-RS') || '–'}</strong> {isMK ? 'Објави денес' : 'Objava danas'}</span>
+                <span class="deck-item"><strong class="mr-1.5">{formatCount(globalPulse?.last_24h)}</strong> {isMK ? 'Објави денес' : 'Objava danas'}</span>
             </div>
         </header>
 
@@ -165,7 +141,7 @@ const siteTitle = isMK ? 'Медиумски Пулс' : 'Medijski Puls';
         />
 
     </main>
-    <Footer />
+    <Footer hideSystemPulse />
 </Layout>
 
 <style>

@@ -103,6 +103,11 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
         return (val * 100).toFixed(0) + '%';
     }
 
+    function formatCount(val: number | null | undefined) {
+        if (!val) return '–';
+        return String(Math.round(val)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    }
+
     function getTypeLabel(type: string) {
         const map: Record<string, string> = {
             'PER': isMK ? 'Личност' : 'Ličnost',
@@ -153,7 +158,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
             <div className={`pulse-stats-grid mb-8 md:mb-12 transition-opacity duration-300 ${loading ? 'opacity-50' : 'opacity-100'}`}>
                 <div className="pulse-glow-card animate-fade-in" title={isMK ? "Вкупен број на обработени објави во последните 24 часа." : "Ukupan broj obrađenih objava u poslednja 24 časa."}>
                     <p className="card-label text-muted-foreground flex items-center gap-1"><Activity size={12}/> {isMK ? 'ИНФОРМАТИВЕН РИТАМ' : 'INFORMATIVNI RITAM'}</p>
-                    <p className="card-value font-serif text-3xl font-black mt-2">{globalPulse?.last_24h?.toLocaleString(isMK ? 'mk-MK' : 'sr-RS') || '–'}</p>
+                    <p className="card-value font-serif text-3xl font-black mt-2">{formatCount(globalPulse?.last_24h)}</p>
                     <div className="card-sparkline group mt-4 flex items-end gap-1 h-12">
                         {velocityData.length > 0 ? (() => {
                             const maxVelocity = Math.max(1, ...velocityData.map((d: any) => d.n || 0));
@@ -328,7 +333,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                     <div className="pulse-premium-card">
                         <h4 className="sidebar-label !border-nyt-accent text-nyt-accent">{isMK ? 'СПОРЕДБА НА ИЗВОРИ' : 'POREĐENJE IZVORA'}</h4>
                         <div className="mt-4">
-                            <SourceComparisonIsland allSources={pulseData.map((r: PulseRow) => r.source)} />
+                            <SourceComparisonIsland allSources={pulseData.map((r: PulseRow) => r.source)} lang={lang} />
                         </div>
                     </div>
                 </aside>

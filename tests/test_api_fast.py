@@ -1275,6 +1275,7 @@ def test_stats_summary_includes_intelligence_payload(mock_all):
     with (
         patch("routes.stats.cached_response", return_value=None),
         patch("routes.stats.set_cache"),
+        patch("routes.common.db", mock_all["db"]),
         patch.object(
             routes.stats.redis_client,
             "hgetall",
@@ -1482,4 +1483,3 @@ def test_synthesis_homepage_boost(mock_all):
     assert clusters[1]["cluster_id"] == "c1"
     assert clusters[1]["has_synthesis"] is False
     assert clusters[1]["homepage_score"] == 10.0
-
