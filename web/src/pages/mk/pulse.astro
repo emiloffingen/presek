@@ -3,6 +3,7 @@ import Layout from '../../layouts/Layout.astro';
 import NYTHeader from '../../components/NYTHeader.astro';
 import Footer from '../../components/Footer.astro';
 import PulseClientContainer from '../../components/PulseClientContainer';
+import '../../styles/pulse-premium.css';
 
 import { apiBaseUrl } from '../../lib/apiBase';
 import { getLangFromUrl } from '../../i18n/utils';
@@ -67,26 +68,26 @@ const siteTitle = isMK ? 'Медиумски Пулс' : 'Medijski Puls';
     <main class="site-layout broadsheet-layout pt-24 pb-[var(--page-py)] overflow-x-hidden">
 
         {/* 1. SYSTEM STATUS BAR (REAL-TIME COMMAND CENTER) */}
-        <div class="system-status-bar mb-12">
-            <div class="status-inner">
-                <div class="status-group group-glow">
-                    <div class="pulse-indicator pulse-emerald"></div>
-                    <span class="status-label">{isMK ? 'СИСТЕМСКИ СИГНАЛ' : 'SISTEMSKI SIGNAL'}</span>
-                    <span class="status-value">{isMK ? 'АКТИВЕН' : 'AKTIVAN'}</span>
+        <div class="pulse-status-deck mb-12">
+            <div class="pulse-status-inner">
+                <div class="pulse-status-group">
+                    <div class="pulse-status-indicator-dot active"></div>
+                    <span class="pulse-status-label">{isMK ? 'СИСТЕМСКИ СИГНАЛ' : 'SISTEMSKI SIGNAL'}</span>
+                    <span class="pulse-status-value">{isMK ? 'АКТИВЕН' : 'AKTIVAN'}</span>
                 </div>
-                <div class="status-group divider-left">
+                <div class="pulse-status-group divider-left">
                     <Cpu size={10} className="text-muted-foreground" />
-                    <span class="status-label">{isMK ? 'AI МОДЕЛИ' : 'AI MODELI'}</span>
-                    <span class="status-value">Gemma 2 / Mistral</span>
+                    <span class="pulse-status-label">{isMK ? 'AI МОДЕЛИ' : 'AI MODELI'}</span>
+                    <span class="pulse-status-value">Gemma 2 / Mistral</span>
                 </div>
-                <div class="status-group divider-left hide-mobile">
+                <div class="pulse-status-group divider-left hide-mobile">
                     <Zap size={10} className="text-nyt-accent" />
-                    <span class="status-label">{isMK ? 'ИНГЕСТИЈА' : 'INGESTIJA'}</span>
-                    <span class="status-value">{globalPulse?.ingestion_rate || '0.0'} {isMK ? 'арт/мин' : 'art/min'}</span>
+                    <span class="pulse-status-label">{isMK ? 'ИНГЕСТИЈА' : 'INGESTIJA'}</span>
+                    <span class="pulse-status-value">{globalPulse?.ingestion_rate || '0.0'} {isMK ? 'арт/мин' : 'art/min'}</span>
                 </div>
-                <div class="status-group divider-left ml-auto">
+                <div class="pulse-status-group divider-left ml-auto">
                     <Timer size={10} className="text-muted-foreground" />
-                    <span class="status-value tabular-nums" id="system-time">00:00:00</span>
+                    <span class="pulse-status-value tabular-nums" id="system-time">00:00:00</span>
                 </div>
             </div>
         </div>
