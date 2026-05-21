@@ -6,9 +6,30 @@ import {
   Mic, Clock, TrendingUp, User, Layout,
   HelpCircle, Archive, Sparkles, ChevronRight,
   Globe, ShieldCheck, Activity, BookOpen, ExternalLink,
-  History, Compass
+  History, Compass, SlidersHorizontal
 } from 'lucide-react';
 import { getDisplaySummary, getDisplayTitle } from '../utils/textUtils';
+
+// Helper function to highlight matching search query text
+function highlightMatch(text: string, query: string) {
+  if (!query.trim()) return text;
+  const escapedQuery = query.trim().replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+  const regex = new RegExp(`(${escapedQuery})`, 'gi');
+  const parts = text.split(regex);
+  return (
+    <>
+      {parts.map((part, i) =>
+        regex.test(part) ? (
+          <mark key={i} className="bg-amber-500/20 text-amber-900 dark:bg-amber-500/30 dark:text-amber-300 font-bold px-0.5 rounded">
+            {part}
+          </mark>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
+}
 
 type Suggestion = {
   cluster_id: string;
@@ -63,6 +84,8 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
   const [showFilters, setShowFilters] = useState(false);
   const [activeSection, setActiveSection] = useState<'NEWS' | 'ENTITIES' | 'ACTIONS' | 'RECENT'>('NEWS');
 
+  const recognitionRef = useRef<any>(null);
+
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const placeholders = lang === 'sr' ? [
     "Istraži medijsku arhivu...",
@@ -89,7 +112,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
 
   const CATEGORIES = [
     { id: 'all', label: lang === 'sr' ? 'SVE TEME' : 'СИТЕ ТЕМИ', color: 'bg-nyt-accent' },
-    { id: 'Srbija', label: lang === 'sr' ? 'Srbija' : 'Македонија', color: 'bg-nyt-red' },
+    { id: lang === 'sr' ? 'Srbija' : 'Makedonija', label: lang === 'sr' ? 'Srbija' : 'Македонија', color: 'bg-nyt-red' },
     { id: 'Politika', label: lang === 'sr' ? 'Politika' : 'Политика', color: 'bg-blue-600' },
     { id: 'Ekonomija', label: lang === 'sr' ? 'Ekonomija' : 'Економија', color: 'bg-emerald-600' },
     { id: 'Sport', label: lang === 'sr' ? 'Sport' : 'Спорт', color: 'bg-orange-500' },
@@ -150,12 +173,19 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
     }
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
     recognition.continuous = false;
     recognition.interimResults = false;
     recognition.lang = lang === 'sr' ? 'sr-RS' : 'mk-MK';
     recognition.onstart = () => setIsListening(true);
-    recognition.onend = () => setIsListening(false);
-    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => {
+      setIsListening(false);
+      recognitionRef.current = null;
+    };
+    recognition.onerror = () => {
+      setIsListening(false);
+      recognitionRef.current = null;
+    };
     recognition.onresult = (event: any) => {
       const transcript = event.results[0]?.[0]?.transcript;
       if (transcript) {
@@ -165,6 +195,17 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
     };
     recognition.start();
   }, [lang]);
+
+  const stopVoiceSearch = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    setIsListening(false);
+  };
 
   const [error, setError] = useState<string | null>(null);
 
@@ -372,6 +413,13 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
             )}
           </div>
           <div className="flex items-center gap-1 sm:gap-[var(--grid-gap)]">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`p-2 rounded-lg hover:bg-secondary transition-colors ${showFilters ? 'text-nyt-accent' : 'text-muted-foreground'}`}
+              title={lang === 'sr' ? 'Filteri pretrage' : 'Филтри за пребарување'}
+            >
+              <SlidersHorizontal size={18} />
+            </button>
             <button onClick={startVoiceSearch} className={`p-2 rounded-lg hover:bg-secondary transition-colors ${isListening ? 'text-nyt-accent animate-pulse' : 'text-muted-foreground'}`}>
               <Mic size={18} />
             </button>
@@ -380,6 +428,94 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
             </button>
           </div>
         </div>
+
+        {/* Voice Search listening overlay */}
+        {isListening && (
+          <div className="absolute inset-0 bg-background/95 backdrop-blur-md z-[10001] flex flex-col items-center justify-center gap-6 animate-in fade-in duration-300">
+            <div className="w-20 h-20 bg-nyt-accent/10 rounded-full flex items-center justify-center text-nyt-accent animate-pulse border border-nyt-accent/20 shadow-lg shadow-nyt-accent/10">
+              <Mic size={36} />
+            </div>
+            
+            <div className="flex items-center gap-1.5 h-10 justify-center">
+              {[...Array(6)].map((_, i) => (
+                <div
+                  key={i}
+                  className="w-1.5 bg-nyt-accent rounded-full animate-bounce"
+                  style={{
+                    height: '24px',
+                    animationDelay: `${i * 0.15}s`,
+                    animationDuration: '0.8s'
+                  }}
+                />
+              ))}
+            </div>
+            
+            <p className="font-serif font-black text-xl text-center">
+              {lang === 'sr' ? 'Slušam vas...' : 'Ве слушам...'}
+            </p>
+            
+            <button
+              onClick={stopVoiceSearch}
+              className="px-6 py-2.5 bg-secondary hover:bg-secondary-foreground/10 border border-border rounded-full text-xs font-black uppercase tracking-widest transition-all"
+            >
+              {lang === 'sr' ? 'Otkaži' : 'Откажи'}
+            </button>
+          </div>
+        )}
+
+        {/* Filters Collapsible Panel */}
+        {showFilters && (
+          <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-border/40 bg-secondary/15 flex flex-col md:flex-row gap-4 md:items-center animate-in slide-in-from-top-4 duration-300">
+            {/* Category Filter */}
+            <div className="flex-1">
+              <span className="text-[9px] font-black uppercase tracking-wider text-muted-foreground block mb-2">
+                {lang === 'sr' ? 'Tema' : 'Тема'}
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setCategoryFilter(cat.id)}
+                    className={`px-3 py-1 text-[11px] font-bold rounded-full transition-all border ${
+                      categoryFilter === cat.id
+                        ? 'bg-nyt-accent text-white border-nyt-accent shadow-sm'
+                        : 'bg-background hover:bg-secondary border-border text-foreground'
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Timespan Filter */}
+            <div className="shrink-0">
+              <span className="text-[9px] font-black uppercase tracking-wider text-muted-foreground block mb-2">
+                {lang === 'sr' ? 'Vremenski okvir' : 'Временска рамка'}
+              </span>
+              <div className="flex gap-1.5">
+                {[
+                  { id: 'all', label: lang === 'sr' ? 'Sve vreme' : 'Сите времиња' },
+                  { id: '24h', label: lang === 'sr' ? 'Danas' : 'Денес' },
+                  { id: '7d', label: lang === 'sr' ? 'Zadnjih 7 dana' : 'Задните 7 дена' },
+                  { id: '30d', label: lang === 'sr' ? 'Zadnjih 30 dana' : 'Задните 30 дена' },
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setTimespan(t.id)}
+                    className={`px-3 py-1 text-[11px] font-bold rounded-full transition-all border ${
+                      timespan === t.id
+                        ? 'bg-nyt-accent text-white border-nyt-accent shadow-sm'
+                        : 'bg-background hover:bg-secondary border-border text-foreground'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Main Content Area */}
         <div className="flex-1 overflow-hidden flex">
@@ -394,11 +530,29 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                     <h3 className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.18em] sm:tracking-[0.2em] text-muted-foreground mb-3 sm:mb-4 flex items-center gap-[var(--grid-gap)]">
                        <History size={12} /> {lang === 'sr' ? 'POSLEDNJE PRETRAGE' : 'ПОСЛЕДНИ ПРЕБАРУВАЊА'}
                     </h3>
-                    <div className="flex flex-wrap gap-[var(--grid-gap)]">
+                    <div className="flex flex-wrap gap-2">
                       {recentSearches.map((s, i) => (
-                        <button key={i} onClick={() => setQuery(s.query)} className="px-3 py-1.5 sm:px-4 sm:py-2 bg-secondary/50 hover:bg-secondary border border-border/50 rounded-full text-[11px] sm:text-xs font-bold transition-all">
-                          {s.query}
-                        </button>
+                        <div
+                          key={i}
+                          onClick={() => setQuery(s.query)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary/50 hover:bg-secondary border border-border/50 rounded-full text-[11px] sm:text-xs font-bold transition-all cursor-pointer group/pill"
+                        >
+                          <span>{s.query}</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const newRecent = recentSearches.filter((item) => item.query !== s.query);
+                              setRecentSearches(newRecent);
+                              if (typeof window !== 'undefined') {
+                                localStorage.setItem('presek_recent_searches', JSON.stringify(newRecent));
+                              }
+                            }}
+                            className="p-0.5 rounded-full hover:bg-muted-foreground/20 text-muted-foreground/40 hover:text-muted-foreground/80 transition-colors"
+                            title={lang === 'sr' ? 'Ukloni pretragu' : 'Отстрани го пребарувањето'}
+                          >
+                            <X size={10} />
+                          </button>
+                        </div>
                       ))}
                     </div>
                   </section>
@@ -457,7 +611,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                         )}
                       </div>
                       <div>
-                        <p className="font-serif font-black text-lg sm:text-xl">{entityResult.name}</p>
+                        <p className="font-serif font-black text-lg sm:text-xl">{highlightMatch(entityResult.name, query)}</p>
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{entityResult.type} · {entityResult.total_mentions} {lang === 'sr' ? 'pominjanja' : 'споменувања'}</p>
                       </div>
                       <ArrowUpRight size={16} className="ml-auto text-muted-foreground" />
@@ -475,17 +629,26 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                           <button
                             key={item.cluster_id}
                             onClick={() => navigateToCluster(item.cluster_id)}
-                            className={`w-full flex items-start gap-3 sm:gap-[var(--grid-gap)] p-3 sm:p-4 rounded-xl border transition-all text-left group ${activeIndex === globalIdx ? 'bg-nyt-accent/5 border-nyt-accent/30 ring-1 ring-nyt-accent/20' : 'bg-transparent border-transparent hover:bg-secondary/30'}`}
+                            className={`w-full flex items-start gap-3 sm:gap-[var(--grid-gap)] p-3 sm:p-4 rounded-xl border transition-all text-left group ${
+                              item.has_synthesis
+                                ? 'bg-amber-500/5 border-amber-500/10 hover:border-amber-500/30'
+                                : 'bg-transparent border-transparent hover:bg-secondary/30'
+                            } ${activeIndex === globalIdx ? 'bg-nyt-accent/5 border-nyt-accent/30 ring-1 ring-nyt-accent/20' : ''}`}
                           >
                             <div className="w-14 sm:w-16 aspect-[4/3] rounded-lg overflow-hidden bg-secondary shrink-0 border border-border/50">
                               {item.image_url && <img src={`/proxy?url=${encodeURIComponent(item.image_url)}&w=200`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-[var(--grid-gap)] mb-1">
-                                <span className="text-[9px] font-black uppercase tracking-wider text-nyt-accent">{item.category}</span>
-                                {item.has_synthesis && <Sparkles size={10} className="text-nyt-accent" fill="currentColor" />}
+                              <div className="flex items-center gap-1.5 mb-1">
+                                <span className={`text-[9px] font-black uppercase tracking-wider ${item.has_synthesis ? 'text-amber-600 dark:text-amber-400' : 'text-nyt-accent'}`}>{item.category}</span>
+                                {item.has_synthesis && (
+                                  <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[8px] font-black uppercase tracking-wider">
+                                    <Sparkles size={8} fill="currentColor" />
+                                    {lang === 'sr' ? 'Sinteza' : 'Синтеза'}
+                                  </span>
+                                )}
                               </div>
-                              <p className="font-serif font-black text-base sm:text-lg leading-tight line-clamp-2 group-hover:text-nyt-accent transition-colors">{item.title}</p>
+                              <p className="font-serif font-black text-base sm:text-lg leading-tight line-clamp-2 group-hover:text-nyt-accent transition-colors">{highlightMatch(item.title, query)}</p>
                               <div className="flex items-center gap-2 sm:gap-[var(--grid-gap)] mt-1.5 sm:mt-2 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
                                 <span>{item.source}</span>
                                 <span>{item.sourceCount} {item.sourceCount === 1 ? (lang === 'sr' ? 'izvor' : 'извор') : (lang === 'sr' ? 'izvora' : 'извори')}</span>
@@ -546,9 +709,15 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                     </div>
 
                     <div>
-                      <div className="flex items-center gap-[var(--grid-gap)] mb-3">
+                      <div className="flex items-center gap-2 mb-3">
                          <span className="px-2 py-1 bg-nyt-accent text-white text-[9px] font-black uppercase tracking-widest rounded">{selectedItem.data.category}</span>
-                         <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-1"><Clock size={12} /> PRE 2 ČASA</span>
+                         {selectedItem.data.has_synthesis && (
+                           <span className="px-2 py-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[9px] font-black uppercase tracking-widest rounded flex items-center gap-1 shadow-sm shadow-amber-500/20">
+                             <Sparkles size={10} fill="currentColor" />
+                             {lang === 'sr' ? 'AI SINTEZA' : 'AI СИНТЕЗА'}
+                           </span>
+                         )}
+                         <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-1"><Clock size={12} /> {lang === 'sr' ? 'PRE 2 ČASA' : 'ПРЕД 2 ЧАСА'}</span>
                       </div>
                       <h2 className="font-serif font-black text-2xl leading-tight mb-4">{selectedItem.data.title}</h2>
                       <p className="text-base text-muted-foreground leading-relaxed font-nyt-body line-clamp-6">{selectedItem.data.description}</p>
