@@ -511,6 +511,14 @@ const leadEvidenceItems = leadCluster ? [
                                 <p class="text-sm text-muted-foreground mt-2">{t('home.consensus_desc')}</p>
                             </div>
                             <div class="consensus-carousel-wrap">
+                                <button 
+                                    class="carousel-nav-btn prev-btn" 
+                                    aria-label="Previous"
+                                    onclick="this.parentElement.querySelector('.consensus-grid').scrollBy({ left: -this.parentElement.querySelector('.consensus-grid').offsetWidth * 0.75, behavior: 'smooth' });"
+                                >
+                                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                                </button>
+                                
                                 <div class="consensus-grid hide-scrollbar">
                                     {consensusClusters.map((cluster: NewsCluster) => (
                                         <div class="consensus-item">
@@ -518,7 +526,15 @@ const leadEvidenceItems = leadCluster ? [
                                         </div>
                                     ))}
                                 </div>
-                                <div class="carousel-fade-hint right md:hidden"></div>
+
+                                <button 
+                                    class="carousel-nav-btn next-btn" 
+                                    aria-label="Next"
+                                    onclick="this.parentElement.querySelector('.consensus-grid').scrollBy({ left: this.parentElement.querySelector('.consensus-grid').offsetWidth * 0.75, behavior: 'smooth' });"
+                                >
+                                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                </button>
+                                <div class="carousel-fade-hint right sm:hidden"></div>
                             </div>
 	                        </div>
                 )}
@@ -706,7 +722,52 @@ const leadEvidenceItems = leadCluster ? [
         position: relative;
         margin: 0 -1rem;
         padding: 0 1rem;
-        overflow: hidden;
+        overflow: visible;
+    }
+
+    .carousel-nav-btn {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 10;
+        background: var(--background);
+        border: 1px solid var(--border);
+        color: var(--foreground);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: var(--shadow-sm);
+        transition: background-color 0.2s, border-color 0.2s, transform 0.2s, opacity 0.2s;
+        opacity: 0.8;
+    }
+    
+    .carousel-nav-btn:hover {
+        background: var(--secondary);
+        border-color: var(--nyt-accent);
+        opacity: 1;
+        transform: translateY(-50%) scale(1.05);
+    }
+    
+    .carousel-nav-btn:active {
+        transform: translateY(-50%) scale(0.95);
+    }
+
+    .prev-btn {
+        left: 0.25rem;
+    }
+
+    .next-btn {
+        right: 0.25rem;
+    }
+
+    @media (min-width: 640px) {
+        .carousel-nav-btn {
+            display: none !important;
+        }
     }
 
     .consensus-grid {

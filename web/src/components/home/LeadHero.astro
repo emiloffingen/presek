@@ -83,6 +83,21 @@ const consensusSuffix = (() => {
         return t('lead.consensus_suffix_2_4');
     }
 })();
+
+const getProxiedUrl = (width: number) => {
+    if (!leadVisual?.proxiedUrl) return '';
+    try {
+        const url = new URL(leadVisual.proxiedUrl, 'https://presek.mk');
+        url.searchParams.set('w', width.toString());
+        return url.pathname + url.search;
+    } catch {
+        return leadVisual.proxiedUrl;
+    }
+};
+
+const leadSrcset = leadVisual?.proxiedUrl ? [400, 600, 800, 1000, 1200].map(w => `${getProxiedUrl(w)} ${w}w`).join(', ') : '';
+const leadSizes = "(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 1200px";
+
 ---
 
 <section class:list={["lead-hero motion-rise", { "lead-hero-filtered": filtered }]}>
@@ -97,6 +112,8 @@ const consensusSuffix = (() => {
 	                    </div>
 	                    <img
 	                        src={leadVisual.proxiedUrl}
+	                        srcset={leadSrcset}
+	                        sizes={leadSizes}
 	                        alt={primaryDisplayTitle || leadTitle}
 	                        width="1200"
 	                        height="1000"
@@ -233,8 +250,8 @@ const consensusSuffix = (() => {
 	                    </div>
 	                    <img
 	                        src={leadVisual.proxiedUrl}
-	                        srcset={`${leadVisual.proxiedUrl.replace('w=1200', 'w=600')} 600w, ${leadVisual.proxiedUrl} 1200w`}
-	                        sizes="(max-width: 768px) 100vw, 1200px"
+	                        srcset={leadSrcset}
+	                        sizes={leadSizes}
 	                        alt={primaryDisplayTitle}
                         width="1200"
                         height="1000"

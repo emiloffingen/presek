@@ -37,9 +37,15 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
 
   const [semanticResults, setSemanticResults] = useState<any[]>([]);
   const [semanticLoading, setSemanticLoading] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Fetch Semantic Recommendations from API
   useEffect(() => {
+    if (!isMounted) return;
     const hasSignals = hasPersonalizationSignal(profile);
     if (!hasSignals) return;
 
@@ -69,7 +75,10 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
     fetchSemantic();
   }, [profile, syncToken, lang]);
 
-  const hasSignals = useMemo(() => hasPersonalizationSignal(profile), [profile]);
+  const hasSignals = useMemo(() => {
+    if (!isMounted) return false;
+    return hasPersonalizationSignal(profile);
+  }, [profile, isMounted]);
 
   // 3. Keyword-based Local Fallback (Personalization 1.0)
   const localPersonalizedItems = useMemo(() => {
@@ -100,6 +109,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
 
   // Track impressions
   useEffect(() => {
+    if (!isMounted) return;
     const suggestionList = [
       ...recommendations.topics.map((item) => ({ kind: 'topic' as const, value: item.value })),
       ...recommendations.sources.map((item) => ({ kind: 'source' as const, value: item.value })),
