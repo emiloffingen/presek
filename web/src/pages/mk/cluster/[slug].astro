@@ -371,7 +371,7 @@ const articleSchema = cluster ? {
 			<div class="scroll-progress-bar" id="reading-progress"></div>
 		</div>
 
-		<div class="editorial-container max-w-[1440px] mx-auto px-4 md:px-10">
+		<div class="editorial-container max-w-[1440px] mx-auto px-2 sm:px-4 md:px-10">
 		<Breadcrumbs items={[
 			{ label: cluster?.articles?.[0]?.category || 'vesti', href: cluster?.articles?.[0]?.category ? `/mk/?category=${cluster.articles[0].category}` : '/mk' },
 			{ label: adjacentTopic || 'Detali' }

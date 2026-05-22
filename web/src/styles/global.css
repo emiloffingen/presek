@@ -1100,6 +1100,13 @@ button:focus-visible,
     }
 }
 
+@media (max-width: 768px) {
+    .site-layout {
+        width: 100%;
+        padding: 0 0.5rem;
+    }
+}
+
 @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: .5; }
