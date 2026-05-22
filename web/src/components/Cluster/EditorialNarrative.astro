@@ -1,6 +1,6 @@
 ---
 import { renderSynthesisHtml as sharedRenderSynthesisHtml } from '../../utils/renderSynthesisHtml';
-import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+import { getLangFromUrl } from '../../i18n/utils';
 
 interface Props {
 	hasStrongLeadNarrative: boolean;
@@ -16,7 +16,6 @@ const { hasStrongLeadNarrative, generatedArticle, synthesisItems, hasCitationSou
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
 console.log("DEBUG EditorialNarrative:", { hostHeader, url: Astro.url.toString(), lang });
-const t = useTranslations(lang);
 
 const renderSynthesisHtml = (text: string) => {
     let html = sharedRenderSynthesisHtml(text, hasCitationSources);
@@ -39,12 +38,11 @@ const renderSynthesisHtml = (text: string) => {
 
 <div class="editorial-narrative prose-editorial">
 	{generatedArticle ? (
-		<div class="narrative-body font-serif is-collapsible is-collapsed">
+		<div class="narrative-body font-serif">
 			{generatedArticle.split('\n').filter((p: string) => p.trim()).map((paragraph: string, idx: number) => (
 				<p class:list={["narrative-p", idx === 0 ? "drop-cap" : ""]} set:html={renderSynthesisHtml(paragraph)}></p>
 			))}
 		</div>
-        <button type="button" class="narrative-toggle" aria-expanded="false">{t('cluster.read_more')}</button>
 	) : (
 		<div class="empty-narrative-fallback italic text-muted-foreground font-serif">
             {lang === 'sr'
@@ -57,44 +55,6 @@ const renderSynthesisHtml = (text: string) => {
 
 <script>
     import { createPopper } from '@popperjs/core';
-
-    const initNarrativeToggles = () => {
-        const containers = document.querySelectorAll('.editorial-narrative');
-        containers.forEach(container => {
-            const body = container.querySelector('.narrative-body') as HTMLElement | null;
-            const toggle = container.querySelector('.narrative-toggle') as HTMLButtonElement | null;
-            if (!body || !toggle || toggle.dataset.narrativeReady === 'true') return;
-
-            toggle.dataset.narrativeReady = 'true';
-            let userExpanded = false;
-
-            const checkHeight = () => {
-                if (userExpanded) return;
-                if (body.scrollHeight <= 320) {
-                    body.classList.remove('is-collapsed');
-                    toggle.setAttribute('aria-expanded', 'true');
-                    toggle.style.display = 'none';
-                } else {
-                    body.classList.add('is-collapsed');
-                    toggle.setAttribute('aria-expanded', 'false');
-                    toggle.style.display = 'block';
-                }
-            };
-
-            checkHeight();
-
-            if ('fonts' in document) {
-                document.fonts.ready.then(checkHeight);
-            }
-
-            toggle.addEventListener('click', () => {
-                userExpanded = true;
-                body.classList.remove('is-collapsed');
-                toggle.setAttribute('aria-expanded', 'true');
-                toggle.style.display = 'none';
-            });
-        });
-    };
 
     document.addEventListener('astro:page-load', () => {
         const pageLang = document.documentElement.lang || 'sr';
@@ -158,15 +118,7 @@ const renderSynthesisHtml = (text: string) => {
                 }
             });
         });
-
-        initNarrativeToggles();
     });
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initNarrativeToggles, { once: true });
-    } else {
-        initNarrativeToggles();
-    }
 </script>
 
 <style>
@@ -180,59 +132,6 @@ const renderSynthesisHtml = (text: string) => {
 
     .entity-tooltip {
         z-index: 1000;
-    }
-
-    .narrative-body.is-collapsible {
-        max-height: 5000px;
-        overflow: hidden;
-        transition: max-height 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .narrative-body.is-collapsible.is-collapsed {
-        max-height: 280px;
-    }
-
-    .narrative-body.is-collapsible:not(.is-collapsed) {
-        max-height: none;
-        overflow: visible;
-    }
-
-    .narrative-body.is-collapsed {
-        mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
-        -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
-    }
-
-    .narrative-toggle {
-        display: block;
-        margin: -2.5rem auto 2rem;
-        position: relative;
-        z-index: 10;
-        padding: 0.75rem 2rem;
-        background: color-mix(in srgb, var(--background) 75%, transparent);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid var(--border);
-        font-family: var(--font-sans);
-        font-size: 0.72rem;
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 0.12em;
-        color: var(--nyt-accent);
-        cursor: pointer;
-        transition: all 0.3s var(--ease-editorial);
-        box-shadow: var(--shadow-sm), 0 8px 24px rgba(0, 0, 0, 0.02);
-    }
-
-    .narrative-toggle:hover {
-        background: var(--nyt-accent);
-        color: white;
-        border-color: var(--nyt-accent);
-        transform: translateY(-2px);
-        box-shadow: 0 10px 20px color-mix(in srgb, var(--nyt-accent) 20%, transparent);
-    }
-
-    .narrative-toggle:active {
-        transform: translateY(0);
     }
 
 	.narrative-p {
