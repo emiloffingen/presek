@@ -99,7 +99,7 @@ from nlp.keywords import (
     extract_keyphrases_locally,
     normalize_tag_name,
 )
-from nlp.text_processing import _is_noisy_summary_sentence, _normalize_summary_sentence
+from nlp.text_processing import _is_noisy_summary_sentence, _normalize_summary_sentence, _jaccard_similarity
 
 
 def _clean_briefing_snippet(text):
@@ -821,26 +821,74 @@ def synthesize_cluster_fallback(articles, lang="mk"):
         lead = articles[0]
     comparison = compare_cluster_sources(articles, lang=lang)
 
-    # 1. Smarter Context Extraction
-    desc = cleanAndDecode(lead.get("description", ""))
-    sentences = [_normalize_briefing_line(s) for s in re.split(r"(?<=[.!?])\s+", desc) if len(s.strip()) > 20]
-    sentences = [s for s in sentences if s and not _is_noisy_summary_sentence(s)]
-
-    # 2. Build Summary Points
-    summary_lines = []
+    # 1. Setup Lead Title, Description, and Update Point
     lead_title = deShout(cleanAndDecode(lead.get("title", ""))).strip()
-
-    # Use the improved update extraction to avoid title repetition
+    desc = cleanAndDecode(lead.get("description", ""))
     update_point = _extract_briefing_update({"title": lead_title, "description": desc}, lang=lang)
 
+    # 2. Multi-source Sentence Fusion
+    candidate_sentences = []
+    for art in articles:
+        art_desc = cleanAndDecode(art.get("description", ""))
+        art_country = art.get("country", "")
+        is_target_country = art_country and str(art_country).upper() == target_country
+        
+        # Extract sentences from description
+        raw_sents = [s.strip() for s in re.split(r"(?<=[.!?])\s+", art_desc) if s.strip()]
+        
+        for idx, s in enumerate(raw_sents):
+            normalized = _normalize_briefing_line(s)
+            if not normalized or len(normalized) < 20 or _is_noisy_summary_sentence(normalized):
+                continue
+            
+            # Sentence scoring logic
+            score = len(normalized.split()) * 0.1
+            if idx == 0:
+                score += 1.0  # first description sentence gets a boost
+            if re.search(r"\d+", normalized):
+                score += 0.5  # contains numbers / statistics
+            if is_target_country:
+                score += 0.8  # matches target country/language
+                
+            candidate_sentences.append({
+                "text": normalized,
+                "score": score,
+                "source": art.get("source"),
+            })
+            
+    candidate_sentences.sort(key=lambda x: x["score"], reverse=True)
+    
+    selected_sentences = []
+    for cand in candidate_sentences:
+        # Avoid duplicating the key update point
+        if update_point and _jaccard_similarity(cand["text"], update_point) > 0.4:
+            continue
+        if any(_jaccard_similarity(cand["text"], s["text"]) > 0.4 for s in selected_sentences):
+            continue
+        selected_sentences.append(cand)
+        if len(selected_sentences) >= 3:
+            break
+            
+    if not selected_sentences:
+        fallback_sents = [_normalize_briefing_line(s) for s in re.split(r"(?<=[.!?])\s+", desc) if len(s.strip()) > 20]
+        fallback_sents = [s for s in fallback_sents if s and not _is_noisy_summary_sentence(s)]
+        for s in fallback_sents:
+            if update_point and _jaccard_similarity(s, update_point) > 0.4:
+                continue
+            selected_sentences.append({"text": s, "source": lead.get("source")})
+        if not selected_sentences and fallback_sents:
+            selected_sentences.append({"text": fallback_sents[0], "source": lead.get("source")})
+
+    # 3. Build Summary Points
+    summary_lines = []
     if update_point and update_point.casefold() != lead_title.casefold():
         summary_lines.append(f"• {t['klucen_razvoj']}: {update_point}")
     else:
         # If no good update found, use a refined version of the title
         summary_lines.append(f"• {t['nastan']}: {lead_title}")
 
-    if len(sentences) > 1:
-        summary_lines.append(f"• {t['detali']}: {sentences[0]}")
+    if selected_sentences:
+        summary_lines.append(f"• {t['detali']}: {selected_sentences[0]['text']}")
 
     common = (
         comparison.get("common_line", "")
@@ -870,6 +918,11 @@ def synthesize_cluster_fallback(articles, lang="mk"):
         article_body.append(f"{lead_title}. {update_point}.")
     else:
         article_body.append(f"{lead_title}. {t['povece_mediumi']}")
+
+    # Insert the fused details paragraph
+    details_paragraph = " ".join([s["text"] for s in selected_sentences])
+    if details_paragraph:
+        article_body.append(details_paragraph)
 
     if comparison.get("common_line"):
         article_body.append(comparison["common_line"])

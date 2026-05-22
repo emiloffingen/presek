@@ -304,6 +304,42 @@ class TestClusterComparison:
         result_sr = synthesize_cluster_fallback(articles, lang="sr")
         assert "Tramp najavio" in result_sr["synthetic_headline"]
 
+    def test_synthesize_cluster_fallback_fuses_multiple_sources(self):
+        articles = [
+            {
+                "source": "Sitel",
+                "title": "Novi merki za namaluvanje na cenite",
+                "description": "Vladata donese odluka za zamrznuvanje na cenite na osnovnite prehrambeni proizvodi od slednata nedela.",
+                "country": "MK",
+            },
+            {
+                "source": "Kanal 5",
+                "title": "Osnovnite namirnici so zamrznati ceni",
+                "description": "Graganite ja pozdravija novata odluka no baraat i pogolemi plati kako dolgorocno resenie.",
+                "country": "MK",
+            },
+            {
+                "source": "Vecer",
+                "title": "Novi merki za cenite na hranata",
+                "description": "Vladata donese odluka za zamrznuvanje na cenite na osnovnite prehrambeni proizvodi od slednata nedela.",
+                "country": "MK",
+            },
+        ]
+
+        result = synthesize_cluster_fallback(articles, lang="mk")
+
+        # 1. First detail sentence should be from the first/highest scoring sentence
+        assert "Vladata donese odluka za zamrznuvanje" in result["summary"]
+
+        # 2. In generated_article, we should have a fusion of the distinct sentences
+        assert "Vladata donese odluka za zamrznuvanje" in result["generated_article"]
+        assert "Graganite ja pozdravija novata odluka" in result["generated_article"]
+
+        # 3. The duplicate sentence should not be repeated
+        text_lower = result["generated_article"].lower()
+        assert text_lower.count("zamrznuvanje na cenite") == 1
+
+
 
 class TestArticleSummaryFallback:
     def test_summarize_locally_prefers_information_dense_sentences_over_noise(self):
