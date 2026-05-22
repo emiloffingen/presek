@@ -165,7 +165,7 @@ main() {
     wait_http_ok "Admin page" "$ADMIN_URL" 200
     wait_http_ok "Admin API without token" "$ADMIN_API_URL" 403
     if [ -n "${PRESEK_ADMIN_TOKEN:-}" ]; then
-      wait_http_ok_header "Admin API with token" "$ADMIN_API_URL" "X-Admin-Token: $PRESEK_ADMIN_TOKEN" 200
+      wait_http_ok_header "Admin API with token" "$ADMIN_API_URL" "Authorization: Bearer $PRESEK_ADMIN_TOKEN" 200
     else
       warn "Skipping admin token smoke check because PRESEK_ADMIN_TOKEN is not available"
     fi

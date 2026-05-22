@@ -127,14 +127,19 @@ def _client_ip_for_request(request: Request) -> str:
     return client_host or "0.0.0.0"
 
 
-def _source_admin_authorized(request: Request) -> bool:
-    token = (request.headers.get("X-Admin-Token") or "").strip()
+def _static_admin_token_authorized(request: Request) -> bool:
     expected = (os.environ.get("PRESEK_ADMIN_TOKEN") or "").strip()
     if not expected:
         return False
-    if not token:
-        return False
-    return secrets.compare_digest(token, expected)
+    candidates = [(request.headers.get("X-Admin-Token") or "").strip()]
+    auth = str(request.headers.get("Authorization") or "").strip()
+    if auth.lower().startswith("bearer "):
+        candidates.append(auth[7:].strip())
+    return any(token and secrets.compare_digest(token, expected) for token in candidates)
+
+
+def _source_admin_authorized(request: Request) -> bool:
+    return _static_admin_token_authorized(request)
 
 
 def _error_json(message: str, status_code: int, details=None):

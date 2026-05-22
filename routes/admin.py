@@ -13,8 +13,12 @@ router = APIRouter()
 
 
 async def verify_admin(request: Request):
-    """Verify admin access using JWT token."""
+    """Verify admin access using a JWT or the configured static admin token."""
     from core.auth import verify_admin_jwt
+    from routes.common import _static_admin_token_authorized
+
+    if _static_admin_token_authorized(request):
+        return True
 
     auth_header = request.headers.get("Authorization")
     if not auth_header:
