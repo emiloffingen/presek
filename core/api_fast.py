@@ -49,8 +49,8 @@ from core.health import _probe_database, _probe_redis
 # Security: Restrict CORS to configured origins. In production, never use "*" with allow_credentials=True
 cors_origins = os.environ.get("CORS_ORIGINS", "")
 if cors_origins == "*" and os.environ.get("ENV") == "production":
-    cors_origins = ["https://presek.live", "https://www.presek.live", "https://presek.mk", "https://www.presek.mk"]
-    log.warning("CORS_ORIGINS was '*', defaulting to presek.live and presek.mk for production security")
+    cors_origins = ["https://presek.live", "https://www.presek.live", "https://presek.rs", "https://www.presek.rs", "https://presek.mk", "https://www.presek.mk"]
+    log.warning("CORS_ORIGINS was '*', defaulting to presek.live, presek.rs, and presek.mk for production security")
 elif cors_origins == "*":
     # In development, still avoid wildcard - use explicit localhost origins
     cors_origins = [
