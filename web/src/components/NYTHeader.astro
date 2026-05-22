@@ -405,14 +405,19 @@ function getRelativeTimeStr(dateStr?: string) {
             letter-spacing: 0.1em;
             white-space: nowrap;
         }
-        .unified-ticker-track-wrap { display: none; }
+        .unified-ticker-track-wrap {
+            display: block;
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+        }
         .mobile-ticker-compact {
-            display: flex;
-            align-items: center;
-            min-width: 0;
-            flex: 1;
-            overflow: hidden;
-            padding: 0 0.75rem 0 0.2rem;
+            display: none;
+        }
+        .live-ticker-headline {
+            font-size: 0.75rem;
+        }
+        .ticker-time {
+            font-size: 0.54rem;
         }
         .mobile-live-ticker-headline {
             display: grid;
