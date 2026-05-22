@@ -44,7 +44,7 @@ const renderSynthesisHtml = (text: string) => {
 				<p class:list={["narrative-p", idx === 0 ? "drop-cap" : ""]} set:html={renderSynthesisHtml(paragraph)}></p>
 			))}
 		</div>
-        <button class="narrative-toggle">{t('cluster.read_more')}</button>
+        <button type="button" class="narrative-toggle" aria-expanded="false">{t('cluster.read_more')}</button>
 	) : (
 		<div class="empty-narrative-fallback italic text-muted-foreground font-serif">
             {lang === 'sr'
@@ -57,6 +57,44 @@ const renderSynthesisHtml = (text: string) => {
 
 <script>
     import { createPopper } from '@popperjs/core';
+
+    const initNarrativeToggles = () => {
+        const containers = document.querySelectorAll('.editorial-narrative');
+        containers.forEach(container => {
+            const body = container.querySelector('.narrative-body') as HTMLElement | null;
+            const toggle = container.querySelector('.narrative-toggle') as HTMLButtonElement | null;
+            if (!body || !toggle || toggle.dataset.narrativeReady === 'true') return;
+
+            toggle.dataset.narrativeReady = 'true';
+            let userExpanded = false;
+
+            const checkHeight = () => {
+                if (userExpanded) return;
+                if (body.scrollHeight <= 320) {
+                    body.classList.remove('is-collapsed');
+                    toggle.setAttribute('aria-expanded', 'true');
+                    toggle.style.display = 'none';
+                } else {
+                    body.classList.add('is-collapsed');
+                    toggle.setAttribute('aria-expanded', 'false');
+                    toggle.style.display = 'block';
+                }
+            };
+
+            checkHeight();
+
+            if ('fonts' in document) {
+                document.fonts.ready.then(checkHeight);
+            }
+
+            toggle.addEventListener('click', () => {
+                userExpanded = true;
+                body.classList.remove('is-collapsed');
+                toggle.setAttribute('aria-expanded', 'true');
+                toggle.style.display = 'none';
+            });
+        });
+    };
 
     document.addEventListener('astro:page-load', () => {
         const pageLang = document.documentElement.lang || 'sr';
@@ -119,41 +157,14 @@ const renderSynthesisHtml = (text: string) => {
             });
         });
 
-        // Toggle collapse/expand and verify heights
-        const containers = document.querySelectorAll('.editorial-narrative');
-        containers.forEach(container => {
-            const body = container.querySelector('.narrative-body') as HTMLElement;
-            const toggle = container.querySelector('.narrative-toggle') as HTMLElement;
-            if (body && toggle) {
-                let userExpanded = false;
-
-                const checkHeight = () => {
-                    if (userExpanded) return;
-                    if (body.scrollHeight <= 320) {
-                        body.classList.remove('is-collapsed');
-                        toggle.style.display = 'none';
-                    } else {
-                        body.classList.add('is-collapsed');
-                        toggle.style.display = 'block';
-                    }
-                };
-
-                // Run initially
-                checkHeight();
-
-                // Run again when fonts are fully loaded to prevent font loading race conditions
-                if (typeof document !== 'undefined' && 'fonts' in document) {
-                    document.fonts.ready.then(checkHeight);
-                }
-
-                toggle.addEventListener('click', () => {
-                    userExpanded = true;
-                    body.classList.remove('is-collapsed');
-                    toggle.style.display = 'none';
-                });
-            }
-        });
+        initNarrativeToggles();
     });
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initNarrativeToggles, { once: true });
+    } else {
+        initNarrativeToggles();
+    }
 </script>
 
 <style>
@@ -177,6 +188,11 @@ const renderSynthesisHtml = (text: string) => {
 
     .narrative-body.is-collapsible.is-collapsed {
         max-height: 280px;
+    }
+
+    .narrative-body.is-collapsible:not(.is-collapsed) {
+        max-height: none;
+        overflow: visible;
     }
 
     .narrative-body.is-collapsed {
