@@ -98,6 +98,8 @@ const renderSynthesisHtml = (text: string) => {
 
     document.addEventListener('astro:page-load', () => {
         const pageLang = document.documentElement.lang || 'sr';
+        const isSr = pageLang.startsWith('sr');
+        const activeLang = isSr ? 'sr' : 'mk';
         const entities = document.querySelectorAll('.inline-entity');
         entities.forEach(entity => {
             const name = entity.getAttribute('data-entity');
@@ -110,7 +112,7 @@ const renderSynthesisHtml = (text: string) => {
                 // Create tooltip element
                 tooltip = document.createElement('div');
                 tooltip.className = 'entity-tooltip';
-                const loadingText = pageLang === 'sr' ? `Učitavam kontekst za ${name}...` : `Вчитувам контекст за ${name}...`;
+                const loadingText = isSr ? `Učitavam kontekst za ${name}...` : `Вчитувам контекст за ${name}...`;
                 const shell = document.createElement('div');
                 shell.className = 'p-4 bg-background border border-border shadow-xl rounded-lg w-64 text-sm';
                 const row = document.createElement('div');
@@ -128,10 +130,10 @@ const renderSynthesisHtml = (text: string) => {
                 });
 
                 // Fetch real data
-                const res = await fetch(`/api/entity-graph/${encodeURIComponent(name)}?lang=${pageLang}`);
+                const res = await fetch(`/api/entity-graph/${encodeURIComponent(name)}?lang=${activeLang}`);
                 const json = await res.json();
                 if (json.status === 'success') {
-                    const noDetailsText = pageLang === 'sr' ? 'Nema dostupnih detalja.' : 'Нема достапни детали.';
+                    const noDetailsText = isSr ? 'Nema dostupnih detalja.' : 'Нема достапни детали.';
                     const content = document.createElement('div');
                     content.className = 'p-4 bg-background border border-border shadow-xl rounded-lg w-64 text-sm font-sans';
                     const title = document.createElement('h4');

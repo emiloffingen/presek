@@ -179,18 +179,7 @@
     }
 }
 
-/* Serbian Cyrillic Optimization */
-body.script-cyrillic,
-body.script-cyrillic blockquote,
-body.script-cyrillic .rail-quote-block p,
-body.script-cyrillic .lead-summary,
-body.script-cyrillic .narrative-p,
-body.script-cyrillic .headline,
-body.script-cyrillic .editorial-headline,
-body.script-cyrillic .kicker,
-body.script-cyrillic .significance-badge {
-    font-family: var(--font-sans) !important;
-}
+
 
 /* Ticker Overflow Mask */
 .unified-ticker-track-wrap {

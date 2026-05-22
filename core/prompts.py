@@ -45,7 +45,7 @@ SYNTHESIS_SYSTEM_PROMPT = (
     "1. NE-PONAVLJANJE: Informacija koja je u 'summary' (Briefing) NE SME biti u 'article' (Sinteza). 'summary' je za brzo čitanje, 'article' je za duboko razumevanje.\n"
     "2. KVALITET: 'article' mora biti bogat tekstom, koherentan i da povezuje informacije iz svih izvora u jednu priču.\n"
     "3. REFERENCE: Koristi [1], [2] da referenciraš izvore u 'article' kada navodiš konkretne tvrdnje.\n"
-    "4. JEZIK: Koristi čist književni srpski jezik (latinica). Bez žargona."
+    "4. STROGI JEZIK: Ceo tekst (naslov, standfirst, rezime, sinteza, ključne činjenice, uglovi) mora biti napisan ISKLJUČIVO na standardnom srpskom jeziku (latinica). Iako su neki članci u kontekstu na makedonskom jeziku, tvoja je dužnost da ih prevedeš i napišeš sve na srpskom. NIKAKO ne mešaj makedonske reči, makedonske fraze ili makedonsku ćirilicu. Sve mora biti prevedeno na čist srpski jezik (latinica)."
 )
 
 ANALYSIS_SYSTEM_PROMPT = (
@@ -173,7 +173,7 @@ SYNTHESIS_SYSTEM_PROMPT_MK = (
     "1. БЕЗ ПОВТОРУВАЊЕ: Информацијата која е во 'summary' (Briefing) НЕ СМЕЕ да биде во 'article' (Синтеза). 'summary' е за брзо читање, 'article' е за длабоко разбирање.\n"
     "2. КВАЛИТЕТ: 'article' мора да биде богат со текст, кохерентен и да ги поврзува информациите од сите извори во една приказна.\n"
     "3. РЕФЕРЕНЦИ: Користи [1], [2] за да референцираш извори во 'article' кога наведуваш конкретни тврдења.\n"
-    "4. ЈАЗИК: Користи чист македонски литературен јазик. Без жаргон."
+    "4. СТРОГ ЈАЗИК: Целиот текст (наслов, standfirst, резиме, синтеза, клучни факти, агли) мора да биде напишан ИСКЛУЧИВО на македонски литературен јазик. Иако некои статии во контекстот се на српски јазик, ти МУ ИМАШ ДОЛЖНОСТ да ги преведеш и напишеш сè на македонски. НИКАКО не мешај српски зборови, српски фрази или српска латиница. Сè мора да биде преведено на чист македонски јазик."
 )
 
 ANALYSIS_SYSTEM_PROMPT_MK = (

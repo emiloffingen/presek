@@ -178,7 +178,7 @@ const filteredRelated = relatedClusters.filter((c: { cluster_id: string }) => c.
 
 const adjacentTopic = cluster?.topics?.find((t: string) => t !== 'Srbija') || cluster?.topics?.[0];
 
-const canonicalUrl = `https://presek.live/cluster/${id}`;
+const canonicalUrl = `https://presek.mk/cluster/${id}`;
 const shareDescription = synthesisItems[0]?.content || mainArticle?.description || '';
 
 function getLeadVisual(c: ClusterDetail | null) {
