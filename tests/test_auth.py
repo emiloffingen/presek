@@ -84,6 +84,17 @@ def test_admin_endpoint_with_jwt():
     assert data["status"] == "success"
 
 
+def test_verify_admin_accepts_static_admin_token(monkeypatch):
+    """Test admin verification with the configured static admin token."""
+    import asyncio
+
+    monkeypatch.setenv("PRESEK_ADMIN_TOKEN", "static-admin-token")
+    from routes.admin import verify_admin
+
+    request = type("Request", (), {"headers": {"Authorization": "Bearer static-admin-token"}})()
+    assert asyncio.run(verify_admin(request)) is True
+
+
 def test_admin_endpoint_without_auth():
     """Test admin endpoint without authentication."""
     from core.api_fast import app

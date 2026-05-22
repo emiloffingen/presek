@@ -344,6 +344,11 @@ from core.auth import verify_admin_jwt
 
 async def admin_auth(request: Request) -> str:
     """Dependency for JWT-based admin authentication."""
+    from .common import _static_admin_token_authorized
+
+    if _static_admin_token_authorized(request):
+        return "admin"
+
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing or invalid token")
