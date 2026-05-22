@@ -40,7 +40,7 @@ export default function AccountSyncIsland({ lang = 'sr' }: { lang?: string }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...buildSyncTokenHeaders(nextToken),
+          ...(buildSyncTokenHeaders(nextToken) as Record<string, string>),
         },
         body: JSON.stringify({
           token: nextToken,

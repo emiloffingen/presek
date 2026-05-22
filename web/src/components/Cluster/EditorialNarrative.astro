@@ -13,7 +13,9 @@ interface Props {
 
 const { hasStrongLeadNarrative, generatedArticle, synthesisItems, hasCitationSources, keyFacts, entities = [] } = Astro.props;
 
-const lang = getLangFromUrl(Astro.url);
+const hostHeader = Astro.request?.headers.get('host');
+const lang = getLangFromUrl(Astro.url, hostHeader);
+console.log("DEBUG EditorialNarrative:", { hostHeader, url: Astro.url.toString(), lang });
 const t = useTranslations(lang);
 
 const renderSynthesisHtml = (text: string) => {
@@ -28,7 +30,7 @@ const renderSynthesisHtml = (text: string) => {
             .replace(/"/g, '&quot;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;');
-        const regex = new RegExp(`\\b${escapedPattern}\\b`, 'g');
+        const regex = new RegExp(`(?<=^|[^\\p{L}\\p{N}_])${escapedPattern}(?=$|[^\\p{L}\\p{N}_])`, 'gu');
         html = html.replace(regex, `<span class="inline-entity" data-entity="${safeAttr}">$&</span>`);
     });
     return html;
@@ -123,13 +125,29 @@ const renderSynthesisHtml = (text: string) => {
             const body = container.querySelector('.narrative-body') as HTMLElement;
             const toggle = container.querySelector('.narrative-toggle') as HTMLElement;
             if (body && toggle) {
-                // If the content is short and fits within the collapsed height, don't show the toggle
-                if (body.scrollHeight <= 320) {
-                    body.classList.remove('is-collapsed');
-                    toggle.style.display = 'none';
+                let userExpanded = false;
+
+                const checkHeight = () => {
+                    if (userExpanded) return;
+                    if (body.scrollHeight <= 320) {
+                        body.classList.remove('is-collapsed');
+                        toggle.style.display = 'none';
+                    } else {
+                        body.classList.add('is-collapsed');
+                        toggle.style.display = 'block';
+                    }
+                };
+
+                // Run initially
+                checkHeight();
+
+                // Run again when fonts are fully loaded to prevent font loading race conditions
+                if (typeof document !== 'undefined' && 'fonts' in document) {
+                    document.fonts.ready.then(checkHeight);
                 }
 
                 toggle.addEventListener('click', () => {
+                    userExpanded = true;
                     body.classList.remove('is-collapsed');
                     toggle.style.display = 'none';
                 });

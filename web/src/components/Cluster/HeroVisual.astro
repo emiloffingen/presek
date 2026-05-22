@@ -14,7 +14,8 @@ interface Props {
 
 const { leadVisual, dominantColor, displayHeadline, id, category, sourcePreview, articlesCount } = Astro.props;
 
-const lang = getLangFromUrl(Astro.url);
+const hostHeader = Astro.request?.headers.get('host');
+const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
 ---
 
