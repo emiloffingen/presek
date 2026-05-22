@@ -994,7 +994,7 @@ class TestProfileDeliveryTasks:
     def test_breaking_alerts_skip_when_lock_is_held(self):
 
         with (
-            patch("tasks.delivery.briefing.redis_client", return_value=False),
+            patch("tasks.delivery.briefing.acquire_task_lock", return_value=False),
             patch("tasks.delivery.briefing._load_active_delivery_rows") as mock_rows,
         ):
             tasks.send_profile_breaking_alerts_task()
