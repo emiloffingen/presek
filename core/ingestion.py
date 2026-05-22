@@ -31,6 +31,7 @@ from core.database import db_manager as db
 from core.embeddings import generate_embeddings_batch
 from core.health import get_source_statuses, record_source_fetch
 from core.language import is_cyrillic_south_slavic
+from core.text_extraction import clean_extracted_article_text
 from nlp.categories import detect_category, detect_subcategory, detect_topic, normalize_headline
 
 log = logging.getLogger("presek")
@@ -262,10 +263,7 @@ def clean_rss_footer(text: str) -> str:
     """Removes common RSS footers and 'continue reading' artifacts."""
     if not text:
         return ""
-    text = html.unescape(text)
-    
-    # Remove source text extraction boilerplate from the beginning
-    text = re.sub(r"^\s*IZVORNI ZAPIS\s*(?:\([^)]+\))?\s*", "", text, flags=re.IGNORECASE)
+    text = clean_extracted_article_text(text)
     
     text = re.sub(r"The post .* appeared first on .*", "", text)
     text = re.sub(r"Procitajte povece na .*", "", text)

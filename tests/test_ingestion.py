@@ -15,6 +15,7 @@ from core.ingestion import (
     normalize_headline,
     parse_entry_timestamp,
 )
+from core.text_extraction import clean_extracted_article_text
 
 
 def test_normalize_headline():
@@ -41,6 +42,46 @@ def test_clean_rss_footer():
 def test_clean_rss_footer_macedonian():
     text = "Sodrzina na vestta. Procitajte povece na example.com"
     assert clean_rss_footer(text) == "Sodrzina na vestta."
+
+
+def test_clean_rss_footer_strips_source_header_and_share_metadata():
+    text = (
+        'IZVORNI ZAPIS (nova.rs)\n'
+        ' Milica Vučković / FoNet Grbović (ŠSG): Kalkulacije o izborima su besmislene, '
+        'spremamo se kao da su sutra autor: Beta Politika 22. maj. 2026. 21:25 0 '
+        'Podeli vest: Predsednik Pokreta slobodnih građana(PSG) Pavle Grbović je večeras '
+        'ocenio da su "kalkulacije o izborima su besmislene".'
+    )
+
+    assert clean_rss_footer(text) == (
+        'Predsednik Pokreta slobodnih građana(PSG) Pavle Grbović je večeras '
+        'ocenio da su "kalkulacije o izborima su besmislene".'
+    )
+
+
+def test_clean_extracted_article_text_strips_nova_page_chrome():
+    text = (
+        'Milica Vučković / FoNet Grbović (PSG): Kalkulacije o izborima su besmislene, '
+        'spremamo se kao da su sutra autor: Beta Politika 22. maj. 2026. 21:25 0 '
+        'Podeli vest: Predsednik Pokreta slobodnih građana(PSG) Pavle Grbović je večeras '
+        'ocenio da su "kalkulacije o izborima su besmislene", te dodao da se PSG sprema '
+        'kao da su sutra. Podeli vest: Oglas On je za televiziju Nova S kazao i da se '
+        'politička borba mora voditi kontinuirano. Pročitajte još: "Direktor Jovine '
+        'gimnazije je onaj kog treba suspendovati" Politika 0 Američka privredna komora '
+        'kritikovala pomoć od 100 evra pred izbore na Kosovu Politika 0 "Naša misija je '
+        'stvaranje proevropskog fronta koji treba da nadživi svaki izborni ciklus", kazao '
+        'je Grbović. izbori pavle grbović psg Pratite nas na društvenim mrežama: Koje je '
+        'tvoje mišljenje o ovoj temi? Učestvuj u diskusiji ili pročitaj komentare'
+    )
+
+    cleaned = clean_extracted_article_text(text)
+
+    assert cleaned.startswith("Predsednik Pokreta slobodnih građana")
+    assert "Podeli vest" not in cleaned
+    assert "Oglas" not in cleaned
+    assert "Pročitajte još" not in cleaned
+    assert "Pratite nas" not in cleaned
+    assert "Naša misija je stvaranje proevropskog fronta" in cleaned
 
 
 def test_clean_rss_footer_empty():

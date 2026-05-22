@@ -8,6 +8,7 @@ import httpx
 import trafilatura
 from playwright.async_api import async_playwright
 
+from core.text_extraction import clean_extracted_article_text
 from utils import _peer_ip, _resolve_public_ips
 
 log = logging.getLogger("presek.crawler")
@@ -95,7 +96,7 @@ class CrawlerService:
 
         return {
             "title": metadata.title if metadata else None,
-            "content": content,
+            "content": clean_extracted_article_text(content),
             "image_url": metadata.image if metadata else None,
             "author": metadata.author if metadata else None,
             "published_at": metadata.date if metadata else None,
