@@ -808,7 +808,17 @@ def synthesize_cluster_fallback(articles, lang="mk"):
         }
 
     t = _T.get(lang, _T["mk"])
-    lead = articles[0]
+    
+    # Try to find a lead article in the target language (represented by country)
+    lead = None
+    target_country = "MK" if lang == "mk" else "RS"
+    for art in articles:
+        art_country = art.get("country")
+        if art_country and str(art_country).upper() == target_country:
+            lead = art
+            break
+    if not lead:
+        lead = articles[0]
     comparison = compare_cluster_sources(articles, lang=lang)
 
     # 1. Smarter Context Extraction
@@ -1083,7 +1093,18 @@ def _build_minimum_cluster_summary(articles, comparison=None, lang="mk"):
     articles = _normalize_articles_for_local_use(articles)
     if not articles:
         return ""
-    return f"• {t['sto_se_slucuva']}: {articles[0]['title']}\n• {t['pokrienost']}: {len(articles)} {t['izvori']}, {t['sledeno_od']} i {_source_list(articles)}."
+
+    lead = None
+    target_country = "MK" if lang == "mk" else "RS"
+    for art in articles:
+        art_country = art.get("country")
+        if art_country and str(art_country).upper() == target_country:
+            lead = art
+            break
+    if not lead:
+        lead = articles[0]
+
+    return f"• {t['sto_se_slucuva']}: {lead['title']}\n• {t['pokrienost']}: {len(articles)} {t['izvori']}, {t['sledeno_od']} i {_source_list(articles)}."
 
 
 def generate_local_placeholder(cluster_id, title, category="vesti"):

@@ -152,6 +152,7 @@ def _normalize_articles_for_local_use(articles):
                 "link": article.get("link"),
                 "created_at": article.get("created_at"),
                 "category": article.get("category"),
+                "country": article.get("country"),
             }
         )
     return [article for article in normalized if article["title"]]

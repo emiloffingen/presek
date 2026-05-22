@@ -280,6 +280,30 @@ class TestClusterComparison:
 
         assert ("local_synthesis_path", {"mode": "enhanced_fallback"}) in events
 
+    def test_synthesize_cluster_fallback_prefers_target_language_lead(self):
+        articles = [
+            {
+                "source": "Telegraf",
+                "title": "Tramp najavio da ce prekrsiti protokol",
+                "description": "Donald Tramp izjavio je da ce razgovarati...",
+                "country": "RS",
+            },
+            {
+                "source": "Vecer",
+                "title": "Tramp najavi prekrsivanje na protokol",
+                "description": "Donald Tramp najavi deka ce razgovara...",
+                "country": "MK",
+            },
+        ]
+
+        # For lang = "mk", it should prefer the MK article ("Vecer")
+        result_mk = synthesize_cluster_fallback(articles, lang="mk")
+        assert "Tramp najavi" in result_mk["synthetic_headline"]
+
+        # For lang = "sr", it should prefer the RS article ("Telegraf")
+        result_sr = synthesize_cluster_fallback(articles, lang="sr")
+        assert "Tramp najavio" in result_sr["synthetic_headline"]
+
 
 class TestArticleSummaryFallback:
     def test_summarize_locally_prefers_information_dense_sentences_over_noise(self):
