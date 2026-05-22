@@ -119,9 +119,9 @@ We may update this Privacy Policy from time to time. We will notify you of any m
 
 If you have any questions about this Privacy Policy or our data practices, please contact us at:
 
-- Email: privacy@presek.live
+- Email: privacy@presek.rs
 - Address: Presek, [Address if applicable]
 
 ## 13. Data Protection Officer
 
-For data protection-related inquiries, please contact our Data Protection Officer at dpo@presek.live.
+For data protection-related inquiries, please contact our Data Protection Officer at dpo@presek.rs.
