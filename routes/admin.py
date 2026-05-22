@@ -37,31 +37,71 @@ async def verify_admin(request: Request):
 @router.get("/admin/dashboard")
 async def get_admin_dashboard(authorized: bool = Depends(verify_admin)):
     """Aggregates all operational health metrics for the Presek Cockpit."""
+    from utils import redis_client
 
-    # 1. AI Status
+    # 1. AI Status & Usage
     current_provider = PROVIDER_FALLBACK_ORDER[0] if PROVIDER_FALLBACK_ORDER else "unknown"
+    today = datetime.date.today().isoformat()
+    try:
+        gemini_usage = int(redis_client.get(f"ai:gemini:usage:{today}") or 0)
+    except Exception:
+        gemini_usage = 0
 
     # 2. Scraper Health
     source_statuses = get_source_statuses()
     total_sources = len(source_statuses)
     degraded_sources = [s for s in source_statuses.values() if s.get("degraded")]
+    healthy_feeds = sum(1 for s in source_statuses.values() if not s.get("degraded", False))
+
+    recent_activity = []
+    for s in source_statuses.values():
+        recent_activity.append({
+            "source": s.get("source", "Unknown"),
+            "is_active": not s.get("degraded", False),
+            "last_fetched": s.get("time") or datetime.datetime.now().isoformat(),
+            "recent_count": s.get("accepted", 0)
+        })
+    recent_activity.sort(key=lambda x: x.get("last_fetched", ""), reverse=True)
 
     # 3. Database & Tasks
     db_health = _probe_database()
     redis_health = _probe_redis()
-    failed_tasks = db.execute(
+    
+    # Failed tasks lists
+    failed_tasks_db = db.execute(
         """
         SELECT task_name, error_message, created_at AS failed_at
         FROM failed_tasks
         ORDER BY created_at DESC LIMIT 5
-    """
-    )
+        """
+    ) or []
+
+    recent_failures_db = [
+        {"task_name": t.get("task_name"), "error": t.get("error_message")}
+        for t in failed_tasks_db
+    ]
+
+    failed_tasks_count_row = db.execute("SELECT COUNT(*) as count FROM failed_tasks")
+    failed_tasks_count = failed_tasks_count_row[0]["count"] if failed_tasks_count_row else 0
 
     # 4. Success Rates (Calculated from Redis)
-    # This is an estimate based on the current live status hash
     total_fetched = sum(int(s.get("fetched", 0)) for s in source_statuses.values())
     total_accepted = sum(int(s.get("accepted", 0)) for s in source_statuses.values())
     global_acceptance = round(total_accepted / total_fetched, 2) if total_fetched > 0 else 0
+
+    # 5. Articles Volume
+    last_24h_res = db.execute("SELECT COUNT(*) as count FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours'")
+    last_24h = last_24h_res[0]["count"] if last_24h_res else 0
+
+    last_1h_res = db.execute("SELECT COUNT(*) as count FROM articles WHERE created_at >= NOW() - INTERVAL '1 hour'")
+    last_1h = last_1h_res[0]["count"] if last_1h_res else 0
+
+    # 6. Clusters Stats
+    total_summaries_row = db.execute("SELECT COUNT(*) as count FROM cluster_summaries")
+    total_summaries = total_summaries_row[0]["count"] if total_summaries_row else 0
+
+    total_clusters_row = db.execute("SELECT COUNT(DISTINCT cluster_id) as count FROM articles")
+    total_clusters = total_clusters_row[0]["count"] if total_clusters_row else 0
 
     return {
         "status": "success",
@@ -69,18 +109,40 @@ async def get_admin_dashboard(authorized: bool = Depends(verify_admin)):
         "ai": {
             "current_provider": current_provider,
             "status": "operational" if current_provider != "unknown" else "offline",
+            "gemini_usage_today": gemini_usage,
+            "gemini_daily_limit": 2000000,
         },
         "scrapers": {
             "total_sources": total_sources,
             "degraded_count": len(degraded_sources),
             "global_acceptance_rate": global_acceptance,
             "statuses": source_statuses,
+            "healthy_feeds": healthy_feeds,
+            "total_feeds": total_sources,
+            "recent_activity": recent_activity,
         },
-        "tasks": {"failed_recent": failed_tasks},
+        "tasks": {
+            "failed_recent": failed_tasks_db,
+            "failed_tasks": failed_tasks_count,
+            "recent_failures": recent_failures_db,
+        },
         "db": db_health,
-        "redis": redis_health,
+        "redis": {
+            "ok": redis_health.get("ok", False),
+            "ping": "PONG" if redis_health.get("ok", False) else "offline",
+            "error": redis_health.get("error", ""),
+        },
+        "articles": {
+            "last_24h": last_24h,
+            "last_1h": last_1h,
+        },
+        "clusters": {
+            "total_summaries": total_summaries,
+            "total_clusters": total_clusters,
+        },
         "system": version_payload(),
     }
+
 
 
 @router.post("/admin/tasks/trigger-newsletter")
