@@ -81,6 +81,25 @@ class LocalAnalyst:
         use_grammar: bool = False,
         lang: str = "mk",
     ) -> Optional[str]:
+        # Try remote API first if enabled (default True)
+        if os.environ.get("USE_REMOTE_ANALYST", "true").lower() == "true":
+            try:
+                from core.ai_engine import sync_call_ai
+
+                raw, provider = sync_call_ai(
+                    prompt=prompt,
+                    system=system_prompt,
+                    task_type="analyst",
+                    max_tokens=max_tokens,
+                    json_mode=use_grammar,
+                    lang=lang,
+                )
+                if raw:
+                    log.info(f"[analyst] Remote generation successful using {provider}")
+                    return raw
+            except Exception as e:
+                log.error(f"[analyst] Remote generation failed, falling back to local: {e}")
+
         if not self._load_model():
             return None
 

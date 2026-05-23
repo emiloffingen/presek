@@ -201,6 +201,13 @@ rsync -a \
     --exclude 'current' \
     "$COPY_ROOT/" "$RELEASE_DIR/"
 
+# Correct static generated and uploads symlinks
+info "Correcting static symlinks..."
+rm -rf "$RELEASE_DIR/static/generated" "$RELEASE_DIR/static/uploads"
+mkdir -p "$SHARED_DIR/static/generated" "$SHARED_DIR/static/uploads"
+ln -sfn "$SHARED_DIR/static/generated" "$RELEASE_DIR/static/generated"
+ln -sfn "$SHARED_DIR/static/uploads" "$RELEASE_DIR/static/uploads"
+
 # 3. Build Frontend
 info "Building frontend..."
 cd "$RELEASE_DIR/web"
