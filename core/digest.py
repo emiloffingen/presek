@@ -13,6 +13,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from urllib.parse import quote
 
 import core.database as database
 
@@ -350,7 +351,10 @@ def send_newsletter_to_all_subscribers(days: int = 1) -> int:
                 continue  # Skip if no stories for this locale
 
             digest = digests[loc]
-            unsubscribe_url = f"{LOCALES[loc]['url']}/api/newsletter/unsubscribe?email={user_email}"
+            unsubscribe_url = (
+                f"{LOCALES[loc]['url']}/api/newsletter/unsubscribe"
+                f"?email={quote(user_email)}&lang={loc}"
+            )
             personalized_html = digest["html"].replace("{{UNSUBSCRIBE_URL}}", unsubscribe_url)
 
             if send_email(personalized_html, digest["subject"], smtp_user, smtp_pass, user_email):

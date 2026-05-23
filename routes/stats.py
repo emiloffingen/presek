@@ -531,11 +531,14 @@ async def subscribe_newsletter(request: Request):
     except Exception:
         raise HTTPException(status_code=400, detail="Nevaliden JSON")
     email = validate_email(body.get("email", ""), "email")
-    locale = str(body.get("locale") or "sr").strip().lower()[:5]
+    locale = "mk" if str(body.get("locale") or "sr").strip().lower() == "mk" else "sr"
     try:
         # Try inserting with locale first (modern schema)
         await db.async_execute(
-            "INSERT INTO subscribers (email, locale) VALUES (%s, %s) ON CONFLICT (email) DO UPDATE SET is_active = TRUE, locale = EXCLUDED.locale",
+            """INSERT INTO subscribers (email, locale)
+               VALUES (%s, %s)
+               ON CONFLICT (email, locale)
+               DO UPDATE SET is_active = TRUE""",
             (email, locale),
             fetch=False,
         )
@@ -579,10 +582,11 @@ async def subscribe_newsletter(request: Request):
 @router.get("/newsletter/unsubscribe")
 async def unsubscribe_newsletter(email: str, lang: str = "sr"):
     """Deactivate a newsletter subscription."""
+    locale = "mk" if str(lang or "sr").strip().lower() == "mk" else "sr"
     try:
         await db.async_execute(
-            "UPDATE subscribers SET is_active = FALSE WHERE email = %s",
-            (email,),
+            "UPDATE subscribers SET is_active = FALSE WHERE email = %s AND locale = %s",
+            (email, locale),
             fetch=False,
         )
     except Exception as e:

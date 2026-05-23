@@ -1,5 +1,7 @@
 from datetime import datetime
 
+import core.database as database
+import core.digest as digest
 from core.digest import SR_DAYS, SR_MONTHS, render_html, sr_date
 
 
@@ -101,3 +103,42 @@ class TestRenderHtml:
         assert html.startswith("<!DOCTYPE html>")
         assert "</html>" in html
         assert 'lang="sr"' in html
+
+
+class TestNewsletterDelivery:
+    def test_newsletter_unsubscribe_links_are_locale_specific(self, monkeypatch):
+        class FakeDb:
+            def execute(self, *_args, **_kwargs):
+                return [
+                    {"email": "reader+sr@example.com", "locale": "sr"},
+                    {"email": "reader+mk@example.com", "locale": "mk"},
+                ]
+
+        sent = []
+
+        monkeypatch.setenv("SMTP_USER", "sender@example.com")
+        monkeypatch.setenv("SMTP_PASS", "secret")
+        monkeypatch.setattr(database, "db_manager", FakeDb())
+        monkeypatch.setattr(
+            digest,
+            "fetch_top_stories",
+            lambda **_kwargs: {"Politics": [{"title": "Story", "link": "#", "source": "A", "source_count": 1}]},
+        )
+        monkeypatch.setattr(
+            digest,
+            "render_html",
+            lambda _stories, _start, _now, locale: f"<a href='{{{{UNSUBSCRIBE_URL}}}}'>{locale}</a>",
+        )
+        monkeypatch.setattr(
+            digest,
+            "send_email",
+            lambda html, subject, _user, _password, to_address: sent.append((to_address, subject, html)) or True,
+        )
+
+        assert digest.send_newsletter_to_all_subscribers(days=1) == 2
+
+        by_email = {email: html for email, _subject, html in sent}
+        assert "lang=sr" in by_email["reader+sr@example.com"]
+        assert "email=reader%2Bsr%40example.com" in by_email["reader+sr@example.com"]
+        assert "lang=mk" in by_email["reader+mk@example.com"]
+        assert "email=reader%2Bmk%40example.com" in by_email["reader+mk@example.com"]
