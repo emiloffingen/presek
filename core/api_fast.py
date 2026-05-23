@@ -32,15 +32,71 @@ from core.version import APP_VERSION, APP_VERSION_LABEL, get_full_version_info
 # Initialize error tracking
 configure_error_tracking()
 
+from contextlib import asynccontextmanager
+
 # Initialize Logging - use centralized config
 # logging_config.early_setup() already called by import
 log = get_logger("presek.api")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup logic
+    log.info(f"Presek API v{APP_VERSION} ({APP_VERSION_LABEL}) starting up...")
+    if _rate_limiter_enabled:
+        log.info("Rate limiting enabled (slowapi)")
+    else:
+        log.warning("Rate limiting disabled - slowapi not installed")
+
+    yield
+
+    # Shutdown logic
+    log.info("Presek API shutting down, cleaning up resources gracefully...")
+
+    # 1. Close Async Database Pool
+    try:
+        from core.database import async_db
+        if async_db._pool:
+            await async_db._pool.close()
+            log.info("Async database connection pool closed successfully.")
+    except Exception as e:
+        log.warning(f"Error closing async database pool during shutdown: {e}")
+
+    # 2. Close Sync Database Pools
+    try:
+        from core.database import db_manager
+        if db_manager._pool:
+            db_manager._pool.close()
+            log.info("Sync database connection pool closed successfully.")
+        if db_manager._read_pool:
+            db_manager._read_pool.close()
+            log.info("Sync database read-replica connection pool closed successfully.")
+    except Exception as e:
+        log.warning(f"Error closing sync database pools during shutdown: {e}")
+
+    # 3. Disconnect Redis Client
+    try:
+        from utils import redis_client
+        if redis_client:
+            redis_client.close()
+            log.info("Redis cache client disconnected successfully.")
+    except Exception as e:
+        log.warning(f"Error disconnecting Redis client during shutdown: {e}")
+
+    # 4. Shutdown Embedding Thread Pool and Unload Local AI Model
+    try:
+        from core.embeddings import shutdown_embedding_executor
+        shutdown_embedding_executor()
+    except Exception as e:
+        log.warning(f"Error shutting down embedding thread pool during shutdown: {e}")
+
 
 app = FastAPI(
     title="Presek API",
     version=APP_VERSION,
     docs_url="/api/docs" if os.environ.get("ENV") != "production" else None,
     redoc_url="/api/redoc" if os.environ.get("ENV") != "production" else None,
+    lifespan=lifespan,
 )
 from core.api_helpers import rank_cluster_citations as _rank_cluster_citations
 from core.health import _probe_database, _probe_redis
@@ -161,57 +217,7 @@ if _rate_limiter_enabled:
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
-# Startup Event
-@app.on_event("startup")
-async def startup_event():
-    log.info(f"Presek API v{APP_VERSION} ({APP_VERSION_LABEL}) starting up...")
-    if _rate_limiter_enabled:
-        log.info("Rate limiting enabled (slowapi)")
-    else:
-        log.warning("Rate limiting disabled - slowapi not installed")
 
-
-# Shutdown Event
-@app.on_event("shutdown")
-async def shutdown_event():
-    log.info("Presek API shutting down, cleaning up resources gracefully...")
-
-    # 1. Close Async Database Pool
-    try:
-        from core.database import async_db
-        if async_db._pool:
-            await async_db._pool.close()
-            log.info("Async database connection pool closed successfully.")
-    except Exception as e:
-        log.warning(f"Error closing async database pool during shutdown: {e}")
-
-    # 2. Close Sync Database Pools
-    try:
-        from core.database import db_manager
-        if db_manager._pool:
-            db_manager._pool.close()
-            log.info("Sync database connection pool closed successfully.")
-        if db_manager._read_pool:
-            db_manager._read_pool.close()
-            log.info("Sync database read-replica connection pool closed successfully.")
-    except Exception as e:
-        log.warning(f"Error closing sync database pools during shutdown: {e}")
-
-    # 3. Disconnect Redis Client
-    try:
-        from utils import redis_client
-        if redis_client:
-            redis_client.close()
-            log.info("Redis cache client disconnected successfully.")
-    except Exception as e:
-        log.warning(f"Error disconnecting Redis client during shutdown: {e}")
-
-    # 4. Shutdown Embedding Thread Pool and Unload Local AI Model
-    try:
-        from core.embeddings import shutdown_embedding_executor
-        shutdown_embedding_executor()
-    except Exception as e:
-        log.warning(f"Error shutting down embedding thread pool during shutdown: {e}")
 
 
 # Import and include routers
