@@ -1228,7 +1228,8 @@ async def save_insight(request: Request, authorized: str = Depends(admin_auth)):
     
     from core.database import db_manager as db
     
-    db.execute(
+    # Use asynchronous execution to prevent blocking the worker thread
+    await db.async_execute(
         "INSERT INTO saved_insights (user_id, cluster_id, title, report) VALUES (%s, %s, %s, %s)",
         (authorized, cluster_id, title, report),
         fetch=False

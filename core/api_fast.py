@@ -206,6 +206,13 @@ async def shutdown_event():
     except Exception as e:
         log.warning(f"Error disconnecting Redis client during shutdown: {e}")
 
+    # 4. Shutdown Embedding Thread Pool and Unload Local AI Model
+    try:
+        from core.embeddings import shutdown_embedding_executor
+        shutdown_embedding_executor()
+    except Exception as e:
+        log.warning(f"Error shutting down embedding thread pool during shutdown: {e}")
+
 
 # Import and include routers
 from routes import admin, home, intelligence, news, profile, stats, system

@@ -142,12 +142,16 @@ async def event_stream(channel: str, request=None):
         while True:
             if request and await request.is_disconnected():
                 break
-            msg = pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
+            # Run blocking get_message in a worker thread to keep the event loop responsive
+            msg = await asyncio.to_thread(pubsub.get_message, ignore_subscribe_messages=True, timeout=1.0)
             if msg:
                 yield f"data: {msg['data']}\n\n"
             else:
                 yield "retry: 10000\n\n"
             await asyncio.sleep(0.1)
     finally:
-        pubsub.unsubscribe(channel)
-        pubsub.close()
+        try:
+            pubsub.unsubscribe(channel)
+            pubsub.close()
+        except Exception as e:
+            log.debug(f"Error closing pubsub: {e}")

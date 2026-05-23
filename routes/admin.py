@@ -68,7 +68,7 @@ async def get_admin_dashboard(authorized: bool = Depends(verify_admin)):
     redis_health = _probe_redis()
     
     # Failed tasks lists
-    failed_tasks_db = db.execute(
+    failed_tasks_db = await db.async_execute(
         """
         SELECT task_name, error_message, created_at AS failed_at
         FROM failed_tasks
@@ -81,7 +81,7 @@ async def get_admin_dashboard(authorized: bool = Depends(verify_admin)):
         for t in failed_tasks_db
     ]
 
-    failed_tasks_count_row = db.execute("SELECT COUNT(*) as count FROM failed_tasks")
+    failed_tasks_count_row = await db.async_execute("SELECT COUNT(*) as count FROM failed_tasks")
     failed_tasks_count = failed_tasks_count_row[0]["count"] if failed_tasks_count_row else 0
 
     # 4. Success Rates (Calculated from Redis)
@@ -90,17 +90,17 @@ async def get_admin_dashboard(authorized: bool = Depends(verify_admin)):
     global_acceptance = round(total_accepted / total_fetched, 2) if total_fetched > 0 else 0
 
     # 5. Articles Volume
-    last_24h_res = db.execute("SELECT COUNT(*) as count FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours'")
+    last_24h_res = await db.async_execute("SELECT COUNT(*) as count FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours'")
     last_24h = last_24h_res[0]["count"] if last_24h_res else 0
 
-    last_1h_res = db.execute("SELECT COUNT(*) as count FROM articles WHERE created_at >= NOW() - INTERVAL '1 hour'")
+    last_1h_res = await db.async_execute("SELECT COUNT(*) as count FROM articles WHERE created_at >= NOW() - INTERVAL '1 hour'")
     last_1h = last_1h_res[0]["count"] if last_1h_res else 0
 
     # 6. Clusters Stats
-    total_summaries_row = db.execute("SELECT COUNT(*) as count FROM cluster_summaries")
+    total_summaries_row = await db.async_execute("SELECT COUNT(*) as count FROM cluster_summaries")
     total_summaries = total_summaries_row[0]["count"] if total_summaries_row else 0
 
-    total_clusters_row = db.execute("SELECT COUNT(DISTINCT cluster_id) as count FROM articles")
+    total_clusters_row = await db.async_execute("SELECT COUNT(DISTINCT cluster_id) as count FROM articles")
     total_clusters = total_clusters_row[0]["count"] if total_clusters_row else 0
 
     return {
@@ -160,7 +160,7 @@ async def retry_failed_tasks(authorized: bool = Depends(verify_admin)):
     """Re-dispatch failed tasks to Celery and clear records."""
     from core.celery_app import celery_app
 
-    failed = db.execute("SELECT id, task_name, args, kwargs FROM failed_tasks")
+    failed = await db.async_execute("SELECT id, task_name, args, kwargs FROM failed_tasks")
     if not failed:
         return {"status": "success", "message": "Nema neuspešnih zadataka."}
 
@@ -173,7 +173,7 @@ async def retry_failed_tasks(authorized: bool = Depends(verify_admin)):
                 args=task_row["args"] or [],
                 kwargs=task_row["kwargs"] or {},
             )
-            db.execute("DELETE FROM failed_tasks WHERE id = %s", (task_row["id"],), fetch=False)
+            await db.async_execute("DELETE FROM failed_tasks WHERE id = %s", (task_row["id"],), fetch=False)
             retry_count += 1
         except Exception as e:
             log.error(f"Failed to retry task {task_row['id']}: {e}")
