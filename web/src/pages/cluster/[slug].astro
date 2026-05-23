@@ -90,6 +90,10 @@ try {
 }
 
 const mainArticle = cluster?.articles?.[0];
+const sourceDocArticle = cluster?.articles?.find((article) => {
+    const text = String(article.full_content || '').replace(/<[^>]*>?/gm, '').trim();
+    return text.length > 0;
+});
 const displayHeadline = cluster?.synthetic_headline || (mainArticle ? cleanAndDecode(mainArticle.title) : (lang === 'sr' ? 'Detalji vesti' : 'Детали за веста'));
 
 // --- SEO Slug Enforcement ---
@@ -440,14 +444,14 @@ const articleSchema = cluster ? {
 							sourcePreview={sourcePreview}
 							articlesCount={cluster.articles?.length || 0}
 						/>
-						{mainArticle?.full_content && (
+						{sourceDocArticle?.full_content && (
 					<div class="mt-12 source-doc-wrapper">
 						<details class="group source-details">
 							<summary class="flex items-center justify-between p-8 md:p-12 cursor-pointer hover:bg-secondary/10 transition-colors list-none">
 								<div class="flex items-center gap-[var(--grid-gap)]">
 									<div class="w-2 h-8 bg-nyt-accent"></div>
 									<h4 class="text-[11px] font-black uppercase tracking-[0.2em] text-foreground">
-										{t('cluster.source_docs')} ({mainArticle.source})
+										{t('cluster.source_docs')} ({sourceDocArticle.source})
 									</h4>
 								</div>
 								<div class="text-muted-foreground group-open:rotate-180 transition-transform duration-300">
@@ -457,12 +461,12 @@ const articleSchema = cluster ? {
 							<div class="px-8 md:px-12 pb-12">
 								<div class="prose-editorial max-w-none pt-6 border-t border-border/20 max-h-[400px] overflow-y-auto custom-editorial-scrollbar">
 									<div class="font-nyt-body text-lg md:text-xl text-foreground/80 leading-[1.8] whitespace-pre-wrap">
-										{mainArticle.full_content.replace(/<[^>]*>?/gm, '').trim()}
+										{sourceDocArticle.full_content.replace(/<[^>]*>?/gm, '').trim()}
 									</div>
 								</div>
 								<div class="mt-12 flex justify-end">
-									<a href={mainArticle.link} target="_blank" rel="noopener noreferrer" class="text-[11px] font-black uppercase tracking-[0.2em] text-nyt-accent hover:underline flex items-center gap-[var(--grid-gap)] bg-background px-6 py-3 rounded-full border border-nyt-accent/20 shadow-sm transition-all hover:shadow-md">
-										{lang === 'sr' ? 'Pročitaj ceo zapis na' : 'Прочитај го целиот запис на'} {mainArticle.source} <ExternalLink size={14} />
+									<a href={sourceDocArticle.link} target="_blank" rel="noopener noreferrer" class="text-[11px] font-black uppercase tracking-[0.2em] text-nyt-accent hover:underline flex items-center gap-[var(--grid-gap)] bg-background px-6 py-3 rounded-full border border-nyt-accent/20 shadow-sm transition-all hover:shadow-md">
+										{lang === 'sr' ? 'Pročitaj ceo zapis na' : 'Прочитај го целиот запис на'} {sourceDocArticle.source} <ExternalLink size={14} />
 									</a>
 								</div>
 							</div>
