@@ -245,10 +245,20 @@ def normalize_perspectives(raw_perspectives, lang: str = "sr") -> list[dict]:
     result = []
     seen = set()
     L = _BACKEND_I18N.get(lang, _BACKEND_I18N["sr"])
+    
+    leaked_indicators = {
+        "verification_report", "agreements", "conflicts", "missing_info",
+        "sentiment", "tone_analysis", "synthetic_headline", "synthetic_standfirst",
+        "key_facts", "pluralism_score", "narrative_diversity", "analyst_entities"
+    }
+
     for item in raw_perspectives:
         if isinstance(item, str):
             content = _clean_text_block(item)
             if content:
+                lowered_content = content.lower()
+                if any(ind in lowered_content for ind in leaked_indicators):
+                    continue
                 angle = _infer_perspective_angle(content, lang=lang)
                 key = content.casefold()
                 if key not in seen:
@@ -260,6 +270,12 @@ def normalize_perspectives(raw_perspectives, lang: str = "sr") -> list[dict]:
         angle = _clean_text_block(item.get("angle") or item.get("label") or item.get("title") or item.get("name") or "")
         content = _clean_text_block(item.get("content") or item.get("text") or item.get("description") or "")
         if not content:
+            continue
+        lowered_content = content.lower()
+        if any(ind in lowered_content for ind in leaked_indicators):
+            continue
+        lowered_angle = angle.lower()
+        if any(ind in lowered_angle for ind in leaked_indicators):
             continue
         if not angle or angle.casefold() in _GENERIC_ANGLES:
             angle = _infer_perspective_angle(content, lang=lang)

@@ -48,3 +48,16 @@ def test_build_citation_snippet_uses_summary_or_description():
 def test_get_source_trust_label():
     label = get_source_trust_label("N1 Info")
     assert label in ["Visoko poverenje", "Potvrden izvor", "sledeci izvor"]
+
+
+def test_normalize_perspectives_filters_leaked_json_keys():
+    raw = [
+        {"angle": "Proevropski i reformistički", "content": "Valid perspective content"},
+        "verification_report': {",
+        "agreements': [",
+        {"angle": "verification_report", "content": "some text"},
+        {"angle": "valid", "content": "this has agreements in the middle of standard text but we filter it to be safe."}
+    ]
+    result = normalize_perspectives(raw)
+    assert len(result) == 1
+    assert result[0]["content"] == "Valid perspective content"
