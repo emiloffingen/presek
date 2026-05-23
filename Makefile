@@ -2,6 +2,14 @@
 
 .PHONY: clean clean-db clean-cache clean-all seed fresh-start
 
+# Default clean target
+clean: clean-cache clean-logs
+
+# Deep clean target for dev databases and untracked files
+clean-all: clean-cache clean-logs
+	@echo "Performing deep cleanup of untracked local DB and schedule files..."
+	rm -f database.db presek.db presek.db-shm presek.db-wal presek.db.bak backfill.log celerybeat-schedule
+
 # Remove all temporary logs, caches, and build artifacts
 clean-cache:
 	@echo "Cleaning application caches..."

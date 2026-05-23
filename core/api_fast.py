@@ -171,6 +171,42 @@ async def startup_event():
         log.warning("Rate limiting disabled - slowapi not installed")
 
 
+# Shutdown Event
+@app.on_event("shutdown")
+async def shutdown_event():
+    log.info("Presek API shutting down, cleaning up resources gracefully...")
+
+    # 1. Close Async Database Pool
+    try:
+        from core.database import async_db
+        if async_db._pool:
+            await async_db._pool.close()
+            log.info("Async database connection pool closed successfully.")
+    except Exception as e:
+        log.warning(f"Error closing async database pool during shutdown: {e}")
+
+    # 2. Close Sync Database Pools
+    try:
+        from core.database import db_manager
+        if db_manager._pool:
+            db_manager._pool.close()
+            log.info("Sync database connection pool closed successfully.")
+        if db_manager._read_pool:
+            db_manager._read_pool.close()
+            log.info("Sync database read-replica connection pool closed successfully.")
+    except Exception as e:
+        log.warning(f"Error closing sync database pools during shutdown: {e}")
+
+    # 3. Disconnect Redis Client
+    try:
+        from utils import redis_client
+        if redis_client:
+            redis_client.close()
+            log.info("Redis cache client disconnected successfully.")
+    except Exception as e:
+        log.warning(f"Error disconnecting Redis client during shutdown: {e}")
+
+
 # Import and include routers
 from routes import admin, home, intelligence, news, profile, stats, system
 
