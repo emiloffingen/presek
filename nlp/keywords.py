@@ -87,14 +87,8 @@ ENTITY_NOISE_WORDS = {
     "izvor",
     "izvori",
     "klaster",
-    "srbija",
-    "srbije",
-    "srbiji",
-    "srbiju",
-    "makedonija",
-    "makedonije",
-    "makedoniji",
-    "makedoniju",
+    "dnes",
+    "deneska",
     "ovo",
     "evo",
     "svet",
@@ -178,14 +172,8 @@ TAG_NOISE_WORDS = {
     "izvor",
     "izvori",
     "klaster",
-    "srbija",
-    "srbije",
-    "srbiji",
-    "srbiju",
-    "makedonija",
-    "makedonije",
-    "makedoniji",
-    "makedoniju",
+    "dnes",
+    "deneska",
     "ovo",
     "evo",
     "svet",
@@ -569,7 +557,7 @@ def normalize_tag_name(name):
         "mickoskiot": "Hristijan Mickoski",
         "filipceto": "Venko Filipce",
         "filipce": "Venko Filipce",
-        "makedonsk": "Srbija",
+        "makedonsk": "Makedonija",
         "amerikan": "Amerika",
         "amerikanski": "Amerika",
         "evropski": "Evropa",
@@ -601,7 +589,7 @@ def normalize_tag_name(name):
         if lowered == "makedon":
             return "Makedon"
         if "makedon" in lowered:
-            return "Srbija"
+            return "Makedonija"
         if "amerika" in lowered:
             return "Amerika"
         return clean.capitalize()

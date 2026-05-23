@@ -29,7 +29,7 @@ def test_briefing_storage():
         print("   ✅ Serbian briefing insert/update successful")
     except Exception as e:
         print(f"   ❌ Serbian briefing failed: {e}")
-        return False
+        assert False, f"Serbian briefing failed: {e}"
 
     # Check if we can insert Macedonian briefing
     print("\n2. Testing Macedonian briefing database operations...")
@@ -43,7 +43,7 @@ def test_briefing_storage():
         print("   ✅ Macedonian briefing insert/update successful")
     except Exception as e:
         print(f"   ❌ Macedonian briefing failed: {e}")
-        return False
+        assert False, f"Macedonian briefing failed: {e}"
 
     # Verify both briefings exist
     print("\n3. Verifying both briefings exist in database...")
@@ -62,7 +62,7 @@ def test_briefing_storage():
             print("   ⚠️  Briefing contents are the same (might be test data)")
     else:
         print("   ❌ One or both briefings missing")
-        return False
+        assert False, "One or both briefings missing"
 
     # Test that we can retrieve briefings by language
     print("\n4. Testing briefing retrieval by language...")
@@ -74,8 +74,6 @@ def test_briefing_storage():
     print(f"   Found {len(all_briefings)} briefings for today:")
     for briefing in all_briefings:
         print(f"   - {briefing['lang']}: {briefing['content_preview']}...")
-
-    return True
 
 
 def test_language_specific_queries():
@@ -106,19 +104,12 @@ def test_language_specific_queries():
     print(f"   Serbian title sample: {sr_titles[0][:50] + '...' if sr_titles else 'None'}")
     print(f"   Macedonian title sample: {mk_titles[0][:50] + '...' if mk_titles else 'None'}")
 
-    return True
-
 
 if __name__ == "__main__":
     try:
-        success1 = test_briefing_storage()
-        success2 = test_language_specific_queries()
-
-        if success1 and success2:
-            print("\n🎉 All workflow tests passed! Language separation is fully functional.")
-        else:
-            print("\n💥 Some workflow tests failed!")
-            sys.exit(1)
+        test_briefing_storage()
+        test_language_specific_queries()
+        print("\n🎉 All workflow tests passed! Language separation is fully functional.")
     except Exception as e:
         print(f"\n💥 Workflow test failed with error: {e}")
         import traceback
