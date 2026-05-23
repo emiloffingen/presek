@@ -111,7 +111,9 @@ celery_app.conf.update(
         "tasks.intelligence.synthesize_cluster_task": {"queue": "fast-track"},
         "tasks.intelligence.auto_summarize_task": {"queue": "fast-track"},
         "tasks.intelligence.*": {"queue": "intel-heavy"},
-        "tasks.delivery.send_profile_breaking_alerts_task": {"queue": "fast-track"},
+        "tasks.delivery.briefing.send_profile_breaking_alerts_task": {"queue": "fast-track"},
+        "tasks.delivery.email.*": {"queue": "delivery"},
+        "tasks.delivery.briefing.*": {"queue": "delivery"},
         "tasks.delivery.*": {"queue": "delivery"},
         "tasks.maintenance.*": {"queue": "maintenance"},
     },
@@ -143,33 +145,33 @@ celery_app.conf.update(
             "schedule": crontab(hour=3, minute=0),  # Daily maintenance
         },
         "generate-daily-briefing-sr": {
-            "task": "tasks.delivery.generate_daily_brief_task",
+            "task": "tasks.delivery.briefing.generate_daily_brief_task",
             "kwargs": {"lang": "sr"},
             "schedule": crontab(hour=6, minute=0),
         },
         "generate-daily-briefing-mk": {
-            "task": "tasks.delivery.generate_daily_brief_task",
+            "task": "tasks.delivery.briefing.generate_daily_brief_task",
             "kwargs": {"lang": "mk"},
             "schedule": crontab(hour=6, minute=5),
         },
         "send-daily-digest": {
-            "task": "tasks.delivery.send_daily_digest_task",
+            "task": "tasks.delivery.email.send_daily_digest_task",
             "schedule": crontab(hour=7, minute=0),  # 7 AM UTC / 8 AM local
         },
         "send-daily-newsletter": {
-            "task": "tasks.delivery.send_newsletter_task",
+            "task": "tasks.delivery.email.send_newsletter_task",
             "schedule": crontab(hour=7, minute=0),  # 7 AM UTC / 8 AM local
         },
         "send-profile-briefings": {
-            "task": "tasks.delivery.send_profile_briefings_task",
+            "task": "tasks.delivery.briefing.send_profile_briefings_task",
             "schedule": crontab(hour=7, minute=10),
         },
         "send-profile-weekly-digests": {
-            "task": "tasks.delivery.send_profile_weekly_digests_task",
+            "task": "tasks.delivery.email.send_profile_weekly_digests_task",
             "schedule": crontab(hour=8, minute=0, day_of_week="sun"),
         },
         "send-profile-breaking-alerts": {
-            "task": "tasks.delivery.send_profile_breaking_alerts_task",
+            "task": "tasks.delivery.briefing.send_profile_breaking_alerts_task",
             "schedule": 600.0,  # Increased from 3m to 10m
         },
         "backfill-cover-art": {
