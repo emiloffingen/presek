@@ -74,6 +74,7 @@ def _load_home_module():
 
     fake_news = types.ModuleType("routes.news")
     fake_news.get_news = lambda *args, **kwargs: {}
+    fake_news.fetch_news_data = lambda *args, **kwargs: {}
 
     fake_stats = types.ModuleType("routes.stats")
     fake_stats.get_briefing = lambda *args, **kwargs: {}

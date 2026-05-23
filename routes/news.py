@@ -319,6 +319,38 @@ async def get_news(
     page: int = 0,
     page_size: int = 24,
 ):
+    try:
+        return await fetch_news_data(
+            q=q,
+            category=category,
+            topic=topic,
+            entity=entity,
+            subcategory=subcategory,
+            country=country,
+            lang=lang,
+            sort=sort,
+            timespan=timespan,
+            page=page,
+            page_size=page_size,
+        )
+    except Exception as e:
+        log.error(f"News Route Error in Endpoint: {e}", exc_info=True)
+        return JSONResponse(status_code=500, content={"message": "Internal server error"})
+
+
+async def fetch_news_data(
+    q: Optional[str] = None,
+    category: Optional[str] = None,
+    topic: Optional[str] = None,
+    entity: Optional[str] = None,
+    subcategory: Optional[str] = None,
+    country: Optional[str] = None,
+    lang: Optional[str] = "sr",
+    sort: str = "recent",
+    timespan: Optional[str] = None,  # '24h', '7d', '30d', 'all'
+    page: int = 0,
+    page_size: int = 24,
+):
     cache_key = f"api:news:v2:{q}:{category}:{topic}:{entity}:{subcategory}:{country}:{lang}:{sort}:{timespan}:{page}:{page_size}"
     cached = cached_response(cache_key)
     if cached:
@@ -697,7 +729,7 @@ async def get_news(
         return final_response
     except Exception as e:
         log.error(f"News Route Error: {e}", exc_info=True)
-        return JSONResponse(status_code=500, content={"message": "Internal server error"})
+        raise e
 
 
 @router.get("/search/semantic")

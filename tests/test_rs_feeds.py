@@ -4,6 +4,7 @@ Test feed functionality.
 
 import pytest
 from unittest.mock import patch
+import utils
 from routes.home import get_home
 
 
@@ -11,8 +12,7 @@ from routes.home import get_home
 async def test_get_home_returns_dict():
     """Test that get_home returns a dictionary."""
     # Mock the database to avoid real calls
-    with patch('routes.home.cached_response', return_value=None), \
-         patch('routes.news.cached_response', return_value=None), \
+    with patch.object(utils.redis_client, 'get', return_value=None), \
          patch('core.database.db_manager.async_execute', return_value=[]):
         result = await get_home('sr')
         
@@ -29,8 +29,7 @@ async def test_get_home_returns_dict():
 @pytest.mark.asyncio
 async def test_get_home_language_support():
     """Test that get_home supports different languages."""
-    with patch('routes.home.cached_response', return_value=None), \
-         patch('routes.news.cached_response', return_value=None), \
+    with patch.object(utils.redis_client, 'get', return_value=None), \
          patch('core.database.db_manager.async_execute', return_value=[]):
         # Test Serbian
         result_sr = await get_home('sr')
@@ -44,8 +43,7 @@ async def test_get_home_language_support():
 @pytest.mark.asyncio
 async def test_get_home_error_handling():
     """Test that get_home handles database errors gracefully."""
-    with patch('routes.home.cached_response', return_value=None), \
-         patch('routes.news.cached_response', return_value=None), \
+    with patch.object(utils.redis_client, 'get', return_value=None), \
          patch('core.database.db_manager.async_execute', side_effect=Exception("DB error")):
         result = await get_home('sr')
         

@@ -10,7 +10,7 @@ from utils import cached_response, set_cache
 
 from .common import cleanAndDecode
 from .intelligence import get_top_entities
-from .news import get_news
+from .news import fetch_news_data
 from .stats import get_stats_summary
 from .system import get_trending_route
 
@@ -293,8 +293,8 @@ async def get_home(lang: Optional[str] = "sr"):
     try:
         # Fetch all dependencies in parallel
         results = await asyncio.gather(
-            get_news(sort="score", page_size=48, lang=lang),
-            get_news(sort="recent", page_size=24, lang=lang),
+            fetch_news_data(sort="score", page_size=48, lang=lang),
+            fetch_news_data(sort="recent", page_size=24, lang=lang),
             get_trending_route(lang=lang),
             get_top_entities(limit=12, lang=lang),
             get_stats_summary(lang=lang),
@@ -417,7 +417,7 @@ async def get_home_live_now(exclude: str = "", lang: Optional[str] = "sr"):
     if cached:
         return cached
     try:
-        recent_result = await get_news(sort="recent", page_size=24, lang=lang)
+        recent_result = await fetch_news_data(sort="recent", page_size=24, lang=lang)
         exclude_cluster_ids = [
             token.strip() for token in str(exclude or "").split(",") if token.strip() and len(token.strip()) <= 80
         ]
@@ -441,7 +441,7 @@ async def get_home_latest_wire(limit: int = 15, lang: Optional[str] = "sr"):
     if cached:
         return cached
     try:
-        recent_result = await get_news(sort="recent", page_size=24, lang=lang)
+        recent_result = await fetch_news_data(sort="recent", page_size=24, lang=lang)
         recent_clusters = recent_result.get("clusters") if isinstance(recent_result, dict) else []
         raw_wire_articles = []
         seen_links = set()

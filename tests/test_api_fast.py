@@ -697,7 +697,7 @@ def test_home_route_composes_named_slots(mock_all):
 
     with (
         patch(
-            "routes.home.get_news",
+            "routes.home.fetch_news_data",
             new=AsyncMock(side_effect=[news_payload, recent_payload]),
         ),
         patch("routes.home.cached_response", return_value=None),
@@ -810,7 +810,7 @@ def test_home_live_now_route_uses_backend_selection(mock_all):
         ],
     }
 
-    with patch("routes.home.get_news", new=AsyncMock(return_value=recent_payload)):
+    with patch("routes.home.fetch_news_data", new=AsyncMock(return_value=recent_payload)):
         data = asyncio.run(home.get_home_live_now(exclude="excluded"))
 
     assert data["status"] == "success"
@@ -878,7 +878,7 @@ def test_home_latest_wire_route_uses_backend_selection(mock_all):
         ],
     }
 
-    with patch("routes.home.get_news", new=AsyncMock(return_value=recent_payload)):
+    with patch("routes.home.fetch_news_data", new=AsyncMock(return_value=recent_payload)):
         data = asyncio.run(home.get_home_latest_wire(limit=10))
 
     assert data["status"] == "success"
