@@ -874,6 +874,110 @@ async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] =
     return res
 
 
+@router.get("/intelligence/network-graph")
+@custom_rate_limit("30/minute")
+async def get_network_graph(
+    request: Request,
+    entity: Optional[str] = None,
+    limit: int = 50,
+    min_weight: int = 2
+):
+    """Fetches the nodes and edges for the interactive media network graph visualization."""
+    limit = min(100, max(10, limit))
+    min_weight = max(1, min_weight)
+    
+    # Cache key based on params
+    cache_key = f"presek:network_graph:entity:{entity or 'global'}:limit:{limit}:min:{min_weight}"
+    cached = cached_response(cache_key)
+    if cached:
+        return cached
+
+    nodes = []
+    edges = []
+    seen_entities = set()
+
+    if entity:
+        # Star-shaped sub-network around the centered entity
+        entity_name_cleaned = entity.strip()
+        
+        # Get matching relationships involving the target entity
+        relationships = await db.async_execute(
+            """
+            SELECT entity_a, entity_b, weight
+            FROM knowledge_relationships
+            WHERE (entity_a = %s OR entity_b = %s) AND weight >= %s
+            ORDER BY weight DESC
+            LIMIT %s
+            """,
+            (entity_name_cleaned, entity_name_cleaned, min_weight, limit),
+        )
+    else:
+        # Global top relationships view
+        relationships = await db.async_execute(
+            """
+            SELECT entity_a, entity_b, weight
+            FROM knowledge_relationships
+            WHERE weight >= %s
+            ORDER BY weight DESC
+            LIMIT %s
+            """,
+            (min_weight, limit),
+        )
+
+    # Gather unique entities
+    for rel in relationships:
+        seen_entities.add(rel["entity_a"])
+        seen_entities.add(rel["entity_b"])
+        edges.append({
+            "source": rel["entity_a"],
+            "target": rel["entity_b"],
+            "weight": rel["weight"]
+        })
+
+    # Fetch entity details
+    if seen_entities:
+        entity_list = list(seen_entities)
+        entities_data = await db.async_execute(
+            """
+            SELECT name, type, total_mentions, sentiment_score
+            FROM knowledge_entities
+            WHERE name = ANY(%s)
+            """,
+            (entity_list,),
+        )
+        
+        # Create look-up map
+        entity_map = {e["name"]: e for e in entities_data}
+        
+        for name in entity_list:
+            data = entity_map.get(name)
+            if data:
+                nodes.append({
+                    "id": name,
+                    "label": name,
+                    "type": data["type"] or "ENTITY",
+                    "mentions": data["total_mentions"] or 1,
+                    "sentiment": float(data["sentiment_score"] or 0.0)
+                })
+            else:
+                nodes.append({
+                    "id": name,
+                    "label": name,
+                    "type": "ENTITY",
+                    "mentions": 1,
+                    "sentiment": 0.0
+                })
+    
+    result = {
+        "status": "success",
+        "nodes": nodes,
+        "edges": edges
+    }
+    
+    set_cache(cache_key, result, ttl=300)
+    return result
+
+
 @router.get("/entity-graph/{entity_name}")
 @custom_rate_limit("30/minute")
 async def entity_graph_lookup(request: Request, entity_name: str):

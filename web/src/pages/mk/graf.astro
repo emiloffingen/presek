@@ -1,0 +1,20 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import NYTHeader from '../../components/NYTHeader.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import IntelligenceGraph from '../../components/IntelligenceGraph';
+import Footer from '../../components/Footer.astro';
+---
+
+<Layout 
+    title="Медиумска Мрежа | Интерактивен Граф" 
+    description="Истражете ја интерактивната мрежа на врски, сентимент и споменувања на политички актери и институции во македонските медиуми."
+>
+    <NYTHeader />
+
+	<main class="site-layout broadsheet-layout py-[var(--page-py)] animate-rise">
+		<Breadcrumbs items={[{ label: "граф" }]} />
+		<IntelligenceGraph lang="mk" client:load />
+	</main>
+	<Footer />
+</Layout>

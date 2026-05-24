@@ -1483,3 +1483,69 @@ def test_synthesis_homepage_boost(mock_all):
     assert clusters[1]["cluster_id"] == "c1"
     assert clusters[1]["has_synthesis"] is False
     assert clusters[1]["homepage_score"] == 10.0
+
+
+def test_fastapi_network_graph(mock_all):
+    import routes.intelligence as intelligence
+    from fastapi import Request
+
+    async def execute_side_effect(query, params=None):
+        if "FROM knowledge_relationships" in query:
+            return [
+                {"entity_a": "Vučić", "entity_b": "Vlada", "weight": 5},
+                {"entity_a": "Mickoski", "entity_b": "Vlada", "weight": 3}
+            ]
+        if "FROM knowledge_entities" in query:
+            return [
+                {"name": "Vučić", "type": "PERSON", "total_mentions": 100, "sentiment_score": 0.1},
+                {"name": "Mickoski", "type": "PERSON", "total_mentions": 80, "sentiment_score": 0.2},
+                {"name": "Vlada", "type": "ORG", "total_mentions": 150, "sentiment_score": 0.0}
+            ]
+        raise AssertionError(f"Unexpected query: {query}")
+
+    mock_all["db"].async_execute.side_effect = execute_side_effect
+
+    # Create a real Starlette Request object with dummy scope
+    from starlette.requests import Request
+    mock_request = Request({
+        "type": "http",
+        "path": "/api/intelligence/network-graph",
+        "method": "GET",
+        "client": ("127.0.0.1", 80),
+        "headers": [],
+    })
+
+
+
+    with (
+        patch("routes.intelligence.cached_response", return_value=None),
+        patch("routes.intelligence.set_cache"),
+    ):
+        # 1. Test global view
+        data = asyncio.run(intelligence.get_network_graph(
+            request=mock_request,
+            entity=None,
+            limit=50,
+            min_weight=2
+        ))
+        
+        assert data["status"] == "success"
+        assert len(data["nodes"]) == 3
+        assert len(data["edges"]) == 2
+        
+        # Verify node properties
+        node_map = {n["id"]: n for n in data["nodes"]}
+        assert node_map["Vučić"]["type"] == "PERSON"
+        assert node_map["Vlada"]["type"] == "ORG"
+        assert node_map["Vučić"]["mentions"] == 100
+        assert node_map["Vučić"]["sentiment"] == 0.1
+
+        # 2. Test filtered entity view
+        data_filtered = asyncio.run(intelligence.get_network_graph(
+            request=mock_request,
+            entity="Vučić",
+            limit=10,
+            min_weight=3
+        ))
+        assert data_filtered["status"] == "success"
+
