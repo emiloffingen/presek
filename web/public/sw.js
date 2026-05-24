@@ -1,14 +1,19 @@
-// Presek — Service Worker v25
+// Presek — Service Worker v26
 // Astro-only frontend caching: Stale-While-Revalidate for API and Cache-First for static assets
 
-const CACHE_NAME = 'presek-v25';
-const API_CACHE_NAME = 'presek-api-v25';
+const CACHE_NAME = 'presek-v26';
+const API_CACHE_NAME = 'presek-api-v26';
 const API_CACHE_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes max staleness for API
 
 // Core static assets that are shared across the Astro frontend
 const STATIC_ASSETS = [
   '/logo.svg?v=3',
   '/img/presek_emblem.svg?v=3',
+  '/img/icons/presek-icon-192.png',
+  '/img/icons/presek-icon-512.png',
+  '/img/icons/presek-maskable-192.png',
+  '/img/icons/presek-maskable-512.png',
+  '/img/icons/presek-apple-touch.png',
   '/img/placeholder.svg',
   '/img/fallbacks/news-general.svg',
   '/img/fallbacks/news-politics.svg',
@@ -18,8 +23,23 @@ const STATIC_ASSETS = [
   '/img/fallbacks/news-culture.svg',
   '/img/fallbacks/news-world.svg',
   '/img/fallbacks/news-local.svg',
-  '/manifest.json'
+  '/manifest.json',
+  '/offline',
+  '/mk/offline'
 ];
+
+function offlineApiResponse() {
+  return new Response(JSON.stringify({ status: 'offline' }), {
+    status: 503,
+    headers: { 'Content-Type': 'application/json; charset=utf-8' }
+  });
+}
+
+function offlinePageFor(url) {
+  return url.hostname.includes('presek.mk') || url.pathname.startsWith('/mk')
+    ? '/mk/offline'
+    : '/offline';
+}
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -36,6 +56,8 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
+
   const url = new URL(e.request.url);
 
   // Stale-While-Revalidate for API calls (with max-age enforcement)
@@ -67,7 +89,7 @@ self.addEventListener('fetch', e => {
             }
             return cachedResponse;
           }
-          return fetchPromise;
+          return fetchPromise.then(net => net || cachedResponse || offlineApiResponse());
         });
       })
     );
@@ -100,7 +122,12 @@ self.addEventListener('fetch', e => {
           caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
         }
         return resp;
-      }).catch(() => caches.match(e.request))
+      }).catch(async () => {
+        const cached = await caches.match(e.request);
+        if (cached) return cached;
+        const localizedOffline = await caches.match(offlinePageFor(url));
+        return localizedOffline || caches.match('/offline');
+      })
     );
     return;
   }
