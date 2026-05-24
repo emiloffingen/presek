@@ -150,3 +150,90 @@ def test_research_service_structured_integration(mock_build_context, mock_async_
     assert kwargs["response_schema"] == ResearchQueryResponse
     assert res["answer"] == "Answer text [source_a]"
 
+
+@patch.object(LocalAnalyst, "analyze")
+def test_zero_token_metadata_fallback(mock_analyze):
+    """Verify that extract_deep_metadata falls back gracefully to zero-token heuristics on failure."""
+    # Simulate LLM returning None
+    mock_analyze.return_value = None
+    
+    analyst = LocalAnalyst()
+    sample_text = (
+        "Vučić je danas najavio značajne promene. Vlada Srbije podržava projekte u Skupštini. "
+        "Ovo donosi stabilnost u regionu i nova ulaganja od 50 miliona evra."
+    )
+    
+    # Run fallback in Serbian
+    res_sr = analyst.extract_deep_metadata(sample_text, lang="sr")
+    
+    assert "facts" in res_sr
+    assert len(res_sr["facts"]) == 3
+    assert "entities" in res_sr
+    assert "Vlada" in res_sr["entities"] or "Vučić" in res_sr["entities"] or "Skupštini" in res_sr["entities"]
+    assert res_sr["sentiment"] in ["pozitivan", "negativan", "neutralan"]
+    assert 1 <= res_sr["pulse"] <= 100
+    
+    # Test Macedonian fallback
+    sample_text_mk = (
+        "Mickoski deneska najavi golem uspeh. Vladata na Makedonija ima stabilen plan vo Sobranieto. "
+        "Ova nosi ekonomski razvoj i novi investicii."
+    )
+    res_mk = analyst.extract_deep_metadata(sample_text_mk, lang="mk")
+    assert "facts" in res_mk
+    assert len(res_mk["facts"]) == 3
+    assert res_mk["sentiment"] == "pozitiven"
+
+
+def test_zero_token_metadata_direct():
+    """Directly test the zero-token metadata parser logic."""
+    analyst = LocalAnalyst()
+    
+    # Test Serbian positive context
+    text_pos = "Odličan razvoj i saradnja sa partnerima. Vlada Srbije beleži uspeh."
+    meta = analyst.get_zero_token_metadata(text_pos, lang="sr")
+    assert meta["sentiment"] == "pozitivan"
+    assert any("Vlada" in e for e in meta["entities"])
+    
+    # Test Serbian negative context
+    text_neg = "Teška kriza i pad ekonomije. Sukob u najavi u Skupštini."
+    meta_neg = analyst.get_zero_token_metadata(text_neg, lang="sr")
+    assert meta_neg["sentiment"] == "negativan"
+
+
+@patch.object(LocalAnalyst, "analyze")
+def test_zero_token_pluralism_fallback(mock_analyze):
+    """Verify that assess_pluralism falls back gracefully to TIER_MAP calculations on failure."""
+    mock_analyze.return_value = None
+    
+    analyst = LocalAnalyst()
+    
+    # 1. High Pluralism: 3 distinct tiers: N1 Info (Independent), RTS (Mainstream), Alternativni (Regional/Alt)
+    sources_high = [
+        "N1 Info: Title 1",
+        "RTS: Title 2",
+        "Alternativni: Title 3"
+    ]
+    res_high = analyst.assess_pluralism(sources_high, lang="sr")
+    assert res_high["score"] == 85
+    assert res_high["bias_detected"] is False
+    assert "zastupljenošću" in res_high["verdict"]
+    
+    # 2. Medium Pluralism: 2 distinct tiers: Informer (Tabloid), Politika (Mainstream)
+    sources_med = [
+        "Informer: Title 1",
+        "Politika: Title 2"
+    ]
+    res_med = analyst.assess_pluralism(sources_med, lang="mk")
+    assert res_med["score"] == 65
+    assert res_med["bias_detected"] is False
+    
+    # 3. Low Pluralism / Echo Chamber: 1 tier: Kurir, Informer (both Tabloidi)
+    sources_low = [
+        "Kurir: Title 1",
+        "Informer: Title 2"
+    ]
+    res_low = analyst.assess_pluralism(sources_low, lang="sr")
+    assert res_low["score"] == 35
+    assert res_low["bias_detected"] is True
+
+

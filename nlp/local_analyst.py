@@ -9,6 +9,25 @@ from typing import Any, Dict, List, Optional
 from llama_cpp import Llama, LlamaGrammar
 from pydantic import BaseModel, Field
 
+try:
+    from core.config import SOURCE_CATEGORIES
+except ImportError:
+    SOURCE_CATEGORIES = {}
+
+TIER_MAP = {
+    "Agencijski": "Mainstream",
+    "Javni servis": "Mainstream",
+    "Javni Servis": "Mainstream",
+    "glavni": "Mainstream",
+    "Nezavisni": "Independent",
+    "Istraživački": "Independent",
+    "Regionalni": "Regional/Alt",
+    "Alternativni": "Regional/Alt",
+    "Lokalni": "Regional/Alt",
+    "Tabloidi": "Tabloid"
+}
+
+
 log = logging.getLogger("presek.analyst")
 
 # Config for Gemma 2 2B on 2-core CPU
@@ -201,6 +220,164 @@ class LocalAnalyst:
         result = self.analyze(f"Naslov: {title}", system, max_tokens=64, lang=lang)
         return result if result else title
 
+    def get_zero_token_metadata(self, text: str, lang: str = "mk") -> Dict[str, Any]:
+        """Extracts facts, entities, sentiment, and pulse using zero-token regex heuristics."""
+        text = text or ""
+        
+        # 1. Facts Extraction
+        sentences = re.split(r'(?<=[.!?])\s+', text)
+        clean_sentences = []
+        for s in sentences:
+            s_clean = s.strip()
+            # Exclude URLs, very short lines, or lines containing mostly special characters
+            if len(s_clean) > 15 and not s_clean.startswith(('http', 'www')) and not s_clean.startswith('NASLOV:'):
+                clean_sentences.append(s_clean)
+                
+        if len(clean_sentences) < 3:
+            # Fallback to splitting by comma or semicolon
+            for s in sentences:
+                for part in re.split(r'[,;]', s):
+                    part_clean = part.strip()
+                    if len(part_clean) > 15 and part_clean not in clean_sentences and not part_clean.startswith('NASLOV:'):
+                        clean_sentences.append(part_clean)
+                        
+        while len(clean_sentences) < 3:
+            if lang == "sr":
+                clean_sentences.append(f"Važan detalj o analiziranom medijskom izveštaju {len(clean_sentences)+1}")
+            else:
+                clean_sentences.append(f"Važen detal za analiziraniot mediumski izveštaj {len(clean_sentences)+1}")
+                
+        facts = [f[:150] for f in clean_sentences[:3]]
+        
+        # 2. Entities Extraction
+        # Match capitalized words/phrases in cyrillic & latin
+        pattern = r'\b[A-ZŠĐČĆŽА-ЯЃЌЅЏЉЊ][a-zšđčćžа-яѓќѕџљњ]*(?:\s+[A-ZŠĐČĆŽА-ЯЃЌЅЏЉЊ][a-zšđčćžа-яѓќѕџљњ]*)*\b'
+        candidates = re.findall(pattern, text)
+        
+        stopwords = {
+            "Vo", "Na", "Za", "I", "No", "Se", "So", "Da", "Koga", "Kaj", "Ova", "Toa", "Tie", "Nie", "Vie", "Sekogash", "Ama",
+            "U", "Ali", "Sa", "Kada", "Kod", "Ovo", "To", "Oni", "Mi", "Vi", "Ako", "Jer", "Dok",
+            "The", "A", "An", "In", "On", "At", "For", "To", "With", "By", "NASLOV", "TEKST"
+        }
+        
+        entities = []
+        seen = set()
+        for cand in candidates:
+            cand_clean = cand.strip()
+            if not cand_clean or len(cand_clean) < 2:
+                continue
+            if cand_clean in stopwords:
+                continue
+            if re.match(r'^\d+$', cand_clean):
+                continue
+            cand_lower = cand_clean.lower()
+            if cand_lower not in seen:
+                seen.add(cand_lower)
+                entities.append(cand_clean)
+                
+        entities = entities[:10]
+        if not entities:
+            entities = ["Vlada" if lang != "sr" else "Vlada"]
+            
+        # 3. Sentiment Estimation
+        pos_words = ["uspeh", "odlic", "poveka", "zgolem", "dobr", "razvoj", "sorabot", "poddr", "napred", "poveća", "uspeš", "stabilan", "stabilen"]
+        neg_words = ["sukob", "kriz", "pad", "napad", "problem", "optuz", "skandal", "smrt", "nesrec", "katastrof", "poraz", "obvin", "optuž", "nesreć", "korupcija", "hronika"]
+        
+        text_lower = text.lower()
+        pos_count = sum(text_lower.count(w) for w in pos_words)
+        neg_count = sum(text_lower.count(w) for w in neg_words)
+        
+        if pos_count > neg_count:
+            sentiment = "pozitivan" if lang == "sr" else "pozitiven"
+        elif neg_count > pos_count:
+            sentiment = "negativan" if lang == "sr" else "negativen"
+        else:
+            sentiment = "neutralan" if lang == "sr" else "neutralen"
+            
+        # 4. Pulse Calculation
+        pulse = 50
+        pulse += min(len(entities) * 5, 20)
+        high_profile = ["vlada", "mickoski", "vucic", "vučić", "sobranie", "skupstina", "skupština", "pretsedatel", "precednik", "izbori"]
+        if any(hp in text_lower for hp in high_profile):
+            pulse += 15
+        if re.search(r'\d+', text):
+            pulse += 10
+        if "%" in text or "procent" in text:
+            pulse += 5
+            
+        pulse = max(10, min(95, pulse))
+        
+        return {
+            "facts": facts,
+            "entities": entities,
+            "sentiment": sentiment,
+            "pulse": pulse
+        }
+
+    def get_zero_token_pluralism(self, titles_with_sources: List[str], lang: str = "mk") -> Dict[str, Any]:
+        """Analyzes media source pluralism using TIER_MAP and SOURCE_CATEGORIES zero-token heuristics."""
+        tiers_present = set()
+        
+        for item in titles_with_sources:
+            source = "Lokalni"
+            # Try splitting by colon
+            if ":" in item:
+                src_part = item.split(":", 1)[0].strip()
+                if src_part:
+                    source = src_part
+            else:
+                # Try finding matching keys in SOURCE_CATEGORIES as a substring
+                item_lower = item.lower()
+                matched = False
+                for k in SOURCE_CATEGORIES.keys():
+                    if k.lower() in item_lower:
+                        source = k
+                        matched = True
+                        break
+                if not matched:
+                    # Look inside parentheses
+                    match = re.search(r'\(([^)]+)\)[^()]*$', item)
+                    if match:
+                        source = match.group(1).strip()
+            
+            # Map source to category and tier
+            cat = SOURCE_CATEGORIES.get(source, "Lokalni")
+            tier = TIER_MAP.get(cat, "Regional/Alt")
+            tiers_present.add(tier)
+            
+        num_tiers = len(tiers_present)
+        
+        if num_tiers >= 3:
+            score = 85
+            verdict = (
+                "Visok medijski pluralizam sa širokom zastupljenošću različitih medijskih grupa i perspektiva."
+                if lang == "sr"
+                else "Visok mediumski pluralizam so široka zastupenost na razlicni mediumski grupi i perspektivi."
+            )
+            bias_detected = False
+        elif num_tiers == 2:
+            score = 65
+            verdict = (
+                "Umeren medijski pluralizam sa uočenom ravnotežom između različitih medijskih grupa."
+                if lang == "sr"
+                else "Umeren mediumski pluralizam so uocena ramnoteza megu razlicni mediumski grupi."
+            )
+            bias_detected = False
+        else:
+            score = 35
+            verdict = (
+                "Nizak medijski pluralizam. Izveštavanje je jednostrano i dominira samo jedna perspektiva (echo chamber)."
+                if lang == "sr"
+                else "Nizok mediumski pluralizam. Izvestuvanjeto e ednostrano i dominira samo edna perspektiva (echo chamber)."
+            )
+            bias_detected = True
+            
+        return {
+            "score": score,
+            "verdict": verdict,
+            "bias_detected": bias_detected
+        }
+
     def extract_deep_metadata(self, text: str, lang: str = "mk") -> Dict[str, Any]:
         """Extracts facts and pulse from text."""
         if lang == "sr":
@@ -223,16 +400,28 @@ class LocalAnalyst:
                 "Vlez: Vladata danas odluci da im zgolemi penziite za 5 procenti pocnuvajci od septembar...\n"
                 'Izlez: {"facts": ["Zgolemuvanje na penziite za 5%", "Merkata stapuva na sila od septembar", "Odluka na Vladata"], "entities": ["Vlada"], "sentiment": "pozitiven", "pulse": 75}'
             )
-        raw = self.analyze(text[:1500], system, max_tokens=400, response_schema=DeepMetadataResponse, lang=lang)
-        if not raw:
-            return {"error": "no_response"}
-
+        
         try:
-            parsed = json.loads(raw)
-            return DeepMetadataResponse(**parsed).model_dump()
+            raw = self.analyze(text[:1500], system, max_tokens=400, response_schema=DeepMetadataResponse, lang=lang)
+            if raw:
+                parsed = json.loads(raw)
+                return DeepMetadataResponse(**parsed).model_dump()
         except Exception as e:
-            log.error(f"[analyst] JSON/Pydantic parse failed: {e} | Raw: {raw[:100]}...")
-            return {"error": "failed_to_parse"}
+            log.error(f"[analyst] LLM/Pydantic metadata generation failed, falling back: {e}")
+
+        # Fallback to zero-token heuristics
+        log.info("[analyst] Running zero-token metadata extraction fallback.")
+        try:
+            fallback_data = self.get_zero_token_metadata(text, lang=lang)
+            return DeepMetadataResponse(**fallback_data).model_dump()
+        except Exception as fe:
+            log.error(f"[analyst] Zero-token metadata fallback failed: {fe}")
+            return {
+                "facts": ["Analiza u toku" if lang == "sr" else "Analiza vo tek", "Nije moguće ekstrahovati podatke" if lang == "sr" else "Ne e vozmozno da se ekstrahiraat podatoci", "Sistemski podaci" if lang == "sr" else "Sistemski podatoci"],
+                "entities": ["Sistem" if lang == "sr" else "Sistem"],
+                "sentiment": "neutralan" if lang == "sr" else "neutralen",
+                "pulse": 50
+            }
 
     def assess_pluralism(self, titles_with_sources: List[str], lang: str = "mk") -> Dict[str, Any]:
         """Analyzes if a cluster represents a diverse consensus or an echo chamber."""
@@ -260,21 +449,28 @@ class LocalAnalyst:
             )
         prompt = "ANALIZIRAJ OVE IZVORE:\n" if lang == "sr" else "ANALIZIRAJ im OVIE izvori:\n"
         prompt += "\n".join(titles_with_sources)
-        raw = self.analyze(prompt, system, max_tokens=256, response_schema=PluralismResponse, lang=lang)
-        fallback = {
-            "score": 50,
-            "verdict": "Standardna pokrivenost" if lang == "sr" else "Standardna pokrienost",
-            "bias_detected": False,
-        }
-        if not raw:
-            return fallback
-
+        
         try:
-            parsed = json.loads(raw)
-            return PluralismResponse(**parsed).model_dump()
+            raw = self.analyze(prompt, system, max_tokens=256, response_schema=PluralismResponse, lang=lang)
+            if raw:
+                parsed = json.loads(raw)
+                return PluralismResponse(**parsed).model_dump()
         except Exception as e:
-            log.debug(f"JSON parse error in assess_pluralism: {e}")
-            return fallback
+            log.debug(f"LLM pluralism assessment failed, falling back: {e}")
+
+        # Fallback to zero-token heuristics
+        log.info("[analyst] Running zero-token pluralism assessment fallback.")
+        try:
+            fallback_data = self.get_zero_token_pluralism(titles_with_sources, lang=lang)
+            return PluralismResponse(**fallback_data).model_dump()
+        except Exception as fe:
+            log.error(f"[analyst] Zero-token pluralism fallback failed: {fe}")
+            return {
+                "score": 50,
+                "verdict": "Standardna pokrivenost" if lang == "sr" else "Standardna pokrienost",
+                "bias_detected": False,
+            }
+
 
     def detect_echo(self, article_text: str, cluster_context: str, lang: str = "mk") -> float:
         """Detects if an article is a unique report or just a 'copy-paste' (echo)."""
