@@ -3,12 +3,18 @@ type ArticleLike = {
   title?: string;
   category?: string;
   source?: string;
+  topic?: string;
+  description?: string;
 };
 
 type ClusterLike = {
   cluster_id?: string;
   representative_image?: string | null;
   articles?: ArticleLike[];
+  topics?: string[];
+  tags?: string[];
+  synthetic_headline?: string | null;
+  synthetic_standfirst?: string | null;
 };
 
 const WEAK_VISUAL_TOKENS = [
@@ -123,6 +129,68 @@ const VARIANT_WIDTH: Record<ImageVariant, number> = {
   thumb: 320,
 };
 
+type FallbackKind = 'politics' | 'economy' | 'sport' | 'tech' | 'culture' | 'world' | 'local' | 'general';
+
+const FALLBACK_ART: Record<FallbackKind, string> = {
+  politics: '/img/fallbacks/news-politics.svg',
+  economy: '/img/fallbacks/news-economy.svg',
+  sport: '/img/fallbacks/news-sport.svg',
+  tech: '/img/fallbacks/news-tech.svg',
+  culture: '/img/fallbacks/news-culture.svg',
+  world: '/img/fallbacks/news-world.svg',
+  local: '/img/fallbacks/news-local.svg',
+  general: '/img/fallbacks/news-general.svg',
+};
+
+function normalizeText(value?: string | null) {
+  return String(value || '').toLowerCase();
+}
+
+function getFallbackKind(cluster: ClusterLike): FallbackKind {
+  const primary = cluster?.articles?.[0] || {};
+  const haystack = [
+    ...(cluster?.topics || []),
+    ...(cluster?.tags || []),
+    cluster?.synthetic_headline,
+    cluster?.synthetic_standfirst,
+    primary.topic,
+    primary.category,
+    primary.title,
+    primary.description,
+  ].map(normalizeText).join(' ');
+
+  if (/(sport|fudbal|ko[šs]arka|tenis|liga|utakmica|gol|спорт|фудбал|кошарка|тенис|лига|натпревар|гол)/.test(haystack)) {
+    return 'sport';
+  }
+  if (/(ekonom|biznis|finans|tr[žz]i[šs]te|inflaci|bud[žz]et|banka|берза|економ|бизнис|финанс|пазар|инфлаци|буџет|банка)/.test(haystack)) {
+    return 'economy';
+  }
+  if (/(tehnolog|nauka|ai|softver|digital|cyber|sajber|startup|технолог|наука|софтвер|дигитал|сајбер|стартап)/.test(haystack)) {
+    return 'tech';
+  }
+  if (/(kultur|umetnost|film|muzik|knjig|festival|театр|култур|уметност|филм|музик|книг|фестивал)/.test(haystack)) {
+    return 'culture';
+  }
+  if (/(polit|vlada|sobran|parlament|izbor|opozici|ministar|premijer|predsed|полит|влада|собран|парламент|избор|опозици|министер|премиер|претсед)/.test(haystack)) {
+    return 'politics';
+  }
+  if (/(svet|global|eu|nato|sad|amerika|rusija|ukraina|izrael|palestin|kina|европа|свет|глобал|сад|русија|украина|израел|палестин|кина)/.test(haystack)) {
+    return 'world';
+  }
+  if (/(skopje|beograd|srbija|makedon|balkan|lokal|op[šs]tin|grad|скопје|белград|србија|македон|балкан|локал|општин|град)/.test(haystack)) {
+    return 'local';
+  }
+  return 'general';
+}
+
+export function getFallbackImage(cluster: ClusterLike) {
+  const kind = getFallbackKind(cluster);
+  return {
+    kind,
+    src: FALLBACK_ART[kind],
+  };
+}
+
 export function chooseClusterImage(cluster: ClusterLike, variant: ImageVariant = 'card') {
   const articles = cluster?.articles || [];
   const representativeSource = articles.find((article) => article.image_url === cluster?.representative_image)?.source;
@@ -147,6 +215,8 @@ export function chooseClusterImage(cluster: ClusterLike, variant: ImageVariant =
 
   const chosen = ranked[0]?.url || '';
   const width = VARIANT_WIDTH[variant];
+  const isWeak = isWeakVisual(chosen);
+  const fallback = getFallbackImage(cluster);
 
   // Better fallback context for smart placeholders
   const cid = cluster?.cluster_id || '';
@@ -167,7 +237,9 @@ export function chooseClusterImage(cluster: ClusterLike, variant: ImageVariant =
 
   return {
     rawUrl: chosen || null,
-    proxiedUrl,
-    isWeak: isWeakVisual(chosen),
+    proxiedUrl: isWeak ? fallback.src : proxiedUrl,
+    isWeak,
+    fallbackUrl: fallback.src,
+    fallbackKind: fallback.kind,
   };
 }

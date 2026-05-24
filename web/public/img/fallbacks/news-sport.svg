@@ -1,0 +1,22 @@
+<svg viewBox="0 0 1200 760" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Presek sport fallback">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f4f7ee"/>
+      <stop offset="0.52" stop-color="#cfded1"/>
+      <stop offset="1" stop-color="#182a1d"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="760" fill="url(#bg)"/>
+  <rect x="72" y="72" width="1056" height="616" rx="28" fill="#fafff6" opacity="0.74" stroke="#182a1d" stroke-opacity="0.14"/>
+  <rect x="132" y="130" width="166" height="44" rx="3" fill="#182a1d"/>
+  <text x="215" y="159" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="800" letter-spacing="4" fill="#fafff6">PRESEK</text>
+  <g transform="translate(172 238)" fill="none" stroke="#182a1d" stroke-width="14" opacity="0.72">
+    <rect x="52" y="22" width="780" height="360" rx="18"/>
+    <line x1="442" y1="22" x2="442" y2="382"/>
+    <circle cx="442" cy="202" r="76"/>
+    <rect x="52" y="122" width="116" height="160"/>
+    <rect x="716" y="122" width="116" height="160"/>
+  </g>
+  <circle cx="930" cy="204" r="82" fill="#ffffff" opacity="0.64" stroke="#182a1d" stroke-width="12"/>
+  <path d="M886 204h88M930 160v88M895 174c32 18 44 55 31 90M966 174c-32 18-44 55-31 90" fill="none" stroke="#182a1d" stroke-width="8" opacity="0.55"/>
+</svg>

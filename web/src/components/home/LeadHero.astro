@@ -97,6 +97,7 @@ const getProxiedUrl = (width: number) => {
 
 const leadSrcset = leadVisual?.proxiedUrl ? [400, 600, 800, 1000, 1200].map(w => `${getProxiedUrl(w)} ${w}w`).join(', ') : '';
 const leadSizes = "(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 1200px";
+const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general.svg';
 
 ---
 
@@ -123,7 +124,7 @@ const leadSizes = "(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 1200px";
 	                        class="lead-media-image"
 	                        transition:name={`cluster-image-${leadCluster.cluster_id}`}
 	                        onload="this.classList.add('is-loaded'); this.parentElement.classList.add('media-ready');"
-	                        onerror="this.style.opacity='0'; this.parentElement.querySelector('.lead-media-placeholder-error').style.display='grid';"
+	                        onerror={`this.onerror=null; this.removeAttribute('srcset'); this.src='${fallbackImageUrl}'; this.classList.add('is-loaded','lead-media-fallback-image'); this.parentElement.classList.add('media-ready','lead-media-frame-fallback');`}
 	                    />
 	                    <div class="lead-media-overlay">
 	                        <div class="overlay-content">
@@ -138,8 +139,9 @@ const leadSizes = "(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 1200px";
                     </div>
                 </Fragment>
             ) : (
-                <div class="lead-media-placeholder design-card" style={`--placeholder-bg: ${tintColor};`}>
-                    <div class="design-card-pattern"></div>
+                <div class="lead-media-placeholder design-card topic-fallback-card" style={`--placeholder-bg: ${tintColor};`}>
+                    <img src={fallbackImageUrl} alt="" width="1200" height="760" class="article-image article-image-fallback is-loaded" loading="eager" decoding="async" />
+                    <div class="topic-fallback-scrim"></div>
                     <div class="design-card-ribbon">
                         <span>{cardLabel}</span>
                     </div>
@@ -260,7 +262,7 @@ const leadSizes = "(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 1200px";
 	                        decoding="async"
 	                        class="lead-media-image"
 	                        onload="this.classList.add('is-loaded'); this.parentElement.classList.add('media-ready');"
-	                        onerror="this.style.opacity='0'; this.parentElement.querySelector('.lead-media-placeholder-error').style.display='grid';"
+	                        onerror={`this.onerror=null; this.removeAttribute('srcset'); this.src='${fallbackImageUrl}'; this.classList.add('is-loaded','lead-media-fallback-image'); this.parentElement.classList.add('media-ready','lead-media-frame-fallback');`}
 	                    />
 	                    <div class="lead-media-overlay">
 	                        <div class="overlay-content">
@@ -275,7 +277,9 @@ const leadSizes = "(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 1200px";
                     </div>
                 </Fragment>
             ) : (
-                <div class="lead-media-placeholder lead-media-editorial-card" style={`--placeholder-bg: ${tintColor};`}>
+                <div class="lead-media-placeholder lead-media-editorial-card topic-fallback-card" style={`--placeholder-bg: ${tintColor};`}>
+                    <img src={fallbackImageUrl} alt="" width="1200" height="760" class="article-image article-image-fallback is-loaded" loading="eager" decoding="async" />
+                    <div class="topic-fallback-scrim"></div>
                     <div class="lead-media-topline">
                         <p class="lead-media-kicker">{mediaLabel}</p>
                         <div class="lead-media-status">
@@ -838,6 +842,15 @@ const leadSizes = "(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 1200px";
         line-height: 0.96;
         letter-spacing: -0.045em;
         text-shadow: none;
+    }
+
+    .lead-media-editorial-card.topic-fallback-card h2,
+    .lead-media-editorial-card.topic-fallback-card .lead-media-summary,
+    .lead-media-editorial-card.topic-fallback-card .lead-media-kicker,
+    .lead-media-editorial-card.topic-fallback-card .lead-media-status,
+    .lead-media-editorial-card.topic-fallback-card .lead-media-source-row {
+        color: white;
+        text-shadow: 0 3px 12px rgba(0,0,0,0.42);
     }
 
     .lead-media-summary {

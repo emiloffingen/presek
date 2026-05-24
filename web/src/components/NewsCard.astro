@@ -38,6 +38,7 @@ const significanceLabel =
 const selectedImage = chooseClusterImage(cluster, isLead ? 'hero' : 'card');
 const thumbSrc = selectedImage.proxiedUrl;
 const isFallbackArt = selectedImage.isWeak;
+const fallbackImageUrl = selectedImage.fallbackUrl;
 const tintColor = cluster.dominant_color || '#1e40af';
 const rawLeadTitle = cluster.synthetic_headline || getDisplayTitle(main);
 
@@ -178,8 +179,17 @@ function getTimeStr(dateStr: string) {
     <div class:list={["image-wrap", { "image-wrap-fallback": isFallbackArt }]}>
         <a href={clusterUrl} class="block h-full" data-testid="cluster-link">
             {isFallbackArt ? (
-                <div class="article-image-placeholder design-card" style={`--placeholder-bg: ${tintColor};`}>
-                    <div class="design-card-pattern"></div>
+                <div class="article-image-placeholder design-card topic-fallback-card" style={`--placeholder-bg: ${tintColor};`}>
+                    <img
+                        src={fallbackImageUrl}
+                        alt=""
+                        width="1200"
+                        height="760"
+                        class="article-image article-image-fallback is-loaded"
+                        loading="lazy"
+                        decoding="async"
+                    />
+                    <div class="topic-fallback-scrim"></div>
                     <div class="design-card-ribbon">
                         <span>{cardLabel}</span>
                     </div>
@@ -209,7 +219,7 @@ function getTimeStr(dateStr: string) {
                         decoding="async"
                         fetchpriority={isLead ? "high" : "auto"}
                         onload="this.classList.add('is-loaded')"
-                        onerror="this.closest('.image-wrap').style.display='none'; this.closest('.nyt-article').classList.remove('has-image');"
+                        onerror={`this.onerror=null; this.removeAttribute('srcset'); this.src='${fallbackImageUrl}'; this.classList.add('is-loaded','article-image-fallback'); this.closest('.image-wrap')?.classList.add('image-wrap-fallback');`}
                     />
                 </div>
             )}
@@ -471,6 +481,26 @@ function getTimeStr(dateStr: string) {
 
     .article-image-placeholder {
         transition: transform 0.8s var(--ease-editorial);
+    }
+
+    .topic-fallback-card {
+        isolation: isolate;
+    }
+
+    .topic-fallback-card .article-image-fallback {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        filter: saturate(0.95) contrast(1.02);
+    }
+
+    .topic-fallback-scrim {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        background:
+            linear-gradient(180deg, rgba(4, 8, 16, 0.08) 0%, rgba(4, 8, 16, 0.58) 100%),
+            linear-gradient(90deg, rgba(4, 8, 16, 0.42), rgba(4, 8, 16, 0.08));
     }
 
     .nyt-article:hover .article-image-placeholder {

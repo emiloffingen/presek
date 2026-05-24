@@ -56,6 +56,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   const selectedImage = chooseClusterImage(cluster, isLead ? 'hero' : 'card');
   const thumbSrc = selectedImage.proxiedUrl;
   const isFallbackArt = selectedImage.isWeak;
+  const fallbackImageUrl = selectedImage.fallbackUrl;
   const tintColor = cluster.dominant_color || '#1e40af';
 
   const rawLeadTitle = cluster.synthetic_headline || getDisplayTitle(main);
@@ -151,8 +152,17 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         <div className={`image-wrap ${isFallbackArt ? 'image-wrap-fallback' : ''} w-28 h-20 flex-shrink-0`}>
           <a href={lang === 'sr' ? `/cluster/${cluster.cluster_id}` : `/mk/cluster/${cluster.cluster_id}`} className="block h-full">
             {isFallbackArt ? (
-              <div className="article-image-placeholder design-card" style={{ '--placeholder-bg': tintColor } as any}>
-                <div className="design-card-pattern"></div>
+              <div className="article-image-placeholder design-card topic-fallback-card" style={{ '--placeholder-bg': tintColor } as any}>
+                <img
+                  src={fallbackImageUrl}
+                  alt=""
+                  width="1200"
+                  height="760"
+                  className="article-image article-image-fallback is-loaded"
+                  loading="lazy"
+                  decoding="async"
+                />
+                <div className="topic-fallback-scrim"></div>
                 <div className="design-card-ribbon flex items-center justify-center text-center px-5 py-2 min-w-max">
                     <span>{cardLabel}</span>
                 </div>
@@ -176,6 +186,14 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                   height="500"
                   className="article-image is-loaded w-full h-full object-cover rounded-md"
                   loading={isLead ? 'eager' : 'lazy'}
+                  onError={(event) => {
+                    const image = event.currentTarget;
+                    image.onerror = null;
+                    image.removeAttribute('srcset');
+                    image.src = fallbackImageUrl;
+                    image.classList.add('article-image-fallback');
+                    image.closest('.image-wrap')?.classList.add('image-wrap-fallback');
+                  }}
                 />
               </div>
             )}
