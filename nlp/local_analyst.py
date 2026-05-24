@@ -7,6 +7,7 @@ import time
 from typing import Any, Dict, List, Optional
 
 from llama_cpp import Llama, LlamaGrammar
+from pydantic import BaseModel, Field
 
 log = logging.getLogger("presek.analyst")
 
@@ -26,6 +27,24 @@ string ::= "\\"" ([^"\\\\\\x00-\\x1F] | "\\\\" (["\\\\/bfnrt] | "u" [0-9a-fA-F] 
 number ::= ("-"? ([0-9] | [1-9] [0-9]*)) ("." [0-9]+)? ([eE] [-+]? [0-9]+)? ws
 ws ::= ([ \\t\\n\\r])*
 """
+
+
+class DeepMetadataResponse(BaseModel):
+    facts: List[str] = Field(..., description="Exactly 3 key facts extracted from the text")
+    entities: List[str] = Field(..., description="List of key entities (names, institutions, etc.) mentioned in the text")
+    sentiment: str = Field(..., description="Sentiment: positive/negativan/neutralan, etc.")
+    pulse: int = Field(..., ge=1, le=100, description="Significance pulse rating from 1 to 100")
+
+
+class PluralismResponse(BaseModel):
+    score: int = Field(..., ge=0, le=100, description="Pluralism score from 0 to 100")
+    verdict: str = Field(..., description="A short sentence explaining the score")
+    bias_detected: bool = Field(..., description="Whether bias was detected")
+
+
+class ResearchQueryResponse(BaseModel):
+    answer: str = Field(..., description="Answer with media source citations like [RTS]")
+    suggestions: List[str] = Field(..., description="Exactly 3 suggested follow-up research questions")
 
 
 class LocalAnalyst:
@@ -80,6 +99,7 @@ class LocalAnalyst:
         max_tokens: int = 512,
         use_grammar: bool = False,
         lang: str = "mk",
+        response_schema: Optional[Any] = None,
     ) -> Optional[str]:
         # Try remote API first if enabled (default True)
         if os.environ.get("USE_REMOTE_ANALYST", "true").lower() == "true":
@@ -91,8 +111,9 @@ class LocalAnalyst:
                     system=system_prompt,
                     task_type="analyst",
                     max_tokens=max_tokens,
-                    json_mode=use_grammar,
+                    json_mode=(use_grammar or response_schema is not None),
                     lang=lang,
+                    response_schema=response_schema,
                 )
                 if raw:
                     log.info(f"[analyst] Remote generation successful using {provider}")
@@ -130,13 +151,25 @@ class LocalAnalyst:
             # Gemma 2 Instruct format (optimized for a single user turn).
             full_prompt = f"<start_of_turn>user\n{system_prompt}\n\n{prompt}<end_of_turn>\n<start_of_turn>model\n"
 
+            # Set grammar dynamically based on response_schema
+            local_grammar = None
+            if response_schema:
+                try:
+                    schema_json = json.dumps(response_schema.model_json_schema())
+                    local_grammar = LlamaGrammar.from_json_schema(schema_json)
+                except Exception as e:
+                    log.error(f"[analyst] Failed to compile grammar from schema: {e}")
+                    local_grammar = self.grammar
+            elif use_grammar:
+                local_grammar = self.grammar
+
             output = self.model(
                 full_prompt,
                 max_tokens=max_tokens,
                 stop=["<end_of_turn>", "<eos>", "###"],
                 echo=False,
                 temperature=0.1,  # Low temperature for analytical consistency
-                grammar=self.grammar if use_grammar else None,
+                grammar=local_grammar,
             )
             return output["choices"][0]["text"].strip()
         except Exception as e:
@@ -190,14 +223,15 @@ class LocalAnalyst:
                 "Vlez: Vladata danas odluci da im zgolemi penziite za 5 procenti pocnuvajci od septembar...\n"
                 'Izlez: {"facts": ["Zgolemuvanje na penziite za 5%", "Merkata stapuva na sila od septembar", "Odluka na Vladata"], "entities": ["Vlada"], "sentiment": "pozitiven", "pulse": 75}'
             )
-        raw = self.analyze(text[:1500], system, max_tokens=400, use_grammar=True, lang=lang)
+        raw = self.analyze(text[:1500], system, max_tokens=400, response_schema=DeepMetadataResponse, lang=lang)
         if not raw:
             return {"error": "no_response"}
 
         try:
-            return json.loads(raw)
+            parsed = json.loads(raw)
+            return DeepMetadataResponse(**parsed).model_dump()
         except Exception as e:
-            log.error(f"[analyst] JSON parse failed: {e} | Raw: {raw[:100]}...")
+            log.error(f"[analyst] JSON/Pydantic parse failed: {e} | Raw: {raw[:100]}...")
             return {"error": "failed_to_parse"}
 
     def assess_pluralism(self, titles_with_sources: List[str], lang: str = "mk") -> Dict[str, Any]:
@@ -226,23 +260,21 @@ class LocalAnalyst:
             )
         prompt = "ANALIZIRAJ OVE IZVORE:\n" if lang == "sr" else "ANALIZIRAJ im OVIE izvori:\n"
         prompt += "\n".join(titles_with_sources)
-        raw = self.analyze(prompt, system, max_tokens=256, use_grammar=True, lang=lang)
+        raw = self.analyze(prompt, system, max_tokens=256, response_schema=PluralismResponse, lang=lang)
+        fallback = {
+            "score": 50,
+            "verdict": "Standardna pokrivenost" if lang == "sr" else "Standardna pokrienost",
+            "bias_detected": False,
+        }
         if not raw:
-            return {
-                "score": 50,
-                "verdict": "Standardna pokrivenost" if lang == "sr" else "Standardna pokrienost",
-                "bias_detected": False,
-            }
+            return fallback
 
         try:
-            return json.loads(raw)
+            parsed = json.loads(raw)
+            return PluralismResponse(**parsed).model_dump()
         except Exception as e:
             log.debug(f"JSON parse error in assess_pluralism: {e}")
-            return {
-                "score": 50,
-                "verdict": "Standardna pokrivenost" if lang == "sr" else "Standardna pokrienost",
-                "bias_detected": False,
-            }
+            return fallback
 
     def detect_echo(self, article_text: str, cluster_context: str, lang: str = "mk") -> float:
         """Detects if an article is a unique report or just a 'copy-paste' (echo)."""
@@ -293,30 +325,25 @@ class LocalAnalyst:
                 'Izlez: {"answer": "Vladata najavi pomos vo iznos od 10 milioni evra [MTV].", "suggestions": ["Koga ce se isplati pomosta?", "Koj im ispolnuva kriteriumite?", "Kakov e efektot vrz budzetot?"]}'
             )
         prompt = f"PITANJE: {query}\nKONTEKST: {context}" if lang == "sr" else f"PRASANjE: {query}\nKONTEKST: {context}"
-        raw = self.analyze(prompt, system, max_tokens=800, use_grammar=True, lang=lang)
+        raw = self.analyze(prompt, system, max_tokens=800, response_schema=ResearchQueryResponse, lang=lang)
+
+        fallback = {
+            "answer": raw if raw else ("Nema dovoljno informacija." if lang == "sr" else "Nema dovolno informacii."),
+            "suggestions": [
+                "Koji su ključni akteri?" if lang == "sr" else "Koi se klucnite akteri?",
+                "Kakav je ekonomski efekat?" if lang == "sr" else "Kakov e ekonomskiot efekt?",
+                "Koji su sledeći koraci?" if lang == "sr" else "Koi se slednite cekori?",
+            ],
+        }
+        if not raw:
+            return fallback
 
         try:
-            return json.loads(raw)
-        except (json.JSONDecodeError, TypeError, ValueError):
-            # Fallback if JSON fails (though grammar should prevent this)
-            if lang == "sr":
-                return {
-                    "answer": raw if raw else "Nema dovoljno informacija.",
-                    "suggestions": [
-                        "Koji su ključni akteri?",
-                        "Kakav je ekonomski efekat?",
-                        "Koji su sledeći koraci?",
-                    ],
-                }
-            else:
-                return {
-                    "answer": raw if raw else "Nema dovolno informacii.",
-                    "suggestions": [
-                        "Koi se klucnite akteri?",
-                        "Kakov e ekonomskiot efekt?",
-                        "Koi se slednite cekori?",
-                    ],
-                }
+            parsed = json.loads(raw)
+            return ResearchQueryResponse(**parsed).model_dump()
+        except (json.JSONDecodeError, TypeError, ValueError) as e:
+            log.debug(f"JSON/Pydantic parse error in research_query: {e}")
+            return fallback
 
 
 # Singleton instance

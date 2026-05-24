@@ -6,7 +6,7 @@ import re
 import time
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import AsyncGenerator
+from typing import Any, AsyncGenerator
 
 import httpx
 from prometheus_client import REGISTRY, Counter, Histogram
@@ -178,6 +178,7 @@ class AIProvider(ABC):
         topic: str = None,
         task_type: str = "default",
         lang: str = "sr",
+        response_schema: Any = None,
     ) -> str | None:
         log.debug(f"Abstract method call() not implemented for {self.__class__.__name__}")
         return None
@@ -207,6 +208,7 @@ class OpenAICompatibleProvider(AIProvider):
         topic: str = None,
         task_type: str = "default",
         lang: str = "sr",
+        response_schema: Any = None,
     ) -> str | None:
         if not self.api_key or not self.api_url:
             return None
@@ -220,7 +222,7 @@ class OpenAICompatibleProvider(AIProvider):
             "max_tokens": max_tokens,
             "temperature": 0.2,
         }
-        if json_mode:
+        if json_mode or response_schema:
             payload["response_format"] = {"type": "json_object"}
 
         headers = {
@@ -260,6 +262,7 @@ class LocalProvider(AIProvider):
         topic: str = None,
         task_type: str = "default",
         lang: str = "sr",
+        response_schema: Any = None,
     ) -> str | None:
         from nlp.local_analyst import analyst
 
@@ -281,10 +284,14 @@ class LocalProvider(AIProvider):
             if res:
                 return json.dumps(res) if isinstance(res, dict) else res
 
-        res = analyst.analyze(prompt, system, max_tokens=max_tokens, lang=lang)
+        res = analyst.analyze(prompt, system, max_tokens=max_tokens, lang=lang, response_schema=response_schema)
         if res:
-            if json_mode:
-                return json.dumps({"report": res, "status": "success", "mode": "local_fallback"})
+            if json_mode or response_schema:
+                try:
+                    json.loads(res)
+                    return res
+                except ValueError:
+                    return json.dumps({"report": res, "status": "success", "mode": "local_fallback"})
         return res
 
 
@@ -324,13 +331,26 @@ class GeminiProvider(AIProvider):
         topic: str = None,
         task_type: str = "default",
         lang: str = "sr",
+        response_schema: Any = None,
     ) -> str | None:
         if self.model is None:
             return None
         try:
             full_prompt = f"{system}\n\n{prompt}"
+            config = None
+            if response_schema:
+                from google.genai import types
+                config = types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    response_schema=response_schema,
+                )
+            elif json_mode:
+                from google.genai import types
+                config = types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                )
             response = self.client.models.generate_content(
-                model=self.model, contents=full_prompt
+                model=self.model, contents=full_prompt, config=config
             )
             return response.text
         except Exception as e:
@@ -388,6 +408,7 @@ async def _call_ai_async(
     stream: bool = False,
     topic: str = None,
     lang: str = "sr",
+    response_schema: Any = None,
 ):
     """Entrypoint with cascading failover."""
     # Sanitize prompts to prevent injection attacks
@@ -439,6 +460,7 @@ async def _call_ai_async(
                 topic=topic,
                 task_type=task_type,
                 lang=lang,
+                response_schema=response_schema,
             )
             if res:
                 AI_LATENCY.labels(provider=provider_name, task_type=task_type).observe(time.time() - start_time)
@@ -468,6 +490,7 @@ def _call_ai(
     json_mode: bool = False,
     topic: str = None,
     lang: str = "sr",
+    response_schema: Any = None,
 ):
     """Synchronous AI entrypoint with cascading failover."""
     # Sanitize prompts to prevent injection attacks
@@ -494,12 +517,12 @@ def _call_ai(
         provider = PROVIDERS[provider_name]
         start_time = time.time()
         try:
-            res = provider.call(prompt, system, max_tokens, json_mode, topic=topic, task_type=task_type, lang=lang)
+            res = provider.call(prompt, system, max_tokens, json_mode, topic=topic, task_type=task_type, lang=lang, response_schema=response_schema)
             
             # Self-Correction Loop: If json_mode is requested but output is malformed, re-prompt once
             if json_mode and res and not clean_json_response(res):
                 log.warning(f"[ai/cascade] Provider {provider_name} returned malformed JSON, retrying once...")
-                res = provider.call(prompt + "\n\nCRITICAL: Return valid JSON only.", system, max_tokens, json_mode, topic=topic, task_type=task_type, lang=lang)
+                res = provider.call(prompt + "\n\nCRITICAL: Return valid JSON only.", system, max_tokens, json_mode, topic=topic, task_type=task_type, lang=lang, response_schema=response_schema)
 
             if res:
                 AI_LATENCY.labels(provider=provider_name, task_type=task_type).observe(time.time() - start_time)
@@ -533,12 +556,13 @@ async def async_call_ai(
     json_mode: bool = False,
     topic: str = None,
     lang: str = "sr",
+    response_schema: Any = None,
 ):
     """
     Asynchronous version of the AI provider cascade.
     Wraps blocking provider calls in a thread executor to keep the event loop free.
     """
-    return await asyncio.to_thread(_call_ai, prompt, system, task_type, max_tokens, json_mode, topic, lang)
+    return await asyncio.to_thread(_call_ai, prompt, system, task_type, max_tokens, json_mode, topic, lang, response_schema)
 
 def sync_call_ai(
     prompt: str,
@@ -548,9 +572,10 @@ def sync_call_ai(
     json_mode: bool = False,
     topic: str = None,
     lang: str = "sr",
+    response_schema: Any = None,
 ):
     """Backwards-compatible alias for synchronous callers."""
-    return _call_ai(prompt, system, task_type, max_tokens, json_mode, topic=topic, lang=lang)
+    return _call_ai(prompt, system, task_type, max_tokens, json_mode, topic=topic, lang=lang, response_schema=response_schema)
 
 
 
