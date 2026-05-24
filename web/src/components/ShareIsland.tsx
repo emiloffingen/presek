@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { MessageCircle } from "lucide-react";
 
 const FacebookIcon = ({ size = 16 }: { size?: number }) => (
@@ -63,13 +63,24 @@ interface ShareIslandProps {
 }
 
 export default function ShareIsland({ title, url }: ShareIslandProps) {
-  const shareText = `${title}\n${url}`;
+  const [currentUrl, setCurrentUrl] = useState(url);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // In production/development, we want the current window URL
+      // If the url is local (e.g. localhost), we should keep it for local testing
+      // but in production it will resolve correctly to the actual browser URL.
+      setCurrentUrl(window.location.href);
+    }
+  }, [url]);
+
+  const shareText = `${title}\n${currentUrl}`;
 
   const shareOptions = [
     {
       name: "Facebook",
       icon: <FacebookIcon size={14} />,
-      url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
+      url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`,
       hoverClass:
         "hover:text-blue-600 hover:border-blue-600 dark:hover:text-blue-400 dark:hover:border-blue-400",
     },
@@ -83,14 +94,14 @@ export default function ShareIsland({ title, url }: ShareIslandProps) {
     {
       name: "Twitter / X",
       icon: <TwitterIcon size={14} />,
-      url: `https://x.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`,
+      url: `https://x.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(currentUrl)}`,
       hoverClass:
         "hover:text-foreground hover:border-foreground dark:hover:text-white dark:hover:border-white",
     },
     {
       name: "Reddit",
       icon: <RedditIcon size={14} />,
-      url: `https://www.reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`,
+      url: `https://www.reddit.com/submit?url=${encodeURIComponent(currentUrl)}&title=${encodeURIComponent(title)}`,
       hoverClass:
         "hover:text-orange-600 hover:border-orange-600 dark:hover:text-orange-400 dark:hover:border-orange-400",
     },

@@ -413,7 +413,7 @@ const articleSchema = cluster ? {
 						</div>
 					</div>
 					<div class="header-actions flex gap-[var(--grid-gap)] pb-1">
-						<ShareIsland client:load title={displayHeadline} url={Astro.url.toString()} />
+						<ShareIsland client:load title={displayHeadline} url={canonicalUrl} />
 					</div>
 				</div>
 				<div class:list={["cluster-evidence-strip mt-10", `tone-${clusterStatus.tone}`]}>
