@@ -294,6 +294,9 @@ def _format_common_line_from_phrases(phrases, lang="mk"):
         return ""
 
     if lang == "sr":
+        from core.language import transliterate_cyr_to_lat
+
+        clean = [transliterate_cyr_to_lat(p) for p in clean]
         if len(clean) == 1:
             return f"Većina izvora se slaže oko {clean[0]} kao teme u fokusu."
         return f"Većina izvora se slaže oko {', '.join(clean[:-1])} i {clean[-1]} kao tema u fokusu."

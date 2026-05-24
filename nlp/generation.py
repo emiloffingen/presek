@@ -651,6 +651,11 @@ def compare_cluster_sources(articles, lang="mk"):
 
     for article in articles:
         combined = " ".join([article["title"], article["description"]]).strip()
+        if lang == "sr":
+            from core.language import transliterate_cyr_to_lat
+
+            combined = transliterate_cyr_to_lat(combined)
+
         terms = set(_extract_terms(combined))
         article_term_sets.append(terms)
         all_terms.update(terms)
@@ -678,6 +683,12 @@ def compare_cluster_sources(articles, lang="mk"):
     threshold = max(2, math.ceil(len(articles) / 2))
     common_terms = [t for t, c in all_terms.most_common(8) if c >= threshold and t not in SOURCE_NOISE_WORDS]
     pooled_text = " ".join(a["title"] + ". " + a["description"] for a in articles)
+
+    if lang == "sr":
+        from core.language import transliterate_cyr_to_lat
+
+        pooled_text = transliterate_cyr_to_lat(pooled_text)
+
     candidate_phrases = extract_keyphrases_locally(pooled_text, top_n=12)
     common_phrases = [
         p
@@ -700,7 +711,10 @@ def compare_cluster_sources(articles, lang="mk"):
                 )
     elif common_terms:
         if lang == "sr":
-            common_line = "Većina izvora se slaže oko " + ", ".join(common_terms[:4]) + " kao tema u fokusu."
+            from core.language import transliterate_cyr_to_lat
+
+            terms = [transliterate_cyr_to_lat(t) for t in common_terms[:4]]
+            common_line = "Većina izvora se slaže oko " + ", ".join(terms) + " kao tema u fokusu."
         else:
             common_line = "Повеќето извори се согласуваат околу " + ", ".join(common_terms[:4]) + " како теми во фокус."
 
@@ -712,8 +726,12 @@ def compare_cluster_sources(articles, lang="mk"):
             unique_titles.append((s, t))
     if len(unique_titles) >= 2:
         if lang == "sr":
+            from core.language import transliterate_cyr_to_lat
+
+            t1 = transliterate_cyr_to_lat(unique_titles[0][1])
+            t2 = transliterate_cyr_to_lat(unique_titles[1][1])
             difference_points.append(
-                f"{unique_titles[0][0]} najdirektnije formuliše razvoj kao „{unique_titles[0][1]}“, dok {unique_titles[1][0]} više naglašava „{unique_titles[1][1]}“."
+                f"{unique_titles[0][0]} najdirektnije formuliše razvoj kao „{t1}“, dok {unique_titles[1][0]} više naglašava „{t2}“."
             )
         else:
             difference_points.append(
@@ -824,12 +842,24 @@ def synthesize_cluster_fallback(articles, lang="mk"):
     # 1. Setup Lead Title, Description, and Update Point
     lead_title = deShout(cleanAndDecode(lead.get("title", ""))).strip()
     desc = cleanAndDecode(lead.get("description", ""))
+
+    if lang == "sr":
+        from core.language import transliterate_cyr_to_lat
+
+        lead_title = transliterate_cyr_to_lat(lead_title)
+        desc = transliterate_cyr_to_lat(desc)
+
     update_point = _extract_briefing_update({"title": lead_title, "description": desc}, lang=lang)
 
     # 2. Multi-source Sentence Fusion
     candidate_sentences = []
     for art in articles:
         art_desc = cleanAndDecode(art.get("description", ""))
+        if lang == "sr":
+            from core.language import transliterate_cyr_to_lat
+
+            art_desc = transliterate_cyr_to_lat(art_desc)
+
         art_country = art.get("country", "")
         is_target_country = art_country and str(art_country).upper() == target_country
         
