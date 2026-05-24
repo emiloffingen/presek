@@ -598,6 +598,52 @@ def _is_name_like_phrase(candidate: str) -> bool:
     return True
 
 
+def determine_relationship_direction(ent_a_name: str, ent_a_type: str, ent_b_name: str, ent_b_type: str, context_text: str) -> str:
+    """
+    Zero-token heuristic to determine influence direction between two entities in a given text.
+    Returns: 'a_to_b', 'b_to_a', or 'mutual'.
+    """
+    if not context_text:
+        return "mutual"
+
+    # Case-insensitive search for first occurrence index
+    text_lower = context_text.lower()
+    
+    # Extract 5-char prefix stems to handle Cyrillic/Latin declensions (e.g. Skupština -> Skupštinu, Vlada -> Vladu)
+    def get_stem(name):
+        name_clean = (name or "").strip()
+        if len(name_clean) >= 5:
+            return name_clean[:5].lower()
+        return name_clean.lower()
+
+    stem_a = get_stem(ent_a_name)
+    stem_b = get_stem(ent_b_name)
+
+    idx_a = text_lower.find(stem_a) if stem_a else -1
+    idx_b = text_lower.find(stem_b) if stem_b else -1
+
+    # 1. Type-based hierarchy: PERSON is usually an active agent influencing ORG, LOC or EVENT.
+    # If one is a PERSON and the other is not, the PERSON is more likely to be the initiator of the flow.
+    type_a = (ent_a_type or "").upper()
+    type_b = (ent_b_type or "").upper()
+    
+    if type_a == "PERSON" and type_b != "PERSON":
+        return "a_to_b"
+    if type_b == "PERSON" and type_a != "PERSON":
+        return "b_to_a"
+
+    # 2. Textual order/prominence heuristic:
+    # Check first appearance in text. Initiator is usually mentioned first in broadsheet reporting.
+    if idx_a != -1 and idx_b != -1:
+        if idx_a < idx_b:
+            return "a_to_b"
+        elif idx_b < idx_a:
+            return "b_to_a"
+
+    # 3. Default fallback if positions are unavailable or equal
+    return "mutual"
+
+
 def update_knowledge_graph(entities: list[dict], context_text: str = ""):
     """
     Updates the global knowledge graph with seen entities and their relationships.
@@ -610,9 +656,11 @@ def update_knowledge_graph(entities: list[dict], context_text: str = ""):
 
     sentiment = analyze_sentiment_locally(context_text) if context_text else 0.0
 
+    entity_info = {}
     for ent in entities:
         # Resolve to canonical name before DB update
         canonical_name = normalize_entity_name(ent["name"])
+        entity_info[canonical_name] = (canonical_name, ent.get("type", "ENTITY"))
 
         sql = """
             INSERT INTO knowledge_entities (name, type, total_mentions, last_seen, sentiment_score)
@@ -625,18 +673,37 @@ def update_knowledge_graph(entities: list[dict], context_text: str = ""):
         db.execute(sql, (canonical_name, ent["type"], sentiment), fetch=False)
 
     if len(entities) > 1:
-        sorted_names = sorted([e["name"] for e in entities])
+        # Sort key names to maintain consistent undirected row keys (a < b)
+        sorted_names = sorted(list(entity_info.keys()))
         for i in range(len(sorted_names)):
             for j in range(i + 1, len(sorted_names)):
                 a, b = sorted_names[i], sorted_names[j]
+                
+                a_name, a_type = entity_info[a]
+                b_name, b_type = entity_info[b]
+                
+                direction = determine_relationship_direction(a_name, a_type, b_name, b_type, context_text)
+                
+                count_a_to_b = 0
+                count_b_to_a = 0
+                if direction == "a_to_b":
+                    count_a_to_b = 1
+                elif direction == "b_to_a":
+                    count_b_to_a = 1
+                else:
+                    count_a_to_b = 1
+                    count_b_to_a = 1
+
                 sql = """
-                    INSERT INTO knowledge_relationships (entity_a, entity_b, weight, last_seen)
-                    VALUES (%s, %s, 1, CURRENT_TIMESTAMP)
+                    INSERT INTO knowledge_relationships (entity_a, entity_b, weight, count_a_to_b, count_b_to_a, last_seen)
+                    VALUES (%s, %s, 1, %s, %s, CURRENT_TIMESTAMP)
                     ON CONFLICT (entity_a, entity_b) DO UPDATE SET
                         weight = knowledge_relationships.weight + 1,
+                        count_a_to_b = knowledge_relationships.count_a_to_b + EXCLUDED.count_a_to_b,
+                        count_b_to_a = knowledge_relationships.count_b_to_a + EXCLUDED.count_b_to_a,
                         last_seen = EXCLUDED.last_seen
                 """
-                db.execute(sql, (a, b), fetch=False)
+                db.execute(sql, (a, b, count_a_to_b, count_b_to_a), fetch=False)
 
 
 def extract_entities(text: str, max_entities: int = 5) -> list[dict]:

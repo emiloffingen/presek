@@ -903,7 +903,7 @@ async def get_network_graph(
         # Get matching relationships involving the target entity
         relationships = await db.async_execute(
             """
-            SELECT entity_a, entity_b, weight
+            SELECT entity_a, entity_b, weight, count_a_to_b, count_b_to_a
             FROM knowledge_relationships
             WHERE (entity_a = %s OR entity_b = %s) AND weight >= %s
             ORDER BY weight DESC
@@ -915,7 +915,7 @@ async def get_network_graph(
         # Global top relationships view
         relationships = await db.async_execute(
             """
-            SELECT entity_a, entity_b, weight
+            SELECT entity_a, entity_b, weight, count_a_to_b, count_b_to_a
             FROM knowledge_relationships
             WHERE weight >= %s
             ORDER BY weight DESC
@@ -928,10 +928,31 @@ async def get_network_graph(
     for rel in relationships:
         seen_entities.add(rel["entity_a"])
         seen_entities.add(rel["entity_b"])
+        
+        c_a_to_b = rel.get("count_a_to_b") or 0
+        c_b_to_a = rel.get("count_b_to_a") or 0
+        
+        # Determine dominant direction
+        if c_b_to_a > c_a_to_b:
+            edge_src = rel["entity_b"]
+            edge_tgt = rel["entity_a"]
+            direction = "b_to_a"
+        elif c_a_to_b > c_b_to_a:
+            edge_src = rel["entity_a"]
+            edge_tgt = rel["entity_b"]
+            direction = "a_to_b"
+        else:
+            edge_src = rel["entity_a"]
+            edge_tgt = rel["entity_b"]
+            direction = "mutual"
+
         edges.append({
-            "source": rel["entity_a"],
-            "target": rel["entity_b"],
-            "weight": rel["weight"]
+            "source": edge_src,
+            "target": edge_tgt,
+            "weight": rel["weight"],
+            "a_to_b": c_a_to_b,
+            "b_to_a": c_b_to_a,
+            "direction": direction
         })
 
     # Fetch entity details

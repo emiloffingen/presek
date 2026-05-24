@@ -1497,8 +1497,8 @@ def test_fastapi_network_graph(mock_all):
     async def execute_side_effect(query, params=None):
         if "FROM knowledge_relationships" in query:
             return [
-                {"entity_a": "Vučić", "entity_b": "Vlada", "weight": 5},
-                {"entity_a": "Mickoski", "entity_b": "Vlada", "weight": 3}
+                {"entity_a": "Vučić", "entity_b": "Vlada", "weight": 5, "count_a_to_b": 4, "count_b_to_a": 1},
+                {"entity_a": "Mickoski", "entity_b": "Vlada", "weight": 3, "count_a_to_b": 1, "count_b_to_a": 2}
             ]
         if "FROM knowledge_entities" in query:
             return [
@@ -1544,6 +1544,20 @@ def test_fastapi_network_graph(mock_all):
         assert node_map["Vlada"]["type"] == "ORG"
         assert node_map["Vučić"]["mentions"] == 100
         assert node_map["Vučić"]["sentiment"] == 0.1
+
+        # Verify edge direction properties
+        edge_map = {f"{e['source']}-{e['target']}": e for e in data["edges"]}
+        assert edge_map["Vučić-Vlada"]["direction"] == "a_to_b"
+        assert edge_map["Vučić-Vlada"]["weight"] == 5
+        assert edge_map["Vučić-Vlada"]["a_to_b"] == 4
+        assert edge_map["Vučić-Vlada"]["b_to_a"] == 1
+
+        # Vlada is the dynamic source because count_b_to_a (2) > count_a_to_b (1) for Mickoski-Vlada
+        # entity_a is Mickoski, entity_b is Vlada. count_b_to_a maps to Vlada -> Mickoski.
+        assert edge_map["Vlada-Mickoski"]["direction"] == "b_to_a"
+        assert edge_map["Vlada-Mickoski"]["weight"] == 3
+        assert edge_map["Vlada-Mickoski"]["a_to_b"] == 1
+        assert edge_map["Vlada-Mickoski"]["b_to_a"] == 2
 
         # 2. Test filtered entity view
         data_filtered = asyncio.run(intelligence.get_network_graph(

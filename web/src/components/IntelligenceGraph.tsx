@@ -29,6 +29,9 @@ interface Edge {
   source: string;
   target: string;
   weight: number;
+  a_to_b?: number;
+  b_to_a?: number;
+  direction?: 'a_to_b' | 'b_to_a' | 'mutual';
 }
 
 const ui = {
@@ -400,22 +403,49 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
                 {/* Direct connections in this visible sub-graph */}
                 <div className="flex flex-col gap-2">
                   <span className="text-muted-foreground uppercase font-black text-[9px]">{t.connections}</span>
-                  <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto pr-1">
+                  <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto pr-1">
                     {edges
                       .filter(edge => edge.source === selectedNode.id || edge.target === selectedNode.id)
                       .map((edge, idx) => {
-                        const targetName = edge.source === selectedNode.id ? edge.target : edge.source;
+                        const isSource = edge.source === selectedNode.id;
+                        const partnerName = isSource ? edge.target : edge.source;
+                        
+                        // Calculate percentage of direction
+                        const total = (edge.a_to_b || 0) + (edge.b_to_a || 0) || edge.weight || 1;
+                        const directionCount = isSource 
+                          ? (edge.direction === 'b_to_a' ? edge.b_to_a : edge.a_to_b)
+                          : (edge.direction === 'b_to_a' ? edge.a_to_b : edge.b_to_a);
+                        
+                        const ratio = Math.round(((directionCount || 0) / total) * 100);
+                        
+                        // Determine representation arrow
+                        let relationArrow = '↔';
+                        if (edge.direction && edge.direction !== 'mutual') {
+                          relationArrow = edge.source === selectedNode.id ? '→' : '←';
+                        }
+
                         return (
                           <div 
                             key={idx}
                             onClick={() => {
-                              const found = nodes.find(n => n.id === targetName);
+                              const found = nodes.find(n => n.id === partnerName);
                               if (found) setSelectedNode(found);
                             }}
-                            className="flex justify-between items-center text-xs py-1.5 px-2 hover:bg-nyt-border cursor-pointer transition-colors duration-150 border-b border-nyt-border"
+                            className="flex flex-col gap-0.5 py-2 px-2 hover:bg-nyt-border cursor-pointer transition-colors duration-150 border-b border-nyt-border"
                           >
-                            <span className="font-serif font-bold text-nyt-text hover:text-nyt-accent">{targetName}</span>
-                            <span className="font-mono text-nyt-accent font-black">w: {edge.weight}</span>
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="font-serif font-bold text-nyt-text hover:text-nyt-accent">
+                                {relationArrow} {partnerName}
+                              </span>
+                              <span className="font-mono text-nyt-accent font-black">w: {edge.weight}</span>
+                            </div>
+                            {edge.direction && edge.direction !== 'mutual' && (
+                              <div className="text-[10px] text-muted-foreground font-mono">
+                                {relationArrow === '→' 
+                                  ? (lang === 'sr' ? `${selectedNode.id} utiče sa ${ratio}%` : `${selectedNode.id} влијае со ${ratio}%`)
+                                  : (lang === 'sr' ? `${partnerName} utiče sa ${ratio}%` : `${partnerName} влијае со ${ratio}%`)}
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -469,11 +499,29 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
                 <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
                   <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(0, 0, 0, 0.03)" strokeWidth="1" />
                 </pattern>
-                {/* Arrow markers for edges if needed */}
-                <marker id="arrow" viewBox="0 -5 10 10" refX="20" refY="0" markerWidth="6" markerHeight="6" orient="auto">
-                  <path d="M0,-5L10,0L0,5" fill="rgba(0, 0, 0, 0.15)" />
+                {/* Arrow markers for edges */}
+                <marker id="influence-arrow" viewBox="0 -5 10 10" refX="0" refY="0" markerWidth="5" markerHeight="5" orient="auto">
+                  <path d="M0,-4L8,0L0,4" fill="rgba(0, 0, 0, 0.2)" />
+                </marker>
+                <marker id="influence-arrow-active" viewBox="0 -5 10 10" refX="0" refY="0" markerWidth="5" markerHeight="5" orient="auto">
+                  <path d="M0,-4L8,0L0,4" fill="rgb(217, 119, 6)" />
                 </marker>
               </defs>
+              <style>{`
+                @keyframes flow-forward {
+                  to {
+                    stroke-dashoffset: -20;
+                  }
+                }
+                .flow-active {
+                  stroke-dasharray: 6, 4;
+                  animation: flow-forward 1.5s linear infinite;
+                }
+                .flow-active-highlight {
+                  stroke-dasharray: 6, 4;
+                  animation: flow-forward 0.9s linear infinite;
+                }
+              `}</style>
               <rect width="700" height="500" fill="url(#grid)" />
 
               {/* Edge Connections */}
@@ -485,17 +533,32 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
                   
                   const isHighlighted = selectedNode && (selectedNode.id === edge.source || selectedNode.id === edge.target);
                   
+                  // Compute vector offset to place arrow head perfectly on target node boundary
+                  const dx = targetNode.x! - sourceNode.x!;
+                  const dy = targetNode.y! - sourceNode.y!;
+                  const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                  
+                  const targetRadius = getNodeRadius(targetNode.type, targetNode.mentions);
+                  const x2 = targetNode.x! - (dx / dist) * (targetRadius + 5);
+                  const y2 = targetNode.y! - (dy / dist) * (targetRadius + 5);
+                  
+                  // Determine flow class
+                  const isDirected = edge.direction && edge.direction !== 'mutual';
+                  const flowClass = isDirected 
+                    ? (isHighlighted ? 'flow-active-highlight' : 'flow-active') 
+                    : '';
+
                   return (
                     <line
                       key={idx}
                       x1={sourceNode.x}
                       y1={sourceNode.y}
-                      x2={targetNode.x}
-                      y2={targetNode.y}
+                      x2={x2}
+                      y2={y2}
                       stroke={isHighlighted ? 'rgb(217, 119, 6)' : 'rgba(0, 0, 0, 0.08)'}
                       strokeWidth={isHighlighted ? Math.max(edge.weight / 1.5, 2.5) : Math.max(edge.weight / 2, 1.2)}
-                      strokeDasharray={isHighlighted ? 'none' : edge.weight < 2 ? '4,4' : 'none'}
-                      className="transition-all duration-150"
+                      markerEnd={isDirected ? `url(#${isHighlighted ? 'influence-arrow-active' : 'influence-arrow'})` : undefined}
+                      className={`transition-all duration-150 ${flowClass}`}
                     />
                   );
                 })}

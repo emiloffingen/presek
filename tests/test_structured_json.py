@@ -274,4 +274,33 @@ def test_zero_token_detect_echo_fallback(mock_analyze):
     assert res_unique == 1.0
 
 
+def test_determine_relationship_direction_heuristic():
+    """Verify that determine_relationship_direction correctly determines active influencer."""
+    from core.entities import determine_relationship_direction
+
+    # Test case 1: PERSON vs non-PERSON (PERSON should influence ORG)
+    res = determine_relationship_direction(
+        ent_a_name="Mickoski", ent_a_type="PERSON",
+        ent_b_name="Vlada", ent_b_type="ORG",
+        context_text="Vlada i Mickoski su se sastali."
+    )
+    assert res == "a_to_b"
+
+    # Test case 2: Order of first appearance (Same types - initiator appears first)
+    res2 = determine_relationship_direction(
+        ent_a_name="Vlada", ent_a_type="ORG",
+        ent_b_name="Skupština", ent_b_type="ORG",
+        context_text="Vlada je uputila predlog zakona u Skupštinu."
+    )
+    assert res2 == "a_to_b"
+
+    # Test case 3: Mutual fallback if no context is supplied
+    res3 = determine_relationship_direction(
+        ent_a_name="Vučić", ent_a_type="PERSON",
+        ent_b_name="Brnabić", ent_b_type="PERSON",
+        context_text=""
+    )
+    assert res3 == "mutual"
+
+
 
