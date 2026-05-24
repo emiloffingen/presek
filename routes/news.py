@@ -568,6 +568,10 @@ async def fetch_news_data(
                 continue
             if category and r.get("category") != category:
                 continue
+            # Filter articles by country to prevent cross-language leakage on language-specific homepages.
+            # We check if 'country' is populated in the article to remain compatible with mock articles in tests.
+            if country and r.get("country") and r.get("country") != country:
+                continue
             r["reading_time"] = calculate_reading_time(r.get("description", ""))
             cid = r["cluster_id"]
             clusters[cid].append(r)
@@ -578,7 +582,8 @@ async def fetch_news_data(
                     cluster_relevance[cid] = score
 
         ranked_clusters = [
-            annotate_cluster_articles(arts, prefer_recent=(sort == "recent")) for arts in clusters.values()
+            annotate_cluster_articles(arts, prefer_recent=(sort == "recent")) 
+            for arts in clusters.values() if arts
         ]
         if sort == "popular":
             ranked_clusters.sort(

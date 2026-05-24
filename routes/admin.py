@@ -183,3 +183,28 @@ async def retry_failed_tasks(authorized: bool = Depends(verify_admin)):
         "message": f"Pokrenuto ponovno izvršavanje {retry_count} zadataka.",
         "retried": retry_count,
     }
+
+
+@router.get("/admin/localization/rules")
+async def get_localization_rules(authorized: bool = Depends(verify_admin)):
+    """Fetches the active dynamic localization and tag normalization rules."""
+    from core.localization import localization_engine
+    return {
+        "status": "success",
+        "rules": localization_engine.get_rules_dict()
+    }
+
+
+@router.post("/admin/localization/rules")
+async def update_localization_rules(request: Request, authorized: bool = Depends(verify_admin)):
+    """Updates and hot-reloads the dynamic localization and tag normalization rules."""
+    from core.localization import localization_engine
+    try:
+        rules_payload = await request.json()
+        success = localization_engine.update_rules(rules_payload)
+        if success:
+            return {"status": "success", "message": "Rules updated and hot-reloaded successfully."}
+        else:
+            return {"status": "error", "message": "Invalid rules payload structure or keys."}
+    except Exception as e:
+        return {"status": "error", "message": f"Failed to update rules: {str(e)}"}
