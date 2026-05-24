@@ -88,6 +88,12 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [minWeight, setMinWeight] = useState(2);
   
+  // Group selection & synthesis states
+  const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
+  const [synthesis, setSynthesis] = useState<string | null>(null);
+  const [synthesisLoading, setSynthesisLoading] = useState(false);
+  const [citations, setCitations] = useState<any[]>([]);
+  
   // Physics simulation state
   const [simNodes, setSimNodes] = useState<Node[]>([]);
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -269,6 +275,67 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
     setSearchQuery('');
     setActiveEntity(null);
     setSelectedNode(null);
+    setSelectedNodes([]);
+    setSynthesis(null);
+    setCitations([]);
+  };
+
+  const handleNodeClick = (node: Node, e: React.MouseEvent) => {
+    if (e.shiftKey) {
+      setSelectedNodes(prev => {
+        if (prev.includes(node.id)) {
+          const next = prev.filter(id => id !== node.id);
+          if (next.length === 0) setSelectedNode(null);
+          else {
+            const lastId = next[next.length - 1];
+            const found = simNodes.find(n => n.id === lastId);
+            if (found) setSelectedNode(found);
+          }
+          return next;
+        } else {
+          setSelectedNode(node);
+          return [...prev, node.id];
+        }
+      });
+    } else {
+      setSelectedNode(node);
+      setSelectedNodes([node.id]);
+    }
+  };
+
+  const generateGroupSynthesis = () => {
+    if (selectedNodes.length === 0) return;
+    setSynthesisLoading(true);
+    setSynthesis(null);
+    setCitations([]);
+    
+    const API_URL = apiBaseUrl();
+    fetch(`${API_URL}/intelligence/synthesize-nodes`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        entities: selectedNodes,
+        lang: lang
+      })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'success') {
+          setSynthesis(data.synthesis);
+          setCitations(data.citations || []);
+        } else {
+          setSynthesis(data.message || 'Greška.');
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        setSynthesis('Greška prilikom povezivanja sa serverom.');
+      })
+      .finally(() => {
+        setSynthesisLoading(false);
+      });
   };
 
   // Helper for computing node styles
@@ -362,7 +429,95 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
               {t.sidebarTitle}
             </h3>
 
-            {selectedNode ? (
+            {selectedNodes.length > 1 ? (
+              <div className="flex flex-col gap-4 animate-fade-in">
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider font-black text-muted-foreground bg-nyt-border px-2 py-0.5 rounded-none block w-max mb-1">
+                    {lang === 'sr' ? 'GRUPNA SELEKCIJA' : 'ГРУПНА СЕЛЕКЦИЈА'}
+                  </span>
+                  <h4 className="font-serif font-black text-xl text-nyt-text">
+                    {lang === 'sr' ? 'Analiza aktera' : 'Анализа на актери'}
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5 mt-2 max-h-24 overflow-y-auto border border-nyt-border p-2 bg-background/50">
+                    {selectedNodes.map(name => (
+                      <span 
+                        key={name}
+                        onClick={() => {
+                          const found = nodes.find(n => n.id === name);
+                          if (found) setSelectedNode(found);
+                        }}
+                        className="cursor-pointer text-xs font-serif font-bold text-nyt-text hover:text-nyt-accent border border-nyt-border px-2 py-0.5 bg-card flex items-center gap-1.5 hover:border-nyt-accent"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-nyt-accent"></span>
+                        {name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border-t border-nyt-border pt-4">
+                  {!synthesis && !synthesisLoading && (
+                    <button
+                      onClick={generateGroupSynthesis}
+                      className="w-full bg-black text-white hover:bg-nyt-accent font-black py-3 text-xs uppercase tracking-wider transition-colors duration-150 flex items-center justify-center gap-2 border border-black hover:border-nyt-accent"
+                    >
+                      <TrendingUp size={16} />
+                      {lang === 'sr' ? 'Generiši analizu grupe' : 'Генерирај анализа на група'}
+                    </button>
+                  )}
+
+                  {synthesisLoading && (
+                    <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
+                      <Loader2 className="animate-spin text-nyt-accent mb-3" size={24} />
+                      <p className="font-serif italic text-xs">
+                        {lang === 'sr' ? 'Lokalni AI analitičar sastavlja izveštaj...' : 'Локалниот АИ аналитичар го составува извештајот...'}
+                      </p>
+                    </div>
+                  )}
+
+                  {synthesis && (
+                    <div className="flex flex-col gap-4 animate-fade-in">
+                      <div className="p-4 bg-card border-l-2 border-nyt-accent font-serif text-sm leading-relaxed text-nyt-text italic bg-background/30 max-h-72 overflow-y-auto scrollbar-thin">
+                        <p className="whitespace-pre-line">{synthesis}</p>
+                      </div>
+
+                      {citations.length > 0 && (
+                        <div className="flex flex-col gap-2 border-t border-nyt-border pt-3">
+                          <span className="text-muted-foreground uppercase font-black text-[9px]">
+                            {lang === 'sr' ? 'Korišćeni izvori' : 'Користени извори'}
+                          </span>
+                          <div className="grid grid-cols-1 gap-1.5 max-h-36 overflow-y-auto pr-1">
+                            {citations.map(cite => (
+                              <a
+                                key={cite.id}
+                                href={cite.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[11px] py-1.5 px-2 hover:bg-nyt-border cursor-pointer transition-colors duration-150 border border-nyt-border flex justify-between items-center"
+                              >
+                                <span className="font-serif font-bold text-nyt-text hover:text-nyt-accent truncate max-w-[80%]">
+                                  [{cite.id}] {cite.title}
+                                </span>
+                                <span className="font-mono text-[9px] uppercase tracking-wider bg-nyt-border px-1.5 py-0.5 text-muted-foreground font-black">
+                                  {cite.source}
+                                </span>
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <button
+                        onClick={() => { setSynthesis(null); setCitations([]); }}
+                        className="w-full mt-2 border border-nyt-border text-muted-foreground font-black py-2 text-xs hover:bg-nyt-border transition-colors duration-150 uppercase tracking-wider"
+                      >
+                        {lang === 'sr' ? 'Nova analiza' : 'Нова анализа'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : selectedNode ? (
               <div className="flex flex-col gap-4 animate-fade-in">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
@@ -577,15 +732,19 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
                       transform={`translate(${node.x},${node.y})`}
                       className="cursor-pointer group"
                       onMouseDown={(e) => handleNodeMouseDown(node.id, e)}
-                      onClick={() => setSelectedNode(node)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleNodeClick(node, e);
+                      }}
                     >
                       {/* Selection shadow glow */}
-                      {isSelected && (
+                      {selectedNodes.includes(node.id) && (
                         <circle
                           r={radius + 8}
-                          fill="rgba(0, 0, 0, 0.04)"
+                          fill="rgba(217, 119, 6, 0.04)"
                           stroke="rgb(217, 119, 6)"
-                          strokeWidth="2"
+                          strokeWidth={isSelected ? "2.5" : "1.5"}
+                          strokeDasharray={isSelected ? "none" : "3,3"}
                           className="animate-pulse"
                         />
                       )}

@@ -1568,3 +1568,64 @@ def test_fastapi_network_graph(mock_all):
         ))
         assert data_filtered["status"] == "success"
 
+
+def test_fastapi_synthesize_nodes_endpoint(mock_all):
+    import sys
+    from unittest.mock import MagicMock
+    
+    # Pre-emptively mock the local analyst module to prevent importing numpy/llama_cpp C-extensions twice
+    mock_analyst = MagicMock()
+    mock_analyst.analyze.return_value = "Generisana sinteza izvestaja."
+    
+    mock_local_analyst_module = MagicMock()
+    mock_local_analyst_module.analyst = mock_analyst
+    sys.modules["nlp.local_analyst"] = mock_local_analyst_module
+
+    import routes.intelligence as intelligence
+    from routes.intelligence import NodeSynthesisRequest
+    import datetime
+
+    async def execute_side_effect(query, params=None):
+        if "FROM entity_mentions_daily" in query:
+            return [{"cluster_id": "cluster_abc"}]
+        if "FROM articles" in query:
+            return [
+                {
+                    "title": "Sastanak u Vladi",
+                    "description": "Vučić i Mickoski razgovarali su u zgradi Vlade.",
+                    "source": "Presek",
+                    "link": "https://presek.rs/sastanak",
+                    "created_at": datetime.datetime.now(),
+                    "cluster_id": "cluster_abc"
+                }
+            ]
+        raise AssertionError(f"Unexpected query: {query}")
+
+    mock_all["db"].async_execute.side_effect = execute_side_effect
+
+    # Create dummy Starlette Request
+    from starlette.requests import Request
+    mock_request = Request({
+        "type": "http",
+        "path": "/api/intelligence/synthesize-nodes",
+        "method": "POST",
+        "client": ("127.0.0.1", 80),
+        "headers": [],
+    })
+
+    payload = NodeSynthesisRequest(
+        entities=["Vučić", "Mickoski"],
+        lang="sr"
+    )
+
+    data = asyncio.run(intelligence.synthesize_nodes(
+        request=mock_request,
+        payload=payload
+    ))
+
+    assert data["status"] == "success"
+    assert "Generisana sinteza izvestaja" in data["synthesis"]
+    assert len(data["citations"]) == 1
+    assert data["citations"][0]["title"] == "Sastanak u Vladi"
+    assert data["citations"][0]["source"] == "Presek"
+

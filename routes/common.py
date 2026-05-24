@@ -217,6 +217,7 @@ _RATE_LIMITED_API_PATHS = {
     "/api/intelligence/cluster/{cluster_id}/analyst",
     "/api/intelligence/top-entities",
     "/api/intelligence/network-graph",
+    "/api/intelligence/synthesize-nodes",
     "/api/intelligence/live-map",
     "/api/intelligence/pulse-overview",
     "/api/intelligence/compare-sources",

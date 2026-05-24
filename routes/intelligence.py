@@ -995,8 +995,119 @@ async def get_network_graph(
         "edges": edges
     }
     
-    set_cache(cache_key, result, ttl=300)
     return result
+
+
+class NodeSynthesisRequest(BaseModel):
+    entities: List[str]
+    lang: Optional[str] = "sr"
+
+
+@router.post("/intelligence/synthesize-nodes")
+@custom_rate_limit("10/minute")
+async def synthesize_nodes(request: Request, payload: NodeSynthesisRequest):
+    """
+    Local Analyst: Dynamically synthesize a broadsheet intelligence briefing
+    for a multi-select group of entities/nodes in recent news.
+    """
+    entities = [e.strip() for e in payload.entities if e.strip()]
+    if not entities:
+        return {"status": "error", "message": "Nije izabran nijedan entitet."}
+
+    lang = payload.lang or "sr"
+
+    # Query clusters that mention ANY of the target entities within the last 14 days
+    rows = await db.async_execute(
+        """
+        SELECT DISTINCT cluster_id 
+        FROM entity_mentions_daily 
+        WHERE entity_name = ANY(%s) AND day >= CURRENT_DATE - INTERVAL '14 days'
+        LIMIT 15
+        """,
+        (entities,),
+    )
+    
+    cluster_ids = [r["cluster_id"] for r in rows]
+    if not cluster_ids:
+        msg = "Nema nedavnih zabeleženih interakcija u vestima za izabrane entitete u poslednjih 14 dana." if lang == "sr" else "Нема неодамнешни забележани интеракции во вестите за избраните ентитети во последните 14 дена."
+        return {
+            "status": "success",
+            "synthesis": msg,
+            "citations": []
+        }
+
+    # Fetch top articles from these clusters
+    articles = await db.async_execute(
+        """
+        SELECT title, description, source, link, created_at, cluster_id
+        FROM articles
+        WHERE cluster_id = ANY(%s)
+        ORDER BY created_at DESC
+        LIMIT 25
+        """,
+        (cluster_ids,),
+    )
+
+    if not articles:
+        msg = "Nema nedavnih članaka za ove entitete." if lang == "sr" else "Нема неодамнешни написи за овие ентитети."
+        return {
+            "status": "success",
+            "synthesis": msg,
+            "citations": []
+        }
+
+    # Format context for Gemma 2 Local Analyst
+    context_lines = []
+    citations = []
+    for idx, art in enumerate(articles):
+        cite_id = idx + 1
+        title = art["title"] or ""
+        desc = art["description"] or ""
+        src = art["source"] or ""
+        context_lines.append(f"[{cite_id}] NASLOV: {title} | IZVOR: {src}\nOPIS: {desc}\n")
+        citations.append({
+            "id": cite_id,
+            "title": title,
+            "source": src,
+            "link": art["link"] or "#"
+        })
+
+    context_text = "\n".join(context_lines)
+
+    # Construct LLM prompt
+    from nlp.local_analyst import analyst
+    
+    if lang == "sr":
+        system_prompt = (
+            "Ti si vrhunski politički analitičar za Presek. Napravi sažetu, objektivnu, visoko-profesionalnu sintezu "
+            "interakcija, sukoba ili saveza između sledećih entiteta: " + ", ".join(entities) + ".\n"
+            "Koristi isključivo priloženi novinski kontekst. Citiraj izvore koristeći brojeve u formatu [1], [2], itd.\n"
+            "Odgovori ISKLJUČIVO na srpskom jeziku (ekavica). Piši u stilu ozbiljne analize (New York Times stil)."
+        )
+    else:
+        system_prompt = (
+            "Ти си врвен политички аналитичар за Пресек. Направи концизна, објективна, високо-професионална синтеза "
+            "на интеракциите, конфликтите или сојузите меѓу следниве ентитети: " + ", ".join(entities) + ".\n"
+            "Користи го исклучиво приложениот контекст од вести. Цитирај ги изворите користејќи броеви во формат [1], [2], итн.\n"
+            "Одговори ИСКЛУЧИВО на стандарден литературен македонски јазик. Пиши во стил на сериозна анализа."
+        )
+
+    prompt = f"ENTITETI: {', '.join(entities)}\n\nKONTEKST VESTI:\n{context_text[:6000]}"
+
+    try:
+        synthesis_text = analyst.analyze(prompt, system_prompt, max_tokens=768, lang=lang)
+    except Exception as e:
+        log.error(f"[analyst] Group synthesis failed: {e}")
+        synthesis_text = f"Greška prilikom analize lokalnog modela: {e}"
+
+    if not synthesis_text:
+        synthesis_text = "Nije bilo moguće generisati analizu." if lang == "sr" else "Не беше можно да се генерира анализа."
+
+    return {
+        "status": "success",
+        "synthesis": synthesis_text,
+        "citations": citations
+    }
 
 
 @router.get("/entity-graph/{entity_name}")
