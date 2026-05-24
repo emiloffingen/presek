@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 from core.config import API_MAX_PAGE, API_MAX_Q_LEN, BREAKING_SCORE_THRESHOLD
 from core.database import db_manager as db
-from core.language import is_cyrillic_south_slavic
+from core.language import is_cyrillic_south_slavic, transliterate_cyr_to_lat
 from nlp import filter_cluster_tags
 from utils import (
     _coerce_datetime,
@@ -129,9 +129,10 @@ _PUBLIC_ARTICLE_FIELDS = {
 }
 
 
-def _public_article_payload(article):
+def _public_article_payload(article, lang="sr"):
     import datetime
 
+    from core.language import transliterate_cyr_to_lat
     from nlp.categories import normalize_headline
 
     res = {}
@@ -139,11 +140,26 @@ def _public_article_payload(article):
         if key not in _PUBLIC_ARTICLE_FIELDS:
             continue
         if key == "title":
-            res[key] = normalize_headline(value)
-        elif key == "description" and value and len(str(value)) > 400:
-            res[key] = str(value)[:397] + "..."
-        elif key == "summary" and value and len(str(value)) > 500:
-            res[key] = str(value)[:497] + "..."
+            val = normalize_headline(value)
+            if lang == "sr":
+                val = transliterate_cyr_to_lat(val)
+            res[key] = val
+        elif key == "description" and value:
+            val = str(value)
+            if lang == "sr":
+                val = transliterate_cyr_to_lat(val)
+            if len(val) > 400:
+                res[key] = val[:397] + "..."
+            else:
+                res[key] = val
+        elif key == "summary" and value:
+            val = str(value)
+            if lang == "sr":
+                val = transliterate_cyr_to_lat(val)
+            if len(val) > 500:
+                res[key] = val[:497] + "..."
+            else:
+                res[key] = val
         elif key == "created_at" and value:
             if isinstance(value, (datetime.datetime, datetime.date)):
                 # If it's a naive datetime, assume UTC and append Z
@@ -697,7 +713,7 @@ async def fetch_news_data(
             summary = summary_map.get(cid, {})
             return {
                 "cluster_id": cid,
-                "articles": [_public_article_payload(article) for article in arts],
+                "articles": [_public_article_payload(article, lang=lang) for article in arts],
                 "representative_image": meta.get("representative_image"),
                 "dominant_color": meta.get("dominant_color"),
                 "synthetic_headline": summary.get("synthetic_headline"),
@@ -714,7 +730,7 @@ async def fetch_news_data(
                 "has_synthesis": cid in synthesis_ids,
                 "has_fact_check": any(a.get("is_fact_check") for a in arts),
                 "has_balanced": is_balanced(arts),
-                "entities": main.get("entity_names", []),
+                "entities": [transliterate_cyr_to_lat(e) for e in main.get("entity_names", [])] if lang == "sr" else main.get("entity_names", []),
                 **editorial,
             }
 
@@ -788,7 +804,7 @@ async def semantic_search(
             result.append(
                 {
                     "cluster_id": cid,
-                    "articles": [_public_article_payload(article) for article in arts],
+                    "articles": [_public_article_payload(article, lang=lang) for article in arts],
                     "similarity": round(float(main.get("similarity", 0)), 4),
                     "reading_time": main.get("reading_time", 1),
                     "score": round(score_cluster(arts), 3),
@@ -831,7 +847,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
         articles = annotate_cluster_articles(rows, prefer_recent=True)
         for a in articles:
             a["reading_time"] = calculate_reading_time(a.get("description", ""))
-        public_articles = [_public_article_payload(article) for article in articles]
+        public_articles = [_public_article_payload(article, lang=lang) for article in articles]
 
         log.debug(f"[debug] Fetching summary for cluster_id: '{cluster_id}' ({lang})")
         s_row = await db.async_execute_one(
