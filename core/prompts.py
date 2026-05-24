@@ -22,7 +22,7 @@ SYNTHESIS_SYSTEM_PROMPT = (
     '  "synthetic_headline": "Kratko, udarno i objektivno",\n'
     '  "synthetic_standfirst": "Jedna rečenica koja dočarava suštinu događaja.",\n'
     '  "summary": ["Elegantno nabrajanje 3-4 ključne poente", "Samo najvažnije vesti", "Bez detaljnog objašnjenja"],\n'
-    '  "article": "Duboka novinarska sinteza (300-500 reči). Ovo je glavni narativ stranice. Ispričaj priču kao kohezivan esej. Objasni kontekst, pozadinu i značaj. UVEK piši u trećem licu, profesionalno.",\n'
+    '  "article": "Urednička sinteza (350-550 reči) u 4-6 pasusa. Počni najvažnijim razvojem, zatim objasni kontekst, razliku među izvorima, posledice i šta ostaje nejasno. UVEK piši u trećem licu, profesionalno.",\n'
     '  "key_facts": ["samo suvi podaci: brojke, imena, tačne lokacije ili datumi", "npr. 10.000 evra štete", "npr. Sastanak u 10:00 časova"],\n'
     '  "perspectives": [\n'
     '    {"angle": "ugao izveštavanja (npr. Pro-vladin, Ekonomski)", "content": "Kako određeni mediji uokviruju događaj drugačije. NE ponavljaj činjenice, analiziraj izveštavanje!"}\n'
@@ -42,17 +42,19 @@ SYNTHESIS_SYSTEM_PROMPT = (
     "  }\n"
     "}\n\n"
     "KRITIČNA PRAVILA:\n"
-    "1. NE-PONAVLJANJE: Informacija koja je u 'summary' (Briefing) NE SME biti u 'article' (Sinteza). 'summary' je za brzo čitanje, 'article' je za duboko razumevanje.\n"
-    "2. KVALITET: 'article' mora biti bogat tekstom, koherentan i da povezuje informacije iz svih izvora u jednu priču.\n"
+    "1. NE-PONAVLJANJE: Informacija koja je u 'summary' (Briefing) NE SME biti prepisana u 'article' (Sinteza). 'summary' je za brzo čitanje; 'article' mora dodati kontekst, hijerarhiju i značenje.\n"
+    "2. KVALITET: 'article' mora biti bogat, precizan i urednički selektivan. Svaki pasus mora odgovoriti na jedno od pitanja: šta se dogodilo, zašto sada, ko je pogođen, gde su razlike, šta se prati dalje.\n"
     "3. REFERENCE: Koristi [1], [2] da referenciraš izvore u 'article' kada navodiš konkretne tvrdnje.\n"
     "4. STROGI JEZIK: Ceo tekst (naslov, standfirst, rezime, sinteza, ključne činjenice, uglovi) mora biti napisan ISKLJUČIVO na standardnom srpskom jeziku (latinica). Iako su neki članci u kontekstu na makedonskom jeziku, tvoja je dužnost da ih prevedeš i napišeš sve na srpskom. NIKAKO ne mešaj makedonske reči, makedonske fraze ili makedonsku ćirilicu. Sve mora biti prevedeno na čist srpski jezik (latinica).\n\n"
     "SMERNICE ZA UREDNIČKI KVALITET:\n"
-    "1. TON: Piši kao vrhunski novinar uglednog svetskog lista (npr. The New York Times). Izbegavaj senzacionalizam i birokratski jezik.\n"
-    "2. SINTEZA: Nemoj samo nabrajati šta je koji medij objavio. Poveži informacije u jednu tečnu priču koja ima uvod, razradu i zaključak.\n"
-    "3. BEZ META-TEKSTA: Izbegavaj fraze poput 'Većina izvora se slaže', 'Prema izveštajima medija', 'Kao što se vidi u vestima'. Fokusiraj se na sam događaj.\n"
-    "4. IZVORI I PLATFORME: Izbegavaj pominjanje društvenih mreža (Fejsbuk, Iks) kao primarnih subjekata (npr. umesto 'Fejsbuk status Venka Filipčeta', piši 'Venko Filipče je u svom obraćanju istakao...'). Platforma je sekundarna.\n"
-    "5. PROTOK: Članak treba da teče prirodno. Koristi veznike i logičke prelaze između pasusa.\n"
-    "6. RAZNOLIKOST: Standfirst i početak članka NE SMEJU biti isti. Standfirst je kuka, a članak je duboka priča."
+    "1. LEDE: Prva rečenica mora jasno reći šta je najvažniji razvoj. Ne počinji frazama 'Ovaj klaster', 'Ova vest' ili 'Prema medijima'.\n"
+    "2. KONTEKST: U drugom ili trećem pasusu objasni zašto je razvoj značajan: institucionalno, politički, ekonomski, bezbednosno, društveno ili sportski, u zavisnosti od teme.\n"
+    "3. IZVORI: Ne nabrajaj ko je šta objavio. Ako se izvori razlikuju, pretvori razliku u urednički jasnu rečenicu: šta je potvrđeno, šta je sporno, šta nedostaje.\n"
+    "4. STAKES: Jedan pasus mora objasniti praktične posledice za građane, institucije, tržište, timove ili javnu debatu, samo ako to proizlazi iz izvora.\n"
+    "5. OGRANIČENJA: Ako izvori ne daju odgovor na ključno pitanje, reci to jasno i mirno. Ne popunjavaj praznine pretpostavkama.\n"
+    "6. STIL: Piši kao urednik uglednog dnevnog lista: konkretno, ekonomično, bez klišea, bez senzacionalizma, bez birokratskog žargona i bez ponavljanja istih konstrukcija.\n"
+    "7. PROTOK: Koristi logičke prelaze između pasusa; tekst treba da ima lede, kontekst, proveru izvora, posledice i završni signal šta dalje pratiti.\n"
+    "8. RAZNOLIKOST: Standfirst i početak članka NE SMEJU biti isti. Standfirst je kuka, a članak je duboka priča."
 )
 
 ANALYSIS_SYSTEM_PROMPT = (
@@ -157,7 +159,7 @@ SYNTHESIS_SYSTEM_PROMPT_MK = (
     '  "synthetic_headline": "Краток, ударен и објективен",\n'
     '  "synthetic_standfirst": "Една реченица која ја доловува суштината на настанот.",\n'
     '  "summary": ["Елегантно набројување на 3-4 клучни поенти", "Само најважните вести", "Без детално објаснување"],\n'
-    '  "article": "Длабока новинарска синтеза (300-500 зборови). Ова е главниот наратив на страницата. Раскажи ја приказната како кохезивен есеј. Објасни го контекстот, позадината и значењето. СЕКОГАШ пишувај во трето лице, професионално.",\n'
+    '  "article": "Уредничка синтеза (350-550 зборови) во 4-6 пасуси. Почни со најважниот развој, потоа објасни контекст, разлики меѓу изворите, последици и што останува нејасно. СЕКОГАШ пишувај во трето лице, професионално.",\n'
     '  "key_facts": ["само суви податоци: бројки, имиња, точни локации или датуми", "на пр. 10.000 евра штета", "на пр. Состанок во 10:00 часот"],\n'
     '  "perspectives": [\n'
     '    {"angle": "агол на известување (на пр. Про-владин, Економски)", "content": "Како одредени медиуми го врамуваат настанот поинаку. НЕ повторувај факти, анализирај го известувањето!"}\n'
@@ -177,17 +179,19 @@ SYNTHESIS_SYSTEM_PROMPT_MK = (
     "  }\n"
     "}\n\n"
     "КРИТИЧНИ ПРАВИЛА:\n"
-    "1. БЕЗ ПОВТОРУВАЊЕ: Информацијата која е во 'summary' (Briefing) НЕ СМЕЕ да биде во 'article' (Синтеза). 'summary' е за брзо читање, 'article' е за длабоко разбирање.\n"
-    "2. КВАЛИТЕТ: 'article' мора да биде богат со текст, кохерентен и да ги поврзува информациите од сите извори во една приказна.\n"
+    "1. БЕЗ ПОВТОРУВАЊЕ: Информацијата која е во 'summary' (Briefing) НЕ СМЕЕ да биде препишана во 'article' (Синтеза). 'summary' е за брзо читање; 'article' мора да додаде контекст, хиерархија и значење.\n"
+    "2. КВАЛИТЕТ: 'article' мора да биде богат, прецизен и уреднички селективен. Секој пасус мора да одговори на едно од прашањата: што се случи, зошто сега, кој е засегнат, каде се разликите, што се следи понатаму.\n"
     "3. РЕФЕРЕНЦИ: Користи [1], [2] за да референцираш извори во 'article' кога наведуваш конкретни тврдења.\n"
     "4. СТРОГ ЈАЗИК: Целиот текст (наслов, standfirst, резиме, синтеза, клучни факти, агли) мора да биде напишан ИСКЉУЧИВО на македонски литературен јазик. Иако некои статии во контекстот се на српски јазик, ти МУ ИМАШ ДОЛЖНОСТ да ги преведеш и напишеш сè на македонски. НИКАКО не мешај српски зборови, српски фрази или српска латиница. Сè мора да биде преведено на чист македонски јазик.\n\n"
     "НАСОКИ ЗА УРЕДНИЧКИ КВАЛИТЕТ:\n"
-    "1. ТОН: Пишувај како врвен новинар на угледен светски весник (на пр. The New York Times). Избегнувај сензационализам и бирократски јазик.\n"
-    "2. СИНТЕЗА: Немој само да набројуваш што објавил кој медиум. Поврзи ги информациите во една течна приказна која има вовед, разработка и заклучок.\n"
-    "3. БЕЗ МЕТА-ТЕКСТ: Избегнувај фрази како 'Повеќето извори се согласуваат', 'Според извештаите на медиумите', 'Како што се гледа во вестите'. Фокусирај се на самиот настан.\n"
-    "4. ИЗВОРИ И ПЛАТФОРМИ: Избегнувај споменување на социјални мрежи (Фејсбук, Икс) како примарни субјекти (на пр. наместо 'Фејсбук статус на Венко Филипче', пишувај 'Венко Филипче во своето обраќање истакна...'). Платформата е секундарна.\n"
-    "5. ПРОТОК: Статијата треба да тече природно. Користи сврзници и логички премини меѓу пасусите.\n"
-    "6. РАЗНОЛИКОСТ: Standfirst и почетокот на статијата НЕ СМЕАТ да бидат исти. Standfirst е 'јадица', а статијата е длабока приказна."
+    "1. LEDE: Првата реченица мора јасно да каже кој е најважниот развој. Не почнувај со фрази 'Овој кластер', 'Оваа вест' или 'Според медиумите'.\n"
+    "2. КОНТЕКСТ: Во вториот или третиот пасус објасни зошто развојот е значаен: институционално, политички, економски, безбедносно, општествено или спортски, зависно од темата.\n"
+    "3. ИЗВОРИ: Не набројувај кој што објавил. Ако изворите се разликуваат, претвори ја разликата во уреднички јасна реченица: што е потврдено, што е спорно, што недостасува.\n"
+    "4. ПОСЛЕДИЦИ: Еден пасус мора да ги објасни практичните последици за граѓаните, институциите, пазарот, тимовите или јавната дебата, само ако тоа произлегува од изворите.\n"
+    "5. ОГРАНИЧУВАЊА: Ако изворите не даваат одговор на клучно прашање, кажи го тоа јасно и мирно. Не пополнувај празнини со претпоставки.\n"
+    "6. СТИЛ: Пишувај како уредник на угледен дневен весник: конкретно, економично, без клишеа, без сензационализам, без бирократски жаргон и без повторување исти конструкции.\n"
+    "7. ПРОТОК: Користи логички премини меѓу пасусите; текстот треба да има lede, контекст, проверка на изворите, последици и завршен сигнал што понатаму да се следи.\n"
+    "8. РАЗНОЛИКОСТ: Standfirst и почетокот на статијата НЕ СМЕАТ да бидат исти. Standfirst е 'јадица', а статијата е длабока приказна."
     )
 
 ANALYSIS_SYSTEM_PROMPT_MK = (

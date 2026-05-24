@@ -11,11 +11,19 @@ interface Props {
     entities?: string[];
 }
 
-const { hasStrongLeadNarrative, generatedArticle, synthesisItems, hasCitationSources, keyFacts, entities = [] } = Astro.props;
+const { hasStrongLeadNarrative, generatedArticle, synthesisItems, hasCitationSources, entities = [] } = Astro.props;
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
-console.log("DEBUG EditorialNarrative:", { hostHeader, url: Astro.url.toString(), lang });
+const isSr = lang === 'sr';
+const narrativeParagraphs = String(generatedArticle || '')
+    .split('\n')
+    .map((paragraph: string) => paragraph.trim())
+    .filter(Boolean);
+const narrativeKicker = isSr ? 'Urednička sinteza' : 'Уредничка синтеза';
+const narrativeMeta = isSr
+    ? `${narrativeParagraphs.length || 1} pasusa konteksta, provere i posledica`
+    : `${narrativeParagraphs.length || 1} пасуси контекст, проверка и последици`;
 
 const renderSynthesisHtml = (text: string) => {
     let html = sharedRenderSynthesisHtml(text, hasCitationSources);
@@ -39,7 +47,11 @@ const renderSynthesisHtml = (text: string) => {
 <div class="editorial-narrative prose-editorial">
 	{generatedArticle ? (
 		<div class="narrative-body font-serif">
-			{generatedArticle.split('\n').filter((p: string) => p.trim()).map((paragraph: string, idx: number) => (
+            <div class="narrative-meta">
+                <span>{narrativeKicker}</span>
+                <small>{narrativeMeta}</small>
+            </div>
+			{narrativeParagraphs.map((paragraph: string, idx: number) => (
 				<p class:list={["narrative-p", idx === 0 ? "drop-cap" : ""]} set:html={renderSynthesisHtml(paragraph)}></p>
 			))}
 		</div>
@@ -141,8 +153,33 @@ const renderSynthesisHtml = (text: string) => {
 		color: var(--foreground);
 		margin-bottom: 2rem;
 		text-align: left;
-        letter-spacing: -0.012em;
+        letter-spacing: 0;
 	}
+
+    .narrative-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.9rem;
+        margin-bottom: 1.75rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
+        font-family: var(--font-sans);
+        text-transform: uppercase;
+    }
+
+    .narrative-meta span {
+        font-size: 0.72rem;
+        font-weight: 950;
+        letter-spacing: 0;
+        color: var(--foreground);
+    }
+
+    .narrative-meta small {
+        font-size: 0.66rem;
+        font-weight: 800;
+        letter-spacing: 0;
+        color: var(--muted-foreground);
+    }
 
 	.narrative-p.drop-cap::first-letter {
 		float: left;

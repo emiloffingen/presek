@@ -211,8 +211,8 @@ const hasGeneratedNarrative = Boolean(generatedArticle && generatedArticle.trim(
 const hasSublimat = synthesisItems.length > 0;
 const hasFactcheck = Boolean(verificationReport && (verificationReport.agreements?.length > 0 || verificationReport.conflicts?.length > 0));
 const hasStrongLeadNarrative = hasGeneratedNarrative && (cluster?.articles?.length || 0) >= 3;
-const primaryNarrativeLabel = 'SINTEZA';
-const primaryNarrativeEyebrow = 'REDAKCISKI PREGLED';
+const primaryNarrativeLabel = lang === 'sr' ? 'SINTEZA' : 'СИНТЕЗА';
+const primaryNarrativeEyebrow = lang === 'sr' ? 'REDAKCIJSKI PREGLED' : 'УРЕДНИЧКИ ПРЕГЛЕД';
 const conflictsCount = verificationReport?.conflicts?.length || 0;
 
 const sentimentData = cluster?.sentiment ? {
@@ -518,6 +518,7 @@ const articleSchema = cluster ? {
 							<div class="section-eyebrow mb-16">
 								<Newspaper size={16} className="text-muted-foreground" />
 								<h2 class="section-label">{primaryNarrativeLabel}</h2>
+                                <span class="section-sub-label">{primaryNarrativeEyebrow}</span>
 								<div class="section-divider"></div>
 							</div>
 
@@ -891,6 +892,15 @@ const articleSchema = cluster ? {
 		letter-spacing: 0.2em;
 		text-transform: uppercase;
 	}
+
+    .section-sub-label {
+        font-family: var(--font-sans);
+        font-size: 0.65rem;
+        font-weight: 850;
+        letter-spacing: 0;
+        text-transform: uppercase;
+        color: var(--muted-foreground);
+    }
 
 	.section-divider {
 		flex: 1;

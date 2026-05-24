@@ -53,6 +53,11 @@ _T = {
         "najdirektno": "Најдиректно од достапните извори: {text}",
         "sto_se_slucuva": "Што се случува",
         "sledeno_od": "Следено од",
+        "znacenje": "Значење",
+        "sto_ostanuva": "Што останува отворено",
+        "urednicki_pregled": "Уреднички преглед базиран на {count} извори.",
+        "izvori_pratat_ista_linija": "Достапните извори ја следат истата основна линија, но не даваат еднаква тежина на сите детали.",
+        "naredno_pratenje": "Следниот сигнал ќе биде дали официјалните актери ќе ги потврдат деталите што сега остануваат недоволно разјаснети.",
     },
     "sr": {
         "klucen_razvoj": "Ključni razvoj",
@@ -88,6 +93,11 @@ _T = {
         "najdirektno": "Najdirektnije iz dostupnih izvora: {text}",
         "sto_se_slucuva": "Šta se dešava",
         "sledeno_od": "Prati",
+        "znacenje": "Značaj",
+        "sto_ostanuva": "Šta ostaje otvoreno",
+        "urednicki_pregled": "Urednički pregled baziran na {count} izvora.",
+        "izvori_pratat_ista_linija": "Dostupni izvori prate istu osnovnu liniju, ali ne daju jednaku težinu svim detaljima.",
+        "naredno_pratenje": "Sledeći signal biće da li će zvanični akteri potvrditi detalje koji za sada ostaju nedovoljno razjašnjeni.",
     },
 }
 
@@ -390,6 +400,40 @@ def _extract_sports_scores(text):
     return scores
 
 
+def _topic_stakes_sentence(text, lang="mk"):
+    lowered = str(text or "").casefold()
+    is_sr = lang == "sr"
+    if any(term in lowered for term in ("izbor", "glasanje", "vlada", "sobranie", "skupština", "парламент", "избор", "влада", "собрание")):
+        return (
+            "Politički značaj je u tome što razvoj može pomeriti odnose među institucijama, partijama ili javnim očekivanjima."
+            if is_sr
+            else "Политичкото значење е во тоа што развојот може да ги помести односите меѓу институциите, партиите или јавните очекувања."
+        )
+    if any(term in lowered for term in ("cena", "inflacija", "budzet", "plata", "tržište", "ekonom", "цена", "инфлација", "буџет", "плата", "пазар")):
+        return (
+            "Ekonomska težina priče je u mogućem uticaju na troškove, budžete ili poslovne odluke."
+            if is_sr
+            else "Економската тежина на приказната е во можниот ефект врз трошоците, буџетите или деловните одлуки."
+        )
+    if any(term in lowered for term in ("policija", "sud", "tužila", "istraga", "uhap", "полиција", "суд", "обвинител", "истрага", "уапс")):
+        return (
+            "Institucionalni značaj zavisi od toga koliko će postupak biti potkrepljen proverljivim činjenicama i daljim odlukama nadležnih."
+            if is_sr
+            else "Институционалното значење зависи од тоа колку постапката ќе биде поткрепена со проверливи факти и понатамошни одлуки на надлежните."
+        )
+    if any(term in lowered for term in ("gol", "utakmica", "liga", "fudbal", "košarka", "натпревар", "гол", "лига", "фудбал", "кошарка")):
+        return (
+            "Sportski značaj se meri kroz posledice po rezultat, poredak i pritisak pred naredne mečeve."
+            if is_sr
+            else "Спортското значење се мери преку последиците врз резултатот, поредокот и притисокот пред следните натпревари."
+        )
+    return (
+        "Značaj razvoja je u tome što povezuje neposredan događaj sa širim javnim interesom i narednim odlukama koje treba pratiti."
+        if is_sr
+        else "Значењето на развојот е во тоа што го поврзува непосредниот настан со поширокиот јавен интерес и следните одлуки што треба да се следат."
+    )
+
+
 def summarize_locally(text, sentence_count=3, topic=None, title=None, lang="mk"):
     """Non-AI summarizer for news-like text."""
     if not text or len(text) < 100:
@@ -586,6 +630,14 @@ def summarize_article_fallback(title, description=None, topic=None, lang="mk"):
 def _join_fragments(parts):
     clean = [str(part or "").strip(" .,;:") for part in parts if str(part or "").strip(" .,;:")]
     return "; ".join(clean)
+
+
+def _sentence(text):
+    clean = str(text or "").strip()
+    clean = re.sub(r"\s+", " ", clean).strip(" ;:")
+    if not clean:
+        return ""
+    return clean if clean.endswith((".", "!", "?", "…")) else f"{clean}."
 
 
 def _extract_comparison_entities(text):
@@ -942,23 +994,35 @@ def synthesize_cluster_fallback(articles, lang="mk"):
 
     summary = "\n".join(summary_lines)
 
-    # 3. Build a "Generated Article"
+    # 3. Build an editorial fallback narrative, not a mechanical digest.
     article_body = []
     if update_point and update_point.casefold() != lead_title.casefold():
-        article_body.append(f"{lead_title}. {update_point}.")
+        article_body.append(f"{_sentence(lead_title)} {_sentence(update_point)}")
     else:
-        article_body.append(f"{lead_title}. {t['povece_mediumi']}")
+        article_body.append(f"{_sentence(lead_title)} {_sentence(t['povece_mediumi'])}")
 
-    # Insert the fused details paragraph
-    details_paragraph = " ".join([s["text"] for s in selected_sentences])
-    if details_paragraph:
-        article_body.append(details_paragraph)
+    details = [_sentence(s["text"]) for s in selected_sentences if s.get("text")]
+    if details:
+        article_body.append(" ".join(details[:2]))
 
+    context_basis = " ".join([lead_title, desc, " ".join(details)])
+    article_body.append(_sentence(_topic_stakes_sentence(context_basis, lang=lang)))
+
+    source_paragraph_parts = []
     if comparison.get("common_line"):
-        article_body.append(comparison["common_line"])
-
+        source_paragraph_parts.append(_sentence(comparison["common_line"]))
+    else:
+        source_paragraph_parts.append(_sentence(t["izvori_pratat_ista_linija"]))
     if comparison.get("difference_points"):
-        article_body.append(comparison["difference_points"][0])
+        source_paragraph_parts.append(_sentence(comparison["difference_points"][0]))
+    article_body.append(" ".join(source_paragraph_parts))
+
+    if comparison.get("open_points"):
+        article_body.append(f"{t['sto_ostanuva']}: {_sentence(comparison['open_points'][0])}")
+    elif len(articles) <= 1:
+        article_body.append(_sentence(t["faza_razvoj"]))
+    else:
+        article_body.append(_sentence(t["naredno_pratenje"]))
 
     generated_article = "\n\n".join(article_body)
 
@@ -984,7 +1048,7 @@ def synthesize_cluster_fallback(articles, lang="mk"):
         "perspectives": perspectives[:3],
         "synthetic_headline": lead_title,
         "generated_article": generated_article,
-        "synthetic_standfirst": t["sistemski_pregled"].format(count=len(articles)),
+        "synthetic_standfirst": t["urednicki_pregled"].format(count=len(articles)),
     }
 
 
