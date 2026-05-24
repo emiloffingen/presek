@@ -558,7 +558,7 @@ async def get_cluster_share_card(cluster_id: str):
 
         # 8. Footer Info
         draw.text((90, 550), "SITE izvori NA EDNO MESTO", fill=(156, 163, 175), font=f_footer)
-        draw.text((1110, 550), "presek.live", fill=(255, 255, 255), font=f_footer, anchor="ra")
+        draw.text((1110, 550), "presek.rs", fill=(255, 255, 255), font=f_footer, anchor="ra")
 
         out = BytesIO()
         img.save(out, format="PNG")
