@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 from core.config import API_MAX_PAGE, API_MAX_Q_LEN, BREAKING_SCORE_THRESHOLD
 from core.database import db_manager as db
-from core.language import is_cyrillic_south_slavic, transliterate_cyr_to_lat
+from core.language import is_cyrillic_south_slavic, transliterate_cyr_to_lat, transliterate_lat_to_cyr
 from nlp import filter_cluster_tags
 from utils import (
     _coerce_datetime,
@@ -132,7 +132,7 @@ _PUBLIC_ARTICLE_FIELDS = {
 def _public_article_payload(article, lang="sr"):
     import datetime
 
-    from core.language import transliterate_cyr_to_lat
+    from core.language import transliterate_cyr_to_lat, transliterate_lat_to_cyr
     from nlp.categories import normalize_headline
 
     res = {}
@@ -143,11 +143,15 @@ def _public_article_payload(article, lang="sr"):
             val = normalize_headline(value)
             if lang == "sr":
                 val = transliterate_cyr_to_lat(val)
+            elif lang == "mk":
+                val = transliterate_lat_to_cyr(val)
             res[key] = val
         elif key == "description" and value:
             val = str(value)
             if lang == "sr":
                 val = transliterate_cyr_to_lat(val)
+            elif lang == "mk":
+                val = transliterate_lat_to_cyr(val)
             if len(val) > 400:
                 res[key] = val[:397] + "..."
             else:
@@ -156,6 +160,8 @@ def _public_article_payload(article, lang="sr"):
             val = str(value)
             if lang == "sr":
                 val = transliterate_cyr_to_lat(val)
+            elif lang == "mk":
+                val = transliterate_lat_to_cyr(val)
             if len(val) > 500:
                 res[key] = val[:497] + "..."
             else:
@@ -730,7 +736,7 @@ async def fetch_news_data(
                 "has_synthesis": cid in synthesis_ids,
                 "has_fact_check": any(a.get("is_fact_check") for a in arts),
                 "has_balanced": is_balanced(arts),
-                "entities": [transliterate_cyr_to_lat(e) for e in main.get("entity_names", [])] if lang == "sr" else main.get("entity_names", []),
+                "entities": [transliterate_cyr_to_lat(e) for e in main.get("entity_names", [])] if lang == "sr" else ([transliterate_lat_to_cyr(e) for e in main.get("entity_names", [])] if lang == "mk" else main.get("entity_names", [])),
                 **editorial,
             }
 
