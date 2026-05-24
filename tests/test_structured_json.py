@@ -1,3 +1,4 @@
+import asyncio
 import json
 from unittest.mock import MagicMock, patch
 from llama_cpp import LlamaGrammar
@@ -86,3 +87,66 @@ def test_research_query_structured(mock_analyze):
 
     assert "[RTS]" in res["answer"]
     assert len(res["suggestions"]) == 3
+
+
+@patch("core.config.ENABLE_EXPENSIVE_STYLE_TASKS", True)
+@patch("tasks.intelligence.db")
+@patch.object(LocalAnalyst, "normalize_headline")
+def test_standardize_article_style_task_language_mapping(mock_normalize, mock_db):
+    """Verify that standardize_article_style_task queries country and maps it to lang correctly."""
+    from tasks.intelligence import standardize_article_style_task
+    
+    # Case 1: Serbian article
+    mock_db.execute_one.return_value = {
+        "title": "Neki senzacionalan naslov o politici!!!",
+        "description": "Neki opis.",
+        "topic": "Politika",
+        "category": "Politika",
+        "country": "SR",
+    }
+    mock_normalize.return_value = "Neki pročišćen naslov o politici"
+    
+    standardize_article_style_task(123)
+    
+    mock_db.execute_one.assert_called_with(
+        "SELECT title, description, topic, category, country FROM articles WHERE id = %s",
+        (123,)
+    )
+    mock_normalize.assert_called_with("Neki senzacionalan naslov o politici!!!", lang="sr")
+    
+    # Case 2: Macedonian article
+    mock_db.execute_one.return_value = {
+        "title": "Nekoj senzacionalen naslov za politika!!!",
+        "description": "Nekoj opis.",
+        "topic": "Politika",
+        "category": "Politika",
+        "country": "MK",
+    }
+    
+    standardize_article_style_task(124)
+    mock_normalize.assert_called_with("Nekoj senzacionalen naslov za politika!!!", lang="mk")
+
+
+@patch("core.services.research_service.async_call_ai")
+@patch("core.services.research_service._build_gemma_research_context")
+def test_research_service_structured_integration(mock_build_context, mock_async_call):
+    """Test that ResearchService.get_cluster_research passes response_schema successfully."""
+    from core.services.research_service import ResearchService
+    
+    mock_build_context.return_value = ("context text", ["source_a"])
+    mock_async_call.side_effect = [
+        ("plan raw", "provider_x"),  # Plan call
+        (json.dumps({
+            "answer": "Answer text [source_a]",
+            "suggestions": ["S1?", "S2?", "S3?"]
+        }), "provider_x")  # Report call
+    ]
+    
+    res = asyncio.run(ResearchService.get_cluster_research("cluster_1", "facts", "", "sr"))
+    
+    # Assert plan was called, then standard report call with response_schema
+    assert mock_async_call.call_count == 2
+    args, kwargs = mock_async_call.call_args_list[1]
+    assert kwargs["response_schema"] == ResearchQueryResponse
+    assert res["answer"] == "Answer text [source_a]"
+

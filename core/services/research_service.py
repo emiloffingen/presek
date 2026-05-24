@@ -13,6 +13,7 @@ from core.prompts import RESEARCH_SYSTEM_PROMPT, RESEARCH_SYSTEM_PROMPT_MK
 from routes.intelligence import _RESEARCH_MODE_QUERIES, _build_gemma_research_context
 from core.entities import extract_entities
 from core.embeddings import get_query_embedding_async
+from nlp.local_analyst import ResearchQueryResponse
 
 log = logging.getLogger(__name__)
 
@@ -292,6 +293,7 @@ class ResearchService:
             json_mode=True,
             max_tokens=1000,
             lang=lang,
+            response_schema=ResearchQueryResponse,
         )
 
         RESEARCH_LATENCY.labels(mode=clean_mode).observe(time.time() - start_time)

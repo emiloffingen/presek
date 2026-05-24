@@ -264,7 +264,7 @@ def standardize_article_style_task(article_id):
         return
 
     row = db.execute_one(
-        "SELECT title, description, topic, category FROM articles WHERE id = %s",
+        "SELECT title, description, topic, category, country FROM articles WHERE id = %s",
         (article_id,),
     )
     if not row:
@@ -273,6 +273,8 @@ def standardize_article_style_task(article_id):
     title = row.get("title", "")
     topic = row.get("topic") or ""
     category = row.get("category") or ""
+    country = row.get("country") or "MK"
+    lang = "sr" if country == "SR" else "mk"
 
     if not title or len(title) < 25:
         return  # Skip very short headlines
@@ -283,7 +285,7 @@ def standardize_article_style_task(article_id):
             return
 
         # Use Gemma 2 2B for Literary Normalization
-        final_title = analyst.normalize_headline(title)
+        final_title = analyst.normalize_headline(title, lang=lang)
 
         if final_title and final_title.strip().lower() != title.strip().lower():
             # Check semantic similarity to ensure we didn't lose the plot
@@ -556,7 +558,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                             with _analyst_semaphore:
                                 # Run analyst on the current (first successful) summary
                                 analyst_text = f"NASLOV: {synthetic_headline}\n{summary}"
-                                shared_metrics["deep_metadata"] = analyst.extract_deep_metadata(analyst_text)
+                                shared_metrics["deep_metadata"] = analyst.extract_deep_metadata(analyst_text, lang=lang)
 
                                 # Phase 3.1: Pluralism Assessment
                                 titles_sources = [
@@ -564,7 +566,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                                     a['title']}"
                                     for a in article_rows[:10]
                                 ]
-                                shared_metrics["pluralism_data"] = analyst.assess_pluralism(titles_sources)
+                                shared_metrics["pluralism_data"] = analyst.assess_pluralism(titles_sources, lang=lang)
 
                                 # Phase 3.2: Knowledge Graph Update
                                 entities = shared_metrics["deep_metadata"].get("entities", [])
