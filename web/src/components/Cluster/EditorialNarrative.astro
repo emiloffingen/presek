@@ -16,9 +16,18 @@ const { hasStrongLeadNarrative, generatedArticle, synthesisItems, hasCitationSou
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
 const isSr = lang === 'sr';
+
+const cleanNarrativeParagraph = (text: string) => String(text || '')
+    .replace(/\s+/g, ' ')
+    .replace(/([A-Za-zА-Яа-яЁёЃѓЌќЉљЊњЏџČĆŽŠĐčćžšđ])\(/g, '$1 (')
+    .replace(/\)([A-Za-zА-Яа-яЁёЃѓЌќЉљЊњЏџČĆŽŠĐčćžšđ])/g, ') $1')
+    .replace(/([.!?]){2,}/g, '$1')
+    .replace(/\s+([,.;:!?])/g, '$1')
+    .trim();
+
 const narrativeParagraphs = String(generatedArticle || '')
     .split('\n')
-    .map((paragraph: string) => paragraph.trim())
+    .map((paragraph: string) => cleanNarrativeParagraph(paragraph))
     .filter(Boolean);
 const narrativeKicker = isSr ? 'Urednička sinteza' : 'Уредничка синтеза';
 const narrativeMeta = isSr

@@ -635,6 +635,10 @@ def _join_fragments(parts):
 def _sentence(text):
     clean = str(text or "").strip()
     clean = re.sub(r"\s+", " ", clean).strip(" ;:")
+    clean = re.sub(r"([A-Za-z\u0400-\u04FF])\(", r"\1 (", clean)
+    clean = re.sub(r"\)([A-Za-z\u0400-\u04FF])", r") \1", clean)
+    clean = re.sub(r"([.!?]){2,}", r"\1", clean)
+    clean = re.sub(r"\s+([,.;:!?])", r"\1", clean)
     if not clean:
         return ""
     return clean if clean.endswith((".", "!", "?", "…")) else f"{clean}."
