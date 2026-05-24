@@ -237,3 +237,41 @@ def test_zero_token_pluralism_fallback(mock_analyze):
     assert res_low["bias_detected"] is True
 
 
+@patch.object(LocalAnalyst, "analyze")
+def test_zero_token_headline_normalization_fallback(mock_analyze):
+    """Verify that normalize_headline falls back to zero-token clickbait stripping on LLM failure."""
+    mock_analyze.return_value = None
+    
+    analyst = LocalAnalyst()
+    headline = "ŠOKANTNO: Vučić razgovarao sa ministrima!!!"
+    
+    res = analyst.normalize_headline(headline, lang="sr")
+    assert "ŠOKANTNO" not in res
+    assert "!!!" not in res
+    assert res == "Vučić razgovarao sa ministrima"
+
+
+
+@patch.object(LocalAnalyst, "analyze")
+def test_zero_token_detect_echo_fallback(mock_analyze):
+    """Verify that detect_echo falls back to zero-token Jaccard similarity index on LLM failure."""
+    mock_analyze.return_value = None
+    
+    analyst = LocalAnalyst()
+    
+    # 1. Identical/Copy-paste text -> echo should be 0.0 (highly duplicated)
+    art_text = "Vlada je danas donela novu odluku o energetskoj stabilnosti i reformama."
+    ctx_text = "Vlada je danas donela novu odluku o energetskoj stabilnosti i reformama."
+    
+    res_echo = analyst.detect_echo(art_text, ctx_text, lang="sr")
+    assert res_echo == 0.0
+    
+    # 2. Completely distinct text -> echo should be 1.0 (uniquely written)
+    art_text_2 = "Sportski uspesi naših plivača na olimpijskim igrama u Parizu."
+    ctx_text_2 = "Politički pregovori o budžetu u Narodnoj skupštini."
+    
+    res_unique = analyst.detect_echo(art_text_2, ctx_text_2, lang="sr")
+    assert res_unique == 1.0
+
+
+

@@ -195,6 +195,25 @@ class LocalAnalyst:
             log.error(f"[analyst] Generation failed: {e}")
             return None
 
+    def get_zero_token_normalized_headline(self, title: str, lang: str = "mk") -> str:
+        """Converts sensationalist headlines to literary/broadsheet style zero-token."""
+        title = title or ""
+        # 1. Clean exclamation marks
+        cleaned = re.sub(r'!+', '', title)
+        
+        # 2. Compile list of sensational clickbait prefix/suffix keywords
+        clickbait_rx = r'(?i)\b(šokantno|sokantno|šok|sok|skandal|eve\s+sto|evo\s+šta|evo\s+sta|bomba|hitno|drama|foto|video|neverovatno|neverojatno|ekskluzivno|ekskluzivno)\b[:\-]?\s*'
+        cleaned = re.sub(clickbait_rx, '', cleaned)
+        
+        # Strip surrounding spaces and punctuation leftovers
+        cleaned = cleaned.strip(" :-\t\n\r")
+        
+        # Ensure first letter is capitalized
+        if cleaned:
+            cleaned = cleaned[0].upper() + cleaned[1:]
+            return cleaned
+        return title
+
     def normalize_headline(self, title: str, lang: str = "mk") -> str:
         """Converts sensationalist headlines to literary/broadsheet style."""
         if lang == "sr":
@@ -217,8 +236,15 @@ class LocalAnalyst:
                 "Vlez: SOKANTNO: Mickoski me raznese opozicijata so ova izjava!!!\n"
                 "Izlez: Mickoski upati kritiki do opoziciskite partii"
             )
-        result = self.analyze(f"Naslov: {title}", system, max_tokens=64, lang=lang)
-        return result if result else title
+        try:
+            result = self.analyze(f"Naslov: {title}", system, max_tokens=64, lang=lang)
+            if result:
+                return result
+        except Exception as e:
+            log.error(f"[analyst] Headline normalization LLM failed: {e}")
+            
+        return self.get_zero_token_normalized_headline(title, lang=lang)
+
 
     def get_zero_token_metadata(self, text: str, lang: str = "mk") -> Dict[str, Any]:
         """Extracts facts, entities, sentiment, and pulse using zero-token regex heuristics."""
@@ -472,6 +498,33 @@ class LocalAnalyst:
             }
 
 
+    def get_zero_token_echo(self, article_text: str, cluster_context: str) -> float:
+        """Estimates originality (0.0 to 1.0) using word overlap zero-token similarity."""
+        article_text = article_text or ""
+        cluster_context = cluster_context or ""
+        
+        # Tokenize into unique words (ignoring case and short words)
+        def get_words(t):
+            # Extract Cyrillic and Latin words
+            return set(re.findall(r'\b[A-Za-zА-Яа-яŠĐČĆŽšđčćžЃЌЅЏЉЊѓќѕџљњ]{3,}\b', t.lower()))
+            
+        words_art = get_words(article_text)
+        words_ctx = get_words(cluster_context)
+        
+        if not words_art or not words_ctx:
+            return 1.0
+            
+        # Jaccard similarity = intersection / union
+        intersection = words_art.intersection(words_ctx)
+        union = words_art.union(words_ctx)
+        similarity = len(intersection) / len(union)
+        
+        # Map similarity to originality smoothly:
+        # If similarity >= 0.4, it's highly likely to be a copy-paste/echo (0.0 originality)
+        # If similarity is 0.0, it's 1.0 (completely unique)
+        originality = max(0.0, min(1.0, 1.0 - (similarity / 0.4)))
+        return round(originality, 2)
+
     def detect_echo(self, article_text: str, cluster_context: str, lang: str = "mk") -> float:
         """Detects if an article is a unique report or just a 'copy-paste' (echo)."""
         if lang == "sr":
@@ -485,18 +538,19 @@ class LocalAnalyst:
                 "Vrati samo brojka od 0.0 (celosna kopija) do 1.0 (celosno unikatno)."
             )
         prompt = f"TEKST: {article_text[:500]}\nKONTEKST: {cluster_context[:1000]}"
-        result = self.analyze(prompt, system, max_tokens=10, lang=lang)
-        if not result:
-            return 1.0
-
+        
         try:
-            matches = re.findall(r"[\d.]+", result)
-            if matches:
-                return float(matches[0])
-            return 1.0
+            result = self.analyze(prompt, system, max_tokens=10, lang=lang)
+            if result:
+                matches = re.findall(r"[\d.]+", result)
+                if matches:
+                    return float(matches[0])
         except Exception as e:
-            log.debug(f"Echo detection parse error: {e}")
-            return 1.0
+            log.error(f"[analyst] Echo detection LLM failed, falling back: {e}")
+            
+        # Fallback to zero-token heuristic
+        return self.get_zero_token_echo(article_text, cluster_context)
+
 
     def research_query(self, query: str, context: str, lang: str = "mk") -> Dict[str, Any]:
         """Acts as a local researcher providing cited answers and follow-up suggestions."""
