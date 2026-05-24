@@ -315,6 +315,11 @@ def test_rate_limited_paths_include_public_ai_endpoints(mock_all):
     assert common._is_rate_limited_path("/api/intelligence/cluster/abc123/research") is True
     assert common._is_rate_limited_path("/api/intelligence/cluster/abc123/analyst") is True
     assert common._is_rate_limited_path("/api/profile/sync/personalized-news") is True
+    assert common._is_rate_limited_path("/api/intelligence/network-graph") is True
+    assert common._is_rate_limited_path("/api/intelligence/live-map") is True
+    assert common._is_rate_limited_path("/api/intelligence/pulse-overview") is True
+    assert common._is_rate_limited_path("/api/intelligence/compare-sources") is True
+
 
 
 def test_profile_sync_rejects_weak_token_headers(mock_all):
