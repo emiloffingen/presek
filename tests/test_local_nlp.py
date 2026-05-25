@@ -166,6 +166,66 @@ class TestClusterComparison:
 
         assert any("120" in item or "Stopanskata komora" in item for item in result["open_points"])
 
+    def test_compare_cluster_sources_skips_fake_nuance_for_same_headline(self):
+        articles = [
+            {
+                "source": "Insajder",
+                "title": "Pad cena nafte u svetu nakon najave sporazuma SAD i Irana",
+                "description": "Insajder prenosi da su cene nafte pale posle najave mogućeg sporazuma.",
+            },
+            {
+                "source": "RTS",
+                "title": "Pad cena nafte u svetu nakon najave sporazuma SAD i Irana",
+                "description": "RTS prenosi isti razvoj i rast prometa na azijskim berzama.",
+            },
+        ]
+
+        result = compare_cluster_sources(articles, lang="sr")
+
+        assert not any("najdirektnije" in item or "više naglašava" in item for item in result["difference_points"])
+        assert not any("ostaju nepotvrđeni kod Insajder, RTS" in item for item in result["open_points"])
+
+    def test_synthesize_cluster_fallback_avoids_repeated_key_development_detail(self):
+        repeated = "Cene nafte su značajno pale nakon najave mogućeg sporazuma SAD i Irana."
+        articles = [
+            {"source": "Insajder", "title": repeated, "description": repeated},
+            {"source": "RTS", "title": repeated, "description": repeated},
+            {"source": "Blic", "title": repeated, "description": "Azijske berze beleže rast prometa posle iste najave."},
+        ]
+
+        result = synthesize_cluster_fallback(articles, lang="sr")
+
+        assert "Prati 3 izvora" in result["summary"]
+        assert result["summary"].count("Cene nafte su značajno pale") == 1
+
+    def test_synthesize_cluster_fallback_cleans_repetitive_editorial_narrative(self):
+        articles = [
+            {
+                "source": "Insajder",
+                "title": "Pad cena nafte u svetu nakon najave o postizanju sporazuma između SAD i Irana",
+                "description": "Cene nafte su značajno pale, a promet na azijskim berzama je u porastu nakon najave o mogućem postizanju sporazuma.",
+            },
+            {
+                "source": "RTS",
+                "title": "Pad cena nafte u svetu nakon najave o postizanju sporazuma između SAD i Irana",
+                "description": "Cene nafte su značajno pale, a promet na azijskim berzama je u porastu nakon najave o mogućem postizanju sporazuma.",
+            },
+            {
+                "source": "Blic",
+                "title": "Nafta pojeftinila dok berze rastu posle najave sporazuma",
+                "description": "Azijska tržišta beleže rast prometa posle najave diplomatskog dogovora.",
+            },
+        ]
+
+        result = synthesize_cluster_fallback(articles, lang="sr")
+        narrative = result["generated_article"]
+
+        assert "Pad Cena Naf" not in narrative
+        assert "najdirektnije formuliše" not in narrative
+        assert "više naglašava" not in narrative
+        assert "Detalji oko ovog razvoja ostaju nepotvrđeni" not in narrative
+        assert narrative.count("Cene nafte su značajno pale") <= 1
+
     def test_compare_cluster_sources_reuses_cached_result_for_same_articles(self, monkeypatch):
         import nlp.generation
 

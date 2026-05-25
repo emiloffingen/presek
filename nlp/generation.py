@@ -662,6 +662,78 @@ def _source_list(articles, limit=3):
     return ", ".join(name for name in names if name)
 
 
+def _source_count_label(count: int, lang: str) -> str:
+    if lang == "sr":
+        return "izvor" if count == 1 else "izvora"
+    return "извор" if count == 1 else "извори"
+
+
+def _comparison_terms(text: str) -> set[str]:
+    return {term for term in _extract_terms(text or "") if term not in SOURCE_NOISE_WORDS}
+
+
+def _term_overlap(left: set[str], right: set[str]) -> float:
+    if not left or not right:
+        return 0.0
+    return len(left & right) / max(1, len(left | right))
+
+
+def _title_difference_is_substantive(left: str, right: str) -> bool:
+    left_terms = _comparison_terms(left)
+    right_terms = _comparison_terms(right)
+    if not left_terms or not right_terms:
+        return False
+    overlap = _term_overlap(left_terms, right_terms)
+    if overlap >= 0.68:
+        return False
+    return len(left_terms - right_terms) >= 2 or len(right_terms - left_terms) >= 2
+
+
+def _clean_common_line(line: str, lang: str) -> str:
+    clean = str(line or "").strip()
+    if not clean:
+        return ""
+    common_prefixes = [
+        "Većina izvora se slaže oko ",
+        "Poveceto izvori se soglasuvaat okolu ",
+        "Повеќето извори се согласуваат околу ",
+    ]
+    for prefix in common_prefixes:
+        if clean.startswith(prefix):
+            clean = clean[len(prefix):]
+            break
+    common_suffixes = [
+        " kao tema u fokusu.",
+        " kao teme u fokusu.",
+        " као тема у фокусу.",
+        " како тема во фокус.",
+        " како теми во фокус.",
+        " kako temi vo fokus.",
+    ]
+    for suffix in common_suffixes:
+        if clean.endswith(suffix):
+            clean = clean[: -len(suffix)]
+            break
+    clean = re.sub(r"\s+", " ", clean).strip(" .,;:")
+    if not clean:
+        return ""
+    chunks = [chunk.strip() for chunk in re.split(r",|\s+i\s+|\s+и\s+", clean) if chunk.strip()]
+    meaningful = []
+    for chunk in chunks:
+        terms = _comparison_terms(chunk)
+        if len(terms) < 2:
+            continue
+        if any(_term_overlap(terms, _comparison_terms(existing)) >= 0.55 for existing in meaningful):
+            continue
+        meaningful.append(chunk)
+    if not meaningful:
+        return ""
+    joined = ", ".join(meaningful[:2])
+    if lang == "sr":
+        return f"Izvori se najviše poklapaju oko: {joined}."
+    return f"Изворите најмногу се поклопуваат околу: {joined}."
+
+
 def compare_cluster_sources(articles, lang="mk"):
     articles = _normalize_articles_for_local_use(articles)
     if not articles:
@@ -775,6 +847,40 @@ def compare_cluster_sources(articles, lang="mk"):
             common_line = "Повеќето извори се согласуваат околу " + ", ".join(common_terms[:4]) + " како теми во фокус."
 
     difference_points, seen_titles = [], set()
+    source_count = len(articles)
+
+    conflicting_numbers = [
+        (number, sorted(sources))
+        for number, sources in number_map.items()
+        if len(sources) < source_count and len(sources) >= 1 and source_count > 1
+    ]
+    if conflicting_numbers:
+        number, sources = conflicting_numbers[0]
+        if lang == "sr":
+            difference_points.append(
+                f"Brojka „{number}“ pojavljuje se samo kod {', '.join(sources[:2])}, pa je treba čitati kao detalj koji nije jednako potvrđen u svim izvorima."
+            )
+        else:
+            difference_points.append(
+                f"Бројката „{number}“ се појавува само кај {', '.join(sources[:2])}, па треба да се чита како детал што не е еднакво потврден во сите извори."
+            )
+
+    unique_entities = [
+        (entity, sorted(sources))
+        for entity, sources in entity_map.items()
+        if len(sources) == 1 and len(entity) >= 4
+    ]
+    if unique_entities:
+        entity, sources = unique_entities[0]
+        if lang == "sr":
+            difference_points.append(
+                f"{sources[0]} izdvaja „{entity}“ kao poseban akcenat koji drugi izvori ne stavljaju u prvi plan."
+            )
+        else:
+            difference_points.append(
+                f"{sources[0]} го издвојува „{entity}“ како посебен акцент што другите извори не го ставаат во прв план."
+            )
+
     unique_titles = []
     for s, t in title_pairs:
         if t.casefold() not in seen_titles:
@@ -786,13 +892,15 @@ def compare_cluster_sources(articles, lang="mk"):
 
             t1 = transliterate_cyr_to_lat(unique_titles[0][1])
             t2 = transliterate_cyr_to_lat(unique_titles[1][1])
-            difference_points.append(
-                f"{unique_titles[0][0]} najdirektnije formuliše razvoj kao „{t1}“, dok {unique_titles[1][0]} više naglašava „{t2}“."
-            )
+            if _title_difference_is_substantive(t1, t2):
+                difference_points.append(
+                    f"{unique_titles[0][0]} stavlja akcenat na „{t1}“, dok {unique_titles[1][0]} priču okviruje kroz „{t2}“."
+                )
         else:
-            difference_points.append(
-                f"{unique_titles[0][0]} најдиректно го формулира развојот како „{unique_titles[0][1]}“, додека {unique_titles[1][0]} повеќе нагласува „{unique_titles[1][1]}“."
-            )
+            if _title_difference_is_substantive(unique_titles[0][1], unique_titles[1][1]):
+                difference_points.append(
+                    f"{unique_titles[0][0]} става акцент на „{unique_titles[0][1]}“, додека {unique_titles[1][0]} ја врамува приказната преку „{unique_titles[1][1]}“."
+                )
 
     open_points = []
     uncertain_sources = [
@@ -814,12 +922,15 @@ def compare_cluster_sources(articles, lang="mk"):
             ]
         )
     ]
-    if uncertain_sources:
+    has_concrete_uncertainty = len(uncertain_sources) < len(articles) or bool(conflicting_numbers or unique_entities)
+    if uncertain_sources and has_concrete_uncertainty:
         if lang == "sr":
-            open_points.append(f"Detalji oko ovog razvoja ostaju nepotvrđeni kod {', '.join(uncertain_sources[:2])}.")
+            open_points.append(
+                f"Otvoreno je da li će detalji koje navode {', '.join(uncertain_sources[:2])} biti potvrđeni i u drugim izvorima."
+            )
         else:
             open_points.append(
-                f"Деталите околу овој развој остануваат непотврдени кај {', '.join(uncertain_sources[:2])}."
+                f"Отворено е дали деталите што ги наведуваат {', '.join(uncertain_sources[:2])} ќе бидат потврдени и во други извори."
             )
 
     # Extra check for numbers mismatch as open points
@@ -947,7 +1058,7 @@ def synthesize_cluster_fallback(articles, lang="mk"):
     selected_sentences = []
     for cand in candidate_sentences:
         # Avoid duplicating the key update point
-        if update_point and _jaccard_similarity(cand["text"], update_point) > 0.4:
+        if update_point and _jaccard_similarity(cand["text"], update_point) > 0.28:
             continue
         if any(_jaccard_similarity(cand["text"], s["text"]) > 0.4 for s in selected_sentences):
             continue
@@ -959,7 +1070,7 @@ def synthesize_cluster_fallback(articles, lang="mk"):
         fallback_sents = [_normalize_briefing_line(s) for s in re.split(r"(?<=[.!?])\s+", desc) if len(s.strip()) > 20]
         fallback_sents = [s for s in fallback_sents if s and not _is_noisy_summary_sentence(s)]
         for s in fallback_sents:
-            if update_point and _jaccard_similarity(s, update_point) > 0.4:
+            if update_point and _jaccard_similarity(s, update_point) > 0.28:
                 continue
             selected_sentences.append({"text": s, "source": lead.get("source")})
         if not selected_sentences and fallback_sents:
@@ -973,7 +1084,7 @@ def synthesize_cluster_fallback(articles, lang="mk"):
         # If no good update found, use a refined version of the title
         summary_lines.append(f"• {t['nastan']}: {lead_title}")
 
-    if selected_sentences:
+    if selected_sentences and not (update_point and _jaccard_similarity(selected_sentences[0]["text"], update_point) > 0.28):
         summary_lines.append(f"• {t['detali']}: {selected_sentences[0]['text']}")
 
     common = (
@@ -991,7 +1102,9 @@ def synthesize_cluster_fallback(articles, lang="mk"):
         summary_lines.append(f"• {t['fokus']}: {common}")
 
     sources_str = _source_list(articles, limit=4)
-    summary_lines.append(f"• {t['pokrienost']}: {t['sledeno_od']} {len(articles)} {t['izvori']} ({sources_str}).")
+    summary_lines.append(
+        f"• {t['pokrienost']}: {t['sledeno_od']} {len(articles)} {_source_count_label(len(articles), lang)} ({sources_str})."
+    )
 
     if comparison.get("open_points"):
         summary_lines.append(f"• {t['otvoreno_lower']}: {comparison['open_points'][0]}")
@@ -1001,20 +1114,29 @@ def synthesize_cluster_fallback(articles, lang="mk"):
     # 3. Build an editorial fallback narrative, not a mechanical digest.
     article_body = []
     if update_point and update_point.casefold() != lead_title.casefold():
-        article_body.append(f"{_sentence(lead_title)} {_sentence(update_point)}")
+        intro_parts = [_sentence(lead_title)]
+        if _jaccard_similarity(update_point, lead_title) <= 0.28:
+            intro_parts.append(_sentence(update_point))
+        article_body.append(" ".join(part for part in intro_parts if part))
     else:
         article_body.append(f"{_sentence(lead_title)} {_sentence(t['povece_mediumi'])}")
 
     details = [_sentence(s["text"]) for s in selected_sentences if s.get("text")]
     if details:
-        article_body.append(" ".join(details[:2]))
+        non_duplicate_details = [
+            detail for detail in details
+            if all(_jaccard_similarity(detail, existing) <= 0.28 for existing in article_body)
+        ]
+        if non_duplicate_details:
+            article_body.append(" ".join(non_duplicate_details[:2]))
 
     context_basis = " ".join([lead_title, desc, " ".join(details)])
     article_body.append(_sentence(_topic_stakes_sentence(context_basis, lang=lang)))
 
     source_paragraph_parts = []
-    if comparison.get("common_line"):
-        source_paragraph_parts.append(_sentence(comparison["common_line"]))
+    clean_common_line = _clean_common_line(comparison.get("common_line", ""), lang)
+    if clean_common_line:
+        source_paragraph_parts.append(_sentence(clean_common_line))
     else:
         source_paragraph_parts.append(_sentence(t["izvori_pratat_ista_linija"]))
     if comparison.get("difference_points"):
@@ -1022,7 +1144,14 @@ def synthesize_cluster_fallback(articles, lang="mk"):
     article_body.append(" ".join(source_paragraph_parts))
 
     if comparison.get("open_points"):
-        article_body.append(f"{t['sto_ostanuva']}: {_sentence(comparison['open_points'][0])}")
+        open_point = _sentence(comparison["open_points"][0])
+        if "Detalji oko ovog razvoja ostaju nepotvr" in open_point:
+            open_point = _sentence(
+                "Nije izdvojena konkretna sporna činjenica; treba pratiti sledeće dopune izvora."
+                if lang == "sr"
+                else "Не е издвоен конкретен спорен факт; треба да се следат следните дополнувања од изворите."
+            )
+        article_body.append(f"{t['sto_ostanuva']}: {open_point}")
     elif len(articles) <= 1:
         article_body.append(_sentence(t["faza_razvoj"]))
     else:

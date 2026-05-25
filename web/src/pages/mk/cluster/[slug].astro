@@ -48,7 +48,7 @@ function getRelativeTimeStr(dateStr: string) {
 }
 
 import { sanitizeHtml } from '../../../lib/sanitize';
-import { Newspaper, Clock, Link2, Zap, Sparkles, ShieldCheck, TriangleAlert, BarChart3, Radio, Search, ExternalLink } from 'lucide-react';
+import { Newspaper, Clock, Link2, Zap, Sparkles, ShieldCheck, TriangleAlert, BarChart3, Radio, Search, ExternalLink, BookOpen, ListChecks } from 'lucide-react';
 import EntityContextCard from '../../../components/EntityContextCard.tsx';
 import ClusterHeader from '../../../components/Cluster/ClusterHeader.astro';
 import HeroVisual from '../../../components/Cluster/HeroVisual.astro';
@@ -103,7 +103,7 @@ const currentHeadlineSlug = slugify(displayHeadline);
 const canonicalSlug = `${id}-${currentHeadlineSlug}`;
 
 if (slug !== canonicalSlug && !error && cluster) {
-    const targetPath = lang === 'sr' ? `/cluster/${canonicalSlug}` : `/mk/cluster/${canonicalSlug}`;
+    const targetPath = `${lang === 'sr' ? `/cluster/${canonicalSlug}` : `/mk/cluster/${canonicalSlug}`}${Astro.url.search}`;
     return Astro.redirect(targetPath, 301);
 }
 
@@ -206,6 +206,50 @@ const imageUrl = leadVisual && !leadVisual.isWeak ? leadVisual.src : '/img/prese
 const headerBriefItems = synthesisItems.length > 0 
     ? synthesisItems.map((item: SynthesisItem) => item.content).filter((line: string) => line.trim().length > 4).slice(0, 4)
     : (mainArticle?.description ? [mainArticle.description] : []);
+
+function normalizeBriefItem(item: string, previousItems: string[]) {
+    let text = String(item || '')
+        .replace(/^\s*[•\-]\s*/, '')
+        .replace(/\bPrati\s+([2-9]|\d{2,})\s+izvori\b/i, 'Prati $1 izvora')
+        .trim();
+    const labelMatch = text.match(/^([^:]{2,40}):\s*(.+)$/);
+    const label = labelMatch ? labelMatch[1].trim().toLocaleLowerCase() : '';
+    const body = labelMatch ? labelMatch[2].trim() : text;
+    const normalizedBody = body
+        .toLocaleLowerCase()
+        .replace(/[^\p{L}\p{N}\s]/gu, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    if (
+        (label.includes('detalj') || label.includes('детал')) &&
+        previousItems.some((prev) => {
+            const normalizedPrev = prev
+                .toLocaleLowerCase()
+                .replace(/^[^:]{2,40}:\s*/, '')
+                .replace(/[^\p{L}\p{N}\s]/gu, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+            return normalizedPrev === normalizedBody || normalizedPrev.includes(normalizedBody) || normalizedBody.includes(normalizedPrev);
+        })
+    ) {
+        return '';
+    }
+    if (
+        (label.includes('otvoreno') || label.includes('отворено')) &&
+        (/detalji oko ovog razvoja ostaju nepotvr/i.test(body) || /деталите околу овој развој остануваат непотв/i.test(body))
+    ) {
+        return lang === 'sr'
+            ? 'Otvoreno: nije izdvojena konkretna sporna činjenica; treba pratiti sledeće dopune izvora, ne tretirati ovu stavku kao potvrđen sukob.'
+            : 'Отворено: не е издвоен конкретен спорен факт; треба да се следат следните дополнувања од изворите, а не ова да се чита како потврден судир.';
+    }
+    return text;
+}
+
+const displayHeaderBriefItems = headerBriefItems.reduce((items: string[], item: string) => {
+    const normalized = normalizeBriefItem(item, items);
+    if (normalized) items.push(normalized);
+    return items;
+}, []).slice(0, 4);
 
 const hasGeneratedNarrative = Boolean(generatedArticle && generatedArticle.trim());
 const hasSublimat = synthesisItems.length > 0;
@@ -405,7 +449,7 @@ const articleSchema = cluster ? {
 								{new Date(cluster.articles?.[0].created_at || '').toLocaleDateString(lang === 'sr' ? 'sr-RS' : 'mk-MK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
 							</span>
 						</div>
-						<h1 class="headline font-serif text-5xl md:text-7xl font-black leading-[1.05] tracking-tight text-foreground mb-6">
+						<h1 class="headline is-visible font-serif text-5xl md:text-7xl font-black leading-[1.05] tracking-tight text-foreground mb-6">
 							{displayHeadline}
 						</h1>
 						<div class="header-meta flex flex-wrap items-center gap-x-8 gap-y-3 text-[11px] font-black uppercase tracking-widest text-muted-foreground">
@@ -436,10 +480,24 @@ const articleSchema = cluster ? {
 						))}
 					</div>
 				</div>
+				<div class="reader-command-bar" aria-label={lang === 'sr' ? 'Kontrole čitanja' : 'Контроли за читање'}>
+					<div class="reader-source-strip">
+						<span>{lang === 'sr' ? 'Izvori u pregledu' : 'Извори во прегледот'}</span>
+						<strong>{sourcePreview.join(' · ')}</strong>
+					</div>
+					<div class="reader-actions">
+						<a href="#cluster-synthesis"><BookOpen size={14} /> {primaryNarrativeLabel}</a>
+						<a href="#cluster-sources"><ListChecks size={14} /> {lang === 'sr' ? 'Izvori' : 'Извори'}</a>
+						<button type="button" data-reader-toggle aria-pressed="false">
+							<BookOpen size={14} />
+							<span data-reader-label>{lang === 'sr' ? 'Fokus čitanje' : 'Фокус читање'}</span>
+						</button>
+					</div>
+				</div>
 			</header>
 
 					{/* 2. HERO GRID (Visual) */}
-					<div class="hero-full mb-24">
+					<div class="hero-full mb-24" id="cluster-visual">
 						<HeroVisual
 							leadVisual={leadVisual}
 							dominantColor={cluster.dominant_color || undefined}
@@ -450,7 +508,7 @@ const articleSchema = cluster ? {
 							articlesCount={cluster.articles?.length || 0}
 						/>
 						{sourceDocArticle?.full_content && (
-					<div class="mt-12 source-doc-wrapper">
+					<div class="mt-12 source-doc-wrapper" id="cluster-source-document">
 						<details class="group source-details">
 							<summary class="flex items-center justify-between p-8 md:p-12 cursor-pointer hover:bg-secondary/10 transition-colors list-none">
 								<div class="flex items-center gap-[var(--grid-gap)]">
@@ -482,7 +540,7 @@ const articleSchema = cluster ? {
 	{/* 3. MAIN COLUMN */}
 	<div class="editorial-main-col">
 						{/* EXECUTIVE SUMMARY / BRIFING - Wider Layout */}
-						{(!hasGeneratedNarrative && (headerBriefItems.length > 0 || (cluster.key_facts && cluster.key_facts.length > 0))) && (
+						{(!hasGeneratedNarrative && (displayHeaderBriefItems.length > 0 || (cluster.key_facts && cluster.key_facts.length > 0))) && (
 							<div class="executive-summary mb-24 p-8 md:p-12 bg-secondary/10 border-l-4 border-nyt-accent shadow-sm">
 								<div class="flex items-center gap-[var(--grid-gap)] mb-14">
 									<Sparkles size={20} className="text-nyt-accent" />
@@ -492,7 +550,7 @@ const articleSchema = cluster ? {
 									<div>
 										<h4 class="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground mb-16">{t('cluster.key_points')}</h4>
 										<ul class="space-y-6">
-											{headerBriefItems.map(item => (
+											{displayHeaderBriefItems.map(item => (
 												<li class="flex items-start gap-4 font-sans text-base md:text-lg leading-relaxed text-foreground/90 not-italic">
 													<span class="flex-shrink-0 mt-2 w-2 h-2 rounded-full bg-nyt-accent/60"></span>
 													<span class="flex-1">{item}</span>
@@ -519,7 +577,7 @@ const articleSchema = cluster ? {
 
 						{/* NARRATIVE SECTION */}
 						{(hasGeneratedNarrative || synthesisItems.length > 0) && (
-						<section class="editorial-section narrative-section mb-24">
+						<section class="editorial-section narrative-section mb-24" id="cluster-synthesis">
 							<div class="section-eyebrow mb-16">
 								<Newspaper size={16} className="text-muted-foreground" />
 								<h2 class="section-label">{primaryNarrativeLabel}</h2>
@@ -535,14 +593,14 @@ const articleSchema = cluster ? {
 							entities={cluster.entities}
 							/>
                             {/* DATA RECAP / KEY POINTS (Moved to bottom of narrative) */}
-                            {hasGeneratedNarrative && (headerBriefItems.length > 0 || (cluster.key_facts && cluster.key_facts.length > 0)) && (
+                            {hasGeneratedNarrative && (displayHeaderBriefItems.length > 0 || (cluster.key_facts && cluster.key_facts.length > 0)) && (
                                 <div class="narrative-recap mt-12 p-8 bg-secondary/10 border-t border-border/40">
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-[var(--grid-gap)]">
-                                        {headerBriefItems.length > 0 && (
+                                        {displayHeaderBriefItems.length > 0 && (
                                             <div>
                                                 <h4 class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">{t('cluster.key_points')}</h4>
                                                 <ul class="space-y-2">
-                                                    {headerBriefItems.map(item => (
+                                                    {displayHeaderBriefItems.map(item => (
                                                         <li class="font-sans text-[13px] leading-snug text-foreground/80 flex items-start gap-[var(--grid-gap)]">
                                                             <span class="text-nyt-accent">•</span>
                                                             {item}
@@ -582,7 +640,7 @@ const articleSchema = cluster ? {
 						)}
 
 						{/* ALL SOURCES LIST */}
-						<section class="editorial-section sources-section mb-24 border-t border-border/40 pt-12">
+						<section class="editorial-section sources-section mb-24 border-t border-border/40 pt-12" id="cluster-sources">
 							<div class="section-eyebrow mb-16">
 								<Newspaper size={18} className="text-muted-foreground" />
 								<h2 class="section-label">{t('cluster.source_docs')}</h2>
@@ -838,6 +896,109 @@ const articleSchema = cluster ? {
         background: var(--border);
     }
 
+    .reader-command-bar {
+        display: flex;
+        align-items: stretch;
+        justify-content: space-between;
+        gap: 1px;
+        margin-top: 1px;
+        background: var(--border);
+        border: 1px solid var(--border);
+        border-top: 0;
+    }
+
+    .reader-source-strip,
+    .reader-actions {
+        background: color-mix(in srgb, var(--background) 96%, var(--surface-soft));
+    }
+
+    .reader-source-strip {
+        flex: 1;
+        min-width: 0;
+        padding: 0.85rem 1rem;
+    }
+
+    .reader-source-strip span {
+        display: block;
+        margin-bottom: 0.25rem;
+        font-family: var(--font-sans);
+        font-size: 0.52rem;
+        font-weight: 950;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--muted-foreground);
+    }
+
+    .reader-source-strip strong {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-family: var(--font-serif);
+        font-size: 0.9rem;
+        line-height: 1.2;
+        color: var(--foreground);
+    }
+
+    .reader-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.55rem;
+    }
+
+    .reader-actions a,
+    .reader-actions button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        min-height: 2.35rem;
+        border: 1px solid var(--border);
+        background: var(--background);
+        color: var(--foreground);
+        padding: 0 0.75rem;
+        font-family: var(--font-sans);
+        font-size: 0.58rem;
+        font-weight: 950;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .reader-actions a:hover,
+    .reader-actions button:hover,
+    .cluster-article-container.reader-focused .reader-actions button[data-reader-toggle] {
+        background: var(--foreground);
+        border-color: var(--foreground);
+        color: var(--background);
+    }
+
+    .cluster-article-container.reader-focused {
+        max-width: 980px;
+    }
+
+    .cluster-article-container.reader-focused .editorial-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .cluster-article-container.reader-focused .editorial-main-col {
+        max-width: 780px;
+        margin: 0 auto;
+    }
+
+    .cluster-article-container.reader-focused .editorial-sidebar-col,
+    .cluster-article-container.reader-focused .related-section,
+    .cluster-article-container.reader-focused .advanced-tools {
+        display: none;
+    }
+
+    .cluster-article-container.reader-focused .hero-full {
+        margin-bottom: 2rem !important;
+    }
+
 	/* --- 3. EDITORIAL GRID --- */
 	.editorial-grid {
 		display: grid;
@@ -1061,6 +1222,20 @@ const articleSchema = cluster ? {
             grid-template-columns: 1fr 1fr;
         }
 
+        .reader-command-bar {
+            flex-direction: column;
+        }
+
+        .reader-actions {
+            overflow-x: auto;
+            justify-content: flex-start;
+        }
+
+        .reader-actions a,
+        .reader-actions button {
+            flex: 0 0 auto;
+        }
+
         .editorial-header-v2 {
             padding-top: 1.5rem !important;
             padding-bottom: 1.5rem !important;
@@ -1093,3 +1268,44 @@ const articleSchema = cluster ? {
         .read-original { font-size: 0.75rem; padding: 0.5rem 0; }
 	}
 </style>
+
+<script is:inline>
+	(() => {
+		const initReaderMode = () => {
+			const article = document.querySelector('.cluster-article-container');
+			const button = document.querySelector('[data-reader-toggle]');
+			const label = document.querySelector('[data-reader-label]');
+			const progress = document.getElementById('reading-progress');
+			if (!article || !button) return;
+			const focusText = document.documentElement.lang === 'mk' ? 'Фокус читање' : 'Fokus čitanje';
+			const fullText = document.documentElement.lang === 'mk' ? 'Целосен приказ' : 'Ceo prikaz';
+
+			const syncLabel = () => {
+				const active = article.classList.contains('reader-focused');
+				button.setAttribute('aria-pressed', active ? 'true' : 'false');
+				if (label) label.textContent = active ? fullText : focusText;
+			};
+
+			button.addEventListener('click', () => {
+				article.classList.toggle('reader-focused');
+				syncLabel();
+			});
+			if (new URLSearchParams(window.location.search).get('reader') === '1') {
+				article.classList.add('reader-focused');
+			}
+			syncLabel();
+
+			const updateProgress = () => {
+				if (!progress) return;
+				const max = document.documentElement.scrollHeight - window.innerHeight;
+				const pct = max > 0 ? Math.min(100, Math.max(0, (window.scrollY / max) * 100)) : 0;
+				progress.style.width = `${pct}%`;
+			};
+			window.addEventListener('scroll', updateProgress, { passive: true });
+			updateProgress();
+		};
+
+		initReaderMode();
+		document.addEventListener('astro:page-load', initReaderMode);
+	})();
+</script>

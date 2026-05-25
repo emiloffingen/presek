@@ -176,7 +176,7 @@ function getTimeStr(dateStr: string) {
     </div>
 
     {thumbSrc && (
-    <div class:list={["image-wrap", { "image-wrap-fallback": isFallbackArt }]}>
+    <div class:list={["image-wrap", { "image-wrap-fallback": isFallbackArt }]} data-image-state={isFallbackArt ? 'fallback' : 'loading'}>
         <a href={clusterUrl} class="block h-full" data-testid="cluster-link">
             {isFallbackArt ? (
                 <div class="article-image-placeholder design-card topic-fallback-card" style={`--placeholder-bg: ${tintColor};`}>
@@ -218,8 +218,8 @@ function getTimeStr(dateStr: string) {
                         loading={isLead ? "eager" : "lazy"}
                         decoding="async"
                         fetchpriority={isLead ? "high" : "auto"}
-                        onload="this.classList.add('is-loaded')"
-                        onerror={`this.onerror=null; this.removeAttribute('srcset'); this.src='${fallbackImageUrl}'; this.classList.add('is-loaded','article-image-fallback'); this.closest('.image-wrap')?.classList.add('image-wrap-fallback');`}
+                        onload="this.classList.add('is-loaded'); this.closest('.image-wrap')?.setAttribute('data-image-state','ready');"
+                        onerror={`this.onerror=null; this.removeAttribute('srcset'); this.src='${fallbackImageUrl}'; this.classList.add('is-loaded','article-image-fallback'); this.closest('.image-wrap')?.classList.add('image-wrap-fallback'); this.closest('.image-wrap')?.setAttribute('data-image-state','fallback');`}
                     />
                 </div>
             )}
@@ -455,14 +455,42 @@ function getTimeStr(dateStr: string) {
     }
 
     .image-wrap {
+        position: relative;
         aspect-ratio: 3 / 2;
         border-radius: 0px !important;
         overflow: hidden;
         border: 1px solid var(--border);
-        background: var(--secondary);
+        background:
+            linear-gradient(135deg, color-mix(in srgb, var(--surface-soft) 86%, var(--background)), color-mix(in srgb, var(--secondary) 72%, var(--background))),
+            var(--secondary);
+    }
+
+    .image-wrap::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        background:
+            linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--foreground) 5%, transparent) 42%, transparent 72%),
+            repeating-linear-gradient(0deg, color-mix(in srgb, var(--border) 30%, transparent) 0 1px, transparent 1px 14px);
+        opacity: 0.75;
+        transform: translateX(-100%);
+        animation: card-image-sheen 1.8s ease-in-out infinite;
+    }
+
+    .image-wrap[data-image-state="ready"]::before,
+    .image-wrap[data-image-state="fallback"]::before {
+        display: none;
+    }
+
+    @keyframes card-image-sheen {
+        0% { transform: translateX(-100%); }
+        55%, 100% { transform: translateX(100%); }
     }
 
     .article-image {
+        position: relative;
+        z-index: 1;
         width: 100%;
         height: 100%;
         object-fit: cover;
@@ -480,6 +508,8 @@ function getTimeStr(dateStr: string) {
     }
 
     .article-image-placeholder {
+        position: relative;
+        z-index: 1;
         transition: transform 0.8s var(--ease-editorial);
     }
 

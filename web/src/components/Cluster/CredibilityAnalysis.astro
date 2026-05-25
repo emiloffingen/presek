@@ -21,6 +21,59 @@ const lang = propLang || getLangFromUrl(effectiveUrl);
 const t = useTranslations(lang);
 
 const renderSynthesisHtml = (text: string) => sharedRenderSynthesisHtml(text, hasCitationSources);
+
+function normalizePerspective(p: any) {
+	const angle = String(p?.angle || '').trim();
+	const content = String(p?.content || '').trim();
+	const loweredAngle = angle.toLocaleLowerCase();
+	const loweredContent = content.toLocaleLowerCase();
+	const quoted = [...content.matchAll(/[„“"]([^„“"]+)[„“"]/g)].map((match) =>
+		match[1].replace(/\s+/g, ' ').trim().toLocaleLowerCase()
+	);
+
+	if (
+		(loweredAngle.includes('nijans') || loweredAngle.includes('нијанс')) &&
+		quoted.length >= 2 &&
+		quoted[0] === quoted[1]
+	) {
+		return {
+			angle,
+			content: lang === 'sr'
+				? 'Izvori ne nude bitno različite uglove; razlika je uglavnom u uredničkom naslovu i izboru detalja za prvi plan.'
+				: 'Изворите не нудат суштински различни агли; разликата е главно во уредничкиот наслов и изборот на детали за прв план.',
+		};
+	}
+
+	if (
+		(loweredAngle.includes('otvoreno') || loweredAngle.includes('отворено')) &&
+		(loweredContent.includes('ostaju nepotvr') || loweredContent.includes('остануваат непотв'))
+	) {
+		return {
+			angle,
+			content: lang === 'sr'
+				? 'Nije izdvojena konkretna sporna činjenica; otvoreno je samo kako će se priča razvijati kroz naredne dopune izvora.'
+				: 'Не е издвоен конкретен спорен факт; отворено е само како ќе се развива приказната низ следните дополнувања од изворите.',
+		};
+	}
+
+	if (
+		(loweredAngle.includes('konsenz') || loweredAngle.includes('консенз')) &&
+		loweredContent.includes('potvrđuju istu osnovnu liniju')
+	) {
+		return {
+			angle,
+			content: lang === 'sr'
+				? content.replace('potvrđuju istu osnovnu liniju događaja', 'se poklapaju oko osnovnog događaja, dok detalje treba čitati kroz njihove pojedinačne naslove i opise')
+				: content,
+		};
+	}
+
+	return { angle, content };
+}
+
+const displayPerspectives = perspectives
+	.map(normalizePerspective)
+	.filter((p) => p.angle && p.content);
 ---
 
 <section class="editorial-section analysis-section mb-16 border-t-4 border-foreground pt-12">
@@ -81,11 +134,11 @@ const renderSynthesisHtml = (text: string) => sharedRenderSynthesisHtml(text, ha
 		</div>
 	)}
 
-	{perspectives.length > 0 && (
+	{displayPerspectives.length > 0 && (
 		<div class="perspectives-area">
 			<h4 class="text-[11px] font-black uppercase tracking-widest text-center mb-8 text-muted-foreground/60">{t('cluster.factcheck.diversity')}</h4>
 			<div class="perspective-grid-v2">
-				{perspectives.map((p: any) => (
+				{displayPerspectives.map((p: any) => (
 					<div class="editorial-angle-card">
 						<h5 class="angle-title" set:html={renderSynthesisHtml(p.angle)}></h5>
 						<p class="angle-content" set:html={renderSynthesisHtml(p.content)}></p>

@@ -14,6 +14,7 @@ import HomeRail from './HomeRail.astro';
 import EmptyState from './EmptyState.astro';
 import HomeLiveStrip from './HomeLiveStrip.astro';
 import TrendingPreviewRail from './TrendingPreviewRail.astro';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { chooseClusterImage } from '../../utils/imageSelection';
 import { cleanAndDecode, extractCleanSummaryText, highlightScores, isMostlyCyrillic } from '../../utils/textUtils';
 import { apiBaseUrl } from '../../lib/apiBase';
@@ -378,6 +379,11 @@ const leadEvidenceItems = leadCluster ? [
         detail: leadSignals.slice(1).join(' · '),
     },
 ].filter((item) => item.value) : [];
+
+const reportingLabel = lang === 'sr' ? 'Izveštavaju:' : 'Известуваат:';
+const factsConfirmedLabel = lang === 'sr' ? 'Činjenice potvrđene' : 'Фактите потврдени';
+const factCheckSourceLabel = lang === 'sr' ? 'Fact-check izvor:' : 'Факт-чек извор:';
+const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 ---
 
 <Layout
@@ -550,15 +556,14 @@ const leadEvidenceItems = leadCluster ? [
 
 				{/* ── UGAO GLEDANJA (PERSPECTIVE SPECTRUM) ── */}
 				{isHomepage && perspectivesClusters && perspectivesClusters.length > 0 && (
-					<div class="section-wrapper perspectives-section bg-muted/10 p-8 border border-border/40 rounded-3xl my-12 shadow-md relative overflow-hidden group">
-						<div class="absolute -right-24 -top-24 w-96 h-96 bg-nyt-accent/5 rounded-full blur-[100px] pointer-events-none transition-all duration-700 group-hover:bg-nyt-accent/10"></div>
-						<div class="section-heading-row mb-8 relative z-10">
+					<div class="section-wrapper analysis-band perspectives-section">
+						<div class="section-heading-row">
 							<span class="text-[10px] font-black uppercase tracking-[0.25em] text-nyt-accent block mb-2">{t('home.perspectives_title')}</span>
 							<h2 class="font-serif text-3xl font-black italic">{t('home.perspectives_subtitle')}</h2>
 							<p class="text-sm text-muted-foreground mt-2 max-w-2xl">{t('home.perspectives_desc')}</p>
 						</div>
 						
-						<div class="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
+						<div class="analysis-grid">
 							{perspectivesClusters.map((cluster: NewsCluster) => {
 								const pluralismVal = cluster.pluralism_score || 50;
 								// Determine color for the plurality gauge
@@ -567,15 +572,15 @@ const leadEvidenceItems = leadCluster ? [
 								else if (pluralismVal >= 60) gaugeColor = "from-teal-500 to-emerald-600 dark:from-teal-400 dark:to-emerald-500";
 								
 								return (
-									<div class="perspective-card flex flex-col justify-between p-6 bg-background/50 hover:bg-muted/10 border border-border/30 hover:border-border/60 rounded-2xl transition-all duration-300 shadow-sm hover:shadow-md group/card hover:-translate-y-0.5">
+									<div class="analysis-card perspective-card">
 										<div>
 											<div class="flex items-center justify-between gap-4 mb-4">
-												<span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground bg-background/60 border border-border/40 px-2 py-0.5 rounded-md">
+												<span class="analysis-eyebrow">
 													{cluster.articles?.[0]?.category || 'Tema'}
 												</span>
 												<div class="flex items-center gap-1.5">
-													<div class="h-1.5 w-16 bg-border/40 rounded-full overflow-hidden">
-														<div class={`h-full bg-gradient-to-r ${gaugeColor} rounded-full`} style={`width: ${pluralismVal}%`}></div>
+													<div class="analysis-meter">
+														<div class={`h-full bg-gradient-to-r ${gaugeColor}`} style={`width: ${pluralismVal}%`}></div>
 													</div>
 													<span class="text-[10px] font-black text-foreground/80">{pluralismVal}%</span>
 												</div>
@@ -594,10 +599,10 @@ const leadEvidenceItems = leadCluster ? [
 										
 										<div class="border-t border-border/30 pt-4 mt-auto">
 											<div class="flex flex-col gap-2">
-												<span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1 block">Izveštavaju:</span>
+												<span class="analysis-foot-label">{reportingLabel}</span>
 												<div class="flex flex-wrap gap-1.5">
 													{cluster.articles?.slice(0, 3).map((art) => (
-														<span class="text-[9px] font-bold px-2 py-0.5 bg-background/50 border border-border/30 text-foreground/70 rounded-md">
+														<span class="analysis-source-chip">
 															{art.source}
 														</span>
 													))}
@@ -618,18 +623,18 @@ const leadEvidenceItems = leadCluster ? [
 
 				{/* ── MEDIJSKI RADAR (FACT-CHECK RADAR) ── */}
 				{isHomepage && radarClusters && radarClusters.length > 0 && (
-					<div class="section-wrapper radar-section my-12 bg-red-500/5 dark:bg-red-500/10 p-8 border border-red-500/15 rounded-3xl">
-						<div class="section-heading-row mb-8">
+					<div class="section-wrapper analysis-band radar-section">
+						<div class="section-heading-row">
 							<span class="text-[10px] font-black uppercase tracking-[0.25em] text-red-500 dark:text-red-400 block mb-2">{t('home.radar_title')}</span>
 							<h2 class="font-serif text-3xl font-black italic">{t('home.radar_subtitle')}</h2>
 							<p class="text-sm text-muted-foreground mt-2 max-w-2xl">{t('home.radar_desc')}</p>
 						</div>
 						
-						<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+						<div class="analysis-grid">
 							{radarClusters.map((cluster: NewsCluster) => {
 								const factCheckedArticle = cluster.articles?.find(a => a.is_fact_check) || cluster.articles?.[0];
 								return (
-									<div class="radar-card flex flex-col justify-between p-6 bg-background/50 hover:bg-red-500/5 border border-red-500/10 hover:border-red-500/20 rounded-2xl transition-all duration-300 group shadow-sm hover:shadow-md">
+									<div class="analysis-card radar-card">
 										<div>
 											<div class="flex items-center justify-between gap-4 mb-4">
 												<div class="flex items-center gap-1.5">
@@ -638,11 +643,11 @@ const leadEvidenceItems = leadCluster ? [
 														<span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
 													</span>
 													<span class="text-[9px] font-black uppercase tracking-widest text-emerald-500 dark:text-emerald-400">
-														Činjenice Potvrđene
+														{factsConfirmedLabel}
 													</span>
 												</div>
-												<span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground bg-background/50 px-2 py-0.5 rounded border border-border/30">
-													{factCheckedArticle?.source || 'Portal'}
+												<span class="analysis-eyebrow">
+													{factCheckedArticle?.source || portalFallbackLabel}
 												</span>
 											</div>
 											
@@ -659,8 +664,8 @@ const leadEvidenceItems = leadCluster ? [
 										
 										<div class="border-t border-border/20 pt-4 mt-auto">
 											<div class="flex items-center justify-between text-[10px] text-muted-foreground">
-												<span class="font-black uppercase tracking-wider">Fact-check Izvor:</span>
-												<span class="font-bold text-foreground/80">{factCheckedArticle?.source || 'Medij'}</span>
+												<span class="analysis-foot-label">{factCheckSourceLabel}</span>
+												<span class="font-bold text-foreground/80">{factCheckedArticle?.source || portalFallbackLabel}</span>
 											</div>
 										</div>
 									</div>
@@ -684,7 +689,7 @@ const leadEvidenceItems = leadCluster ? [
                                     aria-label="Previous"
                                     onclick="this.parentElement.querySelector('.consensus-grid').scrollBy({ left: -this.parentElement.querySelector('.consensus-grid').offsetWidth * 0.75, behavior: 'smooth' });"
                                 >
-                                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                                    <ChevronLeft size={18} strokeWidth={2.5} />
                                 </button>
                                 
                                 <div class="consensus-grid hide-scrollbar">
@@ -700,7 +705,7 @@ const leadEvidenceItems = leadCluster ? [
                                     aria-label="Next"
                                     onclick="this.parentElement.querySelector('.consensus-grid').scrollBy({ left: this.parentElement.querySelector('.consensus-grid').offsetWidth * 0.75, behavior: 'smooth' });"
                                 >
-                                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                    <ChevronRight size={18} strokeWidth={2.5} />
                                 </button>
                                 <div class="carousel-fade-hint right sm:hidden"></div>
                             </div>
@@ -865,6 +870,103 @@ const leadEvidenceItems = leadCluster ? [
         grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 1px;
         background: var(--border);
+    }
+
+    /* ── Analytical Bands ───────────────────────────── */
+    .analysis-band {
+        margin: 2rem 0;
+        padding: clamp(1.25rem, 2.6vw, 2rem) 0;
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+        background: color-mix(in srgb, var(--surface-soft) 62%, transparent);
+    }
+
+    .radar-section {
+        background: color-mix(in srgb, var(--nyt-red) 4%, var(--background));
+        border-color: color-mix(in srgb, var(--nyt-red) 18%, var(--border));
+    }
+
+    .section-heading-row {
+        margin-bottom: 1.35rem;
+        padding: 0 clamp(0.85rem, 2vw, 1.25rem);
+    }
+
+    .section-heading-row h2,
+    .section-heading-row p {
+        margin-left: 0;
+    }
+
+    .analysis-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1px;
+        background: var(--border);
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .analysis-card {
+        display: flex;
+        min-width: 0;
+        min-height: 17rem;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: clamp(1rem, 2vw, 1.35rem);
+        background: var(--background);
+        transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .analysis-card:hover {
+        background: color-mix(in srgb, var(--surface-soft) 72%, var(--background));
+    }
+
+    .radar-card:hover {
+        background: color-mix(in srgb, var(--nyt-red) 5%, var(--background));
+    }
+
+    .analysis-eyebrow,
+    .analysis-foot-label,
+    .analysis-source-chip {
+        font-family: var(--font-sans);
+        font-size: 0.56rem;
+        font-weight: 950;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+    }
+
+    .analysis-eyebrow {
+        max-width: 12rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        padding: 0.2rem 0.45rem;
+        border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+        background: color-mix(in srgb, var(--surface-soft) 72%, transparent);
+        color: var(--muted-foreground);
+    }
+
+    .analysis-meter {
+        width: 4rem;
+        height: 0.38rem;
+        overflow: hidden;
+        background: color-mix(in srgb, var(--border) 70%, transparent);
+    }
+
+    .analysis-foot-label {
+        display: block;
+        margin-bottom: 0.25rem;
+        color: var(--muted-foreground);
+    }
+
+    .analysis-source-chip {
+        max-width: 9rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        padding: 0.2rem 0.45rem;
+        border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+        background: color-mix(in srgb, var(--surface-soft) 64%, transparent);
+        color: color-mix(in srgb, var(--foreground) 76%, var(--muted-foreground));
     }
 
     /* ── Supporting Band & Developments Grids ────────── */
@@ -1036,6 +1138,16 @@ const leadEvidenceItems = leadCluster ? [
     @media (max-width: 768px) {
         .consensus-section {
             padding: 1.5rem 1rem !important;
+        }
+        .analysis-band {
+            margin: 1.5rem 0;
+            padding: 1.1rem 0;
+        }
+        .analysis-grid {
+            grid-template-columns: 1fr;
+        }
+        .analysis-card {
+            min-height: 0;
         }
         .home-evidence-strip {
             grid-template-columns: 1fr;

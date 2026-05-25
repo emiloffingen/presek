@@ -841,11 +841,11 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
         ref={triggerRef}
         onClick={() => setIsOpen(true)}
         data-testid="search-trigger"
-        className="flex items-center gap-[var(--grid-gap)] px-3 py-1.5 bg-secondary/30 hover:bg-secondary/60 border border-border/60 hover:border-nyt-accent/30 rounded-lg transition-all group w-full text-left backdrop-blur-sm"
-        aria-label="Otvori komanden centar"
+        className="presek-search-trigger flex items-center gap-2 px-3 py-1.5 bg-secondary/30 hover:bg-secondary/60 border border-border/60 hover:border-nyt-accent/30 rounded-lg transition-all group w-full text-left backdrop-blur-sm"
+        aria-label={lang === 'sr' ? 'Otvori pretragu' : 'Отвори пребарување'}
       >
         <Search size={14} className="shrink-0 text-muted-foreground group-hover:text-nyt-accent transition-colors" />
-        <span className="hidden min-w-0 flex-1 overflow-hidden h-4 sm:block">
+        <span className="search-trigger-copy hidden min-w-0 flex-1 overflow-hidden h-4 sm:block">
             <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 group-hover:text-muted-foreground transition-colors animate-in slide-in-from-bottom-2 duration-300 block truncate">
                 {placeholders[placeholderIdx]}
             </span>
@@ -870,6 +870,24 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: rgba(var(--nyt-accent), 0.4);
+        }
+        @media (max-width: 640px) {
+          .presek-search-trigger {
+            width: 2.35rem;
+            height: 2.15rem;
+            justify-content: center;
+            padding: 0;
+            border-radius: 9999px;
+            background: color-mix(in srgb, var(--background) 82%, var(--secondary));
+          }
+          .presek-search-trigger .search-trigger-copy,
+          .presek-search-trigger kbd {
+            display: none !important;
+          }
+          .presek-search-trigger svg {
+            width: 1rem;
+            height: 1rem;
+          }
         }
       `}} />
     </>
