@@ -65,7 +65,7 @@ const nameIsCyrillic = isMostlyCyrillic(decodedName);
             <div class="empty-state">
                 <p class="empty-kicker">{lang === 'sr' ? 'GREŠKA' : 'ГРЕШКА'}</p>
                 <h2>{error}</h2>
-                <a href={lang === 'sr' ? '/' : '/'} class="clear-filter mt-4">{lang === 'sr' ? 'Vrati se na početnu' : 'Врати се на почетна'}</a>
+                <a href={lang === 'sr' ? '/' : '/mk'} class="clear-filter mt-4">{lang === 'sr' ? 'Vrati se na početnu' : 'Врати се на почетна'}</a>
             </div>
         ) : (
             <div class="broadsheet-grid">
@@ -81,7 +81,7 @@ const nameIsCyrillic = isMostlyCyrillic(decodedName);
                         <div class="broadsheet-feed">
                             {featuredClusters.map((cluster: any) => (
                                 <div class="feed-item-wrap">
-                                    <NewsCard cluster={cluster} variant="featured" />
+                                    <NewsCard cluster={cluster} variant="featured" lang={lang} />
                                 </div>
                             ))}
                         </div>
@@ -90,7 +90,7 @@ const nameIsCyrillic = isMostlyCyrillic(decodedName);
                             <div class="broadsheet-feed mt-5 md:mt-8">
                                 {compactClusters.map((cluster: any) => (
                                     <div class="feed-item-wrap">
-                                        <NewsCard cluster={cluster} variant="compact" />
+                                        <NewsCard cluster={cluster} variant="compact" lang={lang} />
                                     </div>
                                 ))}
                             </div>

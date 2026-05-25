@@ -95,6 +95,7 @@ function countValues(values: string[]) {
 function buildNewsUrl(params: Record<string, string>) {
 	const url = new URL(`${API_URL}/news`);
 	url.searchParams.set('page_size', '24');
+	url.searchParams.set('lang', lang);
 	for (const [key, value] of Object.entries(params)) {
 		url.searchParams.set(key, value);
 	}
@@ -114,7 +115,7 @@ try {
 	if (clusters.length > 0) {
 		const ids = clusters.slice(0, 6).map((cluster: any) => cluster.cluster_id);
 		const detailResults = await Promise.allSettled(
-			ids.map((id: string) => fetchJson(`${API_URL}/cluster/${id}`))
+			ids.map((id: string) => fetchJson(`${API_URL}/cluster/${id}?lang=${lang}`))
 		);
 
 		detailResults.forEach((result, index) => {
@@ -125,7 +126,7 @@ try {
 	}
 } catch (e: any) {
 	console.error(e);
-	error = 'Tema trenutno nije dostupna.';
+	error = 'Темата моментално не е достапна.';
 	Astro.response.status = e.status || 500;
 }
 
@@ -158,7 +159,7 @@ const topicFollowSuggestions = topicConnections.slice(0, 2).map((item: any) => (
 }));
 const sourceFollowSuggestions = sourceRows.slice(0, 2).map(([name, count]) => ({
 	source: name,
-	reason: `${count} pojavljivanja u aktivnim klasterima za ovu temu.`,
+	reason: `${count} појавувања во активни кластери за оваа тема.`,
 }));
 
 const siteUrl = lang === 'sr' ? 'https://presek.live' : 'https://presek.mk';
@@ -166,7 +167,7 @@ const canonicalUrl = new URL(Astro.url.pathname, siteUrl).href.replace(/\/+$/, "
 
 const leadSummary =
 	getDisplaySummary(leadCluster?.articles?.[0] || {}) ||
-	'Najsnažniji klasteri u ovoj temi su poređani po težini, poverenju i razvoju.';
+	'Најсилните кластери во оваа тема се подредени според тежина, доверба и развој.';
 
 const keyAngles = normalizePerspectives(leadDetail?.perspectives || []).slice(0, 3);
 const synthesisLines = parseSynthesis(leadDetail?.synthesis || '').slice(0, 3);
@@ -175,36 +176,36 @@ const relatedClusters = Array.isArray(leadDetail?.related) ? leadDetail.related.
 function topicIntro() {
 	if (!clusters.length) return '';
 	if (breakingCount >= 2) {
-		return `Tema ${topic} se danas razvija brzo, sa ${clusters.length} aktivnih klastera i ${uniqueSources.size} izvora koji dodaju nove detalje.`;
+		return `Темата ${topic} денес се развива брзо, со ${clusters.length} активни кластери и ${uniqueSources.size} извори што додаваат нови детали.`;
 	}
 	if (clusters.length >= 6) {
-		return `Tema ${topic} je široko prisutna kroz današnji ciklus, sa ${clusters.length} klastera i ${totalReports} izveštaja koji se nadovezuju jedan na drugi.`;
+		return `Темата ${topic} е широко присутна низ денешниот циклус, со ${clusters.length} кластери и ${totalReports} извештаи што се надоврзуваат еден на друг.`;
 	}
-	return `Tema ${topic} ostaje relevantna danas, sa ${clusters.length} klastera i više redakcija koje je prate iz različitih uglova.`;
+	return `Темата ${topic} останува релевантна денес, со ${clusters.length} кластери и повеќе редакции што ја следат од различни агли.`;
 }
 ---
 
 <Layout
-	title={topic ? `${topic} | Tema` : 'Tema'}
-	description={`još što je aktivno za temu ${topic} — klasteri, izvori, perspektive i razvoj.`}
+	title={topic ? `${topic} | Тема` : 'Тема'}
+	description={`Активно за темата ${topic} — кластери, извори, перспективи и развој.`}
 	canonical={canonicalUrl}
 >
 	<NYTHeader topic={topic} />
 
 	<main class="site-layout py-[var(--page-py)]">
 		{(error || !clusters.length) && (
-			<Breadcrumbs items={[{ label: "Teme", href: "/" }, { label: topic || "Tema" }]} />
+			<Breadcrumbs items={[{ label: "Теми", href: "/mk" }, { label: topic || "Тема" }]} />
 		)}
 
 		{error && (
 			<div class="topic-empty">
 				<div class="topic-empty-inner">
-					<span class="topic-kicker">Tema</span>
-					<h1 class="topic-empty-title">{topic || 'Tema'}</h1>
+					<span class="topic-kicker">Тема</span>
+					<h1 class="topic-empty-title">{topic || 'Тема'}</h1>
 					<p>{error}</p>
 					<div class="topic-empty-actions">
-						<a href={l("/")} class="topic-empty-link">Nazad na početak</a>
-						<a href={l("/archive")} class="topic-empty-link topic-empty-link-secondary">Otvori arhivu</a>
+						<a href={l("/")} class="topic-empty-link">Назад на почеток</a>
+						<a href={l("/archive")} class="topic-empty-link topic-empty-link-secondary">Отвори архива</a>
 					</div>
 				</div>
 			</div>
@@ -213,12 +214,12 @@ function topicIntro() {
 		{!error && !clusters.length && (
 			<div class="topic-empty">
 				<div class="topic-empty-inner">
-					<span class="topic-kicker">Tema</span>
+					<span class="topic-kicker">Тема</span>
 					<h1 class="topic-empty-title">{topic}</h1>
-					<p>Nema dovoljno aktivnih klastera za ovu temu u ovom trenutku.</p>
+					<p>Во моментов нема доволно активни кластери за оваа тема.</p>
 					<div class="topic-empty-actions">
-						<a href={l("/")} class="topic-empty-link">Početna</a>
-						<a href={l("/archive")} class="topic-empty-link topic-empty-link-secondary">Potraži u arhivi</a>
+						<a href={l("/")} class="topic-empty-link">Почетна</a>
+						<a href={l("/archive")} class="topic-empty-link topic-empty-link-secondary">Пребарај во архива</a>
 					</div>
 				</div>
 			</div>
@@ -229,7 +230,7 @@ function topicIntro() {
 				<header class="topic-hero">
 					<div class="topic-hero-copy">
 						<Breadcrumbs items={[{ label: topic }]} />
-						<span class="topic-kicker">Tema</span>
+						<span class="topic-kicker">Тема</span>
 						<h1 class="topic-headline">{topic}</h1>
 						<div class="topic-actions">
 							<PreferenceToggle client:visible kind="topic" value={topic} />
@@ -239,19 +240,19 @@ function topicIntro() {
 
 						<div class="topic-stats">
 							<div>
-								<span class="micro-label">klasteri</span>
+								<span class="micro-label">кластери</span>
 								<strong>{clusters.length}</strong>
 							</div>
 							<div>
-								<span class="micro-label">izvori</span>
+								<span class="micro-label">извори</span>
 								<strong>{uniqueSources.size}</strong>
 							</div>
 							<div>
-								<span class="micro-label">Izveštaji</span>
+								<span class="micro-label">Извештаи</span>
 								<strong>{totalReports}</strong>
 							</div>
 							<div>
-								<span class="micro-label">U razvoju</span>
+								<span class="micro-label">Во развој</span>
 								<strong>{breakingCount}</strong>
 							</div>
 						</div>
@@ -259,7 +260,7 @@ function topicIntro() {
 
 					<div class="topic-hero-side">
 						<div class="topic-note-card">
-							<p class="topic-note-label">Šta pokreće ovaj prostor</p>
+							<p class="topic-note-label">Што го движи овој простор</p>
 							<ul class="topic-note-list">
 								{(synthesisLines.length > 0 ? synthesisLines : [leadSummary]).map((line: string) => (
 									<li>{line}</li>
@@ -280,18 +281,18 @@ function topicIntro() {
 						{leadCluster && (
 							<section class="topic-lead">
 								<div class="section-heading-row">
-									<h2 class="section-title">Vodeća priča</h2>
-									<p class="section-note">klaster koji najviše nosi temu napred u ovom trenutku.</p>
+									<h2 class="section-title">Водечка приказна</h2>
+									<p class="section-note">кластерот што најмногу ја носи темата напред во моментов.</p>
 								</div>
-								<NewsCard cluster={leadCluster} isLead={true} />
+								<NewsCard cluster={leadCluster} isLead={true} lang={lang} />
 							</section>
 						)}
 
 						{keyAngles.length > 0 && (
 							<section class="topic-angles">
 								<div class="section-heading-row">
-									<h2 class="section-title">Gde se razlikuje pokrivanje</h2>
-									<p class="section-note">Glavni uglovi koji proizlaze iz vodećeg klastera u temi.</p>
+									<h2 class="section-title">Каде се разликува покривањето</h2>
+									<p class="section-note">Главните агли што произлегуваат од водечкиот кластер во темата.</p>
 								</div>
 								<div class="topic-angle-grid">
 									{keyAngles.map((item: any) => (
@@ -307,12 +308,12 @@ function topicIntro() {
 						{supportingClusters.length > 0 && (
 							<section class="topic-supporting">
 								<div class="section-heading-row">
-									<h2 class="section-title">Šta se razvija dalje</h2>
-									<p class="section-note">Pridruženi i sledeći klasteri koji proširuju temu.</p>
+									<h2 class="section-title">Што се развива понатаму</h2>
+									<p class="section-note">Поврзани и следни кластери што ја прошируваат темата.</p>
 								</div>
 								<div class="topic-supporting-grid">
 									{supportingClusters.map((cluster: any, index: number) => (
-										<NewsCard cluster={cluster} variant={index === 0 ? 'featured' : 'compact'} />
+										<NewsCard cluster={cluster} variant={index === 0 ? 'featured' : 'compact'} lang={lang} />
 									))}
 								</div>
 							</section>
@@ -321,20 +322,20 @@ function topicIntro() {
 						{feedClusters.length > 0 && (
 							<section class="topic-feed">
 								<div class="section-heading-row">
-									<h2 class="section-title">Više od ove teme</h2>
-									<p class="section-note">Ostali aktivni klasteri koje vredi zadržati u vidnom polju.</p>
+									<h2 class="section-title">Повеќе од оваа тема</h2>
+									<p class="section-note">Други активни кластери што вреди да останат во фокус.</p>
 								</div>
 								{featuredFeedClusters.length > 0 && (
 									<div class="topic-feed-grid topic-feed-grid-featured">
 										{featuredFeedClusters.map((cluster: any) => (
-											<NewsCard cluster={cluster} variant="featured" />
+											<NewsCard cluster={cluster} variant="featured" lang={lang} />
 										))}
 									</div>
 								)}
 								{compactFeedClusters.length > 0 && (
 									<div class="topic-feed-grid topic-feed-grid-compact">
 										{compactFeedClusters.map((cluster: any) => (
-											<NewsCard cluster={cluster} variant="compact" />
+											<NewsCard cluster={cluster} variant="compact" lang={lang} />
 										))}
 									</div>
 								)}
@@ -345,7 +346,7 @@ function topicIntro() {
 					<aside class="topic-rail">
 						{tagRows.length > 0 && (
 							<section class="rail-card">
-								<h3 class="rail-card-title">Imena i uglovi</h3>
+								<h3 class="rail-card-title">Имиња и агли</h3>
 								<div class="topic-chip-list">
 									{tagRows.map(([name, count]) => (
 										<a href={l(`/?q=${encodeURIComponent(name)}`)} class="topic-chip">
@@ -358,7 +359,7 @@ function topicIntro() {
 
 						{topicConnections.length > 0 && (
 							<section class="rail-card">
-								<h3 class="rail-card-title">Gde ići dalje</h3>
+								<h3 class="rail-card-title">Каде понатаму</h3>
 								<div class="topic-connection-list">
 									{topicConnections.map((item: any) => (
 										<a href={l(`/tema/${encodeURIComponent(item.topic)}`)} class="topic-connection-card">
@@ -376,14 +377,14 @@ function topicIntro() {
 
 						{sourceRows.length > 0 && (
 							<section class="rail-card">
-								<h3 class="rail-card-title">Izvori koji vode temu</h3>
+								<h3 class="rail-card-title">Извори што ја водат темата</h3>
 								<div class="topic-source-list">
 									{sourceRows.map(([name, count], index) => (
 										<div class="topic-source-row">
 											<span class="topic-source-rank">{String(index + 1).padStart(2, '0')}</span>
 											<div>
 												<p>{name}</p>
-												<span>{count} pojavljivanja u klasterima</span>
+												<span>{count} појавувања во кластерите</span>
 											</div>
 										</div>
 									))}
@@ -393,14 +394,14 @@ function topicIntro() {
 
 						{relatedClusters.length > 0 && (
 							<section class="rail-card">
-								<h3 class="rail-card-title">Šta čitati dalje</h3>
+								<h3 class="rail-card-title">Што да се чита понатаму</h3>
 								<div class="topic-related-list">
 									{relatedClusters.map((item: any) => (
 										<a href={l(`/cluster/${item.cluster_id}`)} class="topic-related-link">
 											{item.relationship_label && <span class="topic-related-kicker">{item.relationship_label}</span>}
 											<strong>{item.title}</strong>
 											{item.relationship_note && <p>{item.relationship_note}</p>}
-											<span class="topic-related-cta">Otvori klaster <ArrowRight size={12} /></span>
+											<span class="topic-related-cta">Отвори кластер <ArrowRight size={12} /></span>
 										</a>
 									))}
 								</div>

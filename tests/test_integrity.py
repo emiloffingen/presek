@@ -123,6 +123,19 @@ class TestAstroFrontendIntegrity:
         assert "const hasCitationSources = false;" in cluster_page
         assert "timeZone: 'Europe/Skopje'" in text_utils
 
+    def test_macedonian_topic_and_entity_pages_keep_locale_contract(self):
+        topic_page = _read("web/src/pages/mk/tema/[topic].astro")
+        entity_page = _read("web/src/pages/mk/subjekt/[name].astro")
+
+        assert "url.searchParams.set('lang', lang);" in topic_page
+        assert "`${API_URL}/cluster/${id}?lang=${lang}`" in topic_page
+        assert 'lang={lang}' in topic_page
+        assert "Tema trenutno nije dostupna." not in topic_page
+        assert "pojavljivanja" not in topic_page
+
+        assert "href={lang === 'sr' ? '/' : '/mk'}" in entity_page
+        assert 'lang={lang}' in entity_page
+
     def test_editorial_interactive_widgets_avoid_placeholder_and_nan_output(self):
         source_comparison = _read("web/src/components/SourceComparisonIsland.tsx")
         research = _read("web/src/components/ResearchIsland.tsx")
