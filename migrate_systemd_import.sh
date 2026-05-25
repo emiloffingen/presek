@@ -17,6 +17,20 @@ echo "Installing system dependencies..."
 sudo apt update
 sudo apt install -y postgresql postgresql-contrib redis-server nginx python3-pip python3-venv curl tar git libpq-dev build-essential
 
+echo "Installing pgvector for PostgreSQL..."
+PG_VERSION=$(psql --version | grep -oE '[0-9]+' | head -n 1)
+sudo apt install -y "postgresql-${PG_VERSION}-pgvector" || {
+    echo "Warning: postgresql-${PG_VERSION}-pgvector apt package not found. Attempting to build pgvector from source..."
+    cd /tmp
+    rm -rf pgvector
+    git clone --branch v0.7.0 https://github.com/pgvector/pgvector.git
+    cd pgvector
+    make
+    sudo make install
+    cd -
+}
+
+
 # 3. Install 'uv' for fast python management
 if ! command -v uv &> /dev/null; then
     echo "Installing uv..."
@@ -31,6 +45,8 @@ echo "Configuring PostgreSQL..."
 sudo -u postgres psql -c "CREATE USER presek WITH SUPERUSER;" || true
 sudo -u postgres psql -c "ALTER USER presek WITH PASSWORD 'presek';" || true
 sudo -u postgres psql -c "CREATE DATABASE presek OWNER presek;" || true
+sudo -u postgres psql -d presek -c "CREATE EXTENSION IF NOT EXISTS vector;" || true
+
 
 # 5. Extract files
 echo "Extracting bundle..."
