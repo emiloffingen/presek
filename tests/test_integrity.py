@@ -30,6 +30,17 @@ class TestAstroFrontendIntegrity:
         # Check for theme logic usage
         assert "typeof localStorage !== 'undefined'" in layout
 
+    def test_adsense_only_loads_on_supported_serbian_domain(self):
+        layout = _read("web/src/layouts/Layout.astro")
+        middleware = _read("web/src/middleware.ts")
+
+        assert "const shouldLoadAdsense = lang === 'sr'" in layout
+        assert "{shouldLoadAdsense && (" in layout
+        assert "pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" in layout
+
+        assert "url.pathname.startsWith('/mk')" in middleware
+        assert "https://presek.mk" in middleware
+
     def test_canonical_url_uses_logic(self):
         layout = _read("web/src/layouts/Layout.astro")
         # Ensure canonical logic is present

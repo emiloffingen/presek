@@ -67,12 +67,16 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 const alternatePath = lang === 'mk' ? requestUrl.pathname.replace(/^\/mk/, '') : requestUrl.pathname;
 const srHref = `https://presek.live${alternatePath.replace(/\/+$/, "") || ""}`;
 const mkHref = `https://presek.mk${alternatePath.replace(/\/+$/, "") || ""}`;
+const normalizedHost = hostHeader.split(':')[0].toLowerCase();
+const shouldLoadAdsense = lang === 'sr' && (normalizedHost === 'presek.live' || normalizedHost === 'www.presek.live');
 ---
 
 <!doctype html>
 <html lang={lang === 'sr' ? "sr-Latn" : "mk"}>
 	<head>
-		<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1724921768403014" crossorigin="anonymous"></script>
+		{shouldLoadAdsense && (
+			<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1724921768403014" crossorigin="anonymous"></script>
+		)}
 		<script async src="https://www.googletagmanager.com/gtag/js?id=G-SV2R3LZJ5C"></script>
 		<script is:inline>
 			window.dataLayer = window.dataLayer || [];
