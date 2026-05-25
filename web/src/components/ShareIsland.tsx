@@ -79,28 +79,28 @@ export default function ShareIsland({ title, url }: ShareIslandProps) {
   const shareOptions = [
     {
       name: "Facebook",
-      icon: <FacebookIcon size={14} />,
+      icon: <FacebookIcon size={20} />,
       url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`,
       hoverClass:
         "hover:text-blue-600 hover:border-blue-600 dark:hover:text-blue-400 dark:hover:border-blue-400",
     },
     {
       name: "WhatsApp",
-      icon: <MessageCircle size={14} />,
+      icon: <MessageCircle size={20} />,
       url: `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`,
       hoverClass:
         "hover:text-green-600 hover:border-green-600 dark:hover:text-green-400 dark:hover:border-green-400",
     },
     {
       name: "Twitter / X",
-      icon: <TwitterIcon size={14} />,
+      icon: <TwitterIcon size={20} />,
       url: `https://x.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(currentUrl)}`,
       hoverClass:
         "hover:text-foreground hover:border-foreground dark:hover:text-white dark:hover:border-white",
     },
     {
       name: "Reddit",
-      icon: <RedditIcon size={14} />,
+      icon: <RedditIcon size={20} />,
       url: `https://www.reddit.com/submit?url=${encodeURIComponent(currentUrl)}&title=${encodeURIComponent(title)}`,
       hoverClass:
         "hover:text-orange-600 hover:border-orange-600 dark:hover:text-orange-400 dark:hover:border-orange-400",
@@ -108,14 +108,15 @@ export default function ShareIsland({ title, url }: ShareIslandProps) {
   ];
 
   return (
-    <span className="meta-actions-list flex flex-row items-center gap-2">
+    <span className="meta-actions-list flex flex-row items-center gap-2.5">
       {shareOptions.map((option) => (
         <a
           key={option.name}
           href={option.url}
           target="_blank"
           rel="noopener noreferrer"
-          className={`meta-action-btn flex items-center justify-center w-8 h-8 rounded-full border border-border/50 text-muted-foreground bg-background/50 hover:bg-muted/30 transition-all duration-200 ${option.hoverClass}`}
+          className={`meta-action-btn flex items-center justify-center rounded-full border border-border/50 text-muted-foreground bg-background/50 hover:bg-muted/30 transition-all duration-200 ${option.hoverClass}`}
+          style={{ width: "38px", height: "38px", minWidth: "38px", minHeight: "38px" }}
           title={option.name}
           aria-label={`Share on ${option.name}`}
         >
