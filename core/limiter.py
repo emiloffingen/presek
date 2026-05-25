@@ -25,7 +25,11 @@ try:
     limiter = Limiter(
         key_func=get_remote_address,
         default_limits=["500/minute", "5000/hour"],
-        storage_uri=os.environ.get("REDIS_URL", "redis://localhost:6379/0"),
+        storage_uri=(
+            "memory://"
+            if "pytest" in sys.modules
+            else os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+        ),
     )
 except ImportError as exc:
     if os.environ.get("ENV") == "production" and "pytest" not in sys.modules:
