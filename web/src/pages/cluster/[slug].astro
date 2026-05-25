@@ -278,6 +278,11 @@ const evidenceItems = [
         value: String(uniqueSourcesCount),
         detail: sourcePreview.join(' · '),
     },
+    ...(cluster?.pluralism_score != null ? [{
+        label: lang === 'sr' ? 'Indeks Pluralizma' : 'Индекс на Плурализам',
+        value: `${cluster.pluralism_score}%`,
+        detail: cluster.narrative_diversity?.verdict ? `“${cluster.narrative_diversity.verdict.slice(0, 60)}...”` : (lang === 'sr' ? 'Raznolikost perspektiva' : 'Разновидност на перспективи'),
+    }] : []),
     {
         label: lang === 'sr' ? 'Prva objava' : 'Прва објава',
         value: firstArticle?.source || '—',

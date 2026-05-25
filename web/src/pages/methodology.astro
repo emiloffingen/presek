@@ -1,0 +1,101 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
+
+const hostHeader = Astro.request?.headers.get('host');
+const lang = getLangFromUrl(Astro.url, hostHeader);
+const t = useTranslations(lang);
+const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
+---
+
+<Layout
+    title={`${t('nav.methodology') || 'Metodologija'} — Presek`}
+    description="Detaljno objašnjenje naučne metodologije, NLP algoritama i matematičkih formula koje Presek koristi za izračunavanje medijskog pluralizma i sentimenta."
+>
+    <NYTHeader />
+    <main class="site-layout broadsheet-layout py-[var(--page-py)]">
+        <header class="editorial-masthead mb-12">
+            <div class="masthead-top">
+                <span class="masthead-kicker">NAUČNI OKVIR I INDEKSIRANJE</span>
+            </div>
+            <div class="masthead-main">
+                <h1 class="masthead-title">Metodologija <span>i metrika</span></h1>
+            </div>
+            <p class="masthead-intro">
+                Kako naši NLP algoritmi analiziraju, grupišu i ocenjuju medijski sadržaj na bazi empirijskih jezičkih modela.
+            </p>
+        </header>
+
+        <div class="broadsheet-grid">
+            <div class="broadsheet-main">
+                <article class="prose-editorial">
+                    <p class="first-paragraph">
+                        Presek funkcioniše kao računarski opservatorijum koji primenjuje stroge matematičke i lingvističke modele na analizu medijskih tekstova. Naša metodologija je u potpunosti transparentna, automatizovana i izgrađena da isključi ljudsku subjektivnost pri proceni medijskog pejzaža.
+                    </p>
+
+                    <h2 class="section-title-italic">1. Vektorsko grupisanje (Semantic Clustering)</h2>
+                    <p>
+                        Prvi korak u našoj obradi je ekstrakcija i grupisanje vesti. Svaki medijski članak se čisti od metapodataka i pretvara u višedimenzionalni numerički vektor korišćenjem embedding modela optimizovanih za južnoslovenske jezike.
+                    </p>
+                    <p>
+                        Sličnost između članaka se utvrđuje računanjem <strong>kosinusne sličnosti</strong> (Cosine Similarity) između vektora. Kada skup članaka pređe prag sličnosti od 0.78, oni se automatski grupišu u jedinstvenu priču ili "klaster". Ovaj proces nam omogućava da pratimo kako različite redakcije pokrivaju potpuno isti događaj.
+                    </p>
+
+                    <div class="editorial-divider"></div>
+
+                    <h2 class="section-title-italic">2. Indeks Medijskog Pluralizma (Pluralism Score)</h2>
+                    <p>
+                        <strong>Indeks Pluralizma</strong> je naša primarna metrička vrednost izražena u procentima (0% do 100%). On meri raznolikost perspektiva i narativni diverzitet unutar jednog klastera:
+                    </p>
+                    <ul class="editorial-list">
+                        <li><strong>Broj nezavisnih izvora (Težinski koeficijent):</strong> Veći broj jedinstvenih izveštaja iz različitih medijskih grupacija povećava indeks.</li>
+                        <li><strong>Semantička disperzija:</strong> Analiziramo varijaciju u izboru reči i sintaksi između članaka. Ako svi mediji koriste identične agencijske fraze (npr. direktan copy-paste saopštenja), indeks opada, ukazujući na nizak pluralizam.</li>
+                        <li><strong>Tonalna entropija:</strong> Meri distribuciju pozitivnih, neutralnih i negativnih tonova. Ujednačen sentiment širom celog političkog i medijskog spektra vodi ka većoj narativnoj raznolikosti.</li>
+                    </ul>
+
+                    <div class="editorial-divider"></div>
+
+                    <h2 class="section-title-italic">3. Analiza Sentimenta i Tonaliteta (Sentiment Pulse)</h2>
+                    <p>
+                        Svaki novinski članak prolazi kroz sintaksičku raščlanjenost gde se evaluira emotivni naboj i tonalitet. Svakoj rečenici se dodeljuje vrednost od -1 (izrazito negativan/senzacionalistički ton) do +1 (izrazito pozitivan/promotivni ton).
+                    </p>
+                    <p>
+                        Zbirni <strong>Sentiment Pulse</strong> prikazuje opšti emotivni profil vesti. Izbalansiran i neutralan tonalitet ukazuje na visokokvalitetno agencijsko izveštavanje, dok ekstremi ukazuju na potencijalnu senzacionalističku pristrasnost.
+                    </p>
+
+                    <div class="editorial-divider"></div>
+
+                    <h2 class="section-title-italic">4. Automatska Sinteza (AI Editorial Synthesis)</h2>
+                    <p>
+                        Kako bismo uštedeli vreme čitaocima i ponudili objektivan pregled, naši generativni NLP modeli analiziraju čitavu grupu članaka u klasteru, izdvajaju unakrsno potvrđene ključne činjenice (fakte) i stvaraju neutralnu sintezu. Ovaj proces sintetiše informacije bez preuzimanja subjektivnog mišljenja pojedinačnih autora, stvarajući jedinstveni doprinos medijskoj analizi.
+                    </p>
+                </article>
+            </div>
+
+            <aside class="broadsheet-rail">
+                <section class="rail-block rail-block-alt">
+                    <p class="rail-kicker">Metrika</p>
+                    <h3 class="rail-title">FORMULA PLURALIZMA</h3>
+                    <p class="rail-text">
+                        Indeks Pluralizma = f(Nezavisni Izvori) * Semantički Diverzitet * Tonalna Entropija. Cilj je matematičko mapiranje informativnih praznina.
+                    </p>
+                </section>
+
+                <section class="rail-block">
+                    <p class="rail-kicker">Navigacija</p>
+                    <div class="rail-directory">
+                        <a href={l('/about')} class="dir-link"><span class="name">O nama</span></a>
+                        <a href={l('/editorial')} class="dir-link"><span class="name">Standardi</span></a>
+                        <a href={l('/izvori')} class="dir-link"><span class="name">Izvori</span></a>
+                        <a href={l('/analize')} class="dir-link"><span class="name">Analize</span></a>
+                    </div>
+                </section>
+            </aside>
+        </div>
+    </main>
+
+    <Footer />
+</Layout>

@@ -34,42 +34,42 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
                 <article class="prose-editorial">
                     <p class="first-paragraph">
                         {lang === 'sr'
-                          ? 'U danima prepunim ponavljanja, preterivanja i brzih naslova, Presek služi kao disciplinovan pregled onoga što se zapravo dešava. Slične objave grupiše u „klastere“ da biste jednu priču mogli videti kroz više izvora, umesto da lovite komadić po komadić.'
-                          : 'Во деновите преполни со повторувања, претерувања и брзи наслови, Пресек служи како дисциплиниран преглед на она што навистина се случува. Сличните објави ги групира во „кластери“ за да можете една приказна да ја видите преку повеќе извори, наместо да го ловите секој дел посебно.'}
+                          ? 'Presek je nezavisni, neprofitni digitalni opservatorijum posvećen analitičkom istraživanju medijskog pluralizma, objektivnosti i narativne raznolikosti u digitalnom informativnom prostoru. U eri preopterećenja informacijama, naš naučni pristup NLP analizi služi za strukturiranje javnih debata i analizu medijskog izveštavanja.'
+                          : 'Пресек е независен, непрофитен дигитален опсерваториум посветен на аналитичко истражување на медиумскиот плурализам, објективноста и наративната разновидност во дигиталниот информативен простор. Во ерата на преоптовареност со информации, нашиот научен пристап кон NLP анализата служи за структурирање на јавните дебати и анализа на медиумското известување.'}
                     </p>
 
                     <p>
                         {lang === 'sr'
-                          ? 'Umesto da tvrdi da zamenjuje redakcije, Presek radi nešto korisno: daje vam strukturu. Iz te strukture proističu nekoliko ključnih slojeva koji oblikuju vašu informisanost.'
-                          : 'Наместо да тврди дека ги заменува редакциите, Пресек прави нешто корисно: ви дава структура. Од таа структура произлегуваат неколку кључни слоеви кои ја обликуваат вашата информираност.'}
+                          ? 'Umesto da zamenjuje tradicionalne medijske redakcije, naš portal vrši funkciju nadzornog mehanizma koji omogućava komparativnu analizu različitih novinarskih izvora, nudeći javnosti transparentnu metodologiju za nezavisnu analizu pristrasnosti, sentimenta i pluralizma.'
+                          : 'Наместо да ги заменува традиционалните медиумски редакции, нашиот портал врши функција на надзорен механизам кој овозможува компаративна анализа на различни новинарски извори, нудејќи ѝ на јавноста транспарентна методологија за независна анализа на пристрасноста, сензибилноста и плурализмот.'}
                     </p>
 
                     <div class="editorial-divider"></div>
 
-                    <h2 class="section-title-italic">{lang === 'sr' ? 'Ključni stubovi' : 'Клучни столбови'}</h2>
+                    <h2 class="section-title-italic">{lang === 'sr' ? 'Ključni stubovi opservatorijuma' : 'Клучни столбови на опсерваториумот'}</h2>
                     <ul class="editorial-list">
-                        <li><strong>{lang === 'sr' ? 'Sistemske sinteze:' : 'Системски синтези:'}</strong> {lang === 'sr' ? 'Automatski urednički pregled dana koji ujedinjuje činjenice sa svih dostupnih izvora u jednu koherentnu priču.' : 'Автоматизиран уреднички преглед на денот кој ги обединува фактите од сите достапни извори во една кохерентна приказна.'}</li>
-                        <li><strong>{lang === 'sr' ? 'Medijski pluralizam:' : 'Медиумски плурализам:'}</strong> {lang === 'sr' ? 'Precizno mapiranje različitih uglova izveštavanja, identifikovanje informativnih praznina i tonalnih razlika između redakcija.' : 'Прецизно мапирање на различни агли на известување, идентификување на информативни празнини и тонални разлики меѓу редакциите.'}</li>
-                        <li><strong>{lang === 'sr' ? 'Dnevni brifing:' : 'Дневен брифинг:'}</strong> {lang === 'sr' ? 'Destilovano jutarnje izdanje tema koje nose najveću težinu javnog interesa.' : 'Дестилирано утринско издание на теми кои имаат најголема тежина за јавниот интерес.'}</li>
+                        <li><strong>{lang === 'sr' ? 'Komparativna sinteza:' : 'Компаративна синтеза:'}</strong> {lang === 'sr' ? 'Automatizovani naučni pregledi koji ujedinjuju činjenice iz svih dostupnih medijskih izvora radi analitičkog kontrasta.' : 'Автоматизирани научни прегледи кои ги обединуваат фактите од сите достапни медиумски извори со цел на аналитички контраст.'}</li>
+                        <li><strong>{lang === 'sr' ? 'Indeksiranje pluralizma:' : 'Индексирање на плурализмот:'}</strong> {lang === 'sr' ? 'Precizno matematičko mapiranje različitih uglova izveštavanja, identifikovanje informativnih praznina i tonalnih razlika između redakcija.' : 'Прецизно математичко мапирање на различни агли на известување, идентификување на информативни празнини и тонални разлики меѓу редакциите.'}</li>
+                        <li><strong>{lang === 'sr' ? 'Analiza sentimenta:' : 'Анализа на сензибилноста:'}</strong> {lang === 'sr' ? 'Statistička obrada rečenica radi otkrivanja prikrivenog tonalnog senzacionalizma i jednostranog izveštavanja.' : 'Статистичка обработка на речениците со цел откривање на прикриен тонален сензационализам и еднострано известување.'}</li>
                     </ul>
 
                     <p>
                         {lang === 'sr'
-                          ? 'Namera je jednostavna: manje šuma, više konteksta. Presek vam ne kaže šta da mislite; pomaže vam da brže vidite šta se dešava, ko kako izveštava i šta još uvek ostaje nejasno.'
-                          : 'Намерата е едноставна: помалку шум, повеќе контекст. Пресек не ви кажува што да мислите; ви помага побрзо да видите што се случува, кој како известува и што сè уште останува нејасно.'}
+                          ? 'Naša namera je naučno-istraživačka: manje šuma, više konteksta. Presek ne sugeriše zaključke; mi nudimo empirijske podatke i vizuelne metrike koji pomažu istraživačima, novinarima i građanima da kritički posmatraju medijski pejzaž.'
+                          : 'Нашата намера е научно-истражувачка: помалку шум, повеќе контекст. Пресек не сугерира заклучоци; ние нудиме емпириски податоци и визуелни метрики кои им помагаат на истражувачите, новинарите и граѓаните критички да го набљудуваат медиумскиот пејзаж.'}
                     </p>
 
                     <div class="editorial-divider"></div>
 
-                    <h2 class="section-title-italic">{lang === 'sr' ? 'Tim i Misija' : 'Тим и Мисија'}</h2>
+                    <h2 class="section-title-italic">{lang === 'sr' ? 'Naučna metodologija i Misija' : 'Научна методологија и Мисија'}</h2>
                     <div class="two-col-grid">
                         <div class="grid-item">
-                            <h3>{lang === 'sr' ? 'Arhitektura' : 'Архитектура'}</h3>
-                            <p>{lang === 'sr' ? 'Presek 5.48 razvijen je od strane tima inženjera posvećenih obradi srpskog jezika. Sistem koristi napredni sistem duboke obrade kako bi garantovao višu preciznost i nezavisnu uredničku sintezu vesti.' : 'Пресек 5.48 е развиен од страна на тим инженери посветени на обработка на македонскиот јазик. Системот користи напреден систем за длабока обработка со цел да гарантира повисока прецизност и независна уредничка синтеза на вестите.'}</p>
+                            <h3>{lang === 'sr' ? 'NLP Arhitektura' : 'NLP Архитектура'}</h3>
+                            <p>{lang === 'sr' ? 'Presek koristi naprednu računarsku lingvistiku i sisteme za obradu prirodnog jezika (NLP) optimizovane za južnoslovenske jezike. Sistem sprovodi automatsko grupisanje primenom kosinusne sličnosti na višedimenzionalnim semantičkim vektorima.' : 'Пресек користи напредна компјутерска лингвистика и системи за обработка на природниот јазик (NLP) оптимизирани за јужнословенските јазици. Системот спроведува автоматско групирање со примена на косинусна сличност на повеќедимензионални семантички вектори.'}</p>
                         </div>
                         <div class="grid-item">
-                            <h3>{lang === 'sr' ? 'Vizija' : 'Визија'}</h3>
-                            <p>{lang === 'sr' ? 'Naš cilj je da izgradimo digitalni prostor u kojem se vesti vrednuju po svojoj sadržini i podršci više izvora, promovišući informisano građanstvo.' : 'Нашата цел е да изградиме дигитален простор во кој вестите ќе се вреднуваат според нивната содржина и поддршката од повеќе извори, промовирајќи информирано граѓанство.'}</p>
+                            <h3>{lang === 'sr' ? 'Istraživačka vizija' : 'Истражувачка визија'}</h3>
+                            <p>{lang === 'sr' ? 'Naš cilj je promovisanje medijske pismenosti i transparentnosti. Želimo da obezbedimo empirijski uvid u to kako se vesti formulišu, olakšavajući uočavanje medijskog monopola i jednostranog narativa.' : 'Нашата цел е промовирање на медиумската писменост и транспарентност. Сакаме да обезбедиме емпириски увид во тоа како се формулираат вестите, олеснувајќи го воочувањето на медиумскиот монопол и едностраниот наратив.'}</p>
                         </div>
                     </div>
                 </article>
