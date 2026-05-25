@@ -9,8 +9,7 @@ import {
   Building2, 
   HelpCircle, 
   ArrowLeft,
-  Loader2,
-  Share2
+  Loader2
 } from 'lucide-react';
 
 interface Node {
