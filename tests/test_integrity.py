@@ -218,8 +218,8 @@ class TestAstroFrontendIntegrity:
         self,
     ):
         news = _read("routes/news.py")
-        assert "def _public_article_payload(article):" in news
-        assert '"articles": [_public_article_payload(article) for article in arts]' in news
+        assert "def _public_article_payload(article, lang=" in news
+        assert '"articles": [_public_article_payload(article, lang=lang) for article in arts]' in news
         assert '"articles": public_articles' in news
         assert '"image_caption"' in news
         assert '"is_redundant"' in news
