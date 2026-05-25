@@ -481,7 +481,7 @@ const articleSchema = cluster ? {
 					</div>
 
 						{/* EXECUTIVE SUMMARY / BRIFING - Wider Layout */}
-						{(!hasGeneratedNarrative && (headerBriefItems.length > 0 || (cluster.key_facts && cluster.key_facts.length > 0))) && (
+						{(headerBriefItems.length > 0 || (cluster.key_facts && cluster.key_facts.length > 0)) && (
 							<div class="executive-summary mb-24 p-8 md:p-12 bg-secondary/10 border-l-4 border-nyt-accent shadow-sm">
 								<div class="flex items-center gap-[var(--grid-gap)] mb-14">
 									<Sparkles size={20} className="text-nyt-accent" />
@@ -535,42 +535,8 @@ const articleSchema = cluster ? {
 								generatedArticle={generatedArticle}
 								synthesisItems={synthesisItems}
 								hasCitationSources={hasCitationSources}
-							entities={cluster.entities}
+								entities={cluster.entities}
 							/>
-                            {/* DATA RECAP / KEY POINTS (Moved to bottom of narrative) */}
-                            {hasGeneratedNarrative && (headerBriefItems.length > 0 || (cluster.key_facts && cluster.key_facts.length > 0)) && (
-                                <div class="narrative-recap mt-12 p-8 bg-secondary/10 border-t border-border/40">
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-[var(--grid-gap)]">
-                                        {headerBriefItems.length > 0 && (
-                                            <div>
-                                                <h4 class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">{t('cluster.key_points')}</h4>
-                                                <ul class="space-y-2">
-                                                    {headerBriefItems.map(item => (
-                                                        <li class="font-sans text-[13px] leading-snug text-foreground/80 flex items-start gap-[var(--grid-gap)]">
-                                                            <span class="text-nyt-accent">•</span>
-                                                            {item}
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        )}
-                                        {cluster.key_facts && cluster.key_facts.length > 0 && (
-                                            <div class="border-t md:border-t-0 md:border-l border-border/40 pt-6 md:pt-0 md:pl-8">
-                                                <h4 class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">{t('cluster.system_data')}</h4>
-                                                <ul class="space-y-2">
-                                                    {cluster.key_facts.map((fact: string) => (
-                                                        <li class="font-sans text-[12px] font-bold leading-tight text-foreground/70 flex items-start gap-[var(--grid-gap)]">
-                                                            <span class="text-nyt-accent">›</span>
-                                                            {fact}
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
 						</section>
 						)}
 
