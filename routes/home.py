@@ -3,7 +3,7 @@ import logging
 import re
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from pydantic import BaseModel, Field
 
 from utils import cached_response, set_cache
@@ -284,8 +284,20 @@ def _display_entity_name(name):
 
 
 @router.get("/home", response_model=HomeResponse)
-async def get_home(lang: Optional[str] = "sr"):
-    cache_key = f"api:home:v5:{lang}"
+async def get_home(request: Request = None, lang: Optional[str] = "sr"):
+    # Support legacy tests passing lang as a positional argument
+    if isinstance(request, str):
+        lang = request
+        request = None
+
+    from routes.common import _extract_sync_token
+    sync_token = _extract_sync_token(request) if request else ""
+    
+    if sync_token:
+        cache_key = f"api:home:v5:{lang}:personalized:{sync_token}"
+    else:
+        cache_key = f"api:home:v5:{lang}"
+        
     cached = cached_response(cache_key, ttl=300)
     if cached:
         return cached
@@ -333,7 +345,27 @@ async def get_home(lang: Optional[str] = "sr"):
 
         lead = clusters[0] if clusters else None
         supporting = clusters[1:5]
-        for_you_pool = [c for c in clusters[5:11] if _is_live_now_candidate(c)]
+
+        # Personalization Engine
+        for_you_pool = []
+        if sync_token:
+            try:
+                from routes.profile import get_personalized_news_by_profile, _normalize_synced_profile
+                from core.database import db_manager as db
+                row = await db.async_execute_one(
+                    "SELECT profile_data FROM synced_reader_profiles WHERE sync_token = %s",
+                    (sync_token,),
+                )
+                if row:
+                    profile = _normalize_synced_profile(row.get("profile_data") or {})
+                    for_you_pool = await get_personalized_news_by_profile(profile, limit=6, lang=lang)
+            except Exception as pe:
+                log.error(f"Failed to fetch personalized news for homepage (token {sync_token}): {pe}")
+                for_you_pool = []
+
+        if not for_you_pool:
+            for_you_pool = [c for c in clusters[5:11] if _is_live_now_candidate(c)]
+
         for_you_ids = {c.get("cluster_id") for c in for_you_pool if c.get("cluster_id")}
         feed_clusters = [c for c in clusters[5:] if c.get("cluster_id") not in for_you_ids]
         developing = [

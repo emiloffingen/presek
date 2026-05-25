@@ -173,7 +173,7 @@ def test_get_personalized_news_sync_with_history():
         patch("routes.profile.score_cluster", return_value=5.0),
         patch("routes.profile.is_balanced", return_value=True),
         patch("routes.profile.score_cluster_for_homepage", return_value=4.0),
-        patch("routes.news._public_article_payload", side_effect=lambda x: x),
+        patch("routes.news._public_article_payload", side_effect=lambda x, **kw: x),
         patch("core.database.async_db", mock_db_manager),
     ):
         response = asyncio.run(get_personalized_news_sync(request))

@@ -277,18 +277,11 @@ async def save_profile_delivery(request: Request):
     return {"status": "success", "subscription": sub}
 
 
-@router.post("/profile/sync/personalized-news")
-async def get_personalized_news_sync(request: Request):
+async def get_personalized_news_by_profile(profile: dict, limit: int = 6, lang: str = "sr") -> List[dict]:
     """
-    Takes a profile payload, calculates the semantic interest vector
-    of the user and returns semantically relevant clusters from the last 48h.
+    Core personalization search using pgvector. Computes dynamic interest vectors
+    from recently read articles or followed topics, and returns semantically matching clusters.
     """
-    try:
-        payload = await request.json()
-    except Exception:
-        raise HTTPException(status_code=400, detail="Nevaliden JSON")
-
-    profile = _normalize_synced_profile(payload.get("profile") or {})
     recent = profile.get("recentClusters") or []
 
     # 1. Fetch embeddings for recent clusters
@@ -318,7 +311,7 @@ async def get_personalized_news_sync(request: Request):
         vec_rows = seed_rows
 
     if not vec_rows:
-        return {"status": "success", "results": []}
+        return []
 
     def parse_vec(v):
         if isinstance(v, str):
@@ -332,14 +325,9 @@ async def get_personalized_news_sync(request: Request):
     interest_vec = [sum(vec[idx] for vec in vecs) / len(vecs) for idx in range(dims)]
     vec_str = "[" + ",".join(map(str, interest_vec)) + "]"
 
-    limit = payload.get("limit") or 6
-    try:
-        limit = min(max(int(limit), 1), 48)
-    except (ValueError, TypeError):
-        limit = 6
-
     # 2. Semantic Search for similar news in last 72 hours (expanded window)
-    # Exclude already seen clusters
+    # Filter by country/language to avoid cross-language leakage
+    country_filter = "mk" if lang == "mk" else "sr"
     rows = await db.async_execute(
         f"""
         WITH pool AS (
@@ -347,6 +335,7 @@ async def get_personalized_news_sync(request: Request):
                    (1 - (embedding <=> %s::vector)) as similarity
             FROM articles
             WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '72 hours'
+              AND country = %s
               AND cluster_id NOT IN (SELECT unnest(%s::text[]))
               AND embedding IS NOT NULL
         )
@@ -356,7 +345,7 @@ async def get_personalized_news_sync(request: Request):
         ORDER BY cluster_id, similarity DESC
         LIMIT 100
     """,
-        (vec_str, recent_ids),
+        (vec_str, country_filter, recent_ids),
     )
 
     # 3. Group and annotate
@@ -371,7 +360,7 @@ async def get_personalized_news_sync(request: Request):
     # 4. Fetch all articles for these clusters to build complete NewsClusters
     cids = list(clusters.keys())
     if not cids:
-        return {"status": "success", "results": []}
+        return []
 
     all_articles = await db.async_execute(
         f"SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY {_FRESHNESS_EXPR} DESC, created_at DESC",
@@ -401,7 +390,7 @@ async def get_personalized_news_sync(request: Request):
         results.append(
             {
                 "cluster_id": cid,
-                "articles": [_public_article_payload(a) for a in annotated],
+                "articles": [_public_article_payload(a, lang=lang) for a in annotated],
                 "representative_image": meta.get("representative_image"),
                 "dominant_color": meta.get("dominant_color"),
                 "is_breaking": score >= BREAKING_SCORE_THRESHOLD,
@@ -410,10 +399,35 @@ async def get_personalized_news_sync(request: Request):
                 "score": round(score, 3),
                 "homepage_score": round(score_cluster_for_homepage(arts), 3),
                 "similarity": round(float(clusters[cid][0]["similarity"]), 4),
-                "reason": "Povrzano so vasite interesi",
+                "reason": "Povrzano so vasite interesi" if lang == "mk" else "Povezano sa vašim interesovanjima",
             }
         )
 
+    return results
+
+
+@router.post("/profile/sync/personalized-news")
+async def get_personalized_news_sync(request: Request):
+    """
+    Takes a profile payload, calculates the semantic interest vector
+    of the user and returns semantically relevant clusters from the last 48h.
+    """
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Nevaliden JSON")
+
+    profile = _normalize_synced_profile(payload.get("profile") or {})
+    limit = payload.get("limit") or 6
+    try:
+        limit = min(max(int(limit), 1), 48)
+    except (ValueError, TypeError):
+        limit = 6
+
+    locale = str(payload.get("locale") or "sr").strip().lower()[:5]
+    lang = "mk" if "mk" in locale else "sr"
+
+    results = await get_personalized_news_by_profile(profile, limit=limit, lang=lang)
     return {"status": "success", "results": results}
 
 
