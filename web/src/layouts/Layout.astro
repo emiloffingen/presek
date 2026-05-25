@@ -102,7 +102,9 @@ const shouldLoadAdsense = lang === 'sr' && (normalizedHost === 'presek.live' || 
 			gtag('config', 'G-SV2R3LZJ5C');
 		</script>
 
-		<meta name="google-adsense-account" content="ca-pub-1724921768403014" />
+		{shouldLoadAdsense && (
+			<meta name="google-adsense-account" content="ca-pub-1724921768403014" />
+		)}
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<link rel="icon" type="image/svg+xml" href="/img/presek_emblem.svg?v=4" />
