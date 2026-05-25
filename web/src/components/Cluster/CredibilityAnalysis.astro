@@ -1,15 +1,24 @@
 ---
 import { ShieldCheck, TriangleAlert, Search } from 'lucide-react';
 import { renderSynthesisHtml as sharedRenderSynthesisHtml } from '../../utils/renderSynthesisHtml';
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 
 interface Props {
 	hasFactcheck: boolean;
 	verificationReport: any;
 	perspectives: any[];
 	hasCitationSources: boolean;
+	lang?: string;
 }
 
-const { hasFactcheck, verificationReport, perspectives, hasCitationSources } = Astro.props;
+const { hasFactcheck, verificationReport, perspectives, hasCitationSources, lang: propLang } = Astro.props;
+
+const requestUrl = Astro.request ? new URL(Astro.request.url) : Astro.url;
+const hostHeader = Astro.request?.headers.get('host') || requestUrl.hostname;
+const effectiveUrl = new URL(requestUrl);
+effectiveUrl.hostname = hostHeader;
+const lang = propLang || getLangFromUrl(effectiveUrl);
+const t = useTranslations(lang);
 
 const renderSynthesisHtml = (text: string) => sharedRenderSynthesisHtml(text, hasCitationSources);
 ---
@@ -17,7 +26,7 @@ const renderSynthesisHtml = (text: string) => sharedRenderSynthesisHtml(text, ha
 <section class="editorial-section analysis-section mb-16 border-t-4 border-foreground pt-12">
 	<div class="section-eyebrow mb-10">
 		<ShieldCheck size={18} className="text-foreground" />
-		<h2 class="section-label">PLURALIZAM</h2>
+		<h2 class="section-label">{t('cluster.media_pluralism')}</h2>
 		<div class="section-divider"></div>
 	</div>
 
@@ -27,7 +36,7 @@ const renderSynthesisHtml = (text: string) => sharedRenderSynthesisHtml(text, ha
 				<div class="factcheck-col agreements">
 					<header class="col-header">
 						<ShieldCheck size={18} className="text-emerald-600" />
-						<h3>potvrdeni fakti</h3>
+						<h3>{t('cluster.factcheck.confirmed')}</h3>
 					</header>
 					<ul class="fact-list">
 						{verificationReport.agreements.map((item: string) => (
@@ -39,7 +48,7 @@ const renderSynthesisHtml = (text: string) => sharedRenderSynthesisHtml(text, ha
 				<div class="factcheck-col conflicts">
 					<header class="col-header">
 						<TriangleAlert size={18} className="text-nyt-red" />
-						<h3>Razliki vo izvestaj</h3>
+						<h3>{t('cluster.factcheck.conflicts')}</h3>
 					</header>
 					<ul class="fact-list">
 						{verificationReport.conflicts.map((item: string) => (
@@ -52,9 +61,9 @@ const renderSynthesisHtml = (text: string) => sharedRenderSynthesisHtml(text, ha
 					<div class="factcheck-col missing-info mt-6 col-span-full border-t border-border pt-4">
 						<header class="col-header">
 							<Search size={18} className="text-amber-500" />
-							<h3>kontekst</h3>
+							<h3>{t('cluster.factcheck.context')}</h3>
 						</header>
-						<p class="text-xs text-muted-foreground mb-3 font-sans uppercase font-bold tracking-wider">Sto izostavuvaat odredeni izvori:</p>
+						<p class="text-xs text-muted-foreground mb-3 font-sans uppercase font-bold tracking-wider">{t('cluster.factcheck.omission')}</p>
 						<ul class="fact-list">
 							{verificationReport.missing_info.map((item: string) => (
 								<li class="fact-item amber" set:html={renderSynthesisHtml(item)}></li>
@@ -74,7 +83,7 @@ const renderSynthesisHtml = (text: string) => sharedRenderSynthesisHtml(text, ha
 
 	{perspectives.length > 0 && (
 		<div class="perspectives-area">
-			<h4 class="text-[11px] font-black uppercase tracking-widest text-center mb-8 text-muted-foreground/60">DIVERZITET</h4>
+			<h4 class="text-[11px] font-black uppercase tracking-widest text-center mb-8 text-muted-foreground/60">{t('cluster.factcheck.diversity')}</h4>
 			<div class="perspective-grid-v2">
 				{perspectives.map((p: any) => (
 					<div class="editorial-angle-card">
