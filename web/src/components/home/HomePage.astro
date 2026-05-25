@@ -454,41 +454,41 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 
                 {/* ── SISTEMSKI SIGNAL (SYSTEM PULSE STATS) ── */}
                 {!error && isHomepage && stats && (
-                    <div class="home-system-stats border-y border-foreground/10 py-3.5 my-6 flex flex-wrap items-center justify-between gap-4 font-sans text-xs">
-                        <div class="flex items-center gap-2">
-                            <span class="relative flex h-2 w-2 shrink-0">
-                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    <div class="home-system-stats-panel">
+                        <div class="stats-panel-header">
+                            <span class="pulse-indicator">
+                                <span class="pulse-ping"></span>
+                                <span class="pulse-dot"></span>
                             </span>
-                            <span class="text-[9px] font-black uppercase tracking-[0.25em] text-foreground shrink-0">
+                            <span class="stats-panel-title">
                                 {lang === 'sr' ? 'SISTEMSKI SIGNAL / MEDIJSKA ANALITIKA' : 'СИСТЕМСКИ СИГНАЛ / МЕДИУМСКА АНАЛИТИКА'}
                             </span>
                         </div>
-                        <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-[10px] text-muted-foreground font-black uppercase tracking-widest">
-                            <div>
-                                <span>{lang === 'sr' ? 'Aktivni izvori:' : 'Активни извори:'}</span>
-                                <strong class="text-foreground ml-1">{stats.total_feeds || 0} {lang === 'sr' ? 'medija' : 'медиуми'}</strong>
+                        <div class="stats-panel-grid">
+                            <div class="stats-grid-item">
+                                <span class="stats-item-label">{lang === 'sr' ? 'Aktivni izvori' : 'Активни извори'}</span>
+                                <span class="stats-item-value">{stats.total_feeds || 0} <span class="stats-item-unit">{lang === 'sr' ? 'medija' : 'медиуми'}</span></span>
                             </div>
-                            <span class="hidden sm:inline text-muted-foreground/30">•</span>
-                            <div>
-                                <span>{lang === 'sr' ? 'Ingestija (24h):' : 'Ингестија (24ч):'}</span>
-                                <strong class="text-foreground ml-1">{stats.last_24h || 0} {lang === 'sr' ? 'objava' : 'објави'}</strong>
+                            <div class="stats-grid-divider"></div>
+                            <div class="stats-grid-item">
+                                <span class="stats-item-label">{lang === 'sr' ? 'Ingestija (24h)' : 'Ингестија (24ч)'}</span>
+                                <span class="stats-item-value">{stats.last_24h || 0} <span class="stats-item-unit">{lang === 'sr' ? 'objava' : 'објави'}</span></span>
                             </div>
                             {stats.intelligence?.pluralism?.pluralism_pct && (
                                 <>
-                                    <span class="hidden sm:inline text-muted-foreground/30">•</span>
-                                    <div>
-                                        <span>{lang === 'sr' ? 'Pluralizam:' : 'Плурализам:'}</span>
-                                        <strong class="text-emerald-600 ml-1">{stats.intelligence.pluralism.pluralism_pct}%</strong>
+                                    <div class="stats-grid-divider"></div>
+                                    <div class="stats-grid-item">
+                                        <span class="stats-item-label">{lang === 'sr' ? 'Indeks Pluralizma' : 'Индекс на Плурализам'}</span>
+                                        <span class="stats-item-value text-emerald-600 dark:text-emerald-400">{stats.intelligence.pluralism.pluralism_pct}%</span>
                                     </div>
                                 </>
                             )}
                             {stats.intelligence?.pluralism?.high_consensus_pct && (
                                 <>
-                                    <span class="hidden sm:inline text-muted-foreground/30">•</span>
-                                    <div>
-                                        <span>{lang === 'sr' ? 'Konsenzus:' : 'Консензус:'}</span>
-                                        <strong class="text-nyt-accent ml-1">{stats.intelligence.pluralism.high_consensus_pct}%</strong>
+                                    <div class="stats-grid-divider"></div>
+                                    <div class="stats-grid-item">
+                                        <span class="stats-item-label">{lang === 'sr' ? 'Konsenzus narativa' : 'Консензус на наративи'}</span>
+                                        <span class="stats-item-value text-nyt-accent">{stats.intelligence.pluralism.high_consensus_pct}%</span>
                                     </div>
                                 </>
                             )}
@@ -1296,6 +1296,135 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 
         .consensus-section {
             padding: 1rem 0.85rem;
+        }
+    }
+
+    /* ── System Stats Panel ──────────────────────────── */
+    .home-system-stats-panel {
+        background: color-mix(in srgb, var(--secondary) 25%, var(--card));
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1.1rem 1.6rem;
+        margin: 1.5rem 0 2rem;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+        transition: border-color 0.3s var(--ease-editorial), box-shadow 0.3s var(--ease-editorial);
+    }
+    .home-system-stats-panel:hover {
+        border-color: color-mix(in srgb, var(--nyt-accent) 40%, var(--border));
+        box-shadow: var(--shadow-md), 0 0 16px color-mix(in srgb, var(--nyt-accent) 5%, transparent);
+    }
+    
+    .stats-panel-header {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+    
+    .pulse-indicator {
+        position: relative;
+        display: flex;
+        height: 0.5rem;
+        width: 0.5rem;
+        flex-shrink: 0;
+    }
+    .pulse-ping {
+        position: absolute;
+        display: inline-flex;
+        height: 100%;
+        width: 100%;
+        border-radius: 9999px;
+        background-color: rgb(52, 211, 153);
+        opacity: 0.75;
+        animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+    }
+    .pulse-dot {
+        position: relative;
+        display: inline-flex;
+        height: 0.5rem;
+        width: 0.5rem;
+        border-radius: 9999px;
+        background-color: rgb(16, 185, 129);
+        box-shadow: 0 0 8px rgb(16, 185, 129);
+    }
+    
+    .stats-panel-title {
+        font-family: var(--font-sans);
+        font-size: 0.58rem;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: 0.22em;
+        color: var(--foreground);
+    }
+    
+    .stats-panel-grid {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 1.25rem;
+    }
+    
+    .stats-grid-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+        flex: 1;
+        min-width: 120px;
+    }
+    
+    .stats-item-label {
+        font-family: var(--font-sans);
+        font-size: 0.54rem;
+        font-weight: 850;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted-foreground);
+    }
+    
+    .stats-item-value {
+        font-family: var(--font-sans);
+        font-size: 1.05rem;
+        font-weight: 900;
+        color: var(--foreground);
+        display: flex;
+        align-items: baseline;
+        gap: 0.2rem;
+    }
+    
+    .stats-item-unit {
+        font-size: 0.65rem;
+        font-weight: 800;
+        color: var(--muted-foreground);
+    }
+    
+    .stats-grid-divider {
+        width: 1px;
+        height: 1.5rem;
+        background-color: var(--border);
+        align-self: center;
+    }
+    
+    @media (max-width: 768px) {
+        .home-system-stats-panel {
+            padding: 1rem;
+            margin: 1.2rem 0 1.5rem;
+        }
+        .stats-panel-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+        .stats-grid-divider {
+            display: none;
+        }
+        .stats-grid-item {
+            min-width: 0;
+            padding: 0.5rem;
+            background: color-mix(in srgb, var(--secondary) 15%, var(--card));
+            border: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+            border-radius: 6px;
         }
     }
 </style>
