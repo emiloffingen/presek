@@ -669,7 +669,14 @@ def _source_count_label(count: int, lang: str) -> str:
 
 
 def _comparison_terms(text: str) -> set[str]:
-    return {term for term in _extract_terms(text or "") if term not in SOURCE_NOISE_WORDS}
+    text_val = str(text or "")
+    if any(ord(c) >= 0x0400 for c in text_val):
+        from core.language import transliterate_cyr_to_lat
+        try:
+            text_val = transliterate_cyr_to_lat(text_val)
+        except Exception:
+            pass
+    return {term for term in _extract_terms(text_val) if term not in SOURCE_NOISE_WORDS}
 
 
 def _term_overlap(left: set[str], right: set[str]) -> float:
@@ -689,7 +696,7 @@ def _title_difference_is_substantive(left: str, right: str) -> bool:
     return len(left_terms - right_terms) >= 2 or len(right_terms - left_terms) >= 2
 
 
-def _clean_common_line(line: str, lang: str) -> str:
+def _clean_common_line(line: str, lang: str, exclude_text: str = "") -> str:
     clean = str(line or "").strip()
     if not clean:
         return ""
@@ -719,11 +726,14 @@ def _clean_common_line(line: str, lang: str) -> str:
         return ""
     chunks = [chunk.strip() for chunk in re.split(r",|\s+i\s+|\s+и\s+", clean) if chunk.strip()]
     meaningful = []
+    exclude_terms = _comparison_terms(exclude_text) if exclude_text else set()
     for chunk in chunks:
         terms = _comparison_terms(chunk)
         if len(terms) < 2:
             continue
         if any(_term_overlap(terms, _comparison_terms(existing)) >= 0.55 for existing in meaningful):
+            continue
+        if exclude_terms and (len(terms & exclude_terms) / len(terms)) >= 0.75:
             continue
         meaningful.append(chunk)
     if not meaningful:
@@ -937,7 +947,7 @@ def compare_cluster_sources(articles, lang="mk"):
     from nlp.categories import detect_topic
 
     all_titles = " ".join([a.get("title") or "" for a in articles])
-    is_sport = detect_topic(all_titles) == "Sport"
+    is_sport = (detect_topic(all_titles) == "Sport") or any(_extract_sports_scores(a.get("title") or "") for a in articles)
 
     if is_sport:
         scores = [
@@ -950,10 +960,16 @@ def compare_cluster_sources(articles, lang="mk"):
         ]
         if conflicting_scores:
             if lang == "sr":
+                difference_points.append(
+                    f"Izvori se razlikuju oko rezultata utakmice (na primer: {', '.join(conflicting_scores)})."
+                )
                 open_points.append(
                     f"Informacije za konačan rezultat se razlikuju (na primer: {conflicting_scores[0]}), što može ukazivati na promenu u toku meča."
                 )
             else:
+                difference_points.append(
+                    f"Изворите се разликуваат околу конечниот резултат (на пример: {', '.join(conflicting_scores)})."
+                )
                 open_points.append(
                     f"Информациите за конечниот резултат се разликуваат (на пример: {conflicting_scores[0]}), што може да укажува на промена во текот на мечот."
                 )
@@ -1134,7 +1150,8 @@ def synthesize_cluster_fallback(articles, lang="mk"):
     article_body.append(_sentence(_topic_stakes_sentence(context_basis, lang=lang)))
 
     source_paragraph_parts = []
-    clean_common_line = _clean_common_line(comparison.get("common_line", ""), lang)
+    existing_text = " ".join(article_body)
+    clean_common_line = _clean_common_line(comparison.get("common_line", ""), lang, exclude_text=existing_text)
     if clean_common_line:
         source_paragraph_parts.append(_sentence(clean_common_line))
     else:

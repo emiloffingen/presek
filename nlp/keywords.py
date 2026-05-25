@@ -74,8 +74,8 @@ def normalize_tag_name(name):
         return clean.capitalize()
 
     # 2. Basic Macedonian Definite Article Stripping (Conservative)
-    # Only strip if the word remains long enough and it's a common suffix
-    if len(clean) > 7:  # Higher threshold to protect words like 'Kuca'
+    # Only strip if the word remains long enough, it is a single word, and it's a common suffix
+    if " " not in clean and len(clean) > 7:  # Higher threshold to protect words like 'Kuca'
         if clean.endswith("to") or clean.endswith("ta"):
             clean = clean[:-2]
         elif clean.endswith("ot"):
@@ -109,7 +109,11 @@ def normalize_tag_name(name):
 
     # 4. Capitalization fallback
     if re.fullmatch(r"[A-Za-zA-Za-z\s-]+", clean) and clean.islower():
-        clean = " ".join(part.capitalize() for part in clean.split(" "))
+        if " " in clean:
+            parts = clean.split(" ")
+            clean = parts[0].capitalize() + " " + " ".join(parts[1:])
+        else:
+            clean = clean.capitalize()
 
     # 5. Final pass against noise
     if clean.lower() in TAG_NOISE_WORDS or len(clean) < 3:
