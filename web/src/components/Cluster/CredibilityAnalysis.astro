@@ -266,8 +266,16 @@ const displayPerspectives = perspectives
 
 	.editorial-angle-card {
 		padding: 2rem;
-		background: var(--secondary);
-		border-radius: 0px;
+		background: color-mix(in srgb, var(--secondary) 30%, var(--card));
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		box-shadow: var(--shadow-sm);
+		transition: transform 0.3s var(--ease-editorial), border-color 0.3s var(--ease-editorial), box-shadow 0.3s var(--ease-editorial);
+	}
+	.editorial-angle-card:hover {
+		transform: translateY(-4px);
+		border-color: color-mix(in srgb, var(--nyt-accent) 30%, var(--border));
+		box-shadow: var(--shadow-md);
 	}
 
 	.angle-title {
