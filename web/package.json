@@ -2,7 +2,7 @@
   "name": "presek-web-serbian",
   "description": "Serbian frontend for Presek (presek.live)",
   "type": "module",
-  "version": "5.48.0",
+  "version": "6.0.0",
   "engines": {
     "node": ">=22.12.0"
   },
