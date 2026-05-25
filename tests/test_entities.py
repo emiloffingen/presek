@@ -54,3 +54,14 @@ def test_normalize_person_surface_name_restores_known_surname_first_person():
 
 def test_normalize_person_surface_name_keeps_non_person_tags_stable():
     assert entities.normalize_person_surface_name("Ekonomija") == "Ekonomija"
+
+
+def test_normalize_entity_name_cross_lingual():
+    # Cyrillic name resolving to Latin canonical alias via direct transliterated lookup
+    assert entities.normalize_entity_name("Мицкоски") == "Hristijan Mickoski"
+    # Cyrillic name resolving to Latin canonical alias via diacritics replacement (Вучиќ -> Vučić -> Vucic -> Aleksandar Vucic)
+    assert entities.normalize_entity_name("Вучиќ") == "Aleksandar Vucic"
+    # Diacritic accented Latin resolving to Latin canonical alias
+    assert entities.normalize_entity_name("Kovačevski") == "Dimitar Kovacevski"
+    assert entities.normalize_entity_name("Vučić") == "Aleksandar Vucic"
+

@@ -204,6 +204,13 @@ class TestNormalizeHeadline:
 
     def test_case_insensitive_prefix(self):
         assert normalize_headline("video: mal naslov") == "Mal naslov"
+        assert normalize_headline("HAOS: Neredi na ulicama") == "Neredi na ulicama"
+        assert normalize_headline("PANIKA u gradu: svi na ulicama") == "Svi na ulicama"
+        assert normalize_headline("BRUTALNO! Oglasio se premijer") == "Oglasio se premijer"
+        assert normalize_headline("SKANDALOZNO - Novi detalji") == "Novi detalji"
+        assert normalize_headline("VAŽNO: Hitna sednica") == "Hitna sednica"
+        assert normalize_headline("NEĆETE VEROVATI - šta se desilo") == "Šta se desilo"
+
 
     def test_strip_sources_suffix(self):
         assert normalize_headline("Naslov - 360 stepeni") == "Naslov"

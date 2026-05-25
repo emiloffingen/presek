@@ -780,7 +780,33 @@ def generate_daily_brief_task(retry_attempt=0, lang="sr"):
         clusters = _load_daily_brief_clusters(limit=10, lang=lang)
         content_context = _build_daily_brief_context(clusters)
         system_insight = f"\n\n[SISTEMSKA ANALIZA ZA POSLEDNJIH 24 SATA]\n- Obradjeni clanci: {total_24h}\n- Udeo svetskih vest: {intl_pct}%\n- Indeks pluralizma (raznovrsni izvori): {diverse_pct}%\n- Najzastupljeni akteri: {top_subjects or 'Nema'}\n- U focusu lokacije: {top_locations or 'Nema'}\n- Naziv izvestaja: {dispatch_name}"
-        full_context = f"<briefing_context>\n{content_context}\n{system_insight}\n</briefing_context>"
+        
+        # Chronological RAG context loop
+        history_context = ""
+        try:
+            prev_brief = db.execute_one(
+                "SELECT content FROM daily_briefings WHERE lang = %s AND date >= CURRENT_DATE - INTERVAL '48 hours' AND date < CURRENT_DATE ORDER BY date DESC LIMIT 1",
+                (lang,),
+            )
+            if prev_brief and prev_brief.get("content"):
+                if lang == "sr":
+                    history_context = (
+                        "\n\n[ISTORIJSKI KONTEKST - BRITING OD PRETHODNOG DANA]\n"
+                        "Iskoristi ovaj prethodni brifing kao kontekst da bi stvorio hronološki povezan narativ. "
+                        "Poveži današnje vesti sa jučerašnjim tamo gde je to relevantno (npr. 'Nastavljajući se na jučerašnji razvoj...', 'Kao što je juče najavljeno...'):\n"
+                        f"<previous_briefing>\n{prev_brief['content'][:2500]}\n</previous_briefing>\n"
+                    )
+                else:
+                    history_context = (
+                        "\n\n[ИСТОРИСКИ КОНТЕКСТ - БРИФИНГ ОД ПРЕТХОДНИОТ ДЕН]\n"
+                        "Искористи го овој претходен брифинг како контекст за да создадеш хронолошки поврзан наратив. "
+                        "Поврзи ги денешните вести со вчерашните таму каде што е тоа релевантно (на пр. 'Надоврзувајќи се на вчерашниот развој...', 'Како што вчера беше најавено...'):\n"
+                        f"<previous_briefing>\n{prev_brief['content'][:2500]}\n</previous_briefing>\n"
+                    )
+        except Exception as e:
+            log.warning(f"Failed to fetch historical briefing context: {e}")
+
+        full_context = f"<briefing_context>\n{content_context}\n{system_insight}\n{history_context}\n</briefing_context>"
         prompt = DAILY_BRIEF_SYSTEM_PROMPT if lang == "sr" else DAILY_BRIEF_SYSTEM_PROMPT_MK
         brief, _ = _call_ai(full_context, prompt, task_type="daily_brief", max_tokens=4000)
         if brief and (

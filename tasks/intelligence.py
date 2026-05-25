@@ -463,14 +463,22 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
 
             system_prompt = SYNTHESIS_SYSTEM_PROMPT_MK if lang == "mk" else SYNTHESIS_SYSTEM_PROMPT_SR
 
-            raw, provider = _call_ai(
-                full_prompt,
-                system_prompt,
-                json_mode=True,
-                task_type="synthesis",
-                max_tokens=max_tokens,
-                lang=lang,
-            )
+            from core.llm_router import SmartModelRouter
+            target_model = SmartModelRouter.route_cluster(article_rows, lang=lang)
+
+            if target_model == "enhanced_fallback":
+                log.info(f"Router selected local enhanced fallback for cluster {cluster_id} ({lang})")
+                raw, provider = None, "enhanced_fallback"
+            else:
+                raw, provider = _call_ai(
+                    full_prompt,
+                    system_prompt,
+                    json_mode=True,
+                    task_type="synthesis",
+                    max_tokens=max_tokens,
+                    lang=lang,
+                    provider_override=target_model,
+                )
             res_data = {}
 
             if raw:
@@ -639,9 +647,12 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                     shared_computed = True
 
             else:
-                log.warning(
-                    f"[tasks/synthesis] AI provider {provider} returned no content for {cluster_id} ({lang}), using enhanced fallback"
-                )
+                if provider == "enhanced_fallback":
+                    log.info(f"Using pre-computed enhanced fallback for {cluster_id} ({lang})")
+                else:
+                    log.warning(
+                        f"[tasks/synthesis] AI provider {provider} returned no content for {cluster_id} ({lang}), using enhanced fallback"
+                    )
                 fallback = synthesize_cluster_fallback(article_rows, lang=lang)
                 summary = fallback["summary"]
                 perspectives = fallback["perspectives"]

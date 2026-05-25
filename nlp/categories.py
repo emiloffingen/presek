@@ -1195,7 +1195,24 @@ def normalize_headline(title: str) -> str:
         "EKSKLUZIVNO",
         "potvrdeno",
         "SKANDAL",
+        "SKANDALOZNO",
+        "SENZACIJA",
+        "BOMBA",
+        "HAOS",
+        "PANIKA",
+        "KATANAC",
+        "KRAH",
+        "SRAMOTA",
+        "SRAMOTNO",
+        "BRUTALNO",
+        "PAKLENO",
+        "NEĆETE VEROVATI",
+        "NECETE VEROVATI",
+        "UŽAS",
         "UZAS",
+        "UŽASNO",
+        "UZASNO",
+        "KATASTROFA",
         "TRAGEDIJA",
         "INTERVJU",
         "ANALIZA",
@@ -1215,9 +1232,15 @@ def normalize_headline(title: str) -> str:
         "VOZNEMIRUVACKO",
         "VIDEOINTERVJU",
         "VIDEO-INTERVJU",
+        "HITNO",
+        "VAŽNO",
+        "VAZNO",
+        "GORI",
+        "FOTO-UBOD",
     ]
-    prefix_pattern = r"^(" + "|".join(sensationalist) + r")[\s\|:–—-]+"
+    prefix_pattern = r"^(" + "|".join(sensationalist) + r")[\s\|:!–—-]+"
     t = re.sub(prefix_pattern, "", t, count=1, flags=re.IGNORECASE)
+
 
     # Strip any remaining prefix followed by colon (e.g. "Beograd: ...", "Manasievski: ...")
     t = re.sub(r"^[A-ZА-Яa-zа-я\s\-]{3,}:", "", t).strip()

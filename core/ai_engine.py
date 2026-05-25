@@ -491,6 +491,7 @@ def _call_ai(
     topic: str = None,
     lang: str = "sr",
     response_schema: Any = None,
+    provider_override: str = None,
 ):
     """Synchronous AI entrypoint with cascading failover."""
     # Sanitize prompts to prevent injection attacks
@@ -502,7 +503,9 @@ def _call_ai(
         AI_CALLS.labels(provider="sanitization", task_type=task_type, status="blocked").inc()
         return None, None
 
-    if task_type == "research":
+    if provider_override and provider_override in PROVIDERS:
+        fallback_order = [provider_override]
+    elif task_type == "research":
         fallback_order = list(PROVIDER_FALLBACK_ORDER_RESEARCH)
     elif task_type in ("summarize", "synthesis"):
         fallback_order = list(PROVIDER_FALLBACK_ORDER_SUMMARY)
@@ -525,8 +528,11 @@ def _call_ai(
                 res = provider.call(prompt + "\n\nCRITICAL: Return valid JSON only.", system, max_tokens, json_mode, topic=topic, task_type=task_type, lang=lang, response_schema=response_schema)
 
             if res:
-                AI_LATENCY.labels(provider=provider_name, task_type=task_type).observe(time.time() - start_time)
+                duration = time.time() - start_time
                 AI_CALLS.labels(provider=provider_name, task_type=task_type, status="success").inc()
+                AI_LATENCY.labels(provider=provider_name, task_type=task_type).observe(duration)
+                
+                # Check response cache metadata to avoid saving duplicate content
                 return res, provider_name
             else:
                 AI_CALLS.labels(provider=provider_name, task_type=task_type, status="failure").inc()
@@ -573,9 +579,10 @@ def sync_call_ai(
     topic: str = None,
     lang: str = "sr",
     response_schema: Any = None,
+    provider_override: str = None,
 ):
     """Backwards-compatible alias for synchronous callers."""
-    return _call_ai(prompt, system, task_type, max_tokens, json_mode, topic=topic, lang=lang, response_schema=response_schema)
+    return _call_ai(prompt, system, task_type, max_tokens, json_mode, topic=topic, lang=lang, response_schema=response_schema, provider_override=provider_override)
 
 
 

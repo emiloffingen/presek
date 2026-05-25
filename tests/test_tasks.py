@@ -67,11 +67,12 @@ class TestSynthesizeClusterTaskQuality:
             },
             {
                 "title": "Tramp: Utorak, 20:00 casot po Istocno vreme",
-                "description": "Povece izvori prenesuvaat deka temata se odnesuva na carini.",
+                "description": "Povece izvori prenesuvaat deka temata se odnesuva na carini i drzaven budzet.",
                 "source": "DW",
                 "link": "https://example.com/2",
                 "created_at": "2026-04-05T11:00:00",
                 "category": "Svet",
+
             },
         ]
 

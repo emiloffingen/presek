@@ -578,7 +578,28 @@ def normalize_entity_name(name: str) -> str:
     clean = str(name or "").strip()
     if not clean:
         return ""
-    return _ENTITY_ALIASES_CASEFOLDED.get(clean.casefold(), clean)
+    if any(ord(c) >= 0x0400 for c in clean):
+        from core.language import transliterate_cyr_to_lat
+        try:
+            clean = transliterate_cyr_to_lat(clean)
+        except Exception:
+            pass
+    
+    res = _ENTITY_ALIASES_CASEFOLDED.get(clean.casefold())
+    if res:
+        return res
+        
+    # Try diacritic-stripped fallback
+    stripped = clean.lower()
+    for src, dst in [("ć", "c"), ("č", "c"), ("š", "s"), ("ž", "z"), ("đ", "dj"), ("đ", "d")]:
+        stripped = stripped.replace(src, dst)
+        
+    res = _ENTITY_ALIASES_CASEFOLDED.get(stripped)
+    if res:
+        return res
+        
+    return clean
+
 
 
 def _is_name_like_phrase(candidate: str) -> bool:

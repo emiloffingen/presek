@@ -128,7 +128,8 @@ def test_normalize_headline_html_tags():
     from core.ingestion import normalize_headline
 
     assert normalize_headline("<p>Tekst</p>") == "Tekst"
-    assert normalize_headline("<b>Vazno</b> <i>rezime</i>") == "Vazno rezime"
+    assert normalize_headline("<b>Bitno</b> <i>rezime</i>") == "Bitno rezime"
+
 
 
 def test_normalize_feed_link_strips_tracking_params():
