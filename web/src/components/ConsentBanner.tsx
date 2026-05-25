@@ -76,6 +76,14 @@ export const ConsentBanner: React.FC = () => {
 
   const accept = () => {
     writeConsentState('accepted');
+    if (typeof window !== 'undefined' && (window as any).gtag) {
+      (window as any).gtag('consent', 'update', {
+        'ad_storage': 'granted',
+        'ad_user_data': 'granted',
+        'ad_personalization': 'granted',
+        'analytics_storage': 'granted'
+      });
+    }
     setVisible(false);
   };
 
