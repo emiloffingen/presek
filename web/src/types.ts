@@ -59,6 +59,7 @@ export interface NewsCluster {
   is_breaking: boolean;
   has_synthesis: boolean;
   has_balanced: boolean;
+  has_fact_check?: boolean;
   reading_time: number;
   reason?: string;
   entities?: string[];
