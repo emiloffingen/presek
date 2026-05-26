@@ -121,7 +121,7 @@ class TestGetDb:
     def test_get_db_returns_wrapper(self):
         from core.database import DBWrapper, get_db
 
-        with patch("database.db_manager") as mock_manager:
+        with patch("core.database.db_manager") as mock_manager:
             mock_manager.get_conn.return_value = MagicMock()
             conn = get_db()
             assert isinstance(conn, DBWrapper)

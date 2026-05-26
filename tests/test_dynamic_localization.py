@@ -1,4 +1,3 @@
-import pytest
 from core.localization import localization_engine, ENTITY_NOISE_WORDS, TAG_NOISE_WORDS, TAG_MAPPINGS
 from nlp.keywords import normalize_tag_name, is_valid_focus_entity
 

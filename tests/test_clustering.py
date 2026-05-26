@@ -11,11 +11,11 @@ from core.clustering import (
     text_to_vector,
 )
 
-# db_manager is imported inside find_or_create_cluster as `from database import db_manager`,
+# db_manager is imported inside find_or_create_cluster as `from core.database import db_manager`,
 # so we must patch the source attribute on the database module.
 _mock_db = MagicMock()
 _mock_db.get_cluster_entities.return_value = {}
-_DB_PATCH = "database.db_manager"
+_DB_PATCH = "core.database.db_manager"
 
 
 def test_sr_stem():

@@ -2,7 +2,8 @@ from core.database import db_manager as db
 import re
 
 def has_latin(text):
-    if not text: return False
+    if not text:
+        return False
     # Check for Latin characters (A-Z)
     return bool(re.search(r'[A-Za-z]', text))
 

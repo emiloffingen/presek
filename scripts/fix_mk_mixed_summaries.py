@@ -4,7 +4,8 @@ import re
 import json
 
 def has_latin(text):
-    if not text: return False
+    if not text:
+        return False
     return bool(re.search(r'[A-Za-z]', text))
 
 def fix():

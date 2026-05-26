@@ -169,7 +169,6 @@ def _fetch_with_cloudscraper(url: str, timeout: int = 30) -> bytes:
 async def _fetch_with_playwright(url: str, timeout: float = 30.0) -> bytes:
     """Fetch URL content using headless Playwright to bypass Cloudflare and complex challenge protections."""
     from playwright.async_api import async_playwright
-    import html
     log.debug(f"[ingest] Launching headless Playwright for {url}")
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)

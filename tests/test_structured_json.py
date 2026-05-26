@@ -1,6 +1,6 @@
 import asyncio
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from llama_cpp import LlamaGrammar
 from nlp.local_analyst import (
     LocalAnalyst,

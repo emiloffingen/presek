@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import threading
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, Set
 
 log = logging.getLogger("presek.localization")
 

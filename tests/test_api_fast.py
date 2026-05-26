@@ -1492,7 +1492,6 @@ def test_synthesis_homepage_boost(mock_all):
 
 def test_fastapi_network_graph(mock_all):
     import routes.intelligence as intelligence
-    from fastapi import Request
 
     async def execute_side_effect(query, params=None):
         if "FROM knowledge_relationships" in query:

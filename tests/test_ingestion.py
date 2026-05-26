@@ -311,7 +311,7 @@ def test_ingest_updates_last_fetched_even_when_all_entries_are_filtered_out():
                 }
             ],
         ),
-        patch("database.db_manager", m_db_manager),
+        patch("core.database.db_manager", m_db_manager),
         patch.object(ingestion, "db", conn),
         patch.object(
             ingestion,

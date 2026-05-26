@@ -67,6 +67,7 @@ def test_jwt_expiration():
 
 def test_admin_endpoint_with_jwt():
     """Test admin endpoint with JWT authentication."""
+    from unittest.mock import patch
     from core.api_fast import app
 
     client = TestClient(app)
@@ -74,8 +75,9 @@ def test_admin_endpoint_with_jwt():
     # Create admin token
     admin_token = create_admin_jwt()
 
-    # Test admin dashboard access
-    response = client.get("/api/admin/dashboard", headers={"Authorization": f"Bearer {admin_token}"})
+    # Test admin dashboard access (mocking the dashboard logic to avoid DB hits)
+    with patch("routes.admin.get_admin_dashboard", return_value={"status": "success"}):
+        response = client.get("/api/admin/dashboard", headers={"Authorization": f"Bearer {admin_token}"})
 
     # Should return 200 for valid admin token
     assert response.status_code == 200
