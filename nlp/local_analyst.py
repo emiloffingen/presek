@@ -147,16 +147,18 @@ class LocalAnalyst:
             except Exception as e:
                 log.error(f"[analyst] Remote generation failed, falling back to local: {e}")
 
-        # Acquire Redis lock to prevent concurrent CPU-heavy llama-cpp generation across workers
+        # Acquire Redis lock with token verification to prevent concurrent CPU-heavy llama-cpp generation
         from utils import redis_client
+        import uuid
         lock_key = "lock:local_llm_inference"
+        lock_token = str(uuid.uuid4())
         acquired = False
         start_time = time.time()
         timeout = 180  # Wait up to 3 minutes
 
         while time.time() - start_time < timeout:
             try:
-                if redis_client.set(lock_key, "1", nx=True, ex=120):  # Lock expires in 120 seconds
+                if redis_client.set(lock_key, lock_token, nx=True, ex=600):  # Lock expires in 600 seconds
                     acquired = True
                     break
             except Exception as e:
@@ -224,7 +226,10 @@ class LocalAnalyst:
         finally:
             if acquired:
                 try:
-                    redis_client.delete(lock_key)
+                    current_val = redis_client.get(lock_key)
+                    val_str = current_val.decode() if isinstance(current_val, bytes) else str(current_val or "")
+                    if val_str == lock_token:
+                        redis_client.delete(lock_key)
                 except Exception as e:
                     log.debug(f"[analyst] Redis unlock error: {e}")
 
