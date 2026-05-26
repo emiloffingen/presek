@@ -126,12 +126,37 @@ class StoryDiscoveryEngine:
         titles = cluster["titles"]
         emb = cluster["avg_embedding"]
 
+        # Determine dominant language based on articles in this cluster
+        lang = "mk"
+        try:
+            art_rows = db.execute(
+                "SELECT country FROM articles WHERE cluster_id = %s LIMIT 1",
+                (cid,)
+            )
+            if art_rows and art_rows[0].get("country") == "RS":
+                lang = "sr"
+        except Exception as e:
+            log.warning(f"Failed to detect dominant language for cluster {cid}: {e}")
+
         # Phase 4: Use Gemma 2 for Editorial Storyline Titles
         from nlp.local_analyst import analyst
 
+        if lang == "sr":
+            system_prompt = (
+                "Ti si glavni urednik ozbiljnih srpskih novina. Na osnovu ovih naslova, "
+                "generiši jedan kratak, upečatljiv naslov za celu priču (storyline) na srpskom jeziku (latinica). "
+                "Vrati samo naslov bez ikakvih navodnika ili objašnjenja."
+            )
+        else:
+            system_prompt = (
+                "Ti si glaven urednik na seriozen makedonski vesnik. Vrz osnova na ovie naslovi, "
+                "generiraj eden kratok, moćen naslov za celata prica (storyline) na makedonski jazik. "
+                "Vrati samo naslov bez nikakvi navodnici ili obrazloženja."
+            )
+
         story_title = analyst.analyze(
             f"Naslovi: {' | '.join(titles[:5])}",
-            "Ti si glaven urednik. Vrz osnova na ovie naslovi, generiraj eden kratok, mocen naslov za celata prica (storyline) na makedonski jazik. Vrati samo naslov.",
+            system_prompt,
             max_tokens=48,
         )
 
@@ -145,14 +170,14 @@ class StoryDiscoveryEngine:
         slug = re.sub(r"-+", "-", slug).strip("-")
         slug = f"{slug}-{cid[:8]}"  # Ensure uniqueness
 
-        log.info(f"Creating new storyline: {story_title}")
+        log.info(f"Creating new storyline: {story_title} (lang: {lang})")
 
         try:
             # Initialize storyline with the first cluster's centroid
             res = db.execute(
                 """INSERT INTO storylines_v2 (title, slug, last_activity, centroid, metadata)
                    VALUES (%s, %s, NOW(), %s, %s) RETURNING id""",
-                (story_title, slug, emb, json.dumps({"origin_cluster": cid})),
+                (story_title, slug, emb, json.dumps({"origin_cluster": cid, "lang": lang})),
             )
             if res:
                 sid = res[0]["id"]
@@ -169,13 +194,23 @@ class StoryDiscoveryEngine:
         Periodically update summaries and titles for active storylines using Gemma 2.
         """
         active_storylines = db.execute(
-            "SELECT id, title FROM storylines_v2 WHERE status = 'active' ORDER BY last_activity DESC LIMIT 20"
+            "SELECT id, title, metadata FROM storylines_v2 WHERE status = 'active' ORDER BY last_activity DESC LIMIT 20"
         )
 
         from nlp.local_analyst import analyst
 
         for s in active_storylines:
             sid = s["id"]
+            
+            # Determine language from metadata
+            metadata = s.get("metadata") or {}
+            if isinstance(metadata, str):
+                try:
+                    metadata = json.loads(metadata)
+                except Exception:
+                    metadata = {}
+            lang = metadata.get("lang", "mk")
+
             # Get all titles and summaries in this storyline
             rows = db.execute(
                 """
@@ -192,9 +227,21 @@ class StoryDiscoveryEngine:
                 continue
 
             combined_text = "\n".join([f"• {r['title']}: {r.get('summary','')}" for r in rows])
+            
+            if lang == "sr":
+                system_prompt = (
+                    "Napiši kratak pregled (2-3 rečenice) na srpskom jeziku (latinica) za dosadašnji razvoj "
+                    "ove priče na osnovu događaja ispod. Fokusiraj se na glavni narativ."
+                )
+            else:
+                system_prompt = (
+                    "Napiši kratok pregled (2-3 rečenice) na makedonski jazik za dosegašniot razvoj "
+                    "na ovaa prica vrz osnova na nastanite podolu. Fokusiraj se na glavniot narativ."
+                )
+
             story_summary = analyst.analyze(
                 combined_text,
-                "Napisi kratok pregled (2-3 recenici) na makedonski jazik za dosegasniot razvoj na ova prica vrz osnova na nastanite podolu. Fokusiraj se na glavni narativ.",
+                system_prompt,
                 max_tokens=256,
             )
 
