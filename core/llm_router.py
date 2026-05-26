@@ -65,4 +65,6 @@ class SmartModelRouter:
             return "mistral_small"
 
         # Low Complexity: 1-2 articles, straightforward routine news
+        if os.environ.get("LOCAL_MODEL_PATH") or os.path.exists("models/gemma-2-2b-it-Q4_K_M.gguf"):
+            return "local"
         return "enhanced_fallback"

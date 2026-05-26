@@ -12,7 +12,13 @@ def test_route_cluster_low_complexity():
         {"title": "Obicna vest o vremenu", "description": "Danas ce sijati sunce na Balkanu."},
         {"title": "Jos jedna vest o vremenu", "description": "Meteorolozi najavljuju toplo leto."}
     ]
-    assert SmartModelRouter.route_cluster(articles) == "enhanced_fallback"
+    # No LOCAL_MODEL_PATH, should return enhanced_fallback
+    with patch("os.path.exists", return_value=False), patch.dict(os.environ, {}, clear=True):
+        assert SmartModelRouter.route_cluster(articles) == "enhanced_fallback"
+
+    # With LOCAL_MODEL_PATH, should return local
+    with patch.dict(os.environ, {"LOCAL_MODEL_PATH": "/path/to/model"}):
+        assert SmartModelRouter.route_cluster(articles) == "local"
 
 
 def test_route_cluster_medium_complexity_by_count():
