@@ -37,16 +37,8 @@ async def verify_admin(request: Request):
 @router.get("/admin/dashboard")
 async def get_admin_dashboard(authorized: bool = Depends(verify_admin)):
     """Aggregates all operational health metrics for the Presek Cockpit."""
-    from utils import redis_client
-
     # 1. AI Status & Usage
     current_provider = PROVIDER_FALLBACK_ORDER[0] if PROVIDER_FALLBACK_ORDER else "unknown"
-    today = datetime.date.today().isoformat()
-    try:
-        gemini_usage = int(redis_client.get(f"ai:gemini:usage:{today}") or 0)
-    except Exception:
-        gemini_usage = 0
-
     # 2. Scraper Health
     source_statuses = get_source_statuses()
     total_sources = len(source_statuses)
@@ -109,8 +101,7 @@ async def get_admin_dashboard(authorized: bool = Depends(verify_admin)):
         "ai": {
             "current_provider": current_provider,
             "status": "operational" if current_provider != "unknown" else "offline",
-            "gemini_usage_today": gemini_usage,
-            "gemini_daily_limit": 2000000,
+            "fallback_order": PROVIDER_FALLBACK_ORDER,
         },
         "scrapers": {
             "total_sources": total_sources,

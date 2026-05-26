@@ -11,7 +11,7 @@ class SmartModelRouter:
     def route_cluster(articles: list[dict], lang: str = "sr") -> str:
         """
         Determines the optimal LLM provider or local fallback for a given news cluster.
-        Returns one of: 'enhanced_fallback', 'local', 'mistral_small', 'gemini', 'mistral_large'.
+        Returns one of: 'enhanced_fallback', 'local', 'mistral_small', 'mistral_large'.
         """
         if not articles:
             return "enhanced_fallback"

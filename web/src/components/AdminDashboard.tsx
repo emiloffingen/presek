@@ -107,8 +107,8 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
 
   if (!data) return null;
 
-  const aiPercent = data ? Math.min(100, (data.ai.gemini_usage_today / data.ai.gemini_daily_limit) * 100) : 0;
   const systemOk = Boolean(data?.db?.ok && data?.redis?.ok);
+  const aiCascade = Array.isArray(data.ai.fallback_order) ? data.ai.fallback_order.join(' -> ') : data.ai.current_provider;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -168,20 +168,14 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
 
           <div className="bg-nyt-accent/5 border border-nyt-accent/20 rounded-2xl p-6">
             <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-[var(--grid-gap)] mb-4 text-nyt-accent">
-              <Zap size={14} /> {lang === 'sr' ? 'AI KVOTA' : 'AI КВОТА'} (GEMINI)
+              <Zap size={14} /> {lang === 'sr' ? 'AI KASKADA' : 'AI КАСКАДА'}
             </h3>
-            <div className="relative h-2 w-full bg-zinc-800 rounded-full overflow-hidden mb-4">
-              <div
-                className="absolute top-0 left-0 h-full bg-nyt-accent transition-all duration-1000"
-                style={{ width: `${aiPercent}%` }}
-              />
-            </div>
             <div className="flex justify-between items-end">
               <div>
-                <p className="text-xl font-black">{data.ai.gemini_usage_today.toLocaleString()}</p>
-                <p className="text-[9px] text-zinc-500 uppercase font-mono tracking-tighter">{lang === 'sr' ? 'Budžet iskorišćenost' : 'Буџет искористеност'}</p>
+                <p className="text-xl font-black uppercase">{data.ai.current_provider}</p>
+                <p className="text-[9px] text-zinc-500 uppercase font-mono tracking-tighter">{lang === 'sr' ? 'Primarni provajder' : 'Примарен провајдер'}</p>
               </div>
-              <p className="text-xs font-bold text-zinc-400">{lang === 'sr' ? 'Limit' : 'Лимит'}: {data.ai.gemini_daily_limit.toLocaleString()}</p>
+              <p className="text-xs font-bold text-zinc-400 text-right max-w-[55%]">{aiCascade}</p>
             </div>
           </div>
         </div>

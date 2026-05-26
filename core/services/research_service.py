@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import os
 import re
@@ -36,44 +35,6 @@ class ResearchService:
     async def _augment_report_with_entities(report: str):
         entities = extract_entities(report, max_entities=10)
         return {"report": report, "entities": entities}
-
-    @staticmethod
-    def _get_obj_value(obj, *names):
-        for name in names:
-            if isinstance(obj, dict) and name in obj:
-                return obj[name]
-            if hasattr(obj, name):
-                return getattr(obj, name)
-        return None
-
-    @staticmethod
-    def _extract_grounding_sources(response):
-        sources = []
-        queries = []
-        candidates = ResearchService._get_obj_value(response, "candidates") or []
-        if not candidates:
-            return sources, queries
-
-        metadata = ResearchService._get_obj_value(candidates[0], "grounding_metadata", "groundingMetadata")
-        if not metadata:
-            return sources, queries
-
-        queries = ResearchService._get_obj_value(metadata, "web_search_queries", "webSearchQueries") or []
-        chunks = ResearchService._get_obj_value(metadata, "grounding_chunks", "groundingChunks") or []
-
-        seen = set()
-        for chunk in chunks:
-            web = ResearchService._get_obj_value(chunk, "web")
-            if not web:
-                continue
-            uri = ResearchService._get_obj_value(web, "uri") or ""
-            title = ResearchService._get_obj_value(web, "title") or uri
-            if not uri or uri in seen:
-                continue
-            seen.add(uri)
-            sources.append({"title": title, "url": uri})
-
-        return sources, queries
 
     @staticmethod
     def _derive_public_search_query(research_query: str, context: str, mode: str):
@@ -163,68 +124,7 @@ class ResearchService:
 
     @staticmethod
     async def _get_google_grounded_research(research_query: str, context: str, mode: str, lang: str):
-        if os.environ.get("ENABLE_GOOGLE_GROUNDED_RESEARCH", "false").lower() != "true":
-            return None
-
-        api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
-        if not api_key:
-            return None
-
-        def call_google():
-            try:
-                from google import genai
-                from google.genai import types
-            except ImportError:
-                log.warning("[research/google] google-genai package not installed")
-                return None
-
-            client = genai.Client(api_key=api_key)
-            grounding_tool = types.Tool(google_search=types.GoogleSearch())
-            config = types.GenerateContentConfig(
-                tools=[grounding_tool],
-                temperature=0.2,
-            )
-            language_rule = (
-                "Odgovori na književnom srpskom jeziku, latinica."
-                if lang == "sr"
-                else "Одговори на македонски јазик, кирилица."
-            )
-            prompt = (
-                f"{language_rule}\n"
-                "Generate a concise Google Search-grounded news research answer. "
-                "Use current web evidence from Google Search when it is available, and do not invent unsupported claims. "
-                "Return only valid JSON in this shape: "
-                '{"answer":"4-7 short paragraphs or bullets with the best answer",'
-                '"suggestions":["follow-up question 1","follow-up question 2","follow-up question 3"]}.\n\n'
-                f"Research mode: {mode}\n"
-                f"User question: {research_query}\n\n"
-                "Local Presek cluster context, for disambiguation only:\n"
-                f"{context[:3500]}"
-            )
-
-            try:
-                response = client.models.generate_content(
-                    model=os.environ.get("GEMINI_GROUNDED_MODEL", os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")),
-                    contents=prompt,
-                    config=config,
-                )
-            except Exception as e:
-                log.warning(f"[research/google] Grounded Gemini call failed: {e}")
-                return None
-
-            parsed = clean_json_response(getattr(response, "text", "") or "")
-            if isinstance(parsed, str):
-                parsed = {"answer": parsed, "suggestions": []}
-            if not isinstance(parsed, dict) or not parsed.get("answer"):
-                return None
-
-            sources, queries = ResearchService._extract_grounding_sources(response)
-            parsed["provider"] = "gemini_google_search"
-            parsed["sources"] = sources
-            parsed["search_queries"] = queries
-            return parsed
-
-        return await asyncio.to_thread(call_google)
+        return None
 
     @staticmethod
     async def get_cluster_research(cluster_id: str, mode: str, query: str, lang: str = "sr"):

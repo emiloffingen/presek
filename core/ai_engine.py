@@ -305,66 +305,6 @@ class NvidiaProvider(OpenAICompatibleProvider):
         super().__init__("nvidia", api_key, api_url, model)
 
 
-class GeminiProvider(AIProvider):
-    def __init__(self, api_key: str, model: str):
-        self.api_key = api_key or os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
-        self.model_name = model
-        if not self.api_key:
-            return
-        try:
-            from google import genai
-            self.client = genai.Client(api_key=self.api_key)
-            self.model = model
-        except ImportError:
-            log.warning("[ai/gemini] google-genai package not installed")
-            return
-        except Exception as e:
-            log.error(f"[ai/gemini] Initialization failed: {e}")
-            return
-
-    def call(
-        self,
-        prompt: str,
-        system: str,
-        max_tokens: int,
-        json_mode: bool,
-        topic: str = None,
-        task_type: str = "default",
-        lang: str = "sr",
-        response_schema: Any = None,
-    ) -> str | None:
-        if self.model is None:
-            return None
-        try:
-            full_prompt = f"{system}\n\n{prompt}"
-            config = None
-            if response_schema:
-                from google.genai import types
-                config = types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    response_schema=response_schema,
-                )
-            elif json_mode:
-                from google.genai import types
-                config = types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                )
-            response = self.client.models.generate_content(
-                model=self.model, contents=full_prompt, config=config
-            )
-            return response.text
-        except Exception as e:
-            log.error(f"[ai/gemini] GeminiProvider call failed: {e}")
-            return None
-            log.warning(f"[ai/nvidia] Call failed: {e}")
-        return None
-
-    async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
-        res = self.call(prompt, system, max_tokens, False)
-        if res:
-            yield res
-
-
 PROVIDERS = {
     "nvidia": NvidiaProvider(
         api_key=os.environ.get("NVIDIA_API_KEY", ""),
@@ -380,10 +320,6 @@ PROVIDERS = {
         api_key=os.environ.get("MISTRAL_SMALL_API_KEY", ""),
         api_url=os.environ.get("MISTRAL_API_URL", "https://api.mistral.ai/v1/chat/completions"),
         model=os.environ.get("MISTRAL_SMALL_MODEL", "mistral-small-latest"),
-    ),
-    "gemini": GeminiProvider(
-        api_key=os.environ.get("GEMINI_API_KEY", "") or os.environ.get("GOOGLE_API_KEY", ""),
-        model=os.environ.get("GEMINI_MODEL", "gemini-2.5-flash"),
     ),
     "local": LocalProvider(),
 }

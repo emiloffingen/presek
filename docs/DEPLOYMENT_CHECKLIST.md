@@ -9,7 +9,6 @@ This document provides a comprehensive checklist for deploying Presek in product
 - [ ] `REDIS_URL` - Redis connection string
 - [ ] `SECRET_KEY` - Random secret key (>= 32 characters)
 - [ ] `PRESEK_ADMIN_TOKEN` - Admin API token
-- [ ] `GEMINI_API_KEY` - For Gemini AI (optional)
 - [ ] `OPENAI_API_KEY` - For OpenAI (optional)
 - [ ] `NTFY_TOPIC` - For notifications (optional)
 - [ ] `NTFY_TOKEN` - For notifications (optional)
@@ -242,8 +241,6 @@ LOG_LEVEL=INFO
 LOG_FORMAT=json
 
 # AI Providers
-GEMINI_API_KEY=your-gemini-api-key
-GEMINI_MODEL=gemini-2.5-flash
 OPENAI_API_KEY=your-openai-api-key
 LOCAL_TRANSLATION_ENABLED=true
 

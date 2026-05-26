@@ -182,7 +182,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
         .filter((source: { title: string; url: string }) => source.title || source.url)
         .slice(0, 6)
     : [];
-  const isGoogleGrounded = data?.provider === 'gemini_google_search';
+  const isGoogleGrounded = data?.provider === 'google_search';
   const isPublicWebSearch = typeof data?.provider === 'string' && data.provider.startsWith('public_web_search');
 
   const modes = [

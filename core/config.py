@@ -559,12 +559,9 @@ DATABASE_READ_REPLICA_URL = os.environ.get("DATABASE_READ_REPLICA_URL", "")
 USE_READ_REPLICA = bool(DATABASE_READ_REPLICA_URL)
 
 # ── AI Routing Configuration ────────────────────────────────────
-# Research should prefer providers that are currently reliable and produce
-# grounded long-form answers. Keep local before degraded/optional providers so
-# interactive research does not stall behind invalid or rate-limited APIs.
-PROVIDER_FALLBACK_ORDER_RESEARCH = ["mistral_large", "local", "mistral_small"]
-PROVIDER_FALLBACK_ORDER_SUMMARY = ["local", "mistral_small"]
-PROVIDER_FALLBACK_ORDER = ["mistral_large", "local", "mistral_small"]  # default
+PROVIDER_FALLBACK_ORDER_RESEARCH = ["mistral_large", "mistral_small", "nvidia", "local"]
+PROVIDER_FALLBACK_ORDER_SUMMARY = ["mistral_large", "mistral_small", "nvidia", "local"]
+PROVIDER_FALLBACK_ORDER = ["mistral_large", "mistral_small", "nvidia", "local"]  # default
 
 # ── Clustering Parameters ───────────────────────────────────────
 CLUSTERING_THRESHOLDS = {
