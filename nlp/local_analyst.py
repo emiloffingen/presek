@@ -147,10 +147,30 @@ class LocalAnalyst:
             except Exception as e:
                 log.error(f"[analyst] Remote generation failed, falling back to local: {e}")
 
-        if not self._load_model():
+        # Acquire Redis lock to prevent concurrent CPU-heavy llama-cpp generation across workers
+        from utils import redis_client
+        lock_key = "lock:local_llm_inference"
+        acquired = False
+        start_time = time.time()
+        timeout = 180  # Wait up to 3 minutes
+
+        while time.time() - start_time < timeout:
+            try:
+                if redis_client.set(lock_key, "1", nx=True, ex=120):  # Lock expires in 120 seconds
+                    acquired = True
+                    break
+            except Exception as e:
+                log.debug(f"[analyst] Redis inference lock error: {e}")
+            time.sleep(1.0)
+
+        if not acquired:
+            log.warning("[analyst] Could not acquire local LLM lock, skipping task to avoid CPU starvation.")
             return None
 
         try:
+            if not self._load_model():
+                return None
+
             prompt = prompt or ""
             system_prompt = system_prompt or ""
             # Enforce literary language
@@ -201,6 +221,12 @@ class LocalAnalyst:
         except Exception as e:
             log.error(f"[analyst] Generation failed: {e}")
             return None
+        finally:
+            if acquired:
+                try:
+                    redis_client.delete(lock_key)
+                except Exception as e:
+                    log.debug(f"[analyst] Redis unlock error: {e}")
 
     def de_shout(self, text: str) -> str:
         """Converts completely uppercase headlines or shouting words to sentence case."""

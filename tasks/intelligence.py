@@ -654,11 +654,11 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                         f"[tasks/synthesis] AI provider {provider} returned no content for {cluster_id} ({lang}), using enhanced fallback"
                     )
                 fallback = synthesize_cluster_fallback(article_rows, lang=lang)
-                summary = fallback["summary"]
-                perspectives = fallback["perspectives"]
-                synthetic_headline = fallback["synthetic_headline"]
-                synthetic_standfirst = fallback["synthetic_standfirst"]
-                generated_article = fallback["generated_article"]
+                summary = fallback.get("summary", "")
+                perspectives = fallback.get("perspectives", [])
+                synthetic_headline = fallback.get("synthetic_headline", "")
+                synthetic_standfirst = fallback.get("synthetic_standfirst", "")
+                generated_article = fallback.get("generated_article", "")
                 verification_report = None
                 quote = ""
                 current_sentiment_data = shared_metrics["sentiment_data"]

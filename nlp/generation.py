@@ -1006,6 +1006,7 @@ def synthesize_cluster_fallback(articles, lang="mk"):
             "perspectives": [],
             "synthetic_headline": "",
             "generated_article": "",
+            "synthetic_standfirst": "",
         }
 
     t = _T.get(lang, _T["mk"])
