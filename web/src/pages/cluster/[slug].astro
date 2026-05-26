@@ -1203,6 +1203,18 @@ const articleSchema = cluster ? {
             flex: 0 0 auto;
         }
 
+        .cluster-article-container.reader-focused .cluster-evidence-strip,
+        .cluster-article-container.reader-focused .reader-source-strip,
+        .cluster-article-container.reader-focused .hero-full,
+        .cluster-article-container.reader-focused .executive-summary {
+            display: none;
+        }
+
+        .cluster-article-container.reader-focused .editorial-header-v2 {
+            margin-bottom: 1rem !important;
+            border-bottom-width: 1px;
+        }
+
         .editorial-header-v2 {
             padding-top: 1.5rem !important;
             padding-bottom: 1.5rem !important;
