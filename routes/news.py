@@ -1072,20 +1072,58 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
 
         chrono = sorted(articles, key=lambda x: x["created_at"])
         timeline = []
+        
+        from nlp.local_analyst import LocalAnalyst
+        analyst = LocalAnalyst()
+        
         for i, a in enumerate(chrono):
             is_major = (a.get("source_signal") or {}).get("trust_level", 0) >= 0.8
-            milestone = (
-                "POCETOK" if i == 0 else ("KONSENZUS" if i == len(chrono) - 1 and len(chrono) >= 3 else "razvoj")
-            )
+            title_text = a.get("title") or ""
+            desc_text = a.get("description") or ""
+            
+            # 1. Clean Title using Clickbait Scrubber
+            clean_title = analyst.get_zero_token_normalized_headline(title_text, lang=lang)
+            
+            # 2. Extract clean 1-sentence chronological event summary
+            clean_desc = ""
+            if desc_text:
+                sentences = re.split(r'(?<=[.!?])\s+', desc_text.strip())
+                if sentences and len(sentences[0]) > 10:
+                    clean_desc = sentences[0]
+            if not clean_desc or len(clean_desc) < 15:
+                clean_desc = clean_title
+            
+            # 3. Dynamic Broadsheet Milestones
+            lower_title = title_text.lower()
+            lower_desc = desc_text.lower()
+            
+            official_keywords = {"vlada", "sobranie", "ministar", "mup", "policija", "skupština", "saopštenje", "soopstenie", "mvr", "srbije", "makedonije"}
+            reaction_keywords = {"protest", "strajk", "reaguje", "osudili", "kritika", "reakcija", "demant", "demantira", "odgovori", "obtozi", "optužio"}
+            escalation_keywords = {"napustio", "odbio", "sukob", "prekinuo", "incident", "uhapšen", "uapsen", "pretepan", "teško", "tesko", "kriza"}
+            
+            if i == 0:
+                milestone = "ПОЧЕТОК НА МЕДИУМСКО ИЗВЕСТУВАЊЕ" if lang == "mk" else "POČETAK MEDIJSKOG IZVEŠTAVANJA"
+            elif any(k in lower_title or k in lower_desc for k in official_keywords):
+                milestone = "ОФИЦИЈАЛНО СООПШТЕНИЕ" if lang == "mk" else "ZVANIČNO SAOPŠTENJE"
+            elif any(k in lower_title or k in lower_desc for k in reaction_keywords):
+                milestone = "РЕАКЦИЈА" if lang == "mk" else "REAKCIJA"
+            elif any(k in lower_title or k in lower_desc for k in escalation_keywords):
+                milestone = "ЕСКАЛАЦИЈА" if lang == "mk" else "ESKALACIJA"
+            elif i == len(chrono) - 1 and len(chrono) >= 3:
+                milestone = "КОНСЕНЗУС НА МЕДИУМИТЕ" if lang == "mk" else "KONSENZUS MEDIJA"
+            else:
+                milestone = "хронологија" if lang == "mk" else "hronologija"
+                
             timeline.append(
                 {
                     "article_id": a["id"],
-                    "title": cleanAndDecode(a["title"]),
+                    "title": clean_title,
                     "source": a["source"],
                     "created_at": a["created_at"],
                     "is_first": i == 0,
                     "is_major": is_major,
                     "milestone": milestone,
+                    "description": clean_desc,
                 }
             )
 

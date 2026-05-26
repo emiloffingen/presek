@@ -675,7 +675,7 @@ def update_knowledge_graph(entities: list[dict], context_text: str = ""):
     if not entities:
         return
 
-    sentiment = analyze_sentiment_locally(context_text) if context_text else 0.0
+    sentiment = analyze_sentiment_locally(context_text, bypass_llm=True) if context_text else 0.0
 
     entity_info = {}
     for ent in entities:

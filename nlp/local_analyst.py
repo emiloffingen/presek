@@ -195,23 +195,51 @@ class LocalAnalyst:
             log.error(f"[analyst] Generation failed: {e}")
             return None
 
+    def de_shout(self, text: str) -> str:
+        """Converts completely uppercase headlines or shouting words to sentence case."""
+        if not text:
+            return ""
+        alpha_chars = [c for c in text if c.isalpha()]
+        if alpha_chars:
+            upper_count = sum(1 for c in alpha_chars if c.isupper())
+            if upper_count / len(alpha_chars) > 0.6 and len(alpha_chars) > 4:
+                return text.lower()
+        return text
+
     def get_zero_token_normalized_headline(self, title: str, lang: str = "mk") -> str:
         """Converts sensationalist headlines to literary/broadsheet style zero-token."""
         title = title or ""
-        # 1. Clean exclamation marks
-        cleaned = re.sub(r'!+', '', title)
         
-        # 2. Compile list of sensational clickbait prefix/suffix keywords
-        clickbait_rx = r'(?i)\b(šokantno|sokantno|šok|sok|skandal|eve\s+sto|evo\s+šta|evo\s+sta|bomba|hitno|drama|foto|video|neverovatno|neverojatno|ekskluzivno|ekskluzivno)\b[:\-]?\s*'
-        cleaned = re.sub(clickbait_rx, '', cleaned)
+        # 1. De-shout completely uppercase headlines
+        title = self.de_shout(title)
+        
+        # 2. Clean leading/trailing/inline bracketed tabloid noise e.g. [FOTO], (VIDEO)
+        bracket_rx = r'(?i)\s*[\[\(](foto|video|uživo|uzivo|ekskluzivno|detalji|analiza|galerija|slobodno|live|breaking|reakcija|saopštenje|saopstenje|soopstenie|foto/video)[\]\)]\s*'
+        title = re.sub(bracket_rx, ' ', title)
+        
+        # 3. Clean exclamation marks and excessive question marks
+        title = re.sub(r'!+', '', title)
+        title = re.sub(r'\?{2,}', '?', title)
+        
+        # 4. Clean clickbait prefix patterns (case-insensitive)
+        clickbait_words = [
+            "šokantno", "sokantno", "šok", "sok", "skandalozno", "skandal", 
+            "bomba", "hitno", "drama", "neverovatno", "neverojatno", "ekskluzivno", 
+            "užas", "uzas", "haos", "pakao", "neviđeno", "nevidno", "procurilo", 
+            "senzacionalno", "skršil", "skrsil", "poludeo", "zapanjio", "otkrio", 
+            "nećete verovati", "nema da veruvate", "grom", "vrisak", "panika", 
+            "vanredno", "spektakularno", "evo šta", "evo sta", "eve što", "eve sto"
+        ]
+        clickbait_rx = r'(?i)\b(' + '|'.join(clickbait_words) + r')\b\s*[:\-]?\s*'
+        title = re.sub(clickbait_rx, '', title)
         
         # Strip surrounding spaces and punctuation leftovers
-        cleaned = cleaned.strip(" :-\t\n\r")
+        title = title.strip(" :-\t\n\r|.")
         
         # Ensure first letter is capitalized
-        if cleaned:
-            cleaned = cleaned[0].upper() + cleaned[1:]
-            return cleaned
+        if title:
+            title = title[0].upper() + title[1:]
+            return title
         return title
 
     def normalize_headline(self, title: str, lang: str = "mk") -> str:

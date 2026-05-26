@@ -99,7 +99,7 @@ SENTIMENT_LEXICON = {
 NEGATIONS = {"ne", "nitu", "nikako", "bez", "prestana", "prekina", "protiv"}
 
 
-def analyze_sentiment_locally(text):
+def analyze_sentiment_locally(text, bypass_llm: bool = False):
     """
     Returns a score between -2.0 and 2.0 based on local LLM or keyword frequency.
     Tries to utilize the local Gemma 4 model first for deep context understanding,
@@ -110,7 +110,7 @@ def analyze_sentiment_locally(text):
 
     # 1. Try local LLM sentiment analysis first
     import os
-    if os.environ.get("LOCAL_MODEL_PATH"):
+    if not bypass_llm and os.environ.get("LOCAL_MODEL_PATH"):
         try:
             from nlp.local_analyst import LocalAnalyst
             analyst = LocalAnalyst()
