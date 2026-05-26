@@ -1160,6 +1160,31 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                 }
             )
 
+        # Calculate zero-token stance vectors and editorial divergence index
+        stance_vectors = {}
+        sentiments = []
+        from nlp.sentiment import analyze_sentiment_locally
+
+        for a in articles:
+            text_context = f"{a.get('title') or ''} {a.get('description') or ''}"
+            score = analyze_sentiment_locally(text_context, bypass_llm=True)
+            sentiments.append(score)
+            src = a.get("source") or "izvor"
+            if src not in stance_vectors:
+                stance_vectors[src] = []
+            stance_vectors[src].append(score)
+
+        # Average sentiment per source
+        avg_stance_vectors = {src: round(sum(scores)/len(scores), 2) for src, scores in stance_vectors.items()}
+        
+        # Calculate standard deviation/divergence
+        if len(sentiments) > 1:
+            mean = sum(sentiments) / len(sentiments)
+            variance = sum((x - mean) ** 2 for x in sentiments) / len(sentiments)
+            editorial_divergence = round(variance ** 0.5, 2)
+        else:
+            editorial_divergence = 0.0
+
         response = {
             "status": "success",
             "data": {
@@ -1186,6 +1211,8 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                 "dominant_color": dominant_color,
                 "related": related,
                 "total_reading_time": sum(a["reading_time"] for a in articles),
+                "stance_vectors": avg_stance_vectors,
+                "editorial_divergence": editorial_divergence,
             },
         }
 

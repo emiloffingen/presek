@@ -250,6 +250,26 @@ def repair_knowledge_graph_task():
             )
             log.info(f"[maintenance] Cleaned up {len(noise_names)} noisy entities.")
 
+        # Apply exponential decay to relationship weights based on days since last seen
+        # w_t = w_{t-1} * EXP(-0.05 * days_passed)
+        try:
+            db.execute(
+                """
+                UPDATE knowledge_relationships
+                SET weight = weight * EXP(-0.05 * EXTRACT(DAY FROM NOW() - last_seen))
+                WHERE last_seen < NOW() - INTERVAL '1 day'
+                """,
+                fetch=False,
+            )
+            # Prune extremely weak relationships (e.g. weight < 0.20)
+            db.execute(
+                "DELETE FROM knowledge_relationships WHERE weight < 0.20",
+                fetch=False,
+            )
+            log.info("[maintenance] Applied exponential weight decay and pruned weak relationships.")
+        except Exception as decay_err:
+            log.warning(f"[maintenance] Weight decay/pruning failed: {decay_err}")
+
         log.info(f"[maintenance] Merged {merged_total} fragmented entities.")
         return f"Repaired {merged_total} entities and cleaned up noise."
     except Exception as e:

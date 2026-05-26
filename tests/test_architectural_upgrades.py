@@ -127,3 +127,110 @@ def test_cross_lingual_storyline_detection_updates_metadata(mock_db):
     assert passed_metadata["is_cross_lingual"] is True
     assert "sr" in passed_metadata["languages"]
     assert "mk" in passed_metadata["languages"]
+
+
+@pytest.mark.anyio
+@patch("routes.news.db")
+async def test_stance_vectors_and_divergence_in_cluster_detail(mock_db):
+    # Verify get_cluster_detail computes stance_vectors and editorial_divergence
+    from routes.news import get_cluster_detail
+    
+    mock_db.async_execute = AsyncMock(return_value=[
+        {
+            "id": "art_1",
+            "title": "Odlican napredak i uspeh vlada",
+            "description": "pobeda i razvoj reformi", # highly positive words
+            "source": "RTS",
+            "created_at": datetime.datetime(2026, 5, 26, 12, 0),
+            "category": "Politika",
+            "country": "RS",
+            "source_signal": {"trust_level": 0.9}
+        },
+        {
+            "id": "art_2",
+            "title": "Katastrofa, haos i propast",
+            "description": "loso, kriminal i neuspeh", # highly negative words
+            "source": "Danas",
+            "created_at": datetime.datetime(2026, 5, 26, 12, 5),
+            "category": "Politika",
+            "country": "RS",
+            "source_signal": {"trust_level": 0.8}
+        }
+    ])
+    mock_db.async_execute_one = AsyncMock(return_value=None)
+    mock_db.async_get_synthesis_ids = AsyncMock(return_value=[])
+    
+    with patch("routes.news._is_publicly_displayable_article", return_value=True), \
+         patch("routes.news.annotate_cluster_articles", side_effect=lambda x, **k: x), \
+         patch("routes.news.cached_response", return_value=None):
+        
+        response = await get_cluster_detail("abcdef0123456789abcdef0123456789", lang="sr")
+        
+        assert response["status"] == "success"
+        data = response["data"]
+        
+        # Verify stance_vectors has both sources and positive/negative scores
+        assert "RTS" in data["stance_vectors"]
+        assert "Danas" in data["stance_vectors"]
+        assert data["stance_vectors"]["RTS"] > 0
+        assert data["stance_vectors"]["Danas"] < 0
+        
+        # Divergence standard deviation should be positive
+        assert data["editorial_divergence"] > 0.5
+
+
+@patch("tasks.maintenance.db")
+def test_maintenance_weight_decay_and_pruning(mock_db):
+    # Verify that repair_knowledge_graph_task triggers weight decay and relationship pruning
+    from tasks.maintenance import repair_knowledge_graph_task
+    mock_db.execute.return_value = [{"name": "A", "total_mentions": 1, "sentiment_score": 0.0, "type": "ENTITY"}]
+    
+    repair_knowledge_graph_task()
+    
+    db_calls = [call[0][0] for call in mock_db.execute.call_args_list]
+    decay_calls = [c for c in db_calls if "weight = weight * EXP" in c]
+    prune_calls = [c for c in db_calls if "DELETE FROM knowledge_relationships WHERE weight" in c]
+    
+    assert len(decay_calls) > 0
+    assert len(prune_calls) > 0
+
+
+@patch("core.topic_discovery.db")
+def test_adaptive_storyline_threshold(mock_db):
+    # Verify StoryDiscoveryEngine applies adaptive thresholds based on velocity
+    engine = StoryDiscoveryEngine()
+    
+    # 1. Existing storyline
+    mock_db.execute_one.return_value = {
+        "id": 999,
+        "title": "Ujedinjena prica",
+        "metadata": json.dumps({"lang": "sr"}),
+        "distance": 0.38 # Close but exceeds standard 0.35 threshold!
+    }
+    mock_db.execute.return_value = [{"country": "RS"}]
+    
+    # Low-velocity cluster: link_threshold becomes 0.30, shouldn't merge at distance 0.38
+    cluster_slow = {
+        "cluster_id": "c_slow",
+        "avg_embedding": [0.1] * 384,
+        "velocity": 1,
+        "source_count": 2,
+        "titles": ["Spora vest"]
+    }
+    engine._process_cluster(cluster_slow)
+    
+    # High-velocity cluster: link_threshold becomes 0.40, SHOULD merge at distance 0.38!
+    cluster_fast = {
+        "cluster_id": "c_fast",
+        "avg_embedding": [0.1] * 384,
+        "velocity": 4, # High velocity!
+        "source_count": 3,
+        "titles": ["Brza vest"]
+    }
+    engine._process_cluster(cluster_fast)
+    
+    # Verify that the high-velocity cluster was successfully inserted into storyline clusters
+    insert_calls = [call for call in mock_db.execute.call_args_list if "INSERT INTO storyline_clusters_v2" in call[0][0]]
+    assert len(insert_calls) == 1
+    assert insert_calls[0][0][1] == (999, "c_fast", 0.62) # 1 - 0.38 distance
+

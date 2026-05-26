@@ -76,9 +76,16 @@ class StoryDiscoveryEngine:
             (emb,),
         )
 
-        if best_storyline and float(best_storyline["distance"]) < STORYLINE_LINK_THRESHOLD:
+        # Adaptive Threshold: Loosen threshold for high-velocity breaking news, tighten for slow news
+        link_threshold = STORYLINE_LINK_THRESHOLD
+        if velocity >= 3:
+            link_threshold = STORYLINE_LINK_THRESHOLD + 0.05
+        elif velocity < 2:
+            link_threshold = STORYLINE_LINK_THRESHOLD - 0.05
+
+        if best_storyline and float(best_storyline["distance"]) < link_threshold:
             sid = best_storyline["id"]
-            log.info(f"Linking cluster {cid} to existing storyline: {best_storyline['title']} (velocity: {velocity})")
+            log.info(f"Linking cluster {cid} to existing storyline: {best_storyline['title']} (velocity: {velocity}, threshold: {link_threshold:.2f})")
 
             db.execute(
                 "INSERT INTO storyline_clusters_v2 (storyline_id, cluster_id, relevance_score) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
