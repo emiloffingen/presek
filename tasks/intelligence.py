@@ -1690,3 +1690,64 @@ def backfill_cluster_summaries_task(days=30, lang="sr"):
     except Exception as e:
         log.error(f"[tasks] Backfill cluster summaries failed: {e}")
         raise
+
+
+@celery_app.task
+def refine_knowledge_graph_sentiment_task():
+    """Asynchronously refine entities and relationships in the knowledge graph using deep LLM sentiment analysis."""
+    try:
+        # Fetch articles from the last 2 hours
+        cutoff = datetime.datetime.now() - datetime.timedelta(hours=2)
+        rows = db.execute(
+            """
+            SELECT cluster_id, array_agg(DISTINCT title) as titles, MAX(description) as desc
+            FROM articles
+            WHERE created_at >= %s
+            GROUP BY cluster_id
+            HAVING COUNT(DISTINCT source) >= 2
+            LIMIT 20
+            """,
+            (cutoff,),
+        )
+        
+        if not rows:
+            log.info("[sentiment-refinement] No active clusters to refine sentiment for.")
+            return
+
+        from core.entities import extract_entities
+        from nlp import analyze_sentiment_locally
+
+        refined_count = 0
+        for r in rows:
+            text = f"{' '.join(r['titles'])} {r['desc'] or ''}"
+            
+            # Extract the unique entities
+            entities = extract_entities(text, max_entities=8)
+            if not entities:
+                continue
+                
+            # Run deep context-aware LLM sentiment analysis (bypass_llm=False)
+            deep_sentiment = analyze_sentiment_locally(text, bypass_llm=False)
+            
+            for ent in entities:
+                from core.entities import normalize_entity_name
+                canonical_name = normalize_entity_name(ent["name"])
+                
+                # Blend the deep sentiment score into the existing database score
+                db.execute(
+                    """
+                    UPDATE knowledge_entities
+                    SET sentiment_score = (sentiment_score * 0.7) + (%s * 0.3),
+                        last_seen = CURRENT_TIMESTAMP
+                    WHERE name = %s
+                    """,
+                    (deep_sentiment, canonical_name),
+                    fetch=False,
+                )
+                refined_count += 1
+                
+        log.info(f"[sentiment-refinement] Successfully refined deep sentiment for {refined_count} entities.")
+        
+    except Exception as e:
+        log.error(f"[sentiment-refinement] Failed to refine knowledge graph sentiment: {e}")
+

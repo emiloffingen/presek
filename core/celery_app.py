@@ -130,6 +130,10 @@ celery_app.conf.update(
             "task": "tasks.intelligence.recluster_recent_articles_task",
             "schedule": 1800.0,  # Increased from 5m to 30m
         },
+        "refine-knowledge-graph-sentiment": {
+            "task": "tasks.intelligence.refine_knowledge_graph_sentiment_task",
+            "schedule": 1800.0,  # Every 30 minutes
+        },
         "backfill-cluster-summaries-sr": {
             "task": "tasks.intelligence.backfill_cluster_summaries_task",
             "kwargs": {"lang": "sr"},

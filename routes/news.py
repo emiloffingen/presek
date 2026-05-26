@@ -1070,13 +1070,38 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                         }
                     )
 
+        def get_jaccard_similarity(s1: str, s2: str) -> float:
+            words1 = set(re.findall(r"\w+", s1.lower()))
+            words2 = set(re.findall(r"\w+", s2.lower()))
+            if not words1 or not words2:
+                return 0.0
+            return len(words1.intersection(words2)) / len(words1.union(words2))
+
         chrono = sorted(articles, key=lambda x: x["created_at"])
+        consolidated_chrono = []
+        for a in chrono:
+            is_dup = False
+            for existing in consolidated_chrono:
+                time_diff = abs((a["created_at"] - existing["created_at"]).total_seconds())
+                if time_diff < 6 * 3600:
+                    sim = get_jaccard_similarity(a.get("title") or "", existing.get("title") or "")
+                    if sim > 0.65:
+                        is_dup = True
+                        if "sources" not in existing:
+                            existing["sources"] = [existing["source"]]
+                        if a["source"] not in existing["sources"]:
+                            existing["sources"].append(a["source"])
+                        break
+            if not is_dup:
+                a["sources"] = [a["source"]]
+                consolidated_chrono.append(a)
+
         timeline = []
         
         from nlp.local_analyst import LocalAnalyst
         analyst = LocalAnalyst()
         
-        for i, a in enumerate(chrono):
+        for i, a in enumerate(consolidated_chrono):
             is_major = (a.get("source_signal") or {}).get("trust_level", 0) >= 0.8
             title_text = a.get("title") or ""
             desc_text = a.get("description") or ""
@@ -1109,16 +1134,24 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                 milestone = "РЕАКЦИЈА" if lang == "mk" else "REAKCIJA"
             elif any(k in lower_title or k in lower_desc for k in escalation_keywords):
                 milestone = "ЕСКАЛАЦИЈА" if lang == "mk" else "ESKALACIJA"
-            elif i == len(chrono) - 1 and len(chrono) >= 3:
+            elif i == len(consolidated_chrono) - 1 and len(consolidated_chrono) >= 3:
                 milestone = "КОНСЕНЗУС НА МЕДИУМИТЕ" if lang == "mk" else "KONSENZUS MEDIJA"
             else:
                 milestone = "хронологија" if lang == "mk" else "hronologija"
                 
+            sources_list = a.get("sources", [a["source"]])
+            if len(sources_list) > 2:
+                formatted_source = f"{sources_list[0]}, {sources_list[1]} + {len(sources_list) - 2}"
+            elif len(sources_list) == 2:
+                formatted_source = f"{sources_list[0]}, {sources_list[1]}"
+            else:
+                formatted_source = sources_list[0]
+
             timeline.append(
                 {
                     "article_id": a["id"],
                     "title": clean_title,
-                    "source": a["source"],
+                    "source": formatted_source,
                     "created_at": a["created_at"],
                     "is_first": i == 0,
                     "is_major": is_major,

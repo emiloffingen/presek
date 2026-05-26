@@ -221,7 +221,7 @@ def render_html(
                 clean = " ".join(
                     line for line in summary_text.split("\n") if line.strip() and not line.strip().startswith("#")
                 )
-                summary_html = f"<p style=\"margin:8px 0 0;color:#4a4a4a;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;letter-spacing:-0.01em\">{clean[:220]}…</p>"
+                summary_html = f"<p class=\"text-body\" style=\"margin:8px 0 0;color:#4a4a4a;font-family:'Source Serif 4',Georgia,serif;font-size:14px;line-height:1.55;letter-spacing:-0.01em\">{clean[:220]}…</p>"
 
             sources_badge = ""
             if a.get("source_count", 1) > 1:
@@ -229,14 +229,14 @@ def render_html(
 
             items += f"""
             <tr>
-              <td style="padding:20px 0;border-bottom:1px solid #e5e7eb">
-                <p style="margin:0 0 6px;font-family:sans-serif;font-size:10px;font-weight:bold;color:#b91c1c;text-transform:uppercase;letter-spacing:0.1em">{a.get('source','') or 'izvor'}</p>
-                <a href="{a['link']}" style="font-family:Georgia,\'Times New Roman\',serif;font-size:19px;font-weight:900;color:#111827;text-decoration:none;line-height:1.25;display:block">
+              <td class="border-light" style="padding:20px 0;border-bottom:1px solid #e5e7eb">
+                <p class="sans" style="margin:0 0 6px;font-family:'Manrope',sans-serif;font-size:10px;font-weight:bold;color:#b91c1c;text-transform:uppercase;letter-spacing:0.1em">{a.get('source','') or 'izvor'}</p>
+                <a href="{a['link']}" class="text-title" style="font-family:'Noto Serif',Georgia,serif;font-size:19px;font-weight:900;color:#111827;text-decoration:none;line-height:1.25;display:block">
                   {headline}
                 </a>
                 {summary_html}
                 <div style="margin-top:12px">
-                    <a href="{a['link']}" style="font-family:sans-serif;font-size:11px;font-weight:bold;color:#6b7280;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em">{conf['read_more']}</a>
+                    <a href="{a['link']}" class="text-muted sans" style="font-family:'Manrope',sans-serif;font-size:11px;font-weight:bold;color:#6b7280;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em">{conf['read_more']}</a>
                     {sources_badge}
                 </div>
               </td>
@@ -247,10 +247,10 @@ def render_html(
           <td style="padding:48px 0 12px">
             <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                    <td style="font-family:sans-serif;font-size:12px;font-weight:900;letter-spacing:0.2em;text-transform:uppercase;color:#111827;padding-bottom:8px">{cat}</td>
+                    <td class="text-title sans" style="font-family:'Manrope',sans-serif;font-size:12px;font-weight:900;letter-spacing:0.2em;text-transform:uppercase;color:#111827;padding-bottom:8px">{cat}</td>
                 </tr>
                 <tr>
-                    <td style="height:2px;background:#111827"></td>
+                    <td class="double-border" style="height:2px;background:#111827"></td>
                 </tr>
             </table>
           </td>
@@ -265,20 +265,68 @@ def render_html(
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>{conf['masthead']} — {conf['subject']}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@800;900&family=Noto+Serif:ital,wght@0,900;1,900&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+  <style>
+    body {{
+      font-family: 'Source Serif 4', Georgia, serif;
+    }}
+    h1 {{
+      font-family: 'Noto Serif', Georgia, serif;
+    }}
+    .sans {{
+      font-family: 'Manrope', 'Helvetica Neue', Helvetica, sans-serif;
+    }}
+    @media (prefers-color-scheme: dark) {{
+      body, .bg-main {{
+        background-color: #111827 !important;
+        color: #f3f4f6 !important;
+      }}
+      .card-bg {{
+        background-color: #1f2937 !important;
+        border-color: #374151 !important;
+      }}
+      .border-light {{
+        border-color: #374151 !important;
+      }}
+      .double-border {{
+        border-color: #f3f4f6 !important;
+        background-color: #f3f4f6 !important;
+      }}
+      .text-title {{
+        color: #ffffff !important;
+      }}
+      .text-body {{
+        color: #d1d5db !important;
+      }}
+      .text-muted {{
+        color: #9ca3af !important;
+      }}
+      .btn-primary {{
+        background-color: #f3f4f6 !important;
+        color: #111827 !important;
+      }}
+      .footer-bg {{
+        background-color: #1f2937 !important;
+        border-top-color: #374151 !important;
+      }}
+    }}
+  </style>
 </head>
-<body style="margin:0;padding:0;background-color:#f9fafb;font-family:Georgia,serif;-webkit-font-smoothing:antialiased">
+<body style="margin:0;padding:0;background-color:#f9fafb;-webkit-font-smoothing:antialiased">
 
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f9fafb;padding:40px 20px">
+  <table width="100%" cellpadding="0" cellspacing="0" class="bg-main" style="background-color:#f9fafb;padding:40px 20px">
     <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#ffffff;border:1px solid #e5e7eb;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1)">
+      <table width="600" cellpadding="0" cellspacing="0" class="card-bg" style="max-width:600px;width:100%;background-color:#ffffff;border:1px solid #e5e7eb;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1)">
 
         <!-- Masthead -->
         <tr>
-          <td style="padding:40px 40px 30px;text-align:center;border-bottom:4px double #111827">
-            <h1 style="margin:0;font-family:Georgia,\'Times New Roman\',serif;font-size:42px;font-weight:900;color:#111827;letter-spacing:-1.5px;text-transform:uppercase">
+          <td class="double-border" style="padding:40px 40px 30px;text-align:center;border-bottom:4px double #111827">
+            <h1 class="text-title" style="margin:0;font-size:42px;font-weight:900;color:#111827;letter-spacing:-1.5px;text-transform:uppercase">
               {conf['masthead']}
             </h1>
-            <p style="margin:10px 0 0;font-family:sans-serif;font-size:11px;font-weight:bold;letter-spacing:0.3em;text-transform:uppercase;color:#6b7280">
+            <p class="text-muted sans" style="margin:10px 0 0;font-size:11px;font-weight:bold;letter-spacing:0.3em;text-transform:uppercase;color:#6b7280">
               {conf['tagline']}
             </p>
           </td>
@@ -287,7 +335,7 @@ def render_html(
         <!-- Media Pulse Bar -->
         <tr>
           <td style="background-color:#111827;padding:12px 40px;text-align:center">
-            <p style="margin:0;font-family:sans-serif;font-size:10px;font-weight:bold;color:#9ca3af;letter-spacing:0.1em;text-transform:uppercase">
+            <p class="sans" style="margin:0;font-size:10px;font-weight:bold;color:#9ca3af;letter-spacing:0.1em;text-transform:uppercase">
               <span style="color:#ffffff">{conf['pulse']}:</span> &nbsp; {total_stories} {conf['temi']} &nbsp; • &nbsp; {total_sources} {conf['izvori']}
             </p>
           </td>
@@ -296,7 +344,7 @@ def render_html(
         <!-- Edition Info -->
         <tr>
           <td style="padding:24px 40px 0;text-align:center">
-            <p style="margin:0;font-family:sans-serif;font-size:12px;color:#6b7280;letter-spacing:0.05em">
+            <p class="text-muted sans" style="margin:0;font-size:12px;color:#6b7280;letter-spacing:0.05em">
               {period_str}
             </p>
           </td>
@@ -314,7 +362,7 @@ def render_html(
         <!-- Bottom CTA -->
         <tr>
             <td style="padding:0 40px 40px;text-align:center">
-                <a href="{conf['url']}" style="display:inline-block;padding:14px 28px;background-color:#111827;color:#ffffff;font-family:sans-serif;font-size:12px;font-weight:bold;text-decoration:none;text-transform:uppercase;letter-spacing:0.15em;border-radius:2px">
+                <a href="{conf['url']}" class="btn-primary sans" style="display:inline-block;padding:14px 28px;background-color:#111827;color:#ffffff;font-size:12px;font-weight:bold;text-decoration:none;text-transform:uppercase;letter-spacing:0.15em;border-radius:2px">
                     {conf['cta']}
                 </a>
             </td>
@@ -322,13 +370,13 @@ def render_html(
 
         <!-- Footer -->
         <tr>
-          <td style="padding:30px 40px;text-align:center;background-color:#f3f4f6;border-top:1px solid #e5e7eb">
-            <p style="margin:0;font-family:sans-serif;font-size:10px;font-weight:bold;color:#9ca3af;letter-spacing:0.1em;text-transform:uppercase">
+          <td class="footer-bg border-light" style="padding:30px 40px;text-align:center;background-color:#f3f4f6;border-top:1px solid #e5e7eb">
+            <p class="text-muted sans" style="margin:0;font-size:10px;font-weight:bold;color:#9ca3af;letter-spacing:0.1em;text-transform:uppercase">
               {conf['footer_tagline']}
             </p>
-            <p style="margin:8px 0 0;font-family:sans-serif;font-size:10px;color:#9ca3af;line-height:1.5">
+            <p class="text-muted sans" style="margin:8px 0 0;font-size:10px;color:#9ca3af;line-height:1.5">
               {conf['footer_disclaimer']}<br>
-              {conf['unsubscribe']} <a href="{{UNSUBSCRIBE_URL}}" style="color:#6b7280;text-decoration:underline">{conf['here']}</a>.
+              {conf['unsubscribe']} <a href="{{UNSUBSCRIBE_URL}}" class="text-muted" style="color:#6b7280;text-decoration:underline">{conf['here']}</a>.
             </p>
           </td>
         </tr>
@@ -338,7 +386,7 @@ def render_html(
       <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%">
         <tr>
             <td style="padding:20px 0;text-align:center">
-                <p style="margin:0;font-family:sans-serif;font-size:10px;color:#9ca3af">
+                <p class="text-muted sans" style="margin:0;font-size:10px;color:#9ca3af">
                     © {datetime.now().year} Presek. {conf['rights']}.
                 </p>
             </td>

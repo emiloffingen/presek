@@ -64,7 +64,7 @@ class StoryDiscoveryEngine:
         # OPTIMIZED: Use stored storylines_v2.centroid with HNSW index for O(log n) lookup
         best_storyline = db.execute_one(
             """
-            SELECT s.id, s.title,
+            SELECT s.id, s.title, s.metadata,
                    s.centroid <=> %s::vector as distance
             FROM storylines_v2 s
             WHERE s.status = 'active'
@@ -93,6 +93,35 @@ class StoryDiscoveryEngine:
             )
             # Maintain the storyline centroid
             self._update_storyline_centroid(sid)
+
+            # Update storyline metadata to cross-lingual if languages differ
+            try:
+                cluster_lang = "mk"
+                art_rows = db.execute(
+                    "SELECT country FROM articles WHERE cluster_id = %s LIMIT 1",
+                    (cid,)
+                )
+                if art_rows and art_rows[0].get("country") == "RS":
+                    cluster_lang = "sr"
+
+                meta = best_storyline.get("metadata") or {}
+                if isinstance(meta, str):
+                    try:
+                        meta = json.loads(meta)
+                    except Exception:
+                        meta = {}
+                
+                story_lang = meta.get("lang") or "mk"
+                if story_lang != cluster_lang:
+                    meta["is_cross_lingual"] = True
+                    meta["languages"] = list(set([story_lang, cluster_lang]))
+                    db.execute(
+                        "UPDATE storylines_v2 SET metadata = %s WHERE id = %s",
+                        (json.dumps(meta), sid),
+                        fetch=False,
+                    )
+            except Exception as e:
+                log.warning(f"Failed to update cross-lingual metadata for storyline {sid}: {e}")
         else:
             # 3. Create a new storyline if it has sufficient momentum
             if cluster["source_count"] >= 3 or velocity >= 2:
@@ -210,6 +239,7 @@ class StoryDiscoveryEngine:
                 except Exception:
                     metadata = {}
             lang = metadata.get("lang", "mk")
+            is_cross_lingual = metadata.get("is_cross_lingual", False)
 
             # Get all titles and summaries in this storyline
             rows = db.execute(
@@ -228,7 +258,14 @@ class StoryDiscoveryEngine:
 
             combined_text = "\n".join([f"• {r['title']}: {r.get('summary','')}" for r in rows])
             
-            if lang == "sr":
+            if is_cross_lingual:
+                system_prompt = (
+                    "Ti si glavni regionalni urednik za Balkan. Ova priča (storyline) se prati i u srpskim i u makedonskim medijima. "
+                    "Na osnovu naslova i rezimea u nastavku, napiši jedan integrisani, uravnotežen regionalni pregled (3-4 rečenice) "
+                    "na srpskom jeziku (latinica) i makedonskom jeziku koji objašnjava regionalni kontekst i reakcije u obe zemlje. "
+                    "Koristi jasan, neutralan i analitički novinarski stil."
+                )
+            elif lang == "sr":
                 system_prompt = (
                     "Napiši kratak pregled (2-3 rečenice) na srpskom jeziku (latinica) za dosadašnji razvoj "
                     "ove priče na osnovu događaja ispod. Fokusiraj se na glavni narativ."
