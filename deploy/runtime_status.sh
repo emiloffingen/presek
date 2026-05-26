@@ -49,6 +49,8 @@ show_path_state() {
 show_service_state() {
   local unit="$1"
   local state
+  local service_type
+  local result
 
   if ! command -v systemctl >/dev/null 2>&1; then
     warn "$unit: systemctl unavailable"
@@ -58,7 +60,14 @@ show_service_state() {
   state="$(systemctl is-active "$unit" 2>/dev/null || true)"
   case "$state" in
     active) ok "$unit: active" ;;
-    *) warn "$unit: ${state:-unknown}" ;;
+    *)
+      service_type="$(systemctl show "$unit" -p Type --value 2>/dev/null || true)"
+      result="$(systemctl show "$unit" -p Result --value 2>/dev/null || true)"
+      if [ "$service_type" = "oneshot" ] && [ "$result" = "success" ]; then
+        ok "$unit: completed successfully"
+        return
+      fi
+      warn "$unit: ${state:-unknown}" ;;
   esac
 }
 
