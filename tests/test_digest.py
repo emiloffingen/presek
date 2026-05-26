@@ -98,6 +98,26 @@ class TestRenderHtml:
         assert "Srbija" in html
         assert "Balkan" in html
 
+    def test_synthetic_prioritization(self):
+        stories = {
+            "Srbija": [
+                {
+                    "title": "Raw Title",
+                    "synthetic_headline": "Premium Synthetic Headline",
+                    "link": "https://example.com/synth",
+                    "source": "MIA",
+                    "summary": "Raw summary text",
+                    "synthesis_summary": "Premium synthesis summary text",
+                    "source_count": 2,
+                }
+            ]
+        }
+        html = render_html(stories, datetime(2026, 3, 22), datetime(2026, 3, 29))
+        assert "Premium Synthetic Headline" in html
+        assert "Raw Title" not in html
+        assert "Premium synthesis summary text" in html
+        assert "Raw summary text" not in html
+
     def test_html_structure(self):
         html = render_html({}, datetime(2026, 1, 1), datetime(2026, 1, 2))
         assert html.startswith("<!DOCTYPE html>")

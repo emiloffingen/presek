@@ -132,11 +132,12 @@ def fetch_top_stories(days: int = 7, per_category: int = 3, locale: str = "sr") 
         with database.get_db() as conn:
             rows = conn.execute(
                 """
-                SELECT id, title, link, source, category, summary, cluster_id, created_at, country, is_global
-                FROM articles
-                WHERE created_at >= NOW() - (INTERVAL '1 day' * %s)
-                  AND (country = %s OR is_global = TRUE)
-                ORDER BY created_at DESC
+                SELECT a.id, a.title, a.link, a.source, a.category, a.summary, a.cluster_id, a.created_at, a.country, a.is_global, COALESCE(s.credibility, 0.5) as credibility
+                FROM articles a
+                LEFT JOIN sources s ON a.source = s.name
+                WHERE a.created_at >= NOW() - (INTERVAL '1 day' * %s)
+                  AND (a.country = %s OR a.is_global = TRUE)
+                ORDER BY a.created_at DESC
             """,
                 (days, country),
             ).fetchall()
@@ -144,10 +145,15 @@ def fetch_top_stories(days: int = 7, per_category: int = 3, locale: str = "sr") 
         log.error(f"DB error in fetch_top_stories: {e}")
         return {}
 
-    # Group by cluster, pick representative
+    # Group by cluster
     clusters: dict[str, list] = defaultdict(list)
     for row in rows:
         clusters[row["cluster_id"]].append(dict(row))
+
+    # Sort each cluster's articles by credibility desc, created_at desc
+    # This picks the highest credibility article as cluster[0]!
+    for cid in clusters:
+        clusters[cid].sort(key=lambda x: (float(x.get("credibility") or 0.5), x["created_at"]), reverse=True)
 
     # Sort clusters by size desc
     sorted_clusters = sorted(clusters.values(), key=len, reverse=True)
@@ -160,6 +166,37 @@ def fetch_top_stories(days: int = 7, per_category: int = 3, locale: str = "sr") 
         if len(by_cat[cat]) < per_category:
             main["source_count"] = len(cluster)
             by_cat[cat].append(main)
+
+    # Fetch synthesis details (synthetic headlines/summaries) for selected clusters
+    top_cluster_ids = [main["cluster_id"] for cat_list in by_cat.values() for main in cat_list]
+    if top_cluster_ids:
+        try:
+            with database.get_db() as conn:
+                summary_rows = conn.execute(
+                    """
+                    SELECT cluster_id, summary, synthetic_headline, synthetic_standfirst
+                    FROM cluster_summaries
+                    WHERE cluster_id = ANY(%s) AND lang = %s
+                """,
+                    (top_cluster_ids, locale),
+                ).fetchall()
+                
+                summaries_by_cid = {r["cluster_id"]: r for r in summary_rows}
+                
+                # Enrich selected articles with synthesis metadata
+                for cat in by_cat:
+                    for main in by_cat[cat]:
+                        cid = main["cluster_id"]
+                        if cid in summaries_by_cid:
+                            s = summaries_by_cid[cid]
+                            if s.get("summary"):
+                                main["synthesis_summary"] = s["summary"]
+                            if s.get("synthetic_headline"):
+                                main["synthetic_headline"] = s["synthetic_headline"]
+                            if s.get("synthetic_standfirst"):
+                                main["synthetic_standfirst"] = s["synthetic_standfirst"]
+        except Exception as e:
+            log.error(f"DB error fetching cluster summaries for digest: {e}")
 
     return dict(by_cat)
 
@@ -177,10 +214,12 @@ def render_html(
     for cat, articles in stories_by_cat.items():
         items = ""
         for a in articles:
+            headline = a.get("synthetic_headline") or a.get("title") or ""
+            summary_text = a.get("synthesis_summary") or a.get("summary") or ""
             summary_html = ""
-            if a.get("summary"):
+            if summary_text:
                 clean = " ".join(
-                    line for line in a["summary"].split("\n") if line.strip() and not line.strip().startswith("#")
+                    line for line in summary_text.split("\n") if line.strip() and not line.strip().startswith("#")
                 )
                 summary_html = f"<p style=\"margin:8px 0 0;color:#4a4a4a;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;letter-spacing:-0.01em\">{clean[:220]}…</p>"
 
@@ -193,7 +232,7 @@ def render_html(
               <td style="padding:20px 0;border-bottom:1px solid #e5e7eb">
                 <p style="margin:0 0 6px;font-family:sans-serif;font-size:10px;font-weight:bold;color:#b91c1c;text-transform:uppercase;letter-spacing:0.1em">{a.get('source','') or 'izvor'}</p>
                 <a href="{a['link']}" style="font-family:Georgia,\'Times New Roman\',serif;font-size:19px;font-weight:900;color:#111827;text-decoration:none;line-height:1.25;display:block">
-                  {a['title']}
+                  {headline}
                 </a>
                 {summary_html}
                 <div style="margin-top:12px">
