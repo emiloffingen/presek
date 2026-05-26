@@ -562,9 +562,9 @@ USE_READ_REPLICA = bool(DATABASE_READ_REPLICA_URL)
 # Research should prefer providers that are currently reliable and produce
 # grounded long-form answers. Keep local before degraded/optional providers so
 # interactive research does not stall behind invalid or rate-limited APIs.
-PROVIDER_FALLBACK_ORDER_RESEARCH = ["mistral_large", "local", "mistral_small", "gemini"]
-PROVIDER_FALLBACK_ORDER_SUMMARY = ["local", "mistral_small", "gemini"]
-PROVIDER_FALLBACK_ORDER = ["mistral_large", "local", "mistral_small", "gemini"]  # default
+PROVIDER_FALLBACK_ORDER_RESEARCH = ["mistral_large", "local", "mistral_small"]
+PROVIDER_FALLBACK_ORDER_SUMMARY = ["local", "mistral_small"]
+PROVIDER_FALLBACK_ORDER = ["mistral_large", "local", "mistral_small"]  # default
 
 # ── Clustering Parameters ───────────────────────────────────────
 CLUSTERING_THRESHOLDS = {
