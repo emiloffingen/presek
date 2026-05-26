@@ -95,6 +95,7 @@ web/.env.local
 
 # Claude
 .claude/
+.antigravitycli/
 .mypy_cache/
 .ruff_cache/
 

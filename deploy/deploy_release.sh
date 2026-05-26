@@ -1,6 +1,12 @@
 #!/bin/bash
 # Production Deployment Script for Presek (Lean Core)
 # Usage: bash deploy/deploy_release.sh
+# Fast modes:
+#   DEPLOY_MODE=frontend bash deploy/deploy_release.sh  # build web, restart Astro only
+#   DEPLOY_MODE=backend bash deploy/deploy_release.sh   # skip web build, restart API/workers
+#   DEPLOY_MODE=workers bash deploy/deploy_release.sh   # restart workers only
+#   DEPLOY_MODE=ops bash deploy/deploy_release.sh       # copy release, no build/DB/restart
+#   DEPLOY_MODE=fast bash deploy/deploy_release.sh      # skip DB backup/migrations
 
 set -euo pipefail
 
@@ -25,6 +31,13 @@ STAGED_SOURCE_DIR=""
 SYSTEMD_TARGET="${SYSTEMD_TARGET:-presek.target}"
 SKIP_RESTART="${SKIP_RESTART:-0}"
 HEALTH_TIMEOUT_SECONDS="${HEALTH_TIMEOUT_SECONDS:-60}"
+DEPLOY_MODE="${DEPLOY_MODE:-full}"
+RUN_FRONTEND_BUILD=1
+RUN_DB_BACKUP=1
+RUN_MIGRATIONS=1
+RESTART_FASTAPI=1
+RESTART_ASTRO=1
+RESTART_WORKERS=1
 
 # Logging helpers
 info() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] $*"; }
@@ -54,6 +67,53 @@ discover_app_services() {
 }
 
 APP_SERVICES=($(discover_app_services))
+
+configure_deploy_mode() {
+    case "$DEPLOY_MODE" in
+        full)
+            ;;
+        frontend)
+            RUN_DB_BACKUP=0
+            RUN_MIGRATIONS=0
+            RESTART_FASTAPI=0
+            RESTART_WORKERS=0
+            ;;
+        backend)
+            RUN_FRONTEND_BUILD=0
+            RESTART_ASTRO=0
+            ;;
+        workers)
+            RUN_FRONTEND_BUILD=0
+            RUN_DB_BACKUP=0
+            RUN_MIGRATIONS=0
+            RESTART_FASTAPI=0
+            RESTART_ASTRO=0
+            ;;
+        ops)
+            RUN_FRONTEND_BUILD=0
+            RUN_DB_BACKUP=0
+            RUN_MIGRATIONS=0
+            RESTART_FASTAPI=0
+            RESTART_ASTRO=0
+            RESTART_WORKERS=0
+            ;;
+        fast)
+            RUN_DB_BACKUP=0
+            RUN_MIGRATIONS=0
+            ;;
+        *)
+            fail "Unknown DEPLOY_MODE '$DEPLOY_MODE' (expected full, frontend, backend, workers, ops, fast)"
+            ;;
+    esac
+
+    # Explicit environment overrides. SKIP_*=1 disables; FORCE_*=1 enables.
+    if [ "${SKIP_FRONTEND_BUILD:-0}" = "1" ]; then RUN_FRONTEND_BUILD=0; fi
+    if [ "${FORCE_FRONTEND_BUILD:-0}" = "1" ]; then RUN_FRONTEND_BUILD=1; fi
+    if [ "${SKIP_DB_BACKUP:-0}" = "1" ]; then RUN_DB_BACKUP=0; fi
+    if [ "${FORCE_DB_BACKUP:-0}" = "1" ]; then RUN_DB_BACKUP=1; fi
+    if [ "${SKIP_MIGRATIONS:-0}" = "1" ]; then RUN_MIGRATIONS=0; fi
+    if [ "${FORCE_MIGRATIONS:-0}" = "1" ]; then RUN_MIGRATIONS=1; fi
+}
 
 stage_clean_git_source_if_needed() {
     if [ ! -d "$SOURCE_ROOT/.git" ]; then
@@ -119,34 +179,40 @@ restart_services_in_order() {
     local remaining_services=()
     local service
 
-    info "Restarting unified FastAPI service"
-    if has_service "presek-fastapi-unified.service"; then
+    if [ "$RESTART_FASTAPI" = "1" ] && has_service "presek-fastapi-unified.service"; then
+        info "Restarting unified FastAPI service"
         sudo systemctl restart presek-fastapi-unified.service
         wait_http_status "FastAPI Unified" "http://127.0.0.1:5001/api/health"
     fi
 
-    if has_service "presek-astro.service"; then
+    if [ "$RESTART_ASTRO" = "1" ] && has_service "presek-astro.service"; then
         info "Restarting Astro"
         sudo systemctl restart presek-astro.service
         wait_http_status "Astro" "http://127.0.0.1:3000"
     fi
 
-    for service in "${APP_SERVICES[@]}"; do
-        case "$service" in
-            presek-fastapi-unified.service|presek-astro.service)
-                ;;
-            *)
-                remaining_services+=("$service")
-                ;;
-        esac
-    done
+    if [ "$RESTART_WORKERS" = "1" ]; then
+        for service in "${APP_SERVICES[@]}"; do
+            case "$service" in
+                presek-fastapi-unified.service|presek-astro.service|cloudflare-realip-update.service)
+                    ;;
+                *)
+                    remaining_services+=("$service")
+                    ;;
+            esac
+        done
+    fi
 
     if [ "${#remaining_services[@]}" -gt 0 ]; then
         info "Restarting background/support services: ${remaining_services[*]}"
         sudo systemctl restart "${remaining_services[@]}"
     fi
 
-    sudo systemctl start "$SYSTEMD_TARGET" || true
+    if [ "$RESTART_FASTAPI" = "1" ] || [ "$RESTART_ASTRO" = "1" ] || [ "$RESTART_WORKERS" = "1" ]; then
+        sudo systemctl start "$SYSTEMD_TARGET" || true
+    else
+        info "No service restarts requested for DEPLOY_MODE=$DEPLOY_MODE"
+    fi
     sudo systemctl reload nginx || true
 }
 
@@ -166,13 +232,17 @@ switch_current_release() {
 
 # 1. Environment Validation
 info "Validating deployment environment..."
+configure_deploy_mode
+info "Deploy mode: $DEPLOY_MODE (build=$RUN_FRONTEND_BUILD backup=$RUN_DB_BACKUP migrations=$RUN_MIGRATIONS restart_api=$RESTART_FASTAPI restart_astro=$RESTART_ASTRO restart_workers=$RESTART_WORKERS)"
 need_cmd git
 need_cmd rsync
 need_cmd tar
-need_cmd npm
 need_cmd curl
 need_cmd sudo
 need_cmd flock
+if [ "$RUN_FRONTEND_BUILD" = "1" ]; then
+    need_cmd npm
+fi
 [ -d "$APP_ROOT" ] || fail "APP_ROOT $APP_ROOT does not exist"
 [ -d "$VENV_DIR" ] || fail "VENV_DIR $VENV_DIR does not exist"
 
@@ -209,28 +279,42 @@ ln -sfn "$SHARED_DIR/static/generated" "$RELEASE_DIR/static/generated"
 ln -sfn "$SHARED_DIR/static/uploads" "$RELEASE_DIR/static/uploads"
 
 # 3. Build Frontend
-info "Building frontend..."
-cd "$RELEASE_DIR/web"
-if [ -d "$SHARED_WEB_NODE_MODULES" ]; then
-    ln -sfn "$SHARED_WEB_NODE_MODULES" "node_modules"
+if [ "$RUN_FRONTEND_BUILD" = "1" ]; then
+    info "Building frontend..."
+    cd "$RELEASE_DIR/web"
+    if [ -d "$SHARED_WEB_NODE_MODULES" ]; then
+        ln -sfn "$SHARED_WEB_NODE_MODULES" "node_modules"
+    else
+        npm install --silent
+    fi
+    npm run build --silent
 else
-    npm install --silent
+    info "Skipping frontend build for DEPLOY_MODE=$DEPLOY_MODE"
+    if [ -L "$CURRENT_LINK" ] && [ -d "$(readlink -f "$CURRENT_LINK")/web/dist" ]; then
+        info "Reusing frontend build from current release"
+        cp -a "$(readlink -f "$CURRENT_LINK")/web/dist" "$RELEASE_DIR/web/dist"
+    else
+        fail "Cannot skip frontend build: current release web/dist is missing"
+    fi
+    if [ -d "$SHARED_WEB_NODE_MODULES" ]; then
+        ln -sfn "$SHARED_WEB_NODE_MODULES" "$RELEASE_DIR/web/node_modules"
+    fi
 fi
-npm run build --silent
 
 # 4. Backup database & Update Backend migrations
 DB_BACKUP_CREATED=0
-info "Backing up database..."
-if [ -f "$SOURCE_ROOT/deploy/backup_postgres.sh" ]; then
+if [ "$RUN_DB_BACKUP" = "1" ] && [ -f "$SOURCE_ROOT/deploy/backup_postgres.sh" ]; then
+    info "Backing up database..."
     if APP_ROOT="$APP_ROOT" ENV_FILE="$SHARED_DIR/.env" bash "$SOURCE_ROOT/deploy/backup_postgres.sh" >/dev/null 2>&1; then
         DB_BACKUP_CREATED=1
         ok "Automatic database backup created successfully"
     else
         info "Database backup skipped or failed (unconfigured environment or missing utility)"
     fi
+else
+    info "Skipping database backup for DEPLOY_MODE=$DEPLOY_MODE"
 fi
 
-info "Running migrations..."
 cd "$RELEASE_DIR"
 if [ -f "$SHARED_DIR/.env" ]; then
     set -a
@@ -239,11 +323,16 @@ if [ -f "$SHARED_DIR/.env" ]; then
 fi
 
 SCHEMA_UPDATED=0
-if "$VENV_DIR/bin/alembic" upgrade head; then
-    SCHEMA_UPDATED=1
-    ok "Database migrations applied successfully"
+if [ "$RUN_MIGRATIONS" = "1" ]; then
+    info "Running migrations..."
+    if "$VENV_DIR/bin/alembic" upgrade head; then
+        SCHEMA_UPDATED=1
+        ok "Database migrations applied successfully"
+    else
+        info "Alembic migrations failed or not configured, skipping..."
+    fi
 else
-    info "Alembic migrations failed or not configured, skipping..."
+    info "Skipping migrations for DEPLOY_MODE=$DEPLOY_MODE"
 fi
 
 # Write runtime metadata for rollback support
@@ -253,6 +342,7 @@ VENV_TARGET=$(readlink -f "$VENV_DIR")
 WEB_NODE_MODULES_TARGET=$(readlink -f "$SHARED_WEB_NODE_MODULES")
 SCHEMA_UPDATED=$SCHEMA_UPDATED
 DB_BACKUP_CREATED=$DB_BACKUP_CREATED
+DEPLOY_MODE=$DEPLOY_MODE
 EOF
 
 # 5. Switch Release
