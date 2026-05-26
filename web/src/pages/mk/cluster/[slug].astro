@@ -1277,6 +1277,8 @@ const articleSchema = cluster ? {
 			const label = document.querySelector('[data-reader-label]');
 			const progress = document.getElementById('reading-progress');
 			if (!article || !button) return;
+			if (button.dataset.readerBound === 'true') return;
+			button.dataset.readerBound = 'true';
 			const focusText = document.documentElement.lang === 'mk' ? 'Фокус читање' : 'Fokus čitanje';
 			const fullText = document.documentElement.lang === 'mk' ? 'Целосен приказ' : 'Ceo prikaz';
 
