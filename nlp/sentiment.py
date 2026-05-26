@@ -101,12 +101,45 @@ NEGATIONS = {"ne", "nitu", "nikako", "bez", "prestana", "prekina", "protiv"}
 
 def analyze_sentiment_locally(text):
     """
-    Returns a score between -2.0 and 2.0 based on keyword frequency.
-    Improved with negation detection.
+    Returns a score between -2.0 and 2.0 based on local LLM or keyword frequency.
+    Tries to utilize the local Gemma 4 model first for deep context understanding,
+    falling back transparently to traditional lexicon keyword frequency.
     """
     if not text:
         return 0.0
 
+    # 1. Try local LLM sentiment analysis first
+    import os
+    if os.environ.get("LOCAL_MODEL_PATH"):
+        try:
+            from nlp.local_analyst import LocalAnalyst
+            analyst = LocalAnalyst()
+            if analyst._load_model():
+                from core.language import detect_language
+                lang = detect_language(text)
+                if lang == "sr":
+                    system = (
+                        "Ti si model za analizu sentimenta. Proceni sentiment teksta. "
+                        "Vrati ISKLJUČIVO broj između -2.0 (ekstremno negativan/kritičan) i 2.0 (ekstremno pozitivan/afirmativan). "
+                        "Neutralan sentiment treba da bude 0.0. Vrati samo broj bez ikakvog dodatnog teksta ili obrazloženja."
+                    )
+                else:
+                    system = (
+                        "Ti si model za analiza na sentiment. Proceni go sentimentot na tekstot. "
+                        "Vrati ISKLUCIVO broj megu -2.0 (ekstremno negativen/kritican) i 2.0 (ekstremno pozitiven/afirmativen). "
+                        "Neutralen sentiment treba da bide 0.0. Vrati samo broj bez nikakov dopolnitelen tekst ili obrazlozenie."
+                    )
+                
+                res = analyst.analyze(text[:1200], system, max_tokens=10, lang=lang)
+                if res:
+                    match = re.search(r"[-+]?\d*\.\d+|\d+", res)
+                    if match:
+                        val = float(match.group())
+                        return max(-2.0, min(2.0, val))
+        except Exception as e:
+            log.warning(f"[sentiment] Local LLM sentiment analysis failed: {e}. Falling back to lexicon.")
+
+    # 2. Traditional Lexicon Fallback
     words = re.findall(r"[A-Za-z\w]{2,}", text.lower())
     score = 0.0
     matches = 0
