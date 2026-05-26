@@ -105,7 +105,14 @@ class LocalAnalyst:
                     n_threads=N_THREADS,
                     verbose=False,
                 )
-                log.info(f"[analyst] Gemma 2 2B loaded in {time.time()-t0:.1f}s")
+                model_filename = os.path.basename(MODEL_PATH)
+                if "gemma-4" in model_filename.lower():
+                    model_display = "Gemma 4"
+                elif "gemma-2" in model_filename.lower():
+                    model_display = "Gemma 2 2B"
+                else:
+                    model_display = model_filename
+                log.info(f"[analyst] {model_display} loaded in {time.time()-t0:.1f}s")
                 return True
             except Exception as e:
                 log.error(f"[analyst] Failed to load local model: {e}")
