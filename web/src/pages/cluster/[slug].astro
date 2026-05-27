@@ -326,6 +326,45 @@ const primaryTopics = Array.from(new Set([
     ...(cluster?.topics || []),
     ...(cluster?.articles || []).map((article: Article) => article.topic).filter(Boolean),
 ])).slice(0, 3);
+const primaryCategory = cluster?.articles?.[0]?.category || '';
+const foldedClusterText = [
+    displayHeadline,
+    primaryCategory,
+    ...primaryTopics,
+    ...(cluster?.tags || []),
+].join(' ').toLowerCase();
+const isWeatherStory = /vreme|vrijeme|време|сончев|дожд|грмеж|температур|prognoz|прогноз|oblac|облач|sunčan|сунчан|kiš|киш/.test(foldedClusterText);
+const isSportsStory = /sport|спорт|utakmic|натпревар|liga|лига|fudbal|фудбал|košark|кошарк|tenis|тенис/.test(foldedClusterText);
+const storyKindLabel = (() => {
+    if (isWeatherStory) return lang === 'sr' ? 'VREMENSKA PROGNOZA' : 'ВРЕМЕНСКА ПРОГНОЗА';
+    if (isSportsStory) return lang === 'sr' ? 'SPORTSKI SIGNAL' : 'СПОРТСКИ СИГНАЛ';
+    if (primaryCategory) return cleanAndDecode(primaryCategory).toUpperCase();
+    return lang === 'sr' ? 'TEMATSKI SIGNAL' : 'ТЕМАТСКИ СИГНАЛ';
+})();
+const topicLabelMap: Record<string, { sr: string; mk: string }> = {
+    vesti: { sr: 'Vesti', mk: 'Вести' },
+    zivot: { sr: 'Život', mk: 'Живот' },
+    život: { sr: 'Život', mk: 'Живот' },
+    politika: { sr: 'Politika', mk: 'Политика' },
+    ekonomija: { sr: 'Ekonomija', mk: 'Економија' },
+    sport: { sr: 'Sport', mk: 'Спорт' },
+    tehnologija: { sr: 'Tehnologija', mk: 'Технологија' },
+    kultura: { sr: 'Kultura', mk: 'Култура' },
+};
+function cleanTopicLabel(value?: string) {
+    const clean = cleanAndDecode(value || '').trim();
+    if (!clean) return '';
+    const mapped = topicLabelMap[clean.toLowerCase()];
+    if (mapped) return lang === 'sr' ? mapped.sr : mapped.mk;
+    return clean;
+}
+const displayTopicSignals = Array.from(new Set([
+    ...(isWeatherStory ? [lang === 'sr' ? 'Vreme' : 'Време'] : []),
+    ...primaryTopics
+        .map((topic: string) => cleanTopicLabel(topic))
+        .filter((topic: string) => topic && !['Vesti', 'Вести'].includes(topic)),
+    cleanTopicLabel(primaryCategory),
+])).filter(Boolean).slice(0, 3);
 const hasConflicts = conflictsCount > 0;
 const isSingleSource = uniqueSourcesCount <= 1;
 const clusterStatus = (() => {
@@ -358,9 +397,13 @@ const clusterStatus = (() => {
     }
     return {
         label: lang === 'sr' ? 'VIŠE IZVORA' : 'ПОВЕЌЕ ИЗВОРИ',
-        description: lang === 'sr'
-            ? 'Grupisano po zajedničkoj temi, akterima i bliskom vremenu objave.'
-            : 'Групирано според заедничка тема, актери и блиско време на објава.',
+        description: isWeatherStory
+            ? (lang === 'sr'
+                ? 'Grupisano prema istoj prognozi, području i bliskom vremenu objave.'
+                : 'Групирано според иста прогноза, подрачје и блиско време на објава.')
+            : (lang === 'sr'
+                ? 'Grupisano po zajedničkoj temi, akterima i bliskom vremenu objave.'
+                : 'Групирано според заедничка тема, актери и блиско време на објава.'),
         tone: 'verified',
     };
 })();
@@ -387,9 +430,9 @@ const evidenceItems = [
         detail: latestArticle?.created_at ? getRelativeTimeStr(latestArticle.created_at) : '',
     },
     {
-        label: lang === 'sr' ? 'Veze u klasteru' : 'Врски во кластерот',
-        value: sharedEntities.length ? sharedEntities.slice(0, 2).join(', ') : (primaryTopics[0] || cluster?.articles?.[0]?.category || '—'),
-        detail: primaryTopics.join(' · '),
+        label: lang === 'sr' ? 'Ključne oznake' : 'Клучни ознаки',
+        value: sharedEntities.length && !isWeatherStory ? sharedEntities.slice(0, 2).join(', ') : (displayTopicSignals[0] || '—'),
+        detail: displayTopicSignals.slice(sharedEntities.length && !isWeatherStory ? 0 : 1).join(' · '),
     },
 ].filter((item) => item.value && item.value !== '—');
 
@@ -507,7 +550,7 @@ const articleSchema = cluster ? {
 								<span class="text-foreground">{cluster.articles?.[0].category || (lang === 'sr' ? 'GENERALNO' : 'ГЕНЕРАЛНО')}</span>
 							</div>
 							<span class="border-l border-border pl-8">{uniqueSourcesCount} {lang === 'sr' ? 'REDAKCIJA' : 'РЕДАКЦИИ'}</span>
-							<span class:list={["hidden md:inline border-l border-border pl-8 cluster-status-text", `tone-${clusterStatus.tone}`]}>{clusterStatus.label}</span>
+							<span class:list={["hidden md:inline border-l border-border pl-8 cluster-status-text", `tone-${clusterStatus.tone}`]}>{storyKindLabel}</span>
 						</div>
 					</div>
 					<div class="header-actions flex gap-[var(--grid-gap)] pb-1">
@@ -531,15 +574,15 @@ const articleSchema = cluster ? {
 				</div>
 				<div class="reader-command-bar" aria-label={lang === 'sr' ? 'Kontrole čitanja' : 'Контроли за читање'}>
 					<div class="reader-source-strip">
-						<span>{lang === 'sr' ? 'Izvori u pregledu' : 'Извори во прегледот'}</span>
-						<strong>{sourcePreview.join(' · ')}</strong>
+						<span>{lang === 'sr' ? 'Izvori' : 'Извори'}</span>
+						<strong>{uniqueSourcesCount} {lang === 'sr' ? 'redakcija u pregledu' : 'редакции во прегледот'}</strong>
 					</div>
 					<div class="reader-actions">
 						<a href="#cluster-synthesis"><BookOpen size={14} /> {primaryNarrativeLabel}</a>
 						<a href="#cluster-sources"><ListChecks size={14} /> {lang === 'sr' ? 'Izvori' : 'Извори'}</a>
 						<button type="button" data-reader-toggle aria-pressed="false">
 							<BookOpen size={14} />
-							<span data-reader-label>{lang === 'sr' ? 'Fokus čitanje' : 'Фокус читање'}</span>
+							<span data-reader-label>{lang === 'sr' ? 'Fokus' : 'Фокус'}</span>
 						</button>
 					</div>
 				</div>
