@@ -111,8 +111,9 @@ class TestAstroFrontendIntegrity:
         home_route = _read("routes/home.py")
         entity_route = _read("routes/intelligence.py")
 
-        assert 'normalized["display_name"] = _display_entity_name(raw_name)' in home_route
-        assert 'normalized["name"] = raw_name' in home_route
+        assert 'display_name = _normalize_focus_entity_name(raw_name)' in home_route
+        assert 'normalized["display_name"] = display_name' in home_route
+        assert 'normalized["name"] = display_name' in home_route
         assert "LOWER(name) = LOWER(%s)" in entity_route
         assert "LOWER(tag) = LOWER(%s)" in entity_route
 

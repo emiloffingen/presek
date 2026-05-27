@@ -747,14 +747,22 @@ def test_home_route_composes_named_slots(mock_all):
         "foryou-6",
     ]
     assert [item["cluster_id"] for item in data["developing"]] == ["developing-1"]
-    assert [item["cluster_id"] for item in data["wire"]] == ["wire-1"]
+    assert [item["cluster_id"] for item in data["wire"]] == [
+        "foryou-1",
+        "foryou-2",
+        "foryou-3",
+        "foryou-4",
+        "foryou-5",
+        "foryou-6",
+        "wire-1",
+    ]
     assert [item["cluster_id"] for item in data["live_now"]] == ["wire-2", "live-1"]
     assert [item["title"] for item in data["latest_wire"]] == [
         "Teska soobracajka na ekspresniot pat kaj Rankovce",
         "Sobranieto otvori rasprava za budzetot",
         "Lead",
     ]
-    assert data["focus_entities"][0]["name"] == "vlada"
+    assert data["focus_entities"][0]["name"] == "Vlada"
     assert data["focus_entities"][0]["display_name"] == "Vlada"
 
 
