@@ -627,9 +627,9 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                     )
                     fallback = synthesize_cluster_fallback(article_rows, lang=lang)
 
-                    # Merge: Prefer AI summary if it exists and is long enough, otherwise fallback
+                    # Merge: Prefer AI summary if it exists and is long enough and not a leaked JSON, otherwise fallback
                     summary = res_data.get("summary") or (
-                        res if isinstance(res, str) and len(res) > 30 else fallback["summary"]
+                        res if isinstance(res, str) and len(res) > 30 and not _looks_like_leaked_json_fragment(res) else fallback["summary"]
                     )
                     generated_article = res_data.get("article") or fallback["generated_article"]
                     synthetic_headline = res_data.get("synthetic_headline") or fallback["synthetic_headline"]
