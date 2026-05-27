@@ -238,6 +238,10 @@
     backdrop-filter 0.3s var(--ease-editorial);
 }
 
+html {
+  font-size: calc(100% * var(--text-scale, 1));
+}
+
 /* --- Premium Typography Core --- */
 :root {
   --font-feature-settings: "kern", "liga", "clig", "calt", "onum", "pnum";

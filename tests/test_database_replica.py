@@ -12,8 +12,12 @@ def test_read_replica_configuration():
     # Test that config variables exist
     assert hasattr(db_manager, "_read_pool")
 
-    # Initially should be None if not configured
-    assert db_manager._read_pool is None
+    # Initially should be None if not configured, or initialized pool if configured
+    from core.config import USE_READ_REPLICA
+    if not USE_READ_REPLICA:
+        assert db_manager._read_pool is None
+    else:
+        assert db_manager._read_pool is not None
 
 
 def test_read_only_query_routing():

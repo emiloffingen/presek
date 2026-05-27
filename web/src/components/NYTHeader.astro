@@ -1,6 +1,7 @@
 ---
 import SearchIsland from './SearchIsland';
 import ThemeIsland from './ThemeIsland';
+import TextScaleIsland from './TextScaleIsland';
 import ScriptSwitcher from './ScriptSwitcher.astro';
 import { Sparkles, BarChart3, Radio, ShieldCheck, Compass } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
@@ -186,6 +187,7 @@ function getRelativeTimeStr(dateStr?: string) {
                     <a href={l('/for-you')} class="user-action-link">{t('nav.for_you') || 'FOR YOU'}</a>
                     <ScriptSwitcher />
                     <ThemeIsland client:idle />
+                    <TextScaleIsland client:load />
                 </div>
             </div>
         </div>

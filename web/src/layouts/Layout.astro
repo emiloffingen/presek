@@ -75,6 +75,14 @@ const shouldLoadAdsense = lang === 'sr' && (normalizedHost === 'presek.live' || 
 <html lang={lang === 'sr' ? "sr-Latn" : "mk"}>
 	<head>
 		<script is:inline>
+			(function() {
+				try {
+					var savedScale = localStorage.getItem('text-scale') || '1';
+					document.documentElement.style.setProperty('--text-scale', savedScale);
+				} catch (e) {}
+			})();
+		</script>
+		<script is:inline>
 			window.dataLayer = window.dataLayer || [];
 			function gtag(){dataLayer.push(arguments);}
 
