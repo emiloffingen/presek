@@ -63,7 +63,7 @@ class SecurityAudit:
             )
 
             # pip-audit returns 1 when vulnerabilities are found, 0 when none found
-            if result.returncode in (0, 1):
+            if result.returncode in (0, 1) and result.stdout.strip():
                 try:
                     stdout_str = result.stdout.strip()
                     if stdout_str and not stdout_str.startswith("{"):
