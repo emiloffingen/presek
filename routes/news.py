@@ -828,6 +828,89 @@ async def semantic_search(
             raise e
         return JSONResponse(status_code=500, content={"message": "Internal server error"})
 
+def _looks_like_leaked_json_fragment(text: str) -> bool:
+    clean = str(text or "").strip()
+    if not clean:
+        return False
+    lowered = clean.lower()
+    json_markers = (
+        '"synthetic_headline"',
+        '"synthetic_standfirst"',
+        '"summary"',
+        '"generated_article"',
+        '"key_facts"',
+        '"perspectives"',
+        "verification_report",
+    )
+    marker_count = sum(1 for marker in json_markers if marker in lowered)
+    bullet_json_lines = sum(1 for line in clean.splitlines() if line.strip().startswith(("• {", "• \"", "{", "\"")))
+    return marker_count >= 2 or bullet_json_lines >= 2
+
+
+def _clean_leaked_json_string(text: str) -> dict:
+    data = {}
+    if not text:
+        return data
+    
+    clean = text.strip()
+    lines = []
+    for line in clean.splitlines():
+        line_s = line.strip()
+        if line_s.startswith("•"):
+            line_s = line_s[1:].strip()
+        lines.append(line_s)
+    clean_lines = "\n".join(lines).strip()
+    
+    try:
+        parsed = json.loads(clean_lines)
+        if isinstance(parsed, dict):
+            for k in ["synthetic_headline", "synthetic_standfirst", "summary", "generated_article", "key_facts"]:
+                if k in parsed:
+                    data[k] = parsed[k]
+    except Exception:
+        # Fall back to regex extraction for truncated/broken JSON
+        headline_match = re.search(r'"synthetic_headline"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"', clean_lines)
+        if headline_match:
+            try:
+                data["synthetic_headline"] = headline_match.group(1).encode('utf-8').decode('unicode-escape', errors='ignore')
+            except Exception:
+                data["synthetic_headline"] = headline_match.group(1)
+        
+        standfirst_match = re.search(r'"synthetic_standfirst"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"', clean_lines)
+        if standfirst_match:
+            try:
+                data["synthetic_standfirst"] = standfirst_match.group(1).encode('utf-8').decode('unicode-escape', errors='ignore')
+            except Exception:
+                data["synthetic_standfirst"] = standfirst_match.group(1)
+            
+        article_match = re.search(r'"generated_article"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"', clean_lines)
+        if article_match:
+            try:
+                data["generated_article"] = article_match.group(1).encode('utf-8').decode('unicode-escape', errors='ignore')
+            except Exception:
+                data["generated_article"] = article_match.group(1)
+            
+        summary_array_match = re.search(r'"summary"\s*:\s*\[(.*?)\]', clean_lines, re.DOTALL)
+        if summary_array_match:
+            array_content = summary_array_match.group(1)
+            bullet_matches = re.findall(r'"([^"\\]*(?:\\.[^"\\]*)*)"', array_content)
+            bullets = []
+            for b in bullet_matches:
+                try:
+                    bullets.append(b.encode('utf-8').decode('unicode-escape', errors='ignore'))
+                except Exception:
+                    bullets.append(b)
+            if bullets:
+                data["summary"] = bullets
+
+    for k in data:
+        if isinstance(data[k], str):
+            data[k] = data[k].replace('\\"', '"').replace('\\n', '\n').strip()
+        elif isinstance(data[k], list):
+            data[k] = [str(item).replace('\\"', '"').replace('\\n', '\n').strip() for item in data[k]]
+            
+    return data
+
 
 @router.get("/cluster/{cluster_id}")
 async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
@@ -890,6 +973,26 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
         generated_article = s_row.get("generated_article") if s_row else None
         synthetic_headline = s_row.get("synthetic_headline") if s_row else None
         synthetic_standfirst = s_row.get("synthetic_standfirst") if s_row else None
+
+        # Self-healing for raw leaked JSON fragments in summary or generated_article
+        leaked_data = {}
+        if summary_text and _looks_like_leaked_json_fragment(summary_text):
+            leaked_data = _clean_leaked_json_string(summary_text)
+        elif generated_article and _looks_like_leaked_json_fragment(generated_article):
+            leaked_data = _clean_leaked_json_string(generated_article)
+
+        if leaked_data:
+            if "synthetic_headline" in leaked_data and leaked_data["synthetic_headline"] and not synthetic_headline:
+                synthetic_headline = leaked_data["synthetic_headline"]
+            if "synthetic_standfirst" in leaked_data and leaked_data["synthetic_standfirst"] and not synthetic_standfirst:
+                synthetic_standfirst = leaked_data["synthetic_standfirst"]
+            if "generated_article" in leaked_data and leaked_data["generated_article"]:
+                generated_article = leaked_data["generated_article"]
+            if "summary" in leaked_data:
+                if isinstance(leaked_data["summary"], list):
+                    summary_text = "\n".join(f"• {b}" for b in leaked_data["summary"])
+                else:
+                    summary_text = str(leaked_data["summary"])
 
         # Build synthesis response (string for backward compatibility with frontend split())
         synthesis = summary_text or ""

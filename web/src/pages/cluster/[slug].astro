@@ -302,9 +302,9 @@ const primaryNarrativeLabel = lang === 'sr' ? 'SINTEZA' : 'СИНТЕЗА';
 const primaryNarrativeEyebrow = lang === 'sr' ? 'REDAKCIJSKI PREGLED' : 'УРЕДНИЧКИ ПРЕГЛЕД';
 const conflictsCount = verificationReport?.conflicts?.length || 0;
 
-const sentimentData = cluster?.sentiment ? {
-    sentiment: cluster.sentiment.sentiment || { score: 0, tone: 'neutralno' },
-    tone_analysis: cluster.sentiment.tone_analysis || { sensationalism: 0, objectivity: 0, emotional_charge: 0 }
+const sentimentData = (cluster?.sentiment || cluster?.tone_analysis) ? {
+    sentiment: (cluster.sentiment && 'sentiment' in cluster.sentiment ? cluster.sentiment.sentiment : cluster.sentiment) || { score: 0, tone: 'neutralno' },
+    tone_analysis: cluster.tone_analysis || cluster.sentiment?.tone_analysis || { sensationalism: 0, objectivity: 0, emotional_charge: 0 }
 } : null;
 
 const firstArticle = cluster?.articles?.length

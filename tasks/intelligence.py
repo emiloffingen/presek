@@ -830,7 +830,6 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
 
                 if lang == "mk" and key_facts:
                     # Translate Serbian Latin key facts to Macedonian Cyrillic
-                    from core.ai_engine import _call_ai, clean_json_response
                     facts_text = "\n".join(f"- {f}" for f in key_facts)
                     translate_prompt = (
                         "Преведи ги следните клучни факти од српски (латиница) на чист македонски литературен јазик (кирилица).\n"
