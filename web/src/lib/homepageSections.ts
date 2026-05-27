@@ -92,22 +92,6 @@ export function buildHomepageSections(input: HomepageSectionsInput) {
     const supportingCompact = filteredSupporting.slice(2).filter((cluster) => !usedIds.has(cluster.cluster_id));
     supportingCompact.forEach((cluster) => usedIds.add(cluster.cluster_id));
 
-    const consensusClusters = input.clusters
-        .filter((cluster) => (cluster.articles?.length || 0) >= 5 && !usedIds.has(cluster.cluster_id))
-        .slice(0, 3);
-    consensusClusters.forEach((cluster) => usedIds.add(cluster.cluster_id));
-
-    const perspectivesClusters = input.clusters
-        .filter((cluster) => (cluster.pluralism_score || 0) >= 40 && !usedIds.has(cluster.cluster_id))
-        .sort((left, right) => (right.pluralism_score || 0) - (left.pluralism_score || 0))
-        .slice(0, 3);
-    perspectivesClusters.forEach((cluster) => usedIds.add(cluster.cluster_id));
-
-    const radarClusters = input.clusters
-        .filter((cluster) => cluster.has_fact_check && !usedIds.has(cluster.cluster_id))
-        .slice(0, 3);
-    radarClusters.forEach((cluster) => usedIds.add(cluster.cluster_id));
-
     if (!input.isHomepage) {
         const forYouStart = 5;
         const forYouEnd = 11;
@@ -127,6 +111,22 @@ export function buildHomepageSections(input: HomepageSectionsInput) {
     );
     const developmentsFeatured = continuingClusters.slice(0, 6);
     developmentsFeatured.forEach((cluster) => usedIds.add(cluster.cluster_id));
+
+    const consensusClusters = input.clusters
+        .filter((cluster) => (cluster.articles?.length || 0) >= 5 && !usedIds.has(cluster.cluster_id))
+        .slice(0, 3);
+    consensusClusters.forEach((cluster) => usedIds.add(cluster.cluster_id));
+
+    const perspectivesClusters = input.clusters
+        .filter((cluster) => (cluster.pluralism_score || 0) >= 40 && !usedIds.has(cluster.cluster_id))
+        .sort((left, right) => (right.pluralism_score || 0) - (left.pluralism_score || 0))
+        .slice(0, 3);
+    perspectivesClusters.forEach((cluster) => usedIds.add(cluster.cluster_id));
+
+    const radarClusters = input.clusters
+        .filter((cluster) => cluster.has_fact_check && !usedIds.has(cluster.cluster_id))
+        .slice(0, 3);
+    radarClusters.forEach((cluster) => usedIds.add(cluster.cluster_id));
 
     const developmentsCompact = continuingClusters.slice(6, 18).filter((cluster) => !usedIds.has(cluster.cluster_id));
     developmentsCompact.forEach((cluster) => usedIds.add(cluster.cluster_id));

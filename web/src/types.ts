@@ -82,6 +82,7 @@ export interface ClusterDetail extends NewsCluster {
   synthetic_standfirst?: string | null;
   perspectives: ClusterSummary[];
   sentiment?: any;
+  tone_analysis?: any;
   verification_report?: any;
   ai_summary_bullets?: string[];
   citation_sources?: CitationSource[];
