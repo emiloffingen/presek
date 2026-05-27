@@ -31,20 +31,79 @@ const narrativeParagraphs = String(generatedArticle || '')
 
 const renderSynthesisHtml = (text: string) => {
     let html = sharedRenderSynthesisHtml(text, hasCitationSources);
-    // Wrap identified entities in a span
+    if (!entities || entities.length === 0) return html;
+
+    const patterns: { regex: RegExp; entity: string; length: number }[] = [];
+    const seenAliases = new Set<string>();
+
     entities.forEach(entity => {
         const safeEntity = String(entity || '').trim();
         if (!safeEntity) return;
-        const escapedPattern = safeEntity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const safeAttr = safeEntity
-            .replace(/&/g, '&amp;')
-            .replace(/"/g, '&quot;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
-        const regex = new RegExp(`(?<=^|[^\\p{L}\\p{N}_])${escapedPattern}(?=$|[^\\p{L}\\p{N}_])`, 'gu');
-        html = html.replace(regex, `<span class="inline-entity" data-entity="${safeAttr}">$&</span>`);
+
+        // 1. Full name pattern with Slavic suffixes
+        const escapedFull = safeEntity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const fullPattern = `(?<=^|[^\\p{L}\\p{N}_])(${escapedFull}(?:от|ов|он|та|то|те|а|у|ом|ем|е|ог|ски|и|има|ама)?)(?=$|[^\\p{L}\\p{N}_])`;
+        patterns.push({
+            regex: new RegExp(fullPattern, 'gu'),
+            entity: safeEntity,
+            length: safeEntity.length
+        });
+
+        // 2. Surname alias pattern (if multi-word)
+        const parts = safeEntity.split(/\s+/);
+        if (parts.length > 1) {
+            const surname = parts[parts.length - 1];
+            // Ensure surname is reasonable (length >= 3 and starts with capital letter)
+            if (surname.length >= 3 && /^[A-ZА-ЯЁЃЌЉЊЏČĆŽŠĐ]/.test(surname)) {
+                const escapedSurname = surname.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const aliasKey = surname.toLowerCase();
+                if (!seenAliases.has(aliasKey)) {
+                    seenAliases.add(aliasKey);
+                    const surnamePattern = `(?<=^|[^\\p{L}\\p{N}_])(${escapedSurname}(?:от|ов|он|та|то|те|а|у|ом|ем|е|ог|ски|и|има|ама)?)(?=$|[^\\p{L}\\p{N}_])`;
+                    patterns.push({
+                        regex: new RegExp(surnamePattern, 'gu'),
+                        entity: safeEntity, // Maps surname back to full entity!
+                        length: surname.length
+                    });
+                }
+            }
+        }
     });
-    return html;
+
+    // Sort patterns by length descending
+    patterns.sort((a, b) => b.length - a.length);
+
+    // Split HTML by tags to avoid replacing inside existing tags or attributes
+    const tokens = html.split(/(<[^>]+>)/g);
+    const replacements: string[] = [];
+
+    // Process only plain text tokens (even indices)
+    for (let i = 0; i < tokens.length; i += 2) {
+        let textToken = tokens[i];
+        if (!textToken) continue;
+
+        patterns.forEach(pattern => {
+            const safeAttr = pattern.entity
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            textToken = textToken.replace(pattern.regex, (match, p1) => {
+                const idx = replacements.length;
+                replacements.push(`<span class="inline-entity" data-entity="${safeAttr}">${p1}</span>`);
+                return `\uFFF0${idx}\uFFF1`;
+            });
+        });
+        tokens[i] = textToken;
+    }
+
+    // Reassemble HTML and substitute private-use character placeholders back with final markup
+    let processedHtml = tokens.join('');
+    for (let idx = 0; idx < replacements.length; idx++) {
+        processedHtml = processedHtml.replace(`\uFFF0${idx}\uFFF1`, replacements[idx]);
+    }
+
+    return processedHtml;
 };
 ---
 
@@ -77,23 +136,23 @@ const renderSynthesisHtml = (text: string) => {
             const name = entity.getAttribute('data-entity');
             if (!name) return;
 
-                let popperInstance: ReturnType<typeof createPopper> | null = null;
-                let tooltip: HTMLDivElement | null = null;
+            let popperInstance: ReturnType<typeof createPopper> | null = null;
+            let tooltip: HTMLDivElement | null = null;
 
             entity.addEventListener('mouseenter', async () => {
                 // Create tooltip element
                 tooltip = document.createElement('div');
                 tooltip.className = 'entity-tooltip';
                 const loadingText = isSr ? `Učitavam kontekst za ${name}...` : `Вчитувам контекст за ${name}...`;
-                const shell = document.createElement('div');
-                shell.className = 'p-4 bg-background border border-border shadow-xl rounded-lg w-64 text-sm';
-                const row = document.createElement('div');
-                row.className = 'flex items-center gap-[var(--grid-gap)]';
-                const dot = document.createElement('div');
-                dot.className = 'w-2 h-2 rounded-full bg-nyt-accent animate-pulse';
-                row.append(dot, document.createTextNode(` ${loadingText}`));
-                shell.appendChild(row);
-                tooltip.replaceChildren(shell);
+                tooltip.innerHTML = `
+                    <div class="tooltip-card bg-background/95 dark:bg-zinc-900/95 backdrop-blur-md border border-border/80 shadow-2xl rounded-xl p-4 w-72 text-sm text-foreground flex items-center gap-3">
+                        <div class="relative w-4 h-4 flex items-center justify-center">
+                            <span class="absolute inline-flex h-full w-full rounded-full bg-nyt-accent opacity-75 animate-ping"></span>
+                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-nyt-accent"></span>
+                        </div>
+                        <span class="text-xs font-bold text-muted-foreground uppercase tracking-wider animate-pulse">${loadingText}</span>
+                    </div>
+                `;
                 document.body.appendChild(tooltip);
 
                 popperInstance = createPopper(entity as HTMLElement, tooltip, {
@@ -102,20 +161,45 @@ const renderSynthesisHtml = (text: string) => {
                 });
 
                 // Fetch real data
-                const res = await fetch(`/api/entity-graph/${encodeURIComponent(name)}?lang=${activeLang}`);
-                const json = await res.json();
-                if (json.status === 'success') {
-                    const noDetailsText = isSr ? 'Nema dostupnih detalja.' : 'Нема достапни детали.';
-                    const content = document.createElement('div');
-                    content.className = 'p-4 bg-background border border-border shadow-xl rounded-lg w-64 text-sm font-sans';
-                    const title = document.createElement('h4');
-                    title.className = 'font-bold text-base mb-1';
-                    title.textContent = name;
-                    const summary = document.createElement('p');
-                    summary.className = 'text-[11px] text-muted-foreground';
-                    summary.textContent = json.data?.summary || noDetailsText;
-                    content.append(title, summary);
-                    tooltip.replaceChildren(content);
+                try {
+                    const res = await fetch(`/api/entity-graph/${encodeURIComponent(name)}?lang=${activeLang}`);
+                    const json = await res.json();
+                    if (json.status === 'success') {
+                        const labelCard = isSr ? 'KONTEKST KARTICA' : 'КОНТЕКСТ КАРТИЧКА';
+                        const labelLastSeen = isSr ? 'POSLEDNJI PUT VIĐENO' : 'ПОСЛЕДНО ВИДЕНО';
+                        const labelProfile = isSr ? 'PROFIL' : 'ПРОФИЛ';
+                        const noDetailsText = isSr ? 'Nema dostupnih detalja.' : 'Нема достапни детали.';
+
+                        const bioSummary = json.data?.bio_summary || json.data?.summary || noDetailsText;
+                        const score = json.data?.importance_score !== undefined ? json.data.importance_score : 1;
+                        const lastSeenDate = json.data?.last_seen 
+                            ? new Date(json.data.last_seen).toLocaleDateString(isSr ? 'sr-RS' : 'mk-MK') 
+                            : (isSr ? 'Nije dostupno' : 'Не е достапно');
+
+                        if (tooltip) {
+                            tooltip.innerHTML = `
+                                <div class="tooltip-card bg-background/95 dark:bg-zinc-900/95 backdrop-blur-md border border-border/80 shadow-2xl rounded-xl p-4 w-72 text-sm text-foreground">
+                                    <div class="flex justify-between items-start mb-2.5 pb-2 border-b border-border/60">
+                                        <span class="text-[9px] font-black uppercase tracking-[0.15em] text-nyt-accent">${labelCard}</span>
+                                        <div class="flex items-center gap-1 bg-secondary/80 dark:bg-zinc-800/80 px-2 py-0.5 rounded-full border border-border/40">
+                                            <svg class="w-2.5 h-2.5 text-nyt-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                                            <span class="text-[9px] font-bold text-foreground">${score}</span>
+                                        </div>
+                                    </div>
+                                    <h4 class="font-bold text-base mb-1 text-foreground tracking-tight">${name}</h4>
+                                    <p class="text-[11px] text-muted-foreground leading-relaxed mb-3 font-normal">${bioSummary}</p>
+                                    <div class="flex items-center justify-between pt-2.5 border-t border-border/60 text-[9px] text-muted-foreground">
+                                        <span class="uppercase font-medium">${labelLastSeen}: ${lastSeenDate}</span>
+                                        <a href="/subjekt/${encodeURIComponent(name)}" class="font-bold text-nyt-accent hover:underline flex items-center gap-0.5 uppercase">${labelProfile} &rarr;</a>
+                                    </div>
+                                </div>
+                            `;
+                            // Re-apply popper since content height changed
+                            if (popperInstance) popperInstance.update();
+                        }
+                    }
+                } catch (e) {
+                    console.error("Error loading entity details:", e);
                 }
             });
 
@@ -140,10 +224,43 @@ const renderSynthesisHtml = (text: string) => {
         text-underline-offset: 4px;
         cursor: help;
         color: var(--nyt-accent);
+        transition: all 0.2s ease;
+        font-weight: 600;
+    }
+    .inline-entity:hover {
+        background: color-mix(in srgb, var(--nyt-accent) 8%, transparent);
+        text-decoration-style: solid;
+        border-radius: 2px;
+    }
+
+    @keyframes tooltip-appear {
+        from {
+            opacity: 0;
+            transform: scale(0.96) translateY(4px);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
     }
 
     .entity-tooltip {
         z-index: 1000;
+        animation: tooltip-appear 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .tooltip-card {
+        box-shadow: 
+            0 4px 30px rgba(0, 0, 0, 0.03),
+            0 10px 50px rgba(0, 0, 0, 0.06),
+            inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    }
+    
+    :global(.dark) .tooltip-card {
+        box-shadow: 
+            0 4px 30px rgba(0, 0, 0, 0.2),
+            0 10px 50px rgba(0, 0, 0, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.05);
     }
 
 	.narrative-p {
