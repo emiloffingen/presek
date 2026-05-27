@@ -47,6 +47,51 @@ function getRelativeTimeStr(dateStr: string) {
     }
 }
 
+const parseBriefItem = (item: string, lang: string) => {
+    const clean = item.trim();
+    // Match prefix up to colon
+    const match = clean.match(/^([^:]+):\s*(.*)$/);
+    if (match) {
+        const prefix = match[1].trim();
+        const content = match[2].trim();
+        
+        // Determine category and badge styling
+        let badgeText = prefix;
+        let badgeClass = "bg-muted text-muted-foreground";
+        
+        const lowerPrefix = prefix.toLowerCase();
+        if (lowerPrefix.includes("настан") || lowerPrefix.includes("фокус") || lowerPrefix.includes("развој") || lowerPrefix.includes("nadan") || lowerPrefix.includes("događaj") || lowerPrefix.includes("fokus") || lowerPrefix.includes("razvoj")) {
+            badgeText = lang === "sr" ? "Fokus" : "Фокус";
+            badgeClass = "bg-nyt-accent/15 text-nyt-accent border border-nyt-accent/25";
+        } else if (lowerPrefix.includes("детали") || lowerPrefix.includes("детал") || lowerPrefix.includes("detalji") || lowerPrefix.includes("detalj")) {
+            badgeText = lang === "sr" ? "Detalji" : "Детали";
+            badgeClass = "bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/25";
+        } else if (lowerPrefix.includes("медиум") || lowerPrefix.includes("покриеност") || lowerPrefix.includes("medij") || lowerPrefix.includes("pokrivenost") || lowerPrefix.includes("izvori") || lowerPrefix.includes("извори")) {
+            badgeText = lang === "sr" ? "Izvori" : "Извори";
+            badgeClass = "bg-green-500/15 text-green-600 dark:text-green-400 border border-green-500/25";
+        } else if (lowerPrefix.includes("отворено") || lowerPrefix.includes("нејасно") || lowerPrefix.includes("otvoreno") || lowerPrefix.includes("nejasno")) {
+            badgeText = lang === "sr" ? "Otvoreno" : "Отворено";
+            badgeClass = "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25";
+        }
+        
+        return { hasBadge: true, badgeText, badgeClass, content };
+    }
+    return { hasBadge: false, badgeText: "", badgeClass: "", content: clean };
+};
+
+const highlightFactText = (text: string) => {
+    let html = text;
+    // Highlight money amounts (e.g. 500.000 евра, 500.000 evra, половина милион евра, пола милион)
+    const moneyRegex = /(\d+[\beta\s\.]*(?:евра|evra|денари|denara|динара|dinara|EUR|€)|половина милион евра|polovina milion evra|пола милион евра|pola miliona evra)/gi;
+    html = html.replace(moneyRegex, '<strong class="text-nyt-accent font-black">$1</strong>');
+
+    // Highlight locations or borders (e.g. ГП Табановце, Tabanovce, Германија, Germanija, Албанија, Albanija)
+    const locationRegex = /(ГП\s+Табановце|Табановце|Tabanovce|Германија|Germanija|Албанија|Albanija)/gi;
+    html = html.replace(locationRegex, '<strong class="text-foreground font-semibold">$1</strong>');
+    
+    return html;
+};
+
 import { sanitizeHtml } from '../../lib/sanitize';
 import { Newspaper, Clock, Link2, Zap, Sparkles, ShieldCheck, TriangleAlert, BarChart3, Radio, Search, ExternalLink, BookOpen, ListChecks } from 'lucide-react';
 import EntityContextCard from '../../components/EntityContextCard.tsx';
@@ -548,12 +593,21 @@ const articleSchema = cluster ? {
 										<div>
 											<h4 class="text-[9px] font-black uppercase tracking-[0.12em] text-muted-foreground mb-4">{t('cluster.key_points')}</h4>
 											<ul class="space-y-3">
-												{displayHeaderBriefItems.map(item => (
-													<li class="flex items-start gap-3 font-sans text-[13px] md:text-[14px] leading-relaxed text-foreground/85 not-italic">
-														<span class="flex-shrink-0 mt-2 w-1.5 h-1.5 rounded-full bg-nyt-accent/60"></span>
-														<span class="flex-1">{item}</span>
-													</li>
-												))}
+												{displayHeaderBriefItems.map(item => {
+													const { hasBadge, badgeText, badgeClass, content } = parseBriefItem(item, lang);
+													return (
+														<li class="flex items-start gap-3 font-sans text-[13px] md:text-[14px] leading-relaxed text-foreground/85 not-italic">
+															{hasBadge ? (
+																<span class={`flex-shrink-0 text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-sm mt-0.5 ${badgeClass}`}>
+																	{badgeText}
+																</span>
+															) : (
+																<span class="flex-shrink-0 mt-2 w-1.5 h-1.5 rounded-full bg-nyt-accent/60"></span>
+															)}
+															<span class="flex-1">{content}</span>
+														</li>
+													);
+												})}
 											</ul>
 										</div>
 									)}
@@ -562,9 +616,9 @@ const articleSchema = cluster ? {
 											<h4 class="text-[9px] font-black uppercase tracking-[0.12em] text-muted-foreground mb-4">{t('cluster.system_data')}</h4>
 											<ul class="space-y-3">
 												{cluster.key_facts.map((fact: string) => (
-													<li class="font-sans text-[13px] md:text-[14px] font-bold leading-tight text-foreground/75 flex items-start gap-2">
-														<span class="text-nyt-accent text-lg mt-[-2px]">›</span>
-														<span class="flex-1">{fact}</span>
+													<li class="font-sans text-[13px] md:text-[14px] font-medium leading-relaxed text-foreground/75 flex items-start gap-2">
+														<span class="text-nyt-accent text-lg mt-[-2px] flex-shrink-0">›</span>
+														<span class="flex-1" set:html={highlightFactText(fact)}></span>
 													</li>
 												))}
 											</ul>
