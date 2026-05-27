@@ -3,6 +3,7 @@ import json
 from unittest.mock import patch
 
 import tasks
+from tasks.intelligence import _sanitize_synthesis_outputs, _split_cluster_merge_score
 
 
 class TestBackfillCoverArtTask:
@@ -41,6 +42,194 @@ class TestBackfillCoverArtTask:
 
         mock_db.execute.assert_not_called()
         mock_apply.assert_not_called()
+
+
+class TestRepairSplitClustersTask:
+    def test_split_cluster_score_accepts_entity_rich_same_story(self):
+        now = datetime.datetime.now()
+        left = {
+            "cluster_id": "f4",
+            "country": "MK",
+            "category": "Germanija",
+            "topic": "vesti",
+            "latest_article": now,
+            "titles": [
+                "Минибусот во кој беа фатени 500.000 евра на ГП Табановце, од Германија требало да стигне во Албанија"
+            ],
+            "tags": ["Минибусот", "Табановце", "Германија", "Албанија"],
+        }
+        right = {
+            "cluster_id": "1d",
+            "country": "MK",
+            "category": "Germanija",
+            "topic": "vesti",
+            "latest_article": now - datetime.timedelta(hours=12),
+            "titles": [
+                "Минибусот во кој беа најдени половина милион евра кеш возел од Германија кон Албанија, открива Николовски"
+            ],
+            "tags": ["Минибусот", "Германија", "Албанија", "Николовски"],
+        }
+
+        assert _split_cluster_merge_score(left, right, lang="mk") > 0
+
+    def test_split_cluster_score_rejects_generic_broad_topic(self):
+        now = datetime.datetime.now()
+        left = {
+            "cluster_id": "cash",
+            "country": "MK",
+            "category": "Germanija",
+            "topic": "vesti",
+            "latest_article": now,
+            "titles": ["Минибус со пари запленет на Табановце"],
+            "tags": ["Германија"],
+        }
+        right = {
+            "cluster_id": "scholz",
+            "country": "MK",
+            "category": "Germanija",
+            "topic": "vesti",
+            "latest_article": now,
+            "titles": ["Шолц ја отфрли соработката со Алтернатива за Германија"],
+            "tags": ["Германија"],
+        }
+
+        assert _split_cluster_merge_score(left, right, lang="mk") == 0
+
+    def test_repair_split_clusters_merges_source_into_larger_target(self):
+        now = datetime.datetime.now()
+        rows = [
+            {
+                "cluster_id": "f4",
+                "country": "MK",
+                "category": "Germanija",
+                "topic": "vesti",
+                "article_count": 2,
+                "first_article": now - datetime.timedelta(hours=13),
+                "latest_article": now - datetime.timedelta(hours=12),
+                "titles": [
+                    "Минибусот во кој беа фатени 500.000 евра на ГП Табановце, од Германија требало да стигне во Албанија"
+                ],
+                "tags": ["Минибусот", "Табановце", "Германија", "Албанија"],
+                "centroid": None,
+            },
+            {
+                "cluster_id": "1d",
+                "country": "MK",
+                "category": "Germanija",
+                "topic": "vesti",
+                "article_count": 1,
+                "first_article": now,
+                "latest_article": now,
+                "titles": [
+                    "Минибусот во кој беа најдени половина милион евра кеш возел од Германија кон Албанија, открива Николовски"
+                ],
+                "tags": ["Минибусот", "Германија", "Албанија", "Николовски"],
+                "centroid": None,
+            },
+        ]
+
+        with (
+            patch("tasks.intelligence.db") as mock_db,
+            patch("tasks.intelligence.invalidate_public_data_caches") as mock_invalidate,
+            patch("tasks.utils.record_task_event"),
+            patch.object(tasks.extract_entities_task, "apply_async") as mock_extract_delay,
+            patch.object(tasks.generate_cluster_metadata_task, "apply_async") as mock_meta_delay,
+            patch.object(tasks.intelligence.auto_summarize_task, "apply_async") as mock_summary_delay,
+        ):
+            mock_db.execute.side_effect = [rows, 1, 1, 1, 1, 1]
+            result = tasks.repair_split_clusters_task(hours=48, limit=20)
+
+        assert result["merges"] == [{"source": "1d", "target": "f4", "score": result["merges"][0]["score"]}]
+        update_call = mock_db.execute.call_args_list[1]
+        assert "UPDATE articles SET cluster_id = %s WHERE cluster_id = %s" in update_call.args[0]
+        assert update_call.args[1] == ("f4", "1d")
+        mock_extract_delay.assert_called_once()
+        mock_meta_delay.assert_called_once()
+        mock_summary_delay.assert_called_once()
+        mock_invalidate.assert_called_once()
+
+    def test_repair_split_clusters_resolves_chains_to_final_target(self):
+        now = datetime.datetime.now()
+        rows = [
+            {
+                "cluster_id": "a",
+                "country": "MK",
+                "category": "Makedonija",
+                "topic": "Politika",
+                "article_count": 1,
+                "first_article": now - datetime.timedelta(minutes=30),
+                "latest_article": now,
+                "titles": ["Собранието го усвои законот за задолжување од 260 милиони евра"],
+                "tags": ["Собранието", "задолжување", "260 милиони"],
+                "centroid": None,
+            },
+            {
+                "cluster_id": "b",
+                "country": "MK",
+                "category": "Makedonija",
+                "topic": "Politika",
+                "article_count": 2,
+                "first_article": now - datetime.timedelta(hours=1),
+                "latest_article": now,
+                "titles": ["Со 65 гласа донесен законот за задолжување од 260 милиони евра"],
+                "tags": ["Собранието", "задолжување", "260 милиони"],
+                "centroid": None,
+            },
+            {
+                "cluster_id": "c",
+                "country": "MK",
+                "category": "Makedonija",
+                "topic": "Politika",
+                "article_count": 4,
+                "first_article": now - datetime.timedelta(hours=2),
+                "latest_article": now,
+                "titles": ["Собранието го донесе законот за задолжување на државата"],
+                "tags": ["Собранието", "задолжување", "260 милиони"],
+                "centroid": None,
+            },
+        ]
+
+        with (
+            patch("tasks.intelligence.db") as mock_db,
+            patch("tasks.intelligence.invalidate_public_data_caches"),
+            patch("tasks.utils.record_task_event"),
+            patch.object(tasks.extract_entities_task, "apply_async"),
+            patch.object(tasks.generate_cluster_metadata_task, "apply_async"),
+            patch.object(tasks.intelligence.auto_summarize_task, "apply_async"),
+        ):
+            mock_db.execute.side_effect = [rows, 1, 1, 1, 1, 1, 1]
+            result = tasks.repair_split_clusters_task(hours=48, limit=20)
+
+        assert all(item["target"] == "c" for item in result["merges"])
+        assert {item["source"] for item in result["merges"]} == {"a", "b"}
+
+    def test_sanitize_synthesis_replaces_json_fragment_and_dedupes_article(self):
+        article_rows = [
+            {
+                "source": "Telma",
+                "title": "Минибусот тргнал од Германија кон Албанија",
+                "description": "Минибусот со половина милион евра бил запрен на Табановце.",
+            },
+            {
+                "source": "NetPress.mk",
+                "title": "Запленети 500.000 евра на ГП Табановце",
+                "description": "Случајот го потврди директорот на Царината.",
+            },
+        ]
+        bad_summary = '• {"synthetic_headline": "X", "synthetic_standfirst": "Y", "summary": ['
+        repeated = "Истиот пасус за настанот и реакциите.\n\nИстиот пасус за настанот и реакциите."
+
+        summary, generated_article, perspectives = _sanitize_synthesis_outputs(
+            bad_summary,
+            repeated,
+            [],
+            article_rows,
+            lang="mk",
+        )
+
+        assert "synthetic_headline" not in summary
+        assert generated_article.count("Истиот пасус") <= 1
+        assert perspectives
 
     def test_backfill_single_skips_when_queue_backlog_is_high(self):
 

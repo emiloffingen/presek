@@ -254,6 +254,7 @@ def build_read_next_clusters(
             c_ents & cand_ents,
             c_topics & cand_topics,
         )
+        meaningful_topics = {topic for topic in sh_topics if topic.lower() not in {"vesti", "news"}}
         overlap = _cluster_title_overlap(c_lead_title, str(lead.get("title") or ""))
 
         score = 0.0
@@ -274,8 +275,10 @@ def build_read_next_clusters(
                 "Isti akteri, drug ugao",
                 "Gi vrzuva istite iminja, no od poinakov ugao.",
             )
-        elif sh_topics:
-            score += 1.05 + len(sh_topics) * 0.12
+        elif meaningful_topics:
+            score += 1.05 + len(meaningful_topics) * 0.12
+        elif sh_topics and overlap >= 0.28:
+            score += 0.95 + len(sh_topics) * 0.08
         else:
             continue
 

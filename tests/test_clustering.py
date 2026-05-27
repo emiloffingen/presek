@@ -3,6 +3,7 @@ from collections import Counter
 from unittest.mock import MagicMock, patch
 
 from core.clustering import (
+    _entity_token_overlap,
     _title_phrase_overlap,
     _topic_bridge_allowed,
     find_or_create_cluster,
@@ -255,6 +256,71 @@ def test_topic_bridge_does_not_merge_same_category_story_without_shared_entities
         topic="Politika",
     )
     assert cid != "c1"
+
+
+@patch("core.clustering._extract_title_entities", return_value={"Минибусот", "Германија", "Албанија", "Николовски"})
+@patch(_DB_PATCH, _mock_db)
+def test_entity_rich_same_day_macedonian_followup_joins_existing_cluster(_extract_mock):
+    _mock_db.get_cluster_entities.return_value = {
+        "c1": {"Минибусот", "Табановце", "Германија", "Албанија"}
+    }
+    recent_articles = [
+        {
+            "cluster_id": "c1",
+            "title": "Минибусот во кој беа фатени 500.000 евра на ГП Табановце, од Германија требало да стигне во Албанија",
+            "created_at": datetime.datetime.now() - datetime.timedelta(hours=13),
+            "source": "NetPress.mk",
+            "category": "Germanija",
+            "topic": "vesti",
+        }
+    ]
+
+    cid = find_or_create_cluster(
+        MagicMock(),
+        "Минибусот во кој беа најдени половина милион евра кеш возел од Германија кон Албанија, открива Николовски",
+        recent_articles,
+        category="Germanija",
+        source="SkopjeInfo.mk",
+        topic="vesti",
+        lang="mk",
+    )
+
+    assert cid == "c1"
+
+
+@patch("core.clustering._extract_title_entities", return_value={"Германија"})
+@patch(_DB_PATCH, _mock_db)
+def test_single_broad_entity_does_not_merge_generic_vesti_followup(_extract_mock):
+    _mock_db.get_cluster_entities.return_value = {"c1": {"Минибусот", "Германија", "Албанија"}}
+    recent_articles = [
+        {
+            "cluster_id": "c1",
+            "title": "Минибусот во кој беа фатени 500.000 евра на ГП Табановце",
+            "created_at": datetime.datetime.now() - datetime.timedelta(hours=6),
+            "source": "NetPress.mk",
+            "category": "Germanija",
+            "topic": "vesti",
+        }
+    ]
+
+    cid = find_or_create_cluster(
+        MagicMock(),
+        "Шолц ја отфрли можноста за соработка со Алтернатива за Германија",
+        recent_articles,
+        category="Germanija",
+        source="NetPress.mk",
+        topic="vesti",
+        lang="mk",
+    )
+
+    assert cid != "c1"
+
+
+def test_entity_token_overlap_handles_cyrillic_variant_entities():
+    assert _entity_token_overlap({"Германија", "Албанија"}, {"Germanija", "Albanija"}, lang="mk") == {
+        "albanija",
+        "germanija",
+    }
 
 
 @patch(_DB_PATCH, _mock_db)

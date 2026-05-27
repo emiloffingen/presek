@@ -595,6 +595,34 @@ class TestReadNextClusters:
 
         assert result == []
 
+    @patch("utils.ranking.get_source_health_map", return_value={})
+    def test_build_read_next_clusters_ignores_generic_vesti_only_match(self, _mock_health):
+        now = datetime.datetime.now()
+        current_articles = [
+            {
+                **_make_article("Telma", created_at=now - datetime.timedelta(minutes=40)),
+                "title": "Минибус со пари запленет на Табановце",
+                "description": "Opis.",
+                "entity_names": [],
+                "topic": "vesti",
+            },
+        ]
+        candidates = [
+            {
+                **_make_article("Kanal 5", created_at=now - datetime.timedelta(minutes=5)),
+                "cluster_id": "noise-v",
+                "title": "Резервоар пукна во фабрика во САД, има загинати",
+                "description": "Unrelated generic news.",
+                "entity_names": [],
+                "cluster_tags": [],
+                "topic": "vesti",
+            },
+        ]
+
+        result = build_read_next_clusters("current", current_articles, [], candidates, limit=4)
+
+        assert result == []
+
 
 class TestSourceReputationRows:
     @patch("utils.ranking.get_source_health_map", return_value={})

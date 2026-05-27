@@ -164,10 +164,12 @@ def test_build_lead_display_returns_cleaned_preview_fields():
     }
 
     display = home._build_lead_display(cluster)
+    mk_display = home._build_lead_display(cluster, lang="mk")
 
     assert display["title"] == "Vladata & merki"
     assert display["summary"] == ""
-    assert display["signal"] == "Najbrz razvoj vo denot"
+    assert display["signal"] == "Najbrži razvoj dana"
+    assert mk_display["signal"] == "Најбрз развој денес"
 
 
 def test_decorate_cluster_display_adds_display_fields_to_articles():

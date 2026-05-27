@@ -658,7 +658,7 @@ def find_or_create_cluster(
             incoming_topic == "vesti"
             and potential_entities
             and rep_entities
-            and not potential_entities.intersection(rep_entities)
+            and not shared_entities
         ):
             continue
 
@@ -726,7 +726,19 @@ def find_or_create_cluster(
             # Weighted combine
             # Favor lexical (stem) similarity for better recall across diverse headlines
             score = (lexical_score * 0.9) + (phrase_score * 0.1)
-            score *= _temporal_decay(rep.get("created_at"))
+            decay = _temporal_decay(rep.get("created_at"))
+            if (
+                incoming_topic == rep_topic
+                and category == rep_category
+                and len(shared_entities or set()) >= 2
+                and freshest_rep_hours <= 24
+                and lexical_score >= 0.38
+            ):
+                # Same-day follow-ups often rewrite the lead ("500.000" vs
+                # "polovina milion") but keep concrete entities. Do not let
+                # time decay alone split those into singleton clusters.
+                decay = max(decay, 0.72)
+            score *= decay
             score *= source_penalty
             score *= entity_boost
 
@@ -754,6 +766,13 @@ def find_or_create_cluster(
         current_threshold = threshold
         if incoming_topic == "vesti" and incoming_topic == rep_topic:
             current_threshold = max(threshold, 0.58)  # Be more demanding for 'vesti'
+            if (
+                category == rep_category
+                and len(shared_entities or set()) >= 2
+                and freshest_rep_hours <= 24
+                and current_best_rep_score >= 0.32
+            ):
+                current_threshold = 0.32
         elif topic_bridge and incoming_topic != rep_topic:
             if freshest_rep_hours <= 12:  # Within half-day cycle
                 current_threshold = min(threshold, 0.40)

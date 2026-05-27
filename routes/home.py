@@ -67,6 +67,53 @@ _FEATURE_PATTERNS = [
     re.compile(r"galerija", re.IGNORECASE),
 ]
 
+_FOCUS_ENTITY_NORMALIZATIONS = {
+    "srbije": "Srbija",
+    "srbiji": "Srbija",
+    "srbijom": "Srbija",
+    "srbiju": "Srbija",
+    "србије": "Србија",
+    "србији": "Србија",
+    "србијом": "Србија",
+    "србију": "Србија",
+    "beogradu": "Beograd",
+    "beograda": "Beograd",
+    "београду": "Београд",
+    "београда": "Београд",
+    "kine": "Kina",
+    "kini": "Kina",
+    "kinom": "Kina",
+    "кине": "Кина",
+    "кини": "Кина",
+    "кином": "Кина",
+    "rusije": "Rusija",
+    "rusiji": "Rusija",
+    "rusijom": "Rusija",
+    "русије": "Русија",
+    "русији": "Русија",
+    "русијом": "Русија",
+}
+_FOCUS_ENTITY_STOPWORDS = {
+    "predsednik",
+    "predsednica",
+    "ministar",
+    "ministarka",
+    "policija",
+    "sporazum",
+    "saradnja",
+    "saradnj",
+    "evra",
+    "zbog",
+    "onda",
+    "претседател",
+    "претседателка",
+    "министер",
+    "министерка",
+    "полиција",
+    "договор",
+    "соработка",
+}
+
 
 def _primary_article(cluster):
     articles = (cluster or {}).get("articles", [{}])
@@ -222,20 +269,21 @@ def _rank_latest_wire_articles(items, limit=15):
     return selected
 
 
-def _build_lead_display(cluster):
+def _build_lead_display(cluster, lang: Optional[str] = "sr"):
     article = _primary_article(cluster)
     if not article:
         return {}
     source_count = len((cluster or {}).get("articles") or [])
+    is_mk = str(lang or "sr").lower().startswith("mk")
     if cluster.get("is_breaking"):
-        signal = "Najbrz razvoj vo denot"
+        signal = "Најбрз развој денес" if is_mk else "Najbrži razvoj dana"
     elif source_count >= 6:
-        signal = "prica sto me dvizi domasnata agenda"
+        signal = "Приказна што ја движи домашната агенда" if is_mk else "Priča koja pokreće domaću agendu"
     elif source_count >= 4:
-        signal = "Tema sto brzo se siri niz redakciite"
+        signal = "Тема што брзо се шири низ редакциите" if is_mk else "Tema koja se brzo širi kroz redakcije"
     else:
-        signal = "razvoj sto vredi da se sledi"
-    
+        signal = "развој што вреди да се следи" if is_mk else "razvoj koji vredi pratiti"
+
     # Prefer the synthetic standfirst if it exists, otherwise fall back to article summary
     summary = cluster.get("synthetic_standfirst") or _extract_preview_summary(article)
     
@@ -276,11 +324,25 @@ def _decorate_clusters_display(clusters):
     return [_decorate_cluster_display(cluster) for cluster in (clusters or [])]
 
 
-def _display_entity_name(name):
+def _normalize_focus_entity_name(name):
     clean = str(name or "").strip()
     if not clean:
         return ""
-    return f"{clean[0].upper()}{clean[1:]}"
+    clean = re.sub(r"\s+", " ", clean)
+    normalized = _FOCUS_ENTITY_NORMALIZATIONS.get(clean.casefold(), clean)
+    return f"{normalized[0].upper()}{normalized[1:]}"
+
+
+def _is_usable_focus_entity(name):
+    clean = str(name or "").strip()
+    if len(clean) < 4:
+        return False
+    folded = clean.casefold()
+    if folded in _FOCUS_ENTITY_STOPWORDS:
+        return False
+    if clean.endswith("nj") or clean.endswith("нј"):
+        return False
+    return True
 
 
 @router.get("/home", response_model=HomeResponse)
@@ -294,9 +356,9 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
     sync_token = _extract_sync_token(request) if request else ""
     
     if sync_token:
-        cache_key = f"api:home:v5:{lang}:personalized:{sync_token}"
+        cache_key = f"api:home:v6:{lang}:personalized:{sync_token}"
     else:
-        cache_key = f"api:home:v5:{lang}"
+        cache_key = f"api:home:v6:{lang}"
         
     cached = cached_response(cache_key, ttl=300)
     if cached:
@@ -366,8 +428,7 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
         if not for_you_pool:
             for_you_pool = [c for c in clusters[5:11] if _is_live_now_candidate(c)]
 
-        for_you_ids = {c.get("cluster_id") for c in for_you_pool if c.get("cluster_id")}
-        feed_clusters = [c for c in clusters[5:] if c.get("cluster_id") not in for_you_ids]
+        feed_clusters = list(clusters[5:])
         developing = [
             cluster
             for cluster in feed_clusters
@@ -379,12 +440,19 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
                 or len(cluster.get("articles") or []) >= 2
             )
         ]
+        developing_ids = {c.get("cluster_id") for c in developing if c.get("cluster_id")}
+        if not sync_token:
+            for_you_pool = [c for c in for_you_pool if c.get("cluster_id") not in developing_ids]
+
         wire = [
             cluster
             for cluster in feed_clusters
-            if cluster.get("latest_wire_fit")
-            or str(cluster.get("story_state") or "") == "singleton"
-            or len(cluster.get("articles") or []) < 2
+            if cluster.get("cluster_id") not in developing_ids
+            and (
+                cluster.get("latest_wire_fit")
+                or str(cluster.get("story_state") or "") == "singleton"
+                or len(cluster.get("articles") or []) < 2
+            )
         ][:12]
 
         excluded_cluster_ids = [
@@ -411,18 +479,22 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
         latest_wire = _rank_latest_wire_articles(raw_wire_articles, limit=15)
 
         focus_entities = []
+        seen_focus_entities = set()
         for entity in top_entities if isinstance(top_entities, list) else []:
             normalized = dict(entity)
             raw_name = str(entity.get("name") or "").strip()
-            normalized["name"] = raw_name
-            normalized["display_name"] = _display_entity_name(raw_name)
-            if raw_name and len(raw_name) >= 3:
+            display_name = _normalize_focus_entity_name(raw_name)
+            key = display_name.casefold()
+            normalized["name"] = display_name
+            normalized["display_name"] = display_name
+            if _is_usable_focus_entity(display_name) and key not in seen_focus_entities:
+                seen_focus_entities.add(key)
                 focus_entities.append(normalized)
 
         response = {
             "status": "success",
             "lead": _decorate_cluster_display(lead),
-            "lead_display": _build_lead_display(lead),
+            "lead_display": _build_lead_display(lead, lang=lang),
             "supporting": _decorate_clusters_display(supporting),
             "live_now": _decorate_clusters_display(live_now),
             "for_you_pool": _decorate_clusters_display(for_you_pool),

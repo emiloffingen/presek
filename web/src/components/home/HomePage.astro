@@ -712,7 +712,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 	                        </div>
                 )}
 
-                {clusters.length > 4 && (
+                {forYouClusters.length > 0 && (
 					<div class="section-wrapper for-you-wrapper">
 					    <ForYouIsland client:visible clusters={forYouClusters} excludeClusterIds={excludedClusterIds} lang={lang} />
                     </div>

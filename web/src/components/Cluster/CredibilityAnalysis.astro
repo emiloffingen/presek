@@ -76,19 +76,19 @@ const displayPerspectives = perspectives
 	.filter((p) => p.angle && p.content);
 ---
 
-<section class="editorial-section analysis-section mb-16 border-t-4 border-foreground pt-12">
-	<div class="section-eyebrow mb-10">
-		<ShieldCheck size={18} className="text-foreground" />
+<section class="editorial-section analysis-section mb-10 border-t-2 border-foreground pt-6">
+	<div class="section-eyebrow mb-5">
+		<ShieldCheck size={16} className="text-foreground" />
 		<h2 class="section-label">{t('cluster.media_pluralism')}</h2>
 		<div class="section-divider"></div>
 	</div>
 
 	{hasFactcheck && (
-		<div class="factcheck-container mb-12">
+		<div class="factcheck-container mb-6">
 			<div class="factcheck-grid-v2">
 				<div class="factcheck-col agreements">
 					<header class="col-header">
-						<ShieldCheck size={18} className="text-emerald-600" />
+						<ShieldCheck size={15} className="text-emerald-600" />
 						<h3>{t('cluster.factcheck.confirmed')}</h3>
 					</header>
 					<ul class="fact-list">
@@ -100,7 +100,7 @@ const displayPerspectives = perspectives
 
 				<div class="factcheck-col conflicts">
 					<header class="col-header">
-						<TriangleAlert size={18} className="text-nyt-red" />
+						<TriangleAlert size={15} className="text-nyt-red" />
 						<h3>{t('cluster.factcheck.conflicts')}</h3>
 					</header>
 					<ul class="fact-list">
@@ -111,12 +111,12 @@ const displayPerspectives = perspectives
 				</div>
 
 				{verificationReport.missing_info && verificationReport.missing_info.length > 0 && (
-					<div class="factcheck-col missing-info mt-6 col-span-full border-t border-border pt-4">
+					<div class="factcheck-col missing-info mt-3 col-span-full border-t border-border pt-3">
 						<header class="col-header">
-							<Search size={18} className="text-amber-500" />
+							<Search size={15} className="text-amber-500" />
 							<h3>{t('cluster.factcheck.context')}</h3>
 						</header>
-						<p class="text-xs text-muted-foreground mb-3 font-sans uppercase font-bold tracking-wider">{t('cluster.factcheck.omission')}</p>
+						<p class="text-[10px] text-muted-foreground mb-2 font-sans uppercase font-bold tracking-wider">{t('cluster.factcheck.omission')}</p>
 						<ul class="fact-list">
 							{verificationReport.missing_info.map((item: string) => (
 								<li class="fact-item amber" set:html={renderSynthesisHtml(item)}></li>
@@ -127,7 +127,7 @@ const displayPerspectives = perspectives
 			</div>
 
 			{verificationReport.context && (
-				<div class="factcheck-context p-6 bg-muted/30 border border-border/40 mt-8 italic text-sm text-muted-foreground">
+				<div class="factcheck-context p-4 bg-muted/30 border border-border/40 mt-4 italic text-sm text-muted-foreground">
 					<p set:html={renderSynthesisHtml(verificationReport.context)}></p>
 				</div>
 			)}
@@ -136,7 +136,7 @@ const displayPerspectives = perspectives
 
 	{displayPerspectives.length > 0 && (
 		<div class="perspectives-area">
-			<h4 class="text-[11px] font-black uppercase tracking-widest text-center mb-8 text-muted-foreground/60">{t('cluster.factcheck.diversity')}</h4>
+			<h4 class="text-[10px] font-black uppercase tracking-widest mb-4 text-muted-foreground/60">{t('cluster.factcheck.diversity')}</h4>
 			<div class="perspective-grid-v2">
 				{displayPerspectives.map((p: any) => (
 					<div class="editorial-angle-card">
@@ -153,7 +153,7 @@ const displayPerspectives = perspectives
 	.section-eyebrow {
 		display: flex;
 		align-items: center;
-		gap: 1rem;
+		gap: 0.625rem;
 	}
 
 	.section-label {
@@ -174,27 +174,27 @@ const displayPerspectives = perspectives
 	.factcheck-grid-v2 {
 		display: grid;
 		grid-template-columns: 1fr;
-		gap: 2rem;
+		gap: 1rem;
 	}
 
 	@media (min-width: 768px) {
 		.factcheck-grid-v2 {
 			grid-template-columns: 1fr 1fr;
-			gap: 4rem;
+			gap: 1.25rem;
 		}
 	}
 
 	.factcheck-col {
 		display: flex;
 		flex-direction: column;
-		gap: 1.5rem;
+		gap: 0.75rem;
 	}
 
 	.col-header {
 		display: flex;
 		align-items: center;
-		padding-bottom: 0.75rem;
-		border-bottom: 2px solid var(--foreground);
+		padding-bottom: 0.45rem;
+		border-bottom: 1px solid var(--foreground);
 	}
 
 	.col-header h3 {
@@ -212,16 +212,16 @@ const displayPerspectives = perspectives
 		margin: 0;
 		display: flex;
 		flex-direction: column;
-		gap: 1.25rem;
+		gap: 0.625rem;
 	}
 
 	.fact-item {
 		font-family: var(--font-nyt-body);
-		font-size: 1rem;
-		line-height: 1.5;
+		font-size: 0.9rem;
+		line-height: 1.4;
 		color: var(--secondary-foreground);
 		position: relative;
-		padding-left: 1.5rem;
+		padding-left: 1rem;
 	}
 
 	.fact-item::before {
@@ -229,8 +229,8 @@ const displayPerspectives = perspectives
 		position: absolute;
 		left: 0;
 		top: 0.5rem;
-		width: 6px;
-		height: 6px;
+		width: 4px;
+		height: 4px;
 		border-radius: 50%;
 	}
 
@@ -247,50 +247,50 @@ const displayPerspectives = perspectives
 	}
 
 	.perspectives-area {
-		margin-top: 4rem;
-		padding-top: 4rem;
+		margin-top: 1.5rem;
+		padding-top: 1.25rem;
 		border-top: 1px solid var(--border);
 	}
 
 	.perspective-grid-v2 {
 		display: grid;
 		grid-template-columns: 1fr;
-		gap: 2rem;
+		gap: 0.75rem;
 	}
 
 	@media (min-width: 768px) {
 		.perspective-grid-v2 {
-			grid-template-columns: 1fr 1fr;
+			grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 		}
 	}
 
 	.editorial-angle-card {
-		padding: 2rem;
+		padding: 1rem;
 		background: color-mix(in srgb, var(--secondary) 30%, var(--card));
 		border: 1px solid var(--border);
-		border-radius: 8px;
+		border-radius: 6px;
 		box-shadow: var(--shadow-sm);
 		transition: transform 0.3s var(--ease-editorial), border-color 0.3s var(--ease-editorial), box-shadow 0.3s var(--ease-editorial);
 	}
 	.editorial-angle-card:hover {
-		transform: translateY(-4px);
+		transform: translateY(-2px);
 		border-color: color-mix(in srgb, var(--nyt-accent) 30%, var(--border));
 		box-shadow: var(--shadow-md);
 	}
 
 	.angle-title {
 		font-family: var(--font-sans);
-		font-size: 0.75rem;
+		font-size: 0.65rem;
 		font-weight: 950;
 		text-transform: uppercase;
-		margin-bottom: 1rem;
+		margin-bottom: 0.45rem;
 		color: var(--nyt-accent);
 	}
 
 	.angle-content {
-		font-family: var(--font-serif);
-		font-size: 1.1rem;
-		line-height: 1.5;
-		font-italic: italic;
+		font-family: var(--font-sans);
+		font-size: 0.86rem;
+		line-height: 1.35;
+		color: var(--secondary-foreground);
 	}
 </style>

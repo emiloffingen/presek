@@ -130,6 +130,10 @@ celery_app.conf.update(
             "task": "tasks.intelligence.recluster_recent_articles_task",
             "schedule": 1800.0,  # Increased from 5m to 30m
         },
+        "repair-split-clusters": {
+            "task": "tasks.intelligence.repair_split_clusters_task",
+            "schedule": 3600.0,  # Cluster-level duplicate merge after metadata catches up
+        },
         "refine-knowledge-graph-sentiment": {
             "task": "tasks.intelligence.refine_knowledge_graph_sentiment_task",
             "schedule": 1800.0,  # Every 30 minutes

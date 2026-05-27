@@ -177,6 +177,65 @@ def _normalize_cluster_synthesis(summary, perspectives, article_rows, lang="mk")
     return clean_summary, clean_perspectives
 
 
+def _looks_like_leaked_json_fragment(text: str) -> bool:
+    clean = str(text or "").strip()
+    if not clean:
+        return False
+    lowered = clean.lower()
+    json_markers = (
+        '"synthetic_headline"',
+        '"synthetic_standfirst"',
+        '"summary"',
+        '"generated_article"',
+        '"key_facts"',
+        '"perspectives"',
+        "verification_report",
+    )
+    marker_count = sum(1 for marker in json_markers if marker in lowered)
+    bullet_json_lines = sum(1 for line in clean.splitlines() if line.strip().startswith(("• {", "• \"", "{", "\"")))
+    return marker_count >= 2 or bullet_json_lines >= 2
+
+
+def _paragraph_fingerprint(text: str) -> str:
+    return re.sub(r"\W+", " ", str(text or "").casefold()).strip()
+
+
+def _dedupe_generated_article(text: str) -> str:
+    parts = [part.strip() for part in re.split(r"\n{2,}", str(text or "")) if part.strip()]
+    kept = []
+    seen = set()
+    for part in parts:
+        key = _paragraph_fingerprint(part)
+        if not key or key in seen:
+            continue
+        if any(key and (key in prev or prev in key) and min(len(key), len(prev)) > 120 for prev in seen):
+            continue
+        seen.add(key)
+        kept.append(part)
+    return "\n\n".join(kept).strip()
+
+
+def _sanitize_synthesis_outputs(summary, generated_article, perspectives, article_rows, lang="mk"):
+    fallback = None
+    clean_summary = normalize_summary_text(summary)
+    clean_article = _dedupe_generated_article(validate_person_names(generated_article or ""))
+
+    if _looks_like_leaked_json_fragment(clean_summary):
+        fallback = fallback or synthesize_cluster_fallback(article_rows, lang=lang)
+        clean_summary = normalize_summary_text(fallback.get("summary", ""))
+
+    if _looks_like_leaked_json_fragment(clean_article) or len(clean_article) < 80:
+        fallback = fallback or synthesize_cluster_fallback(article_rows, lang=lang)
+        clean_article = _dedupe_generated_article(fallback.get("generated_article", ""))
+
+    clean_perspectives = normalize_perspectives(perspectives, lang=lang)
+    if not clean_perspectives:
+        fallback = fallback or synthesize_cluster_fallback(article_rows, lang=lang)
+        clean_perspectives = normalize_perspectives(fallback.get("perspectives", []), lang=lang)
+
+    return clean_summary, clean_article, clean_perspectives
+
+
 def _ensure_dict(value):
     return value if isinstance(value, dict) else {}
 
@@ -253,6 +312,75 @@ def _cosine_dist(a, b):
     norm_a = sum(x * x for x in a) ** 0.5
     norm_b = sum(y * y for y in b) ** 0.5
     return 1 - (dot / (norm_a * norm_b)) if norm_a and norm_b else 1.0
+
+
+_GENERIC_CLUSTER_TOPICS = {"vesti", "news", ""}
+
+
+def _cluster_text_similarity(left_titles, right_titles, lang="mk"):
+    import core.clustering as clustering
+
+    left_text = " ".join(str(title or "") for title in (left_titles or [])[:3])
+    right_text = " ".join(str(title or "") for title in (right_titles or [])[:3])
+    lexical = clustering.get_cosine(
+        clustering.text_to_vector(left_text, lang=lang),
+        clustering.text_to_vector(right_text, lang=lang),
+    )
+    phrase = 0.0
+    for left in (left_titles or [])[:3]:
+        for right in (right_titles or [])[:3]:
+            phrase = max(phrase, clustering._title_phrase_overlap(str(left or ""), str(right or ""), lang=lang))
+    return lexical, phrase
+
+
+def _cluster_tag_set(row):
+    return {str(tag or "").strip().lower() for tag in (row.get("tags") or []) if str(tag or "").strip()}
+
+
+def _split_cluster_merge_score(left, right, lang="mk"):
+    """Return a merge confidence for two already-created clusters, or 0 if unsafe."""
+    if left.get("cluster_id") == right.get("cluster_id"):
+        return 0.0
+    if left.get("country") != right.get("country"):
+        return 0.0
+    if left.get("category") and right.get("category") and left.get("category") != right.get("category"):
+        return 0.0
+
+    left_topic = str(left.get("topic") or "").strip()
+    right_topic = str(right.get("topic") or "").strip()
+    if left_topic != right_topic:
+        return 0.0
+
+    left_latest = left.get("latest_article")
+    right_latest = right.get("latest_article")
+    if left_latest and right_latest:
+        try:
+            if abs((left_latest - right_latest).total_seconds()) > 36 * 3600:
+                return 0.0
+        except Exception:
+            pass
+
+    lexical, phrase = _cluster_text_similarity(left.get("titles"), right.get("titles"), lang=lang)
+    shared_tags = _cluster_tag_set(left) & _cluster_tag_set(right)
+    meaningful_shared_tags = {tag for tag in shared_tags if tag not in _GENERIC_CLUSTER_TOPICS}
+
+    left_centroid = parse_embedding_value(left.get("centroid"))
+    right_centroid = parse_embedding_value(right.get("centroid"))
+    centroid_similarity = 0.0
+    if left_centroid and right_centroid:
+        centroid_similarity = 1 - _cosine_dist(left_centroid, right_centroid)
+
+    generic_topic = left_topic.lower() in _GENERIC_CLUSTER_TOPICS
+    if generic_topic:
+        if len(meaningful_shared_tags) >= 2 and lexical >= 0.34:
+            return round(lexical + phrase + len(meaningful_shared_tags) * 0.08 + centroid_similarity * 0.2, 4)
+        if len(meaningful_shared_tags) >= 1 and lexical >= 0.28 and centroid_similarity >= 0.82:
+            return round(lexical + phrase + centroid_similarity * 0.35, 4)
+        return 0.0
+
+    if lexical >= 0.42 or (phrase >= 0.25 and meaningful_shared_tags):
+        return round(lexical + phrase + len(meaningful_shared_tags) * 0.06 + centroid_similarity * 0.15, 4)
+    return 0.0
 
 
 @celery_app.task(rate_limit="10/m", autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
@@ -553,7 +681,13 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                     "tone_analysis": res_data.get("tone_analysis", {}),
                 }
 
-                summary, perspectives = _normalize_cluster_synthesis(summary, perspectives, article_rows, lang=lang)
+                summary, generated_article, perspectives = _sanitize_synthesis_outputs(
+                    summary,
+                    generated_article,
+                    perspectives,
+                    article_rows,
+                    lang=lang,
+                )
                 record_runtime_event("synthesis_path", mode=provider or "unknown", fast_mode=fast_mode, lang=lang)
 
                 # Phase 3: Deep Local Analyst (SKIP in fast_mode)
@@ -668,6 +802,14 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                     shared_metrics["impact_reasoning"] = ""
                     shared_metrics["story_so_far"] = ""
                     shared_computed = True  # Mark as computed even if fallback
+
+            summary, generated_article, perspectives = _sanitize_synthesis_outputs(
+                summary,
+                generated_article,
+                perspectives,
+                article_rows,
+                lang=lang,
+            )
 
             if summary or perspectives:
                 # Use shared metrics for DB save
@@ -1291,6 +1433,124 @@ def recluster_recent_articles_task(hours=24, limit=800):
         raise
 
 
+@celery_app.task(rate_limit="1/h")
+def repair_split_clusters_task(hours=48, limit=1200, dry_run=False):
+    """Merge recent near-duplicate clusters that ingestion split too conservatively."""
+    try:
+        hours = max(1, int(hours or 48))
+        limit = max(2, int(limit or 1200))
+        cutoff = datetime.datetime.now() - datetime.timedelta(hours=hours)
+        rows = db.execute(
+            """
+            SELECT a.cluster_id,
+                   mode() WITHIN GROUP (ORDER BY a.country) as country,
+                   mode() WITHIN GROUP (ORDER BY a.category) as category,
+                   mode() WITHIN GROUP (ORDER BY a.topic) as topic,
+                   COUNT(*) as article_count,
+                   MIN(COALESCE(a.ingested_at, a.created_at)) as first_article,
+                   MAX(COALESCE(a.ingested_at, a.created_at)) as latest_article,
+                   array_agg(DISTINCT a.title) as titles,
+                   COALESCE(cm.tags, '{}') as tags,
+                   cm.centroid
+            FROM articles a
+            LEFT JOIN cluster_metadata cm ON cm.cluster_id = a.cluster_id
+            WHERE COALESCE(a.ingested_at, a.created_at) >= %s
+              AND a.cluster_id IS NOT NULL
+            GROUP BY a.cluster_id, cm.tags, cm.centroid
+            ORDER BY latest_article DESC
+            LIMIT %s
+            """,
+            (cutoff, limit),
+        ) or []
+
+        candidates = []
+        for i, left in enumerate(rows):
+            for right in rows[i + 1 :]:
+                lang = "mk" if left.get("country") == "MK" else "sr"
+                score = _split_cluster_merge_score(left, right, lang=lang)
+                if score > 0:
+                    candidates.append((score, left, right))
+        candidates.sort(key=lambda item: item[0], reverse=True)
+
+        row_by_id = {row["cluster_id"]: row for row in rows}
+        parent = {row["cluster_id"]: row["cluster_id"] for row in rows}
+
+        def find(cluster_id):
+            while parent.get(cluster_id, cluster_id) != cluster_id:
+                parent[cluster_id] = parent.get(parent[cluster_id], parent[cluster_id])
+                cluster_id = parent[cluster_id]
+            return cluster_id
+
+        def choose_target(left_id, right_id):
+            left = row_by_id[left_id]
+            right = row_by_id[right_id]
+            left_count = int(left.get("article_count") or 0)
+            right_count = int(right.get("article_count") or 0)
+            if left_count > right_count:
+                return left_id, right_id
+            if right_count > left_count:
+                return right_id, left_id
+            return (
+                (left_id, right_id)
+                if (left.get("first_article") or datetime.datetime.max)
+                <= (right.get("first_article") or datetime.datetime.max)
+                else (right_id, left_id)
+            )
+
+        merge_scores = {}
+        touched_clusters = set()
+        for score, left, right in candidates:
+            left_root = find(left["cluster_id"])
+            right_root = find(right["cluster_id"])
+            if left_root == right_root:
+                continue
+
+            target_id, source_id = choose_target(left_root, right_root)
+            parent[source_id] = target_id
+            merge_scores[source_id] = max(float(score), merge_scores.get(source_id, 0.0))
+            touched_clusters.update({target_id, source_id})
+
+        canonical_merges = []
+        for source_id, score in sorted(merge_scores.items(), key=lambda item: item[1], reverse=True):
+            target_id = find(source_id)
+            if source_id != target_id:
+                canonical_merges.append({"source": source_id, "target": target_id, "score": round(score, 4)})
+
+        touched_clusters = set()
+        for merge in canonical_merges:
+            target_id = merge["target"]
+            source_id = merge["source"]
+            touched_clusters.update({target_id, source_id})
+
+            if not dry_run:
+                db.execute(
+                    "UPDATE articles SET cluster_id = %s WHERE cluster_id = %s",
+                    (target_id, source_id),
+                    fetch=False,
+                )
+
+        if canonical_merges and not dry_run:
+            touched = sorted(touched_clusters)
+            for table in ("cluster_summaries", "cluster_metadata", "cluster_entities", "reactions"):
+                db.execute(f"DELETE FROM {table} WHERE cluster_id = ANY(%s)", (touched,), fetch=False)
+
+            extract_entities_task.apply_async(kwargs={"hours": hours, "target_clusters": touched}, countdown=5)
+            generate_cluster_metadata_task.apply_async(kwargs={"hours": hours, "target_clusters": touched}, countdown=10)
+            auto_summarize_task.apply_async(args=(touched,), countdown=20)
+            invalidate_public_data_caches()
+
+        from tasks import utils
+
+        utils.record_task_event("repair_split_clusters", "ok", f"merges:{len(canonical_merges)}")
+        return {"merges": canonical_merges, "dry_run": bool(dry_run), "hours": hours, "limit": limit}
+    except Exception as e:
+        from tasks import utils
+
+        utils.record_task_event("repair_split_clusters", "error", "clusters:recent")
+        log.error(f"[tasks] Split cluster repair failed: {e}")
+        raise
+
+
 @celery_app.task
 def auto_repair_sources_task():
     """Bridge to ingestion module for repair task."""
@@ -1750,4 +2010,3 @@ def refine_knowledge_graph_sentiment_task():
         
     except Exception as e:
         log.error(f"[sentiment-refinement] Failed to refine knowledge graph sentiment: {e}")
-
