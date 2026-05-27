@@ -327,6 +327,8 @@ def extract_words_with_flags(title: str) -> list[tuple[str, bool]]:
     A word is treated as a proper noun if it is capitalised and
     does NOT appear at the start of a sentence.
     """
+    from core.language import transliterate_cyr_to_lat
+
     # Split into sentences on . ! ? so we can identify sentence-start positions
     sentences = re.split(r"[.!?]+", title)
     results: list[tuple[str, bool]] = []
@@ -344,8 +346,21 @@ def extract_words_with_flags(title: str) -> list[tuple[str, bool]]:
             # Skip short words, stopwords, pure numbers
             if len(word_lower) < MIN_WORD_LEN:
                 continue
-            if word_lower in STOPWORDS:
+
+            # Transliterate Cyrillic to Latin to check against the stopwords list
+            word_latin = transliterate_cyr_to_lat(word_lower)
+            word_normalized = (
+                word_latin.replace("ć", "c")
+                .replace("č", "c")
+                .replace("š", "s")
+                .replace("ž", "z")
+                .replace("đ", "d")
+                .replace("ќ", "c")
+            )
+
+            if word_lower in STOPWORDS or word_latin in STOPWORDS or word_normalized in STOPWORDS:
                 continue
+
             if word_lower.isdigit():
                 continue
             # Proper noun: capitalised and NOT the first token in the sentence

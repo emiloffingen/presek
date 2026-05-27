@@ -15,6 +15,12 @@ class TestExtractWordsWithFlags:
         for sw in ["ova", "e", "za"]:
             assert sw not in words
 
+    def test_cyrillic_stopwords_removed(self):
+        pairs = extract_words_with_flags("ова е тест за владата со дека и како")
+        words = {w for w, _ in pairs}
+        for sw in ["дека", "како"]:
+            assert sw not in words
+
     def test_short_words_removed(self):
         pairs = extract_words_with_flags("Da ne vo od")
         assert len(pairs) == 0
