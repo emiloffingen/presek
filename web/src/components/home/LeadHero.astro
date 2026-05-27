@@ -307,8 +307,8 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
 	.lead-hero {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
-		gap: 0.8rem;
-		padding-bottom: 2.5rem;
+		gap: clamp(0.85rem, 1.8vw, 1.4rem);
+		padding-bottom: clamp(1.35rem, 2.8vw, 2.25rem);
 		border-bottom: 4px double var(--border);
 		position: relative;
 		overflow: hidden;
@@ -414,7 +414,7 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
 
 		.lead-copy .headline-lead {
 			margin: 0 0 0.85rem;
-			max-width: 17ch;
+			max-width: 18ch;
 			color: var(--foreground);
 			background: none;
 			-webkit-background-clip: initial;
@@ -456,8 +456,8 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
 	.lead-summary {
 		font-family: var(--font-nyt-body);
 		font-size: var(--text-lg);
-		line-height: 1.6;
-		color: var(--muted-foreground);
+		line-height: 1.55;
+		color: color-mix(in srgb, var(--secondary-foreground) 76%, var(--muted-foreground));
 		max-width: 65ch;
 		text-wrap: pretty;
 		margin: 0;
@@ -594,11 +594,12 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
 			position: relative;
 			aspect-ratio: 3 / 2;
 			width: 100%;
-		border: 1px solid var(--border);
+		border: 1px solid color-mix(in srgb, var(--border) 88%, var(--foreground) 12%);
 		overflow: hidden;
 		background:
 				radial-gradient(circle at top right, color-mix(in srgb, var(--nyt-accent) 8%, transparent), transparent 40%),
 				linear-gradient(135deg, var(--secondary) 0%, color-mix(in srgb, var(--background) 84%, var(--secondary) 16%) 100%);
+		box-shadow: 0 1px 0 color-mix(in srgb, var(--foreground) 7%, transparent);
 		}
 
 		.lead-media-loading-shell {
@@ -669,7 +670,7 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
     .lead-media-overlay {
         position: absolute;
         inset: 0;
-        background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 30%, transparent 60%);
+        background: linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.28) 36%, transparent 66%);
         display: flex;
         flex-direction: column;
         justify-content: flex-end;
@@ -951,6 +952,7 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
 			.lead-copy {
 				justify-content: center;
 				min-height: clamp(310px, 34vw, 420px);
+				padding-right: clamp(0rem, 1vw, 1rem);
 			}
 
 			.lead-copy .headline-lead {
@@ -972,6 +974,10 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
 				object-fit: cover;
 			}
 
+			.lead-media-desktop .lead-media-overlay {
+				opacity: 0;
+			}
+
 			.lead-hero-filtered {
 				grid-template-columns: 1fr;
 				align-items: start;
@@ -983,7 +989,7 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
 	}
 
 		@media (max-width: 639px) {
-			.lead-hero { gap: 0.75rem; }
+			.lead-hero { gap: 0.8rem; padding-bottom: 1rem; }
 			.lead-copy { order: 1; }
 			.lead-media-mobile { order: 2; }
 			.lead-copy { gap: 0.3rem; }
@@ -997,16 +1003,21 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
 			}
 
 			.lead-media-frame {
-				aspect-ratio: 21 / 8;
+				aspect-ratio: 16 / 7;
 				height: auto;
-	            max-height: 22vh;
-				min-height: 7.75rem;
+	            max-height: 24vh;
+				min-height: 8.25rem;
 			}
 
 			.lead-media-image {
 				object-fit: cover;
 				object-position: center;
 				max-height: none;
+			}
+
+			.lead-media-mobile .lead-media-overlay,
+			.lead-media-editorial-card .lead-media-content {
+				display: none;
 			}
 
 		        .overlay-headline {

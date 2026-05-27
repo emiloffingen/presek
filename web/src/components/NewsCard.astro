@@ -240,6 +240,7 @@ function getTimeStr(dateStr: string) {
         display: flex;
         flex-direction: column;
         height: 100%;
+        background: var(--background);
         transition: transform 0.4s var(--ease-editorial), box-shadow 0.4s var(--ease-editorial), border-color 0.4s var(--ease-editorial), background-color 0.4s var(--ease-editorial);
         border: 1px solid transparent;
         border-bottom: 1px solid var(--border);
@@ -289,13 +290,15 @@ function getTimeStr(dateStr: string) {
 	    min-width: 0;
 	    max-width: 100%;
 	    text-decoration: none;
-        min-height: 4.5rem; /* Forces consistent height for 3 lines of text */
+        min-height: 4.45rem;
 	}
 
     .headline-link h2 {
-        display: inline;
+        display: -webkit-box;
+        width: fit-content;
+        max-width: 100%;
         background-image: linear-gradient(var(--nyt-accent), var(--nyt-accent));
-        background-position: 50% 100%;
+        background-position: 0 100%;
         background-repeat: no-repeat;
         background-size: 0% 2px;
         transition: background-size 0.4s var(--ease-editorial), color 0.3s ease;
@@ -313,9 +316,18 @@ function getTimeStr(dateStr: string) {
     /* --- Premium Meta Styles --- */
     .article-meta-v2 {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         gap: 0.5rem;
         margin-bottom: 0.5rem;
+        min-height: 1.35rem;
+    }
+
+    .kicker-group {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.35rem 0.45rem;
+        min-width: 0;
     }
 
     .kicker {
@@ -325,6 +337,10 @@ function getTimeStr(dateStr: string) {
         text-transform: uppercase;
         letter-spacing: 0.1em;
         color: var(--foreground);
+        max-width: 14rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .significance-badge {
@@ -371,6 +387,7 @@ function getTimeStr(dateStr: string) {
     .article-footer-meta {
         display: flex;
         align-items: center;
+        flex-wrap: wrap;
         gap: 0.4rem;
         font-family: var(--font-sans);
         font-size: 0.58rem;
@@ -391,6 +408,10 @@ function getTimeStr(dateStr: string) {
     }
 
     .cluster-signal-row span {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
         border: 1px solid var(--border);
         padding: 0.16rem 0.4rem;
         font-family: var(--font-sans);
@@ -406,14 +427,14 @@ function getTimeStr(dateStr: string) {
     .summary {
         font-family: var(--font-nyt-body);
         font-size: 0.88rem;
-        line-height: 1.4;
-        color: var(--secondary-foreground);
+        line-height: 1.45;
+        color: color-mix(in srgb, var(--secondary-foreground) 86%, var(--muted-foreground));
         margin-top: 0.4rem;
         display: -webkit-box;
         -webkit-line-clamp: 3;
         -webkit-box-orient: vertical;
         overflow: hidden;
-        min-height: 3.9rem; /* Forces consistent height for 3 lines of summary */
+        min-height: 3.85rem;
     }
 
     .sub-headlines {
@@ -459,10 +480,11 @@ function getTimeStr(dateStr: string) {
         aspect-ratio: 3 / 2;
         border-radius: 0px !important;
         overflow: hidden;
-        border: 1px solid var(--border);
+        border: 1px solid color-mix(in srgb, var(--border) 90%, var(--foreground) 10%);
         background:
             linear-gradient(135deg, color-mix(in srgb, var(--surface-soft) 86%, var(--background)), color-mix(in srgb, var(--secondary) 72%, var(--background))),
             var(--secondary);
+        box-shadow: 0 1px 0 color-mix(in srgb, var(--foreground) 7%, transparent);
     }
 
     .image-wrap::before {
@@ -558,6 +580,10 @@ function getTimeStr(dateStr: string) {
 	}
 
 	@media (max-width: 640px) {
+		.article-meta-v2 {
+			min-height: 0;
+		}
+
 		.nyt-article.variant-compact,
 		.nyt-article.variant-wire {
 			padding-bottom: 0.45rem;
@@ -570,7 +596,7 @@ function getTimeStr(dateStr: string) {
 
 		.nyt-article.variant-compact .headline-link,
 		.nyt-article.variant-wire .headline-link {
-			min-height: 3.35rem;
+			min-height: 3.15rem;
 		}
 
 		.nyt-article.variant-compact .headline-compact,

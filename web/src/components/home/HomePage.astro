@@ -825,6 +825,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
     .home-evidence-item {
         background: var(--background);
         padding: 0.74rem 0.9rem;
+        min-width: 0;
     }
 
     .home-evidence-status {
@@ -854,6 +855,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
         font-size: 0.7rem;
         line-height: 1.28;
         color: var(--secondary-foreground);
+        overflow-wrap: anywhere;
     }
 
     .home-evidence-item strong {
@@ -863,6 +865,9 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
         font-size: 0.92rem;
         line-height: 1.1;
         color: var(--foreground);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .home-evidence-grid {
@@ -913,11 +918,12 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
         justify-content: space-between;
         padding: clamp(1rem, 2vw, 1.35rem);
         background: var(--background);
-        transition: background-color 0.2s ease, border-color 0.2s ease;
+        transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.25s var(--ease-editorial);
     }
 
     .analysis-card:hover {
         background: color-mix(in srgb, var(--surface-soft) 72%, var(--background));
+        transform: translateY(-1px);
     }
 
     .radar-card:hover {
@@ -1135,6 +1141,12 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
         margin-bottom: 1.5rem;
     }
 
+    @media (min-width: 769px) and (max-width: 1100px) {
+        .analysis-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
     @media (max-width: 768px) {
         .consensus-section {
             padding: 1.5rem 1rem !important;
@@ -1182,7 +1194,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 
     .quick-pill {
         display: inline-block;
-        padding: 0.42rem 0.95rem;
+        padding: 0.46rem 0.95rem;
         background: var(--secondary);
         border: 1px solid var(--border);
         font-family: var(--font-sans);
@@ -1209,7 +1221,6 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
         color: white;
         border-color: var(--nyt-accent);
         box-shadow: 0 4px 12px color-mix(in srgb, var(--nyt-accent) 35%, transparent);
-        padding-bottom: 0.58rem;
     }
     .quick-pill.is-active::after {
         content: '';
@@ -1304,7 +1315,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
         background: color-mix(in srgb, var(--secondary) 25%, var(--card));
         border: 1px solid var(--border);
         border-radius: 8px;
-        padding: 1.1rem 1.6rem;
+        padding: clamp(0.95rem, 2vw, 1.1rem) clamp(1rem, 3vw, 1.6rem);
         margin: 1.5rem 0 2rem;
         box-shadow: var(--shadow-sm);
         display: flex;
@@ -1357,6 +1368,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
         text-transform: uppercase;
         letter-spacing: 0.22em;
         color: var(--foreground);
+        line-height: 1.25;
     }
     
     .stats-panel-grid {
@@ -1390,6 +1402,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
         color: var(--foreground);
         display: flex;
         align-items: baseline;
+        flex-wrap: wrap;
         gap: 0.2rem;
     }
     
@@ -1409,7 +1422,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
     @media (max-width: 768px) {
         .home-system-stats-panel {
             padding: 1rem;
-            margin: 1.2rem 0 1.5rem;
+            margin: 1rem 0 1.35rem;
         }
         .stats-panel-grid {
             display: grid;
