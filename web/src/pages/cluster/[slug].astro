@@ -14,7 +14,7 @@ import SourceComparisonIsland from '../../components/SourceComparisonIsland.tsx'
 import ClusterFollowSuggestionsIsland from '../../components/ClusterFollowSuggestionsIsland.tsx';
 import NewsletterIsland from '../../components/NewsletterIsland.tsx';
 import { apiBaseUrl } from '../../lib/apiBase';
-import { cleanAndDecode, isMostlyCyrillic, getEditionStr, parseFootnotes, deShout, slugify } from '../../utils/textUtils';
+import { cleanAndDecode, isMostlyCyrillic, getEditionStr, parseFootnotes, deShout, slugify, normalizeAndDeduplicateTags } from '../../utils/textUtils';
 
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 
@@ -311,17 +311,16 @@ const firstArticle = cluster?.articles?.length
     ? [...cluster.articles].sort((left: Article, right: Article) => new Date(left.created_at).getTime() - new Date(right.created_at).getTime())[0]
     : null;
 const latestArticle = cluster?.articles?.[0] || null;
-const sharedEntities = Array.from(new Set([
+const allRawEntities = [
     ...(cluster?.analyst_entities || []),
     ...(cluster?.entities || []),
     ...(cluster?.tags || []),
-])).filter(Boolean).slice(0, 4);
+];
+const sharedEntities = normalizeAndDeduplicateTags(allRawEntities, lang).slice(0, 4);
 
-const keyEntities = Array.from(new Set([
-    ...(cluster?.analyst_entities || []),
-    ...(cluster?.entities || []),
-    ...(cluster?.tags || []),
-])).filter((name: string) => name && name.trim().length >= 2).slice(0, 5);
+const keyEntities = normalizeAndDeduplicateTags(allRawEntities, lang)
+    .filter((name: string) => name && name.trim().length >= 2)
+    .slice(0, 5);
 const primaryTopics = Array.from(new Set([
     ...(cluster?.topics || []),
     ...(cluster?.articles || []).map((article: Article) => article.topic).filter(Boolean),

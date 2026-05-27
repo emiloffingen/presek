@@ -93,9 +93,21 @@ export const transliterate = cyrToLat;
 export const transliterateToLat = cyrToLat;
 
 export function latToCyr(text: string): string {
+    if (!text) return '';
+    let result = text;
+    // Replace multi-char combinations first to avoid character-by-character split issues
+    const multiMap: Record<string, string> = {
+        'Dž': 'Џ', 'dž': 'џ', 'DŽ': 'Џ',
+        'Dz': 'Ѕ', 'dz': 'ѕ', 'DZ': 'Ѕ',
+        'Lj': 'Љ', 'lj': 'љ', 'LJ': 'Љ',
+        'Nj': 'Њ', 'nj': 'њ', 'NJ': 'Њ'
+    };
+    for (const [lat, cyr] of Object.entries(multiMap)) {
+        result = result.replace(new RegExp(lat, 'g'), cyr);
+    }
+
     const latToCyrMap: Record<string, string> = Object.fromEntries(Object.entries(CYR_TO_LAT).map(([k, v]) => [v, k]));
-    // Simple reverse map; caution: some multi-char mappings like 'Dž' need special handling if used
-    return text.split('').map(char => latToCyrMap[char] || char).join('');
+    return result.split('').map(char => latToCyrMap[char] || char).join('');
 }
 
 export const transliterateToCyr = latToCyr;
@@ -398,4 +410,192 @@ export function parseFootnotes(text: string): string {
     return processed.replace(/\[(\d+)\]/g, (match, num) => {
         return `<sup class="text-nyt-accent font-black ml-0.5 cursor-help" title="izvor ${num}">${num}</sup>`;
     });
+}
+
+const COMMON_TAGS_MAP: Record<string, { sr: string; mk: string }> = {
+    // Countries & Regions
+    'amerika': { sr: 'Amerika', mk: 'Америка' },
+    'sad': { sr: 'SAD', mk: 'САД' },
+    'usa': { sr: 'SAD', mk: 'САД' },
+    'rusija': { sr: 'Rusija', mk: 'Русија' },
+    'russia': { sr: 'Rusija', mk: 'Русија' },
+    'ukrajina': { sr: 'Ukrajina', mk: 'Украина' },
+    'ukraina': { sr: 'Ukrajina', mk: 'Украина' },
+    'ukraine': { sr: 'Ukrajina', mk: 'Украина' },
+    'kina': { sr: 'Kina', mk: 'Кина' },
+    'china': { sr: 'Kina', mk: 'Кина' },
+    'evropa': { sr: 'Evropa', mk: 'Европа' },
+    'europe': { sr: 'Evropa', mk: 'Европа' },
+    'balkan': { sr: 'Balkan', mk: 'Балкан' },
+    'srbija': { sr: 'Srbija', mk: 'Србија' },
+    'serbia': { sr: 'Srbija', mk: 'Србија' },
+    'makedonija': { sr: 'Makedonija', mk: 'Македонија' },
+    'macedonia': { sr: 'Makedonija', mk: 'Македонија' },
+    'germanija': { sr: 'Nemačka', mk: 'Германија' },
+    'germany': { sr: 'Nemačka', mk: 'Германија' },
+    'nemacka': { sr: 'Nemačka', mk: 'Германија' },
+    'francija': { sr: 'Francuska', mk: 'Франција' },
+    'france': { sr: 'Francuska', mk: 'Франција' },
+    'francuska': { sr: 'Francuska', mk: 'Франција' },
+    'grcija': { sr: 'Grčka', mk: 'Грција' },
+    'greece': { sr: 'Grčka', mk: 'Грција' },
+    'grcka': { sr: 'Grčka', mk: 'Грција' },
+    'bugarija': { sr: 'Bugarska', mk: 'Бугарија' },
+    'bulgaria': { sr: 'Bugarska', mk: 'Бугарија' },
+    'bugarska': { sr: 'Bugarska', mk: 'Бугарија' },
+    'albanija': { sr: 'Albanija', mk: 'Албанија' },
+    'albania': { sr: 'Albanija', mk: 'Албанија' },
+    'kosovo': { sr: 'Kosovo', mk: 'Косово' },
+    'izrael': { sr: 'Izrael', mk: 'Израел' },
+    'israel': { sr: 'Izrael', mk: 'Израел' },
+    'palestina': { sr: 'Palestina', mk: 'Палестина' },
+    'palestine': { sr: 'Palestina', mk: 'Палестина' },
+    'turcija': { sr: 'Turska', mk: 'Турција' },
+    'turkey': { sr: 'Turska', mk: 'Турција' },
+    'turska': { sr: 'Turska', mk: 'Турција' },
+    'iran': { sr: 'Iran', mk: 'Иран' },
+    'danska': { sr: 'Danska', mk: 'Данска' },
+    'denmark': { sr: 'Danska', mk: 'Данска' },
+    'ungarska': { sr: 'Mađarska', mk: 'Унгарија' },
+    'madarska': { sr: 'Mađarska', mk: 'Унгарија' },
+    'hungary': { sr: 'Mađarska', mk: 'Унгарија' },
+
+    // Cities
+    'skopje': { sr: 'Skoplje', mk: 'Скопје' },
+    'skoplje': { sr: 'Skoplje', mk: 'Скопје' },
+    'bitola': { sr: 'Bitolj', mk: 'Битола' },
+    'ohrid': { sr: 'Ohrid', mk: 'Охрид' },
+    'tetovo': { sr: 'Tetovo', mk: 'Тетово' },
+    'kumanovo': { sr: 'Kumanovo', mk: 'Куманово' },
+    'prilep': { sr: 'Prilep', mk: 'Прилеп' },
+    'veles': { sr: 'Veles', mk: 'Велес' },
+    'stip': { sr: 'Štip', mk: 'Штип' },
+    'strumica': { sr: 'Strumica', mk: 'Струмица' },
+    'gostivar': { sr: 'Gostivar', mk: 'Гостивар' },
+    'kavadarci': { sr: 'Kavadarci', mk: 'Кавадарци' },
+    'kocani': { sr: 'Kočani', mk: 'Кочани' },
+    'kicevo': { sr: 'Kičevo', mk: 'Кичево' },
+    'struga': { sr: 'Struga', mk: 'Струга' },
+    'gevgelija': { sr: 'Gevgelija', mk: 'Гевгелија' },
+    'novi sad': { sr: 'Novi Sad', mk: 'Нови Сад' },
+    'nis': { sr: 'Niš', mk: 'Ниш' },
+    'beograd': { sr: 'Beograd', mk: 'Београд' },
+    'belgrade': { sr: 'Beograd', mk: 'Београд' },
+    'moskva': { sr: 'Moskva', mk: 'Москва' },
+    'moscow': { sr: 'Moskva', mk: 'Москва' },
+    'peking': { sr: 'Peking', mk: 'Пекинг' },
+    'beijing': { sr: 'Peking', mk: 'Пекинг' },
+    'budimpesta': { sr: 'Budimpešta', mk: 'Будимпешта' },
+    'budapest': { sr: 'Budimpešta', mk: 'Будимpeшта' },
+
+    // Organizations & Acronyms
+    'nasa': { sr: 'NASA', mk: 'НАСА' },
+    'nato': { sr: 'NATO', mk: 'НАТО' },
+    'eu': { sr: 'EU', mk: 'ЕУ' },
+    'oob': { sr: 'UN', mk: 'ОН' },
+    'un': { sr: 'UN', mk: 'ОН' },
+    'szo': { sr: 'SZO', mk: 'СЗО' },
+    'who': { sr: 'SZO', mk: 'СЗО' },
+    'mvr': { sr: 'MVR', mk: 'МВР' },
+    'sdsm': { sr: 'SDSM', mk: 'СДСМ' },
+    'vmro': { sr: 'VMRO', mk: 'ВМРО' },
+    'vmro-dpmne': { sr: 'VMRO-DPMNE', mk: 'ВМРО-ДПМНЕ' },
+    'bdi': { sr: 'BDI', mk: 'ДУИ' },
+    'dui': { sr: 'DUI', mk: 'ДУИ' },
+
+    // Topics / Categories / General Terms
+    'vesti': { sr: 'Vesti', mk: 'Вести' },
+    'zivot': { sr: 'Život', mk: 'Живот' },
+    'život': { sr: 'Život', mk: 'Живот' },
+    'politika': { sr: 'Politika', mk: 'Политика' },
+    'ekonomija': { sr: 'Ekonomija', mk: 'Економија' },
+    'sport': { sr: 'Sport', mk: 'Спорт' },
+    'tehnologija': { sr: 'Tehnologija', mk: 'Технологија' },
+    'technology': { sr: 'Tehnologija', mk: 'Технологија' },
+    'kultura': { sr: 'Kultura', mk: 'Култура' },
+    'nauka': { sr: 'Nauka', mk: 'Наука' },
+    'science': { sr: 'Nauka', mk: 'Наука' },
+    'zdravstvo': { sr: 'Zdravstvo', mk: 'Здравство' },
+    'zdravje': { sr: 'Zdravlje', mk: 'Здравје' },
+    'health': { sr: 'Zdravlje', mk: 'Здравје' },
+    'obrazovanje': { sr: 'Obrazovanje', mk: 'Образование' },
+    'education': { sr: 'Obrazovanje', mk: 'Образование' },
+    'hronika': { sr: 'Hronika', mk: 'Хроника' },
+    'crna hronika': { sr: 'Crna hronika', mk: 'Црна хроника' },
+    'vreme': { sr: 'Vreme', mk: 'Време' },
+    'prognoza': { sr: 'Prognoza', mk: 'Прогноза' },
+    'svet': { sr: 'Svet', mk: 'Свет' },
+    'world': { sr: 'Svet', mk: 'Свет' },
+    'regionalni vesti': { sr: 'Regionalne vesti', mk: 'Регионални вести' },
+    'regionalno': { sr: 'Regionalno', mk: 'Регионално' },
+    'zabava': { sr: 'Zabava', mk: 'Забава' },
+    'scena': { sr: 'Scena', mk: 'Сцена' },
+    'astrologija': { sr: 'Astrologija', mk: 'Астрологија' },
+    'horoskop': { sr: 'Horoskop', mk: 'Хороскоп' },
+    'zanimlivosti': { sr: 'Zanimljivosti', mk: 'Занимливости' },
+};
+
+export function normalizeEntityOrTag(tag: string, lang: string): string {
+    let cleaned = cleanAndDecode(tag).trim();
+    if (!cleaned) return '';
+
+    // De-shout screaming caps
+    cleaned = deShout(cleaned);
+
+    // Check the common tags map
+    const lower = cleaned.toLowerCase();
+    if (COMMON_TAGS_MAP[lower]) {
+        return lang === 'sr' ? COMMON_TAGS_MAP[lower].sr : COMMON_TAGS_MAP[lower].mk;
+    }
+
+    // Specific acronym checks: If it is <= 4 chars and has standard acronym characters, keep all caps
+    if (lower.length <= 4 && /^[a-z]+$/i.test(lower)) {
+        cleaned = cleaned.toUpperCase();
+    }
+
+    // If Macedonian, and the string doesn't contain any Cyrillic but has Latin characters,
+    // we transliterate to Cyrillic!
+    if (lang !== 'sr' && !isMostlyCyrillic(cleaned)) {
+        cleaned = latToCyr(cleaned);
+    }
+
+    // If Serbian, and the string is in Cyrillic, transliterate to Latin
+    if (lang === 'sr' && isMostlyCyrillic(cleaned)) {
+        cleaned = transliterate(cleaned);
+    }
+
+    return cleaned.trim();
+}
+
+export function normalizeAndDeduplicateTags(tags: string[], lang: string): string[] {
+    if (!tags || !tags.length) return [];
+
+    // 1. Normalize all tags
+    const normalized = tags
+        .map(tag => normalizeEntityOrTag(tag, lang))
+        .filter(Boolean);
+
+    // 2. Remove exact duplicates using a Set
+    const unique = Array.from(new Set(normalized));
+
+    // 3. Remove highly redundant tags (like substrings or parentheses explanations)
+    // Sort by length ascending first so shorter, more concise tags are preferred and processed first
+    const sorted = [...unique].sort((a, b) => a.length - b.length);
+    const result: string[] = [];
+
+    for (const tag of sorted) {
+        const tagLower = tag.toLowerCase();
+        const isRedundant = result.some(existing => {
+            const existingLower = existing.toLowerCase();
+            // If the tag is a substring of an already-added shorter tag, or vice versa
+            return tagLower.includes(existingLower) || existingLower.includes(tagLower);
+        });
+        if (!isRedundant) {
+            result.push(tag);
+        }
+    }
+
+    // Return in original unique order or sorted order?
+    // Let's filter the original unique array to preserve the relevance order but only keep the non-redundant ones
+    return unique.filter(tag => result.includes(tag));
 }

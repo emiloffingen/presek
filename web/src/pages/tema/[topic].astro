@@ -9,7 +9,7 @@ import TopicFollowSuggestionsIsland from '../../components/TopicFollowSuggestion
 
 import { buildTopicConnections } from '../../lib/topicDiscovery.js';
 import { apiBaseUrl } from '../../lib/apiBase';
-import { cleanAndDecode, getDisplaySummary } from '../../utils/textUtils';
+import { cleanAndDecode, getDisplaySummary, normalizeEntityOrTag } from '../../utils/textUtils';
 import { ArrowRight, Clock3, Newspaper, Sparkles } from 'lucide-react';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 
@@ -146,7 +146,9 @@ const sourceRows = countValues(
 ).slice(0, 6);
 
 const tagRows = countValues(
-	Array.from(detailMap.values()).flatMap((detail: any) => Array.isArray(detail?.tags) ? detail.tags : [])
+	Array.from(detailMap.values())
+		.flatMap((detail: any) => Array.isArray(detail?.tags) ? detail.tags : [])
+		.map((tag: string) => normalizeEntityOrTag(tag, lang))
 )
 	.filter(([name]) => name.toLowerCase() !== topic.toLowerCase())
 	.slice(0, 8);
