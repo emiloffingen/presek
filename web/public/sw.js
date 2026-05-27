@@ -1,8 +1,8 @@
-// Presek — Service Worker v26
+// Presek — Service Worker v27
 // Astro-only frontend caching: Stale-While-Revalidate for API and Cache-First for static assets
 
-const CACHE_NAME = 'presek-v26';
-const API_CACHE_NAME = 'presek-api-v26';
+const CACHE_NAME = 'presek-v27';
+const API_CACHE_NAME = 'presek-api-v27';
 const API_CACHE_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes max staleness for API
 
 // Core static assets that are shared across the Astro frontend
@@ -90,6 +90,30 @@ self.addEventListener('fetch', e => {
             return cachedResponse;
           }
           return fetchPromise.then(net => net || cachedResponse || offlineApiResponse());
+        });
+      })
+    );
+    return;
+  }
+
+  // Cache-First for typography and font resources (woff2, woff, ttf, etc.)
+  if (
+    url.pathname.endsWith('.woff2') || 
+    url.pathname.endsWith('.woff') || 
+    url.pathname.endsWith('.ttf') || 
+    url.hostname.includes('fonts.gstatic.com') ||
+    url.hostname.includes('fonts.googleapis.com')
+  ) {
+    e.respondWith(
+      caches.open(CACHE_NAME).then(cache => {
+        return cache.match(e.request).then(cachedResponse => {
+          if (cachedResponse) return cachedResponse;
+          return fetch(e.request).then(networkResponse => {
+            if (networkResponse && networkResponse.status === 200) {
+              cache.put(e.request, networkResponse.clone());
+            }
+            return networkResponse;
+          });
         });
       })
     );

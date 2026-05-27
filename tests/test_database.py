@@ -80,6 +80,7 @@ class TestDatabaseManagerExecute:
 
         manager = DatabaseManager.__new__(DatabaseManager)
         manager._pool = mock_pool
+        manager._read_pool = None
         result = manager.execute("SELECT 1")
         assert isinstance(result, list)
 
@@ -96,6 +97,7 @@ class TestDatabaseManagerExecute:
 
         manager = DatabaseManager.__new__(DatabaseManager)
         manager._pool = mock_pool
+        manager._read_pool = None
         manager.execute("INSERT INTO foo VALUES (1)", fetch=False)
         mock_conn.commit.assert_called_once()
 
@@ -112,6 +114,7 @@ class TestDatabaseManagerExecute:
 
         manager = DatabaseManager.__new__(DatabaseManager)
         manager._pool = mock_pool
+        manager._read_pool = None
         with pytest.raises(Exception):
             manager.execute("SELECT boom")
         mock_conn.rollback.assert_called_once()

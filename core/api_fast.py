@@ -48,19 +48,29 @@ async def lifespan(app: FastAPI):
     else:
         log.warning("Rate limiting disabled - slowapi not installed")
 
+    # Warm up async database pools on startup
+    try:
+        from core.database import async_db
+        await async_db._ensure_pool()
+    except Exception as e:
+        log.error(f"Failed to initialize async database pools on startup: {e}")
+
     yield
 
     # Shutdown logic
     log.info("Presek API shutting down, cleaning up resources gracefully...")
 
-    # 1. Close Async Database Pool
+    # 1. Close Async Database Pools
     try:
         from core.database import async_db
         if async_db._pool:
             await async_db._pool.close()
             log.info("Async database connection pool closed successfully.")
+        if hasattr(async_db, "_read_pool") and async_db._read_pool:
+            await async_db._read_pool.close()
+            log.info("Async database read-replica connection pool closed successfully.")
     except Exception as e:
-        log.warning(f"Error closing async database pool during shutdown: {e}")
+        log.warning(f"Error closing async database pools during shutdown: {e}")
 
     # 2. Close Sync Database Pools
     try:

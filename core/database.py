@@ -176,6 +176,7 @@ class AsyncDatabaseManager:
 
     _instance = None
     _pool = None
+    _read_pool = None
     _lock = asyncio.Lock()
 
     def __new__(cls):
@@ -187,11 +188,14 @@ class AsyncDatabaseManager:
         """Force re-initialization of the async pool. Crucial after process forking."""
         if self._pool:
             try:
-                # We can't easily close an async pool from a sync signal handler
-                # but we can at least null it out so the next async call re-inits
                 self._pool = None
             except Exception as e:
                 log.debug(f"Failed to close async pool: {e}")
+        if hasattr(self, "_read_pool") and self._read_pool:
+            try:
+                self._read_pool = None
+            except Exception as e:
+                log.debug(f"Failed to close async read replica pool: {e}")
 
     async def _ensure_pool(self):
         async with self._lock:
@@ -212,10 +216,40 @@ class AsyncDatabaseManager:
                     f"Presek {APP_VERSION_LABEL}: Async database pool initialized (min={DB_POOL_MINCONN}, max={DB_POOL_MAXCONN})."
                 )
 
-    async def execute(self, sql, params=None, fetch=True):
+            # Initialize async read replica pool if configured and not yet open
+            from core.config import DATABASE_READ_REPLICA_URL, USE_READ_REPLICA
+            if USE_READ_REPLICA and DATABASE_READ_REPLICA_URL and getattr(self, "_read_pool", None) is None:
+                try:
+                    self._read_pool = AsyncConnectionPool(
+                        conninfo=DATABASE_READ_REPLICA_URL,
+                        min_size=DB_POOL_MINCONN,
+                        max_size=DB_POOL_MAXCONN,
+                        open=False,
+                        kwargs={
+                            "row_factory": dict_row,
+                            "connect_timeout": 5,
+                            "options": DB_SESSION_OPTIONS,
+                        },
+                    )
+                    await self._read_pool.open()
+                    log.info(
+                        f"Presek {APP_VERSION_LABEL}: Async database read replica pool initialized (min={DB_POOL_MINCONN}, max={DB_POOL_MAXCONN})."
+                    )
+                except Exception as e:
+                    log.error(f"Failed to initialize async database read replica pool: {e}")
+                    self._read_pool = None
+
+    async def execute(self, sql, params=None, fetch=True, read_only=None):
         await self._ensure_pool()
         try:
-            async with self._pool.connection() as conn:
+            if read_only is None:
+                cleaned_sql = sql.strip().upper()
+                read_only = any(cleaned_sql.startswith(prefix) for prefix in ("SELECT", "WITH", "SHOW", "EXPLAIN"))
+
+            pool = self._read_pool if read_only and getattr(self, "_read_pool", None) else self._pool
+            if pool == self._read_pool:
+                log.debug(f"Routing async query to read replica pool: {sql[:100]}")
+            async with pool.connection() as conn:
                 async with conn.cursor() as cur:
                     await cur.execute(sql, params)
                     if fetch:
@@ -226,8 +260,8 @@ class AsyncDatabaseManager:
             log.error(f"Presek {APP_VERSION_LABEL} Async DB Error: {e}")
             raise
 
-    async def execute_one(self, sql, params=None):
-        results = await self.execute(sql, params)
+    async def execute_one(self, sql, params=None, read_only=None):
+        results = await self.execute(sql, params, read_only=read_only)
         return results[0] if results else None
 
     @asynccontextmanager
@@ -342,7 +376,7 @@ class DatabaseManager:
         else:
             conn.close()
 
-    def execute(self, sql, params=None, fetch=True, read_only=False):
+    def execute(self, sql, params=None, fetch=True, read_only=None):
         """Standardized query execution with automatic connection release.
 
         Args:
@@ -353,8 +387,12 @@ class DatabaseManager:
         """
         conn = None
         try:
+            if read_only is None:
+                cleaned_sql = sql.strip().upper()
+                read_only = any(cleaned_sql.startswith(prefix) for prefix in ("SELECT", "WITH", "SHOW", "EXPLAIN"))
+
             # Route read-only queries to replica if available
-            pool = self._read_pool if read_only and self._read_pool else self._pool
+            pool = getattr(self, "_read_pool", None) if read_only and getattr(self, "_read_pool", None) else self._pool
             conn = pool.getconn() if pool else self.get_conn()
 
             with conn.cursor() as cur:
@@ -376,17 +414,17 @@ class DatabaseManager:
             elif conn:
                 self.put_conn(conn)
 
-    def execute_one(self, sql, params=None):
-        results = self.execute(sql, params)
+    def execute_one(self, sql, params=None, read_only=None):
+        results = self.execute(sql, params, read_only=read_only)
         return results[0] if results else None
 
-    async def async_execute(self, sql, params=None, fetch=True):
+    async def async_execute(self, sql, params=None, fetch=True, read_only=None):
         """Asynchronous execution via native psycopg 3 async pool."""
-        return await async_db.execute(sql, params, fetch)
+        return await async_db.execute(sql, params, fetch, read_only)
 
-    async def async_execute_one(self, sql, params=None):
+    async def async_execute_one(self, sql, params=None, read_only=None):
         """Asynchronous execution of single row query via native async pool."""
-        return await async_db.execute_one(sql, params)
+        return await async_db.execute_one(sql, params, read_only)
 
     @contextmanager
     def connection(self):
@@ -403,11 +441,12 @@ class DatabaseManager:
         return await self.async_execute(
             "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
             (ids,),
+            read_only=True
         )
 
     async def async_search_semantic(self, query_embedding: list[float], limit: int = 100):
         vec_str = "[" + ",".join(map(str, query_embedding)) + "]"
-        return await self.async_execute(SQL_SEMANTIC_SEARCH, (vec_str, vec_str, limit))
+        return await self.async_execute(SQL_SEMANTIC_SEARCH, (vec_str, vec_str, limit), read_only=True)
 
     async def async_hybrid_search(
         self,
@@ -439,7 +478,7 @@ class DatabaseManager:
         
         validated_sort_by = _validate_sort_by(sort_by)
         sql = _build_hybrid_search_sql(time_filter, validated_sort_by)
-        return await self.async_execute(sql, tuple(params))
+        return await self.async_execute(sql, tuple(params), read_only=True)
 
     async def async_search_articles(
         self,
@@ -463,7 +502,7 @@ class DatabaseManager:
             time_filter = time_filter[4:]
 
         sql = SQL_ARTICLE_SEARCH.format(time_filter=time_filter)
-        return await self.async_execute(sql, tuple(params))
+        return await self.async_execute(sql, tuple(params), read_only=True)
 
     async def async_get_synthesis_ids(self, cluster_ids: list[str], lang: str = None):
         if not cluster_ids:
@@ -473,7 +512,7 @@ class DatabaseManager:
         if lang:
             sql += " AND lang = %s"
             params.append(lang)
-        rows = await self.async_execute(sql, tuple(params))
+        rows = await self.async_execute(sql, tuple(params), read_only=True)
         return [r["cluster_id"] for r in rows]
 
     def get_articles_by_ids(self, ids):
