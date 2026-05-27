@@ -536,33 +536,35 @@ const articleSchema = cluster ? {
 				)}
 					</div>
 
-						{/* EXECUTIVE SUMMARY / BRIFING - Wider Layout */}
+						{/* EXECUTIVE SUMMARY / BRIFING - Compact Horizontal Layout */}
 						{(displayHeaderBriefItems.length > 0 || (cluster.key_facts && cluster.key_facts.length > 0)) && (
-							<div class="executive-summary mb-24 p-8 md:p-12 bg-secondary/10 border-l-4 border-nyt-accent shadow-sm">
-								<div class="flex items-center gap-[var(--grid-gap)] mb-14">
-									<Sparkles size={20} className="text-nyt-accent" />
-									<span class="text-[12px] font-black uppercase tracking-[0.3em] text-nyt-accent">{t('cluster.brief_overview')}</span>
+							<div class="executive-summary mb-12 p-6 bg-secondary/5 border border-border/60 hover:border-nyt-accent/30 transition-all shadow-sm">
+								<div class="flex items-center gap-[var(--grid-gap)] mb-6 border-b border-border/20 pb-3">
+									<Sparkles size={16} className="text-nyt-accent" />
+									<span class="text-[11px] font-black uppercase tracking-[0.25em] text-nyt-accent">{t('cluster.brief_overview')}</span>
 								</div>
-								<div class="grid grid-cols-1 md:grid-cols-2 gap-12">
-									<div>
-										<h4 class="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground mb-16">{t('cluster.key_points')}</h4>
-										<ul class="space-y-6">
-											{displayHeaderBriefItems.map(item => (
-												<li class="flex items-start gap-4 font-sans text-base md:text-lg leading-relaxed text-foreground/90 not-italic">
-													<span class="flex-shrink-0 mt-2 w-2 h-2 rounded-full bg-nyt-accent/60"></span>
-													<span class="flex-1">{item}</span>
-												</li>
-											))}
-										</ul>
-									</div>
+								<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+									{displayHeaderBriefItems.length > 0 && (
+										<div>
+											<h4 class="text-[9px] font-black uppercase tracking-[0.12em] text-muted-foreground mb-4">{t('cluster.key_points')}</h4>
+											<ul class="space-y-3">
+												{displayHeaderBriefItems.map(item => (
+													<li class="flex items-start gap-3 font-sans text-[13px] md:text-[14px] leading-relaxed text-foreground/85 not-italic">
+														<span class="flex-shrink-0 mt-2 w-1.5 h-1.5 rounded-full bg-nyt-accent/60"></span>
+														<span class="flex-1">{item}</span>
+													</li>
+												))}
+											</ul>
+										</div>
+									)}
 									{cluster.key_facts && cluster.key_facts.length > 0 && (
-										<div class="border-t md:border-t-0 md:border-l border-border/40 pt-12 md:pt-0 md:pl-12">
-											<h4 class="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground mb-16">{t('cluster.system_data')}</h4>
-											<ul class="space-y-5">
+										<div class="border-t md:border-t-0 md:border-l border-border/40 pt-6 md:pt-0 md:pl-8">
+											<h4 class="text-[9px] font-black uppercase tracking-[0.12em] text-muted-foreground mb-4">{t('cluster.system_data')}</h4>
+											<ul class="space-y-3">
 												{cluster.key_facts.map((fact: string) => (
-													<li class="font-sans text-base md:text-lg font-bold leading-tight text-foreground/70 flex items-start gap-[var(--grid-gap)]">
-														<span class="text-nyt-accent text-xl mt-0.5">›</span>
-														{fact}
+													<li class="font-sans text-[13px] md:text-[14px] font-bold leading-tight text-foreground/75 flex items-start gap-2">
+														<span class="text-nyt-accent text-lg mt-[-2px]">›</span>
+														<span class="flex-1">{fact}</span>
 													</li>
 												))}
 											</ul>
