@@ -14,7 +14,7 @@ REPLACEMENTS = {
     "MKD.mk": "https://mkd.mk/feed/",
     "Vesti.mk": "https://vesti.mk/feed",
     "Sputnjik Srbija": "https://sputnikportal.rs/export/rss2/archive/index.xml",  # Common sputnik fallback
-    "SakamDaKazam.mk": "https://sdk.mk/feed/",
+    "SakamDaKazam.mk": "https://sdk.mk/index.php/mk/feed/",
     "KumanovoNews": "https://kumanovonews.mk/feed/",
     "Kurir Sport": "https://www.kurir.rs/rss/sport/",
     "InfoKG": "https://infokg.rs/rss",
@@ -35,6 +35,7 @@ DEACTIVATE = [
     "Utrinski.mk",
     "BalkanSport.mk",
     "Vesti-MK",
+    "Ekapija",
 ]
 
 
