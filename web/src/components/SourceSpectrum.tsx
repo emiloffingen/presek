@@ -7,6 +7,7 @@ interface SourceSpectrumProps {
 }
 
 const CATEGORY_MAP: Record<string, string> = {
+  // Macedonian
   "MIA": "Agencijski", "Makfax": "Agencijski",
   "MRT": "Javni Servis",
   "Sitel": "glavni", "Kanal 5": "glavni", "Telma": "glavni", "24 vesti": "glavni", "TV21": "glavni", "Alsat-M": "glavni", "Pressing TV": "glavni",
@@ -16,6 +17,15 @@ const CATEGORY_MAP: Record<string, string> = {
   "Plusinfo": "Lokalni", "Makpress": "Lokalni", "Libertas": "Lokalni", "Skopje1": "Lokalni", "Factor": "Lokalni", "Lokalno": "Lokalni", "nova TV": "Lokalni", "Denesen": "Lokalni", "Ekonomski": "Lokalni",
   "Bitola News": "Regionalni", "Ohrid1": "Regionalni", "KumanovoNews": "Regionalni",
   "PopUp": "Kultura", "Kultura.mk": "Kultura", "Reper": "Kultura",
+
+  // Serbian
+  "RTS": "Javni Servis", "RTV": "Javni Servis",
+  "Tanjug": "Agencijski", "Beta": "Agencijski", "Fonet": "Agencijski",
+  "B92": "glavni", "Prva": "glavni", "Pink": "glavni", "Happy": "glavni",
+  "N1": "Nezavisni", "Nova.rs": "Nezavisni", "Danas": "Nezavisni", "Politika": "Nezavisni", "Vreme": "Nezavisni", "NIN": "Nezavisni", "Nedeljnik": "Nezavisni", "Cenzolovka": "Nezavisni", "Istinomer": "Nezavisni", "Euronews": "Nezavisni",
+  "KRIK": "Istraživački", "CINS": "Istraživački", "BIRN Srbija": "Istraživački", "BIRN": "Istraživački",
+  "Informer": "Alternativni", "Alo": "Alternativni", "Srpski telegraf": "Alternativni", "Blic": "Alternativni", "Telegraf": "Alternativni", "Telegraf.rs": "Alternativni", "Kurir.rs": "Alternativni", "Novosti": "Alternativni",
+  "Južne vesti": "Lokalni", "021": "Lokalni", "Ozonpress": "Lokalni", "Subotica.com": "Lokalni", "Glas Šumadije": "Lokalni", "Novi Sad": "Lokalni"
 };
 
 const CATEGORY_LOCALIZATION: Record<string, Record<string, string>> = {
