@@ -828,6 +828,34 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                         article_rows, summary
                     )
 
+                if lang == "mk" and key_facts:
+                    # Translate Serbian Latin key facts to Macedonian Cyrillic
+                    from core.ai_engine import _call_ai, clean_json_response
+                    facts_text = "\n".join(f"- {f}" for f in key_facts)
+                    translate_prompt = (
+                        "Преведи ги следните клучни факти од српски (латиница) на чист македонски литературен јазик (кирилица).\n"
+                        "Врати ги преведените факти како чист JSON од тип {\"facts\": [\"факт 1\", \"факт 2\", ...]} без никакви дополнителни објаснувања, markdown или воведи.\n\n"
+                        f"{facts_text}"
+                    )
+                    try:
+                        raw_trans, _ = _call_ai(
+                            prompt=translate_prompt,
+                            system="Ти си професионален преведувач за вести од српски на македонски јазик.",
+                            task_type="translation",
+                            max_tokens=500,
+                            json_mode=True,
+                            lang="mk"
+                        )
+                        if raw_trans:
+                            trans_data = clean_json_response(raw_trans)
+                            if isinstance(trans_data, dict) and trans_data.get("facts"):
+                                translated_facts = trans_data["facts"]
+                                if isinstance(translated_facts, list) and len(translated_facts) == len(key_facts):
+                                    key_facts = translated_facts
+                                    log.info("Successfully translated key_facts from Serbian to Macedonian")
+                    except Exception as e:
+                        log.warning(f"Failed to translate key_facts to Macedonian: {e}")
+
                 # Archive current summary before updating (Evolution Log)
                 db.execute(
                     """INSERT INTO cluster_summary_history (cluster_id, lang, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, citation_sources, tone_analysis, created_at, key_facts, analyst_entities)
