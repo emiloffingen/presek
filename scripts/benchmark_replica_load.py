@@ -15,13 +15,13 @@ if "DATABASE_READ_REPLICA_URL" not in os.environ:
         "postgresql://presek:presek_pass_2026@localhost/presek"
     )
 
-from core.database import async_db, db_manager
+from core.database import async_db
 
 async def simulate_read_request(req_id):
     """Simulate a read request (SELECT query) which should route to replica."""
     start = time.time()
     # Trigger a read query. Auto-detection should route this to the replica!
-    res = await async_db.execute("SELECT count(*) FROM articles LIMIT 1")
+    await async_db.execute("SELECT count(*) FROM articles LIMIT 1")
     duration = time.time() - start
     return "read", duration
 
@@ -29,7 +29,7 @@ async def simulate_write_request(req_id):
     """Simulate a write request (INSERT or UPDATE query) which should route to primary."""
     start = time.time()
     # Trigger a write query. Auto-detection should NOT route this to the replica!
-    res = await async_db.execute(
+    await async_db.execute(
         "INSERT INTO failed_tasks (task_name, error_message) VALUES (%s, %s)",
         (f"bench-{req_id}", "Benchmark test write"),
         fetch=False
@@ -38,7 +38,7 @@ async def simulate_write_request(req_id):
     return "write", duration
 
 async def run_benchmark(concurrency=20, total_requests=100):
-    print(f"Starting High-Load Replica Routing Simulation Benchmark...")
+    print("Starting High-Load Replica Routing Simulation Benchmark...")
     print(f"Parameters: Concurrency={concurrency}, Total Requests={total_requests}")
     
     # 1. Warm up connection pools

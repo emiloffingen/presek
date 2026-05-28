@@ -23,6 +23,11 @@ class SecurityAudit:
         self.issues: List[Dict] = []
         self.warnings: List[Dict] = []
         self.info: List[Dict] = []
+        self.ignored_python_vulns = {
+            # Transitive dependency of llama-cpp-python. No fixed diskcache release is
+            # available; risk requires attacker write access to the app-owned cache dir.
+            "CVE-2025-69872": "diskcache is transitive via llama-cpp-python and has no fixed upstream release",
+        }
 
     def run(self) -> None:
         """Run all security checks."""
@@ -55,7 +60,19 @@ class SecurityAudit:
 
         try:
             result = subprocess.run(
-                [sys.executable, "-m", "pip_audit", "--desc", "--format", "json"],
+                [
+                    sys.executable,
+                    "-m",
+                    "pip_audit",
+                    "--desc",
+                    "--format",
+                    "json",
+                    *[
+                        item
+                        for vuln_id in self.ignored_python_vulns
+                        for item in ("--ignore-vuln", vuln_id)
+                    ],
+                ],
                 capture_output=True,
                 text=True,
                 timeout=60,
@@ -97,6 +114,13 @@ class SecurityAudit:
                             self.info.append(
                                 {"message": "No Python dependency vulnerabilities found", "category": "Dependencies"}
                             )
+                            for vuln_id, reason in self.ignored_python_vulns.items():
+                                self.info.append(
+                                    {
+                                        "message": f"Ignored Python vulnerability {vuln_id}: {reason}",
+                                        "category": "Dependency Vulnerability",
+                                    }
+                                )
                     else:
                         self.info.append(
                             {"message": "No Python dependency vulnerabilities found", "category": "Dependencies"}

@@ -1,7 +1,7 @@
 import pytest
 import datetime
 import json
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, patch
 from core.topic_discovery import StoryDiscoveryEngine
 from tasks.intelligence import refine_knowledge_graph_sentiment_task
 
@@ -233,4 +233,3 @@ def test_adaptive_storyline_threshold(mock_db):
     insert_calls = [call for call in mock_db.execute.call_args_list if "INSERT INTO storyline_clusters_v2" in call[0][0]]
     assert len(insert_calls) == 1
     assert insert_calls[0][0][1] == (999, "c_fast", 0.62) # 1 - 0.38 distance
-

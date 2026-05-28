@@ -28,7 +28,7 @@ If a change touches `deploy/systemd/*` or `deploy/install_server.sh`, run step 2
 Backend tests:
 
 ```sh
-./venv/bin/python3 -m pytest -q
+.venv/bin/python3 -m pytest -q
 ```
 
 Frontend tests:

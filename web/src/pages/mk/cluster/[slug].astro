@@ -628,13 +628,11 @@ const articleSchema = cluster ? {
 							</div>
 						</details>
 					</div>
-				)}
-					</div><div class="editorial-grid">
-	{/* 3. MAIN COLUMN */}
-	<div class="editorial-main-col">
-						{/* EXECUTIVE SUMMARY / BRIFING - Compact Horizontal Layout */}
-						{(displayHeaderBriefItems.length > 0 || (cluster.key_facts && cluster.key_facts.length > 0)) && (
-							<div class="executive-summary mb-12 p-6 bg-secondary/5 border border-border/60 hover:border-nyt-accent/30 transition-all shadow-sm">
+					)}
+						</div>
+							{/* EXECUTIVE SUMMARY / BRIFING - Compact Horizontal Layout */}
+							{(displayHeaderBriefItems.length > 0 || (cluster.key_facts && cluster.key_facts.length > 0)) && (
+								<div class="executive-summary mb-12 p-6 bg-secondary/5 border border-border/60 hover:border-nyt-accent/30 transition-all shadow-sm">
 								<div class="flex items-center gap-[var(--grid-gap)] mb-6 border-b border-border/20 pb-3">
 									<Sparkles size={16} className="text-nyt-accent" />
 									<span class="text-[11px] font-black uppercase tracking-[0.25em] text-nyt-accent">{t('cluster.brief_overview')}</span>
@@ -676,10 +674,14 @@ const articleSchema = cluster ? {
 										</div>
 									)}
 								</div>
-							</div>
-						)}
+								</div>
+							)}
 
-						{/* NARRATIVE SECTION */}
+						<div class="editorial-grid">
+						{/* 3. MAIN COLUMN */}
+						<div class="editorial-main-col">
+
+							{/* NARRATIVE SECTION */}
 						{(hasGeneratedNarrative || synthesisItems.length > 0) && (
 						<section class="editorial-section narrative-section mb-24" id="cluster-synthesis">
 							<div class="section-eyebrow mb-16">
