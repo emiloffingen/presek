@@ -143,9 +143,12 @@ async def serve_manifest():
 
 
 @router.get("/robots.txt")
-async def robots_txt():
+async def robots_txt(request: Request):
+    host = request.headers.get("host", "") or ""
+    is_mk = "presek.mk" in host.lower()
+    site_url = "https://presek.mk" if is_mk else "https://presek.live"
     return Response(
-        "User-agent: *\nDisallow: /api/\nAllow: /\n\nSitemap: https://presek.live/sitemap-index.xml\n",
+        f"User-agent: *\nDisallow: /api/\nAllow: /\n\nSitemap: {site_url}/sitemap.xml\n",
         media_type="text/plain",
     )
 
