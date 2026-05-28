@@ -82,7 +82,7 @@ const shouldLoadAdsense = lang === 'sr' && (normalizedHost === 'presek.live' || 
 				} catch (e) {}
 			})();
 		</script>
-		<script is:inline>
+		<script data-cfasync="false" is:inline>
 			window.dataLayer = window.dataLayer || [];
 			function gtag(){dataLayer.push(arguments);}
 
@@ -107,16 +107,16 @@ const shouldLoadAdsense = lang === 'sr' && (normalizedHost === 'presek.live' || 
 		{/* Load Google Analytics - Macedonian domain gets special tracking */}
 		{lang === 'mk' ? (
 			<>
-				<script async src="https://www.googletagmanager.com/gtag/js?id=G-YJZH9KK8X9"></script>
-				<script is:inline>
+				<script data-cfasync="false" async src="https://www.googletagmanager.com/gtag/js?id=G-YJZH9KK8X9"></script>
+				<script data-cfasync="false" is:inline>
 					gtag('js', new Date());
 					gtag('config', 'G-YJZH9KK8X9');
 				</script>
 			</>
 		) : (
 			<>
-				<script async src="https://www.googletagmanager.com/gtag/js?id=G-SV2R3LZJ5C"></script>
-				<script is:inline>
+				<script data-cfasync="false" async src="https://www.googletagmanager.com/gtag/js?id=G-SV2R3LZJ5C"></script>
+				<script data-cfasync="false" is:inline>
 					gtag('js', new Date());
 					gtag('config', 'G-SV2R3LZJ5C');
 				</script>
