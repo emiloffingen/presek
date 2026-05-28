@@ -77,7 +77,7 @@ const shouldLoadAdsense = lang === 'sr' && (normalizedHost === 'presek.live' || 
 		{/* Load Google Analytics - Loaded immediately after <head> to satisfy verification bots */}
 		{lang === 'mk' ? (
 			<Fragment set:html={`<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-YJZH9KK8X9" data-cfasync="false"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-YJZH9KK8X9" data-cfasync="false" crossorigin="anonymous"></script>
 <script data-cfasync="false">
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
@@ -87,7 +87,7 @@ const shouldLoadAdsense = lang === 'sr' && (normalizedHost === 'presek.live' || 
 </script>`} />
 		) : (
 			<Fragment set:html={`<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-SV2R3LZJ5C" data-cfasync="false"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SV2R3LZJ5C" data-cfasync="false" crossorigin="anonymous"></script>
 <script data-cfasync="false">
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
