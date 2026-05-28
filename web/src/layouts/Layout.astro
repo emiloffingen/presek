@@ -75,28 +75,10 @@ const shouldLoadAdsense = lang === 'sr' && (normalizedHost === 'presek.live' || 
 <html lang={lang === 'sr' ? "sr-Latn" : "mk"}>
 	<head>
 		{/* Load Google Analytics - Loaded immediately after <head> to satisfy verification bots */}
-		{lang === 'mk' ? (
-			<Fragment set:html={`<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-YJZH9KK8X9" data-cfasync="false" crossorigin="anonymous"></script>
-<script data-cfasync="false">
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-YJZH9KK8X9');
-</script>`} />
-		) : (
-			<Fragment set:html={`<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-SV2R3LZJ5C" data-cfasync="false" crossorigin="anonymous"></script>
-<script data-cfasync="false">
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-SV2R3LZJ5C');
-</script>`} />
-		)}
 		<script is:inline>
+			window.dataLayer = window.dataLayer || [];
+			function gtag(){dataLayer.push(arguments);}
+
 			var consentState = 'denied';
 			try {
 				var isCrawler = /bot|google|crawler|spider|robot|lighthouse|assistant|verify|test/i.test(navigator.userAgent);
@@ -113,6 +95,21 @@ const shouldLoadAdsense = lang === 'sr' && (normalizedHost === 'presek.live' || 
 				'wait_for_update': 500
 			});
 		</script>
+		{lang === 'mk' ? (
+			<Fragment set:html={`<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-YJZH9KK8X9"></script>
+<script>
+  gtag('js', new Date());
+  gtag('config', 'G-YJZH9KK8X9');
+</script>`} />
+		) : (
+			<Fragment set:html={`<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SV2R3LZJ5C"></script>
+<script>
+  gtag('js', new Date());
+  gtag('config', 'G-SV2R3LZJ5C');
+</script>`} />
+		)}
 		<script is:inline>
 			(function() {
 				try {
