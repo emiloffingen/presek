@@ -475,11 +475,16 @@ def send_email(
 
     try:
         ctx = ssl.create_default_context()
-        with smtplib.SMTP(host, port, timeout=15) as server:
-            server.ehlo()
-            server.starttls(context=ctx)
-            server.login(smtp_user, smtp_pass)
-            server.sendmail(from_addr, to_address, msg.as_string())
+        if port in {465, 2465}:
+            with smtplib.SMTP_SSL(host, port, timeout=15, context=ctx) as server:
+                server.login(smtp_user, smtp_pass)
+                server.sendmail(from_addr, to_address, msg.as_string())
+        else:
+            with smtplib.SMTP(host, port, timeout=15) as server:
+                server.ehlo()
+                server.starttls(context=ctx)
+                server.login(smtp_user, smtp_pass)
+                server.sendmail(from_addr, to_address, msg.as_string())
         log.info(f"Email sent to {to_address} via {host}")
         return True
     except Exception as e:
