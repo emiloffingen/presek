@@ -77,55 +77,41 @@ const shouldLoadAdsense = lang === 'sr' && (normalizedHost === 'presek.live' || 
 		{/* Load Google Analytics - Loaded immediately after <head> to satisfy verification bots */}
 		{lang === 'mk' ? (
 			<Fragment set:html={`<!-- Google tag (gtag.js) -->
-<script data-cfasync="false" async src="https://www.googletagmanager.com/gtag/js?id=G-YJZH9KK8X9"></script>
-<script data-cfasync="false">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-YJZH9KK8X9"></script>
+<script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
-
-  var consentState = 'denied';
-  try {
-    if (localStorage.getItem('presek_cookie_consent') === 'accepted') {
-      consentState = 'granted';
-    }
-  } catch (e) {}
-
-  gtag('consent', 'default', {
-    'ad_storage': consentState,
-    'ad_user_data': consentState,
-    'ad_personalization': consentState,
-    'analytics_storage': consentState,
-    'wait_for_update': 500
-  });
-
   gtag('js', new Date());
+
   gtag('config', 'G-YJZH9KK8X9');
 </script>`} />
 		) : (
 			<Fragment set:html={`<!-- Google tag (gtag.js) -->
-<script data-cfasync="false" async src="https://www.googletagmanager.com/gtag/js?id=G-SV2R3LZJ5C"></script>
-<script data-cfasync="false">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SV2R3LZJ5C"></script>
+<script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
-
-  var consentState = 'denied';
-  try {
-    if (localStorage.getItem('presek_cookie_consent') === 'accepted') {
-      consentState = 'granted';
-    }
-  } catch (e) {}
-
-  gtag('consent', 'default', {
-    'ad_storage': consentState,
-    'ad_user_data': consentState,
-    'ad_personalization': consentState,
-    'analytics_storage': consentState,
-    'wait_for_update': 500
-  });
-
   gtag('js', new Date());
+
   gtag('config', 'G-SV2R3LZJ5C');
 </script>`} />
 		)}
+		<script is:inline>
+			var consentState = 'denied';
+			try {
+				if (localStorage.getItem('presek_cookie_consent') === 'accepted') {
+					consentState = 'granted';
+				}
+			} catch (e) {}
+
+			gtag('consent', 'default', {
+				'ad_storage': consentState,
+				'ad_user_data': consentState,
+				'ad_personalization': consentState,
+				'analytics_storage': consentState,
+				'wait_for_update': 500
+			});
+		</script>
 		<script is:inline>
 			(function() {
 				try {
