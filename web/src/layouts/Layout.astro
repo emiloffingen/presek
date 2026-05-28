@@ -74,39 +74,28 @@ const shouldLoadAdsense = lang === 'sr' && (normalizedHost === 'presek.live' || 
 <!doctype html>
 <html lang={lang === 'sr' ? "sr-Latn" : "mk"}>
 	<head>
-		<script is:inline>
-			(function() {
-				try {
-					var savedScale = localStorage.getItem('text-scale') || '1';
-					document.documentElement.style.setProperty('--text-scale', savedScale);
-				} catch (e) {}
-			})();
-		</script>
-		<script data-cfasync="false" is:inline>
-			window.dataLayer = window.dataLayer || [];
-			function gtag(){dataLayer.push(arguments);}
-
-			var consentState = 'denied';
-			try {
-				if (localStorage.getItem('presek_cookie_consent') === 'accepted') {
-					consentState = 'granted';
-				}
-			} catch (e) {}
-
-			gtag('consent', 'default', {
-				'ad_storage': consentState,
-				'ad_user_data': consentState,
-				'ad_personalization': consentState,
-				'analytics_storage': consentState,
-				'wait_for_update': 500
-			});
-		</script>
-		{shouldLoadAdsense && (
-			<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1724921768403014" crossorigin="anonymous"></script>
-		)}
-		{/* Load Google Analytics - Macedonian domain gets special tracking */}
+		{/* Load Google Analytics - Loaded immediately after <head> to satisfy verification bots */}
 		{lang === 'mk' ? (
 			<>
+				<script data-cfasync="false" is:inline>
+					window.dataLayer = window.dataLayer || [];
+					function gtag(){dataLayer.push(arguments);}
+
+					var consentState = 'denied';
+					try {
+						if (localStorage.getItem('presek_cookie_consent') === 'accepted') {
+							consentState = 'granted';
+						}
+					} catch (e) {}
+
+					gtag('consent', 'default', {
+						'ad_storage': consentState,
+						'ad_user_data': consentState,
+						'ad_personalization': consentState,
+						'analytics_storage': consentState,
+						'wait_for_update': 500
+					});
+				</script>
 				<script data-cfasync="false" async src="https://www.googletagmanager.com/gtag/js?id=G-YJZH9KK8X9"></script>
 				<script data-cfasync="false" is:inline>
 					gtag('js', new Date());
@@ -115,6 +104,25 @@ const shouldLoadAdsense = lang === 'sr' && (normalizedHost === 'presek.live' || 
 			</>
 		) : (
 			<>
+				<script data-cfasync="false" is:inline>
+					window.dataLayer = window.dataLayer || [];
+					function gtag(){dataLayer.push(arguments);}
+
+					var consentState = 'denied';
+					try {
+						if (localStorage.getItem('presek_cookie_consent') === 'accepted') {
+							consentState = 'granted';
+						}
+					} catch (e) {}
+
+					gtag('consent', 'default', {
+						'ad_storage': consentState,
+						'ad_user_data': consentState,
+						'ad_personalization': consentState,
+						'analytics_storage': consentState,
+						'wait_for_update': 500
+					});
+				</script>
 				<script data-cfasync="false" async src="https://www.googletagmanager.com/gtag/js?id=G-SV2R3LZJ5C"></script>
 				<script data-cfasync="false" is:inline>
 					gtag('js', new Date());
@@ -122,7 +130,18 @@ const shouldLoadAdsense = lang === 'sr' && (normalizedHost === 'presek.live' || 
 				</script>
 			</>
 		)}
+		<script is:inline>
+			(function() {
+				try {
+					var savedScale = localStorage.getItem('text-scale') || '1';
+					document.documentElement.style.setProperty('--text-scale', savedScale);
+				} catch (e) {}
+			})();
+		</script>
 
+		{shouldLoadAdsense && (
+			<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1724921768403014" crossorigin="anonymous"></script>
+		)}
 		{shouldLoadAdsense && (
 			<meta name="google-adsense-account" content="ca-pub-1724921768403014" />
 		)}
