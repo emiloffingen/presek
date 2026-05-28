@@ -31,11 +31,31 @@ export default function NationalMoodIsland({ lang = 'sr' }: { lang?: string }) {
                     fetch(`${base}/stats/sentiment-trends?lang=${lang}`)
                 ]);
 
-                const moodJson = await moodRes.json();
-                const trendsJson = await trendsRes.json();
+                let moodJson = null;
+                let trendsJson = null;
 
-                if (moodJson.status === 'success') setMood(moodJson);
-                if (trendsJson.status === 'success') setTrends(trendsJson.data);
+                if (moodRes.ok) {
+                    try {
+                        moodJson = await moodRes.json();
+                    } catch (e) {
+                        console.warn('Failed to parse mood JSON:', e);
+                    }
+                } else {
+                    console.warn(`Failed to fetch mood: status ${moodRes.status}`);
+                }
+
+                if (trendsRes.ok) {
+                    try {
+                        trendsJson = await trendsRes.json();
+                    } catch (e) {
+                        console.warn('Failed to parse trends JSON:', e);
+                    }
+                } else {
+                    console.warn(`Failed to fetch trends: status ${trendsRes.status}`);
+                }
+
+                if (moodJson && moodJson.status === 'success') setMood(moodJson);
+                if (trendsJson && trendsJson.status === 'success') setTrends(trendsJson.data);
             } catch (err) {
                 console.error('Failed to fetch mood data', err);
             } finally {
