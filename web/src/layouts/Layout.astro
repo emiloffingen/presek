@@ -69,6 +69,25 @@ const srHref = `https://presek.live${alternatePath.replace(/\/+$/, "") || ""}`;
 const mkHref = `https://presek.mk${alternatePath.replace(/\/+$/, "") || ""}`;
 const normalizedHost = hostHeader.split(':')[0].toLowerCase();
 const shouldLoadAdsense = lang === 'sr' && (normalizedHost === 'presek.live' || normalizedHost === 'www.presek.live');
+
+const organizationSchema = {
+	"@context": "https://schema.org",
+	"@type": "Organization",
+	"@id": `${siteUrl}/#organization`,
+	"name": siteName,
+	"url": siteUrl,
+	"logo": {
+		"@type": "ImageObject",
+		"url": `${siteUrl}/img/presek_emblem.png`,
+		"width": 512,
+		"height": 512
+	},
+	"sameAs": [
+		"https://twitter.com/presek_rs",
+		"https://facebook.com/presek.rs",
+		"https://instagram.com/presek.rs"
+	]
+};
 ---
 
 <!doctype html>
@@ -171,26 +190,7 @@ const shouldLoadAdsense = lang === 'sr' && (normalizedHost === 'presek.live' || 
 			<script type="application/ld+json" is:inline set:html={JSON.stringify(schema)} />
 		)}
 		{/* News Organization Schema for Google News */}
-		<script type="application/ld+json" is:inline>
-		{
-			"@context": "https://schema.org",
-			"@type": "Organization",
-			"@id": "#{siteUrl}/#organization",
-			"name": siteName,
-			"url": siteUrl,
-			"logo": {
-				"@type": "ImageObject",
-				"url": "#{siteUrl}/static/img/presek_emblem.png",
-				"width": 512,
-				"height": 512
-			},
-			"sameAs": [
-				"https://twitter.com/presek_rs",
-				"https://facebook.com/presek.rs",
-				"https://instagram.com/presek.rs"
-			]
-		}
-		</script>
+		<script type="application/ld+json" is:inline set:html={JSON.stringify(organizationSchema)} />
 
 		<script is:inline>
 			/**
