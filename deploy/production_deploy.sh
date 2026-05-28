@@ -287,7 +287,8 @@ apt-get install -y \
 
 # Install pgvector extension
 echo -e "${YELLOW}Installing pgvector extension...${NC}"
-apt-get install -y postgresql-16-pgvector
+PG_VERSION=$(psql --version | grep -oE '[0-9]+' | head -n 1)
+apt-get install -y "postgresql-${PG_VERSION}-pgvector"
 systemctl restart postgresql
 
 # Configure PostgreSQL

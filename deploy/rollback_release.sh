@@ -53,7 +53,7 @@ cleanup_listener_port() {
   local port="$1"
   local label="$2"
   local pids=""
-  pids="$(sudo lsof -ti TCP:"$port" -sTCP:LISTEN 2>/dev/null | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+  pids="$(sudo lsof -ti TCP:"$port" -sTCP:LISTEN 2>/dev/null | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//')" || true
   [ -n "$pids" ] || return 0
 
   local runtime_pids=()
@@ -73,7 +73,7 @@ cleanup_listener_port() {
   sleep 1
 
   local remaining=""
-  remaining="$(sudo lsof -ti TCP:"$port" -sTCP:LISTEN 2>/dev/null | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+  remaining="$(sudo lsof -ti TCP:"$port" -sTCP:LISTEN 2>/dev/null | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//')" || true
   if [ -n "$remaining" ]; then
     local stubborn_pids=()
     for pid in $remaining; do
