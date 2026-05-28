@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, HTTPException, Query, Request, Depends
+from security_fixes import verify_csrf_token
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 
@@ -525,7 +526,7 @@ async def get_stats_summary(lang: Optional[str] = "sr"):
 
 
 @router.post("/newsletter/subscribe")
-async def subscribe_newsletter(request: Request):
+async def subscribe_newsletter(request: Request, csrf_valid: bool = Depends(verify_csrf_token)):
     try:
         body = await request.json()
     except Exception:
@@ -806,7 +807,7 @@ async def get_sources_route():
 
 
 @router.post("/sources/{name}/control")
-async def control_source_route(name: str, request: Request):
+async def control_source_route(name: str, request: Request, csrf_valid: bool = Depends(verify_csrf_token)):
     if not _source_admin_authorized(request):
         return _error_json("Unauthorized", 403)
     try:
