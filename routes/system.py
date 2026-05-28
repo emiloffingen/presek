@@ -145,7 +145,7 @@ async def serve_manifest():
 @router.get("/robots.txt")
 async def robots_txt():
     return Response(
-        "User-agent: *\nDisallow: /api/\nAllow: /\n\nSitemap: https://presek.live/sitemap-index.xml\n",
+        "User-agent: *\nAllow: /api/stats/\nDisallow: /api/\nAllow: /\n\nSitemap: https://presek.live/sitemap-index.xml\n",
         media_type="text/plain",
     )
 
