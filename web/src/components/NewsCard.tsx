@@ -166,16 +166,6 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                 <div className="design-card-ribbon flex items-center justify-center text-center px-5 py-2 min-w-max">
                     <span>{cardLabel}</span>
                 </div>
-                <div className="design-card-main">
-                    <div className="design-card-icon-wrap">
-                        <Activity size={24} className="text-white/90" />
-                    </div>
-                    <h3 className={titleIsCyrillic ? 'headline-cyrillic' : ''}>{rawLeadTitle}</h3>
-                    <p className="design-card-sub">{totalSources} {totalSources === 1 ? t('news.source') : t('news.sources')}</p>
-                </div>
-                <div className="design-card-footer">
-                    <span className="design-card-cta">{t('news.go_to_article')} <ArrowRight size={12} className="ml-1" /></span>
-                </div>
               </div>
             ) : (
               <div className="relative w-full h-full">

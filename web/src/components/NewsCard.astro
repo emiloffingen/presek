@@ -193,16 +193,6 @@ function getTimeStr(dateStr: string) {
                     <div class="design-card-ribbon">
                         <span>{cardLabel}</span>
                     </div>
-                    <div class="design-card-main">
-                        <div class="design-card-icon-wrap">
-                            <IconComponent size={32} strokeWidth={1.5} className="text-white/90" />
-                        </div>
-                        <h3 class:list={[{ "headline-cyrillic": titleIsCyrillic }]}>{rawLeadTitle}</h3>
-                        <p class="design-card-sub">{cardSub}</p>
-                    </div>
-                    <div class="design-card-footer">
-                        <span class="design-card-cta">{t('news.go_to_article')} <ArrowRight size={12} className="ml-1" /></span>
-                    </div>
                 </div>
             ) : (
                 <div class="relative w-full h-full">

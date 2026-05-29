@@ -145,18 +145,6 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
                     <div class="design-card-ribbon">
                         <span>{cardLabel}</span>
                     </div>
-
-                    <div class="design-card-main">
-                        <div class="design-card-icon-wrap">
-                            <IconComponent size={48} strokeWidth={1.5} className="text-white/90" />
-                        </div>
-                        <h2 class:list={[{ "headline-cyrillic": leadTitleIsCyrillic }]}>{finalLeadTitle}</h2>
-                        <p class="design-card-sub">{cardSub}</p>
-                    </div>
-
-                    <div class="design-card-footer">
-                        <span class="design-card-cta">{t('news.go_to_article')} <ArrowRight size={14} className="ml-1" /></span>
-                    </div>
                 </div>
             )}
         </div>
@@ -286,12 +274,6 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
                            {leadCluster.is_breaking && <Zap size={10} fill="currentColor" />}
                            <p class="lead-media-chip">{leadCluster.articles.length} {leadCluster.articles.length === 1 ? t('news.source') : t('news.sources')}</p>
                         </div>
-                    </div>
-                    <div class="lead-media-content">
-                        <h2 class:list={[{ "headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(finalLeadTitle)}></h2>
-                        {finalLeadSummary && (
-                            <p class:list={["lead-media-summary", { "lead-summary-cyrillic": leadSummaryIsCyrillic }]} set:html={sanitizeHtml(finalLeadSummary)}></p>
-                        )}
                     </div>
                     <div class="lead-media-source-row">
                         <span>{leadCluster.articles?.[0].source}</span>
