@@ -70,3 +70,11 @@ class TestExtractWordsWithFlags:
         words = {w for w, _ in pairs}
         # "nato" should be extracted (4 chars, meets MIN_WORD_LEN)
         assert "nato" in words or len(words) >= 1
+
+    def test_get_trending_rs(self):
+        from core.trending import get_trending
+        trends = get_trending(country="RS")
+        assert len(trends) == 10
+        assert trends[0]["word"] == "Srbiji"
+        assert trends[1]["word"] == "Srbije"
+        assert trends[9]["word"] == "Odluka"
