@@ -9,9 +9,15 @@ interface Props {
 	perspectives: any[];
 	hasCitationSources: boolean;
 	lang?: 'sr' | 'mk';
+	pluralismScore?: number;
+	toneAnalysis?: {
+		sensationalism: number;
+		objectivity: number;
+		emotional_charge?: number;
+	};
 }
 
-const { hasFactcheck, verificationReport, perspectives, hasCitationSources, lang: propLang } = Astro.props;
+const { hasFactcheck, verificationReport, perspectives, hasCitationSources, lang: propLang, pluralismScore, toneAnalysis } = Astro.props;
 
 const requestUrl = Astro.request ? new URL(Astro.request.url) : Astro.url;
 const hostHeader = Astro.request?.headers.get('host') || requestUrl.hostname;
@@ -135,16 +141,49 @@ const displayPerspectives = perspectives
 	)}
 
 	{displayPerspectives.length > 0 && (
-		<div class="perspectives-area">
-			<h4 class="text-[10px] font-black uppercase tracking-widest mb-4 text-muted-foreground/60">{t('cluster.factcheck.diversity')}</h4>
-			<div class="perspective-grid-v2">
-				{displayPerspectives.map((p: any) => (
-					<div class="editorial-angle-card">
-						<h5 class="angle-title" set:html={renderSynthesisHtml(p.angle)}></h5>
-						<p class="angle-content" set:html={renderSynthesisHtml(p.content)}></p>
-					</div>
-				))}
-			</div>
+		<div class="perspectives-area mt-10">
+            <div class="analysis-bento-grid">
+                <!-- Bias Radar Compass -->
+                <div class="bias-compass-card">
+                    <h5 class="compass-label">{lang === 'sr' ? 'KOMPAS MEDIJSKOG DISKURSA' : 'КОМПАС НА МЕДИУМСКИОТ ДИСКУРС'}</h5>
+                    <p class="compass-desc">{lang === 'sr' ? 'Vizuelni odnos pluralizma izvora i senzacionalizma uredničkih naslova.' : 'Визуелен однос на плурализмот на изворите и сензационализмот на уредничките наслови.'}</p>
+                    
+                    <div class="compass-canvas-container">
+                        <svg class="compass-svg" viewBox="0 0 200 200">
+                            <!-- Grid lines -->
+                            <line x1="100" y1="15" x2="100" y2="185" class="compass-grid-axis" />
+                            <line x1="15" y1="100" x2="185" y2="100" class="compass-grid-axis" />
+                            <circle cx="100" cy="100" r="40" class="compass-grid-ring" />
+                            <circle cx="100" cy="100" r="80" class="compass-grid-ring" />
+                            
+                            <!-- Labels -->
+                            <text x="100" y="12" class="compass-text compass-text-top" text-anchor="middle">{lang === 'sr' ? 'Visok Pluralizam' : 'Висок Плурализам'}</text>
+                            <text x="100" y="195" class="compass-text compass-text-bottom" text-anchor="middle">{lang === 'sr' ? 'Eho Komora' : 'Ехо Комора'}</text>
+                            <text x="190" y="103" class="compass-text compass-text-right" text-anchor="start">{lang === 'sr' ? 'Objektivno' : 'Објективно'}</text>
+                            <text x="10" y="103" class="compass-text compass-text-left" text-anchor="end">{lang === 'sr' ? 'Senzacionalistički' : 'Сензационалистички'}</text>
+                            
+                            <!-- Pulsating target coordinate point -->
+                            <g class="compass-target-group">
+                                <circle cx={20 + (toneAnalysis?.objectivity ?? 0.5) * 160} cy={20 + (1 - ((pluralismScore ?? 50) / 100)) * 160} r="8" class="compass-target-glow" style="transform-origin: center;" />
+                                <circle cx={20 + (toneAnalysis?.objectivity ?? 0.5) * 160} cy={20 + (1 - ((pluralismScore ?? 50) / 100)) * 160} r="4" class="compass-target-point" />
+                            </g>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Perspectives Cards -->
+                <div class="perspectives-list-card">
+                    <h4 class="text-[10px] font-black uppercase tracking-widest mb-4 text-muted-foreground/60">{t('cluster.factcheck.diversity')}</h4>
+                    <div class="perspective-grid-v2">
+                        {displayPerspectives.map((p: any) => (
+                            <div class="editorial-angle-card">
+                                <h5 class="angle-title" set:html={renderSynthesisHtml(p.angle)}></h5>
+                                <p class="angle-content" set:html={renderSynthesisHtml(p.content)}></p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
 		</div>
 	)}
 </section>
@@ -293,4 +332,133 @@ const displayPerspectives = perspectives
 		line-height: 1.35;
 		color: var(--secondary-foreground);
 	}
+
+	/* ── Bias Compass & perspectives Grid ── */
+    .analysis-bento-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    @media (min-width: 1024px) {
+        .analysis-bento-grid {
+            grid-template-columns: 260px 1fr;
+            align-items: start;
+        }
+    }
+
+    .bias-compass-card {
+        padding: 1.25rem;
+        background: rgba(255, 255, 255, 0.4);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        border-radius: 12px;
+        box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.03);
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        transition: all 0.3s var(--ease-editorial);
+    }
+
+    .dark .bias-compass-card {
+        background: rgba(0, 0, 0, 0.2);
+        border-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .bias-compass-card:hover {
+        border-color: color-mix(in srgb, var(--nyt-accent) 30%, transparent);
+        box-shadow: 0 8px 25px -4px rgba(0, 0, 0, 0.05);
+    }
+
+    .compass-label {
+        font-family: var(--font-sans);
+        font-size: 0.65rem;
+        font-weight: 950;
+        text-transform: uppercase;
+        color: var(--nyt-accent);
+        margin: 0;
+        letter-spacing: 0.05em;
+    }
+
+    .compass-desc {
+        font-family: var(--font-sans);
+        font-size: 0.72rem;
+        color: var(--muted-foreground);
+        margin: 0 0 0.5rem 0;
+        line-height: 1.3;
+    }
+
+    .compass-canvas-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .compass-svg {
+        width: 100%;
+        max-width: 220px;
+        height: auto;
+        overflow: visible;
+    }
+
+    .compass-grid-axis {
+        stroke: color-mix(in srgb, var(--border) 70%, transparent);
+        stroke-width: 1px;
+        stroke-dasharray: 2 2;
+    }
+
+    .compass-grid-ring {
+        fill: none;
+        stroke: color-mix(in srgb, var(--border) 40%, transparent);
+        stroke-width: 1px;
+    }
+
+    .compass-text {
+        font-family: var(--font-sans);
+        font-size: 8px;
+        font-weight: 750;
+        fill: var(--muted-foreground);
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+    }
+
+    .compass-text-top {
+        fill: #10b981;
+    }
+
+    .compass-text-bottom {
+        fill: #3b82f6;
+    }
+
+    .compass-text-left {
+        fill: var(--nyt-red);
+    }
+
+    .compass-text-right {
+        fill: #10b981;
+    }
+
+    .compass-target-glow {
+        fill: var(--nyt-accent);
+        opacity: 0.25;
+        animation: compass-pulse 2.5s infinite ease-in-out;
+    }
+
+    .compass-target-point {
+        fill: var(--nyt-accent);
+        stroke: var(--background);
+        stroke-width: 1px;
+    }
+
+    @keyframes compass-pulse {
+        0%, 100% {
+            transform: scale(0.9);
+            opacity: 0.2;
+        }
+        50% {
+            transform: scale(1.6);
+            opacity: 0.45;
+        }
+    }
 </style>

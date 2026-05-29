@@ -1472,3 +1472,35 @@ async def save_insight(request: Request, authorized: str = Depends(admin_auth)):
     )
     
     return {"status": "success", "message": "Insight saved successfully."}
+
+@router.get("/intelligence/briefing/audio")
+async def get_briefing_audio(date: Optional[str] = None, lang: str = "sr"):
+    """Generates or fetches the daily briefing TTS audio and returns its public URL."""
+    if date:
+        from .security import validate_date
+        validate_date(date)
+        row = await db.async_execute_one(
+            "SELECT content, date FROM daily_briefings WHERE date = %s AND lang = %s", (date, lang)
+        )
+    else:
+        row = await db.async_execute_one(
+            "SELECT content, date FROM daily_briefings WHERE lang = %s ORDER BY date DESC LIMIT 1", (lang,)
+        )
+
+    if not row or not row.get("content"):
+        return {"status": "error", "message": "Briefing content not found"}
+
+    target_date = str(row["date"])
+    content = str(row["content"])
+
+    from core.audio_service import AudioService
+    loop = asyncio.get_event_loop()
+    audio_url = await loop.run_in_executor(
+        None, AudioService.generate_briefing_audio, target_date, content, lang
+    )
+
+    if not audio_url:
+        return {"status": "error", "message": "Failed to synthesize audio briefing."}
+
+    return {"status": "success", "audio_url": audio_url}
+
