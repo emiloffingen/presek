@@ -115,8 +115,8 @@ class AudioService:
             log.info("[audio] Attempting gTTS fallback...")
             from gtts import gTTS
             
-            # Select regional locales
-            gtts_lang = "sr" if lang == "sr" else "mk"
+            # Select regional locales (using Bulgarian 'bg' as closest phonetic fallback for Macedonian 'mk' which is unsupported by Google TTS)
+            gtts_lang = "sr" if lang == "sr" else "bg"
             tts = gTTS(text=clean_text, lang=gtts_lang, slow=False)
             tts.save(filepath)
             
