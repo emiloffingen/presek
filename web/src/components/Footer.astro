@@ -28,7 +28,7 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
                     </p>
                 </div>
 
-                {!hideSystemPulse && <div class="footer-system-pulse p-5 border border-border">
+                {!hideSystemPulse && <div class="footer-system-pulse p-5">
                     <div class="flex items-center justify-between mb-4">
                         <div class="flex items-center gap-3">
                             <div class="status-indicator pulse-emerald"></div>
@@ -112,8 +112,16 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
     .footer-precision-rules {
         margin-bottom: 4rem;
     }
-    .rule-thick { height: 4px; background: var(--foreground); margin-bottom: 2px; }
-    .rule-thin { height: 1px; background: var(--foreground); }
+    .rule-thick {
+        height: 4px;
+        background: linear-gradient(90deg, var(--foreground) 0%, color-mix(in srgb, var(--foreground) 40%, var(--background)) 75%, transparent 100%);
+        margin-bottom: 3px;
+        border-radius: 2px;
+    }
+    .rule-thin {
+        height: 1px;
+        background: linear-gradient(90deg, var(--border) 0%, transparent 100%);
+    }
 
     .footer-main {
         display: grid;
@@ -180,14 +188,41 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
         font-weight: 850;
         color: var(--muted-foreground);
         text-decoration: none;
-        transition: all 0.2s ease;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         width: fit-content;
         letter-spacing: 0.01em;
+        position: relative;
     }
 
     .dir-group a:hover {
         color: var(--foreground);
-        transform: translateX(4px);
+        transform: translateX(6px);
+    }
+
+    .footer-system-pulse {
+        background: linear-gradient(135deg, rgba(254, 252, 246, 0.75) 0%, rgba(246, 240, 228, 0.7) 100%);
+        backdrop-filter: var(--glass-blur);
+        -webkit-backdrop-filter: var(--glass-blur);
+        border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+        border-radius: 12px;
+        box-shadow: 0 4px 20px -2px color-mix(in srgb, var(--background) 30%, rgba(0, 0, 0, 0.08)),
+                    inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 6%, transparent);
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    
+    .dark .footer-system-pulse {
+        background: linear-gradient(135deg, rgba(22, 26, 41, 0.7) 0%, rgba(15, 18, 29, 0.65) 100%);
+        border-color: color-mix(in srgb, var(--border) 80%, transparent);
+        box-shadow: 0 8px 30px 0 rgba(0, 0, 0, 0.3),
+                    inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 4%, transparent);
+    }
+
+    .footer-system-pulse:hover {
+        border-color: color-mix(in srgb, var(--nyt-accent) 35%, var(--border));
+        box-shadow: 0 12px 30px -4px color-mix(in srgb, var(--background) 40%, rgba(0, 0, 0, 0.16)),
+                    inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 10%, transparent),
+                    0 0 25px -4px color-mix(in srgb, var(--nyt-accent) 6%, transparent);
+        transform: translateY(-2px);
     }
 
     .footer-legal {
@@ -225,12 +260,24 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
         font-family: var(--font-sans);
         font-size: 0.55rem;
         letter-spacing: 0.15em;
-        transition: all 0.3s ease;
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .scroll-top-premium div {
+        border-radius: 9999px;
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .scroll-top-premium:hover {
-        opacity: 0.7;
-        transform: translateY(-2px);
+        color: var(--nyt-accent);
+        transform: translateY(-3px);
+    }
+
+    .scroll-top-premium:hover div {
+        background: var(--nyt-accent);
+        color: white;
+        transform: rotate(45deg) scale(1.1);
+        box-shadow: 0 8px 20px -4px color-mix(in srgb, var(--nyt-accent) 40%, transparent);
     }
 
     @media (max-width: 1024px) {
