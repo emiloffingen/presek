@@ -33,7 +33,7 @@ _tracer_provider: Optional[TracerProvider] = None
 
 def setup_tracing(
     service_name: str = "presek",
-    service_version: str = "0.1.0",
+    service_version: str = "6.0.0",
     environment: str = "development",
     otlp_endpoint: Optional[str] = None,
     otlp_insecure: bool = False,

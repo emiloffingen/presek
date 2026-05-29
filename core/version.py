@@ -6,7 +6,7 @@ from pathlib import Path
 log = logging.getLogger("presek.version")
 
 _ROOT = Path(__file__).resolve().parent
-_VERSION_FILE = _ROOT / "VERSION"
+_VERSION_FILE = _ROOT.parent / "VERSION"
 
 
 def _read_version_file() -> str:
