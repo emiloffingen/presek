@@ -4,7 +4,6 @@ import logging
 import subprocess
 import asyncio
 from typing import Optional
-from core.config import db_manager as db
 
 log = logging.getLogger("presek.audio")
 
