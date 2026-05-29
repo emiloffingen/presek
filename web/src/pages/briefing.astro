@@ -88,6 +88,7 @@ const displayDate = briefingData?.date
                                 last_24h: briefingData.day_stats?.total_articles || stats?.last_24h || 0,
                                 intelligence: stats?.intelligence
                             }}
+                            metadata={briefingData.metadata}
                         />
 
                         {briefingData.metadata?.key_narratives && (

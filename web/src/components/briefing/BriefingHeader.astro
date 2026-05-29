@@ -8,9 +8,10 @@ interface Props {
 	stats: any;
 	readingTime?: number;
     lang?: string;
+    metadata?: any;
 }
 
-const { currentDate, dispatchIcon: DispatchIcon, stats, readingTime = 5, lang = 'sr' } = Astro.props;
+const { currentDate, dispatchIcon: DispatchIcon, stats, readingTime = 5, lang = 'sr', metadata } = Astro.props;
 const t = useTranslations(lang as any);
 const isMK = lang === 'mk';
 ---
