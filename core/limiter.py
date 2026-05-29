@@ -20,11 +20,21 @@ try:
     from slowapi import Limiter, errors
     from slowapi.util import get_remote_address
 
+    def get_custom_client_ip(request) -> str:
+        try:
+            if hasattr(request, "client") and request.client:
+                host = request.client.host
+                if host in ("127.0.0.1", "::1"):
+                    return None
+        except Exception:
+            pass
+        return get_remote_address(request)
+
     RateLimitExceeded = errors.RateLimitExceeded
     _rate_limiter_enabled = True
     limiter = Limiter(
-        key_func=get_remote_address,
-        default_limits=["500/minute", "5000/hour"],
+        key_func=get_custom_client_ip,
+        default_limits=["1000/minute", "12000/hour"],
         storage_uri=(
             "memory://"
             if "pytest" in sys.modules
