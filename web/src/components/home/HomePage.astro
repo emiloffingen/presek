@@ -458,6 +458,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
                         <div class="stats-panel-header">
                             <span class="pulse-indicator">
                                 <span class="pulse-ping"></span>
+                                <span class="pulse-ping pulse-ping-delayed"></span>
                                 <span class="pulse-dot"></span>
                             </span>
                             <span class="stats-panel-title">
@@ -1312,26 +1313,34 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 
     /* ── System Stats Panel ──────────────────────────── */
     .home-system-stats-panel {
-        background: color-mix(in srgb, var(--secondary) 25%, var(--card));
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: clamp(0.95rem, 2vw, 1.1rem) clamp(1rem, 3vw, 1.6rem);
-        margin: 1.5rem 0 2rem;
-        box-shadow: var(--shadow-sm);
+        background: linear-gradient(135deg, color-mix(in srgb, var(--card) 75%, transparent), color-mix(in srgb, var(--secondary) 55%, transparent));
+        background-image: radial-gradient(circle at 15% 0%, color-mix(in srgb, var(--nyt-accent) 6%, transparent), transparent 75%);
+        backdrop-filter: var(--glass-blur);
+        -webkit-backdrop-filter: var(--glass-blur);
+        border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+        border-radius: 12px;
+        padding: clamp(1rem, 2vw, 1.25rem) clamp(1.2rem, 3vw, 2rem);
+        margin: 1.75rem 0 2.25rem;
+        box-shadow: 0 4px 20px -2px color-mix(in srgb, var(--background) 40%, rgba(0, 0, 0, 0.1)), 
+                    inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 6%, transparent);
         display: flex;
         flex-direction: column;
-        gap: 0.85rem;
-        transition: border-color 0.3s var(--ease-editorial), box-shadow 0.3s var(--ease-editorial);
+        gap: 0.95rem;
+        transform: translateY(0);
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .home-system-stats-panel:hover {
-        border-color: color-mix(in srgb, var(--nyt-accent) 40%, var(--border));
-        box-shadow: var(--shadow-md), 0 0 16px color-mix(in srgb, var(--nyt-accent) 5%, transparent);
+        border-color: color-mix(in srgb, var(--nyt-accent) 45%, var(--border));
+        transform: translateY(-2px);
+        box-shadow: 0 12px 30px -4px color-mix(in srgb, var(--background) 50%, rgba(0, 0, 0, 0.2)), 
+                    inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 10%, transparent), 
+                    0 0 20px -3px color-mix(in srgb, var(--nyt-accent) 12%, transparent);
     }
     
     .stats-panel-header {
         display: flex;
         align-items: center;
-        gap: 0.6rem;
+        gap: 0.65rem;
     }
     
     .pulse-indicator {
@@ -1340,6 +1349,8 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
         height: 0.5rem;
         width: 0.5rem;
         flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
     }
     .pulse-ping {
         position: absolute;
@@ -1349,7 +1360,10 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
         border-radius: 9999px;
         background-color: rgb(52, 211, 153);
         opacity: 0.75;
-        animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+        animation: premium-radar-ping 2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+    }
+    .pulse-ping-delayed {
+        animation-delay: 1s;
     }
     .pulse-dot {
         position: relative;
@@ -1358,52 +1372,96 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
         width: 0.5rem;
         border-radius: 9999px;
         background-color: rgb(16, 185, 129);
-        box-shadow: 0 0 8px rgb(16, 185, 129);
+        box-shadow: 0 0 10px 1px rgb(16, 185, 129);
+    }
+
+    @keyframes premium-radar-ping {
+        0% {
+            transform: scale(1);
+            opacity: 0.85;
+        }
+        100% {
+            transform: scale(3.5);
+            opacity: 0;
+        }
     }
     
     .stats-panel-title {
         font-family: var(--font-sans);
-        font-size: 0.58rem;
+        font-size: 0.6rem;
         font-weight: 950;
         text-transform: uppercase;
-        letter-spacing: 0.22em;
+        letter-spacing: 0.24em;
         color: var(--foreground);
         line-height: 1.25;
+        opacity: 0.9;
     }
     
     .stats-panel-grid {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
-        gap: 1.25rem;
+        gap: 1.5rem;
     }
     
     .stats-grid-item {
         display: flex;
         flex-direction: column;
-        gap: 0.15rem;
+        gap: 0.2rem;
         flex: 1;
         min-width: 120px;
+        position: relative;
+        padding: 0.35rem 0.5rem;
+        border-radius: 8px;
+        transition: all 0.3s var(--ease-editorial);
+    }
+    
+    .stats-grid-item::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0.5rem;
+        right: 0.5rem;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--nyt-accent), transparent);
+        opacity: 0;
+        transform: scaleX(0.4);
+        transition: all 0.3s var(--ease-editorial);
+    }
+    
+    .stats-grid-item:hover {
+        background: color-mix(in srgb, var(--foreground) 3%, transparent);
+        transform: translateY(-2px);
+    }
+    
+    .stats-grid-item:hover::after {
+        opacity: 1;
+        transform: scaleX(1);
     }
     
     .stats-item-label {
         font-family: var(--font-sans);
-        font-size: 0.54rem;
+        font-size: 0.56rem;
         font-weight: 850;
         text-transform: uppercase;
         letter-spacing: 0.08em;
         color: var(--muted-foreground);
+        transition: color 0.3s var(--ease-editorial);
+    }
+    
+    .stats-grid-item:hover .stats-item-label {
+        color: var(--foreground);
     }
     
     .stats-item-value {
         font-family: var(--font-sans);
-        font-size: 1.05rem;
+        font-size: 1.1rem;
         font-weight: 900;
         color: var(--foreground);
         display: flex;
         align-items: baseline;
         flex-wrap: wrap;
-        gap: 0.2rem;
+        gap: 0.25rem;
     }
     
     .stats-item-unit {
@@ -1414,30 +1472,41 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
     
     .stats-grid-divider {
         width: 1px;
-        height: 1.5rem;
-        background-color: var(--border);
+        height: 1.75rem;
+        background-color: color-mix(in srgb, var(--border) 60%, transparent);
         align-self: center;
     }
     
     @media (max-width: 768px) {
         .home-system-stats-panel {
-            padding: 1rem;
-            margin: 1rem 0 1.35rem;
+            padding: 1.1rem;
+            margin: 1.25rem 0 1.75rem;
         }
         .stats-panel-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
+            gap: 0.85rem;
         }
         .stats-grid-divider {
             display: none;
         }
         .stats-grid-item {
             min-width: 0;
-            padding: 0.5rem;
-            background: color-mix(in srgb, var(--secondary) 15%, var(--card));
-            border: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
-            border-radius: 6px;
+            padding: 0.75rem 0.85rem;
+            background: linear-gradient(135deg, color-mix(in srgb, var(--card) 45%, transparent), color-mix(in srgb, var(--secondary) 25%, transparent));
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+            border-radius: 10px;
+            box-shadow: inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 4%, transparent);
+        }
+        .stats-grid-item:hover {
+            border-color: color-mix(in srgb, var(--nyt-accent) 30%, var(--border));
+            background: linear-gradient(135deg, color-mix(in srgb, var(--card) 60%, transparent), color-mix(in srgb, var(--secondary) 40%, transparent));
+            transform: translateY(-2px);
+        }
+        .stats-grid-item::after {
+            display: none;
         }
     }
 </style>
