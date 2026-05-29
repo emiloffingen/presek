@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { apiBaseUrl } from '../lib/apiBase';
-import { Search, ShieldCheck, Zap, Activity, ChevronRight } from 'lucide-react';
+import { Search, ShieldCheck, Zap, Activity, ChevronRight, Globe, Compass, HelpCircle } from 'lucide-react';
 import { useTranslations } from '../i18n/utils';
 import type { ui } from '../i18n/ui';
 
@@ -29,15 +29,16 @@ interface SourceRow {
   last_fetched?: string;
   pause_mode?: string | null;
   pause_reason?: string | null;
+  paused_at?: string | null;
 }
 
-function formatLastFetched(value?: string) {
-  if (!value) return 'Нема свеж сигнал';
+function formatLastFetched(value?: string, lang: 'sr' | 'mk' = 'sr') {
+  if (!value) return lang === 'mk' ? 'Нема свеж сигнал' : 'Nema svež signal';
   try {
     const date = new Date(value);
-    return date.toLocaleString('mk-MK', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleString(lang === 'mk' ? 'mk-MK' : 'sr-RS', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
   } catch {
-    return 'Нема свеж сигнал';
+    return lang === 'mk' ? 'Нема свеж сигнал' : 'Nema svež signal';
   }
 }
 
@@ -58,6 +59,109 @@ function getHealthStatus(lastFetched?: string): 'active' | 'stale' | 'critical' 
   }
 }
 
+// Media Bias Coordinate Mapper Function
+const getCoordinates = (source: SourceRow, lang: string) => {
+  let x = 0;
+  const name = source.source;
+  const cat = source.category || '';
+  const weight = source.effective_weight || 1.0;
+  
+  // Editorial independence/stance mapping (X-axis: Left [-1] represents independent/critical, Right [+1] represents tabloid/aligned)
+  if (cat === 'Nezavisni' || cat === 'Istraživački') {
+    x = -0.75 - (weight - 1.5) * 0.1;
+  } else if (cat === 'Tabloidi') {
+    x = 0.75 + (2.0 - weight) * 0.1;
+  } else if (cat === 'Javni Servis') {
+    x = -0.02;
+  } else {
+    // Determine stance heuristically from name and weight
+    const lowerName = name.toLowerCase();
+    if (
+      lowerName.includes('danas') ||
+      lowerName.includes('n1') ||
+      lowerName.includes('nova.rs') ||
+      lowerName.includes('krik') ||
+      lowerName.includes('insajder') ||
+      lowerName.includes('vreme') ||
+      lowerName.includes('nedeljnik') ||
+      lowerName.includes('cenzolovka') ||
+      lowerName.includes('cins') ||
+      lowerName.includes('360 stepeni') ||
+      lowerName.includes('civil') ||
+      lowerName.includes('fokus') ||
+      lowerName.includes('frontline') ||
+      lowerName.includes('libertas') ||
+      lowerName.includes('a1on') ||
+      lowerName.includes('nezavisen')
+    ) {
+      x = -0.7 - (weight >= 1.5 ? 0.12 : 0.04);
+    } else if (
+      lowerName.includes('kurir') ||
+      lowerName.includes('telegraf') ||
+      lowerName.includes('informer') ||
+      lowerName.includes('alo.rs') ||
+      lowerName.includes('novosti') ||
+      lowerName.includes('objektiv') ||
+      lowerName.includes('sitel') ||
+      lowerName.includes('vecer') ||
+      lowerName.includes('kanal 5') ||
+      lowerName.includes('centar.mk') ||
+      lowerName.includes('infomax') ||
+      lowerName.includes('zase.mk')
+    ) {
+      x = 0.7 + (weight < 1.2 ? 0.12 : 0.04);
+    } else if (
+      lowerName.includes('rts') ||
+      lowerName.includes('mrt') ||
+      lowerName.includes('mia') ||
+      lowerName.includes('politika')
+    ) {
+      x = 0.02;
+    } else {
+      if (cat === 'Sport' || cat === 'Tehnologija' || cat === 'Kultura' || cat === 'Zivot') {
+        x = -0.1 + (weight - 1.0) * 0.05;
+      } else {
+        x = 0.2 - (weight - 1.0) * 0.1;
+      }
+    }
+  }
+
+  // Ensure strict bounds
+  x = Math.max(-0.95, Math.min(0.95, x));
+
+  // Consistent deterministic dispersion to avoid perfect overlaps
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const jitterX = ((Math.abs(hash) % 100) / 100 - 0.5) * 0.14;
+  x = x + jitterX;
+  x = Math.max(-0.92, Math.min(0.92, x));
+
+  // Consensus / Concordance mapping (Y-axis: Top [+1] high corroboration consensus, Bottom [-1] exclusive lone leads)
+  const cRate = source.corroboration_rate ?? 0.5;
+  let y = (cRate - 0.5) * 1.6;
+  if (source.lead_count_30d === 0) {
+    y = 0.0;
+  }
+  
+  if (cat === 'Istraživački' && y > -0.2) {
+    y = y - 0.2;
+  }
+  
+  const jitterY = (((Math.abs(hash) >> 8) % 100) / 100 - 0.5) * 0.14;
+  y = y + jitterY;
+  y = Math.max(-0.85, Math.min(0.85, y));
+
+  // Translate coordinates to SVG canvas relative percentages
+  // X: -1 maps to 8%, +1 maps to 92%
+  // Y: +1 maps to 12% (top), -1 maps to 88% (bottom)
+  const pctX = 50 + x * 42;
+  const pctY = 50 - y * 38;
+
+  return { x, y, pctX, pctY };
+};
+
 const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
   const [sources, setSources] = useState<SourceRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,6 +169,11 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTier, setFilterTier] = useState<string>('all');
   const t = useTranslations(lang);
+
+  // New interactive graph states
+  const [graphSearch, setGraphSearch] = useState('');
+  const [hoveredSource, setHoveredSource] = useState<SourceRow | null>(null);
+  const [selectedSource, setSelectedSource] = useState<SourceRow | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -89,8 +198,11 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
     let results = sources;
     const q = searchTerm.trim().toLowerCase();
     if (q) results = results.filter((s) => s.source?.toLowerCase().includes(q));
-    if (filterTier === 'high') results = results.filter(s => s.trust_tier === 'Visoko poverenje' || s.trust_tier === 'Висока доверба');
-    else if (filterTier === 'verified') results = results.filter(s => s.trust_tier === 'Potvrden izvor' || s.trust_tier === 'Потврден извор');
+    if (filterTier === 'high') {
+      results = results.filter(s => s.trust_tier === 'Visoko poverenje' || s.trust_tier === 'Висока доверба');
+    } else if (filterTier === 'verified') {
+      results = results.filter(s => s.trust_tier === 'Potvrden izvor' || s.trust_tier === 'Потврден извор');
+    }
     return results;
   }, [sources, searchTerm, filterTier]);
 
@@ -98,30 +210,69 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
   const intSources = filtered.filter((s) => lang === 'mk' ? (s.country !== 'MK') : (s.country && s.country !== 'RS'));
   const fastMovers = [...filtered].sort((a, b) => b.speed_first_count - a.speed_first_count).slice(0, 10);
 
+  // Filter sources displayed on the domestic graph
+  const domesticGraphSources = useMemo(() => {
+    return sources.filter((s) => lang === 'mk' ? (s.country === 'MK') : (s.country === 'RS' || !s.country));
+  }, [sources, lang]);
+
+  const isMatchedByFilter = (s: SourceRow) => {
+    const q = searchTerm.trim().toLowerCase();
+    if (q && !s.source.toLowerCase().includes(q)) return false;
+    if (filterTier === 'high') {
+      if (s.trust_tier !== 'Visoko poverenje' && s.trust_tier !== 'Висока доверба') return false;
+    } else if (filterTier === 'verified') {
+      if (s.trust_tier !== 'Potvrden izvor' && s.trust_tier !== 'Потврден извор') return false;
+    }
+    return true;
+  };
+
+  const scrollToSource = (sourceName: string) => {
+    const id = `source-${encodeURIComponent(sourceName)}`;
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      element.classList.add('highlight-pulse');
+      setTimeout(() => {
+        element.classList.remove('highlight-pulse');
+      }, 2500);
+    }
+  };
+
   const renderSourceRow = (source: SourceRow) => {
     const health = getHealthStatus(source.last_fetched);
     const reliabilityIndex = ((source.corroboration_rate * 0.7) + ((source.speed_first_count > 0 ? 0.3 : 0))).toFixed(2);
+    const isSelected = selectedSource?.source === source.source;
+    const rowId = `source-${encodeURIComponent(source.source)}`;
 
     return (
-      <a key={source.source} href={`${lang === 'mk' ? '/mk' : ''}/?source=${encodeURIComponent(source.source)}`} className="editorial-source-item group no-underline">
+      <a
+        key={source.source}
+        id={rowId}
+        href={`${lang === 'mk' ? '/mk' : ''}/?source=${encodeURIComponent(source.source)}`}
+        className={`editorial-source-item group no-underline transition-all duration-300 ${isSelected ? 'border-l-4 border-l-nyt-accent pl-4 bg-nyt-accent/5' : ''}`}
+        onClick={(e) => {
+          // If they click on the item directly, let normal navigation run, but record selection state
+          setSelectedSource(source);
+        }}
+      >
         <div className="item-main">
           <div className="item-head mb-2">
             <div className={`health-dot ${health}`} title={health === 'active' ? t('sources.health_active') : health === 'stale' ? t('sources.health_stale') : t('sources.health_critical')}></div>
             <h3 className="section-heading group-hover:text-nyt-accent transition-colors">{source.source}</h3>
             {(source.trust_tier === 'Visoko poverenje' || source.trust_tier === 'Висока доверба') && (
-                <ShieldCheck size={14} className="text-nyt-accent" />
+              <ShieldCheck size={14} className="text-nyt-accent" />
             )}
           </div>
           <p className="item-tendency font-nyt-body text-sm text-muted-foreground line-clamp-1 mb-2 md:mb-3">{source.tendency}</p>
           <div className="item-meta flex items-center gap-2 md:gap-[var(--grid-gap)]">
             <span className="px-2 py-0.5 bg-foreground text-background font-sans text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] md:tracking-widest">{source.country || (lang === 'mk' ? 'MK' : 'RS')}</span>
             <div className="flex gap-1.5">
-                {source.top_categories?.slice(0, 2).map(cat => (
-                    <span key={cat} className="px-2 py-0.5 border border-border rounded-sm font-sans text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground/80">{cat}</span>
-                ))}
+              {source.top_categories?.slice(0, 2).map(cat => (
+                <span key={cat} className="px-2 py-0.5 border border-border rounded-sm font-sans text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground/80">{cat}</span>
+              ))}
             </div>
             <span className="font-sans text-[9px] md:text-[10px] font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground/40 ml-auto flex items-center gap-1.5">
-                <Activity size={10} /> {formatLastFetched(source.last_fetched)}
+              <Activity size={10} /> {formatLastFetched(source.last_fetched, lang as 'sr' | 'mk')}
             </span>
           </div>
         </div>
@@ -139,38 +290,53 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
 
           <div className="heatmap-container flex gap-[2px] items-end h-8 shrink-0" title={t('sources.activity_30d')}>
             {Array.from({ length: 30 }).map((_, i) => {
-                const isRecent = i >= 28;
-                const avgVolume = Math.max(1, (source.recent_7d_volume || 0) / 7);
-                const noise = Math.sin((i + source.source.length) * 0.5) * 0.3 + 0.8;
-                let baseVol = isRecent ? (source.recent_volume || 0) : (source.previous_7d_volume / 7 || avgVolume);
-                baseVol = baseVol * noise * (1 + (i / 30) * 0.2);
+              const isRecent = i >= 28;
+              const avgVolume = Math.max(1, (source.recent_7d_volume || 0) / 7);
+              const noise = Math.sin((i + source.source.length) * 0.5) * 0.3 + 0.8;
+              let baseVol = isRecent ? (source.recent_volume || 0) : (source.previous_7d_volume / 7 || avgVolume);
+              baseVol = baseVol * noise * (1 + (i / 30) * 0.2);
 
-                const value = Math.max(0.1, baseVol / (avgVolume * 2));
+              const value = Math.max(0.1, baseVol / (avgVolume * 2));
 
-                let bgClass = 'bg-foreground';
-                let opacity = 'opacity-20';
-                if (value > 0.8) opacity = 'opacity-100';
-                else if (value > 0.5) opacity = 'opacity-60';
-                else if (value > 0.2) opacity = 'opacity-40';
+              let bgClass = 'bg-foreground';
+              let opacity = 'opacity-20';
+              if (value > 0.8) opacity = 'opacity-100';
+              else if (value > 0.5) opacity = 'opacity-60';
+              else if (value > 0.2) opacity = 'opacity-40';
 
-                if (source.trust_tier === 'Visoko poverenje' || source.trust_tier === 'Висока доверба') bgClass = 'bg-emerald-500';
-                else if (source.trust_tier === 'Potvrden izvor' || source.trust_tier === 'Потврден извор') bgClass = 'bg-nyt-accent';
+              if (source.trust_tier === 'Visoko poverenje' || source.trust_tier === 'Висока доверба') bgClass = 'bg-emerald-500';
+              else if (source.trust_tier === 'Potvrden izvor' || source.trust_tier === 'Потврден извор') bgClass = 'bg-nyt-accent';
 
-                const height = Math.min(100, Math.max(15, value * 100));
+              const height = Math.min(100, Math.max(15, value * 100));
 
-                return (
-                    <div
-                        key={i}
-                        className={`w-[3px] md:w-1.5 rounded-t-[1px] ${bgClass} ${opacity} hover:opacity-100 transition-opacity cursor-crosshair`}
-                        style={{ height: `${height}%` }}
-                    />
-                );
+              return (
+                <div
+                  key={i}
+                  className={`w-[3px] md:w-1.5 rounded-t-[1px] ${bgClass} ${opacity} hover:opacity-100 transition-opacity cursor-crosshair`}
+                  style={{ height: `${height}%` }}
+                />
+              );
             })}
           </div>
         </div>
       </a>
     );
   };
+
+  // Localized string values for the dashboard
+  const spectrumTitle = lang === 'mk' ? 'Медиумски Спектар на Плурализам' : 'Medijski Spektar Pluralizma';
+  const spectrumSubtitle = lang === 'mk'
+    ? 'Интерактивно дводимензионално мапирање на изворите. Кликнете на круг за брз скок до детални податоци.'
+    : 'Interaktivno dvodimenzionalno mapiranje medija. Kliknite na krug za brzi skok do detaljnih podataka.';
+  const labelIndependence = lang === 'mk' ? 'Независни / Истражувачки' : 'Nezavisni / Analitički';
+  const labelTabloids = lang === 'mk' ? 'Сензационалистички / Таблоиди' : 'Senzacionalistički / Tabloidi';
+  const labelConsensus = lang === 'mk' ? 'Висок Консензус' : 'Uglavnom Konsenzus';
+  const labelExclusives = lang === 'mk' ? 'Ексклузиви / Осамен Лидер' : 'Ekskluzive / Usamljeni Lider';
+  const labelMainstream = lang === 'mk' ? 'Центар (Мејнстрим)' : 'Centar (Mainstream)';
+  const searchLabel = lang === 'mk' ? 'Пребарај извор за лоцирање на графиконот...' : 'Pretraži izvor za lociranje na grafikonu...';
+  const hoverInstruction = lang === 'mk' 
+    ? 'Поминете со глушецот за статистика или кликнете за фокусирање.' 
+    : 'Pređite mišem za statistiku ili kliknite za fokusiranje.';
 
   return (
     <div className="broadsheet-sources pt-8 md:pt-12">
@@ -179,7 +345,9 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
           <span className="masthead-kicker font-sans text-[10px] font-black uppercase tracking-[0.25em] text-nyt-accent">{t('sources.reputation')}</span>
         </div>
         <div className="masthead-main mb-8 md:mb-12">
-          <h1 className="masthead-title font-serif text-4xl md:text-7xl font-black leading-[0.92] tracking-tighter">{t('sources.title').split(' ')[0]} <span className="text-nyt-accent italic font-light">{t('sources.title').split(' ')[1]}</span></h1>
+          <h1 className="masthead-title font-serif text-4xl md:text-7xl font-black leading-[0.92] tracking-tighter">
+            {t('sources.title').split(' ')[0]} <span className="text-nyt-accent italic font-light">{t('sources.title').split(' ')[1] || ''}</span>
+          </h1>
           <p className="mt-4 md:mt-6 font-serif text-lg md:text-xl italic text-muted-foreground leading-snug max-w-2xl">
             {t('sources.desc')}
           </p>
@@ -188,28 +356,28 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
         <div className="masthead-controls sticky top-[72px] z-30 bg-background/80 backdrop-blur-xl border-y border-border py-3 md:py-4 flex flex-col md:flex-row justify-between items-center gap-3 md:gap-[var(--grid-gap)]">
           <div className="relative w-full md:w-96 group">
             <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder={t('sources.search_placeholder')}
-                className="w-full bg-secondary/20 border-b-2 border-border py-2 pl-2 pr-10 font-serif font-bold text-base md:text-lg outline-none focus:border-nyt-accent placeholder:italic placeholder:font-normal placeholder:opacity-40 transition-all"
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder={t('sources.search_placeholder')}
+              className="w-full bg-secondary/20 border-b-2 border-border py-2 pl-2 pr-10 font-serif font-bold text-base md:text-lg outline-none focus:border-nyt-accent placeholder:italic placeholder:font-normal placeholder:opacity-40 transition-all"
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none opacity-40">
-                <Search size={18} />
+              <Search size={18} />
             </div>
           </div>
 
           <div className="filter-group flex w-full md:w-auto p-1 bg-secondary/30 rounded-lg border border-border shadow-sm">
             {[
-                { id: 'all', label: t('sources.all') },
-                { id: 'high', label: t('sources.high_trust') },
-                { id: 'verified', label: t('sources.verified') }
+              { id: 'all', label: t('sources.all') },
+              { id: 'high', label: t('sources.high_trust') },
+              { id: 'verified', label: t('sources.verified') }
             ].map(t_tier => (
               <button
                 key={t_tier.id}
                 onClick={() => setFilterTier(t_tier.id)}
                 className={`flex-1 md:flex-none px-3 md:px-4 py-2 rounded-md font-sans text-[9px] md:text-[10px] font-black tracking-[0.14em] md:tracking-widest transition-all ${
-                    filterTier === t_tier.id
+                  filterTier === t_tier.id
                     ? 'bg-nyt-accent text-white shadow-md'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
@@ -221,24 +389,253 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
         </div>
       </header>
 
+      {/* NEW: Media Pluralism & Bias Spectrum Dashboard */}
+      {!loading && !error && domesticGraphSources.length > 0 && (
+        <section className="media-spectrum-dashboard mb-16 border border-border/80 bg-secondary/5 dark:bg-secondary/5 rounded-2xl p-5 md:p-8 backdrop-blur-xl relative overflow-hidden">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/60 pb-5 mb-6">
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <Compass className="text-nyt-accent shrink-0" size={20} />
+                <h2 className="font-serif font-black text-xl md:text-2xl text-foreground leading-none">{spectrumTitle}</h2>
+              </div>
+              <p className="font-serif text-sm italic text-muted-foreground/90">{spectrumSubtitle}</p>
+            </div>
+            
+            {/* Interactive Graph Finder */}
+            <div className="relative w-full md:w-72 shrink-0">
+              <input
+                type="text"
+                value={graphSearch}
+                onChange={(e) => setGraphSearch(e.target.value)}
+                placeholder={searchLabel}
+                className="w-full bg-background border border-border rounded-lg py-1.5 pl-3 pr-8 text-xs font-sans placeholder:italic placeholder:opacity-50 focus:border-nyt-accent focus:ring-1 focus:ring-nyt-accent/30 outline-none transition-all"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none opacity-40">
+                <Search size={14} />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* The Plot Area */}
+            <div className="lg:col-span-3">
+              <div className="relative w-full h-[400px] md:h-[480px] bg-background/40 border border-border/60 rounded-xl overflow-hidden cursor-crosshair select-none shadow-inner">
+                
+                {/* Horizontal axis grid line */}
+                <div className="absolute top-1/2 left-0 right-0 h-[1.5px] bg-foreground/20 dark:bg-foreground/15 border-t border-dashed border-foreground/10 pointer-events-none" />
+                {/* Vertical axis grid line */}
+                <div className="absolute left-1/2 top-0 bottom-0 w-[1.5px] bg-foreground/20 dark:bg-foreground/15 border-l border-dashed border-foreground/10 pointer-events-none" />
+                
+                {/* Visual coordinate grid lines */}
+                <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.06] dark:opacity-[0.1]">
+                  <circle cx="50%" cy="50%" r="18%" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="3 6" />
+                  <circle cx="50%" cy="50%" r="35%" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="3 6" />
+                  <circle cx="50%" cy="50%" r="48%" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="3 6" />
+                </svg>
+
+                {/* Quadrant Text Overlays */}
+                <div className="absolute top-3 left-4 text-[8px] md:text-[9px] font-black uppercase tracking-wider text-muted-foreground/35 pointer-events-none">
+                  {lang === 'mk' ? 'Независен Консензус' : 'Nezavisni Konsenzus'}
+                </div>
+                <div className="absolute bottom-3 left-4 text-[8px] md:text-[9px] font-black uppercase tracking-wider text-muted-foreground/35 pointer-events-none">
+                  {lang === 'mk' ? 'Истражувачки Ексклузиви' : 'Istraživačke Ekskluzive'}
+                </div>
+                <div className="absolute top-3 right-4 text-[8px] md:text-[9px] font-black uppercase tracking-wider text-muted-foreground/35 pointer-events-none">
+                  {lang === 'mk' ? 'Сензационалистички Консензус' : 'Senzacionalistički Konsenzus'}
+                </div>
+                <div className="absolute bottom-3 right-4 text-[8px] md:text-[9px] font-black uppercase tracking-wider text-muted-foreground/35 pointer-events-none">
+                  {lang === 'mk' ? 'Таблоидни Ексклузиви' : 'Tabloidne Ekskluzive'}
+                </div>
+
+                {/* Core Axis Anchors */}
+                <div className="absolute top-2.5 left-1/2 -translate-x-1/2 font-sans text-[8px] font-black uppercase tracking-widest text-muted-foreground/50 pointer-events-none flex items-center gap-1">
+                  {labelConsensus}
+                </div>
+                <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 font-sans text-[8px] font-black uppercase tracking-widest text-muted-foreground/50 pointer-events-none flex items-center gap-1">
+                  {labelExclusives}
+                </div>
+                <div className="absolute top-1/2 -translate-y-1/2 left-3 font-sans text-[8px] font-black uppercase tracking-widest text-muted-foreground/50 pointer-events-none vertical-text">
+                  {labelIndependence}
+                </div>
+                <div className="absolute top-1/2 -translate-y-1/2 right-3 font-sans text-[8px] font-black uppercase tracking-widest text-muted-foreground/50 pointer-events-none vertical-text">
+                  {labelTabloids}
+                </div>
+
+                {/* Center marker */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full border border-nyt-accent/15 bg-background/20 backdrop-blur-[2px] pointer-events-none flex items-center justify-center">
+                  <span className="text-[7px] font-sans font-black tracking-tighter text-nyt-accent/60 opacity-60">CENTER</span>
+                </div>
+
+                {/* Rendering reactive nodes */}
+                {domesticGraphSources.map((s) => {
+                  const coords = getCoordinates(s, lang);
+                  const isSelected = selectedSource?.source === s.source;
+                  const isHovered = hoveredSource?.source === s.source;
+                  const matched = isMatchedByFilter(s);
+                  
+                  // Pulse animation indicator if search-highlighted
+                  const isSearched = graphSearch.trim() !== '' && s.source.toLowerCase().includes(graphSearch.toLowerCase());
+                  
+                  // Node sizes relative to recent volume activity
+                  const nodeSize = 8 + Math.min(14, Math.sqrt(s.recent_volume || 0) * 1.6);
+                  
+                  // Color codes
+                  let colorClass = 'bg-muted-foreground/60 shadow-[0_0_8px_rgba(156,163,175,0.3)]';
+                  if (s.trust_tier === 'Visoko poverenje' || s.trust_tier === 'Висока доверба') {
+                    colorClass = 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.7)]';
+                  } else if (s.trust_tier === 'Potvrden izvor' || s.trust_tier === 'Потврден извор') {
+                    colorClass = 'bg-nyt-accent shadow-[0_0_12px_rgba(235,94,40,0.7)]';
+                  }
+                  
+                  // Opacity and scale adjustments based on current filters
+                  const activeOpacity = matched ? 'opacity-100 scale-100 z-20' : 'opacity-15 scale-75 hover:opacity-40 z-10';
+                  
+                  return (
+                    <div
+                      key={s.source}
+                      className={`absolute transform -translate-x-1/2 -translate-y-1/2 rounded-full cursor-pointer transition-all duration-300 ${colorClass} ${activeOpacity} ${isSelected ? 'ring-4 ring-nyt-accent/40 scale-125 z-30' : 'hover:scale-130'}`}
+                      style={{
+                        left: `${coords.pctX}%`,
+                        top: `${coords.pctY}%`,
+                        width: `${nodeSize}px`,
+                        height: `${nodeSize}px`
+                      }}
+                      onClick={() => {
+                        setSelectedSource(s);
+                        scrollToSource(s.source);
+                      }}
+                      onMouseEnter={() => setHoveredSource(s)}
+                      onMouseLeave={() => setHoveredSource(null)}
+                    >
+                      {/* Search radar pulse */}
+                      {isSearched && (
+                        <div className="absolute -inset-3 rounded-full border-2 border-nyt-accent animate-ping pointer-events-none" />
+                      )}
+                      {/* Small text label for highly prominent media */}
+                      {(s.recent_volume > 15 || isSelected || isSearched || isHovered) && matched && (
+                        <span className={`absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-1 py-0.5 rounded bg-background/90 text-foreground font-sans text-[8px] font-black tracking-tight uppercase border border-border/40 whitespace-nowrap shadow-sm pointer-events-none ${isHovered || isSelected ? 'opacity-100 z-50 scale-105 border-nyt-accent/50' : 'opacity-55'}`}>
+                          {s.source}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* FLOATING HOVER CARD */}
+                {hoveredSource && (() => {
+                  const coords = getCoordinates(hoveredSource, lang);
+                  const showLeft = coords.pctX > 50;
+                  const showTop = coords.pctY > 50;
+                  const reliability = ((hoveredSource.corroboration_rate * 0.7) + ((hoveredSource.speed_first_count > 0 ? 0.3 : 0))).toFixed(2);
+                  
+                  return (
+                    <div
+                      className="absolute z-50 p-4 w-60 border border-border bg-background/95 dark:bg-background/95 shadow-2xl rounded-xl transition-all duration-200 pointer-events-none text-left"
+                      style={{
+                        left: showLeft ? `calc(${coords.pctX}% - 260px)` : `calc(${coords.pctX}% + 20px)`,
+                        top: showTop ? `calc(${coords.pctY}% - 120px)` : `calc(${coords.pctY}% + 10px)`,
+                      }}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <h4 className="font-serif font-black text-sm text-foreground leading-tight">{hoveredSource.source}</h4>
+                        <span className="px-1.5 py-0.5 bg-foreground text-background font-sans text-[8px] font-black uppercase rounded">
+                          {hoveredSource.country || (lang === 'mk' ? 'MK' : 'RS')}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground italic mb-3 line-clamp-1">{hoveredSource.tendency}</p>
+                      
+                      <div className="grid grid-cols-2 gap-2 text-[9px] font-sans border-t border-border/60 pt-2.5">
+                        <div className="flex flex-col">
+                          <span className="font-black uppercase tracking-wider text-muted-foreground/60">{lang === 'mk' ? 'Квалитет' : 'Kvalitet'}</span>
+                          <strong className="text-xs font-black text-nyt-accent">{reliability}</strong>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-black uppercase tracking-wider text-muted-foreground/60">{lang === 'mk' ? 'Консензус' : 'Konsenzus'}</span>
+                          <strong className="text-xs font-black text-foreground">{formatPercent(hoveredSource.corroboration_rate)}</strong>
+                        </div>
+                        <div className="flex flex-col mt-1">
+                          <span className="font-black uppercase tracking-wider text-muted-foreground/60">{lang === 'mk' ? '24ч Обем' : '24h Obim'}</span>
+                          <strong className="text-xs font-black text-foreground">{hoveredSource.recent_volume}</strong>
+                        </div>
+                        <div className="flex flex-col mt-1">
+                          <span className="font-black uppercase tracking-wider text-muted-foreground/60">{lang === 'mk' ? 'Прв во вести' : 'Prvi lider'}</span>
+                          <strong className="text-xs font-black text-foreground">+{hoveredSource.speed_first_count}</strong>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-3.5 text-[8px] font-sans font-black uppercase text-nyt-accent flex items-center gap-1">
+                        <ShieldCheck size={10} />
+                        {hoveredSource.trust_tier}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+              </div>
+              <div className="flex items-center gap-1.5 mt-3 justify-end text-[10px] font-sans font-bold text-muted-foreground/75">
+                <HelpCircle size={12} />
+                <span>{hoverInstruction}</span>
+              </div>
+            </div>
+
+            {/* Sidebar Quadrant Legend */}
+            <div className="lg:col-span-1 flex flex-col justify-between gap-4 p-4 bg-background/50 border border-border/60 rounded-xl">
+              <div>
+                <h4 className="font-sans text-[10px] font-black uppercase tracking-wider border-b border-border/50 pb-2 mb-3 text-foreground">{lang === 'mk' ? 'ГРАФИКОН ЛЕГЕНДА' : 'GRAFIKON LEGENDA'}</h4>
+                <div className="space-y-4 text-xs">
+                  <div>
+                    <span className="inline-block px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-sans text-[9px] font-black tracking-wider uppercase mb-1">{lang === 'mk' ? 'Висока Доверба' : 'Visoko poverenje'}</span>
+                    <p className="text-[11px] text-muted-foreground leading-snug">
+                      {lang === 'mk' ? 'Реномирани извори со стабилно, темелно и верификувано известување.' : 'Renomirani izvori sa stabilnim, temeljnim i verifikovanim izveštavanjem.'}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="inline-block px-1.5 py-0.5 rounded bg-nyt-accent/10 text-nyt-accent font-sans text-[9px] font-black tracking-wider uppercase mb-1">{lang === 'mk' ? 'Потврдени извори' : 'Potvrđeni izvori'}</span>
+                    <p className="text-[11px] text-muted-foreground leading-snug">
+                      {lang === 'mk' ? 'Актуелни професионални медиуми кои се редовно верификувани.' : 'Aktuelni profesionalni mediji koji se redovno verifikuju.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-border/40 pt-3">
+                <h5 className="font-sans text-[9px] font-black uppercase tracking-widest text-foreground mb-1">{lang === 'mk' ? 'АГЛИ НА ИЗВЕСТУВАЊЕ' : 'UGLOVI IZVEŠTAVANJA'}</h5>
+                <p className="text-[10px] text-muted-foreground/80 leading-relaxed">
+                  {lang === 'mk'
+                    ? 'Колку е полево медиумот, толку поексклузивни или истражувачки агли користи. Десната страна претставува сензационализам или широк мејнстрим опсег.'
+                    : 'Koliko je medij levo, toliko više ekskluzivnih ili istraživačkih uglova koristi. Desna strana predstavlja senzacionalizam ili široki mainstream opseg.'
+                  }
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       <div className="broadsheet-grid">
         <div className="broadsheet-main">
           {loading ? (
-            <div className="py-32 text-center opacity-30"><Activity size={48} className="animate-spin mx-auto text-nyt-accent" /></div>
+            <div className="py-32 text-center opacity-30">
+              <Activity size={48} className="animate-spin mx-auto text-nyt-accent" />
+            </div>
           ) : error ? (
             <div className="py-24 text-center border-2 border-dashed border-border rounded-2xl">
-                <h2 className="font-serif text-2xl italic text-muted-foreground">{error}</h2>
+              <h2 className="font-serif text-2xl italic text-muted-foreground">{error}</h2>
             </div>
           ) : (
             <div className="space-y-14 md:space-y-24">
               <section>
-                <h2 className="section-heading mb-6 md:mb-10 pb-2 md:pb-3 border-b-4 border-foreground">{lang === 'mk' ? t('sources.mk_media') : t('sources.sr_media')}</h2>
+                <h2 className="section-heading mb-6 md:mb-10 pb-2 md:pb-3 border-b-4 border-foreground">
+                  {lang === 'mk' ? t('sources.mk_media') : t('sources.sr_media')}
+                </h2>
                 <div className="flex flex-col">
                   {mkSources.map(renderSourceRow)}
                 </div>
               </section>
               <section>
-                <h2 className="section-heading mb-6 md:mb-10 pb-2 md:pb-3 border-b-4 border-foreground">{t('sources.intl_signals')}</h2>
+                <h2 className="section-heading mb-6 md:mb-10 pb-2 md:pb-3 border-b-4 border-foreground">
+                  {t('sources.intl_signals')}
+                </h2>
                 <div className="flex flex-col">
                   {intSources.map(renderSourceRow)}
                 </div>
@@ -306,8 +703,24 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
 
         .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
         @media (min-width: 1024px) {
-          .broadsheet-grid { grid-template-columns: 1fr; }
-          .broadsheet-rail {   align-self: start; }
+          .broadsheet-grid { grid-template-columns: 3fr 1fr; }
+          .broadsheet-rail { align-self: start; }
+        }
+
+        .vertical-text {
+          writing-mode: vertical-lr;
+          transform: rotate(180deg);
+        }
+
+        @keyframes highlightPulse {
+          0% { background-color: rgba(235, 94, 40, 0.25); border-left-color: var(--nyt-accent); }
+          50% { background-color: rgba(235, 94, 40, 0.1); }
+          100% { background-color: transparent; }
+        }
+        .highlight-pulse {
+          animation: highlightPulse 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          border-left: 4px solid var(--nyt-accent);
+          padding-left: 1rem;
         }
 
         @media (max-width: 768px) {
