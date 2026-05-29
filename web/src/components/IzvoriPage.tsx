@@ -312,7 +312,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
               return (
                 <div
                   key={i}
-                  className={`w-[3px] md:w-1.5 rounded-t-[1px] ${bgClass} ${opacity} hover:opacity-100 transition-opacity cursor-crosshair`}
+                  className={`w-[3px] md:w-1.5 rounded-t-[1px] ${bgClass} ${opacity} hover:opacity-100 hover:scale-y-125 transition-all duration-200 cursor-crosshair origin-bottom`}
                   style={{ height: `${height}%` }}
                 />
               );
