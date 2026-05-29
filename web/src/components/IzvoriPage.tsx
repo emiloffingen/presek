@@ -426,6 +426,9 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                 {/* Vertical axis grid line */}
                 <div className="absolute left-1/2 top-0 bottom-0 w-[1.5px] bg-foreground/20 dark:bg-foreground/15 border-l border-dashed border-foreground/10 pointer-events-none" />
                 
+                {/* Dynamic radial gradient glow at intersection */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full bg-[radial-gradient(circle,rgba(235,94,40,0.12)_0%,transparent_70%)] blur-xl pointer-events-none opacity-70 dark:opacity-50" />
+
                 {/* Visual coordinate grid lines */}
                 <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.06] dark:opacity-[0.1]">
                   <circle cx="50%" cy="50%" r="18%" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="3 6" />
@@ -433,37 +436,37 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                   <circle cx="50%" cy="50%" r="48%" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="3 6" />
                 </svg>
 
-                {/* Quadrant Text Overlays */}
-                <div className="absolute top-3 left-4 text-[8px] md:text-[9px] font-black uppercase tracking-wider text-muted-foreground/35 pointer-events-none">
+                {/* Quadrant Text Overlays (Styled Broadsheet Badges) */}
+                <div className="absolute top-3 left-4 text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] text-muted-foreground/35 bg-secondary/20 dark:bg-secondary/10 px-2 py-0.5 border border-border/10 rounded-[2px] pointer-events-none">
                   {lang === 'mk' ? 'Независен Консензус' : 'Nezavisni Konsenzus'}
                 </div>
-                <div className="absolute bottom-3 left-4 text-[8px] md:text-[9px] font-black uppercase tracking-wider text-muted-foreground/35 pointer-events-none">
+                <div className="absolute bottom-3 left-4 text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] text-muted-foreground/35 bg-secondary/20 dark:bg-secondary/10 px-2 py-0.5 border border-border/10 rounded-[2px] pointer-events-none">
                   {lang === 'mk' ? 'Истражувачки Ексклузиви' : 'Istraživačke Ekskluzive'}
                 </div>
-                <div className="absolute top-3 right-4 text-[8px] md:text-[9px] font-black uppercase tracking-wider text-muted-foreground/35 pointer-events-none">
+                <div className="absolute top-3 right-4 text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] text-muted-foreground/35 bg-secondary/20 dark:bg-secondary/10 px-2 py-0.5 border border-border/10 rounded-[2px] pointer-events-none">
                   {lang === 'mk' ? 'Сензационалистички Консензус' : 'Senzacionalistički Konsenzus'}
                 </div>
-                <div className="absolute bottom-3 right-4 text-[8px] md:text-[9px] font-black uppercase tracking-wider text-muted-foreground/35 pointer-events-none">
+                <div className="absolute bottom-3 right-4 text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] text-muted-foreground/35 bg-secondary/20 dark:bg-secondary/10 px-2 py-0.5 border border-border/10 rounded-[2px] pointer-events-none">
                   {lang === 'mk' ? 'Таблоидни Ексклузиви' : 'Tabloidne Ekskluzive'}
                 </div>
 
-                {/* Core Axis Anchors */}
-                <div className="absolute top-2.5 left-1/2 -translate-x-1/2 font-sans text-[8px] font-black uppercase tracking-widest text-muted-foreground/50 pointer-events-none flex items-center gap-1">
-                  {labelConsensus}
+                {/* Core Axis Anchors with Directional Indicators */}
+                <div className="absolute top-2.5 left-1/2 -translate-x-1/2 font-sans text-[8px] font-black uppercase tracking-[0.18em] text-muted-foreground/45 pointer-events-none flex items-center gap-1">
+                  ▲ {labelConsensus}
                 </div>
-                <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 font-sans text-[8px] font-black uppercase tracking-widest text-muted-foreground/50 pointer-events-none flex items-center gap-1">
-                  {labelExclusives}
+                <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 font-sans text-[8px] font-black uppercase tracking-[0.18em] text-muted-foreground/45 pointer-events-none flex items-center gap-1">
+                  ▼ {labelExclusives}
                 </div>
-                <div className="absolute top-1/2 -translate-y-1/2 left-3 font-sans text-[8px] font-black uppercase tracking-widest text-muted-foreground/50 pointer-events-none vertical-text">
-                  {labelIndependence}
+                <div className="absolute top-1/2 -translate-y-1/2 left-3.5 font-sans text-[8px] font-black uppercase tracking-[0.18em] text-muted-foreground/45 pointer-events-none vertical-text flex items-center gap-1">
+                  ◀ {labelIndependence}
                 </div>
-                <div className="absolute top-1/2 -translate-y-1/2 right-3 font-sans text-[8px] font-black uppercase tracking-widest text-muted-foreground/50 pointer-events-none vertical-text">
-                  {labelTabloids}
+                <div className="absolute top-1/2 -translate-y-1/2 right-3.5 font-sans text-[8px] font-black uppercase tracking-[0.18em] text-muted-foreground/45 pointer-events-none vertical-text flex items-center gap-1">
+                  ▶ {labelTabloids}
                 </div>
 
                 {/* Center marker */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full border border-nyt-accent/15 bg-background/20 backdrop-blur-[2px] pointer-events-none flex items-center justify-center">
-                  <span className="text-[7px] font-sans font-black tracking-tighter text-nyt-accent/60 opacity-60">CENTER</span>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full border border-nyt-accent/25 bg-background/50 backdrop-blur-[3px] pointer-events-none flex items-center justify-center shadow-sm">
+                  <span className="text-[7px] font-sans font-black tracking-widest text-nyt-accent/80">CENTER</span>
                 </div>
 
                 {/* Rendering reactive nodes */}
@@ -479,12 +482,12 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                   // Node sizes relative to recent volume activity
                   const nodeSize = 8 + Math.min(14, Math.sqrt(s.recent_volume || 0) * 1.6);
                   
-                  // Color codes
-                  let colorClass = 'bg-muted-foreground/60 shadow-[0_0_8px_rgba(156,163,175,0.3)]';
+                  // Color codes (High-end glossy bead border styling)
+                  let colorClass = 'bg-muted-foreground/70 dark:bg-muted-foreground/50 border border-background dark:border-background/60 shadow-[0_0_8px_rgba(156,163,175,0.3)]';
                   if (s.trust_tier === 'Visoko poverenje' || s.trust_tier === 'Висока доверба') {
-                    colorClass = 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.7)]';
+                    colorClass = 'bg-emerald-500 border border-background dark:border-background/60 shadow-[0_0_12px_rgba(16,185,129,0.7)]';
                   } else if (s.trust_tier === 'Potvrden izvor' || s.trust_tier === 'Потврден извор') {
-                    colorClass = 'bg-nyt-accent shadow-[0_0_12px_rgba(235,94,40,0.7)]';
+                    colorClass = 'bg-nyt-accent border border-background dark:border-background/60 shadow-[0_0_12px_rgba(235,94,40,0.7)]';
                   }
                   
                   // Opacity and scale adjustments based on current filters
@@ -493,7 +496,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                   return (
                     <div
                       key={s.source}
-                      className={`absolute transform -translate-x-1/2 -translate-y-1/2 rounded-full cursor-pointer transition-all duration-300 ${colorClass} ${activeOpacity} ${isSelected ? 'ring-4 ring-nyt-accent/40 scale-125 z-30' : 'hover:scale-130'}`}
+                      className={`absolute transform -translate-x-1/2 -translate-y-1/2 rounded-full cursor-pointer transition-all duration-300 node-interactive ${colorClass} ${activeOpacity} ${isSelected ? 'ring-4 ring-nyt-accent/40 scale-125 z-30' : 'hover:scale-130'}`}
                       style={{
                         left: `${coords.pctX}%`,
                         top: `${coords.pctY}%`,
@@ -721,6 +724,13 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
           animation: highlightPulse 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
           border-left: 4px solid var(--nyt-accent);
           padding-left: 1rem;
+        }
+
+        .node-interactive {
+          transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease, filter 0.3s ease, box-shadow 0.3s ease;
+        }
+        .node-interactive:hover {
+          filter: brightness(1.1);
         }
 
         @media (max-width: 768px) {
