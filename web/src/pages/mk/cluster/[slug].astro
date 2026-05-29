@@ -912,14 +912,27 @@ const articleSchema = cluster ? {
         display: grid;
         grid-template-columns: minmax(0, 0.9fr) minmax(0, 2.2fr);
         gap: 1px;
-        background: var(--border);
-        border: 1px solid var(--border);
+        background: color-mix(in srgb, var(--border) 60%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+        border-radius: 12px 12px 0 0;
+        overflow: hidden;
+        backdrop-filter: var(--glass-blur);
+        -webkit-backdrop-filter: var(--glass-blur);
+        box-shadow: 0 4px 20px -2px color-mix(in srgb, var(--background) 30%, rgba(0, 0, 0, 0.08)), 
+                    inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 6%, transparent);
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .cluster-evidence-status,
     .cluster-evidence-item {
-        background: var(--background);
+        background: color-mix(in srgb, var(--card) 65%, transparent);
         padding: 1.25rem;
+        transition: all 0.3s var(--ease-editorial);
+    }
+    
+    .cluster-evidence-status:hover,
+    .cluster-evidence-item:hover {
+        background: color-mix(in srgb, var(--foreground) 3%, transparent);
     }
 
     .cluster-evidence-status {
@@ -941,6 +954,12 @@ const articleSchema = cluster ? {
         text-transform: uppercase;
         color: var(--muted-foreground);
         margin-bottom: 0.5rem;
+        transition: color 0.3s var(--ease-editorial);
+    }
+
+    .cluster-evidence-status:hover span,
+    .cluster-evidence-item:hover span {
+        color: var(--foreground);
     }
 
     .cluster-evidence-status p,
@@ -950,6 +969,28 @@ const articleSchema = cluster ? {
         line-height: 1.45;
         color: var(--secondary-foreground);
         margin: 0;
+    }
+
+    .cluster-evidence-item {
+        position: relative;
+    }
+
+    .cluster-evidence-item::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 1.25rem;
+        right: 1.25rem;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--nyt-accent), transparent);
+        opacity: 0;
+        transform: scaleX(0.4);
+        transition: all 0.3s var(--ease-editorial);
+    }
+
+    .cluster-evidence-item:hover::after {
+        opacity: 1;
+        transform: scaleX(1);
     }
 
     .cluster-evidence-item strong {
@@ -965,7 +1006,7 @@ const articleSchema = cluster ? {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 1px;
-        background: var(--border);
+        background: color-mix(in srgb, var(--border) 60%, transparent);
     }
 
     .reader-command-bar {
@@ -973,15 +1014,26 @@ const articleSchema = cluster ? {
         align-items: stretch;
         justify-content: space-between;
         gap: 1px;
-        margin-top: 1px;
-        background: var(--border);
-        border: 1px solid var(--border);
+        background: color-mix(in srgb, var(--border) 60%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
         border-top: 0;
+        border-radius: 0 0 12px 12px;
+        overflow: hidden;
+        backdrop-filter: var(--glass-blur);
+        -webkit-backdrop-filter: var(--glass-blur);
+        box-shadow: 0 10px 30px -5px color-mix(in srgb, var(--background) 40%, rgba(0, 0, 0, 0.12)), 
+                    inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 4%, transparent);
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .reader-source-strip,
     .reader-actions {
-        background: color-mix(in srgb, var(--background) 96%, var(--surface-soft));
+        background: color-mix(in srgb, var(--card) 65%, transparent);
+        transition: all 0.3s var(--ease-editorial);
+    }
+    
+    .reader-source-strip:hover {
+        background: color-mix(in srgb, var(--foreground) 3%, transparent);
     }
 
     .reader-source-strip {
