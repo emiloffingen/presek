@@ -84,6 +84,63 @@ def test_clean_extracted_article_text_strips_nova_page_chrome():
     assert "Naša misija je stvaranje proevropskog fronta" in cleaned
 
 
+def test_clean_extracted_article_text_macedonian_cyrillic():
+    text = (
+        "ИЗВОРЕН ЗАПИС (Kanal 5)\n"
+        "3Оженет судија е фатен на дело со истакнат полицаец во судница- шокираните вработени слушале „гласни воздишки“\n"
+        "Тагови: задушница Крадењето авторски текстови е казниво со закон. Преземањето на авторски содржини (текстови) "
+        "од оваа страница е дозволено само делумно и со ставање хиперлинк до содржината што се цитира.Бидете информирани следете не на Facebook"
+    )
+    cleaned = clean_extracted_article_text(text)
+    assert "ИЗВОРЕН ЗАПИС" not in cleaned
+    assert "Kanal 5" not in cleaned
+    assert "Крадењето авторски текстови" not in cleaned
+    assert "Бидете информирани" not in cleaned
+    assert "Facebook" not in cleaned
+    assert "Тагови" not in cleaned
+    assert cleaned == "3Оженет судија е фатен на дело со истакнат полицаец во судница- шокираните вработени слушале „гласни воздишки“"
+
+
+def test_prune_boilerplate_html():
+    from core.crawler import prune_boilerplate_html
+    raw_html = """
+    <html>
+        <head><title>Test News Title</title></head>
+        <body>
+            <header><h1>Header Brand</h1></header>
+            <nav><a href="/">Home</a></nav>
+            <div class="main-content">
+                <article class="news-body">
+                    <h1>Real Headline</h1>
+                    <p>This is the actual story text that we want to keep.</p>
+                </article>
+                <aside class="sidebar-widget">
+                    <h3>Related Stories</h3>
+                    <ul>
+                        <li><a href="/other">Other News story which is noise</a></li>
+                    </ul>
+                </aside>
+                <div id="comments-section" class="komentari">
+                    <p>Some user comments here.</p>
+                </div>
+                <div class="kategorija-meteo">
+                    <p>Weather: Sunny 25C</p>
+                </div>
+            </div>
+            <footer>Copyright 2026</footer>
+        </body>
+    </html>
+    """
+    cleaned = prune_boilerplate_html(raw_html)
+    assert "Header Brand" not in cleaned
+    assert "Related Stories" not in cleaned
+    assert "Other News story" not in cleaned
+    assert "Some user comments" not in cleaned
+    assert "Weather:" not in cleaned
+    assert "Copyright 2026" not in cleaned
+    assert "This is the actual story text" in cleaned
+
+
 def test_clean_rss_footer_empty():
     assert clean_rss_footer("") == ""
     assert clean_rss_footer(None) == ""
