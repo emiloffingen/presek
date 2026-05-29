@@ -80,6 +80,11 @@ function normalizePerspective(p: any) {
 const displayPerspectives = perspectives
 	.map(normalizePerspective)
 	.filter((p) => p.angle && p.content);
+
+const objScore = toneAnalysis?.objectivity ?? 0.5;
+const plurScore = (pluralismScore ?? 50) / 100;
+const targetX = 30 + objScore * 140;
+const targetY = 30 + (1 - plurScore) * 140;
 ---
 
 <section class="editorial-section analysis-section mb-10 border-t-2 border-foreground pt-6">
@@ -145,27 +150,51 @@ const displayPerspectives = perspectives
             <div class="analysis-bento-grid">
                 <!-- Bias Radar Compass -->
                 <div class="bias-compass-card">
-                    <h5 class="compass-label">{lang === 'sr' ? 'KOMPAS MEDIJSKOG DISKURSA' : 'КОМПАС НА МЕДИУМСКИОТ ДИСКУРС'}</h5>
+                    <div class="compass-header">
+                        <h5 class="compass-label">{lang === 'sr' ? 'KOMPAS MEDIJSKOG DISKURSA' : 'КОМПАС НА МЕДИУМСКИОТ ДИСКУРС'}</h5>
+                        <div class="compass-data-badge">
+                            <span class="plur-val">P: {pluralismScore}%</span>
+                            <span class="sep">·</span>
+                            <span class="obj-val">O: {Math.round(objScore * 100)}%</span>
+                        </div>
+                    </div>
                     <p class="compass-desc">{lang === 'sr' ? 'Vizuelni odnos pluralizma izvora i senzacionalizma uredničkih naslova.' : 'Визуелен однос на плурализмот на изворите и сензационализмот на уредничките наслови.'}</p>
                     
                     <div class="compass-canvas-container">
                         <svg class="compass-svg" viewBox="0 0 200 200">
+                            <!-- Background subtle radar gradient -->
+                            <defs>
+                                <radialGradient id="compass-bg-glow" cx="50%" cy="50%" r="50%">
+                                    <stop offset="0%" stop-color="var(--nyt-accent)" stop-opacity="0.08" />
+                                    <stop offset="70%" stop-color="var(--nyt-accent)" stop-opacity="0.02" />
+                                    <stop offset="100%" stop-color="transparent" stop-opacity="0" />
+                                </radialGradient>
+                            </defs>
+                            <circle cx="100" cy="100" r="70" fill="url(#compass-bg-glow)" />
+
+                            <!-- Bounding box -->
+                            <rect x="30" y="30" width="140" height="140" fill="none" stroke="var(--border)" stroke-width="0.75" stroke-dasharray="1 3" opacity="0.8" />
+
                             <!-- Grid lines -->
-                            <line x1="100" y1="15" x2="100" y2="185" class="compass-grid-axis" />
-                            <line x1="15" y1="100" x2="185" y2="100" class="compass-grid-axis" />
-                            <circle cx="100" cy="100" r="40" class="compass-grid-ring" />
-                            <circle cx="100" cy="100" r="80" class="compass-grid-ring" />
+                            <line x1="100" y1="30" x2="100" y2="170" class="compass-grid-axis" />
+                            <line x1="30" y1="100" x2="170" y2="100" class="compass-grid-axis" />
+                            <circle cx="100" cy="100" r="35" class="compass-grid-ring" />
+                            <circle cx="100" cy="100" r="70" class="compass-grid-ring" />
                             
                             <!-- Labels -->
-                            <text x="100" y="12" class="compass-text compass-text-top" text-anchor="middle">{lang === 'sr' ? 'Visok Pluralizam' : 'Висок Плурализам'}</text>
-                            <text x="100" y="195" class="compass-text compass-text-bottom" text-anchor="middle">{lang === 'sr' ? 'Eho Komora' : 'Ехо Комора'}</text>
-                            <text x="190" y="103" class="compass-text compass-text-right" text-anchor="start">{lang === 'sr' ? 'Objektivno' : 'Објективно'}</text>
-                            <text x="10" y="103" class="compass-text compass-text-left" text-anchor="end">{lang === 'sr' ? 'Senzacionalistički' : 'Сензационалистички'}</text>
+                            <text x="100" y="22" class="compass-text compass-text-top" text-anchor="middle">{lang === 'sr' ? 'Pluralizam' : 'Плурализам'}</text>
+                            <text x="100" y="186" class="compass-text compass-text-bottom" text-anchor="middle">{lang === 'sr' ? 'Eho Komora' : 'Ехо Комора'}</text>
+                            <text x="176" y="103" class="compass-text compass-text-right" text-anchor="start">{lang === 'sr' ? 'Objektivno' : 'Објективно'}</text>
+                            <text x="24" y="103" class="compass-text compass-text-left" text-anchor="end">{lang === 'sr' ? 'Senzacionalizam' : 'Сензационализам'}</text>
                             
+                            <!-- Projection lines to axes -->
+                            <line x1={targetX} y1="100" x2={targetX} y2={targetY} stroke="var(--nyt-accent)" stroke-width="0.75" stroke-dasharray="1.5 1.5" opacity="0.5" />
+                            <line x1="100" y1={targetY} x2={targetX} y2={targetY} stroke="var(--nyt-accent)" stroke-width="0.75" stroke-dasharray="1.5 1.5" opacity="0.5" />
+
                             <!-- Pulsating target coordinate point -->
                             <g class="compass-target-group">
-                                <circle cx={20 + (toneAnalysis?.objectivity ?? 0.5) * 160} cy={20 + (1 - ((pluralismScore ?? 50) / 100)) * 160} r="8" class="compass-target-glow" style="transform-origin: center;" />
-                                <circle cx={20 + (toneAnalysis?.objectivity ?? 0.5) * 160} cy={20 + (1 - ((pluralismScore ?? 50) / 100)) * 160} r="4" class="compass-target-point" />
+                                <circle cx={targetX} cy={targetY} r="7" class="compass-target-glow" style="transform-origin: center;" />
+                                <circle cx={targetX} cy={targetY} r="3.5" class="compass-target-point" />
                             </g>
                         </svg>
                     </div>
@@ -348,45 +377,69 @@ const displayPerspectives = perspectives
     }
 
     .bias-compass-card {
-        padding: 1.25rem;
-        background: rgba(255, 255, 255, 0.4);
+        padding: 0.9rem;
+        background: rgba(255, 255, 255, 0.45);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
-        border: 1px solid rgba(0, 0, 0, 0.05);
-        border-radius: 12px;
-        box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.03);
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        border-radius: 10px;
+        box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.02);
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
+        gap: 0.35rem;
         transition: all 0.3s var(--ease-editorial);
     }
 
     .dark .bias-compass-card {
-        background: rgba(0, 0, 0, 0.2);
+        background: rgba(18, 18, 18, 0.45);
         border-color: rgba(255, 255, 255, 0.05);
     }
 
     .bias-compass-card:hover {
-        border-color: color-mix(in srgb, var(--nyt-accent) 30%, transparent);
-        box-shadow: 0 8px 25px -4px rgba(0, 0, 0, 0.05);
+        border-color: color-mix(in srgb, var(--nyt-accent) 25%, transparent);
+        box-shadow: 0 6px 20px -4px rgba(0, 0, 0, 0.04);
+    }
+
+    .compass-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
     }
 
     .compass-label {
         font-family: var(--font-sans);
-        font-size: 0.65rem;
+        font-size: 0.62rem;
         font-weight: 950;
         text-transform: uppercase;
         color: var(--nyt-accent);
         margin: 0;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.04em;
+    }
+
+    .compass-data-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+        background: color-mix(in srgb, var(--nyt-accent) 8%, transparent);
+        border: 1px solid color-mix(in srgb, var(--nyt-accent) 20%, transparent);
+        padding: 0.1rem 0.45rem;
+        border-radius: 9999px;
+        font-family: var(--font-sans);
+        font-size: 0.58rem;
+        font-weight: 850;
+        color: var(--nyt-accent);
+        letter-spacing: 0.03em;
+        white-space: nowrap;
+        height: fit-content;
     }
 
     .compass-desc {
         font-family: var(--font-sans);
-        font-size: 0.72rem;
+        font-size: 0.68rem;
         color: var(--muted-foreground);
-        margin: 0 0 0.5rem 0;
-        line-height: 1.3;
+        margin: 0 0 0.35rem 0;
+        line-height: 1.35;
     }
 
     .compass-canvas-container {
@@ -397,30 +450,30 @@ const displayPerspectives = perspectives
 
     .compass-svg {
         width: 100%;
-        max-width: 220px;
+        max-width: 180px;
         height: auto;
         overflow: visible;
     }
 
     .compass-grid-axis {
-        stroke: color-mix(in srgb, var(--border) 70%, transparent);
-        stroke-width: 1px;
+        stroke: color-mix(in srgb, var(--border) 60%, transparent);
+        stroke-width: 0.75px;
         stroke-dasharray: 2 2;
     }
 
     .compass-grid-ring {
         fill: none;
-        stroke: color-mix(in srgb, var(--border) 40%, transparent);
-        stroke-width: 1px;
+        stroke: color-mix(in srgb, var(--border) 35%, transparent);
+        stroke-width: 0.75px;
     }
 
     .compass-text {
         font-family: var(--font-sans);
-        font-size: 8px;
-        font-weight: 750;
+        font-size: 6.5px;
+        font-weight: 850;
         fill: var(--muted-foreground);
         text-transform: uppercase;
-        letter-spacing: 0.02em;
+        letter-spacing: 0.03em;
     }
 
     .compass-text-top {
@@ -441,8 +494,8 @@ const displayPerspectives = perspectives
 
     .compass-target-glow {
         fill: var(--nyt-accent);
-        opacity: 0.25;
-        animation: compass-pulse 2.5s infinite ease-in-out;
+        opacity: 0.22;
+        animation: compass-pulse 2.8s infinite ease-in-out;
     }
 
     .compass-target-point {
@@ -453,12 +506,12 @@ const displayPerspectives = perspectives
 
     @keyframes compass-pulse {
         0%, 100% {
-            transform: scale(0.9);
-            opacity: 0.2;
+            transform: scale(0.95);
+            opacity: 0.18;
         }
         50% {
-            transform: scale(1.6);
-            opacity: 0.45;
+            transform: scale(1.5);
+            opacity: 0.4;
         }
     }
 </style>
