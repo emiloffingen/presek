@@ -1,5 +1,5 @@
 ---
-import { Timer, Activity, ShieldCheck, Cpu } from 'lucide-react';
+import { Timer, Activity } from 'lucide-react';
 import { useTranslations } from '../../i18n/utils';
 
 interface Props {
@@ -7,42 +7,15 @@ interface Props {
 	dispatchIcon: any;
 	stats: any;
 	readingTime?: number;
-    metadata?: any;
     lang?: string;
 }
 
-const { currentDate, dispatchIcon: DispatchIcon, stats, readingTime = 5, metadata, lang = 'sr' } = Astro.props;
+const { currentDate, dispatchIcon: DispatchIcon, stats, readingTime = 5, lang = 'sr' } = Astro.props;
 const t = useTranslations(lang as any);
 const isMK = lang === 'mk';
-
-const systemSignature = metadata?.system_signature || 'Presek v2.1-CC';
-const modelName = metadata?.model || 'Gemma 2 / Mistral';
 ---
 
 <header class="briefing-masthead motion-rise animate-rise">
-    {/* 1. REPORT STATUS BAR */}
-    <div class="briefing-status-deck mb-8">
-        <div class="briefing-status-inner">
-            <div class="briefing-status-item">
-                <div class="briefing-pulse-emerald"></div>
-                <span class="briefing-status-label">{t('footer.system_signal')}</span>
-                <span class="briefing-status-value">{t('footer.active')}</span>
-            </div>
-            <div class="briefing-status-item divider-left">
-                <Cpu size={10} className="text-muted-foreground" />
-                <span class="briefing-status-label">{isMK ? 'AI МОДЕЛ' : 'AI MODEL'}</span>
-                <span class="briefing-status-value">{modelName}</span>
-            </div>
-            <div class="briefing-status-item divider-left hide-mobile">
-                <ShieldCheck size={10} className="text-emerald-500" />
-                <span class="briefing-status-label">{isMK ? 'ВЕРИФИКАЦИЈА' : 'VERIFIKACIJA'}</span>
-                <span class="briefing-status-value text-emerald-500">{isMK ? 'ПОТВРДЕНО' : 'POTVRĐENO'}</span>
-            </div>
-            <div class="briefing-status-item ml-auto briefing-signature-tag hide-mobile">
-                <span class="briefing-status-value tabular-nums opacity-60 font-mono">{systemSignature}</span>
-            </div>
-        </div>
-    </div>
 
 	<div class="masthead-main mb-12">
 		<div class="masthead-branding mb-8">
@@ -97,26 +70,7 @@ const modelName = metadata?.model || 'Gemma 2 / Mistral';
 <style>
     .briefing-masthead { margin-bottom: 3rem; }
 
-    /* ── Report Status Bar ──────────────────────────── */
-    .report-status-bar {
-        background: var(--card);
-        border: 1px solid var(--border);
-        padding: 0.6rem 1.25rem;
-        border-radius: 99px;
-    }
-    .status-inner { display: flex; align-items: center; gap: 1.5rem; }
-    .status-item { display: flex; align-items: center; gap: 0.5rem; }
-    .divider-left { border-left: 1px solid var(--border); padding-left: 1.5rem; }
-    .status-label { font-size: 0.55rem; font-weight: 900; letter-spacing: 0.1em; color: var(--muted-foreground); text-transform: uppercase; }
-    .status-value { font-size: 0.6rem; font-weight: 850; letter-spacing: 0.05em; color: var(--foreground); }
 
-    .pulse-indicator { width: 6px; height: 6px; border-radius: 50%; }
-    .pulse-emerald { background: #10b981; box-shadow: 0 0 8px #10b981; animation: pulse-glow 2s infinite; }
-
-    @keyframes pulse-glow {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.5; transform: scale(1.2); }
-    }
 
     .masthead-main { display: flex; flex-direction: column; align-items: center; text-align: center; }
     .masthead-title { font-family: var(--font-serif); font-size: clamp(2rem, 6vw, 4.5rem); font-weight: 950; line-height: 0.9; letter-spacing: -0.04em; margin: 0; }
@@ -126,29 +80,11 @@ const modelName = metadata?.model || 'Gemma 2 / Mistral';
     .signature-tag { font-family: var(--font-mono); }
 
     @media (max-width: 768px) {
-        .report-status-bar { border-radius: 0px; }
-        .status-inner { flex-wrap: wrap; gap: 0.75rem; }
-        .divider-left { border: none; padding-left: 0; }
         .hide-mobile { display: none; }
-        .signature-tag { width: 100%; border-top: 1px solid var(--border); padding-top: 0.5rem; margin-top: 0.25rem; }
     }
 
     @media (max-width: 639.98px) {
         .briefing-masthead { margin-bottom: 1.75rem; }
-        .report-status-bar {
-            margin-bottom: 1.25rem;
-            padding: 0.55rem 0.85rem;
-        }
-        .status-inner {
-            gap: 0.5rem 0.85rem;
-        }
-        .status-label {
-            font-size: 0.48rem;
-            letter-spacing: 0.08em;
-        }
-        .status-value {
-            font-size: 0.52rem;
-        }
         .masthead-main {
             margin-bottom: 1.75rem;
         }

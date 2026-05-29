@@ -45,9 +45,7 @@ export default function NewsletterIsland({ lang = 'sr' }: { lang?: keyof typeof 
             {t('newsletter.success')}
           </h3>
           <p className="font-serif italic text-sm text-secondary-foreground leading-relaxed">
-            {lang === 'sr'
-              ? 'Svako jutro u 08:00 časova ćete dobijati najvažniji presek vesti direktno u vaše sanduče.'
-              : 'Секое утро во 08:00 часот ќе го добивате најважниот пресек на вестите директно во вашето сандаче.'}
+            {t('newsletter.success_description')}
           </p>
         </div>
         <div className="absolute -right-4 -bottom-4 opacity-5">
@@ -65,16 +63,12 @@ export default function NewsletterIsland({ lang = 'sr' }: { lang?: keyof typeof 
             {t('newsletter.title')}
           </span>
           <h3 className="section-heading leading-tight tracking-tight">
-            {lang === 'sr'
-              ? 'Uređen pregled dana kroz objektiv pluralizma.'
-              : 'Уреден преглед на денот низ објективот на плурализмот.'}
+            {t('newsletter.description')}
           </h3>
         </header>
 
         <p className="font-serif italic text-sm text-secondary-foreground leading-relaxed mb-6">
-          {lang === 'sr'
-            ? 'Svako jutro dobijajte destilovan sublimat događaja koji oblikuju javnu debatu.'
-            : 'Секое утро добивајте дестилиран сублимат на настаните што ја обликуваат јавната дебата.'}
+          {t('newsletter.subdescription')}
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-[var(--grid-gap)]">
@@ -108,9 +102,7 @@ export default function NewsletterIsland({ lang = 'sr' }: { lang?: keyof typeof 
         </form>
 
         <p className="text-[9px] text-muted-foreground mt-4 leading-relaxed opacity-60">
-          {lang === 'sr'
-            ? '* Prijavljivanjem se slažete sa našim uslovima. Možete se odjaviti u bilo kom trenutku.'
-            : '* Со пријавувањето се согласувате со нашите услови. Можете да се одјавите во секое време.'}
+          {t('newsletter.disclaimer')}
         </p>
       </div>
 

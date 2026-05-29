@@ -78,7 +78,6 @@ const displayDate = briefingData?.date
                             currentDate={displayDate}
                             dispatchIcon={Newspaper}
                             lang={lang}
-                            metadata={briefingData.metadata}
                             stats={{
                                 total_feeds: briefingData.day_stats?.total_sources || stats?.total_feeds || 0,
                                 last_24h: briefingData.day_stats?.total_articles || stats?.last_24h || 0,

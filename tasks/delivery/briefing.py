@@ -823,7 +823,6 @@ def generate_daily_brief_task(retry_attempt=0, lang="sr"):
 
             # Phase 1: Extract structured metadata for Intelligence Report 2.0
             metadata = {
-                "system_signature": "Presek v2.1-CC",
                 "model": "Gemma 2 / Mistral-Nemo",
                 "stats": {"total_articles": total_24h, "intl_share": intl_pct, "pluralism_score": diverse_pct},
                 "key_narratives": [],

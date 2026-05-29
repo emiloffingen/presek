@@ -25,7 +25,10 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
 const STOP_WORDS = new Set([
     'evo', 'ovo', 'kako', 'sada', 'zato', 'kada', 'šta', 'sve', 'još', 'ako', 'ili', 'ali',
     'samo', 'zbog', 'koji', 'koja', 'koje', 'kroz', 'prema', 'koga', 'kome', 'čemu', 'čiji',
-    'te', 'uz', 'bi', 'biće', 'bio', 'bila', 'bilo', 'bili', 'bile', 'sam', 'smo', 'ste', 'su'
+    'te', 'uz', 'bi', 'biće', 'bio', 'bila', 'bilo', 'bili', 'bile', 'sam', 'smo', 'ste', 'su',
+    'oglasio', 'oglasila', 'oglasili', 'oglasio se', 'oglasila se',
+    'kompanija', 'kompanije', 'kompanij', 'kompaniju', 'kompanijama',
+    'automobil', 'automobili', 'automobila', 'automobilu'
 ]);
 
 const NORMALIZATIONS: Record<string, string> = {
@@ -42,7 +45,11 @@ const NORMALIZATIONS: Record<string, string> = {
     'partizanu': 'partizan',
     'zvezde': 'crvena zvezda',
     'zvezdi': 'crvena zvezda',
-    'zvezda': 'crvena zvezda'
+    'zvezda': 'crvena zvezda',
+    'ukrajine': 'ukrajina',
+    'ukrajini': 'ukrajina',
+    'ukrajinom': 'ukrajina',
+    'ukrajinu': 'ukrajina'
 };
 
 // Deduplicate and normalize entities to declutter the tag cloud

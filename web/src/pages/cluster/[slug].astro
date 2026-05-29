@@ -870,7 +870,7 @@ const articleSchema = cluster ? {
 									<h4 class="sidebar-label">{t('cluster.key_entities')}</h4>
 									<div class="flex flex-col gap-[var(--grid-gap)] mt-4">
 											{keyEntities.map((name: string) => (
-											<EntityContextCard name={name} client:visible />
+											<EntityContextCard name={name} lang="sr" client:visible />
 										))}
 									</div>
 								</div>
@@ -1553,7 +1553,29 @@ const articleSchema = cluster ? {
 
 <script is:inline>
 	(() => {
+		// Helper function for screen reader announcements
+		function createAnnouncement() {
+			const el = document.createElement('div');
+			el.id = 'aria-announcement';
+			el.setAttribute('aria-live', 'polite');
+			el.setAttribute('aria-atomic', 'true');
+			el.style.position = 'absolute';
+			el.style.width = '1px';
+			el.style.height = '1px';
+			el.style.margin = '-1px';
+			el.style.padding = '0';
+			el.style.overflow = 'hidden';
+			el.style.clip = 'rect(0, 0, 0, 0)';
+			el.style.border = '0';
+			document.body.appendChild(el);
+			return el;
+		}
+
 		const initReaderMode = () => {
+			// Wait for DOM to be fully ready
+			if (document.readyState !== 'complete') return;
+			if (!customElements || !customElements.whenDefined) return;
+
 			const article = document.querySelector('.cluster-article-container');
 			const button = document.querySelector('[data-reader-toggle]');
 			const label = document.querySelector('[data-reader-label]');
@@ -1561,22 +1583,69 @@ const articleSchema = cluster ? {
 			if (!article || !button) return;
 			if (button.dataset.readerBound === 'true') return;
 			button.dataset.readerBound = 'true';
+
 			const focusText = document.documentElement.lang === 'mk' ? 'Фокус читање' : 'Fokus čitanje';
 			const fullText = document.documentElement.lang === 'mk' ? 'Целосен приказ' : 'Ceo prikaz';
+
+			// Check localStorage for user preference
+			try {
+				const savedPreference = localStorage.getItem('readerMode');
+				if (savedPreference === 'true') {
+					article.classList.add('reader-focused');
+				}
+			} catch (e) {
+				console.error('Could not read localStorage:', e);
+			}
 
 			const syncLabel = () => {
 				const active = article.classList.contains('reader-focused');
 				button.setAttribute('aria-pressed', active ? 'true' : 'false');
 				if (label) label.textContent = active ? fullText : focusText;
+
+				// Announce change for screen readers
+				try {
+					const announcement = document.getElementById('aria-announcement') || createAnnouncement();
+					announcement.textContent = active ? fullText : focusText;
+				} catch (e) {
+					console.error('Could not create announcement:', e);
+				}
 			};
 
-			button.addEventListener('click', () => {
+			// Debounced click handler
+			let lastClick = 0;
+			const handleClick = () => {
+				const now = Date.now();
+				if (now - lastClick < 500) return; // Prevent rapid clicks
+				lastClick = now;
+
 				article.classList.toggle('reader-focused');
+
+				// Save preference to localStorage
+				try {
+					const isFocused = article.classList.contains('reader-focused');
+					localStorage.setItem('readerMode', isFocused ? 'true' : 'false');
+				} catch (e) {
+					console.error('Could not write to localStorage:', e);
+				}
+
 				syncLabel();
+			};
+
+			button.addEventListener('click', handleClick);
+
+			// Keyboard support
+			button.addEventListener('keydown', (e) => {
+				if (e.key === 'Enter' || e.key === ' ') {
+					e.preventDefault();
+					handleClick();
+				}
 			});
+
+			// Handle URL parameter
 			if (new URLSearchParams(window.location.search).get('reader') === '1') {
 				article.classList.add('reader-focused');
 			}
+
 			syncLabel();
 
 			const updateProgress = () => {
@@ -1591,5 +1660,8 @@ const articleSchema = cluster ? {
 
 		initReaderMode();
 		document.addEventListener('astro:page-load', initReaderMode);
+		
+		// Fallback in case astro:page-load doesn't fire
+		setTimeout(initReaderMode, 1000);
 	})();
 </script>
