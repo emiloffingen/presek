@@ -37,6 +37,17 @@ def classify_news_quality_locally(title: str, description: str) -> dict:
         "energetika",
         "Zdravstvo",
         "Obrazovanje",
+        # Serbian equivalents
+        "skupstina",
+        "predsednik",
+        "premijer",
+        "ministar",
+        "pravosudje",
+        "tuzilastvo",
+        "pravda",
+        "izgradnja",
+        "obrazovanje",
+        "zdravstvo",
     }
 
     # 2. Low-Value / Junk Indicators
@@ -66,6 +77,14 @@ def classify_news_quality_locally(title: str, description: str) -> dict:
         "galerija",
         "gledajte",
         "nema da veruvate",
+        # Serbian equivalents
+        "zvezde",
+        "predvidjanja",
+        "haljina",
+        "drustvene mreze",
+        "influenser",
+        "necete verovati",
+        "estrada",
     }
 
     # 3. Literacy / Professionalism Penalties

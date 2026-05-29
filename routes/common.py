@@ -50,7 +50,7 @@ def _validate_sync_token_value(value: str, *, required: bool = True) -> str:
     return token
 
 
-def _looks_macedonian_headline(text: str) -> bool:
+def _looks_cyrillic_headline(text: str) -> bool:
     value = str(text or "").strip()
     if not value:
         return False
@@ -64,7 +64,7 @@ def _looks_macedonian_headline(text: str) -> bool:
 
 
 def _preferred_cluster_headline(rows) -> str:
-    preferred_mk = None
+    preferred_cyrillic = None
     fallback = ""
     for row in rows or []:
         title = cleanAndDecode(row.get("title") or "")
@@ -74,11 +74,11 @@ def _preferred_cluster_headline(rows) -> str:
             fallback = title
         original_title = cleanAndDecode(row.get("original_title") or "")
         is_translated = bool(row.get("is_translated")) or (original_title and title != original_title)
-        if is_translated and _looks_macedonian_headline(title):
+        if is_translated and _looks_cyrillic_headline(title):
             return title
-        if preferred_mk is None and _looks_macedonian_headline(title):
-            preferred_mk = title
-    return preferred_mk or fallback or "vest"
+        if preferred_cyrillic is None and _looks_cyrillic_headline(title):
+            preferred_cyrillic = title
+    return preferred_cyrillic or fallback or "vest"
 
 
 def _parse_ip_literal(value: str) -> str:
