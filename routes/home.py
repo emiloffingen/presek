@@ -401,7 +401,7 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
     try:
         # Fetch all dependencies in parallel
         results = await asyncio.gather(
-            fetch_news_data(sort="score", page_size=48, lang=lang),
+            fetch_news_data(sort="score", page_size=80, lang=lang),
             fetch_news_data(sort="recent", page_size=24, lang=lang),
             get_trending_route(lang=lang),
             get_top_entities(limit=12, lang=lang),

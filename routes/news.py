@@ -380,7 +380,7 @@ async def fetch_news_data(
 
     try:
         page = max(0, min(int(page or 0), API_MAX_PAGE))
-        page_size = max(1, min(int(page_size or 24), 50))
+        page_size = max(1, min(int(page_size or 24), 100))
         row_limit = _news_row_limit(page, page_size)
         if q:
             q = q.strip()[:API_MAX_Q_LEN]
