@@ -128,7 +128,43 @@ export default function NationalMoodIsland({ lang = 'sr' }: { lang?: string }) {
     const indicatorPos = ((mood.score + 1) / 2) * 100;
 
     return (
-        <div className="relative overflow-hidden bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-premium transition-all duration-500 hover:shadow-2xl group">
+        <div className="relative overflow-hidden rounded-xl p-6 shadow-premium transition-all duration-500 national-mood-card group">
+            <style>{`
+                .national-mood-card {
+                  background: linear-gradient(135deg, rgba(254, 252, 246, 0.75) 0%, rgba(246, 240, 228, 0.7) 100%);
+                  backdrop-filter: var(--glass-blur);
+                  -webkit-backdrop-filter: var(--glass-blur);
+                  border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+                  box-shadow: 0 8px 32px 0 color-mix(in srgb, var(--background) 30%, rgba(0, 0, 0, 0.08)),
+                              inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 6%, transparent);
+                  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+                }
+                
+                .dark .national-mood-card {
+                  background: linear-gradient(135deg, rgba(22, 26, 41, 0.7) 0%, rgba(15, 18, 29, 0.65) 100%);
+                  border-color: color-mix(in srgb, var(--border) 80%, transparent);
+                  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.3),
+                              inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 4%, transparent);
+                }
+                
+                .national-mood-card:hover {
+                  border-color: color-mix(in srgb, var(--nyt-accent) 35%, var(--border));
+                  box-shadow: 0 16px 48px 0 color-mix(in srgb, var(--background) 50%, rgba(0, 0, 0, 0.18)),
+                              inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 10%, transparent),
+                              0 0 30px -4px color-mix(in srgb, var(--nyt-accent) 6%, transparent);
+                  transform: translateY(-2px);
+                }
+                
+                .mood-trend-column {
+                  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+                }
+                
+                .mood-trend-column:hover {
+                  transform: scaleY(1.15) scaleX(1.3);
+                  filter: brightness(1.25);
+                }
+            `}</style>
+            
             {/* Ambient Background Gradient */}
             <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.08] pointer-events-none bg-gradient-to-br from-nyt-accent via-transparent to-emerald-500 group-hover:opacity-10 transition-opacity duration-700" />
             
@@ -161,8 +197,13 @@ export default function NationalMoodIsland({ lang = 'sr' }: { lang?: string }) {
                     </div>
                     <div className="relative h-1.5 w-full bg-zinc-100 dark:bg-zinc-900 rounded-full overflow-visible">
                         <div
-                            className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white dark:bg-white border-2 border-black dark:border-nyt-accent rounded-full shadow-lg transition-all duration-1000 cubic-bezier(0.16, 1, 0.3, 1) z-20"
-                            style={{ left: `${indicatorPos}%`, marginLeft: '-6px' }}
+                            className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white dark:bg-zinc-950 border-[3px] rounded-full shadow-lg transition-all duration-1000 cubic-bezier(0.16, 1, 0.3, 1) z-20"
+                            style={{
+                                left: `${indicatorPos}%`,
+                                marginLeft: '-7px',
+                                borderColor: mood.score > 0.2 ? '#10b981' : mood.score < -0.2 ? '#ef4444' : '#f59e0b',
+                                boxShadow: mood.score > 0.2 ? '0 0 10px 2px rgba(16,185,129,0.5)' : mood.score < -0.2 ? '0 0 10px 2px rgba(239,68,68,0.5)' : '0 0 10px 2px rgba(245,158,11,0.5)'
+                            }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-r from-red-500/20 via-zinc-200/10 dark:via-zinc-800/10 to-emerald-500/20 rounded-full" />
                     </div>
@@ -192,12 +233,12 @@ export default function NationalMoodIsland({ lang = 'sr' }: { lang?: string }) {
                             {trends.map((t, i) => (
                                 <div
                                     key={i}
-                                    className="w-2 rounded-t-[2px] transition-all duration-500 hover:scale-x-125 hover:brightness-110"
+                                    className="w-2 rounded-t-[2px] mood-trend-column"
                                     style={{
                                         height: `${Math.max(15, (t.objectivity * 100))}%`,
                                         backgroundColor: t.score > 0.1 ? '#10b981' : t.score < -0.1 ? '#ef4444' : '#71717a',
                                         opacity: 0.3 + (i * 0.1)
-                                    }}
+                                    } as any}
                                     title={`${t.day}: ${t.label} (Obj: ${t.objectivity})`}
                                 />
                             ))}
