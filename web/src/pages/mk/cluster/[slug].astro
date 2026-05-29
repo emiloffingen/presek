@@ -49,8 +49,8 @@ function getRelativeTimeStr(dateStr: string) {
 
 const parseBriefItem = (item: string, lang: string) => {
     const clean = item.trim();
-    // Match prefix up to colon
-    const match = clean.match(/^([^:]+):\s*(.*)$/);
+    // Match prefix up to colon (only allow alphabetic/Cyrillic characters, spaces, and hyphens of length 3-20 to prevent splitting on timestamps like "06:00")
+    const match = clean.match(/^([A-Za-z\u0400-\u04FF\s\-]{3,20}):\s*(.*)$/);
     if (match) {
         const prefix = match[1].trim();
         const content = match[2].trim();
