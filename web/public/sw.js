@@ -161,3 +161,25 @@ self.addEventListener('fetch', e => {
     caches.match(e.request).then(cached => cached || fetch(e.request))
   );
 });
+
+// Background Prefetching Handler
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'PREFETCH_URLS') {
+    const urls = event.data.urls || [];
+    caches.open(CACHE_NAME).then(cache => {
+      urls.forEach(url => {
+        cache.match(url).then(cachedResponse => {
+          if (!cachedResponse) {
+            fetch(url).then(networkResponse => {
+              if (networkResponse && networkResponse.status === 200) {
+                cache.put(url, networkResponse);
+              }
+            }).catch(() => {
+              // Ignore safe background network failures
+            });
+          }
+        });
+      });
+    });
+  }
+});

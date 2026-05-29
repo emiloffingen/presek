@@ -273,6 +273,33 @@ const organizationSchema = {
 						console.warn('Service Worker registration failed:', err);
 					});
 				});
+
+				// Network-aware dynamic background prefetching for instant PWA loading
+				const dispatchPrefetch = () => {
+					if (navigator.serviceWorker.controller) {
+						const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+						if (conn) {
+							if (conn.saveData || (conn.effectiveType && conn.effectiveType !== '4g')) {
+								return; // Skip prefetch on slow connection or data-saver
+							}
+						}
+						const clusterUrls = Array.from(document.querySelectorAll('a'))
+							.map(a => a.getAttribute('href'))
+							.filter(href => href && (href.startsWith('/cluster/') || href.startsWith('/mk/cluster/')))
+							.map(href => new URL(href, window.location.origin).pathname);
+						
+						const uniqueUrls = [...new Set(clusterUrls)].slice(0, 12);
+						if (uniqueUrls.length > 0) {
+							navigator.serviceWorker.controller.postMessage({
+								type: 'PREFETCH_URLS',
+								urls: uniqueUrls
+							});
+						}
+					}
+				};
+
+				// Trigger on initial page load and all subsequent Astro client-side page transitions
+				document.addEventListener('astro:page-load', dispatchPrefetch);
 			}
 
 			// Parallax Effect for Hero Images
