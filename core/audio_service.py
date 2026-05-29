@@ -72,11 +72,13 @@ class AudioService:
 
             # Locate local ONNX weights in shared models path
             onnx_path = "/home/emiloffingen/presek-runtime/shared/models/kokoro-v0_19.onnx"
-            voices_json = "/home/emiloffingen/presek-runtime/shared/models/voices.json"
+            voices_bin = "/home/emiloffingen/presek-runtime/shared/models/voices.bin"
             
-            if os.path.exists(onnx_path) and os.path.exists(voices_json):
+            if os.path.exists(onnx_path) and os.path.exists(voices_bin):
+                # Set system espeak-ng data path to override hardcoded paths in precompiled wheels
+                os.environ["ESPEAK_DATA_PATH"] = "/usr/lib/x86_64-linux-gnu/espeak-ng-data"
                 log.info("[audio] Initializing local Kokoro ONNX model on CPU...")
-                kokoro = kokoro_onnx.KokoroOnnx(onnx_path, voices_json)
+                kokoro = kokoro_onnx.Kokoro(onnx_path, voices_bin)
                 
                 # Pick a premium voice (af_bella is female, am_adam is male)
                 voice_name = "af_bella" if lang == "sr" else "am_adam"
