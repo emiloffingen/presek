@@ -974,6 +974,17 @@ const articleSchema = cluster ? {
         opacity: 0;
     }
 
+    @keyframes cardReveal {
+        from {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
     .timeline-marker {
         position: absolute;
         left: -1.5rem;
@@ -1013,7 +1024,7 @@ const articleSchema = cluster ? {
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.01);
     }
 
-    .dark .timeline-event-content {
+    :global(.dark) .timeline-event-content {
         background: rgba(0, 0, 0, 0.2);
         border-color: rgba(255, 255, 255, 0.05);
     }
@@ -1025,7 +1036,7 @@ const articleSchema = cluster ? {
         background: rgba(255, 255, 255, 0.6);
     }
 
-    .dark .timeline-event-content:hover {
+    :global(.dark) .timeline-event-content:hover {
         background: rgba(0, 0, 0, 0.3);
     }
 
