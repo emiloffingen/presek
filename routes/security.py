@@ -1,12 +1,11 @@
-"""
-security.py - Centralized security utilities and middleware for Presek API
-"""
-
 import importlib
 import logging
 import os
 import re
 import secrets
+import hmac
+import hashlib
+import time
 from typing import Callable
 
 from fastapi import HTTPException, Request
@@ -24,6 +23,88 @@ def _raise_http_error(status_code: int, detail: str):
         log.debug(f"Failed to import fastapi: {e}")
         exc_cls = HTTPException
     raise exc_cls(status_code=status_code, detail=detail)
+
+
+# =============================================================================
+# CSRF Protection System
+# =============================================================================
+
+# Initialize CSRF secret - use environment variable or generate a stable one
+_CSRF_SECRET_FILE = "/tmp/presek_csrf_secret.txt"
+if os.environ.get("CSRF_TOKEN_SECRET"):
+    CSRF_TOKEN_SECRET = os.environ.get("CSRF_TOKEN_SECRET")
+elif os.path.exists(_CSRF_SECRET_FILE):
+    with open(_CSRF_SECRET_FILE, "r") as f:
+        CSRF_TOKEN_SECRET = f.read().strip()
+else:
+    CSRF_TOKEN_SECRET = secrets.token_urlsafe(32)
+    try:
+        with open(_CSRF_SECRET_FILE, "w") as f:
+            f.write(CSRF_TOKEN_SECRET)
+    except Exception:
+        pass  # If we can't write the file, just use the in-memory secret
+
+CSRF_TOKEN_EXPIRY = 3600  # 1 hour
+
+
+def generate_csrf_token() -> str:
+    """Generate a CSRF token."""
+    timestamp = str(int(time.time()))
+    message = f"{timestamp}:{CSRF_TOKEN_SECRET}"
+    signature = hmac.new(CSRF_TOKEN_SECRET.encode(), message.encode(), hashlib.sha256).hexdigest()
+    return f"{timestamp}:{signature}"
+
+
+def validate_csrf_token(token: str) -> bool:
+    """Validate a CSRF token."""
+    if not token or ":" not in token:
+        return False
+    
+    try:
+        timestamp_str, signature = token.split(":", 1)
+        timestamp = int(timestamp_str)
+        
+        # Check if token is expired
+        if int(time.time()) - timestamp > CSRF_TOKEN_EXPIRY:
+            return False
+        
+        # Reconstruct and validate signature
+        message = f"{timestamp}:{CSRF_TOKEN_SECRET}"
+        expected_signature = hmac.new(
+            CSRF_TOKEN_SECRET.encode(), 
+            message.encode(), 
+            hashlib.sha256
+        ).hexdigest()
+        
+        return hmac.compare_digest(signature, expected_signature)
+    except Exception:
+        return False
+
+
+async def verify_csrf_token(request: Request):
+    """Dependency for CSRF token validation."""
+    # Allow GET, HEAD, OPTIONS requests
+    if request.method in ("GET", "HEAD", "OPTIONS"):
+        return True
+    
+    # Check for CSRF token in header or form data
+    csrf_token = request.headers.get("X-CSRF-Token")
+    
+    if not csrf_token:
+        try:
+            form_data = await request.form()
+            csrf_token = form_data.get("csrf_token")
+        except Exception:
+            pass
+    
+    if not validate_csrf_token(csrf_token):
+        raise HTTPException(
+            status_code=403,
+            detail="Nevaliden CSRF token"
+        )
+    
+    return True
+
 
 
 # Security Headers Middleware
@@ -84,6 +165,18 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             samesite="lax",
             max_age=300,  # 5 minutes - match typical page load time
         )
+
+        # Add CSRF token cookie for frontend use
+        csrf_token = generate_csrf_token()
+        response.set_cookie(
+            key="csrf_token",
+            value=csrf_token,
+            httponly=False,  # Must be accessible to JavaScript
+            secure=is_production,
+            samesite="lax",
+            max_age=CSRF_TOKEN_EXPIRY,
+        )
+
 
         # Permissions Policy
         response.headers["Permissions-Policy"] = (
@@ -281,9 +374,10 @@ class EnhancedRateLimitMiddleware(BaseHTTPMiddleware):
 
         client_ip = _client_ip_for_request(request)
 
-        # Skip rate limiting for localhost only in development mode
-        # In production, rate limit all requests including localhost
-        if client_ip in {"127.0.0.1", "::1", "::ffff:127.0.0.1"} and os.environ.get("ENV") != "production":
+        # Security enhancement: Only allow bypass for specific admin endpoints in development
+        if (client_ip in {"127.0.0.1", "::1", "::ffff:127.0.0.1"} 
+            and os.environ.get("ENV") != "production"
+            and not request.url.path.startswith("/admin/")):
             return await call_next(request)
 
         # Check if this path should be rate limited
@@ -331,6 +425,7 @@ def create_security_middleware(app):
     """Create and add all security middleware to the app."""
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(RequestSizeMiddleware)
+    app.add_middleware(EnhancedRateLimitMiddleware)
     log.info("Security middleware configured")
     return app
 

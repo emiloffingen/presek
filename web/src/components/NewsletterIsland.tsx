@@ -10,6 +10,14 @@ export default function NewsletterIsland({ lang = 'sr' }: { lang?: keyof typeof 
   const [message, setMessage] = useState('');
   const t = useTranslations(lang);
 
+  const getCookie = (name: string): string | undefined => {
+    if (typeof document === 'undefined') return undefined;
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop()?.split(';').shift();
+    return undefined;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !email.includes('@')) return;
@@ -17,9 +25,15 @@ export default function NewsletterIsland({ lang = 'sr' }: { lang?: keyof typeof 
     setStatus('loading');
     try {
       const API_URL = apiBaseUrl();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const csrfToken = getCookie('csrf_token');
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
+
       const res = await fetch(`${API_URL}/newsletter/subscribe`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ email, locale: lang }),
       });
       const data = await res.json();
