@@ -63,8 +63,66 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
   };
 
   return (
-    <div className="media-pulse-card bg-background/60 backdrop-blur-md border border-nyt-accent/15 p-5 md:p-6 rounded-xl shadow-editorial overflow-hidden">
-      <div className="flex flex-col gap-6 md:gap-8 items-center">
+    <div className="media-pulse-card p-5 md:p-6 rounded-xl overflow-hidden relative">
+      <style>{`
+        .media-pulse-card {
+          background: linear-gradient(135deg, rgba(254, 252, 246, 0.75) 0%, rgba(246, 240, 228, 0.7) 100%);
+          backdrop-filter: var(--glass-blur);
+          -webkit-backdrop-filter: var(--glass-blur);
+          border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+          box-shadow: 0 8px 32px 0 color-mix(in srgb, var(--background) 30%, rgba(0, 0, 0, 0.08)),
+                      inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 6%, transparent);
+          transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .dark .media-pulse-card {
+          background: linear-gradient(135deg, rgba(22, 26, 41, 0.7) 0%, rgba(15, 18, 29, 0.65) 100%);
+          border-color: color-mix(in srgb, var(--border) 80%, transparent);
+          box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.3),
+                      inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 4%, transparent);
+        }
+        
+        .media-pulse-card:hover {
+          border-color: color-mix(in srgb, var(--nyt-accent) 35%, var(--border));
+          box-shadow: 0 16px 48px 0 color-mix(in srgb, var(--background) 50%, rgba(0, 0, 0, 0.18)),
+                      inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 10%, transparent),
+                      0 0 30px -4px color-mix(in srgb, var(--nyt-accent) 6%, transparent);
+          transform: translateY(-2px);
+        }
+        
+        .radar-sweep-line {
+          transform-origin: 100px 100px;
+          animation: radar-sweep-rotate 5s linear infinite;
+        }
+        
+        @keyframes radar-sweep-rotate {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        
+        .radar-polygon {
+          filter: drop-shadow(0 0 5px color-mix(in srgb, var(--nyt-accent) 30%, transparent));
+          transition: all 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .media-pulse-card:hover .radar-polygon {
+          filter: drop-shadow(0 0 8px color-mix(in srgb, var(--nyt-accent) 50%, transparent));
+          fill-opacity: 0.25;
+        }
+        
+        .pulse-stat-row {
+          transition: all 0.3s var(--ease-editorial);
+          padding: 0.35rem 0.5rem;
+          margin: 0 -0.5rem;
+          border-radius: 8px;
+        }
+        
+        .pulse-stat-row:hover {
+          background: color-mix(in srgb, var(--foreground) 3%, transparent);
+          transform: translateX(4px);
+        }
+      `}</style>
+      <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-center">
         {/* Radar Visualization */}
         <div className="relative w-56 h-56 md:w-60 md:h-60 flex-shrink-0 mx-auto">
           <svg viewBox="0 0 200 200" className="w-full h-full overflow-visible drop-shadow-md relative z-10">
@@ -91,6 +149,9 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
             <text x={cx + radius * Math.sin(120 * Math.PI / 180) + 18} y={cy - radius * Math.cos(120 * Math.PI / 180) + 18} textAnchor="middle" className="text-[11px] font-black fill-muted-foreground uppercase tracking-[0.2em]">Senzacionalizam</text>
             <text x={cx + radius * Math.sin(240 * Math.PI / 180) - 18} y={cy - radius * Math.cos(240 * Math.PI / 180) + 18} textAnchor="middle" className="text-[11px] font-black fill-muted-foreground uppercase tracking-[0.2em]">Emocije</text>
 
+            {/* Radar Scanning Line */}
+            <line x1="100" y1="100" x2="100" y2={100 - radius} stroke="var(--nyt-accent)" strokeWidth="1.5" strokeOpacity="0.25" className="radar-sweep-line pointer-events-none" />
+
             {/* Data shape */}
             <polygon
               points={points}
@@ -99,16 +160,16 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
               stroke="var(--nyt-accent)"
               strokeWidth="3"
               strokeLinejoin="round"
-              className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1)"
+              className="radar-polygon transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1)"
             />
 
             {/* Interactive Points */}
             <g className="cursor-crosshair">
-                <circle cx={x1} cy={y1} r="6" fill="var(--nyt-accent)" className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) stroke-[4px] stroke-background hover:scale-150 hover:stroke-[2px]"
+                <circle cx={x1} cy={y1} r="6" fill="var(--nyt-accent)" className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) stroke-[4px] stroke-background hover:scale-150 hover:stroke-[2px] cursor-pointer"
                   onMouseEnter={() => setActiveTooltip({x: x1, y: y1, label: 'Objektivnost', value: `${objectivity.toFixed(1)}%`})} onMouseLeave={() => setActiveTooltip(null)} />
-                <circle cx={x2} cy={y2} r="6" fill="var(--nyt-accent)" className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) stroke-[4px] stroke-background hover:scale-150 hover:stroke-[2px]"
+                <circle cx={x2} cy={y2} r="6" fill="var(--nyt-accent)" className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) stroke-[4px] stroke-background hover:scale-150 hover:stroke-[2px] cursor-pointer"
                   onMouseEnter={() => setActiveTooltip({x: x2, y: y2, label: 'Senzacionalizam', value: `${sensationalism.toFixed(1)}%`})} onMouseLeave={() => setActiveTooltip(null)} />
-                <circle cx={x3} cy={y3} r="6" fill="var(--nyt-accent)" className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) stroke-[4px] stroke-background hover:scale-150 hover:stroke-[2px]"
+                <circle cx={x3} cy={y3} r="6" fill="var(--nyt-accent)" className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) stroke-[4px] stroke-background hover:scale-150 hover:stroke-[2px] cursor-pointer"
                   onMouseEnter={() => setActiveTooltip({x: x3, y: y3, label: 'Emocije', value: `${emotionalCharge.toFixed(1)}%`})} onMouseLeave={() => setActiveTooltip(null)} />
             </g>
           </svg>
@@ -137,31 +198,37 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
           </div>
 
           <div className="flex flex-col gap-4 pt-4 border-t border-border">
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 pulse-stat-row">
               <div className="flex justify-between items-end">
                 <span className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.15em]">Objektivnost</span>
                 <span className="text-lg font-black tabular-nums tracking-tighter">{objectivity.toFixed(0)}%</span>
               </div>
-              <div className="h-1.5 w-full bg-border rounded-full overflow-hidden">
-                  <div className="h-full bg-foreground transition-all duration-1000 delay-300" style={{ width: isMounted ? `${objectivity}%` : '0%' }}></div>
+              <div className="h-2 w-full bg-secondary/40 rounded-full overflow-hidden border border-border/10 shadow-inner">
+                  <div className="h-full bg-gradient-to-r from-zinc-700 to-zinc-950 dark:from-zinc-300 dark:to-white transition-all duration-1000 delay-300 rounded-full relative" style={{ width: isMounted ? `${objectivity}%` : '0%' }}>
+                      <div className="absolute top-0 right-0 bottom-0 w-2 bg-white/40 blur-[1px] animate-pulse" />
+                  </div>
               </div>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 pulse-stat-row">
               <div className="flex justify-between items-end">
                 <span className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.15em]">Senzacionalizam</span>
                 <span className="text-lg font-black tabular-nums tracking-tighter">{sensationalism.toFixed(0)}%</span>
               </div>
-              <div className="h-1.5 w-full bg-border rounded-full overflow-hidden">
-                  <div className="h-full bg-nyt-red transition-all duration-1000 delay-500" style={{ width: isMounted ? `${sensationalism}%` : '0%' }}></div>
+              <div className="h-2 w-full bg-secondary/40 rounded-full overflow-hidden border border-border/10 shadow-inner">
+                  <div className="h-full bg-gradient-to-r from-nyt-red to-rose-400 transition-all duration-1000 delay-500 rounded-full relative" style={{ width: isMounted ? `${sensationalism}%` : '0%' }}>
+                      <div className="absolute top-0 right-0 bottom-0 w-2 bg-white/40 blur-[1px] animate-pulse" />
+                  </div>
               </div>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 pulse-stat-row">
               <div className="flex justify-between items-end">
                 <span className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.15em]">Emocionalnost</span>
                 <span className="text-lg font-black tabular-nums tracking-tighter">{emotionalCharge.toFixed(0)}%</span>
               </div>
-              <div className="h-1.5 w-full bg-border rounded-full overflow-hidden">
-                  <div className="h-full bg-amber-500 transition-all duration-1000 delay-700" style={{ width: isMounted ? `${emotionalCharge}%` : '0%' }}></div>
+              <div className="h-2 w-full bg-secondary/40 rounded-full overflow-hidden border border-border/10 shadow-inner">
+                  <div className="h-full bg-gradient-to-r from-amber-500 to-amber-300 transition-all duration-1000 delay-700 rounded-full relative" style={{ width: isMounted ? `${emotionalCharge}%` : '0%' }}>
+                      <div className="absolute top-0 right-0 bottom-0 w-2 bg-white/40 blur-[1px] animate-pulse" />
+                  </div>
               </div>
             </div>
           </div>
