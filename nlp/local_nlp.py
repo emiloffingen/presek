@@ -3,13 +3,14 @@ from nlp.keywords import ENTITY_NOISE_WORDS, _extract_capitalized_phrases
 
 def classify_news_quality_locally(title: str, description: str) -> dict:
     """
-    Advanced Heuristic-based quality classifier for Macedonian news.
+    Advanced Heuristic-based quality classifier for Macedonian and Serbian news.
     Favors standard literary patterns and penalizes 'internet slang' or 'noise'.
     """
     text = (f"{title} {description or ''}").lower()
 
     # 1. High-Value / Hard News Indicators (Policy, Law, Infrastructure)
     hard_keywords = {
+        # Macedonian
         "sobranie",
         "parlament",
         "vlada",
@@ -39,19 +40,33 @@ def classify_news_quality_locally(title: str, description: str) -> dict:
         "Obrazovanje",
         # Serbian equivalents
         "skupstina",
+        "skupština",
         "predsednik",
         "premijer",
         "ministar",
+        "ministarstvo",
         "pravosudje",
+        "pravosudje",
+        "pravosuđe",
         "tuzilastvo",
+        "tužilaštvo",
         "pravda",
         "izgradnja",
         "obrazovanje",
         "zdravstvo",
+        "budžet",
+        "ekonomija",
+        "ustav",
+        "diplomacija",
+        "izbori",
+        "opština",
+        "opstina",
+        "referendum",
     }
 
     # 2. Low-Value / Junk Indicators
     soft_keywords = {
+        # Macedonian
         "horoskop",
         "horoskopot",
         "zvezdite",
@@ -80,11 +95,25 @@ def classify_news_quality_locally(title: str, description: str) -> dict:
         # Serbian equivalents
         "zvezde",
         "predvidjanja",
+        "predviđanja",
         "haljina",
         "drustvene mreze",
+        "društvene mreže",
         "influenser",
         "necete verovati",
+        "nećete verovati",
         "estrada",
+        "rijaliti",
+        "senzacija",
+        "senzacionalno",
+        "viralno",
+        "žena otkriva",
+        "zena otkriva",
+        "hit recept",
+        "dijeta",
+        "šokantno",
+        "sokantno",
+        "foto galerija",
     }
 
     # 3. Literacy / Professionalism Penalties
@@ -94,9 +123,14 @@ def classify_news_quality_locally(title: str, description: str) -> dict:
         literacy_penalty += 0.2
     if "sokantno" in text or "skandalozno" in text:
         literacy_penalty += 0.15
+    # Serbian clickbait shouting constructs
+    if "šokantno" in text or "senzacionalno" in text:
+        literacy_penalty += 0.15
+    if "nećete verovati" in text or "necete verovati" in text:
+        literacy_penalty += 0.15
 
     # Check for informal particles/slang common in low-quality portals
-    if any(s in text for s in ["eve sto", "kako da", "samo sto"]):
+    if any(s in text for s in ["eve sto", "kako da", "samo sto", "evo šta", "evo sta", "samo što", "samo sto"]):
         literacy_penalty += 0.1
 
     # 4. Entity Density Check (Hard news has more unique named entities)

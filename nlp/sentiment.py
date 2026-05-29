@@ -3,9 +3,9 @@ import re
 
 log = logging.getLogger("presek")
 
-# Simple Macedonian Lexicon for Sentiment (Positive / Negative)
+# Bilingual Macedonian + Serbian Lexicon for Sentiment (Positive / Negative)
 SENTIMENT_LEXICON = {
-    # Positive - General & Politics
+    # Positive - General & Politics (Macedonian)
     "dobro": 1.0,
     "odlicno": 2.0,
     "super": 2.0,
@@ -39,7 +39,25 @@ SENTIMENT_LEXICON = {
     "integracija": 1.0,
     "nadez": 1.5,
     "odobreno": 1.0,
-    # Negative - Crime, War, Crisis
+    # Positive - Serbian specific
+    "uspešno": 1.5,
+    "uspesno": 1.5,
+    "saradnja": 1.0,
+    "investicije": 1.5,
+    "reforme": 1.0,
+    "izgradnja": 1.0,
+    "poboljšanje": 1.5,
+    "poboljsanje": 1.5,
+    "podrška": 1.0,
+    "podrska": 1.0,
+    "pozitivan": 1.5,
+    "nada": 1.5,
+    "odobrenje": 1.0,
+    "unapređenje": 1.5,
+    "unapredjenje": 1.5,
+    "prosperitet": 1.5,
+    "napredak": 1.5,
+    # Negative - Crime, War, Crisis (Macedonian)
     "loso": -1.0,
     "katastrofa": -2.0,
     "kriza": -1.5,
@@ -94,9 +112,34 @@ SENTIMENT_LEXICON = {
     "pad": -1.0,
     "namaluvanje": -0.5,
     "vlosuvanje": -1.5,
+    # Negative - Serbian specific
+    "šteta": -1.5,
+    "nesreća": -2.0,
+    "požar": -1.5,
+    "povređeni": -1.5,
+    "žrtve": -2.0,
+    "uhapšen": -1.0,
+    "uhapsen": -1.0,
+    "suđenje": -0.5,
+    "sudjenje": -0.5,
+    "poskupljenje": -1.0,
+    "neuspešno": -1.5,
+    "neuspesno": -1.5,
+    "poraz": -1.5,
+    "gubitak": -1.5,
+    "pretnja": -1.5,
+    "nasilje": -2.0,
+    "hapšenje": -1.0,
+    "hapsenje": -1.0,
+    "rat": -2.0,
+    "loše": -1.0,
+    "lose": -1.0,
+    "pogoršanje": -1.5,
+    "pogorsanje": -1.5,
+    "smanjenje": -0.5,
 }
 
-NEGATIONS = {"ne", "nitu", "nikako", "bez", "prestana", "prekina", "protiv"}
+NEGATIONS = {"ne", "nitu", "nikako", "bez", "prestana", "prekina", "protiv", "nije", "nema", "nikad"}
 
 
 def analyze_sentiment_locally(text, bypass_llm: bool = False):

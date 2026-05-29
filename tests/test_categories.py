@@ -178,6 +178,15 @@ class TestDetectTopic:
         assert detect_topic("Markets react to inflation and tariffs") == "Ekonomija"
         assert detect_topic("New software and AI chip launch") == "Tehnologija"
 
+    def test_detects_topic_from_serbian_keywords(self):
+        assert detect_topic("Budžet i finansije pod uticajem inflacije") == "Ekonomija"
+        assert detect_topic("Vučić i premijer na skupštini doneli odluku") == "Politika"
+        assert detect_topic("Đoković osvojio turnir nakon dramatične utakmice") == "Sport"
+        assert detect_topic("Hapšenje i suđenje za korupciju u tužilaštvu") == "Kriminal"
+        assert detect_topic("Nova izložba i kultura u pozorištu") == "Kultura"
+
+
+
 
 # ── normalize_headline ────────────────────────────────────────────
 
