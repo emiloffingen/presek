@@ -64,36 +64,38 @@ class AudioService:
 
         log.info(f"[audio] Synthesizing daily briefing for {date_str} ({lang}) [Length: {len(clean_text)} chars]...")
 
-        # 1. Attempt Local Kokoro ONNX Speech Synthesis (First-class choice)
+        # 1. Attempt Local Piper ONNX Speech Synthesis (First-class choice)
         try:
-            import kokoro_onnx
-            import soundfile as sf
-            import numpy as np
+            import wave
+            from piper import PiperVoice
 
             # Locate local ONNX weights in shared models path
-            onnx_path = "/home/emiloffingen/presek-runtime/shared/models/kokoro-v0_19.onnx"
-            voices_bin = "/home/emiloffingen/presek-runtime/shared/models/voices.bin"
+            onnx_path = "/home/emiloffingen/presek-runtime/shared/models/sr_RS-serbski_institut-medium.onnx"
+            config_path = "/home/emiloffingen/presek-runtime/shared/models/sr_RS-serbski_institut-medium.onnx.json"
             
-            if os.path.exists(onnx_path) and os.path.exists(voices_bin):
+            if os.path.exists(onnx_path) and os.path.exists(config_path):
                 # Set system espeak-ng data path to override hardcoded paths in precompiled wheels
                 os.environ["ESPEAK_DATA_PATH"] = "/usr/lib/x86_64-linux-gnu/espeak-ng-data"
-                log.info("[audio] Initializing local Kokoro ONNX model on CPU...")
-                kokoro = kokoro_onnx.Kokoro(onnx_path, voices_bin)
+                log.info("[audio] Initializing local Piper ONNX model...")
+                voice = PiperVoice.load(onnx_path, config_path=config_path)
                 
-                # Pick a premium voice (af_bella is female, am_adam is male)
-                voice_name = "af_bella" if lang == "sr" else "am_adam"
-                
-                # Kokoro ONNX generate returns audio array and sample rate
-                samples, sample_rate = kokoro.create(
-                    clean_text,
-                    voice=voice_name,
-                    speed=1.0,
-                    lang="en-us" # Kokoro handles international mappings elegantly
-                )
+                # If Macedonian is requested, maps characters phonetically to Serbian for the model
+                text_to_speak = clean_text
+                if lang == "mk":
+                    # Transliterate Macedonian Cyrillic letters that do not exist in Serbian Cyrillic
+                    # to their closest Serbian Cyrillic phonetic equivalents.
+                    mapping = {
+                        'ѓ': 'ђ', 'Ѓ': 'Ђ',
+                        'ќ': 'ћ', 'Ќ': 'Ћ',
+                        'ѕ': 'з', 'Ѕ': 'З',
+                    }
+                    for k, v in mapping.items():
+                        text_to_speak = text_to_speak.replace(k, v)
                 
                 # Write to WAV temporarily
                 wav_path = filepath.replace(".mp3", ".wav")
-                sf.write(wav_path, samples, sample_rate)
+                with wave.open(wav_path, "wb") as wav_file:
+                    voice.synthesize_wav(text_to_speak, wav_file)
                 
                 # Compress to premium MP3 using ffmpeg
                 subprocess.run(
@@ -107,10 +109,10 @@ class AudioService:
                 if os.path.exists(wav_path):
                     os.remove(wav_path)
                     
-                log.info(f"[audio] Successfully synthesized briefing using local Kokoro ONNX at {filepath}")
+                log.info(f"[audio] Successfully synthesized briefing using local Piper ONNX at {filepath}")
                 return urlpath
         except Exception as e:
-            log.debug(f"[audio] Local Kokoro ONNX pipeline not fully initialized or skipped: {e}")
+            log.debug(f"[audio] Local Piper ONNX pipeline not fully initialized or skipped: {e}")
 
         # 2. Attempt Google TTS (gTTS) Fallback (Extremely lightweight, zero-compile CPU fallback)
         try:
@@ -179,31 +181,35 @@ class AudioService:
 
         log.info(f"[audio] Synthesizing cluster audio for {cluster_id} ({lang}) [Length: {len(clean_text)} chars]...")
 
-        # 1. Attempt Local Kokoro ONNX Speech Synthesis
+        # 1. Attempt Local Piper ONNX Speech Synthesis
         try:
-            import kokoro_onnx
-            import soundfile as sf
-            import numpy as np
+            import wave
+            from piper import PiperVoice
 
-            onnx_path = "/home/emiloffingen/presek-runtime/shared/models/kokoro-v0_19.onnx"
-            voices_bin = "/home/emiloffingen/presek-runtime/shared/models/voices.bin"
+            onnx_path = "/home/emiloffingen/presek-runtime/shared/models/sr_RS-serbski_institut-medium.onnx"
+            config_path = "/home/emiloffingen/presek-runtime/shared/models/sr_RS-serbski_institut-medium.onnx.json"
             
-            if os.path.exists(onnx_path) and os.path.exists(voices_bin):
+            if os.path.exists(onnx_path) and os.path.exists(config_path):
                 os.environ["ESPEAK_DATA_PATH"] = "/usr/lib/x86_64-linux-gnu/espeak-ng-data"
-                log.info("[audio] Initializing local Kokoro ONNX model for cluster TTS...")
-                kokoro = kokoro_onnx.Kokoro(onnx_path, voices_bin)
+                log.info("[audio] Initializing local Piper ONNX model for cluster TTS...")
+                voice = PiperVoice.load(onnx_path, config_path=config_path)
                 
-                voice_name = "af_bella" if lang == "sr" else "am_adam"
-                
-                samples, sample_rate = kokoro.create(
-                    clean_text,
-                    voice=voice_name,
-                    speed=1.0,
-                    lang="en-us"
-                )
+                # If Macedonian is requested, maps characters phonetically to Serbian for the model
+                text_to_speak = clean_text
+                if lang == "mk":
+                    # Transliterate Macedonian Cyrillic letters that do not exist in Serbian Cyrillic
+                    # to their closest Serbian Cyrillic phonetic equivalents.
+                    mapping = {
+                        'ѓ': 'ђ', 'Ѓ': 'Ђ',
+                        'ќ': 'ћ', 'Ќ': 'Ћ',
+                        'ѕ': 'з', 'Ѕ': 'З',
+                    }
+                    for k, v in mapping.items():
+                        text_to_speak = text_to_speak.replace(k, v)
                 
                 wav_path = filepath.replace(".mp3", ".wav")
-                sf.write(wav_path, samples, sample_rate)
+                with wave.open(wav_path, "wb") as wav_file:
+                    voice.synthesize_wav(text_to_speak, wav_file)
                 
                 subprocess.run(
                     ["ffmpeg", "-y", "-i", wav_path, "-codec:a", "libmp3lame", "-qscale:a", "2", filepath],
@@ -215,10 +221,10 @@ class AudioService:
                 if os.path.exists(wav_path):
                     os.remove(wav_path)
                     
-                log.info(f"[audio] Successfully synthesized cluster audio using local Kokoro ONNX at {filepath}")
+                log.info(f"[audio] Successfully synthesized cluster audio using local Piper ONNX at {filepath}")
                 return urlpath
         except Exception as e:
-            log.debug(f"[audio] Local Kokoro ONNX cluster audio synthesis failed/skipped: {e}")
+            log.debug(f"[audio] Local Piper ONNX cluster audio synthesis failed/skipped: {e}")
 
         # 2. Attempt gTTS Fallback
         try:
