@@ -8,14 +8,14 @@
     border-radius: 12px;
     font-family: var(--font-sans);
     box-shadow: var(--shadow-md), 0 4px 20px -8px rgba(0,0,0,0.3);
-    border: 1px solid rgba(255,255,255,0.08);
+    border: 1px solid color-mix(in srgb, var(--luminous) 30%, transparent);
 }
 
 .dark .pulse-status-deck {
     background: color-mix(in srgb, var(--card) 85%, transparent);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
-    border-color: rgba(255,255,255,0.05);
+    border-color: color-mix(in srgb, var(--luminous) 20%, transparent);
     color: var(--foreground);
 }
 
@@ -35,13 +35,11 @@
 }
 
 .pulse-status-group.divider-left {
-    border-left: 1px solid rgba(255,255,255,0.12);
+    border-left: 1px solid color-mix(in srgb, var(--luminous) 45%, transparent);
     padding-left: 1.5rem;
 }
 
-.dark .pulse-status-group.divider-left {
-    border-left-color: var(--border);
-}
+
 
 .pulse-status-label {
     font-size: 0.55rem;

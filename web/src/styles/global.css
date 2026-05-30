@@ -103,6 +103,9 @@
     /* 10% Accent: Trust Blue (Primary Brand) */
     --nyt-accent: #1e3a8a; /* Deep Trust Blue */
     --nyt-red: #991b1b; /* Richer Journalist Crimson */
+
+    /* Luminous Elements (for borders, overlays, glows) */
+    --luminous: rgba(255, 255, 255, 0.8); /* White with opacity for light mode */
     --nyt-black: #121315;
     --link: #1e3a8a;
     --link-hover: #2563eb;
@@ -183,6 +186,9 @@
     /* Luminescent Shadows for Dark Mode */
     --shadow-premium:
       0 30px 60px -12px rgba(0, 0, 0, 0.6), 0 0 1px rgba(255, 255, 255, 0.1);
+
+    /* Luminous Elements (for borders, overlays, glows) - Dark Mode */
+    --luminous: rgba(255, 255, 255, 0.15); /* Subtle white with lower opacity for dark mode */
 
     /* NYT Smart Colors (Dark Mode - Automated Inversion) */
     --nyt-black: #f8fafc;
@@ -1959,7 +1965,7 @@ button:active,
   padding: 0.82rem 1rem;
   border: 1px solid var(--nyt-accent);
   background: var(--nyt-accent);
-  color: #fff;
+  color: var(--primary);
   font-family: var(--font-sans);
   font-size: 0.72rem;
   font-weight: 800;

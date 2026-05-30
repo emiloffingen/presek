@@ -49,7 +49,7 @@ export default function ThemeIsland({ fixed = false }: { fixed?: boolean }) {
     <button
       onClick={toggleTheme}
       className={`${baseClasses} ${fixed ? fixedClasses : inlineClasses}`}
-      aria-label="Promeni tema"
+      aria-label={theme === 'light' ? 'Prebaci na tamni režim' : 'Prebaci na svetli režim'}
     >
       <div className="relative" style={{ width: size, height: size }}>
         <div 
@@ -57,14 +57,14 @@ export default function ThemeIsland({ fixed = false }: { fixed?: boolean }) {
             theme === 'light' ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-50 pointer-events-none'
           }`}
         >
-          <Moon size={size} className="text-muted-foreground group-hover:text-foreground transition-colors" />
+          <Sun size={size} className="text-muted-foreground group-hover:text-foreground transition-colors" />
         </div>
         <div 
           className={`absolute inset-0 flex items-center justify-center transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
             theme === 'dark' ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 rotate-90 scale-50 pointer-events-none'
           }`}
         >
-          <Sun size={size} className="text-muted-foreground group-hover:text-foreground transition-colors" />
+          <Moon size={size} className="text-muted-foreground group-hover:text-foreground transition-colors" />
         </div>
       </div>
     </button>
