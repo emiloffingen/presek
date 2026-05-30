@@ -145,7 +145,7 @@ function formatDate(dateStr: string) {
                     0 0 30px -5px color-mix(in srgb, var(--nyt-accent) 8%, transparent);
     }
 
-    .dark .editorial-briefing {
+    :global(.dark) .editorial-briefing {
         background: linear-gradient(135deg, rgba(22, 26, 41, 0.9) 0%, rgba(15, 18, 29, 0.85) 100%);
         background-image: radial-gradient(circle at 80% 10%, color-mix(in srgb, var(--nyt-accent) 5%, transparent), transparent 70%);
         box-shadow: 0 10px 40px -12px rgba(0, 0, 0, 0.4), 
@@ -364,7 +364,7 @@ function formatDate(dateStr: string) {
         transition: all 0.3s var(--ease-editorial);
     }
     
-    .dark .briefing-audio-player {
+    :global(.dark) .briefing-audio-player {
         background: rgba(0, 0, 0, 0.2);
         border-color: rgba(255, 255, 255, 0.05);
     }
@@ -375,7 +375,7 @@ function formatDate(dateStr: string) {
         background: rgba(255, 255, 255, 0.6);
     }
     
-    .dark .briefing-audio-player:hover {
+    :global(.dark) .briefing-audio-player:hover {
         background: rgba(0, 0, 0, 0.3);
     }
 

@@ -42,7 +42,7 @@ const { color = '#1e40af', class: className } = Astro.props;
         animation: mesh-float 20s ease-in-out infinite alternate;
     }
 
-    .dark .mesh-gradient {
+    :global(.dark) .mesh-gradient {
         opacity: 0.25;
         filter: blur(120px);
     }

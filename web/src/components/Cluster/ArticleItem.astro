@@ -131,6 +131,10 @@ const displaySnippet = cleanText(a.description || a.summary);
     .tone-badge.tone-deep { background: #e0e7ff; color: #3730a3; }
     .tone-badge.tone-neutral { background: var(--secondary); color: var(--secondary-foreground); }
 
+    :global(.dark) .tone-badge.tone-latest { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+    :global(.dark) .tone-badge.tone-origin { background: rgba(100, 116, 139, 0.15); color: #94a3b8; }
+    :global(.dark) .tone-badge.tone-deep { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
+
     /* Quality Badges */
     .quality-badge {
         display: flex;

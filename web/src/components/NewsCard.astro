@@ -240,7 +240,7 @@ function getTimeStr(dateStr: string) {
         transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 	}
 
-    .dark .nyt-article {
+    :global(.dark) .nyt-article {
         background: linear-gradient(135deg, rgba(22, 26, 41, 0.5) 0%, rgba(15, 18, 29, 0.45) 100%);
         box-shadow: 0 4px 20px -3px rgba(0, 0, 0, 0.3),
                     inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 4%, transparent);
@@ -255,7 +255,7 @@ function getTimeStr(dateStr: string) {
                     inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 6%, transparent);
     }
 
-    .dark .nyt-article.has-synthesis {
+    :global(.dark) .nyt-article.has-synthesis {
         background: linear-gradient(135deg, rgba(22, 26, 41, 0.75) 0%, rgba(15, 18, 29, 0.7) 100%);
         background-image: radial-gradient(circle at 90% 10%, color-mix(in srgb, #fbbf24 12%, transparent), transparent 65%);
     }

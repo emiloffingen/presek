@@ -1234,10 +1234,10 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
         background-color: currentColor;
         transform: translateX(-50%);
     }
-    .dark .quick-pill {
+    :global(.dark) .quick-pill {
         background: var(--card);
     }
-    .dark .quick-pill.is-active {
+    :global(.dark) .quick-pill.is-active {
         background: var(--nyt-accent);
     }
 
