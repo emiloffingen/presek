@@ -48,7 +48,7 @@ class AudioService:
     def generate_briefing_audio(cls, date_str: str, content: str, lang: str) -> Optional[str]:
         """
         Synthesizes daily briefing text into high-quality speech.
-        Uses local lightweight ONNX Kokoro TTS if possible, with a robust fallback pipeline.
+        Uses local OmniVoice TTS if possible, with gTTS and shell fallbacks.
         """
         os.makedirs(_AUDIO_DIR, exist_ok=True)
         filepath, urlpath = cls.get_audio_path_and_url(date_str, lang)
@@ -64,68 +64,19 @@ class AudioService:
 
         log.info(f"[audio] Synthesizing daily briefing for {date_str} ({lang}) [Length: {len(clean_text)} chars]...")
 
-        # 1. Attempt Local Piper ONNX Speech Synthesis (First-class choice)
+        # 1. Attempt Local OmniVoice Speech Synthesis (First-class choice)
         try:
-            import wave
-            from piper import PiperVoice
-
-            # Locate local ONNX weights in shared models path
-            onnx_path = "/home/emiloffingen/presek-runtime/shared/models/sr_RS-serbski_institut-medium.onnx"
-            config_path = "/home/emiloffingen/presek-runtime/shared/models/sr_RS-serbski_institut-medium.onnx.json"
-            
-            if os.path.exists(onnx_path) and os.path.exists(config_path):
-                # Set system espeak-ng data path to override hardcoded paths in precompiled wheels
-                os.environ["ESPEAK_DATA_PATH"] = "/usr/lib/x86_64-linux-gnu/espeak-ng-data"
-                log.info("[audio] Initializing local Piper ONNX model...")
-                voice = PiperVoice.load(onnx_path, config_path=config_path)
-                
-                # If Macedonian is requested, maps characters phonetically to Serbian for the model
-                text_to_speak = clean_text
-                if lang == "mk":
-                    # Transliterate Macedonian Cyrillic letters that do not exist in Serbian Cyrillic
-                    # to their closest Serbian Cyrillic phonetic equivalents.
-                    mapping = {
-                        'ѓ': 'ђ', 'Ѓ': 'Ђ',
-                        'ќ': 'ћ', 'Ќ': 'Ћ',
-                        'ѕ': 'з', 'Ѕ': 'З',
-                    }
-                    for k, v in mapping.items():
-                        text_to_speak = text_to_speak.replace(k, v)
-                
-                # Write to WAV temporarily
-                wav_path = filepath.replace(".mp3", ".wav")
-                with wave.open(wav_path, "wb") as wav_file:
-                    voice.synthesize_wav(text_to_speak, wav_file)
-                
-                # Compress to premium MP3 using ffmpeg
-                subprocess.run(
-                    ["ffmpeg", "-y", "-i", wav_path, "-codec:a", "libmp3lame", "-qscale:a", "2", filepath],
-                    check=True,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
-                )
-                
-                # Cleanup WAV
-                if os.path.exists(wav_path):
-                    os.remove(wav_path)
-                    
-                log.info(f"[audio] Successfully synthesized briefing using local Piper ONNX at {filepath}")
-                return urlpath
-        except Exception as e:
-            log.debug(f"[audio] Local Piper ONNX pipeline not fully initialized or skipped: {e}")
-
-        # 2. Attempt OmniVoice Fallback (Massively multilingual zero-shot TTS fallback)
-        try:
-            log.info("[audio] Attempting OmniVoice fallback...")
+            log.info("[audio] Attempting local OmniVoice speech synthesis...")
             import soundfile as sf
             from omnivoice import OmniVoice
-            
+            import numpy as np
+
             # Load pretrained OmniVoice model dynamically on CPU
             log.info("[audio] Initializing local OmniVoice model on CPU...")
             model = OmniVoice.from_pretrained("k2-fsa/OmniVoice", device_map="cpu")
             
             # Use voice design to select premium male/female regional accents
-            instruct_desc = "female, clear regional voice" if lang == "sr" or lang == "mk" else "male, clear voice"
+            instruct_desc = "female, young adult" if lang == "sr" or lang == "mk" else "male, young adult"
             
             log.info(f"[audio] Synthesizing text with OmniVoice [Instruct: {instruct_desc}]...")
             audio = model.generate(
@@ -133,6 +84,9 @@ class AudioService:
                 instruct=instruct_desc,
                 num_step=16
             )
+            
+            # Concatenate list of segment arrays returned by OmniVoice
+            audio = np.concatenate(audio)
             
             # Write to WAV temporarily (OmniVoice sample rate is 24000)
             wav_path = filepath.replace(".mp3", ".wav")
@@ -150,16 +104,30 @@ class AudioService:
             if os.path.exists(wav_path):
                 os.remove(wav_path)
                 
-            log.info(f"[audio] Successfully synthesized briefing using OmniVoice fallback at {filepath}")
+            log.info(f"[audio] Successfully synthesized briefing using local OmniVoice at {filepath}")
             return urlpath
         except Exception as e:
-            log.debug(f"[audio] OmniVoice fallback skipped or failed: {e}")
+            log.debug(f"[audio] Local OmniVoice speech synthesis skipped or failed: {e}")
+
+        # 2. Attempt Google TTS (gTTS) Fallback (Extremely lightweight fallback)
+        try:
+            log.info("[audio] Attempting gTTS fallback...")
+            from gtts import gTTS
+            
+            # Select regional locales (using Bulgarian 'bg' as closest phonetic fallback for Macedonian 'mk' which is unsupported by Google TTS)
+            gtts_lang = "sr" if lang == "sr" else "bg"
+            tts = gTTS(text=clean_text, lang=gtts_lang, slow=False)
+            tts.save(filepath)
+            
+            log.info(f"[audio] Successfully synthesized briefing using gTTS fallback at {filepath}")
+            return urlpath
+        except Exception as e:
+            log.debug(f"[audio] gTTS fallback skipped or not installed: {e}")
 
         # 3. Last Resort: Simple Shell Synthesis / Mock
         # If all else fails, create a clean placeholder voice notification so the player still has content
         try:
             log.info("[audio] Running shell backup voice generation...")
-            # We create a silent MP3 or call local 'espeak' if available
             wav_path = filepath.replace(".mp3", ".wav")
             subprocess.run(
                 ["espeak", "-w", wav_path, f"Dnevni brifing za {date_str}."],
@@ -167,11 +135,16 @@ class AudioService:
                 stderr=subprocess.DEVNULL
             )
             if os.path.exists(wav_path):
-                subprocess.run(
-                    ["ffmpeg", "-y", "-i", wav_path, "-codec:a", "libmp3lame", filepath],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
-                )
+                try:
+                    subprocess.run(
+                        ["ffmpeg", "-y", "-i", wav_path, "-codec:a", "libmp3lame", filepath],
+                        check=True,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL
+                    )
+                except Exception:
+                    import shutil
+                    shutil.copy(wav_path, filepath)
                 os.remove(wav_path)
                 return urlpath
         except Exception as e:
@@ -207,67 +180,25 @@ class AudioService:
 
         log.info(f"[audio] Synthesizing cluster audio for {cluster_id} ({lang}) [Length: {len(clean_text)} chars]...")
 
-        # 1. Attempt Local Piper ONNX Speech Synthesis
+        # 1. Attempt Local OmniVoice Speech Synthesis (First-class choice)
         try:
-            import wave
-            from piper import PiperVoice
-
-            onnx_path = "/home/emiloffingen/presek-runtime/shared/models/sr_RS-serbski_institut-medium.onnx"
-            config_path = "/home/emiloffingen/presek-runtime/shared/models/sr_RS-serbski_institut-medium.onnx.json"
-            
-            if os.path.exists(onnx_path) and os.path.exists(config_path):
-                os.environ["ESPEAK_DATA_PATH"] = "/usr/lib/x86_64-linux-gnu/espeak-ng-data"
-                log.info("[audio] Initializing local Piper ONNX model for cluster TTS...")
-                voice = PiperVoice.load(onnx_path, config_path=config_path)
-                
-                # If Macedonian is requested, maps characters phonetically to Serbian for the model
-                text_to_speak = clean_text
-                if lang == "mk":
-                    # Transliterate Macedonian Cyrillic letters that do not exist in Serbian Cyrillic
-                    # to their closest Serbian Cyrillic phonetic equivalents.
-                    mapping = {
-                        'ѓ': 'ђ', 'Ѓ': 'Ђ',
-                        'ќ': 'ћ', 'Ќ': 'Ћ',
-                        'ѕ': 'з', 'Ѕ': 'З',
-                    }
-                    for k, v in mapping.items():
-                        text_to_speak = text_to_speak.replace(k, v)
-                
-                wav_path = filepath.replace(".mp3", ".wav")
-                with wave.open(wav_path, "wb") as wav_file:
-                    voice.synthesize_wav(text_to_speak, wav_file)
-                
-                subprocess.run(
-                    ["ffmpeg", "-y", "-i", wav_path, "-codec:a", "libmp3lame", "-qscale:a", "2", filepath],
-                    check=True,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
-                )
-                
-                if os.path.exists(wav_path):
-                    os.remove(wav_path)
-                    
-                log.info(f"[audio] Successfully synthesized cluster audio using local Piper ONNX at {filepath}")
-                return urlpath
-        except Exception as e:
-            log.debug(f"[audio] Local Piper ONNX cluster audio synthesis failed/skipped: {e}")
-
-        # 2. Attempt OmniVoice Fallback
-        try:
-            log.info("[audio] Attempting OmniVoice fallback for cluster audio...")
+            log.info("[audio] Attempting local OmniVoice speech synthesis for cluster...")
             import soundfile as sf
             from omnivoice import OmniVoice
-            
-            log.info("[audio] Initializing local OmniVoice model for cluster TTS fallback on CPU...")
+            import numpy as np
+
+            log.info("[audio] Initializing local OmniVoice model on CPU...")
             model = OmniVoice.from_pretrained("k2-fsa/OmniVoice", device_map="cpu")
             
-            instruct_desc = "female, clear regional voice" if lang == "sr" or lang == "mk" else "male, clear voice"
+            instruct_desc = "female, young adult" if lang == "sr" or lang == "mk" else "male, young adult"
             
             audio = model.generate(
                 text=clean_text,
                 instruct=instruct_desc,
                 num_step=16
             )
+            
+            audio = np.concatenate(audio)
             
             wav_path = filepath.replace(".mp3", ".wav")
             sf.write(wav_path, audio, 24000)
@@ -282,10 +213,22 @@ class AudioService:
             if os.path.exists(wav_path):
                 os.remove(wav_path)
                 
-            log.info(f"[audio] Successfully synthesized cluster audio using OmniVoice fallback at {filepath}")
+            log.info(f"[audio] Successfully synthesized cluster audio using local OmniVoice at {filepath}")
             return urlpath
         except Exception as e:
-            log.debug(f"[audio] OmniVoice cluster fallback failed: {e}")
+            log.debug(f"[audio] Local OmniVoice cluster audio synthesis failed: {e}")
+
+        # 2. Attempt Google TTS (gTTS) Fallback
+        try:
+            log.info("[audio] Attempting gTTS fallback for cluster audio...")
+            from gtts import gTTS
+            gtts_lang = "sr" if lang == "sr" else "bg"
+            tts = gTTS(text=clean_text, lang=gtts_lang, slow=False)
+            tts.save(filepath)
+            log.info(f"[audio] Successfully synthesized cluster audio using gTTS fallback at {filepath}")
+            return urlpath
+        except Exception as e:
+            log.debug(f"[audio] gTTS cluster fallback failed: {e}")
 
         # 3. Last Resort: Shell Synthesis / Mock
         try:
@@ -297,11 +240,16 @@ class AudioService:
                 stderr=subprocess.DEVNULL
             )
             if os.path.exists(wav_path):
-                subprocess.run(
-                    ["ffmpeg", "-y", "-i", wav_path, "-codec:a", "libmp3lame", filepath],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
-                )
+                try:
+                    subprocess.run(
+                        ["ffmpeg", "-y", "-i", wav_path, "-codec:a", "libmp3lame", filepath],
+                        check=True,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL
+                    )
+                except Exception:
+                    import shutil
+                    shutil.copy(wav_path, filepath)
                 os.remove(wav_path)
                 return urlpath
         except Exception as e:

@@ -128,8 +128,6 @@ filelock==3.29.0
     # via
     #   huggingface-hub
     #   torch
-flatbuffers==25.12.19
-    # via onnxruntime
 frozenlist==1.8.0
     # via
     #   aiohttp
@@ -277,7 +275,6 @@ numpy==2.4.4
     #   llama-cpp-python
     #   numba
     #   omnivoice
-    #   onnxruntime
     #   pandas
     #   pgvector
     #   scikit-learn
@@ -333,8 +330,6 @@ nvidia-nvtx==13.0.85
     # via cuda-toolkit
 omnivoice==0.1.5
     # via presek (pyproject.toml)
-onnxruntime==1.26.0
-    # via piper-tts
 opentelemetry-api==1.41.1
     # via
     #   presek (pyproject.toml)
@@ -374,7 +369,6 @@ packaging==26.2
     #   kombu
     #   lazy-loader
     #   limits
-    #   onnxruntime
     #   pooch
     #   pytest
     #   spacy
@@ -386,8 +380,6 @@ pandas==3.0.3
     # via gradio
 passlib==1.7.4
     # via presek (pyproject.toml)
-pathvalidate==3.3.1
-    # via piper-tts
 pgvector==0.4.2
     # via presek (pyproject.toml)
 pillow==12.2.0
@@ -395,8 +387,6 @@ pillow==12.2.0
     #   presek (pyproject.toml)
     #   gradio
 pillow-avif-plugin==1.5.5
-    # via presek (pyproject.toml)
-piper-tts==1.4.2
     # via presek (pyproject.toml)
 platformdirs==4.10.0
     # via pooch
@@ -421,7 +411,6 @@ propcache==0.5.2
 protobuf==6.33.6
     # via
     #   googleapis-common-protos
-    #   onnxruntime
     #   opentelemetry-proto
     #   tensorboardx
 psutil==7.2.2
