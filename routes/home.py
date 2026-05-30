@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from utils import cached_response, set_cache
 
+from core.audio_service import AudioService
 from .common import cleanAndDecode
 from .intelligence import get_top_entities
 from .news import fetch_news_data
@@ -47,6 +48,61 @@ _HARD_NEWS_CATEGORIES = {
     "Srbija",
     "Makedonija",
     "Balkan",
+
+
+async def _ensure_cluster_audio(cluster: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Check if cluster has synthesis and ensure audio is generated.
+    Adds audio_url to cluster if available.
+    """
+    if not cluster or not cluster.get('cluster_id'):
+        return cluster
+        
+    cluster_id = cluster['cluster_id']
+    lang = cluster.get('lang', 'sr')
+    
+    # Check if cluster already has audio info
+    if cluster.get('audio_url'):
+        return cluster
+    
+    try:
+        # Check if cluster has generated synthesis content
+        if cluster.get('generated_article') or cluster.get('synthesis'):
+            content = cluster.get('generated_article') or cluster.get('synthesis') or ""
+            if content and len(content.strip()) > 50:  # Only generate for substantial content
+                log.info(f"[home] Cluster {cluster_id} has synthesis, ensuring audio generation")
+                
+                # Generate audio in background (non-blocking)
+                asyncio.create_task(_generate_cluster_audio_background(cluster_id, content, lang))
+                
+                # Check if audio already exists
+                filepath, urlpath = AudioService.get_cluster_audio_path_and_url(cluster_id, lang)
+                if os.path.exists(filepath) and os.path.getsize(filepath) > 1000:
+                    cluster['audio_url'] = urlpath
+                    cluster['has_audio'] = True
+                    log.info(f"[home] Audio already exists for cluster {cluster_id}: {urlpath}")
+                else:
+                    log.info(f"[home] Audio will be generated for cluster {cluster_id} in background")
+    except Exception as e:
+        log.error(f"[home] Error checking cluster audio for {cluster_id}: {e}")
+    
+    return cluster
+
+
+async def _generate_cluster_audio_background(cluster_id: str, content: str, lang: str):
+    """Background task to generate cluster audio without blocking the main request."""
+    try:
+        log.info(f"[home] Background audio generation started for cluster {cluster_id} ({lang})")
+        audio_url = AudioService.generate_cluster_audio(cluster_id, content, lang)
+        if audio_url:
+            log.info(f"[home] Successfully generated audio for cluster {cluster_id}: {audio_url}")
+        else:
+            log.warning(f"[home] Audio generation failed for cluster {cluster_id}")
+    except Exception as e:
+        log.error(f"[home] Background audio generation failed for cluster {cluster_id}: {e}")
+
+
+_HARD_NEWS_CATEGORIES = {
     "Evropa",
     "Germanija",
     "Amerika",
@@ -439,6 +495,10 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
         clusters = news_result.get("clusters") or []
         global_clusters = news_result.get("global_clusters") or []
 
+        # Ensure audio generation for clusters with syntheses
+        clusters = [await _ensure_cluster_audio(cluster) for cluster in clusters]
+        global_clusters = [await _ensure_cluster_audio(cluster) for cluster in global_clusters]
+
         lead = clusters[0] if clusters else None
         supporting = clusters[1:5]
 
@@ -461,6 +521,8 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
 
         if not for_you_pool:
             for_you_pool = [c for c in clusters[5:11] if _is_live_now_candidate(c)]
+            # Ensure audio for personalized clusters too
+            for_you_pool = [await _ensure_cluster_audio(c) for c in for_you_pool]
 
         feed_clusters = list(clusters[5:])
         developing = [
@@ -501,6 +563,9 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
         live_now = _rank_live_now_clusters(recent_clusters, exclude_cluster_ids=excluded_cluster_ids, limit=4)
 
         raw_wire_articles = []
+        # Ensure audio for recent clusters
+        recent_clusters = [await _ensure_cluster_audio(c) for c in (recent_clusters or [])]
+
         seen_links = set()
         for cluster in recent_clusters or []:
             for article in cluster.get("articles") or []:

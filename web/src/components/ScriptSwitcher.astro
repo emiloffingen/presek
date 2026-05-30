@@ -20,7 +20,17 @@ const t = useTranslations(lang);
         const toggle = document.getElementById('script-toggle');
         if (!toggle) return;
 
-        let isCyrillic = false;
+        // Initialize state from localStorage if available
+        let isCyrillic = localStorage.getItem('scriptPreference') === 'cyrillic';
+        
+        // Apply initial state
+        if (isCyrillic) {
+            document.body.classList.add('script-cyrillic');
+            toggle.textContent = 'ЛАТ/КИР'; // Show Latin first when Cyrillic is active
+        } else {
+            document.body.classList.remove('script-cyrillic');
+            toggle.textContent = 'КИР/ЛАТ'; // Show Cyrillic first when Latin is active
+        }
 
         function traverse(node: Node) {
             if (node.nodeType === Node.TEXT_NODE) {
@@ -34,13 +44,26 @@ const t = useTranslations(lang);
             }
         }
 
+        // Apply initial script conversion
+        traverse(document.body);
+
         toggle.addEventListener('click', () => {
             isCyrillic = !isCyrillic;
+            
+            // Update localStorage
+            localStorage.setItem('scriptPreference', isCyrillic ? 'cyrillic' : 'latin');
+            
+            // Update button text
+            toggle.textContent = isCyrillic ? 'ЛАТ/КИР' : 'КИР/ЛАТ';
+            
+            // Update body class
             if (isCyrillic) {
                 document.body.classList.add('script-cyrillic');
             } else {
                 document.body.classList.remove('script-cyrillic');
             }
+            
+            // Convert text
             traverse(document.body);
         });
     });

@@ -4,6 +4,7 @@ import { chooseClusterImage } from '../utils/imageSelection';
 import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, slugify, getDesignCardContext, transliterate, cleanAndDecode } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
 import { Clock, Layers, ShieldCheck, Globe, Sparkles, Zap, AlertCircle, Palette, Building2, TrendingUp, Award, Cpu, Newspaper, ArrowRight } from 'lucide-react';
+import AudioPlayer from '../audio/AudioPlayer.astro';
 import type { NewsCluster, Article } from '../types';
 import type { ui } from '../i18n/ui';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
@@ -173,6 +174,18 @@ function getTimeStr(dateStr: string) {
             <span class="meta-dot">·</span>
             <span class="source-count">{uniqueSources} {uniqueSources === 1 ? t('news.source') : t('news.sources')}</span>
         </div>
+        
+        {/* Audio player for clusters with syntheses */}
+        {cluster.has_audio && (
+            <div class="audio-player-container mt-2">
+                <AudioPlayer 
+                    clusterId={cluster.cluster_id} 
+                    lang={lang} 
+                    type="cluster" 
+                    initialAudioUrl={cluster.audio_url}
+                />
+            </div>
+        )}
     </div>
 
     {thumbSrc && (
@@ -740,6 +753,12 @@ function getTimeStr(dateStr: string) {
 
 		.article-image-fallback {
 			max-height: none;
+		}
+		
+		.audio-player-container {
+			padding-top: 0.5rem;
+			border-top: 1px solid rgba(var(--nyt-accent-rgb), 0.1);
+			margin-top: 0.5rem;
 		}
 	}
 </style>

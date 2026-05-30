@@ -330,7 +330,7 @@ export const ui = {
     'narrative.no_details': 'Nema dostupnih detalja.',
     'error.title': 'Došlo je do greške. Pokušajte ponovo.',
     'error.restart': 'Restartuj',
-    'script.toggle': 'ĆIR/LAT',
+    'script.toggle': 'КИР/ЛАТ',
   },
   mk: {
     'nav.home': 'Почетна',
