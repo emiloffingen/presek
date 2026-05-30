@@ -366,27 +366,27 @@ const targetY = 30 + (1 - plurScore) * 140;
     .analysis-bento-grid {
         display: grid;
         grid-template-columns: 1fr;
-        gap: 1.5rem;
+        gap: 1.25rem;
     }
 
     @media (min-width: 1024px) {
         .analysis-bento-grid {
-            grid-template-columns: 260px 1fr;
+            grid-template-columns: 210px 1fr;
             align-items: start;
         }
     }
 
     .bias-compass-card {
-        padding: 0.9rem;
+        padding: 0.65rem;
         background: rgba(255, 255, 255, 0.45);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
         border: 1px solid rgba(0, 0, 0, 0.06);
-        border-radius: 10px;
+        border-radius: 8px;
         box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.02);
         display: flex;
         flex-direction: column;
-        gap: 0.35rem;
+        gap: 0.2rem;
         transition: all 0.3s var(--ease-editorial);
     }
 
@@ -409,7 +409,7 @@ const targetY = 30 + (1 - plurScore) * 140;
 
     .compass-label {
         font-family: var(--font-sans);
-        font-size: 0.62rem;
+        font-size: 0.58rem;
         font-weight: 950;
         text-transform: uppercase;
         color: var(--nyt-accent);
@@ -420,13 +420,13 @@ const targetY = 30 + (1 - plurScore) * 140;
     .compass-data-badge {
         display: inline-flex;
         align-items: center;
-        gap: 0.2rem;
+        gap: 0.15rem;
         background: color-mix(in srgb, var(--nyt-accent) 8%, transparent);
         border: 1px solid color-mix(in srgb, var(--nyt-accent) 20%, transparent);
-        padding: 0.1rem 0.45rem;
+        padding: 0.08rem 0.35rem;
         border-radius: 9999px;
         font-family: var(--font-sans);
-        font-size: 0.58rem;
+        font-size: 0.54rem;
         font-weight: 850;
         color: var(--nyt-accent);
         letter-spacing: 0.03em;
@@ -436,10 +436,10 @@ const targetY = 30 + (1 - plurScore) * 140;
 
     .compass-desc {
         font-family: var(--font-sans);
-        font-size: 0.68rem;
+        font-size: 0.6rem;
         color: var(--muted-foreground);
-        margin: 0 0 0.35rem 0;
-        line-height: 1.35;
+        margin: 0 0 0.15rem 0;
+        line-height: 1.3;
     }
 
     .compass-canvas-container {
@@ -450,7 +450,7 @@ const targetY = 30 + (1 - plurScore) * 140;
 
     .compass-svg {
         width: 100%;
-        max-width: 180px;
+        max-width: 135px;
         height: auto;
         overflow: visible;
     }
@@ -469,7 +469,7 @@ const targetY = 30 + (1 - plurScore) * 140;
 
     .compass-text {
         font-family: var(--font-sans);
-        font-size: 6.5px;
+        font-size: 7.2px;
         font-weight: 850;
         fill: var(--muted-foreground);
         text-transform: uppercase;
