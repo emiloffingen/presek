@@ -1,0 +1,197 @@
+---
+// AudioPlayer.astro - Reusable audio player component
+import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
+
+interface Props {
+    clusterId?: string;
+    briefingDate?: string;
+    lang: string;
+    type: 'cluster' | 'briefing';
+    initialAudioUrl?: string;
+}
+
+const { clusterId, briefingDate, lang, type, initialAudioUrl } = Astro.props;
+const isMK = lang === 'mk';
+const apiBase = import.meta.env.PUBLIC_API_BASE || '';
+
+// Determine which API endpoint to use based on type
+const apiEndpoint = type === 'cluster' 
+    ? `${apiBase}/api/cluster/${clusterId}/audio?lang=${lang}`
+    : `${apiBase}/intelligence/briefing/audio${briefingDate ? `?date=${briefingDate}&lang=${lang}` : `?lang=${lang}`}`;
+
+const playIcon = isMK ? 'Слушај аудио синтеза' : 'Slušaj audio sintezu';
+const pauseIcon = isMK ? 'Паузирај аудио' : 'Pauziraj audio';
+const loadingText = isMK ? 'Подготвувам аудио...' : 'Pripremam audio...';
+const errorText = isMK ? 'Грешка при вчитување на аудиото.' : 'Greška pri učitavanju audio zapisa.';
+---
+
+<div class="audio-player-wrapper flex items-center gap-3" data-type={type} data-cluster-id={clusterId} data-briefing-date={briefingDate} data-lang={lang} data-audio-bound="false">
+    <button class="audio-play-btn flex items-center justify-center bg-nyt-accent/10 hover:bg-nyt-accent/25 border border-nyt-accent/20 rounded-full w-8 h-8 transition-all cursor-pointer" 
+            aria-label={playIcon} 
+            title={playIcon}>
+        <Play className="w-4 h-4 text-nyt-accent" />
+    </button>
+    
+    <span class="audio-status-text text-[11px] text-nyt-accent font-sans font-black uppercase tracking-widest transition-all duration-300 opacity-0 max-w-0 overflow-hidden whitespace-nowrap">{loadingText}</span>
+    
+    <audio class="hidden audio-element" preload="none" src={initialAudioUrl || undefined}></audio>
+</div>
+
+<style>
+    .audio-player-wrapper {
+        position: relative;
+    }
+    
+    .audio-play-btn {
+        flex-shrink: 0;
+    }
+    
+    .audio-status-text {
+        transition: all 0.3s ease;
+    }
+    
+    .audio-player-wrapper[data-audio-bound="true"] .audio-status-text {
+        opacity: 1;
+        max-width: 200px;
+    }
+    
+    .audio-play-btn.playing {
+        background-color: rgba(var(--nyt-accent-rgb), 0.25);
+        border-color: rgba(var(--nyt-accent-rgb), 0.5);
+    }
+    
+        .audio-play-btn.playing svg {
+        display: none;
+    }
+    
+    .audio-play-btn.playing::after {
+        content: '';
+        display: block;
+        width: 2px;
+        height: 8px;
+        background: currentColor;
+        animation: pulse 1.5s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+</style>
+
+<script is:inline>
+    document.addEventListener('DOMContentLoaded', function() {
+        const wrapper = document.querySelector('.audio-player-wrapper');
+        if (wrapper.dataset.audioBound === 'true') return;
+        
+        wrapper.dataset.audioBound = 'true';
+        
+        const playBtn = wrapper.querySelector('.audio-play-btn');
+        const statusText = wrapper.querySelector('.audio-status-text');
+        const audio = wrapper.querySelector('.audio-element');
+        
+        let isPlaying = false;
+        let isLoading = false;
+        
+        // Update UI based on playback state
+        function updateUI() {
+            if (isLoading) {
+                statusText.textContent = wrapper.dataset.lang === 'mk' ? 'Подготвувам аудио...' : 'Pripremam audio...';
+                playBtn.disabled = true;
+            } else if (isPlaying) {
+                statusText.textContent = wrapper.dataset.lang === 'mk' ? 'Се пушта' : 'Se pušta';
+                playBtn.classList.add('playing');
+                playBtn.setAttribute('aria-label', wrapper.dataset.lang === 'mk' ? 'Паузирај аудио' : 'Pauziraj audio');
+            } else {
+                statusText.textContent = '';
+                playBtn.classList.remove('playing');
+                playBtn.setAttribute('aria-label', wrapper.dataset.lang === 'mk' ? 'Слушај аудио синтеза' : 'Slušaj audio sintezu');
+            }
+        }
+        
+        // Load and play audio
+        async function loadAndPlayAudio() {
+            if (isLoading || isPlaying) return;
+            
+            try {
+                isLoading = true;
+                updateUI();
+                
+                // If we already have a source, just play it
+                if (audio.src) {
+                    await audio.play();
+                    isPlaying = true;
+                    isLoading = false;
+                    updateUI();
+                    return;
+                }
+                
+                // Otherwise, fetch the audio URL from API
+                const response = await fetch(wrapper.dataset.type === 'cluster'
+                    ? `${apiBase}/api/cluster/${wrapper.dataset.clusterId}/audio?lang=${wrapper.dataset.lang}`
+                    : `${apiBase}/intelligence/briefing/audio${wrapper.dataset.briefingDate ? `?date=${wrapper.dataset.briefingDate}&lang=${wrapper.dataset.lang}` : `?lang=${wrapper.dataset.lang}`}`
+                );
+                
+                const data = await response.json();
+                
+                if (data.status === 'success' && data.audio_url) {
+                    audio.src = data.audio_url.startsWith('http') ? data.audio_url : `${apiBase}${data.audio_url}`;
+                    await audio.play();
+                    isPlaying = true;
+                } else {
+                    throw new Error(data.message || 'Unknown error');
+                }
+                
+            } catch (err) {
+                console.error('Failed to load audio:', err);
+                statusText.textContent = wrapper.dataset.lang === 'mk' ? 'Грешка при вчитување на аудиото.' : 'Greška pri učitavanju audio zapisa.';
+                statusText.classList.add('text-red-500');
+            } finally {
+                isLoading = false;
+                updateUI();
+            }
+        }
+        
+        // Toggle play/pause
+        playBtn.addEventListener('click', async function() {
+            if (isLoading) return;
+            
+            if (isPlaying) {
+                audio.pause();
+                isPlaying = false;
+            } else {
+                await loadAndPlayAudio();
+            }
+            
+            updateUI();
+        });
+        
+        // Handle audio events
+        audio.addEventListener('ended', () => {
+            isPlaying = false;
+            updateUI();
+        });
+        
+        audio.addEventListener('pause', () => {
+            if (isPlaying) {
+                isPlaying = false;
+                updateUI();
+            }
+        });
+        
+        audio.addEventListener('play', () => {
+            if (!isPlaying) {
+                isPlaying = true;
+                updateUI();
+            }
+        });
+        
+        audio.addEventListener('error', () => {
+            statusText.textContent = wrapper.dataset.lang === 'mk' ? 'Грешка при пуштање на аудиото.' : 'Greška pri puštanju audio zapisa.';
+            statusText.classList.add('text-red-500');
+            isPlaying = false;
+            isLoading = false;
+            updateUI();
+        });
+    });
+</script>

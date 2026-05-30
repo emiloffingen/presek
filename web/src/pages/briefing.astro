@@ -7,6 +7,7 @@ import BriefingContent from '../components/briefing/BriefingContent.astro';
 import BriefingSidebar from '../components/briefing/BriefingSidebar.astro';
 import BriefingDigest from '../components/briefing/BriefingDigest.astro';
 import NarrativeList from '../components/briefing/NarrativeList';
+import AudioPlayer from '../components/audio/AudioPlayer.astro';
 import '../styles/briefing-premium.css';
 
 import { apiBaseUrl } from '../lib/apiBase';
@@ -79,18 +80,25 @@ const displayDate = briefingData?.date
             ) : briefingData ? (
                 <div class="briefing-layout-grid relative">
                     <div class="briefing-main-col">
-                        <BriefingHeader
-                            currentDate={displayDate}
-                            dispatchIcon={Newspaper}
-                            lang={lang}
-                            date={briefingData.date}
-                            stats={{
-                                total_feeds: briefingData.day_stats?.total_sources || stats?.total_feeds || 0,
-                                last_24h: briefingData.day_stats?.total_articles || stats?.last_24h || 0,
-                                intelligence: stats?.intelligence
-                            }}
-                            metadata={briefingData.metadata}
-                        />
+                        <div class="flex items-center justify-between mb-8">
+                            <BriefingHeader
+                                currentDate={displayDate}
+                                dispatchIcon={Newspaper}
+                                lang={lang}
+                                date={briefingData.date}
+                                stats={{
+                                    total_feeds: briefingData.day_stats?.total_sources || stats?.total_feeds || 0,
+                                    last_24h: briefingData.day_stats?.total_articles || stats?.last_24h || 0,
+                                    intelligence: stats?.intelligence
+                                }}
+                                metadata={briefingData.metadata}
+                            />
+                            <AudioPlayer 
+                                type="briefing"
+                                briefingDate={briefingData.date}
+                                lang={lang}
+                            />
+                        </div>
 
                         {briefingData.metadata?.key_narratives && (
                             <NarrativeList narratives={briefingData.metadata.key_narratives} lang={lang} client:load />

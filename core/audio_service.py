@@ -3,9 +3,21 @@ import re
 import logging
 import subprocess
 import asyncio
+import threading
+import time
 from typing import Optional
 
 log = logging.getLogger("presek.audio")
+
+# Model caching to avoid repeated loading
+_omnivoice_model = None
+_model_lock = threading.Lock()
+_model_load_attempts = 0
+_max_model_load_attempts = 3
+
+# Rate limiting settings
+_last_generation_time = 0
+_min_generation_interval = 2.0  # seconds between generations
 
 # Shared static path for uploads in Presek runtime
 _STATIC_ROOT = "/home/emiloffingen/presek-runtime/shared/static"
@@ -36,6 +48,105 @@ def clean_briefing_text_for_tts(text: str) -> str:
     return text
 
 class AudioService:
+    @staticmethod
+    def _get_omnivoice_model() -> Optional[any]:
+        """Get cached OmniVoice model with singleton pattern to avoid repeated CPU-intensive loading."""
+        global _omnivoice_model, _model_load_attempts
+        
+        with _model_lock:
+            if _omnivoice_model is not None:
+                return _omnivoice_model
+            
+            if _model_load_attempts >= _max_model_load_attempts:
+                log.error("[audio] Max model load attempts reached, returning None")
+                return None
+                
+            try:
+                log.info("[audio] Loading OmniVoice model (first time - this may take CPU resources)...")
+                _model_load_attempts += 1
+                
+                # Try to use GPU if available, otherwise fall back to CPU
+                import torch
+                device = "cuda" if torch.cuda.is_available() else ("mps" if hasattr(torch.backends, 'mps') and torch.backends.mps.is_available() else "cpu")
+                
+                from omnivoice import OmniVoice
+                _omnivoice_model = OmniVoice.from_pretrained("k2-fsa/OmniVoice", device_map=device)
+                
+                log.info(f"[audio] OmniVoice model loaded successfully on {device}")
+                return _omnivoice_model
+                
+            except Exception as e:
+                log.error(f"[audio] Failed to load OmniVoice model: {e}")
+                return None
+
+    @staticmethod
+    def _enforce_rate_limit():
+        """Enforce minimum interval between audio generations to prevent CPU overload."""
+        global _last_generation_time
+        
+        current_time = time.time()
+        elapsed = current_time - _last_generation_time
+        
+        if elapsed < _min_generation_interval:
+            sleep_time = _min_generation_interval - elapsed
+            log.info(f"[audio] Rate limiting: sleeping for {sleep_time:.2f}s to prevent CPU overload")
+            time.sleep(sleep_time)
+            
+        _last_generation_time = time.time()
+
+    @staticmethod
+    def _generate_audio_in_chunks(model, text: str, instruct_desc: str, max_chunk_size: int = 400) -> any:
+        """
+        Generate audio in chunks to reduce memory usage and prevent CPU spikes.
+        This is especially important for long texts that could cause OOM errors.
+        """
+        import numpy as np
+        
+        if len(text) <= max_chunk_size:
+            # Short text, generate normally
+            return np.concatenate(model.generate(text=text, instruct=instruct_desc, num_step=16))
+        
+        # Split long text into chunks
+        chunks = []
+        current_chunk = ""
+        sentences = re.split(r'(?<=[.!?])\s+', text)
+        
+        for sentence in sentences:
+            if len(current_chunk) + len(sentence) <= max_chunk_size:
+                current_chunk += (" " + sentence) if current_chunk else sentence
+            else:
+                chunks.append(current_chunk)
+                current_chunk = sentence
+        
+        if current_chunk:
+            chunks.append(current_chunk)
+        
+        log.info(f"[audio] Processing {len(chunks)} text chunks to reduce CPU/memory usage")
+        
+        # Generate audio for each chunk and concatenate
+        audio_segments = []
+        for i, chunk in enumerate(chunks):
+            log.debug(f"[audio] Generating chunk {i+1}/{len(chunks)}...")
+            chunk_audio = model.generate(text=chunk, instruct=instruct_desc, num_step=16)
+            audio_segments.extend(chunk_audio)
+            
+            # Small delay between chunks to prevent CPU overload
+            if i < len(chunks) - 1:
+                time.sleep(0.1)  # 100ms between chunks
+        
+        return np.concatenate(audio_segments)
+
+    @staticmethod
+    def _lower_process_priority():
+        """Lower process priority to reduce impact on system performance."""
+        try:
+            # Linux/Unix systems
+            os.nice(10)  # Lower priority (0-19, higher is lower priority)
+            log.debug("[audio] Lowered process priority to reduce CPU impact")
+        except (AttributeError, OSError):
+            # Windows or unsupported system
+            pass
+
     @staticmethod
     def get_audio_path_and_url(date_str: str, lang: str) -> tuple[str, str]:
         """Returns the absolute file path and the public URL path for the briefing audio."""
@@ -75,18 +186,21 @@ class AudioService:
                 import numpy as np
 
                 # Load pretrained OmniVoice model dynamically on CPU
-                log.info("[audio] Initializing local OmniVoice model on CPU...")
-                model = OmniVoice.from_pretrained("k2-fsa/OmniVoice", device_map="cpu")
+                # Use cached model instead of loading each time
+                model = cls._get_omnivoice_model()
+                if model is None:
+                    log.error("[audio] Could not load OmniVoice model, aborting briefing audio generation")
+                    return None
+                
+                cls._lower_process_priority()
+                cls._enforce_rate_limit()
                 
                 # Use voice design to select premium male/female regional accents
                 instruct_desc = "female, young adult" if lang == "sr" or lang == "mk" else "male, young adult"
                 
                 log.info(f"[audio] Synthesizing text with OmniVoice [Instruct: {instruct_desc}]...")
-                audio = model.generate(
-                    text=clean_text,
-                    instruct=instruct_desc,
-                    num_step=16
-                )
+                # Process text in chunks to reduce memory usage and prevent CPU spikes
+                audio = cls._generate_audio_in_chunks(model, clean_text, instruct_desc)
                 
                 # Concatenate list of segment arrays returned by OmniVoice
                 audio = np.concatenate(audio)
@@ -95,9 +209,16 @@ class AudioService:
                 wav_path = filepath.replace(".mp3", ".wav")
                 sf.write(wav_path, audio, 24000)
                 
-                # Compress to premium MP3 using ffmpeg
+                # Compress to MP3 using ffmpeg with CPU-friendly settings
                 subprocess.run(
-                    ["ffmpeg", "-y", "-i", wav_path, "-codec:a", "libmp3lame", "-qscale:a", "2", filepath],
+                    [
+                        "ffmpeg", "-y", "-i", wav_path,
+                        "-codec:a", "libmp3lame",
+                        "-qscale:a", "4",  # Lower quality = faster encoding
+                        "-threads", "1",   # Limit to 1 thread to prevent CPU overload
+                        "-loglevel", "quiet",  # Suppress output
+                        filepath
+                    ],
                     check=True,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL
@@ -157,16 +278,19 @@ class AudioService:
                 from omnivoice import OmniVoice
                 import numpy as np
 
-                log.info("[audio] Initializing local OmniVoice model on CPU...")
-                model = OmniVoice.from_pretrained("k2-fsa/OmniVoice", device_map="cpu")
+                # Use cached model instead of loading each time
+                model = cls._get_omnivoice_model()
+                if model is None:
+                    log.error("[audio] Could not load OmniVoice model, aborting cluster audio generation")
+                    return None
+                
+                cls._lower_process_priority()
+                cls._enforce_rate_limit()
                 
                 instruct_desc = "female, young adult" if lang == "sr" or lang == "mk" else "male, young adult"
                 
-                audio = model.generate(
-                    text=clean_text,
-                    instruct=instruct_desc,
-                    num_step=16
-                )
+                # Process text in chunks to reduce memory usage and prevent CPU spikes
+                audio = cls._generate_audio_in_chunks(model, clean_text, instruct_desc)
                 
                 audio = np.concatenate(audio)
                 

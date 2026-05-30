@@ -17,6 +17,7 @@ import { apiBaseUrl } from '../../../lib/apiBase';
 import { cleanAndDecode, isMostlyCyrillic, getEditionStr, parseFootnotes, deShout, slugify, normalizeAndDeduplicateTags } from '../../../utils/textUtils';
 
 import { getLangFromUrl, useTranslations } from '../../../i18n/utils';
+import AudioPlayer from '../../../components/audio/AudioPlayer.astro';
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
@@ -711,22 +712,11 @@ const articleSchema = cluster ? {
 
                                 <!-- Premium TTS Play Button -->
                                 {cluster && (
-                                    <div class="cluster-audio-player-wrapper ml-3 flex items-center" data-cluster-id={id} data-lang={lang}>
-                                        <button class="cluster-audio-play-btn flex items-center justify-center bg-nyt-accent/10 hover:bg-nyt-accent/25 border border-nyt-accent/20 rounded-full w-7 h-7 transition-all cursor-pointer" aria-label="Slušaj sintezu" title={lang === 'sr' ? 'Slušaj audio sintezu' : 'Слушај аудио синтеза'}>
-                                            <svg class="play-icon w-3.5 h-3.5 text-nyt-accent" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M8 5v14l11-7z"/>
-                                            </svg>
-                                            <svg class="pause-icon w-3.5 h-3.5 text-nyt-accent hidden" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-                                            </svg>
-                                            <svg class="loading-spinner w-3.5 h-3.5 text-nyt-accent hidden animate-spin" fill="none" viewBox="0 0 24 24">
-                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                        </button>
-                                        <span class="audio-status-text text-[9px] text-nyt-accent font-sans font-black uppercase tracking-widest ml-2 max-w-0 overflow-hidden whitespace-nowrap transition-all duration-300"></span>
-                                        <audio class="hidden cluster-audio-element" preload="none"></audio>
-                                    </div>
+                                    <AudioPlayer 
+                                        type="cluster"
+                                        clusterId={id}
+                                        lang={lang}
+                                    />
                                 )}
 
 								<div class="section-divider"></div>
@@ -1727,111 +1717,3 @@ const articleSchema = cluster ? {
 	})();
 </script>
 
-<script is:inline>
-	(function() {
-		const initClusterAudio = () => {
-			const wrapper = document.querySelector('.cluster-audio-player-wrapper');
-			if (!wrapper) return;
-			if (wrapper.dataset.audioBound === 'true') return;
-			wrapper.dataset.audioBound = 'true';
-
-			const playBtn = wrapper.querySelector('.cluster-audio-play-btn');
-			const playIcon = wrapper.querySelector('.play-icon');
-			const pauseIcon = wrapper.querySelector('.pause-icon');
-			const spinner = wrapper.querySelector('.loading-spinner');
-			const statusText = wrapper.querySelector('.audio-status-text');
-			const audio = wrapper.querySelector('.cluster-audio-element');
-
-			const clusterId = wrapper.getAttribute('data-cluster-id');
-			const lang = wrapper.getAttribute('data-lang') || 'sr';
-
-			let isLoaded = false;
-			let isLoading = false;
-
-			const setStatus = (text) => {
-				if (text) {
-					statusText.textContent = text;
-					statusText.style.maxWidth = '200px';
-				} else {
-					statusText.style.maxWidth = '0';
-				}
-			};
-
-			const resetPlayerState = () => {
-				playIcon.classList.remove('hidden');
-				pauseIcon.classList.add('hidden');
-				spinner.classList.add('hidden');
-				setStatus('');
-			};
-
-			const loadAndPlay = async () => {
-				if (isLoading) return;
-				isLoading = true;
-
-				playIcon.classList.add('hidden');
-				pauseIcon.classList.add('hidden');
-				spinner.classList.remove('hidden');
-				setStatus(lang === 'mk' ? 'Се генерира...' : 'Generiše se...');
-
-				try {
-					const apiBase = window.location.origin;
-					const response = await fetch(`${apiBase}/api/cluster/${clusterId}/audio?lang=${lang}`);
-					const data = await response.json();
-
-					if (data.status === 'success' && data.audio_url) {
-						audio.src = data.audio_url.startsWith('http') ? data.audio_url : `${apiBase}${data.audio_url}`;
-						await audio.play();
-						isLoaded = true;
-
-						spinner.classList.add('hidden');
-						pauseIcon.classList.remove('hidden');
-						setStatus(lang === 'mk' ? 'Се пушта...' : 'Pušta se...');
-						setTimeout(() => setStatus(''), 2000);
-					} else {
-						console.error('Audio synthesis failed:', data);
-						alert(lang === 'mk' ? 'Грешка при генерирање на аудиото.' : 'Greška prilikom generisanja audio zapisa.');
-						resetPlayerState();
-					}
-				} catch (err) {
-					console.error('Failed to load cluster audio:', err);
-					alert(lang === 'mk' ? 'Грешка при поврзување.' : 'Greška pri povezivanju.');
-					resetPlayerState();
-				} finally {
-					isLoading = false;
-				}
-			};
-
-			playBtn.addEventListener('click', async () => {
-				if (!isLoaded) {
-					await loadAndPlay();
-				} else {
-					if (audio.paused) {
-						try {
-							await audio.play();
-							playIcon.classList.add('hidden');
-							pauseIcon.classList.remove('hidden');
-							setStatus(lang === 'mk' ? 'Се пушта...' : 'Pušta se...');
-							setTimeout(() => setStatus(''), 2000);
-						} catch (err) {
-							console.error(err);
-						}
-					} else {
-						audio.pause();
-						playIcon.classList.remove('hidden');
-						pauseIcon.classList.add('hidden');
-						setStatus(lang === 'mk' ? 'Паузирано' : 'Pauzirano');
-						setTimeout(() => setStatus(''), 1500);
-					}
-				}
-			});
-
-			audio.addEventListener('ended', () => {
-				resetPlayerState();
-			});
-		};
-
-		initClusterAudio();
-		document.addEventListener('astro:page-load', initClusterAudio);
-		setTimeout(initClusterAudio, 1000);
-	})();
-</script>
