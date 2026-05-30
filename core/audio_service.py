@@ -114,20 +114,46 @@ class AudioService:
         except Exception as e:
             log.debug(f"[audio] Local Piper ONNX pipeline not fully initialized or skipped: {e}")
 
-        # 2. Attempt Google TTS (gTTS) Fallback (Extremely lightweight, zero-compile CPU fallback)
+        # 2. Attempt OmniVoice Fallback (Massively multilingual zero-shot TTS fallback)
         try:
-            log.info("[audio] Attempting gTTS fallback...")
-            from gtts import gTTS
+            log.info("[audio] Attempting OmniVoice fallback...")
+            import soundfile as sf
+            from omnivoice import OmniVoice
             
-            # Select regional locales (using Bulgarian 'bg' as closest phonetic fallback for Macedonian 'mk' which is unsupported by Google TTS)
-            gtts_lang = "sr" if lang == "sr" else "bg"
-            tts = gTTS(text=clean_text, lang=gtts_lang, slow=False)
-            tts.save(filepath)
+            # Load pretrained OmniVoice model dynamically on CPU
+            log.info("[audio] Initializing local OmniVoice model on CPU...")
+            model = OmniVoice.from_pretrained("k2-fsa/OmniVoice", device_map="cpu")
             
-            log.info(f"[audio] Successfully synthesized briefing using gTTS fallback at {filepath}")
+            # Use voice design to select premium male/female regional accents
+            instruct_desc = "female, clear regional voice" if lang == "sr" or lang == "mk" else "male, clear voice"
+            
+            log.info(f"[audio] Synthesizing text with OmniVoice [Instruct: {instruct_desc}]...")
+            audio = model.generate(
+                text=clean_text,
+                instruct=instruct_desc,
+                num_step=16
+            )
+            
+            # Write to WAV temporarily (OmniVoice sample rate is 24000)
+            wav_path = filepath.replace(".mp3", ".wav")
+            sf.write(wav_path, audio, 24000)
+            
+            # Compress to premium MP3 using ffmpeg
+            subprocess.run(
+                ["ffmpeg", "-y", "-i", wav_path, "-codec:a", "libmp3lame", "-qscale:a", "2", filepath],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            
+            # Cleanup WAV
+            if os.path.exists(wav_path):
+                os.remove(wav_path)
+                
+            log.info(f"[audio] Successfully synthesized briefing using OmniVoice fallback at {filepath}")
             return urlpath
         except Exception as e:
-            log.debug(f"[audio] gTTS fallback skipped or not installed: {e}")
+            log.debug(f"[audio] OmniVoice fallback skipped or failed: {e}")
 
         # 3. Last Resort: Simple Shell Synthesis / Mock
         # If all else fails, create a clean placeholder voice notification so the player still has content
@@ -226,17 +252,40 @@ class AudioService:
         except Exception as e:
             log.debug(f"[audio] Local Piper ONNX cluster audio synthesis failed/skipped: {e}")
 
-        # 2. Attempt gTTS Fallback
+        # 2. Attempt OmniVoice Fallback
         try:
-            log.info("[audio] Attempting gTTS fallback for cluster audio...")
-            from gtts import gTTS
-            gtts_lang = "sr" if lang == "sr" else "bg"
-            tts = gTTS(text=clean_text, lang=gtts_lang, slow=False)
-            tts.save(filepath)
-            log.info(f"[audio] Successfully synthesized cluster audio using gTTS fallback at {filepath}")
+            log.info("[audio] Attempting OmniVoice fallback for cluster audio...")
+            import soundfile as sf
+            from omnivoice import OmniVoice
+            
+            log.info("[audio] Initializing local OmniVoice model for cluster TTS fallback on CPU...")
+            model = OmniVoice.from_pretrained("k2-fsa/OmniVoice", device_map="cpu")
+            
+            instruct_desc = "female, clear regional voice" if lang == "sr" or lang == "mk" else "male, clear voice"
+            
+            audio = model.generate(
+                text=clean_text,
+                instruct=instruct_desc,
+                num_step=16
+            )
+            
+            wav_path = filepath.replace(".mp3", ".wav")
+            sf.write(wav_path, audio, 24000)
+            
+            subprocess.run(
+                ["ffmpeg", "-y", "-i", wav_path, "-codec:a", "libmp3lame", "-qscale:a", "2", filepath],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            
+            if os.path.exists(wav_path):
+                os.remove(wav_path)
+                
+            log.info(f"[audio] Successfully synthesized cluster audio using OmniVoice fallback at {filepath}")
             return urlpath
         except Exception as e:
-            log.debug(f"[audio] gTTS cluster fallback failed: {e}")
+            log.debug(f"[audio] OmniVoice cluster fallback failed: {e}")
 
         # 3. Last Resort: Shell Synthesis / Mock
         try:
