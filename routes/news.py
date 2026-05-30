@@ -1463,3 +1463,36 @@ async def get_historical_events(cluster_id: str):
 @router.get("/live")
 async def get_live_route(request: Request):
     return StreamingResponse(event_stream("updates", request=request), media_type="text/event-stream")
+
+
+@router.get("/cluster/{cluster_id}/audio")
+async def get_cluster_audio(cluster_id: str, lang: Optional[str] = "sr"):
+    """Generates or fetches the cluster synthesis TTS audio and returns its public URL."""
+    import asyncio
+    validate_cluster_id(cluster_id)
+    
+    s_row = await db.async_execute_one(
+        "SELECT generated_article, summary FROM cluster_summaries WHERE cluster_id = %s AND lang = %s",
+        (cluster_id, lang),
+    )
+    if not s_row and lang != "sr":
+        s_row = await db.async_execute_one(
+            "SELECT generated_article, summary FROM cluster_summaries WHERE cluster_id = %s AND lang = 'sr'",
+            (cluster_id,),
+        )
+        
+    if not s_row or (not s_row.get("generated_article") and not s_row.get("summary")):
+        raise HTTPException(status_code=404, detail="Sinteza nije pronađena za ovaj klaster.")
+        
+    content = s_row.get("generated_article") or s_row.get("summary")
+    
+    from core.audio_service import AudioService
+    loop = asyncio.get_event_loop()
+    audio_url = await loop.run_in_executor(
+        None, AudioService.generate_cluster_audio, cluster_id, content, lang
+    )
+    
+    if not audio_url:
+        return {"status": "error", "message": "Failed to synthesize cluster audio."}
+        
+    return {"status": "success", "audio_url": audio_url}
