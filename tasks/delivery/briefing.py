@@ -865,6 +865,16 @@ def generate_daily_brief_task(retry_attempt=0, lang="sr"):
             )
             delete_cache(f"daily_brief:latest:{lang}")
             record_task_event("daily_brief", "ok" if brief else "fallback", f"lang:{lang}")
+
+            # Automatically pre-generate the briefing audio in the background
+            try:
+                from core.audio_service import AudioService
+                import datetime
+                target_date = datetime.date.today().isoformat()
+                log.info(f"[tasks] Auto-generating OmniVoice briefing audio in background for {target_date} ({lang})...")
+                AudioService.generate_briefing_audio(target_date, final_brief, lang)
+            except Exception as audio_err:
+                log.error(f"[tasks] Failed to auto-generate briefing audio for {target_date} ({lang}): {audio_err}")
             if not brief and retry_attempt < 2:
                 generate_daily_brief_task.apply_async(
                     kwargs={"retry_attempt": retry_attempt + 1, "lang": lang}, countdown=1800
@@ -879,6 +889,16 @@ def generate_daily_brief_task(retry_attempt=0, lang="sr"):
                 (fallback, lang, json.dumps({"is_fallback": True})),
                 fetch=False,
             )
+
+            # Automatically pre-generate the briefing audio (fallback) in the background
+            try:
+                from core.audio_service import AudioService
+                import datetime
+                target_date = datetime.date.today().isoformat()
+                log.info(f"[tasks] Auto-generating OmniVoice briefing audio in background (fallback) for {target_date} ({lang})...")
+                AudioService.generate_briefing_audio(target_date, fallback, lang)
+            except Exception as audio_err:
+                log.error(f"[tasks] Failed to auto-generate briefing audio for {target_date} ({lang}): {audio_err}")
             if retry_attempt < 2:
                 generate_daily_brief_task.apply_async(
                     kwargs={"retry_attempt": retry_attempt + 1, "lang": lang}, countdown=1800
