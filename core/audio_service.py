@@ -64,51 +64,59 @@ class AudioService:
 
         log.info(f"[audio] Synthesizing daily briefing for {date_str} ({lang}) [Length: {len(clean_text)} chars]...")
 
-        try:
-            log.info("[audio] Attempting local OmniVoice speech synthesis...")
-            import soundfile as sf
-            from omnivoice import OmniVoice
-            import numpy as np
+        max_retries = 3
+        retry_delay = 2.0  # seconds
 
-            # Load pretrained OmniVoice model dynamically on CPU
-            log.info("[audio] Initializing local OmniVoice model on CPU...")
-            model = OmniVoice.from_pretrained("k2-fsa/OmniVoice", device_map="cpu")
-            
-            # Use voice design to select premium male/female regional accents
-            instruct_desc = "female, young adult" if lang == "sr" or lang == "mk" else "male, young adult"
-            
-            log.info(f"[audio] Synthesizing text with OmniVoice [Instruct: {instruct_desc}]...")
-            audio = model.generate(
-                text=clean_text,
-                instruct=instruct_desc,
-                num_step=16
-            )
-            
-            # Concatenate list of segment arrays returned by OmniVoice
-            audio = np.concatenate(audio)
-            
-            # Write to WAV temporarily (OmniVoice sample rate is 24000)
-            wav_path = filepath.replace(".mp3", ".wav")
-            sf.write(wav_path, audio, 24000)
-            
-            # Compress to premium MP3 using ffmpeg
-            subprocess.run(
-                ["ffmpeg", "-y", "-i", wav_path, "-codec:a", "libmp3lame", "-qscale:a", "2", filepath],
-                check=True,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
-            
-            # Cleanup WAV
-            if os.path.exists(wav_path):
-                os.remove(wav_path)
+        for attempt in range(1, max_retries + 1):
+            try:
+                log.info(f"[audio] Attempting local OmniVoice speech synthesis (attempt {attempt}/{max_retries})...")
+                import soundfile as sf
+                from omnivoice import OmniVoice
+                import numpy as np
+
+                # Load pretrained OmniVoice model dynamically on CPU
+                log.info("[audio] Initializing local OmniVoice model on CPU...")
+                model = OmniVoice.from_pretrained("k2-fsa/OmniVoice", device_map="cpu")
                 
-            log.info(f"[audio] Successfully synthesized briefing using local OmniVoice at {filepath}")
-            return urlpath
-        except Exception as e:
-            log.error(f"[audio] Local OmniVoice speech synthesis failed: {e}")
+                # Use voice design to select premium male/female regional accents
+                instruct_desc = "female, young adult" if lang == "sr" or lang == "mk" else "male, young adult"
+                
+                log.info(f"[audio] Synthesizing text with OmniVoice [Instruct: {instruct_desc}]...")
+                audio = model.generate(
+                    text=clean_text,
+                    instruct=instruct_desc,
+                    num_step=16
+                )
+                
+                # Concatenate list of segment arrays returned by OmniVoice
+                audio = np.concatenate(audio)
+                
+                # Write to WAV temporarily (OmniVoice sample rate is 24000)
+                wav_path = filepath.replace(".mp3", ".wav")
+                sf.write(wav_path, audio, 24000)
+                
+                # Compress to premium MP3 using ffmpeg
+                subprocess.run(
+                    ["ffmpeg", "-y", "-i", wav_path, "-codec:a", "libmp3lame", "-qscale:a", "2", filepath],
+                    check=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+                
+                # Cleanup WAV
+                if os.path.exists(wav_path):
+                    os.remove(wav_path)
+                    
+                log.info(f"[audio] Successfully synthesized briefing using local OmniVoice at {filepath}")
+                return urlpath
+            except Exception as e:
+                log.error(f"[audio] Local OmniVoice speech synthesis attempt {attempt} failed: {e}")
+                if attempt < max_retries:
+                    import time
+                    log.info(f"[audio] Retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
 
-        log.error("[audio] Failed to synthesize briefing audio since OmniVoice failed.")
+        log.error("[audio] Failed to synthesize briefing audio since OmniVoice failed after all retries.")
         return None
 
     @staticmethod
@@ -139,41 +147,50 @@ class AudioService:
 
         log.info(f"[audio] Synthesizing cluster audio for {cluster_id} ({lang}) [Length: {len(clean_text)} chars]...")
 
-        try:
-            log.info("[audio] Attempting local OmniVoice speech synthesis for cluster...")
-            import soundfile as sf
-            from omnivoice import OmniVoice
-            import numpy as np
+        max_retries = 3
+        retry_delay = 2.0  # seconds
 
-            log.info("[audio] Initializing local OmniVoice model on CPU...")
-            model = OmniVoice.from_pretrained("k2-fsa/OmniVoice", device_map="cpu")
-            
-            instruct_desc = "female, young adult" if lang == "sr" or lang == "mk" else "male, young adult"
-            
-            audio = model.generate(
-                text=clean_text,
-                instruct=instruct_desc,
-                num_step=16
-            )
-            
-            audio = np.concatenate(audio)
-            
-            wav_path = filepath.replace(".mp3", ".wav")
-            sf.write(wav_path, audio, 24000)
-            
-            subprocess.run(
-                ["ffmpeg", "-y", "-i", wav_path, "-codec:a", "libmp3lame", "-qscale:a", "2", filepath],
-                check=True,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
-            
-            if os.path.exists(wav_path):
-                os.remove(wav_path)
+        for attempt in range(1, max_retries + 1):
+            try:
+                log.info(f"[audio] Attempting local OmniVoice speech synthesis for cluster (attempt {attempt}/{max_retries})...")
+                import soundfile as sf
+                from omnivoice import OmniVoice
+                import numpy as np
+
+                log.info("[audio] Initializing local OmniVoice model on CPU...")
+                model = OmniVoice.from_pretrained("k2-fsa/OmniVoice", device_map="cpu")
                 
-            log.info(f"[audio] Successfully synthesized cluster audio using local OmniVoice at {filepath}")
-            return urlpath
-        except Exception as e:
-            log.error(f"[audio] Local OmniVoice cluster audio synthesis failed: {e}")
+                instruct_desc = "female, young adult" if lang == "sr" or lang == "mk" else "male, young adult"
+                
+                audio = model.generate(
+                    text=clean_text,
+                    instruct=instruct_desc,
+                    num_step=16
+                )
+                
+                audio = np.concatenate(audio)
+                
+                wav_path = filepath.replace(".mp3", ".wav")
+                sf.write(wav_path, audio, 24000)
+                
+                subprocess.run(
+                    ["ffmpeg", "-y", "-i", wav_path, "-codec:a", "libmp3lame", "-qscale:a", "2", filepath],
+                    check=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+                
+                if os.path.exists(wav_path):
+                    os.remove(wav_path)
+                    
+                log.info(f"[audio] Successfully synthesized cluster audio using local OmniVoice at {filepath}")
+                return urlpath
+            except Exception as e:
+                log.error(f"[audio] Local OmniVoice cluster speech synthesis attempt {attempt} failed: {e}")
+                if attempt < max_retries:
+                    import time
+                    log.info(f"[audio] Retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
 
+        log.error("[audio] Failed to synthesize cluster audio since OmniVoice failed after all retries.")
         return None
