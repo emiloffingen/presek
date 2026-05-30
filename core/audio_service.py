@@ -48,7 +48,7 @@ class AudioService:
     def generate_briefing_audio(cls, date_str: str, content: str, lang: str) -> Optional[str]:
         """
         Synthesizes daily briefing text into high-quality speech.
-        Uses local OmniVoice TTS if possible, with gTTS and shell fallbacks.
+        Uses local OmniVoice TTS exclusively.
         """
         os.makedirs(_AUDIO_DIR, exist_ok=True)
         filepath, urlpath = cls.get_audio_path_and_url(date_str, lang)
@@ -64,7 +64,6 @@ class AudioService:
 
         log.info(f"[audio] Synthesizing daily briefing for {date_str} ({lang}) [Length: {len(clean_text)} chars]...")
 
-        # 1. Attempt Local OmniVoice Speech Synthesis (First-class choice)
         try:
             log.info("[audio] Attempting local OmniVoice speech synthesis...")
             import soundfile as sf
@@ -107,50 +106,9 @@ class AudioService:
             log.info(f"[audio] Successfully synthesized briefing using local OmniVoice at {filepath}")
             return urlpath
         except Exception as e:
-            log.debug(f"[audio] Local OmniVoice speech synthesis skipped or failed: {e}")
+            log.error(f"[audio] Local OmniVoice speech synthesis failed: {e}")
 
-        # 2. Attempt Google TTS (gTTS) Fallback (Extremely lightweight fallback)
-        try:
-            log.info("[audio] Attempting gTTS fallback...")
-            from gtts import gTTS
-            
-            # Select regional locales (using Bulgarian 'bg' as closest phonetic fallback for Macedonian 'mk' which is unsupported by Google TTS)
-            gtts_lang = "sr" if lang == "sr" else "bg"
-            tts = gTTS(text=clean_text, lang=gtts_lang, slow=False)
-            tts.save(filepath)
-            
-            log.info(f"[audio] Successfully synthesized briefing using gTTS fallback at {filepath}")
-            return urlpath
-        except Exception as e:
-            log.debug(f"[audio] gTTS fallback skipped or not installed: {e}")
-
-        # 3. Last Resort: Simple Shell Synthesis / Mock
-        # If all else fails, create a clean placeholder voice notification so the player still has content
-        try:
-            log.info("[audio] Running shell backup voice generation...")
-            wav_path = filepath.replace(".mp3", ".wav")
-            subprocess.run(
-                ["espeak", "-w", wav_path, f"Dnevni brifing za {date_str}."],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
-            if os.path.exists(wav_path):
-                try:
-                    subprocess.run(
-                        ["ffmpeg", "-y", "-i", wav_path, "-codec:a", "libmp3lame", filepath],
-                        check=True,
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL
-                    )
-                except Exception:
-                    import shutil
-                    shutil.copy(wav_path, filepath)
-                os.remove(wav_path)
-                return urlpath
-        except Exception as e:
-            log.error(f"[audio] Shell backup voice generation failed: {e}")
-
-        log.error("[audio] Failed to synthesize briefing audio using all available pipelines.")
+        log.error("[audio] Failed to synthesize briefing audio since OmniVoice failed.")
         return None
 
     @staticmethod
@@ -165,6 +123,7 @@ class AudioService:
     def generate_cluster_audio(cls, cluster_id: str, content: str, lang: str) -> Optional[str]:
         """
         Synthesizes cluster generated article/synthesis text into high-quality speech.
+        Uses local OmniVoice TTS exclusively.
         """
         os.makedirs(_AUDIO_DIR, exist_ok=True)
         filepath, urlpath = cls.get_cluster_audio_path_and_url(cluster_id, lang)
@@ -180,7 +139,6 @@ class AudioService:
 
         log.info(f"[audio] Synthesizing cluster audio for {cluster_id} ({lang}) [Length: {len(clean_text)} chars]...")
 
-        # 1. Attempt Local OmniVoice Speech Synthesis (First-class choice)
         try:
             log.info("[audio] Attempting local OmniVoice speech synthesis for cluster...")
             import soundfile as sf
@@ -216,43 +174,6 @@ class AudioService:
             log.info(f"[audio] Successfully synthesized cluster audio using local OmniVoice at {filepath}")
             return urlpath
         except Exception as e:
-            log.debug(f"[audio] Local OmniVoice cluster audio synthesis failed: {e}")
-
-        # 2. Attempt Google TTS (gTTS) Fallback
-        try:
-            log.info("[audio] Attempting gTTS fallback for cluster audio...")
-            from gtts import gTTS
-            gtts_lang = "sr" if lang == "sr" else "bg"
-            tts = gTTS(text=clean_text, lang=gtts_lang, slow=False)
-            tts.save(filepath)
-            log.info(f"[audio] Successfully synthesized cluster audio using gTTS fallback at {filepath}")
-            return urlpath
-        except Exception as e:
-            log.debug(f"[audio] gTTS cluster fallback failed: {e}")
-
-        # 3. Last Resort: Shell Synthesis / Mock
-        try:
-            log.info("[audio] Running shell backup voice generation for cluster audio...")
-            wav_path = filepath.replace(".mp3", ".wav")
-            subprocess.run(
-                ["espeak", "-w", wav_path, f"Sinteza vesti za klaster {cluster_id}."],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
-            if os.path.exists(wav_path):
-                try:
-                    subprocess.run(
-                        ["ffmpeg", "-y", "-i", wav_path, "-codec:a", "libmp3lame", filepath],
-                        check=True,
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL
-                    )
-                except Exception:
-                    import shutil
-                    shutil.copy(wav_path, filepath)
-                os.remove(wav_path)
-                return urlpath
-        except Exception as e:
-            log.error(f"[audio] Shell backup voice generation for cluster audio failed: {e}")
+            log.error(f"[audio] Local OmniVoice cluster audio synthesis failed: {e}")
 
         return None
