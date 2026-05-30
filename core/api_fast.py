@@ -224,7 +224,7 @@ if _rate_limiter_enabled:
 
 
 # Mount static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory="static", follow_symlink=True), name="static")
 
 
 
