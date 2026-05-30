@@ -210,26 +210,32 @@ class AudioService:
                 sf.write(wav_path, audio, 24000)
                 
                 # Compress to MP3 using ffmpeg with CPU-friendly settings
-                subprocess.run(
-                    [
-                        "ffmpeg", "-y", "-i", wav_path,
-                        "-codec:a", "libmp3lame",
-                        "-qscale:a", "4",  # Lower quality = faster encoding
-                        "-threads", "1",   # Limit to 1 thread to prevent CPU overload
-                        "-loglevel", "quiet",  # Suppress output
-                        filepath
-                    ],
-                    check=True,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
-                )
-                
-                # Cleanup WAV
-                if os.path.exists(wav_path):
-                    os.remove(wav_path)
-                    
-                log.info(f"[audio] Successfully synthesized briefing using local OmniVoice at {filepath}")
-                return urlpath
+                ffmpeg_success = False
+                try:
+                    subprocess.run(
+                        [
+                            "ffmpeg", "-y", "-i", wav_path,
+                            "-codec:a", "libmp3lame",
+                            "-qscale:a", "4",  # Lower quality = faster encoding
+                            "-threads", "1",   # Limit to 1 thread to prevent CPU overload
+                            "-loglevel", "quiet",  # Suppress output
+                            filepath
+                        ],
+                        check=True,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL
+                    )
+                    ffmpeg_success = True
+                    log.info(f"[audio] Successfully synthesized briefing using local OmniVoice at {filepath}")
+                    return urlpath
+                finally:
+                    # Cleanup WAV file in finally block to ensure it always gets removed
+                    try:
+                        if os.path.exists(wav_path):
+                            os.remove(wav_path)
+                            log.debug(f"[audio] Cleaned up temporary WAV file: {wav_path}")
+                    except Exception as cleanup_e:
+                        log.warning(f"[audio] Failed to cleanup WAV file {wav_path}: {cleanup_e}")
             except Exception as e:
                 log.error(f"[audio] Local OmniVoice speech synthesis attempt {attempt} failed: {e}")
                 if attempt < max_retries:
@@ -297,18 +303,33 @@ class AudioService:
                 wav_path = filepath.replace(".mp3", ".wav")
                 sf.write(wav_path, audio, 24000)
                 
-                subprocess.run(
-                    ["ffmpeg", "-y", "-i", wav_path, "-codec:a", "libmp3lame", "-qscale:a", "2", filepath],
-                    check=True,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
-                )
-                
-                if os.path.exists(wav_path):
-                    os.remove(wav_path)
-                    
-                log.info(f"[audio] Successfully synthesized cluster audio using local OmniVoice at {filepath}")
-                return urlpath
+                # Compress to MP3 using ffmpeg with CPU-friendly settings
+                ffmpeg_success = False
+                try:
+                    subprocess.run(
+                        [
+                            "ffmpeg", "-y", "-i", wav_path,
+                            "-codec:a", "libmp3lame",
+                            "-qscale:a", "4",  # Lower quality = faster encoding
+                            "-threads", "1",   # Limit to 1 thread to prevent CPU overload
+                            "-loglevel", "quiet",  # Suppress output
+                            filepath
+                        ],
+                        check=True,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL
+                    )
+                    ffmpeg_success = True
+                    log.info(f"[audio] Successfully synthesized cluster audio using local OmniVoice at {filepath}")
+                    return urlpath
+                finally:
+                    # Cleanup WAV file in finally block to ensure it always gets removed
+                    try:
+                        if os.path.exists(wav_path):
+                            os.remove(wav_path)
+                            log.debug(f"[audio] Cleaned up temporary WAV file: {wav_path}")
+                    except Exception as cleanup_e:
+                        log.warning(f"[audio] Failed to cleanup WAV file {wav_path}: {cleanup_e}")
             except Exception as e:
                 log.error(f"[audio] Local OmniVoice cluster speech synthesis attempt {attempt} failed: {e}")
                 if attempt < max_retries:
