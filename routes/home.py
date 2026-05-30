@@ -48,6 +48,7 @@ _HARD_NEWS_CATEGORIES = {
     "Srbija",
     "Makedonija",
     "Balkan",
+}
 
 
 async def _ensure_cluster_audio(cluster: Dict[str, Any]) -> Dict[str, Any]:
