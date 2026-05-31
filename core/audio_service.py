@@ -104,7 +104,11 @@ class AudioService:
         
         if len(text) <= max_chunk_size:
             # Short text, generate normally
-            return np.concatenate(model.generate(text=text, instruct=instruct_desc, num_step=16))
+            chunk_audio = model.generate(text=text, instruct=instruct_desc, num_step=16)
+            if not chunk_audio or len(chunk_audio) == 0:
+                log.error("[audio] OmniVoice generated empty array for single chunk")
+                return np.array([], dtype=np.float32)
+            return np.concatenate(chunk_audio) if isinstance(chunk_audio, (list, tuple)) else chunk_audio
         
         # Split long text into chunks
         chunks = []
@@ -128,6 +132,9 @@ class AudioService:
         for i, chunk in enumerate(chunks):
             log.debug(f"[audio] Generating chunk {i+1}/{len(chunks)}...")
             chunk_audio = model.generate(text=chunk, instruct=instruct_desc, num_step=16)
+            if not chunk_audio or len(chunk_audio) == 0:
+                log.error(f"[audio] OmniVoice generated empty array for chunk {i+1}")
+                continue
             audio_segments.extend(chunk_audio)
             
             # Small delay between chunks to prevent CPU overload
@@ -203,7 +210,17 @@ class AudioService:
                 audio = cls._generate_audio_in_chunks(model, clean_text, instruct_desc)
                 
                 # Concatenate list of segment arrays returned by OmniVoice
-                audio = np.concatenate(audio)
+                try:
+                    if not audio or len(audio) == 0:
+                        log.error("[audio] OmniVoice returned empty audio array")
+                        return None
+                    audio = np.concatenate(audio)
+                    if audio.ndim == 0:
+                        log.error("[audio] OmniVoice returned zero-dimensional array")
+                        return None
+                except Exception as e:
+                    log.error(f"[audio] Failed to concatenate audio arrays: {e}")
+                    return None
                 
                 # Write to WAV temporarily (OmniVoice sample rate is 24000)
                 wav_path = filepath.replace(".mp3", ".wav")

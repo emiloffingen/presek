@@ -22,7 +22,7 @@ async def trigger_audio_generation():
         async with httpx.AsyncClient(timeout=30.0) as client:
             # Get homepage data to find clusters with syntheses
             print('📡 Fetching homepage data...')
-            response = await client.get('http://localhost:3000/api/home')
+            response = await client.get('http://localhost:5001/api/home')
             
             if response.status_code == 200:
                 data = response.json()
@@ -51,7 +51,7 @@ async def trigger_audio_generation():
                     # Check if cluster has synthesis by trying to get audio
                     try:
                         audio_response = await client.get(
-                            f'http://localhost:3000/api/cluster/{cluster_id}/audio',
+                            f'http://localhost:5001/api/cluster/{cluster_id}/audio',
                             params={'lang': lang}
                         )
                         
@@ -88,7 +88,7 @@ async def trigger_audio_generation():
                 
             else:
                 print(f'❌ Failed to fetch homepage: HTTP {response.status_code}')
-                print('💡 Make sure the Presek server is running on http://localhost:3000')
+                print('💡 Make sure the Presek server is running on http://localhost:5001')
     except Exception as e:
         print(f'💥 Error during audio generation: {e}')
         print('💡 Make sure the Presek server is running and accessible')
