@@ -26,6 +26,7 @@ if not os.path.exists(_STATIC_ROOT):
     _STATIC_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "static"))
 
 _AUDIO_DIR = os.path.join(_STATIC_ROOT, "uploads", "audio")
+_TTS_ENGINE = os.environ.get("AUDIO_TTS_ENGINE", "espeak").strip().lower()
 
 def clean_briefing_text_for_tts(text: str) -> str:
     """Sanitizes markdown briefing content to read naturally in spoken audio."""
@@ -144,6 +145,22 @@ class AudioService:
         return np.concatenate(audio_segments)
 
     @staticmethod
+    def _coerce_audio_array(audio) -> any:
+        """Normalize OmniVoice output into a one-dimensional NumPy array."""
+        import numpy as np
+
+        if audio is None:
+            return np.array([], dtype=np.float32)
+        if isinstance(audio, np.ndarray):
+            return audio.reshape(-1)
+        if isinstance(audio, (list, tuple)):
+            if len(audio) == 0:
+                return np.array([], dtype=np.float32)
+            return np.concatenate(audio).reshape(-1)
+
+        return np.asarray(audio).reshape(-1)
+
+    @staticmethod
     def _lower_process_priority():
         """Lower process priority to reduce impact on system performance."""
         try:
@@ -153,6 +170,67 @@ class AudioService:
         except (AttributeError, OSError):
             # Windows or unsupported system
             pass
+
+    @staticmethod
+    def _espeak_voice(lang: str) -> str:
+        if lang == "mk":
+            return "mk"
+        if lang == "sr":
+            return "sr"
+        return "en"
+
+    @classmethod
+    def _generate_espeak_mp3(cls, text: str, filepath: str, lang: str) -> bool:
+        """Generate a small local MP3 using espeak-ng and ffmpeg."""
+        wav_path = filepath.replace(".mp3", ".wav")
+        try:
+            subprocess.run(
+                [
+                    "espeak-ng",
+                    "-v",
+                    cls._espeak_voice(lang),
+                    "-s",
+                    "155",
+                    "-w",
+                    wav_path,
+                    text,
+                ],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=60,
+            )
+            subprocess.run(
+                [
+                    "ffmpeg",
+                    "-y",
+                    "-i",
+                    wav_path,
+                    "-codec:a",
+                    "libmp3lame",
+                    "-qscale:a",
+                    "4",
+                    "-threads",
+                    "1",
+                    "-loglevel",
+                    "quiet",
+                    filepath,
+                ],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=60,
+            )
+            return os.path.exists(filepath) and os.path.getsize(filepath) > 1000
+        except Exception as e:
+            log.error(f"[audio] espeak-ng audio generation failed: {e}")
+            return False
+        finally:
+            try:
+                if os.path.exists(wav_path):
+                    os.remove(wav_path)
+            except Exception as cleanup_e:
+                log.warning(f"[audio] Failed to cleanup WAV file {wav_path}: {cleanup_e}")
 
     @staticmethod
     def get_audio_path_and_url(date_str: str, lang: str) -> tuple[str, str]:
@@ -182,6 +260,12 @@ class AudioService:
 
         log.info(f"[audio] Synthesizing daily briefing for {date_str} ({lang}) [Length: {len(clean_text)} chars]...")
 
+        if _TTS_ENGINE != "omnivoice":
+            if cls._generate_espeak_mp3(clean_text, filepath, lang):
+                log.info(f"[audio] Successfully synthesized briefing using espeak-ng at {filepath}")
+                return urlpath
+            return None
+
         max_retries = 3
         retry_delay = 2.0  # seconds
 
@@ -207,19 +291,11 @@ class AudioService:
                 
                 log.info(f"[audio] Synthesizing text with OmniVoice [Instruct: {instruct_desc}]...")
                 # Process text in chunks to reduce memory usage and prevent CPU spikes
-                audio = cls._generate_audio_in_chunks(model, clean_text, instruct_desc)
-                
-                # Concatenate list of segment arrays returned by OmniVoice
-                try:
-                    if not audio or len(audio) == 0:
-                        log.error("[audio] OmniVoice returned empty audio array")
-                        return None
-                    audio = np.concatenate(audio)
-                    if audio.ndim == 0:
-                        log.error("[audio] OmniVoice returned zero-dimensional array")
-                        return None
-                except Exception as e:
-                    log.error(f"[audio] Failed to concatenate audio arrays: {e}")
+                audio = cls._coerce_audio_array(
+                    cls._generate_audio_in_chunks(model, clean_text, instruct_desc)
+                )
+                if audio.size == 0:
+                    log.error("[audio] OmniVoice returned empty audio array")
                     return None
                 
                 # Write to WAV temporarily (OmniVoice sample rate is 24000)
@@ -291,6 +367,12 @@ class AudioService:
 
         log.info(f"[audio] Synthesizing cluster audio for {cluster_id} ({lang}) [Length: {len(clean_text)} chars]...")
 
+        if _TTS_ENGINE != "omnivoice":
+            if cls._generate_espeak_mp3(clean_text, filepath, lang):
+                log.info(f"[audio] Successfully synthesized cluster audio using espeak-ng at {filepath}")
+                return urlpath
+            return None
+
         max_retries = 3
         retry_delay = 2.0  # seconds
 
@@ -313,9 +395,12 @@ class AudioService:
                 instruct_desc = "female, young adult" if lang == "sr" or lang == "mk" else "male, young adult"
                 
                 # Process text in chunks to reduce memory usage and prevent CPU spikes
-                audio = cls._generate_audio_in_chunks(model, clean_text, instruct_desc)
-                
-                audio = np.concatenate(audio)
+                audio = cls._coerce_audio_array(
+                    cls._generate_audio_in_chunks(model, clean_text, instruct_desc)
+                )
+                if audio.size == 0:
+                    log.error("[audio] OmniVoice returned empty cluster audio array")
+                    return None
                 
                 wav_path = filepath.replace(".mp3", ".wav")
                 sf.write(wav_path, audio, 24000)
