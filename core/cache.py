@@ -3,8 +3,7 @@ Redis Cache Utility for Presek
 """
 
 import json
-import time
-from typing import Any, Optional, Callable
+from typing import Optional, Callable
 
 import redis
 from fastapi import Request

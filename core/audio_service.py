@@ -2,7 +2,6 @@ import os
 import re
 import logging
 import subprocess
-import asyncio
 import threading
 import time
 from typing import Optional
@@ -30,6 +29,7 @@ _TTS_ENGINE = os.environ.get("AUDIO_TTS_ENGINE", "auto").strip().lower()
 _SR_TTS_ENGINE = os.environ.get("AUDIO_TTS_ENGINE_SR", "gtts").strip().lower()
 _MK_TTS_ENGINE = os.environ.get("AUDIO_TTS_ENGINE_MK", "omnivoice").strip().lower()
 _OMNIVOICE_NUM_STEP = max(1, int(os.environ.get("OMNIVOICE_NUM_STEP", "8")))
+_SR_TTS_SPEED_FACTOR = max(1.0, min(2.0, float(os.environ.get("SR_TTS_SPEED_FACTOR", "1.2"))))
 
 def clean_briefing_text_for_tts(text: str) -> str:
     """Sanitizes markdown briefing content to read naturally in spoken audio."""
@@ -224,9 +224,46 @@ class AudioService:
 
             tts = gTTS(text=text, lang=cls._gtts_lang(lang), slow=False)
             tts.save(filepath)
+            
+            # Apply speed adjustment for Serbian to fix slow speech
+            if lang == "sr" and os.path.exists(filepath):
+                cls._adjust_audio_speed(filepath, speed_factor=_SR_TTS_SPEED_FACTOR)
+            
             return os.path.exists(filepath) and os.path.getsize(filepath) > 1000
         except Exception as e:
             log.error(f"[audio] gTTS audio generation failed: {e}")
+            return False
+
+    @classmethod
+    def _adjust_audio_speed(cls, filepath: str, speed_factor: float = 1.0) -> bool:
+        """Adjust audio playback speed using ffmpeg."""
+        try:
+            import subprocess
+            temp_file = filepath + ".temp"
+            
+            # Use ffmpeg atempo filter to adjust speed (1.0 = normal, >1.0 = faster)
+            cmd = [
+                "ffmpeg", "-i", filepath,
+                "-filter:a", f"atempo={speed_factor}",
+                "-y", temp_file,
+                "-loglevel", "error"
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, timeout=30)
+            
+            if result.returncode == 0 and os.path.exists(temp_file):
+                # Replace original file with adjusted version
+                os.replace(temp_file, filepath)
+                log.info(f"[audio] Adjusted audio speed by factor {speed_factor}")
+                return True
+            else:
+                log.error(f"[audio] ffmpeg speed adjustment failed: {result.stderr.decode() if result.stderr else 'unknown error'}")
+                # Clean up temp file if it exists
+                if os.path.exists(temp_file):
+                    os.remove(temp_file)
+                return False
+        except Exception as e:
+            log.error(f"[audio] Audio speed adjustment failed: {e}")
             return False
 
     @classmethod
@@ -333,8 +370,6 @@ class AudioService:
             try:
                 log.info(f"[audio] Attempting local OmniVoice speech synthesis (attempt {attempt}/{max_retries})...")
                 import soundfile as sf
-                from omnivoice import OmniVoice
-                import numpy as np
 
                 # Load pretrained OmniVoice model dynamically on CPU
                 # Use cached model instead of loading each time
@@ -450,8 +485,6 @@ class AudioService:
             try:
                 log.info(f"[audio] Attempting local OmniVoice speech synthesis for cluster (attempt {attempt}/{max_retries})...")
                 import soundfile as sf
-                from omnivoice import OmniVoice
-                import numpy as np
 
                 # Use cached model instead of loading each time
                 model = cls._get_omnivoice_model()

@@ -11,7 +11,6 @@ sys.path.append('.')
 os.environ['ENV'] = 'development'
 
 import httpx
-import json
 from datetime import datetime
 
 API_BASE_URL = os.environ.get('PRESEK_API_BASE_URL', 'http://127.0.0.1:5001')
@@ -107,7 +106,7 @@ async def trigger_audio_generation():
                         print(f'💥 Error processing cluster {cluster_id}: {e}', flush=True)
                         errors += 1
                 
-                print(f'\n📈 Audio Generation Summary:', flush=True)
+                print('\n📈 Audio Generation Summary:', flush=True)
                 print(f'🎉 New audio files generated: {audio_generated}', flush=True)
                 print(f'✅ Existing audio files: {audio_existed}', flush=True)
                 print(f'❌ Clusters without synthesis: {no_synthesis}', flush=True)
