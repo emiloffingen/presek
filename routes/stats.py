@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, HTTPException, Query, Request, Depends
-from security_fixes import verify_csrf_token
+from .security import verify_csrf_token
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 
