@@ -58,6 +58,8 @@ export interface NewsCluster {
   score: number;
   is_breaking: boolean;
   has_synthesis: boolean;
+  has_audio?: boolean;
+  audio_url?: string | null;
   has_balanced: boolean;
   has_fact_check?: boolean;
   reading_time: number;

@@ -182,7 +182,7 @@ function getTimeStr(dateStr: string) {
                     clusterId={cluster.cluster_id} 
                     lang={lang} 
                     type="cluster" 
-                    initialAudioUrl={cluster.audio_url}
+                    initialAudioUrl={cluster.audio_url || undefined}
                 />
             </div>
         )}
@@ -239,33 +239,28 @@ function getTimeStr(dateStr: string) {
 		--news-card-cache-bust-20260518: 1;
 		min-width: 0;
 		max-width: 100%;
-        padding: 1.2rem;
+        padding: clamp(0.9rem, 1.8vw, 1.15rem);
         display: flex;
         flex-direction: column;
         height: 100%;
-        border-radius: 16px;
-        background: linear-gradient(135deg, rgba(254, 252, 246, 0.4) 0%, rgba(246, 240, 228, 0.35) 100%);
-        backdrop-filter: var(--glass-blur);
-        -webkit-backdrop-filter: var(--glass-blur);
-        border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
-        box-shadow: 0 4px 20px -2px color-mix(in srgb, var(--background) 30%, rgba(0, 0, 0, 0.08)),
-                    inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 6%, transparent);
-        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--card) 88%, var(--background));
+        border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+        box-shadow: 0 1px 0 color-mix(in srgb, var(--foreground) 4%, transparent);
+        transition: transform 0.28s var(--ease-editorial), border-color 0.28s var(--ease-editorial), box-shadow 0.28s var(--ease-editorial), background-color 0.28s var(--ease-editorial);
 	}
 
     :global(.dark) .nyt-article {
-        background: linear-gradient(135deg, rgba(22, 26, 41, 0.5) 0%, rgba(15, 18, 29, 0.45) 100%);
-        box-shadow: 0 4px 20px -3px rgba(0, 0, 0, 0.3),
-                    inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 4%, transparent);
+        background: color-mix(in srgb, var(--card) 88%, var(--background));
+        box-shadow: 0 1px 0 color-mix(in srgb, var(--foreground) 5%, transparent);
     }
 
     .nyt-article.has-synthesis {
         border-top: 3px solid #fbbf24;
-        border-radius: 16px;
-        background: linear-gradient(135deg, color-mix(in srgb, var(--card) 95%, transparent), color-mix(in srgb, var(--secondary) 85%, transparent));
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--card) 92%, #fbbf24 3%);
         background-image: radial-gradient(circle at 90% 10%, color-mix(in srgb, #fbbf24 8%, transparent), transparent 70%);
-        box-shadow: 0 8px 30px -4px color-mix(in srgb, var(--background) 40%, rgba(0, 0, 0, 0.08)),
-                    inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 6%, transparent);
+        box-shadow: 0 1px 0 color-mix(in srgb, var(--foreground) 4%, transparent);
     }
 
     :global(.dark) .nyt-article.has-synthesis {
@@ -275,19 +270,16 @@ function getTimeStr(dateStr: string) {
 
     @media (hover: hover) {
         .nyt-article:not(.lead-story):hover {
-            transform: translateY(-4px) scale(1.01);
+            transform: translateY(-2px);
             border-color: color-mix(in srgb, var(--nyt-accent) 45%, var(--border));
-            box-shadow: 0 12px 30px -4px color-mix(in srgb, var(--background) 50%, rgba(0, 0, 0, 0.18)),
-                        inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 10%, transparent),
-                        0 0 25px -4px color-mix(in srgb, var(--nyt-accent) 8%, transparent);
+            box-shadow: 0 12px 26px -18px rgba(15, 23, 42, 0.35);
+            background: color-mix(in srgb, var(--card) 96%, var(--nyt-accent) 2%);
             z-index: 10;
         }
         .nyt-article.has-synthesis:not(.lead-story):hover {
-            transform: translateY(-4px) scale(1.01);
+            transform: translateY(-2px);
             border-color: #f59e0b;
-            box-shadow: 0 16px 40px -8px color-mix(in srgb, var(--background) 50%, rgba(0, 0, 0, 0.16)),
-                        inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 10%, transparent),
-                        0 0 25px -4px color-mix(in srgb, #fbbf24 10%, transparent);
+            box-shadow: 0 12px 26px -18px rgba(146, 64, 14, 0.42);
             z-index: 10;
         }
         .nyt-article.has-synthesis.lead-story:hover {
@@ -315,7 +307,7 @@ function getTimeStr(dateStr: string) {
 	    min-width: 0;
 	    max-width: 100%;
 	    text-decoration: none;
-        min-height: 4.45rem;
+        min-height: 4.15rem;
 	}
 
     .headline-link h2 {
@@ -466,7 +458,7 @@ function getTimeStr(dateStr: string) {
         -webkit-line-clamp: 3;
         -webkit-box-orient: vertical;
         overflow: hidden;
-        min-height: 3.85rem;
+        min-height: 3.78rem;
     }
 
     .sub-headlines {
@@ -519,7 +511,7 @@ function getTimeStr(dateStr: string) {
     .image-wrap {
         position: relative;
         aspect-ratio: 3 / 2;
-        border-radius: 10px !important;
+        border-radius: 6px !important;
         overflow: hidden;
         border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
         background:
@@ -622,6 +614,35 @@ function getTimeStr(dateStr: string) {
 	}
 
 	@media (max-width: 640px) {
+        .nyt-article {
+            padding: 0.85rem;
+            border-radius: 8px;
+        }
+
+        .nyt-article:not(.variant-featured):not(.lead-story) {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) clamp(5.6rem, 28vw, 7.1rem);
+            gap: 0.8rem;
+            align-items: start;
+        }
+
+        .nyt-article:not(.variant-featured):not(.lead-story) .article-body {
+            grid-column: 1;
+            grid-row: 1;
+        }
+
+        .nyt-article:not(.variant-featured):not(.lead-story) .image-wrap {
+            grid-column: 2;
+            grid-row: 1;
+            aspect-ratio: 1 / 1;
+            max-height: none;
+        }
+
+        .nyt-article:not(.variant-featured):not(.lead-story) .article-image {
+            aspect-ratio: 1 / 1;
+            max-height: none;
+        }
+
 		.article-meta-v2 {
 			min-height: 0;
 		}
@@ -638,7 +659,7 @@ function getTimeStr(dateStr: string) {
 
 		.nyt-article.variant-compact .headline-link,
 		.nyt-article.variant-wire .headline-link {
-			min-height: 3.15rem;
+			min-height: 0;
 		}
 
 		.nyt-article.variant-compact .headline-compact,
@@ -653,7 +674,7 @@ function getTimeStr(dateStr: string) {
 			font-size: 0.8rem;
 			line-height: 1.34;
 			margin-top: 0.25rem;
-			min-height: 3.2rem;
+			min-height: 0;
 			-webkit-line-clamp: 2;
 		}
 
@@ -685,14 +706,14 @@ function getTimeStr(dateStr: string) {
 		.nyt-article.variant-compact .image-wrap,
 		.nyt-article.variant-wire .image-wrap {
 			border-width: 1px;
-			aspect-ratio: 16 / 9;
-			max-height: 8.5rem;
+			aspect-ratio: 1 / 1;
+			max-height: none;
 		}
 
 		.nyt-article.variant-compact .article-image,
 		.nyt-article.variant-wire .article-image {
-			aspect-ratio: 16 / 9;
-			max-height: 8.5rem;
+			aspect-ratio: 1 / 1;
+			max-height: none;
 			object-position: center;
 		}
 

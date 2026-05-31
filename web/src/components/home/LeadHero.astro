@@ -291,7 +291,7 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
 		grid-template-columns: minmax(0, 1fr);
 		gap: clamp(0.85rem, 1.8vw, 1.4rem);
 		padding-bottom: clamp(1.35rem, 2.8vw, 2.25rem);
-		border-bottom: 4px double var(--border);
+		border-bottom: 1px solid var(--border);
 		position: relative;
 		overflow: hidden;
         margin-bottom: 2rem;
@@ -427,7 +427,7 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
 		padding: 0.4rem 0.85rem;
         background: color-mix(in srgb, var(--secondary) 25%, transparent);
         border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
-        border-radius: 8px;
+        border-radius: 6px;
         box-shadow: inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 4%, transparent);
 	}
 
@@ -471,7 +471,7 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
         background-image: radial-gradient(circle at 90% 10%, color-mix(in srgb, var(--dominant-color) 8%, transparent), transparent 70%);
         border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
         border-top: 3px solid var(--dominant-color);
-        border-radius: 12px;
+        border-radius: 8px;
         box-shadow: 0 8px 30px -4px color-mix(in srgb, var(--background) 40%, rgba(0, 0, 0, 0.08)),
                     inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 6%, transparent);
         transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -617,7 +617,7 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
         backdrop-filter: var(--glass-blur);
         -webkit-backdrop-filter: var(--glass-blur);
         border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
-        border-radius: 12px;
+        border-radius: 8px;
         box-shadow: 0 4px 20px -2px color-mix(in srgb, var(--background) 30%, rgba(0, 0, 0, 0.08)),
                     inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 6%, transparent);
         transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -648,14 +648,11 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
 			aspect-ratio: 3 / 2;
 			width: 100%;
             border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
-            border-radius: 16px;
+            border-radius: 8px;
             overflow: hidden;
-            background: linear-gradient(135deg, rgba(254, 252, 246, 0.4) 0%, rgba(246, 240, 228, 0.3) 100%);
-            backdrop-filter: var(--glass-blur);
-            -webkit-backdrop-filter: var(--glass-blur);
-            box-shadow: 0 12px 40px -8px color-mix(in srgb, var(--background) 40%, rgba(0, 0, 0, 0.15)),
-                        inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 8%, transparent);
-            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            background: color-mix(in srgb, var(--card) 88%, var(--background));
+            box-shadow: 0 14px 36px -28px rgba(15, 23, 42, 0.48);
+            transition: transform 0.35s var(--ease-editorial), border-color 0.35s var(--ease-editorial), box-shadow 0.35s var(--ease-editorial);
 		}
 
         :global(.dark) .lead-media-frame {
@@ -666,10 +663,8 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
 
         .lead-media-frame:hover {
             border-color: color-mix(in srgb, var(--dominant-color) 45%, var(--border));
-            box-shadow: 0 20px 50px -10px color-mix(in srgb, var(--background) 50%, rgba(0, 0, 0, 0.25)),
-                        inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 12%, transparent),
-                        0 0 35px -5px color-mix(in srgb, var(--dominant-color) 12%, transparent);
-            transform: translateY(-4px);
+            box-shadow: 0 18px 42px -28px rgba(15, 23, 42, 0.6);
+            transform: translateY(-2px);
         }
 
 		.lead-media-loading-shell {
@@ -1060,7 +1055,7 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
 	}
 
 		@media (max-width: 639px) {
-			.lead-hero { gap: 0.8rem; padding-bottom: 1rem; }
+			.lead-hero { gap: 0.8rem; padding-bottom: 1rem; margin-bottom: 1rem; }
 			.lead-copy { order: 1; }
 			.lead-media-mobile { order: 2; }
 			.lead-copy { gap: 0.3rem; }
@@ -1074,10 +1069,10 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
 			}
 
 			.lead-media-frame {
-				aspect-ratio: 16 / 7;
+				aspect-ratio: 16 / 8.5;
 				height: auto;
-	            max-height: 24vh;
-				min-height: 8.25rem;
+	            max-height: 28vh;
+				min-height: 9.2rem;
 			}
 
 			.lead-media-image {

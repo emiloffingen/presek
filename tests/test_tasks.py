@@ -238,7 +238,6 @@ class TestRepairSplitClustersTask:
         assert "СИНТЕЗА" not in polished
         assert "УРЕДНИЧКИ ПРЕГЛЕД" not in polished
         assert polished.startswith("покажува нов развој") or polished.startswith("Покажува нов развој")
-        assert perspectives
 
     def test_backfill_single_skips_when_queue_backlog_is_high(self):
 

@@ -48,14 +48,12 @@ def prune_boilerplate_html(html_str: str) -> str:
         ]
 
         for keyword in noisy_keywords:
-            # Match divs, sections, uls, spans, articles, tables, asides, lists, rows, cells
             xpath_query = (
                 f"//*[self::div or self::section or self::ul or self::span or self::article or self::aside or self::td or self::tr]"
                 f"[contains(translate(@class, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '{keyword}') "
                 f"or contains(translate(@id, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '{keyword}')]"
             )
             for elem in doc.xpath(xpath_query):
-                # Never remove body or html, and ensure the parent exists
                 if elem.tag not in ["body", "html"] and elem.getparent() is not None:
                     try:
                         elem.getparent().remove(elem)
@@ -89,7 +87,6 @@ class CrawlerService:
         """
         Main entry point: Try fast extraction first, fall back to headless browser if needed.
         """
-        # Ant-bot: Random sleep before fetch
         await asyncio.sleep(random.uniform(0.5, 2.0))
 
         result = {
@@ -102,7 +99,6 @@ class CrawlerService:
             "method": "fast",
         }
 
-        # 1. Fast path: HTTPX + Trafilatura
         try:
             headers = self._get_headers()
             safe_ips = _resolve_public_ips(url)
@@ -122,13 +118,10 @@ class CrawlerService:
             return {"url": url, "error": f"Security block: {e}"}
         except Exception as e:
             log.warning(f"Fast crawl failed for {url}: {e}")
-            # If even the basic GET fails, we definitely want to try the "heavy" path
             return await self._extract_headless(url)
 
-        # Use trafilatura on the fetched HTML
         extracted = self._parse_with_trafilatura(html_content, final_url)
 
-        # If trafilatura failed to get meaningful content, it might be a JS-rendered site
         if not extracted.get("content") or len(extracted.get("content", "")) < 200:
             log.info(f"Low quality content from fast path for {url}, falling back to headless")
             return await self._extract_headless(url)
@@ -140,7 +133,6 @@ class CrawlerService:
         """Extracts content and metadata using trafilatura."""
         cleaned_html = prune_boilerplate_html(html)
 
-        # trafilatura.extract is synchronous
         content = trafilatura.extract(
             cleaned_html,
             url=url,
@@ -161,19 +153,16 @@ class CrawlerService:
     async def _extract_headless(self, url: str) -> Dict[str, Any]:
         """
         Fallback path: Uses Playwright to render the page.
-        Slow but extremely robust against modern JS frameworks.
         """
         log.info(f"Starting headless crawl for {url}")
         result = {"url": url, "method": "headless"}
         browser = None
 
         try:
-            # SSRF Protection
             _resolve_public_ips(url)
 
             async with async_playwright() as p:
                 browser = await p.chromium.launch(headless=True)
-                # Set a common viewport and user agent
                 user_agent = random.choice(self.user_agents)
                 context = await browser.new_context(
                     viewport={
@@ -183,17 +172,12 @@ class CrawlerService:
                     user_agent=user_agent,
                 )
                 page = await context.new_page()
-
-                # Wait for 'networkidle' to ensure JS has finished loading content
                 await page.goto(url, wait_until="networkidle", timeout=30000)
-
-                # Some sites might need a small extra sleep for hydration
                 await asyncio.sleep(1)
 
                 html_content = await page.content()
                 final_url = page.url
 
-                # Extract metadata using page.evaluate to get computed properties
                 metadata = await page.evaluate(
                     """() => {
                     const getMeta = (name) => {
@@ -212,16 +196,15 @@ class CrawlerService:
                 await browser.close()
                 browser = None
 
-                # Still use trafilatura on the rendered HTML for the best text extraction
                 extracted = self._parse_with_trafilatura(html_content, final_url)
 
                 result.update(
                     {
-                        "title": str(metadata.get("title")) if metadata.get("title") else (str(extracted.get("title")) if extracted.get("title") else None),  # type: ignore
-                        "content": str(extracted.get("content")) if extracted.get("content") else None,  # type: ignore
-                        "image_url": str(metadata.get("ogImage")) if metadata.get("ogImage") else (str(extracted.get("image_url")) if extracted.get("image_url") else None),  # type: ignore
-                        "author": str(metadata.get("author")) if metadata.get("author") else (str(extracted.get("author")) if extracted.get("author") else None),  # type: ignore
-                        "published_at": str(extracted.get("published_at")) if extracted.get("published_at") else None,  # type: ignore
+                        "title": str(metadata.get("title")) if metadata.get("title") else (str(extracted.get("title")) if extracted.get("title") else None),
+                        "content": str(extracted.get("content")) if extracted.get("content") else None,
+                        "image_url": str(metadata.get("ogImage")) if metadata.get("ogImage") else (str(extracted.get("image_url")) if extracted.get("image_url") else None),
+                        "author": str(metadata.get("author")) if metadata.get("author") else (str(extracted.get("author")) if extracted.get("author") else None),
+                        "published_at": str(extracted.get("published_at")) if extracted.get("published_at") else None,
                     }
                 )
         except Exception as e:
@@ -240,17 +223,14 @@ class CrawlerService:
         log.info(f"Searching for feeds on {homepage_url}")
         feeds = []
         try:
-            # SSRF Protection
             _resolve_public_ips(homepage_url)
 
             async with async_playwright() as p:
                 browser = await p.chromium.launch(headless=True)
                 try:
                     page = await browser.new_page(user_agent=self._get_headers()["User-Agent"])
-                    # Increase timeout for potential redirects
                     await page.goto(homepage_url, wait_until="networkidle", timeout=30000)
 
-                    # Look for <link rel="alternate" type="application/rss+xml" ...>
                     found = await page.evaluate(
                         """() => {
                         const links = Array.from(document.querySelectorAll('link[rel="alternate"]'));
@@ -260,7 +240,6 @@ class CrawlerService:
                     }"""
                     )
 
-                    # Also look for <a> tags that look like feeds
                     found_links = await page.evaluate(
                         """() => {
                         const anchors = Array.from(document.querySelectorAll('a'));
@@ -272,7 +251,6 @@ class CrawlerService:
                 finally:
                     await browser.close()
 
-                # Unique-ify and resolve relative URLs
                 seen = set()
                 all_raw = (found or []) + (found_links or [])
                 for url in all_raw:

@@ -4,6 +4,7 @@ import logging
 import subprocess
 import threading
 import time
+import asyncio
 from typing import Optional
 
 log = logging.getLogger("presek.audio")
@@ -82,6 +83,45 @@ class AudioService:
             except Exception as e:
                 log.error(f"[audio] Failed to load OmniVoice model: {e}")
                 return None
+
+    @classmethod
+    def _generate_edge_mp3(cls, text: str, filepath: str, lang: str) -> bool:
+        """Generate audio using Microsoft Edge TTS (async wrapper)."""
+        try:
+            import edge_tts
+            
+            # Map languages to high-quality neural voices
+            voice_map = {
+                "mk": "mk-MK-MarijaNeural",
+                "sr": "sr-RS-SophieNeural",
+                "en": "en-US-AvaNeural"
+            }
+            
+            voice = voice_map.get(lang, "en-US-AvaNeural")
+            
+            async def _do_generate():
+                communicate = edge_tts.Communicate(text, voice)
+                await communicate.save(filepath)
+            
+            # Run the async generation in the current thread's loop or a new one
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            
+            if loop.is_running():
+                # If we're already in a loop (unlikely for Celery worker but possible), 
+                # we need a different approach, but asyncio.run is usually safest for standalone tasks.
+                import nest_asyncio
+                nest_asyncio.apply()
+            
+            asyncio.run(_do_generate())
+            
+            return os.path.exists(filepath) and os.path.getsize(filepath) > 1000
+        except Exception as e:
+            log.error(f"[audio] Edge TTS audio generation failed: {e}")
+            return False
 
     @staticmethod
     def _enforce_rate_limit():
@@ -239,7 +279,7 @@ class AudioService:
         """Adjust audio playback speed using ffmpeg."""
         try:
             import subprocess
-            temp_file = filepath + ".temp"
+            temp_file = filepath.replace(".mp3", "_temp.mp3")
             
             # Use ffmpeg atempo filter to adjust speed (1.0 = normal, >1.0 = faster)
             cmd = [
@@ -350,16 +390,36 @@ class AudioService:
         engine = cls._engine_for_lang(lang)
         if engine == "gtts":
             if cls._generate_gtts_mp3(clean_text, filepath, lang):
-                log.info(f"[audio] Successfully synthesized briefing using gTTS at {filepath}")
+                log.info(f"[audio] Successfully synthesized audio using gTTS at {filepath}")
                 return urlpath
-            log.info("[audio] Falling back to espeak-ng for briefing audio")
+            log.info("[audio] Falling back to espeak-ng for audio")
             if cls._generate_espeak_mp3(clean_text, filepath, lang):
                 return urlpath
             return None
 
+        if engine == "edge":
+            if cls._generate_edge_mp3(clean_text, filepath, lang):
+                log.info(f"[audio] Successfully synthesized audio using Edge TTS at {filepath}")
+                return urlpath
+            
+            log.info(f"[audio] Edge TTS failed for {lang}, attempting high-quality fallback.")
+            if lang == "sr":
+                if cls._generate_gtts_mp3(clean_text, filepath, lang):
+                    log.info(f"[audio] Successfully synthesized audio using gTTS (sr) at {filepath}")
+                    return urlpath
+            elif lang == "mk":
+                # Set engine to omnivoice and continue to the OmniVoice section
+                engine = "omnivoice"
+            
+            if engine != "omnivoice":
+                log.info(f"[audio] No high-quality fallback for {lang}, using espeak-ng.")
+                if cls._generate_espeak_mp3(clean_text, filepath, lang):
+                    return urlpath
+                return None
+
         if engine != "omnivoice":
             if cls._generate_espeak_mp3(clean_text, filepath, lang):
-                log.info(f"[audio] Successfully synthesized briefing using espeak-ng at {filepath}")
+                log.info(f"[audio] Successfully synthesized audio using espeak-ng at {filepath}")
                 return urlpath
             return None
 
@@ -398,7 +458,6 @@ class AudioService:
                 sf.write(wav_path, audio, 24000)
                 
                 # Compress to MP3 using ffmpeg with CPU-friendly settings
-                ffmpeg_success = False
                 try:
                     subprocess.run(
                         [
@@ -413,7 +472,6 @@ class AudioService:
                         stdout=subprocess.DEVNULL,
                         stderr=subprocess.DEVNULL
                     )
-                    ffmpeg_success = True
                     log.info(f"[audio] Successfully synthesized briefing using local OmniVoice at {filepath}")
                     return urlpath
                 finally:
@@ -465,16 +523,36 @@ class AudioService:
         engine = cls._engine_for_lang(lang)
         if engine == "gtts":
             if cls._generate_gtts_mp3(clean_text, filepath, lang):
-                log.info(f"[audio] Successfully synthesized cluster audio using gTTS at {filepath}")
+                log.info(f"[audio] Successfully synthesized audio using gTTS at {filepath}")
                 return urlpath
-            log.info("[audio] Falling back to espeak-ng for cluster audio")
+            log.info("[audio] Falling back to espeak-ng for audio")
             if cls._generate_espeak_mp3(clean_text, filepath, lang):
                 return urlpath
             return None
 
+        if engine == "edge":
+            if cls._generate_edge_mp3(clean_text, filepath, lang):
+                log.info(f"[audio] Successfully synthesized audio using Edge TTS at {filepath}")
+                return urlpath
+            
+            log.info(f"[audio] Edge TTS failed for {lang}, attempting high-quality fallback.")
+            if lang == "sr":
+                if cls._generate_gtts_mp3(clean_text, filepath, lang):
+                    log.info(f"[audio] Successfully synthesized audio using gTTS (sr) at {filepath}")
+                    return urlpath
+            elif lang == "mk":
+                # Set engine to omnivoice and continue to the OmniVoice section
+                engine = "omnivoice"
+            
+            if engine != "omnivoice":
+                log.info(f"[audio] No high-quality fallback for {lang}, using espeak-ng.")
+                if cls._generate_espeak_mp3(clean_text, filepath, lang):
+                    return urlpath
+                return None
+
         if engine != "omnivoice":
             if cls._generate_espeak_mp3(clean_text, filepath, lang):
-                log.info(f"[audio] Successfully synthesized cluster audio using espeak-ng at {filepath}")
+                log.info(f"[audio] Successfully synthesized audio using espeak-ng at {filepath}")
                 return urlpath
             return None
 
@@ -509,7 +587,6 @@ class AudioService:
                 sf.write(wav_path, audio, 24000)
                 
                 # Compress to MP3 using ffmpeg with CPU-friendly settings
-                ffmpeg_success = False
                 try:
                     subprocess.run(
                         [
@@ -524,7 +601,6 @@ class AudioService:
                         stdout=subprocess.DEVNULL,
                         stderr=subprocess.DEVNULL
                     )
-                    ffmpeg_success = True
                     log.info(f"[audio] Successfully synthesized cluster audio using local OmniVoice at {filepath}")
                     return urlpath
                 finally:
