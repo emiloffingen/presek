@@ -124,6 +124,8 @@ fasttext==0.9.3
     # via presek (pyproject.toml)
 feedparser==6.0.12
     # via presek (pyproject.toml)
+gtts==2.5.4
+    # via presek (pyproject.toml)
 filelock==3.29.0
     # via
     #   huggingface-hub

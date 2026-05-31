@@ -26,7 +26,10 @@ if not os.path.exists(_STATIC_ROOT):
     _STATIC_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "static"))
 
 _AUDIO_DIR = os.path.join(_STATIC_ROOT, "uploads", "audio")
-_TTS_ENGINE = os.environ.get("AUDIO_TTS_ENGINE", "espeak").strip().lower()
+_TTS_ENGINE = os.environ.get("AUDIO_TTS_ENGINE", "auto").strip().lower()
+_SR_TTS_ENGINE = os.environ.get("AUDIO_TTS_ENGINE_SR", "gtts").strip().lower()
+_MK_TTS_ENGINE = os.environ.get("AUDIO_TTS_ENGINE_MK", "omnivoice").strip().lower()
+_OMNIVOICE_NUM_STEP = max(1, int(os.environ.get("OMNIVOICE_NUM_STEP", "8")))
 
 def clean_briefing_text_for_tts(text: str) -> str:
     """Sanitizes markdown briefing content to read naturally in spoken audio."""
@@ -96,7 +99,13 @@ class AudioService:
         _last_generation_time = time.time()
 
     @staticmethod
-    def _generate_audio_in_chunks(model, text: str, instruct_desc: str, max_chunk_size: int = 400) -> any:
+    def _generate_audio_in_chunks(
+        model,
+        text: str,
+        instruct_desc: str,
+        lang: str,
+        max_chunk_size: int = 400,
+    ) -> any:
         """
         Generate audio in chunks to reduce memory usage and prevent CPU spikes.
         This is especially important for long texts that could cause OOM errors.
@@ -105,7 +114,12 @@ class AudioService:
         
         if len(text) <= max_chunk_size:
             # Short text, generate normally
-            chunk_audio = model.generate(text=text, instruct=instruct_desc, num_step=16)
+            chunk_audio = model.generate(
+                text=text,
+                language=lang,
+                instruct=instruct_desc,
+                num_step=_OMNIVOICE_NUM_STEP,
+            )
             if not chunk_audio or len(chunk_audio) == 0:
                 log.error("[audio] OmniVoice generated empty array for single chunk")
                 return np.array([], dtype=np.float32)
@@ -132,7 +146,12 @@ class AudioService:
         audio_segments = []
         for i, chunk in enumerate(chunks):
             log.debug(f"[audio] Generating chunk {i+1}/{len(chunks)}...")
-            chunk_audio = model.generate(text=chunk, instruct=instruct_desc, num_step=16)
+            chunk_audio = model.generate(
+                text=chunk,
+                language=lang,
+                instruct=instruct_desc,
+                num_step=_OMNIVOICE_NUM_STEP,
+            )
             if not chunk_audio or len(chunk_audio) == 0:
                 log.error(f"[audio] OmniVoice generated empty array for chunk {i+1}")
                 continue
@@ -178,6 +197,37 @@ class AudioService:
         if lang == "sr":
             return "sr"
         return "en"
+
+    @staticmethod
+    def _engine_for_lang(lang: str) -> str:
+        if _TTS_ENGINE != "auto":
+            return _TTS_ENGINE
+        if lang == "mk":
+            return _MK_TTS_ENGINE
+        if lang == "sr":
+            return _SR_TTS_ENGINE
+        return "gtts"
+
+    @staticmethod
+    def _gtts_lang(lang: str) -> str:
+        if lang == "sr":
+            return "sr"
+        if lang == "mk":
+            return "mk"
+        return "en"
+
+    @classmethod
+    def _generate_gtts_mp3(cls, text: str, filepath: str, lang: str) -> bool:
+        """Generate MP3 using gTTS. Falls back to caller if unsupported/network fails."""
+        try:
+            from gtts import gTTS
+
+            tts = gTTS(text=text, lang=cls._gtts_lang(lang), slow=False)
+            tts.save(filepath)
+            return os.path.exists(filepath) and os.path.getsize(filepath) > 1000
+        except Exception as e:
+            log.error(f"[audio] gTTS audio generation failed: {e}")
+            return False
 
     @classmethod
     def _generate_espeak_mp3(cls, text: str, filepath: str, lang: str) -> bool:
@@ -260,7 +310,17 @@ class AudioService:
 
         log.info(f"[audio] Synthesizing daily briefing for {date_str} ({lang}) [Length: {len(clean_text)} chars]...")
 
-        if _TTS_ENGINE != "omnivoice":
+        engine = cls._engine_for_lang(lang)
+        if engine == "gtts":
+            if cls._generate_gtts_mp3(clean_text, filepath, lang):
+                log.info(f"[audio] Successfully synthesized briefing using gTTS at {filepath}")
+                return urlpath
+            log.info("[audio] Falling back to espeak-ng for briefing audio")
+            if cls._generate_espeak_mp3(clean_text, filepath, lang):
+                return urlpath
+            return None
+
+        if engine != "omnivoice":
             if cls._generate_espeak_mp3(clean_text, filepath, lang):
                 log.info(f"[audio] Successfully synthesized briefing using espeak-ng at {filepath}")
                 return urlpath
@@ -292,7 +352,7 @@ class AudioService:
                 log.info(f"[audio] Synthesizing text with OmniVoice [Instruct: {instruct_desc}]...")
                 # Process text in chunks to reduce memory usage and prevent CPU spikes
                 audio = cls._coerce_audio_array(
-                    cls._generate_audio_in_chunks(model, clean_text, instruct_desc)
+                    cls._generate_audio_in_chunks(model, clean_text, instruct_desc, lang)
                 )
                 if audio.size == 0:
                     log.error("[audio] OmniVoice returned empty audio array")
@@ -367,7 +427,17 @@ class AudioService:
 
         log.info(f"[audio] Synthesizing cluster audio for {cluster_id} ({lang}) [Length: {len(clean_text)} chars]...")
 
-        if _TTS_ENGINE != "omnivoice":
+        engine = cls._engine_for_lang(lang)
+        if engine == "gtts":
+            if cls._generate_gtts_mp3(clean_text, filepath, lang):
+                log.info(f"[audio] Successfully synthesized cluster audio using gTTS at {filepath}")
+                return urlpath
+            log.info("[audio] Falling back to espeak-ng for cluster audio")
+            if cls._generate_espeak_mp3(clean_text, filepath, lang):
+                return urlpath
+            return None
+
+        if engine != "omnivoice":
             if cls._generate_espeak_mp3(clean_text, filepath, lang):
                 log.info(f"[audio] Successfully synthesized cluster audio using espeak-ng at {filepath}")
                 return urlpath
@@ -396,7 +466,7 @@ class AudioService:
                 
                 # Process text in chunks to reduce memory usage and prevent CPU spikes
                 audio = cls._coerce_audio_array(
-                    cls._generate_audio_in_chunks(model, clean_text, instruct_desc)
+                    cls._generate_audio_in_chunks(model, clean_text, instruct_desc, lang)
                 )
                 if audio.size == 0:
                     log.error("[audio] OmniVoice returned empty cluster audio array")

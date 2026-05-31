@@ -50,9 +50,10 @@ _HARD_NEWS_CATEGORIES = {
     "Makedonija",
     "Balkan",
 }
+_AUDIO_PRIORITY_GENERATION_LIMIT = max(0, int(os.environ.get("AUDIO_PRIORITY_GENERATION_LIMIT", "2")))
 
 
-async def _ensure_cluster_audio(cluster: Dict[str, Any]) -> Dict[str, Any]:
+async def _ensure_cluster_audio(cluster: Dict[str, Any], generate: bool = False) -> Dict[str, Any]:
     """
     Check if cluster has synthesis and ensure audio is generated.
     Adds audio_url to cluster if available.
@@ -68,6 +69,16 @@ async def _ensure_cluster_audio(cluster: Dict[str, Any]) -> Dict[str, Any]:
         return cluster
     
     try:
+        filepath, urlpath = AudioService.get_cluster_audio_path_and_url(cluster_id, lang)
+        if os.path.exists(filepath) and os.path.getsize(filepath) > 1000:
+            cluster['audio_url'] = urlpath
+            cluster['has_audio'] = True
+            log.info(f"[home] Audio already exists for cluster {cluster_id}: {urlpath}")
+            return cluster
+
+        if not generate:
+            return cluster
+
         # Check if cluster has generated synthesis content
         if cluster.get('generated_article') or cluster.get('synthesis'):
             content = cluster.get('generated_article') or cluster.get('synthesis') or ""
@@ -76,15 +87,7 @@ async def _ensure_cluster_audio(cluster: Dict[str, Any]) -> Dict[str, Any]:
                 
                 # Generate audio in background (non-blocking)
                 asyncio.create_task(_generate_cluster_audio_background(cluster_id, content, lang))
-                
-                # Check if audio already exists
-                filepath, urlpath = AudioService.get_cluster_audio_path_and_url(cluster_id, lang)
-                if os.path.exists(filepath) and os.path.getsize(filepath) > 1000:
-                    cluster['audio_url'] = urlpath
-                    cluster['has_audio'] = True
-                    log.info(f"[home] Audio already exists for cluster {cluster_id}: {urlpath}")
-                else:
-                    log.info(f"[home] Audio will be generated for cluster {cluster_id} in background")
+                log.info(f"[home] Audio will be generated for cluster {cluster_id} in background")
     except Exception as e:
         log.error(f"[home] Error checking cluster audio for {cluster_id}: {e}")
     
@@ -497,12 +500,43 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
         clusters = news_result.get("clusters") or []
         global_clusters = news_result.get("global_clusters") or []
 
-        # Ensure audio generation for clusters with syntheses
-        clusters = [await _ensure_cluster_audio(cluster) for cluster in clusters]
-        global_clusters = [await _ensure_cluster_audio(cluster) for cluster in global_clusters]
-
         lead = clusters[0] if clusters else None
         supporting = clusters[1:5]
+        priority_audio_ids = set()
+        priority_audio_budget = _AUDIO_PRIORITY_GENERATION_LIMIT
+
+        def should_generate_priority_audio(cluster: Dict[str, Any]) -> bool:
+            nonlocal priority_audio_budget
+            if priority_audio_budget <= 0 or not cluster or not cluster.get("cluster_id"):
+                return False
+            filepath, _ = AudioService.get_cluster_audio_path_and_url(
+                cluster["cluster_id"],
+                cluster.get("lang", "sr"),
+            )
+            if os.path.exists(filepath) and os.path.getsize(filepath) > 1000:
+                return False
+            priority_audio_budget -= 1
+            return True
+
+        if lead:
+            lead = await _ensure_cluster_audio(lead, generate=should_generate_priority_audio(lead))
+            priority_audio_ids.add(lead.get("cluster_id"))
+            clusters[0] = lead
+
+        for idx, cluster in enumerate(supporting, start=1):
+            supporting[idx - 1] = await _ensure_cluster_audio(
+                cluster,
+                generate=should_generate_priority_audio(cluster),
+            )
+            priority_audio_ids.add(cluster.get("cluster_id"))
+            clusters[idx] = supporting[idx - 1]
+
+        for idx, cluster in enumerate(global_clusters[:2]):
+            global_clusters[idx] = await _ensure_cluster_audio(
+                cluster,
+                generate=should_generate_priority_audio(cluster),
+            )
+            priority_audio_ids.add(cluster.get("cluster_id"))
 
         # Personalization Engine
         for_you_pool = []
@@ -523,8 +557,7 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
 
         if not for_you_pool:
             for_you_pool = [c for c in clusters[5:11] if _is_live_now_candidate(c)]
-            # Ensure audio for personalized clusters too
-            for_you_pool = [await _ensure_cluster_audio(c) for c in for_you_pool]
+            for_you_pool = [await _ensure_cluster_audio(c, generate=False) for c in for_you_pool]
 
         feed_clusters = list(clusters[5:])
         developing = [
@@ -563,10 +596,16 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
         ]
         recent_clusters = recent_result.get("clusters") if isinstance(recent_result, dict) else []
         live_now = _rank_live_now_clusters(recent_clusters, exclude_cluster_ids=excluded_cluster_ids, limit=4)
+        for idx, cluster in enumerate(live_now):
+            should_generate = (
+                cluster.get("cluster_id") not in priority_audio_ids
+                and should_generate_priority_audio(cluster)
+            )
+            live_now[idx] = await _ensure_cluster_audio(cluster, generate=should_generate)
+            priority_audio_ids.add(cluster.get("cluster_id"))
 
         raw_wire_articles = []
-        # Ensure audio for recent clusters
-        recent_clusters = [await _ensure_cluster_audio(c) for c in (recent_clusters or [])]
+        recent_clusters = [await _ensure_cluster_audio(c, generate=False) for c in (recent_clusters or [])]
 
         seen_links = set()
         for cluster in recent_clusters or []:

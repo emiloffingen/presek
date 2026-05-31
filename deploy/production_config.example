@@ -106,6 +106,16 @@ RATE_LIMIT_REQUESTS=100
 RATE_LIMIT_WINDOW=60
 
 # ============================================================================
+# Audio
+# ============================================================================
+# auto = Serbian uses gTTS, Macedonian uses OmniVoice.
+AUDIO_TTS_ENGINE=auto
+AUDIO_TTS_ENGINE_SR=gtts
+AUDIO_TTS_ENGINE_MK=omnivoice
+OMNIVOICE_NUM_STEP=8
+AUDIO_PRIORITY_GENERATION_LIMIT=2
+
+# ============================================================================
 # Maintenance
 # ============================================================================
 DB_RETAIN_DAYS=180
