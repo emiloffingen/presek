@@ -6,6 +6,8 @@ def test_synthesis_prompt_requires_angle_content_schema():
     assert "angle" in SYNTHESIS_SYSTEM_PROMPT
     assert "content" in SYNTHESIS_SYSTEM_PROMPT
     assert "verification_report" in SYNTHESIS_SYSTEM_PROMPT
+    assert "Mora zvučati kao rad iskusnog urednika" in SYNTHESIS_SYSTEM_PROMPT
+    assert "ZABRANJENE AI FRAZE" in SYNTHESIS_SYSTEM_PROMPT
 
 
 def test_summary_prompt_requires_plain_json_summary():

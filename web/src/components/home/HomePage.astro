@@ -452,6 +452,46 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
                     </script>
                 )}
 
+                {!error && clusters.length === 0 && (
+                    <EmptyState trending={trending} />
+                )}
+
+				{leadCluster && (
+					<div class="section-wrapper lead-wrapper">
+						<LeadHero
+							leadCluster={leadCluster}
+							leadTitle={leadTitle}
+							leadTitleIsCyrillic={leadTitleIsCyrillic}
+							leadSignal={finalLeadSignal}
+							leadSummary={leadSummary}
+							leadSummaryIsCyrillic={leadSummaryIsCyrillic}
+							leadVisual={leadVisual}
+							dominantColor={leadCluster.dominant_color}
+							getTimeStr={getTimeStr}
+							filtered={!isHomepage}
+							filterLabel={activeFilterLabel}
+                            lang={lang}
+						/>
+                        {leadStatus && leadEvidenceItems.length > 0 && (
+                            <div class:list={["home-evidence-strip", `tone-${leadStatus.tone}`]}>
+                                <div class="home-evidence-status">
+                                    <span>{leadStatus.label}</span>
+                                    <p>{leadStatus.note}</p>
+                                </div>
+                                <div class="home-evidence-grid">
+                                    {leadEvidenceItems.map((item) => (
+                                        <div class="home-evidence-item">
+                                            <span>{item.label}</span>
+                                            <strong>{item.value}</strong>
+                                            {item.detail && <p>{item.detail}</p>}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+					</div>
+				)}
+
                 {/* ── SISTEMSKI SIGNAL (SYSTEM PULSE STATS) ── */}
                 {!error && isHomepage && stats && (
                     <div class="home-system-stats-panel">
@@ -496,46 +536,6 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
                         </div>
                     </div>
                 )}
-
-                {!error && clusters.length === 0 && (
-                    <EmptyState trending={trending} />
-                )}
-
-				{leadCluster && (
-					<div class="section-wrapper lead-wrapper">
-						<LeadHero
-							leadCluster={leadCluster}
-							leadTitle={leadTitle}
-							leadTitleIsCyrillic={leadTitleIsCyrillic}
-							leadSignal={finalLeadSignal}
-							leadSummary={leadSummary}
-							leadSummaryIsCyrillic={leadSummaryIsCyrillic}
-							leadVisual={leadVisual}
-							dominantColor={leadCluster.dominant_color}
-							getTimeStr={getTimeStr}
-							filtered={!isHomepage}
-							filterLabel={activeFilterLabel}
-                            lang={lang}
-						/>
-                        {leadStatus && leadEvidenceItems.length > 0 && (
-                            <div class:list={["home-evidence-strip", `tone-${leadStatus.tone}`]}>
-                                <div class="home-evidence-status">
-                                    <span>{leadStatus.label}</span>
-                                    <p>{leadStatus.note}</p>
-                                </div>
-                                <div class="home-evidence-grid">
-                                    {leadEvidenceItems.map((item) => (
-                                        <div class="home-evidence-item">
-                                            <span>{item.label}</span>
-                                            <strong>{item.value}</strong>
-                                            {item.detail && <p>{item.detail}</p>}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-					</div>
-				)}
 
                 {!error && isHomepage && (
                     <HomeLiveStrip articles={topWireArticles} getTimeStr={getTimeStr} lang={lang} />
@@ -1313,28 +1313,21 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 
     /* ── System Stats Panel ──────────────────────────── */
     .home-system-stats-panel {
-        background: linear-gradient(135deg, color-mix(in srgb, var(--card) 75%, transparent), color-mix(in srgb, var(--secondary) 55%, transparent));
-        background-image: radial-gradient(circle at 15% 0%, color-mix(in srgb, var(--nyt-accent) 6%, transparent), transparent 75%);
-        backdrop-filter: var(--glass-blur);
-        -webkit-backdrop-filter: var(--glass-blur);
-        border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
-        border-radius: 12px;
-        padding: clamp(1rem, 2vw, 1.25rem) clamp(1.2rem, 3vw, 2rem);
-        margin: 1.75rem 0 2.25rem;
-        box-shadow: 0 4px 20px -2px color-mix(in srgb, var(--background) 40%, rgba(0, 0, 0, 0.1)), 
-                    inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 6%, transparent);
+        background: color-mix(in srgb, var(--secondary) 42%, var(--background));
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: clamp(0.85rem, 1.8vw, 1.1rem) clamp(1rem, 2.4vw, 1.5rem);
+        margin: 0 0 1.4rem;
+        box-shadow: var(--shadow-sm);
         display: flex;
         flex-direction: column;
-        gap: 0.95rem;
+        gap: 0.85rem;
         transform: translateY(0);
-        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        transition: border-color 0.3s var(--ease-editorial), box-shadow 0.3s var(--ease-editorial);
     }
     .home-system-stats-panel:hover {
-        border-color: color-mix(in srgb, var(--nyt-accent) 45%, var(--border));
-        transform: translateY(-2px);
-        box-shadow: 0 12px 30px -4px color-mix(in srgb, var(--background) 50%, rgba(0, 0, 0, 0.2)), 
-                    inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 10%, transparent), 
-                    0 0 20px -3px color-mix(in srgb, var(--nyt-accent) 12%, transparent);
+        border-color: color-mix(in srgb, var(--nyt-accent) 36%, var(--border));
+        box-shadow: var(--shadow-md);
     }
     
     .stats-panel-header {
@@ -1480,7 +1473,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
     @media (max-width: 768px) {
         .home-system-stats-panel {
             padding: 1.1rem;
-            margin: 1.25rem 0 1.75rem;
+            margin: 0 0 1.25rem;
         }
         .stats-panel-grid {
             display: grid;
@@ -1493,16 +1486,13 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
         .stats-grid-item {
             min-width: 0;
             padding: 0.75rem 0.85rem;
-            background: linear-gradient(135deg, color-mix(in srgb, var(--card) 45%, transparent), color-mix(in srgb, var(--secondary) 25%, transparent));
-            backdrop-filter: var(--glass-blur);
-            -webkit-backdrop-filter: var(--glass-blur);
-            border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
-            border-radius: 10px;
-            box-shadow: inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 4%, transparent);
+            background: var(--background);
+            border: 1px solid var(--border);
+            border-radius: 6px;
         }
         .stats-grid-item:hover {
             border-color: color-mix(in srgb, var(--nyt-accent) 30%, var(--border));
-            background: linear-gradient(135deg, color-mix(in srgb, var(--card) 60%, transparent), color-mix(in srgb, var(--secondary) 40%, transparent));
+            background: color-mix(in srgb, var(--secondary) 45%, var(--background));
             transform: translateY(-2px);
         }
         .stats-grid-item::after {

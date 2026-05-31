@@ -6,6 +6,8 @@ from core.prompts import (
     SYNTHESIS_SYSTEM_PROMPT_MK,
     SYNTHESIS_SYSTEM_PROMPT_SR,
 )
+from core.text_extraction import clean_extracted_article_text
+from nlp.categories import normalize_headline
 from nlp import (
     deShout,
     extract_cluster_tags_locally,
@@ -215,10 +217,48 @@ def _dedupe_generated_article(text: str) -> str:
     return "\n\n".join(kept).strip()
 
 
+def _polish_generated_article(text: str, lang: str = "mk") -> str:
+    clean = str(text or "").strip()
+    if not clean:
+        return ""
+
+    heading_patterns = (
+        r"^\s*(синтеза|уреднички преглед|уредничка синтеза|анализа|article)\s*:?\s*$",
+        r"^\s*(sinteza|urednički pregled|urednicki pregled|urednička sinteza|urednicka sinteza|analiza|article)\s*:?\s*$",
+    )
+    meta_leads = (
+        (r"^\s*Овој кластер(?:\s+вести)?\s+", ""),
+        (r"^\s*Оваа синтеза\s+", ""),
+        (r"^\s*Според медиумските извештаи,\s*", ""),
+        (r"^\s*Во вестите се наведува дека\s+", ""),
+        (r"^\s*Ovaj klaster(?:\s+vesti)?\s+", ""),
+        (r"^\s*Ova sinteza\s+", ""),
+        (r"^\s*Prema medijskim izveštajima,\s*", ""),
+        (r"^\s*U vestima se navodi da\s+", ""),
+    )
+
+    polished_parts = []
+    for part in re.split(r"\n{2,}", clean):
+        paragraph = re.sub(r"\s+", " ", part).strip()
+        if not paragraph:
+            continue
+        if any(re.match(pattern, paragraph, flags=re.IGNORECASE) for pattern in heading_patterns):
+            continue
+        for pattern, replacement in meta_leads:
+            paragraph = re.sub(pattern, replacement, paragraph, flags=re.IGNORECASE).strip()
+        if paragraph:
+            polished_parts.append(paragraph)
+
+    return "\n\n".join(polished_parts).strip()
+
+
 def _sanitize_synthesis_outputs(summary, generated_article, perspectives, article_rows, lang="mk"):
     fallback = None
     clean_summary = normalize_summary_text(summary)
-    clean_article = _dedupe_generated_article(validate_person_names(generated_article or ""))
+    clean_article = _polish_generated_article(
+        _dedupe_generated_article(validate_person_names(generated_article or "")),
+        lang=lang,
+    )
 
     if _looks_like_leaked_json_fragment(clean_summary):
         fallback = fallback or synthesize_cluster_fallback(article_rows, lang=lang)
@@ -226,7 +266,10 @@ def _sanitize_synthesis_outputs(summary, generated_article, perspectives, articl
 
     if _looks_like_leaked_json_fragment(clean_article) or len(clean_article) < 80:
         fallback = fallback or synthesize_cluster_fallback(article_rows, lang=lang)
-        clean_article = _dedupe_generated_article(fallback.get("generated_article", ""))
+        clean_article = _polish_generated_article(
+            _dedupe_generated_article(fallback.get("generated_article", "")),
+            lang=lang,
+        )
 
     clean_perspectives = normalize_perspectives(perspectives, lang=lang)
     if not clean_perspectives:
@@ -278,13 +321,13 @@ def _build_citation_sources(article_rows):
 def _build_synthesis_source_context(article_rows, lang: str = "sr"):
     blocks = []
     for idx, row in enumerate(article_rows or [], start=1):
-        title = str(row.get("title") or "").strip()
+        title = deShout(normalize_headline(str(row.get("title") or "").strip()))
         source = str(row.get("source") or "izvor").strip()
         category = str(row.get("category") or "").strip()
         topic = str(row.get("topic") or "").strip()
-        description = str(row.get("description") or "").strip()
+        description = clean_extracted_article_text(str(row.get("description") or "").strip())
         summary = str(row.get("summary") or "").strip()
-        full_content = str(row.get("full_content") or "").strip()
+        full_content = clean_extracted_article_text(str(row.get("full_content") or "").strip())
 
         evidence = full_content if len(full_content or "") > len(description or "") else description
         evidence = evidence[:2200].strip()

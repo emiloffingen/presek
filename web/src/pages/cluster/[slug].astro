@@ -156,10 +156,19 @@ try {
 }
 
 const mainArticle = cluster?.articles?.[0];
+const cleanSourceDocumentText = (text: unknown) => cleanAndDecode(String(text || '')
+    .replace(/<[^>]*>?/gm, ' ')
+    .replace(/^\s*(?:(?:IZVORNI|IZVOREN)\s+ZAPIS|(?:ИЗВОРНИ|ИЗВОРЕН)\s+ЗАПИС)\s*(?:\([^)]+\))?/i, '')
+    .replace(/\b(?:Podeli\s+vest|Spodeli\s+vest|Подели\s+вест|Сподели\s+вест|Сподели\s+ја\s+веста)\s*:?\s*/gi, ' ')
+    .replace(/\b(?:Oglas|Оглас)\b/gi, ' ')
+    .replace(/\b(?:Pročitajte\s+još|Прочитајте\s+још|Procitajte\s+povece|Прочитајте\s+повеќе|Прочитајте\s+уште)\b.*$/i, ' ')
+    .replace(/\s+/g, ' ')
+    .trim());
 const sourceDocArticle = cluster?.articles?.find((article) => {
-    const text = String(article.full_content || '').replace(/<[^>]*>?/gm, '').trim();
+    const text = cleanSourceDocumentText(article.full_content);
     return text.length > 0;
 });
+const sourceDocText = sourceDocArticle ? cleanSourceDocumentText(sourceDocArticle.full_content) : '';
 const displayHeadline = cluster?.synthetic_headline || (mainArticle ? cleanAndDecode(mainArticle.title) : (lang === 'sr' ? 'Detalji vesti' : 'Детали за веста'));
 
 // --- SEO Slug Enforcement ---
@@ -319,8 +328,8 @@ const hasGeneratedNarrative = Boolean(generatedArticle && generatedArticle.trim(
 const hasSublimat = synthesisItems.length > 0;
 const hasFactcheck = Boolean(verificationReport && (verificationReport.agreements?.length > 0 || verificationReport.conflicts?.length > 0));
 const hasStrongLeadNarrative = hasGeneratedNarrative && (cluster?.articles?.length || 0) >= 3;
-const primaryNarrativeLabel = lang === 'sr' ? 'SINTEZA' : 'СИНТЕЗА';
-const primaryNarrativeEyebrow = lang === 'sr' ? 'REDAKCIJSKI PREGLED' : 'УРЕДНИЧКИ ПРЕГЛЕД';
+const primaryNarrativeLabel = lang === 'sr' ? 'PREGLED PRIČE' : 'ПРЕСЕК НА ПРИКАЗНАТА';
+const primaryNarrativeEyebrow = lang === 'sr' ? 'Šta je potvrđeno, šta nedostaje' : 'Што е потврдено, што недостига';
 const conflictsCount = verificationReport?.conflicts?.length || 0;
 
 const sentimentData = (cluster?.sentiment || cluster?.tone_analysis) ? {
@@ -573,7 +582,7 @@ const articleSchema = cluster ? {
 		) : cluster && (
 			<article class="cluster-article-container">
 				{/* 1. THE LEDE */}
-			<header class="editorial-header-v2 py-12 border-y-4 border-double border-foreground/10 mb-24">
+			<header class="editorial-header-v2 py-10 md:py-12 mb-16 md:mb-20">
 				<div class="flex flex-col md:flex-row md:items-end justify-between gap-[var(--grid-gap)]">
 					<div class="header-main-info flex-grow">
 						<div class="edition-kicker flex items-center gap-[var(--grid-gap)] mb-6">
@@ -642,35 +651,6 @@ const articleSchema = cluster ? {
 							sourcePreview={sourcePreview}
 							articlesCount={cluster.articles?.length || 0}
 						/>
-						{sourceDocArticle?.full_content && (
-					<div class="mt-12 source-doc-wrapper" id="cluster-source-document">
-						<details class="group source-details">
-							<summary class="flex items-center justify-between p-8 md:p-12 cursor-pointer hover:bg-secondary/10 transition-colors list-none">
-								<div class="flex items-center gap-[var(--grid-gap)]">
-									<div class="w-2 h-8 bg-nyt-accent"></div>
-									<h4 class="text-[11px] font-black uppercase tracking-[0.2em] text-foreground">
-										{t('cluster.source_docs')} ({sourceDocArticle.source})
-									</h4>
-								</div>
-								<div class="text-muted-foreground group-open:rotate-180 transition-transform duration-300">
-									<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-								</div>
-							</summary>
-							<div class="px-8 md:px-12 pb-12">
-								<div class="prose-editorial max-w-none pt-6 border-t border-border/20 max-h-[400px] overflow-y-auto custom-editorial-scrollbar">
-									<div class="font-nyt-body text-lg md:text-xl text-foreground/80 leading-[1.8] whitespace-pre-wrap">
-										{sourceDocArticle.full_content.replace(/<[^>]*>?/gm, '').trim()}
-									</div>
-								</div>
-								<div class="mt-12 flex justify-end">
-									<a href={sourceDocArticle.link} target="_blank" rel="noopener noreferrer" class="text-[11px] font-black uppercase tracking-[0.2em] text-nyt-accent hover:underline flex items-center gap-[var(--grid-gap)] bg-background px-6 py-3 rounded-full border border-nyt-accent/20 shadow-sm transition-all hover:shadow-md">
-										{lang === 'sr' ? 'Pročitaj ceo zapis na' : 'Прочитај го целиот запис на'} {sourceDocArticle.source} <ExternalLink size={14} />
-									</a>
-								</div>
-							</div>
-						</details>
-					</div>
-				)}
 					</div>
 
 						{/* EXECUTIVE SUMMARY / BRIFING - Compact Horizontal Layout */}
@@ -754,42 +734,6 @@ const articleSchema = cluster ? {
 						</section>
 						)}
 
-						<!-- 2. NARRATIVE TIMELINE EVOLUTION -->
-						{cluster?.articles?.length > 0 && (
-						<section class="editorial-section timeline-section mb-24 border-t border-border/40 pt-12" id="cluster-timeline">
-							<div class="section-eyebrow mb-16">
-								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-								<h2 class="section-label">{lang === 'sr' ? 'HRONOLOGIJA RAZVOJA PRIČE' : 'ХРОНОЛОГИЈА НА РАЗВОЈ НА ПРИКАЗНАТА'}</h2>
-								<span class="section-sub-label">{lang === 'sr' ? 'Hronološki raspored medijskih izveštaja od nastanka vesti' : 'Хронолошки редослед на медиумските извештаи од почетокот'}</span>
-								<div class="section-divider"></div>
-							</div>
-
-							<div class="timeline-container">
-								<div class="timeline-line"></div>
-								<div class="timeline-events-wrap">
-									{[...cluster.articles].sort((a, b) => new Date(a.created_at || a.ingested_at).getTime() - new Date(b.created_at || b.ingested_at).getTime()).slice(0, 10).map((art, idx) => (
-										<div class="timeline-event" style={`animation-delay: ${idx * 0.08}s`}>
-											<div class="timeline-marker">
-												<div class="marker-dot"></div>
-											</div>
-											<div class="timeline-event-content">
-												<div class="event-meta">
-													<span class="event-source">{art.source}</span>
-													<span class="event-time">{getTimeStr(art.created_at || art.ingested_at)}</span>
-												</div>
-												<h4 class="event-title">
-													<a href={art.link} target="_blank" rel="noopener noreferrer" class="hover:underline">
-														{art.title}
-													</a>
-												</h4>
-											</div>
-										</div>
-									))}
-								</div>
-							</div>
-						</section>
-						)}
-
 						{/* ANALYSIS SECTION: Fact Check & Comparison */}
 						{(hasFactcheck || perspectives.length > 0) && (
 							<CredibilityAnalysis
@@ -807,8 +751,39 @@ const articleSchema = cluster ? {
 							<div class="section-eyebrow mb-16">
 								<Newspaper size={18} className="text-muted-foreground" />
 								<h2 class="section-label">{t('cluster.source_docs')}</h2>
+								<span class="section-sub-label">{lang === 'sr' ? 'Hronološki pregled medijskih izveštaja' : 'Хронолошки преглед на медиумските извештаи'}</span>
 								<div class="section-divider"></div>
 							</div>
+
+						{sourceDocText && (
+								<div class="mb-10 source-doc-wrapper" id="cluster-source-document">
+									<details class="group source-details">
+										<summary class="flex items-center justify-between p-6 md:p-8 cursor-pointer hover:bg-secondary/10 transition-colors list-none">
+											<div class="flex items-center gap-[var(--grid-gap)]">
+												<div class="w-2 h-8 bg-nyt-accent"></div>
+												<h4 class="text-[11px] font-black uppercase tracking-[0.2em] text-foreground">
+													{lang === 'sr' ? 'Pun izvorni zapis' : 'Целосен изворен запис'} ({sourceDocArticle.source})
+												</h4>
+											</div>
+											<div class="text-muted-foreground group-open:rotate-180 transition-transform duration-300">
+												<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+											</div>
+										</summary>
+										<div class="px-6 md:px-8 pb-8">
+											<div class="prose-editorial max-w-none pt-6 border-t border-border/20 max-h-[400px] overflow-y-auto custom-editorial-scrollbar">
+												<div class="font-nyt-body text-lg md:text-xl text-foreground/80 leading-[1.8] whitespace-pre-wrap">
+										{sourceDocText}
+												</div>
+											</div>
+											<div class="mt-8 flex justify-end">
+												<a href={sourceDocArticle.link} target="_blank" rel="noopener noreferrer" class="text-[11px] font-black uppercase tracking-[0.2em] text-nyt-accent hover:underline flex items-center gap-[var(--grid-gap)] bg-background px-6 py-3 rounded-full border border-nyt-accent/20 shadow-sm transition-all hover:shadow-md">
+													{lang === 'sr' ? 'Pročitaj ceo zapis na' : 'Прочитај го целиот запис на'} {sourceDocArticle.source} <ExternalLink size={14} />
+												</a>
+											</div>
+										</div>
+									</details>
+								</div>
+							)}
 
 							<div class="editorial-article-list editorial-timeline">
 								<div class="timeline-v-line"></div>
@@ -856,31 +831,37 @@ const articleSchema = cluster ? {
 							</section>
 						)}
                         {/* ADVANCED ANALYTICS */}
-                        <section class="editorial-section advanced-tools mb-24 bg-secondary/5 p-12 md:p-16 border-y border-border/40 shadow-inner">
-                            <div class="section-eyebrow mb-16">
-                                <Radio size={24} className="text-muted-foreground" />
-                                <h2 class="section-label">{t('cluster.deep_synthesis')}</h2>
-                                <div class="section-divider"></div>
-                            </div>
-                            <div class="deep-dive-tabs">
-                                <input type="radio" name="deep-dive-tabs" id="deep-tab-history" checked />
-                                {allSourcesNames.length >= 2 && <input type="radio" name="deep-dive-tabs" id="deep-tab-sources" />}
-
-                                <div class="deep-tab-list" role="tablist" aria-label={t('cluster.deep_synthesis')}>
-                                    <label for="deep-tab-history" class="deep-tab-trigger">{lang === 'sr' ? 'Razvoj priče' : 'Развој на приказната'}</label>
-                                    {allSourcesNames.length >= 2 && <label for="deep-tab-sources" class="deep-tab-trigger">{lang === 'sr' ? 'Izvori' : 'Извори'}</label>}
-                                </div>
-
-                                <div class="deep-tab-panel deep-tab-history">
-                                    <StorylineHistoryIsland client:visible clusterId={id || ''} apiUrl={API_URL} lang={lang} />
-                                    <ClusterHistoryIsland client:visible clusterId={id || ''} lang={lang} />
-                                </div>
-                                {allSourcesNames.length >= 2 && (
-                                    <div class="deep-tab-panel deep-tab-sources">
-                                        <SourceComparisonIsland allSources={allSourcesNames} lang={lang} client:visible />
+                        <section class="editorial-section advanced-tools mb-24">
+                            <details class="advanced-tools-details">
+                                <summary class="advanced-tools-summary">
+                                    <div class="section-eyebrow">
+                                        <Radio size={20} className="text-muted-foreground" />
+                                        <h2 class="section-label">{t('cluster.deep_synthesis')}</h2>
+                                        <span class="section-sub-label">{lang === 'sr' ? 'Dodatni alati za kontekst' : 'Дополнителни алатки за контекст'}</span>
+                                        <div class="section-divider"></div>
                                     </div>
-                                )}
-                            </div>
+                                    <span class="advanced-toggle-label">{lang === 'sr' ? 'Otvori' : 'Отвори'}</span>
+                                </summary>
+                                <div class="deep-dive-tabs">
+                                    <input type="radio" name="deep-dive-tabs" id="deep-tab-history" checked />
+                                    {allSourcesNames.length >= 2 && <input type="radio" name="deep-dive-tabs" id="deep-tab-sources" />}
+
+                                    <div class="deep-tab-list" role="tablist" aria-label={t('cluster.deep_synthesis')}>
+                                        <label for="deep-tab-history" class="deep-tab-trigger">{lang === 'sr' ? 'Razvoj priče' : 'Развој на приказната'}</label>
+                                        {allSourcesNames.length >= 2 && <label for="deep-tab-sources" class="deep-tab-trigger">{lang === 'sr' ? 'Izvori' : 'Извори'}</label>}
+                                    </div>
+
+                                    <div class="deep-tab-panel deep-tab-history">
+                                        <StorylineHistoryIsland client:visible clusterId={id || ''} apiUrl={API_URL} lang={lang} />
+                                        <ClusterHistoryIsland client:visible clusterId={id || ''} lang={lang} />
+                                    </div>
+                                    {allSourcesNames.length >= 2 && (
+                                        <div class="deep-tab-panel deep-tab-sources">
+                                            <SourceComparisonIsland allSources={allSourcesNames} lang={lang} client:visible />
+                                        </div>
+                                    )}
+                                </div>
+                            </details>
                         </section>
 
 					</div>
@@ -914,26 +895,6 @@ const articleSchema = cluster ? {
 								client:visible
 							/>
 
-							{cluster.pluralism_score != null && (
-								<div class="sidebar-module p-6 bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-200/50 rounded-sm">
-									<h4 class="sidebar-label !border-emerald-500 !text-emerald-700 dark:!text-emerald-400">{t('cluster.media_pluralism')}</h4>
-									<div class="mt-4">
-										<div class="flex items-center justify-between mb-2">
-											<span class="text-[10px] font-black uppercase">{t('cluster.diversity')}</span>
-											<span class="text-xs font-black">{cluster.pluralism_score}%</span>
-										</div>
-										<div class="h-1.5 w-full bg-emerald-200 dark:bg-emerald-900 rounded-full overflow-hidden">
-											<div class="h-full bg-emerald-500" style={`width: ${cluster.pluralism_score}%`}></div>
-										</div>
-										{cluster.narrative_diversity?.verdict && (
-											<p class="mt-3 text-[11px] font-medium leading-relaxed text-emerald-800 dark:text-emerald-300 italic">
-												“{cluster.narrative_diversity.verdict}”
-											</p>
-										)}
-									</div>
-								</div>
-							)}
-
 							{keyEntities && keyEntities.length > 0 && (
 								<div class="sidebar-module">
 									<h4 class="sidebar-label">{t('cluster.key_entities')}</h4>
@@ -955,134 +916,6 @@ const articleSchema = cluster ? {
 </Layout>
 
 <style>
-    /* ── Narrative Timeline Evolution ── */
-    .timeline-container {
-        position: relative;
-        padding-left: 1.5rem;
-        margin-top: 1.5rem;
-    }
-    
-    .timeline-line {
-        position: absolute;
-        left: 3px;
-        top: 8px;
-        bottom: 8px;
-        width: 2px;
-        background: linear-gradient(180deg, var(--nyt-accent) 0%, color-mix(in srgb, var(--border) 60%, transparent) 100%);
-    }
-
-    .timeline-events-wrap {
-        display: flex;
-        flex-direction: column;
-        gap: 1.75rem;
-    }
-
-    .timeline-event {
-        position: relative;
-        display: flex;
-        gap: 1rem;
-        animation: cardReveal 0.5s var(--ease-editorial) forwards;
-        opacity: 0;
-    }
-
-    @keyframes cardReveal {
-        from {
-            opacity: 0;
-            transform: translateY(8px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .timeline-marker {
-        position: absolute;
-        left: -1.5rem;
-        top: 5px;
-        width: 8px;
-        height: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .marker-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--background);
-        border: 2px solid var(--nyt-accent);
-        box-shadow: 0 0 0 2px var(--background);
-        transition: all 0.3s var(--ease-editorial);
-    }
-
-    .timeline-event:hover .marker-dot {
-        background: var(--nyt-accent);
-        transform: scale(1.3);
-        box-shadow: 0 0 10px var(--nyt-accent);
-    }
-
-    .timeline-event-content {
-        flex: 1;
-        padding: 1rem 1.25rem;
-        background: rgba(255, 255, 255, 0.4);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border: 1px solid rgba(0, 0, 0, 0.05);
-        border-radius: 12px;
-        transition: all 0.3s var(--ease-editorial);
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.01);
-    }
-
-    :global(.dark) .timeline-event-content {
-        background: rgba(0, 0, 0, 0.2);
-        border-color: rgba(255, 255, 255, 0.05);
-    }
-
-    .timeline-event-content:hover {
-        transform: translateX(4px);
-        border-color: color-mix(in srgb, var(--nyt-accent) 30%, transparent);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-        background: rgba(255, 255, 255, 0.6);
-    }
-
-    :global(.dark) .timeline-event-content:hover {
-        background: rgba(0, 0, 0, 0.3);
-    }
-
-    .event-meta {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 0.35rem;
-    }
-
-    .event-source {
-        font-family: var(--font-sans);
-        font-size: 0.65rem;
-        font-weight: 950;
-        text-transform: uppercase;
-        color: var(--nyt-accent);
-        letter-spacing: 0.05em;
-    }
-
-    .event-time {
-        font-family: var(--font-sans);
-        font-size: 0.65rem;
-        color: var(--muted-foreground);
-        font-weight: 500;
-    }
-
-    .event-title {
-        font-family: var(--font-serif);
-        font-size: 0.95rem;
-        font-weight: 800;
-        line-height: 1.35;
-        margin: 0;
-        color: var(--foreground);
-    }
-
 	.page-container {
 		display: flex;
 		flex-direction: column;
@@ -1117,10 +950,29 @@ const articleSchema = cluster ? {
 	}
 
 	/* --- 1. EDITORIAL HEADER V2 --- */
+    .editorial-header-v2 {
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+    }
+
 	.editorial-header-v2 .headline {
 		letter-spacing: -0.04em;
         text-wrap: balance;
 	}
+
+    .edition-badge {
+        border-radius: 3px;
+        letter-spacing: 0.14em;
+    }
+
+    .header-date,
+    .header-meta {
+        letter-spacing: 0.08em;
+    }
+
+    .header-meta {
+        font-weight: 850;
+    }
 
     .cluster-status-text.tone-verified { color: #047857; }
     .cluster-status-text.tone-mixed { color: #b45309; }
@@ -1129,33 +981,24 @@ const articleSchema = cluster ? {
 
     .cluster-evidence-strip {
         display: grid;
-        grid-template-columns: minmax(0, 0.9fr) minmax(0, 2.2fr);
-        gap: 1px;
-        background: color-mix(in srgb, var(--border) 60%, transparent);
-        border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
-        border-radius: 12px 12px 0 0;
+        grid-template-columns: minmax(0, 0.82fr) minmax(0, 2.4fr);
+        gap: 0;
+        background: color-mix(in srgb, var(--secondary) 32%, var(--background));
+        border: 1px solid var(--border);
+        border-radius: 6px;
         overflow: hidden;
-        backdrop-filter: var(--glass-blur);
-        -webkit-backdrop-filter: var(--glass-blur);
-        box-shadow: 0 4px 20px -2px color-mix(in srgb, var(--background) 30%, rgba(0, 0, 0, 0.08)), 
-                    inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 6%, transparent);
-        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: none;
     }
 
     .cluster-evidence-status,
     .cluster-evidence-item {
-        background: color-mix(in srgb, var(--card) 65%, transparent);
-        padding: 1.25rem;
-        transition: all 0.3s var(--ease-editorial);
-    }
-    
-    .cluster-evidence-status:hover,
-    .cluster-evidence-item:hover {
-        background: color-mix(in srgb, var(--foreground) 3%, transparent);
+        background: transparent;
+        padding: 1rem 1.1rem;
     }
 
     .cluster-evidence-status {
-        border-left: 4px solid var(--nyt-accent);
+        border-left: 3px solid var(--nyt-accent);
+        border-right: 1px solid var(--border);
     }
 
     .cluster-evidence-strip.tone-verified .cluster-evidence-status { border-left-color: #059669; }
@@ -1167,18 +1010,12 @@ const articleSchema = cluster ? {
     .cluster-evidence-item span {
         display: block;
         font-family: var(--font-sans);
-        font-size: 0.58rem;
-        font-weight: 950;
-        letter-spacing: 0.16em;
+        font-size: 0.56rem;
+        font-weight: 900;
+        letter-spacing: 0.1em;
         text-transform: uppercase;
         color: var(--muted-foreground);
-        margin-bottom: 0.5rem;
-        transition: color 0.3s var(--ease-editorial);
-    }
-
-    .cluster-evidence-status:hover span,
-    .cluster-evidence-item:hover span {
-        color: var(--foreground);
+        margin-bottom: 0.35rem;
     }
 
     .cluster-evidence-status p,
@@ -1190,75 +1027,45 @@ const articleSchema = cluster ? {
         margin: 0;
     }
 
-    .cluster-evidence-item {
-        position: relative;
-    }
-
-    .cluster-evidence-item::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 1.25rem;
-        right: 1.25rem;
-        height: 2px;
-        background: linear-gradient(90deg, transparent, var(--nyt-accent), transparent);
-        opacity: 0;
-        transform: scaleX(0.4);
-        transition: all 0.3s var(--ease-editorial);
-    }
-
-    .cluster-evidence-item:hover::after {
-        opacity: 1;
-        transform: scaleX(1);
-    }
-
     .cluster-evidence-item strong {
         display: block;
         font-family: var(--font-serif);
-        font-size: 1.2rem;
+        font-size: 1.05rem;
         line-height: 1.1;
         color: var(--foreground);
-        margin-bottom: 0.45rem;
+        margin-bottom: 0.32rem;
     }
 
     .cluster-evidence-grid {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 1px;
-        background: color-mix(in srgb, var(--border) 60%, transparent);
+    }
+
+    .cluster-evidence-item + .cluster-evidence-item {
+        border-left: 1px solid var(--border);
     }
 
     .reader-command-bar {
         display: flex;
         align-items: stretch;
         justify-content: space-between;
-        gap: 1px;
-        background: color-mix(in srgb, var(--border) 60%, transparent);
-        border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
-        border-top: 0;
-        border-radius: 0 0 12px 12px;
-        overflow: hidden;
-        backdrop-filter: var(--glass-blur);
-        -webkit-backdrop-filter: var(--glass-blur);
-        box-shadow: 0 10px 30px -5px color-mix(in srgb, var(--background) 40%, rgba(0, 0, 0, 0.12)), 
-                    inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 4%, transparent);
-        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        gap: 0.75rem;
+        margin-top: 0.75rem;
+        border: 0;
+        border-radius: 0;
+        overflow: visible;
+        box-shadow: none;
     }
 
     .reader-source-strip,
     .reader-actions {
-        background: color-mix(in srgb, var(--card) 65%, transparent);
-        transition: all 0.3s var(--ease-editorial);
-    }
-    
-    .reader-source-strip:hover {
-        background: color-mix(in srgb, var(--foreground) 3%, transparent);
+        background: transparent;
     }
 
     .reader-source-strip {
         flex: 1;
         min-width: 0;
-        padding: 0.85rem 1rem;
+        padding: 0.3rem 0;
     }
 
     .reader-source-strip span {
@@ -1287,7 +1094,7 @@ const articleSchema = cluster ? {
         display: flex;
         align-items: center;
         gap: 0.45rem;
-        padding: 0.55rem;
+        padding: 0;
     }
 
     .reader-actions a,
@@ -1298,7 +1105,7 @@ const articleSchema = cluster ? {
         gap: 0.4rem;
         min-height: 2.35rem;
         border: 1px solid var(--border);
-        background: var(--background);
+        background: transparent;
         color: var(--foreground);
         padding: 0 0.75rem;
         font-family: var(--font-sans);
@@ -1479,6 +1286,56 @@ const articleSchema = cluster ? {
         box-shadow: inset 0 0 60px rgba(0,0,0,0.02);
     }
 
+    .advanced-tools-details {
+        background: color-mix(in srgb, var(--secondary) 35%, transparent);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 1.25rem;
+    }
+
+    .advanced-tools-summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        cursor: pointer;
+        list-style: none;
+    }
+
+    .advanced-tools-summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .advanced-tools-summary .section-eyebrow {
+        flex: 1;
+        margin-bottom: 0;
+        min-width: 0;
+    }
+
+    .advanced-toggle-label {
+        flex-shrink: 0;
+        border: 1px solid var(--border);
+        padding: 0.55rem 0.85rem;
+        font-family: var(--font-sans);
+        font-size: 0.62rem;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--muted-foreground);
+    }
+
+    .advanced-tools-details[open] .advanced-toggle-label {
+        background: var(--foreground);
+        color: var(--background);
+        border-color: var(--foreground);
+    }
+
+    .advanced-tools-details .deep-dive-tabs {
+        margin-top: 1.75rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
+    }
+
     .deep-dive-tabs > input {
         position: absolute;
         opacity: 0;
@@ -1563,6 +1420,23 @@ const articleSchema = cluster ? {
 
         .cluster-evidence-grid {
             grid-template-columns: 1fr 1fr;
+        }
+
+        .cluster-evidence-status {
+            border-right: 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .cluster-evidence-item + .cluster-evidence-item {
+            border-left: 0;
+        }
+
+        .cluster-evidence-item:nth-child(even) {
+            border-left: 1px solid var(--border);
+        }
+
+        .cluster-evidence-item:nth-child(n + 3) {
+            border-top: 1px solid var(--border);
         }
 
         .reader-command-bar {
@@ -1703,11 +1577,11 @@ const articleSchema = cluster ? {
 			}
 
 			.reader-source-strip {
-				padding: 0.75rem 0.85rem;
+				padding: 0.2rem 0;
 			}
 
 			.reader-actions {
-				padding: 0.45rem;
+				padding: 0;
 			}
 
 			.reader-actions a,
@@ -1914,4 +1788,3 @@ const articleSchema = cluster ? {
 		setTimeout(initReaderMode, 1000);
 	})();
 </script>
-

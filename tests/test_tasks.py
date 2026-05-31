@@ -3,7 +3,7 @@ import json
 from unittest.mock import patch
 
 import tasks
-from tasks.intelligence import _sanitize_synthesis_outputs, _split_cluster_merge_score
+from tasks.intelligence import _polish_generated_article, _sanitize_synthesis_outputs, _split_cluster_merge_score
 
 
 class TestBackfillCoverArtTask:
@@ -229,6 +229,15 @@ class TestRepairSplitClustersTask:
 
         assert "synthetic_headline" not in summary
         assert generated_article.count("Истиот пасус") <= 1
+
+    def test_polish_generated_article_removes_meta_headings(self):
+        text = "СИНТЕЗА\n\nОвој кластер вести покажува нов развој во институциите.\n\nУРЕДНИЧКИ ПРЕГЛЕД"
+
+        polished = _polish_generated_article(text, lang="mk")
+
+        assert "СИНТЕЗА" not in polished
+        assert "УРЕДНИЧКИ ПРЕГЛЕД" not in polished
+        assert polished.startswith("покажува нов развој") or polished.startswith("Покажува нов развој")
         assert perspectives
 
     def test_backfill_single_skips_when_queue_backlog_is_high(self):

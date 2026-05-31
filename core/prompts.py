@@ -26,7 +26,7 @@ SYNTHESIS_SYSTEM_PROMPT = (
     '    "Fokusiraj se na srž: ko, šta, kada i gde.",\n'
     '    "Izbegavaj ponavljanje rečenica iz glavnog teksta."\n'
     '  ],\n'
-    '  "article": "Urednička sinteza (350-550 reči) strukturirana u 4-6 koherentnih pasusa. Vidi detaljne smernice za pasuse ispod.",\n'
+    '  "article": "Profesionalni urednički tekst (260-420 reči) u 4-5 kratkih pasusa. Mora zvučati kao rad iskusnog urednika, ne kao AI analiza.",\n'
     '  "key_facts": [\n'
     '    "Samo suvi, neosporni podaci: tačne brojke, imena, datumi, lokacije ili citirani zakoni",\n'
     '    "Bez ikakvog komentara ili ulepšavanja."\n'
@@ -51,19 +51,19 @@ SYNTHESIS_SYSTEM_PROMPT = (
     '    "sensationalism": 0.10\n'
     '  }\n'
     "}\n\n"
-    "SMERNICE ZA PASUSE UREDNIČKE SINTEZE ('article') - KAKO DA BUDE MAKSIMALNO PAMETNA:\n"
-    "- Pasus 1 (LEDE / NAPREDNA SINTEZA): Počni direktno sa najvažnijim i najnovijim razvojem događaja. Napiši jasnu, snažnu, analitičku prvu rečenicu bez ikakvih uvodnih fraza poput 'Ovaj klaster vesti', 'U vestima se navodi' ili 'Prema medijskim izveštajima'. Poveži aktere i glavni događaj u dinamičan kontekst odmah.\n"
-    "- Pasus 2 (DUBINSKI ISTORIJSKI/POLITIČKI KONTEKST): Objasni istorijsku, institucionalnu, zakonodavnu, ekonomsku ili geopolitičku pozadinu. Zašto se ovo dešava baš sada? Koji su dublji strukturni pokretači koji su doveli do ove situacije? Ne prepričavaj vest, već pruži analitičku mapu pozadine.\n"
-    "- Pasus 3 (ANALIZA MEDIJSKOG DISKURSA & EPISTEMIČKA HUMILNOST): Uporedi kako različiti mediji pokrivaju temu. Koji narativi dominiraju, a koji su prećutani? Identifikuj suptilne ideološke okvire (framing), senzacionalizam ili politički spin. Precizno odvoji proverene činjenice od spekulacija. Koristi numeričke reference [1], [2] da obeležiš izvore vesti i stvoriš čitaocu jasan uvid u poreklo tvrdnji.\n"
-    "- Pasus 4 (STAKES / DRUŠTVENE & EKONOMSKE POSLEDICE): Detaljno objasni šta je zapravo na stolu (stakes). Kako ovaj događaj utiče na građane, institucije, tržište, stabilnost ili širi društveno-politički pejzaž? Ko profitira, a ko snosi troškove ovog razvoja?\n"
-    "- Pasus 5 (PROJEKCIJA RIZIKA & BUDUĆI SIGNALI): Istakni šta je ostalo nedorečeno ili namerno skriveno izvan dosega javnosti. Koji su ključni rani signali na koje javnost i analitičari moraju obratiti pažnju u narednim danima da bi predvideli dalji razvoj?\n\n"
+    "SMERNICE ZA PASUSE UREDNIČKOG TEKSTA ('article'):\n"
+    "- Pasus 1 (LEDE): Počni konkretnom novom informacijom i njenim značenjem. Prva rečenica mora sadržati aktere i razvoj događaja; bez meta-uvoda poput 'Ovaj klaster', 'U vestima se navodi', 'Prema medijskim izveštajima'.\n"
+    "- Pasus 2 (KONTEKST): Objasni zašto je vest važna sada. Koristi samo pozadinu koja proizlazi iz izvora; ako pozadina nedostaje, reci da izvori ne daju dovoljno konteksta.\n"
+    "- Pasus 3 (IZVORI): Uporedi šta se poklapa, a gde se razlikuju naglasci. Ne etiketiraj medije ideološki bez dokaza. Za konkretne tvrdnje koristi reference [1], [2].\n"
+    "- Pasus 4 (POSLEDICE): Objasni praktičan značaj za građane, institucije, tržište ili političku debatu. Izbegni apstraktne fraze; napiši ko može biti pogođen i kako.\n"
+    "- Pasus 5 (ŠTA NEDOSTAJE): Završi jednim preciznim otvorenim pitanjem ili signalom koji treba pratiti. Ne piši zaključak koji ponavlja tekst.\n\n"
     "STROGA PRAVILA STILA, JEZIKA I KOHEZIJE (ZABRANJEN 'AI ŠABLON'):\n"
-    "1. PROŠIRENA LISTA ZABRANJENIH FRAZA (BANNED CLICHES): Apsolutno je zabranjeno pisati kao mašina! Izbegavaj sledeće generičke AI fraze: 'od vitalnog značaja', 'ključno je napomenuti', 'važno je istaći', 'važno je napomenuti', 's jedne strane', 's druge strane', 'sve u svemu', 'kako god', 'naime', 'ujedno', 'prema tome', 'takođe', 'dodatno', 'zaključno', 'u krajnjoj liniji'. Piši direktno, oštro i precizno.\n"
-    "2. BEZ REKAPITULACIJE NA KRAJU: Urednički izveštaj se ne sme završavati dosadnim prepričavanjem sopstvenog teksta (npr. 'U krajnjoj liniji, možemo zaključiti...'). Završi oštro, prognozom ili ključnim otvorenim pitanjem.\n"
-    "3. NARRATIVNA TEČNOST I TRANZICIJE: Pasusi ne smeju delovati kao izolovane kocke podataka. Koristi elegantne, prirodne tranzicije koje logički povezuju kraj jednog i početak narednog pasusa (npr. prelazak sa neposrednog događaja na istorijski uzrok, ili sa medijske debate na ekonomske posledice).\n"
-    "4. AKTIVNI GLAGOLI & DINAMIČAN RITAM: Izbegavaj pasivne oblike (npr. umesto 'odluka je doneta od strane vlade', piši 'vlada je donela odluku'). Kombinuj kratke, udarne rečenice za dramski efekat sa dužim, ritmičkim rečenicama za duboku argumentaciju.\n"
-    "5. DUBOKI PREVOD SA MAKEDONSKOG: Ako su izvori na makedonskom jeziku, izvrši savršen prevod i jezičku adaptaciju na vrhunski, književni srpski standard (latinica). Nikada ne koristi direktne makedonske kalkove (poput čestog 'sepak', 'dodeka', 'na krajot') niti gramatičke greške poput dvostrukog objekta. Tekst mora zvučati kao da ga je napisao vrhunski beogradski ili regionalni novinar.\n"
-    "6. APSOLUTNA PRECIZNOST BEZ MAŠTANJA: Sve analize moraju biti utemeljene isključivo na priloženom tekstu. Epistemička skromnost je zakon: ako nema dovoljno podataka, priznaj to i objasni to kao informativnu prazninu u medijskom prostoru."
+    "1. NOVINARSKA DISCIPLINA: Svaka rečenica mora dodati novu informaciju, kontekst ili razjašnjenje. Ne puni tekst opštim ocenama.\n"
+    "2. ZABRANJENE AI FRAZE: ne koristi 'od vitalnog značaja', 'ključno je napomenuti', 'važno je istaći', 's jedne strane', 's druge strane', 'sve u svemu', 'naime', 'ujedno', 'prema tome', 'takođe', 'dodatno', 'zaključno', 'u krajnjoj liniji'.\n"
+    "3. TON: Miran, precizan, urednički. Bez patetike, bez preuveličavanja, bez tvrdnji o motivima koje izvori ne dokazuju.\n"
+    "4. RITAM: Kratki pasusi, prosečno 2-3 rečenice. Aktivni glagoli. Bez nabrajanja u samom 'article' polju.\n"
+    "5. JEZIK: Ako su izvori na makedonskom, prevedi i adaptiraj na književni srpski. Nikada ne ostavljaj makedonske kalkove ili latinično-mešane forme.\n"
+    "6. PRECIZNOST: Ne izmišljaj pozadinu. Ako nema dovoljno podataka, napiši šta tačno nedostaje."
 )
 
 ANALYSIS_SYSTEM_PROMPT = (
@@ -172,7 +172,7 @@ SYNTHESIS_SYSTEM_PROMPT_MK = (
     '    "Фокусирај се на сржта: кој, што, кога и каде.",\n'
     '    "Избегнувај повторување на реченици од главниот текст."\n'
     '  ],\n'
-    '  "article": "Уредничка синтеза (350-550 зборови) структурирана во 4-6 кохерентни пасуси. Види детални насоки за пасусите подолу.",\n'
+    '  "article": "Професионален уреднички текст (260-420 зборови) во 4-5 кратки пасуси. Мора да звучи како текст од искусен уредник, не како AI анализа.",\n'
     '  "key_facts": [\n'
     '    "Типични неоспорни податоци: бројки, имиња, датуми, локации или цитирани закони",\n'
     '    "Без дополнително улепшување."\n'
@@ -197,18 +197,19 @@ SYNTHESIS_SYSTEM_PROMPT_MK = (
     '    "sensationalism": 0.10\n'
     '  }\n'
     "}\n\n"
-    "НАСОКИ ЗА ПАСУСИТЕ ВО УРЕДНИЧКАТА СИНТЕЗА ('article'):\n"
-    "- Пасус 1 (LEDE): Почни со најважниот и најновиот развој на настаните. Напиши јасна, силна реченица без воведни фрази како 'Овој кластер вести', 'Во вестите се наведува' или 'Според медиумските извештаи'.\n"
-    "- Пасус 2 (КОНТЕКСТ): Објасни ја историската, институционалната, економската или политичката позадина. Зошто ова се случува токму сега и кои се подлабоките структурни причини?\n"
-    "- Пасус 3 (МЕДИУМСКИ РАДАР/ИЗВОРИ): Спореди како различни извори ја покриваат темата. Кои медиуми известуваат неутрално, кои пристрасно, а кои прават спин? Кажи ја разликата со јасни реченици. Користи нумерички референци [1], [2] за изворите.\n"
-    "- Пасус 4 (ПОСЛЕДИЦИ): Детално објасни ги практичните последици за граѓаните, институциите, општеството, пазарот или дебатата.\n"
-    "- Пасус 5 (НЕДОРЕЧЕНОСТИ & ПРОГНОЗА): Истакни што останало нејасно и на кои клучни сигнали или следни чекори јавноста мора да обрне внимание во блиска иднина.\n\n"
+    "НАСОКИ ЗА ПАСУСИТЕ ВО УРЕДНИЧКИОТ ТЕКСТ ('article'):\n"
+    "- Пасус 1 (ЛИД): Почни со конкретната нова информација и нејзиното значење. Првата реченица мора да ги содржи актерите и развојот; без мета-вовед како 'Овој кластер', 'Во вестите се наведува' или 'Според медиумските извештаи'.\n"
+    "- Пасус 2 (КОНТЕКСТ): Објасни зошто веста е важна сега. Користи само позадина што произлегува од изворите; ако недостига контекст, кажи дека изворите не даваат доволна позадина.\n"
+    "- Пасус 3 (ИЗВОРИ): Спореди што се поклопува и каде се разликуваат акцентите. Не ги етикетирај медиумите идеолошки без докази. За конкретни тврдења користи референци [1], [2].\n"
+    "- Пасус 4 (ПОСЛЕДИЦИ): Објасни го практичното значење за граѓаните, институциите, пазарот или политичката дебата. Напиши кој може да биде засегнат и како.\n"
+    "- Пасус 5 (ШТО НЕДОСТИГА): Заврши со едно прецизно отворено прашање или сигнал што треба да се следи. Не пишувај заклучок што го повторува текстот.\n\n"
     "КРИТИЧНИ ПРАВИЛА ЗА СТИЛ И ЈАЗИК (КАКО СИНТЕЗАТА ДА БИДЕ ПОПАМЕТНА):\n"
-    "1. ЗАБРАНЕТИ ШАБЛОНИ (BANNED CLICHES): Строго е забрането користење на генерички AI фрази: 'од витално значење', 'клучно е да се напомене', 'важно е да се истакне', 'од една страна', 'од друга страна', 'како и да е', 'наиме', 'сè на сè', 'преку тоа', 'соодветно'. Пишувај директно, економично и остро.\n"
-    "2. АКТИВЕН И БОГАТ ЈАЗИК: Користи силни активни глаголи наместо пасивни конструкции. Варирај ја должината на речениците – комбинирај кратки и ударни реченици со посложени, ритмични реченици.\n"
-    "3. СТРОГ СТАНДАРДЕН ЈАЗИК: Целиот текст мора да биде напишан исклучиво на стандарден, чист македонски литературен јазик. Ако меѓу изворите се наоѓаат текстови на српски јазик, твоја должност е совршено да ги преведеш и адаптираш. Никогаш не мешај српски зборови или латиница во македонската синтеза.\n"
-    "4. БЕЗ ПОВТОРУВАЊЕ: Информациите од полето 'summary' (краткото резиме) не смеат да се копираат или буквално да се препишуваат во 'article' (синтезата). Резимето дава брзи факти; синтезата дава интелектуална длабочина и значење.\n"
-    "5. БЕЗ ХАЛУЦИНАЦИИ: Потпирај се исклучиво на доставените податоци. Ако некој податок не постои во изворите, не го претпоставувај и не го измислувај."
+    "1. НОВИНАРСКА ДИСЦИПЛИНА: Секоја реченица мора да додаде нова информација, контекст или разјаснување. Не го полни текстот со општи оценки.\n"
+    "2. ЗАБРАНЕТИ AI ФРАЗИ: не користи 'од витално значење', 'клучно е да се напомене', 'важно е да се истакне', 'од една страна', 'од друга страна', 'како и да е', 'наиме', 'сè на сè', 'преку тоа', 'соодветно', 'заклучно'.\n"
+    "3. ТОН: Мирен, прецизен, уреднички. Без патетика, без преувеличување, без тврдења за мотиви што изворите не ги докажуваат.\n"
+    "4. РИТАМ: Кратки пасуси, просечно 2-3 реченици. Активни глаголи. Без набројување во самото поле 'article'.\n"
+    "5. ЈАЗИК: Исклучиво стандарден македонски литературен јазик. Ако изворите се на српски, преведи и адаптирај. Не мешај српски зборови или латиница.\n"
+    "6. ПРЕЦИЗНОСТ: Не измислувај позадина. Ако нема доволно податоци, напиши што точно недостига."
 )
 
 ANALYSIS_SYSTEM_PROMPT_MK = (
