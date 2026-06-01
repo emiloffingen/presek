@@ -33,7 +33,7 @@ async def main():
     
     context_lines = []
     for a in articles:
-        context_lines.append(f"Source: {a['source']}\nTitle: {a['title']}\nDescription: {a.get('description') or ''}\nContent: {a.get('content') or ''}\n---")
+        context_lines.append(f"Source: {a['source']}\nTitle: {a['title']}\nDescription: {a.get('description') or ''}\nContent: {a.get('full_content') or ''}\n---")
     
     prompt_parts.append("\n".join(context_lines))
     prompt_parts.append("</articles_context>")
