@@ -696,6 +696,7 @@ const articleSchema = cluster ? {
                                         type="cluster"
                                         clusterId={id}
                                         lang={lang}
+                                        title={lang === 'sr' ? 'Audio sinteza' : 'Аудио синтеза'}
                                     />
                                 )}
 
@@ -733,7 +734,7 @@ const articleSchema = cluster ? {
 								<div class="section-divider"></div>
 							</div>
 
-							{sourceDocText && (
+							{sourceDocArticle && sourceDocText && (
 								<div class="mb-10 source-doc-wrapper" id="cluster-source-document">
 									<details class="group source-details">
 										<summary class="flex items-center justify-between p-6 md:p-8 cursor-pointer hover:bg-secondary/10 transition-colors list-none">

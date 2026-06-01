@@ -1,6 +1,6 @@
 ---
-// AudioPlayer.astro - Reusable audio player component
-import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
+// AudioPlayer.astro - reusable cluster and briefing audio player
+import { Loader2, Pause, Play, RotateCcw, RotateCw } from 'lucide-react';
 
 interface Props {
     clusterId?: string;
@@ -8,212 +8,485 @@ interface Props {
     lang: string;
     type: 'cluster' | 'briefing';
     initialAudioUrl?: string;
+    title?: string;
+    compact?: boolean;
 }
 
-const { clusterId, briefingDate, lang, type, initialAudioUrl } = Astro.props;
+const { clusterId, briefingDate, lang, type, initialAudioUrl, title, compact = false } = Astro.props;
 const isMK = lang === 'mk';
 const apiBase = import.meta.env.PUBLIC_API_BASE || '';
+const params = new URLSearchParams();
+params.set('lang', lang);
+if (type === 'briefing' && briefingDate) params.set('date', briefingDate);
 
-// Determine which API endpoint to use based on type
-const apiEndpoint = type === 'cluster' 
-    ? `${apiBase}/api/cluster/${clusterId}/audio?lang=${lang}`
-    : `${apiBase}/intelligence/briefing/audio${briefingDate ? `?date=${briefingDate}&lang=${lang}` : `?lang=${lang}`}`;
+const apiEndpoint = type === 'cluster'
+    ? `${apiBase}/api/cluster/${clusterId}/audio?${params.toString()}`
+    : `${apiBase}/api/intelligence/briefing/audio?${params.toString()}`;
 
-const playIcon = isMK ? 'Слушај аудио синтеза' : 'Slušaj audio sintezu';
-const pauseIcon = isMK ? 'Паузирај аудио' : 'Pauziraj audio';
-const loadingText = isMK ? 'Подготвувам аудио...' : 'Pripremam audio...';
+const labels = {
+    title: title || (type === 'briefing'
+        ? (isMK ? 'Аудио брифинг' : 'Audio brifing')
+        : (isMK ? 'Аудио синтеза' : 'Audio sinteza')),
+    idle: isMK ? 'Подготвено за слушање' : 'Spremno za slušanje',
+    loading: isMK ? 'Подготвувам аудио...' : 'Pripremam audio...',
+    playing: isMK ? 'Се пушта' : 'Se pušta',
+    paused: isMK ? 'Паузирано' : 'Pauzirano',
+    error: isMK ? 'Грешка при вчитување.' : 'Greška pri učitavanju.',
+    play: isMK ? 'Пушти аудио' : 'Pusti audio',
+    pause: isMK ? 'Паузирај аудио' : 'Pauziraj audio',
+    rewind: isMK ? 'Назад 10 секунди' : 'Nazad 10 sekundi',
+    forward: isMK ? 'Напред 10 секунди' : 'Napred 10 sekundi',
+};
 ---
 
 <div
-    class="audio-player-wrapper flex items-center gap-3"
+    class:list={['presek-audio-player', { 'is-compact': compact }]}
     data-type={type}
     data-cluster-id={clusterId}
     data-briefing-date={briefingDate}
     data-lang={lang}
     data-api-endpoint={apiEndpoint}
+    data-state="idle"
     data-audio-bound="false"
+    data-kicker={isMK ? 'АУДИО' : 'AUDIO'}
 >
-    <button class="audio-play-btn flex items-center justify-center bg-nyt-accent/10 hover:bg-nyt-accent/25 border border-nyt-accent/20 rounded-full w-8 h-8 transition-all cursor-pointer" 
-            type="button"
-            aria-label={playIcon} 
-            title={playIcon}>
-        <Play className="audio-icon audio-icon-play w-4 h-4 text-nyt-accent" />
-        <Pause className="audio-icon audio-icon-pause w-4 h-4 text-nyt-accent" />
-    </button>
-    
-    <span class="audio-status-text text-[11px] text-nyt-accent font-sans font-black uppercase tracking-widest transition-all duration-300 opacity-0 max-w-0 overflow-hidden whitespace-nowrap">{loadingText}</span>
-    
-    <audio class="hidden audio-element" preload="none" src={initialAudioUrl || undefined}></audio>
+    <div class="audio-main-row">
+        <button class="audio-play-toggle" type="button" aria-label={labels.play} title={labels.play}>
+            <Play className="audio-icon audio-icon-play" />
+            <Pause className="audio-icon audio-icon-pause" />
+            <Loader2 className="audio-icon audio-icon-loading" />
+        </button>
+
+        <div class="audio-copy">
+            <div class="audio-title-row">
+                <span class="audio-title">{labels.title}</span>
+                <span class="audio-state">{labels.idle}</span>
+            </div>
+            <button class="audio-progress" type="button" aria-label={isMK ? 'Премотај аудио' : 'Premotaj audio'}>
+                <span class="audio-progress-buffer"></span>
+                <span class="audio-progress-fill"></span>
+            </button>
+        </div>
+
+        <span class="audio-time">
+            <span class="audio-current">0:00</span>
+            <span class="audio-separator">/</span>
+            <span class="audio-duration">0:00</span>
+        </span>
+    </div>
+
+    <div class="audio-controls-row" aria-label={isMK ? 'Аудио контроли' : 'Audio kontrole'}>
+        <button class="audio-skip" type="button" data-skip="-10" aria-label={labels.rewind} title={labels.rewind}>
+            <RotateCcw size={13} />
+            <span>10</span>
+        </button>
+        <button class="audio-speed" type="button" aria-label={isMK ? 'Брзина на пуштање' : 'Brzina puštanja'} title="1x">1x</button>
+        <button class="audio-skip" type="button" data-skip="10" aria-label={labels.forward} title={labels.forward}>
+            <span>10</span>
+            <RotateCw size={13} />
+        </button>
+    </div>
+
+    <audio class="audio-element" preload="metadata" src={initialAudioUrl || undefined}></audio>
 </div>
 
 <style>
-    .audio-player-wrapper {
+    .presek-audio-player {
+        --audio-accent: var(--nyt-accent);
         position: relative;
+        display: grid;
+        gap: 0.65rem;
+        width: min(100%, 34rem);
+        padding: 0.85rem 0;
+        border-top: 2px solid var(--foreground);
+        border-bottom: 1px solid var(--border);
+        background: transparent;
+        box-shadow: none;
+        color: var(--foreground);
     }
-    
-    .audio-play-btn {
-        flex-shrink: 0;
+
+    .presek-audio-player::before {
+        content: attr(data-kicker);
+        position: absolute;
+        top: -0.65rem;
+        left: 0;
+        padding-right: 0.5rem;
+        background: var(--background);
+        color: var(--audio-accent);
+        font-family: var(--font-sans);
+        font-size: 0.52rem;
+        font-weight: 950;
+        letter-spacing: 0.18em;
+        line-height: 1;
     }
-    
-    .audio-status-text {
-        transition: all 0.3s ease;
+
+    .presek-audio-player.is-compact {
+        width: 100%;
+        padding: 0.65rem 0;
+        gap: 0.45rem;
+        border-top-width: 1px;
     }
-    
-    .audio-player-wrapper[data-audio-bound="true"] .audio-status-text {
-        opacity: 1;
-        max-width: 200px;
+
+    .audio-main-row {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 0.8rem;
     }
-    
-    .audio-play-btn.playing {
-        background-color: rgba(var(--nyt-accent-rgb), 0.25);
-        border-color: rgba(var(--nyt-accent-rgb), 0.5);
+
+    .audio-play-toggle {
+        width: 2.25rem;
+        height: 2.25rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0;
+        background: transparent;
+        color: var(--foreground);
+        border: 1px solid var(--foreground);
+        transition: color 0.16s var(--ease-editorial), border-color 0.16s var(--ease-editorial), background-color 0.16s var(--ease-editorial);
     }
-    
+
+    .presek-audio-player.is-compact .audio-play-toggle {
+        width: 1.8rem;
+        height: 1.8rem;
+    }
+
+    .audio-play-toggle:hover {
+        background: var(--foreground);
+        color: var(--background);
+        border-color: var(--foreground);
+    }
+
+    .audio-play-toggle:disabled {
+        cursor: wait;
+        opacity: 0.82;
+    }
+
+    .audio-icon {
+        width: 0.95rem;
+        height: 0.95rem;
+    }
+
     .audio-icon-pause,
-    .audio-play-btn.playing .audio-icon-play {
+    .audio-icon-loading,
+    .presek-audio-player[data-state="playing"] .audio-icon-play,
+    .presek-audio-player[data-state="loading"] .audio-icon-play {
         display: none;
     }
 
-    .audio-play-btn.playing .audio-icon-pause {
+    .presek-audio-player[data-state="playing"] .audio-icon-pause,
+    .presek-audio-player[data-state="loading"] .audio-icon-loading {
         display: block;
+    }
+
+    .presek-audio-player[data-state="loading"] .audio-icon-loading {
+        animation: audio-spin 0.8s linear infinite;
+    }
+
+    .audio-copy {
+        min-width: 0;
+        display: grid;
+        gap: 0.48rem;
+    }
+
+    .audio-title-row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.75rem;
+        min-width: 0;
+    }
+
+    .audio-title {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-family: var(--font-serif);
+        font-size: 0.95rem;
+        font-weight: 950;
+        letter-spacing: 0;
+        line-height: 1;
+    }
+
+    .audio-state {
+        flex: none;
+        font-family: var(--font-sans);
+        font-size: 0.56rem;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--muted-foreground);
+    }
+
+    .audio-progress {
+        position: relative;
+        height: 0.32rem;
+        width: 100%;
+        overflow: hidden;
+        border-radius: 0;
+        background: color-mix(in srgb, var(--foreground) 12%, transparent);
+        cursor: pointer;
+    }
+
+    .audio-progress-buffer,
+    .audio-progress-fill {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 0%;
+        border-radius: 0;
+    }
+
+    .audio-progress-buffer {
+        background: color-mix(in srgb, var(--foreground) 18%, transparent);
+    }
+
+    .audio-progress-fill {
+        background: var(--audio-accent);
+    }
+
+    .audio-time {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.18rem;
+        min-width: 4.9rem;
+        justify-content: flex-end;
+        font-family: var(--font-sans);
+        font-size: 0.62rem;
+        font-weight: 950;
+        color: var(--muted-foreground);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .audio-controls-row {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0;
+        border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+        padding-top: 0.45rem;
+    }
+
+    .audio-skip,
+    .audio-speed {
+        height: 1.35rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.2rem;
+        border: 0;
+        border-left: 1px solid var(--border);
+        background: transparent;
+        color: var(--muted-foreground);
+        font-family: var(--font-sans);
+        font-size: 0.58rem;
+        font-weight: 950;
+        letter-spacing: 0.08em;
+        line-height: 1;
+        padding: 0 0.55rem;
+        text-transform: uppercase;
+    }
+
+    .audio-speed {
+        min-width: 2.2rem;
+    }
+
+    .audio-skip:hover,
+    .audio-speed:hover {
+        border-color: var(--audio-accent);
+        color: var(--audio-accent);
+    }
+
+    .audio-element {
+        display: none;
+    }
+
+    .presek-audio-player[data-state="error"] {
+        border-top-color: var(--nyt-red);
+    }
+
+    .presek-audio-player[data-state="error"] .audio-state {
+        color: var(--nyt-red);
+    }
+
+    @media (max-width: 640px) {
+        .presek-audio-player {
+            padding: 0.75rem 0;
+        }
+
+        .audio-main-row {
+            grid-template-columns: auto minmax(0, 1fr);
+        }
+
+        .audio-time {
+            grid-column: 2;
+            justify-content: flex-start;
+            min-width: 0;
+        }
+
+        .audio-title-row {
+            display: grid;
+            gap: 0.1rem;
+        }
+    }
+
+    @keyframes audio-spin {
+        to { transform: rotate(360deg); }
     }
 </style>
 
 <script is:inline>
-    function initAudioPlayers() {
-        document.querySelectorAll('.audio-player-wrapper').forEach((wrapper) => {
-            if (!wrapper || wrapper.dataset.audioBound === 'true') return;
+    function initPresekAudioPlayers() {
+        document.querySelectorAll('.presek-audio-player').forEach((wrapper) => {
+            if (!(wrapper instanceof HTMLElement) || wrapper.dataset.audioBound === 'true') return;
 
-            const playBtn = wrapper.querySelector('.audio-play-btn');
-            const statusText = wrapper.querySelector('.audio-status-text');
+            const playBtn = wrapper.querySelector('.audio-play-toggle');
             const audio = wrapper.querySelector('.audio-element');
-            if (!playBtn || !statusText || !audio) return;
+            const progress = wrapper.querySelector('.audio-progress');
+            const fill = wrapper.querySelector('.audio-progress-fill');
+            const buffer = wrapper.querySelector('.audio-progress-buffer');
+            const current = wrapper.querySelector('.audio-current');
+            const duration = wrapper.querySelector('.audio-duration');
+            const state = wrapper.querySelector('.audio-state');
+            const speed = wrapper.querySelector('.audio-speed');
+            const skips = wrapper.querySelectorAll('.audio-skip');
+            if (!(playBtn instanceof HTMLButtonElement) || !(audio instanceof HTMLAudioElement) || !(progress instanceof HTMLButtonElement) || !(fill instanceof HTMLElement) || !(buffer instanceof HTMLElement) || !(current instanceof HTMLElement) || !(duration instanceof HTMLElement) || !(state instanceof HTMLElement) || !(speed instanceof HTMLButtonElement)) return;
 
             wrapper.dataset.audioBound = 'true';
 
-            let isPlaying = false;
-            let isLoading = false;
-            let errorMessage = '';
+            const lang = wrapper.dataset.lang || 'sr';
+            const copy = {
+                idle: lang === 'mk' ? 'Подготвено за слушање' : 'Spremno za slušanje',
+                loading: lang === 'mk' ? 'Подготвувам аудио...' : 'Pripremam audio...',
+                playing: lang === 'mk' ? 'Се пушта' : 'Se pušta',
+                paused: lang === 'mk' ? 'Паузирано' : 'Pauzirano',
+                error: lang === 'mk' ? 'Грешка при вчитување.' : 'Greška pri učitavanju.',
+                play: lang === 'mk' ? 'Пушти аудио' : 'Pusti audio',
+                pause: lang === 'mk' ? 'Паузирај аудио' : 'Pauziraj audio',
+            };
 
-            function playLabel() {
-                return wrapper.dataset.lang === 'mk' ? 'Слушај аудио синтеза' : 'Slušaj audio sintezu';
+            const speeds = [1, 1.25, 1.5, 2];
+            let speedIndex = 0;
+
+            function formatTime(value) {
+                if (!Number.isFinite(value) || value < 0) return '0:00';
+                const total = Math.floor(value);
+                const minutes = Math.floor(total / 60);
+                const seconds = String(total % 60).padStart(2, '0');
+                return `${minutes}:${seconds}`;
             }
 
-            function pauseLabel() {
-                return wrapper.dataset.lang === 'mk' ? 'Паузирај аудио' : 'Pauziraj audio';
+            function setState(next) {
+                wrapper.dataset.state = next;
+                playBtn.disabled = next === 'loading';
+                state.textContent = copy[next] || copy.idle;
+                playBtn.setAttribute('aria-label', next === 'playing' ? copy.pause : copy.play);
+                playBtn.setAttribute('title', next === 'playing' ? copy.pause : copy.play);
             }
 
-            function updateUI() {
-                if (isLoading) {
-                    errorMessage = '';
-                    statusText.textContent = wrapper.dataset.lang === 'mk' ? 'Подготвувам аудио...' : 'Pripremam audio...';
-                    statusText.classList.remove('text-red-500');
-                    playBtn.disabled = true;
-                    playBtn.classList.remove('playing');
-                    return;
-                }
+            function updateProgress() {
+                const mediaDuration = audio.duration;
+                current.textContent = formatTime(audio.currentTime);
+                duration.textContent = formatTime(mediaDuration);
 
-                playBtn.disabled = false;
-
-                if (isPlaying) {
-                    errorMessage = '';
-                    statusText.textContent = wrapper.dataset.lang === 'mk' ? 'Се пушта' : 'Se pušta';
-                    statusText.classList.remove('text-red-500');
-                    playBtn.classList.add('playing');
-                    playBtn.setAttribute('aria-label', pauseLabel());
-                    playBtn.setAttribute('title', pauseLabel());
-                    return;
-                }
-
-                playBtn.classList.remove('playing');
-                playBtn.setAttribute('aria-label', playLabel());
-                playBtn.setAttribute('title', playLabel());
-
-                if (errorMessage) {
-                    statusText.textContent = errorMessage;
-                    statusText.classList.add('text-red-500');
-                } else {
-                    statusText.textContent = '';
-                    statusText.classList.remove('text-red-500');
+                if (Number.isFinite(mediaDuration) && mediaDuration > 0) {
+                    fill.style.width = `${Math.min(100, (audio.currentTime / mediaDuration) * 100)}%`;
+                    if (audio.buffered.length > 0) {
+                        const bufferedEnd = audio.buffered.end(audio.buffered.length - 1);
+                        buffer.style.width = `${Math.min(100, (bufferedEnd / mediaDuration) * 100)}%`;
+                    }
                 }
             }
 
-            async function loadAndPlayAudio() {
-                if (isLoading || isPlaying) return;
+            function resolveAudioUrl(audioUrl) {
+                if (/^https?:\/\//i.test(audioUrl)) return audioUrl;
+                return new URL(
+                    audioUrl,
+                    new URL(wrapper.dataset.apiEndpoint || window.location.href, window.location.href).origin
+                ).href;
+            }
 
+            async function ensureAudioLoaded() {
+                if (audio.currentSrc || audio.getAttribute('src')) return;
+                setState('loading');
+
+                const response = await fetch(wrapper.dataset.apiEndpoint);
+                if (!response.ok) throw new Error(`Audio request failed: ${response.status}`);
+                const data = await response.json();
+                if (data.status !== 'success' || !data.audio_url) {
+                    throw new Error(data.message || 'Missing audio URL');
+                }
+                audio.src = resolveAudioUrl(data.audio_url);
+                audio.load();
+            }
+
+            async function playAudio() {
                 try {
-                    isLoading = true;
-                    updateUI();
-
-                    if (audio.currentSrc || audio.getAttribute('src')) {
-                        await audio.play();
-                        isPlaying = true;
-                        return;
-                    }
-
-                    const response = await fetch(wrapper.dataset.apiEndpoint);
-                    const data = await response.json();
-
-                    if (data.status === 'success' && data.audio_url) {
-                        audio.src = data.audio_url.startsWith('http')
-                            ? data.audio_url
-                            : new URL(data.audio_url, new URL(wrapper.dataset.apiEndpoint, window.location.href).origin).href;
-                        await audio.play();
-                        isPlaying = true;
-                    } else {
-                        throw new Error(data.message || 'Unknown error');
-                    }
-                } catch (err) {
-                    console.error('Failed to load audio:', err);
-                    errorMessage = wrapper.dataset.lang === 'mk' ? 'Грешка при вчитување на аудиото.' : 'Greška pri učitavanju audio zapisa.';
-                    isPlaying = false;
-                } finally {
-                    isLoading = false;
-                    updateUI();
+                    document.querySelectorAll('.presek-audio-player .audio-element').forEach((otherAudio) => {
+                        if (otherAudio !== audio && otherAudio instanceof HTMLAudioElement) otherAudio.pause();
+                    });
+                    await ensureAudioLoaded();
+                    await audio.play();
+                    setState('playing');
+                } catch (error) {
+                    console.error('Failed to play audio:', error);
+                    setState('error');
                 }
             }
 
-            playBtn.addEventListener('click', async function() {
-                if (isLoading) return;
-
-                if (isPlaying) {
-                    audio.pause();
-                    isPlaying = false;
+            playBtn.addEventListener('click', async () => {
+                if (wrapper.dataset.state === 'loading') return;
+                if (audio.paused) {
+                    await playAudio();
                 } else {
-                    await loadAndPlayAudio();
+                    audio.pause();
                 }
-
-                updateUI();
             });
 
+            progress.addEventListener('click', (event) => {
+                if (!Number.isFinite(audio.duration) || audio.duration <= 0) return;
+                const rect = progress.getBoundingClientRect();
+                const pct = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+                audio.currentTime = pct * audio.duration;
+                updateProgress();
+            });
+
+            skips.forEach((button) => {
+                if (!(button instanceof HTMLButtonElement)) return;
+                button.addEventListener('click', () => {
+                    const delta = Number(button.dataset.skip || 0);
+                    audio.currentTime = Math.min(Math.max(audio.currentTime + delta, 0), audio.duration || Infinity);
+                    updateProgress();
+                });
+            });
+
+            speed.addEventListener('click', () => {
+                speedIndex = (speedIndex + 1) % speeds.length;
+                audio.playbackRate = speeds[speedIndex];
+                speed.textContent = `${speeds[speedIndex]}x`;
+                speed.title = `${speeds[speedIndex]}x`;
+            });
+
+            audio.addEventListener('loadedmetadata', updateProgress);
+            audio.addEventListener('progress', updateProgress);
+            audio.addEventListener('timeupdate', updateProgress);
+            audio.addEventListener('play', () => setState('playing'));
+            audio.addEventListener('pause', () => setState(audio.currentTime > 0 && !audio.ended ? 'paused' : 'idle'));
             audio.addEventListener('ended', () => {
-                isPlaying = false;
-                updateUI();
+                audio.currentTime = 0;
+                fill.style.width = '0%';
+                setState('idle');
             });
+            audio.addEventListener('error', () => setState('error'));
 
-            audio.addEventListener('pause', () => {
-                if (isPlaying) {
-                    isPlaying = false;
-                    updateUI();
-                }
-            });
-
-            audio.addEventListener('play', () => {
-                if (!isPlaying) {
-                    isPlaying = true;
-                    updateUI();
-                }
-            });
-
-            audio.addEventListener('error', () => {
-                errorMessage = wrapper.dataset.lang === 'mk' ? 'Грешка при пуштање на аудиото.' : 'Greška pri puštanju audio zapisa.';
-                isPlaying = false;
-                isLoading = false;
-                updateUI();
-            });
+            if (audio.getAttribute('src')) {
+                audio.addEventListener('loadedmetadata', updateProgress, { once: true });
+            }
+            setState('idle');
         });
     }
 
-    document.addEventListener('DOMContentLoaded', initAudioPlayers);
-    document.addEventListener('astro:page-load', initAudioPlayers);
+    document.addEventListener('DOMContentLoaded', initPresekAudioPlayers);
+    document.addEventListener('astro:page-load', initPresekAudioPlayers);
 </script>

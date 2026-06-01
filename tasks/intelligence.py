@@ -994,7 +994,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                     from core.audio_service import AudioService
                     content = generated_article or summary
                     if content:
-                        log.info(f"[tasks] Auto-generating OmniVoice cluster audio in background for cluster {cluster_id} ({lang})...")
+                        log.info(f"[tasks] Auto-generating cluster audio in background for cluster {cluster_id} ({lang})...")
                         AudioService.generate_cluster_audio(cluster_id, content, lang)
                 except Exception as audio_err:
                     log.error(f"[tasks] Failed to auto-generate cluster audio for {cluster_id} ({lang}): {audio_err}")

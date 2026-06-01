@@ -103,20 +103,24 @@ class AudioService:
                 communicate = edge_tts.Communicate(text, voice)
                 await communicate.save(filepath)
             
-            # Run the async generation in the current thread's loop or a new one
             try:
-                loop = asyncio.get_event_loop()
+                asyncio.get_running_loop()
             except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-            
-            if loop.is_running():
-                # If we're already in a loop (unlikely for Celery worker but possible), 
-                # we need a different approach, but asyncio.run is usually safest for standalone tasks.
-                import nest_asyncio
-                nest_asyncio.apply()
-            
-            asyncio.run(_do_generate())
+                asyncio.run(_do_generate())
+            else:
+                result: dict[str, Optional[BaseException]] = {"error": None}
+
+                def run_in_thread():
+                    try:
+                        asyncio.run(_do_generate())
+                    except BaseException as exc:
+                        result["error"] = exc
+
+                thread = threading.Thread(target=run_in_thread, daemon=True)
+                thread.start()
+                thread.join()
+                if result["error"]:
+                    raise result["error"]
             
             return os.path.exists(filepath) and os.path.getsize(filepath) > 1000
         except Exception as e:
@@ -371,7 +375,7 @@ class AudioService:
     def generate_briefing_audio(cls, date_str: str, content: str, lang: str) -> Optional[str]:
         """
         Synthesizes daily briefing text into high-quality speech.
-        Uses local OmniVoice TTS exclusively.
+        Uses the configured engine for the target language, with fallbacks.
         """
         os.makedirs(_AUDIO_DIR, exist_ok=True)
         filepath, urlpath = cls.get_audio_path_and_url(date_str, lang)
@@ -504,7 +508,7 @@ class AudioService:
     def generate_cluster_audio(cls, cluster_id: str, content: str, lang: str) -> Optional[str]:
         """
         Synthesizes cluster generated article/synthesis text into high-quality speech.
-        Uses local OmniVoice TTS exclusively.
+        Uses the configured engine for the target language, with fallbacks.
         """
         os.makedirs(_AUDIO_DIR, exist_ok=True)
         filepath, urlpath = cls.get_cluster_audio_path_and_url(cluster_id, lang)

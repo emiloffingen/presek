@@ -80,7 +80,7 @@ const displayDate = briefingData?.date
             ) : briefingData ? (
                 <div class="briefing-layout-grid relative">
                     <div class="briefing-main-col">
-                        <div class="flex items-center justify-between mb-8">
+                        <div class="mb-8 flex flex-col gap-6">
                             <BriefingHeader
                                 currentDate={displayDate}
                                 dispatchIcon={Newspaper}
@@ -97,6 +97,7 @@ const displayDate = briefingData?.date
                                 type="briefing"
                                 briefingDate={briefingData.date}
                                 lang={lang}
+                                title={isMK ? 'Аудио брифинг' : 'Audio brifing'}
                             />
                         </div>
 

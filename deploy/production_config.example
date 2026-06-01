@@ -110,8 +110,8 @@ RATE_LIMIT_WINDOW=60
 # ============================================================================
 # auto = Serbian uses gTTS, Macedonian uses OmniVoice.
 AUDIO_TTS_ENGINE=auto
-AUDIO_TTS_ENGINE_SR=gtts
-AUDIO_TTS_ENGINE_MK=omnivoice
+AUDIO_TTS_ENGINE_SR=edge
+AUDIO_TTS_ENGINE_MK=edge
 OMNIVOICE_NUM_STEP=8
 AUDIO_PRIORITY_GENERATION_LIMIT=2
 

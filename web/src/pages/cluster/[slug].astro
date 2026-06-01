@@ -718,6 +718,7 @@ const articleSchema = cluster ? {
                                         type="cluster"
                                         clusterId={id}
                                         lang={lang}
+                                        title={lang === 'sr' ? 'Audio sinteza' : 'Аудио синтеза'}
                                     />
                                 )}
 
@@ -755,7 +756,7 @@ const articleSchema = cluster ? {
 								<div class="section-divider"></div>
 							</div>
 
-						{sourceDocText && (
+							{sourceDocArticle && sourceDocText && (
 								<div class="mb-10 source-doc-wrapper" id="cluster-source-document">
 									<details class="group source-details">
 										<summary class="flex items-center justify-between p-6 md:p-8 cursor-pointer hover:bg-secondary/10 transition-colors list-none">
@@ -772,7 +773,7 @@ const articleSchema = cluster ? {
 										<div class="px-6 md:px-8 pb-8">
 											<div class="prose-editorial max-w-none pt-6 border-t border-border/20 max-h-[400px] overflow-y-auto custom-editorial-scrollbar">
 												<div class="font-nyt-body text-lg md:text-xl text-foreground/80 leading-[1.8] whitespace-pre-wrap">
-										{sourceDocText}
+													{sourceDocText}
 												</div>
 											</div>
 											<div class="mt-8 flex justify-end">
