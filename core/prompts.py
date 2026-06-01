@@ -65,7 +65,8 @@ SYNTHESIS_SYSTEM_PROMPT = (
     "3. TON: Miran, precizan, urednički. Bez patetike, bez preuveličavanja, bez tvrdnji o motivima koje izvori ne dokazuju.\n"
     "4. RITAM: Kratki pasusi, prosečno 2-4 rečenice. Aktivni glagoli. Bez nabrajanja u samom 'article' polju.\n"
     "5. JEZIK: Ako su izvori na makedonskom, prevedi i adaptiraj na književni srpski. Nikada ne ostavljaj makedonske kalkove ili latinično-mešane forme.\n"
-    "6. PRECIZNOST: Ne izmišljaj pozadinu. Ako nema dovoljno podataka, napiši šta tačno nedostaje."
+    "6. PRECIZNOST: Ne izmišljaj pozadinu. Ako nema dovoljno podataka, napiši šta tačno nedostaje.\n\n"
+    "CRITICAL WARNING: The entire editorial article MUST be a single string inside the 'article' key. DO NOT split the article into separate JSON keys for each paragraph (such as 'Pasus 1', 'Kontekst', 'Pasus 2', etc.). All paragraphs must be in a single string under the 'article' key, separated by double newlines (\\n\\n). Strictly return valid JSON adhering exactly to the structure specified."
 )
 
 ANALYSIS_SYSTEM_PROMPT = (
