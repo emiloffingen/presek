@@ -86,13 +86,28 @@ async def run():
                         errors.append(f"Missing Element: {name}")
 
             # 2. Verify National Mood content after hydration
-            mood_widget = await page.query_selector("astro-island[component-url*='NationalMoodIsland']")
-            if mood_widget:
-                text = await mood_widget.inner_text()
-                if "Puls" in text or "Пулс" in text or "Mood" in text:
-                    log.info("National Mood Widget: Functional and Hydrated.")
-                else:
-                    log.warning("National Mood Widget: Found but content seems limited. Check hydration.")
+            log.info("Verifying National Mood Widget...")
+            # Wait up to 10 seconds for the widget to leave loading state
+            mood_loaded = False
+            last_text = ""
+            for _ in range(10):
+                mood_widget = await page.query_selector("astro-island[component-url*='NationalMoodIsland']")
+                if mood_widget:
+                    text = await mood_widget.inner_text()
+                    last_text = text.replace('\n', ' ')
+                    text_lower = text.lower()
+                    if "puls" in text_lower or "пулс" in text_lower or "mood" in text_lower:
+                        log.info("National Mood Widget: Functional and Hydrated.")
+                        mood_loaded = True
+                        break
+                    elif "kalibracija" in text_lower or "калибрација" in text_lower:
+                        log.info("National Mood Widget: Hydrated but in 'System Calibration' state (no data).")
+                        mood_loaded = True
+                        break
+                await asyncio.sleep(1)
+            
+            if not mood_loaded:
+                log.warning(f"National Mood Widget: Found but content seems limited or still loading. Text observed: '{last_text}'")
 
             # 3. Verify Live Ticker headlines
             ticker_headline = await page.query_selector(".live-ticker-headline")
@@ -106,6 +121,16 @@ async def run():
             for name, status in found_elements.items():
                 log.info(f"{name}: {status}")
 
+            if errors:
+                log.error("--- Console/Page Errors ---")
+                for err in errors:
+                    log.error(f"  {err}")
+
+            if network_failures:
+                log.error("--- Network Failures (4xx/5xx) ---")
+                for fail in network_failures:
+                    log.error(f"  {fail}")
+
             # Take final screenshot
             os.makedirs("screenshots", exist_ok=True)
             domain = target_url.split("//")[-1].split("/")[0].replace(".", "_")
@@ -116,10 +141,6 @@ async def run():
             log.exception(f"An error occurred during check: {e}")
         finally:
             await browser.close()
-
-
-if __name__ == "__main__":
-    asyncio.run(run())
 
 
 if __name__ == "__main__":

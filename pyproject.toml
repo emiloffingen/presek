@@ -48,6 +48,8 @@ dependencies = [
     "trafilatura>=2.0.0",
     "uvicorn>=0.46.0",
     "pyjwt>=2.12.1",
+    "cryptography>=46.0.6",
+    "idna>=3.15",
     "sentry-sdk>=2.60.0",
 ]
 
