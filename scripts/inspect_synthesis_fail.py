@@ -14,7 +14,7 @@ async def main():
     
     # Get articles
     articles = await db.async_execute(
-        "SELECT id, title, description, full_content, source, published_at FROM articles WHERE cluster_id = %s",
+        "SELECT id, title, description, full_content, source, created_at FROM articles WHERE cluster_id = %s",
         (cluster_id,)
     )
     
