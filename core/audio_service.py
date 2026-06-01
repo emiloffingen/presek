@@ -110,12 +110,18 @@ class AudioService:
             
             voice = voice_map.get(lang, "en-US-AvaNeural")
             
+            # Apply speed factor dynamically (e.g., Serbian speaks very slowly by default)
+            rate_str = "+0%"
+            if lang == "sr":
+                rate_percent = int((_SR_TTS_SPEED_FACTOR - 1.0) * 100)
+                rate_str = f"+{rate_percent}%" if rate_percent >= 0 else f"{rate_percent}%"
+
             async def _do_generate():
                 # Use high-quality parameters for better audio output
                 communicate = edge_tts.Communicate(
                     text, 
                     voice,
-                    rate="+0%",
+                    rate=rate_str,
                     volume="+0%",
                     pitch="+0Hz"
                 )
@@ -418,10 +424,8 @@ class AudioService:
             if cls._generate_edge_mp3(clean_text, filepath, lang):
                 log.info(f"[audio] Successfully synthesized audio using Edge TTS at {filepath}")
                 return version_audio_url(filepath, urlpath)
-            log.info("[audio] Edge TTS also failed, falling back to espeak-ng")
-            if cls._generate_espeak_mp3(clean_text, filepath, lang):
-                return version_audio_url(filepath, urlpath)
-            return None
+            log.info("[audio] Edge TTS also failed, falling back to local OmniVoice.")
+            engine = "omnivoice"
 
         if engine == "edge":
             if cls._generate_edge_mp3(clean_text, filepath, lang):
@@ -433,6 +437,9 @@ class AudioService:
                 if cls._generate_gtts_mp3(clean_text, filepath, lang):
                     log.info(f"[audio] Successfully synthesized audio using gTTS (sr) at {filepath}")
                     return version_audio_url(filepath, urlpath)
+                else:
+                    log.info("[audio] gTTS failed for sr, falling back to local OmniVoice.")
+                    engine = "omnivoice"
             elif lang == "mk":
                 # Set engine to omnivoice and continue to the OmniVoice section
                 engine = "omnivoice"
@@ -516,6 +523,9 @@ class AudioService:
                     time.sleep(retry_delay)
 
         log.error("[audio] Failed to synthesize briefing audio since OmniVoice failed after all retries.")
+        log.info("[audio] Attempting absolute final fallback to espeak-ng.")
+        if cls._generate_espeak_mp3(clean_text, filepath, lang):
+            return version_audio_url(filepath, urlpath)
         return None
 
     @staticmethod
@@ -559,10 +569,12 @@ class AudioService:
             if cls._generate_gtts_mp3(clean_text, filepath, lang):
                 log.info(f"[audio] Successfully synthesized audio using gTTS at {filepath}")
                 return version_audio_url(filepath, urlpath)
-            log.info("[audio] Falling back to espeak-ng for audio")
-            if cls._generate_espeak_mp3(clean_text, filepath, lang):
+            log.info("[audio] gTTS failed, falling back to Edge TTS")
+            if cls._generate_edge_mp3(clean_text, filepath, lang):
+                log.info(f"[audio] Successfully synthesized audio using Edge TTS at {filepath}")
                 return version_audio_url(filepath, urlpath)
-            return None
+            log.info("[audio] Edge TTS also failed, falling back to local OmniVoice.")
+            engine = "omnivoice"
 
         if engine == "edge":
             if cls._generate_edge_mp3(clean_text, filepath, lang):
@@ -574,6 +586,9 @@ class AudioService:
                 if cls._generate_gtts_mp3(clean_text, filepath, lang):
                     log.info(f"[audio] Successfully synthesized audio using gTTS (sr) at {filepath}")
                     return version_audio_url(filepath, urlpath)
+                else:
+                    log.info("[audio] gTTS failed for sr, falling back to local OmniVoice.")
+                    engine = "omnivoice"
             elif lang == "mk":
                 # Set engine to omnivoice and continue to the OmniVoice section
                 engine = "omnivoice"
@@ -653,4 +668,7 @@ class AudioService:
                     time.sleep(retry_delay)
 
         log.error("[audio] Failed to synthesize cluster audio since OmniVoice failed after all retries.")
+        log.info("[audio] Attempting absolute final fallback to espeak-ng.")
+        if cls._generate_espeak_mp3(clean_text, filepath, lang):
+            return version_audio_url(filepath, urlpath)
         return None
