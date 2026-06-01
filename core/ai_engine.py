@@ -645,7 +645,10 @@ def clean_json_response(text: str) -> dict | str | None:
                 return {"answer": data["report"], "suggestions": data.get("suggestions", [])}
             # Single key unwrapping
             if len(data) == 1:
+                key = list(data.keys())[0]
                 val = list(data.values())[0]
+                if key in ("answer", "summary", "report") and isinstance(val, str):
+                    return {"answer": val, "suggestions": []}
                 if isinstance(val, str) and (len(val) > 20 or " " in val):
                     return {"answer": val, "suggestions": []}
         return data
@@ -685,6 +688,14 @@ def clean_json_response(text: str) -> dict | str | None:
                     return data
                 if "report" in data:
                     return {"answer": data["report"], "suggestions": data.get("suggestions", [])}
+                # Single key unwrapping
+                if len(data) == 1:
+                    key = list(data.keys())[0]
+                    val = list(data.values())[0]
+                    if key in ("answer", "summary", "report") and isinstance(val, str):
+                        return {"answer": val, "suggestions": []}
+                    if isinstance(val, str) and (len(val) > 20 or " " in val):
+                        return {"answer": val, "suggestions": []}
                 return data
             return data
     except Exception as e:
