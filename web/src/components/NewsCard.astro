@@ -176,7 +176,7 @@ function getTimeStr(dateStr: string) {
     </div>
 
     {thumbSrc && (
-    <div class:list={["image-wrap", { "image-wrap-fallback": isFallbackArt }]} data-image-state={isFallbackArt ? 'fallback' : 'loading'}>
+    <div class:list={["image-wrap", { "image-wrap-fallback": isFallbackArt }]} data-image-state={isFallbackArt ? 'fallback' : 'loading'} style={!isFallbackArt ? `--placeholder-bg: ${tintColor}` : undefined}>
         <a href={clusterUrl} class="block h-full" data-testid="cluster-link">
             {isFallbackArt ? (
                 <div class="article-image-placeholder design-card topic-fallback-card" style={`--placeholder-bg: ${tintColor};`}>
@@ -195,7 +195,7 @@ function getTimeStr(dateStr: string) {
                     </div>
                 </div>
             ) : (
-                <div class="relative w-full h-full">
+                <div class="runtime-image-container relative w-full h-full">
                     <img
                         src={thumbSrc}
                         srcset={`${thumbSrc.replace('w=720', 'w=360')} 360w, ${thumbSrc} 720w, ${thumbSrc.replace('w=720', 'w=1200')} 1200w`}
@@ -211,6 +211,10 @@ function getTimeStr(dateStr: string) {
                         onload="this.classList.add('is-loaded'); this.closest('.image-wrap')?.setAttribute('data-image-state','ready');"
                         onerror={`this.onerror=null; this.removeAttribute('srcset'); this.src='${fallbackImageUrl}'; this.classList.add('is-loaded','article-image-fallback'); this.closest('.image-wrap')?.classList.add('image-wrap-fallback'); this.closest('.image-wrap')?.setAttribute('data-image-state','fallback');`}
                     />
+                    <div class="topic-fallback-scrim runtime-fallback-only"></div>
+                    <div class="design-card-ribbon runtime-fallback-only">
+                        <span>{cardLabel}</span>
+                    </div>
                 </div>
             )}
         </a>
@@ -576,7 +580,39 @@ function getTimeStr(dateStr: string) {
             linear-gradient(90deg, rgba(4, 8, 16, 0.42), rgba(4, 8, 16, 0.08));
     }
 
-    .nyt-article:hover .article-image-placeholder {
+    /* Runtime image fallback custom styles */
+    .runtime-image-container {
+        transition: transform 0.8s var(--ease-editorial);
+    }
+
+    .runtime-fallback-only {
+        display: none;
+    }
+
+    .image-wrap[data-image-state="fallback"] .runtime-fallback-only {
+        display: block !important;
+    }
+
+    .image-wrap[data-image-state="fallback"] .runtime-image-container {
+        background: linear-gradient(135deg, color-mix(in srgb, var(--placeholder-bg, #070c16) 100%, black) 0%, color-mix(in srgb, var(--placeholder-bg, #132a4f) 60%, black) 100%) !important;
+        position: relative;
+        width: 100%;
+        height: 100%;
+        display: block;
+        isolation: isolate;
+    }
+
+    .image-wrap[data-image-state="fallback"] .runtime-image-container .article-image-fallback {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        filter: saturate(0.95) contrast(1.02);
+        object-fit: contain;
+        padding: 1.5rem;
+    }
+
+    .nyt-article:hover .article-image-placeholder,
+    .nyt-article:hover .image-wrap[data-image-state="fallback"] .runtime-image-container {
         transform: scale(1.04);
     }
 

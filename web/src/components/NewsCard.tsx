@@ -149,7 +149,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
       </div>
 
       {thumbSrc && (
-        <div className={`image-wrap ${isFallbackArt ? 'image-wrap-fallback' : ''} w-28 h-20 flex-shrink-0`}>
+        <div className={`image-wrap ${isFallbackArt ? 'image-wrap-fallback' : ''} w-28 h-20 flex-shrink-0`} style={!isFallbackArt ? { '--placeholder-bg': tintColor } as any : undefined}>
           <a href={lang === 'sr' ? `/cluster/${cluster.cluster_id}` : `/mk/cluster/${cluster.cluster_id}`} className="block h-full">
             {isFallbackArt ? (
               <div className="article-image-placeholder design-card topic-fallback-card" style={{ '--placeholder-bg': tintColor } as any}>
@@ -168,7 +168,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="relative w-full h-full">
+              <div className="runtime-image-container relative w-full h-full">
                 <img
                   src={thumbSrc}
                   alt={displayTitle}
@@ -182,9 +182,17 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                     image.removeAttribute('srcset');
                     image.src = fallbackImageUrl;
                     image.classList.add('article-image-fallback');
-                    image.closest('.image-wrap')?.classList.add('image-wrap-fallback');
+                    const wrap = image.closest('.image-wrap');
+                    if (wrap) {
+                      wrap.classList.add('image-wrap-fallback');
+                      wrap.setAttribute('data-image-state', 'fallback');
+                    }
                   }}
                 />
+                <div className="topic-fallback-scrim runtime-fallback-only"></div>
+                <div className="design-card-ribbon runtime-fallback-only">
+                    <span>{cardLabel}</span>
+                </div>
               </div>
             )}
           </a>
