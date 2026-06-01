@@ -195,21 +195,7 @@ async def get_weather(lang: Optional[str] = "sr"):
 
 @router.get("/trending")
 async def get_trending_route(lang: Optional[str] = "sr"):
-    if lang == "sr":
-        return [
-            {"word": "Srbiji", "count": 100, "score": 100.0, "trend": "↑", "is_breaking": False, "categories": ["Srbija"]},
-            {"word": "Srbije", "count": 95, "score": 95.0, "trend": "↑", "is_breaking": False, "categories": ["Srbija"]},
-            {"word": "Rumuniji", "count": 90, "score": 90.0, "trend": "↑", "is_breaking": False, "categories": ["Svet"]},
-            {"word": "Dačić", "count": 85, "score": 85.0, "trend": "↑", "is_breaking": False, "categories": ["Politika"]},
-            {"word": "Srbima", "count": 80, "score": 80.0, "trend": "↑", "is_breaking": False, "categories": ["Srbija"]},
-            {"word": "Zbog", "count": 75, "score": 75.0, "trend": "↑", "is_breaking": False, "categories": ["Vesti"]},
-            {"word": "Rusije", "count": 70, "score": 70.0, "trend": "↑", "is_breaking": False, "categories": ["Svet"]},
-            {"word": "Tramp", "count": 65, "score": 65.0, "trend": "↑", "is_breaking": False, "categories": ["Svet"]},
-            {"word": "Bilo", "count": 60, "score": 60.0, "trend": "↑", "is_breaking": False, "categories": ["Vesti"]},
-            {"word": "Odluka", "count": 55, "score": 55.0, "trend": "↑", "is_breaking": False, "categories": ["Politika"]},
-        ]
-
-    cache_key = f"api:trending:{lang}"
+    cache_key = f"api:trending:v3:{lang}"
     cached = cached_response(cache_key)
     if cached:
         return cached

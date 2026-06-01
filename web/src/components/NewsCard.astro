@@ -26,7 +26,7 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
 const main = cluster.articles?.[0];
 if (!main) return;
 const sourceSignal = main?.source_signal || {};
-const totalSources = cluster.articles.length;
+const totalSources = Number((cluster as any).sources_count || (cluster as any).source_count || cluster.articles.length);
 const showTrustBadge = totalSources >= 2 && Boolean(sourceSignal.trust_label);
 const showSignificanceLabel = cluster.is_breaking || totalSources >= 3;
 const significanceLabel =
@@ -51,7 +51,7 @@ const titleIsCyrillic = isMostlyCyrillic(displayTitle);
 const clusterSlug = slugify(cluster.synthetic_headline || getDisplayTitle(main));
 const clusterUrl = `${l('/cluster/')}${cluster.cluster_id}-${clusterSlug}`;
 
-const uniqueSources = new Set(cluster.articles.map(a => a.source)).size;
+const uniqueSources = Number((cluster as any).sources_count || (cluster as any).source_count || new Set(cluster.articles.map(a => a.source)).size);
 const cardSignals = [
     cluster.pluralism_score != null ? `${t('cluster.media_pluralism')} ${cluster.pluralism_score}%` : '',
     cluster.pulse_score != null ? `PULSE ${cluster.pulse_score}%` : '',

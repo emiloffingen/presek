@@ -400,8 +400,9 @@ def _extract_sports_scores(text):
     return scores
 
 
-def _topic_stakes_sentence(text, lang="mk"):
+def _topic_stakes_sentence(text, lang="mk", topic="", category=""):
     lowered = str(text or "").casefold()
+    topic_context = f"{topic or ''} {category or ''}".casefold()
     is_sr = lang == "sr"
     if any(term in lowered for term in ("izbor", "glasanje", "vlada", "sobranie", "skupština", "парламент", "избор", "влада", "собрание")):
         return (
@@ -421,7 +422,10 @@ def _topic_stakes_sentence(text, lang="mk"):
             if is_sr
             else "Институционалното значење зависи од тоа колку постапката ќе биде поткрепена со проверливи факти и понатамошни одлуки на надлежните."
         )
-    if any(term in lowered for term in ("gol", "utakmica", "liga", "fudbal", "košarka", "натпревар", "гол", "лига", "фудбал", "кошарка")):
+    if (
+        any(term in topic_context for term in ("sport", "спорт"))
+        and any(term in lowered for term in ("gol", "utakmica", "liga", "fudbal", "košarka", "натпревар", "гол", "лига", "фудбал", "кошарка"))
+    ):
         return (
             "Sportski značaj se meri kroz posledice po rezultat, poredak i pritisak pred naredne mečeve."
             if is_sr
@@ -1148,7 +1152,12 @@ def synthesize_cluster_fallback(articles, lang="mk"):
             article_body.append(" ".join(non_duplicate_details[:2]))
 
     context_basis = " ".join([lead_title, desc, " ".join(details)])
-    article_body.append(_sentence(_topic_stakes_sentence(context_basis, lang=lang)))
+    article_body.append(_sentence(_topic_stakes_sentence(
+        context_basis,
+        lang=lang,
+        topic=lead.get("topic") or "",
+        category=lead.get("category") or "",
+    )))
 
     source_paragraph_parts = []
     existing_text = " ".join(article_body)
@@ -1410,6 +1419,33 @@ def generate_local_placeholder(cluster_id, title, category="vesti"):
 
     # 1. Deterministic seed from cluster_id
     seed = int(hashlib.md5(str(cluster_id).encode()).hexdigest(), 16)
+    category_raw = str(category or "vesti")
+    category_l = category_raw.casefold()
+    title = str(title or "Presek")
+
+    if any(token in category_l for token in ("sport", "спорт", "fudbal", "фудбал")):
+        category_key = "Sport"
+    elif any(token in category_l for token in ("ekonom", "економ", "biznis", "бизнис", "finans", "финанс")):
+        category_key = "Ekonomija"
+    elif any(token in category_l for token in ("tehnolog", "технолог", "nauka", "наука", "digital", "дигитал")):
+        category_key = "Tehnologija"
+    elif any(token in category_l for token in ("kultur", "култур", "zabava", "забава", "film", "филм")):
+        category_key = "Zabava"
+    elif any(token in category_l for token in ("hronika", "хроника", "policija", "полиција", "sud", "суд")):
+        category_key = "Hronika"
+    elif any(token in category_l for token in ("makedon", "македон")):
+        category_key = "Makedonija"
+    elif any(token in category_l for token in ("srb", "срб")):
+        category_key = "Srbija"
+    elif any(token in category_l for token in ("evrop", "европ", "eu")):
+        category_key = "Evropa"
+    elif any(token in category_l for token in ("svet", "свет", "world", "global")):
+        category_key = "Svet"
+    else:
+        category_key = category_raw if category_raw in {
+            "Srbija", "Makedonija", "Balkan", "Evropa", "Amerika", "Svet",
+            "Sport", "Tehnologija", "Ekonomija", "Hronika", "Zabava",
+        } else "default"
 
     # 2. Professional Category Palettes (Primary, Deep, Accent)
     palettes = {
@@ -1427,7 +1463,7 @@ def generate_local_placeholder(cluster_id, title, category="vesti"):
         "default": ["#2d3748", "#1a202c", "#718096"],
     }
 
-    colors = palettes.get(category, palettes["default"])
+    colors = palettes.get(category_key, palettes["default"])
     c1, c2, c3 = colors
 
     # 3. Deterministic Geometric Shifts
@@ -1508,7 +1544,7 @@ def generate_local_placeholder(cluster_id, title, category="vesti"):
             # Branding
             '<rect x="40" y="385" width="120" height="2" fill="white" opacity="0.3" />',
             '<text x="40" y="415" font-family="sans-serif" font-size="16" font-weight="900" fill="white" opacity="0.6" letter-spacing="4">PRESEK</text>',
-            f'<text x="760" y="415" text-anchor="end" font-family="sans-serif" font-size="12" font-weight="700" fill="white" opacity="0.4" letter-spacing="1">{category.upper()}</text>',
+            f'<text x="760" y="415" text-anchor="end" font-family="sans-serif" font-size="12" font-weight="700" fill="white" opacity="0.4" letter-spacing="1">{category_key.upper()}</text>',
             "</svg>",
         ]
     )

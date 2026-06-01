@@ -316,7 +316,7 @@ function getFirstArticle(cluster: NewsCluster | null) {
     })[0];
 }
 
-const leadUniqueSources = leadCluster ? new Set(leadCluster.articles.map((article) => article.source).filter(Boolean)).size : 0;
+const leadUniqueSources = leadCluster ? Number((leadCluster as any).sources_count || (leadCluster as any).source_count || new Set(leadCluster.articles.map((article) => article.source).filter(Boolean)).size) : 0;
 const leadFirstArticle = getFirstArticle(leadCluster);
 const leadLatestArticle = leadCluster?.articles?.[0] || null;
 const leadSignals = Array.from(new Set([
@@ -393,7 +393,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 		: t('layout.home_description')}
     image={leadVisual?.proxiedUrl || undefined}
 >
-    <NYTHeader q={q} category={category} topic={topic} entity={entity} subcategory={subcategory} stats={stats} />
+    <NYTHeader q={q} category={category} topic={topic} entity={entity} subcategory={subcategory} stats={stats} latestTickerItems={topWireArticles} />
 
 	<main class="site-layout broadsheet-layout py-0 overflow-x-hidden max-w-full" data-testid="news-feed">
 

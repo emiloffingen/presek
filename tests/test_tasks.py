@@ -3,7 +3,12 @@ import json
 from unittest.mock import patch
 
 import tasks
-from tasks.intelligence import _polish_generated_article, _sanitize_synthesis_outputs, _split_cluster_merge_score
+from tasks.intelligence import (
+    _langs_for_cluster_articles,
+    _polish_generated_article,
+    _sanitize_synthesis_outputs,
+    _split_cluster_merge_score,
+)
 
 
 class TestBackfillCoverArtTask:
@@ -251,6 +256,23 @@ class TestRepairSplitClustersTask:
 
 
 class TestSynthesizeClusterTaskQuality:
+    def test_cluster_synthesis_languages_follow_article_countries(self):
+        assert _langs_for_cluster_articles([{"country": "MK"}, {"country": "MK"}]) == ["mk"]
+        assert _langs_for_cluster_articles([{"country": "RS"}]) == ["sr"]
+        assert _langs_for_cluster_articles([{"country": "RS"}, {"country": "MK"}]) == ["sr", "mk"]
+
+    def test_backfill_filters_clusters_and_articles_by_language_country(self):
+        from tasks.intelligence import backfill_cluster_summaries_task
+
+        with patch("core.database.db_manager") as mock_db:
+            mock_db.execute.return_value = []
+
+            backfill_cluster_summaries_task(days=2, lang="sr")
+
+        query, params = mock_db.execute.call_args.args
+        assert "a.country = %s" in query
+        assert params == ("RS", 2, "sr")
+
     def test_normalizes_ai_summary_and_perspectives_before_store(self):
 
         article_rows = [

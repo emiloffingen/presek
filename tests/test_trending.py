@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from core.trending import extract_words_with_flags
 
 
@@ -71,10 +73,47 @@ class TestExtractWordsWithFlags:
         # "nato" should be extracted (4 chars, meets MIN_WORD_LEN)
         assert "nato" in words or len(words) >= 1
 
-    def test_get_trending_rs(self):
+    def test_get_trending_rs(self, monkeypatch):
         from core.trending import get_trending
+
+        rows = [
+            {
+                "title": "Dačić razgovarao sa Trampom o Srbiji",
+                "created_at": datetime.now(),
+                "cluster_id": "1",
+                "category": "Politika",
+            },
+            {
+                "title": "Dačić i Tramp razgovarali o Srbiji",
+                "created_at": datetime.now(),
+                "cluster_id": "1",
+                "category": "Svet",
+            },
+            {
+                "title": "Zbog odluke bilo reakcija u Srbiji i Србије",
+                "created_at": datetime.now(),
+                "cluster_id": "2",
+                "category": "Srbija",
+            },
+        ]
+
+        class FakeCursor:
+            def fetchall(self):
+                return rows
+
+        class FakeDb:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                return None
+
+            def execute(self, sql, params=None):
+                return FakeCursor()
+
+        monkeypatch.setattr("core.trending.database.get_db", lambda: FakeDb())
+
         trends = get_trending(country="RS")
-        assert len(trends) == 10
-        assert trends[0]["word"] == "Srbiji"
-        assert trends[1]["word"] == "Srbije"
-        assert trends[9]["word"] == "Odluka"
+        words = {item["word"] for item in trends}
+        assert {"Dačić", "Tramp"} <= words
+        assert {"Srbija", "Srbiji", "Srbije", "Srbima", "Србије", "Zbog", "Bilo", "Odluka"}.isdisjoint(words)

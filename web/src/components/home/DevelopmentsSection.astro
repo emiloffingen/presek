@@ -18,7 +18,7 @@ const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
 
 function getBentoSpan(cluster: NewsCluster) {
-    const count = cluster.articles?.length || 0;
+    const count = Number((cluster as any).sources_count || (cluster as any).source_count || cluster.articles?.length || 0);
     const importanceScore = cluster.importance_score || 0;
     if (count >= 6 || importanceScore > 0.85) return '2x2';
     if (count >= 4 || importanceScore > 0.65) return '2x1';

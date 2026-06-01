@@ -21,6 +21,7 @@ type HomepageSectionsInput = {
 
 function toForYouCluster(cluster: NewsCluster) {
     const article = cluster.articles?.[0] || {};
+    const sourceCount = Number((cluster as any).sources_count || (cluster as any).source_count || cluster.articles?.length || 0);
     return {
         cluster_id: cluster.cluster_id,
         is_breaking: cluster.is_breaking,
@@ -34,14 +35,15 @@ function toForYouCluster(cluster: NewsCluster) {
             description: article.description,
             category: article.category,
         }],
-        sources_count: cluster.articles?.length || 0,
+        sources_count: sourceCount,
     };
 }
 
 function clusterTrendScore(cluster: NewsCluster) {
+    const sourceCount = Number((cluster as any).sources_count || (cluster as any).source_count || cluster.articles?.length || 0);
     return Number(cluster.homepage_score || 0)
         + (cluster.is_breaking ? 100 : 0)
-        + Math.min(cluster.articles?.length || 0, 8) * 5;
+        + Math.min(sourceCount, 8) * 5;
 }
 
 function sortByNewestArticle(left: WireArticle, right: WireArticle) {

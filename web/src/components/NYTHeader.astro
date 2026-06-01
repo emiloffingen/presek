@@ -16,9 +16,10 @@ interface Props {
     subcategory?: string | null;
     q?: string | null;
     stats?: any | null;
+    latestTickerItems?: any[];
 }
 
-const { category, topic, entity, subcategory, q, stats: propStats } = Astro.props;
+const { category, topic, entity, subcategory, q, stats: propStats, latestTickerItems: propLatestTickerItems = [] } = Astro.props;
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
@@ -44,7 +45,15 @@ interface NavItem {
 
 let navigationData: { breaking: NavItem[]; sections: any[] } = { breaking: [], sections: [] };
 let stats = propStats;
-let latestTickerItems: any[] = [];
+let latestTickerItems: any[] = (Array.isArray(propLatestTickerItems) ? propLatestTickerItems : [])
+    .map((article: any) => ({
+        label: article?.display_title || article?.title || t('header.latest'),
+        href: `${l('/cluster/')}${article?.cluster_id}`,
+        type: 'latest',
+        created_at: article?.ingested_at || article?.created_at || null,
+    }))
+    .filter((item: any) => item.href && item.label)
+    .slice(0, 6);
 
 try {
     const requests = [fetch(`${API_URL}/navigation?lang=${lang}`)];
@@ -61,7 +70,7 @@ try {
         stats = await results[1].value.json();
     }
 
-    if (!navigationData.breaking.length) {
+    if (!navigationData.breaking.length && latestTickerItems.length === 0) {
         const latestRes = await fetch(`${API_URL}/news?page_size=8&sort=recent&lang=${lang}`);
         if (latestRes.ok) {
             const latestData = await latestRes.json();
@@ -172,7 +181,7 @@ function getRelativeTimeStr(dateStr?: string) {
         <div class="topbar-main">
             <div class="topbar-left-stack">
                 <div class="search-entry-wrap">
-                    <SearchIsland initialQuery={q} client:load lang={lang} />
+                    <SearchIsland initialQuery={q} client:idle lang={lang} />
                 </div>
             </div>
 
@@ -187,7 +196,7 @@ function getRelativeTimeStr(dateStr?: string) {
                     <a href={l('/for-you')} class="user-action-link">{t('nav.for_you') || 'FOR YOU'}</a>
                     <ScriptSwitcher />
                     <ThemeIsland client:idle />
-                    <TextScaleIsland client:load />
+                    <TextScaleIsland client:idle />
                 </div>
             </div>
         </div>

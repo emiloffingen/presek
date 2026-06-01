@@ -73,7 +73,7 @@ const IconComponent =
 const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
 
 const consensusSuffix = (() => {
-    const count = leadCluster.articles.length;
+    const count = Number((leadCluster as any).sources_count || (leadCluster as any).source_count || leadCluster.articles.length);
     if (lang === 'sr') {
         if (count === 1) return t('lead.consensus_suffix_1');
         if (count >= 2 && count <= 4) return t('lead.consensus_suffix_2_4');
@@ -153,7 +153,7 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
         <div class="lead-edition-bar" role="note" aria-label={t('lead.narrative_kicker')}>
             <span class="lead-edition-label">{t('lead.narrative_kicker')}</span>
             <span class="lead-edition-note">
-                {t('lead.consensus_prefix')} {leadCluster.articles.length} {consensusSuffix}
+                {t('lead.consensus_prefix')} {Number((leadCluster as any).sources_count || (leadCluster as any).source_count || leadCluster.articles.length)} {consensusSuffix}
             </span>
         </div>
         <div class="lead-kicker-v2 mb-4">

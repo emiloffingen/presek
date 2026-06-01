@@ -29,6 +29,24 @@ from tasks.utils import (
 from utils import get_dominant_color
 
 SUPPORTED_LANGS = ["sr", "mk"]
+COUNTRY_LANG = {"RS": "sr", "MK": "mk"}
+
+STRONG_IMAGE_SQL_FILTER = """
+    image_url IS NOT NULL
+    AND image_url NOT LIKE '%%placeholder%%'
+    AND image_url NOT LIKE '%%default%%'
+    AND image_url NOT LIKE '%%.svg'
+    AND image_url NOT LIKE '%%logo%%'
+    AND image_url NOT LIKE '%%emblem%%'
+    AND image_url NOT LIKE '%%avatar%%'
+    AND image_url NOT LIKE '%%icon%%'
+    AND image_url NOT LIKE '%%favicon%%'
+    AND image_url NOT LIKE '%%sprite%%'
+    AND image_url NOT LIKE '%%banner%%'
+    AND image_url NOT LIKE '%%social%%'
+    AND image_url NOT LIKE '%%fallback%%'
+    AND image_url NOT LIKE '%%no-image%%'
+"""
 import datetime
 import json
 import os
@@ -148,9 +166,19 @@ def summarize_article_task(article_id, final_title=None):
 
 def _load_cluster_articles_for_synthesis(cluster_id):
     return db.execute(
-        "SELECT title, description, summary, full_content, source, link, created_at, category, topic, embedding FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 8",
+        "SELECT title, description, summary, full_content, source, link, created_at, category, topic, country, embedding FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 8",
         (cluster_id,),
     )
+
+
+def _langs_for_cluster_articles(article_rows):
+    countries = {
+        str(row.get("country") or "").upper()
+        for row in (article_rows or [])
+        if str(row.get("country") or "").strip()
+    }
+    langs = [COUNTRY_LANG[country] for country in ("RS", "MK") if country in countries]
+    return langs or ["sr"]
 
 
 def _build_cluster_synthesis_content(article_rows):
@@ -551,8 +579,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
     """Generates a multi-perspective synthesis for a cluster with historical continuity."""
     article_rows = _load_cluster_articles_for_synthesis(cluster_id)
     citation_sources = _build_citation_sources(article_rows)
-    # We pass the default 'sr' here, but it will be overridden inside the lang loop if needed
-    # Actually, it's better to build it inside the loop for each language
+    target_langs = _langs_for_cluster_articles(article_rows)
     source_context_sr = _build_synthesis_source_context(article_rows, lang="sr")
     source_context_mk = _build_synthesis_source_context(article_rows, lang="mk")
 
@@ -612,7 +639,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
     }
     shared_computed = False
 
-    for lang in SUPPORTED_LANGS:
+    for lang in target_langs:
         try:
             log.info(f"Generating synthesis for cluster {cluster_id} in {lang}")
             prompt_parts = []
@@ -1066,7 +1093,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
 
         # Improved image logic: if no image or ONLY weak visuals exist, generate art
         strong_img = db.execute_one(
-            "SELECT 1 FROM articles WHERE cluster_id = %s AND image_url IS NOT NULL AND image_url NOT LIKE '%%placeholder%%' LIMIT 1",
+            f"SELECT 1 FROM articles WHERE cluster_id = %s AND {STRONG_IMAGE_SQL_FILTER} LIMIT 1",
             (cluster_id,),
         )
         if not strong_img:
@@ -1281,6 +1308,15 @@ def generate_cluster_metadata_task(hours=24, target_clusters=None):
                   AND image_url NOT LIKE '%%default%%'
                   AND image_url NOT LIKE '%%.svg'
                   AND image_url NOT LIKE '%%logo%%'
+                  AND image_url NOT LIKE '%%emblem%%'
+                  AND image_url NOT LIKE '%%avatar%%'
+                  AND image_url NOT LIKE '%%icon%%'
+                  AND image_url NOT LIKE '%%favicon%%'
+                  AND image_url NOT LIKE '%%sprite%%'
+                  AND image_url NOT LIKE '%%banner%%'
+                  AND image_url NOT LIKE '%%social%%'
+                  AND image_url NOT LIKE '%%fallback%%'
+                  AND image_url NOT LIKE '%%no-image%%'
                 ORDER BY
                     (
                         CASE WHEN image_url ~* '(thumb|thumbnail|sprite|logo|icon|avatar|favicon|pixel|small|social)' THEN -15 ELSE 0 END +
@@ -1934,19 +1970,22 @@ def backfill_cluster_summaries_task(days=30, lang="sr"):
         from core.config import AUTO_SUMMARIZE_MIN_SRC
         from core.database import db_manager as db
 
+        target_country = "MK" if lang == "mk" else "RS"
+
         # Get all clusters with articles but no summaries
         rows = db.execute(
             """
             SELECT DISTINCT a.cluster_id
             FROM articles a
             WHERE a.cluster_id IS NOT NULL
+            AND a.country = %s
             AND a.created_at >= NOW() - make_interval(days => %s)
             AND NOT EXISTS (
                 SELECT 1 FROM cluster_summaries cs
                 WHERE cs.cluster_id = a.cluster_id AND cs.lang = %s
             )
             """,
-            (days, lang),
+            (target_country, days, lang),
         )
 
         if not rows:
@@ -1960,8 +1999,8 @@ def backfill_cluster_summaries_task(days=30, lang="sr"):
             try:
                 # Check if this cluster has enough sources
                 src_rows = db.execute(
-                    "SELECT DISTINCT source FROM articles WHERE cluster_id = %s",
-                    (cluster_id,),
+                    "SELECT DISTINCT source FROM articles WHERE cluster_id = %s AND country = %s",
+                    (cluster_id, target_country),
                 )
 
                 if len(src_rows) < AUTO_SUMMARIZE_MIN_SRC:
@@ -1970,8 +2009,8 @@ def backfill_cluster_summaries_task(days=30, lang="sr"):
 
                 # Load articles for this cluster
                 article_rows = db.execute(
-                    "SELECT * FROM articles WHERE cluster_id = %s ORDER BY created_at ASC",
-                    (cluster_id,),
+                    "SELECT * FROM articles WHERE cluster_id = %s AND country = %s ORDER BY created_at ASC",
+                    (cluster_id, target_country),
                 )
 
                 if not article_rows:

@@ -289,7 +289,7 @@ const organizationSchema = {
 							.filter(href => href && (href.startsWith('/cluster/') || href.startsWith('/mk/cluster/')))
 							.map(href => new URL(href, window.location.origin).pathname);
 						
-						const uniqueUrls = [...new Set(clusterUrls)].slice(0, 12);
+						const uniqueUrls = [...new Set(clusterUrls)].slice(0, 8);
 						if (uniqueUrls.length > 0) {
 							navigator.serviceWorker.controller.postMessage({
 								type: 'PREFETCH_URLS',
@@ -300,19 +300,35 @@ const organizationSchema = {
 				};
 
 				// Trigger on initial page load and all subsequent Astro client-side page transitions
-				document.addEventListener('astro:page-load', dispatchPrefetch);
+				const schedulePrefetch = () => {
+					const idle = window.requestIdleCallback || ((cb) => window.setTimeout(cb, 1500));
+					idle(dispatchPrefetch, { timeout: 4000 });
+				};
+				document.addEventListener('astro:page-load', schedulePrefetch);
 			}
 
 			// Parallax Effect for Hero Images
 			function initParallax() {
 				if (window.innerWidth < 1024) return;
+				const parallaxEls = Array.from(document.querySelectorAll('.lead-media-image, .cluster-visual-image'));
+				if (parallaxEls.length === 0) return;
+				let ticking = false;
 				const handleScroll = () => {
-					const scrolled = window.scrollY;
-					document.querySelectorAll('.lead-media-image, .cluster-visual-image').forEach(el => {
-						const speed = 0.15;
-						el.style.setProperty('--parallax-y', `${scrolled * speed}px`);
+					if (ticking) return;
+					ticking = true;
+					window.requestAnimationFrame(() => {
+						const scrolled = window.scrollY;
+						for (const el of parallaxEls) {
+							el.style.setProperty('--parallax-y', `${scrolled * 0.15}px`);
+						}
+						ticking = false;
 					});
 				};
+				const parallaxWindow = window as Window & { _presekParallaxHandler?: (event: Event) => void };
+				if (parallaxWindow._presekParallaxHandler) {
+					window.removeEventListener('scroll', parallaxWindow._presekParallaxHandler);
+				}
+				parallaxWindow._presekParallaxHandler = handleScroll;
 				window.addEventListener('scroll', handleScroll, { passive: true });
 			}
 			initParallax();
@@ -322,6 +338,10 @@ const organizationSchema = {
 		<script>
 			// Global Headline Reveal Animation
 			const initHeadlineReveal = () => {
+				const headlineWindow = window as Window & { _presekHeadlineObserver?: IntersectionObserver };
+				if (headlineWindow._presekHeadlineObserver) {
+					headlineWindow._presekHeadlineObserver.disconnect();
+				}
 				const observer = new IntersectionObserver((entries) => {
 					entries.forEach(entry => {
 						if (entry.isIntersecting) {
@@ -333,6 +353,7 @@ const organizationSchema = {
 				document.querySelectorAll('.headline, .editorial-headline, .lead-media-frame').forEach(el => {
 					observer.observe(el);
 				});
+				headlineWindow._presekHeadlineObserver = observer;
 			};
 
 			document.addEventListener('astro:page-load', initHeadlineReveal);
@@ -340,15 +361,26 @@ const organizationSchema = {
 
 			// Interactive Spotlight Hover Effect
 			const initSpotlight = () => {
+					const targets = Array.from(document.querySelectorAll('.premium-spotlight'));
+					if (targets.length === 0 || window.matchMedia('(pointer: coarse)').matches) return;
+					let pendingEvent: MouseEvent | null = null;
+					let ticking = false;
 					const handleMouseMove = (e: MouseEvent) => {
-						for (const target of document.querySelectorAll('.premium-spotlight')) {
-							const spotlightTarget = target as HTMLElement;
-							const rect = target.getBoundingClientRect();
-							const x = e.clientX - rect.left;
-							const y = e.clientY - rect.top;
-							spotlightTarget.style.setProperty('--mouse-x', `${x}px`);
-							spotlightTarget.style.setProperty('--mouse-y', `${y}px`);
-						}
+						pendingEvent = e;
+						if (ticking) return;
+						ticking = true;
+						window.requestAnimationFrame(() => {
+							if (!pendingEvent) return;
+							for (const target of targets) {
+								const spotlightTarget = target as HTMLElement;
+								const rect = target.getBoundingClientRect();
+								const x = pendingEvent.clientX - rect.left;
+								const y = pendingEvent.clientY - rect.top;
+								spotlightTarget.style.setProperty('--mouse-x', `${x}px`);
+								spotlightTarget.style.setProperty('--mouse-y', `${y}px`);
+							}
+							ticking = false;
+						});
 					};
 					const spotlightWindow = window as Window & { _spotlightHandler?: (event: MouseEvent) => void };
 					if (spotlightWindow._spotlightHandler) {

@@ -399,6 +399,36 @@ class TestClusterComparison:
         text_lower = result["generated_article"].lower()
         assert text_lower.count("zamrznuvanje na cenite") == 1
 
+    def test_synthesize_cluster_fallback_does_not_insert_sports_context_for_economy(self):
+        from nlp.generation import synthesize_cluster_fallback
+
+        articles = [
+            {
+                "source": "Kurir.mk",
+                "title": "Девизните резерви 5,2 милијарди евра",
+                "description": (
+                    "Девизни резерви на крајот на април годинава изнесувале 5.207 милиони евра. "
+                    "Најголем дел се пласирани во хартии од вредност."
+                ),
+                "category": "Makedonija",
+                "topic": "Ekonomija",
+                "country": "MK",
+            },
+            {
+                "source": "Nezavisen.mk",
+                "title": "Девизните резерви 5,2 милијарди евра",
+                "description": "Податоците на Народната банка покажуваат раст на резервите.",
+                "category": "Makedonija",
+                "topic": "Ekonomija",
+                "country": "MK",
+            },
+        ]
+
+        result = synthesize_cluster_fallback(articles, lang="mk")
+
+        assert "Спортското значење" not in result["generated_article"]
+        assert "резерв" in result["generated_article"].lower()
+
 
 
 class TestArticleSummaryFallback:

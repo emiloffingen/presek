@@ -522,6 +522,44 @@ def sync_call_ai(
 
 
 
+def _escape_json_string_control_chars(text: str) -> str:
+    """Escape raw control characters that providers sometimes emit inside JSON strings."""
+    result: list[str] = []
+    in_string = False
+    escaped = False
+
+    for char in text:
+        if escaped:
+            result.append(char)
+            escaped = False
+            continue
+
+        if char == "\\" and in_string:
+            result.append(char)
+            escaped = True
+            continue
+
+        if char == '"':
+            in_string = not in_string
+            result.append(char)
+            continue
+
+        if in_string and ord(char) < 0x20:
+            if char == "\n":
+                result.append("\\n")
+            elif char == "\r":
+                result.append("\\r")
+            elif char == "\t":
+                result.append("\\t")
+            else:
+                result.append(f"\\u{ord(char):04x}")
+            continue
+
+        result.append(char)
+
+    return "".join(result)
+
+
 def clean_json_response(text: str) -> dict | str | None:
     if text is None or not isinstance(text, str):
         return ""
@@ -534,9 +572,18 @@ def clean_json_response(text: str) -> dict | str | None:
     text = re.sub(r"\s*```$", "", text)
     text = text.strip()
 
+    def _parse_json(candidate: str):
+        try:
+            return json.loads(candidate)
+        except json.JSONDecodeError:
+            repaired = _escape_json_string_control_chars(candidate)
+            if repaired != candidate:
+                return json.loads(repaired)
+            raise
+
     # 2. Try direct JSON parse
     try:
-        data = json.loads(text)
+        data = _parse_json(text)
         if isinstance(data, dict):
             # If it's the expected structure, return it
             if "answer" in data:
@@ -576,7 +623,7 @@ def clean_json_response(text: str) -> dict | str | None:
         last = text.rfind("}")
         if first != -1 and last > first:
             candidate = text[first : last + 1]
-            data = json.loads(candidate)
+            data = _parse_json(candidate)
             if isinstance(data, dict):
                 if "answer" in data:
                     return data

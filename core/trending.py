@@ -278,6 +278,45 @@ STOPWORDS = {
     "alfa",
     # Serbian / Bosnian overlap
     "nije",
+    "bilo",
+    "zbog",
+    "odluka",
+    "odluke",
+    "odluku",
+    "dana",
+    "sada",
+    "sad",
+    "moze",
+    "mogu",
+    "mora",
+    "moraju",
+    "treba",
+    "razgovarao",
+    "razgovarali",
+    "razgovarala",
+    "razgovor",
+    "reakcija",
+    "reakcije",
+    "zasto",
+    "zašto",
+    "nego",
+    "posle",
+    "poslije",
+    "godina",
+    "godine",
+    "godinu",
+    "miliona",
+    "oglasio",
+    "oglasila",
+    "oglasili",
+    "nakon",
+    "tokom",
+    "prema",
+    "među",
+    "oko",
+    "sve",
+    "svih",
+    "svima",
     "koji",
     "koja",
     "koje",
@@ -374,20 +413,6 @@ def get_trending(hours: int = 12, limit: int = MAX_RESULTS, country: str = "RS")
     """
     Count word frequency in recent article titles with momentum and velocity calculation.
     """
-    if country == "RS":
-        return [
-            {"word": "Srbiji", "count": 100, "score": 100.0, "trend": "↑", "is_breaking": False, "categories": ["Srbija"]},
-            {"word": "Srbije", "count": 95, "score": 95.0, "trend": "↑", "is_breaking": False, "categories": ["Srbija"]},
-            {"word": "Rumuniji", "count": 90, "score": 90.0, "trend": "↑", "is_breaking": False, "categories": ["Svet"]},
-            {"word": "Dačić", "count": 85, "score": 85.0, "trend": "↑", "is_breaking": False, "categories": ["Politika"]},
-            {"word": "Srbima", "count": 80, "score": 80.0, "trend": "↑", "is_breaking": False, "categories": ["Srbija"]},
-            {"word": "Zbog", "count": 75, "score": 75.0, "trend": "↑", "is_breaking": False, "categories": ["Vesti"]},
-            {"word": "Rusije", "count": 70, "score": 70.0, "trend": "↑", "is_breaking": False, "categories": ["Svet"]},
-            {"word": "Tramp", "count": 65, "score": 65.0, "trend": "↑", "is_breaking": False, "categories": ["Svet"]},
-            {"word": "Bilo", "count": 60, "score": 60.0, "trend": "↑", "is_breaking": False, "categories": ["Vesti"]},
-            {"word": "Odluka", "count": 55, "score": 55.0, "trend": "↑", "is_breaking": False, "categories": ["Politika"]},
-        ][:limit]
-
     try:
         with database.get_db() as conn:
             cutoff = datetime.now() - timedelta(hours=hours)
@@ -402,6 +427,8 @@ def get_trending(hours: int = 12, limit: int = MAX_RESULTS, country: str = "RS")
 
     if not rows:
         return []
+
+    from core.language import transliterate_cyr_to_lat
 
     now = datetime.now()
     # Velocity windows:
@@ -441,12 +468,23 @@ def get_trending(hours: int = 12, limit: int = MAX_RESULTS, country: str = "RS")
         cat = row.get("category", "vesti")
 
         for word, is_proper in pairs:
+            word_latin = transliterate_cyr_to_lat(word).lower()
+            word_key = (
+                word_latin.replace("ć", "c")
+                .replace("č", "c")
+                .replace("š", "s")
+                .replace("ž", "z")
+                .replace("đ", "d")
+                .replace("ќ", "c")
+            )
             # Basic normalization for common entities
             normalization = {
                 "iran": "iran",
                 "iranski": "iran",
                 "trump": "tramp",
                 "trampa": "tramp",
+                "trampu": "tramp",
+                "trampom": "tramp",
                 "putin": "putin",
                 "putina": "putin",
                 "biden": "bajden",
@@ -463,7 +501,18 @@ def get_trending(hours: int = 12, limit: int = MAX_RESULTS, country: str = "RS")
                 "ukraina": "ukraina",
                 "russia": "rusija",
                 "rusija": "rusija",
-                "Srbija": "Srbija",
+                "rusije": "rusija",
+                "rusiji": "rusija",
+                "rusiju": "rusija",
+                "srbiji": "srbija",
+                "srbije": "srbija",
+                "srbiju": "srbija",
+                "srbima": "srbija",
+                "srbija": "srbija",
+                "rumuniji": "rumunija",
+                "rumunije": "rumunija",
+                "rumuniju": "rumunija",
+                "rumunija": "rumunija",
                 "ormuz": "ormuz",
                 "ormuski": "ormuz",
                 "ormutski": "ormuz",
@@ -471,7 +520,9 @@ def get_trending(hours: int = 12, limit: int = MAX_RESULTS, country: str = "RS")
                 "ormutskiot": "ormuz",
                 "tesnece": "tesnec",
             }
-            word = normalization.get(word, word)
+            word = normalization.get(word_latin, normalization.get(word_key, word_latin))
+            if country == "RS" and word == "srbija":
+                continue
 
             noun_bonus = PROPER_NOUN_BONUS if is_proper else 1.0
 

@@ -146,6 +146,15 @@ function normalizeText(value?: string | null) {
   return String(value || '').toLowerCase();
 }
 
+function fallbackContext(cluster: ClusterLike) {
+  const primary = cluster?.articles?.[0] || {};
+  return {
+    cid: cluster?.cluster_id || '',
+    title: cluster?.synthetic_headline || primary.title || cluster?.synthetic_standfirst || '',
+    category: primary.category || primary.topic || cluster?.topics?.[0] || cluster?.tags?.[0] || 'vesti',
+  };
+}
+
 function getFallbackKind(cluster: ClusterLike): FallbackKind {
   const primary = cluster?.articles?.[0] || {};
   const haystack = [
@@ -185,9 +194,16 @@ function getFallbackKind(cluster: ClusterLike): FallbackKind {
 
 export function getFallbackImage(cluster: ClusterLike) {
   const kind = getFallbackKind(cluster);
+  const context = fallbackContext(cluster);
+  const params = new URLSearchParams();
+  if (context.cid) params.set('cid', context.cid);
+  if (context.title) params.set('t', context.title);
+  if (context.category) params.set('cat', context.category);
+
   return {
     kind,
     src: FALLBACK_ART[kind],
+    smartSrc: `/proxy?${params.toString()}`,
   };
 }
 
@@ -218,10 +234,7 @@ export function chooseClusterImage(cluster: ClusterLike, variant: ImageVariant =
   const isWeak = isWeakVisual(chosen);
   const fallback = getFallbackImage(cluster);
 
-  // Better fallback context for smart placeholders
-  const cid = cluster?.cluster_id || '';
-  const title = articles[0]?.title || '';
-  const cat = articles[0]?.category || '';
+  const context = fallbackContext(cluster);
 
   let proxiedUrl = null;
   if (chosen) {
@@ -229,17 +242,18 @@ export function chooseClusterImage(cluster: ClusterLike, variant: ImageVariant =
       url: chosen,
       w: width.toString()
     });
-    if (cid) params.set('cid', cid);
-    if (title) params.set('t', title);
-    if (cat) params.set('cat', cat);
+    if (context.cid) params.set('cid', context.cid);
+    if (context.title) params.set('t', context.title);
+    if (context.category) params.set('cat', context.category);
     proxiedUrl = `/proxy?${params.toString()}`;
   }
 
   return {
     rawUrl: chosen || null,
-    proxiedUrl: isWeak ? fallback.src : proxiedUrl,
+    proxiedUrl: isWeak ? fallback.smartSrc : proxiedUrl,
     isWeak,
-    fallbackUrl: fallback.src,
+    fallbackUrl: fallback.smartSrc,
+    staticFallbackUrl: fallback.src,
     fallbackKind: fallback.kind,
   };
 }

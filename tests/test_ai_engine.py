@@ -88,3 +88,10 @@ def test_clean_json_response_deeply_nested():
     res = clean_json_response(text)
     assert isinstance(res, dict)
     assert isinstance(res["perspectives"], list)
+
+
+def test_clean_json_response_repairs_raw_newlines_inside_json_strings():
+    text = '{"summary": "Lead line", "article": "First paragraph.\n\nSecond paragraph.", "suggestions": []}'
+    res = clean_json_response(text)
+    assert isinstance(res, dict)
+    assert res["article"] == "First paragraph.\n\nSecond paragraph."

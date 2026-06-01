@@ -419,6 +419,21 @@ def _decorate_clusters_display(clusters):
     return [_decorate_cluster_display(cluster) for cluster in (clusters or [])]
 
 
+def _compact_home_cluster(cluster, max_articles=4):
+    if not isinstance(cluster, dict):
+        return cluster
+    compact = dict(cluster)
+    articles = list(cluster.get("articles") or [])
+    compact["source_count"] = int(cluster.get("source_count") or len(articles))
+    compact["sources_count"] = int(cluster.get("sources_count") or compact["source_count"])
+    compact["articles"] = articles[:max_articles]
+    return compact
+
+
+def _compact_home_clusters(clusters, max_articles=4):
+    return [_compact_home_cluster(cluster, max_articles=max_articles) for cluster in (clusters or [])]
+
+
 def _normalize_focus_entity_name(name):
     clean = str(name or "").strip()
     if not clean:
@@ -462,8 +477,8 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
     try:
         # Fetch all dependencies in parallel
         results = await asyncio.gather(
-            fetch_news_data(sort="score", page_size=80, lang=lang),
-            fetch_news_data(sort="recent", page_size=24, lang=lang),
+            fetch_news_data(sort="score", page_size=56, lang=lang),
+            fetch_news_data(sort="recent", page_size=20, lang=lang),
             get_trending_route(lang=lang),
             get_top_entities(limit=12, lang=lang),
             get_stats_summary(lang=lang),
@@ -633,15 +648,15 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
 
         response = {
             "status": "success",
-            "lead": _decorate_cluster_display(lead),
+            "lead": _compact_home_cluster(_decorate_cluster_display(lead), max_articles=4),
             "lead_display": _build_lead_display(lead, lang=lang),
-            "supporting": _decorate_clusters_display(supporting),
-            "live_now": _decorate_clusters_display(live_now),
-            "for_you_pool": _decorate_clusters_display(for_you_pool),
-            "developing": _decorate_clusters_display(developing),
-            "wire": _decorate_clusters_display(wire),
+            "supporting": _compact_home_clusters(_decorate_clusters_display(supporting), max_articles=4),
+            "live_now": _compact_home_clusters(_decorate_clusters_display(live_now), max_articles=4),
+            "for_you_pool": _compact_home_clusters(_decorate_clusters_display(for_you_pool), max_articles=3),
+            "developing": _compact_home_clusters(_decorate_clusters_display(developing), max_articles=4),
+            "wire": _compact_home_clusters(_decorate_clusters_display(wire), max_articles=3),
             "latest_wire": _decorate_articles_display(latest_wire),
-            "global": _decorate_clusters_display(global_clusters),
+            "global": _compact_home_clusters(_decorate_clusters_display(global_clusters), max_articles=4),
             "stats": stats,
             "trending": trending if isinstance(trending, list) else [],
             "focus_entities": focus_entities[:10],
