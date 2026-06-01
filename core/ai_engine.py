@@ -246,6 +246,46 @@ class OpenAICompatibleProvider(AIProvider):
 
 
 class LocalProvider(AIProvider):
+    @staticmethod
+    def _local_synthesis_system(lang: str) -> str:
+        if lang == "mk":
+            return (
+                "Ти си главен уредник на Пресек. Напиши премиум уредничка синтеза на стандарден македонски јазик. "
+                "Врати САМО валиден JSON со клучеви: synthetic_headline, synthetic_standfirst, summary, article, "
+                "key_facts, perspectives, verification_report, sentiment, tone_analysis. "
+                "article мора да биде еден string со 6 кратки пасуси разделени со \\n\\n: лид, контекст, длабок слој, "
+                "споредба на извори, верификација, последици/што недостига. "
+                "Пиши како искусен уредник: конкретно, елегантно, аналитички, без AI фрази, без повторување и без измислување. "
+                "summary е листа од 3-4 концизни точки. perspectives е листа од објекти со angle и content. "
+                "key_facts се само проверливи факти. Ако нешто недостига, кажи точно што недостига."
+            )
+        return (
+            "Ti si glavni urednik Preseka. Napiši premium uredničku sintezu na književnom srpskom jeziku, latinica. "
+            "Vrati SAMO validan JSON sa ključevima: synthetic_headline, synthetic_standfirst, summary, article, "
+            "key_facts, perspectives, verification_report, sentiment, tone_analysis. "
+            "article mora biti jedan string sa 6 kratkih pasusa razdvojenih sa \\n\\n: lede, kontekst, dubinski sloj, "
+            "poređenje izvora, verifikacija, posledice/šta nedostaje. "
+            "Piši kao iskusan urednik: konkretno, elegantno, analitički, bez AI fraza, bez ponavljanja i bez izmišljanja. "
+            "summary je lista od 3-4 sažete stavke. perspectives je lista objekata sa angle i content. "
+            "key_facts su samo proverljive činjenice. Ako nešto nedostaje, reci tačno šta nedostaje."
+        )
+
+    @staticmethod
+    def _local_synthesis_prompt(prompt: str, lang: str) -> str:
+        if lang == "mk":
+            instruction = (
+                "Од следниот контекст направи богата, уреднички полирана синтеза. "
+                "Не препишувај извор по извор; спои ги фактите во една јасна приказна. "
+                "Користи [1], [2] само кога конкретна тврдња е врзана за извор."
+            )
+        else:
+            instruction = (
+                "Od sledećeg konteksta napravi bogatu, urednički poliranu sintezu. "
+                "Ne prepisuj izvor po izvor; spoji činjenice u jednu jasnu priču. "
+                "Koristi [1], [2] samo kada je konkretna tvrdnja vezana za izvor."
+            )
+        return f"{instruction}\n\nKONTEKST:\n{prompt}"
+
     async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
         res = self.call(prompt, system, max_tokens, False)
         if res:
@@ -269,7 +309,18 @@ class LocalProvider(AIProvider):
         lowered_system = (system or "").lower()
 
         if "synthesis" in lowered_system or "sintez" in lowered_system or task_type == "synthesis":
-            res = analyst.analyze(prompt, system, max_tokens=max_tokens, lang=lang)
+            if json_mode or response_schema is not None:
+                prompt = self._local_synthesis_prompt(prompt, lang)
+                system = self._local_synthesis_system(lang)
+            res = analyst.analyze(
+                prompt,
+                system,
+                max_tokens=max_tokens,
+                use_grammar=json_mode,
+                lang=lang,
+                response_schema=response_schema,
+                temperature=0.18,
+            )
             if res:
                 return res
             return synthesize_locally([], topic=topic)

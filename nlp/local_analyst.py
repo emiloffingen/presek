@@ -126,6 +126,7 @@ class LocalAnalyst:
         use_grammar: bool = False,
         lang: str = "mk",
         response_schema: Optional[Any] = None,
+        temperature: Optional[float] = None,
     ) -> Optional[str]:
         # Try remote API first if enabled (default True)
         if os.environ.get("USE_REMOTE_ANALYST", "true").lower() == "true":
@@ -216,7 +217,7 @@ class LocalAnalyst:
                 max_tokens=max_tokens,
                 stop=["<end_of_turn>", "<eos>", "###"],
                 echo=False,
-                temperature=0.1,  # Low temperature for analytical consistency
+                temperature=0.1 if temperature is None else temperature,
                 grammar=local_grammar,
             )
             return output["choices"][0]["text"].strip()
