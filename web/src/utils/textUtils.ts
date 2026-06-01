@@ -96,7 +96,12 @@ export function latToCyr(text: string): string {
     if (!text) return '';
     let result = text;
     // Standardize vecer to večer (case-insensitive) to ensure correct transliteration to вечер instead of вецер
-    result = result.replace(/vecer/g, 'večer').replace(/Vecer/g, 'Večer').replace(/VECER/g, 'VEČER');
+    result = result.replace(/vecer/gi, (match) => {
+        if (match === 'VECER') return 'VEČER';
+        if (match === 'Vecer') return 'Večer';
+        if (match[0] === 'V') return 'Večer';
+        return 'večer';
+    });
     
     // Replace multi-char combinations first to avoid character-by-character split issues
     const multiMap: Record<string, string> = {
