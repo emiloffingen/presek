@@ -334,9 +334,15 @@ const primaryNarrativeLabel = lang === 'sr' ? 'PREGLED PRIČE' : 'ПРЕСЕК �
 const primaryNarrativeEyebrow = lang === 'sr' ? 'Šta je potvrđeno, šta nedostaje' : 'Што е потврдено, што недостига';
 const conflictsCount = verificationReport?.conflicts?.length || 0;
 
-const sentimentData = (cluster?.sentiment || cluster?.tone_analysis) ? {
-    sentiment: (cluster.sentiment && 'sentiment' in cluster.sentiment ? cluster.sentiment.sentiment : cluster.sentiment) || { score: 0, tone: 'neutralno' },
-    tone_analysis: cluster.tone_analysis || cluster.sentiment?.tone_analysis || { sensationalism: 0, objectivity: 0, emotional_charge: 0 }
+const isFiniteMetric = (value: unknown) => Number.isFinite(typeof value === 'number' ? value : Number(value));
+const rawToneAnalysis = cluster?.tone_analysis || cluster?.sentiment?.tone_analysis || null;
+const hasToneAnalysis = Boolean(
+    rawToneAnalysis &&
+    (isFiniteMetric(rawToneAnalysis.objectivity) || isFiniteMetric(rawToneAnalysis.sensationalism) || isFiniteMetric(rawToneAnalysis.emotional_charge))
+);
+const sentimentData = hasToneAnalysis ? {
+    sentiment: (cluster?.sentiment && 'sentiment' in cluster.sentiment ? cluster.sentiment.sentiment : cluster?.sentiment) || { score: 0, tone: 'neutralno' },
+    tone_analysis: rawToneAnalysis
 } : null;
 
 const firstArticle = cluster?.articles?.length
@@ -855,11 +861,11 @@ const articleSchema = cluster ? {
 					<aside class="editorial-sidebar-col">
 						<div class="sticky-sidebar space-y-12">
                             {/* NEW: Data Anchors in Sidebar */}
-                            {sentimentData && (
+                            {sentimentData && isFiniteMetric(sentimentData.tone_analysis?.objectivity) && isFiniteMetric(sentimentData.tone_analysis?.sensationalism) && isFiniteMetric(sentimentData.tone_analysis?.emotional_charge) && (
                                 <div class="sidebar-module">
                                     <h4 class="sidebar-label">{t('cluster.media_pulse')}</h4>
                                     <div class="mt-4">
-                                        <MediaPulseRadar data={sentimentData} client:visible />
+                                        <MediaPulseRadar data={sentimentData} lang={lang} client:visible />
                                     </div>
                                 </div>
                             )}

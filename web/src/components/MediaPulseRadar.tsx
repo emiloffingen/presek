@@ -16,9 +16,10 @@ interface SentimentData {
 
 interface Props {
   data: SentimentData;
+  lang?: 'sr' | 'mk';
 }
 
-export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
+export const MediaPulseRadar: React.FC<Props> = ({ data, lang = 'sr' }) => {
   const { tone_analysis, sentiment } = data;
   const [isMounted, setIsMounted] = React.useState(false);
   const [activeTooltip, setActiveTooltip] = React.useState<{x: number, y: number, label: string, value: string} | null>(null);
@@ -28,10 +29,23 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Normalize values to 0-100 for the SVG
-  const sensationalism = Math.min(100, Math.max(0, (tone_analysis?.sensationalism || 0) * 100));
-  const objectivity = Math.min(100, Math.max(0, (tone_analysis?.objectivity || 0) * 100));
-  const emotionalCharge = Math.min(100, Math.max(0, (tone_analysis?.emotional_charge || 0) * 100));
+  const labels = {
+    objectivity: lang === 'mk' ? 'Објективност' : 'Objektivnost',
+    sensationalism: lang === 'mk' ? 'Сензационализам' : 'Senzacionalizam',
+    emotions: lang === 'mk' ? 'Емоции' : 'Emocije',
+    mediaPulse: lang === 'mk' ? 'Медиумски пулс' : 'Medijski puls',
+    tone: lang === 'mk' ? 'Тон' : 'Ton',
+    emotionality: lang === 'mk' ? 'Емоционалност' : 'Emocionalnost',
+    note: lang === 'mk'
+      ? '* оваа анализа е генерирана автоматски преку споредба на јазичните форми и структурата на известување кај сите вклучени медиуми.'
+      : '* ova analiza je generisana automatski kroz poređenje jezičkih formi i strukture izveštavanja kod svih uključenih medija.',
+  };
+
+  // Normalize values to 0-100 for the SVG. The parent only renders this component
+  // when all three metrics are present, so 0 remains a valid real value here.
+  const sensationalism = Math.min(100, Math.max(0, tone_analysis.sensationalism * 100));
+  const objectivity = Math.min(100, Math.max(0, tone_analysis.objectivity * 100));
+  const emotionalCharge = Math.min(100, Math.max(0, tone_analysis.emotional_charge * 100));
 
   // Scale factor for animation
   const scale = isMounted ? 1 : 0.01;
@@ -145,9 +159,9 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
             <line x1="100" y1="100" x2={cx + radius * Math.sin(240 * Math.PI / 180)} y2={cy - radius * Math.cos(240 * Math.PI / 180)} stroke="currentColor" strokeWidth="1.5" className="text-border" />
 
             {/* Labels */}
-            <text x="100" y={cy - radius - 15} textAnchor="middle" className="text-[11px] font-black fill-muted-foreground uppercase tracking-[0.2em]">Objektivnost</text>
-            <text x={cx + radius * Math.sin(120 * Math.PI / 180) + 18} y={cy - radius * Math.cos(120 * Math.PI / 180) + 18} textAnchor="middle" className="text-[11px] font-black fill-muted-foreground uppercase tracking-[0.2em]">Senzacionalizam</text>
-            <text x={cx + radius * Math.sin(240 * Math.PI / 180) - 18} y={cy - radius * Math.cos(240 * Math.PI / 180) + 18} textAnchor="middle" className="text-[11px] font-black fill-muted-foreground uppercase tracking-[0.2em]">Emocije</text>
+            <text x="100" y={cy - radius - 15} textAnchor="middle" className="text-[11px] font-black fill-muted-foreground uppercase tracking-[0.2em]">{labels.objectivity}</text>
+            <text x={cx + radius * Math.sin(120 * Math.PI / 180) + 18} y={cy - radius * Math.cos(120 * Math.PI / 180) + 18} textAnchor="middle" className="text-[11px] font-black fill-muted-foreground uppercase tracking-[0.2em]">{labels.sensationalism}</text>
+            <text x={cx + radius * Math.sin(240 * Math.PI / 180) - 18} y={cy - radius * Math.cos(240 * Math.PI / 180) + 18} textAnchor="middle" className="text-[11px] font-black fill-muted-foreground uppercase tracking-[0.2em]">{labels.emotions}</text>
 
             {/* Radar Scanning Line */}
             <line x1="100" y1="100" x2="100" y2={100 - radius} stroke="var(--nyt-accent)" strokeWidth="1.5" strokeOpacity="0.25" className="radar-sweep-line pointer-events-none" />
@@ -166,11 +180,11 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
             {/* Interactive Points */}
             <g className="cursor-crosshair">
                 <circle cx={x1} cy={y1} r="6" fill="var(--nyt-accent)" className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) stroke-[4px] stroke-background hover:scale-150 hover:stroke-[2px] cursor-pointer"
-                  onMouseEnter={() => setActiveTooltip({x: x1, y: y1, label: 'Objektivnost', value: `${objectivity.toFixed(1)}%`})} onMouseLeave={() => setActiveTooltip(null)} />
+                  onMouseEnter={() => setActiveTooltip({x: x1, y: y1, label: labels.objectivity, value: `${objectivity.toFixed(1)}%`})} onMouseLeave={() => setActiveTooltip(null)} />
                 <circle cx={x2} cy={y2} r="6" fill="var(--nyt-accent)" className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) stroke-[4px] stroke-background hover:scale-150 hover:stroke-[2px] cursor-pointer"
-                  onMouseEnter={() => setActiveTooltip({x: x2, y: y2, label: 'Senzacionalizam', value: `${sensationalism.toFixed(1)}%`})} onMouseLeave={() => setActiveTooltip(null)} />
+                  onMouseEnter={() => setActiveTooltip({x: x2, y: y2, label: labels.sensationalism, value: `${sensationalism.toFixed(1)}%`})} onMouseLeave={() => setActiveTooltip(null)} />
                 <circle cx={x3} cy={y3} r="6" fill="var(--nyt-accent)" className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) stroke-[4px] stroke-background hover:scale-150 hover:stroke-[2px] cursor-pointer"
-                  onMouseEnter={() => setActiveTooltip({x: x3, y: y3, label: 'Emocije', value: `${emotionalCharge.toFixed(1)}%`})} onMouseLeave={() => setActiveTooltip(null)} />
+                  onMouseEnter={() => setActiveTooltip({x: x3, y: y3, label: labels.emotions, value: `${emotionalCharge.toFixed(1)}%`})} onMouseLeave={() => setActiveTooltip(null)} />
             </g>
           </svg>
 
@@ -191,16 +205,16 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
         {/* Text Metrics */}
         <div className="flex-1 w-full space-y-6">
           <div className="text-center md:text-left">
-            <span className="inline-block bg-nyt-accent/10 px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest text-nyt-accent mb-3">Mediumski Puls</span>
+            <span className="inline-block bg-nyt-accent/10 px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest text-nyt-accent mb-3">{labels.mediaPulse}</span>
             <p className="text-2xl font-serif font-black leading-tight text-foreground">
-              Ton: <span className={getSentimentColor(sentiment.score)}>{sentiment.tone}</span>
+              {labels.tone}: <span className={getSentimentColor(sentiment.score)}>{sentiment.tone}</span>
             </p>
           </div>
 
           <div className="flex flex-col gap-4 pt-4 border-t border-border">
             <div className="space-y-1.5 pulse-stat-row">
               <div className="flex justify-between items-end">
-                <span className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.15em]">Objektivnost</span>
+                <span className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.15em]">{labels.objectivity}</span>
                 <span className="text-lg font-black tabular-nums tracking-tighter">{objectivity.toFixed(0)}%</span>
               </div>
               <div className="h-2 w-full bg-secondary/40 rounded-full overflow-hidden border border-border/10 shadow-inner">
@@ -211,7 +225,7 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
             </div>
             <div className="space-y-1.5 pulse-stat-row">
               <div className="flex justify-between items-end">
-                <span className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.15em]">Senzacionalizam</span>
+                <span className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.15em]">{labels.sensationalism}</span>
                 <span className="text-lg font-black tabular-nums tracking-tighter">{sensationalism.toFixed(0)}%</span>
               </div>
               <div className="h-2 w-full bg-secondary/40 rounded-full overflow-hidden border border-border/10 shadow-inner">
@@ -222,7 +236,7 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
             </div>
             <div className="space-y-1.5 pulse-stat-row">
               <div className="flex justify-between items-end">
-                <span className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.15em]">Emocionalnost</span>
+                <span className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.15em]">{labels.emotionality}</span>
                 <span className="text-lg font-black tabular-nums tracking-tighter">{emotionalCharge.toFixed(0)}%</span>
               </div>
               <div className="h-2 w-full bg-secondary/40 rounded-full overflow-hidden border border-border/10 shadow-inner">
@@ -234,7 +248,7 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
           </div>
 
           <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium leading-relaxed italic border-l-2 border-zinc-200 dark:border-zinc-800 pl-3 py-1">
-            * ova analiza e generirana avtomatski preku sporedba na jazicnite formi i strukturata na izvestuvanje kaj site vkluceni mediumi.
+            {labels.note}
           </p>
         </div>
       </div>

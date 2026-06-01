@@ -81,27 +81,42 @@ const displayPerspectives = perspectives
 	.map(normalizePerspective)
 	.filter((p) => p.angle && p.content);
 
-const clampPercent = (value: unknown, fallback: number) => {
+const hasMetric = (value: unknown) => {
 	const numeric = typeof value === 'number' ? value : Number(value);
-	if (!Number.isFinite(numeric)) return fallback;
+	return Number.isFinite(numeric);
+};
+
+const clampPercent = (value: unknown) => {
+	const numeric = typeof value === 'number' ? value : Number(value);
 	return Math.min(100, Math.max(0, Math.round(numeric)));
 };
 
-const objectivityPercent = clampPercent((toneAnalysis?.objectivity ?? 0.5) * 100, 50);
-const pluralismPercent = clampPercent(pluralismScore, 50);
-const pluralismLabel = pluralismPercent >= 70
+const hasPluralismMetric = hasMetric(pluralismScore);
+const hasObjectivityMetric = hasMetric(toneAnalysis?.objectivity);
+const shouldShowSignalCard = hasPluralismMetric || hasObjectivityMetric;
+const objectivityPercent = hasObjectivityMetric ? clampPercent(Number(toneAnalysis?.objectivity) * 100) : null;
+const pluralismPercent = hasPluralismMetric ? clampPercent(pluralismScore) : null;
+const pluralismLabel = pluralismPercent === null ? '' : pluralismPercent >= 70
 	? (lang === 'sr' ? 'visok pluralizam' : 'висок плурализам')
 	: pluralismPercent >= 45
 		? (lang === 'sr' ? 'umeren pluralizam' : 'умерен плурализам')
 		: (lang === 'sr' ? 'nizak pluralizam' : 'низок плурализам');
-const objectivityLabel = objectivityPercent >= 70
+const objectivityLabel = objectivityPercent === null ? '' : objectivityPercent >= 70
 	? (lang === 'sr' ? 'visoka objektivnost' : 'висока објективност')
 	: objectivityPercent >= 45
 		? (lang === 'sr' ? 'umerena objektivnost' : 'умерена објективност')
 		: (lang === 'sr' ? 'niska objektivnost' : 'ниска објективност');
-const signalSummary = lang === 'sr'
-	? `Pokriće pokazuje ${pluralismLabel} i ${objectivityLabel} u uredničkoj obradi.`
-	: `Покриеноста покажува ${pluralismLabel} и ${objectivityLabel} во уредничката обработка.`;
+const signalSummary = pluralismLabel && objectivityLabel
+	? (lang === 'sr'
+		? `Pokriće pokazuje ${pluralismLabel} i ${objectivityLabel} u uredničkoj obradi.`
+		: `Покриеноста покажува ${pluralismLabel} и ${objectivityLabel} во уредничката обработка.`)
+	: pluralismLabel
+		? (lang === 'sr'
+			? `Pokriće pokazuje ${pluralismLabel} u izboru izvora.`
+			: `Покриеноста покажува ${pluralismLabel} во изборот на извори.`)
+		: (lang === 'sr'
+			? `Pokriće pokazuje ${objectivityLabel} u uredničkoj obradi.`
+			: `Покриеноста покажува ${objectivityLabel} во уредничката обработка.`);
 ---
 
 <section class="editorial-section analysis-section mb-10 border-t-2 border-foreground pt-6">
@@ -165,12 +180,14 @@ const signalSummary = lang === 'sr'
 	{displayPerspectives.length > 0 && (
 		<div class="perspectives-area mt-10">
             <div class="analysis-bento-grid">
+                {shouldShowSignalCard && (
                 <div class="media-signal-card">
                     <div class="signal-header">
                         <h5 class="signal-label">{lang === 'sr' ? 'SIGNAL MEDIJSKOG DISKURSA' : 'СИГНАЛ НА МЕДИУМСКИОТ ДИСКУРС'}</h5>
                         <p class="signal-summary">{signalSummary}</p>
                     </div>
                     <div class="signal-metrics">
+                        {pluralismPercent !== null && (
                         <div class="signal-metric">
                             <div class="signal-metric-head">
                                 <span>{lang === 'sr' ? 'Pluralizam izvora' : 'Плурализам на извори'}</span>
@@ -181,6 +198,8 @@ const signalSummary = lang === 'sr'
                             </div>
                             <p>{lang === 'sr' ? 'Koliko se izvori razlikuju u uglu i pokrivenosti.' : 'Колку се разликуваат изворите во аголот и покривањето.'}</p>
                         </div>
+                        )}
+                        {objectivityPercent !== null && (
                         <div class="signal-metric">
                             <div class="signal-metric-head">
                                 <span>{lang === 'sr' ? 'Objektivnost obrade' : 'Објективност на обработка'}</span>
@@ -191,8 +210,10 @@ const signalSummary = lang === 'sr'
                             </div>
                             <p>{lang === 'sr' ? 'Koliko je urednička obrada udaljena od senzacionalizma.' : 'Колку уредничката обработка е оддалечена од сензационализам.'}</p>
                         </div>
+                        )}
                     </div>
                 </div>
+                )}
 
                 <!-- Perspectives Cards -->
                 <div class="perspectives-list-card">
