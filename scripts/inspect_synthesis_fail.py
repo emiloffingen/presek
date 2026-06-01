@@ -9,7 +9,7 @@ from core.prompts import SYNTHESIS_SYSTEM_PROMPT_SR
 from tasks.intelligence import synthesize_cluster_task
 
 async def main():
-    cluster_id = "1e54ebcce23a"
+    cluster_id = "3374b3ae8b5d"
     lang = "sr"
     
     # Get articles
