@@ -23,14 +23,24 @@ def test_serbian_audio_paths_use_new_profile_without_changing_macedonian(monkeyp
     sr_cluster_path, sr_cluster_url = audio_service.AudioService.get_cluster_audio_path_and_url("abc123", "sr")
     mk_cluster_path, mk_cluster_url = audio_service.AudioService.get_cluster_audio_path_and_url("abc123", "mk")
 
-    assert sr_path.endswith("briefing_2026-06-01_sr_v2.mp3")
-    assert sr_url == "/static/uploads/audio/briefing_2026-06-01_sr_v2.mp3"
+    assert sr_path.endswith("briefing_2026-06-01_sr_v3.mp3")
+    assert sr_url == "/static/uploads/audio/briefing_2026-06-01_sr_v3.mp3"
     assert mk_path.endswith("briefing_2026-06-01_mk.mp3")
     assert mk_url == "/static/uploads/audio/briefing_2026-06-01_mk.mp3"
-    assert sr_cluster_path.endswith("cluster_abc123_sr_v2.mp3")
-    assert sr_cluster_url == "/static/uploads/audio/cluster_abc123_sr_v2.mp3"
+    assert sr_cluster_path.endswith("cluster_abc123_sr_v3.mp3")
+    assert sr_cluster_url == "/static/uploads/audio/cluster_abc123_sr_v3.mp3"
     assert mk_cluster_path.endswith("cluster_abc123_mk.mp3")
     assert mk_cluster_url == "/static/uploads/audio/cluster_abc123_mk.mp3"
+
+
+def test_serbian_latin_to_cyrillic_uses_serbian_letters():
+    import core.audio_service as audio_service
+
+    result = audio_service.serbian_latin_to_cyrillic(
+        "Danas: Đoković, Ljubiša, Njegoš, džez, Čačak, ćirilica, šuma, žito."
+    )
+
+    assert result == "Данас: Ђоковић, Љубиша, Његош, џез, Чачак, ћирилица, шума, жито."
 
 
 def test_serbian_edge_failure_falls_back_like_macedonian_without_gtts(monkeypatch, tmp_path):

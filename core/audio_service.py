@@ -65,7 +65,49 @@ def version_audio_url(filepath: str, urlpath: str) -> str:
 
 def audio_profile_suffix(lang: str) -> str:
     """Bump Serbian filenames so previously generated bad SR audio is not reused."""
-    return "_v2" if lang == "sr" else ""
+    return "_v3" if lang == "sr" else ""
+
+
+def serbian_latin_to_cyrillic(text: str) -> str:
+    """Convert Serbian Latin text to Serbian Cyrillic for clearer Serbian TTS."""
+    if not text:
+        return ""
+    if sum(1 for char in text if "\u0400" <= char <= "\u04ff") > 0:
+        return text
+
+    digraphs = {
+        "DŽ": "Џ",
+        "Dž": "Џ",
+        "dž": "џ",
+        "LJ": "Љ",
+        "Lj": "Љ",
+        "lj": "љ",
+        "NJ": "Њ",
+        "Nj": "Њ",
+        "nj": "њ",
+    }
+    singles = {
+        "A": "А", "B": "Б", "C": "Ц", "Č": "Ч", "Ć": "Ћ", "D": "Д", "Đ": "Ђ", "E": "Е",
+        "F": "Ф", "G": "Г", "H": "Х", "I": "И", "J": "Ј", "K": "К", "L": "Л", "M": "М",
+        "N": "Н", "O": "О", "P": "П", "R": "Р", "S": "С", "Š": "Ш", "T": "Т", "U": "У",
+        "V": "В", "Z": "З", "Ž": "Ж",
+        "a": "а", "b": "б", "c": "ц", "č": "ч", "ć": "ћ", "d": "д", "đ": "ђ", "e": "е",
+        "f": "ф", "g": "г", "h": "х", "i": "и", "j": "ј", "k": "к", "l": "л", "m": "м",
+        "n": "н", "o": "о", "p": "п", "r": "р", "s": "с", "š": "ш", "t": "т", "u": "у",
+        "v": "в", "z": "з", "ž": "ж",
+    }
+
+    result = []
+    index = 0
+    while index < len(text):
+        two = text[index:index + 2]
+        if two in digraphs:
+            result.append(digraphs[two])
+            index += 2
+            continue
+        result.append(singles.get(text[index], text[index]))
+        index += 1
+    return "".join(result)
 
 
 class AudioService:
@@ -109,11 +151,12 @@ class AudioService:
             # Map languages to high-quality neural voices
             voice_map = {
                 "mk": "mk-MK-MarijaNeural",
-                "sr": "sr-RS-SophieNeural",
+                "sr": "sr-RS-NicholasNeural",
                 "en": "en-US-AvaNeural"
             }
             
             voice = voice_map.get(lang, "en-US-AvaNeural")
+            speech_text = serbian_latin_to_cyrillic(text) if lang == "sr" else text
             
             # Keep Edge neural voices at their natural cadence. Older Serbian audio
             # was sped up here, which made it diverge from the Macedonian path.
@@ -125,7 +168,7 @@ class AudioService:
             async def _do_generate():
                 # Use high-quality parameters for better audio output
                 communicate = edge_tts.Communicate(
-                    text, 
+                    speech_text,
                     voice,
                     rate=rate_str,
                     volume="+0%",
