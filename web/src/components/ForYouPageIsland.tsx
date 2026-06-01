@@ -117,7 +117,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
     return () => {
       cancelled = true;
     };
-  }, [profile, lang, isMK]);
+  }, [profile]);
 
   const mergedClusters = useMemo<PersonalizedCluster[]>(() => {
     const local = buildPersonalizedClusters(initialClusters, profile, 48, [], lang);
