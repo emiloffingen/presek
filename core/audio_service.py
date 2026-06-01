@@ -27,8 +27,8 @@ if not os.path.exists(_STATIC_ROOT):
 
 _AUDIO_DIR = os.path.join(_STATIC_ROOT, "uploads", "audio")
 _TTS_ENGINE = os.environ.get("AUDIO_TTS_ENGINE", "auto").strip().lower()
-_SR_TTS_ENGINE = os.environ.get("AUDIO_TTS_ENGINE_SR", "gtts").strip().lower()
-_MK_TTS_ENGINE = os.environ.get("AUDIO_TTS_ENGINE_MK", "omnivoice").strip().lower()
+_SR_TTS_ENGINE = os.environ.get("AUDIO_TTS_ENGINE_SR", "edge").strip().lower()
+_MK_TTS_ENGINE = os.environ.get("AUDIO_TTS_ENGINE_MK", "edge").strip().lower()
 _OMNIVOICE_NUM_STEP = max(1, int(os.environ.get("OMNIVOICE_NUM_STEP", "8")))
 _SR_TTS_SPEED_FACTOR = max(1.0, min(2.0, float(os.environ.get("SR_TTS_SPEED_FACTOR", "1.2"))))
 
@@ -61,6 +61,11 @@ def version_audio_url(filepath: str, urlpath: str) -> str:
     except OSError:
         pass
     return urlpath
+
+
+def audio_profile_suffix(lang: str) -> str:
+    """Bump Serbian filenames so previously generated bad SR audio is not reused."""
+    return "_v2" if lang == "sr" else ""
 
 
 class AudioService:
@@ -104,15 +109,16 @@ class AudioService:
             # Map languages to high-quality neural voices
             voice_map = {
                 "mk": "mk-MK-MarijaNeural",
-                "sr": "sr-RS-NicholasNeural",
+                "sr": "sr-RS-SophieNeural",
                 "en": "en-US-AvaNeural"
             }
             
             voice = voice_map.get(lang, "en-US-AvaNeural")
             
-            # Apply speed factor dynamically (e.g., Serbian speaks very slowly by default)
+            # Keep Edge neural voices at their natural cadence. Older Serbian audio
+            # was sped up here, which made it diverge from the Macedonian path.
             rate_str = "+0%"
-            if lang == "sr":
+            if lang == "sr" and _SR_TTS_ENGINE == "gtts":
                 rate_percent = int((_SR_TTS_SPEED_FACTOR - 1.0) * 100)
                 rate_str = f"+{rate_percent}%" if rate_percent >= 0 else f"{rate_percent}%"
 
@@ -390,7 +396,7 @@ class AudioService:
     @staticmethod
     def get_audio_path_and_url(date_str: str, lang: str) -> tuple[str, str]:
         """Returns the absolute file path and the public URL path for the briefing audio."""
-        filename = f"briefing_{date_str}_{lang}.mp3"
+        filename = f"briefing_{date_str}_{lang}{audio_profile_suffix(lang)}.mp3"
         filepath = os.path.join(_AUDIO_DIR, filename)
         urlpath = f"/static/uploads/audio/{filename}"
         return filepath, urlpath
@@ -433,14 +439,7 @@ class AudioService:
                 return version_audio_url(filepath, urlpath)
             
             log.info(f"[audio] Edge TTS failed for {lang}, attempting high-quality fallback.")
-            if lang == "sr":
-                if cls._generate_gtts_mp3(clean_text, filepath, lang):
-                    log.info(f"[audio] Successfully synthesized audio using gTTS (sr) at {filepath}")
-                    return version_audio_url(filepath, urlpath)
-                else:
-                    log.info("[audio] gTTS failed for sr, falling back to local OmniVoice.")
-                    engine = "omnivoice"
-            elif lang == "mk":
+            if lang in {"sr", "mk"}:
                 # Set engine to omnivoice and continue to the OmniVoice section
                 engine = "omnivoice"
             
@@ -531,7 +530,7 @@ class AudioService:
     @staticmethod
     def get_cluster_audio_path_and_url(cluster_id: str, lang: str) -> tuple[str, str]:
         """Returns the absolute file path and the public URL path for the cluster synthesis audio."""
-        filename = f"cluster_{cluster_id}_{lang}.mp3"
+        filename = f"cluster_{cluster_id}_{lang}{audio_profile_suffix(lang)}.mp3"
         filepath = os.path.join(_AUDIO_DIR, filename)
         urlpath = f"/static/uploads/audio/{filename}"
         return filepath, urlpath
@@ -582,14 +581,7 @@ class AudioService:
                 return version_audio_url(filepath, urlpath)
             
             log.info(f"[audio] Edge TTS failed for {lang}, attempting high-quality fallback.")
-            if lang == "sr":
-                if cls._generate_gtts_mp3(clean_text, filepath, lang):
-                    log.info(f"[audio] Successfully synthesized audio using gTTS (sr) at {filepath}")
-                    return version_audio_url(filepath, urlpath)
-                else:
-                    log.info("[audio] gTTS failed for sr, falling back to local OmniVoice.")
-                    engine = "omnivoice"
-            elif lang == "mk":
+            if lang in {"sr", "mk"}:
                 # Set engine to omnivoice and continue to the OmniVoice section
                 engine = "omnivoice"
             

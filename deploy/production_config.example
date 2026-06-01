@@ -108,7 +108,7 @@ RATE_LIMIT_WINDOW=60
 # ============================================================================
 # Audio
 # ============================================================================
-# auto = Serbian uses gTTS, Macedonian uses OmniVoice.
+# auto = Serbian and Macedonian use Edge neural TTS.
 AUDIO_TTS_ENGINE=auto
 AUDIO_TTS_ENGINE_SR=edge
 AUDIO_TTS_ENGINE_MK=edge
