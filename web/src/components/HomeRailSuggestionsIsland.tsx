@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import { useStore } from '@nanostores/react';
 import { $profile } from '../lib/store.ts';
@@ -12,10 +12,17 @@ import {
 
 export default function HomeRailSuggestionsIsland({ lang = 'sr' }: { lang?: string }) {
   const profile = useStore($profile);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const activeProfile = isMounted ? profile : null;
 
   const suggestions = useMemo(
-    () => buildSurfaceFollowSuggestions(profile, 'home_rail', { topicLimit: 2, sourceLimit: 1, lang }),
-    [profile, lang]
+    () => buildSurfaceFollowSuggestions(activeProfile, 'home_rail', { topicLimit: 2, sourceLimit: 1, lang }),
+    [activeProfile, lang]
   );
 
   const labels = {
@@ -35,8 +42,8 @@ export default function HomeRailSuggestionsIsland({ lang = 'sr' }: { lang?: stri
 
   const t = labels[lang as keyof typeof labels] || labels.sr;
 
-  const followedCount = (profile?.followedTopics || []).length + (profile?.followedSources || []).length;
-  const show = suggestions.topics.length + suggestions.sources.length > 0 && (!hasPersonalizationSignal(profile) || followedCount < 4);
+  const followedCount = (activeProfile?.followedTopics || []).length + (activeProfile?.followedSources || []).length;
+  const show = suggestions.topics.length + suggestions.sources.length > 0 && (!hasPersonalizationSignal(activeProfile) || followedCount < 4);
 
   useEffect(() => {
     if (!show) return;

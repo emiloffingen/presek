@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import { useStore } from '@nanostores/react';
 import { $profile } from '../lib/store.ts';
@@ -26,12 +26,19 @@ export default function ClusterFollowSuggestionsIsland({
   lang?: string;
 }) {
   const profile = useStore($profile);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const activeProfile = isMounted ? profile : null;
   const isMK = lang === 'mk';
 
   const suggestions = useMemo(() => {
-    const base = buildSurfaceFollowSuggestions(profile, 'cluster', { topicLimit: 2, sourceLimit: 1, lang });
-    const followedTopics = new Set(profile?.followedTopics || []);
-    const followedSources = new Set(profile?.followedSources || []);
+    const base = buildSurfaceFollowSuggestions(activeProfile, 'cluster', { topicLimit: 2, sourceLimit: 1, lang });
+    const followedTopics = new Set(activeProfile?.followedTopics || []);
+    const followedSources = new Set(activeProfile?.followedSources || []);
 
     const topicSuggestions: Suggestion[] = [...base.topics];
     const sourceSuggestions: Suggestion[] = [...base.sources];

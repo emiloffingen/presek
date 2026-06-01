@@ -6,6 +6,7 @@ import {
   buildSurfaceFollowSuggestions,
   completeOnboarding,
   dismissOnboarding,
+  getOnboardingProgress,
   recordSuggestionDismiss,
   recordSuggestionFollow,
   recordSuggestionImpressions,
@@ -15,7 +16,13 @@ import {
 export default function OnboardingIsland({ compact = false, lang = 'sr' }: { compact?: boolean, lang?: string }) {
   const profile = useStore($profile);
   const onboarding = useStore($onboarding);
-  const progress = useMemo(() => getStoredOnboardingProgress(lang), [profile, onboarding, lang]);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const progress = useMemo(() => getOnboardingProgress(isMounted ? undefined : null as any, lang), [isMounted, profile, onboarding, lang]);
   const [visible, setVisible] = useState(true);
   const isMK = lang === 'mk';
 
@@ -25,9 +32,10 @@ export default function OnboardingIsland({ compact = false, lang = 'sr' }: { com
     }
   }, [progress.shouldShow]);
 
+  const activeProfile = isMounted ? profile : null;
   const recommendations = useMemo(
-    () => buildSurfaceFollowSuggestions(profile, 'onboarding', { topicLimit: compact ? 2 : 3, sourceLimit: compact ? 1 : 2, lang }),
-    [profile, compact, lang]
+    () => buildSurfaceFollowSuggestions(activeProfile, 'onboarding', { topicLimit: compact ? 2 : 3, sourceLimit: compact ? 1 : 2, lang }),
+    [activeProfile, compact, lang]
   );
 
   useEffect(() => {
@@ -125,7 +133,7 @@ export default function OnboardingIsland({ compact = false, lang = 'sr' }: { com
       </div>
 
       <div className="onboarding-steps">
-        {progress.steps.map((step) => (
+        {progress.steps.map((step: any) => (
           <div key={step.id} className={`onboarding-step ${step.done ? 'is-done' : ''}`}>
             <span className="onboarding-step-icon">{step.done ? <CheckCircle2 size={14} /> : <ArrowRight size={14} />}</span>
             <span>{step.label}</span>
