@@ -2155,9 +2155,17 @@ button:active,
   display: flex;
   flex-direction: column;
   padding-top: 1.25rem;
-  border-top: none;
-  border-bottom: none;
+  border-top: none !important;
+  border-bottom: none !important;
   height: auto;
+}
+
+.section-heading-row .section-heading {
+  border-top: none !important;
+  border-bottom: none !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-top: 0 !important;
 }
 
 .section-heading-row.masthead-double-rule::before {
