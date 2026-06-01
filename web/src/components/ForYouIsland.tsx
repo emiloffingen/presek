@@ -43,6 +43,8 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
     setIsMounted(true);
   }, []);
 
+  const activeProfile = isMounted ? profile : null;
+
   // Fetch Semantic Recommendations from API
   useEffect(() => {
     if (!isMounted) return;
@@ -95,8 +97,8 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
   }, [semanticResults, localPersonalizedItems]);
 
   const recommendations = useMemo(
-    () => buildSurfaceFollowSuggestions(profile, 'for_you', { topicLimit: 2, sourceLimit: 1, lang }),
-    [profile, lang]
+    () => buildSurfaceFollowSuggestions(activeProfile, 'for_you', { topicLimit: 2, sourceLimit: 1, lang }),
+    [activeProfile, lang]
   );
 
   const fallbackItems = useMemo(() => {
@@ -213,7 +215,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
           })}
         </div>
 
-        <OnboardingIslandCompact profile={profile} recommendations={recommendations} lang={lang} />
+        <OnboardingIslandCompact profile={activeProfile} recommendations={recommendations} lang={lang} />
       </section>
     );
   }
@@ -263,7 +265,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
         </div>
       )}
 
-      <OnboardingIslandCompact profile={profile} recommendations={recommendations} lang={lang} />
+      <OnboardingIslandCompact profile={activeProfile} recommendations={recommendations} lang={lang} />
     </section>
   );
 }
