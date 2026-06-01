@@ -30,9 +30,9 @@ A comprehensive audit of the Presek application has been performed. The applicat
 - **Elements:** All key UI components (Branding, Navigation, Live Ticker, News Articles, Widgets) were successfully identified and hydrated.
 - **Live Ticker:** Active with recent headlines (e.g., "ПРЕ 54 МИН ...").
 
-## 7. Recommendations
-- **Dependency Updates:** While not critical, consider updating `cryptography`, `pyjwt`, and `idna` to address the info-level vulnerabilities identified by `pip-audit`.
-- **National Mood Widget:** The live site check noted that content in the National Mood widget seemed "limited". Verify if this is due to data availability or a minor hydration delay.
+## 7. Recommendations (Resolved)
+- **Dependency Updates:** Updated `pyproject.toml` to explicitly pin safe versions of `cryptography` (>=46.0.6), `idna` (>=3.15), and `pyjwt` (>=2.12.1). (Resolved ✅)
+- **National Mood Widget:** Verified that the widget is functional and correctly hydrated on the live site with 272+ events sampled. Improved `scripts/check_live_site.py` to be more robust and case-insensitive. (Resolved ✅)
 
 ## 8. Conclusion
 The Presek application is in a **Production-Ready** state with strong security posture and full test coverage.
