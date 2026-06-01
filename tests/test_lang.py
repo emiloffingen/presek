@@ -1,5 +1,5 @@
 from core.ingestion import is_supported_display_language
-from core.language import detect_language
+from core.language import detect_language, transliterate_lat_to_cyr
 
 
 def test_lang():
@@ -19,5 +19,13 @@ def test_lang():
         print("-" * 10)
 
 
+def test_transliterate_vecer():
+    assert transliterate_lat_to_cyr("Vecer") == "Вечер"
+    assert transliterate_lat_to_cyr("vecer") == "вечер"
+    assert transliterate_lat_to_cyr("VECER") == "ВЕЧЕР"
+    assert transliterate_lat_to_cyr("VEcer") == "Вечер"
+
+
 if __name__ == "__main__":
     test_lang()
+

@@ -292,10 +292,23 @@ def transliterate_lat_to_cyr(text: str) -> str:
     if cyr_chars > 0:
         return text
 
+    # Standardize vecer to вечер (case-insensitive) to ensure correct transliteration to вечер instead of вецер
+    import re
+    def replace_vecer(match):
+        m = match.group(0)
+        if m == 'VECER':
+            return 'ВЕЧЕР'
+        if m == 'Vecer':
+            return 'Вечер'
+        if m[0] == 'V':
+            return 'Вечер'
+        return 'вечер'
+    res = re.sub(r'vecer', replace_vecer, text, flags=re.IGNORECASE)
+
     # Build reverse map, sorting by length descending to handle multi-char sequences like 'Dzh'
     lat_to_cyr_map = {v: k for k, v in _CYR_LAT_MAP.items()}
     
-    res = text.replace("ć", "c").replace("č", "ch").replace("š", "sh").replace("ž", "zh").replace("đ", "dj").replace("Ć", "C").replace("Č", "Ch").replace("Š", "Sh").replace("Ž", "Zh").replace("Đ", "Dj")
+    res = res.replace("ć", "c").replace("č", "ch").replace("š", "sh").replace("ž", "zh").replace("đ", "dj").replace("Ć", "C").replace("Č", "Ch").replace("Š", "Sh").replace("Ž", "Zh").replace("Đ", "Dj")
     for k in sorted(lat_to_cyr_map.keys(), key=len, reverse=True):
         res = res.replace(k, lat_to_cyr_map[k])
     return res
