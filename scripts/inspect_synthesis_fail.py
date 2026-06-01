@@ -56,6 +56,13 @@ async def main():
     print("--------------------\n")
     
     if raw:
+        # Diagnostic slice
+        try:
+            print("Slice around 2409:")
+            print(raw[2300:2500])
+        except Exception:
+            pass
+        
         # Let's inspect control characters
         for idx, char in enumerate(raw):
             if ord(char) < 0x20 and char not in ('\n', '\r', '\t', ' '):
