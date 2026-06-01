@@ -95,6 +95,9 @@ export const transliterateToLat = cyrToLat;
 export function latToCyr(text: string): string {
     if (!text) return '';
     let result = text;
+    // Standardize vecer to večer (case-insensitive) to ensure correct transliteration to вечер instead of вецер
+    result = result.replace(/vecer/g, 'večer').replace(/Vecer/g, 'Večer').replace(/VECER/g, 'VEČER');
+    
     // Replace multi-char combinations first to avoid character-by-character split issues
     const multiMap: Record<string, string> = {
         'Dž': 'Џ', 'dž': 'џ', 'DŽ': 'Џ',
