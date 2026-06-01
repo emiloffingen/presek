@@ -195,7 +195,7 @@ function getRelativeTimeStr(dateStr?: string) {
                 <div class="topbar-util">
                     <a href={l('/for-you')} class="user-action-link">{t('nav.for_you') || 'FOR YOU'}</a>
                     <ScriptSwitcher />
-                    <ThemeIsland client:idle />
+                    <ThemeIsland client:idle lang={lang} />
                     <TextScaleIsland client:idle />
                 </div>
             </div>

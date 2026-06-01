@@ -338,6 +338,8 @@ export const ui = {
     'personalization.reason_secondary_topic': 'Pojavljuje se kao sporedna tema u klasterima koje čitate',
     'personalization.reason_followed_topic': 'Praćena tema: {topic}',
     'personalization.reason_related_tag': 'Povezano sa {tag}',
+    'theme.to_dark': 'Prebaci na tamni režim',
+    'theme.to_light': 'Prebaci na svetli režim',
   },
   mk: {
     'nav.home': 'Почетна',
@@ -671,5 +673,7 @@ export const ui = {
     'personalization.reason_secondary_topic': 'Се појавува како споредна тема во кластерите што ги читате',
     'personalization.reason_followed_topic': 'Следена тема: {topic}',
     'personalization.reason_related_tag': 'Поврзано со {tag}',
+    'theme.to_dark': 'Префрли на темен режим',
+    'theme.to_light': 'Префрли на светол режим',
   },
 } as const;

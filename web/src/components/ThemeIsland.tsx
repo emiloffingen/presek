@@ -2,9 +2,11 @@ import React, { useEffect } from 'react';
 import { useStore } from '@nanostores/react';
 import { Moon, Sun } from 'lucide-react';
 import { $theme, updateTheme } from '../lib/store';
+import { useTranslations } from '../i18n/utils';
 
-export default function ThemeIsland({ fixed = false }: { fixed?: boolean }) {
+export default function ThemeIsland({ fixed = false, lang = 'sr' }: { fixed?: boolean; lang?: string }) {
   const theme = useStore($theme);
+  const t = useTranslations(lang as any);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -52,7 +54,7 @@ export default function ThemeIsland({ fixed = false }: { fixed?: boolean }) {
     <button
       onClick={toggleTheme}
       className={`${baseClasses} ${fixed ? fixedClasses : inlineClasses}`}
-      aria-label={theme === 'light' ? 'Prebaci na tamni režim' : 'Prebaci na svetli režim'}
+      aria-label={theme === 'light' ? t('theme.to_dark') : t('theme.to_light')}
     >
       <div className="relative" style={{ width: size, height: size }}>
         <div 
