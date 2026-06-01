@@ -440,7 +440,18 @@ def _call_ai(
         return None, None
 
     if provider_override and provider_override in PROVIDERS:
+        base_order = []
+        if task_type == "research":
+            base_order = list(PROVIDER_FALLBACK_ORDER_RESEARCH)
+        elif task_type in ("summarize", "synthesis"):
+            base_order = list(PROVIDER_FALLBACK_ORDER_SUMMARY)
+        else:
+            base_order = list(PROVIDER_FALLBACK_ORDER)
+        
         fallback_order = [provider_override]
+        for p in base_order:
+            if p not in fallback_order:
+                fallback_order.append(p)
     elif task_type == "research":
         fallback_order = list(PROVIDER_FALLBACK_ORDER_RESEARCH)
     elif task_type in ("summarize", "synthesis"):
