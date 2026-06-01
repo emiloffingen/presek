@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+import re
 import time
 
 import fastapi
@@ -12,7 +13,7 @@ if not hasattr(fastapi, "responses"):
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
@@ -221,6 +222,100 @@ if _rate_limiter_enabled:
             },
             headers={"Retry-After": str(getattr(exc, "retry_after", 60))},
         )
+
+
+_AUDIO_FILENAME_RE = re.compile(r"^[A-Za-z0-9_.-]+\.mp3$")
+_STATIC_ROOT = "/home/emiloffingen/presek-runtime/shared/static"
+if not os.path.exists(_STATIC_ROOT):
+    _STATIC_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "static"))
+_AUDIO_UPLOAD_DIR = os.path.join(_STATIC_ROOT, "uploads", "audio")
+
+
+def _audio_file_path(filename: str) -> str | None:
+    if not _AUDIO_FILENAME_RE.fullmatch(filename):
+        return None
+    candidate = os.path.abspath(os.path.join(_AUDIO_UPLOAD_DIR, filename))
+    try:
+        if os.path.commonpath([candidate, os.path.abspath(_AUDIO_UPLOAD_DIR)]) != os.path.abspath(_AUDIO_UPLOAD_DIR):
+            return None
+    except ValueError:
+        return None
+    return candidate
+
+
+def _iter_file_range(path: str, start: int, end: int, chunk_size: int = 64 * 1024):
+    with open(path, "rb") as handle:
+        handle.seek(start)
+        remaining = end - start + 1
+        while remaining > 0:
+            chunk = handle.read(min(chunk_size, remaining))
+            if not chunk:
+                break
+            remaining -= len(chunk)
+            yield chunk
+
+
+@app.api_route("/static/uploads/audio/{filename}", methods=["GET", "HEAD"])
+async def serve_uploaded_audio(filename: str, request: Request):
+    """Serve generated MP3s with byte-range support for browser audio controls."""
+    path = _audio_file_path(filename)
+    if not path or not os.path.exists(path) or not os.path.isfile(path):
+        return JSONResponse(status_code=404, content={"detail": "Audio file not found"})
+
+    file_size = os.path.getsize(path)
+    headers = {
+        "Accept-Ranges": "bytes",
+        "Cache-Control": "public, max-age=3600",
+        "Content-Encoding": "identity",
+    }
+    range_header = request.headers.get("range")
+
+    if range_header:
+        match = re.fullmatch(r"bytes=(\d*)-(\d*)", range_header.strip())
+        if not match:
+            return Response(status_code=416, headers={**headers, "Content-Range": f"bytes */{file_size}"})
+
+        start_raw, end_raw = match.groups()
+        if start_raw == "" and end_raw == "":
+            return Response(status_code=416, headers={**headers, "Content-Range": f"bytes */{file_size}"})
+
+        if start_raw == "":
+            suffix_length = int(end_raw)
+            if suffix_length <= 0:
+                return Response(status_code=416, headers={**headers, "Content-Range": f"bytes */{file_size}"})
+            start = max(file_size - suffix_length, 0)
+            end = file_size - 1
+        else:
+            start = int(start_raw)
+            end = int(end_raw) if end_raw else file_size - 1
+            end = min(end, file_size - 1)
+
+        if start >= file_size or start > end:
+            return Response(status_code=416, headers={**headers, "Content-Range": f"bytes */{file_size}"})
+
+        content_length = end - start + 1
+        partial_headers = {
+            **headers,
+            "Content-Length": str(content_length),
+            "Content-Range": f"bytes {start}-{end}/{file_size}",
+        }
+        if request.method == "HEAD":
+            return Response(status_code=206, headers=partial_headers, media_type="audio/mpeg")
+        return StreamingResponse(
+            _iter_file_range(path, start, end),
+            status_code=206,
+            headers=partial_headers,
+            media_type="audio/mpeg",
+        )
+
+    full_headers = {**headers, "Content-Length": str(file_size)}
+    if request.method == "HEAD":
+        return Response(headers=full_headers, media_type="audio/mpeg")
+    return StreamingResponse(
+        _iter_file_range(path, 0, file_size - 1),
+        headers=full_headers,
+        media_type="audio/mpeg",
+    )
 
 
 # Mount static files

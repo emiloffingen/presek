@@ -246,7 +246,7 @@ const organizationSchema = {
 		<div id="loading-bar" class="fixed top-0 left-0 z-[9999] transition-all duration-300 opacity-0 w-0"></div>
 		<slot />
 		<ConsentBanner client:idle />
-		<script>
+		<script is:inline>
 			// Handle Astro transitions loading state
 			document.addEventListener('astro:before-preparation', () => {
 				const bar = document.getElementById('loading-bar');
@@ -324,7 +324,7 @@ const organizationSchema = {
 						ticking = false;
 					});
 				};
-				const parallaxWindow = window as Window & { _presekParallaxHandler?: (event: Event) => void };
+				const parallaxWindow = /** @type {Window & { _presekParallaxHandler?: (event: Event) => void }} */ (window);
 				if (parallaxWindow._presekParallaxHandler) {
 					window.removeEventListener('scroll', parallaxWindow._presekParallaxHandler);
 				}
@@ -335,10 +335,10 @@ const organizationSchema = {
 			document.addEventListener('astro:page-load', initParallax);
 		</script>
 
-		<script>
+		<script is:inline>
 			// Global Headline Reveal Animation
 			const initHeadlineReveal = () => {
-				const headlineWindow = window as Window & { _presekHeadlineObserver?: IntersectionObserver };
+				const headlineWindow = /** @type {Window & { _presekHeadlineObserver?: IntersectionObserver }} */ (window);
 				if (headlineWindow._presekHeadlineObserver) {
 					headlineWindow._presekHeadlineObserver.disconnect();
 				}
@@ -363,26 +363,28 @@ const organizationSchema = {
 			const initSpotlight = () => {
 					const targets = Array.from(document.querySelectorAll('.premium-spotlight'));
 					if (targets.length === 0 || window.matchMedia('(pointer: coarse)').matches) return;
-					let pendingEvent: MouseEvent | null = null;
+					/** @type {MouseEvent | null} */
+					let pendingEvent = null;
 					let ticking = false;
-					const handleMouseMove = (e: MouseEvent) => {
+					/** @param {MouseEvent} e */
+					const handleMouseMove = (e) => {
 						pendingEvent = e;
 						if (ticking) return;
 						ticking = true;
 						window.requestAnimationFrame(() => {
 							if (!pendingEvent) return;
 							for (const target of targets) {
-								const spotlightTarget = target as HTMLElement;
+								if (!(target instanceof HTMLElement)) continue;
 								const rect = target.getBoundingClientRect();
 								const x = pendingEvent.clientX - rect.left;
 								const y = pendingEvent.clientY - rect.top;
-								spotlightTarget.style.setProperty('--mouse-x', `${x}px`);
-								spotlightTarget.style.setProperty('--mouse-y', `${y}px`);
+								target.style.setProperty('--mouse-x', `${x}px`);
+								target.style.setProperty('--mouse-y', `${y}px`);
 							}
 							ticking = false;
 						});
 					};
-					const spotlightWindow = window as Window & { _spotlightHandler?: (event: MouseEvent) => void };
+					const spotlightWindow = /** @type {Window & { _spotlightHandler?: (event: MouseEvent) => void }} */ (window);
 					if (spotlightWindow._spotlightHandler) {
 						window.removeEventListener('mousemove', spotlightWindow._spotlightHandler);
 					}

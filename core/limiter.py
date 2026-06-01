@@ -25,7 +25,7 @@ try:
             if hasattr(request, "client") and request.client:
                 host = request.client.host
                 if host in ("127.0.0.1", "::1"):
-                    return None
+                    return "localhost"
         except Exception:
             pass
         return get_remote_address(request)
