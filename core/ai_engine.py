@@ -571,6 +571,39 @@ def _escape_json_string_control_chars(text: str) -> str:
     return "".join(result)
 
 
+def repair_json_syntax(s: str) -> str:
+    """Repair common LLM JSON syntax issues like trailing commas and raw newlines inside string literals."""
+    if not isinstance(s, str):
+        return s
+    
+    # Extract string literals to avoid modifying them
+    strings = []
+    def replace_str(match):
+        strings.append(match.group(0))
+        return f"__STR_PLACEHOLDER_{len(strings)-1}__"
+    
+    # Match double quoted string literals, handling escaped quotes
+    pattern = r'"(?:[^"\\]|\\.)*"'
+    placeholder_s = re.sub(pattern, replace_str, s)
+    
+    # Now we can safely perform repairs on placeholder_s
+    # 1. Remove trailing commas before } or ]
+    placeholder_s = re.sub(r',\s*\}', '}', placeholder_s)
+    placeholder_s = re.sub(r',\s*\]', ']', placeholder_s)
+    
+    # Restore the strings and escape any raw control characters inside them
+    def restore_str(match):
+        idx = int(match.group(1))
+        val = strings[idx]
+        inner = val[1:-1]
+        # Escape raw control characters inside strings
+        inner = inner.replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
+        return f'"{inner}"'
+    
+    restored = re.sub(r'__STR_PLACEHOLDER_(\d+)__', restore_str, placeholder_s)
+    return restored
+
+
 def clean_json_response(text: str) -> dict | str | None:
     if text is None or not isinstance(text, str):
         return ""
@@ -587,9 +620,18 @@ def clean_json_response(text: str) -> dict | str | None:
         try:
             return json.loads(candidate)
         except json.JSONDecodeError:
-            repaired = _escape_json_string_control_chars(candidate)
-            if repaired != candidate:
+            try:
+                repaired = _escape_json_string_control_chars(candidate)
+                if repaired != candidate:
+                    return json.loads(repaired)
+            except Exception:
+                pass
+            
+            try:
+                repaired = repair_json_syntax(candidate)
                 return json.loads(repaired)
+            except Exception:
+                pass
             raise
 
     # 2. Try direct JSON parse
@@ -610,7 +652,45 @@ def clean_json_response(text: str) -> dict | str | None:
     except Exception as e:
         log.warning(f"Direct JSON parse failed in _unwrapped_answer: {e}")
 
-    # 3. Aggressive Regex Extraction (if JSON parse failed)
+    # 3. Brute force: find the first { or [ and last } or ] and try parsing that
+    # Moved before regex extraction to parse full JSON objects wrapped in conversational text
+    try:
+        first_curly = text.find("{")
+        last_curly = text.rfind("}")
+        first_bracket = text.find("[")
+        last_bracket = text.rfind("]")
+        
+        first = -1
+        last = -1
+        if first_curly != -1 and last_curly > first_curly:
+            if first_bracket != -1 and last_bracket > first_bracket:
+                if first_curly < first_bracket:
+                    first = first_curly
+                    last = last_curly
+                else:
+                    first = first_bracket
+                    last = last_bracket
+            else:
+                first = first_curly
+                last = last_curly
+        elif first_bracket != -1 and last_bracket > first_bracket:
+            first = first_bracket
+            last = last_bracket
+            
+        if first != -1 and last > first:
+            candidate = text[first : last + 1]
+            data = _parse_json(candidate)
+            if isinstance(data, dict):
+                if "answer" in data:
+                    return data
+                if "report" in data:
+                    return {"answer": data["report"], "suggestions": data.get("suggestions", [])}
+                return data
+            return data
+    except Exception as e:
+        log.warning(f"Brute-force JSON parse failed in _unwrapped_answer: {e}")
+
+    # 4. Aggressive Regex Extraction (if JSON parse failed)
     # This handles cases where the model returns broken JSON or text with JSON inside
     # We look for "answer" or "report" or "summary" followed by the content
     # This is more robust against multiline and unescaped content
@@ -627,21 +707,6 @@ def clean_json_response(text: str) -> dict | str | None:
                 sugg_str = sugg_match.group(1)
                 suggestions = [s.strip().strip('"').strip("'") for s in sugg_str.split(',')]
             return {"answer": clean_text, "suggestions": [s for s in suggestions if s]}
-
-    # 4. Brute force: find the first { and last } and try parsing that
-    try:
-        first = text.find("{")
-        last = text.rfind("}")
-        if first != -1 and last > first:
-            candidate = text[first : last + 1]
-            data = _parse_json(candidate)
-            if isinstance(data, dict):
-                if "answer" in data:
-                    return data
-                if "report" in data:
-                    return {"answer": data["report"], "suggestions": data.get("suggestions", [])}
-    except Exception as e:
-        log.warning(f"Brute-force JSON parse failed in _unwrapped_answer: {e}")
 
     # 5. Final Fallback: Return the raw text but strip common JSON artifacts
     # if it obviously leaked (e.g. starts with { "answer": )
