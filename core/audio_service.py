@@ -52,6 +52,17 @@ def clean_briefing_text_for_tts(text: str) -> str:
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
+
+def version_audio_url(filepath: str, urlpath: str) -> str:
+    """Add a stable mtime version so replaced MP3s bypass browser/CDN caches."""
+    try:
+        if os.path.exists(filepath):
+            return f"{urlpath}?v={int(os.path.getmtime(filepath))}"
+    except OSError:
+        pass
+    return urlpath
+
+
 class AudioService:
     @staticmethod
     def _get_omnivoice_model() -> Optional[any]:
@@ -100,7 +111,14 @@ class AudioService:
             voice = voice_map.get(lang, "en-US-AvaNeural")
             
             async def _do_generate():
-                communicate = edge_tts.Communicate(text, voice)
+                # Use high-quality parameters for better audio output
+                communicate = edge_tts.Communicate(
+                    text, 
+                    voice,
+                    rate="+0%",
+                    volume="+0%",
+                    pitch="+0Hz"
+                )
                 await communicate.save(filepath)
             
             try:
@@ -382,7 +400,7 @@ class AudioService:
 
         if os.path.exists(filepath) and os.path.getsize(filepath) > 1000:
             log.info(f"[audio] Audio briefing already exists for {date_str} ({lang}).")
-            return urlpath
+            return version_audio_url(filepath, urlpath)
 
         clean_text = clean_briefing_text_for_tts(content)
         if not clean_text:
@@ -395,22 +413,26 @@ class AudioService:
         if engine == "gtts":
             if cls._generate_gtts_mp3(clean_text, filepath, lang):
                 log.info(f"[audio] Successfully synthesized audio using gTTS at {filepath}")
-                return urlpath
-            log.info("[audio] Falling back to espeak-ng for audio")
+                return version_audio_url(filepath, urlpath)
+            log.info("[audio] gTTS failed, falling back to Edge TTS")
+            if cls._generate_edge_mp3(clean_text, filepath, lang):
+                log.info(f"[audio] Successfully synthesized audio using Edge TTS at {filepath}")
+                return version_audio_url(filepath, urlpath)
+            log.info("[audio] Edge TTS also failed, falling back to espeak-ng")
             if cls._generate_espeak_mp3(clean_text, filepath, lang):
-                return urlpath
+                return version_audio_url(filepath, urlpath)
             return None
 
         if engine == "edge":
             if cls._generate_edge_mp3(clean_text, filepath, lang):
                 log.info(f"[audio] Successfully synthesized audio using Edge TTS at {filepath}")
-                return urlpath
+                return version_audio_url(filepath, urlpath)
             
             log.info(f"[audio] Edge TTS failed for {lang}, attempting high-quality fallback.")
             if lang == "sr":
                 if cls._generate_gtts_mp3(clean_text, filepath, lang):
                     log.info(f"[audio] Successfully synthesized audio using gTTS (sr) at {filepath}")
-                    return urlpath
+                    return version_audio_url(filepath, urlpath)
             elif lang == "mk":
                 # Set engine to omnivoice and continue to the OmniVoice section
                 engine = "omnivoice"
@@ -418,13 +440,13 @@ class AudioService:
             if engine != "omnivoice":
                 log.info(f"[audio] No high-quality fallback for {lang}, using espeak-ng.")
                 if cls._generate_espeak_mp3(clean_text, filepath, lang):
-                    return urlpath
+                    return version_audio_url(filepath, urlpath)
                 return None
 
         if engine != "omnivoice":
             if cls._generate_espeak_mp3(clean_text, filepath, lang):
                 log.info(f"[audio] Successfully synthesized audio using espeak-ng at {filepath}")
-                return urlpath
+                return version_audio_url(filepath, urlpath)
             return None
 
         max_retries = 3
@@ -477,7 +499,7 @@ class AudioService:
                         stderr=subprocess.DEVNULL
                     )
                     log.info(f"[audio] Successfully synthesized briefing using local OmniVoice at {filepath}")
-                    return urlpath
+                    return version_audio_url(filepath, urlpath)
                 finally:
                     # Cleanup WAV file in finally block to ensure it always gets removed
                     try:
@@ -505,7 +527,7 @@ class AudioService:
         return filepath, urlpath
 
     @classmethod
-    def generate_cluster_audio(cls, cluster_id: str, content: str, lang: str) -> Optional[str]:
+    def generate_cluster_audio(cls, cluster_id: str, content: str, lang: str, force: bool = False) -> Optional[str]:
         """
         Synthesizes cluster generated article/synthesis text into high-quality speech.
         Uses the configured engine for the target language, with fallbacks.
@@ -513,9 +535,17 @@ class AudioService:
         os.makedirs(_AUDIO_DIR, exist_ok=True)
         filepath, urlpath = cls.get_cluster_audio_path_and_url(cluster_id, lang)
 
-        if os.path.exists(filepath) and os.path.getsize(filepath) > 1000:
+        if os.path.exists(filepath) and os.path.getsize(filepath) > 1000 and not force:
             log.info(f"[audio] Cluster audio already exists for {cluster_id} ({lang}).")
-            return urlpath
+            return version_audio_url(filepath, urlpath)
+
+        if force and os.path.exists(filepath):
+            try:
+                os.remove(filepath)
+                log.info(f"[audio] Removed existing cluster audio before regeneration: {filepath}")
+            except OSError as e:
+                log.error(f"[audio] Failed to remove existing cluster audio {filepath}: {e}")
+                return None
 
         clean_text = clean_briefing_text_for_tts(content)
         if not clean_text:
@@ -528,22 +558,22 @@ class AudioService:
         if engine == "gtts":
             if cls._generate_gtts_mp3(clean_text, filepath, lang):
                 log.info(f"[audio] Successfully synthesized audio using gTTS at {filepath}")
-                return urlpath
+                return version_audio_url(filepath, urlpath)
             log.info("[audio] Falling back to espeak-ng for audio")
             if cls._generate_espeak_mp3(clean_text, filepath, lang):
-                return urlpath
+                return version_audio_url(filepath, urlpath)
             return None
 
         if engine == "edge":
             if cls._generate_edge_mp3(clean_text, filepath, lang):
                 log.info(f"[audio] Successfully synthesized audio using Edge TTS at {filepath}")
-                return urlpath
+                return version_audio_url(filepath, urlpath)
             
             log.info(f"[audio] Edge TTS failed for {lang}, attempting high-quality fallback.")
             if lang == "sr":
                 if cls._generate_gtts_mp3(clean_text, filepath, lang):
                     log.info(f"[audio] Successfully synthesized audio using gTTS (sr) at {filepath}")
-                    return urlpath
+                    return version_audio_url(filepath, urlpath)
             elif lang == "mk":
                 # Set engine to omnivoice and continue to the OmniVoice section
                 engine = "omnivoice"
@@ -551,13 +581,13 @@ class AudioService:
             if engine != "omnivoice":
                 log.info(f"[audio] No high-quality fallback for {lang}, using espeak-ng.")
                 if cls._generate_espeak_mp3(clean_text, filepath, lang):
-                    return urlpath
+                    return version_audio_url(filepath, urlpath)
                 return None
 
         if engine != "omnivoice":
             if cls._generate_espeak_mp3(clean_text, filepath, lang):
                 log.info(f"[audio] Successfully synthesized audio using espeak-ng at {filepath}")
-                return urlpath
+                return version_audio_url(filepath, urlpath)
             return None
 
         max_retries = 3
@@ -606,7 +636,7 @@ class AudioService:
                         stderr=subprocess.DEVNULL
                     )
                     log.info(f"[audio] Successfully synthesized cluster audio using local OmniVoice at {filepath}")
-                    return urlpath
+                    return version_audio_url(filepath, urlpath)
                 finally:
                     # Cleanup WAV file in finally block to ensure it always gets removed
                     try:
