@@ -27,21 +27,24 @@ export default function ThemeIsland({ fixed = false }: { fixed?: boolean }) {
         const root = document.documentElement;
         if (next === 'dark') {
             root.classList.add('dark');
+            root.style.colorScheme = 'dark';
         } else {
             root.classList.remove('dark');
+            root.style.colorScheme = 'light';
         }
 
         // Update theme-color meta tags
         const lightMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: light)"]');
         const darkMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: dark)"]');
-        if (lightMeta) lightMeta.setAttribute('content', next === 'dark' ? '#000000' : '#fafafb');
-        if (darkMeta) darkMeta.setAttribute('content', next === 'dark' ? '#000000' : '#1a1715');
+        const themeColor = next === 'dark' ? '#0b0d13' : '#fdfdfa';
+        if (lightMeta) lightMeta.setAttribute('content', themeColor);
+        if (darkMeta) darkMeta.setAttribute('content', themeColor);
     }
   };
 
-  const baseClasses = "flex items-center justify-center transition-all duration-300 group relative";
-  const fixedClasses = "fixed top-4 right-4 z-[200] h-10 w-10 rounded-full border border-border bg-secondary shadow-sm hover:scale-110 active:scale-95";
-  const inlineClasses = "rounded-full p-2 hover:bg-secondary active:scale-90 transition-transform";
+  const baseClasses = "header-utility-button flex items-center justify-center transition-all duration-300 group relative";
+  const fixedClasses = "fixed top-4 right-4 z-[200] h-10 w-10 border border-border bg-card shadow-sm hover:-translate-y-0.5 active:translate-y-0";
+  const inlineClasses = "h-9 w-9 hover:bg-secondary active:scale-95";
 
   const size = fixed ? 20 : 18;
 

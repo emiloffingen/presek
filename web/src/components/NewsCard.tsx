@@ -115,7 +115,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
           <h2
             className={`headline ${
                 isLead ? 'headline-lead' : (variant === 'compact' ? 'headline-compact' : 'headline-standard')
-            } ${titleIsCyrillic ? 'headline-cyrillic' : ''} text-neutral-900 font-bold whitespace-normal break-words line-clamp-2 md:line-clamp-3 text-lg leading-snug`}
+            } ${titleIsCyrillic ? 'headline-cyrillic' : ''} text-foreground font-bold whitespace-normal break-words line-clamp-2 md:line-clamp-3 text-lg leading-snug`}
             dangerouslySetInnerHTML={{ __html: sanitizeHtml(displayTitle) }}
           ></h2>
         </a>
@@ -130,13 +130,13 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         <div className="card-content-stack mt-1">
           {displaySummary && (
             <p
-              className={`summary ${summaryIsCyrillic ? 'summary-cyrillic' : ''} min-w-0 break-words line-clamp-3 text-neutral-600 dark:text-neutral-400`}
+              className={`summary ${summaryIsCyrillic ? 'summary-cyrillic' : ''} min-w-0 break-words line-clamp-3 text-secondary-foreground`}
               dangerouslySetInnerHTML={{ __html: sanitizeHtml(displaySummary) }}
             ></p>
           )}
         </div>
 
-        <div className="mt-auto pt-2 flex items-center gap-3 text-xs text-neutral-500">
+        <div className="mt-auto pt-2 flex items-center gap-3 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <Clock size={11} />
             {getTimeStr(main.ingested_at || main.created_at)}

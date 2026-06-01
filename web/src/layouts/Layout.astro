@@ -212,8 +212,9 @@ const organizationSchema = {
 				// Update theme-color meta tags
 				const lightMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: light)"]');
 				const darkMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: dark)"]');
-				if (lightMeta) lightMeta.setAttribute('content', isDark ? '#0b0e14' : '#fafafb');
-				if (darkMeta) darkMeta.setAttribute('content', isDark ? '#0b0e14' : '#fafafb');
+				var themeColor = isDark ? '#0b0d13' : '#fdfdfa';
+				if (lightMeta) lightMeta.setAttribute('content', themeColor);
+				if (darkMeta) darkMeta.setAttribute('content', themeColor);
 			}
 
 			applyTheme();

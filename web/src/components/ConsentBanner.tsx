@@ -38,15 +38,10 @@ function writeConsentState(status: 'accepted' | 'dismissed') {
 export const ConsentBanner: React.FC = () => {
   const [visible, setVisible] = useState(false);
   const [expanded, setExpanded] = useState(false);
-
-  // Detect language for translations
-  const [lang, setLang] = useState<'sr' | 'mk'>('sr');
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const detected = getLangFromUrl(new URL(window.location.href));
-      setLang(detected as 'sr' | 'mk');
-    }
-  }, []);
+  const [lang] = useState<'sr' | 'mk'>(() => {
+    if (typeof window === 'undefined') return 'sr';
+    return getLangFromUrl(new URL(window.location.href)) as 'sr' | 'mk';
+  });
 
   const t = useTranslations(lang);
   const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
@@ -92,25 +87,18 @@ export const ConsentBanner: React.FC = () => {
     setVisible(false);
   };
 
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    if (visible) {
-      document.body.classList.add('has-consent-banner');
-    } else {
-      document.body.classList.remove('has-consent-banner');
-    }
-    return () => document.body.classList.remove('has-consent-banner');
-  }, [visible]);
-
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-[100] px-2 pb-2 md:p-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="mx-auto max-w-5xl rounded-2xl border border-border bg-background/94 px-2.5 py-1.5 shadow-[0_-8px_30px_rgba(17,24,39,0.08)] backdrop-blur-md md:px-5 md:py-3.5">
-        <div className="flex items-center gap-[var(--grid-gap)] md:items-center md:justify-between">
+    <div
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] isolate px-2 pb-2 md:p-4 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3 motion-safe:duration-300"
+      style={{ contain: 'layout paint style' }}
+    >
+      <div className="pointer-events-auto mx-auto max-w-5xl rounded-lg border border-border bg-popover/95 px-3 py-2 text-popover-foreground shadow-[0_-10px_28px_rgba(17,24,39,0.10)] backdrop-blur-xl md:px-5 md:py-3">
+        <div className="flex items-center gap-3 md:items-center md:justify-between">
           <div className="min-w-0 flex-1">
-            <div className="mb-0.5 flex items-center gap-[var(--grid-gap)]">
-              <h3 className="font-sans text-[11px] font-black uppercase tracking-[0.14em] text-foreground">{t('cookies.title')}</h3>
+            <div className="mb-0.5 flex items-center gap-2">
+              <h3 className="font-sans text-[11px] font-black uppercase tracking-[0.12em] text-foreground">{t('cookies.title')}</h3>
               <span className="hidden md:inline text-[11px] text-muted-foreground">•</span>
               <span className="hidden md:inline text-xs text-muted-foreground">{t('cookies.kicker')}</span>
             </div>
@@ -138,17 +126,17 @@ export const ConsentBanner: React.FC = () => {
               <a href={l('/privacy')} className="underline underline-offset-2 hover:text-nyt-accent">{t('nav.privacy')}</a>.
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-1 self-auto">
+          <div className="flex shrink-0 items-center gap-1.5 self-auto">
             <button
               onClick={dismiss}
               aria-label={t('cookies.dismiss')}
-              className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-border/80 text-muted-foreground transition-colors hover:text-foreground md:h-9 md:w-9"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border/80 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground md:h-9 md:w-9"
             >
               <X size={12} />
             </button>
             <button
               onClick={accept}
-              className="rounded-full bg-foreground px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-background transition-colors hover:bg-nyt-accent hover:text-white md:px-4 md:py-2 md:text-[11px]"
+              className="rounded-md bg-foreground px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.12em] text-background transition-colors hover:bg-nyt-accent hover:text-white md:px-4 md:py-2 md:text-[11px]"
             >
               {t('cookies.accept')}
             </button>

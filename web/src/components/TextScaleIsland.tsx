@@ -4,7 +4,7 @@ import { Type, Check } from 'lucide-react';
 const SCALES = [
   { value: '1', label: '100%', name: 'Standard' },
   { value: '1.12', label: '112%', name: 'Editorial' },
-  { value: '1.24', label: '124%', name: 'Poveќano' }
+  { value: '1.24', label: '124%', name: 'Uvecano' }
 ];
 
 export default function TextScaleIsland() {
@@ -43,7 +43,7 @@ export default function TextScaleIsland() {
     <div className="relative inline-block text-left" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="rounded-full p-2 hover:bg-secondary active:scale-90 transition-transform flex items-center justify-center text-muted-foreground hover:text-foreground relative group"
+        className="header-utility-button h-9 w-9 flex items-center justify-center text-muted-foreground hover:text-foreground relative group"
         aria-label="Skaliraj golemina na tekst"
         aria-expanded={isOpen}
       >
@@ -53,7 +53,7 @@ export default function TextScaleIsland() {
 
       {isOpen && (
         <div 
-          className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-none shadow-lg z-[210] animate-in fade-in slide-in-from-top-2 duration-200"
+          className="absolute right-0 mt-2 w-52 bg-popover text-popover-foreground border border-border shadow-lg z-[210] animate-in fade-in slide-in-from-top-2 duration-200"
           role="menu"
           aria-orientation="vertical"
         >
@@ -66,7 +66,7 @@ export default function TextScaleIsland() {
                 <button
                   key={s.value}
                   onClick={() => handleScaleChange(s.value)}
-                  className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors hover:bg-secondary ${
+                  className={`w-full text-left px-3 py-2.5 text-xs flex items-center justify-between transition-colors hover:bg-secondary ${
                     scale === s.value ? 'font-bold text-foreground' : 'text-muted-foreground'
                   }`}
                   role="menuitem"
