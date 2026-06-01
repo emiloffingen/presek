@@ -1,4 +1,9 @@
-from core.prompts import DAILY_BRIEF_SYSTEM_PROMPT, SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT
+from core.prompts import (
+    DAILY_BRIEF_SYSTEM_PROMPT,
+    SUMMARY_SYSTEM_PROMPT,
+    SYNTHESIS_SYSTEM_PROMPT,
+    SYNTHESIS_SYSTEM_PROMPT_MK,
+)
 
 
 def test_synthesis_prompt_requires_angle_content_schema():
@@ -8,6 +13,19 @@ def test_synthesis_prompt_requires_angle_content_schema():
     assert "verification_report" in SYNTHESIS_SYSTEM_PROMPT
     assert "Mora zvučati kao rad iskusnog urednika" in SYNTHESIS_SYSTEM_PROMPT
     assert "ZABRANJENE AI FRAZE" in SYNTHESIS_SYSTEM_PROMPT
+
+
+def test_synthesis_prompt_requires_long_editorial_structure():
+    assert "550-750 reči" in SYNTHESIS_SYSTEM_PROMPT
+    assert "6-8 kratkih" in SYNTHESIS_SYSTEM_PROMPT
+    assert "DUBINSKI SLOJ" in SYNTHESIS_SYSTEM_PROMPT
+    assert "VERIFIKACIJA" in SYNTHESIS_SYSTEM_PROMPT
+    assert "Dužinu gradi dodavanjem slojeva značenja" in SYNTHESIS_SYSTEM_PROMPT
+
+    assert "550-750 зборови" in SYNTHESIS_SYSTEM_PROMPT_MK
+    assert "6-8 кратки" in SYNTHESIS_SYSTEM_PROMPT_MK
+    assert "ДЛАБОК СЛОЈ" in SYNTHESIS_SYSTEM_PROMPT_MK
+    assert "ВЕРИФИКАЦИЈА" in SYNTHESIS_SYSTEM_PROMPT_MK
 
 
 def test_summary_prompt_requires_plain_json_summary():

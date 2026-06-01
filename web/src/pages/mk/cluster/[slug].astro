@@ -685,19 +685,25 @@ const articleSchema = cluster ? {
 							{/* NARRATIVE SECTION */}
 						{(hasGeneratedNarrative || synthesisItems.length > 0) && (
 						<section class="editorial-section narrative-section mb-24" id="cluster-synthesis">
-							<div class="section-eyebrow mb-16">
-								<Newspaper size={16} className="text-muted-foreground" />
-								<h2 class="section-label">{primaryNarrativeLabel}</h2>
-                                <span class="section-sub-label">{primaryNarrativeEyebrow}</span>
+							<div class="section-eyebrow narrative-eyebrow mb-16">
+                                <div class="section-title-lockup">
+                                    <Newspaper size={16} className="section-title-icon text-muted-foreground" />
+                                    <div class="section-title-copy">
+                                        <h2 class="section-label">{primaryNarrativeLabel}</h2>
+                                        <span class="section-sub-label">{primaryNarrativeEyebrow}</span>
+                                    </div>
+                                </div>
 
                                 <!-- Premium TTS Play Button -->
                                 {cluster && (
-                                    <AudioPlayer 
-                                        type="cluster"
-                                        clusterId={id}
-                                        lang={lang}
-                                        title={lang === 'sr' ? 'Audio sinteza' : 'Аудио синтеза'}
-                                    />
+                                    <div class="narrative-audio-wrap">
+                                        <AudioPlayer 
+                                            type="cluster"
+                                            clusterId={id}
+                                            lang={lang}
+                                            title={lang === 'sr' ? 'Audio sinteza' : 'Аудио синтеза'}
+                                        />
+                                    </div>
                                 )}
 
 								<div class="section-divider"></div>
@@ -1189,6 +1195,34 @@ const articleSchema = cluster ? {
 		text-transform: uppercase;
 	}
 
+    .narrative-eyebrow {
+        display: grid;
+        gap: 1.35rem;
+    }
+
+    .section-title-lockup {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.85rem;
+        min-width: 0;
+    }
+
+    .section-title-icon {
+        flex: none;
+        margin-top: 0.1rem;
+    }
+
+    .section-title-copy {
+        display: grid;
+        gap: 0.35rem;
+        min-width: 0;
+    }
+
+    .narrative-audio-wrap {
+        width: min(100%, 34rem);
+        padding-top: 0.35rem;
+    }
+
     .section-sub-label {
         font-family: var(--font-sans);
         font-size: 0.65rem;
@@ -1204,6 +1238,10 @@ const articleSchema = cluster ? {
 		background: var(--border);
 		opacity: 0.4;
 	}
+
+    .narrative-eyebrow .section-divider {
+        width: 100%;
+    }
 
     /* --- SOURCE RECORD EXPANDABLE --- */
     .source-doc-wrapper {

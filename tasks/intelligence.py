@@ -556,8 +556,8 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
     source_context_sr = _build_synthesis_source_context(article_rows, lang="sr")
     source_context_mk = _build_synthesis_source_context(article_rows, lang="mk")
 
-    # In fast mode, we use a slightly shorter token limit but still enough for the full JSON schema
-    max_tokens = 1600 if fast_mode else 3200
+    # Non-fast synthesis needs room for a longer editorial article plus the surrounding JSON fields.
+    max_tokens = 2200 if fast_mode else 5200
 
     # 1. Fetch Historical Context (Cross-Story Memory)
     # We'll fetch this once for the primary language (sr) to use as context for all syntheses
@@ -618,7 +618,9 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             prompt_parts = []
             if fast_mode:
                 prompt_parts.append(
-                    "PROVIDE A BRIEF 1-PARAGRAPH SUMMARY ONLY. FOCUS ON THE CORE EVENT. IGNORE PERSPECTIVES."
+                    "FAST MODE: return the full valid JSON schema, but keep the editorial article concise and complete "
+                    "(350-500 words). Include the core event, context, source comparison, consequences, and one clear "
+                    "open question. Do not reduce the article to a single paragraph."
                 )
             elif history_context:
                 prompt_parts.append(history_context)
