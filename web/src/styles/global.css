@@ -23,6 +23,8 @@
   --color-nyt-gray-600: var(--nyt-gray-600);
   --color-nyt-accent: var(--nyt-accent);
   --color-nyt-red: var(--nyt-red);
+  --color-nyt-text: var(--foreground);
+  --color-nyt-border: var(--border);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
