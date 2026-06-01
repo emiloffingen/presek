@@ -120,7 +120,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
   }, [profile, lang, isMK]);
 
   const mergedClusters = useMemo<PersonalizedCluster[]>(() => {
-    const local = buildPersonalizedClusters(initialClusters, profile, 48);
+    const local = buildPersonalizedClusters(initialClusters, profile, 48, [], lang);
     const seen = new Set(semanticResults.map((r) => r.cluster_id));
 
     const combined = [
@@ -141,15 +141,15 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
     }
 
     return combined;
-  }, [initialClusters, semanticResults, profile, isMK]);
+  }, [initialClusters, semanticResults, profile, isMK, lang]);
 
   const followSuggestions = useMemo(() => {
-    const suggestions = buildSurfaceFollowSuggestions(profile, 'for_you', { topicLimit: 5, sourceLimit: 3 });
+    const suggestions = buildSurfaceFollowSuggestions(profile, 'for_you', { topicLimit: 5, sourceLimit: 3, lang });
     return [
       ...suggestions.topics.map((topic: any) => ({ ...topic, kind: 'topic' })),
       ...suggestions.sources.map((source: any) => ({ ...source, kind: 'source' })),
     ];
-  }, [profile]);
+  }, [profile, lang]);
 
   const followedTopics = profile.followedTopics || [];
   const followedSources = profile.followedSources || [];

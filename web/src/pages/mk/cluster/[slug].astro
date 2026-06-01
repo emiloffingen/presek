@@ -865,12 +865,13 @@ const articleSchema = cluster ? {
                                 </div>
                             </div>
 
-							<NewsletterIsland client:visible />
+							<NewsletterIsland lang={lang} client:visible />
 
 							<ClusterFollowSuggestionsIsland
 								topic={cluster.topics?.[0] || ''}
 								source={cluster.articles?.[0]?.source || ''}
 								adjacentTopic={adjacentTopic}
+                                lang={lang}
 								client:visible
 							/>
 

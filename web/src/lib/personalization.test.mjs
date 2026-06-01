@@ -114,7 +114,9 @@ test('buildPersonalizedClusters prefers followed topics and unseen items', () =>
       cluster({ cluster_id: 'sports-cluster', articles: [{ title: 'Sports', source: 'MRT', category: 'Спорт', topic: 'Спорт', description: 'desc' }], topics: ['Спорт'], tags: ['Фудбал'] }),
     ],
     profile,
-    2
+    2,
+    [],
+    'mk'
   );
 
   assert.equal(items[0].cluster.cluster_id, 'fresh-cluster');
@@ -148,7 +150,8 @@ test('buildDeliveryDigest reflects follows and briefing headings', () => {
   const digest = buildDeliveryDigest(
     '## Што го движи денот\n### 1. Собрание\n## Каде се разликува известувањето',
     profile,
-    prefs
+    prefs,
+    'mk'
   );
 
   assert.match(digest, /Следени теми: Политика\./);

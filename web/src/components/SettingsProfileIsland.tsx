@@ -72,8 +72,8 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
   }, [recentItems]);
 
   const recommendations = useMemo(
-    () => buildSurfaceFollowSuggestions(profile, 'settings', { topicLimit: 3, sourceLimit: 2 }),
-    [profile]
+    () => buildSurfaceFollowSuggestions(profile, 'settings', { topicLimit: 3, sourceLimit: 2, lang }),
+    [profile, lang]
   );
 
   useEffect(() => {

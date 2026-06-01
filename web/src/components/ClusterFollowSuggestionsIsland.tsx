@@ -29,7 +29,7 @@ export default function ClusterFollowSuggestionsIsland({
   const isMK = lang === 'mk';
 
   const suggestions = useMemo(() => {
-    const base = buildSurfaceFollowSuggestions(profile, 'cluster', { topicLimit: 2, sourceLimit: 1 });
+    const base = buildSurfaceFollowSuggestions(profile, 'cluster', { topicLimit: 2, sourceLimit: 1, lang });
     const followedTopics = new Set(profile?.followedTopics || []);
     const followedSources = new Set(profile?.followedSources || []);
 

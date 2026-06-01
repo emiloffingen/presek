@@ -98,8 +98,8 @@ export default function BriefingDeliveryIsland({
   }, [syncToken, isMK]);
 
   const digest = useMemo(
-    () => buildDeliveryDigest(content, profile, prefs),
-    [content, profile, prefs]
+    () => buildDeliveryDigest(content, profile, prefs, lang),
+    [content, profile, prefs, lang]
   );
 
   const mailHref = useMemo(() => {

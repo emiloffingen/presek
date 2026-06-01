@@ -14,8 +14,8 @@ export default function HomeRailSuggestionsIsland({ lang = 'sr' }: { lang?: stri
   const profile = useStore($profile);
 
   const suggestions = useMemo(
-    () => buildSurfaceFollowSuggestions(profile, 'home_rail', { topicLimit: 2, sourceLimit: 1 }),
-    [profile]
+    () => buildSurfaceFollowSuggestions(profile, 'home_rail', { topicLimit: 2, sourceLimit: 1, lang }),
+    [profile, lang]
   );
 
   const labels = {

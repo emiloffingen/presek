@@ -15,7 +15,7 @@ import {
 export default function OnboardingIsland({ compact = false, lang = 'sr' }: { compact?: boolean, lang?: string }) {
   const profile = useStore($profile);
   const onboarding = useStore($onboarding);
-  const progress = useMemo(() => getStoredOnboardingProgress(), [profile, onboarding]);
+  const progress = useMemo(() => getStoredOnboardingProgress(lang), [profile, onboarding, lang]);
   const [visible, setVisible] = useState(true);
   const isMK = lang === 'mk';
 
@@ -26,8 +26,8 @@ export default function OnboardingIsland({ compact = false, lang = 'sr' }: { com
   }, [progress.shouldShow]);
 
   const recommendations = useMemo(
-    () => buildSurfaceFollowSuggestions(profile, 'onboarding', { topicLimit: compact ? 2 : 3, sourceLimit: compact ? 1 : 2 }),
-    [profile, compact]
+    () => buildSurfaceFollowSuggestions(profile, 'onboarding', { topicLimit: compact ? 2 : 3, sourceLimit: compact ? 1 : 2, lang }),
+    [profile, compact, lang]
   );
 
   useEffect(() => {

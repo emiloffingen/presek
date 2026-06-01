@@ -83,8 +83,8 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
   // 3. Keyword-based Local Fallback (Personalization 1.0)
   const localPersonalizedItems = useMemo(() => {
     if (!hasSignals || !Array.isArray(clusters) || clusters.length === 0) return [];
-    return buildPersonalizedClusters(clusters, profile, 4, excludeClusterIds);
-  }, [clusters, profile, hasSignals, excludeClusterIds]);
+    return buildPersonalizedClusters(clusters, profile, 4, excludeClusterIds, lang);
+  }, [clusters, profile, hasSignals, excludeClusterIds, lang]);
 
   // 4. Combined Personalized Set
   // Priority: Semantic Results (Brain) > Local Matches (Keywords)
@@ -95,8 +95,8 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
   }, [semanticResults, localPersonalizedItems]);
 
   const recommendations = useMemo(
-    () => buildSurfaceFollowSuggestions(profile, 'for_you', { topicLimit: 2, sourceLimit: 1 }),
-    [profile]
+    () => buildSurfaceFollowSuggestions(profile, 'for_you', { topicLimit: 2, sourceLimit: 1, lang }),
+    [profile, lang]
   );
 
   const fallbackItems = useMemo(() => {

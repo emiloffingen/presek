@@ -36,7 +36,7 @@ export default function TopicFollowSuggestionsIsland({
   const suggestions = useMemo(() => {
     const followedTopics = new Set(profile?.followedTopics || []);
     const followedSources = new Set(profile?.followedSources || []);
-    const base = buildSurfaceFollowSuggestions(profile, 'topic', { topicLimit: 2, sourceLimit: 1 });
+    const base = buildSurfaceFollowSuggestions(profile, 'topic', { topicLimit: 2, sourceLimit: 1, lang });
 
     const topicItems = [
       {
