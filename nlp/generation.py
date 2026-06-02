@@ -1488,14 +1488,6 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None):
     if theme_l == "light":
         style_content = f"""
             svg, :root {{
-                --bg-start: {c_bg_light};
-                --bg-end: #f1f3f5;
-                --spot-color: {c_spot_light};
-                --spot-opacity: 0.35;
-                --art-glow: {c_accent_light};
-                --art-glow-opacity: 0.25;
-                --grain-fill: black;
-                --grain-opacity: 0.015;
                 --glass-fill: rgba(255,255,255,0.3);
                 --glass-stroke: rgba(0,0,0,0.06);
                 --grid-stroke: rgba(0,0,0,0.04);
@@ -1510,19 +1502,19 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None):
                 --art-circle-dot: #0f172a;
                 --text-shadow: 0 2px 4px rgba(255,255,255,0.8);
                 --drop-shadow: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
+                --grain-fill: black;
+                --grain-opacity: 0.015;
             }}
+            .bg-stop-start {{ stop-color: {c_bg_light}; }}
+            .bg-stop-end {{ stop-color: #f1f3f5; }}
+            .mesh-stop-start {{ stop-color: {c_spot_light}; stop-opacity: 0.35; }}
+            .mesh-stop-end {{ stop-color: #f1f3f5; stop-opacity: 0; }}
+            .art-glow-start {{ stop-color: {c_accent_light}; stop-opacity: 0.25; }}
+            .art-glow-end {{ stop-color: #f1f3f5; stop-opacity: 0; }}
         """
     elif theme_l == "dark":
         style_content = f"""
             svg, :root {{
-                --bg-start: {c_bg_dark};
-                --bg-end: #020408;
-                --spot-color: {c_spot_dark};
-                --spot-opacity: 0.45;
-                --art-glow: {c_accent_dark};
-                --art-glow-opacity: 0.35;
-                --grain-fill: white;
-                --grain-opacity: 0.04;
                 --glass-fill: rgba(255,255,255,0.02);
                 --glass-stroke: rgba(255,255,255,0.07);
                 --grid-stroke: rgba(255,255,255,0.08);
@@ -1537,20 +1529,20 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None):
                 --art-circle-dot: #ffffff;
                 --text-shadow: 0 4px 12px rgba(0,0,0,0.5);
                 --drop-shadow: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
+                --grain-fill: white;
+                --grain-opacity: 0.04;
             }}
+            .bg-stop-start {{ stop-color: {c_bg_dark}; }}
+            .bg-stop-end {{ stop-color: #020408; }}
+            .mesh-stop-start {{ stop-color: {c_spot_dark}; stop-opacity: 0.45; }}
+            .mesh-stop-end {{ stop-color: #020408; stop-opacity: 0; }}
+            .art-glow-start {{ stop-color: {c_accent_dark}; stop-opacity: 0.35; }}
+            .art-glow-end {{ stop-color: #020408; stop-opacity: 0; }}
         """
     else:
         # Auto/System: Default to Dark, override on light prefers-color-scheme
         style_content = f"""
             svg, :root {{
-                --bg-start: {c_bg_dark};
-                --bg-end: #020408;
-                --spot-color: {c_spot_dark};
-                --spot-opacity: 0.45;
-                --art-glow: {c_accent_dark};
-                --art-glow-opacity: 0.35;
-                --grain-fill: white;
-                --grain-opacity: 0.04;
                 --glass-fill: rgba(255,255,255,0.02);
                 --glass-stroke: rgba(255,255,255,0.07);
                 --grid-stroke: rgba(255,255,255,0.08);
@@ -1565,17 +1557,18 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None):
                 --art-circle-dot: #ffffff;
                 --text-shadow: 0 4px 12px rgba(0,0,0,0.5);
                 --drop-shadow: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
+                --grain-fill: white;
+                --grain-opacity: 0.04;
             }}
+            .bg-stop-start {{ stop-color: {c_bg_dark}; }}
+            .bg-stop-end {{ stop-color: #020408; }}
+            .mesh-stop-start {{ stop-color: {c_spot_dark}; stop-opacity: 0.45; }}
+            .mesh-stop-end {{ stop-color: #020408; stop-opacity: 0; }}
+            .art-glow-start {{ stop-color: {c_accent_dark}; stop-opacity: 0.35; }}
+            .art-glow-end {{ stop-color: #020408; stop-opacity: 0; }}
+
             @media (prefers-color-scheme: light) {{
                 svg, :root {{
-                    --bg-start: {c_bg_light};
-                    --bg-end: #f1f3f5;
-                    --spot-color: {c_spot_light};
-                    --spot-opacity: 0.35;
-                    --art-glow: {c_accent_light};
-                    --art-glow-opacity: 0.25;
-                    --grain-fill: black;
-                    --grain-opacity: 0.015;
                     --glass-fill: rgba(255,255,255,0.3);
                     --glass-stroke: rgba(0,0,0,0.06);
                     --grid-stroke: rgba(0,0,0,0.04);
@@ -1590,7 +1583,15 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None):
                     --art-circle-dot: #0f172a;
                     --text-shadow: 0 2px 4px rgba(255,255,255,0.8);
                     --drop-shadow: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
+                    --grain-fill: black;
+                    --grain-opacity: 0.015;
                 }}
+                .bg-stop-start {{ stop-color: {c_bg_light}; }}
+                .bg-stop-end {{ stop-color: #f1f3f5; }}
+                .mesh-stop-start {{ stop-color: {c_spot_light}; stop-opacity: 0.35; }}
+                .mesh-stop-end {{ stop-color: #f1f3f5; stop-opacity: 0; }}
+                .art-glow-start {{ stop-color: {c_accent_light}; stop-opacity: 0.25; }}
+                .art-glow-end {{ stop-color: #f1f3f5; stop-opacity: 0; }}
             }}
         """
 
@@ -1716,18 +1717,18 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None):
         f'<style>{style_content}</style>',
         # Main Linear Background Gradient using styles
         f'  <linearGradient id="bg_{cluster_id}" x1="0%" y1="0%" x2="100%" y2="100%">',
-        '    <stop offset="0%" style="stop-color:var(--bg-start);stop-opacity:1" />',
-        '    <stop offset="100%" style="stop-color:var(--bg-end);stop-opacity:1" />',
+        '    <stop class="bg-stop-start" offset="0%" style="stop-opacity:1" />',
+        '    <stop class="bg-stop-end" offset="100%" style="stop-opacity:1" />',
         '  </linearGradient>',
         # Soft Neon Spotlight Glowing Mesh
         f'  <radialGradient id="mesh_{cluster_id}" cx="{60 + (seed%20)}%" cy="{40 + (seed%20)}%" r="70%">',
-        '    <stop offset="0%" style="stop-color:var(--spot-color);stop-opacity:var(--spot-opacity)" />',
-        '    <stop offset="100%" style="stop-color:var(--bg-end);stop-opacity:0" />',
+        '    <stop class="mesh-stop-start" offset="0%" />',
+        '    <stop class="mesh-stop-end" offset="100%" />',
         '  </radialGradient>',
         # Transparent Gradient for Art Fills
         f'  <linearGradient id="art_glow_{cluster_id}" x1="0%" y1="0%" x2="0%" y2="100%">',
-        '    <stop offset="0%" style="stop-color:var(--art-glow);stop-opacity:var(--art-glow-opacity)" />',
-        '    <stop offset="100%" style="stop-color:var(--bg-end);stop-opacity:0" />',
+        '    <stop class="art-glow-start" offset="0%" />',
+        '    <stop class="art-glow-end" offset="100%" />',
         '  </linearGradient>',
         # High-end paper-grain/noise texture filter
         '  <filter id="grain" x="0" y="0" width="100%" height="100%">',
