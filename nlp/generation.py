@@ -1487,183 +1487,110 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None):
     theme_l = str(theme or "").lower()
     if theme_l == "light":
         style_content = f"""
-            .bg-stop-start {{ stop-color: {c_bg_light}; }}
-            .bg-stop-end {{ stop-color: #f1f3f5; }}
-            .mesh-stop-start {{ stop-color: {c_spot_light}; stop-opacity: 0.35; }}
-            .mesh-stop-end {{ stop-color: #f1f3f5; stop-opacity: 0; }}
-            .art-glow-start {{ stop-color: {c_accent_light}; stop-opacity: 0.25; }}
-            .art-glow-end {{ stop-color: #f1f3f5; stop-opacity: 0; }}
-            .grain-rect {{ fill: black; opacity: 0.015; }}
-            .glass-panel {{ fill: rgba(255,255,255,0.3); stroke: rgba(0,0,0,0.06); }}
-            .grid-lines {{ stroke: rgba(0,0,0,0.04); }}
-            .synthesis-text {{ fill: #334155; opacity: 0.7; }}
-            .headline-text {{ fill: #0f172a; text-shadow: 0 2px 4px rgba(255,255,255,0.8); filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05)); }}
-            .brand-text {{ fill: #334155; opacity: 0.7; }}
-            .category-text {{ fill: {c_accent_light}; opacity: 0.95; }}
-
-            .art-ellipse-vvlight {{ stroke: rgba(0,0,0,0.02); fill: none; stroke-width: 1.5; }}
-            .art-ellipse-accent-dash {{ stroke: {c_accent_light}; fill: none; stroke-width: 2; stroke-dasharray: 6 4; opacity: 0.35; }}
-            .art-line-accent-thick {{ stroke: {c_accent_light}; stroke-width: 4; stroke-linecap: round; opacity: 0.3; }}
-            .art-circle-accent {{ fill: {c_accent_light}; opacity: 0.7; }}
-            .art-circle-dot {{ fill: #0f172a; opacity: 0.9; }}
-
-            .art-path-accent-thick {{ stroke: {c_accent_light}; fill: none; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; opacity: 0.35; }}
-            .art-path-glow {{ fill: url(#art_glow_{cluster_id}); opacity: 0.15; }}
-            .art-line-light {{ stroke: rgba(0,0,0,0.12); stroke-width: 1.5; }}
-            .art-line-vlight {{ stroke: rgba(0,0,0,0.05); stroke-width: 1; stroke-dasharray: 4 4; }}
-            .art-circle-light {{ fill: rgba(0,0,0,0.08); opacity: 0.5; }}
-
-            .art-circle-vvlight {{ stroke: rgba(0,0,0,0.02); fill: none; stroke-width: 1; }}
-            .art-rect-accent-dash {{ stroke: {c_accent_light}; fill: none; stroke-width: 1.5; stroke-dasharray: 6 4; opacity: 0.3; }}
-            .art-circle-accent-glow {{ fill: {c_accent_light}; opacity: 0.4; }}
-
-            .art-path-accent-curve {{ stroke: {c_accent_light}; fill: none; stroke-width: 4; stroke-linecap: round; opacity: 0.35; }}
-            .art-circle-accent-blur {{ fill: {c_accent_light}; opacity: 0.3; }}
-
-            .art-line-accent-base {{ stroke: {c_accent_light}; stroke-width: 4; stroke-linecap: round; opacity: 0.3; }}
-            .art-path-roof {{ stroke: {c_accent_light}; stroke-width: 3; fill: rgba(0,0,0,0.02); opacity: 0.3; }}
-
-            .art-circle-accent-thick {{ stroke: {c_accent_light}; fill: none; stroke-width: 2.5; opacity: 0.3; }}
-            .art-ellipse-light {{ stroke: rgba(0,0,0,0.08); fill: none; stroke-width: 1.5; }}
-
-            .art-circle-accent-dash-thick {{ stroke: {c_accent_light}; fill: none; stroke-width: 2; stroke-dasharray: 6 4; opacity: 0.35; }}
-            .art-circle-light-thin {{ stroke: rgba(0,0,0,0.05); fill: none; stroke-width: 1; }}
-            .art-line-light-thin {{ stroke: rgba(0,0,0,0.05); stroke-width: 1.5; }}
+            :root {{
+                --bg-start: {c_bg_light};
+                --bg-end: #f1f3f5;
+                --spot-color: {c_spot_light};
+                --spot-opacity: 0.35;
+                --art-glow: {c_accent_light};
+                --art-glow-opacity: 0.25;
+                --grain-fill: black;
+                --grain-opacity: 0.015;
+                --glass-fill: rgba(255,255,255,0.3);
+                --glass-stroke: rgba(0,0,0,0.06);
+                --grid-stroke: rgba(0,0,0,0.04);
+                --text-primary: #0f172a;
+                --text-meta: #334155;
+                --meta-opacity: 0.7;
+                --category-opacity: 0.95;
+                --art-accent: {c_accent_light};
+                --art-line-light: rgba(0,0,0,0.12);
+                --art-line-vlight: rgba(0,0,0,0.05);
+                --art-line-vvlight: rgba(0,0,0,0.02);
+                --art-circle-dot: #0f172a;
+                --text-shadow: 0 2px 4px rgba(255,255,255,0.8);
+                --drop-shadow: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
+            }}
         """
     elif theme_l == "dark":
         style_content = f"""
-            .bg-stop-start {{ stop-color: {c_bg_dark}; }}
-            .bg-stop-end {{ stop-color: #020408; }}
-            .mesh-stop-start {{ stop-color: {c_spot_dark}; stop-opacity: 0.45; }}
-            .mesh-stop-end {{ stop-color: #020408; stop-opacity: 0; }}
-            .art-glow-start {{ stop-color: {c_accent_dark}; stop-opacity: 0.35; }}
-            .art-glow-end {{ stop-color: #020408; stop-opacity: 0; }}
-            .grain-rect {{ fill: white; opacity: 0.04; }}
-            .glass-panel {{ fill: rgba(255,255,255,0.02); stroke: rgba(255,255,255,0.07); }}
-            .grid-lines {{ stroke: rgba(255,255,255,0.08); }}
-            .synthesis-text {{ fill: white; opacity: 0.75; }}
-            .headline-text {{ fill: white; text-shadow: 0 4px 12px rgba(0,0,0,0.5); filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4)); }}
-            .brand-text {{ fill: white; opacity: 0.6; }}
-            .category-text {{ fill: {c_accent_dark}; opacity: 0.8; }}
-
-            .art-ellipse-vvlight {{ stroke: rgba(255,255,255,0.03); fill: none; stroke-width: 1.5; }}
-            .art-ellipse-accent-dash {{ stroke: {c_accent_dark}; fill: none; stroke-width: 2; stroke-dasharray: 6 4; opacity: 0.25; }}
-            .art-line-accent-thick {{ stroke: {c_accent_dark}; stroke-width: 4; stroke-linecap: round; opacity: 0.3; }}
-            .art-circle-accent {{ fill: {c_accent_dark}; opacity: 0.7; }}
-            .art-circle-dot {{ fill: white; opacity: 0.9; }}
-
-            .art-path-accent-thick {{ stroke: {c_accent_dark}; fill: none; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; opacity: 0.35; }}
-            .art-path-glow {{ fill: url(#art_glow_{cluster_id}); opacity: 0.1; }}
-            .art-line-light {{ stroke: rgba(255,255,255,0.15); stroke-width: 1.5; }}
-            .art-line-vlight {{ stroke: rgba(255,255,255,0.05); stroke-width: 1; stroke-dasharray: 4 4; }}
-            .art-circle-light {{ fill: rgba(255,255,255,0.2); opacity: 0.5; }}
-
-            .art-circle-vvlight {{ stroke: rgba(255,255,255,0.03); fill: none; stroke-width: 1; }}
-            .art-rect-accent-dash {{ stroke: {c_accent_dark}; fill: none; stroke-width: 1.5; stroke-dasharray: 6 4; opacity: 0.3; }}
-            .art-circle-accent-glow {{ fill: {c_accent_dark}; opacity: 0.4; }}
-
-            .art-path-accent-curve {{ stroke: {c_accent_dark}; fill: none; stroke-width: 4; stroke-linecap: round; opacity: 0.35; }}
-            .art-circle-accent-blur {{ fill: {c_accent_dark}; opacity: 0.3; }}
-
-            .art-line-accent-base {{ stroke: {c_accent_dark}; stroke-width: 4; stroke-linecap: round; opacity: 0.3; }}
-            .art-path-roof {{ stroke: {c_accent_dark}; stroke-width: 3; fill: rgba(255,255,255,0.03); opacity: 0.3; }}
-
-            .art-circle-accent-thick {{ stroke: {c_accent_dark}; fill: none; stroke-width: 2.5; opacity: 0.3; }}
-            .art-ellipse-light {{ stroke: rgba(255,255,255,0.08); fill: none; stroke-width: 1.5; }}
-
-            .art-circle-accent-dash-thick {{ stroke: {c_accent_dark}; fill: none; stroke-width: 2; stroke-dasharray: 6 4; opacity: 0.35; }}
-            .art-circle-light-thin {{ stroke: rgba(255,255,255,0.08); fill: none; stroke-width: 1; }}
-            .art-line-light-thin {{ stroke: rgba(255,255,255,0.08); stroke-width: 1.5; }}
+            :root {{
+                --bg-start: {c_bg_dark};
+                --bg-end: #020408;
+                --spot-color: {c_spot_dark};
+                --spot-opacity: 0.45;
+                --art-glow: {c_accent_dark};
+                --art-glow-opacity: 0.35;
+                --grain-fill: white;
+                --grain-opacity: 0.04;
+                --glass-fill: rgba(255,255,255,0.02);
+                --glass-stroke: rgba(255,255,255,0.07);
+                --grid-stroke: rgba(255,255,255,0.08);
+                --text-primary: #ffffff;
+                --text-meta: #ffffff;
+                --meta-opacity: 0.6;
+                --category-opacity: 0.8;
+                --art-accent: {c_accent_dark};
+                --art-line-light: rgba(255,255,255,0.15);
+                --art-line-vlight: rgba(255,255,255,0.05);
+                --art-line-vvlight: rgba(255,255,255,0.03);
+                --art-circle-dot: #ffffff;
+                --text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+                --drop-shadow: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
+            }}
         """
     else:
         # Auto/System: Default to Dark, override on light prefers-color-scheme
         style_content = f"""
-            .bg-stop-start {{ stop-color: {c_bg_dark}; }}
-            .bg-stop-end {{ stop-color: #020408; }}
-            .mesh-stop-start {{ stop-color: {c_spot_dark}; stop-opacity: 0.45; }}
-            .mesh-stop-end {{ stop-color: #020408; stop-opacity: 0; }}
-            .art-glow-start {{ stop-color: {c_accent_dark}; stop-opacity: 0.35; }}
-            .art-glow-end {{ stop-color: #020408; stop-opacity: 0; }}
-            .grain-rect {{ fill: white; opacity: 0.04; }}
-            .glass-panel {{ fill: rgba(255,255,255,0.02); stroke: rgba(255,255,255,0.07); }}
-            .grid-lines {{ stroke: rgba(255,255,255,0.08); }}
-            .synthesis-text {{ fill: white; opacity: 0.75; }}
-            .headline-text {{ fill: white; text-shadow: 0 4px 12px rgba(0,0,0,0.5); filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4)); }}
-            .brand-text {{ fill: white; opacity: 0.6; }}
-            .category-text {{ fill: {c_accent_dark}; opacity: 0.8; }}
-
-            .art-ellipse-vvlight {{ stroke: rgba(255,255,255,0.03); fill: none; stroke-width: 1.5; }}
-            .art-ellipse-accent-dash {{ stroke: {c_accent_dark}; fill: none; stroke-width: 2; stroke-dasharray: 6 4; opacity: 0.25; }}
-            .art-line-accent-thick {{ stroke: {c_accent_dark}; stroke-width: 4; stroke-linecap: round; opacity: 0.3; }}
-            .art-circle-accent {{ fill: {c_accent_dark}; opacity: 0.7; }}
-            .art-circle-dot {{ fill: white; opacity: 0.9; }}
-
-            .art-path-accent-thick {{ stroke: {c_accent_dark}; fill: none; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; opacity: 0.35; }}
-            .art-path-glow {{ fill: url(#art_glow_{cluster_id}); opacity: 0.1; }}
-            .art-line-light {{ stroke: rgba(255,255,255,0.15); stroke-width: 1.5; }}
-            .art-line-vlight {{ stroke: rgba(255,255,255,0.05); stroke-width: 1; stroke-dasharray: 4 4; }}
-            .art-circle-light {{ fill: rgba(255,255,255,0.2); opacity: 0.5; }}
-
-            .art-circle-vvlight {{ stroke: rgba(255,255,255,0.03); fill: none; stroke-width: 1; }}
-            .art-rect-accent-dash {{ stroke: {c_accent_dark}; fill: none; stroke-width: 1.5; stroke-dasharray: 6 4; opacity: 0.3; }}
-            .art-circle-accent-glow {{ fill: {c_accent_dark}; opacity: 0.4; }}
-
-            .art-path-accent-curve {{ stroke: {c_accent_dark}; fill: none; stroke-width: 4; stroke-linecap: round; opacity: 0.35; }}
-            .art-circle-accent-blur {{ fill: {c_accent_dark}; opacity: 0.3; }}
-
-            .art-line-accent-base {{ stroke: {c_accent_dark}; stroke-width: 4; stroke-linecap: round; opacity: 0.3; }}
-            .art-path-roof {{ stroke: {c_accent_dark}; stroke-width: 3; fill: rgba(255,255,255,0.03); opacity: 0.3; }}
-
-            .art-circle-accent-thick {{ stroke: {c_accent_dark}; fill: none; stroke-width: 2.5; opacity: 0.3; }}
-            .art-ellipse-light {{ stroke: rgba(255,255,255,0.08); fill: none; stroke-width: 1.5; }}
-
-            .art-circle-accent-dash-thick {{ stroke: {c_accent_dark}; fill: none; stroke-width: 2; stroke-dasharray: 6 4; opacity: 0.35; }}
-            .art-circle-light-thin {{ stroke: rgba(255,255,255,0.08); fill: none; stroke-width: 1; }}
-            .art-line-light-thin {{ stroke: rgba(255,255,255,0.08); stroke-width: 1.5; }}
-
+            :root {{
+                --bg-start: {c_bg_dark};
+                --bg-end: #020408;
+                --spot-color: {c_spot_dark};
+                --spot-opacity: 0.45;
+                --art-glow: {c_accent_dark};
+                --art-glow-opacity: 0.35;
+                --grain-fill: white;
+                --grain-opacity: 0.04;
+                --glass-fill: rgba(255,255,255,0.02);
+                --glass-stroke: rgba(255,255,255,0.07);
+                --grid-stroke: rgba(255,255,255,0.08);
+                --text-primary: #ffffff;
+                --text-meta: #ffffff;
+                --meta-opacity: 0.6;
+                --category-opacity: 0.8;
+                --art-accent: {c_accent_dark};
+                --art-line-light: rgba(255,255,255,0.15);
+                --art-line-vlight: rgba(255,255,255,0.05);
+                --art-line-vvlight: rgba(255,255,255,0.03);
+                --art-circle-dot: #ffffff;
+                --text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+                --drop-shadow: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
+            }}
             @media (prefers-color-scheme: light) {{
-                .bg-stop-start {{ stop-color: {c_bg_light}; }}
-                .bg-stop-end {{ stop-color: #f1f3f5; }}
-                .mesh-stop-start {{ stop-color: {c_spot_light}; stop-opacity: 0.35; }}
-                .mesh-stop-end {{ stop-color: #f1f3f5; stop-opacity: 0; }}
-                .art-glow-start {{ stop-color: {c_accent_light}; stop-opacity: 0.25; }}
-                .art-glow-end {{ stop-color: #f1f3f5; stop-opacity: 0; }}
-                .grain-rect {{ fill: black; opacity: 0.015; }}
-                .glass-panel {{ fill: rgba(255,255,255,0.3); stroke: rgba(0,0,0,0.06); }}
-                .grid-lines {{ stroke: rgba(0,0,0,0.04); }}
-                .synthesis-text {{ fill: #334155; opacity: 0.7; }}
-                .headline-text {{ fill: #0f172a; text-shadow: 0 2px 4px rgba(255,255,255,0.8); filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05)); }}
-                .brand-text {{ fill: #334155; opacity: 0.7; }}
-                .category-text {{ fill: {c_accent_light}; opacity: 0.95; }}
-
-                .art-ellipse-vvlight {{ stroke: rgba(0,0,0,0.02); }}
-                .art-ellipse-accent-dash {{ stroke: {c_accent_light}; }}
-                .art-line-accent-thick {{ stroke: {c_accent_light}; }}
-                .art-circle-accent {{ fill: {c_accent_light}; }}
-                .art-circle-dot {{ fill: #0f172a; }}
-
-                .art-path-accent-thick {{ stroke: {c_accent_light}; }}
-                .art-path-glow {{ fill: url(#art_glow_{cluster_id}); }}
-                .art-line-light {{ stroke: rgba(0,0,0,0.12); }}
-                .art-line-vlight {{ stroke: rgba(0,0,0,0.05); }}
-                .art-circle-light {{ fill: rgba(0,0,0,0.08); }}
-
-                .art-circle-vvlight {{ stroke: rgba(0,0,0,0.02); }}
-                .art-rect-accent-dash {{ stroke: {c_accent_light}; }}
-                .art-circle-accent-glow {{ fill: {c_accent_light}; }}
-
-                .art-path-accent-curve {{ stroke: {c_accent_light}; }}
-                .art-circle-accent-blur {{ fill: {c_accent_light}; }}
-
-                .art-line-accent-base {{ stroke: {c_accent_light}; }}
-                .art-path-roof {{ stroke: {c_accent_light}; fill: rgba(0,0,0,0.02); }}
-
-                .art-circle-accent-thick {{ stroke: {c_accent_light}; }}
-                .art-ellipse-light {{ stroke: rgba(0,0,0,0.08); }}
-
-                .art-circle-accent-dash-thick {{ stroke: {c_accent_light}; }}
-                .art-circle-light-thin {{ stroke: rgba(0,0,0,0.05); }}
-                .art-line-light-thin {{ stroke: rgba(0,0,0,0.05); }}
+                :root {{
+                    --bg-start: {c_bg_light};
+                    --bg-end: #f1f3f5;
+                    --spot-color: {c_spot_light};
+                    --spot-opacity: 0.35;
+                    --art-glow: {c_accent_light};
+                    --art-glow-opacity: 0.25;
+                    --grain-fill: black;
+                    --grain-opacity: 0.015;
+                    --glass-fill: rgba(255,255,255,0.3);
+                    --glass-stroke: rgba(0,0,0,0.06);
+                    --grid-stroke: rgba(0,0,0,0.04);
+                    --text-primary: #0f172a;
+                    --text-meta: #334155;
+                    --meta-opacity: 0.7;
+                    --category-opacity: 0.95;
+                    --art-accent: {c_accent_light};
+                    --art-line-light: rgba(0,0,0,0.12);
+                    --art-line-vlight: rgba(0,0,0,0.05);
+                    --art-line-vvlight: rgba(0,0,0,0.02);
+                    --art-circle-dot: #0f172a;
+                    --text-shadow: 0 2px 4px rgba(255,255,255,0.8);
+                    --drop-shadow: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
+                }}
             }}
         """
 
@@ -1714,77 +1641,72 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None):
     # Vector Art backgrounds centered at cx=590, cy=225
     art_templates = {
         "Sport": f"""
-            <ellipse cx="590" cy="225" rx="110" ry="60" class="art-ellipse-vvlight"/>
-            <ellipse cx="590" cy="225" rx="140" ry="80" class="art-ellipse-accent-dash"/>
-            <line x1="450" y1="280" x2="730" y2="170" class="art-line-accent-thick"/>
-            <circle cx="680" cy="190" r="10" class="art-circle-accent"/>
-            <circle cx="680" cy="190" r="4" class="art-circle-dot"/>
+            <ellipse cx="590" cy="225" rx="110" ry="60" fill="none" stroke="var(--art-line-vvlight)" stroke-width="1.5"/>
+            <ellipse cx="590" cy="225" rx="140" ry="80" fill="none" stroke="var(--art-accent)" stroke-width="2" stroke-dasharray="6 4" opacity="0.25"/>
+            <line x1="450" y1="280" x2="730" y2="170" stroke="var(--art-accent)" stroke-width="4" stroke-linecap="round" opacity="0.3"/>
+            <circle cx="680" cy="190" r="10" fill="var(--art-accent)" opacity="0.7"/>
+            <circle cx="680" cy="190" r="4" fill="var(--art-circle-dot)" opacity="0.9"/>
         """,
         "Ekonomija": f"""
-            <path d="M 450 280 L 510 230 L 570 250 L 630 170 L 690 120" class="art-path-accent-thick"/>
-            <path d="M 450 280 L 510 230 L 570 250 L 630 170 L 690 120 L 690 280 L 450 280 Z" class="art-path-glow"/>
-            <line x1="440" y1="280" x2="700" y2="280" class="art-line-light"/>
-            <line x1="440" y1="230" x2="700" y2="230" class="art-line-vlight"/>
-            <line x1="440" y1="170" x2="700" y2="170" class="art-line-vlight"/>
-            <circle cx="690" cy="120" r="8" class="art-circle-accent"/>
+            <path d="M 450 280 L 510 230 L 570 250 L 630 170 L 690 120" fill="none" stroke="var(--art-accent)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.35"/>
+            <path d="M 450 280 L 510 230 L 570 250 L 630 170 L 690 120 L 690 280 L 450 280 Z" fill="url(#art_glow_{cluster_id})" opacity="0.1" stroke="none"/>
+            <line x1="440" y1="280" x2="700" y2="280" stroke="var(--art-line-light)" stroke-width="1.5"/>
+            <line x1="440" y1="230" x2="700" y2="230" stroke="var(--art-line-vlight)" stroke-width="1" stroke-dasharray="4 4"/>
+            <line x1="440" y1="170" x2="700" y2="170" stroke="var(--art-line-vlight)" stroke-width="1" stroke-dasharray="4 4"/>
+            <circle cx="690" cy="120" r="8" fill="var(--art-accent)" opacity="0.7"/>
         """,
         "Tehnologija": f"""
-            <circle cx="590" cy="225" r="70" class="art-circle-vvlight"/>
-            <rect x="520" y="155" width="140" height="140" rx="12" class="art-rect-accent-dash"/>
-            <circle cx="590" cy="225" r="22" class="art-circle-accent-glow"/>
-            <circle cx="535" cy="170" r="6" class="art-circle-accent"/>
-            <circle cx="645" cy="280" r="6" class="art-circle-accent"/>
-            <circle cx="645" cy="170" r="8" class="art-circle-light"/>
-            <line x1="535" y1="170" x2="590" y2="225" class="art-line-light"/>
-            <line x1="645" y1="280" x2="590" y2="225" class="art-line-light"/>
+            <circle cx="590" cy="225" r="70" fill="none" stroke="var(--art-line-vvlight)" stroke-width="1"/>
+            <rect x="520" y="155" width="140" height="140" rx="12" fill="none" stroke="var(--art-accent)" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.3"/>
+            <circle cx="590" cy="225" r="22" fill="var(--art-accent)" opacity="0.4"/>
+            <circle cx="535" cy="170" r="6" fill="var(--art-accent)" opacity="0.7"/>
+            <circle cx="645" cy="280" r="6" fill="var(--art-accent)" opacity="0.7"/>
+            <circle cx="645" cy="170" r="8" fill="var(--art-line-light)" opacity="0.5"/>
+            <line x1="535" y1="170" x2="590" y2="225" stroke="var(--art-line-light)" stroke-width="1.5"/>
+            <line x1="645" y1="280" x2="590" y2="225" stroke="var(--art-line-light)" stroke-width="1.5"/>
         """,
         "Zabava": f"""
-            <path d="M 460 240 C 510 160, 550 290, 590 225 C 630 160, 670 290, 720 210" class="art-path-accent-thick"/>
-            <circle cx="590" cy="225" r="45" class="art-circle-accent-blur" filter="blur(1px)"/>
-            <circle cx="610" cy="205" r="8" class="art-circle-dot"/>
+            <path d="M 460 240 C 510 160, 550 290, 590 225 C 630 160, 670 290, 720 210" fill="none" stroke="var(--art-accent)" stroke-width="4" stroke-linecap="round" opacity="0.35"/>
+            <circle cx="590" cy="225" r="45" fill="var(--art-accent)" opacity="0.3" filter="blur(1px)"/>
+            <circle cx="610" cy="205" r="8" fill="var(--art-circle-dot)" opacity="0.6"/>
         """,
         "Politika": f"""
-            <path d="M 480 270 L 700 270" class="art-line-accent-base"/>
-            <path d="M 480 160 L 700 160" class="art-line-accent-base"/>
-            <path d="M 515 160 L 515 270 M 552 160 L 552 270 M 590 160 L 590 270 M 627 160 L 627 270 M 665 160 L 665 270" class="art-line-light"/>
-            <path d="M 495 160 L 590 110 L 685 160 Z" class="art-path-roof"/>
-            <circle cx="590" cy="215" r="20" class="art-circle-accent"/>
+            <path d="M 480 270 L 700 270" stroke="var(--art-accent)" stroke-width="4" stroke-linecap="round" opacity="0.3"/>
+            <path d="M 480 160 L 700 160" stroke="var(--art-accent)" stroke-width="4" stroke-linecap="round" opacity="0.3"/>
+            <path d="M 515 160 L 515 270 M 552 160 L 552 270 M 590 160 L 590 270 M 627 160 L 627 270 M 665 160 L 665 270" stroke="var(--art-line-light)" stroke-width="2" opacity="0.6"/>
+            <path d="M 495 160 L 590 110 L 685 160 Z" stroke="var(--art-accent)" stroke-width="3" fill="var(--art-line-vvlight)" opacity="0.3"/>
+            <circle cx="590" cy="215" r="20" fill="var(--art-accent)" opacity="0.5"/>
         """,
         "Svet": f"""
-            <circle cx="590" cy="225" r="90" class="art-circle-accent-thick"/>
-            <ellipse cx="590" cy="225" rx="90" ry="32" class="art-ellipse-light"/>
-            <ellipse cx="590" cy="225" rx="32" ry="90" class="art-ellipse-light"/>
-            <circle cx="625" cy="180" r="7" class="art-circle-accent"/>
+            <circle cx="590" cy="225" r="90" fill="none" stroke="var(--art-accent)" stroke-width="2.5" opacity="0.3"/>
+            <ellipse cx="590" cy="225" rx="90" ry="32" fill="none" stroke="var(--art-line-light)" stroke-width="1.5"/>
+            <ellipse cx="590" cy="225" rx="32" ry="90" fill="none" stroke="var(--art-line-light)" stroke-width="1.5"/>
+            <circle cx="625" cy="180" r="7" fill="var(--art-accent)" opacity="0.7"/>
         """,
         "Local": f"""
-            <circle cx="590" cy="225" r="90" class="art-circle-light-thin"/>
-            <circle cx="590" cy="225" r="70" class="art-circle-accent-dash-thick"/>
-            <circle cx="590" cy="225" r="40" class="art-circle-light-thin"/>
-            <line x1="490" y1="225" x2="690" y2="225" class="art-line-light-thin"/>
-            <line x1="590" y1="125" x2="590" y2="325" class="art-line-light-thin"/>
-            <circle cx="550" cy="245" r="10" class="art-circle-accent"/>
-            <circle cx="550" cy="245" r="4" class="art-circle-dot"/>
+            <circle cx="590" cy="225" r="90" fill="none" stroke="var(--art-line-vvlight)" stroke-width="1"/>
+            <circle cx="590" cy="225" r="70" fill="none" stroke="var(--art-accent)" stroke-width="2" stroke-dasharray="6 4" opacity="0.35"/>
+            <circle cx="590" cy="225" r="40" fill="none" stroke="var(--art-line-light)" stroke-width="1"/>
+            <line x1="490" y1="225" x2="690" y2="225" stroke="var(--art-line-light)" stroke-width="1.5"/>
+            <line x1="590" y1="125" x2="590" y2="325" stroke="var(--art-line-light)" stroke-width="1.5"/>
+            <circle cx="550" cy="245" r="10" fill="var(--art-accent)" opacity="0.7"/>
+            <circle cx="550" cy="245" r="4" fill="var(--art-circle-dot)" opacity="0.9"/>
         """,
         "default": f"""
-            <circle cx="590" cy="225" r="60" class="art-circle-vvlight"/>
-            <circle cx="590" cy="225" r="85" class="art-circle-accent-dash-thick"/>
-            <circle cx="590" cy="225" r="22" class="art-circle-accent-glow"/>
-            <circle cx="535" cy="185" r="7" class="art-circle-accent"/>
-            <circle cx="645" cy="260" r="6" class="art-circle-accent"/>
-            <line x1="535" y1="185" x2="590" y2="225" class="art-line-light"/>
-            <line x1="645" cy="260" x2="590" y2="225" class="art-line-light"/>
+            <circle cx="590" cy="225" r="60" fill="none" stroke="var(--art-line-vvlight)" stroke-width="1"/>
+            <circle cx="590" cy="225" r="85" fill="none" stroke="var(--art-accent)" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.25"/>
+            <circle cx="590" cy="225" r="22" fill="var(--art-accent)" opacity="0.4"/>
+            <circle cx="535" cy="185" r="7" fill="var(--art-accent)" opacity="0.6"/>
+            <circle cx="645" cy="260" r="6" fill="var(--art-accent)" opacity="0.6"/>
+            <line x1="535" y1="185" x2="590" y2="225" stroke="var(--art-line-light)" stroke-width="1.5"/>
+            <line x1="645" y1="260" x2="590" y2="225" stroke="var(--art-line-light)" stroke-width="1.5"/>
         """
     }
 
     art_svg = art_templates.get(category_key, art_templates["default"])
 
     # Define color scheme support style for browser/image-tag content evaluation
-    if theme_l == "light":
-        color_scheme_style = 'style="color-scheme: light;"'
-    elif theme_l == "dark":
-        color_scheme_style = 'style="color-scheme: dark;"'
-    else:
-        color_scheme_style = 'style="color-scheme: light dark;"'
+    color_scheme_style = 'style="color-scheme: light dark;"'
 
     # 3. Construct premium editorial dynamic SVG
     svg = [
@@ -1794,18 +1716,18 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None):
         f'<style>{style_content}</style>',
         # Main Linear Background Gradient using styles
         f'  <linearGradient id="bg_{cluster_id}" x1="0%" y1="0%" x2="100%" y2="100%">',
-        '    <stop class="bg-stop-start" offset="0%" style="stop-opacity:1" />',
-        '    <stop class="bg-stop-end" offset="100%" style="stop-opacity:1" />',
+        '    <stop offset="0%" style="stop-color:var(--bg-start);stop-opacity:1" />',
+        '    <stop offset="100%" style="stop-color:var(--bg-end);stop-opacity:1" />',
         '  </linearGradient>',
         # Soft Neon Spotlight Glowing Mesh
         f'  <radialGradient id="mesh_{cluster_id}" cx="{60 + (seed%20)}%" cy="{40 + (seed%20)}%" r="70%">',
-        '    <stop class="mesh-stop-start" offset="0%" />',
-        '    <stop class="mesh-stop-end" offset="100%" />',
+        '    <stop offset="0%" style="stop-color:var(--spot-color);stop-opacity:var(--spot-opacity)" />',
+        '    <stop offset="100%" style="stop-color:var(--bg-end);stop-opacity:0" />',
         '  </radialGradient>',
         # Transparent Gradient for Art Fills
         f'  <linearGradient id="art_glow_{cluster_id}" x1="0%" y1="0%" x2="0%" y2="100%">',
-        '    <stop class="art-glow-start" offset="0%" />',
-        '    <stop class="art-glow-end" offset="100%" />',
+        '    <stop offset="0%" style="stop-color:var(--art-glow);stop-opacity:var(--art-glow-opacity)" />',
+        '    <stop offset="100%" style="stop-color:var(--bg-end);stop-opacity:0" />',
         '  </linearGradient>',
         # High-end paper-grain/noise texture filter
         '  <filter id="grain" x="0" y="0" width="100%" height="100%">',
