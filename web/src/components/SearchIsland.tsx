@@ -714,7 +714,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                          {selectedItem.data.has_synthesis && (
                            <span className="px-2 py-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[9px] font-black uppercase tracking-widest rounded flex items-center gap-1 shadow-sm shadow-amber-500/20">
                              <Sparkles size={10} fill="currentColor" />
-                             {lang === 'sr' ? 'AI SINTEZA' : 'AI СИНТЕЗА'}
+                             {lang === 'sr' ? 'SISTEMSKA SINTEZA' : 'СИСТЕМСКА СИНТЕЗА'}
                            </span>
                          )}
                          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-1"><Clock size={12} /> {lang === 'sr' ? 'PRE 2 ČASA' : 'ПРЕД 2 ЧАСА'}</span>
@@ -828,7 +828,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
            <div className="flex items-center gap-2 sm:gap-[var(--grid-gap)]">
               <span className="flex items-center gap-1.5"><Globe size={12} /> {lang === 'sr' ? 'GLOBALNA PRETRAGA' : 'ГЛОБАЛНО ПРЕБАРУВАЊЕ'}</span>
               <span className="hidden sm:inline w-1 h-1 rounded-full bg-border" />
-              <span className="hidden sm:flex items-center gap-1.5"><Sparkles size={12} /> AI {lang === 'sr' ? 'ASISTENCIJA' : 'АСИСТЕНЦИЈА'}</span>
+              <span className="hidden sm:flex items-center gap-1.5"><Sparkles size={12} /> {lang === 'sr' ? 'PAMETNA ASISTENCIJA' : 'ПАМЕТНА АСИСТЕНЦИЈА'}</span>
            </div>
         </div>
       </div>
