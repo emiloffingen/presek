@@ -10,16 +10,112 @@ import {
 } from 'lucide-react';
 import { getDisplaySummary, getDisplayTitle } from '../utils/textUtils';
 
-// Helper function to highlight matching search query text
+// Transliteration character mapping for Cyrillic/Latin script-agnostic matching
+const SCRIPT_MAP: Record<string, string[]> = {
+  'a': ['a', 'а', 'А', 'A'],
+  'а': ['a', 'а', 'А', 'A'],
+  'b': ['b', 'б', 'Б', 'B'],
+  'б': ['b', 'б', 'Б', 'B'],
+  'v': ['v', 'в', 'В', 'V'],
+  'в': ['v', 'в', 'В', 'V'],
+  'g': ['g', 'г', 'Г', 'G', 'ѓ', 'Ѓ'],
+  'г': ['g', 'г', 'Г', 'G', 'ѓ', 'Ѓ'],
+  'ѓ': ['g', 'г', 'Г', 'G', 'ѓ', 'Ѓ'],
+  'd': ['d', 'д', 'Д', 'D'],
+  'д': ['d', 'д', 'Д', 'D'],
+  'đ': ['đ', 'ђ', 'Ђ', 'Đ'],
+  'ђ': ['đ', 'ђ', 'Ђ', 'Đ'],
+  'e': ['e', 'е', 'Е', 'E'],
+  'е': ['e', 'е', 'Е', 'E'],
+  'ž': ['ž', 'ж', 'Ж', 'Ž'],
+  'ж': ['ž', 'ж', 'Ж', 'Ž'],
+  'z': ['z', 'з', 'З', 'Z'],
+  'з': ['z', 'з', 'З', 'Z'],
+  'i': ['i', 'и', 'И', 'I'],
+  'и': ['i', 'и', 'И', 'I'],
+  'j': ['j', 'ј', 'Ј', 'J'],
+  'ј': ['j', 'ј', 'Ј', 'J'],
+  'k': ['k', 'к', 'К', 'K', 'ќ', 'Ќ'],
+  'к': ['k', 'к', 'К', 'K', 'ќ', 'Ќ'],
+  'ќ': ['k', 'к', 'К', 'K', 'ќ', 'Ќ'],
+  'l': ['l', 'л', 'Л', 'L'],
+  'л': ['l', 'л', 'Л', 'L'],
+  'љ': ['љ', 'lj', 'Lj', 'LJ'],
+  'm': ['m', 'м', 'М', 'M'],
+  'м': ['m', 'м', 'М', 'M'],
+  'n': ['n', 'н', 'Н', 'N'],
+  'н': ['n', 'н', 'Н', 'N'],
+  'њ': ['њ', 'nj', 'Nj', 'NJ'],
+  'o': ['o', 'о', 'О', 'O'],
+  'о': ['o', 'о', 'О', 'O'],
+  'p': ['p', 'п', 'П', 'P'],
+  'п': ['p', 'п', 'П', 'P'],
+  'r': ['r', 'р', 'Р', 'R'],
+  'р': ['r', 'р', 'Р', 'R'],
+  's': ['s', 'с', 'С', 'S'],
+  'с': ['s', 'с', 'С', 'S'],
+  'ѕ': ['ѕ', 'dz', 'Dz', 'DZ'],
+  't': ['t', 'т', 'Т', 'T'],
+  'т': ['t', 'т', 'Т', 'T'],
+  'ć': ['ć', 'ћ', 'Ћ', 'Ć'],
+  'ћ': ['ć', 'ћ', 'Ћ', 'Ć'],
+  'u': ['u', 'у', 'У', 'U'],
+  'у': ['u', 'у', 'У', 'U'],
+  'f': ['f', 'ф', 'Ф', 'F'],
+  'ф': ['f', 'ф', 'Ф', 'F'],
+  'h': ['h', 'х', 'Х', 'H'],
+  'х': ['h', 'х', 'Х', 'H'],
+  'c': ['c', 'ц', 'Ц', 'C'],
+  'ц': ['c', 'ц', 'Ц', 'C'],
+  'č': ['č', 'ч', 'Ч', 'Č'],
+  'ч': ['č', 'ч', 'Ч', 'Č'],
+  'џ': ['џ', 'dž', 'Dž', 'DŽ'],
+  'š': ['š', 'ш', 'Ш', 'Š'],
+  'ш': ['š', 'ш', 'Ш', 'Š']
+};
+
+function getScriptAgnosticPattern(query: string) {
+  let escaped = query.toLowerCase().replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+  
+  // Replace digraphs first
+  escaped = escaped.replace(/dž/g, '(џ|dž)');
+  escaped = escaped.replace(/lj/g, '(љ|lj)');
+  escaped = escaped.replace(/nj/g, '(њ|nj)');
+  escaped = escaped.replace(/dz/g, '(ѕ|dz)');
+
+  let result = '';
+  for (let i = 0; i < escaped.length; i++) {
+    const char = escaped[i];
+    if (char === '(') {
+      const endIdx = escaped.indexOf(')', i);
+      if (endIdx !== -1) {
+        result += escaped.substring(i, endIdx + 1);
+        i = endIdx;
+        continue;
+      }
+    }
+    
+    const mapping = SCRIPT_MAP[char];
+    if (mapping) {
+      result += `[${Array.from(new Set(mapping)).join('')}]`;
+    } else {
+      result += char;
+    }
+  }
+  return result;
+}
+
+// Helper function to highlight matching search query text (script-agnostic)
 function highlightMatch(text: string, query: string) {
   if (!query.trim()) return text;
-  const escapedQuery = query.trim().replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-  const regex = new RegExp(`(${escapedQuery})`, 'gi');
+  const pattern = getScriptAgnosticPattern(query);
+  const regex = new RegExp(`(${pattern})`, 'gi');
+  const testRegex = new RegExp(`^(${pattern})$`, 'i');
   const parts = text.split(regex);
   return (
     <>
       {parts.map((part, i) =>
-        regex.test(part) ? (
+        testRegex.test(part) ? (
           <mark key={i} className="bg-amber-500/20 text-amber-900 dark:bg-amber-500/30 dark:text-amber-300 font-bold px-0.5 rounded">
             {part}
           </mark>
@@ -30,6 +126,29 @@ function highlightMatch(text: string, query: string) {
     </>
   );
 }
+
+function SearchSkeleton({ lang = 'sr' }: { lang?: string }) {
+  return (
+    <div className="space-y-6 animate-pulse">
+      <section>
+        <div className="h-3 w-32 bg-muted-foreground/20 rounded mb-4" />
+        <div className="space-y-2.5">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="flex items-start gap-3 sm:gap-[var(--grid-gap)] p-3 sm:p-4 rounded-xl border border-border/10 bg-secondary/15">
+              <div className="w-14 sm:w-16 aspect-[4/3] rounded-lg bg-muted-foreground/15 shrink-0" />
+              <div className="flex-1 min-w-0 space-y-2">
+                <div className="h-2.5 w-16 bg-muted-foreground/15 rounded" />
+                <div className="h-3.5 w-5/6 bg-muted-foreground/15 rounded" />
+                <div className="h-2.5 w-2/3 bg-muted-foreground/15 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 
 type Suggestion = {
   cluster_id: string;
@@ -228,6 +347,35 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
       clearTimeout(timer);
     };
   }, [isOpen]);
+
+  // Focus Trapping Effect
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleTabKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      if (!dialogRef.current) return;
+      const focusableElements = dialogRef.current.querySelectorAll(FOCUSABLE_SELECTOR);
+      if (focusableElements.length === 0) return;
+      
+      const firstElement = focusableElements[0] as HTMLElement;
+      const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+      
+      if (e.shiftKey) {
+        if (document.activeElement === firstElement) {
+          lastElement.focus();
+          e.preventDefault();
+        }
+      } else {
+        if (document.activeElement === lastElement) {
+          firstElement.focus();
+          e.preventDefault();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleTabKey);
+    return () => window.removeEventListener('keydown', handleTabKey);
+  }, [isOpen]);
+
 
   useEffect(() => {
     if (!isOpen) return;
@@ -596,70 +744,77 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
             {/* Results List */}
             {query.trim().length >= 2 && (
               <div className="space-y-6 sm:space-y-8">
-                {entityResult && (
-                  <section>
-                    <h3 className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.18em] sm:tracking-[0.2em] text-muted-foreground mb-3 sm:mb-4">{lang === 'sr' ? 'SUBJEKTI' : 'СУБЈЕКТИ'}</h3>
-                    <button
-                      onClick={() => navigateToQuery(entityResult.name)}
-                      className={`w-full flex items-center gap-3 sm:gap-[var(--grid-gap)] p-3 sm:p-4 rounded-xl border transition-all text-left ${activeIndex === 0 ? 'bg-nyt-accent/5 border-nyt-accent/30 ring-1 ring-nyt-accent/20' : 'bg-transparent border-transparent hover:bg-secondary/30'}`}
-                    >
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-secondary flex items-center justify-center shrink-0 border-2 border-nyt-accent/20">
-                        {entityResult.image_url ? (
-                          <img src={`/proxy?url=${encodeURIComponent(entityResult.image_url)}&w=128`} className="w-full h-full object-cover" />
-                        ) : (
-                          <User size={24} className="text-nyt-accent" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="font-serif font-black text-lg sm:text-xl">{highlightMatch(entityResult.name, query)}</p>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{entityResult.type} · {entityResult.total_mentions} {lang === 'sr' ? 'pominjanja' : 'споменувања'}</p>
-                      </div>
-                      <ArrowUpRight size={16} className="ml-auto text-muted-foreground" />
-                    </button>
-                  </section>
+                {isLoading ? (
+                  <SearchSkeleton lang={lang} />
+                ) : (
+                  <>
+                    {entityResult && (
+                      <section>
+                        <h3 className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.18em] sm:tracking-[0.2em] text-muted-foreground mb-3 sm:mb-4">{lang === 'sr' ? 'SUBJEKTI' : 'СУБЈЕКТИ'}</h3>
+                        <button
+                          onClick={() => navigateToQuery(entityResult.name)}
+                          className={`w-full flex items-center gap-3 sm:gap-[var(--grid-gap)] p-3 sm:p-4 rounded-xl border transition-all text-left ${activeIndex === 0 ? 'bg-nyt-accent/5 border-nyt-accent/30 ring-1 ring-nyt-accent/20' : 'bg-transparent border-transparent hover:bg-secondary/30'}`}
+                        >
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-secondary flex items-center justify-center shrink-0 border-2 border-nyt-accent/20">
+                            {entityResult.image_url ? (
+                              <img src={`/proxy?url=${encodeURIComponent(entityResult.image_url)}&w=128`} className="w-full h-full object-cover" />
+                            ) : (
+                              <User size={24} className="text-nyt-accent" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-serif font-black text-lg sm:text-xl">{highlightMatch(entityResult.name, query)}</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{entityResult.type} · {entityResult.total_mentions} {lang === 'sr' ? 'pominjanja' : 'споменувања'}</p>
+                          </div>
+                          <ArrowUpRight size={16} className="ml-auto text-muted-foreground" />
+                        </button>
+                      </section>
+                    )}
+
+                    {suggestions.length > 0 && (
+                      <section>
+                        <h3 className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.18em] sm:tracking-[0.2em] text-muted-foreground mb-3 sm:mb-4">{lang === 'sr' ? 'VESTI I PRIČE' : 'ВЕСТИ И ПРИКАЗНИ'}</h3>
+                        <div className="space-y-2">
+                          {suggestions.map((item, idx) => {
+                            const globalIdx = entityResult ? idx + 1 : idx;
+                            return (
+                              <button
+                                key={item.cluster_id}
+                                onClick={() => navigateToCluster(item.cluster_id)}
+                                className={`w-full flex items-start gap-3 sm:gap-[var(--grid-gap)] p-3 sm:p-4 rounded-xl border transition-all text-left group ${
+                                  item.has_synthesis
+                                    ? 'bg-amber-500/5 border-amber-500/10 hover:border-amber-500/30'
+                                    : 'bg-transparent border-transparent hover:bg-secondary/30'
+                                } ${activeIndex === globalIdx ? 'bg-nyt-accent/5 border-nyt-accent/30 ring-1 ring-nyt-accent/20' : ''}`}
+                              >
+                                <div className="w-14 sm:w-16 aspect-[4/3] rounded-lg overflow-hidden bg-secondary shrink-0 border border-border/50">
+                                  {item.image_url && <img src={`/proxy?url=${encodeURIComponent(item.image_url)}&w=200`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-1.5 mb-1">
+                                    <span className={`text-[9px] font-black uppercase tracking-wider ${item.has_synthesis ? 'text-amber-600 dark:text-amber-400' : 'text-nyt-accent'}`}>{item.category}</span>
+                                    {item.has_synthesis && (
+                                      <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[8px] font-black uppercase tracking-wider">
+                                        <Sparkles size={8} fill="currentColor" />
+                                        {lang === 'sr' ? 'Sinteza' : 'Синтеза'}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="font-serif font-black text-base sm:text-lg leading-tight line-clamp-2 group-hover:text-nyt-accent transition-colors">{highlightMatch(item.title, query)}</p>
+                                  <div className="flex items-center gap-2 sm:gap-[var(--grid-gap)] mt-1.5 sm:mt-2 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
+                                    <span>{item.source}</span>
+                                    <span>{item.sourceCount} {item.sourceCount === 1 ? (lang === 'sr' ? 'izvor' : 'извор') : (lang === 'sr' ? 'izvora' : 'извори')}</span>
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </section>
+                    )}
+                  </>
                 )}
 
-                {suggestions.length > 0 && (
-                  <section>
-                    <h3 className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.18em] sm:tracking-[0.2em] text-muted-foreground mb-3 sm:mb-4">{lang === 'sr' ? 'VESTI I PRIČE' : 'ВЕСТИ И ПРИКАЗНИ'}</h3>
-                    <div className="space-y-2">
-                      {suggestions.map((item, idx) => {
-                        const globalIdx = entityResult ? idx + 1 : idx;
-                        return (
-                          <button
-                            key={item.cluster_id}
-                            onClick={() => navigateToCluster(item.cluster_id)}
-                            className={`w-full flex items-start gap-3 sm:gap-[var(--grid-gap)] p-3 sm:p-4 rounded-xl border transition-all text-left group ${
-                              item.has_synthesis
-                                ? 'bg-amber-500/5 border-amber-500/10 hover:border-amber-500/30'
-                                : 'bg-transparent border-transparent hover:bg-secondary/30'
-                            } ${activeIndex === globalIdx ? 'bg-nyt-accent/5 border-nyt-accent/30 ring-1 ring-nyt-accent/20' : ''}`}
-                          >
-                            <div className="w-14 sm:w-16 aspect-[4/3] rounded-lg overflow-hidden bg-secondary shrink-0 border border-border/50">
-                              {item.image_url && <img src={`/proxy?url=${encodeURIComponent(item.image_url)}&w=200`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-1.5 mb-1">
-                                <span className={`text-[9px] font-black uppercase tracking-wider ${item.has_synthesis ? 'text-amber-600 dark:text-amber-400' : 'text-nyt-accent'}`}>{item.category}</span>
-                                {item.has_synthesis && (
-                                  <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[8px] font-black uppercase tracking-wider">
-                                    <Sparkles size={8} fill="currentColor" />
-                                    {lang === 'sr' ? 'Sinteza' : 'Синтеза'}
-                                  </span>
-                                )}
-                              </div>
-                              <p className="font-serif font-black text-base sm:text-lg leading-tight line-clamp-2 group-hover:text-nyt-accent transition-colors">{highlightMatch(item.title, query)}</p>
-                              <div className="flex items-center gap-2 sm:gap-[var(--grid-gap)] mt-1.5 sm:mt-2 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
-                                <span>{item.source}</span>
-                                <span>{item.sourceCount} {item.sourceCount === 1 ? (lang === 'sr' ? 'izvor' : 'извор') : (lang === 'sr' ? 'izvora' : 'извори')}</span>
-                              </div>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </section>
-                )}
 
                 {filteredActions.length > 0 && (
                   <section>
