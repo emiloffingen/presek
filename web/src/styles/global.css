@@ -4712,6 +4712,7 @@ button:active,
 .bento-box-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  grid-auto-flow: dense;
   gap: 1.25rem;
   align-items: stretch;
 }
