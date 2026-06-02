@@ -25,6 +25,7 @@ class HomeResponse(BaseModel):
     lead: Optional[Any] = None
     lead_display: Optional[Dict[str, Any]] = None
     supporting: List[Any] = Field(default_factory=list)
+    synthesis_picks: List[Any] = Field(default_factory=list)
     live_now: List[Any] = Field(default_factory=list)
     for_you_pool: List[Any] = Field(default_factory=list)
     developing: List[Any] = Field(default_factory=list)
@@ -455,6 +456,104 @@ def _is_usable_focus_entity(name):
     return True
 
 
+async def fetch_synthesis_picks(lang: str = "sr") -> List[Dict[str, Any]]:
+    """Fetches the latest clusters that have a generated synthesis for the given language."""
+    from collections import defaultdict
+    from core.database import db_manager as db
+    from utils import score_cluster, score_cluster_for_homepage, is_balanced, annotate_cluster_articles
+    from routes.news import _compute_editorial_signals, _public_article_payload, _as_list, _parse_maybe_json
+    from utils.ranking import transliterate_cyr_to_lat, transliterate_lat_to_cyr
+
+    # Get latest cluster IDs with synthesis for this language
+    sql = """
+        SELECT DISTINCT s.cluster_id, s.created_at
+        FROM cluster_summaries s
+        WHERE s.lang = %s
+          AND COALESCE(s.synthetic_headline, '') != ''
+          AND COALESCE(s.generated_article, '') != ''
+          AND EXISTS (SELECT 1 FROM articles a WHERE a.cluster_id = s.cluster_id)
+        ORDER BY s.created_at DESC
+        LIMIT 4
+    """
+    rows = await db.async_execute(sql, (lang,))
+    cids = [r["cluster_id"] for r in rows]
+    if not cids:
+        return []
+
+    # Fetch articles in these clusters
+    art_rows = await db.async_execute(
+        "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
+        (cids,),
+    )
+
+    clusters_grouped = defaultdict(list)
+    for art in art_rows:
+        cid = art["cluster_id"]
+        clusters_grouped[cid].append(art)
+
+    meta_rows = await db.async_execute(
+        "SELECT cluster_id, representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = ANY(%s)",
+        (cids,),
+    )
+    meta_map = {r["cluster_id"]: r for r in meta_rows}
+
+    summary_rows = await db.async_execute(
+        """
+        SELECT cluster_id, synthetic_headline, synthetic_standfirst, key_facts,
+               analyst_entities, pulse_score, pluralism_score, narrative_diversity,
+               generated_article, quote
+        FROM cluster_summaries
+        WHERE cluster_id = ANY(%s) AND lang = %s
+        """,
+        (cids, lang),
+    )
+    summary_map = {r["cluster_id"]: r for r in summary_rows}
+
+    formatted_clusters = []
+    for cid in cids:
+        arts = clusters_grouped.get(cid)
+        if not arts:
+            continue
+
+        # Annotate articles in cluster
+        arts = annotate_cluster_articles(arts)
+
+        main = arts[0]
+        s = score_cluster(arts)
+        homepage_score = score_cluster_for_homepage(arts)
+        editorial = _compute_editorial_signals(arts, s, homepage_score)
+        meta = meta_map.get(cid, {})
+        summary = summary_map.get(cid, {})
+
+        fc = {
+            "cluster_id": cid,
+            "articles": [_public_article_payload(article, lang=lang) for article in arts],
+            "representative_image": meta.get("representative_image"),
+            "dominant_color": meta.get("dominant_color"),
+            "synthetic_headline": summary.get("synthetic_headline"),
+            "synthetic_standfirst": summary.get("synthetic_standfirst"),
+            "generated_article": summary.get("generated_article"),
+            "quote": summary.get("quote"),
+            "key_facts": _as_list(summary.get("key_facts")),
+            "analyst_entities": _as_list(summary.get("analyst_entities")),
+            "pulse_score": summary.get("pulse_score"),
+            "pluralism_score": summary.get("pluralism_score"),
+            "narrative_diversity": _parse_maybe_json(summary.get("narrative_diversity")),
+            "reading_time": main.get("reading_time", 1),
+            "score": round(s, 3),
+            "homepage_score": round(homepage_score, 3),
+            "is_breaking": s >= 1.5,
+            "has_synthesis": True,
+            "has_fact_check": any(a.get("is_fact_check") for a in arts),
+            "has_balanced": is_balanced(arts),
+            "entities": [transliterate_cyr_to_lat(e) for e in main.get("entity_names", [])] if lang == "sr" else ([transliterate_lat_to_cyr(e) for e in main.get("entity_names", [])] if lang == "mk" else main.get("entity_names", [])),
+            **editorial,
+        }
+        formatted_clusters.append(fc)
+
+    return formatted_clusters
+
+
 @router.get("/home", response_model=HomeResponse)
 async def get_home(request: Request = None, lang: Optional[str] = "sr"):
     # Support legacy tests passing lang as a positional argument
@@ -482,10 +581,11 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
             get_trending_route(lang=lang),
             get_top_entities(limit=12, lang=lang),
             get_stats_summary(lang=lang),
+            fetch_synthesis_picks(lang=lang),
             return_exceptions=True,
         )
 
-        news_result, recent_result, trending, top_entities, stats = results
+        news_result, recent_result, trending, top_entities, stats, synthesis_picks = results
 
         # Basic error check (ensure news_result is a dict)
         if isinstance(news_result, Exception):
@@ -503,6 +603,9 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
             top_entities = []
         if isinstance(stats, Exception):
             stats = {}
+        if isinstance(synthesis_picks, Exception):
+            log.error(f"Failed to fetch synthesis picks: {synthesis_picks}")
+            synthesis_picks = []
 
         if hasattr(stats, "body") and hasattr(stats, "status_code"):
             import json
@@ -514,6 +617,9 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
 
         clusters = news_result.get("clusters") or []
         global_clusters = news_result.get("global_clusters") or []
+
+        synthesis_pick_ids = {c["cluster_id"] for c in synthesis_picks}
+        clusters = [c for c in clusters if c["cluster_id"] not in synthesis_pick_ids]
 
         lead = clusters[0] if clusters else None
         supporting = clusters[1:5]
@@ -606,6 +712,7 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
             for cluster_id in [
                 lead.get("cluster_id") if lead else None,
                 *[c.get("cluster_id") for c in supporting],
+                *[c.get("cluster_id") for c in (synthesis_picks or [])],
             ]
             if cluster_id
         ]
@@ -651,6 +758,7 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
             "lead": _compact_home_cluster(_decorate_cluster_display(lead), max_articles=4),
             "lead_display": _build_lead_display(lead, lang=lang),
             "supporting": _compact_home_clusters(_decorate_clusters_display(supporting), max_articles=4),
+            "synthesis_picks": _compact_home_clusters(_decorate_clusters_display(synthesis_picks), max_articles=4),
             "live_now": _compact_home_clusters(_decorate_clusters_display(live_now), max_articles=4),
             "for_you_pool": _compact_home_clusters(_decorate_clusters_display(for_you_pool), max_articles=3),
             "developing": _compact_home_clusters(_decorate_clusters_display(developing), max_articles=4),
