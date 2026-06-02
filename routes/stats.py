@@ -482,12 +482,12 @@ async def get_stats_summary(lang: Optional[str] = "sr"):
           -- Priority to objective content if sentiment data exists
           AND (
               s.sentiment->'tone_analysis'->>'objectivity' IS NULL
-              OR (s.sentiment->'tone_analysis'->>'objectivity')::float >= 0.4
+              OR (CASE WHEN (s.sentiment->'tone_analysis'->>'objectivity') ~ '^[0-9.]+$' THEN (s.sentiment->'tone_analysis'->>'objectivity')::float ELSE 0.0 END) >= 0.4
           )
         GROUP BY s.quote, s.summary, s.generated_article, s.cluster_id, s.created_at, s.sentiment
         ORDER BY
             CASE WHEN COALESCE(s.quote, '') != '' THEN 0 ELSE 1 END,
-            COALESCE((s.sentiment->'tone_analysis'->>'objectivity')::float, 0.5) DESC,
+            COALESCE(CASE WHEN (s.sentiment->'tone_analysis'->>'objectivity') ~ '^[0-9.]+$' THEN (s.sentiment->'tone_analysis'->>'objectivity')::float ELSE NULL END, 0.5) DESC,
             s.created_at DESC
         LIMIT 1
     """,
@@ -869,9 +869,9 @@ async def get_sentiment_trends(lang: Optional[str] = "sr"):
     sql = """
         SELECT
             DATE(created_at) as day,
-            AVG((sentiment->'sentiment'->>'score')::float) as avg_score,
-            AVG((tone_analysis->>'objectivity')::float) as avg_objectivity,
-            AVG((tone_analysis->>'sensationalism')::float) as avg_sensationalism,
+            AVG(CASE WHEN (sentiment->'sentiment'->>'score') ~ '^-?[0-9.]+$' THEN (sentiment->'sentiment'->>'score')::float ELSE NULL END) as avg_score,
+            AVG(CASE WHEN (tone_analysis->>'objectivity') ~ '^[0-9.]+$' THEN (tone_analysis->>'objectivity')::float ELSE NULL END) as avg_objectivity,
+            AVG(CASE WHEN (tone_analysis->>'sensationalism') ~ '^[0-9.]+$' THEN (tone_analysis->>'sensationalism')::float ELSE NULL END) as avg_sensationalism,
             COUNT(*) as cluster_count
         FROM cluster_summaries
         WHERE created_at >= NOW() - INTERVAL '7 days'
@@ -926,8 +926,8 @@ async def get_current_mood(lang: Optional[str] = "sr"):
     sql = """
         SELECT
             sentiment->'sentiment'->>'tone' as tone,
-            (sentiment->'sentiment'->>'score')::float as score,
-            (tone_analysis->>'objectivity')::float as objectivity
+            CASE WHEN (sentiment->'sentiment'->>'score') ~ '^-?[0-9.]+$' THEN (sentiment->'sentiment'->>'score')::float ELSE NULL END as score,
+            CASE WHEN (tone_analysis->>'objectivity') ~ '^[0-9.]+$' THEN (tone_analysis->>'objectivity')::float ELSE NULL END as objectivity
         FROM cluster_summaries
         WHERE created_at >= NOW() - INTERVAL '24 hours'
           AND sentiment IS NOT NULL

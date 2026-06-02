@@ -575,7 +575,7 @@ async def get_source_pulse(category: Optional[str] = None, lang: Optional[str] =
     rows = await db.async_execute(sql, tuple(final_params))
 
     for r in rows:
-        r["trust_label"] = get_source_trust_label(r["source"])
+        r["trust_label"] = get_source_trust_label(r["source"], lang=lang)
         r["effective_weight"] = round(get_source_effective_weight(r["source"]), 2)
         # Calculate delta defensively
         if r.get("avg_objectivity") is not None and r.get("baseline_objectivity") is not None:
