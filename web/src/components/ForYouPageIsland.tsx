@@ -222,16 +222,25 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
         <div className="for-you-signal-panel" aria-label={isMK ? 'Состојба на профилот' : 'Stanje profila'}>
           <div className="signal-head">
             <Gauge size={18} />
-            <span>{isMK ? 'Сигнал профила' : 'Signal profila'}</span>
+            <span>{isMK ? 'Сигнал на профилот' : 'Signal profila'}</span>
             <strong>{signalStrength}%</strong>
           </div>
           <div className="signal-meter" aria-hidden="true">
             <span style={{ width: `${signalStrength}%` }}></span>
           </div>
           <div className="signal-metrics">
-            <span><BellRing size={13} /> {followedTopics.length + followedSources.length}</span>
-            <span><Layers size={13} /> {mergedClusters.length}</span>
-            <span><Radio size={13} /> {sourceCount}</span>
+            <span title={isMK ? 'Следени сигнали (теми и извори)' : 'Praćeni signali (teme i izvori)'}>
+              <BellRing size={13} /> {followedTopics.length + followedSources.length}
+              <small className="ml-1 text-[9px] opacity-70 font-normal">{isMK ? 'сигнали' : 'signala'}</small>
+            </span>
+            <span title={isMK ? 'Препорачани приказни' : 'Preporučene priče'}>
+              <Layers size={13} /> {mergedClusters.length}
+              <small className="ml-1 text-[9px] opacity-70 font-normal">{isMK ? 'вести' : 'vesti'}</small>
+            </span>
+            <span title={isMK ? 'Опфатени извори' : 'Obuhvaćeni izvori'}>
+              <Radio size={13} /> {sourceCount}
+              <small className="ml-1 text-[9px] opacity-70 font-normal">{isMK ? 'извори' : 'izvora'}</small>
+            </span>
           </div>
         </div>
       </section>
@@ -251,7 +260,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
               <h2>{isMK ? 'Најрелевантно сега' : 'Najrelevantnije sada'}</h2>
             </div>
             <a href={isMK ? '/mk/settings' : '/settings'} className="for-you-text-link">
-              <SlidersHorizontal size={14} /> {isMK ? 'Подеси' : 'Podesi'}
+              <SlidersHorizontal size={14} /> {isMK ? 'Прилагоди' : 'Podesi'}
             </a>
           </section>
 

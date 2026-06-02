@@ -439,3 +439,45 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* Fix double borders and nested visual layers in For You dashboard */
+.priority-story .nyt-article,
+.recommendation-tile .nyt-article {
+    border: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.priority-story .nyt-article:hover,
+.recommendation-tile .nyt-article:hover {
+    background: transparent !important;
+    transform: none !important;
+}
+
+.priority-story,
+.recommendation-tile {
+    transition: all 0.4s var(--ease-editorial);
+    position: relative;
+    overflow: hidden;
+}
+
+.priority-story:hover,
+.recommendation-tile:hover {
+    transform: translateY(-3px);
+    border-color: var(--nyt-accent);
+    box-shadow: var(--shadow-lg);
+    background: color-mix(in srgb, var(--card) 94%, var(--nyt-accent) 6%);
+}
+
+.priority-story.is-primary:hover {
+    background: color-mix(in srgb, var(--card) 90%, var(--nyt-accent) 10%);
+}
+
+.cold-start-panel .onboarding-card {
+    border: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
