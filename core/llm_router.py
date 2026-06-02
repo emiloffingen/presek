@@ -59,12 +59,12 @@ class SmartModelRouter:
 
         # Medium Complexity: Standard news, moderate cluster size
         if article_count >= 3 or has_high_weight:
-            # Route to local Gemma 2 2B if available, otherwise Mistral Small
-            if os.environ.get("LOCAL_MODEL_PATH") or os.path.exists("models/gemma-2-2b-it-Q4_K_M.gguf"):
+            # Route to local Gemma 4 if available, otherwise Mistral Small
+            if os.environ.get("LOCAL_MODEL_PATH") or os.path.exists("models/google_gemma-4-E4B-it-Q8_0.gguf"):
                 return "local"
             return "mistral_small"
 
         # Low Complexity: 1-2 articles, straightforward routine news
-        if os.environ.get("LOCAL_MODEL_PATH") or os.path.exists("models/gemma-2-2b-it-Q4_K_M.gguf"):
+        if os.environ.get("LOCAL_MODEL_PATH") or os.path.exists("models/google_gemma-4-E4B-it-Q8_0.gguf"):
             return "local"
         return "enhanced_fallback"
