@@ -9,6 +9,7 @@ import '../../styles/archive-premium.css';
 import { apiBaseUrl } from '../../lib/apiBase';
 import { sanitizeHtml } from '../../lib/sanitize';
 import { CalendarDays, ChevronRight, Hash, Building2, Sparkles, Search, Activity } from 'lucide-react';
+
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 
 const hostHeader = Astro.request?.headers.get('host');
@@ -62,7 +63,8 @@ const buildFilterHref = (kind: 'source' | 'topic' | 'q', value: string) => {
   if (kind === 'source') { if (value) params.set('source', value); if (topic) params.set('topic', topic); if (q) params.set('q', q); }
   else if (kind === 'topic') { if (source) params.set('source', source); if (value) params.set('topic', value); if (q) params.set('q', q); }
   else { if (source) params.set('source', source); if (topic) params.set('topic', topic); if (value) params.set('q', value); }
-  return `/mk/archive?${params.toString()}`;
+  const prefix = isMK ? '/mk' : '';
+  return `${prefix}/archive?${params.toString()}`;
 };
 
 const formattedDisplayDate = new Date(archive.date).toLocaleDateString(isMK ? 'mk-MK' : 'sr-RS', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -152,15 +154,15 @@ function formatBriefingItem(item: string) {
 
                     <div class="flex items-center gap-1">
                         <a
-                            href={`/mk/archive?date=${new Date(new Date(date).getTime() - 86400000).toISOString().split('T')[0]}`}
+                            href={`${isMK ? '/mk' : ''}/archive?date=${new Date(new Date(date).getTime() - 86400000).toISOString().split('T')[0]}`}
                             class="archive-nav-btn"
                         >
                             ← {isMK ? 'ПРЕТХОДЕН' : 'PRETHODNI'}
                         </a>
                         {new Date(date) < new Date(new Date().toISOString().split('T')[0]) && (
                             <a
-                                href={`/mk/archive?date=${new Date(new Date(date).getTime() + 86400000).toISOString().split('T')[0]}`}
-                                class="archive-nav-btn"
+                                  href={`${isMK ? '/mk' : ''}/archive?date=${new Date(new Date(date).getTime() + 86400000).toISOString().split('T')[0]}`}
+                                  class="archive-nav-btn"
                             >
                                 {isMK ? 'СЛЕДЕН' : 'SLEDEĆI'} →
                             </a>
@@ -209,10 +211,8 @@ function formatBriefingItem(item: string) {
     </details>
 
     <div class="broadsheet-grid">
-      <div class="broadsheet-main">
-        {error && <div class="bg-destructive/10 text-destructive p-4 rounded-sm border border-destructive/20 mb-8 font-black uppercase text-[10px] tracking-widest">{error}</div>}
-
-        {q || source || topic ? (
+        <section class="broadsheet-main">
+            {q || source || topic ? (
                 <div class="active-filters mb-12 flex items-center gap-[var(--grid-gap)] p-4 bg-nyt-accent/[0.03] border border-nyt-accent/10 rounded-lg">
                     <span class="font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('archive.active_filter')}</span>
                     <div class="flex flex-wrap gap-[var(--grid-gap)]">
@@ -220,55 +220,62 @@ function formatBriefingItem(item: string) {
                         {source && <span class="px-3 py-1 bg-foreground text-background rounded-full font-sans text-[10px] font-black uppercase tracking-widest flex items-center gap-[var(--grid-gap)]">🏢 {source} <a href={buildFilterHref('source', '')} class="ml-1 opacity-60 hover:opacity-100">×</a></span>}
                         {topic && <span class="px-3 py-1 bg-foreground text-background rounded-full font-sans text-[10px] font-black uppercase tracking-widest flex items-center gap-[var(--grid-gap)]"># {topic} <a href={buildFilterHref('topic', '')} class="ml-1 opacity-60 hover:opacity-100">×</a></span>}
                     </div>
-                    <a href={`/mk/archive?date=${date}`} class="ml-auto font-sans text-[10px] font-black uppercase tracking-widest text-nyt-accent underline decoration-2 underline-offset-4">{t('archive.clear')}</a>
+                    <a href={`${isMK ? '/mk' : ''}/archive?date=${date}`} class="ml-auto font-sans text-[10px] font-black uppercase tracking-widest text-nyt-accent underline decoration-2 underline-offset-4">{t('archive.clear')}</a>
                 </div>
             ) : null}
 
-        {archive.clusters && archive.clusters.length > 0 ? (
-          <div class="archive-feed-list space-y-12">
-            <ArchiveFeedIsland client:visible initialClusters={archive.clusters} initialHasMore={archive.has_more} pageSize={archive.page_size || 50} date={date} q={q} source={source} topic={topic} lang={lang} />
-          </div>
-        ) : (
-          <div class="empty-archive-state py-24 text-center border-2 border-dashed border-border/60 rounded-2xl">
-            <Activity size={48} className="mx-auto mb-6 text-muted-foreground/30" />
-            <h2 class="font-serif text-3xl font-black italic mb-4">{t('archive.empty')}</h2>
-            <p class="font-nyt-body text-muted-foreground">{isMK ? 'Пробајте со друг датум или прилагодете ги филтрите за пребарување.' : 'Probajte sa drugim datumom ili prilagodite filtere pretrage.'}</p>
-            <button onclick="window.location.href='/mk/archive'" class="mt-8 text-[10px] font-black uppercase tracking-widest text-nyt-accent underline underline-offset-8">{t('archive.reset')}</button>
-          </div>
-        )}
-      </div>
-
-      <aside class="broadsheet-rail pl-4">
-        {/* ON THIS DAY */}
-        {onThisDay.cluster_id && (
-            <div class="archive-otd-card mb-12">
-                <div class="absolute top-0 right-0 p-4 opacity-10">
-                    <CalendarDays size={64} />
-                </div>
-                <span class="block font-sans text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent mb-4">{t('archive.on_this_day')}</span>
-                <h3 class="font-serif text-2xl font-black leading-tight mb-4 tracking-tight">
-                    {t('archive.years_ago').replace('{n}', onThisDay.years_ago)}
-                </h3>
-                <div class="otd-content group">
-                    {onThisDay.image && (
-                        <div class="mb-4 overflow-hidden rounded-lg shadow-sm">
-                            <img src={onThisDay.image} alt="" class="w-full aspect-video object-cover transition-transform group-hover:scale-105 duration-700" />
-                        </div>
-                    )}
-                    <a href={`/mk/cluster/${onThisDay.cluster_id}`} class="block group">
-                        <h4 class="font-serif font-black text-lg leading-tight group-hover:text-nyt-accent transition-colors mb-3">{onThisDay.title}</h4>
-                    </a>
-                    <p class="font-nyt-body text-sm leading-relaxed text-muted-foreground line-clamp-4 italic">"{onThisDay.summary}"</p>
-                </div>
+            <div class="archive-feed-list">
+                {error ? (
+                    <div class="py-24 text-center border-2 border-dashed border-border rounded-2xl">
+                        <p class="font-serif text-2xl italic text-muted-foreground">{error}</p>
+                    </div>
+                ) : archive.clusters.length > 0 ? (
+                    <ArchiveFeedIsland client:visible initialClusters={archive.clusters} initialHasMore={archive.has_more} pageSize={archive.page_size || 50} date={date} q={q} source={source} topic={topic} lang={lang} />
+                ) : (
+                    <div class="py-32 text-center border-2 border-dashed border-border rounded-2xl">
+                        <h2 class="font-serif text-3xl font-black italic mb-4">{t('archive.empty')}</h2>
+                        <p class="font-nyt-body text-muted-foreground">{isMK ? 'Пробајте со друг датум или прилагодете ги филтрите за пребарување.' : 'Probajte sa drugim datumom ili prilagodite filtere pretrage.'}</p>
+                        <a href={isMK ? "/mk/archive" : "/archive"} class="mt-8 inline-block px-8 py-3 bg-foreground text-background font-sans text-[10px] font-black uppercase tracking-widest hover:bg-nyt-accent transition-all">{t('archive.back_today')}</a>
+                    </div>
+                )}
             </div>
-        )}
+        </section>
 
-        {/* TOP TOPICS */}
-        {archive.top_topics && archive.top_topics.length > 0 && (
+        <aside class="broadsheet-rail pl-4">
+            <div class="rail-nav-block mb-12">
+                <a href={isMK ? "/mk/archive" : "/archive"} class="group flex items-center justify-between p-4 bg-foreground text-background rounded-sm transition-all hover:bg-nyt-accent shadow-lg shadow-black/5 hover:-translate-y-1">
+                    <span class="font-sans text-[11px] font-black uppercase tracking-widest">{t('archive.back_today')}</span>
+                    <ChevronRight size={16} />
+                </a>
+            </div>
+
+            {onThisDay && onThisDay.cluster_id && (
+                <div class="archive-otd-card mb-12">
+                    <div class="absolute top-0 right-0 p-4 opacity-10">
+                        <CalendarDays size={64} />
+                    </div>
+                    <span class="block font-sans text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent mb-4">{t('archive.on_this_day')}</span>
+                    <h3 class="font-serif text-2xl font-black leading-tight mb-4 tracking-tight">
+                        {t('archive.years_ago').replace('{n}', onThisDay.years_ago)}
+                    </h3>
+                    <div class="otd-content group">
+                        {onThisDay.image && (
+                            <div class="mb-4 overflow-hidden rounded-lg shadow-sm">
+                                <img src={onThisDay.image} alt="" class="w-full aspect-video object-cover transition-transform group-hover:scale-105 duration-700" />
+                            </div>
+                        )}
+                        <a href={isMK ? `/mk/cluster/${onThisDay.cluster_id}` : `/cluster/${onThisDay.cluster_id}`} class="block group">
+                            <h4 class="font-serif font-black text-lg leading-tight group-hover:text-nyt-accent transition-colors mb-3">{onThisDay.title}</h4>
+                        </a>
+                        <p class="font-nyt-body text-sm leading-relaxed text-muted-foreground line-clamp-4 italic">"{onThisDay.summary}"</p>
+                    </div>
+                </div>
+            )}
+
             <div class="rail-directory-module mb-12">
                 <h3 class="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-foreground mb-6 pb-2 border-b-2 border-foreground">{t('archive.focus_topics')}</h3>
                 <div class="flex flex-col gap-1">
-                    {archive.top_topics.slice(0, 15).map((item: any) => (
+                    {archive.top_topics?.slice(0, 15).map((item: any) => (
                         <a href={buildFilterHref('topic', item.topic)} class="archive-sidebar-item group">
                             <span class="font-serif font-bold text-base group-hover:text-nyt-accent transition-colors">{item.topic}</span>
                             <span class="archive-sidebar-count">{item.n || item.count}</span>
@@ -276,14 +283,11 @@ function formatBriefingItem(item: string) {
                     ))}
                 </div>
             </div>
-        )}
 
-        {/* TOP SOURCES */}
-        {archive.top_sources && archive.top_sources.length > 0 && (
             <div class="rail-directory-module">
                 <h3 class="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-foreground mb-6 pb-2 border-b-2 border-foreground">{t('archive.leading_channels')}</h3>
                 <div class="flex flex-col gap-1">
-                    {archive.top_sources.slice(0, 15).map((item: any) => (
+                    {archive.top_sources?.slice(0, 15).map((item: any) => (
                         <a href={buildFilterHref('source', item.source)} class="archive-sidebar-item group">
                             <span class="font-serif font-bold text-base group-hover:text-nyt-accent transition-colors flex items-center gap-[var(--grid-gap)]">
                                 <Building2 size={12} className="opacity-30 group-hover:opacity-100 transition-opacity" />
@@ -294,8 +298,7 @@ function formatBriefingItem(item: string) {
                     ))}
                 </div>
             </div>
-        )}
-      </aside>
+        </aside>
     </div>
   </main>
 
@@ -303,6 +306,7 @@ function formatBriefingItem(item: string) {
 </Layout>
 
 <style>
+    .broadsheet-layout { background: var(--background); }
     .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 4rem; }
 
     @media (min-width: 1024px) {
@@ -523,6 +527,15 @@ function formatBriefingItem(item: string) {
         .rail-module,
         .rail-directory-module {
             margin-bottom: 1rem !important;
+        }
+
+        .rail-nav-block a {
+            padding: 0.9rem !important;
+        }
+
+        .rail-nav-block span {
+            font-size: 0.62rem !important;
+            letter-spacing: 0.12em !important;
         }
 
         .rail-module {

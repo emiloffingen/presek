@@ -234,3 +234,44 @@
     border-color: color-mix(in srgb, var(--border) 85%, transparent);
     border-left-color: var(--nyt-accent);
 }
+
+/* 8. Fix nested visual card layers & add premium row animations */
+.archive-clusters .nyt-article {
+    border: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.archive-clusters .nyt-article:hover {
+    background: transparent !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.archive-cluster-row {
+    transition: all 0.4s var(--ease-editorial);
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 30%, transparent) !important;
+    padding-bottom: 1.5rem !important;
+    padding-top: 1.5rem !important;
+}
+
+@media (min-width: 768px) {
+    .archive-cluster-row {
+        border-radius: 12px;
+        padding: 1.25rem !important;
+        margin-left: -1.25rem;
+        margin-right: -1.25rem;
+    }
+
+    .archive-cluster-row:hover {
+        background: color-mix(in srgb, var(--card) 93%, var(--nyt-accent) 7%);
+        box-shadow: var(--shadow-sm);
+        transform: translateY(-2px);
+    }
+}
+
+.archive-cluster-row:last-child {
+    border-bottom: none !important;
+}
+
