@@ -397,7 +397,7 @@ async def metrics():
 # Proxy for images to avoid CORS/Mixed content issues on client
 @app.get("/proxy")
 async def image_proxy(
-    url: str,
+    url: str = "",
     w: str | None = None,
     cid: str | None = None,
     t: str | None = None,
