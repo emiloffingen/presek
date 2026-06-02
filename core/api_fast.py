@@ -402,10 +402,11 @@ async def image_proxy(
     cid: str | None = None,
     t: str | None = None,
     cat: str | None = None,
+    theme: str | None = None,
 ):
     from routes.system import proxy_image
 
-    return await proxy_image(url=url, w=w, cid=cid, t=t, cat=cat)
+    return await proxy_image(url=url, w=w, cid=cid, t=t, cat=cat, theme=theme)
 
 
 # Legacy/Helper endpoints

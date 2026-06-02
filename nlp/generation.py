@@ -1705,9 +1705,17 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None):
 
     art_svg = art_templates.get(category_key, art_templates["default"])
 
+    # Define color scheme support style for browser/image-tag content evaluation
+    if theme_l == "light":
+        color_scheme_style = 'style="color-scheme: light;"'
+    elif theme_l == "dark":
+        color_scheme_style = 'style="color-scheme: dark;"'
+    else:
+        color_scheme_style = 'style="color-scheme: light dark;"'
+
     # 3. Construct premium editorial dynamic SVG
     svg = [
-        '<svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">',
+        f'<svg viewBox="0 0 800 450" {color_scheme_style} xmlns="http://www.w3.org/2000/svg">',
         '<defs>',
         # Embed the dynamic styling rule-sets
         f'<style>{style_content}</style>',
