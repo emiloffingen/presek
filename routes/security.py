@@ -136,21 +136,27 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # External domains must be carefully reviewed - third-party scripts require
         # either nonce support or explicit trust
         # See: https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
-        csp = (
-            "default-src 'self'; "
-            f"script-src 'self' 'nonce-{csp_nonce}' https://cdn.jsdelivr.net; "
-            f"style-src 'self' 'nonce-{csp_nonce}' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
-            "font-src 'self' https://fonts.gstatic.com; "
-            "img-src 'self' data: https: blob: https://www.google-analytics.com https://www.googletagmanager.com; "
-            "connect-src 'self' https: https://www.google-analytics.com https://analytics.google.com wss:; "
-            "frame-src 'self'; "
-            "frame-ancestors 'none'; "
-            "base-uri 'self'; "
-            "form-action 'self'; "
-            "object-src 'none'; "
-            "media-src 'self' data: https:; "
-            "worker-src 'self' blob:"
-        )
+        content_type = response.headers.get("content-type", "")
+        if "image/svg+xml" in content_type:
+            # Special secure CSP for SVG images to allow rendering stylesheet styles
+            # while blocking all script execution.
+            csp = "default-src 'none'; style-src 'unsafe-inline';"
+        else:
+            csp = (
+                "default-src 'self'; "
+                f"script-src 'self' 'nonce-{csp_nonce}' https://cdn.jsdelivr.net; "
+                f"style-src 'self' 'nonce-{csp_nonce}' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
+                "font-src 'self' https://fonts.gstatic.com; "
+                "img-src 'self' data: https: blob: https://www.google-analytics.com https://www.googletagmanager.com; "
+                "connect-src 'self' https: https://www.google-analytics.com https://analytics.google.com wss:; "
+                "frame-src 'self'; "
+                "frame-ancestors 'none'; "
+                "base-uri 'self'; "
+                "form-action 'self'; "
+                "object-src 'none'; "
+                "media-src 'self' data: https:; "
+                "worker-src 'self' blob:"
+            )
         response.headers["Content-Security-Policy"] = csp
 
         # Set nonce in a cookie so frontend can access it for inline styles/scripts
