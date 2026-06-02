@@ -81,9 +81,9 @@ import { Scale, FileText, AlertTriangle } from 'lucide-react';
 
     .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
     @media (min-width: 1024px) {
-        .broadsheet-grid { grid-template-columns: 1fr; }
-        .broadsheet-main { border-right: none; padding-right: 0; }
-        .broadsheet-rail {   align-self: start; }
+        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 320px; }
+        .broadsheet-main { border-right: 1px solid var(--border); padding-right: 3rem; }
+        .broadsheet-rail { align-self: start; }
     }
 
     .prose-editorial { font-family: var(--font-nyt-body); font-size: 1.1rem; line-height: 1.75; color: var(--secondary-foreground); }
