@@ -584,12 +584,42 @@ class AudioService:
         Synthesizes cluster generated article/synthesis text into high-quality speech.
         Uses the configured engine for the target language, with fallbacks.
         """
+        import hashlib
         os.makedirs(_AUDIO_DIR, exist_ok=True)
         filepath, urlpath = cls.get_cluster_audio_path_and_url(cluster_id, lang)
 
-        if os.path.exists(filepath) and os.path.getsize(filepath) > 1000 and not force:
-            log.info(f"[audio] Cluster audio already exists for {cluster_id} ({lang}).")
-            return version_audio_url(filepath, urlpath)
+        clean_text = clean_briefing_text_for_tts(content)
+        if not clean_text:
+            log.warning("[audio] Empty cluster content, skipping audio synthesis.")
+            return None
+
+        content_hash = hashlib.md5(clean_text.encode('utf-8')).hexdigest()
+        hash_filepath = filepath.replace(".mp3", ".hash")
+
+        # Stale check: if force is False but file exists, verify its content hash
+        if not force and os.path.exists(filepath) and os.path.getsize(filepath) > 1000:
+            if os.path.exists(hash_filepath):
+                try:
+                    with open(hash_filepath, "r", encoding="utf-8") as f:
+                        stored_hash = f.read().strip()
+                    if stored_hash == content_hash:
+                        log.info(f"[audio] Cluster audio already exists and matches hash for {cluster_id} ({lang}).")
+                        return version_audio_url(filepath, urlpath)
+                    else:
+                        log.info(f"[audio] Cluster audio text changed (stored: {stored_hash}, new: {content_hash}), forcing regeneration for {cluster_id}")
+                        force = True
+                except Exception as he:
+                    log.warning(f"[audio] Failed to read hash file {hash_filepath}: {he}")
+            else:
+                # To prevent CPU spike on old clusters that have audios but no hash,
+                # we just write the current hash now and keep the existing audio.
+                try:
+                    with open(hash_filepath, "w", encoding="utf-8") as f:
+                        f.write(content_hash)
+                    log.info(f"[audio] Cluster audio exists but hash file was missing; wrote hash {content_hash} for {cluster_id}")
+                    return version_audio_url(filepath, urlpath)
+                except Exception as he:
+                    log.warning(f"[audio] Failed to write hash file {hash_filepath}: {he}")
 
         if force and os.path.exists(filepath):
             try:
@@ -598,11 +628,19 @@ class AudioService:
             except OSError as e:
                 log.error(f"[audio] Failed to remove existing cluster audio {filepath}: {e}")
                 return None
+            try:
+                if os.path.exists(hash_filepath):
+                    os.remove(hash_filepath)
+            except OSError:
+                pass
 
-        clean_text = clean_briefing_text_for_tts(content)
-        if not clean_text:
-            log.warning("[audio] Empty cluster content, skipping audio synthesis.")
-            return None
+        def save_hash_and_return():
+            try:
+                with open(hash_filepath, "w", encoding="utf-8") as f:
+                    f.write(content_hash)
+            except Exception as he:
+                log.warning(f"[audio] Failed to write hash file {hash_filepath}: {he}")
+            return version_audio_url(filepath, urlpath)
 
         log.info(f"[audio] Synthesizing cluster audio for {cluster_id} ({lang}) [Length: {len(clean_text)} chars]...")
 
@@ -610,18 +648,18 @@ class AudioService:
         if engine == "gtts":
             if cls._generate_gtts_mp3(clean_text, filepath, lang):
                 log.info(f"[audio] Successfully synthesized audio using gTTS at {filepath}")
-                return version_audio_url(filepath, urlpath)
+                return save_hash_and_return()
             log.info("[audio] gTTS failed, falling back to Edge TTS")
             if cls._generate_edge_mp3(clean_text, filepath, lang):
                 log.info(f"[audio] Successfully synthesized audio using Edge TTS at {filepath}")
-                return version_audio_url(filepath, urlpath)
+                return save_hash_and_return()
             log.info("[audio] Edge TTS also failed, falling back to local OmniVoice.")
             engine = "omnivoice"
 
         if engine == "edge":
             if cls._generate_edge_mp3(clean_text, filepath, lang):
                 log.info(f"[audio] Successfully synthesized audio using Edge TTS at {filepath}")
-                return version_audio_url(filepath, urlpath)
+                return save_hash_and_return()
             
             log.info(f"[audio] Edge TTS failed for {lang}, attempting high-quality fallback.")
             if lang in {"sr", "mk"}:
@@ -631,13 +669,13 @@ class AudioService:
             if engine != "omnivoice":
                 log.info(f"[audio] No high-quality fallback for {lang}, using espeak-ng.")
                 if cls._generate_espeak_mp3(clean_text, filepath, lang):
-                    return version_audio_url(filepath, urlpath)
+                    return save_hash_and_return()
                 return None
 
         if engine != "omnivoice":
             if cls._generate_espeak_mp3(clean_text, filepath, lang):
                 log.info(f"[audio] Successfully synthesized audio using espeak-ng at {filepath}")
-                return version_audio_url(filepath, urlpath)
+                return save_hash_and_return()
             return None
 
         max_retries = 3
@@ -686,7 +724,7 @@ class AudioService:
                         stderr=subprocess.DEVNULL
                     )
                     log.info(f"[audio] Successfully synthesized cluster audio using local OmniVoice at {filepath}")
-                    return version_audio_url(filepath, urlpath)
+                    return save_hash_and_return()
                 finally:
                     # Cleanup WAV file in finally block to ensure it always gets removed
                     try:
@@ -705,5 +743,5 @@ class AudioService:
         log.error("[audio] Failed to synthesize cluster audio since OmniVoice failed after all retries.")
         log.info("[audio] Attempting absolute final fallback to espeak-ng.")
         if cls._generate_espeak_mp3(clean_text, filepath, lang):
-            return version_audio_url(filepath, urlpath)
+            return save_hash_and_return()
         return None
