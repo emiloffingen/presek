@@ -46,7 +46,8 @@ function getSourceBadgeLabel(count: number) {
                 {synthesisPicks.map((cluster) => {
                     const artCount = cluster.articles?.length || 0;
                     const pluralismVal = cluster.pluralism_score || 50;
-                    const visualImage = chooseClusterImage(cluster, 'card');
+                    const imageObj = chooseClusterImage(cluster, 'card');
+                    const visualImage = imageObj.proxiedUrl || imageObj.fallbackUrl || imageObj.staticFallbackUrl;
                     
                     // Distinct pluralism grade/color
                     let gaugeColor = "from-sky-500 to-indigo-600 dark:from-sky-400 dark:to-indigo-500";
