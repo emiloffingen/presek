@@ -532,8 +532,8 @@ class TestLocalBriefingFallback:
 
         result = generate_daily_brief_fallback(clusters)
 
-        assert "## Динамика на денот" in result
-        assert "## Контекст и разлики" in result
+        assert "## Големата Слика" in result
+        assert "## Глобални и Локални Оски" in result
         assert "- Клучен аспект:" in result or "- Зошто е важно:" in result
 
     def test_generate_daily_brief_fallback_prefers_cluster_synthesis_text(self):
@@ -600,8 +600,8 @@ class TestLocalBriefingFallback:
 
         result = generate_daily_brief_fallback(clusters)
 
-        assert "Zemjotres od 4,8 stepeni e pocuvstvuvan vo povece gradovi niz Srbija" in result.splitlines()[2]
-        assert "SDSM: Vo ocajna potraga po dobra vest" not in result.splitlines()[2]
+        assert "Zemjotres od 4,8 stepeni e pocuvstvuvan vo povece gradovi niz Srbija" in result.splitlines()[4]
+        assert "SDSM: Vo ocajna potraga po dobra vest" not in result.splitlines()[4]
 
     def test_generate_daily_brief_fallback_keeps_required_sections_without_editorial_points(
         self,
@@ -619,7 +619,7 @@ class TestLocalBriefingFallback:
 
         result = generate_daily_brief_fallback(clusters)
 
-        assert "## Контекст и разлики" in result
+        assert "## Глобални и Локални Оски" in result
         assert "### 1. Bugarija" in result
         assert "Temata se pojavuva niz" not in result
 
@@ -728,8 +728,8 @@ class TestLocalBriefingFallback:
 
         result = generate_daily_brief_fallback(clusters)
 
-        assert "Динамика на денот" in result
-        assert "Контекст и разлики" in result
+        assert "Големата Слика" in result
+        assert "Глобални и Локални Оски" in result
 
     def test_generate_daily_brief_fallback_keeps_election_importance_outcome_oriented(
         self,
@@ -746,7 +746,7 @@ class TestLocalBriefingFallback:
 
         result = generate_daily_brief_fallback(clusters)
 
-        assert "Динамика на денот" in result
+        assert "Големата Слика" in result
         assert "Bugarija" in result or "izbori" in result
 
 
