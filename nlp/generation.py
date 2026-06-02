@@ -1414,7 +1414,7 @@ def _build_minimum_cluster_summary(articles, comparison=None, lang="mk"):
     return f"• {t['sto_se_slucuva']}: {lead['title']}\n• {t['pokrienost']}: {len(articles)} {t['izvori']}, {t['sledeno_od']} i {_source_list(articles)}."
 
 
-def generate_local_placeholder(cluster_id, title, category="vesti"):
+def generate_local_placeholder(cluster_id, title, category="vesti", theme=None):
     import hashlib
 
     # 1. Deterministic seed from cluster_id
@@ -1447,8 +1447,8 @@ def generate_local_placeholder(cluster_id, title, category="vesti"):
             "Sport", "Tehnologija", "Ekonomija", "Hronika", "Zabava",
         } else "default"
 
-    # 2. Premium Dark Palettes: Base, Spot, Accent
-    palettes = {
+    # 2. Premium Palettes: Base, Spot, Accent (Dark and Light)
+    palettes_dark = {
         "Srbija": ["#150305", "#4a0e10", "#9e2a2b"],       # Crimson Red
         "Makedonija": ["#1a0500", "#5c1200", "#d62828"],   # Sun Orange/Red
         "Balkan": ["#03140c", "#0f3a24", "#2d4a3e"],       # Deep Emerald/Forest
@@ -1463,8 +1463,136 @@ def generate_local_placeholder(cluster_id, title, category="vesti"):
         "default": ["#090d16", "#1c2536", "#64748b"]       # Neutral Slate
     }
 
-    colors = palettes.get(category_key, palettes["default"])
-    c_bg, c_spot, c_accent = colors
+    palettes_light = {
+        "Srbija": ["#fdf8f8", "#ffd2d4", "#9e2a2b"],       # Crimson Red
+        "Makedonija": ["#fdf9f7", "#ffe5db", "#d62828"],   # Sun Orange/Red
+        "Balkan": ["#f7faf8", "#d8ecd5", "#1b4d3e"],       # Deep Emerald/Forest
+        "Evropa": ["#f6f8fb", "#d0e1fd", "#1e3a8a"],       # Royal Blue
+        "Amerika": ["#f6f8fb", "#d0e1fd", "#1e3a8a"],      # Navy Blue
+        "Svet": ["#faf7fc", "#ebdcfc", "#581c87"],         # Global Violet
+        "Sport": ["#fdfaf7", "#ffecd6", "#c2410c"],         # Clay Orange
+        "Tehnologija": ["#f9f7fc", "#eedffd", "#6d28d9"],  # Purple
+        "Ekonomija": ["#f6fafe", "#d7eafd", "#1d4ed8"],    # Financial Blue
+        "Hronika": ["#f8fafc", "#e2e8f0", "#475569"],      # Charcoal Slate
+        "Zabava": ["#fdf7fa", "#fce7f3", "#be185d"],       # Rose Magenta
+        "default": ["#f8fafc", "#e2e8f0", "#475569"]       # Neutral Slate
+    }
+
+    colors_dark = palettes_dark.get(category_key, palettes_dark["default"])
+    colors_light = palettes_light.get(category_key, palettes_light["default"])
+
+    c_bg_dark, c_spot_dark, c_accent_dark = colors_dark
+    c_bg_light, c_spot_light, c_accent_light = colors_light
+
+    theme_l = str(theme or "").lower()
+    if theme_l == "light":
+        style_content = f"""
+            :root {{
+                --bg-start: {c_bg_light};
+                --bg-end: #f1f3f5;
+                --spot-color: {c_spot_light};
+                --spot-opacity: 0.35;
+                --art-glow: {c_accent_light};
+                --art-glow-opacity: 0.25;
+                --grain-fill: black;
+                --grain-opacity: 0.015;
+                --glass-fill: rgba(255,255,255,0.3);
+                --glass-stroke: rgba(0,0,0,0.06);
+                --grid-stroke: rgba(0,0,0,0.04);
+                --text-primary: #0f172a;
+                --text-meta: #334155;
+                --meta-opacity: 0.7;
+                --category-opacity: 0.95;
+                --art-accent: {c_accent_light};
+                --art-line-light: rgba(0,0,0,0.12);
+                --art-line-vlight: rgba(0,0,0,0.05);
+                --art-line-vvlight: rgba(0,0,0,0.02);
+                --art-circle-dot: #0f172a;
+                --text-shadow: 0 2px 4px rgba(255,255,255,0.8);
+                --drop-shadow: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
+            }}
+        """
+    elif theme_l == "dark":
+        style_content = f"""
+            :root {{
+                --bg-start: {c_bg_dark};
+                --bg-end: #020408;
+                --spot-color: {c_spot_dark};
+                --spot-opacity: 0.45;
+                --art-glow: {c_accent_dark};
+                --art-glow-opacity: 0.35;
+                --grain-fill: white;
+                --grain-opacity: 0.04;
+                --glass-fill: rgba(255,255,255,0.02);
+                --glass-stroke: rgba(255,255,255,0.07);
+                --grid-stroke: rgba(255,255,255,0.08);
+                --text-primary: #ffffff;
+                --text-meta: #ffffff;
+                --meta-opacity: 0.6;
+                --category-opacity: 0.8;
+                --art-accent: {c_accent_dark};
+                --art-line-light: rgba(255,255,255,0.15);
+                --art-line-vlight: rgba(255,255,255,0.05);
+                --art-line-vvlight: rgba(255,255,255,0.03);
+                --art-circle-dot: #ffffff;
+                --text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+                --drop-shadow: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
+            }}
+        """
+    else:
+        # Auto/System: Default to Dark, override on light prefers-color-scheme
+        style_content = f"""
+            :root {{
+                --bg-start: {c_bg_dark};
+                --bg-end: #020408;
+                --spot-color: {c_spot_dark};
+                --spot-opacity: 0.45;
+                --art-glow: {c_accent_dark};
+                --art-glow-opacity: 0.35;
+                --grain-fill: white;
+                --grain-opacity: 0.04;
+                --glass-fill: rgba(255,255,255,0.02);
+                --glass-stroke: rgba(255,255,255,0.07);
+                --grid-stroke: rgba(255,255,255,0.08);
+                --text-primary: #ffffff;
+                --text-meta: #ffffff;
+                --meta-opacity: 0.6;
+                --category-opacity: 0.8;
+                --art-accent: {c_accent_dark};
+                --art-line-light: rgba(255,255,255,0.15);
+                --art-line-vlight: rgba(255,255,255,0.05);
+                --art-line-vvlight: rgba(255,255,255,0.03);
+                --art-circle-dot: #ffffff;
+                --text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+                --drop-shadow: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
+            }}
+            @media (prefers-color-scheme: light) {{
+                :root {{
+                    --bg-start: {c_bg_light};
+                    --bg-end: #f1f3f5;
+                    --spot-color: {c_spot_light};
+                    --spot-opacity: 0.35;
+                    --art-glow: {c_accent_light};
+                    --art-glow-opacity: 0.25;
+                    --grain-fill: black;
+                    --grain-opacity: 0.015;
+                    --glass-fill: rgba(255,255,255,0.3);
+                    --glass-stroke: rgba(0,0,0,0.06);
+                    --grid-stroke: rgba(0,0,0,0.04);
+                    --text-primary: #0f172a;
+                    --text-meta: #334155;
+                    --meta-opacity: 0.7;
+                    --category-opacity: 0.95;
+                    --art-accent: {c_accent_light};
+                    --art-line-light: rgba(0,0,0,0.12);
+                    --art-line-vlight: rgba(0,0,0,0.05);
+                    --art-line-vvlight: rgba(0,0,0,0.02);
+                    --art-circle-dot: #0f172a;
+                    --text-shadow: 0 2px 4px rgba(255,255,255,0.8);
+                    --drop-shadow: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
+                }}
+            }}
+        """
 
     # Deterministic geometric adjustments
     angle = seed % 360
@@ -1513,65 +1641,65 @@ def generate_local_placeholder(cluster_id, title, category="vesti"):
     # Vector Art backgrounds centered at cx=590, cy=225
     art_templates = {
         "Sport": f"""
-            <ellipse cx="590" cy="225" rx="110" ry="60" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1.5"/>
-            <ellipse cx="590" cy="225" rx="140" ry="80" fill="none" stroke="{c_accent}" stroke-width="2" stroke-dasharray="6 4" opacity="0.25"/>
-            <line x1="450" y1="280" x2="730" y2="170" stroke="{c_accent}" stroke-width="4" stroke-linecap="round" opacity="0.3"/>
-            <circle cx="680" cy="190" r="10" fill="{c_accent}" opacity="0.7"/>
-            <circle cx="680" cy="190" r="4" fill="white" opacity="0.9"/>
+            <ellipse cx="590" cy="225" rx="110" ry="60" fill="none" stroke="var(--art-line-vvlight)" stroke-width="1.5"/>
+            <ellipse cx="590" cy="225" rx="140" ry="80" fill="none" stroke="var(--art-accent)" stroke-width="2" stroke-dasharray="6 4" opacity="0.25"/>
+            <line x1="450" y1="280" x2="730" y2="170" stroke="var(--art-accent)" stroke-width="4" stroke-linecap="round" opacity="0.3"/>
+            <circle cx="680" cy="190" r="10" fill="var(--art-accent)" opacity="0.7"/>
+            <circle cx="680" cy="190" r="4" fill="var(--art-circle-dot)" opacity="0.9"/>
         """,
         "Ekonomija": f"""
-            <path d="M 450 280 L 510 230 L 570 250 L 630 170 L 690 120" fill="none" stroke="{c_accent}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.35"/>
+            <path d="M 450 280 L 510 230 L 570 250 L 630 170 L 690 120" fill="none" stroke="var(--art-accent)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.35"/>
             <path d="M 450 280 L 510 230 L 570 250 L 630 170 L 690 120 L 690 280 L 450 280 Z" fill="url(#art_glow_{cluster_id})" opacity="0.1" stroke="none"/>
-            <line x1="440" y1="280" x2="700" y2="280" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
-            <line x1="440" y1="230" x2="700" y2="230" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="4 4"/>
-            <line x1="440" y1="170" x2="700" y2="170" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="4 4"/>
-            <circle cx="690" cy="120" r="8" fill="{c_accent}" opacity="0.7"/>
+            <line x1="440" y1="280" x2="700" y2="280" stroke="var(--art-line-light)" stroke-width="1.5"/>
+            <line x1="440" y1="230" x2="700" y2="230" stroke="var(--art-line-vlight)" stroke-width="1" stroke-dasharray="4 4"/>
+            <line x1="440" y1="170" x2="700" y2="170" stroke="var(--art-line-vlight)" stroke-width="1" stroke-dasharray="4 4"/>
+            <circle cx="690" cy="120" r="8" fill="var(--art-accent)" opacity="0.7"/>
         """,
         "Tehnologija": f"""
-            <circle cx="590" cy="225" r="70" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
-            <rect x="520" y="155" width="140" height="140" rx="12" fill="none" stroke="{c_accent}" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.3"/>
-            <circle cx="590" cy="225" r="22" fill="{c_accent}" opacity="0.4"/>
-            <circle cx="535" cy="170" r="6" fill="{c_accent}" opacity="0.7"/>
-            <circle cx="645" cy="280" r="6" fill="{c_accent}" opacity="0.7"/>
-            <circle cx="645" cy="170" r="8" fill="rgba(255,255,255,0.2)" opacity="0.5"/>
-            <line x1="535" y1="170" x2="590" y2="225" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
-            <line x1="645" y1="280" x2="590" y2="225" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+            <circle cx="590" cy="225" r="70" fill="none" stroke="var(--art-line-vvlight)" stroke-width="1"/>
+            <rect x="520" y="155" width="140" height="140" rx="12" fill="none" stroke="var(--art-accent)" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.3"/>
+            <circle cx="590" cy="225" r="22" fill="var(--art-accent)" opacity="0.4"/>
+            <circle cx="535" cy="170" r="6" fill="var(--art-accent)" opacity="0.7"/>
+            <circle cx="645" cy="280" r="6" fill="var(--art-accent)" opacity="0.7"/>
+            <circle cx="645" cy="170" r="8" fill="var(--art-line-light)" opacity="0.5"/>
+            <line x1="535" y1="170" x2="590" y2="225" stroke="var(--art-line-light)" stroke-width="1.5"/>
+            <line x1="645" y1="280" x2="590" y2="225" stroke="var(--art-line-light)" stroke-width="1.5"/>
         """,
         "Zabava": f"""
-            <path d="M 460 240 C 510 160, 550 290, 590 225 C 630 160, 670 290, 720 210" fill="none" stroke="{c_accent}" stroke-width="4" stroke-linecap="round" opacity="0.35"/>
-            <circle cx="590" cy="225" r="45" fill="{c_accent}" opacity="0.3" filter="blur(1px)"/>
-            <circle cx="610" cy="205" r="8" fill="white" opacity="0.6"/>
+            <path d="M 460 240 C 510 160, 550 290, 590 225 C 630 160, 670 290, 720 210" fill="none" stroke="var(--art-accent)" stroke-width="4" stroke-linecap="round" opacity="0.35"/>
+            <circle cx="590" cy="225" r="45" fill="var(--art-accent)" opacity="0.3" filter="blur(1px)"/>
+            <circle cx="610" cy="205" r="8" fill="var(--art-circle-dot)" opacity="0.6"/>
         """,
         "Politika": f"""
-            <path d="M 480 270 L 700 270" stroke="{c_accent}" stroke-width="4" stroke-linecap="round" opacity="0.3"/>
-            <path d="M 480 160 L 700 160" stroke="{c_accent}" stroke-width="4" stroke-linecap="round" opacity="0.3"/>
-            <path d="M 515 160 L 515 270 M 552 160 L 552 270 M 590 160 L 590 270 M 627 160 L 627 270 M 665 160 L 665 270" stroke="rgba(255,255,255,0.08)" stroke-width="2" opacity="0.6"/>
-            <path d="M 495 160 L 590 110 L 685 160 Z" stroke="{c_accent}" stroke-width="3" fill="rgba(255,255,255,0.03)" opacity="0.3"/>
-            <circle cx="590" cy="215" r="20" fill="{c_accent}" opacity="0.5"/>
+            <path d="M 480 270 L 700 270" stroke="var(--art-accent)" stroke-width="4" stroke-linecap="round" opacity="0.3"/>
+            <path d="M 480 160 L 700 160" stroke="var(--art-accent)" stroke-width="4" stroke-linecap="round" opacity="0.3"/>
+            <path d="M 515 160 L 515 270 M 552 160 L 552 270 M 590 160 L 590 270 M 627 160 L 627 270 M 665 160 L 665 270" stroke="var(--art-line-light)" stroke-width="2" opacity="0.6"/>
+            <path d="M 495 160 L 590 110 L 685 160 Z" stroke="var(--art-accent)" stroke-width="3" fill="var(--art-line-vvlight)" opacity="0.3"/>
+            <circle cx="590" cy="215" r="20" fill="var(--art-accent)" opacity="0.5"/>
         """,
         "Svet": f"""
-            <circle cx="590" cy="225" r="90" fill="none" stroke="{c_accent}" stroke-width="2.5" opacity="0.3"/>
-            <ellipse cx="590" cy="225" rx="90" ry="32" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1.5"/>
-            <ellipse cx="590" cy="225" rx="32" ry="90" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1.5"/>
-            <circle cx="625" cy="180" r="7" fill="{c_accent}" opacity="0.7"/>
+            <circle cx="590" cy="225" r="90" fill="none" stroke="var(--art-accent)" stroke-width="2.5" opacity="0.3"/>
+            <ellipse cx="590" cy="225" rx="90" ry="32" fill="none" stroke="var(--art-line-light)" stroke-width="1.5"/>
+            <ellipse cx="590" cy="225" rx="32" ry="90" fill="none" stroke="var(--art-line-light)" stroke-width="1.5"/>
+            <circle cx="625" cy="180" r="7" fill="var(--art-accent)" opacity="0.7"/>
         """,
         "Local": f"""
-            <circle cx="590" cy="225" r="90" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
-            <circle cx="590" cy="225" r="70" fill="none" stroke="{c_accent}" stroke-width="2" stroke-dasharray="6 4" opacity="0.35"/>
-            <circle cx="590" cy="225" r="40" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-            <line x1="490" y1="225" x2="690" y2="225" stroke="rgba(255,255,255,0.08)" stroke-width="1.5"/>
-            <line x1="590" y1="125" x2="590" y2="325" stroke="rgba(255,255,255,0.08)" stroke-width="1.5"/>
-            <circle cx="550" cy="245" r="10" fill="{c_accent}" opacity="0.7"/>
-            <circle cx="550" cy="245" r="4" fill="white" opacity="0.9"/>
+            <circle cx="590" cy="225" r="90" fill="none" stroke="var(--art-line-vvlight)" stroke-width="1"/>
+            <circle cx="590" cy="225" r="70" fill="none" stroke="var(--art-accent)" stroke-width="2" stroke-dasharray="6 4" opacity="0.35"/>
+            <circle cx="590" cy="225" r="40" fill="none" stroke="var(--art-line-light)" stroke-width="1"/>
+            <line x1="490" y1="225" x2="690" y2="225" stroke="var(--art-line-light)" stroke-width="1.5"/>
+            <line x1="590" y1="125" x2="590" y2="325" stroke="var(--art-line-light)" stroke-width="1.5"/>
+            <circle cx="550" cy="245" r="10" fill="var(--art-accent)" opacity="0.7"/>
+            <circle cx="550" cy="245" r="4" fill="var(--art-circle-dot)" opacity="0.9"/>
         """,
         "default": f"""
-            <circle cx="590" cy="225" r="60" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
-            <circle cx="590" cy="225" r="85" fill="none" stroke="{c_accent}" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.25"/>
-            <circle cx="590" cy="225" r="22" fill="{c_accent}" opacity="0.4"/>
-            <circle cx="535" cy="185" r="7" fill="{c_accent}" opacity="0.6"/>
-            <circle cx="645" cy="260" r="6" fill="{c_accent}" opacity="0.6"/>
-            <line x1="535" y1="185" x2="590" y2="225" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
-            <line x1="645" y1="260" x2="590" y2="225" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+            <circle cx="590" cy="225" r="60" fill="none" stroke="var(--art-line-vvlight)" stroke-width="1"/>
+            <circle cx="590" cy="225" r="85" fill="none" stroke="var(--art-accent)" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.25"/>
+            <circle cx="590" cy="225" r="22" fill="var(--art-accent)" opacity="0.4"/>
+            <circle cx="535" cy="185" r="7" fill="var(--art-accent)" opacity="0.6"/>
+            <circle cx="645" cy="260" r="6" fill="var(--art-accent)" opacity="0.6"/>
+            <line x1="535" y1="185" x2="590" y2="225" stroke="var(--art-line-light)" stroke-width="1.5"/>
+            <line x1="645" y1="260" x2="590" y2="225" stroke="var(--art-line-light)" stroke-width="1.5"/>
         """
     }
 
@@ -1581,20 +1709,22 @@ def generate_local_placeholder(cluster_id, title, category="vesti"):
     svg = [
         '<svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">',
         '<defs>',
-        # Main Linear Background Gradient
+        # Embed the dynamic styling rule-sets
+        f'<style>{style_content}</style>',
+        # Main Linear Background Gradient using styles
         f'  <linearGradient id="bg_{cluster_id}" x1="0%" y1="0%" x2="100%" y2="100%">',
-        f'    <stop offset="0%" style="stop-color:{c_bg};stop-opacity:1" />',
-        f'    <stop offset="100%" style="stop-color:#020408;stop-opacity:1" />',
+        '    <stop offset="0%" style="stop-color:var(--bg-start);stop-opacity:1" />',
+        '    <stop offset="100%" style="stop-color:var(--bg-end);stop-opacity:1" />',
         '  </linearGradient>',
         # Soft Neon Spotlight Glowing Mesh
         f'  <radialGradient id="mesh_{cluster_id}" cx="{60 + (seed%20)}%" cy="{40 + (seed%20)}%" r="70%">',
-        f'    <stop offset="0%" style="stop-color:{c_spot};stop-opacity:0.45" />',
-        f'    <stop offset="100%" style="stop-color:#020408;stop-opacity:0" />',
+        '    <stop offset="0%" style="stop-color:var(--spot-color);stop-opacity:var(--spot-opacity)" />',
+        '    <stop offset="100%" style="stop-color:var(--bg-end);stop-opacity:0" />',
         '  </radialGradient>',
         # Transparent Gradient for Art Fills
         f'  <linearGradient id="art_glow_{cluster_id}" x1="0%" y1="0%" x2="0%" y2="100%">',
-        f'    <stop offset="0%" style="stop-color:{c_accent};stop-opacity:0.35" />',
-        f'    <stop offset="100%" style="stop-color:#020408;stop-opacity:0" />',
+        '    <stop offset="0%" style="stop-color:var(--art-glow);stop-opacity:var(--art-glow-opacity)" />',
+        '    <stop offset="100%" style="stop-color:var(--bg-end);stop-opacity:0" />',
         '  </linearGradient>',
         # High-end paper-grain/noise texture filter
         '  <filter id="grain" x="0" y="0" width="100%" height="100%">',
@@ -1610,13 +1740,13 @@ def generate_local_placeholder(cluster_id, title, category="vesti"):
         f'<rect width="100%" height="100%" fill="url(#mesh_{cluster_id})" />',
         
         # 2. Tactile Grain Overlay
-        '<rect width="100%" height="100%" fill="white" opacity="0.04" filter="url(#grain)" />',
+        '<rect width="100%" height="100%" fill="var(--grain-fill)" opacity="var(--grain-opacity)" filter="url(#grain)" />',
         
         # 3. Floating Glassmorphism Panel
-        '<rect x="40" y="40" width="720" height="370" rx="24" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.07)" stroke-width="1.5" />',
+        '<rect x="40" y="40" width="720" height="370" rx="24" fill="var(--glass-fill)" stroke="var(--glass-stroke)" stroke-width="1.5" />',
         
         # 4. Editorial Layout Grid Lines
-        '<g stroke="rgba(255,255,255,0.08)" stroke-width="1" stroke-dasharray="6 6">',
+        '<g stroke="var(--grid-stroke)" stroke-width="1" stroke-dasharray="6 6">',
         '  <line x1="120" y1="40" x2="120" y2="410" />',
         '  <line x1="460" y1="40" x2="460" y2="410" />',
         '  <line x1="40" y1="110" x2="760" y2="110" />',
@@ -1628,19 +1758,19 @@ def generate_local_placeholder(cluster_id, title, category="vesti"):
         '<circle cx="80" cy="75" r="10" fill="none" stroke="#f43f5e" stroke-width="1.5" opacity="0.4">',
         '  <animate attributeName="r" values="5;15;5" dur="3s" repeatCount="indefinite"/>',
         '</circle>',
-        '<text x="96" y="79" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="900" letter-spacing="2" fill="white" opacity="0.75">SISTEMSKA SINTEZA</text>',
+        '<text x="96" y="79" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="900" letter-spacing="2" fill="var(--text-meta)" opacity="var(--meta-opacity)">SISTEMSKA SINTEZA</text>',
         
         # 6. Beautiful Category Vector Art
         f'{art_svg}',
         
         # 7. Asymmetric Headline Typography
-        f'<text font-family="Georgia, \'Times New Roman\', serif" font-size="{font_size}" font-weight="900" fill="white" text-shadow="0 4px 12px rgba(0,0,0,0.5)" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.4))">',
+        f'<text font-family="Georgia, \'Times New Roman\', serif" font-size="{font_size}" font-weight="900" fill="var(--text-primary)" text-shadow="var(--text-shadow)" filter="var(--drop-shadow)">',
         f'  {tspans}',
         '</text>',
         
         # 8. Premium Branding Metadata
-        '<text x="80" y="378" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" letter-spacing="4" fill="white" opacity="0.6">PRESEK</text>',
-        f'<text x="720" y="378" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" letter-spacing="2" fill="{c_accent}" opacity="0.8">{category_key.upper()}</text>',
+        '<text x="80" y="378" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" letter-spacing="4" fill="var(--text-meta)" opacity="var(--meta-opacity)">PRESEK</text>',
+        f'<text x="720" y="378" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" letter-spacing="2" fill="var(--art-accent)" opacity="var(--category-opacity)">{category_key.upper()}</text>',
         
         '</svg>'
     ]

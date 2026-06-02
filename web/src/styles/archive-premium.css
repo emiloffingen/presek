@@ -4,10 +4,9 @@
 .archive-premium-deck {
     display: grid;
     grid-template-columns: repeat(1, minmax(0, 1fr));
+    gap: 1px;
+    background: color-mix(in srgb, var(--border) 60%, transparent);
     border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
-    background: color-mix(in srgb, var(--card) 45%, transparent);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
     border-radius: 16px;
     overflow: hidden;
     box-shadow: var(--shadow-sm);
@@ -34,13 +33,10 @@
 .archive-deck-stat {
     padding: 1.25rem;
     text-align: center;
-    background: transparent;
+    background: color-mix(in srgb, var(--card) 45%, transparent);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
     transition: all 0.3s ease;
-    border-right: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
-}
-
-.archive-deck-stat:last-child {
-    border-right: none;
 }
 
 .archive-deck-stat:hover {
@@ -48,11 +44,11 @@
 }
 
 .archive-deck-stat.accent-total-themes {
-    background: color-mix(in srgb, var(--nyt-accent) 4%, transparent);
+    background: color-mix(in srgb, var(--nyt-accent) 4%, var(--card));
 }
 
 .archive-deck-stat.accent-total-themes:hover {
-    background: color-mix(in srgb, var(--nyt-accent) 8%, transparent);
+    background: color-mix(in srgb, var(--nyt-accent) 8%, var(--card));
 }
 
 /* 2. Floating Sticky Navigation Bar */

@@ -612,6 +612,7 @@ async def proxy_image(
     cid: Optional[str] = None,
     t: Optional[str] = None,
     cat: Optional[str] = None,
+    theme: Optional[str] = None,
 ):
     """
     Proxy images to avoid CORS and mixed content issues.
@@ -622,17 +623,17 @@ async def proxy_image(
         try:
             from nlp.generation import generate_local_placeholder
 
-            svg = generate_local_placeholder(cid or "px", t or "vest", cat or "vesti")
+            svg = generate_local_placeholder(cid or "px", t or "vest", cat or "vesti", theme=theme)
             log.warning(f"[proxy] Serving fallback for {url or 'unknown'}: {reason}")
 
             # Add diagnostic information to the SVG for debugging
             diagnostic_svg = svg.replace(
                 "</svg>",
                 f"""
-        <text x="40" y="430" font-family="sans-serif" font-size="12" fill="white" opacity="0.7">
+        <text x="40" y="430" font-family="sans-serif" font-size="12" fill="var(--text-meta)" opacity="0.7">
             Proxy Fallback: {reason}
         </text>
-        <text x="40" y="445" font-family="sans-serif" font-size="10" fill="white" opacity="0.7">
+        <text x="40" y="445" font-family="sans-serif" font-size="10" fill="var(--text-meta)" opacity="0.7">
             URL: {url[:50] if url else 'unknown'}...
         </text>
     </svg>""",

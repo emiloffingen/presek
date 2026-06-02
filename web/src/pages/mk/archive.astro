@@ -303,13 +303,12 @@ function formatBriefingItem(item: string) {
 </Layout>
 
 <style>
-    .broadsheet-layout { background: var(--background); }
     .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 4rem; }
 
     @media (min-width: 1024px) {
-        .broadsheet-grid { grid-template-columns: 1fr; }
-        .broadsheet-main { border-right: none; padding-right: 0; }
-        .broadsheet-rail {   align-self: start; }
+        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 320px; }
+        .broadsheet-main { border-right: 1px solid var(--border); padding-right: 3rem; }
+        .broadsheet-rail { position: sticky; top: 8rem; align-self: start; }
     }
 
     .masthead-title span { font-style: italic; font-weight: 300; }

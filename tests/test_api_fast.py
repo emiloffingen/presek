@@ -1161,6 +1161,37 @@ def test_fastapi_proxy_ignores_unsafe_db_local_image_path(mock_all):
     assert response.headers["X-Proxy-Fallback"] == "fetch_failed"
 
 
+def test_fastapi_proxy_theme_parameter(mock_all):
+    import routes.system as system_routes
+    from nlp.generation import generate_local_placeholder
+
+    # Directly check generate_local_placeholder theme outputs
+    svg_light = generate_local_placeholder("123", "Test Article", "Srbija", theme="light")
+    assert "--bg-start: #fdf8f8" in svg_light
+    assert "--bg-end: #f1f3f5" in svg_light
+    assert "prefers-color-scheme" not in svg_light
+
+    svg_dark = generate_local_placeholder("123", "Test Article", "Srbija", theme="dark")
+    assert "--bg-start: #150305" in svg_dark
+    assert "--bg-end: #020408" in svg_dark
+    assert "prefers-color-scheme" not in svg_dark
+
+    svg_auto = generate_local_placeholder("123", "Test Article", "Srbija", theme=None)
+    assert "@media (prefers-color-scheme: light)" in svg_auto
+    assert "--bg-start: #150305" in svg_auto
+    assert "--bg-start: #fdf8f8" in svg_auto
+
+    # Verify endpoint works and forwards parameter
+    with (
+        patch("utils.network._resolve_public_ips", side_effect=ValueError("blocked")),
+    ):
+        response = asyncio.run(system_routes.proxy_image("https://example.com/image.jpg", theme="light"))
+    assert response.media_type == "image/svg+xml"
+    assert response.headers["X-Proxy-Fallback"] == "fetch_failed"
+    # Ensure the returned body has the light theme background
+    assert "--bg-start: #f8fafc" in response.content
+
+
 def test_fastapi_serves_robots_txt(mock_all):
     import routes.system as system_routes
 
