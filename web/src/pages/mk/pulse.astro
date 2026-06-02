@@ -7,6 +7,7 @@ import '../../styles/pulse-premium.css';
 
 import { apiBaseUrl } from '../../lib/apiBase';
 import { getLangFromUrl } from '../../i18n/utils';
+import { APP_VERSION } from '../../lib/version';
 import { Activity, Timer, Zap } from 'lucide-react';
 
 const API_URL = apiBaseUrl();
@@ -80,7 +81,7 @@ const formatCount = (value: number | null | undefined) => value ? String(Math.ro
                         </svg>
                         <Timer size={11} /> <span id="last-updated" data-is-mk={isMK ? "true" : "false"}>{isMK ? 'ВО ЖИВО' : 'UŽIVO'}</span>
                     </span>
-                    <span class="meta-item"><Activity size={11} /> V.2.1-CC</span>
+                    <span class="meta-item"><Activity size={11} /> V.{APP_VERSION}</span>
                 </div>
             </div>
 

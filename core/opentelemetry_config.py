@@ -33,7 +33,7 @@ _tracer_provider: Optional[TracerProvider] = None
 
 def setup_tracing(
     service_name: str = "presek",
-    service_version: str = "6.0.0",
+    service_version: Optional[str] = None,
     environment: str = "development",
     otlp_endpoint: Optional[str] = None,
     otlp_insecure: bool = False,
@@ -52,6 +52,10 @@ def setup_tracing(
         Configured TracerProvider
     """
     global _tracer_provider
+
+    if service_version is None:
+        from core.version import APP_VERSION
+        service_version = APP_VERSION
 
     # Determine configuration from environment
     env = os.environ.get("ENV", environment)
