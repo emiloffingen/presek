@@ -95,7 +95,7 @@ const ArchiveFeedIsland: React.FC<ArchiveFeedIslandProps> = ({
                 </div>
               </div>
               <div className="flex-1 min-w-0">
-                <NewsCard cluster={cluster} variant={index === 0 && page === 0 ? 'featured' : 'standard'} lang={lang} />
+                <NewsCard cluster={cluster} variant={index === 0 && page === 0 ? 'featured' : 'compact'} lang={lang} />
               </div>
             </div>
           </div>

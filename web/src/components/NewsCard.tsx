@@ -128,11 +128,11 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
   return (
     <article 
-      className={`nyt-article variant-${variant} ${isLead ? 'lead-story' : ''} ${cluster.has_synthesis ? 'has-synthesis' : ''} ${thumbSrc ? 'has-image' : ''} flex flex-row items-start gap-4 w-full min-w-0`}
+      className={`nyt-article variant-${variant} ${isLead ? 'lead-story' : ''} ${cluster.has_synthesis ? 'has-synthesis' : ''} ${thumbSrc ? 'has-image' : ''}`}
       data-cluster={JSON.stringify(slimCluster)}
       data-testid="article-card"
     >
-      <div className="article-body flex-grow flex-1 min-w-0 flex flex-col h-full">
+      <div className="article-body">
         <div className="article-meta-v2">
           <div className="kicker-group">
             <span className="kicker">{main.source}</span>
@@ -183,7 +183,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
       {thumbSrc && (
         <div 
-          className={`image-wrap ${isFallbackArt ? 'image-wrap-fallback' : ''} w-28 h-20 flex-shrink-0`} 
+          className={`image-wrap ${isFallbackArt ? 'image-wrap-fallback' : ''}`} 
           data-image-state={isFallbackArt ? 'fallback' : 'loading'}
           style={!isFallbackArt ? { '--placeholder-bg': tintColor } as any : undefined}
         >
