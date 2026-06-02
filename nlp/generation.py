@@ -1447,32 +1447,32 @@ def generate_local_placeholder(cluster_id, title, category="vesti"):
             "Sport", "Tehnologija", "Ekonomija", "Hronika", "Zabava",
         } else "default"
 
-    # 2. Professional Category Palettes (Primary, Deep, Accent)
+    # 2. Premium Dark Palettes: Base, Spot, Accent
     palettes = {
-        "Srbija": ["#8b1e22", "#4a0e10", "#c42a2e"],  # Editorial Crimson
-        "Makedonija": ["#d62828", "#8c1c1c", "#f77f00"],  # Macedonian Sun tones
-        "Balkan": ["#2d4a3e", "#1a2e25", "#4d806a"],  # Deep Forest
-        "Evropa": ["#1b3a5a", "#0d1e33", "#3d6db2"],  # Diplomatic Blue
-        "Amerika": ["#1a365d", "#102a43", "#2b6cb0"],  # Atlantic Blue
-        "Svet": ["#4a3f5a", "#2d2638", "#7a6a96"],  # Global Dusk
-        "Sport": ["#9c4221", "#5c2a12", "#e85d04"],  # Clay/Dynamic
-        "Tehnologija": ["#1a202c", "#0f172a", "#4a5568"],  # Slate/Midnight
-        "Ekonomija": ["#2c5282", "#1a365d", "#4299e1"],  # Corporate Blue
-        "Hronika": ["#2d3748", "#1a202c", "#4a5568"],  # Industrial Grey
-        "Zabava": ["#702459", "#4a0e3a", "#b83280"],  # Artsy Magenta
-        "default": ["#2d3748", "#1a202c", "#718096"],
+        "Srbija": ["#150305", "#4a0e10", "#9e2a2b"],       # Crimson Red
+        "Makedonija": ["#1a0500", "#5c1200", "#d62828"],   # Sun Orange/Red
+        "Balkan": ["#03140c", "#0f3a24", "#2d4a3e"],       # Deep Emerald/Forest
+        "Evropa": ["#020b18", "#0b2545", "#1b3a5a"],       # Royal Blue
+        "Amerika": ["#020b18", "#0b2240", "#1a365d"],      # Navy Blue
+        "Svet": ["#0c0614", "#2a1b40", "#4a3f5a"],         # Global Violet
+        "Sport": ["#1a0a03", "#5c2505", "#e85d04"],         # Dynamic Clay Orange
+        "Tehnologija": ["#080214", "#20063b", "#8b5cf6"],  # Cyber Purple
+        "Ekonomija": ["#020f1c", "#0b3154", "#3b82f6"],    # Deep Financial Blue
+        "Hronika": ["#0a0d14", "#272e3f", "#4b5563"],      # Industrial Charcoal
+        "Zabava": ["#140210", "#3d0a2d", "#ec4899"],       # Artsy Rose Magenta
+        "default": ["#090d16", "#1c2536", "#64748b"]       # Neutral Slate
     }
 
     colors = palettes.get(category_key, palettes["default"])
-    c1, c2, c3 = colors
+    c_bg, c_spot, c_accent = colors
 
-    # 3. Deterministic Geometric Shifts
-    shift_x = seed % 100
-    shift_y = seed % 80
+    # Deterministic geometric adjustments
     angle = seed % 360
+    shift_x = seed % 40
+    shift_y = seed % 30
 
-    # 4. Text Wrapping Logic
-    def wrap_text(text, max_chars=35):
+    # Auto text wrap logic for asymmetrical editorial layout
+    def wrap_text(text, max_chars=28):
         words = text.split()
         lines = []
         cur = []
@@ -1487,66 +1487,162 @@ def generate_local_placeholder(cluster_id, title, category="vesti"):
         return lines[:4]  # Max 4 lines
 
     display_lines = wrap_text(title)
-    text_y_start = 220 - (len(display_lines) - 1) * 25
+    num_lines = len(display_lines)
+
+    # Typographical baseline vertical alignment inside the 370px glass panel
+    # The vertical center of the panel is at y=225.
+    line_height = 42
+    if num_lines >= 4:
+        font_size = 24
+        line_height = 36
+    elif num_lines == 3:
+        font_size = 27
+        line_height = 40
+    else:
+        font_size = 30
+        line_height = 44
+
+    y_start = 225 - ((num_lines - 1) * line_height) / 2 + (font_size / 3.5)
 
     tspans = ""
     for i, line in enumerate(display_lines):
-        y = text_y_start + i * 52
-        # Clean line for XML
+        y = y_start + i * line_height
         line_clean = line.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-        tspans += f'<tspan x="400" y="{y}">{line_clean}</tspan>'
+        tspans += f'<tspan x="80" y="{y}">{line_clean}</tspan>'
 
-    # 5. Generative SVG Construction
+    # Vector Art backgrounds centered at cx=590, cy=225
+    art_templates = {
+        "Sport": f"""
+            <ellipse cx="590" cy="225" rx="110" ry="60" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1.5"/>
+            <ellipse cx="590" cy="225" rx="140" ry="80" fill="none" stroke="{c_accent}" stroke-width="2" stroke-dasharray="6 4" opacity="0.25"/>
+            <line x1="450" y1="280" x2="730" y2="170" stroke="{c_accent}" stroke-width="4" stroke-linecap="round" opacity="0.3"/>
+            <circle cx="680" cy="190" r="10" fill="{c_accent}" opacity="0.7"/>
+            <circle cx="680" cy="190" r="4" fill="white" opacity="0.9"/>
+        """,
+        "Ekonomija": f"""
+            <path d="M 450 280 L 510 230 L 570 250 L 630 170 L 690 120" fill="none" stroke="{c_accent}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.35"/>
+            <path d="M 450 280 L 510 230 L 570 250 L 630 170 L 690 120 L 690 280 L 450 280 Z" fill="url(#art_glow_{cluster_id})" opacity="0.1" stroke="none"/>
+            <line x1="440" y1="280" x2="700" y2="280" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+            <line x1="440" y1="230" x2="700" y2="230" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="4 4"/>
+            <line x1="440" y1="170" x2="700" y2="170" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="4 4"/>
+            <circle cx="690" cy="120" r="8" fill="{c_accent}" opacity="0.7"/>
+        """,
+        "Tehnologija": f"""
+            <circle cx="590" cy="225" r="70" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+            <rect x="520" y="155" width="140" height="140" rx="12" fill="none" stroke="{c_accent}" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.3"/>
+            <circle cx="590" cy="225" r="22" fill="{c_accent}" opacity="0.4"/>
+            <circle cx="535" cy="170" r="6" fill="{c_accent}" opacity="0.7"/>
+            <circle cx="645" cy="280" r="6" fill="{c_accent}" opacity="0.7"/>
+            <circle cx="645" cy="170" r="8" fill="rgba(255,255,255,0.2)" opacity="0.5"/>
+            <line x1="535" y1="170" x2="590" y2="225" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+            <line x1="645" y1="280" x2="590" y2="225" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+        """,
+        "Zabava": f"""
+            <path d="M 460 240 C 510 160, 550 290, 590 225 C 630 160, 670 290, 720 210" fill="none" stroke="{c_accent}" stroke-width="4" stroke-linecap="round" opacity="0.35"/>
+            <circle cx="590" cy="225" r="45" fill="{c_accent}" opacity="0.3" filter="blur(1px)"/>
+            <circle cx="610" cy="205" r="8" fill="white" opacity="0.6"/>
+        """,
+        "Politika": f"""
+            <path d="M 480 270 L 700 270" stroke="{c_accent}" stroke-width="4" stroke-linecap="round" opacity="0.3"/>
+            <path d="M 480 160 L 700 160" stroke="{c_accent}" stroke-width="4" stroke-linecap="round" opacity="0.3"/>
+            <path d="M 515 160 L 515 270 M 552 160 L 552 270 M 590 160 L 590 270 M 627 160 L 627 270 M 665 160 L 665 270" stroke="rgba(255,255,255,0.08)" stroke-width="2" opacity="0.6"/>
+            <path d="M 495 160 L 590 110 L 685 160 Z" stroke="{c_accent}" stroke-width="3" fill="rgba(255,255,255,0.03)" opacity="0.3"/>
+            <circle cx="590" cy="215" r="20" fill="{c_accent}" opacity="0.5"/>
+        """,
+        "Svet": f"""
+            <circle cx="590" cy="225" r="90" fill="none" stroke="{c_accent}" stroke-width="2.5" opacity="0.3"/>
+            <ellipse cx="590" cy="225" rx="90" ry="32" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1.5"/>
+            <ellipse cx="590" cy="225" rx="32" ry="90" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1.5"/>
+            <circle cx="625" cy="180" r="7" fill="{c_accent}" opacity="0.7"/>
+        """,
+        "Local": f"""
+            <circle cx="590" cy="225" r="90" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+            <circle cx="590" cy="225" r="70" fill="none" stroke="{c_accent}" stroke-width="2" stroke-dasharray="6 4" opacity="0.35"/>
+            <circle cx="590" cy="225" r="40" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+            <line x1="490" y1="225" x2="690" y2="225" stroke="rgba(255,255,255,0.08)" stroke-width="1.5"/>
+            <line x1="590" y1="125" x2="590" y2="325" stroke="rgba(255,255,255,0.08)" stroke-width="1.5"/>
+            <circle cx="550" cy="245" r="10" fill="{c_accent}" opacity="0.7"/>
+            <circle cx="550" cy="245" r="4" fill="white" opacity="0.9"/>
+        """,
+        "default": f"""
+            <circle cx="590" cy="225" r="60" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+            <circle cx="590" cy="225" r="85" fill="none" stroke="{c_accent}" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.25"/>
+            <circle cx="590" cy="225" r="22" fill="{c_accent}" opacity="0.4"/>
+            <circle cx="535" cy="185" r="7" fill="{c_accent}" opacity="0.6"/>
+            <circle cx="645" cy="260" r="6" fill="{c_accent}" opacity="0.6"/>
+            <line x1="535" y1="185" x2="590" y2="225" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+            <line x1="645" y1="260" x2="590" y2="225" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+        """
+    }
+
+    art_svg = art_templates.get(category_key, art_templates["default"])
+
+    # 3. Construct premium editorial dynamic SVG
     svg = [
         '<svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">',
-        "<defs>",
-        # Main Linear Gradient
-        f'  <linearGradient id="grad_{cluster_id}" x1="0%" y1="0%" x2="100%" y2="100%" gradientTransform="rotate({angle})">',
-        f'    <stop offset="0%" style="stop-color:{c1};stop-opacity:1" />',
-        f'    <stop offset="100%" style="stop-color:{c2};stop-opacity:1" />',
-        "  </linearGradient>",
-        # Radial Accent (The "Mesh" feel)
-        f'  <radialGradient id="mesh_{cluster_id}" cx="{20 + (seed%60)}%" cy="{20 + (seed%60)}%" r="80%">',
-        f'    <stop offset="0%" style="stop-color:{c3};stop-opacity:0.4" />',
-        f'    <stop offset="100%" style="stop-color:{c2};stop-opacity:0" />',
-        "  </radialGradient>",
-        # Filter for subtle noise/texture
-        '  <filter id="noise" x="0" y="0" width="100%" height="100%">',
-        '    <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" />',
+        '<defs>',
+        # Main Linear Background Gradient
+        f'  <linearGradient id="bg_{cluster_id}" x1="0%" y1="0%" x2="100%" y2="100%">',
+        f'    <stop offset="0%" style="stop-color:{c_bg};stop-opacity:1" />',
+        f'    <stop offset="100%" style="stop-color:#020408;stop-opacity:1" />',
+        '  </linearGradient>',
+        # Soft Neon Spotlight Glowing Mesh
+        f'  <radialGradient id="mesh_{cluster_id}" cx="{60 + (seed%20)}%" cy="{40 + (seed%20)}%" r="70%">',
+        f'    <stop offset="0%" style="stop-color:{c_spot};stop-opacity:0.45" />',
+        f'    <stop offset="100%" style="stop-color:#020408;stop-opacity:0" />',
+        '  </radialGradient>',
+        # Transparent Gradient for Art Fills
+        f'  <linearGradient id="art_glow_{cluster_id}" x1="0%" y1="0%" x2="0%" y2="100%">',
+        f'    <stop offset="0%" style="stop-color:{c_accent};stop-opacity:0.35" />',
+        f'    <stop offset="100%" style="stop-color:#020408;stop-opacity:0" />',
+        '  </linearGradient>',
+        # High-end paper-grain/noise texture filter
+        '  <filter id="grain" x="0" y="0" width="100%" height="100%">',
+        '    <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch" />',
         '    <feColorMatrix type="saturate" values="0" />',
-        '    <feComponentTransfer><feFuncA type="linear" slope="0.03" /></feComponentTransfer>',
+        '    <feComponentTransfer><feFuncA type="linear" slope="0.035" /></feComponentTransfer>',
         '    <feComposite operator="in" in2="SourceGraphic" />',
-        "  </filter>",
-        "</defs>",
-        # Background Layers
-        f'<rect width="100%" height="100%" fill="url(#grad_{cluster_id})" />',
+        '  </filter>',
+        '</defs>',
+        
+        # 1. Base Gradient Backgrounds
+        f'<rect width="100%" height="100%" fill="url(#bg_{cluster_id})" />',
         f'<rect width="100%" height="100%" fill="url(#mesh_{cluster_id})" />',
-        # Subtle Geometric Overlay (Dots or Lines)
-        '<rect width="100%" height="100%" fill="white" opacity="0.03" filter="url(#noise)" />',
+        
+        # 2. Tactile Grain Overlay
+        '<rect width="100%" height="100%" fill="white" opacity="0.04" filter="url(#grain)" />',
+        
+        # 3. Floating Glassmorphism Panel
+        '<rect x="40" y="40" width="720" height="370" rx="24" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.07)" stroke-width="1.5" />',
+        
+        # 4. Editorial Layout Grid Lines
+        '<g stroke="rgba(255,255,255,0.08)" stroke-width="1" stroke-dasharray="6 6">',
+        '  <line x1="120" y1="40" x2="120" y2="410" />',
+        '  <line x1="460" y1="40" x2="460" y2="410" />',
+        '  <line x1="40" y1="110" x2="760" y2="110" />',
+        '  <line x1="40" y1="340" x2="760" y2="340" />',
+        '</g>',
+        
+        # 5. Live Synthesis Glimmer
+        '<circle cx="80" cy="75" r="5" fill="#f43f5e" opacity="0.9" />',
+        '<circle cx="80" cy="75" r="10" fill="none" stroke="#f43f5e" stroke-width="1.5" opacity="0.4">',
+        '  <animate attributeName="r" values="5;15;5" dur="3s" repeatCount="indefinite"/>',
+        '</circle>',
+        '<text x="96" y="79" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="900" letter-spacing="2" fill="white" opacity="0.75">SISTEMSKA SINTEZA</text>',
+        
+        # 6. Beautiful Category Vector Art
+        f'{art_svg}',
+        
+        # 7. Asymmetric Headline Typography
+        f'<text font-family="Georgia, \'Times New Roman\', serif" font-size="{font_size}" font-weight="900" fill="white" text-shadow="0 4px 12px rgba(0,0,0,0.5)" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.4))">',
+        f'  {tspans}',
+        '</text>',
+        
+        # 8. Premium Branding Metadata
+        '<text x="80" y="378" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" letter-spacing="4" fill="white" opacity="0.6">PRESEK</text>',
+        f'<text x="720" y="378" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" letter-spacing="2" fill="{c_accent}" opacity="0.8">{category_key.upper()}</text>',
+        
+        '</svg>'
     ]
-
-    # Optional Geometric Detail based on ID
-    if seed % 2 == 0:
-        # Grid Pattern
-        svg.append(
-            f'<path d="M 0 {shift_y} L 800 {shift_y} M {shift_x} 0 L {shift_x} 450" stroke="white" stroke-width="0.5" opacity="0.1" />'
-        )
-    else:
-        # Subtle circle
-        svg.append(f'<circle cx="{800-shift_x}" cy="{shift_y}" r="150" fill="white" opacity="0.05" />')
-
-    # Typography
-    svg.extend(
-        [
-            '<text font-family="serif" text-anchor="middle" font-size="38" font-weight="800" fill="white" style="text-shadow: 0 4px 12px rgba(0,0,0,0.3)">',
-            f"{tspans}",
-            "</text>",
-            # Branding
-            '<rect x="40" y="385" width="120" height="2" fill="white" opacity="0.3" />',
-            '<text x="40" y="415" font-family="sans-serif" font-size="16" font-weight="900" fill="white" opacity="0.6" letter-spacing="4">PRESEK</text>',
-            f'<text x="760" y="415" text-anchor="end" font-family="sans-serif" font-size="12" font-weight="700" fill="white" opacity="0.4" letter-spacing="1">{category_key.upper()}</text>',
-            "</svg>",
-        ]
-    )
 
     return "".join(svg)

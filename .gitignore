@@ -125,3 +125,6 @@ public_key.pem
 *.key
 *.crt
 *.cert
+
+# Previews
+previews/
