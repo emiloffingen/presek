@@ -8,6 +8,7 @@ import Footer from '../Footer.astro';
 import ForYouIsland from '../ForYouIsland.tsx';
 import LeadHero from './LeadHero.astro';
 import SupportingBand from './SupportingBand.astro';
+import SynthesisPicksSection from './SynthesisPicksSection.astro';
 import DevelopmentsSection from './DevelopmentsSection.astro';
 import FilterHeader from './FilterHeader.astro';
 import HomeRail from './HomeRail.astro';
@@ -65,6 +66,7 @@ let feedClusters: NewsCluster[] = [];
 let wireClusters: NewsCluster[] = [];
 let wireArticles = [];
 let excludedClusterIds: string[] = [];
+let synthesisPicks: NewsCluster[] = [];
 let homepageLeadDisplay: { title?: string; summary?: string; signal?: string } | null = null;
 
 async function loadHomepageFallback() {
@@ -155,8 +157,9 @@ if (isHomepage) {
         briefing = home?.briefing || null;
         homepageLeadDisplay = home?.lead_display && typeof home.lead_display === 'object' ? home.lead_display : null;
         excludedClusterIds = Array.isArray(home?.excluded_cluster_ids) ? home.excluded_cluster_ids : [];
+        synthesisPicks = Array.isArray(home?.synthesis_picks) ? home.synthesis_picks : [];
         feedClusters = [...developingClusters, ...wireClusters];
-        clusters = [...lead, ...supportingClusters, ...(Array.isArray(home?.for_you_pool) ? home.for_you_pool : []), ...feedClusters];
+        clusters = [...lead, ...supportingClusters, ...synthesisPicks, ...(Array.isArray(home?.for_you_pool) ? home.for_you_pool : []), ...feedClusters];
     } else {
         console.error('Home fetch error:', homePayload.status === 'rejected' ? homePayload.reason : homePayload.value);
         const recovered = await loadHomepageFallback();
@@ -551,6 +554,15 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 							supportingFeatured={supportingFeatured}
 							supportingCompact={supportingCompact}
                             lang={lang}
+						/>
+					</div>
+				)}
+
+				{isHomepage && synthesisPicks && synthesisPicks.length > 0 && (
+					<div class="section-wrapper">
+						<SynthesisPicksSection
+							synthesisPicks={synthesisPicks}
+							lang={lang}
 						/>
 					</div>
 				)}
