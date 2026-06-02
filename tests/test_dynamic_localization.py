@@ -16,6 +16,11 @@ def test_dynamic_hashing_and_normalizer():
     # Test built-in mapping
     assert normalize_tag_name("mickoski") == "Hristijan Mickoski"
     assert normalize_tag_name("makedonsk") == "Makedonija"
+    assert normalize_tag_name("srbije") == "Srbija"
+    assert normalize_tag_name("srbiji") == "Srbija"
+    assert normalize_tag_name("srbiju") == "Srbija"
+    assert normalize_tag_name("srbijom") == "Srbija"
+    assert normalize_tag_name("srbija") == "Srbija"
 
 
 def test_localization_hot_reload():

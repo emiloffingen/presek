@@ -539,7 +539,12 @@
     "rabotnic": "Rabotnici",
     "tehnick": "Tehnicki",
     "posledn": "Posledno",
-    "poranesn": "Poranesen"
+    "poranesn": "Poranesen",
+    "srbije": "Srbija",
+    "srbiji": "Srbija",
+    "srbiju": "Srbija",
+    "srbijom": "Srbija",
+    "srbija": "Srbija"
   },
   "protected_names": [
     "amerika",
