@@ -151,7 +151,7 @@ class AudioService:
             # Map languages to high-quality neural voices
             voice_map = {
                 "mk": "mk-MK-MarijaNeural",
-                "sr": "sr-RS-NicholasNeural",
+                "sr": "sr-RS-SophieNeural",
                 "en": "en-US-AvaNeural"
             }
             
