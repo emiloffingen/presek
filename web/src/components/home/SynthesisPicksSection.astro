@@ -1,0 +1,487 @@
+---
+import type { NewsCluster } from '../../types';
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+import type { ui } from '../../i18n/ui';
+import { chooseClusterImage } from '../../utils/imageSelection';
+
+interface Props {
+    synthesisPicks: NewsCluster[];
+    lang?: keyof typeof ui;
+}
+
+const { synthesisPicks, lang: propLang } = Astro.props;
+const hostHeader = Astro.request?.headers.get('host');
+const urlLang = getLangFromUrl(Astro.url, hostHeader || undefined);
+const lang = propLang || urlLang;
+const t = useTranslations(lang);
+const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
+
+function getSourceBadgeLabel(count: number) {
+    if (lang === 'sr') {
+        if (count === 1) return '1 MEDIJ';
+        if (count >= 2 && count <= 4) return `${count} MEDIJA`;
+        return `${count} MEDIJA`;
+    } else {
+        if (count === 1) return '1 МЕДИУМ';
+        return `${count} МЕДИУМИ`;
+    }
+}
+---
+
+{synthesisPicks && synthesisPicks.length > 0 && (
+    <section class="synthesis-picks-section motion-rise">
+        <div class="feed-section-container">
+            <div class="section-heading-row masthead-double-rule">
+                <div class="heading-badge">
+                    <span class="pulse-glowing-dot"></span>
+                    <span class="badge-text">{lang === 'sr' ? 'AI EDITORIAL' : 'АИ ЕДИТОРИЈАЛ'}</span>
+                </div>
+                <h2 class="section-heading font-serif">{t('home.synthesis_picks_title')}</h2>
+                <p class="section-note mt-2 text-xs font-bold uppercase tracking-widest text-muted-foreground/80">
+                    {t('home.synthesis_picks_desc')}
+                </p>
+            </div>
+
+            <div class="synthesis-grid">
+                {synthesisPicks.map((cluster) => {
+                    const artCount = cluster.articles?.length || 0;
+                    const pluralismVal = cluster.pluralism_score || 50;
+                    const visualImage = chooseClusterImage(cluster, 'card');
+                    
+                    // Distinct pluralism grade/color
+                    let gaugeColor = "from-sky-500 to-indigo-600 dark:from-sky-400 dark:to-indigo-500";
+                    let pluralismText = lang === 'sr' ? 'Umeren' : 'Умерен';
+                    if (pluralismVal >= 75) {
+                        gaugeColor = "from-purple-500 to-pink-600 dark:from-purple-400 dark:to-pink-500";
+                        pluralismText = lang === 'sr' ? 'Visok' : 'Висок';
+                    } else if (pluralismVal >= 60) {
+                        gaugeColor = "from-teal-500 to-emerald-600 dark:from-teal-400 dark:to-emerald-500";
+                        pluralismText = lang === 'sr' ? 'Stabilan' : 'Стабилен';
+                    }
+
+                    // Extract unique sources for tag-cloud
+                    const sources = Array.from(new Set((cluster.articles || []).map(a => a.source).filter(Boolean))).slice(0, 5);
+
+                    return (
+                        <div class="synthesis-card-wrapper">
+                            <div class="synthesis-card">
+                                {visualImage && (
+                                    <div class="card-image-wrapper">
+                                        <img src={visualImage} alt={cluster.synthetic_headline || ''} class="card-image" loading="lazy" />
+                                        <div class="card-image-overlay"></div>
+                                        <div class="source-count-badge">
+                                            {getSourceBadgeLabel(artCount)}
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                <div class="card-content">
+                                    <div class="card-header-row">
+                                        <span class="category-tag">
+                                            {cluster.articles?.[0]?.category || 'Tema'}
+                                        </span>
+                                        <div class="synthesis-badge">
+                                            <div class="soundwave-mini">
+                                                <span class="bar bar-1"></span>
+                                                <span class="bar bar-2"></span>
+                                                <span class="bar bar-3"></span>
+                                            </div>
+                                            <span class="synthesis-badge-text">
+                                                {lang === 'sr' ? 'SINTEZA' : 'СИНТЕЗА'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <a href={l(`/cluster/${cluster.cluster_id}`)} class="block group/title">
+                                        <h3 class="card-title font-serif">
+                                            {cluster.synthetic_headline || cluster.articles?.[0]?.title}
+                                        </h3>
+                                    </a>
+
+                                    <p class="card-description font-serif italic text-muted-foreground leading-relaxed">
+                                        {cluster.synthetic_standfirst || cluster.articles?.[0]?.description || ''}
+                                    </p>
+
+                                    {/* Pluralism Metric */}
+                                    <div class="pluralism-metric-box">
+                                        <div class="metric-info">
+                                            <span class="metric-label">{lang === 'sr' ? 'Medijski pluralizam:' : 'Медиумски плурализам:'}</span>
+                                            <span class="metric-value font-black">{pluralismText} ({pluralismVal}%)</span>
+                                        </div>
+                                        <div class="metric-bar-container">
+                                            <div class={`metric-bar-fill bg-gradient-to-r ${gaugeColor}`} style={`width: ${pluralismVal}%`}></div>
+                                        </div>
+                                    </div>
+
+                                    {/* Compiled Sources Cloud */}
+                                    {sources.length > 0 && (
+                                        <div class="sources-cloud">
+                                            <span class="sources-label">{lang === 'sr' ? 'Sinteza izvora:' : 'Синтеза на извори:'}</span>
+                                            <div class="sources-tags">
+                                                {sources.map(src => (
+                                                    <span class="source-tag">{src}</span>
+                                                ))}
+                                                {cluster.articles && cluster.articles.length > 5 && (
+                                                    <span class="source-tag-more">+{cluster.articles.length - 5}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div class="card-footer">
+                                    <a href={l(`/cluster/${cluster.cluster_id}`)} class="read-synthesis-link">
+                                        <span>{lang === 'sr' ? 'Otvori sintezu' : 'Отвори синтеза'}</span>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="arrow-icon"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    </section>
+)}
+
+<style>
+    .synthesis-picks-section {
+        margin-top: 3.5rem;
+        margin-bottom: 2rem;
+        position: relative;
+    }
+
+    .feed-section-container {
+        padding: 2.5rem 1.5rem;
+        background: linear-gradient(180deg, rgba(var(--background-rgb), 0) 0%, rgba(var(--accent-rgb), 0.03) 100%);
+        border-radius: 16px;
+        border: 1px solid rgba(var(--accent-rgb), 0.05);
+    }
+
+    .heading-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(var(--accent-rgb), 0.08);
+        border: 1px solid rgba(var(--accent-rgb), 0.15);
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        margin-bottom: 0.75rem;
+    }
+
+    .pulse-glowing-dot {
+        width: 6px;
+        height: 6px;
+        background-color: var(--nyt-accent, #9e2a2b);
+        border-radius: 50%;
+        box-shadow: 0 0 8px var(--nyt-accent);
+        animation: pulse-glow 1.5s infinite;
+    }
+
+    @keyframes pulse-glow {
+        0% { transform: scale(0.9); opacity: 0.6; }
+        50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 12px var(--nyt-accent); }
+        100% { transform: scale(0.9); opacity: 0.6; }
+    }
+
+    .badge-text {
+        font-size: 0.65rem;
+        font-weight: 900;
+        letter-spacing: 0.15em;
+        color: var(--nyt-accent, #9e2a2b);
+    }
+
+    .synthesis-grid {
+        display: grid;
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+        gap: 2rem;
+        margin-top: 2rem;
+    }
+
+    @media (min-width: 768px) {
+        .synthesis-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (min-width: 1200px) {
+        .synthesis-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+    }
+
+    .synthesis-card-wrapper {
+        perspective: 1000px;
+    }
+
+    .synthesis-card {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        background: rgba(var(--card-background-rgb, 255, 255, 255), 0.6);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(var(--foreground-rgb), 0.06);
+        border-radius: 12px;
+        overflow: hidden;
+        transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), box-shadow 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), border-color 0.3s;
+    }
+
+    :global(.dark) .synthesis-card {
+        background: rgba(30, 30, 30, 0.45);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .synthesis-card:hover {
+        transform: translateY(-6px);
+        border-color: rgba(var(--accent-rgb), 0.25);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+    }
+
+    :global(.dark) .synthesis-card:hover {
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .card-image-wrapper {
+        position: relative;
+        width: 100%;
+        height: 160px;
+        overflow: hidden;
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    .card-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+    }
+
+    .synthesis-card:hover .card-image {
+        transform: scale(1.05);
+    }
+
+    .card-image-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.4) 100%);
+    }
+
+    .source-count-badge {
+        position: absolute;
+        bottom: 0.75rem;
+        left: 0.75rem;
+        background: rgba(0, 0, 0, 0.75);
+        backdrop-filter: blur(4px);
+        color: #ffffff;
+        font-size: 0.65rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .card-content {
+        padding: 1.25rem;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .card-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+
+    .category-tag {
+        font-size: 0.65rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--nyt-accent, #9e2a2b);
+    }
+
+    .synthesis-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        padding: 0.15rem 0.4rem;
+        border-radius: 4px;
+    }
+
+    .synthesis-badge-text {
+        font-size: 0.55rem;
+        font-weight: 900;
+        letter-spacing: 0.05em;
+        color: #10b981;
+    }
+
+    /* Soundwave Mini Animation */
+    .soundwave-mini {
+        display: flex;
+        align-items: flex-end;
+        gap: 2px;
+        width: 10px;
+        height: 8px;
+    }
+
+    .soundwave-mini .bar {
+        width: 2px;
+        background-color: #10b981;
+        border-radius: 1px;
+        animation: soundwave-bounce 0.8s infinite ease-in-out alternate;
+    }
+
+    .soundwave-mini .bar-1 { height: 30%; animation-delay: 0.1s; }
+    .soundwave-mini .bar-2 { height: 60%; animation-delay: 0.3s; }
+    .soundwave-mini .bar-3 { height: 40%; animation-delay: 0.2s; }
+
+    @keyframes soundwave-bounce {
+        0% { height: 20%; }
+        100% { height: 100%; }
+    }
+
+    .card-title {
+        font-size: 1.125rem;
+        font-weight: 800;
+        line-height: 1.3;
+        color: var(--foreground);
+        margin-bottom: 0.75rem;
+        transition: color 0.2s;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .synthesis-card:hover .card-title {
+        color: var(--nyt-accent, #9e2a2b);
+    }
+
+    .card-description {
+        font-size: 0.8rem;
+        line-height: 1.5;
+        margin-bottom: 1.25rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 4;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .pluralism-metric-box {
+        background: rgba(var(--foreground-rgb), 0.02);
+        border: 1px solid rgba(var(--foreground-rgb), 0.04);
+        padding: 0.65rem;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+        margin-top: auto;
+    }
+
+    .metric-info {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.65rem;
+        margin-bottom: 0.35rem;
+    }
+
+    .metric-label {
+        color: var(--muted-foreground);
+    }
+
+    .metric-value {
+        color: var(--foreground);
+    }
+
+    .metric-bar-container {
+        width: 100%;
+        height: 4px;
+        background: rgba(var(--foreground-rgb), 0.08);
+        border-radius: 2px;
+        overflow: hidden;
+    }
+
+    .metric-bar-fill {
+        height: 100%;
+        border-radius: 2px;
+    }
+
+    .sources-cloud {
+        margin-bottom: 0.5rem;
+    }
+
+    .sources-label {
+        display: block;
+        font-size: 0.6rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--muted-foreground);
+        margin-bottom: 0.35rem;
+    }
+
+    .sources-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+
+    .source-tag {
+        font-size: 0.6rem;
+        font-weight: 600;
+        background: rgba(var(--foreground-rgb), 0.05);
+        color: var(--muted-foreground);
+        padding: 0.1rem 0.35rem;
+        border-radius: 3px;
+        border: 1px solid rgba(var(--foreground-rgb), 0.03);
+    }
+
+    .source-tag-more {
+        font-size: 0.6rem;
+        font-weight: 700;
+        background: rgba(var(--accent-rgb), 0.1);
+        color: var(--nyt-accent);
+        padding: 0.1rem 0.35rem;
+        border-radius: 3px;
+    }
+
+    .card-footer {
+        padding: 0.75rem 1.25rem 1.25rem;
+        border-top: 1px solid rgba(var(--foreground-rgb), 0.04);
+        background: rgba(var(--foreground-rgb), 0.01);
+    }
+
+    .read-synthesis-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        width: 100%;
+        background: rgba(var(--foreground-rgb), 0.03);
+        border: 1px solid rgba(var(--foreground-rgb), 0.06);
+        padding: 0.5rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--foreground);
+        transition: all 0.2s;
+    }
+
+    .read-synthesis-link:hover {
+        background: var(--nyt-accent, #9e2a2b);
+        border-color: var(--nyt-accent, #9e2a2b);
+        color: #ffffff;
+    }
+
+    .arrow-icon {
+        transition: transform 0.2s;
+    }
+
+    .read-synthesis-link:hover .arrow-icon {
+        transform: translateX(3px);
+    }
+</style>
