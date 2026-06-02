@@ -219,6 +219,18 @@ def _load_daily_brief_clusters(limit=5, lang="sr"):
         source_count = len({a.get("source") for a in ranked if a.get("source")})
         cluster_summary = (synthesis_row or {}).get("summary") or ""
         description = lead.get("summary") or lead.get("description") or ""
+        other_titles = []
+        seen_title_keys = {str(lead.get("title") or "").strip().casefold()}
+        for article in ranked[1:6]:
+            alt_title = str(article.get("title") or "").strip()
+            if not alt_title:
+                continue
+            title_key = alt_title.casefold()
+            if title_key in seen_title_keys:
+                continue
+            seen_title_keys.add(title_key)
+            source = str(article.get("source") or "").strip()
+            other_titles.append(f"{source}: {alt_title}" if source else alt_title)
 
         # New Diversity Signal: Extract Actors (Entities)
         entities = set(_extract_capitalized_phrases(f"{lead.get('title')} {description}"))
@@ -251,6 +263,7 @@ def _load_daily_brief_clusters(limit=5, lang="sr"):
                 "difference_point": difference_point,
                 "open_point": open_point,
                 "cluster_summary": cluster_summary,
+                "other_titles": other_titles,
                 "entities": entities,
                 "score": max(0.0, briefing_score),
                 "is_routine_weather": is_routine_weather,
@@ -286,6 +299,8 @@ def _load_daily_brief_clusters(limit=5, lang="sr"):
 def _build_daily_brief_context(clusters):
     blocks = []
     for index, cluster in enumerate(clusters[:6], start=1):
+        source_count = cluster.get("source_count") or 1
+        editorial_weight = "high" if source_count >= 5 else "medium" if source_count >= 2 else "single-source"
         blocks.append(
             "\n".join(
                 [
@@ -294,12 +309,13 @@ def _build_daily_brief_context(clusters):
                     f"Naslov: {cluster.get('title') or ''}",
                     f"Kategorija: {cluster.get('category') or cluster.get('topic') or 'vesti'}",
                     f"Vodeci izvor: {cluster.get('source') or 'izvor'}",
-                    f"Broj izvora: {cluster.get('source_count') or 1}",
+                    f"Broj izvora: {source_count}",
+                    f"Urednicka tezina: {editorial_weight}",
                     f"Kratok kontekst: {cluster.get('description') or ''}",
                     f"Sinteza: {cluster.get('cluster_summary') or ''}",
-                    f"Drugi agli: {' | '.join(cluster.get('other_titles') or [])}",
-                    f"Razliki: {cluster.get('difference_point') or ''}",
-                    f"otvoreno: {cluster.get('open_point') or ''}",
+                    f"Kako drugi izvori naslovuvaju: {' | '.join(cluster.get('other_titles') or [])}",
+                    f"Razliki vo akcent: {cluster.get('difference_point') or ''}",
+                    f"Sto ostanuva otvoreno: {cluster.get('open_point') or ''}",
                 ]
             )
         )
@@ -366,6 +382,20 @@ def _is_high_quality_briefing(brief: str) -> bool:
         "ostaje da se vidi",
         "doprva ce",
         "vremeto ce pokaze",
+        "ќе покаже",
+        "останува важно",
+        "може да влијае",
+        "вреди да се следи",
+        "останува да се види",
+        "допрва ќе",
+        "времето ќе покаже",
+        "клучно е да се напомене",
+        "важно е да се истакне",
+        "од витално значење",
+        "sve u svemu",
+        "ključno je napomenuti",
+        "važno je istaći",
+        "od vitalnog značaja",
     ]
     lines = [line.strip() for line in text.splitlines() if line.strip() and not line.startswith("#")]
     if not lines:

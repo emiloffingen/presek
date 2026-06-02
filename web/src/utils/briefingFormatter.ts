@@ -1,5 +1,12 @@
 import { sanitizeHtml } from '../lib/sanitize';
 
+function stripDecorativePrefix(text: string): string {
+    return text
+        .replace(/^\s*(?:[\dIVXLCDM]+[.)]\s*)+/i, '')
+        .replace(/^\s*(?:тема|теза|фокус|analiza|tema|teza|fokus)\s*[:\-]\s*/i, '')
+        .trim();
+}
+
 /**
  * A specialized formatter for the Daily Briefing markdown content.
  * Converts markdown-like structures into styled HTML for the Briefing layout.
@@ -10,13 +17,20 @@ export function formatBriefing(markdown: string, lang = 'sr'): string {
     const l = (path: string) => isMK ? `/mk${path}` : path;
 
     let html = markdown.trim();
+    let sectionIndex = 0;
 
     // 1. Handle Headings (e.g., # Header, ## Subheader, ### Title)
     html = html.replace(/^#\s+(.+)$/gm, ''); // Main title is handled by BriefingHeader
-    html = html.replace(/^##\s+(.+)$/gm, '<h2 class="briefing-section-title">$1</h2>');
+    html = html.replace(/^##\s+(.+)$/gm, (_match, rawTitle) => {
+        sectionIndex += 1;
+        const title = stripDecorativePrefix(rawTitle);
+        const sectionLabel = isMK ? 'Секција' : 'Sekcija';
+        return `<h2 class="briefing-section-title"><span class="briefing-section-index">${String(sectionIndex).padStart(2, '0')}</span><span>${title}</span><small>${sectionLabel}</small></h2>`;
+    });
     html = html.replace(/^###\s+(\d+\.\s+)?(.+?)(\s+\[\[(.+?)\]\])?$/gm, (match, num, title, idGroup, id) => {
-        const idBadge = id ? `<a href="${l('/cluster/')}${id}" class="briefing-inline-badge">${isMK ? 'Отворете кластер' : 'Otvorite klaster'}</a>` : '';
-        return `<h3 class="briefing-item-title">${num || ''}${title}${idBadge}</h3>`;
+        const idBadge = id ? `<a href="${l('/cluster/')}${id}" class="briefing-inline-badge">${isMK ? 'Кластер' : 'Klaster'}</a>` : '';
+        const cleanTitle = stripDecorativePrefix(`${num || ''}${title}`);
+        return `<h3 class="briefing-item-title">${cleanTitle}${idBadge}</h3>`;
     });
 
     // 2. Handle Pull-quotes (Markdown blockquotes)
@@ -32,7 +46,7 @@ export function formatBriefing(markdown: string, lang = 'sr'): string {
 
     // 4. Handle Paragraphs
     const blocks = html.split(/\n\n+/);
-    let hasAppliedDropCap = false;
+    let paragraphIndex = 0;
     html = blocks.map(block => {
         const trimmed = block.trim();
         if (!trimmed) return "";
@@ -40,10 +54,9 @@ export function formatBriefing(markdown: string, lang = 'sr'): string {
             return trimmed;
         }
 
-        // Apply drop-cap only to the very first regular paragraph
-        if (!hasAppliedDropCap && trimmed.length > 100 && !trimmed.includes('<')) {
-             hasAppliedDropCap = true;
-             return `<p class="briefing-paragraph drop-cap">${trimmed}</p>`;
+        paragraphIndex += 1;
+        if (paragraphIndex === 1 && trimmed.length > 80 && !trimmed.includes('<')) {
+             return `<p class="briefing-paragraph briefing-lede drop-cap">${trimmed}</p>`;
         }
         return `<p class="briefing-paragraph">${trimmed}</p>`;
     }).join('\n');

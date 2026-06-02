@@ -130,3 +130,93 @@ a:hover .design-card-cta {
     transform: translateY(-5px) scale(1.05);
     box-shadow: 0 10px 20px -5px rgba(0,0,0,0.3);
 }
+
+/* ──────────────────────────────────────────────────
+   Runtime Image Fallback Global Styles
+   (Synced from NewsCard.astro scoped style block)
+   ────────────────────────────────────────────────── */
+.runtime-image-container {
+    transition: transform 0.8s var(--ease-editorial);
+}
+
+.runtime-fallback-only {
+    display: none !important;
+}
+
+.image-wrap[data-image-state="fallback"] .runtime-fallback-only {
+    display: block !important;
+}
+
+.image-wrap[data-image-state="fallback"] .runtime-image-container {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--placeholder-bg, #070c16) 100%, black) 0%, color-mix(in srgb, var(--placeholder-bg, #132a4f) 60%, black) 100%) !important;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: block;
+    isolation: isolate;
+}
+
+.image-wrap[data-image-state="fallback"] .runtime-image-container .article-image-fallback {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    filter: saturate(0.95) contrast(1.02);
+    object-fit: contain;
+    padding: 1.5rem;
+}
+
+.nyt-article:hover .article-image-placeholder,
+.nyt-article:hover .image-wrap[data-image-state="fallback"] .runtime-image-container {
+    transform: scale(1.04);
+}
+
+/* ──────────────────────────────────────────────────
+   Ribbon and Image Padding Adjustments for Small Cards
+   ────────────────────────────────────────────────── */
+.image-wrap.w-28 .design-card-ribbon,
+.image-wrap.h-20 .design-card-ribbon,
+.nyt-article.variant-compact .design-card-ribbon,
+.nyt-article.variant-wire .design-card-ribbon {
+    padding: 0.2rem 0.4rem !important;
+    font-size: 0.42rem !important;
+    letter-spacing: 0.08em !important;
+}
+
+.image-wrap.w-28[data-image-state="fallback"] .runtime-image-container .article-image-fallback,
+.image-wrap.h-20[data-image-state="fallback"] .runtime-image-container .article-image-fallback,
+.nyt-article.variant-compact[data-image-state="fallback"] .runtime-image-container .article-image-fallback,
+.nyt-article.variant-wire[data-image-state="fallback"] .runtime-image-container .article-image-fallback {
+    padding: 0.5rem !important;
+}
+
+/* ──────────────────────────────────────────────────
+   Image Loading Sheen Animation Global Styles
+   ────────────────────────────────────────────────── */
+.image-wrap {
+    position: relative;
+    overflow: hidden;
+}
+
+.image-wrap::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background:
+        linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--foreground) 5%, transparent) 42%, transparent 72%),
+        repeating-linear-gradient(0deg, color-mix(in srgb, var(--border) 30%, transparent) 0 1px, transparent 1px 14px);
+    opacity: 0.75;
+    transform: translateX(-100%);
+    animation: card-image-sheen 1.8s ease-in-out infinite;
+}
+
+.image-wrap[data-image-state="ready"]::before,
+.image-wrap[data-image-state="fallback"]::before {
+    display: none !important;
+}
+
+@keyframes card-image-sheen {
+    0% { transform: translateX(-100%); }
+    55%, 100% { transform: translateX(100%); }
+}
+
