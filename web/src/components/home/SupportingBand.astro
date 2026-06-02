@@ -22,8 +22,8 @@ const allSupporting = [...supportingFeatured, ...supportingCompact];
 function getBentoSpan(cluster: NewsCluster, index: number): '1x1' | '2x1' | '2x2' {
     const score = cluster.homepage_score || 0;
     
-    // First item if high score gets hero treatment
-    if (index === 0 && score > 0.7) return '2x2';
+    // First item if high score gets hero treatment (use 2x1 to align heights perfectly)
+    if (index === 0 && score > 0.7) return '2x1';
     
     // High scores get wide tiles
     if (score > 0.8) return '2x1';
