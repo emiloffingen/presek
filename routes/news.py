@@ -130,8 +130,6 @@ _PUBLIC_ARTICLE_FIELDS = {
 
 
 def _public_article_payload(article, lang="sr"):
-    import datetime
-
     from core.language import transliterate_cyr_to_lat, transliterate_lat_to_cyr
     from nlp.categories import normalize_headline
 

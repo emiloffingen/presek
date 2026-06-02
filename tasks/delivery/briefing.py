@@ -869,7 +869,6 @@ def generate_daily_brief_task(retry_attempt=0, lang="sr"):
             # Automatically pre-generate the briefing audio in the background
             try:
                 from core.audio_service import AudioService
-                import datetime
                 target_date = datetime.date.today().isoformat()
                 log.info(f"[tasks] Auto-generating OmniVoice briefing audio in background for {target_date} ({lang})...")
                 AudioService.generate_briefing_audio(target_date, final_brief, lang)
@@ -893,7 +892,6 @@ def generate_daily_brief_task(retry_attempt=0, lang="sr"):
             # Automatically pre-generate the briefing audio (fallback) in the background
             try:
                 from core.audio_service import AudioService
-                import datetime
                 target_date = datetime.date.today().isoformat()
                 log.info(f"[tasks] Auto-generating OmniVoice briefing audio in background (fallback) for {target_date} ({lang})...")
                 AudioService.generate_briefing_audio(target_date, fallback, lang)
