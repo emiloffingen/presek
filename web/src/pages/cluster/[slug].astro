@@ -1742,7 +1742,6 @@ const articleSchema = cluster ? {
 
 		const initReaderMode = () => {
 			// Wait for DOM to be fully ready
-			if (document.readyState !== 'complete') return;
 			if (!customElements || !customElements.whenDefined) return;
 
 			const article = document.querySelector('.cluster-article-container');
