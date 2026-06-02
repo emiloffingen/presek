@@ -52,26 +52,18 @@ function getBentoSpan(cluster: NewsCluster) {
                 </div>
             )
         ) : (
-            <Fragment>
-                {developmentsFeatured.length > 0 && (
-                    <div class="bento-box-grid">
-                        {developmentsFeatured.map((cluster: NewsCluster, idx: number) => (
-                            <div class="developments-card" style={`animation-delay: ${idx * 0.08}s`}>
-                                <NewsCard cluster={cluster} variant="featured" bentoSpan={getBentoSpan(cluster)} lang={lang} />
-                            </div>
-                        ))}
+            <div class="bento-box-grid">
+                {developmentsFeatured.map((cluster: NewsCluster, idx: number) => (
+                    <div class="developments-card" style={`animation-delay: ${idx * 0.08}s`}>
+                        <NewsCard cluster={cluster} variant="featured" bentoSpan={getBentoSpan(cluster)} lang={lang} />
                     </div>
-                )}
-                {developmentsCompact.length > 0 && (
-                    <div class="news-feed-grid news-feed-grid-compact mt-8">
-                        {developmentsCompact.map((cluster: NewsCluster, idx: number) => (
-                            <div class="developments-card" style={`animation-delay: ${(developmentsFeatured.length + idx) * 0.06}s`}>
-                                <NewsCard cluster={cluster} variant="compact" lang={lang} />
-                            </div>
-                        ))}
+                ))}
+                {developmentsCompact.map((cluster: NewsCluster, idx: number) => (
+                    <div class="developments-card" style={`animation-delay: ${(developmentsFeatured.length + idx) * 0.06}s`}>
+                        <NewsCard cluster={cluster} variant="compact" lang={lang} />
                     </div>
-                )}
-            </Fragment>
+                ))}
+            </div>
         )}
     </div>
 </section>
