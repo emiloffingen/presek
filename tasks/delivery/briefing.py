@@ -846,7 +846,7 @@ def generate_daily_brief_task(retry_attempt=0, lang="sr"):
         ):
             log.warning(f"[tasks] Daily brief ({lang}) rejected; using local fallback.")
             brief = ""
-        final_brief = brief or generate_daily_brief_fallback(clusters)
+        final_brief = brief or generate_daily_brief_fallback(clusters, lang=lang)
         if final_brief:
             if brief and not final_brief.startswith("#"):
                 final_brief = f"# {dispatch_name}\n\n" + final_brief
@@ -909,8 +909,8 @@ def generate_daily_brief_task(retry_attempt=0, lang="sr"):
                     kwargs={"retry_attempt": retry_attempt + 1, "lang": lang}, countdown=1800
                 )
     except Exception as e:
-        clusters = _load_daily_brief_clusters(limit=6, lang="sr")
-        fallback = generate_daily_brief_fallback(clusters)
+        clusters = _load_daily_brief_clusters(limit=6, lang=lang)
+        fallback = generate_daily_brief_fallback(clusters, lang=lang)
         if fallback:
             db.execute(
                 "INSERT INTO daily_briefings (date, content, lang, metadata) VALUES (CURRENT_DATE, %s, %s, %s) "

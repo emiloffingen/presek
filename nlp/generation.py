@@ -37,6 +37,10 @@ _T = {
         "analiticki_uvid": "Аналитички увид",
         "ostanuva_otvoreno": "Останува отворено",
         "kontekst_razliki": "Контекст и разлики",
+        "golemata_slika": "Големата Слика",
+        "globalni_lokalni_oski": "Глобални и Локални Оски",
+        "mediumski_radar": "Медиумски Радар",
+        "sto_da_se_sledi": "Што да се следи",
         "klucen_aspekt": "Клучен аспект",
         "zosto_vazno": "Зошто е важно",
         "beleska": "Белешка",
@@ -77,6 +81,10 @@ _T = {
         "analiticki_uvid": "Analitički uvid",
         "ostanuva_otvoreno": "Ostaje otvoreno",
         "kontekst_razliki": "Kontekst i razlike",
+        "golemata_slika": "Velika Slika",
+        "globalni_lokalni_oski": "Globalne i Lokalne Ose",
+        "mediumski_radar": "Medijski Radar",
+        "sto_da_se_sledi": "Šta pratiti",
         "klucen_aspekt": "Ključni aspekt",
         "zosto_vazno": "Zašto je važno",
         "beleska": "Beleška",
@@ -1215,7 +1223,7 @@ def synthesize_cluster_fallback(articles, lang="mk"):
 def generate_daily_brief_fallback(clusters, lang="mk"):
     t = _T.get(lang, _T["mk"])
     if not clusters:
-        return f"## {t['dneven_brifing']}\n\n{t['nema_vesti']}"
+        return f"# {t['dneven_brifing']}\n\n## {t['golemata_slika']}\n\n{t['nema_vesti']}"
     display_clusters = sorted(
         clusters[:4],
         key=lambda item: (
@@ -1225,7 +1233,7 @@ def generate_daily_brief_fallback(clusters, lang="mk"):
         ),
     )
     display_clusters = _dedupe_briefing_clusters(display_clusters, limit=4, lang=lang)
-    lines = [f"## {t['dinamika_den']}", ""]
+    lines = [f"# {t['dneven_brifing']}", "", f"## {t['golemata_slika']}", ""]
 
     if len(display_clusters) >= 1:
         lead_update = _condense_briefing_update(_extract_briefing_update(display_clusters[0], lang=lang), max_chars=150)
@@ -1238,9 +1246,33 @@ def generate_daily_brief_fallback(clusters, lang="mk"):
             intro_line = t["denot_obeleza"].format(text1=lead_update, text2=sec_update)
 
         lines.append(intro_line)
+        lead_sources = int(display_clusters[0].get("source_count") or 1)
+        if lead_sources >= 2:
+            lines.append(t["urednicki_pregled"].format(count=lead_sources))
         lines.append("")
 
-    lines.append(f"## {t['kontekst_razliki']}")
+    lines.append(f"## {t['globalni_lokalni_oski']}")
+    lines.append("")
+    for index, cluster in enumerate(display_clusters, start=1):
+        title = str(cluster.get("title") or "").strip()
+        clean_title = _clean_briefing_snippet(title)
+        cluster_id = str(cluster.get("cluster_id") or "").strip()
+
+        summary = _extract_briefing_update(cluster, lang=lang)
+        importance = _extract_briefing_importance(cluster, lang=lang)
+
+        title_line = clean_title or title
+        if cluster_id:
+            title_line = f"{title_line} [[{cluster_id}]]"
+        lines.append(f"### {index}. {title_line}")
+
+        if summary and summary.casefold() != (clean_title or title).casefold():
+            lines.append(f"- {t['klucen_aspekt']}: {summary}.")
+
+        lines.append(f"- {t['zosto_vazno']}: {importance}.")
+        lines.append("")
+
+    lines.append(f"## {t['mediumski_radar']}")
     lines.append("")
     difference_added = False
     for cluster in display_clusters[:3]:
@@ -1255,22 +1287,14 @@ def generate_daily_brief_fallback(clusters, lang="mk"):
         lines.append(f"• {short_t}: " f"{_extract_briefing_importance(fallback_cluster, lang=lang)}.")
     lines.append("")
 
-    for index, cluster in enumerate(display_clusters, start=1):
-        title = str(cluster.get("title") or "").strip()
-        clean_title = _clean_briefing_snippet(title)
-
-        # Use content-aware extraction to avoid repeating the title
-        summary = _extract_briefing_update(cluster, lang=lang)
-        importance = _extract_briefing_importance(cluster, lang=lang)
-
-        lines.append(f"### {index}. {clean_title or title}")
-
-        if summary and summary.casefold() != (clean_title or title).casefold():
-            lines.append(f"- {t['klucen_aspekt']}: {summary}.")
-
-        lines.append(f"- {t['zosto_vazno']}: {importance}.")
-        lines.append("")
-
+    lines.append(f"## {t['sto_da_se_sledi']}")
+    lines.append("")
+    for cluster in display_clusters[:4]:
+        open_point = _normalize_briefing_line(cluster.get("open_point"))
+        signal = open_point or t["naredno_pratenje"]
+        short_t = _condense_briefing_update(cluster.get("title"), max_chars=82)
+        lines.append(f"- {short_t}: {signal}")
+    lines.append("")
     lines.append(f"**{t['beleska']}**: {t['sodrzina_generirana']}")
     return "\n".join(lines).strip()
 

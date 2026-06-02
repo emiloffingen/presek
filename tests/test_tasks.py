@@ -474,11 +474,6 @@ class TestDailyBriefTaskQuality:
         with (
             patch("tasks.delivery.briefing.db") as mock_db,
             patch("utils.ranking.score_cluster_for_homepage", return_value=4.2),
-            patch.object(
-                tasks.delivery.briefing,
-                "_load_daily_brief_clusters",
-                return_value=[{"cluster_id": "c1", "title": "T"}],
-            ),
         ):
             mock_db.execute.return_value = cluster_articles
             mock_db.execute_one.return_value = {
@@ -500,6 +495,32 @@ class TestDailyBriefTaskQuality:
 
         assert clusters
         assert "### klaster 1" in context or "###" in context
+        assert "Urednicka tezina" in context
+        assert "Kako drugi izvori naslovuvaju" in context
+        assert "Reuters akcentira na rokot i reakciite" in context
+
+    def test_daily_brief_fallback_uses_editorial_sections_and_language(self):
+        from nlp import generate_daily_brief_fallback
+
+        clusters = [
+            {
+                "cluster_id": "mk1",
+                "title": "Владата најави нова економска мерка",
+                "description": "Мерката се однесува на цените и буџетската поддршка.",
+                "cluster_summary": "Владата најави мерка што треба да ги ублажи ценовните притисоци.",
+                "source_count": 4,
+                "open_point": "дали мерката ќе биде усвоена во најавениот рок",
+            }
+        ]
+
+        brief = generate_daily_brief_fallback(clusters, lang="mk")
+
+        assert "## Големата Слика" in brief
+        assert "## Глобални и Локални Оски" in brief
+        assert "## Медиумски Радар" in brief
+        assert "## Што да се следи" in brief
+        assert "[[mk1]]" in brief
+        assert "Dnevni brifing" not in brief
 
     def test_rejects_daily_brief_with_named_entity_missing_from_context(self):
 
