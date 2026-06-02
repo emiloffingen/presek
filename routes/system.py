@@ -203,6 +203,27 @@ async def get_trending_route(lang: Optional[str] = "sr"):
 
     target_country = "MK" if lang == "mk" else "RS"
     words = get_trending(limit=20, country=target_country)
+    
+    if lang == "mk":
+        from core.language import transliterate_lat_to_cyr
+        for w in words:
+            if isinstance(w, dict) and "word" in w:
+                cw = transliterate_lat_to_cyr(w["word"])
+                if cw == "Сдсм":
+                    cw = "СДСМ"
+                elif cw == "Вмро-дпмне":
+                    cw = "ВМРО-ДПМНЕ"
+                elif cw == "Еу":
+                    cw = "ЕУ"
+                elif cw == "Нато":
+                    cw = "НАТО"
+                elif cw == "Сад":
+                    cw = "САД"
+                elif "-" in cw:
+                    parts = cw.split("-")
+                    cw = "-".join(p.capitalize() for p in parts)
+                w["word"] = cw
+
     set_cache(cache_key, words, ttl=300)
     return words
 
