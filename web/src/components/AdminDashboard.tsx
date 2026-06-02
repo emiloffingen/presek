@@ -168,7 +168,7 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
 
           <div className="bg-nyt-accent/5 border border-nyt-accent/20 rounded-2xl p-6">
             <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-[var(--grid-gap)] mb-4 text-nyt-accent">
-              <Zap size={14} /> {lang === 'sr' ? 'AI KASKADA' : 'AI КАСКАДА'}
+              <Zap size={14} /> {lang === 'sr' ? 'SISTEMSKA KASKADA' : 'СИСТЕМСКА КАСКАДА'}
             </h3>
             <div className="flex justify-between items-end">
               <div>
