@@ -1,22 +1,58 @@
-<svg viewBox="0 0 1200 760" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Presek politics fallback">
+<svg viewBox="0 0 1200 760" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Presek politics news fallback">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#f7f4ed"/>
-      <stop offset="0.48" stop-color="#d8dde5"/>
-      <stop offset="1" stop-color="#253044"/>
+      <stop offset="0%" stop-color="#18040a"/>
+      <stop offset="50%" stop-color="#2d0a14"/>
+      <stop offset="100%" stop-color="#0a0104"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#881337" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#ca8a04" stop-opacity="0.1"/>
+    </linearGradient>
+    <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.02"/>
     </linearGradient>
   </defs>
   <rect width="1200" height="760" fill="url(#bg)"/>
-  <rect x="70" y="70" width="1060" height="620" rx="24" fill="#fffaf0" opacity="0.78" stroke="#111827" stroke-opacity="0.12"/>
-  <rect x="132" y="130" width="166" height="44" rx="3" fill="#253044"/>
-  <text x="215" y="159" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="800" letter-spacing="4" fill="#fffaf0">PRESEK</text>
-  <g transform="translate(220 240)" fill="none" stroke="#253044" stroke-width="18" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M120 248h560"/>
-    <path d="M172 212V96M292 212V96M412 212V96M532 212V96M652 212V96"/>
-    <path d="M100 96h600L400 14 100 96Z" fill="#253044" fill-opacity="0.08"/>
-    <path d="M76 292h648"/>
+  
+  <circle cx="680" cy="380" r="420" fill="url(#glow)" filter="blur(95px)" opacity="0.45"/>
+  <circle cx="220" cy="180" r="280" fill="#ca8a04" filter="blur(120px)" opacity="0.15"/>
+
+  <rect x="80" y="80" width="1040" height="600" rx="28" fill="url(#plate)" stroke="rgba(255,255,255,0.08)" stroke-width="2"/>
+  
+  <g stroke="rgba(255,255,255,0.12)" stroke-width="1.5" stroke-dasharray="6 6">
+    <line x1="200" y1="80" x2="200" y2="680"/>
+    <line x1="1000" y1="80" x2="1000" y2="680"/>
+    <line x1="80" y1="200" x2="1120" y2="200"/>
+    <line x1="80" y1="560" x2="1120" y2="560"/>
   </g>
-  <circle cx="920" cy="190" r="118" fill="#b91c1c" opacity="0.12"/>
-  <rect x="132" y="594" width="360" height="18" fill="#253044" opacity="0.18"/>
-  <rect x="132" y="628" width="520" height="18" fill="#253044" opacity="0.11"/>
+
+  <text x="200" y="155" font-family="'Times New Roman', Times, serif" font-size="34" font-weight="900" letter-spacing="8" fill="#ffffff" opacity="0.8">PRESEK</text>
+  <text x="200" y="185" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="850" letter-spacing="4" fill="#ca8a04">POLITIKA / POLITICS</text>
+
+  <!-- Editorial Text lines -->
+  <rect x="200" y="270" width="480" height="8" rx="4" fill="#ffffff" opacity="0.25"/>
+  <rect x="200" y="300" width="400" height="8" rx="4" fill="#ffffff" opacity="0.2"/>
+  <rect x="200" y="330" width="510" height="8" rx="4" fill="#ffffff" opacity="0.15"/>
+  
+  <rect x="200" y="400" width="450" height="8" rx="4" fill="#ffffff" opacity="0.25"/>
+  <rect x="200" y="430" width="320" height="8" rx="4" fill="#ffffff" opacity="0.2"/>
+  <rect x="200" y="460" width="490" height="8" rx="4" fill="#ffffff" opacity="0.15"/>
+
+  <!-- Classical scales/architectural abstract art -->
+  <g transform="translate(800, 360)" stroke="url(#glow)" stroke-linecap="round" fill="none">
+    <!-- Dome pillars shape -->
+    <path d="M-120 120 L120 120" stroke-width="6"/>
+    <path d="M-120 -80 L120 -80" stroke-width="6"/>
+    <path d="M-100 -80 L-100 120 M-50 -80 L-50 120 M0 -80 L0 120 M50 -80 L50 120 M100 -80 L100 120" stroke-width="4" opacity="0.6"/>
+    <!-- Triangular dome -->
+    <path d="M-130 -80 L0 -160 L130 -80 Z" stroke-width="4" fill="rgba(136,19,55,0.1)"/>
+    <!-- Glowing seal -->
+    <circle cx="0" cy="20" r="30" fill="#ca8a04" opacity="0.75" filter="blur(1px)" stroke="none"/>
+    <circle cx="0" cy="20" r="15" fill="#ffffff" opacity="0.9" stroke="none" style="mix-blend-mode: overlay;"/>
+  </g>
+  
+  <text x="200" y="625" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" letter-spacing="6" fill="#ffffff" opacity="0.4">PRESEK.RS</text>
+  <text x="1000" y="625" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" fill="#ca8a04" opacity="0.8">POLITIČKI ANALITIK</text>
 </svg>
