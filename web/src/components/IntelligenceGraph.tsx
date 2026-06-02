@@ -469,7 +469,7 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
                     <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
                       <Loader2 className="animate-spin text-nyt-accent mb-3" size={24} />
                       <p className="font-serif italic text-xs">
-                        {lang === 'sr' ? 'Lokalni AI analitičar sastavlja izveštaj...' : 'Локалниот АИ аналитичар го составува извештајот...'}
+                        {lang === 'sr' ? 'Lokalni analitičar sastavlja izveštaj...' : 'Локалниот аналитичар го составува извештајот...'}
                       </p>
                     </div>
                   )}
