@@ -1487,7 +1487,7 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None):
     theme_l = str(theme or "").lower()
     if theme_l == "light":
         style_content = f"""
-            :root {{
+            svg, :root {{
                 --bg-start: {c_bg_light};
                 --bg-end: #f1f3f5;
                 --spot-color: {c_spot_light};
@@ -1514,7 +1514,7 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None):
         """
     elif theme_l == "dark":
         style_content = f"""
-            :root {{
+            svg, :root {{
                 --bg-start: {c_bg_dark};
                 --bg-end: #020408;
                 --spot-color: {c_spot_dark};
@@ -1542,7 +1542,7 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None):
     else:
         # Auto/System: Default to Dark, override on light prefers-color-scheme
         style_content = f"""
-            :root {{
+            svg, :root {{
                 --bg-start: {c_bg_dark};
                 --bg-end: #020408;
                 --spot-color: {c_spot_dark};
@@ -1567,7 +1567,7 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None):
                 --drop-shadow: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
             }}
             @media (prefers-color-scheme: light) {{
-                :root {{
+                svg, :root {{
                     --bg-start: {c_bg_light};
                     --bg-end: #f1f3f5;
                     --spot-color: {c_spot_light};
