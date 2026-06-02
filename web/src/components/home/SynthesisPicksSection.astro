@@ -146,144 +146,207 @@ function getSourceBadgeLabel(count: number) {
 
 <style>
     .synthesis-picks-section {
-        margin-top: 3.5rem;
-        margin-bottom: 2rem;
+        margin-top: 5rem;
+        margin-bottom: 5rem;
         position: relative;
     }
 
     .feed-section-container {
-        padding: 2.5rem 1.5rem;
-        background: linear-gradient(180deg, rgba(var(--background-rgb), 0) 0%, rgba(var(--accent-rgb), 0.03) 100%);
-        border-radius: 16px;
-        border: 1px solid rgba(var(--accent-rgb), 0.05);
+        padding: 3.5rem 2rem;
+        background: linear-gradient(180deg, 
+            color-mix(in srgb, var(--background) 96%, var(--nyt-accent)) 0%, 
+            color-mix(in srgb, var(--background) 99%, var(--nyt-accent)) 100%);
+        border-radius: 24px;
+        border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+        box-shadow: 0 20px 50px -20px rgba(0, 0, 0, 0.05);
+    }
+
+    :global(.dark) .feed-section-container {
+        background: linear-gradient(180deg, 
+            rgba(20, 24, 38, 0.4) 0%, 
+            rgba(15, 18, 28, 0.2) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        box-shadow: 0 30px 60px -25px rgba(0, 0, 0, 0.3);
+    }
+
+    .section-heading-row {
+        text-align: center;
+        margin-bottom: 3.5rem;
+        position: relative;
+        padding-bottom: 2rem;
+    }
+
+    .section-heading-row::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 120px;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--nyt-accent), transparent);
     }
 
     .heading-badge {
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
-        background: rgba(var(--accent-rgb), 0.08);
-        border: 1px solid rgba(var(--accent-rgb), 0.15);
-        padding: 0.25rem 0.75rem;
+        background: color-mix(in srgb, var(--nyt-accent) 8%, transparent);
+        border: 1px solid color-mix(in srgb, var(--nyt-accent) 20%, transparent);
+        padding: 0.35rem 1rem;
         border-radius: 9999px;
-        margin-bottom: 0.75rem;
+        margin-bottom: 1.25rem;
+        box-shadow: 0 4px 12px -2px color-mix(in srgb, var(--nyt-accent) 10%, transparent);
     }
 
     .pulse-glowing-dot {
-        width: 6px;
-        height: 6px;
-        background-color: var(--nyt-accent, #9e2a2b);
+        width: 8px;
+        height: 8px;
+        background-color: var(--nyt-accent);
         border-radius: 50%;
-        box-shadow: 0 0 8px var(--nyt-accent);
-        animation: pulse-glow 1.5s infinite;
+        box-shadow: 0 0 10px var(--nyt-accent);
+        animation: pulse-glow 2s infinite;
     }
 
     @keyframes pulse-glow {
-        0% { transform: scale(0.9); opacity: 0.6; }
-        50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 12px var(--nyt-accent); }
-        100% { transform: scale(0.9); opacity: 0.6; }
+        0% { transform: scale(0.85); opacity: 0.6; }
+        50% { transform: scale(1.25); opacity: 1; box-shadow: 0 0 14px var(--nyt-accent); }
+        100% { transform: scale(0.85); opacity: 0.6; }
     }
 
     .badge-text {
-        font-size: 0.65rem;
+        font-family: var(--font-sans);
+        font-size: 0.6rem;
+        font-weight: 950;
+        letter-spacing: 0.22em;
+        color: var(--nyt-accent);
+        text-transform: uppercase;
+    }
+
+    .section-heading {
+        font-size: 2.5rem;
+        font-weight: 950;
+        letter-spacing: -0.03em;
+        color: var(--foreground);
+        line-height: 1.1;
+    }
+
+    .section-note {
+        font-family: var(--font-sans);
+        font-size: 0.72rem;
         font-weight: 900;
-        letter-spacing: 0.15em;
-        color: var(--nyt-accent, #9e2a2b);
+        letter-spacing: 0.18em;
+        color: var(--muted-foreground);
+        text-transform: uppercase;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+        line-height: 1.5;
     }
 
     .synthesis-grid {
         display: grid;
         grid-template-columns: repeat(1, minmax(0, 1fr));
-        gap: 2rem;
+        gap: 3rem;
         margin-top: 2rem;
     }
 
     @media (min-width: 768px) {
         .synthesis-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 2.5rem;
         }
     }
 
     @media (min-width: 1200px) {
         .synthesis-grid {
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 3.5rem;
         }
     }
 
     .synthesis-card-wrapper {
-        perspective: 1000px;
+        perspective: 1200px;
     }
 
     .synthesis-card {
         display: flex;
         flex-direction: column;
         height: 100%;
-        background: rgba(var(--card-background-rgb, 255, 255, 255), 0.6);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(var(--foreground-rgb), 0.06);
-        border-radius: 12px;
+        background: color-mix(in srgb, var(--background) 95%, var(--accent-color, #ffffff));
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+        border-radius: 20px;
         overflow: hidden;
-        transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), box-shadow 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), border-color 0.3s;
+        transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), 
+                    box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1), 
+                    border-color 0.4s;
+        box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.05);
     }
 
     :global(.dark) .synthesis-card {
-        background: rgba(30, 30, 30, 0.45);
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        background: rgba(25, 29, 44, 0.45);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        box-shadow: 0 15px 35px -20px rgba(0, 0, 0, 0.4);
     }
 
     .synthesis-card:hover {
-        transform: translateY(-6px);
-        border-color: rgba(var(--accent-rgb), 0.25);
-        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+        transform: translateY(-8px) scale(1.01);
+        border-color: color-mix(in srgb, var(--nyt-accent) 45%, transparent);
+        box-shadow: 0 25px 50px -15px color-mix(in srgb, var(--nyt-accent) 8%, rgba(0, 0, 0, 0.12));
     }
 
     :global(.dark) .synthesis-card:hover {
-        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+        box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.6), 
+                    0 0 40px -10px rgba(158, 42, 43, 0.15);
     }
 
     .card-image-wrapper {
         position: relative;
         width: 100%;
-        height: 160px;
+        height: 220px;
         overflow: hidden;
-        background-color: rgba(0, 0, 0, 0.05);
+        background-color: color-mix(in srgb, var(--foreground) 5%, transparent);
     }
 
     .card-image {
         width: 100%;
         height: 100%;
         object-fit: cover;
-        transition: transform 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+        transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .synthesis-card:hover .card-image {
-        transform: scale(1.05);
+        transform: scale(1.06);
     }
 
     .card-image-overlay {
         position: absolute;
         inset: 0;
-        background: linear-gradient(180deg, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.4) 100%);
+        background: linear-gradient(180deg, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.5) 100%);
     }
 
     .source-count-badge {
         position: absolute;
-        bottom: 0.75rem;
-        left: 0.75rem;
-        background: rgba(0, 0, 0, 0.75);
-        backdrop-filter: blur(4px);
+        bottom: 1rem;
+        left: 1rem;
+        background: rgba(15, 13, 12, 0.82);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
         color: #ffffff;
-        font-size: 0.65rem;
-        font-weight: 900;
-        letter-spacing: 0.08em;
-        padding: 0.25rem 0.5rem;
-        border-radius: 4px;
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        font-family: var(--font-sans);
+        font-size: 0.6rem;
+        font-weight: 950;
+        letter-spacing: 0.12em;
+        padding: 0.35rem 0.75rem;
+        border-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
     }
 
     .card-content {
-        padding: 1.25rem;
+        padding: 2rem;
         flex-grow: 1;
         display: flex;
         flex-direction: column;
@@ -293,32 +356,34 @@ function getSourceBadgeLabel(count: number) {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 0.75rem;
+        margin-bottom: 1.25rem;
     }
 
     .category-tag {
-        font-size: 0.65rem;
-        font-weight: 900;
+        font-family: var(--font-sans);
+        font-size: 0.62rem;
+        font-weight: 950;
         text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: var(--nyt-accent, #9e2a2b);
+        letter-spacing: 0.15em;
+        color: var(--nyt-accent);
     }
 
     .synthesis-badge {
         display: inline-flex;
         align-items: center;
-        gap: 0.25rem;
-        background: rgba(16, 185, 129, 0.1);
-        border: 1px solid rgba(16, 185, 129, 0.2);
-        padding: 0.15rem 0.4rem;
-        border-radius: 4px;
+        gap: 0.35rem;
+        background: color-mix(in srgb, var(--nyt-accent) 12%, transparent);
+        border: 1px solid color-mix(in srgb, var(--nyt-accent) 25%, transparent);
+        padding: 0.25rem 0.6rem;
+        border-radius: 6px;
     }
 
     .synthesis-badge-text {
+        font-family: var(--font-sans);
         font-size: 0.55rem;
-        font-weight: 900;
-        letter-spacing: 0.05em;
-        color: #10b981;
+        font-weight: 950;
+        letter-spacing: 0.1em;
+        color: var(--nyt-accent);
     }
 
     /* Soundwave Mini Animation */
@@ -326,13 +391,13 @@ function getSourceBadgeLabel(count: number) {
         display: flex;
         align-items: flex-end;
         gap: 2px;
-        width: 10px;
-        height: 8px;
+        width: 11px;
+        height: 10px;
     }
 
     .soundwave-mini .bar {
         width: 2px;
-        background-color: #10b981;
+        background-color: var(--nyt-accent);
         border-radius: 1px;
         animation: soundwave-bounce 0.8s infinite ease-in-out alternate;
     }
@@ -342,17 +407,18 @@ function getSourceBadgeLabel(count: number) {
     .soundwave-mini .bar-3 { height: 40%; animation-delay: 0.2s; }
 
     @keyframes soundwave-bounce {
-        0% { height: 20%; }
+        0% { height: 25%; }
         100% { height: 100%; }
     }
 
     .card-title {
-        font-size: 1.125rem;
-        font-weight: 800;
-        line-height: 1.3;
+        font-size: 1.45rem;
+        font-weight: 850;
+        line-height: 1.25;
         color: var(--foreground);
-        margin-bottom: 0.75rem;
-        transition: color 0.2s;
+        margin-bottom: 1rem;
+        letter-spacing: -0.02em;
+        transition: color 0.3s;
         display: -webkit-box;
         -webkit-line-clamp: 3;
         -webkit-box-orient: vertical;
@@ -360,13 +426,15 @@ function getSourceBadgeLabel(count: number) {
     }
 
     .synthesis-card:hover .card-title {
-        color: var(--nyt-accent, #9e2a2b);
+        color: var(--nyt-accent);
     }
 
     .card-description {
-        font-size: 0.8rem;
-        line-height: 1.5;
-        margin-bottom: 1.25rem;
+        font-size: 0.88rem;
+        line-height: 1.6;
+        margin-bottom: 1.75rem;
+        color: var(--muted-foreground);
+        opacity: 0.95;
         display: -webkit-box;
         -webkit-line-clamp: 4;
         -webkit-box-orient: vertical;
@@ -374,40 +442,45 @@ function getSourceBadgeLabel(count: number) {
     }
 
     .pluralism-metric-box {
-        background: rgba(var(--foreground-rgb), 0.02);
-        border: 1px solid rgba(var(--foreground-rgb), 0.04);
-        padding: 0.65rem;
-        border-radius: 6px;
-        margin-bottom: 1rem;
+        background: color-mix(in srgb, var(--foreground) 2%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+        padding: 1rem;
+        border-radius: 10px;
+        margin-bottom: 1.5rem;
         margin-top: auto;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
     }
 
     .metric-info {
         display: flex;
         justify-content: space-between;
-        font-size: 0.65rem;
-        margin-bottom: 0.35rem;
+        font-family: var(--font-sans);
+        font-size: 0.68rem;
+        margin-bottom: 0.5rem;
     }
 
     .metric-label {
         color: var(--muted-foreground);
+        font-weight: 700;
+        letter-spacing: 0.02em;
     }
 
     .metric-value {
         color: var(--foreground);
+        font-weight: 900;
     }
 
     .metric-bar-container {
         width: 100%;
-        height: 4px;
-        background: rgba(var(--foreground-rgb), 0.08);
-        border-radius: 2px;
+        height: 6px;
+        background: color-mix(in srgb, var(--foreground) 8%, transparent);
+        border-radius: 99px;
         overflow: hidden;
     }
 
     .metric-bar-fill {
         height: 100%;
-        border-radius: 2px;
+        border-radius: 99px;
     }
 
     .sources-cloud {
@@ -416,72 +489,87 @@ function getSourceBadgeLabel(count: number) {
 
     .sources-label {
         display: block;
-        font-size: 0.6rem;
-        font-weight: 800;
+        font-family: var(--font-sans);
+        font-size: 0.62rem;
+        font-weight: 900;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.1em;
         color: var(--muted-foreground);
-        margin-bottom: 0.35rem;
+        margin-bottom: 0.6rem;
     }
 
     .sources-tags {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.25rem;
+        gap: 0.35rem;
     }
 
     .source-tag {
-        font-size: 0.6rem;
-        font-weight: 600;
-        background: rgba(var(--foreground-rgb), 0.05);
+        font-family: var(--font-sans);
+        font-size: 0.62rem;
+        font-weight: 800;
+        background: color-mix(in srgb, var(--foreground) 4%, transparent);
         color: var(--muted-foreground);
-        padding: 0.1rem 0.35rem;
-        border-radius: 3px;
-        border: 1px solid rgba(var(--foreground-rgb), 0.03);
+        padding: 0.2rem 0.55rem;
+        border-radius: 4px;
+        border: 1px solid color-mix(in srgb, var(--border) 25%, transparent);
+        transition: all 0.2s;
+    }
+
+    .synthesis-card:hover .source-tag {
+        background: color-mix(in srgb, var(--foreground) 7%, transparent);
+        color: var(--foreground);
     }
 
     .source-tag-more {
-        font-size: 0.6rem;
-        font-weight: 700;
-        background: rgba(var(--accent-rgb), 0.1);
+        font-family: var(--font-sans);
+        font-size: 0.62rem;
+        font-weight: 900;
+        background: color-mix(in srgb, var(--nyt-accent) 8%, transparent);
         color: var(--nyt-accent);
-        padding: 0.1rem 0.35rem;
-        border-radius: 3px;
+        padding: 0.2rem 0.55rem;
+        border-radius: 4px;
+        border: 1px solid color-mix(in srgb, var(--nyt-accent) 15%, transparent);
     }
 
     .card-footer {
-        padding: 0.75rem 1.25rem 1.25rem;
-        border-top: 1px solid rgba(var(--foreground-rgb), 0.04);
-        background: rgba(var(--foreground-rgb), 0.01);
+        padding: 1.25rem 2rem 2rem;
+        border-top: 1px solid color-mix(in srgb, var(--border) 25%, transparent);
+        background: color-mix(in srgb, var(--foreground) 1%, transparent);
     }
 
     .read-synthesis-link {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 0.5rem;
+        gap: 0.6rem;
         width: 100%;
-        background: rgba(var(--foreground-rgb), 0.03);
-        border: 1px solid rgba(var(--foreground-rgb), 0.06);
-        padding: 0.5rem;
-        border-radius: 6px;
-        font-size: 0.75rem;
-        font-weight: 700;
+        background: color-mix(in srgb, var(--foreground) 4%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+        padding: 0.75rem;
+        border-radius: 10px;
+        font-family: var(--font-sans);
+        font-size: 0.82rem;
+        font-weight: 900;
         color: var(--foreground);
-        transition: all 0.2s;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
     }
 
     .read-synthesis-link:hover {
-        background: var(--nyt-accent, #9e2a2b);
-        border-color: var(--nyt-accent, #9e2a2b);
+        background: var(--nyt-accent);
+        border-color: var(--nyt-accent);
         color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 10px 20px -8px color-mix(in srgb, var(--nyt-accent) 40%, transparent);
     }
 
     .arrow-icon {
-        transition: transform 0.2s;
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .read-synthesis-link:hover .arrow-icon {
-        transform: translateX(3px);
+        transform: translateX(4px);
     }
 </style>
