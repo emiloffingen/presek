@@ -462,7 +462,7 @@ async def fetch_synthesis_picks(lang: str = "sr") -> List[Dict[str, Any]]:
     from core.database import db_manager as db
     from utils import score_cluster, score_cluster_for_homepage, is_balanced, annotate_cluster_articles
     from routes.news import _compute_editorial_signals, _public_article_payload, _as_list, _parse_maybe_json
-    from utils.ranking import transliterate_cyr_to_lat, transliterate_lat_to_cyr
+    from core.language import transliterate_cyr_to_lat, transliterate_lat_to_cyr
 
     # Get latest cluster IDs with synthesis for this language
     sql = """
