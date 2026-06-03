@@ -95,7 +95,7 @@ export default function AccountSyncIsland({ lang = 'sr' }: { lang?: string }) {
     <div className="w-full max-w-xl mx-auto">
       <div className="premium-card passport-glow-card">
         <div className="flex items-center gap-3.5 mb-6">
-          <div className="p-3 bg-nyt-accent/10 rounded-xl">
+          <div className="p-3 bg-nyt-accent/10 rounded-none">
             <KeyRound className="text-nyt-accent" size={24} />
           </div>
           <div>
@@ -109,7 +109,7 @@ export default function AccountSyncIsland({ lang = 'sr' }: { lang?: string }) {
         </div>
 
         <div className="space-y-6">
-          <div className="bg-secondary/45 p-4 rounded-xl border border-border/50 flex gap-3">
+          <div className="bg-secondary/45 p-4 rounded-none border border-border/50 flex gap-3">
             <ShieldCheck size={18} className="text-nyt-accent shrink-0 mt-0.5" />
             <p className="text-xs text-muted-foreground leading-relaxed">
               {lang === 'sr'
@@ -122,17 +122,17 @@ export default function AccountSyncIsland({ lang = 'sr' }: { lang?: string }) {
             <button
               onClick={createSyncKey}
               disabled={status === 'working'}
-              className="w-full bg-nyt-accent hover:bg-nyt-accent/90 text-white font-black py-4 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] text-xs uppercase tracking-wider shadow-lg shadow-nyt-accent/15 cursor-pointer"
+              className="w-full bg-nyt-accent hover:bg-nyt-accent/90 text-white font-black py-4 rounded-none flex items-center justify-center gap-2 transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] text-xs uppercase tracking-wider shadow-lg shadow-nyt-accent/15 cursor-pointer"
             >
               {status === 'working' ? <RefreshCw className="animate-spin" size={16} /> : <KeyRound size={16} />}
               <span>{lang === 'sr' ? 'Kreiraj ključ za sinhronizaciju' : 'Креирај клуч за синхронизација'}</span>
             </button>
           ) : (
-            <div className="bg-secondary/45 p-4 rounded-xl border border-border/60">
+            <div className="bg-secondary/45 p-4 rounded-none border border-border/60">
               <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-2">
                 {lang === 'sr' ? 'Vaš tajni ključ' : 'Вашиот таен клуч'}
               </p>
-              <div className="flex items-center gap-3 p-3 bg-background/55 border border-border/55 rounded-lg">
+              <div className="flex items-center gap-3 p-3 bg-background/55 border border-border/55 rounded-none">
                 <code className="flex-1 text-xs sm:text-sm font-mono text-nyt-accent truncate">{token}</code>
                 <button
                   onClick={copyToken}
@@ -147,7 +147,7 @@ export default function AccountSyncIsland({ lang = 'sr' }: { lang?: string }) {
                 <button
                   onClick={() => pushLocalProfile()}
                   disabled={status === 'working'}
-                  className="flex-1 bg-nyt-accent/10 border border-nyt-accent/30 hover:bg-nyt-accent/20 text-nyt-accent font-black py-3 rounded-lg flex items-center justify-center gap-2 transition-all text-[10px] uppercase tracking-wider cursor-pointer"
+                  className="flex-1 bg-nyt-accent/10 border border-nyt-accent/30 hover:bg-nyt-accent/20 text-nyt-accent font-black py-3 rounded-none flex items-center justify-center gap-2 transition-all text-[10px] uppercase tracking-wider cursor-pointer"
                 >
                   {status === 'working' ? <RefreshCw className="animate-spin" size={14} /> : <Upload size={14} />}
                   <span>{lang === 'sr' ? 'Backup na server' : 'Резервна копија'}</span>
@@ -155,7 +155,7 @@ export default function AccountSyncIsland({ lang = 'sr' }: { lang?: string }) {
                 <button
                   onClick={() => pullRemoteProfile()}
                   disabled={status === 'working'}
-                  className="flex-1 bg-background/60 hover:bg-background border border-border/50 text-foreground font-black py-3 rounded-lg flex items-center justify-center gap-2 transition-all text-[10px] uppercase tracking-wider cursor-pointer"
+                  className="flex-1 bg-background/60 hover:bg-background border border-border/50 text-foreground font-black py-3 rounded-none flex items-center justify-center gap-2 transition-all text-[10px] uppercase tracking-wider cursor-pointer"
                 >
                   {status === 'working' ? <RefreshCw className="animate-spin" size={14} /> : <Download size={14} />}
                   <span>{lang === 'sr' ? 'Učitaj sa servera' : 'Вчитај од сервер'}</span>
@@ -185,12 +185,12 @@ export default function AccountSyncIsland({ lang = 'sr' }: { lang?: string }) {
               value={inputToken}
               onChange={(e) => setInputToken(e.target.value)}
               placeholder={lang === 'sr' ? "Unesite tajni ključ..." : "Внесете го тајниот клуч..."}
-              className="flex-1 bg-background/45 border border-border/60 text-foreground p-3 rounded-xl text-xs sm:text-sm font-mono placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-nyt-accent/30 focus:border-nyt-accent transition-all"
+              className="flex-1 bg-background/45 border border-border/60 text-foreground p-3 rounded-none text-xs sm:text-sm font-mono placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-nyt-accent/30 focus:border-nyt-accent transition-all"
             />
             <button
               onClick={() => pullRemoteProfile(inputToken)}
               disabled={status === 'working' || !inputToken.trim()}
-              className="bg-foreground text-background dark:bg-foreground dark:text-background hover:opacity-90 font-black px-6 py-3 rounded-xl transition-all disabled:opacity-50 text-[10px] sm:text-xs uppercase tracking-widest cursor-pointer"
+              className="bg-foreground text-background dark:bg-foreground dark:text-background hover:opacity-90 font-black px-6 py-3 rounded-none transition-all disabled:opacity-50 text-[10px] sm:text-xs uppercase tracking-widest cursor-pointer"
             >
               {lang === 'sr' ? 'Učitaj' : 'Вчитај'}
             </button>
@@ -198,7 +198,7 @@ export default function AccountSyncIsland({ lang = 'sr' }: { lang?: string }) {
         </div>
 
         {message && (
-          <div className={`mt-5 p-3.5 rounded-xl text-xs font-bold flex items-center gap-2.5 ${
+          <div className={`mt-5 p-3.5 rounded-none text-xs font-bold flex items-center gap-2.5 ${
             status === 'error'
               ? 'bg-red-500/10 text-red-500 border border-red-500/20'
               : 'bg-green-500/10 text-green-500 border border-green-500/20'
