@@ -116,19 +116,31 @@ def test_fallback_to_primary_when_replica_unavailable():
 
 def test_database_manager_initialization_with_replica():
     """Test database manager initialization with replica support."""
-    # Mock the environment variables
-    with patch("core.config.DATABASE_READ_REPLICA_URL", "postgresql://user:pass@replica:5432/db"):
-        with patch("core.config.USE_READ_REPLICA", True):
-            # Re-import to get the patched config
-            import importlib
+    import importlib
+    import core.database
 
-            import core.database
+    # Mock ConnectionPool so it doesn't connect to replica
+    with patch("psycopg_pool.ConnectionPool") as mock_conn_pool:
+        with patch("core.config.DATABASE_READ_REPLICA_URL", "postgresql://user:pass@replica:5432/db"):
+            with patch("core.config.USE_READ_REPLICA", True):
+                importlib.reload(core.database)
+                
+                # Check that ConnectionPool was called with the replica URL
+                mock_conn_pool.assert_any_call(
+                    conninfo="postgresql://user:pass@replica:5432/db",
+                    min_size=core.database.DB_POOL_MINCONN,
+                    max_size=core.database.DB_POOL_MAXCONN,
+                    open=True,
+                    kwargs={
+                        "row_factory": core.database.dict_row,
+                        "connect_timeout": 5,
+                        "options": core.database.DB_SESSION_OPTIONS,
+                    },
+                )
 
-            importlib.reload(core.database)
-
-            # The database manager should attempt to initialize read pool
-            # (actual connection testing would require a real database)
-            assert True
+    # Crucial: Reload core.database once again in a clean environment (no patches)
+    # to restore the original db_manager and clean up any mock states
+    importlib.reload(core.database)
 
 
 def test_error_handling_in_replica_queries():
