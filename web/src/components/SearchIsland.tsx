@@ -624,7 +624,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                   <button
                     key={cat.id}
                     onClick={() => setCategoryFilter(cat.id)}
-                    className={`px-3 py-1 text-[11px] font-bold rounded-full transition-all border ${
+                    className={`px-3 py-1 text-[11px] font-bold rounded-none transition-all border ${
                       categoryFilter === cat.id
                         ? 'bg-nyt-accent text-white border-nyt-accent shadow-sm'
                         : 'bg-background hover:bg-secondary border-border text-foreground'
@@ -651,7 +651,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                   <button
                     key={t.id}
                     onClick={() => setTimespan(t.id)}
-                    className={`px-3 py-1 text-[11px] font-bold rounded-full transition-all border ${
+                    className={`px-3 py-1 text-[11px] font-bold rounded-none transition-all border ${
                       timespan === t.id
                         ? 'bg-nyt-accent text-white border-nyt-accent shadow-sm'
                         : 'bg-background hover:bg-secondary border-border text-foreground'
@@ -683,7 +683,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                         <div
                           key={i}
                           onClick={() => setQuery(s.query)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary/50 hover:bg-secondary border border-border/50 rounded-full text-[11px] sm:text-xs font-bold transition-all cursor-pointer group/pill"
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary/50 hover:bg-secondary border border-border/50 rounded-none text-[11px] sm:text-xs font-bold transition-all cursor-pointer group/pill"
                         >
                           <span>{s.query}</span>
                           <button
