@@ -1685,6 +1685,18 @@ const articleSchema = cluster ? {
 				try {
 					const isFocused = article.classList.contains('reader-focused');
 					localStorage.setItem('readerMode', isFocused ? 'true' : 'false');
+
+					// Send telemetry event to Google Analytics if available
+					if (typeof window !== 'undefined' && window.gtag) {
+						window.gtag('event', 'reader_mode_toggle', {
+							'event_category': 'Engagement',
+							'event_label': isFocused ? 'enabled' : 'disabled',
+							'value': isFocused ? 1 : 0
+						});
+					}
+
+					// Fire custom DOM event for other components
+					window.dispatchEvent(new CustomEvent('presek:reader-mode-toggled', { detail: { active: isFocused } }));
 				} catch (e) {
 					console.error('Could not write to localStorage:', e);
 				}
