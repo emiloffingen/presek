@@ -5,7 +5,6 @@ import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 import node from '@astrojs/node';
-import partytown from '@astrojs/partytown';
 
 // Site URL is determined dynamically in Layout.astro based on language
 // https://astro.build/config
@@ -27,11 +26,6 @@ export default defineConfig({
   integrations: [
     react(),
     sitemap(),
-    partytown({
-      config: {
-        forward: ['dataLayer.push', 'gtag'],
-      },
-    }),
   ],
 
   vite: {
