@@ -712,11 +712,11 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-[var(--grid-gap)]">
                     {trendingItems.length > 0 ? trendingItems.map((item, i) => (
-                      <button key={i} onClick={() => setQuery(item.word)} className="flex items-center gap-2 sm:gap-[var(--grid-gap)] p-2.5 sm:p-3 bg-secondary/30 hover:bg-secondary/60 rounded-xl transition-all group text-left">
+                      <button key={i} onClick={() => setQuery(item.word)} className="flex items-center gap-2 sm:gap-[var(--grid-gap)] p-2.5 sm:p-3 bg-secondary/30 hover:bg-secondary/60 rounded-none transition-all group text-left">
                         <span className="text-[10px] font-black text-nyt-accent/40 group-hover:text-nyt-accent">{(i+1).toString().padStart(2, '0')}</span>
                         <span className="font-serif font-black text-[13px] sm:text-sm truncate">{item.word}</span>
                       </button>
-                    )) : [1,2,3,4,5,6].map(i => <div key={i} className="h-12 bg-secondary/20 animate-pulse rounded-xl"></div>)}
+                    )) : [1,2,3,4,5,6].map(i => <div key={i} className="h-12 bg-secondary/20 animate-pulse rounded-none"></div>)}
                   </div>
                 </section>
 
@@ -726,8 +726,8 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-[var(--grid-gap)]">
                     {SEARCH_ACTIONS.map(action => (
-                      <button key={action.id} onClick={() => { closeSearch(); navigate(action.href); }} className="flex items-center gap-3 sm:gap-[var(--grid-gap)] p-3 sm:p-4 bg-secondary/30 hover:bg-secondary/60 border border-border/50 rounded-xl transition-all group text-left">
-                        <div className="p-2 bg-background rounded-lg text-muted-foreground group-hover:text-nyt-accent group-hover:bg-nyt-accent/10 transition-all">
+                      <button key={action.id} onClick={() => { closeSearch(); navigate(action.href); }} className="flex items-center gap-3 sm:gap-[var(--grid-gap)] p-3 sm:p-4 bg-secondary/30 hover:bg-secondary/60 border border-border/50 rounded-none transition-all group text-left">
+                        <div className="p-2 bg-background rounded-none text-muted-foreground group-hover:text-nyt-accent group-hover:bg-nyt-accent/10 transition-all">
                           <action.icon size={18} />
                         </div>
                         <div>
