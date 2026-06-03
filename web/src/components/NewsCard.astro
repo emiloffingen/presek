@@ -226,7 +226,6 @@ function getTimeStr(dateStr: string) {
 
 <style>
 	.nyt-article {
-		--news-card-cache-bust-20260518: 1;
 		min-width: 0;
 		max-width: 100%;
         padding: clamp(0.9rem, 1.8vw, 1.15rem);
@@ -239,6 +238,12 @@ function getTimeStr(dateStr: string) {
         box-shadow: 0 1px 0 color-mix(in srgb, var(--foreground) 4%, transparent);
         transition: transform 0.28s var(--ease-editorial), border-color 0.28s var(--ease-editorial), box-shadow 0.28s var(--ease-editorial), background-color 0.28s var(--ease-editorial);
 	}
+
+    .nyt-article:hover {
+        transform: translateY(-3px);
+        border-color: color-mix(in srgb, var(--nyt-accent) 30%, var(--border));
+        box-shadow: var(--shadow-md), 0 1px 0 color-mix(in srgb, var(--foreground) 4%, transparent);
+    }
 
     :global(.dark) .nyt-article {
         background: color-mix(in srgb, var(--card) 88%, var(--background));

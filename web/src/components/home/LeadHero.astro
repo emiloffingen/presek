@@ -457,6 +457,17 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
 		margin: 0;
 	}
 
+	.lead-summary::first-letter {
+		font-family: var(--font-serif-display);
+		font-size: clamp(3.2rem, 5.5vw, 4rem);
+		float: left;
+		line-height: 0.82;
+		margin: 0.15rem 0.65rem 0.1rem 0;
+		font-weight: 900;
+		color: var(--dominant-color, var(--nyt-accent));
+		text-shadow: 1px 1px 0px var(--background), 2px 2px 0px color-mix(in srgb, var(--border) 40%, transparent);
+	}
+
 	.lead-summary-cyrillic {
 		line-height: 1.65;
         letter-spacing: 0.01em;
