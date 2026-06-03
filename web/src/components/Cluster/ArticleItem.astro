@@ -59,13 +59,15 @@ const displaySnippet = cleanText(a.description || a.summary);
 	.article-editorial-row {
 		padding: 1.75rem 0 1.75rem 3rem;
 		border-bottom: 1px solid var(--border);
-		transition: all 0.2s ease;
-        position: relative;
+		border-left: 3px solid transparent;
+		transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+		position: relative;
 	}
 
-    .article-editorial-row:hover {
-        background-color: var(--secondary)/5;
-    }
+	.article-editorial-row:hover {
+		background-color: color-mix(in srgb, var(--cluster-accent, var(--nyt-accent)) 3%, var(--background));
+		border-left-color: var(--cluster-accent, var(--nyt-accent));
+	}
 
     .timeline-dot {
         position: absolute;
@@ -82,7 +84,7 @@ const displaySnippet = cleanText(a.description || a.summary);
 
     .article-editorial-row:hover .timeline-dot {
         transform: scale(1.2);
-        background: var(--nyt-accent);
+        background: var(--cluster-accent, var(--nyt-accent));
     }
 
     .article-editorial-row.tone-latest .timeline-dot { background: #10b981; }
@@ -169,7 +171,7 @@ const displaySnippet = cleanText(a.description || a.summary);
 	}
 
 	.row-title-link:hover .row-title {
-		color: var(--nyt-accent);
+		color: var(--cluster-accent, var(--nyt-accent));
 	}
 
 	.row-snippet {
@@ -205,6 +207,6 @@ const displaySnippet = cleanText(a.description || a.summary);
 	}
 
 	.read-original:hover {
-		color: var(--nyt-accent);
+		color: var(--cluster-accent, var(--nyt-accent));
 	}
 </style>
