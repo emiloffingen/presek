@@ -1140,6 +1140,80 @@ const articleSchema = cluster ? {
         color: var(--background);
     }
 
+    /* --- Premium reader-mode-active Global overrides --- */
+    :global(body) {
+        transition: background-color 0.4s ease, color 0.4s ease;
+    }
+
+    :global(body.reader-mode-active) {
+        background-color: #FAF6EC !important; /* Elegant warm light parchment */
+        color: #2C2518 !important;
+    }
+
+    :global(.dark body.reader-mode-active) {
+        background-color: #07090e !important; /* Immersive dark midnight */
+        color: #e2e8f0 !important;
+    }
+
+    /* Hide surrounding navigation & secondary elements in reader mode */
+    :global(body.reader-mode-active .site-header),
+    :global(body.reader-mode-active .site-footer),
+    :global(body.reader-mode-active .breadcrumbs),
+    :global(body.reader-mode-active .hero-full),
+    :global(body.reader-mode-active .executive-summary),
+    :global(body.reader-mode-active .cluster-evidence-strip),
+    :global(body.reader-mode-active .reader-source-strip),
+    :global(body.reader-mode-active .editorial-sidebar-col),
+    :global(body.reader-mode-active .related-section),
+    :global(body.reader-mode-active .advanced-tools),
+    :global(body.reader-mode-active .sources-section),
+    :global(body.reader-mode-active .newsletter-island) {
+        display: none !important;
+    }
+
+    /* Keep reading text centered with broadsheet/editorial margins and optimal line heights */
+    :global(body.reader-mode-active) .editorial-main-col {
+        max-width: 720px !important;
+        margin: 0 auto !important;
+        float: none !important;
+    }
+
+    :global(body.reader-mode-active) .headline {
+        text-align: center !important;
+        font-size: clamp(2rem, 6vw, 3.8rem) !important;
+        margin-top: 1.5rem !important;
+        margin-bottom: 1.5rem !important;
+        color: inherit !important;
+    }
+
+    :global(body.reader-mode-active) .edition-kicker {
+        justify-content: center !important;
+    }
+
+    :global(body.reader-mode-active) .editorial-header-v2 {
+        border-top: none !important;
+        border-bottom: 1px dashed color-mix(in srgb, var(--border) 40%, transparent) !important;
+        padding-top: 0.5rem !important;
+        padding-bottom: 2rem !important;
+        margin-bottom: 3.5rem !important;
+    }
+
+    :global(body.reader-mode-active) .narrative-p {
+        font-size: clamp(1.25rem, 4.5vw, 1.45rem) !important;
+        line-height: 2.0 !important;
+        color: inherit !important;
+        margin-bottom: 2.5rem !important;
+    }
+
+    :global(body.reader-mode-active) .inline-entity {
+        color: var(--nyt-accent) !important;
+        text-decoration-color: var(--nyt-accent) !important;
+    }
+
+    :global(body.reader-mode-active) .inline-entity:hover {
+        background: color-mix(in srgb, var(--nyt-accent) 12%, transparent) !important;
+    }
+
     .cluster-article-container.reader-focused {
         max-width: 980px;
     }
@@ -1767,6 +1841,11 @@ const articleSchema = cluster ? {
 
 			const syncLabel = () => {
 				const active = article.classList.contains('reader-focused');
+				if (active) {
+					document.body.classList.add('reader-mode-active');
+				} else {
+					document.body.classList.remove('reader-mode-active');
+				}
 				button.setAttribute('aria-pressed', active ? 'true' : 'false');
 				if (label) label.textContent = active ? fullText : focusText;
 
