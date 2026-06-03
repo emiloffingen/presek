@@ -34,7 +34,6 @@ def prune_boilerplate_html(html_str: str) -> str:
                 if elem.getparent() is not None:
                     elem.getparent().remove(elem)
 
-        # 2. Elements to remove by ID or class name containing specific noisy keywords
         noisy_keywords = [
             "sidebar", "side-bar", "widget", "comment", "related", "recommend",
             "share", "sharing", "social", "ads", "ad-box", "ad-container",
@@ -42,16 +41,30 @@ def prune_boilerplate_html(html_str: str) -> str:
             "nav-menu", "navbar", "menu-container", "tags", "tag-list",
             "meteo", "weather", "latest-news", "popular-news", "most-read",
             "most-popular", "disqus", "fb-root", "facebook",
+            "cookie", "cookies", "consent", "gdpr", "privacy",
             # Regional (Serbian / Macedonian) keywords
             "povrzani", "povezani", "najnovi", "najcitanije", "najcitaniji", "najcitani",
-            "reklama", "reklame", "spodeli", "podeli", "anketa", "komentari", "meteorološki"
+            "reklama", "reklame", "spodeli", "podeli", "anketa", "komentari", "meteorološki",
+            "kolačići", "kolacici", "privatnost"
         ]
+
+        # Do not prune elements whose classes/IDs suggest they are main content wrappers
+        exclude_wrapper_keywords = ["wrapper", "content", "main", "post", "article", "container", "body", "page"]
+        exclude_conds = []
+        for exc in exclude_wrapper_keywords:
+            exclude_conds.append(
+                f"not(contains(translate(@class, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '{exc}'))"
+            )
+            exclude_conds.append(
+                f"not(contains(translate(@id, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '{exc}'))"
+            )
+        exclude_xpath = " and ".join(exclude_conds)
 
         for keyword in noisy_keywords:
             xpath_query = (
                 f"//*[self::div or self::section or self::ul or self::span or self::article or self::aside or self::td or self::tr]"
-                f"[contains(translate(@class, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '{keyword}') "
-                f"or contains(translate(@id, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '{keyword}')]"
+                f"[({exclude_xpath}) and (contains(translate(@class, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '{keyword}') "
+                f"or contains(translate(@id, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '{keyword}'))]"
             )
             for elem in doc.xpath(xpath_query):
                 if elem.tag not in ["body", "html"] and elem.getparent() is not None:
