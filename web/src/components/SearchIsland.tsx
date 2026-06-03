@@ -116,7 +116,7 @@ function highlightMatch(text: string, query: string) {
     <>
       {parts.map((part, i) =>
         testRegex.test(part) ? (
-          <mark key={i} className="bg-amber-500/20 text-amber-900 dark:bg-amber-500/30 dark:text-amber-300 font-bold px-0.5 rounded">
+          <mark key={i} className="bg-amber-500/20 text-amber-900 dark:bg-amber-500/30 dark:text-amber-300 font-bold px-0.5 rounded-none">
             {part}
           </mark>
         ) : (
@@ -131,15 +131,15 @@ function SearchSkeleton({ lang = 'sr' }: { lang?: string }) {
   return (
     <div className="space-y-6 animate-pulse">
       <section>
-        <div className="h-3 w-32 bg-muted-foreground/20 rounded mb-4" />
+        <div className="h-3 w-32 bg-muted-foreground/20 rounded-none mb-4" />
         <div className="space-y-2.5">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="flex items-start gap-3 sm:gap-[var(--grid-gap)] p-3 sm:p-4 rounded-xl border border-border/10 bg-secondary/15">
-              <div className="w-14 sm:w-16 aspect-[4/3] rounded-lg bg-muted-foreground/15 shrink-0" />
+            <div key={i} className="flex items-start gap-3 sm:gap-[var(--grid-gap)] p-3 sm:p-4 rounded-none border border-border/10 bg-secondary/15">
+              <div className="w-14 sm:w-16 aspect-[4/3] rounded-none bg-muted-foreground/15 shrink-0" />
               <div className="flex-1 min-w-0 space-y-2">
-                <div className="h-2.5 w-16 bg-muted-foreground/15 rounded" />
-                <div className="h-3.5 w-5/6 bg-muted-foreground/15 rounded" />
-                <div className="h-2.5 w-2/3 bg-muted-foreground/15 rounded" />
+                <div className="h-2.5 w-16 bg-muted-foreground/15 rounded-none" />
+                <div className="h-3.5 w-5/6 bg-muted-foreground/15 rounded-none" />
+                <div className="h-2.5 w-2/3 bg-muted-foreground/15 rounded-none" />
               </div>
             </div>
           ))}
@@ -536,7 +536,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
     >
       <div
         ref={dialogRef}
-        className="w-full max-w-6xl h-[100dvh] sm:h-[92vh] md:h-[80vh] bg-background/95 border-x border-border/50 sm:border sm:border-border/50 shadow-2xl rounded-none sm:rounded-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 mx-0 sm:mx-4"
+        className="w-full max-w-6xl h-[100dvh] sm:h-[92vh] md:h-[80vh] bg-background/95 border-x border-border/50 sm:border sm:border-border/50 shadow-2xl rounded-none flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 mx-0 sm:mx-4"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Command Header */}
@@ -563,15 +563,15 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
           <div className="flex items-center gap-1 sm:gap-[var(--grid-gap)]">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`p-2 rounded-lg hover:bg-secondary transition-colors ${showFilters ? 'text-nyt-accent' : 'text-muted-foreground'}`}
+              className={`p-2 hover:bg-secondary transition-colors ${showFilters ? 'text-nyt-accent' : 'text-muted-foreground'}`}
               title={lang === 'sr' ? 'Filteri pretrage' : 'Филтри за пребарување'}
             >
               <SlidersHorizontal size={18} />
             </button>
-            <button onClick={startVoiceSearch} className={`p-2 rounded-lg hover:bg-secondary transition-colors ${isListening ? 'text-nyt-accent animate-pulse' : 'text-muted-foreground'}`}>
+            <button onClick={startVoiceSearch} className={`p-2 rounded-none hover:bg-secondary transition-colors ${isListening ? 'text-nyt-accent animate-pulse' : 'text-muted-foreground'}`}>
               <Mic size={18} />
             </button>
-            <button onClick={closeSearch} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground transition-colors">
+            <button onClick={closeSearch} className="p-2 rounded-none hover:bg-secondary text-muted-foreground transition-colors">
               <X size={18} />
             </button>
           </div>
@@ -604,7 +604,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
             
             <button
               onClick={stopVoiceSearch}
-              className="px-6 py-2.5 bg-secondary hover:bg-secondary-foreground/10 border border-border rounded-full text-xs font-black uppercase tracking-widest transition-all"
+              className="px-6 py-2.5 bg-secondary hover:bg-secondary-foreground/10 border border-border rounded-none text-xs font-black uppercase tracking-widest transition-all"
             >
               {lang === 'sr' ? 'Otkaži' : 'Откажи'}
             </button>
