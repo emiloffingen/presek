@@ -3,11 +3,12 @@ import SearchIsland from './SearchIsland';
 import ThemeIsland from './ThemeIsland';
 import TextScaleIsland from './TextScaleIsland';
 import ScriptSwitcher from './ScriptSwitcher.astro';
-import { Sparkles, BarChart3, Radio, ShieldCheck, Compass } from 'lucide-react';
+import { Sparkles, BarChart3, Radio, ShieldCheck, Compass, GitBranch, Calendar } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
 import { getEditionStr } from '../utils/textUtils';
 import Branding from './Branding.astro';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
+import gitStats from '../git_stats.json';
 
 interface Props {
     category?: string | null;
@@ -131,6 +132,17 @@ function getRelativeTimeStr(dateStr?: string) {
     {hasTicker && (
     <div class="unified-dispatch-bar">
         <div class="dispatch-container site-layout">
+            <div class="dispatch-stats">
+                <span class="stat-badge">
+                    <GitBranch size={10} className="text-nyt-accent mr-1" />
+                    <strong>{gitStats.commits}</strong> commits
+                </span>
+                <span class="stat-badge">
+                    <Calendar size={10} className="text-nyt-accent mr-1" />
+                    <strong>{gitStats.days}</strong> {lang === 'mk' ? 'дена' : 'dana'}
+                </span>
+            </div>
+
             <div class="ticker-prefix">
                 <span class="relative flex h-2 w-2 live-glow-indicator">
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -253,6 +265,30 @@ function getRelativeTimeStr(dateStr?: string) {
         overflow: hidden;
         backdrop-filter: var(--glass-blur);
         -webkit-backdrop-filter: var(--glass-blur);
+    }
+    .dispatch-stats {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-right: 1rem;
+        padding-right: 1rem;
+        border-right: 1px solid var(--border);
+        height: 100%;
+    }
+    .stat-badge {
+        display: flex;
+        align-items: center;
+        font-family: var(--font-sans);
+        font-size: 0.58rem;
+        font-weight: 850;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted-foreground);
+    }
+    .stat-badge strong {
+        font-weight: 950;
+        color: var(--foreground);
+        margin-right: 0.15rem;
     }
     .dispatch-container { display: flex; align-items: center; height: 100%; }
 
