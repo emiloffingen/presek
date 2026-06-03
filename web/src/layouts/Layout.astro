@@ -96,8 +96,8 @@ const organizationSchema = {
 		{/* Load Google Analytics immediately after <head> to satisfy verification bots. */}
 		{lang === 'mk' ? (
 			<Fragment set:html={`<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-YJZH9KK8X9" data-cfasync="false"></script>
-<script data-cfasync="false">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-YJZH9KK8X9"></script>
+<script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
@@ -106,8 +106,8 @@ const organizationSchema = {
 </script>`} />
 		) : (
 			<Fragment set:html={`<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-SV2R3LZJ5C" data-cfasync="false"></script>
-<script data-cfasync="false">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SV2R3LZJ5C"></script>
+<script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
