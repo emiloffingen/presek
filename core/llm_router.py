@@ -61,16 +61,23 @@ class SmartModelRouter:
         local_available = _local_model_available()
         prefer_local_synthesis = os.environ.get("LOCAL_SYNTHESIS_PREFER_LOCAL", "true").lower() == "true"
         force_remote_high_complexity = (
-            os.environ.get("LOCAL_SYNTHESIS_HIGH_COMPLEXITY_REMOTE", "false").lower() == "true"
+            os.environ.get("LOCAL_SYNTHESIS_HIGH_COMPLEXITY_REMOTE", "true").lower() == "true"
+        )
+
+        is_high_complexity = (
+            article_count >= 5 or 
+            has_score_conflict or 
+            (article_count >= 3 and has_high_weight)
         )
 
         # --- Decision Matrix ---
 
-        if local_available and prefer_local_synthesis and not (has_score_conflict and force_remote_high_complexity):
+        # If local is available, preferred, and it's NOT a high complexity story that we want to force remote for
+        if local_available and prefer_local_synthesis and not (is_high_complexity and force_remote_high_complexity):
             return "local"
         
         # High Complexity: Serious disputes, large clusters, high political/economic weight, or sports conflicts
-        if article_count >= 5 or has_score_conflict or (article_count >= 3 and has_high_weight):
+        if is_high_complexity:
             return "mistral_large"
 
         # Medium Complexity: Standard news, moderate cluster size

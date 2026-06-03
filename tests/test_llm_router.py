@@ -62,7 +62,7 @@ def test_route_cluster_high_complexity_large_cluster():
     with patch("os.path.exists", return_value=False), patch.dict(os.environ, {}, clear=True):
         assert SmartModelRouter.route_cluster(articles) == "mistral_large"
 
-    with patch("os.path.exists", return_value=True), patch.dict(os.environ, {"LOCAL_MODEL_PATH": "/path/to/model"}):
+    with patch("os.path.exists", return_value=True), patch.dict(os.environ, {"LOCAL_MODEL_PATH": "/path/to/model", "LOCAL_SYNTHESIS_HIGH_COMPLEXITY_REMOTE": "false"}):
         assert SmartModelRouter.route_cluster(articles) == "local"
 
 
@@ -75,7 +75,7 @@ def test_route_cluster_high_complexity_medium_with_weight():
     with patch("os.path.exists", return_value=False), patch.dict(os.environ, {}, clear=True):
         assert SmartModelRouter.route_cluster(articles) == "mistral_large"
 
-    with patch("os.path.exists", return_value=True), patch.dict(os.environ, {"LOCAL_MODEL_PATH": "/path/to/model"}):
+    with patch("os.path.exists", return_value=True), patch.dict(os.environ, {"LOCAL_MODEL_PATH": "/path/to/model", "LOCAL_SYNTHESIS_HIGH_COMPLEXITY_REMOTE": "false"}):
         assert SmartModelRouter.route_cluster(articles) == "local"
 
 
