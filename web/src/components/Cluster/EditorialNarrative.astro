@@ -282,17 +282,43 @@ const renderSynthesisHtml = (text: string) => {
 		padding-right: 12px;
 		padding-left: 2px;
 		font-weight: 950;
-		color: var(--nyt-accent);
-        text-shadow: 1px 1px 0 var(--background), 3px 3px 0 color-mix(in srgb, var(--nyt-accent) 15%, transparent);
+		color: var(--cluster-accent, var(--nyt-accent));
+        text-shadow: 1px 1px 0 var(--background), 3px 3px 0 color-mix(in srgb, var(--cluster-accent, var(--nyt-accent)) 15%, transparent);
 	}
 
     .narrative-facts-box {
         margin-top: 4rem;
         padding: 2rem;
-        background: color-mix(in srgb, var(--nyt-accent) 4%, var(--background));
-        border-left: 4px solid var(--nyt-accent);
-        border-radius: 0 4px 4px 0;
+        background: color-mix(in srgb, var(--cluster-accent, var(--nyt-accent)) 4%, var(--background));
+        border-left: 4px solid var(--cluster-accent, var(--nyt-accent));
+        border-radius: 0px;
         box-shadow: var(--shadow-editorial);
+    }
+
+    /* Styled blockquotes for editorial citations and contrasting viewpoints */
+    .narrative-body blockquote {
+        margin: 2.5rem 0;
+        padding: 1.5rem 2rem 1.5rem 2.5rem;
+        border-left: 4px solid var(--cluster-accent, var(--nyt-accent));
+        background: color-mix(in srgb, var(--cluster-accent, var(--nyt-accent)) 4%, var(--background));
+        font-family: var(--font-nyt-body);
+        font-size: 1.25rem;
+        font-style: italic;
+        line-height: 1.8;
+        color: var(--foreground);
+        position: relative;
+    }
+
+    .narrative-body blockquote::before {
+        content: "“";
+        position: absolute;
+        left: 0.6rem;
+        top: -0.2rem;
+        font-size: 3.5rem;
+        font-family: var(--font-serif);
+        color: var(--cluster-accent, var(--nyt-accent));
+        opacity: 0.25;
+        line-height: 1;
     }
 
 	.synthesis-item {

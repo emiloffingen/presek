@@ -586,7 +586,7 @@ const articleSchema = cluster ? {
 				<a href="/" class="text-nyt-accent hover:underline">Nazad na pocetna</a>
 			</div>
 		) : cluster && (
-			<article class="cluster-article-container">
+			<article class="cluster-article-container" style={cluster.dominant_color ? `--cluster-accent: ${cluster.dominant_color};` : ''}>
 				{/* 1. THE LEDE */}
 			<header class="editorial-header-v2 py-10 md:py-12 mb-16 md:mb-20">
 				<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-[var(--grid-gap)]">
@@ -949,10 +949,21 @@ const articleSchema = cluster ? {
 
     .scroll-progress-bar {
         height: 100%;
-        background: var(--nyt-accent);
+        background: var(--cluster-accent, var(--nyt-accent));
         width: 0%;
         transition: width 0.1s ease-out;
-        box-shadow: 0 0 15px var(--nyt-accent);
+        box-shadow: 0 0 15px var(--cluster-accent, var(--nyt-accent));
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
 	.cluster-article-container {
@@ -961,6 +972,7 @@ const articleSchema = cluster ? {
 		padding: 0 1rem;
         width: 100%;
         box-sizing: border-box;
+        animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 	}
 
 	/* --- 1. EDITORIAL HEADER V2 --- */

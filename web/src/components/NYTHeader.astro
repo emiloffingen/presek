@@ -401,21 +401,30 @@ function getRelativeTimeStr(dateStr?: string) {
         color: var(--foreground);
         transform: translateY(-1px);
     }
+    .nav-rail-link::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        width: 0;
+        height: 2px;
+        background: var(--nyt-accent);
+        transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), left 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        border-radius: 0px;
+        box-shadow: 0 0 10px 1px var(--nyt-accent);
+    }
+    .nav-rail-link:hover::after {
+        width: calc(100% - 1.7rem);
+        left: 0.85rem;
+    }
     .nav-rail-link.is-active {
         color: var(--nyt-accent);
         background: color-mix(in srgb, var(--nyt-accent) 8%, transparent);
         border-color: color-mix(in srgb, var(--nyt-accent) 25%, transparent);
     }
     .nav-rail-link.is-active::after {
-        content: "";
-        position: absolute;
-        bottom: 0;
-        left: 0.85rem;
-        right: 0.85rem;
-        height: 2px;
-        background: var(--nyt-accent);
-        border-radius: 9999px;
-        box-shadow: 0 0 10px 1px var(--nyt-accent);
+        width: calc(100% - 1.7rem) !important;
+        left: 0.85rem !important;
     }
     .live-indicator-dot {
         box-shadow: 0 0 8px var(--nyt-red);
