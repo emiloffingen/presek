@@ -591,6 +591,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
     history_context = ""
     try:
         from core.embeddings import get_cluster_embedding
+        from core.config import HISTORY_SEMANTIC_THRESHOLD
 
         current_vec = get_cluster_embedding(cluster_id)
         if current_vec:
@@ -606,10 +607,11 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                   AND s.lang = 'sr'
                   AND s.created_at >= NOW() - INTERVAL '7 days'
                   AND s.created_at < (SELECT MIN(created_at) FROM articles WHERE cluster_id = %s)
+                  AND (m.centroid <=> %s::vector) < %s
                 ORDER BY m.centroid <=> %s::vector
                 LIMIT 1
             """,
-                (cluster_id, cluster_id, current_vec_str),
+                (cluster_id, cluster_id, current_vec_str, HISTORY_SEMANTIC_THRESHOLD, current_vec_str),
             )
 
             if related:

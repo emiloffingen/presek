@@ -604,3 +604,7 @@ CLUSTERING_THRESHOLDS = {
     "VECTOR_THRESHOLD": 0.28,
     "MAX_CLUSTER_SIZE": 35,
 }
+
+# ── History Context Parameters ──────────────────────────────────
+HISTORY_SEMANTIC_THRESHOLD = 0.40
+
