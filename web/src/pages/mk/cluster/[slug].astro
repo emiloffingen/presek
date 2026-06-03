@@ -569,7 +569,7 @@ const articleSchema = cluster ? {
 				{/* 1. THE LEDE */}
 			<header class="editorial-header-v2 py-10 md:py-12 mb-16 md:mb-20">
 				<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-[var(--grid-gap)]">
-					<div class="header-main-info flex-grow">
+					<div class="header-main-info flex-grow min-w-0">
 						<div class="edition-kicker flex items-center gap-[var(--grid-gap)] mb-6">
 							<span class="edition-badge bg-foreground text-background px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em]">
 								{t(getEditionStr(cluster.articles?.[0].created_at) as any)}
@@ -590,7 +590,7 @@ const articleSchema = cluster ? {
 							<span class:list={["hidden md:inline border-l border-border pl-8 cluster-status-text", `tone-${clusterStatus.tone}`]}>{storyKindLabel}</span>
 						</div>
 					</div>
-					<div class="header-actions flex gap-[var(--grid-gap)] pb-1">
+					<div class="header-actions shrink-0 flex gap-[var(--grid-gap)] pb-1">
 						<ShareIsland client:load title={displayHeadline} url={canonicalUrl} />
 					</div>
 				</div>
