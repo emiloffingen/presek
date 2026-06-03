@@ -3,12 +3,11 @@ import SearchIsland from './SearchIsland';
 import ThemeIsland from './ThemeIsland';
 import TextScaleIsland from './TextScaleIsland';
 import ScriptSwitcher from './ScriptSwitcher.astro';
-import { Sparkles, BarChart3, Radio, ShieldCheck, Compass, GitBranch, Calendar } from 'lucide-react';
+import { Sparkles, BarChart3, Radio, ShieldCheck, Compass } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
 import { getEditionStr } from '../utils/textUtils';
 import Branding from './Branding.astro';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
-import gitStats from '../git_stats.json';
 
 interface Props {
     category?: string | null;
@@ -132,16 +131,6 @@ function getRelativeTimeStr(dateStr?: string) {
     {hasTicker && (
     <div class="unified-dispatch-bar">
         <div class="dispatch-container site-layout">
-            <div class="dispatch-stats">
-                <span class="stat-badge" title={`${gitStats.commits} github commits`}>
-                    <GitBranch size={11} className="text-nyt-accent mr-1" />
-                    <strong>{gitStats.commits}</strong>
-                </span>
-                <span class="stat-badge" title={`${gitStats.days} ${lang === 'mk' ? 'дена во живо' : 'dana uživo'}`}>
-                    <Calendar size={11} className="text-nyt-accent mr-1" />
-                    <strong>{gitStats.days}</strong>
-                </span>
-            </div>
 
             <div class="ticker-prefix">
                 <span class="relative flex h-2 w-2 live-glow-indicator">
