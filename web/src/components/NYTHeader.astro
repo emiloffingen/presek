@@ -402,7 +402,7 @@ function getRelativeTimeStr(dateStr?: string) {
     .group-links { display: flex; align-items: center; gap: 0.25rem; }
     .nav-rail-link {
         font-family: var(--font-sans); font-size: 0.65rem; font-weight: 900; padding: 0.35rem 0.85rem;
-        color: var(--muted-foreground); text-decoration: none; border-radius: 6px;
+        color: var(--muted-foreground); text-decoration: none; border-radius: var(--radius-md, 0px);
         transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); white-space: nowrap;
         border: 1px solid transparent;
         position: relative;

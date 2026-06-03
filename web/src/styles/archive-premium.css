@@ -7,7 +7,7 @@
     gap: 1px;
     background: color-mix(in srgb, var(--border) 60%, transparent);
     border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
-    border-radius: 16px;
+    border-radius: var(--radius-lg, 0px);
     overflow: hidden;
     box-shadow: var(--shadow-sm);
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -63,7 +63,7 @@
     border-bottom: 1px solid var(--border);
     padding: 0.85rem 1.25rem;
     margin-bottom: 3.5rem;
-    border-radius: 12px;
+    border-radius: var(--radius-lg, 0px);
     box-shadow: var(--shadow-sm);
     transition: all 0.3s ease;
 }
@@ -78,7 +78,7 @@
     background: color-mix(in srgb, var(--card) 60%, transparent);
     border: 1px solid var(--border);
     padding: 0.5rem 2.2rem 0.5rem 1rem;
-    border-radius: 8px;
+    border-radius: var(--radius-lg, 0px);
     font-family: var(--font-sans);
     font-size: 0.7rem;
     font-weight: 900;
@@ -99,7 +99,7 @@
     padding: 0.5rem 1rem;
     background: color-mix(in srgb, var(--card) 50%, transparent);
     border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
-    border-radius: 8px;
+    border-radius: var(--radius-lg, 0px);
     font-family: var(--font-sans);
     font-size: 0.65rem;
     font-weight: 900;
@@ -134,7 +134,7 @@
 /* 4. Pulse Dashboard Expansion */
 .archive-pulse-deck-toggle {
     border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
-    border-radius: 16px;
+    border-radius: var(--radius-lg, 0px);
     overflow: hidden;
     box-shadow: var(--shadow-sm);
     transition: all 0.3s ease;
@@ -157,7 +157,7 @@
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
     border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
-    border-radius: 16px;
+    border-radius: var(--radius-lg, 0px);
     box-shadow: var(--shadow-sm);
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -186,7 +186,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 0.5rem 0.75rem;
-    border-radius: 8px;
+    border-radius: var(--radius-lg, 0px);
     border-bottom: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
     background: transparent;
     transition: all 0.2s ease;
@@ -224,7 +224,7 @@
     border: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
     border-left: 4px solid var(--nyt-accent);
     padding: 1.75rem;
-    border-radius: 16px;
+    border-radius: var(--radius-lg, 0px);
     box-shadow: var(--shadow-sm), 0 4px 20px -8px color-mix(in srgb, var(--nyt-accent) 10%, transparent);
     transition: all 0.3s ease;
 }
@@ -258,7 +258,7 @@
 
 @media (min-width: 768px) {
     .archive-cluster-row {
-        border-radius: 12px;
+        border-radius: var(--radius-lg, 0px);
         padding: 1.25rem !important;
         margin-left: -1.25rem;
         margin-right: -1.25rem;

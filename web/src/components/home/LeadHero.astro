@@ -425,7 +425,7 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
 		padding: 0.4rem 0.85rem;
         background: color-mix(in srgb, var(--secondary) 25%, transparent);
         border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
-        border-radius: 6px;
+        border-radius: var(--radius-md, 0px);
         box-shadow: inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 4%, transparent);
 	}
 
@@ -469,7 +469,7 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
         background-image: radial-gradient(circle at 90% 10%, color-mix(in srgb, var(--dominant-color) 8%, transparent), transparent 70%);
         border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
         border-top: 3px solid var(--dominant-color);
-        border-radius: 8px;
+        border-radius: var(--radius-lg, 0px);
         box-shadow: 0 8px 30px -4px color-mix(in srgb, var(--background) 40%, rgba(0, 0, 0, 0.08)),
                     inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 6%, transparent);
         transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -615,7 +615,7 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
         backdrop-filter: var(--glass-blur);
         -webkit-backdrop-filter: var(--glass-blur);
         border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
-        border-radius: 8px;
+        border-radius: var(--radius-lg, 0px);
         box-shadow: 0 4px 20px -2px color-mix(in srgb, var(--background) 30%, rgba(0, 0, 0, 0.08)),
                     inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 6%, transparent);
         transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -646,7 +646,7 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
 			aspect-ratio: 3 / 2;
 			width: 100%;
             border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
-            border-radius: 8px;
+            border-radius: var(--radius-lg, 0px);
             overflow: hidden;
             background: color-mix(in srgb, var(--card) 88%, var(--background));
             box-shadow: 0 14px 36px -28px rgba(15, 23, 42, 0.48);

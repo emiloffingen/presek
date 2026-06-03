@@ -1350,7 +1350,7 @@ button:focus-visible,
 
 /* Compact header utilities */
 .header-utility-button {
-  border-radius: 8px;
+  border-radius: var(--radius-lg, 0px);
   border: 1px solid transparent;
   color: var(--muted-foreground);
   background: transparent;
@@ -4835,7 +4835,7 @@ body.zen-mode .section-eyebrow {
 
 ::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--foreground) 15%, transparent);
-  border-radius: 3px;
+  border-radius: var(--radius-sm, 0px);
   transition: background 0.3s;
 }
 

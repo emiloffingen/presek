@@ -341,7 +341,7 @@ function getSourceBadgeLabel(count: number) {
         font-weight: 950;
         letter-spacing: 0.12em;
         padding: 0.35rem 0.75rem;
-        border-radius: 6px;
+        border-radius: var(--radius-md, 0px);
         border: 1px solid rgba(255, 255, 255, 0.18);
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
     }
@@ -376,7 +376,7 @@ function getSourceBadgeLabel(count: number) {
         background: color-mix(in srgb, var(--nyt-accent) 12%, transparent);
         border: 1px solid color-mix(in srgb, var(--nyt-accent) 25%, transparent);
         padding: 0.25rem 0.6rem;
-        border-radius: 6px;
+        border-radius: var(--radius-md, 0px);
     }
 
     .synthesis-badge-text {
@@ -512,7 +512,7 @@ function getSourceBadgeLabel(count: number) {
         background: color-mix(in srgb, var(--foreground) 4%, transparent);
         color: var(--muted-foreground);
         padding: 0.2rem 0.55rem;
-        border-radius: 4px;
+        border-radius: var(--radius-sm, 0px);
         border: 1px solid color-mix(in srgb, var(--border) 25%, transparent);
         transition: all 0.2s;
     }
@@ -529,7 +529,7 @@ function getSourceBadgeLabel(count: number) {
         background: color-mix(in srgb, var(--nyt-accent) 8%, transparent);
         color: var(--nyt-accent);
         padding: 0.2rem 0.55rem;
-        border-radius: 4px;
+        border-radius: var(--radius-sm, 0px);
         border: 1px solid color-mix(in srgb, var(--nyt-accent) 15%, transparent);
     }
 

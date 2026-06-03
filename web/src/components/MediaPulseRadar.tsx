@@ -128,7 +128,7 @@ export const MediaPulseRadar: React.FC<Props> = ({ data, lang = 'sr' }) => {
           transition: all 0.3s var(--ease-editorial);
           padding: 0.35rem 0.5rem;
           margin: 0 -0.5rem;
-          border-radius: 8px;
+          border-radius: var(--radius-lg, 0px);
         }
         
         .pulse-stat-row:hover {

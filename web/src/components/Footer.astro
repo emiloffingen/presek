@@ -116,7 +116,7 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
         height: 4px;
         background: linear-gradient(90deg, var(--foreground) 0%, color-mix(in srgb, var(--foreground) 40%, var(--background)) 75%, transparent 100%);
         margin-bottom: 3px;
-        border-radius: 2px;
+        border-radius: var(--radius-sm, 0px);
     }
     .rule-thin {
         height: 1px;
@@ -204,7 +204,7 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
         backdrop-filter: var(--glass-blur);
         -webkit-backdrop-filter: var(--glass-blur);
         border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
-        border-radius: 12px;
+        border-radius: var(--radius-lg, 0px);
         box-shadow: 0 4px 20px -2px color-mix(in srgb, var(--background) 30%, rgba(0, 0, 0, 0.08)),
                     inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 6%, transparent);
         transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);

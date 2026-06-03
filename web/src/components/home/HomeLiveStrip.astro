@@ -49,7 +49,7 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
         background: color-mix(in srgb, var(--border) 60%, transparent);
         border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
         border-top: 3px solid var(--nyt-red);
-        border-radius: 12px;
+        border-radius: var(--radius-lg, 0px);
         overflow: hidden;
         backdrop-filter: var(--glass-blur);
         -webkit-backdrop-filter: var(--glass-blur);

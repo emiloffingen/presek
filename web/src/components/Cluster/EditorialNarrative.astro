@@ -230,7 +230,7 @@ const renderSynthesisHtml = (text: string) => {
     .inline-entity:hover {
         background: color-mix(in srgb, var(--nyt-accent) 8%, transparent);
         text-decoration-style: solid;
-        border-radius: 2px;
+        border-radius: var(--radius-sm, 0px);
     }
 
     @keyframes tooltip-appear {
