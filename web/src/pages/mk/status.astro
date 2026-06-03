@@ -1,4 +1,236 @@
 ---
-Astro.response.status = 404;
-Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+import Layout from '../../layouts/Layout.astro';
+import NYTHeader from '../../components/NYTHeader.astro';
+import Footer from '../../components/Footer.astro';
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+import { apiBaseUrl } from '../../lib/apiBase';
+
+const hostHeader = Astro.request?.headers.get('host');
+const lang = getLangFromUrl(Astro.url, hostHeader);
+const t = useTranslations(lang);
+
+const API_URL = apiBaseUrl();
+let healthData = {
+    status: "degraded",
+    uptime_seconds: 0,
+    database: { ok: false, article_count: 0, size_mb: 0 },
+    redis: { ok: false },
+    version: "6.2.0"
+};
+
+try {
+    const res = await fetch(`${API_URL}/health`);
+    if (res.ok) {
+        healthData = await res.json();
+    }
+} catch (e) {
+    console.error("[Status Page] Fetch error:", e);
+}
+
+const formattedUptime = (seconds: number) => {
+    if (!seconds) return "0s";
+    const d = Math.floor(seconds / (3600 * 24));
+    const h = Math.floor((seconds % (3600 * 24)) / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    
+    const parts = [];
+    if (lang === 'sr') {
+        if (d > 0) parts.push(`${d}d`);
+        if (h > 0) parts.push(`${h}h`);
+        if (m > 0) parts.push(`${m}m`);
+    } else {
+        if (d > 0) parts.push(`${d}д`);
+        if (h > 0) parts.push(`${h}ч`);
+        if (m > 0) parts.push(`${m}м`);
+    }
+    return parts.join(' ') || `${seconds}s`;
+};
 ---
+
+<Layout
+    title={lang === 'sr' ? "Status sistema — Presek" : "Статус на системот — Пресек"}
+    description={lang === 'sr' ? "Prikaz statusa rada i zdravlja sistema Presek, baza podataka, keša i pozadinskih servisa." : "Приказ на статусот на работа и здравјето на системот Пресек, база на податоци, кеш и позадински сервиси."}
+>
+    <NYTHeader />
+    <main class="site-layout py-[var(--page-py)]" id="system-status-main">
+        <header class="editorial-masthead mb-12">
+            <div class="masthead-top">
+                <span class="masthead-kicker">{lang === 'sr' ? "OPERATIVNI MONITORING" : "ОПЕРАТИВЕН МОНИТОРИНГ"}</span>
+            </div>
+            <div class="masthead-main">
+                <h1 class="masthead-title">
+                    {lang === 'sr' ? "Status Sistema" : "Статус на Системот"} <span>{lang === 'sr' ? "i metrika" : "и метрика"}</span>
+                </h1>
+            </div>
+            <p class="masthead-intro">
+                {lang === 'sr' 
+                    ? "Pregled performansi, stabilnosti i rada pozadinske infrastrukture agregatora vesti."
+                    : "Преглед на перформансите, стабилноста и работата на позадинската инфраструктура на агрегаторот на вести."}
+            </p>
+        </header>
+
+        <div class="status-grid">
+            <div class="status-overview-card" id="status-card-root">
+                <div class="status-header">
+                    <span class="status-title">{lang === 'sr' ? "SISTEMSKI STATUS" : "СИСТЕМСКИ СТАТУС"}</span>
+                    <span class={`status-badge-pill ${healthData.status}`}>
+                        <span class="relative flex h-2.5 w-2.5 pulse-container">
+                            <span class={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${healthData.status === 'ok' ? 'bg-emerald-400' : 'bg-red-400'}`}></span>
+                            <span class={`relative inline-flex rounded-full h-2.5 w-2.5 ${healthData.status === 'ok' ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
+                        </span>
+                        {healthData.status === 'ok' 
+                            ? (lang === 'sr' ? "AKTIVAN" : "АКТИВЕН") 
+                            : (lang === 'sr' ? "DEGRADIRAN" : "ДЕГРАДИРАН")}
+                    </span>
+                </div>
+                
+                <div class="metrics-grid">
+                    <div class="metric-card" id="metric-db">
+                        <div class="metric-label">{lang === 'sr' ? "BAZA PODATAKA" : "БАЗА НА ПОДАТОЦИ"}</div>
+                        <div class="metric-value">{healthData.database.ok ? "OK" : "ERROR"}</div>
+                        <div class="metric-sub">{healthData.database.article_count.toLocaleString()} {lang === 'sr' ? "članaka" : "артикли"} | {healthData.database.size_mb.toFixed(1)} MB</div>
+                    </div>
+                    <div class="metric-card" id="metric-redis">
+                        <div class="metric-label">{lang === 'sr' ? "REDIS KEŠ & RED" : "REDIS КЕШ И РЕД"}</div>
+                        <div class="metric-value">{healthData.redis.ok ? "OK" : "ERROR"}</div>
+                        <div class="metric-sub">{lang === 'sr' ? "Komunikacija aktivna" : "Комуникацијата е активна"}</div>
+                    </div>
+                    <div class="metric-card" id="metric-uptime">
+                        <div class="metric-label">{lang === 'sr' ? "VREME RADA" : "ВРЕМЕ НА РАБОТА"}</div>
+                        <div class="metric-value">{formattedUptime(healthData.uptime_seconds)}</div>
+                        <div class="metric-sub">{lang === 'sr' ? "Uptime pozadinskog servisa" : "Uptime на позадинскиот сервис"}</div>
+                    </div>
+                    <div class="metric-card" id="metric-version">
+                        <div class="metric-label">{lang === 'sr' ? "VERZIJA" : "ВЕРЗИЈА"}</div>
+                        <div class="metric-value">v{healthData.version || "6.2.0"}</div>
+                        <div class="metric-sub">{lang === 'sr' ? "Presek Proizvodno Izdanje" : "Пресек Производно Издание"}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <Footer />
+</Layout>
+
+<style>
+    /* ── Masthead ────────────────────────────────────── */
+    .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 2rem; margin-bottom: 3rem; }
+    .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
+    .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; margin: 1.5rem 0; letter-spacing: -0.02em; }
+    .masthead-title span { font-weight: 400; font-style: italic; }
+    .masthead-intro { font-family: var(--font-nyt-body); font-size: 1.15rem; line-height: 1.6; color: var(--secondary-foreground); max-width: 42rem; }
+
+    /* ── Status Grid ────────────────────────────────── */
+    .status-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: var(--grid-gap);
+    }
+
+    .status-overview-card {
+        border: 1px solid var(--border);
+        background: var(--card);
+        padding: 2.5rem;
+        border-radius: 0px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .status-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .status-title {
+        font-family: var(--font-sans);
+        font-size: 0.72rem;
+        font-weight: 950;
+        letter-spacing: 0.12em;
+        color: var(--foreground);
+    }
+
+    .status-badge-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.35rem 0.85rem;
+        font-family: var(--font-sans);
+        font-size: 0.62rem;
+        font-weight: 950;
+        letter-spacing: 0.08em;
+        border-radius: 0px;
+        border: 1px solid transparent;
+    }
+
+    .status-badge-pill.ok {
+        background: color-mix(in srgb, #10b981 8%, transparent);
+        color: #059669;
+        border-color: color-mix(in srgb, #10b981 20%, transparent);
+    }
+
+    .status-badge-pill.degraded {
+        background: color-mix(in srgb, var(--nyt-red) 8%, transparent);
+        color: var(--nyt-red);
+        border-color: color-mix(in srgb, var(--nyt-red) 20%, transparent);
+    }
+
+    /* ── Metrics Grid ───────────────────────────────── */
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    @media (min-width: 640px) {
+        .metrics-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .metrics-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+
+    .metric-card {
+        border: 1px solid var(--border);
+        background: var(--secondary);
+        padding: 1.5rem;
+        border-radius: 0px;
+        transition: transform 0.3s var(--ease-editorial), border-color 0.3s;
+    }
+
+    .metric-card:hover {
+        transform: translateY(-2px);
+        border-color: color-mix(in srgb, var(--nyt-accent) 40%, transparent);
+    }
+
+    .metric-label {
+        font-family: var(--font-sans);
+        font-size: 0.58rem;
+        font-weight: 950;
+        letter-spacing: 0.1em;
+        color: var(--muted-foreground);
+        margin-bottom: 0.75rem;
+    }
+
+    .metric-value {
+        font-family: var(--font-serif);
+        font-size: 1.85rem;
+        font-weight: 900;
+        color: var(--foreground);
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+
+    .metric-sub {
+        font-family: var(--font-sans);
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: var(--muted-foreground);
+    }
+</style>
