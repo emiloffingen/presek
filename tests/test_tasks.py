@@ -296,6 +296,9 @@ class TestSynthesizeClusterTaskQuality:
         ]
 
         ai_payload = {
+            "synthetic_headline": "Trump tariff announcement",
+            "article": "Paragraf jedan sa detaljima [1].\n\nParagraf dva sa detaljima [2].\n\nParagraf tri sa detaljima [3].\n\nParagraf četiri sa detaljima [4].\n\nParagraf pet sa zaključkom.",
+            "key_facts": ["fact 1", "fact 2", "fact 3", "fact 4"],
             "summary": "clanci:\n• Glaven razvoj: Tramp: Utorak, 20:00 casot po istocno vreme\n• Glaven razvoj: Tramp: Utorak, 20:00 casot po istocno vreme",
             "perspectives": [
                 {
