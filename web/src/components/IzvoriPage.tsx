@@ -268,7 +268,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
             <span className="px-2 py-0.5 bg-foreground text-background font-sans text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] md:tracking-widest">{source.country || (lang === 'mk' ? 'MK' : 'RS')}</span>
             <div className="flex gap-1.5">
               {source.top_categories?.slice(0, 2).map(cat => (
-                <span key={cat} className="px-2 py-0.5 border border-border rounded-sm font-sans text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground/80">{cat}</span>
+                <span key={cat} className="px-2 py-0.5 border border-border rounded-none font-sans text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground/80">{cat}</span>
               ))}
             </div>
             <span className="font-sans text-[9px] md:text-[10px] font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground/40 ml-auto flex items-center gap-1.5">
@@ -312,7 +312,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
               return (
                 <div
                   key={i}
-                  className={`w-[3px] md:w-1.5 rounded-t-[1px] ${bgClass} ${opacity} hover:opacity-100 hover:scale-y-125 transition-all duration-200 cursor-crosshair origin-bottom`}
+                  className={`w-[3px] md:w-1.5 rounded-none ${bgClass} ${opacity} hover:opacity-100 hover:scale-y-125 transition-all duration-200 cursor-crosshair origin-bottom`}
                   style={{ height: `${height}%` }}
                 />
               );
@@ -367,7 +367,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
             </div>
           </div>
 
-          <div className="filter-group flex w-full md:w-auto p-1 bg-secondary/30 rounded-lg border border-border shadow-sm">
+          <div className="filter-group flex w-full md:w-auto p-1 bg-secondary/30 rounded-none border border-border shadow-sm">
             {[
               { id: 'all', label: t('sources.all') },
               { id: 'high', label: t('sources.high_trust') },
@@ -376,7 +376,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
               <button
                 key={t_tier.id}
                 onClick={() => setFilterTier(t_tier.id)}
-                className={`flex-1 md:flex-none px-3 md:px-4 py-2 rounded-md font-sans text-[9px] md:text-[10px] font-black tracking-[0.14em] md:tracking-widest transition-all ${
+                className={`flex-1 md:flex-none px-3 md:px-4 py-2 rounded-none font-sans text-[9px] md:text-[10px] font-black tracking-[0.14em] md:tracking-widest transition-all ${
                   filterTier === t_tier.id
                     ? 'bg-nyt-accent text-white shadow-md'
                     : 'text-muted-foreground hover:text-foreground'
@@ -391,7 +391,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
 
       {/* NEW: Media Pluralism & Bias Spectrum Dashboard */}
       {!loading && !error && domesticGraphSources.length > 0 && (
-        <section className="media-spectrum-dashboard mb-16 border border-border/80 bg-secondary/5 dark:bg-secondary/5 rounded-2xl p-5 md:p-8 backdrop-blur-xl relative overflow-hidden">
+        <section className="media-spectrum-dashboard mb-16 border border-border/80 bg-secondary/5 dark:bg-secondary/5 rounded-none p-5 md:p-8 backdrop-blur-xl relative overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/60 pb-5 mb-6">
             <div>
               <div className="flex items-center gap-2 mb-1.5">
@@ -408,7 +408,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                 value={graphSearch}
                 onChange={(e) => setGraphSearch(e.target.value)}
                 placeholder={searchLabel}
-                className="w-full bg-background border border-border rounded-lg py-1.5 pl-3 pr-8 text-xs font-sans placeholder:italic placeholder:opacity-50 focus:border-nyt-accent focus:ring-1 focus:ring-nyt-accent/30 outline-none transition-all"
+                className="w-full bg-background border border-border rounded-none py-1.5 pl-3 pr-8 text-xs font-sans placeholder:italic placeholder:opacity-50 focus:border-nyt-accent focus:ring-1 focus:ring-nyt-accent/30 outline-none transition-all"
               />
               <div className="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none opacity-40">
                 <Search size={14} />
@@ -419,7 +419,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* The Plot Area */}
             <div className="lg:col-span-3">
-              <div className="relative w-full h-[400px] md:h-[480px] bg-background/40 border border-border/60 rounded-xl overflow-hidden cursor-crosshair select-none shadow-inner">
+              <div className="relative w-full h-[400px] md:h-[480px] bg-background/40 border border-border/60 rounded-none overflow-hidden cursor-crosshair select-none shadow-inner">
                 
                 {/* Horizontal axis grid line */}
                 <div className="absolute top-1/2 left-0 right-0 h-[1.5px] bg-foreground/20 dark:bg-foreground/15 border-t border-dashed border-foreground/10 pointer-events-none" />
@@ -437,16 +437,16 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                 </svg>
 
                 {/* Quadrant Text Overlays (Styled Broadsheet Badges) */}
-                <div className="absolute top-3 left-4 text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] text-muted-foreground/35 bg-secondary/20 dark:bg-secondary/10 px-2 py-0.5 border border-border/10 rounded-[2px] pointer-events-none">
+                <div className="absolute top-3 left-4 text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] text-muted-foreground/35 bg-secondary/20 dark:bg-secondary/10 px-2 py-0.5 border border-border/10 rounded-none pointer-events-none">
                   {lang === 'mk' ? 'Независен Консензус' : 'Nezavisni Konsenzus'}
                 </div>
-                <div className="absolute bottom-3 left-4 text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] text-muted-foreground/35 bg-secondary/20 dark:bg-secondary/10 px-2 py-0.5 border border-border/10 rounded-[2px] pointer-events-none">
+                <div className="absolute bottom-3 left-4 text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] text-muted-foreground/35 bg-secondary/20 dark:bg-secondary/10 px-2 py-0.5 border border-border/10 rounded-none pointer-events-none">
                   {lang === 'mk' ? 'Истражувачки Ексклузиви' : 'Istraživačke Ekskluzive'}
                 </div>
-                <div className="absolute top-3 right-4 text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] text-muted-foreground/35 bg-secondary/20 dark:bg-secondary/10 px-2 py-0.5 border border-border/10 rounded-[2px] pointer-events-none">
+                <div className="absolute top-3 right-4 text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] text-muted-foreground/35 bg-secondary/20 dark:bg-secondary/10 px-2 py-0.5 border border-border/10 rounded-none pointer-events-none">
                   {lang === 'mk' ? 'Сензационалистички Консензус' : 'Senzacionalistički Konsenzus'}
                 </div>
-                <div className="absolute bottom-3 right-4 text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] text-muted-foreground/35 bg-secondary/20 dark:bg-secondary/10 px-2 py-0.5 border border-border/10 rounded-[2px] pointer-events-none">
+                <div className="absolute bottom-3 right-4 text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] text-muted-foreground/35 bg-secondary/20 dark:bg-secondary/10 px-2 py-0.5 border border-border/10 rounded-none pointer-events-none">
                   {lang === 'mk' ? 'Таблоидни Ексклузиви' : 'Tabloidne Ekskluzive'}
                 </div>
 
@@ -516,7 +516,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                       )}
                       {/* Small text label for highly prominent media */}
                       {(s.recent_volume > 15 || isSelected || isSearched || isHovered) && matched && (
-                        <span className={`absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-1 py-0.5 rounded bg-background/90 text-foreground font-sans text-[8px] font-black tracking-tight uppercase border border-border/40 whitespace-nowrap shadow-sm pointer-events-none ${isHovered || isSelected ? 'opacity-100 z-50 scale-105 border-nyt-accent/50' : 'opacity-55'}`}>
+                        <span className={`absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-1 py-0.5 rounded-none bg-background/90 text-foreground font-sans text-[8px] font-black tracking-tight uppercase border border-border/40 whitespace-nowrap shadow-sm pointer-events-none ${isHovered || isSelected ? 'opacity-100 z-50 scale-105 border-nyt-accent/50' : 'opacity-55'}`}>
                           {s.source}
                         </span>
                       )}
@@ -533,7 +533,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                   
                   return (
                     <div
-                      className="absolute z-50 p-4 w-60 border border-border bg-background/95 dark:bg-background/95 shadow-2xl rounded-xl transition-all duration-200 pointer-events-none text-left"
+                      className="absolute z-50 p-4 w-60 border border-border bg-background/95 dark:bg-background/95 shadow-2xl rounded-none transition-all duration-200 pointer-events-none text-left"
                       style={{
                         left: showLeft ? `calc(${coords.pctX}% - 260px)` : `calc(${coords.pctX}% + 20px)`,
                         top: showTop ? `calc(${coords.pctY}% - 120px)` : `calc(${coords.pctY}% + 10px)`,
@@ -541,7 +541,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                     >
                       <div className="flex items-center justify-between mb-1.5">
                         <h4 className="font-serif font-black text-sm text-foreground leading-tight">{hoveredSource.source}</h4>
-                        <span className="px-1.5 py-0.5 bg-foreground text-background font-sans text-[8px] font-black uppercase rounded">
+                        <span className="px-1.5 py-0.5 bg-foreground text-background font-sans text-[8px] font-black uppercase rounded-none">
                           {hoveredSource.country || (lang === 'mk' ? 'MK' : 'RS')}
                         </span>
                       </div>
@@ -582,18 +582,18 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
             </div>
 
             {/* Sidebar Quadrant Legend */}
-            <div className="lg:col-span-1 flex flex-col justify-between gap-4 p-4 bg-background/50 border border-border/60 rounded-xl">
+            <div className="lg:col-span-1 flex flex-col justify-between gap-4 p-4 bg-background/50 border border-border/60 rounded-none">
               <div>
                 <h4 className="font-sans text-[10px] font-black uppercase tracking-wider border-b border-border/50 pb-2 mb-3 text-foreground">{lang === 'mk' ? 'ГРАФИКОН ЛЕГЕНДА' : 'GRAFIKON LEGENDA'}</h4>
                 <div className="space-y-4 text-xs">
                   <div>
-                    <span className="inline-block px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-sans text-[9px] font-black tracking-wider uppercase mb-1">{lang === 'mk' ? 'Висока Доверба' : 'Visoko poverenje'}</span>
+                    <span className="inline-block px-1.5 py-0.5 rounded-none bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-sans text-[9px] font-black tracking-wider uppercase mb-1">{lang === 'mk' ? 'Висока Доверба' : 'Visoko poverenje'}</span>
                     <p className="text-[11px] text-muted-foreground leading-snug">
                       {lang === 'mk' ? 'Реномирани извори со стабилно, темелно и верификувано известување.' : 'Renomirani izvori sa stabilnim, temeljnim i verifikovanim izveštavanjem.'}
                     </p>
                   </div>
                   <div>
-                    <span className="inline-block px-1.5 py-0.5 rounded bg-nyt-accent/10 text-nyt-accent font-sans text-[9px] font-black tracking-wider uppercase mb-1">{lang === 'mk' ? 'Потврдени извори' : 'Potvrđeni izvori'}</span>
+                    <span className="inline-block px-1.5 py-0.5 rounded-none bg-nyt-accent/10 text-nyt-accent font-sans text-[9px] font-black tracking-wider uppercase mb-1">{lang === 'mk' ? 'Потврдени извори' : 'Potvrđeni izvori'}</span>
                     <p className="text-[11px] text-muted-foreground leading-snug">
                       {lang === 'mk' ? 'Актуелни професионални медиуми кои се редовно верификувани.' : 'Aktuelni profesionalni mediji koji se redovno verifikuju.'}
                     </p>
@@ -622,7 +622,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
               <Activity size={48} className="animate-spin mx-auto text-nyt-accent" />
             </div>
           ) : error ? (
-            <div className="py-24 text-center border-2 border-dashed border-border rounded-2xl">
+            <div className="py-24 text-center border-2 border-dashed border-border rounded-none">
               <h2 className="font-serif text-2xl italic text-muted-foreground">{error}</h2>
             </div>
           ) : (
@@ -648,7 +648,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
         </div>
 
         <aside className="broadsheet-rail pl-0 md:pl-4">
-          <section className="rail-module mb-8 md:mb-12 p-4 md:p-8 bg-nyt-accent/5 border border-nyt-accent/10 rounded-xl">
+          <section className="rail-module mb-8 md:mb-12 p-4 md:p-8 bg-nyt-accent/5 border border-nyt-accent/10 rounded-none">
             <span className="block font-sans text-[9px] md:text-[10px] font-black uppercase tracking-[0.16em] md:tracking-[0.2em] text-nyt-accent mb-3 md:mb-4">{t('briefing.system_balance')}</span>
             <h3 className="section-heading mb-4 leading-tight tracking-tight">{t('sources.qi_title')}</h3>
             <p className="font-nyt-body text-sm leading-relaxed text-muted-foreground">
@@ -662,13 +662,13 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
               {fastMovers.map(s => (
                 <div key={s.source} className="flex items-center justify-between py-2 border-b border-border/40 hover:bg-secondary/10 px-1 transition-all gap-2">
                   <span className="font-serif font-bold text-sm md:text-base">{s.source}</span>
-                  <span className="font-sans text-[10px] md:text-[11px] font-black text-nyt-accent bg-nyt-accent/10 px-2 py-0.5 rounded">+{s.speed_first_count}</span>
+                  <span className="font-sans text-[10px] md:text-[11px] font-black text-nyt-accent bg-nyt-accent/10 px-2 py-0.5 rounded-none">+{s.speed_first_count}</span>
                 </div>
               ))}
             </div>
           </section>
 
-          <div className="rail-methodology-module p-4 md:p-6 bg-secondary/10 border border-border/40 rounded-sm">
+          <div className="rail-methodology-module p-4 md:p-6 bg-secondary/10 border border-border/40 rounded-none">
             <h4 className="font-sans text-[9px] md:text-[10px] font-black uppercase tracking-[0.14em] md:tracking-widest border-b border-border pb-3 mb-4">{t('sources.methodology')}</h4>
             <ul className="space-y-3 md:space-y-4">
               <li className="flex flex-col gap-1">
