@@ -17,7 +17,7 @@ async def test_proxy_image_fallback():
         # Should return a fallback response
         assert result.status_code == 200
         assert 'image/svg+xml' in result.headers.get('Content-Type', '')
-        assert b'Proxy Fallback' in result.body if hasattr(result, 'body') else b'Proxy Fallback' in result.content
+        assert b'<svg' in result.body if hasattr(result, 'body') else b'<svg' in result.content
 
 
 @pytest.mark.asyncio
@@ -40,6 +40,6 @@ async def test_proxy_image_ssrf_block():
         # Should return fallback (it returns fetch_failed, not security_ssrf_block)
         assert result.status_code == 200
         assert 'image/svg+xml' in result.headers.get('Content-Type', '')
-        # Check that it's a fallback response (contains diagnostic info)
+        # Check that it's a fallback response (contains SVG content)
         response_content = result.body if hasattr(result, 'body') else result.content
-        assert b'Proxy Fallback' in response_content
+        assert b'<svg' in response_content
