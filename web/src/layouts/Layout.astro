@@ -380,6 +380,76 @@ const organizationSchema = {
 			document.addEventListener('astro:page-load', initSpotlight);
 			initSpotlight();
 		</script>
+		<script>
+			// Global Image Loading and Fallback System (CSP-compliant, replacing inline onload/onerror)
+			const handleImageLoad = (img: HTMLImageElement) => {
+				img.classList.add('is-loaded');
+				const imageWrap = img.closest('.image-wrap');
+				if (imageWrap) {
+					imageWrap.setAttribute('data-image-state', 'ready');
+				}
+				const leadFrame = img.closest('.lead-media-frame');
+				if (leadFrame) {
+					leadFrame.classList.add('media-ready');
+				}
+			};
+
+			const handleImageError = (img: HTMLImageElement) => {
+				if (img.classList.contains('article-image') && !img.classList.contains('article-image-fallback')) {
+					img.removeAttribute('srcset');
+					const fallbackUrl = img.getAttribute('data-fallback-url') || '/img/fallbacks/news-general.svg';
+					img.src = fallbackUrl;
+					img.classList.add('is-loaded', 'article-image-fallback');
+					const imageWrap = img.closest('.image-wrap');
+					if (imageWrap) {
+						imageWrap.classList.add('image-wrap-fallback');
+						imageWrap.setAttribute('data-image-state', 'fallback');
+					}
+				}
+				if (img.classList.contains('lead-media-image') && !img.classList.contains('lead-media-fallback-image')) {
+					img.removeAttribute('srcset');
+					const fallbackUrl = img.getAttribute('data-fallback-url') || '/img/fallbacks/news-general.svg';
+					img.src = fallbackUrl;
+					img.classList.add('is-loaded', 'lead-media-fallback-image');
+					const parent = img.parentElement;
+					if (parent) {
+						parent.classList.add('media-ready', 'lead-media-frame-fallback');
+					}
+				}
+			};
+
+			// Listen to events at document level using capturing phase (since load/error do not bubble)
+			document.addEventListener('load', (event) => {
+				const target = event.target as HTMLElement;
+				if (target && target.tagName === 'IMG') {
+					handleImageLoad(target as HTMLImageElement);
+				}
+			}, true);
+
+			document.addEventListener('error', (event) => {
+				const target = event.target as HTMLElement;
+				if (target && target.tagName === 'IMG') {
+					handleImageError(target as HTMLImageElement);
+				}
+			}, true);
+
+			// Immediately check images that have already loaded or failed (handling cache/SSR fast loading)
+			const checkAllImages = () => {
+				document.querySelectorAll('img').forEach((img) => {
+					if (img.complete) {
+						if (img.naturalWidth === 0) {
+							handleImageError(img);
+						} else {
+							handleImageLoad(img);
+						}
+					}
+				});
+			};
+
+			// Run on initial script execution and on client-side page transitions
+			checkAllImages();
+			document.addEventListener('astro:page-load', checkAllImages);
+		</script>
 	</body>
 </html>
 

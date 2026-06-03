@@ -208,8 +208,7 @@ function getTimeStr(dateStr: string) {
                         loading={isLead ? "eager" : "lazy"}
                         decoding="async"
                         fetchpriority={isLead ? "high" : "auto"}
-                        onload="this.classList.add('is-loaded'); this.closest('.image-wrap')?.setAttribute('data-image-state','ready');"
-                        onerror={`this.onerror=null; this.removeAttribute('srcset'); this.src='${fallbackImageUrl}'; this.classList.add('is-loaded','article-image-fallback'); this.closest('.image-wrap')?.classList.add('image-wrap-fallback'); this.closest('.image-wrap')?.setAttribute('data-image-state','fallback');`}
+                        data-fallback-url={fallbackImageUrl}
                     />
                     <div class="topic-fallback-scrim runtime-fallback-only"></div>
                     <div class="design-card-ribbon runtime-fallback-only">

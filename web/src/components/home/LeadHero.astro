@@ -123,8 +123,7 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
 	                        decoding="async"
 	                        class="lead-media-image"
 	                        transition:name={`cluster-image-${leadCluster.cluster_id}`}
-	                        onload="this.classList.add('is-loaded'); this.parentElement.classList.add('media-ready');"
-	                        onerror={`this.onerror=null; this.removeAttribute('srcset'); this.src='${fallbackImageUrl}'; this.classList.add('is-loaded','lead-media-fallback-image'); this.parentElement.classList.add('media-ready','lead-media-frame-fallback');`}
+                            data-fallback-url={fallbackImageUrl}
 	                    />
 	                    <div class="lead-media-overlay">
 	                        <div class="overlay-content">
@@ -249,8 +248,7 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
 	                        fetchpriority="high"
 	                        decoding="async"
 	                        class="lead-media-image"
-	                        onload="this.classList.add('is-loaded'); this.parentElement.classList.add('media-ready');"
-	                        onerror={`this.onerror=null; this.removeAttribute('srcset'); this.src='${fallbackImageUrl}'; this.classList.add('is-loaded','lead-media-fallback-image'); this.parentElement.classList.add('media-ready','lead-media-frame-fallback');`}
+                            data-fallback-url={fallbackImageUrl}
 	                    />
 	                    <div class="lead-media-overlay">
 	                        <div class="overlay-content">
