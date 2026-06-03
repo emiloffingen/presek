@@ -6,6 +6,13 @@ from nlp.generation import _extract_sports_scores
 log = logging.getLogger("presek.router")
 
 
+def _local_model_available() -> bool:
+    configured_path = os.environ.get("LOCAL_MODEL_PATH")
+    if configured_path:
+        return os.path.exists(configured_path)
+    return os.path.exists("models/google_gemma-4-E4B-it-Q8_0.gguf")
+
+
 class SmartModelRouter:
     @staticmethod
     def route_cluster(articles: list[dict], lang: str = "sr") -> str:
@@ -51,7 +58,16 @@ class SmartModelRouter:
 
         log.debug(f"[router] Routing info: count={article_count}, is_sport={is_sport}, score_conflict={has_score_conflict}, high_weight={has_high_weight}")
 
+        local_available = _local_model_available()
+        prefer_local_synthesis = os.environ.get("LOCAL_SYNTHESIS_PREFER_LOCAL", "true").lower() == "true"
+        force_remote_high_complexity = (
+            os.environ.get("LOCAL_SYNTHESIS_HIGH_COMPLEXITY_REMOTE", "false").lower() == "true"
+        )
+
         # --- Decision Matrix ---
+
+        if local_available and prefer_local_synthesis and not (has_score_conflict and force_remote_high_complexity):
+            return "local"
         
         # High Complexity: Serious disputes, large clusters, high political/economic weight, or sports conflicts
         if article_count >= 5 or has_score_conflict or (article_count >= 3 and has_high_weight):
@@ -60,11 +76,11 @@ class SmartModelRouter:
         # Medium Complexity: Standard news, moderate cluster size
         if article_count >= 3 or has_high_weight:
             # Route to local Gemma 4 if available, otherwise Mistral Small
-            if os.environ.get("LOCAL_MODEL_PATH") or os.path.exists("models/google_gemma-4-E4B-it-Q8_0.gguf"):
+            if local_available:
                 return "local"
             return "mistral_small"
 
         # Low Complexity: 1-2 articles, straightforward routine news
-        if os.environ.get("LOCAL_MODEL_PATH") or os.path.exists("models/google_gemma-4-E4B-it-Q8_0.gguf"):
+        if local_available:
             return "local"
         return "enhanced_fallback"

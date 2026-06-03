@@ -3,7 +3,7 @@ from unittest.mock import Mock
 import sys
 import types
 
-from core.ai_engine import LocalProvider
+from core.ai_engine import LocalProvider, _call_ai
 
 
 def test_clean_json_response_raw_text():
@@ -123,10 +123,11 @@ def test_local_provider_uses_compact_editorial_json_prompt_for_synthesis(monkeyp
     args, kwargs = analyst.analyze.call_args
     assert "KONTEKST" in args[0]
     assert "premium uredničku sintezu" in args[1]
-    assert "article mora biti jedan string sa 6 kratkih pasusa" in args[1]
+    assert "article mora biti jedan string sa tačno 5 kratkih pasusa" in args[1]
     assert kwargs["use_grammar"] is True
     assert kwargs["temperature"] == 0.18
     assert kwargs["lang"] == "sr"
+    assert kwargs["force_local"] is True
 
 
 def test_local_provider_uses_macedonian_compact_synthesis_prompt(monkeypatch):
@@ -152,3 +153,34 @@ def test_local_provider_uses_macedonian_compact_synthesis_prompt(monkeypatch):
     assert kwargs["use_grammar"] is True
     assert kwargs["temperature"] == 0.18
     assert kwargs["lang"] == "mk"
+    assert kwargs["force_local"] is True
+
+
+def test_provider_override_local_does_not_cascade_to_remote(monkeypatch):
+    local_provider = Mock()
+    local_provider.call.return_value = None
+    remote_provider = Mock()
+    remote_provider.call.return_value = '{"summary":["remote"],"article":"remote"}'
+
+    monkeypatch.setattr(
+        "core.ai_engine.PROVIDERS",
+        {
+            "local": local_provider,
+            "mistral_large": remote_provider,
+            "mistral_small": remote_provider,
+            "nvidia": remote_provider,
+        },
+    )
+
+    raw, provider = _call_ai(
+        "prompt",
+        "system",
+        task_type="synthesis",
+        json_mode=True,
+        provider_override="local",
+    )
+
+    assert raw is None
+    assert provider is None
+    assert local_provider.call.call_count == 1
+    assert remote_provider.call.call_count == 0

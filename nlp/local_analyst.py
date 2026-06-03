@@ -31,7 +31,7 @@ TIER_MAP = {
 log = logging.getLogger("presek.analyst")
 
 # Config for Gemma 2 2B on 2-core CPU
-MODEL_PATH = os.environ.get("LOCAL_MODEL_PATH", "models/gemma-2-2b-it-Q4_K_M.gguf")
+MODEL_PATH = os.environ.get("LOCAL_MODEL_PATH", "models/google_gemma-4-E4B-it-Q8_0.gguf")
 N_THREADS = int(os.environ.get("MODEL_THREADS", "2"))
 MODEL_CONTEXT = int(os.environ.get("LOCAL_MODEL_CONTEXT", "4096"))
 MAX_PROMPT_CHARS = int(os.environ.get("LOCAL_MODEL_MAX_PROMPT_CHARS", "9000"))
@@ -127,9 +127,10 @@ class LocalAnalyst:
         lang: str = "mk",
         response_schema: Optional[Any] = None,
         temperature: Optional[float] = None,
+        force_local: bool = False,
     ) -> Optional[str]:
         # Try remote API first if enabled (default True)
-        if os.environ.get("USE_REMOTE_ANALYST", "true").lower() == "true":
+        if not force_local and os.environ.get("USE_REMOTE_ANALYST", "true").lower() == "true":
             try:
                 from core.ai_engine import sync_call_ai
 

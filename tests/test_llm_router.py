@@ -16,9 +16,13 @@ def test_route_cluster_low_complexity():
     with patch("os.path.exists", return_value=False), patch.dict(os.environ, {}, clear=True):
         assert SmartModelRouter.route_cluster(articles) == "enhanced_fallback"
 
-    # With LOCAL_MODEL_PATH, should return local
-    with patch.dict(os.environ, {"LOCAL_MODEL_PATH": "/path/to/model"}):
+    # With an existing LOCAL_MODEL_PATH, should return local
+    with patch("os.path.exists", return_value=True), patch.dict(os.environ, {"LOCAL_MODEL_PATH": "/path/to/model"}):
         assert SmartModelRouter.route_cluster(articles) == "local"
+
+    # A configured but missing LOCAL_MODEL_PATH should not be treated as available
+    with patch("os.path.exists", return_value=False), patch.dict(os.environ, {"LOCAL_MODEL_PATH": "/path/to/model"}):
+        assert SmartModelRouter.route_cluster(articles) == "enhanced_fallback"
 
 
 def test_route_cluster_medium_complexity_by_count():
@@ -46,8 +50,8 @@ def test_route_cluster_medium_complexity_local_model():
         {"title": "Vest 2", "description": "Nesto se dogodilo."},
         {"title": "Vest 3", "description": "Nesto se dogodilo."}
     ]
-    # With LOCAL_MODEL_PATH, should route to local
-    with patch.dict(os.environ, {"LOCAL_MODEL_PATH": "/path/to/model"}):
+    # With an existing LOCAL_MODEL_PATH, should route to local
+    with patch("os.path.exists", return_value=True), patch.dict(os.environ, {"LOCAL_MODEL_PATH": "/path/to/model"}):
         assert SmartModelRouter.route_cluster(articles) == "local"
 
 
@@ -55,7 +59,11 @@ def test_route_cluster_high_complexity_large_cluster():
     articles = [
         {"title": f"Vest {i}", "description": "Detalji."} for i in range(5)
     ]
-    assert SmartModelRouter.route_cluster(articles) == "mistral_large"
+    with patch("os.path.exists", return_value=False), patch.dict(os.environ, {}, clear=True):
+        assert SmartModelRouter.route_cluster(articles) == "mistral_large"
+
+    with patch("os.path.exists", return_value=True), patch.dict(os.environ, {"LOCAL_MODEL_PATH": "/path/to/model"}):
+        assert SmartModelRouter.route_cluster(articles) == "local"
 
 
 def test_route_cluster_high_complexity_medium_with_weight():
@@ -64,7 +72,11 @@ def test_route_cluster_high_complexity_medium_with_weight():
         {"title": "Sednica parlamenta", "description": "Diskusija o zakonu."},
         {"title": "Saopstenje vlada", "description": "Detalji odluke."}
     ]
-    assert SmartModelRouter.route_cluster(articles) == "mistral_large"
+    with patch("os.path.exists", return_value=False), patch.dict(os.environ, {}, clear=True):
+        assert SmartModelRouter.route_cluster(articles) == "mistral_large"
+
+    with patch("os.path.exists", return_value=True), patch.dict(os.environ, {"LOCAL_MODEL_PATH": "/path/to/model"}):
+        assert SmartModelRouter.route_cluster(articles) == "local"
 
 
 def test_route_cluster_high_complexity_sports_conflict():
@@ -72,4 +84,5 @@ def test_route_cluster_high_complexity_sports_conflict():
         {"title": "Partizan pobedio Zvezdu sa 3:1", "description": "Neverovatan mec."},
         {"title": "Zvezda savladala Partizan rezultatom 2:0", "description": "Veliki derbi."}
     ]
-    assert SmartModelRouter.route_cluster(articles) == "mistral_large"
+    with patch("os.path.exists", return_value=False), patch.dict(os.environ, {}, clear=True):
+        assert SmartModelRouter.route_cluster(articles) == "mistral_large"

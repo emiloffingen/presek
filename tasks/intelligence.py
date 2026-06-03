@@ -280,6 +280,233 @@ def _polish_generated_article(text: str, lang: str = "mk") -> str:
     return "\n\n".join(polished_parts).strip()
 
 
+def _clean_macedonian_spelling_and_script(text: str) -> str:
+    if not text:
+        return text
+
+    # Direct homoglyph map (lookalikes swap) for mixed words
+    homoglyphs = {
+        'a': 'а', 'c': 'ц', 'e': 'е', 'o': 'о', 'p': 'п', 'x': 'х', 'y': 'у',
+        'j': 'ј', 's': 'с', 'i': 'и',
+        'A': 'А', 'C': 'Ц', 'E': 'Е', 'O': 'О', 'P': 'П', 'X': 'Х', 'Y': 'У',
+        'J': 'Ј', 'S': 'С', 'I': 'И', 'K': 'К', 'M': 'М', 'T': 'Т', 'B': 'В',
+        'H': 'Н', 'R': 'Р'
+    }
+
+    # Serbian to Macedonian leak mappings (both Cyrillic and Latin versions)
+    # We will do case-insensitive word replacements
+    leaks = {
+        "током": "во текот на",
+        "између": "меѓу",
+        "измеѓу": "меѓу",
+        "такође": "исто така",
+        "како би": "за да",
+        "да ли": "дали",
+        "нису": "не се",
+        "јесте": "е",
+        "председник": "претседател",
+        "премијер": "премиер",
+        "министар": "министер",
+        "саопштење": "соопштение",
+        "тужилаштво": "обвинителство",
+        "оптужница": "обвинение",
+        "сарадња": "соработка",
+        "састанак": "состанок",
+        "земља": "земја",
+        "недеља": "недела",
+        "понедељак": "понеделник",
+        "уторак": "вторник",
+        "четвртак": "четврток",
+        "петак": "петок",
+        "субота": "сабота",
+        "јануар": "јануари",
+        "фебруар": "февруари",
+        "октобар": "октомври",
+        "новембар": "ноември",
+        "децембар": "декември",
+        "догађај": "настан",
+        "због": "поради",
+        "учешће": "учество",
+        "предузеће": "претпријатие",
+        "грађани": "граѓани",
+        "грађанин": "граѓанин",
+        "држављанин": "државјанин",
+        "држављани": "државјани",
+        "унутрашњи": "внатрешен",
+        "спољашњи": "надворешен",
+        "избеглице": "бегалци",
+        "ухапшен": "уапсен",
+        "ухапшени": "уапсени",
+        "помоћ": "помош",
+        "савез": "сојуз",
+        "захтев": "барање",
+        "веза": "врска",
+        "избор": "избор",
+        "избори": "избори",
+        "решење": "решение",
+        "односи": "односи",
+        "већ": "веќе",
+        
+        # Latin leaks
+        "tokom": "во текот на",
+        "između": "меѓу",
+        "takođe": "исто така",
+        "kako bi": "за да",
+        "da li": "дали",
+        "nisu": "не се",
+        "jeste": "е",
+        "predsednik": "претседател",
+        "premijer": "премиер",
+        "ministar": "министер",
+        "saopštenje": "соопштение",
+        "tužilaštvo": "обвинителство",
+        "optužnica": "обвинение",
+        "saradnja": "соработка",
+        "sastanak": "состанок",
+        "zemlja": "земја",
+        "nedelja": "недела",
+        "ponedeljak": "понеделник",
+        "utorak": "вторник",
+        "četvrtak": "четврток",
+        "petak": "петок",
+        "subota": "сабота",
+        "januar": "јануари",
+        "februar": "февруари",
+        "oktobar": "октомври",
+        "novembar": "ноември",
+        "decembar": "декември",
+        "događaj": "настан",
+        "zbog": "поради",
+        "učešće": "учество",
+        "preduzeće": "претпријатие",
+        "građani": "граѓани",
+        "građanin": "граѓанин",
+        "državljanin": "државјанин",
+        "državljani": "државјани",
+        "unutrašnji": "внатрешен",
+        "spoljašnji": "надворешен",
+        "izbeglice": "бегалци",
+        "uhapšen": "уапсен",
+        "uhapšeni": "уапсени",
+        "pomoć": "помош",
+        "savez": "сојуз",
+        "zahtev": "барање",
+        "već": "веќе",
+    }
+
+    # Helper for full Latin phonetic transliteration
+    phonetic = {
+        "Lj": "Љ", "lj": "љ",
+        "Nj": "Њ", "nj": "њ",
+        "Dž": "Џ", "dž": "џ",
+        "Gj": "Ѓ", "gj": "ѓ",
+        "Kj": "Ќ", "kj": "ќ",
+        "Dz": "Ѕ", "dz": "ѕ",
+        "A": "А", "a": "а",
+        "B": "Б", "b": "б",
+        "V": "В", "v": "в",
+        "G": "Г", "g": "г",
+        "D": "Д", "d": "д",
+        "Đ": "Ѓ", "đ": "ѓ",
+        "E": "Е", "e": "е",
+        "Ž": "Ж", "ž": "ж",
+        "Z": "З", "z": "з",
+        "I": "И", "i": "и",
+        "J": "Ј", "j": "ј",
+        "K": "К", "k": "к",
+        "L": "Л", "l": "л",
+        "M": "М", "m": "м",
+        "N": "Н", "n": "н",
+        "O": "О", "o": "о",
+        "P": "П", "p": "п",
+        "R": "Р", "r": "р",
+        "S": "С", "s": "с",
+        "T": "Т", "t": "т",
+        "Ć": "Ќ", "ć": "ќ",
+        "U": "У", "u": "у",
+        "F": "Ф", "f": "ф",
+        "H": "Х", "h": "х",
+        "C": "Ц", "c": "ц",
+        "Č": "Ч", "č": "ч",
+        "Š": "Ш", "š": "ш",
+    }
+
+    def clean_word(word: str) -> str:
+        if word.startswith('[') and word.endswith(']'):
+            return word
+        
+        w_lower = word.lower()
+        if w_lower in leaks:
+            replacement = leaks[w_lower]
+            if word[0].isupper():
+                replacement = replacement[0].upper() + replacement[1:]
+            return replacement
+
+        has_cyrillic = any('\u0400' <= char <= '\u04FF' for char in word)
+        has_latin = any(('a' <= char.lower() <= 'z') for char in word)
+        
+        if has_cyrillic and has_latin:
+            chars = []
+            for c in word:
+                if c in homoglyphs:
+                    chars.append(homoglyphs[c])
+                else:
+                    chars.append(c)
+            return "".join(chars)
+
+        if has_latin and not has_cyrillic:
+            if word.isupper() and len(word) in (2, 3, 4, 5):
+                return word
+            
+            res = word
+            for lat, cyr in sorted(phonetic.items(), key=lambda x: len(x[0]), reverse=True):
+                res = res.replace(lat, cyr)
+            return res
+
+        return word
+
+    tokens = re.split(r'(\s+|[.,!?;:()""\'\'„“»«\[\]]+)', text)
+    cleaned_tokens = []
+    for token in tokens:
+        if not token:
+            continue
+        if re.match(r'^[a-zA-Z\u0400-\u04FF\u0160\u0161\u0106\u0107\u010C\u010D\u0110\u0111\u017D\u017E]+$', token):
+            cleaned_tokens.append(clean_word(token))
+        else:
+            cleaned_tokens.append(token)
+
+    return "".join(cleaned_tokens)
+
+
+def _score_synthesis_quality(headline: str, article: str, key_facts: list, lang: str = "sr") -> float:
+    """
+    Evaluates synthesis quality, returning a score between 0.0 and 1.0.
+    Docks points for repetition, poor citation/fact density, and broken paragraph structure.
+    """
+    score = 1.0
+    if not headline or not article:
+        return 0.0
+
+    # 1. Headline repetition in body
+    h_clean = headline.lower().strip()
+    a_clean = article.lower().strip()
+    if h_clean in a_clean:
+        score -= 0.4
+
+    # 2. Source-grounded facts/citations density
+    citations = re.findall(r'\[\d+\]', article)
+    facts_count = len(key_facts) if isinstance(key_facts, list) else 0
+    if len(citations) < 4 and facts_count < 4:
+        score -= 0.3
+
+    # 3. Paragraph structure check (strictly 5 paragraphs)
+    paragraphs = [p.strip() for p in re.split(r'\n{2,}', article) if p.strip()]
+    if len(paragraphs) != 5:
+        score -= 0.3
+
+    return max(0.0, min(1.0, score))
+
+
 def _sanitize_synthesis_outputs(summary, generated_article, perspectives, article_rows, lang="mk"):
     fallback = None
     clean_summary = normalize_summary_text(summary)
@@ -303,6 +530,23 @@ def _sanitize_synthesis_outputs(summary, generated_article, perspectives, articl
     if not clean_perspectives:
         fallback = fallback or synthesize_cluster_fallback(article_rows, lang=lang)
         clean_perspectives = normalize_perspectives(fallback.get("perspectives", []), lang=lang)
+
+    # Strictly verify Cyrillic script and clean spelling leaks for Macedonian
+    if lang == "mk":
+        if isinstance(clean_summary, str):
+            clean_summary = _clean_macedonian_spelling_and_script(clean_summary)
+        elif isinstance(clean_summary, list):
+            clean_summary = [_clean_macedonian_spelling_and_script(s) for s in clean_summary]
+        
+        clean_article = _clean_macedonian_spelling_and_script(clean_article)
+        
+        if isinstance(clean_perspectives, list):
+            for p in clean_perspectives:
+                if isinstance(p, dict):
+                    if "angle" in p:
+                        p["angle"] = _clean_macedonian_spelling_and_script(p["angle"])
+                    if "content" in p:
+                        p["content"] = _clean_macedonian_spelling_and_script(p["content"])
 
     return clean_summary, clean_article, clean_perspectives
 
@@ -346,19 +590,60 @@ def _build_citation_sources(article_rows):
     return normalize_citation_sources(ordered)
 
 
+def _extract_one_quote_or_fact(text: str) -> str | None:
+    if not text:
+        return None
+    # Look for quotes in text
+    quote_patterns = [
+        r'["“„»]([^"“„»]{15,})["”„«]',
+        r'\'([^\']{15,})\''
+    ]
+    for pattern in quote_patterns:
+        matches = re.findall(pattern, text)
+        if matches:
+            return matches[0].strip()
+    
+    # If no quotes, find a sentence containing a number/fact
+    sentences = re.split(r'[.!?]\s+', text)
+    for s in sentences:
+        if any(c.isdigit() for c in s) and len(s) > 20:
+            return s.strip()
+            
+    # Default to the first sentence
+    if sentences:
+        first = sentences[0].strip()
+        if len(first) > 10:
+            return first
+    return None
+
+
 def _build_synthesis_source_context(article_rows, lang: str = "sr"):
+    # Group and deduplicate by source, preserving order of first occurrence
+    seen_sources = set()
+    deduped_rows = []
+    for row in (article_rows or []):
+        source = str(row.get("source") or "").strip().lower()
+        if source and source not in seen_sources:
+            seen_sources.add(source)
+            deduped_rows.append(row)
+            
+    # Feed only top 4-6 articles (we use 5)
+    top_rows = deduped_rows[:5]
+    
     blocks = []
-    for idx, row in enumerate(article_rows or [], start=1):
+    for idx, row in enumerate(top_rows, start=1):
         title = deShout(normalize_headline(str(row.get("title") or "").strip()))
         source = str(row.get("source") or "izvor").strip()
         category = str(row.get("category") or "").strip()
         topic = str(row.get("topic") or "").strip()
         description = clean_extracted_article_text(str(row.get("description") or "").strip())
-        summary = str(row.get("summary") or "").strip()
         full_content = clean_extracted_article_text(str(row.get("full_content") or "").strip())
-
+        
         evidence = full_content if len(full_content or "") > len(description or "") else description
-        evidence = evidence[:2200].strip()
+        evidence = evidence[:1200].strip()  # Shortened to keep context clean
+        
+        extracted_fact = _extract_one_quote_or_fact(full_content or description)
+        
         parts = [f"[{idx}] {source}"]
         if category:
             parts.append(f"{'Kategorija' if lang == 'sr' else 'Категорија'}: {category}")
@@ -366,11 +651,13 @@ def _build_synthesis_source_context(article_rows, lang: str = "sr"):
             parts.append(f"{'Tema' if lang == 'sr' else 'Тема'}: {topic}")
         if title:
             parts.append(f"{'Naslov' if lang == 'sr' else 'Наслов'}: {title}")
-        if summary:
-            parts.append(f"{'Postojeće rezime' if lang == 'sr' else 'Постоечко резиме'}: {summary[:500]}")
         if evidence:
-            parts.append(f"{'kontekst' if lang == 'sr' else 'контекст'}:\n{evidence}")
+            parts.append(f"{'Opis' if lang == 'sr' else 'Опис'}:\n{evidence}")
+        if extracted_fact:
+            parts.append(f"{'Ključna izjava/činjenica' if lang == 'sr' else 'Клучна изјава/факт'}: {extracted_fact}")
+            
         blocks.append("\n".join(parts))
+        
     return "\n\n".join(blocks)
 
 
@@ -668,9 +955,17 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             from core.llm_router import SmartModelRouter
             target_model = SmartModelRouter.route_cluster(article_rows, lang=lang)
 
+            provider = "enhanced_fallback" if target_model == "enhanced_fallback" else None
+            model = None
+            quality_score = None
+            fallback_reason = None
+            raw = None
+
             if target_model == "enhanced_fallback":
                 log.info(f"Router selected local enhanced fallback for cluster {cluster_id} ({lang})")
-                raw, provider = None, "enhanced_fallback"
+                provider = "enhanced_fallback"
+                model = "enhanced_fallback"
+                fallback_reason = "router_selected_fallback"
             else:
                 raw, provider = _call_ai(
                     full_prompt,
@@ -681,51 +976,65 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                     lang=lang,
                     provider_override=target_model,
                 )
-            res_data = {}
+                if provider:
+                    from core.ai_engine import PROVIDERS
+                    p_obj = PROVIDERS.get(provider)
+                    if p_obj and hasattr(p_obj, "model") and p_obj.model:
+                        model = p_obj.model
+                    else:
+                        model = provider
+                else:
+                    fallback_reason = "provider_returned_no_content"
 
+            res_data = {}
             if raw:
                 try:
                     res = clean_json_response(raw)
+                    if not isinstance(res, dict):
+                        raise ValueError("Parsed JSON is not a dictionary")
+                    res_data = res
                 except Exception as e:
                     log.error(f"[tasks/synthesis] JSON Parse Error for {cluster_id} ({lang}): {e}. Raw: {raw[:200]}")
-                    continue  # Try next language
+                    fallback_reason = "malformed_json"
+                    raw = None
 
-                res_data = res if isinstance(res, dict) else {}
-
-                # If the AI returned a string instead of a dict, or if the dict is missing core fields,
-                # we should treat it as a partial failure and merge with local fallback
-                if not isinstance(res, dict) or not res.get("summary") or not res.get("article"):
-                    log.info(
-                        f"[tasks/synthesis] AI returned unstructured or partial response for {
-                             cluster_id} ({lang}), merging with enhanced fallback."
-                    )
-                    fallback = synthesize_cluster_fallback(article_rows, lang=lang)
-
-                    # Merge: Prefer AI summary if it exists and is long enough and not a leaked JSON, otherwise fallback
-                    summary = res_data.get("summary") or (
-                        res if isinstance(res, str) and len(res) > 30 and not _looks_like_leaked_json_fragment(res) else fallback["summary"]
-                    )
-                    generated_article = res_data.get("article") or fallback["generated_article"]
-                    synthetic_headline = res_data.get("synthetic_headline") or fallback["synthetic_headline"]
-                    synthetic_standfirst = res_data.get("synthetic_standfirst") or fallback["synthetic_standfirst"]
-                    perspectives = res_data.get("perspectives") or fallback["perspectives"]
-                else:
-                    summary = res_data.get("summary", "")
-                    generated_article = res_data.get("article", "")
-                    synthetic_headline = res_data.get("synthetic_headline", "")
-                    synthetic_standfirst = res_data.get("synthetic_standfirst", "")
-                    perspectives = res_data.get("perspectives", [])
+            if raw:
+                # Merge if partial response (missing summary or article)
+                if not res_data.get("summary") or not res_data.get("article"):
+                    fallback_reason = "partial_response"
+                
+                summary = res_data.get("summary", "")
+                generated_article = res_data.get("article", "")
+                synthetic_headline = res_data.get("synthetic_headline", "")
+                synthetic_standfirst = res_data.get("synthetic_standfirst", "")
+                perspectives = res_data.get("perspectives", [])
 
                 # Ensure summary is a string for validation and comparison
                 if isinstance(summary, list):
                     summary = "\n".join(str(s) for s in summary)
 
+                # AI Quality Gate: Hallucination Scanner (SKIP in fast_mode)
+                comparison_text = (summary or "") + "\n" + (generated_article or "")
+                if (
+                    not fast_mode
+                    and not _is_grounded_synthesis(comparison_text, current_context or legacy_summary)
+                ):
+                    log.warning(f"Hallucination gate failed for cluster {cluster_id} ({lang})")
+                    fallback_reason = "hallucination_gate_failed"
+                    raw = None
+
+            if raw:
+                # Quality Score evaluation
+                key_facts = res_data.get("key_facts", [])
+                quality_score = _score_synthesis_quality(synthetic_headline, generated_article, key_facts, lang)
+                if quality_score < 0.7:
+                    log.warning(f"Quality score {quality_score:.2f} below threshold (0.7) for cluster {cluster_id} ({lang})")
+                    fallback_reason = "failed_quality_score"
+                    raw = None
+
+            if raw:
                 verification_report = res_data.get("verification_report")
                 quote = validate_person_names(res_data.get("quote", ""))
-
-                if not summary or (isinstance(summary, str) and len(summary) < 20):
-                    log.warning(f"[tasks/synthesis] AI returned empty or too short summary for {cluster_id} ({lang})")
-                    continue
 
                 # Sanitize for name hallucinations
                 summary = validate_person_names(summary)
@@ -738,17 +1047,6 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 impact_data = _ensure_dict(res_data.get("impact_analysis", {}))
                 current_impact_score = float(impact_data.get("score", 0.0))
                 current_impact_reasoning = impact_data.get("reasoning", "")
-
-                # AI Quality Gate: Hallucination Scanner (SKIP in fast_mode)
-                comparison_text = (summary or "") + "\n" + (generated_article or "")
-                if (
-                    not fast_mode
-                    and not _is_grounded_synthesis(comparison_text, current_context or legacy_summary)
-                    and retry_attempt < 2
-                ):
-                    log.warning(f"Hallucination gate failed for cluster {cluster_id} ({lang}), retrying later...")
-                    # We don't return here because we might want to try other languages
-                    continue
 
                 current_sentiment_data = {
                     "sentiment": res_data.get("sentiment", {}),
@@ -859,8 +1157,10 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                     log.info(f"Using pre-computed enhanced fallback for {cluster_id} ({lang})")
                 else:
                     log.warning(
-                        f"[tasks/synthesis] AI provider {provider} returned no content for {cluster_id} ({lang}), using enhanced fallback"
+                        f"[tasks/synthesis] AI provider {provider} failed checks or returned no content for {cluster_id} ({lang}), using enhanced fallback"
                     )
+                provider = "enhanced_fallback"
+                model = "enhanced_fallback"
                 fallback = synthesize_cluster_fallback(article_rows, lang=lang)
                 summary = fallback.get("summary", "")
                 perspectives = fallback.get("perspectives", [])
@@ -931,8 +1231,8 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
 
                 # Archive current summary before updating (Evolution Log)
                 db.execute(
-                    """INSERT INTO cluster_summary_history (cluster_id, lang, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, citation_sources, tone_analysis, created_at, key_facts, analyst_entities)
-                       SELECT cluster_id, lang, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, citation_sources, tone_analysis, created_at, key_facts, analyst_entities
+                    """INSERT INTO cluster_summary_history (cluster_id, lang, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, citation_sources, tone_analysis, created_at, key_facts, analyst_entities, generation_provider, generation_model, quality_score, fallback_reason)
+                       SELECT cluster_id, lang, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, citation_sources, tone_analysis, created_at, key_facts, analyst_entities, generation_provider, generation_model, quality_score, fallback_reason
                        FROM cluster_summaries WHERE cluster_id = %s AND lang = %s""",
                     (cluster_id, lang),
                     fetch=False,
@@ -940,8 +1240,8 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
 
                 if res_data.get("full_article_draft") and len(res_data["full_article_draft"]) > 100:
                     db.execute(
-                        """INSERT INTO cluster_summaries (cluster_id, lang, summary, generated_article, synthetic_headline, synthetic_standfirst, created_at, citation_sources, key_facts, analyst_entities, pulse_score, pluralism_score, narrative_diversity)
-                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        """INSERT INTO cluster_summaries (cluster_id, lang, summary, generated_article, synthetic_headline, synthetic_standfirst, created_at, citation_sources, key_facts, analyst_entities, pulse_score, pluralism_score, narrative_diversity, generation_provider, generation_model, quality_score, fallback_reason)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                            ON CONFLICT (cluster_id, lang) DO UPDATE SET
                                summary = EXCLUDED.summary,
                                generated_article = EXCLUDED.generated_article,
@@ -953,7 +1253,11 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                                analyst_entities = EXCLUDED.analyst_entities,
                                pulse_score = EXCLUDED.pulse_score,
                                pluralism_score = EXCLUDED.pluralism_score,
-                               narrative_diversity = EXCLUDED.narrative_diversity""",
+                               narrative_diversity = EXCLUDED.narrative_diversity,
+                               generation_provider = EXCLUDED.generation_provider,
+                               generation_model = EXCLUDED.generation_model,
+                               quality_score = EXCLUDED.quality_score,
+                               fallback_reason = EXCLUDED.fallback_reason""",
                         (
                             cluster_id,
                             lang,
@@ -968,13 +1272,17 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                             float(pulse_score),
                             float(pluralism_score),
                             json.dumps(pluralism_data),
+                            provider,
+                            model,
+                            quality_score,
+                            fallback_reason,
                         ),
                         fetch=False,
                     )
                 else:
                     db.execute(
-                        """INSERT INTO cluster_summaries (cluster_id, lang, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, tone_analysis, verification_report, quote, centroid, citation_sources, key_facts, analyst_entities, pulse_score, pluralism_score, narrative_diversity, storyline_narrative)
-                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        """INSERT INTO cluster_summaries (cluster_id, lang, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, tone_analysis, verification_report, quote, centroid, citation_sources, key_facts, analyst_entities, pulse_score, pluralism_score, narrative_diversity, storyline_narrative, generation_provider, generation_model, quality_score, fallback_reason)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                            ON CONFLICT (cluster_id, lang) DO UPDATE SET
                                summary = EXCLUDED.summary,
                                perspectives = EXCLUDED.perspectives,
@@ -993,7 +1301,11 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                                pulse_score = EXCLUDED.pulse_score,
                                pluralism_score = EXCLUDED.pluralism_score,
                                narrative_diversity = EXCLUDED.narrative_diversity,
-                               storyline_narrative = EXCLUDED.storyline_narrative""",
+                               storyline_narrative = EXCLUDED.storyline_narrative,
+                               generation_provider = EXCLUDED.generation_provider,
+                               generation_model = EXCLUDED.generation_model,
+                               quality_score = EXCLUDED.quality_score,
+                               fallback_reason = EXCLUDED.fallback_reason""",
                         (
                             cluster_id,
                             lang,
@@ -1015,6 +1327,10 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                             float(pluralism_score),
                             json.dumps(pluralism_data),
                             shared_metrics["story_so_far"],
+                            provider,
+                            model,
+                            quality_score,
+                            fallback_reason,
                         ),
                         fetch=False,
                     )

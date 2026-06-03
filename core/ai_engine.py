@@ -246,6 +246,14 @@ class OpenAICompatibleProvider(AIProvider):
 
 
 class LocalProvider(AIProvider):
+    def __init__(self):
+        try:
+            from nlp.local_analyst import MODEL_PATH
+            import os
+            self.model = os.path.basename(MODEL_PATH)
+        except ImportError:
+            self.model = "google_gemma-4-E4B-it-Q8_0.gguf"
+
     @staticmethod
     def _local_synthesis_system(lang: str) -> str:
         if lang == "mk":
@@ -253,8 +261,8 @@ class LocalProvider(AIProvider):
                 "Ти си главен уредник на Пресек. Напиши премиум уредничка синтеза на стандарден македонски јазик. "
                 "Врати САМО валиден JSON со клучеви: synthetic_headline, synthetic_standfirst, summary, article, "
                 "key_facts, perspectives, verification_report, sentiment, tone_analysis. "
-                "article мора да биде еден string со 6 кратки пасуси разделени со \\n\\n: лид, контекст, длабок слој, "
-                "споредба на извори, верификација, последици/што недостига. "
+                "article мора да биде еден string со точно 5 кратки пасуси разделени со \\n\\n: лид, контекст, "
+                "околу што се согласуваат изворите, каде се разликуваат, неверификувано/што останува непознато. "
                 "Пиши како искусен уредник: конкретно, елегантно, аналитички, без AI фрази, без повторување и без измислување. "
                 "summary е листа од 3-4 концизни точки. perspectives е листа од објекти со angle и content. "
                 "key_facts се само проверливи факти. Ако нешто недостига, кажи точно што недостига."
@@ -263,8 +271,8 @@ class LocalProvider(AIProvider):
             "Ti si glavni urednik Preseka. Napiši premium uredničku sintezu na književnom srpskom jeziku, latinica. "
             "Vrati SAMO validan JSON sa ključevima: synthetic_headline, synthetic_standfirst, summary, article, "
             "key_facts, perspectives, verification_report, sentiment, tone_analysis. "
-            "article mora biti jedan string sa 6 kratkih pasusa razdvojenih sa \\n\\n: lede, kontekst, dubinski sloj, "
-            "poređenje izvora, verifikacija, posledice/šta nedostaje. "
+            "article mora biti jedan string sa tačno 5 kratkih pasusa razdvojenih sa \\n\\n: lede, kontekst, "
+            "oko čega se mediji slažu, gde se razlikuju, neverifikovano/šta ostaje nepoznato. "
             "Piši kao iskusan urednik: konkretno, elegantno, analitički, bez AI fraza, bez ponavljanja i bez izmišljanja. "
             "summary je lista od 3-4 sažete stavke. perspectives je lista objekata sa angle i content. "
             "key_facts su samo proverljive činjenice. Ako nešto nedostaje, reci tačno šta nedostaje."
@@ -320,6 +328,7 @@ class LocalProvider(AIProvider):
                 lang=lang,
                 response_schema=response_schema,
                 temperature=0.18,
+                force_local=True,
             )
             if res:
                 return res
@@ -490,7 +499,9 @@ def _call_ai(
         AI_CALLS.labels(provider="sanitization", task_type=task_type, status="blocked").inc()
         return None, None
 
-    if provider_override and provider_override in PROVIDERS:
+    if provider_override == "local" and provider_override in PROVIDERS:
+        fallback_order = ["local"]
+    elif provider_override and provider_override in PROVIDERS:
         base_order = []
         if task_type == "research":
             base_order = list(PROVIDER_FALLBACK_ORDER_RESEARCH)
