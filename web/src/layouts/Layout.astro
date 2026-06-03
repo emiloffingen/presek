@@ -100,6 +100,12 @@ const organizationSchema = {
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
+  gtag('consent', 'default', {
+    'ad_storage': 'denied',
+    'ad_user_data': 'denied',
+    'ad_personalization': 'denied',
+    'analytics_storage': 'granted'
+  });
   gtag('js', new Date());
 
   gtag('config', 'G-YJZH9KK8X9');
@@ -110,28 +116,17 @@ const organizationSchema = {
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
+  gtag('consent', 'default', {
+    'ad_storage': 'denied',
+    'ad_user_data': 'denied',
+    'ad_personalization': 'denied',
+    'analytics_storage': 'granted'
+  });
   gtag('js', new Date());
 
   gtag('config', 'G-SV2R3LZJ5C');
 </script>`} />
 		)}
-		<script is:inline>
-			var consentState = 'denied';
-			try {
-				var isCrawler = /bot|google|crawler|spider|robot|lighthouse|assistant|verify|test/i.test(navigator.userAgent);
-				if (isCrawler || localStorage.getItem('presek_cookie_consent') === 'accepted') {
-					consentState = 'granted';
-				}
-			} catch (e) {}
-
-			gtag('consent', 'default', {
-				'ad_storage': consentState,
-				'ad_user_data': consentState,
-				'ad_personalization': consentState,
-				'analytics_storage': consentState,
-				'wait_for_update': 500
-			});
-		</script>
 		<script is:inline>
 			(function() {
 				try {
