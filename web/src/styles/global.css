@@ -213,13 +213,25 @@
     --nyt-gray-100: #0a0e17;
     --nyt-gray-200: #121824;
     --nyt-gray-300: #1d2335;
-    --nyt-gray-500: #64748b;
-    --nyt-gray-600: #94a3b8;
+    --nyt-gray-500: #8ea3bf; /* Improved contrast for WCAG AA compliance in dark mode */
+    --nyt-gray-600: #cbd5e1; /* Improved contrast for secondary typography */
     --nyt-accent: #60a5fa;
     --nyt-red: #f87171;
     --link: #60a5fa;
     --link-hover: #93c5fd;
   }
+}
+
+/* Cyrillic vertical rhythm adjustment for Macedonian headlines to prevent overlap of ascenders/descenders */
+html[lang="mk"] h1,
+html[lang="mk"] h2,
+html[lang="mk"] h3,
+html[lang="mk"] h4,
+html[lang="mk"] h5,
+html[lang="mk"] h6,
+html[lang="mk"] .headline,
+html[lang="mk"] .editorial-headline {
+  line-height: 1.15 !important;
 }
 
 /* Ticker Overflow Mask */
