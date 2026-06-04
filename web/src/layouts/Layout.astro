@@ -51,10 +51,7 @@ const pageTitle = title.includes("Presek") || title.includes("Пресек")
 
 function buildCanonicalUrl(pathname: string): string {
 	const base = new URL(siteUrl);
-    // If we are on the Macedonian domain, we don't want the /mk prefix in the canonical URL
-    // as it's already served at the root of that domain.
-    const cleanPath = lang === 'mk' ? pathname.replace(/^\/mk/, '') : pathname;
-	const url = new URL(cleanPath, base);
+	const url = new URL(pathname, base);
 	let clean = url.origin + url.pathname.replace(/\/+$/, "");
 	if (clean === url.origin || clean === url.origin + "") return url.origin;
 	return clean;
@@ -63,10 +60,11 @@ function buildCanonicalUrl(pathname: string): string {
 const canonicalUrl = canonical || buildCanonicalUrl(requestUrl.pathname);
 const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.startsWith("/") ? image : `/${image}`}`;
 
-// Generate hreflang URLs for cross-domain SEO
-const alternatePath = lang === 'mk' ? requestUrl.pathname.replace(/^\/mk/, '') : requestUrl.pathname;
-const srHref = `https://presek.live${alternatePath.replace(/\/+$/, "") || ""}`;
-const mkHref = `https://presek.mk${alternatePath.replace(/\/+$/, "") || ""}`;
+// Generate hreflang URLs for cross-domain SEO.
+// Serbian routes live at root; Macedonian routes live under /mk even on presek.mk.
+const alternatePath = requestUrl.pathname.replace(/^\/mk/, '').replace(/\/+$/, "");
+const srHref = `https://presek.live${alternatePath || ""}`;
+const mkHref = `https://presek.mk/mk${alternatePath || ""}`;
 const normalizedHost = hostHeader.split(':')[0].toLowerCase();
 const shouldLoadAdsense = lang === 'sr' && (normalizedHost === 'presek.live' || normalizedHost === 'www.presek.live');
 

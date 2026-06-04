@@ -252,15 +252,6 @@ flock -n 9 || fail "Another deploy or rollback is already in progress (lock: $LO
 
 stage_clean_git_source_if_needed
 
-# Update git stats file dynamically inside the deployment COPY_ROOT
-if [ -f "$SOURCE_ROOT/scripts/update_git_stats.py" ]; then
-    info "Generating git stats..."
-    python3 "$SOURCE_ROOT/scripts/update_git_stats.py"
-    if [ "$COPY_ROOT" != "$SOURCE_ROOT" ]; then
-        cp "$SOURCE_ROOT/web/src/git_stats.json" "$COPY_ROOT/web/src/git_stats.json"
-    fi
-fi
-
 # 2. Release Management
 RELEASE_ID=$(date -u +%Y%m%dT%H%M%SZ)
 RELEASE_DIR="$RELEASES_DIR/$RELEASE_ID"
