@@ -2,12 +2,16 @@
 import { Link2, ShieldCheck, ExternalLink } from 'lucide-react';
 import { sanitizeHtml } from '../../lib/sanitize';
 import { deShout, cleanAndDecode } from '../../utils/textUtils';
+import { getLangFromUrl } from '../../i18n/utils';
 
 interface Props {
 	article: any;
 }
 
 const { article: a } = Astro.props;
+const hostHeader = Astro.request?.headers.get('host');
+const lang = getLangFromUrl(Astro.url, hostHeader);
+const isMk = lang === 'mk';
 
 // Clean text function to strip HTML tags and unwanted artifacts
 function cleanText(text: string) {
@@ -23,6 +27,8 @@ function cleanText(text: string) {
 
 const displayTitle = cleanText(a.title);
 const displaySnippet = cleanText(a.description || a.summary);
+const objectiveTitle = isMk ? 'Висок степен на фактичко известување' : 'Visok stepen faktičkog izveštavanja';
+const readOriginalLabel = isMk ? 'ПРОЧИТАЈ НА' : 'PROČITAJ NA';
 ---
 
 <div class={`article-editorial-row tone-${a.relationship.tone} timeline-item min-w-0`} data-article-link={encodeURIComponent(a.link || '')}>
@@ -33,7 +39,7 @@ const displaySnippet = cleanText(a.description || a.summary);
 			<span class={`tone-badge tone-${a.relationship.tone}`}>{a.relationship.label}</span>
 
             {a.quality.isObjective && (
-                <span class="quality-badge badge-obj" title="Visok stepen na fakticko izvestuvanje">
+                <span class="quality-badge badge-obj" title={objectiveTitle}>
                     <ShieldCheck size={10} />
                 </span>
             )}
@@ -49,9 +55,9 @@ const displaySnippet = cleanText(a.description || a.summary);
         <p class="row-snippet min-w-0 break-words whitespace-normal">{displaySnippet}</p>
     )}
 	<div class="row-footer">
-		<a href={a.link} target="_blank" rel="noopener noreferrer" class="read-original">
-			PROČITAJ NA {a.source} <ExternalLink size={10} />
-		</a>
+        <a href={a.link} target="_blank" rel="noopener noreferrer" class="read-original">
+            {readOriginalLabel} {a.source} <ExternalLink size={10} />
+        </a>
 	</div>
 </div>
 
