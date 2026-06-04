@@ -1,5 +1,15 @@
 import type { APIRoute } from 'astro';
 import { apiBaseUrl } from '../lib/apiBase';
+import { slugify } from '../utils/textUtils';
+
+function escapeXml(value: string = '') {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+}
 
 export const GET: APIRoute = async ({ request }) => {
     const url = new URL(request.url);
@@ -8,7 +18,7 @@ export const GET: APIRoute = async ({ request }) => {
     const SITE_URL = isMk ? 'https://presek.mk' : 'https://presek.live';
     const API_URL = apiBaseUrl();
     
-    const clusterData: {id: string, title: string, image: string | null}[] = [];
+    const clusterData: {id: string, title: string, image: string | null, updated: string | null}[] = [];
 
     try {
         let page = 0;
@@ -23,11 +33,14 @@ export const GET: APIRoute = async ({ request }) => {
                     const filtered = data.clusters.filter((c: any) => 
                         c.articles && c.articles.some((a: any) => a.country === country)
                     );
-                    clusterData.push(...filtered.map((c: any) => ({
-                        id: c.cluster_id,
-                        title: c.synthetic_headline || c.title || '',
-                        image: c.representative_image || null
-                    })));
+                    clusterData.push(...filtered
+                        .filter((c: any) => c.has_synthesis && (c.synthetic_headline || c.synthetic_standfirst))
+                        .map((c: any) => ({
+                            id: c.cluster_id,
+                            title: c.synthetic_headline || c.title || '',
+                            image: c.representative_image || null,
+                            updated: c.synthesis_updated_at || c.articles?.[0]?.created_at || null
+                        })));
                     hasMore = data.has_more;
                 } else {
                     hasMore = false;
@@ -41,7 +54,7 @@ export const GET: APIRoute = async ({ request }) => {
         console.error("Sitemap fetch error:", e);
     }
 
-    const staticPages = ['', '/about', '/archive', '/izvori', '/pulse', '/editorial', '/privacy', '/terms', '/analize', '/methodology', '/contact', '/cookies', '/support', '/briefing', '/for-you'];
+    const staticPages = ['', '/about', '/archive', '/izvori', '/pulse', '/editorial', '/privacy', '/terms', '/analize', '/methodology', '/contact', '/cookies'];
     const now = new Date().toISOString();
 
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -53,16 +66,20 @@ ${staticPages.map(page => `  <url>
     <changefreq>${page === '' ? 'always' : 'daily'}</changefreq>
     <priority>${page === '' ? '1.0' : '0.8'}</priority>
   </url>`).join('\n')}
-${clusterData.map(cluster => `  <url>
-    <loc>${SITE_URL}/cluster/${cluster.id}</loc>
-    <lastmod>${now}</lastmod>
+${clusterData.map(cluster => {
+    const clusterSlug = slugify(cluster.title);
+    const path = clusterSlug ? `${cluster.id}-${clusterSlug}` : cluster.id;
+    return `  <url>
+    <loc>${SITE_URL}/cluster/${path}</loc>
+    <lastmod>${cluster.updated ? new Date(cluster.updated).toISOString() : now}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>${cluster.image ? `
     <image:image>
-      <image:loc>${cluster.image}</image:loc>
-      <image:title><![CDATA[${cluster.title || 'Presek News'}]]></image:title>
+      <image:loc>${escapeXml(cluster.image)}</image:loc>
+      <image:title>${escapeXml(cluster.title || 'Presek News')}</image:title>
     </image:image>` : ''}
-  </url>`).join('\n')}
+  </url>`;
+}).join('\n')}
 </urlset>`;
 
     return new Response(sitemap, {

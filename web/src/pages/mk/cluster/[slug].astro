@@ -127,7 +127,7 @@ import type { Article, ClusterDetail } from '../../../types';
 
 const { slug } = Astro.params;
 const API_URL = apiBaseUrl();
-const SITE_URL = (import.meta.env.PUBLIC_SITE_URL || 'https://presek.live').replace(/\/+$/, '');
+const SITE_URL = 'https://presek.mk';
 
 // Extract ID from slug (handles both legacy 8-char and new 12-char dashed IDs)
 const idMatch = slug?.match(/^([0-9a-f]{8}-[0-9a-f]{3,4}|[0-9a-f]{8,12})/);
@@ -176,6 +176,7 @@ const displayHeadline = cluster?.synthetic_headline || (mainArticle ? cleanAndDe
 // we perform a 301 redirect to the "Correct" SEO URL.
 const currentHeadlineSlug = slugify(displayHeadline);
 const canonicalSlug = `${id}-${currentHeadlineSlug}`;
+const canonicalPathSlug = id && cluster && currentHeadlineSlug ? canonicalSlug : (id || 'cluster');
 
 if (slug !== canonicalSlug && !error && cluster) {
     const targetPath = `${lang === 'sr' ? `/cluster/${canonicalSlug}` : `/mk/cluster/${canonicalSlug}`}${Astro.url.search}`;
@@ -257,7 +258,7 @@ const filteredRelated = relatedClusters.filter((c: { cluster_id: string }) => c.
 
 const adjacentTopic = cluster?.topics?.find((t: string) => t !== 'Srbija') || cluster?.topics?.[0];
 
-const canonicalUrl = `https://presek.mk/cluster/${id}`;
+const canonicalUrl = `https://presek.mk/cluster/${canonicalPathSlug}`;
 const shareDescription = synthesisItems[0]?.content || mainArticle?.description || '';
 
 function getLeadVisual(c: ClusterDetail | null) {

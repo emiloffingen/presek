@@ -1,11 +1,12 @@
 import type { APIRoute } from 'astro';
 import { apiBaseUrl } from '../../lib/apiBase';
+import { slugify } from '../../utils/textUtils';
 
-const SITE_URL = (import.meta.env.PUBLIC_SITE_URL || 'https://presek.live').replace(/\/+$/, '');
 const API_URL = apiBaseUrl();
 
 export const GET: APIRoute = async () => {
-    const clusterIds: string[] = [];
+    const SITE_URL = 'https://presek.mk';
+    const clusterData: {id: string, title: string, updated: string | null}[] = [];
 
     try {
         let page = 0;
@@ -15,7 +16,16 @@ export const GET: APIRoute = async () => {
             if (res.ok) {
                 const data = await res.json();
                 if (data && Array.isArray(data.clusters)) {
-                    clusterIds.push(...data.clusters.map((c: any) => c.cluster_id));
+                    const filtered = data.clusters.filter((c: any) =>
+                        c.articles && c.articles.some((a: any) => a.country === 'MK')
+                    );
+                    clusterData.push(...filtered
+                        .filter((c: any) => c.has_synthesis && (c.synthetic_headline || c.synthetic_standfirst))
+                        .map((c: any) => ({
+                            id: c.cluster_id,
+                            title: c.synthetic_headline || c.title || '',
+                            updated: c.synthesis_updated_at || c.articles?.[0]?.created_at || null
+                        })));
                     hasMore = data.has_more;
                 } else {
                     hasMore = false;
@@ -29,7 +39,7 @@ export const GET: APIRoute = async () => {
         console.error("Sitemap fetch error:", e);
     }
 
-    const staticPages = ['', '/about', '/archive', '/izvori', '/pulse', '/editorial', '/privacy', '/terms', '/analize', '/methodology', '/contact', '/cookies', '/support', '/briefing', '/for-you'];
+    const staticPages = ['', '/about', '/archive', '/izvori', '/pulse', '/editorial', '/privacy', '/terms', '/analize', '/methodology', '/contact', '/cookies'];
     const now = new Date().toISOString();
 
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -40,12 +50,16 @@ ${staticPages.map(page => `  <url>
     <changefreq>${page === '' ? 'always' : 'daily'}</changefreq>
     <priority>${page === '' ? '1.0' : '0.8'}</priority>
   </url>`).join('\n')}
-${clusterIds.map(id => `  <url>
-    <loc>${SITE_URL}/cluster/${id}</loc>
-    <lastmod>${now}</lastmod>
+${clusterData.map(cluster => {
+    const clusterSlug = slugify(cluster.title);
+    const path = clusterSlug ? `${cluster.id}-${clusterSlug}` : cluster.id;
+    return `  <url>
+    <loc>${SITE_URL}/cluster/${path}</loc>
+    <lastmod>${cluster.updated ? new Date(cluster.updated).toISOString() : now}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
-  </url>`).join('\n')}
+  </url>`;
+}).join('\n')}
 </urlset>`;
 
     return new Response(sitemap, {

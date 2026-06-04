@@ -9,8 +9,8 @@ export const GET: APIRoute = async ({ request }) => {
   const robots = `User-agent: *
 Allow: /
 Disallow: /api/
-Disallow: /settings
-Disallow: /status
+Disallow: /admin/
+Disallow: /debug/
 
 Sitemap: ${siteUrl}/sitemap.xml
 Sitemap: ${siteUrl}/rss.xml
