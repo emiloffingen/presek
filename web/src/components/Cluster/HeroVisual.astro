@@ -41,7 +41,7 @@ const t = useTranslations(lang);
 					loading="eager"
 				/>
 			)}
-			<div class="hero-caption py-3 px-4 bg-background/80 backdrop-blur-sm border-t border-border/40 text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
+			<div class="hero-caption py-3 px-4 bg-background/80 backdrop-blur-sm border-t border-border/40 uppercase font-bold tracking-widest text-muted-foreground">
 				{t('cluster.hero_caption')} · {articlesCount} {t('cluster.newsrooms_analyzed')}
 			</div>
 		</div>
@@ -105,7 +105,7 @@ const t = useTranslations(lang);
 
 	.hero-fallback-kicker {
 		font-family: var(--font-sans);
-		font-size: 0.65rem;
+		font-size: 0.68rem;
 		font-weight: 950;
 		text-transform: uppercase;
 		letter-spacing: 0.15em;
@@ -121,9 +121,14 @@ const t = useTranslations(lang);
 
 	.hero-fallback-meta {
 		font-family: var(--font-sans);
-		font-size: 0.75rem;
+		font-size: 0.78rem;
 		font-weight: 800;
 		text-transform: uppercase;
 		color: var(--muted-foreground);
 	}
+
+    .hero-caption {
+        font-family: var(--font-sans);
+        font-size: 0.62rem;
+    }
 </style>

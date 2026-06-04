@@ -180,15 +180,15 @@ const renderSynthesisHtml = (text: string) => {
                             tooltip.innerHTML = `
                                 <div class="tooltip-card bg-background/95 dark:bg-zinc-900/95 backdrop-blur-md border border-border/80 shadow-2xl rounded-xl p-4 w-72 text-sm text-foreground">
                                     <div class="flex justify-between items-start mb-2.5 pb-2 border-b border-border/60">
-                                        <span class="text-[9px] font-black uppercase tracking-[0.15em] text-nyt-accent">${labelCard}</span>
+                                        <span class="entity-tooltip-kicker text-nyt-accent">${labelCard}</span>
                                         <div class="flex items-center gap-1 bg-secondary/80 dark:bg-zinc-800/80 px-2 py-0.5 rounded-full border border-border/40">
                                             <svg class="w-2.5 h-2.5 text-nyt-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-                                            <span class="text-[9px] font-bold text-foreground">${score}</span>
+                                            <span class="entity-tooltip-score text-foreground">${score}</span>
                                         </div>
                                     </div>
                                     <h4 class="font-bold text-base mb-1 text-foreground tracking-tight">${name}</h4>
-                                    <p class="text-[11px] text-muted-foreground leading-relaxed mb-3 font-normal">${bioSummary}</p>
-                                    <div class="flex items-center justify-between pt-2.5 border-t border-border/60 text-[9px] text-muted-foreground">
+                                    <p class="entity-tooltip-summary text-muted-foreground leading-relaxed mb-3 font-normal">${bioSummary}</p>
+                                    <div class="entity-tooltip-footer flex items-center justify-between pt-2.5 border-t border-border/60 text-muted-foreground">
                                         <span class="uppercase font-medium">${labelLastSeen}: ${lastSeenDate}</span>
                                         <a href="/subjekt/${encodeURIComponent(name)}" class="font-bold text-nyt-accent hover:underline flex items-center gap-0.5 uppercase">${labelProfile} &rarr;</a>
                                     </div>
@@ -254,6 +254,32 @@ const renderSynthesisHtml = (text: string) => {
             0 4px 30px rgba(0, 0, 0, 0.03),
             0 10px 50px rgba(0, 0, 0, 0.06),
             inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    }
+
+    :global(.entity-tooltip-kicker),
+    :global(.entity-tooltip-score),
+    :global(.entity-tooltip-footer) {
+        font-family: var(--font-sans);
+    }
+
+    :global(.entity-tooltip-kicker) {
+        font-size: 0.58rem;
+        font-weight: 950;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+
+    :global(.entity-tooltip-score) {
+        font-size: 0.6rem;
+        font-weight: 850;
+    }
+
+    :global(.entity-tooltip-summary) {
+        font-size: 0.75rem;
+    }
+
+    :global(.entity-tooltip-footer) {
+        font-size: 0.58rem;
     }
     
     :global(.dark) .tooltip-card {

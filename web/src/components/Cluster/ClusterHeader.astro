@@ -31,13 +31,13 @@ const {
 
 <header class="editorial-lede mb-12">
 	<div class="lede-meta mb-8">
-		<span class:list={["font-black uppercase tracking-[0.3em] text-[10px] mr-6", momentumKicker.color]}>{momentumKicker.label}</span>
+		<span class:list={["lede-kicker mr-6", momentumKicker.color]}>{momentumKicker.label}</span>
 		<span class="nyt-section-label text-foreground/50 mr-6">{category}</span>
 		<span class="lede-time-meta inline-flex items-center gap-[var(--grid-gap)] text-muted-foreground">
 			<Clock size={12} />
-			<span class="text-[10px] font-bold uppercase tracking-wider">{getRelativeTimeStr(createdAt)}</span>
+			<span class="lede-meta-label">{getRelativeTimeStr(createdAt)}</span>
 			<span class="mx-2 opacity-30">·</span>
-			<span class="font-black uppercase tracking-widest text-[10px] text-nyt-accent/80">
+			<span class="lede-meta-label lede-edition-label">
 				{getEditionStr(createdAt)}
 			</span>
 		</span>
@@ -65,7 +65,7 @@ const {
 			value={topics?.[0] || category}
 			client:idle
 		/>
-        <button id="zen-mode-toggle" class="flex items-center gap-[var(--grid-gap)] text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors ml-auto">
+        <button id="zen-mode-toggle" class="zen-mode-toggle flex items-center gap-[var(--grid-gap)] text-muted-foreground hover:text-foreground transition-colors ml-auto">
             Zen Mod
         </button>
 	</div>
@@ -124,7 +124,7 @@ const {
 
 	.nyt-section-label {
 		font-family: var(--font-sans);
-		font-size: 0.7rem;
+		font-size: 0.72rem;
 		font-weight: 950;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
@@ -133,4 +133,18 @@ const {
 	.lede-time-meta {
 		font-family: var(--font-sans);
 	}
+
+    .lede-kicker,
+    .lede-meta-label,
+    .zen-mode-toggle {
+        font-family: var(--font-sans);
+        font-size: 0.62rem;
+        font-weight: 950;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+    }
+
+    .lede-edition-label {
+        color: color-mix(in srgb, var(--nyt-accent) 82%, var(--foreground));
+    }
 </style>

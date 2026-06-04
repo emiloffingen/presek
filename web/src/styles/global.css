@@ -118,6 +118,9 @@
     /* 10% Accent: Trust Blue (Primary Brand) */
     --nyt-accent: #1e3a8a; /* Deep Trust Blue */
     --nyt-red: #991b1b; /* Richer Journalist Crimson */
+    --editorial-positive: #047857;
+    --editorial-watch: #92400e;
+    --editorial-premium: #b45309;
 
     /* Luminous Elements (for borders, overlays, glows) */
     --luminous: rgba(255, 255, 255, 0.8); /* White with opacity for light mode */
@@ -217,6 +220,9 @@
     --nyt-gray-600: #cbd5e1; /* Improved contrast for secondary typography */
     --nyt-accent: #60a5fa;
     --nyt-red: #f87171;
+    --editorial-positive: #34d399;
+    --editorial-watch: #f59e0b;
+    --editorial-premium: #fbbf24;
     --link: #60a5fa;
     --link-hover: #93c5fd;
   }

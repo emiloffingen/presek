@@ -483,7 +483,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
                                     <div class="stats-grid-divider"></div>
                                     <div class="stats-grid-item">
                                         <span class="stats-item-label">{lang === 'sr' ? 'Indeks Pluralizma' : 'Индекс на Плурализам'}</span>
-                                        <span class="stats-item-value text-emerald-600 dark:text-emerald-400">{stats.intelligence.pluralism.pluralism_pct}%</span>
+                                        <span class="stats-item-value stats-value-positive">{stats.intelligence.pluralism.pluralism_pct}%</span>
                                     </div>
                                 </>
                             )}
@@ -612,10 +612,10 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 											<div class="flex items-center justify-between gap-4 mb-4">
 												<div class="flex items-center gap-1.5">
 													<span class="relative flex h-2 w-2">
-														<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-														<span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+														<span class="fact-status-ping animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"></span>
+														<span class="fact-status-dot relative inline-flex rounded-full h-2 w-2"></span>
 													</span>
-													<span class="text-[9px] font-black uppercase tracking-widest text-emerald-500 dark:text-emerald-400">
+													<span class="fact-status-label text-[9px] font-black uppercase tracking-widest">
 														{factsConfirmedLabel}
 													</span>
 												</div>
@@ -818,15 +818,15 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
     }
 
     .home-evidence-strip.tone-live .home-evidence-status { border-left-color: var(--nyt-red); }
-    .home-evidence-strip.tone-consensus .home-evidence-status { border-left-color: #059669; }
-    .home-evidence-strip.tone-early .home-evidence-status { border-left-color: #d97706; }
+    .home-evidence-strip.tone-consensus .home-evidence-status { border-left-color: var(--editorial-positive); }
+    .home-evidence-strip.tone-early .home-evidence-status { border-left-color: var(--editorial-watch); }
 
     .home-evidence-status span,
     .home-evidence-item span {
         display: block;
         margin-bottom: 0.28rem;
         font-family: var(--font-sans);
-        font-size: 0.52rem;
+        font-size: 0.56rem;
         font-weight: 950;
         letter-spacing: 0.14em;
         text-transform: uppercase;
@@ -837,8 +837,8 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
     .home-evidence-item p {
         margin: 0;
         font-family: var(--font-nyt-body);
-        font-size: 0.7rem;
-        line-height: 1.28;
+        font-size: 0.74rem;
+        line-height: 1.32;
         color: color-mix(in srgb, var(--foreground) 78%, var(--secondary-foreground));
         overflow-wrap: anywhere;
     }
@@ -847,8 +847,8 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
         display: block;
         margin-bottom: 0.24rem;
         font-family: var(--font-serif);
-        font-size: 0.92rem;
-        line-height: 1.1;
+        font-size: 0.98rem;
+        line-height: 1.12;
         color: var(--foreground);
         overflow: hidden;
         text-overflow: ellipsis;
@@ -921,7 +921,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
     .analysis-foot-label,
     .analysis-source-chip {
         font-family: var(--font-sans);
-        font-size: 0.56rem;
+        font-size: 0.6rem;
         font-weight: 950;
         letter-spacing: 0.11em;
         text-transform: uppercase;
@@ -1235,7 +1235,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
         height: 100%;
         width: 100%;
         border-radius: 9999px;
-        background-color: rgb(52, 211, 153);
+        background-color: color-mix(in srgb, var(--editorial-positive) 72%, white 28%);
         opacity: 0.75;
         animation: premium-radar-ping 2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
     }
@@ -1248,8 +1248,8 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
         height: 0.5rem;
         width: 0.5rem;
         border-radius: 9999px;
-        background-color: rgb(16, 185, 129);
-        box-shadow: 0 0 10px 1px rgb(16, 185, 129);
+        background-color: var(--editorial-positive);
+        box-shadow: 0 0 10px 1px color-mix(in srgb, var(--editorial-positive) 72%, transparent);
     }
 
     @keyframes premium-radar-ping {
@@ -1265,7 +1265,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
     
     .stats-panel-title {
         font-family: var(--font-sans);
-        font-size: 0.6rem;
+        font-size: 0.64rem;
         font-weight: 950;
         text-transform: uppercase;
         letter-spacing: 0.24em;
@@ -1318,7 +1318,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
     
     .stats-item-label {
         font-family: var(--font-sans);
-        font-size: 0.56rem;
+        font-size: 0.6rem;
         font-weight: 850;
         text-transform: uppercase;
         letter-spacing: 0.08em;
@@ -1332,13 +1332,26 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
     
     .stats-item-value {
         font-family: var(--font-sans);
-        font-size: 1.1rem;
+        font-size: 1.18rem;
         font-weight: 900;
         color: var(--foreground);
         display: flex;
         align-items: baseline;
         flex-wrap: wrap;
         gap: 0.25rem;
+    }
+
+    .stats-value-positive,
+    .fact-status-label {
+        color: var(--editorial-positive);
+    }
+
+    .fact-status-ping {
+        background-color: color-mix(in srgb, var(--editorial-positive) 72%, white 28%);
+    }
+
+    .fact-status-dot {
+        background-color: var(--editorial-positive);
     }
     
     .stats-item-unit {

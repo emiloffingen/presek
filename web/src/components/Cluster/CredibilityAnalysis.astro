@@ -131,7 +131,7 @@ const signalSummary = pluralismLabel && objectivityLabel
 			<div class="factcheck-grid-v2">
 				<div class="factcheck-col agreements">
 					<header class="col-header">
-						<ShieldCheck size={15} className="text-emerald-600" />
+						<ShieldCheck size={15} className="fact-icon-positive" />
 						<h3>{t('cluster.factcheck.confirmed')}</h3>
 					</header>
 					<ul class="fact-list">
@@ -156,10 +156,10 @@ const signalSummary = pluralismLabel && objectivityLabel
 				{verificationReport.missing_info && verificationReport.missing_info.length > 0 && (
 					<div class="factcheck-col missing-info mt-3 col-span-full border-t border-border pt-3">
 						<header class="col-header">
-							<Search size={15} className="text-amber-500" />
+							<Search size={15} className="fact-icon-watch" />
 							<h3>{t('cluster.factcheck.context')}</h3>
 						</header>
-						<p class="text-[10px] text-muted-foreground mb-2 font-sans uppercase font-bold tracking-wider">{t('cluster.factcheck.omission')}</p>
+						<p class="fact-omission-label">{t('cluster.factcheck.omission')}</p>
 						<ul class="fact-list">
 							{verificationReport.missing_info.map((item: string) => (
 								<li class="fact-item amber" set:html={renderSynthesisHtml(item)}></li>
@@ -217,7 +217,7 @@ const signalSummary = pluralismLabel && objectivityLabel
 
                 <!-- Perspectives Cards -->
                 <div class="perspectives-list-card">
-                    <h4 class="text-[10px] font-black uppercase tracking-widest mb-4 text-muted-foreground/60">{t('cluster.factcheck.diversity')}</h4>
+                    <h4 class="perspectives-label">{t('cluster.factcheck.diversity')}</h4>
                     <div class="perspective-grid-v2">
                         {displayPerspectives.map((p: any) => (
                             <div class="editorial-angle-card">
@@ -241,7 +241,7 @@ const signalSummary = pluralismLabel && objectivityLabel
 
 	.section-label {
 		font-family: var(--font-sans);
-		font-size: 0.75rem;
+		font-size: 0.78rem;
 		font-weight: 950;
 		letter-spacing: 0.15em;
 		color: var(--foreground);
@@ -282,7 +282,7 @@ const signalSummary = pluralismLabel && objectivityLabel
 
 	.col-header h3 {
 		font-family: var(--font-sans);
-		font-size: 0.65rem;
+		font-size: 0.68rem;
 		font-weight: 950;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
@@ -300,8 +300,8 @@ const signalSummary = pluralismLabel && objectivityLabel
 
 	.fact-item {
 		font-family: var(--font-nyt-body);
-		font-size: 0.9rem;
-		line-height: 1.4;
+		font-size: 0.94rem;
+		line-height: 1.44;
 		color: var(--secondary-foreground);
 		position: relative;
 		padding-left: 1rem;
@@ -318,7 +318,7 @@ const signalSummary = pluralismLabel && objectivityLabel
 	}
 
 	.fact-item.green::before {
-		background: #10b981;
+		background: var(--editorial-positive);
 	}
 
 	.fact-item.red::before {
@@ -326,8 +326,34 @@ const signalSummary = pluralismLabel && objectivityLabel
 	}
 
 	.fact-item.amber::before {
-		background: #f59e0b;
+		background: var(--editorial-watch);
 	}
+
+    .fact-icon-positive {
+        color: var(--editorial-positive);
+    }
+
+    .fact-icon-watch {
+        color: var(--editorial-watch);
+    }
+
+    .fact-omission-label,
+    .perspectives-label {
+        font-family: var(--font-sans);
+        font-size: 0.62rem;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: color-mix(in srgb, var(--foreground) 62%, var(--muted-foreground));
+    }
+
+    .fact-omission-label {
+        margin: 0 0 0.5rem;
+    }
+
+    .perspectives-label {
+        margin: 0 0 1rem;
+    }
 
 	.perspectives-area {
 		margin-top: 1.5rem;
@@ -363,7 +389,7 @@ const signalSummary = pluralismLabel && objectivityLabel
 
 	.angle-title {
 		font-family: var(--font-sans);
-		font-size: 0.65rem;
+		font-size: 0.68rem;
 		font-weight: 950;
 		text-transform: uppercase;
 		margin-bottom: 0.45rem;
@@ -372,8 +398,8 @@ const signalSummary = pluralismLabel && objectivityLabel
 
 	.angle-content {
 		font-family: var(--font-sans);
-		font-size: 0.86rem;
-		line-height: 1.35;
+		font-size: 0.9rem;
+		line-height: 1.4;
 		color: var(--secondary-foreground);
 	}
 
@@ -412,7 +438,7 @@ const signalSummary = pluralismLabel && objectivityLabel
 
     .signal-label {
         font-family: var(--font-sans);
-        font-size: 0.65rem;
+        font-size: 0.68rem;
         font-weight: 950;
         text-transform: uppercase;
         color: var(--nyt-accent);
@@ -422,8 +448,8 @@ const signalSummary = pluralismLabel && objectivityLabel
 
     .signal-summary {
         font-family: var(--font-sans);
-        font-size: 0.86rem;
-        line-height: 1.4;
+        font-size: 0.9rem;
+        line-height: 1.44;
         color: var(--secondary-foreground);
         margin: 0;
     }
@@ -478,7 +504,7 @@ const signalSummary = pluralismLabel && objectivityLabel
     }
 
     .signal-bar-fill.pluralism {
-        background: linear-gradient(90deg, #3b82f6, #10b981);
+        background: linear-gradient(90deg, var(--nyt-accent), var(--editorial-positive));
     }
 
     .signal-bar-fill.objectivity {
@@ -488,7 +514,7 @@ const signalSummary = pluralismLabel && objectivityLabel
     .signal-metric p {
         margin: 0;
         font-family: var(--font-sans);
-        font-size: 0.72rem;
+        font-size: 0.76rem;
         line-height: 1.35;
         color: var(--muted-foreground);
     }

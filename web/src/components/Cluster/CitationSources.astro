@@ -9,7 +9,7 @@ const { citationSources } = Astro.props;
 ---
 
 <footer class="narrative-citations mt-12 p-8 bg-secondary/10 border border-border/40 rounded-lg">
-	<h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-6">REFERENTNI izvori</h4>
+	<h4 class="citation-heading">REFERENTNI izvori</h4>
 	<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-[var(--grid-gap)]">
 		{citationSources.map((art: any) => (
 			<div class="citation-card group">
@@ -33,7 +33,7 @@ const { citationSources } = Astro.props;
 	}
 	.citation-idx {
 		font-family: var(--font-sans);
-		font-size: 0.65rem;
+		font-size: 0.68rem;
 		font-weight: 900;
 		color: var(--nyt-accent);
 		margin-top: 0.2rem;
@@ -44,7 +44,7 @@ const { citationSources } = Astro.props;
 	}
 	.citation-source {
 		font-family: var(--font-sans);
-		font-size: 0.6rem;
+		font-size: 0.62rem;
 		font-weight: 950;
 		text-transform: uppercase;
 		color: var(--muted-foreground);
@@ -53,7 +53,7 @@ const { citationSources } = Astro.props;
 	}
 	.citation-link {
 		font-family: var(--font-serif);
-		font-size: 0.95rem;
+		font-size: 0.98rem;
 		font-weight: 700;
 		line-height: 1.35;
 		color: var(--foreground);
@@ -61,6 +61,16 @@ const { citationSources } = Astro.props;
 		display: block;
 		text-wrap: pretty;
 	}
+
+    .citation-heading {
+        margin: 0 0 1.5rem;
+        font-family: var(--font-sans);
+        font-size: 0.62rem;
+        font-weight: 950;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--muted-foreground);
+    }
 	.citation-link:hover {
 		color: var(--nyt-accent);
 		text-decoration: underline;

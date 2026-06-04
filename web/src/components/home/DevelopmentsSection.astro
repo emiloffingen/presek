@@ -104,17 +104,17 @@ function getBentoSpan(cluster: NewsCluster) {
 
     /* ── Tone Variants ──────────────────────────────── */
     .feed-tone-global {
-        background: color-mix(in srgb, #0f766e 3%, transparent);
-        border-left: 4px solid #0f766e;
-        border-top: 1px solid color-mix(in srgb, #0f766e 10%, transparent);
-        border-bottom: 1px solid color-mix(in srgb, #0f766e 10%, transparent);
+        background: color-mix(in srgb, var(--editorial-positive) 3%, transparent);
+        border-left: 4px solid var(--editorial-positive);
+        border-top: 1px solid color-mix(in srgb, var(--editorial-positive) 10%, transparent);
+        border-bottom: 1px solid color-mix(in srgb, var(--editorial-positive) 10%, transparent);
     }
 
     .feed-tone-developing {
-        background: color-mix(in srgb, #9a3412 3%, transparent);
-        border-left: 4px solid #9a3412;
-        border-top: 1px solid color-mix(in srgb, #9a3412 10%, transparent);
-        border-bottom: 1px solid color-mix(in srgb, #9a3412 10%, transparent);
+        background: color-mix(in srgb, var(--editorial-watch) 3%, transparent);
+        border-left: 4px solid var(--editorial-watch);
+        border-top: 1px solid color-mix(in srgb, var(--editorial-watch) 10%, transparent);
+        border-bottom: 1px solid color-mix(in srgb, var(--editorial-watch) 10%, transparent);
     }
 
     .feed-tone-wire {
@@ -127,7 +127,7 @@ function getBentoSpan(cluster: NewsCluster) {
     .section-kicker {
         margin: 0 0 0.15rem;
         font-family: var(--font-sans);
-        font-size: 0.6rem;
+        font-size: 0.64rem;
         font-weight: 950;
         letter-spacing: 0.12em;
         text-transform: uppercase;
@@ -136,7 +136,7 @@ function getBentoSpan(cluster: NewsCluster) {
 
     .feed-section .section-title {
         font-family: var(--font-serif);
-        font-size: clamp(1.2rem, 1rem + 0.6vw, 1.8rem);
+        font-size: clamp(1.35rem, 1.08rem + 0.75vw, 1.9rem);
         font-weight: 900;
         font-style: italic;
         line-height: 1.05;
@@ -146,7 +146,7 @@ function getBentoSpan(cluster: NewsCluster) {
     .feed-section .section-note {
         max-width: 42rem;
         font-family: var(--font-nyt-body);
-        font-size: 0.85rem;
+        font-size: 0.9rem;
         font-weight: 400;
         letter-spacing: 0.01em;
         text-transform: none;
@@ -154,12 +154,12 @@ function getBentoSpan(cluster: NewsCluster) {
         color: color-mix(in srgb, var(--foreground) 66%, var(--muted-foreground));
     }
 
-    .feed-tone-global .section-kicker { color: #0f766e; }
+    .feed-tone-global .section-kicker { color: var(--editorial-positive); }
     .feed-tone-wire .section-kicker { color: var(--nyt-red); }
-    .feed-tone-developing .section-kicker { color: #9a3412; }
+    .feed-tone-developing .section-kicker { color: var(--editorial-watch); }
 
-    .feed-tone-global .editorial-ornament { color: #0f766e; opacity: 0.6; }
-    .feed-tone-developing .editorial-ornament { color: #9a3412; opacity: 0.6; }
+    .feed-tone-global .editorial-ornament { color: var(--editorial-positive); opacity: 0.6; }
+    .feed-tone-developing .editorial-ornament { color: var(--editorial-watch); opacity: 0.6; }
     .feed-tone-wire .editorial-ornament { color: var(--nyt-red); opacity: 0.6; }
 
     /* ── Card Entrance Animations ───────────────────── */
@@ -199,11 +199,11 @@ function getBentoSpan(cluster: NewsCluster) {
         }
 
         .feed-section .section-title {
-            font-size: 1.25rem;
+            font-size: 1.32rem;
         }
 
         .feed-section .section-note {
-            font-size: 0.8rem;
+            font-size: 0.84rem;
             line-height: 1.4;
         }
     }
