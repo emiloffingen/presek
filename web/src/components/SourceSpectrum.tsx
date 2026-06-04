@@ -98,7 +98,7 @@ export const SourceSpectrum: React.FC<SourceSpectrumProps> = ({ articles, lang =
             <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center gap-[var(--grid-gap)]">
                 <div className="w-2.5 h-2.5 rounded-[2px] transition-transform group-hover:scale-110" style={{ backgroundColor: s.color }}></div>
-                <span className="text-[11px] font-black uppercase tracking-tighter text-foreground/90">{s.displayName}</span>
+                <span className="text-[11px] font-black uppercase tracking-[0.04em] text-foreground/90">{s.displayName}</span>
               </div>
               <span className="text-[11px] font-black tabular-nums text-foreground/70">{Math.round(s.percentage)}%</span>
             </div>

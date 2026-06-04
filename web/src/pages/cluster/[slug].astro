@@ -609,7 +609,7 @@ const articleSchema = cluster ? {
 								{new Date(cluster.articles?.[0].created_at || '').toLocaleDateString(lang === 'sr' ? 'sr-RS' : 'mk-MK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
 							</span>
 						</div>
-						<h1 class="headline is-visible font-serif text-5xl md:text-7xl font-black leading-[1.05] tracking-tight text-foreground mb-6">
+						<h1 class:list={["headline is-visible font-serif text-5xl md:text-7xl font-black leading-[1.05] tracking-tight text-foreground mb-6", { "headline-cyrillic": headlineIsCyrillic }]}>
 							{displayHeadline}
 						</h1>
 						<div class="header-meta cluster-meta-row flex flex-wrap items-center gap-x-8 gap-y-3 text-muted-foreground">
@@ -789,7 +789,7 @@ const articleSchema = cluster ? {
 										<summary class="flex items-center justify-between p-6 md:p-8 cursor-pointer hover:bg-secondary/10 transition-colors list-none">
 											<div class="flex items-center gap-[var(--grid-gap)]">
 												<div class="w-2 h-8 bg-nyt-accent"></div>
-												<h4 class="text-[11px] font-black uppercase tracking-[0.2em] text-foreground">
+												<h4 class="text-[11px] font-black uppercase tracking-[0.08em] text-foreground">
 													{lang === 'sr' ? 'Pun izvorni zapis' : 'Целосен изворен запис'} ({sourceDocArticle.source})
 												</h4>
 											</div>
@@ -804,7 +804,7 @@ const articleSchema = cluster ? {
 												</div>
 											</div>
 											<div class="mt-8 flex justify-end">
-												<a href={sourceDocArticle.link} target="_blank" rel="noopener noreferrer" class="text-[11px] font-black uppercase tracking-[0.2em] text-nyt-accent hover:underline flex items-center gap-[var(--grid-gap)] bg-background px-6 py-3 rounded-full border border-nyt-accent/20 shadow-sm transition-all hover:shadow-md">
+												<a href={sourceDocArticle.link} target="_blank" rel="noopener noreferrer" class="text-[11px] font-black uppercase tracking-[0.08em] text-nyt-accent hover:underline flex items-center gap-[var(--grid-gap)] bg-background px-6 py-3 rounded-full border border-nyt-accent/20 shadow-sm transition-all hover:shadow-md">
 													{lang === 'sr' ? 'Pročitaj ceo zapis na' : 'Прочитај го целиот запис на'} {sourceDocArticle.source} <ExternalLink size={14} />
 												</a>
 											</div>
@@ -997,13 +997,18 @@ const articleSchema = cluster ? {
     }
 
 	.editorial-header-v2 .headline {
-		letter-spacing: -0.04em;
+		letter-spacing: -0.018em;
         text-wrap: balance;
 	}
 
+    .editorial-header-v2 .headline.headline-cyrillic {
+        letter-spacing: 0.005em;
+        line-height: 1.12;
+    }
+
     .edition-badge {
         border-radius: var(--radius-sm, 0px);
-        letter-spacing: 0.14em;
+        letter-spacing: 0.08em;
     }
 
     .header-date,
@@ -1042,25 +1047,25 @@ const articleSchema = cluster ? {
     .cluster-meta-pill,
     .cluster-meta-label {
         font-size: 0.62rem;
-        letter-spacing: 0.16em;
+        letter-spacing: 0.08em;
     }
 
     .cluster-meta-row {
         font-size: 0.66rem;
         font-weight: 950;
-        letter-spacing: 0.12em;
+        letter-spacing: 0.06em;
     }
 
     .cluster-summary-kicker {
         font-size: 0.66rem;
-        letter-spacing: 0.18em;
+        letter-spacing: 0.08em;
     }
 
     .cluster-summary-label,
     .cluster-related-meta,
     .cluster-related-time {
         font-size: 0.62rem;
-        letter-spacing: 0.12em;
+        letter-spacing: 0.07em;
     }
 
     .cluster-brief-badge {
@@ -1071,7 +1076,7 @@ const articleSchema = cluster ? {
 
     .cluster-related-evidence {
         font-size: 0.68rem;
-        letter-spacing: 0.1em;
+        letter-spacing: 0.06em;
     }
 
     .cluster-status-text.tone-verified { color: var(--editorial-positive); }
@@ -1214,7 +1219,7 @@ const articleSchema = cluster ? {
         font-family: var(--font-sans);
         font-size: 0.56rem;
         font-weight: 950;
-        letter-spacing: 0.15em;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
         color: var(--muted-foreground);
     }
@@ -1251,7 +1256,7 @@ const articleSchema = cluster ? {
         font-family: var(--font-sans);
         font-size: 0.66rem;
         font-weight: 950;
-        letter-spacing: 0.1em;
+        letter-spacing: 0.06em;
         text-transform: uppercase;
         text-decoration: none;
         cursor: pointer;
@@ -1419,7 +1424,7 @@ const articleSchema = cluster ? {
 		font-family: var(--font-sans);
 		font-size: 0.85rem;
 		font-weight: 950;
-		letter-spacing: 0.2em;
+		letter-spacing: 0.1em;
 		text-transform: uppercase;
 	}
 
@@ -1519,7 +1524,7 @@ const articleSchema = cluster ? {
 		font-size: 0.68rem;
 		font-weight: 950;
 		text-transform: uppercase;
-		letter-spacing: 0.15em;
+		letter-spacing: 0.08em;
 		padding-bottom: 0.75rem;
 		border-bottom: 1px solid var(--border);
 		margin-bottom: 1.5rem;
@@ -1566,7 +1571,7 @@ const articleSchema = cluster ? {
         font-size: 0.66rem;
         font-weight: 950;
         text-transform: uppercase;
-        letter-spacing: 0.12em;
+        letter-spacing: 0.07em;
         color: var(--muted-foreground);
     }
 
@@ -1605,7 +1610,7 @@ const articleSchema = cluster ? {
         font-family: var(--font-sans);
         font-size: 0.68rem;
         font-weight: 950;
-        letter-spacing: 0.16em;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
         color: var(--muted-foreground);
         transition: all 0.2s ease;
