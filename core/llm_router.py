@@ -88,6 +88,6 @@ class SmartModelRouter:
             return "mistral_small"
 
         # Low Complexity: 1-2 articles, straightforward routine news
-        if local_available and prefer_local_synthesis:
+        if local_available:
             return "local"
         return "enhanced_fallback"
