@@ -14,6 +14,7 @@ interface Props {
 	canonicalUrl: string;
 	topics: string[];
 	getRelativeTimeStr: (dateStr: string) => string;
+	lang?: string;
 }
 
 const {
@@ -25,7 +26,8 @@ const {
 	syntheticStandfirst,
 	canonicalUrl,
 	topics,
-	getRelativeTimeStr
+	getRelativeTimeStr,
+	lang = 'sr'
 } = Astro.props;
 ---
 
@@ -63,6 +65,7 @@ const {
 		<PreferenceToggle
 			kind="topic"
 			value={topics?.[0] || category}
+			lang={lang}
 			client:idle
 		/>
         <button id="zen-mode-toggle" class="zen-mode-toggle flex items-center gap-[var(--grid-gap)] text-muted-foreground hover:text-foreground transition-colors ml-auto">

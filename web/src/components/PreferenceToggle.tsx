@@ -10,12 +10,15 @@ import {
 export default function PreferenceToggle({
   kind,
   value,
+  label,
+  lang = 'sr',
   onChanged,
   analyticsSurface,
 }: {
   kind: 'topic' | 'source';
   value: string;
   label?: string;
+  lang?: string;
   onChanged?: (isFollowing: boolean) => void;
   analyticsSurface?: string;
 }) {
@@ -44,7 +47,9 @@ export default function PreferenceToggle({
       window.clearTimeout(feedbackTimerRef.current);
     }
 
-    setFeedback(nextFollowing ? 'Zacuvano' : 'Otstraneto');
+    setFeedback(nextFollowing
+      ? (lang === 'mk' ? 'Зачувано' : 'Sačuvano')
+      : (lang === 'mk' ? 'Отстрането' : 'Uklonjeno'));
     if (typeof window !== 'undefined') {
       feedbackTimerRef.current = window.setTimeout(() => setFeedback(''), 1800);
     }
@@ -61,12 +66,22 @@ export default function PreferenceToggle({
 
   const statusId = `pref-status-${kind}-${String(value || '').replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'value'}`;
 
-  const shortAction = isFollowing ? 'Se sledi' : kind === 'topic' ? 'Sledi tema' : 'Sledi izvor';
-  const clitic = kind === 'topic' ? 'Ja' : 'Go';
+  const isMK = lang === 'mk';
+  const displayValue = label || value;
+  const shortAction = isFollowing
+    ? (isMK ? 'Се следи' : 'Se prati')
+    : kind === 'topic'
+      ? (isMK ? 'Следи тема' : 'Prati temu')
+      : (isMK ? 'Следи извор' : 'Prati izvor');
+  const clitic = isMK
+    ? (kind === 'topic' ? 'Ја' : 'Го')
+    : (kind === 'topic' ? 'Je' : 'Ga');
+  const followVerb = isMK ? 'следите' : 'pratite';
+  const negativePrefix = isMK ? 'Не' : 'Ne';
   const buttonLabel = feedback || shortAction;
   const liveMessage = feedback
-    ? `${feedback}: ${value}`
-    : `${isFollowing ? clitic + ' sledite' : 'Ne ' + clitic.toLowerCase() + ' sledite'} ${value}`;
+    ? `${feedback}: ${displayValue}`
+    : `${isFollowing ? `${clitic} ${followVerb}` : `${negativePrefix} ${clitic.toLowerCase()} ${followVerb}`} ${displayValue}`;
 
   return (
     <>

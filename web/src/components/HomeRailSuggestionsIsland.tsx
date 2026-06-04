@@ -88,6 +88,7 @@ export default function HomeRailSuggestionsIsland({ lang = 'sr' }: { lang?: stri
               kind="topic"
               value={item.value}
               label={`${t.topic}: ${item.value}`}
+              lang={lang}
               analyticsSurface="home_rail"
             />
           </div>
@@ -104,6 +105,7 @@ export default function HomeRailSuggestionsIsland({ lang = 'sr' }: { lang?: stri
               kind="source"
               value={item.value}
               label={`${t.source}: ${item.value}`}
+              lang={lang}
               analyticsSurface="home_rail"
             />
           </div>

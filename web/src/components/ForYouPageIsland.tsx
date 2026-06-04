@@ -320,10 +320,10 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
             </div>
             <div className="followed-stack">
               {followedTopics.slice(0, 8).map((topic: string) => (
-                <PreferenceToggle key={`topic:${topic}`} kind="topic" value={topic} analyticsSurface="for_you_page" />
+                <PreferenceToggle key={`topic:${topic}`} kind="topic" value={topic} lang={lang} analyticsSurface="for_you_page" />
               ))}
               {followedSources.slice(0, 6).map((source: string) => (
-                <PreferenceToggle key={`source:${source}`} kind="source" value={source} analyticsSurface="for_you_page" />
+                <PreferenceToggle key={`source:${source}`} kind="source" value={source} lang={lang} analyticsSurface="for_you_page" />
               ))}
             </div>
           </section>
@@ -355,6 +355,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
                     <PreferenceToggle
                       kind={item.kind as any}
                       value={item.value}
+                      lang={lang}
                       analyticsSurface="for_you_page_discover"
                     />
                   </div>

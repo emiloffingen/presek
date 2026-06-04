@@ -376,21 +376,21 @@ const foldedClusterText = [
 ].join(' ').toLowerCase();
 const isWeatherStory = /vreme|vrijeme|време|сончев|дожд|грмеж|температур|prognoz|прогноз|oblac|облач|sunčan|сунчан|kiš|киш/.test(foldedClusterText);
 const isSportsStory = /sport|спорт|utakmic|натпревар|liga|лига|fudbal|фудбал|košark|кошарк|tenis|тенис/.test(foldedClusterText);
-const storyKindLabel = (() => {
-    if (isWeatherStory) return lang === 'sr' ? 'VREMENSKA PROGNOZA' : 'ВРЕМЕНСКА ПРОГНОЗА';
-    if (isSportsStory) return lang === 'sr' ? 'SPORTSKI SIGNAL' : 'СПОРТСКИ СИГНАЛ';
-    if (primaryCategory) return cleanAndDecode(primaryCategory).toUpperCase();
-    return lang === 'sr' ? 'TEMATSKI SIGNAL' : 'ТЕМАТСКИ СИГНАЛ';
-})();
 const topicLabelMap: Record<string, { sr: string; mk: string }> = {
+    ekonomija: { sr: 'Ekonomija', mk: 'Економија' },
+    kultura: { sr: 'Kultura', mk: 'Култура' },
+    makedonija: { sr: 'Makedonija', mk: 'Македонија' },
+    politika: { sr: 'Politika', mk: 'Политика' },
+    region: { sr: 'Region', mk: 'Регион' },
+    srbija: { sr: 'Srbija', mk: 'Србија' },
+    sport: { sr: 'Sport', mk: 'Спорт' },
+    svet: { sr: 'Svet', mk: 'Свет' },
+    tehnologija: { sr: 'Tehnologija', mk: 'Технологија' },
     vesti: { sr: 'Vesti', mk: 'Вести' },
+    zabava: { sr: 'Zabava', mk: 'Забава' },
+    zdravje: { sr: 'Zdravlje', mk: 'Здравје' },
     zivot: { sr: 'Život', mk: 'Живот' },
     život: { sr: 'Život', mk: 'Живот' },
-    politika: { sr: 'Politika', mk: 'Политика' },
-    ekonomija: { sr: 'Ekonomija', mk: 'Економија' },
-    sport: { sr: 'Sport', mk: 'Спорт' },
-    tehnologija: { sr: 'Tehnologija', mk: 'Технологија' },
-    kultura: { sr: 'Kultura', mk: 'Култура' },
 };
 function cleanTopicLabel(value?: string) {
     const clean = cleanAndDecode(value || '').trim();
@@ -399,6 +399,12 @@ function cleanTopicLabel(value?: string) {
     if (mapped) return lang === 'sr' ? mapped.sr : mapped.mk;
     return clean;
 }
+const storyKindLabel = (() => {
+    if (isWeatherStory) return lang === 'sr' ? 'VREMENSKA PROGNOZA' : 'ВРЕМЕНСКА ПРОГНОЗА';
+    if (isSportsStory) return lang === 'sr' ? 'SPORTSKI SIGNAL' : 'СПОРТСКИ СИГНАЛ';
+    if (primaryCategory) return cleanTopicLabel(primaryCategory).toUpperCase();
+    return lang === 'sr' ? 'TEMATSKI SIGNAL' : 'ТЕМАТСКИ СИГНАЛ';
+})();
 const displayTopicSignals = Array.from(new Set([
     ...(isWeatherStory ? [lang === 'sr' ? 'Vreme' : 'Време'] : []),
     ...primaryTopics
@@ -559,8 +565,8 @@ const articleSchema = cluster ? {
 
 		<div class="editorial-container max-w-[1440px] mx-auto px-2 sm:px-4 md:px-10">
 		<Breadcrumbs items={[
-			{ label: cluster?.articles?.[0]?.category || 'vesti', href: cluster?.articles?.[0]?.category ? `/mk/?category=${cluster.articles[0].category}` : '/mk' },
-			{ label: adjacentTopic || 'Detali' }
+			{ label: cleanTopicLabel(cluster?.articles?.[0]?.category) || 'Вести', href: cluster?.articles?.[0]?.category ? `/mk/?category=${cluster.articles[0].category}` : '/mk' },
+			{ label: cleanTopicLabel(adjacentTopic) || 'Детали' }
 		]} />
 
 		{error ? (
@@ -588,7 +594,7 @@ const articleSchema = cluster ? {
 						<div class="header-meta cluster-meta-row flex flex-wrap items-center gap-x-8 gap-y-3 text-muted-foreground">
 							<div class="flex items-center gap-[var(--grid-gap)]">
 								<div class="w-3 h-3 rounded-full bg-nyt-accent"></div>
-								<span class="text-foreground">{cluster.articles?.[0].category || (lang === 'sr' ? 'GENERALNO' : 'ГЕНЕРАЛНО')}</span>
+								<span class="text-foreground">{cleanTopicLabel(cluster.articles?.[0].category) || (lang === 'sr' ? 'GENERALNO' : 'ГЕНЕРАЛНО')}</span>
 							</div>
                             <span class="border-l border-border pl-8">{uniqueSourcesCount} {newsroomCountLabel(uniqueSourcesCount)}</span>
                             <span class:list={["hidden md:inline border-l border-border pl-8 cluster-status-text", `tone-${clusterStatus.tone}`]}>{storyKindLabel}</span>
@@ -602,11 +608,6 @@ const articleSchema = cluster ? {
                     <div class="cluster-evidence-status">
                         <span>{clusterStatus.label}</span>
                         <p>{clusterStatus.description}</p>
-                        <small class="cluster-grouping-note">
-                            {lang === 'sr'
-                                ? 'Grupisanje je zasnovano na zajedničkoj temi, akterima i bliskom vremenu objave.'
-                                : 'Групирањето е засновано на заедничка тема, актери и блиско време на објава.'}
-                        </small>
                     </div>
 					<div class="cluster-evidence-grid">
 						{evidenceItems.map((item) => (
@@ -641,7 +642,7 @@ const articleSchema = cluster ? {
 							dominantColor={cluster.dominant_color || undefined}
 							displayHeadline={displayHeadline}
 							id={id || ''}
-							category={cluster.articles?.[0].category || ''}
+							category={cleanTopicLabel(cluster.articles?.[0].category)}
 							sourcePreview={sourcePreview}
 							articlesCount={cluster.articles?.length || 0}
 						/>
@@ -887,7 +888,7 @@ const articleSchema = cluster ? {
                             <div class="sidebar-module">
                                 <h4 class="sidebar-label">{t('cluster.source_spectrum')}</h4>
                                 <div class="mt-6">
-                                    <SourceSpectrum articles={cluster.articles.map((a: Article) => ({ source: a.source })) as any} client:visible />
+                                    <SourceSpectrum articles={cluster.articles.map((a: Article) => ({ source: a.source })) as any} lang={lang} client:visible />
                                 </div>
                             </div>
 
@@ -1129,18 +1130,6 @@ const articleSchema = cluster ? {
         line-height: 1.45;
         color: var(--secondary-foreground);
         margin: 0;
-    }
-
-    .cluster-grouping-note {
-        display: block;
-        margin-top: 0.8rem;
-        font-family: var(--font-sans);
-        font-size: 0.62rem;
-        font-weight: 800;
-        line-height: 1.45;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--muted-foreground);
     }
 
     .synthesis-provenance-note {

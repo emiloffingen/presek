@@ -14,6 +14,30 @@ type Suggestion = {
   reason: string;
 };
 
+const TOPIC_LABELS: Record<string, { sr: string; mk: string }> = {
+  ekonomija: { sr: 'Ekonomija', mk: 'Економија' },
+  kultura: { sr: 'Kultura', mk: 'Култура' },
+  makedonija: { sr: 'Makedonija', mk: 'Македонија' },
+  politika: { sr: 'Politika', mk: 'Политика' },
+  region: { sr: 'Region', mk: 'Регион' },
+  srbija: { sr: 'Srbija', mk: 'Србија' },
+  sport: { sr: 'Sport', mk: 'Спорт' },
+  svet: { sr: 'Svet', mk: 'Свет' },
+  tehnologija: { sr: 'Tehnologija', mk: 'Технологија' },
+  vesti: { sr: 'Vesti', mk: 'Вести' },
+  zabava: { sr: 'Zabava', mk: 'Забава' },
+  zdravje: { sr: 'Zdravlje', mk: 'Здравје' },
+  zivot: { sr: 'Život', mk: 'Живот' },
+  život: { sr: 'Život', mk: 'Живот' },
+};
+
+function displayTopicLabel(value: string, lang: string) {
+  const clean = String(value || '').trim();
+  if (!clean) return '';
+  const mapped = TOPIC_LABELS[clean.toLowerCase()];
+  return mapped ? (lang === 'mk' ? mapped.mk : mapped.sr) : clean;
+}
+
 export default function ClusterFollowSuggestionsIsland({
   topic = '',
   source = '',
@@ -104,21 +128,25 @@ export default function ClusterFollowSuggestionsIsland({
       </div>
 
       <div className="cluster-follow-suggestions-grid">
-        {suggestions.topics.map((item) => (
-          <div key={`topic:${item.value}`} className="cluster-follow-suggestion-card">
-            <div>
-              <p className="cluster-follow-suggestion-kicker">{isMK ? 'Предлог тема' : 'Predlog tema'}</p>
-              <h4>{item.value}</h4>
-              <p className="cluster-follow-suggestion-reason">{item.reason}</p>
+        {suggestions.topics.map((item) => {
+          const displayValue = displayTopicLabel(item.value, lang);
+          return (
+            <div key={`topic:${item.value}`} className="cluster-follow-suggestion-card">
+              <div>
+                <p className="cluster-follow-suggestion-kicker">{isMK ? 'Предлог тема' : 'Predlog tema'}</p>
+                <h4>{displayValue}</h4>
+                <p className="cluster-follow-suggestion-reason">{item.reason}</p>
+              </div>
+              <PreferenceToggle
+                kind="topic"
+                value={item.value}
+                label={isMK ? `тема: ${displayValue}` : `tema: ${displayValue}`}
+                lang={lang}
+                analyticsSurface="cluster"
+              />
             </div>
-            <PreferenceToggle
-              kind="topic"
-              value={item.value}
-              label={isMK ? `тема: ${item.value}` : `tema: ${item.value}`}
-              analyticsSurface="cluster"
-            />
-          </div>
-        ))}
+          );
+        })}
 
         {suggestions.sources.map((item) => (
           <div key={`source:${item.value}`} className="cluster-follow-suggestion-card">
@@ -131,6 +159,7 @@ export default function ClusterFollowSuggestionsIsland({
               kind="source"
               value={item.value}
               label={isMK ? `извор: ${item.value}` : `izvor: ${item.value}`}
+              lang={lang}
               analyticsSurface="cluster"
             />
           </div>

@@ -290,6 +290,7 @@ function OnboardingIslandCompact({ profile, recommendations, lang = 'sr' }: any)
             <PreferenceToggle
               kind="topic"
               value={item.value}
+              lang={lang}
               analyticsSurface="for_you"
             />
           </div>
@@ -304,6 +305,7 @@ function OnboardingIslandCompact({ profile, recommendations, lang = 'sr' }: any)
             <PreferenceToggle
               kind="source"
               value={item.value}
+              lang={lang}
               analyticsSurface="for_you"
             />
           </div>

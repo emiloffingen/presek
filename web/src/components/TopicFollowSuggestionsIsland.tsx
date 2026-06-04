@@ -112,6 +112,7 @@ export default function TopicFollowSuggestionsIsland({
               kind="topic"
               value={item.topic}
               label={isMK ? `тема: ${item.topic}` : `tema: ${item.topic}`}
+              lang={lang}
               analyticsSurface="topic"
             />
           </div>
@@ -128,6 +129,7 @@ export default function TopicFollowSuggestionsIsland({
               kind="source"
               value={item.source}
               label={isMK ? `извор: ${item.source}` : `izvor: ${item.source}`}
+              lang={lang}
               analyticsSurface="topic"
             />
           </div>
