@@ -8,7 +8,7 @@ import utils
 from routes.home import get_home
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_get_home_returns_dict():
     """Test that get_home returns a dictionary."""
     # Mock the database to avoid real calls
@@ -26,7 +26,7 @@ async def test_get_home_returns_dict():
         assert 'excluded_cluster_ids' in result
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_get_home_language_support():
     """Test that get_home supports different languages."""
     with patch.object(utils.redis_client, 'get', return_value=None), \
@@ -40,7 +40,7 @@ async def test_get_home_language_support():
         assert isinstance(result_mk, dict)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_get_home_error_handling():
     """Test that get_home handles database errors gracefully."""
     with patch.object(utils.redis_client, 'get', return_value=None), \

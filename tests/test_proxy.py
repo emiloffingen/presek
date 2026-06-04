@@ -7,7 +7,7 @@ from unittest.mock import patch
 from routes.system import proxy_image
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_proxy_image_fallback():
     """Test that proxy returns fallback when database fails."""
     # Mock database failure
@@ -20,7 +20,7 @@ async def test_proxy_image_fallback():
         assert b'<svg' in result.body if hasattr(result, 'body') else b'<svg' in result.content
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_proxy_image_invalid_url():
     """Test invalid URL handling."""
     result = await proxy_image('invalid-url')
@@ -30,7 +30,7 @@ async def test_proxy_image_invalid_url():
     assert 'image/svg+xml' in result.headers.get('Content-Type', '')
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_proxy_image_ssrf_block():
     """Test SSRF protection."""
     # Mock a response from a non-public IP

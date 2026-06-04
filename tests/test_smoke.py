@@ -5,7 +5,7 @@ import os
 # Base URL for the API
 BASE_URL = os.environ.get("API_BASE_URL", "http://127.0.0.1:5001")
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_api_critical_endpoints():
     """
     Smoke test critical endpoints to ensure they return 200 OK.
@@ -24,7 +24,7 @@ async def test_api_critical_endpoints():
             # 200, 400 (if invalid cluster), 401, or 403 are acceptable signs of service availability.
             assert response.status_code in [200, 400, 401, 403], f"Endpoint {endpoint} failed with {response.status_code}"
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_health_check_responds():
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
         response = await client.get("/api/health")
