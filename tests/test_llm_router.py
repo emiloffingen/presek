@@ -17,7 +17,7 @@ def test_route_cluster_low_complexity():
         assert SmartModelRouter.route_cluster(articles) == "enhanced_fallback"
 
     # With an existing LOCAL_MODEL_PATH, should return local
-    with patch("os.path.exists", return_value=True), patch.dict(os.environ, {"LOCAL_MODEL_PATH": "/path/to/model"}):
+    with patch("os.path.exists", return_value=True), patch.dict(os.environ, {"LOCAL_MODEL_PATH": "/path/to/model", "LOCAL_SYNTHESIS_PREFER_LOCAL": "true"}):
         assert SmartModelRouter.route_cluster(articles) == "local"
 
     # A configured but missing LOCAL_MODEL_PATH should not be treated as available
@@ -51,7 +51,7 @@ def test_route_cluster_medium_complexity_local_model():
         {"title": "Vest 3", "description": "Nesto se dogodilo."}
     ]
     # With an existing LOCAL_MODEL_PATH, should route to local
-    with patch("os.path.exists", return_value=True), patch.dict(os.environ, {"LOCAL_MODEL_PATH": "/path/to/model"}):
+    with patch("os.path.exists", return_value=True), patch.dict(os.environ, {"LOCAL_MODEL_PATH": "/path/to/model", "LOCAL_SYNTHESIS_PREFER_LOCAL": "true"}):
         assert SmartModelRouter.route_cluster(articles) == "local"
 
 
@@ -62,7 +62,7 @@ def test_route_cluster_high_complexity_large_cluster():
     with patch("os.path.exists", return_value=False), patch.dict(os.environ, {}, clear=True):
         assert SmartModelRouter.route_cluster(articles) == "mistral_large"
 
-    with patch("os.path.exists", return_value=True), patch.dict(os.environ, {"LOCAL_MODEL_PATH": "/path/to/model", "LOCAL_SYNTHESIS_HIGH_COMPLEXITY_REMOTE": "false"}):
+    with patch("os.path.exists", return_value=True), patch.dict(os.environ, {"LOCAL_MODEL_PATH": "/path/to/model", "LOCAL_SYNTHESIS_HIGH_COMPLEXITY_REMOTE": "false", "LOCAL_SYNTHESIS_PREFER_LOCAL": "true"}):
         assert SmartModelRouter.route_cluster(articles) == "local"
 
 
@@ -75,7 +75,7 @@ def test_route_cluster_high_complexity_medium_with_weight():
     with patch("os.path.exists", return_value=False), patch.dict(os.environ, {}, clear=True):
         assert SmartModelRouter.route_cluster(articles) == "mistral_large"
 
-    with patch("os.path.exists", return_value=True), patch.dict(os.environ, {"LOCAL_MODEL_PATH": "/path/to/model", "LOCAL_SYNTHESIS_HIGH_COMPLEXITY_REMOTE": "false"}):
+    with patch("os.path.exists", return_value=True), patch.dict(os.environ, {"LOCAL_MODEL_PATH": "/path/to/model", "LOCAL_SYNTHESIS_HIGH_COMPLEXITY_REMOTE": "false", "LOCAL_SYNTHESIS_PREFER_LOCAL": "true"}):
         assert SmartModelRouter.route_cluster(articles) == "local"
 
 
