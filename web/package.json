@@ -55,6 +55,7 @@
     "cypress": "^15.14.2"
   },
   "overrides": {
+    "vite": "^7.3.3",
     "yaml-language-server": "1.22.0",
     "fast-uri": "^3.1.2",
     "file-type": "^21.3.1",
