@@ -1095,7 +1095,7 @@ async def synthesize_nodes(request: Request, payload: NodeSynthesisRequest):
     prompt = f"ENTITETI: {', '.join(entities)}\n\nKONTEKST VESTI:\n{context_text[:6000]}"
 
     try:
-        synthesis_text = analyst.analyze(prompt, system_prompt, max_tokens=768, lang=lang)
+        synthesis_text = analyst.analyze(prompt, system_prompt, max_tokens=768, lang=lang, lock_timeout=15)
     except Exception as e:
         log.error(f"[analyst] Group synthesis failed: {e}")
         synthesis_text = f"Greška prilikom analize lokalnog modela: {e}"

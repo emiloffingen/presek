@@ -646,7 +646,7 @@ class LocalAnalyst:
                 'Izlez: {"answer": "Vladata najavi pomos vo iznos od 10 milioni evra [MTV].", "suggestions": ["Koga ce se isplati pomosta?", "Koj im ispolnuva kriteriumite?", "Kakov e efektot vrz budzetot?"]}'
             )
         prompt = f"PITANJE: {query}\nKONTEKST: {context}" if lang == "sr" else f"PRASANjE: {query}\nKONTEKST: {context}"
-        raw = self.analyze(prompt, system, max_tokens=800, response_schema=ResearchQueryResponse, lang=lang)
+        raw = self.analyze(prompt, system, max_tokens=800, response_schema=ResearchQueryResponse, lang=lang, lock_timeout=15)
 
         fallback = {
             "answer": raw if raw else ("Nema dovoljno informacija." if lang == "sr" else "Nema dovolno informacii."),
