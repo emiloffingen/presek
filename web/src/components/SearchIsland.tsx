@@ -221,7 +221,6 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
   ];
 
   const SEARCH_ACTIONS: SearchAction[] = [
-    { id: 'act-home', label: lang === 'sr' ? 'Početna Stranica' : 'Почетна Страница', icon: Layout, href: lang === 'sr' ? '/' : '/mk', category: 'NAVIGATION', desc: lang === 'sr' ? 'Vrati se na glavnu stranicu sa vestima.' : 'Врати се на главната страница со вести.' },
     { id: 'act-briefing', label: lang === 'sr' ? 'Dnevni Brifing' : 'Дневен Брифинг', icon: Zap, href: lang === 'sr' ? '/briefing' : '/mk/briefing', category: 'NAVIGATION', desc: lang === 'sr' ? 'Pregled najvažnijih vesti u formi brifinga.' : 'Преглед на најважните вести во форма на брифинг.' },
     { id: 'act-foryou', label: lang === 'sr' ? 'Za Vas' : 'За Вас', icon: Compass, href: lang === 'sr' ? '/for-you' : '/mk/for-you', category: 'NAVIGATION', desc: lang === 'sr' ? 'Personalizovan pregled vesti prema vašim interesovanjima.' : 'Персонализиран преглед на вести според вашите интереси.' },
     { id: 'act-pulse', label: lang === 'sr' ? 'Informativni Ritam' : 'Информативен Ритам', icon: Activity, href: lang === 'sr' ? '/pulse' : '/mk/pulse', category: 'NAVIGATION', desc: lang === 'sr' ? 'Pratite trendove i medijski pluralizam.' : 'Следете ги трендовите и медиумскиот плурализам.' },
