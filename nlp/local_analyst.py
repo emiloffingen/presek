@@ -30,9 +30,9 @@ TIER_MAP = {
 
 log = logging.getLogger("presek.analyst")
 
-# Config for Gemma 2 2B on 2-core CPU
+# Config for Gemma 2 2B / Gemma 4 on 8-core CPU (utilizing 6 threads)
 MODEL_PATH = os.environ.get("LOCAL_MODEL_PATH", "models/google_gemma-4-E4B-it-Q8_0.gguf")
-N_THREADS = int(os.environ.get("MODEL_THREADS", "2"))
+N_THREADS = int(os.environ.get("MODEL_THREADS", "6"))
 MODEL_CONTEXT = int(os.environ.get("LOCAL_MODEL_CONTEXT", "4096"))
 MAX_PROMPT_CHARS = int(os.environ.get("LOCAL_MODEL_MAX_PROMPT_CHARS", "9000"))
 
