@@ -195,7 +195,7 @@ async def get_weather(lang: Optional[str] = "sr"):
 
 @router.get("/trending")
 async def get_trending_route(lang: Optional[str] = "sr"):
-    cache_key = f"api:trending:v3:{lang}"
+    cache_key = f"api:trending:v5:{lang}"
     cached = cached_response(cache_key)
     if cached:
         return cached
@@ -219,6 +219,8 @@ async def get_trending_route(lang: Optional[str] = "sr"):
                     cw = "НАТО"
                 elif cw == "Сад":
                     cw = "САД"
+                elif cw == "Вучиц":
+                    cw = "Вучиќ"
                 elif "-" in cw:
                     parts = cw.split("-")
                     cw = "-".join(p.capitalize() for p in parts)

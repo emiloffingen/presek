@@ -4,7 +4,7 @@ import { navigate } from 'astro:transitions/client';
 import {
   Search, X, Zap, ArrowUpRight, LoaderCircle, Newspaper,
   Mic, Clock, TrendingUp, User, Layout,
-  HelpCircle, Archive, Sparkles, ChevronRight,
+  Archive, Sparkles, ChevronRight,
   Globe, ShieldCheck, Activity, BookOpen, ExternalLink,
   History, Compass, SlidersHorizontal
 } from 'lucide-react';
@@ -226,7 +226,6 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
     { id: 'act-foryou', label: lang === 'sr' ? 'Za Vas' : 'За Вас', icon: Compass, href: lang === 'sr' ? '/for-you' : '/mk/for-you', category: 'NAVIGATION', desc: lang === 'sr' ? 'Personalizovan pregled vesti prema vašim interesovanjima.' : 'Персонализиран преглед на вести според вашите интереси.' },
     { id: 'act-pulse', label: lang === 'sr' ? 'Informativni Ritam' : 'Информативен Ритам', icon: Activity, href: lang === 'sr' ? '/pulse' : '/mk/pulse', category: 'NAVIGATION', desc: lang === 'sr' ? 'Pratite trendove i medijski pluralizam.' : 'Следете ги трендовите и медиумскиот плурализам.' },
     { id: 'act-archive', label: lang === 'sr' ? 'Arhiva vesti' : 'Архива на вести', icon: Archive, href: lang === 'sr' ? '/archive' : '/mk/archive', category: 'NAVIGATION', desc: lang === 'sr' ? 'Pretražite sve dosadašnje objave.' : 'Пребарајте ги сите досегашни објави.' },
-    { id: 'act-about', label: lang === 'sr' ? 'O Projektu' : 'За Проектот', icon: HelpCircle, href: lang === 'sr' ? '/about' : '/mk/about', category: 'HELP', desc: lang === 'sr' ? 'Saznajte više o Preseku i tehnologiji iza njega.' : 'Дознајте повеќе за Пресек и технологијата зад него.' },
   ];
 
   const CATEGORIES = [
@@ -386,7 +385,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
         if (!res.ok) return;
         const data = await res.json();
         if (!cancelled && Array.isArray(data)) {
-          setTrendingItems(data.slice(0, 10));
+          setTrendingItems(data.filter((item) => typeof item?.word === 'string').slice(0, 10));
         }
       } catch {
         if (!cancelled) setTrendingItems([]);

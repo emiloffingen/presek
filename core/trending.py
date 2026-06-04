@@ -359,6 +359,112 @@ LOOKBACK_HOURS = 8
 # Bonus multiplier for likely proper nouns (capitalized mid-sentence)
 PROPER_NOUN_BONUS = 4.0
 
+TREND_NORMALIZATION = {
+    "iran": "iran",
+    "iranski": "iran",
+    "trump": "tramp",
+    "trampa": "tramp",
+    "trampu": "tramp",
+    "trampom": "tramp",
+    "putin": "putin",
+    "putina": "putin",
+    "biden": "bajden",
+    "bajden": "bajden",
+    "zelensky": "zelenski",
+    "zelenski": "zelenski",
+    "nato": "nato",
+    "eu": "eu",
+    "sad": "sad",
+    "video": "video",
+    "vinea": "video",
+    "foto": "foto",
+    "ukraine": "ukraina",
+    "ukraina": "ukraina",
+    "russia": "rusija",
+    "rusija": "rusija",
+    "rusije": "rusija",
+    "rusiji": "rusija",
+    "rusiju": "rusija",
+    "srbiji": "srbija",
+    "srbije": "srbija",
+    "srbiju": "srbija",
+    "srbima": "srbija",
+    "srbija": "srbija",
+    "makedonija": "makedonija",
+    "makedonije": "makedonija",
+    "makedoniji": "makedonija",
+    "makedoniju": "makedonija",
+    "beograda": "beograd",
+    "beogradu": "beograd",
+    "beogradom": "beograd",
+    "evra": "evro",
+    "evro": "evro",
+    "eura": "evro",
+    "euro": "evro",
+    "tivtu": "tivat",
+    "tivtom": "tivat",
+    "libana": "liban",
+    "libanu": "liban",
+    "libanom": "liban",
+    "crna": "crna gora",
+    "crne": "crna gora",
+    "crnoj": "crna gora",
+    "crnu": "crna gora",
+    "gora": "crna gora",
+    "gore": "crna gora",
+    "gori": "crna gora",
+    "goru": "crna gora",
+    "vučić": "vucic",
+    "vučića": "vucic",
+    "vučiću": "vucic",
+    "vucic": "vucic",
+    "vucica": "vucic",
+    "vucicu": "vucic",
+    "rumuniji": "rumunija",
+    "rumunije": "rumunija",
+    "rumuniju": "rumunija",
+    "rumunija": "rumunija",
+    "ormuz": "ormuz",
+    "ormuski": "ormuz",
+    "ormutski": "ormuz",
+    "ormuskiot": "ormuz",
+    "ormutskiot": "ormuz",
+    "tesnece": "tesnec",
+}
+
+AMBIGUOUS_PROPER_NOUN_NORMALIZATION = {
+    "gora": "crna gora",
+    "gore": "crna gora",
+    "gori": "crna gora",
+    "goru": "crna gora",
+}
+
+DISPLAY_OVERRIDES = {
+    "eu": "EU",
+    "nato": "NATO",
+    "sad": "SAD",
+    "vucic": "Vučić",
+}
+
+
+def normalize_trend_word(word_latin: str, word_key: str, is_proper: bool) -> str:
+    if word_latin in TREND_NORMALIZATION:
+        return TREND_NORMALIZATION[word_latin]
+    if word_key in TREND_NORMALIZATION:
+        return TREND_NORMALIZATION[word_key]
+    if is_proper and word_latin in AMBIGUOUS_PROPER_NOUN_NORMALIZATION:
+        return AMBIGUOUS_PROPER_NOUN_NORMALIZATION[word_latin]
+    if is_proper and word_key in AMBIGUOUS_PROPER_NOUN_NORMALIZATION:
+        return AMBIGUOUS_PROPER_NOUN_NORMALIZATION[word_key]
+    return word_latin
+
+
+def format_trend_word(word: str) -> str:
+    override = DISPLAY_OVERRIDES.get(word)
+    if override:
+        return override
+    return " ".join(part.capitalize() for part in word.split())
+
 
 def extract_words_with_flags(title: str) -> list[tuple[str, bool]]:
     """
@@ -467,6 +573,7 @@ def get_trending(hours: int = 12, limit: int = MAX_RESULTS, country: str = "RS")
         is_high_volume_cluster = cluster_source_counts[row["cluster_id"]] >= 4
         cat = row.get("category", "vesti")
 
+        seen_in_title = set()
         for word, is_proper in pairs:
             word_latin = transliterate_cyr_to_lat(word).lower()
             word_key = (
@@ -477,52 +584,14 @@ def get_trending(hours: int = 12, limit: int = MAX_RESULTS, country: str = "RS")
                 .replace("đ", "d")
                 .replace("ќ", "c")
             )
-            # Basic normalization for common entities
-            normalization = {
-                "iran": "iran",
-                "iranski": "iran",
-                "trump": "tramp",
-                "trampa": "tramp",
-                "trampu": "tramp",
-                "trampom": "tramp",
-                "putin": "putin",
-                "putina": "putin",
-                "biden": "bajden",
-                "bajden": "bajden",
-                "zelensky": "zelenski",
-                "zelenski": "zelenski",
-                "nato": "nato",
-                "eu": "eu",
-                "sad": "sad",
-                "video": "video",
-                "vinea": "video",
-                "foto": "foto",
-                "ukraine": "ukraina",
-                "ukraina": "ukraina",
-                "russia": "rusija",
-                "rusija": "rusija",
-                "rusije": "rusija",
-                "rusiji": "rusija",
-                "rusiju": "rusija",
-                "srbiji": "srbija",
-                "srbije": "srbija",
-                "srbiju": "srbija",
-                "srbima": "srbija",
-                "srbija": "srbija",
-                "rumuniji": "rumunija",
-                "rumunije": "rumunija",
-                "rumuniju": "rumunija",
-                "rumunija": "rumunija",
-                "ormuz": "ormuz",
-                "ormuski": "ormuz",
-                "ormutski": "ormuz",
-                "ormuskiot": "ormuz",
-                "ormutskiot": "ormuz",
-                "tesnece": "tesnec",
-            }
-            word = normalization.get(word_latin, normalization.get(word_key, word_latin))
+            word = normalize_trend_word(word_latin, word_key, is_proper)
             if country == "RS" and word == "srbija":
                 continue
+            if country == "MK" and word == "makedonija":
+                continue
+            if word in seen_in_title:
+                continue
+            seen_in_title.add(word)
 
             noun_bonus = PROPER_NOUN_BONUS if is_proper else 1.0
 
@@ -574,7 +643,7 @@ def get_trending(hours: int = 12, limit: int = MAX_RESULTS, country: str = "RS")
 
         scored_items.append(
             {
-                "word": word.capitalize(),
+                "word": format_trend_word(word),
                 "count": raw[word],
                 "score": final_score,
                 "trend": trend,

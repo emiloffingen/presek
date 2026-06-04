@@ -117,3 +117,109 @@ class TestExtractWordsWithFlags:
         words = {item["word"] for item in trends}
         assert {"Dačić", "Tramp"} <= words
         assert {"Srbija", "Srbiji", "Srbije", "Srbima", "Србије", "Zbog", "Bilo", "Odluka"}.isdisjoint(words)
+
+    def test_get_trending_normalizes_location_cases(self, monkeypatch):
+        from core.trending import get_trending
+
+        rows = [
+            {
+                "title": "Vučić danas putuje u Tivtu i Beogradu",
+                "created_at": datetime.now(),
+                "cluster_id": "1",
+                "category": "Politika",
+            },
+            {
+                "title": "Delegacije iz Crne Gore i Libanu razgovaraju",
+                "created_at": datetime.now(),
+                "cluster_id": "2",
+                "category": "Svet",
+            },
+            {
+                "title": "Sastanak u Crnoj Gori posle posete Tivtu",
+                "created_at": datetime.now(),
+                "cluster_id": "3",
+                "category": "Svet",
+            },
+            {
+                "title": "Vesti iz Crnu Goru, Crnoj Gori i Crne Gore",
+                "created_at": datetime.now(),
+                "cluster_id": "4",
+                "category": "Region",
+            },
+            {
+                "title": "Beogradu stižu reakcije iz Libanu",
+                "created_at": datetime.now(),
+                "cluster_id": "5",
+                "category": "Region",
+            },
+        ]
+
+        class FakeCursor:
+            def fetchall(self):
+                return rows
+
+        class FakeDb:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                return None
+
+            def execute(self, sql, params=None):
+                return FakeCursor()
+
+        monkeypatch.setattr("core.trending.database.get_db", lambda: FakeDb())
+
+        words = {item["word"] for item in get_trending(country="RS")}
+        assert {"Tivat", "Beograd", "Crna Gora", "Liban"} <= words
+        assert {"Tivtu", "Beogradu", "Goru", "Gori", "Crnu", "Crnoj", "Crne", "Libanu"}.isdisjoint(words)
+
+    def test_get_trending_normalizes_mk_trend_noise(self, monkeypatch):
+        from core.trending import get_trending
+
+        rows = [
+            {
+                "title": "Македонија и Црна Гора разговараат за евра",
+                "created_at": datetime.now(),
+                "cluster_id": "1",
+                "category": "Политика",
+            },
+            {
+                "title": "Вучиќ во Црна Гора за пакет од евра",
+                "created_at": datetime.now(),
+                "cluster_id": "2",
+                "category": "Регион",
+            },
+            {
+                "title": "Вучиќ повторно тема во регионалните медиуми",
+                "created_at": datetime.now(),
+                "cluster_id": "2",
+                "category": "Регион",
+            },
+            {
+                "title": "Нова реакција од Гора и Црна по средбата",
+                "created_at": datetime.now(),
+                "cluster_id": "3",
+                "category": "Регион",
+            },
+        ]
+
+        class FakeCursor:
+            def fetchall(self):
+                return rows
+
+        class FakeDb:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                return None
+
+            def execute(self, sql, params=None):
+                return FakeCursor()
+
+        monkeypatch.setattr("core.trending.database.get_db", lambda: FakeDb())
+
+        words = {item["word"] for item in get_trending(country="MK")}
+        assert {"Crna Gora", "Evro", "Vučić"} <= words
+        assert {"Makedonija", "Crna", "Gora", "Evra", "Vucic"}.isdisjoint(words)
