@@ -45,9 +45,9 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
         display: grid;
         grid-template-columns: minmax(7.5rem, 0.65fr) minmax(0, 3.35fr);
         gap: 1px;
-        margin: 0 0 1.25rem;
-        background: color-mix(in srgb, var(--border) 60%, transparent);
-        border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+        margin: 0 0 0.95rem;
+        background: color-mix(in srgb, var(--foreground) 10%, var(--border));
+        border: 1px solid color-mix(in srgb, var(--foreground) 14%, var(--border));
         border-top: 3px solid var(--nyt-red);
         border-radius: var(--radius-lg, 0px);
         overflow: hidden;
@@ -77,8 +77,8 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
         align-items: flex-start;
         justify-content: space-between;
         gap: 0.65rem;
-        padding: 0.85rem 1rem;
-        background: linear-gradient(135deg, color-mix(in srgb, var(--card) 95%, transparent), color-mix(in srgb, var(--secondary) 90%, transparent));
+        padding: 0.78rem 0.9rem;
+        background: linear-gradient(135deg, color-mix(in srgb, var(--card) 98%, transparent), color-mix(in srgb, var(--secondary) 94%, transparent));
         position: relative;
     }
     
@@ -142,15 +142,15 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
         grid-auto-columns: minmax(16rem, 1fr);
         gap: 1px;
         overflow-x: auto;
-        background: color-mix(in srgb, var(--border) 60%, transparent);
+        background: color-mix(in srgb, var(--foreground) 10%, var(--border));
         scroll-snap-type: x proximity;
     }
 
     .home-live-item {
         display: block;
         min-width: 0;
-        padding: 0.85rem 1rem;
-        background: linear-gradient(135deg, color-mix(in srgb, var(--card) 75%, transparent), color-mix(in srgb, var(--secondary) 60%, transparent));
+        padding: 0.78rem 0.9rem;
+        background: linear-gradient(135deg, color-mix(in srgb, var(--card) 92%, transparent), color-mix(in srgb, var(--secondary) 76%, transparent));
         color: var(--foreground);
         text-decoration: none;
         scroll-snap-align: start;
@@ -183,7 +183,7 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
     }
 
     .home-live-meta strong {
-        color: var(--muted-foreground);
+        color: color-mix(in srgb, var(--foreground) 62%, var(--muted-foreground));
     }
 
     .home-live-item p {
@@ -206,12 +206,12 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
     @media (max-width: 639px) {
         .home-live-strip {
             grid-template-columns: 1fr;
-            margin-bottom: 1.15rem;
+            margin-bottom: 0.85rem;
         }
 
         .home-live-head {
             gap: 0.45rem;
-            padding: 0.75rem 0.85rem;
+            padding: 0.65rem 0.75rem;
             flex-direction: row;
         }
         
@@ -230,7 +230,7 @@ const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
         }
 
         .home-live-item {
-            padding: 0.75rem 0.85rem;
+            padding: 0.68rem 0.75rem;
         }
 
         .home-live-item p {

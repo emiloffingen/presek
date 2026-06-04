@@ -405,7 +405,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 			<FilterHeader q={q} category={category} topic={topic} entity={entity} subcategory={subcategory} />
 		)}
 
-		<div class="broadsheet-grid px-2 sm:px-4 md:px-8 xl:px-10">
+		<div class="broadsheet-grid px-3 sm:px-4 md:px-8 xl:px-10">
 			<div class="broadsheet-main">
                 {error && (
                     <div class="error-panel">
@@ -747,7 +747,13 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 
 <style>
     /* ── Broadsheet Layout ───────────────────────────── */
-    .broadsheet-layout { background: var(--background); }
+    .broadsheet-layout {
+        background:
+            linear-gradient(90deg, color-mix(in srgb, var(--foreground) 2%, transparent) 0 1px, transparent 1px 100%),
+            var(--background);
+        background-size: min(100%, 76rem) 100%;
+        background-position: center top;
+    }
     .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: var(--grid-gap); }
 
     @media (min-width: 768px) {
@@ -763,19 +769,23 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
     }
 
     /* ── Section Dividers ────────────────────────────── */
-    .section-wrapper { border-bottom: 1px solid color-mix(in srgb, var(--border) 82%, transparent); padding-bottom: clamp(1.25rem, 2.5vw, 2rem); margin-bottom: clamp(1.25rem, 2.5vw, 2rem); }
+    .section-wrapper {
+        border-bottom: 2px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
+        padding-bottom: clamp(1.15rem, 2.2vw, 1.85rem);
+        margin-bottom: clamp(1.1rem, 2.2vw, 1.85rem);
+    }
     .section-wrapper:last-child { border-bottom: none; }
-    .lead-wrapper { padding-bottom: 1.1rem; margin-bottom: 0.9rem; }
+    .lead-wrapper { padding-bottom: 0.95rem; margin-bottom: 0.9rem; }
 
     @media (max-width: 768px) {
-        .section-wrapper { padding-bottom: 1.25rem; margin-bottom: 1.25rem; }
+        .section-wrapper { padding-bottom: 1rem; margin-bottom: 1rem; }
         .lead-wrapper { padding-bottom: 1.25rem; margin-bottom: 1.25rem; }
     }
 
     @media (max-width: 639px) {
         .section-wrapper {
-            padding-bottom: 1rem;
-            margin-bottom: 1rem;
+            padding-bottom: 0.85rem;
+            margin-bottom: 0.85rem;
         }
         .lead-wrapper {
             padding-bottom: 1rem;
@@ -789,8 +799,8 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
         grid-template-columns: minmax(0, 0.78fr) minmax(0, 2.8fr);
         gap: 1px;
         margin-top: -0.55rem;
-        background: var(--border);
-        border: 1px solid var(--border);
+        background: color-mix(in srgb, var(--foreground) 12%, var(--border));
+        border: 1px solid color-mix(in srgb, var(--foreground) 16%, var(--border));
         border-top: 0;
         border-radius: 0px;
         overflow: hidden;
@@ -799,7 +809,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
     .home-evidence-status,
     .home-evidence-item {
         background: var(--background);
-        padding: 0.74rem 0.9rem;
+        padding: 0.72rem 0.85rem;
         min-width: 0;
     }
 
@@ -820,7 +830,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
         font-weight: 950;
         letter-spacing: 0.14em;
         text-transform: uppercase;
-        color: var(--muted-foreground);
+        color: color-mix(in srgb, var(--foreground) 68%, var(--muted-foreground));
     }
 
     .home-evidence-status p,
@@ -829,7 +839,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
         font-family: var(--font-nyt-body);
         font-size: 0.7rem;
         line-height: 1.28;
-        color: var(--secondary-foreground);
+        color: color-mix(in srgb, var(--foreground) 78%, var(--secondary-foreground));
         overflow-wrap: anywhere;
     }
 
@@ -849,16 +859,16 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 1px;
-        background: var(--border);
+        background: color-mix(in srgb, var(--foreground) 12%, var(--border));
     }
 
     /* ── Analytical Bands ───────────────────────────── */
     .analysis-band {
-        margin: 2rem 0;
-        padding: clamp(1.25rem, 2.6vw, 2rem) 0;
+        margin: 1.35rem 0;
+        padding: clamp(1rem, 2vw, 1.55rem) 0;
         border-top: 1px solid var(--border);
         border-bottom: 1px solid var(--border);
-        background: color-mix(in srgb, var(--surface-soft) 62%, transparent);
+        background: color-mix(in srgb, var(--surface-soft) 78%, var(--background));
         border-radius: var(--radius-lg, 0px);
         overflow: hidden;
     }
@@ -869,7 +879,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
     }
 
     .section-heading-row {
-        margin-bottom: 1.35rem;
+        margin-bottom: 1.05rem;
         padding: 0 clamp(0.85rem, 2vw, 1.25rem);
     }
 
@@ -925,7 +935,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
         padding: 0.2rem 0.45rem;
         border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
         background: color-mix(in srgb, var(--surface-soft) 72%, transparent);
-        color: var(--muted-foreground);
+        color: color-mix(in srgb, var(--foreground) 62%, var(--muted-foreground));
     }
 
     .analysis-meter {
@@ -938,7 +948,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
     .analysis-foot-label {
         display: block;
         margin-bottom: 0.25rem;
-        color: var(--muted-foreground);
+        color: color-mix(in srgb, var(--foreground) 62%, var(--muted-foreground));
     }
 
     .analysis-source-chip {
@@ -957,8 +967,8 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
     .news-feed-grid-featured {
         display: grid;
         grid-template-columns: minmax(0, 1fr);
-        gap: 1.5rem;
-        margin-bottom: 2rem;
+        gap: 1rem;
+        margin-bottom: 1.2rem;
         align-items: start;
     }
 
@@ -966,7 +976,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
     .news-feed-grid-compact {
         display: grid;
         grid-template-columns: minmax(0, 1fr);
-        gap: 1.25rem;
+        gap: 0.85rem;
         align-items: start;
     }
 
@@ -984,7 +994,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
         transform: translateY(-50%);
         z-index: 10;
         background: var(--background);
-        border: 1px solid var(--border);
+        border: 1px solid color-mix(in srgb, var(--foreground) 12%, var(--border));
         color: var(--foreground);
         width: 36px;
         height: 36px;
@@ -1028,7 +1038,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
         flex-wrap: nowrap;
         overflow-x: auto;
         scroll-snap-type: x mandatory;
-        gap: 1.25rem;
+        gap: 0.85rem;
         padding-bottom: 0.75rem;
         -webkit-overflow-scrolling: touch;
         margin-bottom: -0.5rem;
@@ -1112,11 +1122,11 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
     }
 
     .for-you-wrapper {
-        background: color-mix(in srgb, var(--nyt-accent) 4%, transparent);
-        padding: 1.5rem 1rem;
+        background: color-mix(in srgb, var(--nyt-accent) 5%, var(--background));
+        padding: 1.1rem 0.9rem;
         border-top: 1px solid color-mix(in srgb, var(--nyt-accent) 15%, transparent);
         border-bottom: 1px solid color-mix(in srgb, var(--nyt-accent) 15%, transparent);
-        margin-bottom: 1.5rem;
+        margin-bottom: 1rem;
         border-radius: var(--radius-lg, 0px);
     }
 
@@ -1128,11 +1138,11 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 
     @media (max-width: 768px) {
         .consensus-section {
-            padding: 1.5rem 1rem !important;
+            padding: 1rem 0.85rem !important;
         }
         .analysis-band {
-            margin: 1.5rem 0;
-            padding: 1.1rem 0;
+            margin: 1rem 0;
+            padding: 0.9rem 0;
         }
         .analysis-grid {
             grid-template-columns: 1fr;
@@ -1147,7 +1157,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
         .for-you-wrapper {
-            padding: 1.5rem 1rem;
+            padding: 1rem 0.85rem;
         }
     }
     .editorial-briefing-wrap { padding-bottom: 2.25rem; }
@@ -1162,7 +1172,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 
         .home-evidence-status,
         .home-evidence-item {
-            padding: 0.8rem;
+            padding: 0.68rem;
         }
 
         .home-evidence-grid {
@@ -1171,13 +1181,13 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 
         .supporting-featured-grid,
         .news-feed-grid-featured {
-            gap: 1rem;
-            margin-bottom: 1.15rem;
+            gap: 0.75rem;
+            margin-bottom: 0.85rem;
         }
 
         .supporting-compact-grid,
         .news-feed-grid-compact {
-            gap: 0.9rem;
+            gap: 0.65rem;
         }
 
         .consensus-section {
@@ -1188,10 +1198,10 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
     /* ── System Stats Panel ──────────────────────────── */
     .home-system-stats-panel {
         background: color-mix(in srgb, var(--secondary) 42%, var(--background));
-        border: 1px solid var(--border);
+        border: 1px solid color-mix(in srgb, var(--foreground) 12%, var(--border));
         border-radius: var(--radius-lg, 0px);
         padding: clamp(0.85rem, 1.8vw, 1.1rem) clamp(1rem, 2.4vw, 1.5rem);
-        margin: 0 0 1.4rem;
+        margin: 0 0 0.95rem;
         box-shadow: 0 1px 0 color-mix(in srgb, var(--foreground) 4%, transparent);
         display: flex;
         flex-direction: column;
@@ -1312,7 +1322,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
         font-weight: 850;
         text-transform: uppercase;
         letter-spacing: 0.08em;
-        color: var(--muted-foreground);
+        color: color-mix(in srgb, var(--foreground) 64%, var(--muted-foreground));
         transition: color 0.3s var(--ease-editorial);
     }
     
@@ -1334,7 +1344,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
     .stats-item-unit {
         font-size: 0.65rem;
         font-weight: 800;
-        color: var(--muted-foreground);
+        color: color-mix(in srgb, var(--foreground) 64%, var(--muted-foreground));
     }
     
     .stats-grid-divider {
@@ -1361,7 +1371,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
             min-width: 0;
             padding: 0.75rem 0.85rem;
             background: var(--background);
-            border: 1px solid var(--border);
+            border: 1px solid color-mix(in srgb, var(--foreground) 12%, var(--border));
             border-radius: var(--radius-lg, 0px);
         }
         .stats-grid-item:hover {
