@@ -10,6 +10,41 @@ from nlp import (
     summarize_locally,
     synthesize_cluster_fallback,
 )
+from nlp.local_nlp import classify_news_quality_locally
+
+
+class TestLocalNewsQualityClassifier:
+    def test_classifies_cyrillic_hard_news_as_high_value(self):
+        result = classify_news_quality_locally(
+            "Владата усвои буџет со нови мерки за пензии",
+            "Министерството соопшти дека пакетот вреди 120 милиони евра и ќе важи од следниот месец.",
+        )
+
+        assert result["score"] >= 0.6
+        assert result["is_hard_news"]
+        assert result["hard_matches"] >= 2
+        assert result["public_interest_matches"] >= 1
+
+    def test_rejects_clickbait_soft_content(self):
+        result = classify_news_quality_locally(
+            "ŠOKANTNO!!! Nećete verovati šta zvezde predviđaju",
+            "Horoskop za vikend otkriva veliki preokret, pogledajte foto galeriju i viralni hit.",
+        )
+
+        assert result["score"] < 0.3
+        assert not result["is_hard_news"]
+        assert result["reason"] == "Low Quality / Junk"
+        assert result["clickbait_matches"] >= 2
+
+    def test_preserves_public_interest_story_with_photo_label(self):
+        result = classify_news_quality_locally(
+            "FOTO: Skupština raspravlja o zakonu o energetici",
+            "Ministarstvo navodi da zakon utiče na cene struje za domaćinstva i budžet za narednu godinu.",
+        )
+
+        assert result["score"] >= 0.55
+        assert result["is_hard_news"]
+        assert result["hard_matches"] >= 2
 
 
 class TestTagFiltering:
@@ -195,7 +230,7 @@ class TestClusterComparison:
 
         result = synthesize_cluster_fallback(articles, lang="sr")
 
-        assert "Prati 3 izvora" in result["summary"]
+        assert "prati 3 izvora" in result["summary"].lower()
         assert result["summary"].count("Cene nafte su značajno pale") == 1
 
     def test_synthesize_cluster_fallback_cleans_repetitive_editorial_narrative(self):
@@ -275,7 +310,7 @@ class TestClusterComparison:
 
         assert any(item["angle"] == "Нијанси" for item in result["perspectives"])
         assert any(item["angle"] == "отворено" for item in result["perspectives"])
-        assert "Клучен развој" in result["summary"] or "Настан" in result["summary"]
+        assert "merkite pocnuvaat vo Sreda" in result["summary"]
 
     def test_synthesize_cluster_fallback_uses_confirmed_section(self):
         articles = [
@@ -311,7 +346,6 @@ class TestClusterComparison:
 
         result = synthesize_cluster_fallback(articles)
 
-        assert "Настан" in result["summary"]
         assert "Paketot" in result["summary"]
 
     def test_synthesize_cluster_fallback_records_mode(self, monkeypatch):
@@ -487,8 +521,8 @@ class TestLocalSerbianRewrite:
 
         result = synthesize_cluster_fallback(articles)
 
-        assert "Клучен развој" in result["summary"]
-        assert "Следено од 2 извори" in result["summary"]
+        assert "120 milioni evra" in result["summary"]
+        assert "приказната ја следат 2 извори" in result["summary"].lower()
 
     def test_synthesize_cluster_fallback_uses_cleaner_open_line_label(self):
         articles = [

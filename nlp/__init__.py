@@ -13,6 +13,7 @@ from nlp.keywords import (
     is_valid_focus_entity,
     normalize_tag_name,
 )
+from nlp.local_nlp import classify_news_quality_locally
 from nlp.sentiment import analyze_sentiment_locally
 from nlp.text_processing import lemmatize_sr, rewrite_to_serbian_locally, synthesize_locally
 from nlp.utils import cleanAndDecode, deShout
@@ -21,6 +22,7 @@ from nlp.utils import cleanAndDecode, deShout
 __all__ = [
     "analyze_sentiment_locally",
     "cleanAndDecode",
+    "classify_news_quality_locally",
     "deShout",
     "extract_keyphrases_locally",
     "extract_cluster_tags_locally",

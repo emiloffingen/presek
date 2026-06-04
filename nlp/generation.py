@@ -1093,16 +1093,16 @@ def synthesize_cluster_fallback(articles, lang="mk"):
         if not selected_sentences and fallback_sents:
             selected_sentences.append({"text": fallback_sents[0], "source": lead.get("source")})
 
-    # 3. Build Summary Points
+    # 3. Build direct editorial summary points. Avoid label-style bullets because
+    # they read like a template once rendered on the cluster page.
     summary_lines = []
     if update_point and update_point.casefold() != lead_title.casefold():
-        summary_lines.append(f"• {t['klucen_razvoj']}: {update_point}")
+        summary_lines.append(f"• {_sentence(update_point)}")
     else:
-        # If no good update found, use a refined version of the title
-        summary_lines.append(f"• {t['nastan']}: {lead_title}")
+        summary_lines.append(f"• {_sentence(lead_title)}")
 
     if selected_sentences and not (update_point and _jaccard_similarity(selected_sentences[0]["text"], update_point) > 0.28):
-        summary_lines.append(f"• {t['detali']}: {selected_sentences[0]['text']}")
+        summary_lines.append(f"• {_sentence(selected_sentences[0]['text'])}")
 
     common = (
         comparison.get("common_line", "")
@@ -1116,15 +1116,26 @@ def synthesize_cluster_fallback(articles, lang="mk"):
         .strip()
     )
     if common and len(common) > 18 and "," not in common:
-        summary_lines.append(f"• {t['fokus']}: {common}")
+        if lang == "sr":
+            summary_lines.append(f"• Izvori se najjasnije poklapaju oko {_sentence(common).lower()}")
+        else:
+            summary_lines.append(f"• Изворите најјасно се поклопуваат околу {_sentence(common).lower()}")
 
     sources_str = _source_list(articles, limit=4)
-    summary_lines.append(
-        f"• {t['pokrienost']}: {t['sledeno_od']} {len(articles)} {_source_count_label(len(articles), lang)} ({sources_str})."
-    )
+    if lang == "sr":
+        summary_lines.append(
+            f"• Priču prati {len(articles)} {_source_count_label(len(articles), lang)} ({sources_str}), što daje osnov za poređenje akcenata, ali ne i za tvrdnje van objavljenih podataka."
+        )
+    else:
+        summary_lines.append(
+            f"• Приказната ја следат {len(articles)} {_source_count_label(len(articles), lang)} ({sources_str}), што дава основа за споредба на акцентите, но не и за тврдења надвор од објавените податоци."
+        )
 
     if comparison.get("open_points"):
-        summary_lines.append(f"• {t['otvoreno_lower']}: {comparison['open_points'][0]}")
+        if lang == "sr":
+            summary_lines.append(f"• Otvoreno ostaje {comparison['open_points'][0].strip(' .;:')}.")
+        else:
+            summary_lines.append(f"• Отворено останува {comparison['open_points'][0].strip(' .;:')}.")
 
     summary = "\n".join(summary_lines)
 

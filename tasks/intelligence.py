@@ -507,6 +507,100 @@ def _score_synthesis_quality(headline: str, article: str, key_facts: list, lang:
     return max(0.0, min(1.0, score))
 
 
+_EDITORIAL_VAGUE_PATTERNS = (
+    r"\brazvoj događaja\b",
+    r"\bsituacija (?:je |ostaje )?dinamična\b",
+    r"\bizvori izveštavaju\b",
+    r"\bprivukao je pažnju\b",
+    r"\bostaje da se vidi\b",
+    r"\bširi kontekst\b",
+    r"\bmedijski izvori\b",
+    r"\bразвојот на настаните\b",
+    r"\bситуацијата (?:е |останува )?динамична\b",
+    r"\bизворите известуваат\b",
+    r"\bпривлече внимание\b",
+    r"\bостанува да се види\b",
+    r"\bпоширок контекст\b",
+    r"\bмедиумски извори\b",
+)
+
+
+def _split_summary_items(summary) -> list[str]:
+    if isinstance(summary, list):
+        raw_items = summary
+    else:
+        raw_items = str(summary or "").splitlines()
+
+    items = []
+    for item in raw_items:
+        clean = re.sub(r"^[\s\-•*\d.)]+", "", str(item or "")).strip()
+        clean = re.sub(r"^(šta se desilo|što se slučilo|што се случи|značaj|значење|otvoreno|отворено)\s*:\s*", "", clean, flags=re.IGNORECASE)
+        if clean:
+            items.append(clean)
+    return items
+
+
+def _score_editorial_summary(summary, article: str = "", lang: str = "sr") -> float:
+    """
+    Scores whether synthesis bullets read like editorial judgement rather than
+    generic extraction. The target is 3-4 differentiated bullets: development,
+    significance, source agreement/difference, and uncertainty/next signal.
+    """
+    items = _split_summary_items(summary)
+    if not items:
+        return 0.0
+
+    score = 1.0
+    if len(items) < 3:
+        score -= 0.35
+    if len(items) > 4:
+        score -= 0.15
+
+    all_text = " ".join(items)
+    lowered = all_text.casefold()
+    item_terms = []
+    for item in items:
+        words = set(re.findall(r"[A-Za-zÀ-žА-џ0-9]{4,}", item.casefold()))
+        item_terms.append(words)
+
+    # Repetition check: bullets should not be paraphrases of the same headline.
+    for idx, current in enumerate(item_terms):
+        for previous in item_terms[:idx]:
+            if not current or not previous:
+                continue
+            overlap = len(current & previous) / max(1, min(len(current), len(previous)))
+            if overlap > 0.72:
+                score -= 0.18
+                break
+
+    vague_hits = sum(1 for pattern in _EDITORIAL_VAGUE_PATTERNS if re.search(pattern, lowered, flags=re.IGNORECASE))
+    score -= min(0.3, vague_hits * 0.1)
+
+    significance_markers = (
+        "zato", "jer", "znač", "posled", "utic", "rizik", "ulog", "instituc", "budžet", "bezbed",
+        "поради", "затоа", "знач", "послед", "влија", "ризик", "влог", "институц", "буџет", "безбед",
+    )
+    verification_markers = (
+        "potvr", "saglas", "razlik", "nejas", "nepotvr", "otvoren", "izvor", "naredn", "sledeć",
+        "потврд", "соглас", "разлик", "нејас", "непотврд", "отворен", "извор", "следн",
+    )
+    if not any(marker in lowered for marker in significance_markers):
+        score -= 0.2
+    if not any(marker in lowered for marker in verification_markers):
+        score -= 0.2
+
+    # Avoid summary bullets that simply duplicate article opening sentences.
+    article_start = _paragraph_fingerprint(" ".join(str(article or "").split()[:80]))
+    duplicate_bullets = 0
+    for item in items:
+        item_key = _paragraph_fingerprint(item)
+        if item_key and len(item_key) > 50 and item_key in article_start:
+            duplicate_bullets += 1
+    score -= min(0.2, duplicate_bullets * 0.1)
+
+    return max(0.0, min(1.0, score))
+
+
 def _sanitize_synthesis_outputs(summary, generated_article, perspectives, article_rows, lang="mk"):
     fallback = None
     clean_summary = normalize_summary_text(summary)
@@ -634,17 +728,20 @@ def _build_synthesis_source_context(article_rows, lang: str = "sr"):
     for idx, row in enumerate(top_rows, start=1):
         title = deShout(normalize_headline(str(row.get("title") or "").strip()))
         source = str(row.get("source") or "izvor").strip()
+        created_at = str(row.get("created_at") or "").strip()
         category = str(row.get("category") or "").strip()
         topic = str(row.get("topic") or "").strip()
         description = clean_extracted_article_text(str(row.get("description") or "").strip())
         full_content = clean_extracted_article_text(str(row.get("full_content") or "").strip())
         
         evidence = full_content if len(full_content or "") > len(description or "") else description
-        evidence = evidence[:1200].strip()  # Shortened to keep context clean
+        evidence = evidence[:1600].strip()
         
         extracted_fact = _extract_one_quote_or_fact(full_content or description)
         
         parts = [f"[{idx}] {source}"]
+        if created_at:
+            parts.append(f"{'Objavljeno' if lang == 'sr' else 'Објавено'}: {created_at}")
         if category:
             parts.append(f"{'Kategorija' if lang == 'sr' else 'Категорија'}: {category}")
         if topic:
@@ -658,7 +755,18 @@ def _build_synthesis_source_context(article_rows, lang: str = "sr"):
             
         blocks.append("\n".join(parts))
         
-    return "\n\n".join(blocks)
+    source_count = len(top_rows)
+    if lang == "mk":
+        header = (
+            f"Достапни се {source_count} различни извори. Спореди ги по факти, акценти и пропусти; "
+            "не претпоставувај мотиви и не користи податоци што не се во изворите."
+        )
+    else:
+        header = (
+            f"Dostupno je {source_count} različitih izvora. Uporedi ih po činjenicama, akcentima i propustima; "
+            "ne pretpostavljaj motive i ne koristi podatke koji nisu u izvorima."
+        )
+    return f"{header}\n\n" + "\n\n".join(blocks) if blocks else ""
 
 
 def _compute_centroid_from_values(values):
@@ -948,6 +1056,18 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             elif legacy_summary:
                 prompt_parts.append(legacy_summary)
             prompt_parts.append("</articles_context>")
+            if lang == "mk":
+                prompt_parts.append(
+                    "УРЕДНИЧКИ ФОКУС: резимето не смее да биде список на наслови. "
+                    "Изведи 3-4 паметни точки: нов развој, зошто е важен, што навистина е потврдено "
+                    "и што останува непознато или следно за проверка."
+                )
+            else:
+                prompt_parts.append(
+                    "UREĐIVAČKI FOKUS: rezime ne sme biti lista naslova. "
+                    "Izvedi 3-4 pametne tačke: novi razvoj, zašto je važan, šta je zaista potvrđeno "
+                    "i šta ostaje nepoznato ili sledeće za proveru."
+                )
             full_prompt = "\n\n".join(part for part in prompt_parts if part)
 
             system_prompt = SYNTHESIS_SYSTEM_PROMPT_MK if lang == "mk" else SYNTHESIS_SYSTEM_PROMPT_SR
@@ -1026,9 +1146,14 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             if raw:
                 # Quality Score evaluation
                 key_facts = res_data.get("key_facts", [])
-                quality_score = _score_synthesis_quality(synthetic_headline, generated_article, key_facts, lang)
+                article_score = _score_synthesis_quality(synthetic_headline, generated_article, key_facts, lang)
+                summary_score = _score_editorial_summary(summary, generated_article, lang)
+                quality_score = round((article_score * 0.65) + (summary_score * 0.35), 3)
                 if quality_score < 0.7:
-                    log.warning(f"Quality score {quality_score:.2f} below threshold (0.7) for cluster {cluster_id} ({lang})")
+                    log.warning(
+                        f"Quality score {quality_score:.2f} below threshold (0.7) for cluster {cluster_id} ({lang}) "
+                        f"(article={article_score:.2f}, summary={summary_score:.2f})"
+                    )
                     fallback_reason = "failed_quality_score"
                     raw = None
 
@@ -2110,6 +2235,76 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
         if len(str(phrase or "").strip()) >= 4
     }
 
+    role_words = {
+        "president",
+        "prime",
+        "minister",
+        "premier",
+        "serbian",
+        "macedonian",
+        "american",
+        "russian",
+        "ukrainian",
+        "european",
+        "pretsedatel",
+        "pretsedatelot",
+        "pretsedatelkata",
+        "premierot",
+        "premierkata",
+        "premijer",
+        "premijerka",
+        "ministar",
+        "ministarka",
+        "ministerot",
+        "ministerkata",
+        "srpski",
+        "srpska",
+        "srpskog",
+        "makedonski",
+        "makedonska",
+        "americki",
+        "americka",
+        "ruski",
+        "ruska",
+        "ukrajinski",
+        "ukrajinska",
+        "evropski",
+        "evropska",
+    }
+
+    def _entity_words(value: str) -> list[str]:
+        folded_value = transliterate(value or "").casefold()
+        return [
+            word
+            for word in re.findall(r"[A-Za-z\u0400-\u04FF0-9-]{3,}", folded_value)
+            if word not in role_words
+        ]
+
+    def _entity_is_grounded(value: str) -> bool:
+        folded_value = transliterate(value or "").casefold().strip()
+        if not folded_value:
+            return True
+        if folded_value in context_entities or folded_value in source_latin:
+            return True
+
+        words = _entity_words(value)
+        if not words:
+            return True
+
+        # Role + partial name should pass when the actual name appears nearby in source.
+        matched = 0
+        for word in words:
+            stem = word[:6] if len(word) > 7 else word
+            if stem in source_latin or any(stem in entity for entity in context_entities):
+                matched += 1
+
+        if matched >= len(words):
+            return True
+        if len(words) >= 2 and matched >= len(words) - 1 and any(len(word) >= 6 for word in words):
+            return True
+
+        return False
+
     allowed_singletons = {
         "srbij",
         "beograd",
@@ -2205,7 +2400,8 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
         "pandev",
     }
 
-    hallucinated_count = 0
+    hard_hallucinations = 0
+    soft_hallucinations = 0
     for phrase in _extract_capitalized_phrases(synthesis_text):
         clean = str(phrase or "").strip().replace("\n", " ")
         if len(clean) < 4:
@@ -2243,39 +2439,26 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
         if is_allowed:
             continue
 
-        if folded in source_latin:
+        if _entity_is_grounded(clean):
             continue
 
-        # Fuzzy/partial matching for linguistic variations (e.g., Premijer vs Premierot)
-        meaningful_words = [
-            word.casefold()
-            for word in re.findall(r"[A-Za-zA-Za-z\u0400-\u04FF0-9-]{4,}", folded)
-            if word.casefold()
-            not in {"ministerkata", "ministerot", "pretsedatelot", "vladata", "premierot", "premijer"}
-        ]
+        core_words = _entity_words(clean)
+        if is_acronym or len(core_words) >= 2:
+            log.warning(f"[ai/hallucination] Hallucinated entity detected in synthesis: {clean} (folded: {folded})")
+            hard_hallucinations += 1
+        else:
+            log.debug(f"[ai/hallucination] Suspicious but soft entity in synthesis: {clean} (folded: {folded})")
+            soft_hallucinations += 1
 
-        # If it's a multi-word entity, check if the "core" (longest words) are in the source
-        if meaningful_words:
-            # Check if all long meaningful words are present (even as substrings)
-            match_count = 0
-            for mw in meaningful_words:
-                # Basic substring check for grammatical cases (e.g., Mickoskog -> Mickoski)
-                # We check first 6 chars for longer words
-                mw_stem = mw[:6] if len(mw) > 7 else mw
-                if mw_stem in source_latin or any(mw_stem in s_ent for s_ent in context_entities):
-                    match_count += 1
-
-            if match_count >= len(meaningful_words):
-                continue
-
-        log.warning(f"[ai/hallucination] Hallucinated entity detected in synthesis: {clean} (folded: {folded})")
-        hallucinated_count += 1
-
-    # Allow more minor hallucinations for long syntheses to prevent infinite retry loops
-    # especially for Macedonian where capitalization patterns differ
-    if hallucinated_count > 3:
+    # Keep hard failures for truly ungrounded names, but allow a little noise from
+    # translated titles and capitalization quirks in Serbian/Macedonian synthesis.
+    if hard_hallucinations > 2:
         return False
-    if hallucinated_count >= 1 and len(synthesis_text) < 1000:
+    if hard_hallucinations >= 1 and len(synthesis_text) < 700:
+        return False
+    if hard_hallucinations >= 2 and len(synthesis_text) < 1400:
+        return False
+    if hard_hallucinations >= 1 and soft_hallucinations >= 4 and len(synthesis_text) < 1200:
         return False
 
     return True
