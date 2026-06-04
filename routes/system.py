@@ -455,6 +455,29 @@ async def get_navigation(lang: Optional[str] = "sr"):
         if e["total_mentions"] > 5
     ]
 
+    observatory_items = [
+        {
+            "label": "Analize" if lang == "sr" else "Анализи",
+            "href": "/analize",
+            "count": 0,
+        },
+        {
+            "label": "Metodologija" if lang == "sr" else "Методологија",
+            "href": "/methodology",
+            "count": 0,
+        },
+        {
+            "label": "Standardi" if lang == "sr" else "Стандарди",
+            "href": "/editorial",
+            "count": 0,
+        },
+        {
+            "label": "Izvori" if lang == "sr" else "Извори",
+            "href": "/izvori",
+            "count": 0,
+        },
+    ]
+
     res = {
         "breaking": breaking_items,
         "sections": [
@@ -462,6 +485,7 @@ async def get_navigation(lang: Optional[str] = "sr"):
             {"label": L["news"], "items": news_items, "type": "dynamic"},
             {"label": L["magazine"], "items": magazine_items, "type": "magazine"},
             {"label": L["fokus"], "items": entities[:5], "type": "trending"},
+            {"label": "Opservatorijum" if lang == "sr" else "Опсерваториум", "items": observatory_items, "type": "core"},
         ],
     }
     set_cache(cache_key, res, ttl=300)
