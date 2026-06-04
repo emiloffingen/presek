@@ -99,10 +99,12 @@ class LocalAnalyst:
             try:
                 t0 = time.time()
                 # Keep enough context for fallback brief/synthesis while staying within small-host RAM limits.
+                use_mlock = os.environ.get("LOCAL_MODEL_USE_MLOCK", "true").lower() == "true"
                 self.model = Llama(
                     model_path=MODEL_PATH,
                     n_ctx=MODEL_CONTEXT,
                     n_threads=N_THREADS,
+                    use_mlock=use_mlock,
                     verbose=False,
                 )
                 model_filename = os.path.basename(MODEL_PATH)
