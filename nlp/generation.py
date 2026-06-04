@@ -17,6 +17,7 @@ from nlp.utils import (
     deShout,
 )
 from utils import record_runtime_event
+from core.language import transliterate_cyr_to_lat
 
 _T = {
     "mk": {
@@ -683,7 +684,6 @@ def _source_count_label(count: int, lang: str) -> str:
 def _comparison_terms(text: str) -> set[str]:
     text_val = str(text or "")
     if any(ord(c) >= 0x0400 for c in text_val):
-        from core.language import transliterate_cyr_to_lat
         try:
             text_val = transliterate_cyr_to_lat(text_val)
         except Exception:
@@ -802,8 +802,6 @@ def compare_cluster_sources(articles, lang="mk"):
     for article in articles:
         combined = " ".join([article["title"], article["description"]]).strip()
         if lang == "sr":
-            from core.language import transliterate_cyr_to_lat
-
             combined = transliterate_cyr_to_lat(combined)
 
         terms = set(_extract_terms(combined))
@@ -835,8 +833,6 @@ def compare_cluster_sources(articles, lang="mk"):
     pooled_text = " ".join(a["title"] + ". " + a["description"] for a in articles)
 
     if lang == "sr":
-        from core.language import transliterate_cyr_to_lat
-
         pooled_text = transliterate_cyr_to_lat(pooled_text)
 
     candidate_phrases = extract_keyphrases_locally(pooled_text, top_n=12)
@@ -861,8 +857,6 @@ def compare_cluster_sources(articles, lang="mk"):
                 )
     elif common_terms:
         if lang == "sr":
-            from core.language import transliterate_cyr_to_lat
-
             terms = [transliterate_cyr_to_lat(t) for t in common_terms[:4]]
             common_line = "Većina izvora se slaže oko " + ", ".join(terms) + " kao tema u fokusu."
         else:
@@ -910,8 +904,6 @@ def compare_cluster_sources(articles, lang="mk"):
             unique_titles.append((s, t))
     if len(unique_titles) >= 2:
         if lang == "sr":
-            from core.language import transliterate_cyr_to_lat
-
             t1 = transliterate_cyr_to_lat(unique_titles[0][1])
             t2 = transliterate_cyr_to_lat(unique_titles[1][1])
             if _title_difference_is_substantive(t1, t2):
@@ -1040,8 +1032,6 @@ def synthesize_cluster_fallback(articles, lang="mk"):
     desc = cleanAndDecode(lead.get("description", ""))
 
     if lang == "sr":
-        from core.language import transliterate_cyr_to_lat
-
         lead_title = transliterate_cyr_to_lat(lead_title)
         desc = transliterate_cyr_to_lat(desc)
 
@@ -1052,8 +1042,6 @@ def synthesize_cluster_fallback(articles, lang="mk"):
     for art in articles:
         art_desc = cleanAndDecode(art.get("description", ""))
         if lang == "sr":
-            from core.language import transliterate_cyr_to_lat
-
             art_desc = transliterate_cyr_to_lat(art_desc)
 
         art_country = art.get("country", "")
