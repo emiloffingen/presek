@@ -18,6 +18,86 @@ env:
 
 jobs:
   # ============================================================================
+  # Security Scan
+  # ============================================================================
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies for security audit
+        run: |
+          uv venv
+          source .venv/bin/activate
+          uv sync --dev
+
+      - name: Run Presek Security Audit
+        run: |
+          source .venv/bin/activate
+          python scripts/security_audit.py
+          echo "Presek security audit completed"
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Run Bandit for Python security issues
+        run: |
+          source .venv/bin/activate
+          uv pip install bandit
+          bandit -r core/ routes/ -f json -o bandit_results.json || true
+          echo "Bandit scan completed"
+
+      - name: Run Safety for Python dependency vulnerabilities
+        run: |
+          source .venv/bin/activate
+          uv pip install safety
+          safety check --full-report || true
+          echo "Safety scan completed"
+
+      - name: Run Semgrep for code patterns
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/python
+            p/secrets
+            p/security-audit
+          auditOn: push
+
+      - name: Check for secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+      - name: Run Snyk for dependency scanning
+        if: ${{ env.SNYK_TOKEN != '' }}
+        uses: snyk/actions/python@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+  # ============================================================================
   # Backend Tests
   # ============================================================================
   backend-test:
@@ -232,62 +312,6 @@ jobs:
         run: |
           source .venv/bin/activate
           locust -f tests/loadtest.py --headless -u 100 -r 10 --run-time 2m --host=http://localhost:8000 --users 100 --spawn-rate 20
-
-  # ============================================================================
-  # Security Scan
-  # ============================================================================
-  security-scan:
-    name: Security Scan
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          exit-code: '1'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
-
-      - name: Run Bandit for Python security issues
-        run: |
-          pip install bandit
-          bandit -r core/ routes/ -f json -o bandit_results.json || true
-          echo "Bandit scan completed"
-
-      - name: Run Safety for Python dependency vulnerabilities
-        run: |
-          pip install safety
-          safety check --full-report || true
-          echo "Safety scan completed"
-
-      - name: Run Semgrep for code patterns
-        uses: returntocorp/semgrep-action@v1
-        with:
-          config: >-
-            p/python
-            p/secrets
-            p/security-audit
-          auditOn: push
-
-      - name: Check for secrets
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
-
-      - name: Run Snyk for dependency scanning
-        if: ${{ env.SNYK_TOKEN != '' }}
-        uses: snyk/actions/python@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high
 
   # ============================================================================
   # Deployment
