@@ -83,11 +83,11 @@ class SmartModelRouter:
         # Medium Complexity: Standard news, moderate cluster size
         if article_count >= 3 or has_high_weight:
             # Route to local Gemma 4 if available, otherwise Mistral Small
-            if local_available:
+            if local_available and prefer_local_synthesis:
                 return "local"
             return "mistral_small"
 
         # Low Complexity: 1-2 articles, straightforward routine news
-        if local_available:
+        if local_available and prefer_local_synthesis:
             return "local"
         return "enhanced_fallback"
