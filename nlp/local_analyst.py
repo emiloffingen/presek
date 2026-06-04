@@ -128,6 +128,7 @@ class LocalAnalyst:
         response_schema: Optional[Any] = None,
         temperature: Optional[float] = None,
         force_local: bool = False,
+        lock_timeout: int = 180,
     ) -> Optional[str]:
         # Try remote API first if enabled (default True)
         if not force_local and os.environ.get("USE_REMOTE_ANALYST", "true").lower() == "true":
@@ -156,7 +157,7 @@ class LocalAnalyst:
         lock_token = str(uuid.uuid4())
         acquired = False
         start_time = time.time()
-        timeout = 180  # Wait up to 3 minutes
+        timeout = lock_timeout
 
         while time.time() - start_time < timeout:
             try:
@@ -496,7 +497,7 @@ class LocalAnalyst:
             )
         
         try:
-            raw = self.analyze(text[:1500], system, max_tokens=400, response_schema=DeepMetadataResponse, lang=lang)
+            raw = self.analyze(text[:1500], system, max_tokens=400, response_schema=DeepMetadataResponse, lang=lang, lock_timeout=5)
             if raw:
                 parsed = json.loads(raw)
                 return DeepMetadataResponse(**parsed).model_dump()
@@ -545,7 +546,7 @@ class LocalAnalyst:
         prompt += "\n".join(titles_with_sources)
         
         try:
-            raw = self.analyze(prompt, system, max_tokens=256, response_schema=PluralismResponse, lang=lang)
+            raw = self.analyze(prompt, system, max_tokens=256, response_schema=PluralismResponse, lang=lang, lock_timeout=5)
             if raw:
                 parsed = json.loads(raw)
                 return PluralismResponse(**parsed).model_dump()
