@@ -145,6 +145,7 @@ def repair_knowledge_graph_task():
             return "No entities to repair."
 
         canonical_map = {}
+        aliases_map = {}
         for r in rows:
             name = r["name"]
             total = r["total_mentions"]
@@ -164,15 +165,18 @@ def repair_knowledge_graph_task():
                 if etype in ("PERSON", "ORG", "LOC") and canonical_map[canonical]["type"] == "ENTITY":
                     canonical_map[canonical]["type"] = etype
 
+            if name != canonical:
+                if canonical not in aliases_map:
+                    aliases_map[canonical] = []
+                aliases_map[canonical].append(name)
+
         merged_total = 0
         for canonical, data in canonical_map.items():
             if data["mentions"] == 0:
                 continue
 
             # Find all aliases that resolve to this canonical
-            aliases = [
-                r["name"] for r in rows if normalize_entity_name(r["name"]) == canonical and r["name"] != canonical
-            ]
+            aliases = aliases_map.get(canonical, [])
 
             # Always update/insert canonical first to ensure it exists for FKs
             final_sentiment = data["sentiment_sum"] / data["mentions"]
