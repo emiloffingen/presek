@@ -252,7 +252,7 @@ class LocalProvider(AIProvider):
             import os
             self.model = os.path.basename(MODEL_PATH)
         except ImportError:
-            self.model = "google_gemma-4-E4B-it-Q8_0.gguf"
+            self.model = "gemma-2-2b-it-Q4_K_M.gguf"
 
     @staticmethod
     def _local_synthesis_system(lang: str) -> str:

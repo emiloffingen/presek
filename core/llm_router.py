@@ -10,7 +10,7 @@ def _local_model_available() -> bool:
     configured_path = os.environ.get("LOCAL_MODEL_PATH")
     if configured_path:
         return os.path.exists(configured_path)
-    return os.path.exists("models/google_gemma-4-E4B-it-Q8_0.gguf")
+    return os.path.exists("models/gemma-2-2b-it-Q4_K_M.gguf")
 
 
 class SmartModelRouter:
