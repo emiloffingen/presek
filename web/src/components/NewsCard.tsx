@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, Globe, CheckCircle2, Sparkles, Activity, Clock, Layers, Palette, ArrowRight } from 'lucide-react';
+import { ShieldCheck, Globe, CheckCircle2, Activity, Clock, Layers, Palette, ArrowRight } from 'lucide-react';
 import { chooseClusterImage } from '../utils/imageSelection';
 import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, getDesignCardContext, slugify } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
@@ -92,7 +92,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
     return highlightScores(truncated);
   }
 
-  const displaySummary = cluster.synthetic_standfirst || getCardSummary(main, isLead);
+  const displaySummary = getCardSummary(main, isLead);
   const summaryIsCyrillic = isMostlyCyrillic(displaySummary);
 
   const getTimeStr = (dateStr: string) => {
@@ -138,12 +138,6 @@ export const NewsCard: React.FC<NewsCardProps> = ({
             <span className="kicker">{main.source}</span>
             {cluster.is_breaking && (
               <span className="significance-badge is-breaking">{t('news.breaking').toUpperCase()}</span>
-            )}
-            {cluster.has_synthesis && (
-              <span className="premium-synthesis-badge">
-                <Sparkles size={10} className="inline-block mr-1 align-middle text-amber-500" />
-                {t('cluster.synthesis_badge').toUpperCase()}
-              </span>
             )}
           </div>
         </div>
