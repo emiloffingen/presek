@@ -164,7 +164,7 @@ def _normalize_server_delivery_row(row):
 
 @router.post("/profile/sync/init", response_model=ProfileInitResponse)
 @custom_rate_limit("10/minute")
-async def init_profile_sync(request: Request, csrf_valid: bool = Depends(verify_csrf_token)):
+async def init_profile_sync(request: Request = None, csrf_valid: bool = Depends(verify_csrf_token)):
     token = _validate_sync_token_value(secrets.token_urlsafe(24))
     empty = _normalize_synced_profile({})
     await db.async_execute(

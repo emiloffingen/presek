@@ -2,17 +2,16 @@
 Test proxy functionality.
 """
 
-import pytest
+import asyncio
 from unittest.mock import patch
 from routes.system import proxy_image
 
 
-@pytest.mark.anyio
-async def test_proxy_image_fallback():
+def test_proxy_image_fallback():
     """Test that proxy returns fallback when database fails."""
     # Mock database failure
-    with patch('core.database.db_manager.async_execute', side_effect=Exception("DB error")):
-        result = await proxy_image('https://example.com/image.jpg')
+    with patch('routes.system.db.async_execute_one', side_effect=Exception("DB error")):
+        result = asyncio.run(proxy_image('https://example.com/image.jpg'))
         
         # Should return a fallback response
         assert result.status_code == 200
@@ -20,22 +19,20 @@ async def test_proxy_image_fallback():
         assert b'<svg' in result.body if hasattr(result, 'body') else b'<svg' in result.content
 
 
-@pytest.mark.anyio
-async def test_proxy_image_invalid_url():
+def test_proxy_image_invalid_url():
     """Test invalid URL handling."""
-    result = await proxy_image('invalid-url')
+    result = asyncio.run(proxy_image('invalid-url'))
     
     # Should return fallback for invalid URL
     assert result.status_code == 200
     assert 'image/svg+xml' in result.headers.get('Content-Type', '')
 
 
-@pytest.mark.anyio
-async def test_proxy_image_ssrf_block():
+def test_proxy_image_ssrf_block():
     """Test SSRF protection."""
     # Mock a response from a non-public IP
     with patch('routes.system._resolve_public_ips', return_value=[]):
-        result = await proxy_image('http://192.168.1.1/image.jpg')
+        result = asyncio.run(proxy_image('http://192.168.1.1/image.jpg'))
         
         # Should return fallback (it returns fetch_failed, not security_ssrf_block)
         assert result.status_code == 200

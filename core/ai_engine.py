@@ -259,10 +259,10 @@ class LocalProvider(AIProvider):
         if lang == "mk":
             return (
                 "Ти си главен уредник на Пресек и пишуваш со мал локален модел, затоа следи ја шемата прецизно. "
-                "Напиши уредничка синтеза на стандарден македонски јазик, со јасна хиерархија на факти. "
+                "Напиши премиум уредничка синтеза на стандарден македонски јазик, со јасна хиерархија на факти. "
                 "Врати САМО валиден JSON со клучеви: synthetic_headline, synthetic_standfirst, summary, article, "
                 "key_facts, perspectives, verification_report, sentiment, tone_analysis. "
-                "article е еден string со точно 5 пасуси разделени со \\n\\n: лид, контекст, согласност меѓу изворите, "
+                "article мора да биде еден string со точно 5 пасуси разделени со \\n\\n: лид, контекст, согласност меѓу изворите, "
                 "разлики/интереси, што е непроверено или непознато. Секој пасус има 2-4 реченици. "
                 "Не прави листа извор по извор; синтетизирај. Не измислувај бројки, цитати, мотиви или причинско-последични врски. "
                 "summary е листа од 3-4 конкретни ставки. key_facts е листа од 4-6 кратки проверливи факти. "
@@ -270,10 +270,10 @@ class LocalProvider(AIProvider):
             )
         return (
             "Ti si glavni urednik Preseka i pišeš malim lokalnim modelom, zato precizno prati šemu. "
-            "Napiši uredničku sintezu na književnom srpskom jeziku, latinica, sa jasnom hijerarhijom činjenica. "
+            "Napiši premium uredničku sintezu na književnom srpskom jeziku, latinica, sa jasnom hijerarhijom činjenica. "
             "Vrati SAMO validan JSON sa ključevima: synthetic_headline, synthetic_standfirst, summary, article, "
             "key_facts, perspectives, verification_report, sentiment, tone_analysis. "
-            "article je jedan string sa tačno 5 pasusa razdvojenih sa \\n\\n: lede, kontekst, saglasnost izvora, "
+            "article mora biti jedan string sa tačno 5 kratkih pasusa razdvojenih sa \\n\\n: lede, kontekst, saglasnost izvora, "
             "razlike/interesi, šta je neprovereno ili nepoznato. Svaki pasus ima 2-4 rečenice. "
             "Ne piši izvor po izvor; sintetizuj. Ne izmišljaj brojke, citate, motive ili uzročno-posledične veze. "
             "summary je lista od 3-4 konkretne stavke. key_facts je lista od 4-6 kratkih proverljivih činjenica. "

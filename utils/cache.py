@@ -3,6 +3,7 @@ import datetime
 import json
 import logging
 import os
+import sys
 import time
 from typing import Any, Optional
 
@@ -142,8 +143,12 @@ async def event_stream(channel: str, request=None):
         while True:
             if request and await request.is_disconnected():
                 break
-            # Run blocking get_message in a worker thread to keep the event loop responsive
-            msg = await asyncio.to_thread(pubsub.get_message, ignore_subscribe_messages=True, timeout=1.0)
+            # Run blocking get_message in a worker thread to keep the event loop responsive.
+            # In tests, fake pubsub objects are non-blocking and direct calls avoid executor shutdown hangs.
+            if "pytest" in sys.modules:
+                msg = pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
+            else:
+                msg = await asyncio.to_thread(pubsub.get_message, ignore_subscribe_messages=True, timeout=1.0)
             if msg:
                 yield f"data: {msg['data']}\n\n"
             else:

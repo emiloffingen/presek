@@ -8,8 +8,8 @@ from contextlib import asynccontextmanager, contextmanager
 import alembic.command
 import alembic.config
 import psycopg
+import psycopg_pool
 from psycopg.rows import dict_row
-from psycopg_pool import AsyncConnectionPool, ConnectionPool
 
 from core.version import APP_VERSION_LABEL
 
@@ -200,7 +200,7 @@ class AsyncDatabaseManager:
     async def _ensure_pool(self):
         async with self._lock:
             if self._pool is None:
-                self._pool = AsyncConnectionPool(
+                self._pool = psycopg_pool.AsyncConnectionPool(
                     conninfo=DATABASE_URL,
                     min_size=DB_POOL_MINCONN,
                     max_size=DB_POOL_MAXCONN,
@@ -220,7 +220,7 @@ class AsyncDatabaseManager:
             from core.config import DATABASE_READ_REPLICA_URL, USE_READ_REPLICA
             if USE_READ_REPLICA and DATABASE_READ_REPLICA_URL and getattr(self, "_read_pool", None) is None:
                 try:
-                    self._read_pool = AsyncConnectionPool(
+                    self._read_pool = psycopg_pool.AsyncConnectionPool(
                         conninfo=DATABASE_READ_REPLICA_URL,
                         min_size=DB_POOL_MINCONN,
                         max_size=DB_POOL_MAXCONN,
@@ -291,7 +291,7 @@ class DatabaseManager:
         """Initialize connection pool with exponential backoff retry logic."""
         for attempt in range(retries):
             try:
-                self._pool = ConnectionPool(
+                self._pool = psycopg_pool.ConnectionPool(
                     conninfo=DATABASE_URL,
                     min_size=DB_POOL_MINCONN,
                     max_size=DB_POOL_MAXCONN,
@@ -328,7 +328,7 @@ class DatabaseManager:
 
         for attempt in range(retries):
             try:
-                self._read_pool = ConnectionPool(
+                self._read_pool = psycopg_pool.ConnectionPool(
                     conninfo=DATABASE_READ_REPLICA_URL,
                     min_size=DB_POOL_MINCONN,
                     max_size=DB_POOL_MAXCONN,

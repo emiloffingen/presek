@@ -1,5 +1,6 @@
 """Test database read replica functionality."""
 
+import os
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -120,23 +121,24 @@ def test_database_manager_initialization_with_replica():
     import core.database
 
     # Mock ConnectionPool so it doesn't connect to replica
-    with patch("psycopg_pool.ConnectionPool") as mock_conn_pool:
-        with patch("core.config.DATABASE_READ_REPLICA_URL", "postgresql://user:pass@replica:5432/db"):
-            with patch("core.config.USE_READ_REPLICA", True):
-                importlib.reload(core.database)
-                
-                # Check that ConnectionPool was called with the replica URL
-                mock_conn_pool.assert_any_call(
-                    conninfo="postgresql://user:pass@replica:5432/db",
-                    min_size=core.database.DB_POOL_MINCONN,
-                    max_size=core.database.DB_POOL_MAXCONN,
-                    open=True,
-                    kwargs={
-                        "row_factory": core.database.dict_row,
-                        "connect_timeout": 5,
-                        "options": core.database.DB_SESSION_OPTIONS,
-                    },
-                )
+    with patch.dict(os.environ, {"PRESEK_SKIP_DB_POOL_INIT": "0"}):
+        with patch("psycopg_pool.ConnectionPool") as mock_conn_pool:
+            with patch("core.config.DATABASE_READ_REPLICA_URL", "postgresql://user:pass@replica:5432/db"):
+                with patch("core.config.USE_READ_REPLICA", True):
+                    importlib.reload(core.database)
+
+                    # Check that ConnectionPool was called with the replica URL
+                    mock_conn_pool.assert_any_call(
+                        conninfo="postgresql://user:pass@replica:5432/db",
+                        min_size=core.database.DB_POOL_MINCONN,
+                        max_size=core.database.DB_POOL_MAXCONN,
+                        open=True,
+                        kwargs={
+                            "row_factory": core.database.dict_row,
+                            "connect_timeout": 5,
+                            "options": core.database.DB_SESSION_OPTIONS,
+                        },
+                    )
 
     # Crucial: Reload core.database once again in a clean environment (no patches)
     # to restore the original db_manager and clean up any mock states
@@ -254,4 +256,3 @@ async def test_async_read_only_query_routing():
     finally:
         async_db._read_pool = original_read_pool
         async_db._pool = original_pool
-

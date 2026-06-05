@@ -2,19 +2,41 @@
 Test feed functionality.
 """
 
-import pytest
+import asyncio
 from unittest.mock import patch
-import utils
-from routes.home import get_home
+import routes.home as home_routes
 
 
-@pytest.mark.anyio
-async def test_get_home_returns_dict():
+async def _empty_news_data(*args, **kwargs):
+    return {"clusters": [], "global_clusters": []}
+
+
+async def _empty_list(*args, **kwargs):
+    return []
+
+
+async def _empty_stats(*args, **kwargs):
+    return {}
+
+
+def _patch_home_dependencies():
+    return (
+        patch.object(home_routes, 'cached_response', return_value=None),
+        patch.object(home_routes, 'set_cache', return_value=None),
+        patch.object(home_routes, 'fetch_news_data', side_effect=_empty_news_data),
+        patch.object(home_routes, 'get_trending_route', side_effect=_empty_list),
+        patch.object(home_routes, 'get_top_entities', side_effect=_empty_list),
+        patch.object(home_routes, 'get_stats_summary', side_effect=_empty_stats),
+        patch.object(home_routes, 'fetch_synthesis_picks', side_effect=_empty_list),
+    )
+
+
+def test_get_home_returns_dict():
     """Test that get_home returns a dictionary."""
-    # Mock the database to avoid real calls
-    with patch.object(utils.redis_client, 'get', return_value=None), \
-         patch('core.database.db_manager.async_execute', return_value=[]):
-        result = await get_home('sr')
+    with _patch_home_dependencies()[0], _patch_home_dependencies()[1], _patch_home_dependencies()[2], \
+         _patch_home_dependencies()[3], _patch_home_dependencies()[4], _patch_home_dependencies()[5], \
+         _patch_home_dependencies()[6]:
+        result = asyncio.run(home_routes.get_home('sr'))
         
         # Should return a dictionary
         assert isinstance(result, dict)
@@ -26,30 +48,33 @@ async def test_get_home_returns_dict():
         assert 'excluded_cluster_ids' in result
 
 
-@pytest.mark.anyio
-async def test_get_home_language_support():
+def test_get_home_language_support():
     """Test that get_home supports different languages."""
-    with patch.object(utils.redis_client, 'get', return_value=None), \
-         patch('core.database.db_manager.async_execute', return_value=[]):
+    with _patch_home_dependencies()[0], _patch_home_dependencies()[1], _patch_home_dependencies()[2], \
+         _patch_home_dependencies()[3], _patch_home_dependencies()[4], _patch_home_dependencies()[5], \
+         _patch_home_dependencies()[6]:
         # Test Serbian
-        result_sr = await get_home('sr')
+        result_sr = asyncio.run(home_routes.get_home('sr'))
         assert isinstance(result_sr, dict)
         
         # Test Macedonian
-        result_mk = await get_home('mk')
+        result_mk = asyncio.run(home_routes.get_home('mk'))
         assert isinstance(result_mk, dict)
 
 
-@pytest.mark.anyio
-async def test_get_home_error_handling():
+def test_get_home_error_handling():
     """Test that get_home handles database errors gracefully."""
-    with patch.object(utils.redis_client, 'get', return_value=None), \
-         patch('core.database.db_manager.async_execute', side_effect=Exception("DB error")):
-        result = await get_home('sr')
+    async def fail_news_data(*args, **kwargs):
+        raise Exception("DB error")
+
+    with patch.object(home_routes, 'cached_response', return_value=None), \
+         patch.object(home_routes, 'fetch_news_data', side_effect=fail_news_data), \
+         patch.object(home_routes, 'get_trending_route', side_effect=_empty_list), \
+         patch.object(home_routes, 'get_top_entities', side_effect=_empty_list), \
+         patch.object(home_routes, 'get_stats_summary', side_effect=_empty_stats), \
+         patch.object(home_routes, 'fetch_synthesis_picks', side_effect=_empty_list):
+        result = asyncio.run(home_routes.get_home('sr'))
         
         # Should still return a dict even on error
         assert isinstance(result, dict)
-        # Should have empty lists on error
-        assert result.get('developing', []) == []
-        assert result.get('for_you_pool', []) == []
-
+        assert result["status"] == "error"

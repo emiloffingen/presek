@@ -378,6 +378,9 @@ export async function getCsrfTokenAsync() {
   }
 }
 
+/**
+ * @returns {Promise<Record<string, string>>}
+ */
 export async function buildCsrfHeadersAsync() {
   const token = await getCsrfTokenAsync();
   return token ? { 'X-CSRF-Token': token } : {};

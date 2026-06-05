@@ -129,11 +129,15 @@ def test_standardize_article_style_task_language_mapping(mock_normalize, mock_db
 
 @patch("core.services.research_service.async_call_ai")
 @patch("core.services.research_service._build_gemma_research_context")
-def test_research_service_structured_integration(mock_build_context, mock_async_call):
+@patch("core.services.research_service.get_query_embedding_async")
+@patch("core.services.research_service.ResearchService._public_web_search")
+def test_research_service_structured_integration(mock_public_search, mock_embedding, mock_build_context, mock_async_call):
     """Test that ResearchService.get_cluster_research passes response_schema successfully."""
     from core.services.research_service import ResearchService
     
     mock_build_context.return_value = ("context text", ["source_a"])
+    mock_embedding.return_value = [0.1, 0.2, 0.3]
+    mock_public_search.return_value = []
     mock_async_call.side_effect = [
         ("plan raw", "provider_x"),  # Plan call
         (json.dumps({
@@ -301,6 +305,5 @@ def test_determine_relationship_direction_heuristic():
         context_text=""
     )
     assert res3 == "mutual"
-
 
 

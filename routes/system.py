@@ -717,11 +717,20 @@ async def proxy_image(
                 return serve_fallback("invalid_domain")
             if parsed_url.netloc.endswith((".localhost", "localhost", "127.0.0.1", "0.0.0.0")):
                 return serve_fallback("security_localhost_block")
+            if parsed_url.path.lower().endswith(".svg"):
+                return serve_fallback("remote_svg_block")
         except Exception:
             return serve_fallback("parse_error")
 
         target_w = int(w) if w and w.isdigit() else 600
         target_w = max(20, min(1200, target_w))
+
+        try:
+            safe_ips = _resolve_public_ips(url)
+        except Exception:
+            return serve_fallback("fetch_failed")
+        if not safe_ips:
+            return serve_fallback("security_ssrf_block")
 
         cache_key = f"proxy:bin:v4:{target_w}:{url}"
         try:
@@ -756,6 +765,7 @@ async def proxy_image(
                     log.info(f"[proxy] Using local master for {url}")
         except Exception as e:
             log.warning(f"[proxy] DB lookup failed: {e}")
+            return serve_fallback("db_lookup_failed")
 
         # Fetch from remote
         if not img_data:
@@ -766,10 +776,6 @@ async def proxy_image(
             }
 
             try:
-                from utils.network import _peer_ip, _resolve_public_ips
-
-                safe_ips = _resolve_public_ips(url)
-
                 import httpx
 
                 async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:

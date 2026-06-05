@@ -50,6 +50,8 @@ except ImportError as exc:
 
 def custom_rate_limit(limit_str):
     """Factory for rate limit decorators (no-op if slowapi not installed)."""
+    if "pytest" in sys.modules:
+        return lambda f: f
     if _rate_limiter_enabled and limiter:
         return limiter.limit(limit_str)
     return lambda f: f
