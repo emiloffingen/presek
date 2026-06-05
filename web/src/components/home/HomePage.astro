@@ -17,7 +17,7 @@ import HomeLiveStrip from './HomeLiveStrip.astro';
 import TrendingPreviewRail from './TrendingPreviewRail.astro';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { chooseClusterImage } from '../../utils/imageSelection';
-import { cleanAndDecode, extractCleanSummaryText, highlightScores, isMostlyCyrillic } from '../../utils/textUtils';
+import { cleanAndDecode, extractCleanSummaryText, getStoryPreviewText, highlightScores, isMostlyCyrillic } from '../../utils/textUtils';
 import { apiBaseUrl } from '../../lib/apiBase';
 import type { NewsCluster } from '../../types';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
@@ -566,7 +566,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 											</a>
 											
 											<p class="text-xs text-muted-foreground line-clamp-3 mb-6 font-serif italic leading-relaxed">
-												{cluster.synthetic_standfirst || cluster.articles?.[0]?.description || ''}
+												{getStoryPreviewText(cluster, cluster.articles?.[0], lang)}
 											</p>
 										</div>
 										
@@ -631,7 +631,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 											</a>
 											
 											<p class="text-xs text-muted-foreground line-clamp-3 mb-6 font-serif leading-relaxed">
-												{cluster.synthetic_standfirst || factCheckedArticle?.description || ''}
+												{getStoryPreviewText(cluster, factCheckedArticle, lang)}
 											</p>
 										</div>
 										

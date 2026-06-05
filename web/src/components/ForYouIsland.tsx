@@ -12,11 +12,11 @@ import {
   sendSuggestionEvents,
 } from '../lib/personalization.js';
 import { sanitizeHtml } from '../lib/sanitize';
-import { getDisplaySummary, getDisplayTitle, highlightScores, getPersonalizedText } from '../utils/textUtils';
+import { getDisplayTitle, getStoryPreviewText, highlightScores, getPersonalizedText } from '../utils/textUtils';
 
 function getSummary(cluster: any, lang: string) {
   const article = cluster?.articles?.[0];
-  const text = cluster.synthetic_standfirst || getDisplaySummary(article, lang);
+  const text = getStoryPreviewText(cluster, article, lang);
   return getPersonalizedText(text, lang);
 }
 

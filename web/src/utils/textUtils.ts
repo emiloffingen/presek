@@ -289,6 +289,31 @@ export function getDisplaySummary(article: any, lang?: string): string {
     return summary;
 }
 
+export function isSyntheticStandfirstBoilerplate(input: any): boolean {
+    const text = extractCleanSummaryText(input);
+    if (!text) return false;
+
+    return [
+        /^Уреднички\s+преглед(?:\s|:|\.|,|$)/i,
+        /^Urednički\s+pregled\s+baziran\s+na\b/i,
+        /^Urednicki\s+pregled\s+baziran\s+na\b/i,
+        /^Editorial\s+overview\s+based\s+on\b/i,
+    ].some((pattern) => pattern.test(text));
+}
+
+export function getStoryPreviewText(cluster: any, fallbackArticle?: any, lang?: string): string {
+    const standfirst = extractCleanSummaryText(cluster?.synthetic_standfirst || '');
+    if (standfirst && !isSyntheticStandfirstBoilerplate(standfirst)) {
+        if (lang === 'sr' && isMostlyCyrillic(standfirst)) {
+            return transliterate(standfirst);
+        }
+        return standfirst;
+    }
+
+    const article = fallbackArticle || cluster?.articles?.[0];
+    return getDisplaySummary(article, lang);
+}
+
 export function getPersonalizedText(text: string, lang: string): string {
     if (!text) return '';
     let result = deShout(text);

@@ -3,6 +3,7 @@ import type { NewsCluster } from '../../types';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import type { ui } from '../../i18n/ui';
 import { chooseClusterImage } from '../../utils/imageSelection';
+import { getStoryPreviewText } from '../../utils/textUtils';
 import { ArrowRight } from 'lucide-react';
 
 interface Props {
@@ -49,7 +50,7 @@ function getPluralismLabel(value: number) {
         <div class="feed-section-container">
             <div class="section-heading-row masthead-double-rule">
                 <div class="heading-badge">
-                    <span class="badge-text">{lang === 'sr' ? 'SISTEMSKA SINTEZA' : 'СИСТЕМСКА СИНТЕЗА'}</span>
+                    <span class="badge-text">{lang === 'sr' ? 'Sistemska sinteza' : 'Системска синтеза'}</span>
                 </div>
                 <h2 class="section-heading font-serif">{t('home.synthesis_picks_title')}</h2>
                 <p class="section-note">
@@ -91,7 +92,7 @@ function getPluralismLabel(value: number) {
                                     </h3>
 
                                     <p class="card-description font-serif italic text-muted-foreground leading-relaxed">
-                                        {cluster.synthetic_standfirst || cluster.articles?.[0]?.description || ''}
+                                        {getStoryPreviewText(cluster, cluster.articles?.[0], lang)}
                                     </p>
 
                                     <div class="card-meta-row">
@@ -148,11 +149,11 @@ function getPluralismLabel(value: number) {
 
     .badge-text {
         font-family: var(--font-sans);
-        font-size: 0.6rem;
-        font-weight: 950;
-        letter-spacing: 0.22em;
+        font-size: 0.72rem;
+        font-weight: 850;
+        letter-spacing: 0.04em;
         color: var(--nyt-accent);
-        text-transform: uppercase;
+        text-transform: none;
     }
 
     .section-heading {
