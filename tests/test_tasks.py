@@ -273,6 +273,60 @@ class TestSynthesizeClusterTaskQuality:
         assert "a.country = %s" in query
         assert params == ("RS", 2, "sr")
 
+    def test_backfill_summary_records_generation_metadata(self):
+        from tasks.intelligence import backfill_cluster_summaries_task
+
+        article_rows = [
+            {
+                "cluster_id": "cluster-1",
+                "title": "Naslov",
+                "description": "Opis",
+                "source": "MIA",
+                "country": "RS",
+                "created_at": datetime.datetime.now(),
+            }
+        ]
+        fallback_result = {
+            "summary": "Sažetak",
+            "generated_article": "Članak",
+            "synthetic_headline": "Naslov",
+            "synthetic_standfirst": "Uvod",
+            "perspectives": [{"angle": "Ugao"}],
+            "key_facts": ["činjenica"],
+            "analyst_entities": ["Entitet"],
+        }
+
+        with (
+            patch("core.config.AUTO_SUMMARIZE_MIN_SRC", 1),
+            patch("core.database.db_manager") as mock_db,
+            patch("nlp.generation.synthesize_cluster_fallback", return_value=fallback_result),
+            patch("tasks.intelligence.record_runtime_event") as mock_event,
+        ):
+            mock_db.execute.side_effect = [
+                [{"cluster_id": "cluster-1"}],
+                [{"source": "MIA"}],
+                article_rows,
+                None,
+            ]
+
+            backfill_cluster_summaries_task(days=2, lang="sr")
+
+        insert_query, insert_params = mock_db.execute.call_args_list[3].args
+        assert "generation_provider" in insert_query
+        assert "generation_model" in insert_query
+        assert "fallback_reason" in insert_query
+        assert insert_params[-3:] == (
+            "enhanced_fallback",
+            "enhanced_fallback",
+            "backfill_enhanced_fallback",
+        )
+        mock_event.assert_called_once_with(
+            "synthesis_path",
+            mode="enhanced_fallback",
+            fast_mode=False,
+            lang="sr",
+        )
+
     def test_normalizes_ai_summary_and_perspectives_before_store(self):
 
         article_rows = [

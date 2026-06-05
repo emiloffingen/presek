@@ -184,3 +184,36 @@ def test_provider_override_local_does_not_cascade_to_remote(monkeypatch):
     assert provider is None
     assert local_provider.call.call_count == 1
     assert remote_provider.call.call_count == 0
+
+
+def test_call_ai_skips_rate_limited_provider(monkeypatch):
+    from core import ai_engine
+
+    cooled_provider = Mock()
+    next_provider = Mock()
+    next_provider.call.return_value = '{"summary":["ok"],"article":"ok"}'
+
+    monkeypatch.setattr(
+        ai_engine,
+        "PROVIDERS",
+        {
+            "mistral_large": cooled_provider,
+            "mistral_small": next_provider,
+            "nvidia": Mock(),
+            "local": Mock(),
+        },
+    )
+    monkeypatch.setattr(ai_engine, "PROVIDER_FALLBACK_ORDER_SUMMARY", ["mistral_large", "mistral_small"])
+    monkeypatch.setitem(ai_engine._PROVIDER_COOLDOWN_UNTIL, "mistral_large", ai_engine.time.time() + 60)
+
+    raw, provider = ai_engine._call_ai(
+        "prompt",
+        "system",
+        task_type="synthesis",
+        json_mode=True,
+    )
+
+    assert provider == "mistral_small"
+    assert raw == '{"summary":["ok"],"article":"ok"}'
+    cooled_provider.call.assert_not_called()
+    next_provider.call.assert_called_once()

@@ -2523,13 +2523,18 @@ def backfill_cluster_summaries_task(days=30, lang="sr"):
                 fallback_result = synthesize_cluster_fallback(article_rows, lang=lang)
 
                 if fallback_result["summary"] or fallback_result["generated_article"]:
+                    generation_provider = "enhanced_fallback"
+                    generation_model = "enhanced_fallback"
+                    fallback_reason = "backfill_enhanced_fallback"
+
                     # Store the summary in database
                     db.execute(
                         """
                         INSERT INTO cluster_summaries
                         (cluster_id, lang, summary, generated_article, synthetic_headline,
-                         synthetic_standfirst, created_at, perspectives, key_facts, analyst_entities)
-                        VALUES (%s, %s, %s, %s, %s, %s, NOW(), %s, %s, %s)
+                         synthetic_standfirst, created_at, perspectives, key_facts, analyst_entities,
+                         generation_provider, generation_model, fallback_reason)
+                        VALUES (%s, %s, %s, %s, %s, %s, NOW(), %s, %s, %s, %s, %s, %s)
                         ON CONFLICT (cluster_id, lang) DO UPDATE SET
                         summary = EXCLUDED.summary,
                         generated_article = EXCLUDED.generated_article,
@@ -2538,7 +2543,10 @@ def backfill_cluster_summaries_task(days=30, lang="sr"):
                         created_at = NOW(),
                         perspectives = EXCLUDED.perspectives,
                         key_facts = EXCLUDED.key_facts,
-                        analyst_entities = EXCLUDED.analyst_entities
+                        analyst_entities = EXCLUDED.analyst_entities,
+                        generation_provider = EXCLUDED.generation_provider,
+                        generation_model = EXCLUDED.generation_model,
+                        fallback_reason = EXCLUDED.fallback_reason
                         """,
                         (
                             cluster_id,
@@ -2558,8 +2566,12 @@ def backfill_cluster_summaries_task(days=30, lang="sr"):
                             json.dumps(fallback_result["perspectives"][:2000] if fallback_result["perspectives"] else []),
                             json.dumps(fallback_result.get("key_facts")[:1000] if fallback_result.get("key_facts") else []),
                             json.dumps(fallback_result.get("analyst_entities")[:1000] if fallback_result.get("analyst_entities") else []),
+                            generation_provider,
+                            generation_model,
+                            fallback_reason,
                         ),
                     )
+                    record_runtime_event("synthesis_path", mode=generation_provider, fast_mode=False, lang=lang)
                     log.info(f"[tasks] Generated summary for cluster {cluster_id} (lang={lang})")
                 else:
                     log.debug(f"[tasks] No summary generated for cluster {cluster_id}")

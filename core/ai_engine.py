@@ -19,6 +19,21 @@ from core.config import (
 
 log = logging.getLogger("presek")
 
+PROVIDER_RATE_LIMIT_COOLDOWN_SECONDS = int(os.environ.get("PROVIDER_RATE_LIMIT_COOLDOWN_SECONDS", "300"))
+_PROVIDER_COOLDOWN_UNTIL: dict[str, float] = {}
+
+
+def _provider_cooldown_remaining(provider_name: str) -> float:
+    return max(0.0, _PROVIDER_COOLDOWN_UNTIL.get(provider_name, 0.0) - time.time())
+
+
+def _mark_provider_cooldown(provider_name: str, retry_after: str | None = None):
+    try:
+        cooldown_seconds = int(retry_after) if retry_after else PROVIDER_RATE_LIMIT_COOLDOWN_SECONDS
+    except (TypeError, ValueError):
+        cooldown_seconds = PROVIDER_RATE_LIMIT_COOLDOWN_SECONDS
+    _PROVIDER_COOLDOWN_UNTIL[provider_name] = time.time() + max(1, cooldown_seconds)
+
 
 from nlp import synthesize_locally
 
@@ -235,8 +250,12 @@ class OpenAICompatibleProvider(AIProvider):
                 resp.raise_for_status()
                 data = resp.json()
                 return data["choices"][0]["message"]["content"]
-        except (httpx.RequestError, httpx.HTTPStatusError) as e:
-            log.warning(f"[ai/{self.provider_name}] Call failed: {e}")
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 429:
+                _mark_provider_cooldown(self.provider_name, e.response.headers.get("Retry-After"))
+            log.warning(f"[ai/{self.provider_name}] Call failed for model {self.model}: {e}")
+        except httpx.RequestError as e:
+            log.warning(f"[ai/{self.provider_name}] Call failed for model {self.model}: {e}")
         return None
 
     async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
@@ -362,8 +381,8 @@ class LocalProvider(AIProvider):
 
 
 class MistralProvider(OpenAICompatibleProvider):
-    def __init__(self, api_key: str, api_url: str, model: str):
-        super().__init__("mistral", api_key, api_url, model)
+    def __init__(self, provider_name: str, api_key: str, api_url: str, model: str):
+        super().__init__(provider_name, api_key, api_url, model)
 
 
 class NvidiaProvider(OpenAICompatibleProvider):
@@ -378,11 +397,13 @@ PROVIDERS = {
         model=os.environ.get("NVIDIA_MODEL", "nvidia/llama-3.1-nemotron-70b-instruct"),
     ),
     "mistral_large": MistralProvider(
+        provider_name="mistral_large",
         api_key=os.environ.get("MISTRAL_API_KEY", ""),
         api_url=os.environ.get("MISTRAL_API_URL", "https://api.mistral.ai/v1/chat/completions"),
         model=os.environ.get("MISTRAL_MODEL", "mistral-large-latest"),
     ),
     "mistral_small": MistralProvider(
+        provider_name="mistral_small",
         api_key=os.environ.get("MISTRAL_SMALL_API_KEY", ""),
         api_url=os.environ.get("MISTRAL_API_URL", "https://api.mistral.ai/v1/chat/completions"),
         model=os.environ.get("MISTRAL_SMALL_MODEL", "mistral-small-latest"),
@@ -435,6 +456,13 @@ async def _call_ai_async(
 
     for provider_name in fallback_order:
         provider = PROVIDERS[provider_name]
+        cooldown_remaining = _provider_cooldown_remaining(provider_name)
+        if cooldown_remaining > 0:
+            AI_CALLS.labels(provider=provider_name, task_type=task_type, status="cooldown").inc()
+            log.warning(
+                f"[ai/cascade] Provider {provider_name} is rate-limited, skipping for {cooldown_remaining:.0f}s"
+            )
+            continue
         start_time = time.time()
         try:
             if stream:
@@ -533,6 +561,13 @@ def _call_ai(
 
     for provider_name in fallback_order:
         provider = PROVIDERS[provider_name]
+        cooldown_remaining = _provider_cooldown_remaining(provider_name)
+        if cooldown_remaining > 0:
+            AI_CALLS.labels(provider=provider_name, task_type=task_type, status="cooldown").inc()
+            log.warning(
+                f"[ai/cascade] Provider {provider_name} is rate-limited, skipping for {cooldown_remaining:.0f}s"
+            )
+            continue
         start_time = time.time()
         try:
             res = provider.call(prompt, system, max_tokens, json_mode, topic=topic, task_type=task_type, lang=lang, response_schema=response_schema)
