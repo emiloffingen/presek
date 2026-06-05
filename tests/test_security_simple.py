@@ -76,23 +76,27 @@ def test_input_validation_functions():
     assert valid_list == ["item1", "item2"], "Valid list should pass"
 
 
-def test_security_headers_middleware():
+async def test_security_headers_middleware():
     """Test that security headers middleware adds expected headers."""
-    from fastapi import FastAPI
-    from fastapi.testclient import TestClient
+    from starlette.datastructures import Headers
+    from starlette.responses import JSONResponse
     from routes.security import SecurityHeadersMiddleware
     
     print("Testing security headers middleware...")
-    
-    app = FastAPI()
-    app.add_middleware(SecurityHeadersMiddleware)
-    
-    @app.get("/test")
-    def test_endpoint():
-        return {"message": "test"}
-    
-    client = TestClient(app)
-    response = client.get("/test")
+
+    middleware = SecurityHeadersMiddleware(app=lambda scope, receive, send: None)
+    request = type(
+        "Request",
+        (),
+        {
+            "headers": Headers({}),
+        },
+    )()
+
+    async def call_next(_request):
+        return JSONResponse({"message": "test"})
+
+    response = await middleware.dispatch(request, call_next)
     
     # Check critical security headers
     assert "X-Content-Type-Options" in response.headers, "X-Content-Type-Options header missing"
@@ -126,7 +130,8 @@ def main():
         test_csrf_token_generation_and_validation()
         test_jwt_token_creation_and_decoding()
         test_input_validation_functions()
-        test_security_headers_middleware()
+        import asyncio
+        asyncio.run(test_security_headers_middleware())
         
         print()
         print("=" * 60)

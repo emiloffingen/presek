@@ -128,7 +128,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
   return (
     <article 
-      className={`nyt-article variant-${variant} ${isLead ? 'lead-story' : ''} ${cluster.has_synthesis ? 'has-synthesis' : ''} ${thumbSrc ? 'has-image' : ''}`}
+      className={`nyt-article variant-${variant} ${isLead ? 'lead-story' : ''} ${thumbSrc ? 'has-image' : ''}`}
       data-cluster={JSON.stringify(slimCluster)}
       data-testid="article-card"
     >

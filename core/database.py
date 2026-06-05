@@ -280,8 +280,11 @@ class DatabaseManager:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(DatabaseManager, cls).__new__(cls)
-            cls._instance._init_pool()
-            cls._instance._init_read_pool()
+            cls._instance._pool = None
+            cls._instance._read_pool = None
+            if os.environ.get("PRESEK_SKIP_DB_POOL_INIT") != "1":
+                cls._instance._init_pool()
+                cls._instance._init_read_pool()
         return cls._instance
 
     def _init_pool(self, retries=3, backoff_base=2):

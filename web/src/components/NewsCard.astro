@@ -97,8 +97,6 @@ if (lang === 'sr' && isMostlyCyrillic(displaySummary)) {
 }
 const summaryIsCyrillic = isMostlyCyrillic(displaySummary);
 
-const hasSynthesis = cluster.has_synthesis;
-
 // Relative time format
 function getTimeStr(dateStr: string) {
     try {
@@ -121,7 +119,7 @@ function getTimeStr(dateStr: string) {
 }
 ---
 
-<article class:list={["nyt-article", "premium-spotlight", `variant-${variant}`, { "lead-story": isLead, "has-image": !!thumbSrc, "has-synthesis": hasSynthesis }, bentoSpan ? `bento-${bentoSpan}` : ""]} data-cluster={JSON.stringify(slimCluster)} data-testid="article-card">
+<article class:list={["nyt-article", "premium-spotlight", `variant-${variant}`, { "lead-story": isLead, "has-image": !!thumbSrc }, bentoSpan ? `bento-${bentoSpan}` : ""]} data-cluster={JSON.stringify(slimCluster)} data-testid="article-card">
 	<div class="article-body">
         <div class="article-meta-v2">
             <div class="kicker-group">
@@ -246,19 +244,6 @@ function getTimeStr(dateStr: string) {
         box-shadow: 0 1px 0 color-mix(in srgb, var(--foreground) 5%, transparent);
     }
 
-    .nyt-article.has-synthesis {
-        border-top: 3px solid var(--editorial-premium);
-        border-radius: var(--radius-lg, 0px);
-        background: color-mix(in srgb, var(--card) 92%, var(--editorial-premium) 3%);
-        background-image: radial-gradient(circle at 90% 10%, color-mix(in srgb, var(--editorial-premium) 8%, transparent), transparent 70%);
-        box-shadow: 0 1px 0 color-mix(in srgb, var(--foreground) 4%, transparent);
-    }
-
-    :global(.dark) .nyt-article.has-synthesis {
-        background: linear-gradient(135deg, rgba(22, 26, 41, 0.75) 0%, rgba(15, 18, 29, 0.7) 100%);
-        background-image: radial-gradient(circle at 90% 10%, color-mix(in srgb, var(--editorial-premium) 12%, transparent), transparent 65%);
-    }
-
     @media (hover: hover) {
         .nyt-article:not(.lead-story):hover {
             transform: translateY(-2px);
@@ -266,18 +251,6 @@ function getTimeStr(dateStr: string) {
             box-shadow: 0 12px 26px -18px rgba(15, 23, 42, 0.35);
             background: color-mix(in srgb, var(--card) 96%, var(--nyt-accent) 2%);
             z-index: 10;
-        }
-        .nyt-article.has-synthesis:not(.lead-story):hover {
-            transform: translateY(-2px);
-            border-color: var(--editorial-premium);
-            box-shadow: 0 12px 26px -18px color-mix(in srgb, var(--editorial-premium) 42%, transparent);
-            z-index: 10;
-        }
-        .nyt-article.has-synthesis.lead-story:hover {
-            border-color: var(--editorial-premium);
-            box-shadow: 0 16px 40px -8px color-mix(in srgb, var(--background) 50%, rgba(0, 0, 0, 0.16)),
-                        inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 10%, transparent),
-                        0 0 25px -4px color-mix(in srgb, var(--editorial-premium) 10%, transparent);
         }
     }
 
@@ -366,29 +339,6 @@ function getTimeStr(dateStr: string) {
     .significance-badge.is-breaking {
         color: white;
         background: var(--nyt-red);
-    }
-
-    .premium-synthesis-badge {
-        font-family: var(--font-sans);
-        font-size: 0.56rem;
-        font-weight: 950;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--editorial-premium);
-        background: color-mix(in srgb, var(--editorial-premium) 8%, transparent);
-        border: 1px solid color-mix(in srgb, var(--editorial-premium) 35%, transparent);
-        padding: 0.1rem 0.4rem;
-        line-height: 1.1;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.2rem;
-        border-radius: var(--radius-sm, 0px);
-        box-shadow: 0 1px 2px color-mix(in srgb, var(--editorial-premium) 6%, transparent);
-    }
-
-    :global(.dark) .premium-synthesis-badge {
-        background: color-mix(in srgb, var(--editorial-premium) 12%, transparent);
-        border-color: color-mix(in srgb, var(--editorial-premium) 40%, transparent);
     }
 
     .article-footer-meta {

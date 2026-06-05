@@ -2,7 +2,6 @@
 Test security headers and middleware functionality.
 """
 import pytest
-from fastapi.testclient import TestClient
 from routes.security import SecurityHeadersMiddleware, generate_csrf_token, validate_csrf_token
 from core.auth import create_jwt_token, decode_jwt
 
@@ -37,19 +36,25 @@ def test_jwt_token_creation_and_decoding():
     assert "jti" in payload
 
 
-def test_security_headers_middleware():
+@pytest.mark.asyncio
+async def test_security_headers_middleware():
     """Test that security headers middleware adds expected headers."""
-    from fastapi import FastAPI
-    
-    app = FastAPI()
-    app.add_middleware(SecurityHeadersMiddleware)
-    
-    @app.get("/test")
-    def test_endpoint():
-        return {"message": "test"}
-    
-    client = TestClient(app)
-    response = client.get("/test")
+    from starlette.datastructures import Headers
+    from starlette.responses import JSONResponse
+
+    middleware = SecurityHeadersMiddleware(app=lambda scope, receive, send: None)
+    request = type(
+        "Request",
+        (),
+        {
+            "headers": Headers({}),
+        },
+    )()
+
+    async def call_next(_request):
+        return JSONResponse({"message": "test"})
+
+    response = await middleware.dispatch(request, call_next)
     
     # Check critical security headers
     assert "X-Content-Type-Options" in response.headers

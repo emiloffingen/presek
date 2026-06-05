@@ -52,6 +52,11 @@ class SecurityAudit:
         """Check for known vulnerabilities in Python dependencies."""
         print("[*] Checking Python dependencies for vulnerabilities...")
 
+        audit_python = sys.executable
+        venv_python = self.project_root / ".venv" / "bin" / "python3"
+        if venv_python.exists():
+            audit_python = str(venv_python)
+
         # Build PATH to include user pip installations
         env = os.environ.copy()
         user_local_bin = os.path.expanduser("~/.local/bin")
@@ -61,7 +66,7 @@ class SecurityAudit:
         try:
             result = subprocess.run(
                 [
-                    sys.executable,
+                    audit_python,
                     "-m",
                     "pip_audit",
                     "--desc",

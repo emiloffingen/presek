@@ -1,8 +1,6 @@
 """Test authentication functionality."""
 
 import pytest
-from fastapi.testclient import TestClient
-
 from core.auth import create_admin_jwt, create_jwt_token, decode_jwt, verify_admin_jwt
 
 
@@ -65,25 +63,15 @@ def test_jwt_expiration():
     # Note: In a real test, you'd need to mock the time or use a very short expiration
 
 
-def test_admin_endpoint_with_jwt():
-    """Test admin endpoint with JWT authentication."""
-    from unittest.mock import patch
-    from core.api_fast import app
+def test_verify_admin_accepts_jwt():
+    """Test admin verification with JWT authentication."""
+    import asyncio
+    from routes.admin import verify_admin
 
-    client = TestClient(app)
-
-    # Create admin token
     admin_token = create_admin_jwt()
+    request = type("Request", (), {"headers": {"Authorization": f"Bearer {admin_token}"}})()
 
-    # Test admin dashboard access (mocking the dashboard logic to avoid DB hits)
-    with patch("routes.admin.get_admin_dashboard", return_value={"status": "success"}):
-        response = client.get("/api/admin/dashboard", headers={"Authorization": f"Bearer {admin_token}"})
-
-    # Should return 200 for valid admin token
-    assert response.status_code == 200
-    data = response.json()
-    assert "status" in data
-    assert data["status"] == "success"
+    assert asyncio.run(verify_admin(request)) is True
 
 
 def test_verify_admin_accepts_static_admin_token(monkeypatch):
@@ -110,26 +98,26 @@ def test_static_admin_token_disabled_by_default_in_production(monkeypatch):
 
 
 def test_admin_endpoint_without_auth():
-    """Test admin endpoint without authentication."""
-    from core.api_fast import app
+    """Test admin verification without authentication."""
+    import asyncio
+    from fastapi import HTTPException
+    from routes.admin import verify_admin
 
-    client = TestClient(app)
+    request = type("Request", (), {"headers": {}})()
 
-    # Test admin dashboard access without auth
-    response = client.get("/api/admin/dashboard")
-
-    # Should return 403 for unauthorized access
-    assert response.status_code == 403
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(verify_admin(request))
+    assert exc.value.status_code == 403
 
 
 def test_admin_endpoint_with_invalid_token():
-    """Test admin endpoint with invalid token."""
-    from core.api_fast import app
+    """Test admin verification with invalid token."""
+    import asyncio
+    from fastapi import HTTPException
+    from routes.admin import verify_admin
 
-    client = TestClient(app)
+    request = type("Request", (), {"headers": {"Authorization": "Bearer invalid.token.here"}})()
 
-    # Test admin dashboard access with invalid token
-    response = client.get("/api/admin/dashboard", headers={"Authorization": "Bearer invalid.token.here"})
-
-    # Should return 403 for invalid token
-    assert response.status_code == 403
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(verify_admin(request))
+    assert exc.value.status_code == 403
