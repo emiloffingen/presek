@@ -1511,9 +1511,9 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None):
     if theme_l == "light":
         style_content = f"""
             svg, :root {{
-                --glass-fill: rgba(255,255,255,0.3);
+                --glass-fill: rgba(255,255,255,0.22);
                 --glass-stroke: rgba(0,0,0,0.06);
-                --grid-stroke: rgba(0,0,0,0.04);
+                --grid-stroke: rgba(0,0,0,0.035);
                 --text-primary: #0f172a;
                 --text-meta: #334155;
                 --meta-opacity: 0.7;
@@ -1538,9 +1538,9 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None):
     elif theme_l == "dark":
         style_content = f"""
             svg, :root {{
-                --glass-fill: rgba(255,255,255,0.02);
-                --glass-stroke: rgba(255,255,255,0.07);
-                --grid-stroke: rgba(255,255,255,0.08);
+                --glass-fill: rgba(255,255,255,0.015);
+                --glass-stroke: rgba(255,255,255,0.06);
+                --grid-stroke: rgba(255,255,255,0.06);
                 --text-primary: #ffffff;
                 --text-meta: #ffffff;
                 --meta-opacity: 0.6;
@@ -1566,9 +1566,9 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None):
         # Auto/System: Default to Dark, override on light prefers-color-scheme
         style_content = f"""
             svg, :root {{
-                --glass-fill: rgba(255,255,255,0.02);
-                --glass-stroke: rgba(255,255,255,0.07);
-                --grid-stroke: rgba(255,255,255,0.08);
+                --glass-fill: rgba(255,255,255,0.015);
+                --glass-stroke: rgba(255,255,255,0.06);
+                --grid-stroke: rgba(255,255,255,0.06);
                 --text-primary: #ffffff;
                 --text-meta: #ffffff;
                 --meta-opacity: 0.6;
@@ -1592,9 +1592,9 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None):
 
             @media (prefers-color-scheme: light) {{
                 svg, :root {{
-                    --glass-fill: rgba(255,255,255,0.3);
+                    --glass-fill: rgba(255,255,255,0.22);
                     --glass-stroke: rgba(0,0,0,0.06);
-                    --grid-stroke: rgba(0,0,0,0.04);
+                    --grid-stroke: rgba(0,0,0,0.035);
                     --text-primary: #0f172a;
                     --text-meta: #334155;
                     --meta-opacity: 0.7;
@@ -1769,23 +1769,20 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None):
         # 2. Tactile Grain Overlay
         '<rect width="100%" height="100%" fill="var(--grain-fill)" opacity="var(--grain-opacity)" filter="url(#grain)" />',
         
-        # 3. Floating Glassmorphism Panel
-        '<rect x="40" y="40" width="720" height="370" rx="24" fill="var(--glass-fill)" stroke="var(--glass-stroke)" stroke-width="1.5" />',
+        # 3. Editorial panel
+        '<rect x="40" y="40" width="720" height="370" rx="10" fill="var(--glass-fill)" stroke="var(--glass-stroke)" stroke-width="1.25" />',
         
         # 4. Editorial Layout Grid Lines
-        '<g stroke="var(--grid-stroke)" stroke-width="1" stroke-dasharray="6 6">',
+        '<g stroke="var(--grid-stroke)" stroke-width="1" stroke-dasharray="6 8">',
         '  <line x1="120" y1="40" x2="120" y2="410" />',
         '  <line x1="460" y1="40" x2="460" y2="410" />',
         '  <line x1="40" y1="110" x2="760" y2="110" />',
         '  <line x1="40" y1="340" x2="760" y2="340" />',
         '</g>',
         
-        # 5. Live Synthesis Glimmer
-        '<circle cx="80" cy="75" r="5" fill="#f43f5e" opacity="0.9" />',
-        '<circle cx="80" cy="75" r="10" fill="none" stroke="#f43f5e" stroke-width="1.5" opacity="0.4">',
-        '  <animate attributeName="r" values="5;15;5" dur="3s" repeatCount="indefinite"/>',
-        '</circle>',
-        '<text x="96" y="79" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="900" letter-spacing="2" fill="var(--text-meta)" opacity="var(--meta-opacity)">SISTEMSKA SINTEZA</text>',
+        # 5. Editorial status
+        '<circle cx="80" cy="75" r="4" fill="var(--art-accent)" opacity="0.72" />',
+        '<text x="96" y="79" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="900" letter-spacing="2" fill="var(--text-meta)" opacity="var(--meta-opacity)">PREGLED VESTI</text>',
         
         # 6. Beautiful Category Vector Art
         f'{art_svg}',

@@ -10,18 +10,24 @@
       <stop offset="100%" stop-color="#1e3a8a" stop-opacity="0.1"/>
     </linearGradient>
     <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.08"/>
-      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.02"/>
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.055"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.015"/>
     </linearGradient>
   </defs>
+  <style>
+    @media (prefers-color-scheme: light) {
+      .theme-surface { filter: invert(0.92) hue-rotate(180deg) saturate(0.78) brightness(1.1); }
+    }
+  </style>
+  <g class="theme-surface">
   <rect width="1200" height="760" fill="url(#bg)"/>
   
-  <circle cx="680" cy="380" r="410" fill="url(#glow)" filter="blur(95px)" opacity="0.45"/>
-  <circle cx="240" cy="180" r="240" fill="#ea580c" filter="blur(110px)" opacity="0.12"/>
+  <circle cx="680" cy="380" r="410" fill="url(#glow)" filter="blur(72px)" opacity="0.28"/>
+  <circle cx="240" cy="180" r="240" fill="#ea580c" filter="blur(82px)" opacity="0.07"/>
 
-  <rect x="80" y="80" width="1040" height="600" rx="28" fill="url(#plate)" stroke="rgba(255,255,255,0.08)" stroke-width="2"/>
+  <rect x="80" y="80" width="1040" height="600" rx="10" fill="url(#plate)" stroke="#ffffff" stroke-opacity="0.06" stroke-width="1.5"/>
   
-  <g stroke="rgba(255,255,255,0.12)" stroke-width="1.5" stroke-dasharray="6 6">
+  <g stroke="#ffffff" stroke-opacity="0.07" stroke-width="1" stroke-dasharray="6 8">
     <line x1="200" y1="80" x2="200" y2="680"/>
     <line x1="1000" y1="80" x2="1000" y2="680"/>
     <line x1="80" y1="200" x2="1120" y2="200"/>
@@ -42,20 +48,21 @@
 
   <!-- Stadium tracks & speed vector dynamic abstract art -->
   <g transform="translate(800, 360)">
-    <ellipse cx="0" cy="0" rx="140" ry="80" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1.5"/>
+    <ellipse cx="0" cy="0" rx="140" ry="80" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="1.5"/>
     <ellipse cx="0" cy="0" rx="170" ry="100" fill="none" stroke="url(#glow)" stroke-width="2"/>
-    <ellipse cx="0" cy="0" rx="200" ry="120" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1" stroke-dasharray="4 4"/>
+    <ellipse cx="0" cy="0" rx="200" ry="120" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1" stroke-dasharray="4 4"/>
     
     <!-- Dynamic diagonal speed line -->
     <line x1="-180" y1="100" x2="180" y2="-100" stroke="#ea580c" stroke-width="4" stroke-linecap="round"/>
-    <line x1="-120" y1="70" x2="120" y2="-70" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+    <line x1="-120" y1="70" x2="120" y2="-70" stroke="#ffffff" stroke-opacity="0.2" stroke-width="2"/>
     
     <!-- Glowing dynamic cores -->
     <circle cx="0" cy="0" r="30" fill="url(#glow)" opacity="0.8"/>
-    <circle cx="120" cy="-70" r="12" fill="#ea580c" opacity="0.75" filter="blur(2px)"/>
+    <circle cx="120" cy="-70" r="12" fill="#ea580c" opacity="0.75" filter="blur(1px)"/>
     <circle cx="120" cy="-70" r="5" fill="#ffffff" opacity="0.9"/>
   </g>
   
   <text x="200" y="625" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" letter-spacing="6" fill="#ffffff" opacity="0.4">PRESEK.RS</text>
-  <text x="1000" y="625" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" fill="#ea580c" opacity="0.8">LIVESCORE STRIP</text>
+  <text x="1000" y="625" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" fill="#ea580c" opacity="0.72">SPORTSKI PREGLED</text>
+  </g>
 </svg>

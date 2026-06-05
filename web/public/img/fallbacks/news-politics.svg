@@ -10,18 +10,24 @@
       <stop offset="100%" stop-color="#ca8a04" stop-opacity="0.1"/>
     </linearGradient>
     <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.08"/>
-      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.02"/>
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.055"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.015"/>
     </linearGradient>
   </defs>
+  <style>
+    @media (prefers-color-scheme: light) {
+      .theme-surface { filter: invert(0.92) hue-rotate(180deg) saturate(0.78) brightness(1.1); }
+    }
+  </style>
+  <g class="theme-surface">
   <rect width="1200" height="760" fill="url(#bg)"/>
   
-  <circle cx="680" cy="380" r="420" fill="url(#glow)" filter="blur(95px)" opacity="0.45"/>
-  <circle cx="220" cy="180" r="280" fill="#ca8a04" filter="blur(120px)" opacity="0.15"/>
+  <circle cx="680" cy="380" r="420" fill="url(#glow)" filter="blur(72px)" opacity="0.28"/>
+  <circle cx="220" cy="180" r="280" fill="#ca8a04" filter="blur(88px)" opacity="0.08"/>
 
-  <rect x="80" y="80" width="1040" height="600" rx="28" fill="url(#plate)" stroke="rgba(255,255,255,0.08)" stroke-width="2"/>
+  <rect x="80" y="80" width="1040" height="600" rx="10" fill="url(#plate)" stroke="#ffffff" stroke-opacity="0.06" stroke-width="1.5"/>
   
-  <g stroke="rgba(255,255,255,0.12)" stroke-width="1.5" stroke-dasharray="6 6">
+  <g stroke="#ffffff" stroke-opacity="0.07" stroke-width="1" stroke-dasharray="6 8">
     <line x1="200" y1="80" x2="200" y2="680"/>
     <line x1="1000" y1="80" x2="1000" y2="680"/>
     <line x1="80" y1="200" x2="1120" y2="200"/>
@@ -47,12 +53,13 @@
     <path d="M-120 -80 L120 -80" stroke-width="6"/>
     <path d="M-100 -80 L-100 120 M-50 -80 L-50 120 M0 -80 L0 120 M50 -80 L50 120 M100 -80 L100 120" stroke-width="4" opacity="0.6"/>
     <!-- Triangular dome -->
-    <path d="M-130 -80 L0 -160 L130 -80 Z" stroke-width="4" fill="rgba(136,19,55,0.1)"/>
+    <path d="M-130 -80 L0 -160 L130 -80 Z" stroke-width="4" fill="#881337" fill-opacity="0.1"/>
     <!-- Glowing seal -->
     <circle cx="0" cy="20" r="30" fill="#ca8a04" opacity="0.75" filter="blur(1px)" stroke="none"/>
     <circle cx="0" cy="20" r="15" fill="#ffffff" opacity="0.9" stroke="none" style="mix-blend-mode: overlay;"/>
   </g>
   
   <text x="200" y="625" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" letter-spacing="6" fill="#ffffff" opacity="0.4">PRESEK.RS</text>
-  <text x="1000" y="625" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" fill="#ca8a04" opacity="0.8">POLITIČKI ANALITIK</text>
+  <text x="1000" y="625" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" fill="#ca8a04" opacity="0.72">POLITIČKI PREGLED</text>
+  </g>
 </svg>
