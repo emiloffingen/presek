@@ -3,7 +3,7 @@ import SearchIsland from './SearchIsland';
 import ThemeIsland from './ThemeIsland';
 import TextScaleIsland from './TextScaleIsland';
 import ScriptSwitcher from './ScriptSwitcher.astro';
-import { Sparkles, BarChart3, Radio, ShieldCheck, Compass } from 'lucide-react';
+import { ArrowLeftRight, Sparkles, BarChart3, Radio, ShieldCheck, Compass } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
 import { getEditionStr } from '../utils/textUtils';
 import Branding from './Branding.astro';
@@ -236,6 +236,10 @@ function getRelativeTimeStr(dateStr?: string) {
                     })}
                 </div>
             </div>
+            <div class="nav-scroll-cue" aria-hidden="true">
+                <ArrowLeftRight size={14} strokeWidth={2.5} />
+                <span>{t('header.nav_scroll_hint')}</span>
+            </div>
             <div class="nav-fade left"></div>
             <div class="nav-fade right"></div>
         </div>
@@ -366,6 +370,9 @@ function getRelativeTimeStr(dateStr?: string) {
     /* ── Discovery Navigation ────────────────────────── */
     .discovery-nav-v2 { border-top: 1px solid color-mix(in srgb, var(--border) 50%, transparent); background: transparent; }
     .nav-rail-wrapper { position: relative; }
+    .nav-rail-wrapper.has-nav-scroll .nav-scroll-cue { opacity: 1; transform: translateY(-50%) translateX(0); }
+    .nav-rail-wrapper.has-nav-scroll.has-nav-interacted .nav-scroll-cue,
+    .nav-rail-wrapper.has-nav-scroll.is-at-end .nav-scroll-cue { opacity: 0; transform: translateY(-50%) translateX(0.35rem); }
     .nav-rail-scroll {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
@@ -384,6 +391,37 @@ function getRelativeTimeStr(dateStr?: string) {
     }
     .nav-fade.left { left: 0; background: linear-gradient(to right, color-mix(in srgb, var(--background) 90%, transparent), transparent); }
     .nav-fade.right { right: 0; background: linear-gradient(to left, color-mix(in srgb, var(--background) 90%, transparent), transparent); }
+
+    .nav-scroll-cue {
+        position: absolute;
+        top: 50%;
+        right: 0.55rem;
+        z-index: 12;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.32rem 0.5rem;
+        border: 1px solid color-mix(in srgb, var(--foreground) 16%, transparent);
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--background) 88%, transparent);
+        color: var(--secondary-foreground);
+        font-family: var(--font-sans);
+        font-size: 0.58rem;
+        font-weight: 950;
+        line-height: 1;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        transform: translateY(-50%) translateX(0.35rem);
+        transition: opacity 0.25s ease, transform 0.25s ease;
+        box-shadow: 0 8px 20px -14px rgba(0, 0, 0, 0.45);
+    }
+
+    .nav-scroll-cue svg {
+        flex: 0 0 auto;
+    }
 
     .nav-rail-group { border-right: 1px solid color-mix(in srgb, var(--border) 40%, transparent); padding: 0 1.25rem; display: flex; align-items: center; height: 100%; flex-shrink: 0; scroll-snap-align: start; }
     .nav-rail-group:last-child { border-right: none; }
@@ -450,6 +488,12 @@ function getRelativeTimeStr(dateStr?: string) {
         .nav-rail-content { padding: 0.25rem 0; }
         .nav-rail-group { padding: 0 0.75rem; }
         .nav-rail-link { font-size: 0.62rem; padding: 0.35rem 0.55rem; }
+    }
+
+    @media (min-width: 769px) {
+        .nav-scroll-cue {
+            display: none;
+        }
     }
 
     @media (max-width: 640px) {
@@ -651,14 +695,27 @@ function getRelativeTimeStr(dateStr?: string) {
 
         const initFades = () => {
             const navShell = document.querySelector('.nav-rail-scroll');
+            const navWrapper = document.querySelector('.nav-rail-wrapper');
             const fadeLeft = document.querySelector('.nav-fade.left');
             const fadeRight = document.querySelector('.nav-fade.right');
-            if (!navShell || !fadeLeft || !fadeRight) return;
+            if (!navShell || !navWrapper || !fadeLeft || !fadeRight) return;
             const update = () => {
-                fadeLeft.style.opacity = navShell.scrollLeft > 15 ? '1' : '0';
-                fadeRight.style.opacity = navShell.scrollLeft < navShell.scrollWidth - navShell.clientWidth - 15 ? '1' : '0';
+                const canScroll = navShell.scrollWidth > navShell.clientWidth + 15;
+                const atStart = navShell.scrollLeft <= 15;
+                const atEnd = navShell.scrollLeft >= navShell.scrollWidth - navShell.clientWidth - 15;
+                navWrapper.classList.toggle('has-nav-scroll', canScroll);
+                navWrapper.classList.toggle('is-at-end', atEnd);
+                fadeLeft.style.opacity = !atStart ? '1' : '0';
+                fadeRight.style.opacity = canScroll && !atEnd ? '1' : '0';
             };
-            navShell.addEventListener('scroll', update, { passive: true });
+            navShell.addEventListener('scroll', () => {
+                navWrapper.classList.add('has-nav-interacted');
+                update();
+            }, { passive: true });
+            navShell.addEventListener('pointerdown', () => {
+                navWrapper.classList.add('has-nav-interacted');
+            }, { passive: true });
+            window.addEventListener('resize', update, { passive: true });
             update();
         };
 
