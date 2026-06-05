@@ -851,7 +851,7 @@ def _split_cluster_merge_score(left, right, lang="mk"):
 
 @celery_app.task(rate_limit="10/m", autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
 def standardize_article_style_task(article_id):
-    """Refines article linguistic style using Gemma 4 (Literary Normalization)."""
+    """Refines article linguistic style using the local style normalizer."""
     from core.config import ENABLE_EXPENSIVE_STYLE_TASKS
 
     if not ENABLE_EXPENSIVE_STYLE_TASKS:
@@ -878,7 +878,7 @@ def standardize_article_style_task(article_id):
         if topic == "Sport" or category == "Sport":
             return
 
-        # Use Gemma 4 for Literary Normalization
+        # Use the local style normalizer for literary normalization.
         final_title = analyst.normalize_headline(title, lang=lang)
 
         if final_title and final_title.strip().lower() != title.strip().lower():
@@ -895,7 +895,7 @@ def standardize_article_style_task(article_id):
                 (final_title, title, article_id),
                 fetch=False,
             )
-            log.info(f"[style] Standardized title for article {article_id} using Gemma 4")
+            log.info(f"[style] Standardized title for article {article_id} using local style normalizer")
             # Re-trigger summary if title changed significantly
             summarize_article_task.delay(article_id, final_title)
 

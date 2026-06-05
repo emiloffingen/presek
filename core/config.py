@@ -5,7 +5,7 @@ try:
     from dotenv import load_dotenv
 except ModuleNotFoundError:  # Optional in pre-provisioned environments.
 
-    def load_dotenv():
+    def load_dotenv(*_args, **_kwargs):
         return False
 
 
@@ -581,7 +581,7 @@ BALANCED_COVERAGE_THRESHOLD = 3  # clusters with 3+ diverse sources get a badge
 POLLINATIONS_API_KEY = os.environ.get("POLLINATIONS_API_KEY", "")
 
 # ── Performance & Resource Management ───────────────────────────
-# Large models (Gemma 4) take significant RAM and can slow down the server.
+# Local model tasks can take significant RAM and can slow down the server.
 # Set to False to disable local translation/style normalization.
 LOCAL_TRANSLATION_ENABLED = os.environ.get("LOCAL_TRANSLATION_ENABLED", "true").lower() == "true"
 ENABLE_EXPENSIVE_STYLE_TASKS = os.environ.get("ENABLE_EXPENSIVE_STYLE_TASKS", "false").lower() == "true"
@@ -607,4 +607,3 @@ CLUSTERING_THRESHOLDS = {
 
 # ── History Context Parameters ──────────────────────────────────
 HISTORY_SEMANTIC_THRESHOLD = 0.40
-

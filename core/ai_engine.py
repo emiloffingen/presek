@@ -258,24 +258,26 @@ class LocalProvider(AIProvider):
     def _local_synthesis_system(lang: str) -> str:
         if lang == "mk":
             return (
-                "Ти си главен уредник на Пресек. Напиши премиум уредничка синтеза на стандарден македонски јазик. "
+                "Ти си главен уредник на Пресек и пишуваш со мал локален модел, затоа следи ја шемата прецизно. "
+                "Напиши уредничка синтеза на стандарден македонски јазик, со јасна хиерархија на факти. "
                 "Врати САМО валиден JSON со клучеви: synthetic_headline, synthetic_standfirst, summary, article, "
                 "key_facts, perspectives, verification_report, sentiment, tone_analysis. "
-                "article мора да биде еден string со точно 5 кратки пасуси разделени со \\n\\n: лид, контекст, "
-                "околу што се согласуваат изворите, каде се разликуваат, неверификувано/што останува непознато. "
-                "Пиши како искусен уредник: конкретно, елегантно, аналитички, без AI фрази, без повторување и без измислување. "
-                "summary е листа од 3-4 концизни точки. perspectives е листа од објекти со angle и content. "
-                "key_facts се само проверливи факти. Ако нешто недостига, кажи точно што недостига."
+                "article е еден string со точно 5 пасуси разделени со \\n\\n: лид, контекст, согласност меѓу изворите, "
+                "разлики/интереси, што е непроверено или непознато. Секој пасус има 2-4 реченици. "
+                "Не прави листа извор по извор; синтетизирај. Не измислувај бројки, цитати, мотиви или причинско-последични врски. "
+                "summary е листа од 3-4 конкретни ставки. key_facts е листа од 4-6 кратки проверливи факти. "
+                "perspectives е листа од 2-3 објекти со angle и content. Пиши без AI фрази, без маркетинг тон и без повторување."
             )
         return (
-            "Ti si glavni urednik Preseka. Napiši premium uredničku sintezu na književnom srpskom jeziku, latinica. "
+            "Ti si glavni urednik Preseka i pišeš malim lokalnim modelom, zato precizno prati šemu. "
+            "Napiši uredničku sintezu na književnom srpskom jeziku, latinica, sa jasnom hijerarhijom činjenica. "
             "Vrati SAMO validan JSON sa ključevima: synthetic_headline, synthetic_standfirst, summary, article, "
             "key_facts, perspectives, verification_report, sentiment, tone_analysis. "
-            "article mora biti jedan string sa tačno 5 kratkih pasusa razdvojenih sa \\n\\n: lede, kontekst, "
-            "oko čega se mediji slažu, gde se razlikuju, neverifikovano/šta ostaje nepoznato. "
-            "Piši kao iskusan urednik: konkretno, elegantno, analitički, bez AI fraza, bez ponavljanja i bez izmišljanja. "
-            "summary je lista od 3-4 sažete stavke. perspectives je lista objekata sa angle i content. "
-            "key_facts su samo proverljive činjenice. Ako nešto nedostaje, reci tačno šta nedostaje."
+            "article je jedan string sa tačno 5 pasusa razdvojenih sa \\n\\n: lede, kontekst, saglasnost izvora, "
+            "razlike/interesi, šta je neprovereno ili nepoznato. Svaki pasus ima 2-4 rečenice. "
+            "Ne piši izvor po izvor; sintetizuj. Ne izmišljaj brojke, citate, motive ili uzročno-posledične veze. "
+            "summary je lista od 3-4 konkretne stavke. key_facts je lista od 4-6 kratkih proverljivih činjenica. "
+            "perspectives je lista od 2-3 objekta sa angle i content. Piši bez AI fraza, marketing tona i ponavljanja."
         )
 
     @staticmethod
@@ -283,14 +285,18 @@ class LocalProvider(AIProvider):
         if lang == "mk":
             instruction = (
                 "Од следниот контекст направи богата, уреднички полирана синтеза. "
+                "Започни со најважната промена или последица, потоа објасни контекст и актери. "
                 "Не препишувај извор по извор; спои ги фактите во една јасна приказна. "
-                "Користи [1], [2] само кога конкретна тврдња е врзана за извор."
+                "Користи [1], [2] само кога конкретна тврдња е врзана за извор. "
+                "Ако контекстот е слаб, напиши пократко, но не пополнувај со општи реченици."
             )
         else:
             instruction = (
                 "Od sledećeg konteksta napravi bogatu, urednički poliranu sintezu. "
+                "Počni najvažnijom promenom ili posledicom, zatim objasni kontekst i aktere. "
                 "Ne prepisuj izvor po izvor; spoji činjenice u jednu jasnu priču. "
-                "Koristi [1], [2] samo kada je konkretna tvrdnja vezana za izvor."
+                "Koristi [1], [2] samo kada je konkretna tvrdnja vezana za izvor. "
+                "Ako je kontekst slab, piši kraće, ali ne popunjavaj opštim rečenicama."
             )
         return f"{instruction}\n\nKONTEKST:\n{prompt}"
 

@@ -17,12 +17,17 @@ def _parse_args():
     parser.add_argument(
         "--provider",
         action="append",
-        default=["local", "enhanced_fallback"],
+        default=None,
         help="Generation provider to refresh. Can be repeated. Default: local and enhanced_fallback.",
     )
     parser.add_argument("--cluster-id", action="append", help="Specific cluster ID to refresh. Can be repeated.")
     parser.add_argument("--limit", type=int, default=0, help="Maximum number of clusters to process.")
     parser.add_argument("--dry-run", action="store_true", help="List clusters without regenerating synthesis.")
+    parser.add_argument(
+        "--target-provider",
+        choices=["mistral_large", "mistral_small", "nvidia"],
+        help="Force regenerated synthesis through a remote provider instead of the router.",
+    )
     parser.add_argument(
         "--delete-first",
         action="store_true",
@@ -35,14 +40,18 @@ def _load_cluster_ids(args):
     if args.cluster_id:
         return list(dict.fromkeys(args.cluster_id))
 
+    include_missing_provider = "" in args.provider
     sql = """
         SELECT DISTINCT cluster_id
         FROM cluster_summaries
         WHERE created_at >= CURRENT_DATE
-          AND generation_provider = ANY(%s)
+          AND (
+            generation_provider = ANY(%s)
+            OR (%s AND (generation_provider IS NULL OR generation_provider = ''))
+          )
         ORDER BY cluster_id
     """
-    rows = db.execute(sql, (args.provider,))
+    rows = db.execute(sql, (args.provider, include_missing_provider))
     cluster_ids = [row["cluster_id"] for row in rows]
     if args.limit and args.limit > 0:
         cluster_ids = cluster_ids[: args.limit]
@@ -51,8 +60,12 @@ def _load_cluster_ids(args):
 
 def main():
     args = _parse_args()
+    if args.provider is None:
+        args.provider = ["local", "enhanced_fallback"]
+
     print("--- Starting Today's Synthesis Refresh ---")
     print(f"Providers: {args.provider}")
+    print(f"Target provider: {args.target_provider or 'router'}")
     print(f"Delete first: {args.delete_first}")
 
     cluster_ids = _load_cluster_ids(args)
@@ -61,6 +74,11 @@ def main():
     if args.dry_run:
         print("--- Dry run complete; no synthesis was regenerated. ---")
         return
+
+    if args.target_provider:
+        from core.llm_router import SmartModelRouter
+
+        SmartModelRouter.route_cluster = staticmethod(lambda _articles, lang="sr": args.target_provider)
 
     for idx, cid in enumerate(cluster_ids, 1):
         print(f"\n[{idx}/{len(cluster_ids)}] Processing cluster {cid}...")
