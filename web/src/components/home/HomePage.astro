@@ -17,7 +17,7 @@ import HomeLiveStrip from './HomeLiveStrip.astro';
 import TrendingPreviewRail from './TrendingPreviewRail.astro';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { chooseClusterImage } from '../../utils/imageSelection';
-import { cleanAndDecode, extractCleanSummaryText, getStoryPreviewText, highlightScores, isMostlyCyrillic } from '../../utils/textUtils';
+import { cleanAndDecode, extractCleanSummaryText, getStoryPreviewText, highlightScores, isMostlyCyrillic, isSyntheticStandfirstBoilerplate } from '../../utils/textUtils';
 import { apiBaseUrl } from '../../lib/apiBase';
 import type { NewsCluster } from '../../types';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
@@ -228,12 +228,13 @@ function getLeadSignal(cluster: NewsCluster) {
 
 function getLeadSummary(cluster: NewsCluster) {
 	const article = cluster?.articles?.[0];
-	return extractCleanSummaryText(article?.summary || article?.description || '');
+	return getStoryPreviewText(cluster, article, lang);
 }
 
 const leadSignal = leadCluster ? getLeadSignal(leadCluster) : '';
-const leadSummary = isHomepage
-    ? String(homepageLeadDisplay?.summary || '')
+const homepageLeadSummary = extractCleanSummaryText(homepageLeadDisplay?.summary || '');
+const leadSummary = isHomepage && homepageLeadSummary && !isSyntheticStandfirstBoilerplate(homepageLeadSummary)
+    ? homepageLeadSummary
     : (leadCluster ? getLeadSummary(leadCluster) : '');
 const leadTitle = highlightScores(isHomepage
     ? String(homepageLeadDisplay?.title || '')
