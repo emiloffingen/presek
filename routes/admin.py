@@ -7,6 +7,7 @@ from core.config import PROVIDER_FALLBACK_ORDER
 from core.database import db_manager as db
 from core.health import _probe_database, _probe_redis, get_source_statuses
 from core.version import version_payload
+from routes.security import verify_csrf_token
 
 log = logging.getLogger("presek.api.admin")
 router = APIRouter()
@@ -137,7 +138,10 @@ async def get_admin_dashboard(authorized: bool = Depends(verify_admin)):
 
 
 @router.post("/admin/tasks/trigger-newsletter")
-async def trigger_newsletter(authorized: bool = Depends(verify_admin)):
+async def trigger_newsletter(
+    authorized: bool = Depends(verify_admin),
+    csrf_valid: bool = Depends(verify_csrf_token),
+):
     """Manually trigger the newsletter delivery task."""
     from tasks.delivery import send_newsletter_task
 
@@ -147,7 +151,10 @@ async def trigger_newsletter(authorized: bool = Depends(verify_admin)):
 
 
 @router.post("/admin/tasks/retry-failed")
-async def retry_failed_tasks(authorized: bool = Depends(verify_admin)):
+async def retry_failed_tasks(
+    authorized: bool = Depends(verify_admin),
+    csrf_valid: bool = Depends(verify_csrf_token),
+):
     """Re-dispatch failed tasks to Celery and clear records."""
     from core.celery_app import celery_app
 
@@ -187,7 +194,11 @@ async def get_localization_rules(authorized: bool = Depends(verify_admin)):
 
 
 @router.post("/admin/localization/rules")
-async def update_localization_rules(request: Request, authorized: bool = Depends(verify_admin)):
+async def update_localization_rules(
+    request: Request,
+    authorized: bool = Depends(verify_admin),
+    csrf_valid: bool = Depends(verify_csrf_token),
+):
     """Updates and hot-reloads the dynamic localization and tag normalization rules."""
     from core.localization import localization_engine
     try:

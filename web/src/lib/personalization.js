@@ -230,7 +230,7 @@ export function sendSuggestionEvents(events, storage = globalThis?.localStorage)
 
   fetchImpl('/api/profile/suggestion-event', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...buildCsrfHeaders() },
     body: JSON.stringify({
       token: loadSyncToken(storage),
       clientId: getOrCreateClientId(storage),
@@ -333,7 +333,54 @@ export function saveSyncToken(token, storage = globalThis?.localStorage) {
 
 export function buildSyncTokenHeaders(token) {
   const clean = normalizeValue(token);
-  return clean ? { 'X-Sync-Token': clean } : {};
+  return {
+    ...buildCsrfHeaders(),
+    ...(clean ? { 'X-Sync-Token': clean } : {}),
+  };
+}
+
+export async function buildSyncTokenHeadersAsync(token) {
+  const clean = normalizeValue(token);
+  return {
+    ...(await buildCsrfHeadersAsync()),
+    ...(clean ? { 'X-Sync-Token': clean } : {}),
+  };
+}
+
+export function getCsrfToken() {
+  if (typeof document === 'undefined') return '';
+  const match = document.cookie
+    .split('; ')
+    .find((row) => row.startsWith('csrf_token='));
+  return match ? decodeURIComponent(match.split('=').slice(1).join('=')) : '';
+}
+
+export function buildCsrfHeaders() {
+  const token = getCsrfToken();
+  return token ? { 'X-CSRF-Token': token } : {};
+}
+
+export async function getCsrfTokenAsync() {
+  const existing = getCsrfToken();
+  if (existing || typeof fetch !== 'function') return existing;
+
+  try {
+    const res = await fetch('/api/csrf-token', {
+      method: 'GET',
+      credentials: 'same-origin',
+      cache: 'no-store',
+    });
+    if (!res.ok) return getCsrfToken();
+    const payload = await res.json();
+    return payload?.csrf_token || getCsrfToken();
+  } catch {
+    return getCsrfToken();
+  }
+}
+
+export async function buildCsrfHeadersAsync() {
+  const token = await getCsrfTokenAsync();
+  return token ? { 'X-CSRF-Token': token } : {};
 }
 
 export function loadReaderProfile(storage = globalThis?.localStorage) {

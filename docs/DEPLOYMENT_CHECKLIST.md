@@ -8,6 +8,8 @@ This document provides a comprehensive checklist for deploying Presek in product
 - [ ] `DATABASE_URL` - PostgreSQL connection string with credentials
 - [ ] `REDIS_URL` - Redis connection string
 - [ ] `SECRET_KEY` - Random secret key (>= 32 characters)
+- [ ] `JWT_SECRET` - Random JWT signing secret (>= 32 characters)
+- [ ] `CSRF_TOKEN_SECRET` - Random CSRF signing secret (>= 32 characters)
 - [ ] `PRESEK_ADMIN_TOKEN` - Admin API token
 - [ ] `OPENAI_API_KEY` - For OpenAI (optional)
 - [ ] `NTFY_TOPIC` - For notifications (optional)

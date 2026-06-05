@@ -128,6 +128,8 @@ def _client_ip_for_request(request: Request) -> str:
 
 
 def _static_admin_token_authorized(request: Request) -> bool:
+    if os.environ.get("ENV") == "production" and os.environ.get("ALLOW_STATIC_ADMIN_TOKEN", "").lower() != "true":
+        return False
     expected = (os.environ.get("PRESEK_ADMIN_TOKEN") or "").strip()
     if not expected:
         return False
@@ -139,7 +141,19 @@ def _static_admin_token_authorized(request: Request) -> bool:
 
 
 def _source_admin_authorized(request: Request) -> bool:
-    return _static_admin_token_authorized(request)
+    if _static_admin_token_authorized(request):
+        return True
+
+    auth = str(request.headers.get("Authorization") or "").strip()
+    if not auth.lower().startswith("bearer "):
+        return False
+
+    try:
+        from core.auth import verify_admin_jwt
+
+        return verify_admin_jwt(auth[7:].strip())
+    except Exception:
+        return False
 
 
 def _error_json(message: str, status_code: int, details=None):

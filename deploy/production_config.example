@@ -17,8 +17,14 @@ SECRET_KEY=your_secure_secret_key_here_minimum_32_chars
 # Generate with: openssl rand -hex 32
 JWT_SECRET=your_secure_jwt_secret_here_minimum_32_chars
 
+# Generate with: openssl rand -hex 32
+CSRF_TOKEN_SECRET=your_secure_csrf_secret_here_minimum_32_chars
+
 # JWT token expiration in minutes
 JWT_EXPIRE_MINUTES=60
+
+# Keep false unless you need a short emergency static-token maintenance window.
+ALLOW_STATIC_ADMIN_TOKEN=false
 
 # ============================================================================
 # Database

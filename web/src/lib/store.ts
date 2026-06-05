@@ -12,7 +12,8 @@ import {
     loadOnboardingState,
     saveOnboardingState,
     subscribeToOnboarding,
-    getOnboardingProgress
+    getOnboardingProgress,
+    buildCsrfHeadersAsync
 } from './personalization.js';
 import { apiBaseUrl } from './apiBase.ts';
 
@@ -114,9 +115,10 @@ $profile.subscribe((profile) => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    ...(await buildCsrfHeadersAsync()),
                     'X-Sync-Token': token
                 },
-                body: JSON.stringify({ profile }),
+                body: JSON.stringify({ token, profile }),
             });
         } catch (e) {
             console.warn("[store] Profile sync failed", e);

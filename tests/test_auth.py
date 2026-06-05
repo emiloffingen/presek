@@ -90,11 +90,23 @@ def test_verify_admin_accepts_static_admin_token(monkeypatch):
     """Test admin verification with the configured static admin token."""
     import asyncio
 
+    monkeypatch.setenv("ENV", "development")
     monkeypatch.setenv("PRESEK_ADMIN_TOKEN", "static-admin-token")
     from routes.admin import verify_admin
 
     request = type("Request", (), {"headers": {"Authorization": "Bearer static-admin-token"}})()
     assert asyncio.run(verify_admin(request)) is True
+
+
+def test_static_admin_token_disabled_by_default_in_production(monkeypatch):
+    """Production should not accept the static admin token unless explicitly enabled."""
+    monkeypatch.setenv("ENV", "production")
+    monkeypatch.delenv("ALLOW_STATIC_ADMIN_TOKEN", raising=False)
+    monkeypatch.setenv("PRESEK_ADMIN_TOKEN", "static-admin-token")
+    from routes.common import _static_admin_token_authorized
+
+    request = type("Request", (), {"headers": {"Authorization": "Bearer static-admin-token"}})()
+    assert _static_admin_token_authorized(request) is False
 
 
 def test_admin_endpoint_without_auth():

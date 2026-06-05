@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiBaseUrl } from '../lib/apiBase';
+import { buildCsrfHeadersAsync } from '../lib/personalization.js';
 import {
   Shield, Layout, Activity, Zap,
   Settings, Terminal, AlertTriangle, CheckCircle2,
@@ -42,7 +43,7 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
     try {
       const res = await fetch(`${apiBaseUrl()}/admin/tasks/trigger-newsletter?lang=${lang}`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}`, ...(await buildCsrfHeadersAsync()) }
       });
       const data = await res.json();
       alert(data.message || (lang === 'sr' ? 'Bilten je aktiviran.' : 'Билтенот е активиран.'));
@@ -55,7 +56,7 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
     try {
       await fetch(`${apiBaseUrl()}/admin/tasks/retry-failed?lang=${lang}`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}`, ...(await buildCsrfHeadersAsync()) }
       });
       fetchDashboard();
     } catch {

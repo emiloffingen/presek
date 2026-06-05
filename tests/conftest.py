@@ -7,6 +7,7 @@ from unittest.mock import MagicMock
 import pytest
 
 os.environ.setdefault("SECRET_KEY", "test-secret-key")
+os.environ.setdefault("CSRF_TOKEN_SECRET", "test-csrf-secret")
 os.environ.setdefault("DATABASE_URL", "postgresql://presek:presek_pass_2026@localhost/presek_test")
 os.environ["DATABASE_READ_REPLICA_URL"] = "postgresql://presek:presek_pass_2026@localhost/presek_test"
 

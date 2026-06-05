@@ -33,6 +33,8 @@ def _raise_http_error(status_code: int, detail: str):
 _CSRF_SECRET_FILE = "/tmp/presek_csrf_secret.txt"
 if os.environ.get("CSRF_TOKEN_SECRET"):
     CSRF_TOKEN_SECRET = os.environ.get("CSRF_TOKEN_SECRET")
+elif os.environ.get("ENV") == "production":
+    raise RuntimeError("CSRF_TOKEN_SECRET must be set in production")
 elif os.path.exists(_CSRF_SECRET_FILE):
     with open(_CSRF_SECRET_FILE, "r") as f:
         CSRF_TOKEN_SECRET = f.read().strip()
@@ -448,7 +450,7 @@ async def admin_auth(request: Request) -> str:
     from .common import _static_admin_token_authorized
 
     if _static_admin_token_authorized(request):
-        return "admin"
+        return "emergency-admin"
 
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):

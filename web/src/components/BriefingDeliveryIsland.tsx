@@ -5,6 +5,7 @@ import { $profile, $deliveryPrefs, $syncToken, updateDeliveryPrefs } from '../li
 import AccountSyncIsland from './AccountSyncIsland.tsx';
 import {
   buildSyncTokenHeaders,
+  buildCsrfHeadersAsync,
   buildDeliveryDigest,
   createDefaultServerDeliverySettings,
   loadDeliveryPreferences,
@@ -141,7 +142,7 @@ export default function BriefingDeliveryIsland({
 
                     await fetch('/api/profile/delivery', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json', ...(await buildCsrfHeadersAsync()) },
                         body: JSON.stringify({ token: syncToken, subscription: payload, locale: lang })
                     });
                 }
@@ -186,7 +187,7 @@ export default function BriefingDeliveryIsland({
       const payload = normalizeServerDeliverySettings(serverDelivery);
       const res = await fetch('/api/profile/delivery', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await buildCsrfHeadersAsync()) },
         body: JSON.stringify({
           token: syncToken,
           subscription: payload,

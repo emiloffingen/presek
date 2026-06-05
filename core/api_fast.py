@@ -18,6 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
 from core.limiter import RateLimitExceeded, _rate_limiter_enabled, exempt_from_rate_limit, limiter
+from routes.security import generate_csrf_token, verify_csrf_token
 
 if _rate_limiter_enabled:
     from slowapi.middleware import SlowAPIMiddleware
@@ -161,6 +162,12 @@ if _rate_limiter_enabled:
 from routes.security import create_security_middleware
 
 create_security_middleware(app)
+
+
+@app.get("/api/csrf-token")
+@app.get("/api/v1/csrf-token")
+def get_csrf_token():
+    return {"status": "success", "csrf_token": generate_csrf_token()}
 
 
 # =============================================================================
@@ -470,7 +477,12 @@ API_VERSION = "v1"
 
 # Clustering Control Endpoints - Manual triggers for debugging/emergency use
 @app.post("/api/admin/trigger-reclustering")
-def trigger_reclustering(hours: int = 6, limit: int = 500, authorized: str = Depends(admin.verify_admin)):
+def trigger_reclustering(
+    hours: int = 6,
+    limit: int = 500,
+    authorized: str = Depends(admin.verify_admin),
+    csrf_valid: bool = Depends(verify_csrf_token),
+):
     """
     Manually trigger reclustering of recent articles.
     Used when automatic clustering fails or for emergency recovery.
@@ -491,7 +503,10 @@ def trigger_reclustering(hours: int = 6, limit: int = 500, authorized: str = Dep
 
 
 @app.post("/api/admin/trigger-storyline-discovery")
-def trigger_storyline_discovery(authorized: str = Depends(admin.verify_admin)):
+def trigger_storyline_discovery(
+    authorized: str = Depends(admin.verify_admin),
+    csrf_valid: bool = Depends(verify_csrf_token),
+):
     """
     Manually trigger storyline discovery.
     Used when storylines aren't being created automatically.

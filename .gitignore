@@ -58,6 +58,10 @@ ENV/
 env/
 python-venv/
 
+# Local key material
+*.pem
+*.key
+
 # IDE
 .idea/
 .vscode/

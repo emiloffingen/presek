@@ -19,6 +19,7 @@ import PreferenceToggle from './PreferenceToggle.tsx';
 import { NewsCard } from './NewsCard.tsx';
 import OnboardingIsland from './OnboardingIsland.tsx';
 import {
+  buildCsrfHeadersAsync,
   buildPersonalizedClusters,
   hasPersonalizationSignal,
   buildSurfaceFollowSuggestions,
@@ -84,7 +85,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
       try {
         const res = await fetch(`${apiBaseUrl()}/profile/sync/personalized-news`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...(await buildCsrfHeadersAsync()) },
           body: JSON.stringify({
             profile,
             limit: 36,

@@ -4,6 +4,7 @@ import { useStore } from '@nanostores/react';
 import { $profile, $syncToken } from '../lib/store.ts';
 import PreferenceToggle from './PreferenceToggle.tsx';
 import {
+  buildCsrfHeadersAsync,
   buildSurfaceFollowSuggestions,
   buildPersonalizedClusters,
   hasPersonalizationSignal,
@@ -56,7 +57,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
       try {
         const response = await fetch('/api/profile/sync/personalized-news', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...(await buildCsrfHeadersAsync()) },
           body: JSON.stringify({
             token: syncToken,
             lang: lang,

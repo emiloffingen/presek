@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { $syncToken, updateSyncToken } from '../lib/store';
-import { buildSyncTokenHeaders } from '../lib/personalization.js';
+import { buildCsrfHeadersAsync, buildSyncTokenHeadersAsync } from '../lib/personalization.js';
 import { KeyRound, ShieldCheck, RefreshCw, Copy, Upload, Download, AlertCircle, Check } from 'lucide-react';
 
 export default function AccountSyncIsland({ lang = 'sr' }: { lang?: string }) {
@@ -16,7 +16,10 @@ export default function AccountSyncIsland({ lang = 'sr' }: { lang?: string }) {
   const createSyncKey = async () => {
     setStatus('working');
     try {
-      const res = await fetch('/api/profile/sync/init', { method: 'POST' });
+      const res = await fetch('/api/profile/sync/init', {
+        method: 'POST',
+        headers: await buildCsrfHeadersAsync() as Record<string, string>,
+      });
       const data = await res.json();
       if (data.token) {
         updateSyncToken(data.token);
@@ -40,7 +43,7 @@ export default function AccountSyncIsland({ lang = 'sr' }: { lang?: string }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(buildSyncTokenHeaders(nextToken) as Record<string, string>),
+          ...(await buildSyncTokenHeadersAsync(nextToken) as Record<string, string>),
         },
         body: JSON.stringify({
           token: nextToken,
@@ -65,7 +68,7 @@ export default function AccountSyncIsland({ lang = 'sr' }: { lang?: string }) {
     setStatus('working');
     try {
       const res = await fetch('/api/profile/sync', {
-        headers: buildSyncTokenHeaders(nextToken) as Record<string, string>,
+        headers: await buildSyncTokenHeadersAsync(nextToken) as Record<string, string>,
       });
       if (res.ok) {
         const data = await res.json();

@@ -18,7 +18,7 @@ from nlp import normalize_tag_name
 from utils import cached_response, score_cluster, set_cache
 
 from .common import _is_valid_focus_entity, cleanAndDecode
-from .security import validate_cluster_id, validate_list_param, validate_string_param
+from .security import validate_cluster_id, validate_list_param, validate_string_param, verify_csrf_token
 
 log = logging.getLogger("presek")
 router = APIRouter()
@@ -1455,7 +1455,11 @@ async def get_latest_briefing(date: Optional[str] = None, lang: str = "sr"):
 from routes.security import admin_auth
 
 @router.post("/intelligence/save-insight")
-async def save_insight(request: Request, authorized: str = Depends(admin_auth)):
+async def save_insight(
+    request: Request,
+    authorized: str = Depends(admin_auth),
+    csrf_valid: bool = Depends(verify_csrf_token),
+):
     """Saves a research insight for an authenticated user."""
     data = await request.json()
     cluster_id = data.get("cluster_id")
@@ -1503,4 +1507,3 @@ async def get_briefing_audio(date: Optional[str] = None, lang: str = "sr"):
         return {"status": "error", "message": "Failed to synthesize audio briefing."}
 
     return {"status": "success", "audio_url": audio_url}
-

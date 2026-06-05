@@ -3,12 +3,13 @@ import logging
 import secrets
 from typing import List
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 from core.api_helpers import normalize_server_delivery_subscription as _normalize_server_delivery_subscription
 from core.config import BREAKING_SCORE_THRESHOLD
 from core.database import db_manager as db
+from core.limiter import custom_rate_limit
 from utils import annotate_cluster_articles, delete_cache, is_balanced, score_cluster, score_cluster_for_homepage
 
 from .common import (
@@ -19,6 +20,7 @@ from .common import (
     _normalize_sync_list,
     _validate_sync_token_value,
 )
+from .security import verify_csrf_token
 
 log = logging.getLogger("presek")
 router = APIRouter()
@@ -161,7 +163,8 @@ def _normalize_server_delivery_row(row):
 
 
 @router.post("/profile/sync/init", response_model=ProfileInitResponse)
-async def init_profile_sync():
+@custom_rate_limit("10/minute")
+async def init_profile_sync(request: Request, csrf_valid: bool = Depends(verify_csrf_token)):
     token = _validate_sync_token_value(secrets.token_urlsafe(24))
     empty = _normalize_synced_profile({})
     await db.async_execute(
@@ -198,7 +201,8 @@ async def get_profile_sync(request: Request):
 
 
 @router.post("/profile/sync")
-async def save_profile_sync(request: Request):
+@custom_rate_limit("30/minute")
+async def save_profile_sync(request: Request, csrf_valid: bool = Depends(verify_csrf_token)):
     try:
         payload = await request.json()
     except Exception:
@@ -242,7 +246,8 @@ async def get_profile_delivery(request: Request):
 
 
 @router.post("/profile/delivery")
-async def save_profile_delivery(request: Request):
+@custom_rate_limit("20/minute")
+async def save_profile_delivery(request: Request, csrf_valid: bool = Depends(verify_csrf_token)):
     try:
         payload = await request.json()
     except Exception:
@@ -407,7 +412,8 @@ async def get_personalized_news_by_profile(profile: dict, limit: int = 6, lang: 
 
 
 @router.post("/profile/sync/personalized-news")
-async def get_personalized_news_sync(request: Request):
+@custom_rate_limit("20/minute")
+async def get_personalized_news_sync(request: Request, csrf_valid: bool = Depends(verify_csrf_token)):
     """
     Takes a profile payload, calculates the semantic interest vector
     of the user and returns semantically relevant clusters from the last 48h.
@@ -432,7 +438,8 @@ async def get_personalized_news_sync(request: Request):
 
 
 @router.post("/profile/suggestion-event")
-async def save_suggestion_events(request: Request):
+@custom_rate_limit("30/minute")
+async def save_suggestion_events(request: Request, csrf_valid: bool = Depends(verify_csrf_token)):
     try:
         payload = await request.json()
     except Exception:
