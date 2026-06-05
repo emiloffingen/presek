@@ -101,7 +101,7 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
 
 ---
 
-<section class:list={["lead-hero motion-rise", { "lead-hero-filtered": filtered }]} style={`--dominant-color: ${tintColor};`}>
+<section class:list={["lead-hero", { "lead-hero-filtered": filtered }]} style={`--dominant-color: ${tintColor};`}>
     <MeshGradient color={tintColor} />
     <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="lead-media lead-media-mobile" aria-hidden="true" tabindex="-1" data-testid="cluster-link">
         <div class:list={["lead-media-frame shadow-editorial", { "lead-media-frame-fallback": leadVisual?.isWeak }]}>

@@ -436,7 +436,7 @@ export const ui = {
     'home.supporting_title': 'Веднаш потоа',
     'home.supporting_desc': 'Следниот слој приказни што го проширува дневниот контекст.',
     'home.synthesis_picks_title': 'Клучни Пресеци',
-    'home.synthesis_picks_desc': 'Длабински синтези и уреднички сублимати со аудио интерпретација.',
+    'home.synthesis_picks_desc': 'Длабински синтези на најважните теми, достапни и во аудио форма.',
     'home.perspectives_title': 'МЕДИУМСКИ ПЕРСПЕКТИВИ',
     'home.perspectives_subtitle': 'Судир на перспективи',
     'home.perspectives_desc': 'Теми со најизразени разлики во известувањето и изразен плурализам.',
