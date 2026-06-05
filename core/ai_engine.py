@@ -541,6 +541,12 @@ def _call_ai(
             if json_mode and res and not clean_json_response(res):
                 log.warning(f"[ai/cascade] Provider {provider_name} returned malformed JSON, retrying once...")
                 res = provider.call(prompt + "\n\nCRITICAL: Return valid JSON only.", system, max_tokens, json_mode, topic=topic, task_type=task_type, lang=lang, response_schema=response_schema)
+                if res and not clean_json_response(res):
+                    AI_CALLS.labels(provider=provider_name, task_type=task_type, status="malformed_json").inc()
+                    log.warning(
+                        f"[ai/cascade] Provider {provider_name} still returned malformed JSON for task {task_type}, trying next provider"
+                    )
+                    continue
 
             if res:
                 duration = time.time() - start_time
