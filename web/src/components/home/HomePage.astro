@@ -15,7 +15,7 @@ import HomeRail from './HomeRail.astro';
 import EmptyState from './EmptyState.astro';
 import HomeLiveStrip from './HomeLiveStrip.astro';
 import TrendingPreviewRail from './TrendingPreviewRail.astro';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeftRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { chooseClusterImage } from '../../utils/imageSelection';
 import { cleanAndDecode, extractCleanSummaryText, highlightScores, isMostlyCyrillic } from '../../utils/textUtils';
 import { apiBaseUrl } from '../../lib/apiBase';
@@ -651,10 +651,16 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
                 {/* THE BIG PICTURE (HIGH CONSENSUS) */}
                 {isHomepage && consensusClusters.length > 0 && (
                     <div class="section-wrapper consensus-section bg-secondary/10 p-8 border-y border-border/40">
-                            <div class="section-heading-row mb-8">
-                                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent block mb-2">{t('home.consensus_title')}</span>
-                                <h2 class="font-serif text-3xl font-black italic">{t('home.consensus_subtitle')}</h2>
-                                <p class="text-sm text-muted-foreground mt-2">{t('home.consensus_desc')}</p>
+                            <div class="section-heading-row consensus-heading mb-8">
+                                <div class="consensus-heading-main">
+                                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent block mb-2">{t('home.consensus_title')}</span>
+                                    <h2 class="font-serif text-3xl font-black italic">{t('home.consensus_subtitle')}</h2>
+                                    <p class="text-sm text-muted-foreground mt-2">{t('home.consensus_desc')}</p>
+                                </div>
+                                <span class="horizontal-scroll-hint" aria-hidden="true">
+                                    <ArrowLeftRight size={15} strokeWidth={2.4} />
+                                    {t('home.scroll_hint')}
+                                </span>
                             </div>
                             <div class="consensus-carousel-wrap">
                                 <button 
@@ -888,6 +894,42 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
         margin-left: 0;
     }
 
+    .consensus-heading {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .consensus-heading-main {
+        min-width: 0;
+    }
+
+    .horizontal-scroll-hint {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        flex: 0 0 auto;
+        margin-top: 0.2rem;
+        padding: 0.35rem 0.55rem;
+        border: 1px solid color-mix(in srgb, var(--foreground) 18%, transparent);
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--background) 76%, transparent);
+        color: var(--secondary-foreground);
+        font-family: var(--font-sans);
+        font-size: 0.68rem;
+        font-weight: 900;
+        line-height: 1;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        white-space: nowrap;
+        box-shadow: 0 1px 0 color-mix(in srgb, var(--foreground) 5%, transparent);
+    }
+
+    .horizontal-scroll-hint svg {
+        flex: 0 0 auto;
+    }
+
     .analysis-grid {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1028,6 +1070,10 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
     }
 
     @media (min-width: 640px) {
+        .horizontal-scroll-hint {
+            display: none;
+        }
+
         .carousel-nav-btn {
             display: none !important;
         }
