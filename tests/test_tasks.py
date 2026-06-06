@@ -299,6 +299,7 @@ class TestSynthesizeClusterTaskQuality:
         with (
             patch("core.config.AUTO_SUMMARIZE_MIN_SRC", 1),
             patch("core.database.db_manager") as mock_db,
+            patch("tasks.intelligence._try_local_synthesis_before_fallback", return_value=(None, "local", None)),
             patch("nlp.generation.synthesize_cluster_fallback", return_value=fallback_result),
             patch("tasks.intelligence.record_runtime_event") as mock_event,
         ):
@@ -318,7 +319,7 @@ class TestSynthesizeClusterTaskQuality:
         assert insert_params[-3:] == (
             "enhanced_fallback",
             "enhanced_fallback",
-            "backfill_enhanced_fallback",
+            "backfill_enhanced_fallback_after_local_failure",
         )
         mock_event.assert_called_once_with(
             "synthesis_path",

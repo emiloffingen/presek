@@ -188,6 +188,108 @@ def _build_cluster_synthesis_content(article_rows):
     )
 
 
+def _build_cluster_synthesis_prompt(article_rows, lang="sr", history_context="", legacy_summary=""):
+    rows = article_rows or []
+    prompt_parts = []
+    if history_context:
+        prompt_parts.append(history_context)
+    prompt_parts.append("novi clanci OD danas:\n<articles_context>")
+
+    context_lines = []
+    for idx, article in enumerate(rows[:8], 1):
+        content = article.get("full_content") or article.get("summary") or article.get("description") or ""
+        context_lines.append(
+            "\n".join(
+                [
+                    f"[{idx}] Source: {article.get('source') or 'unknown'}",
+                    f"Title: {article.get('title') or ''}",
+                    f"Description: {article.get('description') or ''}",
+                    f"Content: {str(content)[:2200]}",
+                ]
+            )
+        )
+
+    prompt_parts.append("\n---\n".join(context_lines) or _build_cluster_synthesis_content(rows))
+    if legacy_summary:
+        prompt_parts.append(f"Prethodni sazetak kao kontekst:\n{legacy_summary}")
+    prompt_parts.append("</articles_context>")
+
+    if lang == "mk":
+        prompt_parts.append(
+            "УРЕДНИЧКИ ФОКУС: резимето не смее да биде список на наслови. "
+            "Изведи 3-4 паметни точки: нов развој, зошто е важен, што навистина е потврдено "
+            "и што останува непознато или следно за проверка."
+        )
+    else:
+        prompt_parts.append(
+            "UREĐIVAČKI FOKUS: rezime ne sme biti lista naslova. "
+            "Izvedi 3-4 pametne tačke: novi razvoj, zašto je važan, šta je zaista potvrđeno "
+            "i šta ostaje nepoznato ili sledeće za proveru."
+        )
+    return "\n\n".join(part for part in prompt_parts if part)
+
+
+def _try_local_synthesis_before_fallback(article_rows, full_prompt, system_prompt, lang="sr", max_tokens=3000):
+    """Use the local Gemma provider before dropping to deterministic enhanced fallback."""
+    raw, provider = _call_ai(
+        full_prompt,
+        system_prompt,
+        json_mode=True,
+        task_type="synthesis",
+        max_tokens=max_tokens,
+        lang=lang,
+        provider_override="local",
+    )
+    if not raw or provider != "local":
+        return None, provider, None
+
+    try:
+        data = clean_json_response(raw)
+        if not isinstance(data, dict):
+            return None, provider, None
+    except Exception as exc:
+        log.warning(f"[tasks/synthesis] Local Gemma fallback returned malformed JSON: {exc}")
+        return None, provider, None
+
+    summary = data.get("summary", "")
+    if isinstance(summary, list):
+        summary = "\n".join(str(item) for item in summary)
+    generated_article = data.get("article") or data.get("generated_article") or ""
+    if not summary and not generated_article:
+        return None, provider, None
+
+    summary = validate_person_names(str(summary))
+    generated_article = validate_person_names(str(generated_article))
+    synthetic_headline = validate_person_names(str(data.get("synthetic_headline") or ""))
+    synthetic_standfirst = validate_person_names(str(data.get("synthetic_standfirst") or ""))
+    perspectives = data.get("perspectives") or []
+    if not isinstance(perspectives, list):
+        perspectives = []
+
+    summary, generated_article, perspectives = _sanitize_synthesis_outputs(
+        summary,
+        generated_article,
+        perspectives,
+        article_rows,
+        lang=lang,
+    )
+
+    result = {
+        "summary": summary,
+        "generated_article": generated_article,
+        "synthetic_headline": synthetic_headline,
+        "synthetic_standfirst": synthetic_standfirst,
+        "perspectives": perspectives,
+        "key_facts": data.get("key_facts") if isinstance(data.get("key_facts"), list) else [],
+        "analyst_entities": data.get("analyst_entities") if isinstance(data.get("analyst_entities"), list) else [],
+    }
+
+    from core.ai_engine import PROVIDERS
+
+    provider_model = getattr(PROVIDERS.get("local"), "model", None) or "local"
+    return result, "local", provider_model
+
+
 def _normalize_cluster_synthesis(summary, perspectives, article_rows, lang="mk"):
     clean_summary = normalize_summary_text(summary)
     clean_perspectives = normalize_perspectives(perspectives)
@@ -1282,16 +1384,35 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                     log.info(f"Using pre-computed enhanced fallback for {cluster_id} ({lang})")
                 else:
                     log.warning(
-                        f"[tasks/synthesis] AI provider {provider} failed checks or returned no content for {cluster_id} ({lang}), using enhanced fallback"
+                        f"[tasks/synthesis] AI provider {provider} failed checks or returned no content for {cluster_id} ({lang}), trying local Gemma before enhanced fallback"
                     )
-                provider = "enhanced_fallback"
-                model = "enhanced_fallback"
-                fallback = synthesize_cluster_fallback(article_rows, lang=lang)
-                summary = fallback.get("summary", "")
-                perspectives = fallback.get("perspectives", [])
-                synthetic_headline = fallback.get("synthetic_headline", "")
-                synthetic_standfirst = fallback.get("synthetic_standfirst", "")
-                generated_article = fallback.get("generated_article", "")
+                local_result, local_provider, local_model = _try_local_synthesis_before_fallback(
+                    article_rows,
+                    full_prompt,
+                    system_prompt,
+                    lang=lang,
+                    max_tokens=max_tokens,
+                )
+                if local_result:
+                    provider = local_provider
+                    model = local_model
+                    fallback_reason = fallback_reason or "local_gemma_after_remote_failure"
+                    summary = local_result.get("summary", "")
+                    perspectives = local_result.get("perspectives", [])
+                    synthetic_headline = local_result.get("synthetic_headline", "")
+                    synthetic_standfirst = local_result.get("synthetic_standfirst", "")
+                    generated_article = local_result.get("generated_article", "")
+                    record_runtime_event("synthesis_path", mode=provider, fast_mode=fast_mode, lang=lang)
+                else:
+                    provider = "enhanced_fallback"
+                    model = "enhanced_fallback"
+                    fallback_reason = fallback_reason or "enhanced_fallback_after_local_failure"
+                    fallback = synthesize_cluster_fallback(article_rows, lang=lang)
+                    summary = fallback.get("summary", "")
+                    perspectives = fallback.get("perspectives", [])
+                    synthetic_headline = fallback.get("synthetic_headline", "")
+                    synthetic_standfirst = fallback.get("synthetic_standfirst", "")
+                    generated_article = fallback.get("generated_article", "")
                 verification_report = None
                 quote = ""
                 current_sentiment_data = shared_metrics["sentiment_data"]
@@ -2517,16 +2638,24 @@ def backfill_cluster_summaries_task(days=30, lang="sr"):
                 if not article_rows:
                     continue
 
-                # Generate summary using fallback (local) synthesis
-                from nlp.generation import synthesize_cluster_fallback
+                system_prompt = SYNTHESIS_SYSTEM_PROMPT_MK if lang == "mk" else SYNTHESIS_SYSTEM_PROMPT_SR
+                full_prompt = _build_cluster_synthesis_prompt(article_rows, lang=lang)
+                fallback_result, generation_provider, generation_model = _try_local_synthesis_before_fallback(
+                    article_rows,
+                    full_prompt,
+                    system_prompt,
+                    lang=lang,
+                    max_tokens=3000,
+                )
+                fallback_reason = "backfill_local_gemma"
 
-                fallback_result = synthesize_cluster_fallback(article_rows, lang=lang)
-
-                if fallback_result["summary"] or fallback_result["generated_article"]:
+                if not fallback_result:
+                    fallback_result = synthesize_cluster_fallback(article_rows, lang=lang)
                     generation_provider = "enhanced_fallback"
                     generation_model = "enhanced_fallback"
-                    fallback_reason = "backfill_enhanced_fallback"
+                    fallback_reason = "backfill_enhanced_fallback_after_local_failure"
 
+                if fallback_result["summary"] or fallback_result["generated_article"]:
                     # Store the summary in database
                     db.execute(
                         """
