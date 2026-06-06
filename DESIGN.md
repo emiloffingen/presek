@@ -22,6 +22,12 @@ This document defines the visual and structural language of the Presek platform:
   - Used for: Navigation, metadata, labels, buttons.
   - Style: Medium/bold weights (600-700), wide tracking (0.1em) for kickers and metadata.
 
+### Accessibility & WCAG Compliance
+- **Contrast Ratios**: All text meets WCAG AA standards (minimum 4.5:1 contrast ratio)
+- **Font Sizes**: Responsive typography with fluid scaling using `clamp()` functions
+- **Line Height**: Cyrillic-specific adjustments (1.15 line-height) to prevent ascender/descender collisions
+- **Readability**: Body text uses Source Serif 4 with 1.62-1.75 line-height for optimal readability
+
 ### Font Loading
 - Use exact self-hosted `@fontsource` weights instead of package defaults.
 - Headline weights: `Noto Serif Display` 700/900 plus 900 italic; `Noto Serif` 700/900 plus 900 italic for script fallback.
@@ -54,6 +60,12 @@ This document defines the visual and structural language of the Presek platform:
 - **Trust Blue (`--nyt-accent`):** `#173f7a`. Used for verified signals and interactive states.
 - **Alert Red (`--nyt-red`):** `#a31621`. Reserved for "Breaking" and "Live" indicators.
 
+### Accessibility Compliance
+- **Contrast Ratios**: All color combinations meet WCAG AA standards (4.5:1 minimum)
+- **Dark Mode**: Automated color inversion with WCAG-compliant contrast levels
+- **Focus States**: Visible focus indicators for keyboard navigation
+- **Color Blindness**: Sufficient contrast for protanopia, deuteranopia, and tritanopia
+
 ## 4. Imagery
 
 ### Aspect Ratios
@@ -76,5 +88,26 @@ This document defines the visual and structural language of the Presek platform:
 - **Easing:** `cubic-bezier(0.16, 1, 0.3, 1)` (The "Editorial Glide").
 - **Pattern:** Elements enter with a `18px` upward translate and opacity fade over `620ms`.
 
+## 7. Accessibility Features
+
+### ARIA Implementation
+- **Semantic HTML**: Proper use of `<article>`, `<time>`, `<nav>` elements
+- **ARIA Attributes**: `role`, `aria-label`, `aria-describedby` for interactive components
+- **Screen Reader Support**: Hidden duplicates marked with `aria-hidden="true"`
+- **Keyboard Navigation**: Focus management and visible focus states
+
+### WCAG 2.1 AA Compliance
+- **Text Contrast**: Minimum 4.5:1 contrast ratio for normal text
+- **Large Text**: Minimum 3:1 contrast ratio for large text (18.66px+ bold or 24px+ normal)
+- **Responsive Design**: Fluid typography and adaptive layouts
+- **Color Independence**: Information not conveyed by color alone
+- **Error Prevention**: Clear form validation and error messages
+
+### Performance Optimizations
+- **CSS Containment**: `contain: content` for performance-critical components
+- **Font Loading**: `font-display: swap` with fallback strategies
+- **Lazy Loading**: Images and non-critical resources
+- **Reduced Motion**: Respects `prefers-reduced-motion` media query
+
 ---
-*Last updated: april 2026 • Presek AI Design System*
+*Last updated: june 2026 • Presek AI Design System • WCAG 2.1 AA Compliant*

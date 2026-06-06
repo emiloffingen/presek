@@ -2,7 +2,7 @@
 import { Link2, ShieldCheck, ExternalLink } from 'lucide-react';
 import { sanitizeHtml } from '../../lib/sanitize';
 import { deShout, cleanAndDecode } from '../../utils/textUtils';
-import { getLangFromUrl } from '../../i18n/utils';
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 
 interface Props {
 	article: any;
@@ -12,6 +12,7 @@ const { article: a } = Astro.props;
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
 const isMk = lang === 'mk';
+const t = useTranslations(lang);
 
 // Clean text function to strip HTML tags and unwanted artifacts
 function cleanText(text: string) {
@@ -31,32 +32,34 @@ const objectiveTitle = isMk ? 'Висок степен на фактичко и�
 const readOriginalLabel = isMk ? 'ПРОЧИТАЈ НА' : 'PROČITAJ NA';
 ---
 
-<div class={`article-editorial-row tone-${a.relationship.tone} timeline-item min-w-0`} data-article-link={encodeURIComponent(a.link || '')}>
-	<div class="timeline-dot"></div>
+<div class={`article-editorial-row tone-${a.relationship.tone} timeline-item min-w-0`} data-article-link={encodeURIComponent(a.link || '')} role="article" aria-labelledby={`article-title-${a.id || a.link.hashCode()}`}>
+	<div class="timeline-dot" role="presentation"></div>
     <div class="row-header">
 		<div class="row-source-info">
 			<span class="source-name">{a.source}</span>
-			<span class={`tone-badge tone-${a.relationship.tone}`}>{a.relationship.label}</span>
+			<span class={`tone-badge tone-${a.relationship.tone}`} aria-label={t('article.relationship_type', { type: a.relationship.label })}>
+				{a.relationship.label}
+			</span>
 
             {a.quality.isObjective && (
-                <span class="quality-badge badge-obj" title={objectiveTitle}>
+                <span class="quality-badge badge-obj" title={objectiveTitle} aria-label={objectiveTitle}>
                     <ShieldCheck size={10} />
                 </span>
             )}
 		</div>
 		<div class="row-time">
-			<span class="relative">{a.relativeTime}</span>
+			<time datetime={a.published_at || a.ingested_at}>{a.relativeTime}</time>
 		</div>
 	</div>
-	<a href={a.link} target="_blank" rel="noopener noreferrer" class="row-title-link">
-		<h3 class="row-title min-w-0 break-words whitespace-normal">{displayTitle}</h3>
+	<a href={a.link} target="_blank" rel="noopener noreferrer" class="row-title-link" aria-describedby={`article-source-${a.id || a.link.hashCode()}`}>
+		<h3 id={`article-title-${a.id || a.link.hashCode()}`} class="row-title min-w-0 break-words whitespace-normal">{displayTitle}</h3>
 	</a>
 	{displaySnippet && (
         <p class="row-snippet min-w-0 break-words whitespace-normal">{displaySnippet}</p>
     )}
 	<div class="row-footer">
-        <a href={a.link} target="_blank" rel="noopener noreferrer" class="read-original">
-            {readOriginalLabel} {a.source} <ExternalLink size={10} />
+        <a href={a.link} target="_blank" rel="noopener noreferrer" class="read-original" id={`article-source-${a.id || a.link.hashCode()}`}>
+            {readOriginalLabel} {a.source} <ExternalLink size={10} aria-hidden="true" />
         </a>
 	</div>
 </div>

@@ -147,13 +147,13 @@ function getRelativeTimeStr(dateStr?: string) {
                     </a>
                 )}
             </div>
-            <div class="unified-ticker-track-wrap">
+            <div class="unified-ticker-track-wrap" role="region" aria-label={t('header.live_updates')}>
                 <div class="unified-ticker-track">
                     <div class="ticker-content-segment">
-                        {breakingItems.map((item: any) => {
+                        {breakingItems.map((item: any, index: number) => {
                             const relativeTime = getRelativeTimeStr(item.created_at);
                             return (
-                                <a href={item.href} class="live-ticker-headline">
+                                <a href={item.href} class="live-ticker-headline" aria-label={`${item.label}${relativeTime ? `, ${relativeTime}` : ''}`}>
                                     {relativeTime && <span class="ticker-time">{relativeTime}</span>}
                                     <span class="ticker-title">{item.label}</span>
                                 </a>
@@ -165,7 +165,7 @@ function getRelativeTimeStr(dateStr?: string) {
                         {breakingItems.map((item: any) => {
                             const relativeTime = getRelativeTimeStr(item.created_at);
                             return (
-                                <a href={item.href} class="live-ticker-headline">
+                                <a href={item.href} class="live-ticker-headline" aria-hidden="true" tabindex="-1">
                                     {relativeTime && <span class="ticker-time">{relativeTime}</span>}
                                     <span class="ticker-title">{item.label}</span>
                                 </a>
