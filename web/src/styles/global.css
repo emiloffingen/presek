@@ -1,7 +1,20 @@
 @import "./design-card.css";
-@import "@fontsource/manrope";
-@import "@fontsource/noto-serif";
-@import "@fontsource/source-serif-4";
+@import "@fontsource/noto-serif-display/700.css";
+@import "@fontsource/noto-serif-display/900.css";
+@import "@fontsource/noto-serif-display/900-italic.css";
+@import "@fontsource/noto-serif/700.css";
+@import "@fontsource/noto-serif/900.css";
+@import "@fontsource/noto-serif/900-italic.css";
+@import "@fontsource/source-serif-4/400.css";
+@import "@fontsource/source-serif-4/500.css";
+@import "@fontsource/source-serif-4/600.css";
+@import "@fontsource/source-serif-4/400-italic.css";
+@import "@fontsource/ibm-plex-sans-condensed/500.css";
+@import "@fontsource/ibm-plex-sans-condensed/600.css";
+@import "@fontsource/ibm-plex-sans-condensed/700.css";
+@import "@fontsource/manrope/600.css";
+@import "@fontsource/manrope/700.css";
+@import "@fontsource/manrope/800.css";
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -9,10 +22,12 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-serif: "Noto Serif", serif;
-  --font-sans: "Manrope", sans-serif;
+  --font-serif: "Noto Serif Display", "Noto Serif", Georgia, serif;
+  --font-sans: "IBM Plex Sans Condensed", "Manrope", Arial, sans-serif;
   --font-nyt-body: "Source Serif 4", serif;
-  --font-serif-display: "Source Serif 4", serif;
+  --font-serif-display: "Noto Serif Display", "Noto Serif", Georgia, serif;
+  --font-ui: "IBM Plex Sans Condensed", "Manrope", Arial, sans-serif;
+  --font-ui-wide: "Manrope", Arial, sans-serif;
 
   /* NYT Palette - Now using reactive variables */
   --color-nyt-black: var(--nyt-black);
@@ -91,22 +106,22 @@
   }
 
   :root {
-    /* 60% Dominant: Background (Luxurious Editorial Warm Parchment) */
-    --background: #fdfdfa;
-    --foreground: #121315; /* Rule 2: Near Black for sharp text */
+    /* Broadsheet 2.0: warm paper, black ink, restrained signal color. */
+    --background: #fbfaf5;
+    --foreground: #101010;
 
     /* 30% Secondary: Structural Elements */
-    --card: #ffffff;
+    --card: #fffefa;
     --card-foreground: #121315;
-    --popover: #ffffff;
+    --popover: #fffefa;
     --popover-foreground: #121315;
     --primary: #121315;
     --primary-foreground: #fdfdfa;
-    --secondary: #f6f5f0;
-    --secondary-foreground: #222935;
-    --border: #e6e5dd;
-    --muted: #fafaf7;
-    --muted-foreground: #5a6472; /* Improved contrast for light mode */
+    --secondary: #f0eee6;
+    --secondary-foreground: #26231d;
+    --border: #d9d5c8;
+    --muted: #f6f4ec;
+    --muted-foreground: #686257;
     --accent: #eef2ff;
     --accent-foreground: #121315;
     --destructive: #b91c1c;
@@ -116,17 +131,17 @@
     --surface-strong: #eeede6;
 
     /* 10% Accent: Trust Blue (Primary Brand) */
-    --nyt-accent: #1e3a8a; /* Deep Trust Blue */
-    --nyt-red: #991b1b; /* Richer Journalist Crimson */
+    --nyt-accent: #173f7a;
+    --nyt-red: #a31621;
     --editorial-positive: #047857;
     --editorial-watch: #92400e;
     --editorial-premium: #b45309;
 
     /* Luminous Elements (for borders, overlays, glows) */
     --luminous: rgba(255, 255, 255, 0.8); /* White with opacity for light mode */
-    --nyt-black: #121315;
-    --link: #1e3a8a;
-    --link-hover: #2563eb;
+    --nyt-black: #101010;
+    --link: #173f7a;
+    --link-hover: #0f559f;
 
     /* --- Premium Shadow System (Layered) --- */
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -145,11 +160,11 @@
     --transition-base: 0.4s var(--ease-editorial);
 
     /* NYT Smart Colors */
-    --nyt-gray-100: #f3f4f6;
-    --nyt-gray-200: #e5e7eb;
-    --nyt-gray-300: #d1d5db;
-    --nyt-gray-500: #6b7280; /* Improved contrast */
-    --nyt-gray-600: #4b5563;
+    --nyt-gray-100: #f3f1e8;
+    --nyt-gray-200: #e5e1d5;
+    --nyt-gray-300: #d4cebd;
+    --nyt-gray-500: #6f695e;
+    --nyt-gray-600: #49443d;
 
     /* ... rest of variables unchanged ... */
 
@@ -182,27 +197,27 @@
   }
 
   .dark {
-    /* Core Palette (Dark - Deep Midnight Obsidian) */
-    --background: #0b0d13;
-    --foreground: #f8fafc;
-    --card: #111420;
+    /* Core Palette (Dark - newsroom terminal) */
+    --background: #08090b;
+    --foreground: #f4f1e8;
+    --card: #0d0f13;
     --card-foreground: #f8fafc;
     --popover: #111420;
     --popover-foreground: #f8fafc;
     --primary: #f8fafc;
     --primary-foreground: #000000;
-    --secondary: #161a29;
-    --secondary-foreground: #cbd5e1;
-    --muted: #0f121d;
-    --muted-foreground: #94a3b8;
+    --secondary: #13161b;
+    --secondary-foreground: #d8d3c6;
+    --muted: #101216;
+    --muted-foreground: #aaa294;
     --accent: #f8fafc;
     --accent-foreground: #000000;
     --destructive: #f87171;
-    --border: #1d2335;
-    --input: #1d2335;
-    --ring: #3b82f6;
-    --surface-soft: #121522;
-    --surface-strong: #171c2e;
+    --border: #292722;
+    --input: #302d27;
+    --ring: #5f91d6;
+    --surface-soft: #111318;
+    --surface-strong: #181a20;
 
     /* Luminescent Shadows for Dark Mode */
     --shadow-premium:
@@ -316,11 +331,11 @@ h6,
 }
 
 .kicker {
-  font-family: var(--font-sans);
+  font-family: var(--font-ui);
   font-size: 0.62rem;
-  font-weight: 950;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.14em;
   color: var(--nyt-accent);
   display: block;
   margin-bottom: 0.5rem;
@@ -336,9 +351,9 @@ h6,
 
 .headline {
   font-family: var(--font-serif);
-  font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.012em;
   color: var(--foreground);
   text-wrap: balance;
   transition:
@@ -381,24 +396,18 @@ button:focus-visible,
 
 .headline-lead {
   font-size: var(--text-4xl); /* Now clamp(2.4rem, 2rem + 1.8vw, 3.8rem) */
-  font-weight: 850;
-  margin-bottom: 1.25rem;
-  letter-spacing: -0.04em;
-  line-height: 0.92;
+  font-weight: 900;
+  margin-bottom: 1rem;
+  letter-spacing: -0.018em;
+  line-height: 0.96;
   text-wrap: balance;
   display: -webkit-box;
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  /* Subtle "ink" sheen */
-  background: linear-gradient(
-    135deg,
-    var(--foreground) 70%,
-    color-mix(in srgb, var(--foreground), var(--nyt-accent) 20%)
-  );
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.05));
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  filter: none;
 }
 
 .headline,
@@ -435,7 +444,7 @@ button:focus-visible,
 .section-heading {
   font-family: var(--font-serif);
   font-size: 1.15rem;
-  font-weight: 950;
+  font-weight: 900;
   line-height: 1.1;
   color: var(--foreground);
   display: flex;
@@ -521,8 +530,8 @@ button:focus-visible,
   .nyt-article {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    padding-bottom: 1.25rem;
+    gap: 0.55rem;
+    padding-bottom: 1rem;
     border-bottom: 1px solid var(--border);
     transition:
       transform 0.4s var(--ease-editorial),
@@ -547,9 +556,11 @@ button:focus-visible,
   }
 
   .nyt-article.variant-featured:not(.lead-story) {
-    padding: 0.75rem;
+    padding: 0.85rem 0;
     border: 1px solid var(--border);
-    background: var(--card);
+    border-left: 0;
+    border-right: 0;
+    background: transparent;
   }
 
   .nyt-article.variant-compact:not(.lead-story) {
@@ -638,9 +649,9 @@ button:focus-visible,
   .headline {
     font-family: var(--font-serif);
     font-size: var(--text-2xl);
-    font-weight: 850;
-    line-height: 1.08;
-    letter-spacing: -0.015em;
+    font-weight: 900;
+    line-height: 1.04;
+    letter-spacing: -0.012em;
     margin-bottom: 0.25rem;
     color: var(--foreground);
     max-width: 100%;
@@ -651,8 +662,8 @@ button:focus-visible,
 
   .headline-lead {
     font-size: clamp(1.8rem, 5vw, 3.4rem);
-    line-height: 0.95;
-    letter-spacing: -0.02em;
+    line-height: 0.96;
+    letter-spacing: -0.015em;
   }
 
   .headline-standard {
@@ -676,8 +687,8 @@ button:focus-visible,
 
   .summary {
     font-family: var(--font-nyt-body);
-    font-size: 0.85rem;
-    line-height: 1.4;
+    font-size: 0.92rem;
+    line-height: 1.5;
     color: var(--secondary-foreground);
     margin-bottom: 0.35rem;
     text-wrap: pretty;
@@ -700,10 +711,10 @@ button:focus-visible,
 
   .why-it-matters {
     margin: 0 0 0.35rem;
-    font-family: var(--font-sans);
+    font-family: var(--font-ui);
     font-size: 0.58rem;
-    font-weight: 800;
-    letter-spacing: 0.04em;
+    font-weight: 700;
+    letter-spacing: 0.08em;
     color: var(--muted-foreground);
     text-transform: uppercase;
   }
@@ -717,16 +728,16 @@ button:focus-visible,
   }
 
   .source-label {
-    font-family: var(--font-sans);
+    font-family: var(--font-ui);
     font-size: 0.58rem;
-    font-weight: 800;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--nyt-accent);
   }
 
   .footer-meta {
-    font-family: var(--font-sans);
+    font-family: var(--font-ui);
     font-size: 0.58rem;
     color: var(--muted-foreground);
     font-weight: 600;
@@ -1403,7 +1414,7 @@ button:active,
 .source-reputation-card:hover,
 .nyt-article:hover {
   border-color: var(--nyt-accent);
-  background: color-mix(in srgb, var(--card) 96%, var(--nyt-accent) 4%);
+  background: color-mix(in srgb, var(--background) 97%, var(--nyt-accent) 3%);
 }
 
 .nyt-article {

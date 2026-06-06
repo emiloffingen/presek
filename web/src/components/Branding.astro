@@ -29,8 +29,8 @@ const t = useTranslations(lang);
     {(mode === 'full' || mode === 'logo') && (
         <div class="logo-text-group">
             <svg viewBox="0 0 800 110" fill="none" xmlns="http://www.w3.org/2000/svg" class="presek-logo-svg">
-                <text x="400" y="82" font-family="var(--font-serif)" font-size="98" letter-spacing="-3" fill="currentColor" text-anchor="middle">
-                    <tspan font-weight="950">{lang === 'mk' ? 'ПРЕСЕК.mk' : 'PRESEK.rs'}</tspan>
+                <text x="400" y="82" font-family="var(--font-serif-display)" font-size="98" letter-spacing="-1.4" fill="currentColor" text-anchor="middle">
+                    <tspan font-weight="900">{lang === 'mk' ? 'ПРЕСЕК.mk' : 'PRESEK.rs'}</tspan>
                 </text>
                 {/* Precision Editorial Rules */}
                 <rect x="0" y="102" width="800" height="4" fill="currentColor" />
@@ -46,8 +46,8 @@ const t = useTranslations(lang);
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 0.4rem;
-        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        gap: 0.28rem;
+        transition: color 0.25s ease;
         color: var(--foreground);
         min-width: 0;
     }
@@ -63,15 +63,15 @@ const t = useTranslations(lang);
     }
 
     .presek-logo-svg {
-        width: 320px;
-        height: 44px;
+        width: clamp(240px, 26vw, 380px);
+        height: 52px;
     }
 
     .logo-sublabel {
-        font-family: var(--font-sans);
-        font-size: 0.52rem;
-        font-weight: 950;
-        letter-spacing: 0.28em;
+        font-family: var(--font-ui);
+        font-size: 0.56rem;
+        font-weight: 700;
+        letter-spacing: 0.22em;
         color: var(--muted-foreground);
         text-transform: uppercase;
         line-height: 1;
@@ -82,30 +82,14 @@ const t = useTranslations(lang);
         transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    /* --- LIVE PULSE EFFECT --- */
     .pulse-ring {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        border: 2px solid var(--nyt-accent);
-        opacity: 0;
-        z-index: 1;
-        animation: logo-pulse 4s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+        display: none;
     }
 
     @keyframes logo-pulse {
         0% { transform: scale(0.8); opacity: 0; }
         50% { opacity: 0.2; }
         100% { transform: scale(1.8); opacity: 0; }
-    }
-
-    /* --- HOVER DYNAMICS --- */
-    .presek-branding:hover .presek-emblem-svg {
-        transform: scale(1.05);
-    }
-
-    .presek-branding:hover .accent-block {
-        transform: rotate(90deg) scale(1.1);
     }
 
     .presek-branding:hover .logo-sublabel {
@@ -123,22 +107,22 @@ const t = useTranslations(lang);
     .presek-branding.footer-logo-premium .logo-sublabel { font-size: 0.6rem; }
 
     @media (max-width: 960px) {
-        .presek-branding { gap: 0.75rem; }
+        .presek-branding { gap: 0.35rem; }
         .presek-emblem-svg { width: 32px; height: 32px; }
         .logo-sublabel { display: none; }
-        .presek-logo-svg { width: 140px; }
+        .presek-logo-svg { width: 150px; height: 34px; }
     }
 
     @media (max-width: 768px) {
-        .presek-branding { gap: 0.5rem; }
+        .presek-branding { gap: 0.3rem; }
         .presek-emblem-svg { width: 28px; height: 28px; }
-        .presek-logo-svg { width: 120px; }
+        .presek-logo-svg { width: 132px; height: 32px; }
     }
 
     @media (max-width: 480px) {
-        .presek-branding { gap: 0.4rem; }
+        .presek-branding { gap: 0.25rem; }
         .presek-emblem-svg { width: 24px; height: 24px; }
-        .presek-logo-svg { width: 100px; }
+        .presek-logo-svg { width: 112px; height: 30px; }
         .presek-branding.footer-logo-premium .presek-emblem-svg { width: 40px; height: 36px; }
         .presek-branding.footer-logo-premium .presek-logo-svg { width: 160px; }
     }

@@ -1,26 +1,32 @@
-# Presek Design System: Modern Editorial Broadsheet
+# Presek Design System: Broadsheet 2.0
 
-This document defines the visual and structural language of the Presek platform, inspired by premium digital broadsheets (NYT, BBC, The Guardian).
+This document defines the visual and structural language of the Presek platform: a strict editorial front page with data-rich newsroom tooling.
 
 ## Core Principles
 
-- **Broadsheet Authority:** Hierarchy is driven by strong typography and disciplined modular grids.
-- **Editorial Restraint:** Clean space and thin structural rules replace decorative shadows and gradients.
+- **Broadsheet Authority:** Hierarchy is driven by strong typography, visible rules, and disciplined modular grids.
+- **Editorial Restraint:** Clean space and thin structural rules replace decorative shadows, glow, gradients, and app-like chrome.
 - **Content First:** The interface recedes to let the news and AI synthesis lead the experience.
 - **Cyrillic-First Optimization:** Specific attention to Macedonian Cyrillic legibility and vertical rhythm.
 
 ## 1. Typography
 
 ### Primary Font Families
-- **Headline Serif (`--font-serif`):** `Noto Serif`
+- **Headline Serif (`--font-serif`, `--font-serif-display`):** `Noto Serif Display`, falling back to `Noto Serif`
   - Used for: Major mastheads, cluster titles, section headers.
-  - Style: Black (900) weight, tight tracking (-0.02em), compact line-height.
+  - Style: Black (900) weight, tight tracking, compact line-height.
 - **Body Serif (`--font-nyt-body`):** `Source Serif 4`
   - Used for: Article summaries, briefings, long-form prose.
   - Style: Balanced line-height (1.62 - 1.75) for maximum readability.
-- **Interface Sans (`--font-sans`):** `Manrope`
+- **Interface Sans (`--font-ui`, `--font-sans`):** `IBM Plex Sans Condensed`, falling back to `Manrope`
   - Used for: Navigation, metadata, labels, buttons.
-  - Style: Heavy weight (800-900) for labels, wide tracking (0.1em) for kickers.
+  - Style: Medium/bold weights (600-700), wide tracking (0.1em) for kickers and metadata.
+
+### Font Loading
+- Use exact self-hosted `@fontsource` weights instead of package defaults.
+- Headline weights: `Noto Serif Display` 700/900 plus 900 italic; `Noto Serif` 700/900 plus 900 italic for script fallback.
+- Body weights: `Source Serif 4` 400/500/600 plus 400 italic.
+- UI weights: `IBM Plex Sans Condensed` 500/600/700; `Manrope` 600/700/800 as fallback and utility sans.
 
 ### Cyrillic Optimization
 - **Macedonian Vertical Rhythm:** Cyrillic headlines use an increased `line-height` (1.12 - 1.15) to prevent collision of descenders and ascenders (e.g., Dj, j, c).
@@ -40,13 +46,13 @@ This document defines the visual and structural language of the Presek platform,
 ## 3. Color Palette
 
 ### Base Tones
-- **Background:** Off-white (`#fafafb`) / OLED Navy (`#111827`) in dark mode.
-- **Foreground:** Deep charcoal (`#111827`) / Soft white (`#f3f4f6`) in dark mode.
-- **Borders:** Subtle gray (`#e5e7eb`) / Muted slate (`#374151`).
+- **Background:** Warm paper (`#fbfaf5`) / near-black newsroom terminal (`#08090b`) in dark mode.
+- **Foreground:** Ink black (`#101010`) / warm white (`#f4f1e8`) in dark mode.
+- **Borders:** Paper rule (`#d9d5c8`) / muted ink rule (`#292722`) in dark mode.
 
 ### Brand Accents
-- **Trust Blue (`--nyt-accent`):** `#1e40af`. Used for verified signals and interactive states.
-- **Alert Red (`--nyt-red`):** `#b91c1c`. Reserved for "Breaking" and "Live" indicators.
+- **Trust Blue (`--nyt-accent`):** `#173f7a`. Used for verified signals and interactive states.
+- **Alert Red (`--nyt-red`):** `#a31621`. Reserved for "Breaking" and "Live" indicators.
 
 ## 4. Imagery
 
@@ -63,7 +69,7 @@ This document defines the visual and structural language of the Presek platform,
 - **Drop Caps:** Used in the first paragraph of Briefings and About pages.
 - **Live Ticker:** High-contrast red bar for breaking headlines with a subtle pulse animation.
 - **Pulse Stats Bar:** Clean, border-divided stats for pluralism and synthesis.
-- **Editorial Cards:** No rounded corners (`0px`). Backgrounds are flat or use extremely subtle `color-mix` tints.
+- **Article Blocks:** No rounded corners (`0px`). Articles sit on the page with thin top/bottom rules, not floating cards.
 
 ## 6. Motion (The "Rise" System)
 

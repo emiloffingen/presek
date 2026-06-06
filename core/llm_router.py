@@ -10,7 +10,7 @@ def _local_model_available() -> bool:
     configured_path = os.environ.get("LOCAL_MODEL_PATH")
     if configured_path:
         return os.path.exists(configured_path)
-    return os.path.exists("models/gemma-2-2b-it-Q4_K_M.gguf")
+    return os.path.exists("models/gemma-4-E2B-it-Q4_K_M.gguf")
 
 
 class SmartModelRouter:
@@ -82,7 +82,7 @@ class SmartModelRouter:
 
         # Medium Complexity: Standard news, moderate cluster size
         if article_count >= 3 or has_high_weight:
-            # Route to the local Gemma 2 fallback if available, otherwise Mistral Small
+            # Route to the local Gemma 4 E2B fallback if available, otherwise Mistral Small
             if local_available and prefer_local_synthesis:
                 return "local"
             return "mistral_small"

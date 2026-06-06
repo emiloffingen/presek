@@ -853,7 +853,7 @@ def generate_daily_brief_task(retry_attempt=0, lang="sr"):
 
             # Phase 1: Extract structured metadata for Intelligence Report 2.0
             metadata = {
-                "model": "Mistral / NVIDIA / Gemma 2",
+                "model": "Mistral / NVIDIA / Gemma 4 E2B",
                 "stats": {"total_articles": total_24h, "intl_share": intl_pct, "pluralism_score": diverse_pct},
                 "key_narratives": [],
             }

@@ -1056,7 +1056,7 @@ async def synthesize_nodes(request: Request, payload: NodeSynthesisRequest):
             "citations": []
         }
 
-    # Format context for Gemma 2 Local Analyst
+    # Format context for Gemma 4 E2B Local Analyst
     context_lines = []
     citations = []
     for idx, art in enumerate(articles):
@@ -1144,7 +1144,7 @@ async def entity_graph_lookup(request: Request, entity_name: str):
 @router.get("/research/{cluster_id}")
 @custom_rate_limit("10/minute")
 async def cluster_research(request: Request, cluster_id: str, q: str):
-    """Researches a cluster based on a user query using Gemma 2."""
+    """Researches a cluster based on a user query using Gemma 4 E2B."""
     from nlp.local_analyst import analyst
 
     # Get cluster context

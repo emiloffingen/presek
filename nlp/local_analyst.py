@@ -30,8 +30,8 @@ TIER_MAP = {
 
 log = logging.getLogger("presek.analyst")
 
-# Config for Gemma 2 2B / Gemma 4 on 8-core CPU (utilizing 6 threads)
-MODEL_PATH = os.environ.get("LOCAL_MODEL_PATH", "models/gemma-2-2b-it-Q4_K_M.gguf")
+# Config for Gemma 4 E2B on 8-core CPU (utilizing 6 threads)
+MODEL_PATH = os.environ.get("LOCAL_MODEL_PATH", "models/gemma-4-E2B-it-Q4_K_M.gguf")
 N_THREADS = int(os.environ.get("MODEL_THREADS", "6"))
 MODEL_CONTEXT = int(os.environ.get("LOCAL_MODEL_CONTEXT", "4096"))
 MAX_PROMPT_CHARS = int(os.environ.get("LOCAL_MODEL_MAX_PROMPT_CHARS", "9000"))
@@ -109,9 +109,7 @@ class LocalAnalyst:
                 )
                 model_filename = os.path.basename(MODEL_PATH)
                 if "gemma-4" in model_filename.lower():
-                    model_display = "Gemma 4"
-                elif "gemma-2" in model_filename.lower():
-                    model_display = "Gemma 2 2B"
+                    model_display = "Gemma 4 E2B"
                 else:
                     model_display = model_filename
                 log.info(f"[analyst] {model_display} loaded in {time.time()-t0:.1f}s")
@@ -201,7 +199,7 @@ class LocalAnalyst:
                     trunc_msg = "\n\n[Kontekstot e skraten za lokalniot model.]"
                 prompt = prompt[:MAX_PROMPT_CHARS] + trunc_msg
 
-            # Gemma 2 Instruct format (optimized for a single user turn).
+            # Gemma instruct format (optimized for a single user turn).
             full_prompt = f"<start_of_turn>user\n{system_prompt}\n\n{prompt}<end_of_turn>\n<start_of_turn>model\n"
 
             # Set grammar dynamically based on response_schema

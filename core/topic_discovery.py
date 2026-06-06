@@ -174,7 +174,7 @@ class StoryDiscoveryEngine:
         except Exception as e:
             log.warning(f"Failed to detect dominant language for cluster {cid}: {e}")
 
-        # Phase 4: Use Gemma 2 for Editorial Storyline Titles
+        # Phase 4: Use Gemma 4 E2B for Editorial Storyline Titles
         from nlp.local_analyst import analyst
 
         if lang == "sr":
@@ -227,7 +227,7 @@ class StoryDiscoveryEngine:
 
     def refresh_storyline_metadata(self):
         """
-        Periodically update summaries and titles for active storylines using Gemma 2.
+        Periodically update summaries and titles for active storylines using Gemma 4 E2B.
         """
         active_storylines = db.execute(
             "SELECT id, title, metadata FROM storylines_v2 WHERE status = 'active' ORDER BY last_activity DESC LIMIT 20"

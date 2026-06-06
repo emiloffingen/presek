@@ -271,7 +271,7 @@ class LocalProvider(AIProvider):
             import os
             self.model = os.path.basename(MODEL_PATH)
         except ImportError:
-            self.model = "gemma-2-2b-it-Q4_K_M.gguf"
+            self.model = "gemma-4-E2B-it-Q4_K_M.gguf"
 
     @staticmethod
     def _local_synthesis_system(lang: str) -> str:

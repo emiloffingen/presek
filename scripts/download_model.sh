@@ -1,11 +1,11 @@
 #!/bin/bash
 MODEL_DIR="models"
-MODEL_FILE="gemma-2-2b-it-Q4_K_M.gguf"
-URL="https://huggingface.co/bartowski/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_K_M.gguf"
+MODEL_FILE="gemma-4-E2B-it-Q4_K_M.gguf"
+URL="https://huggingface.co/ruygar/gemma-4-E2B-it-GGUF/resolve/main/gemma-4-E2B-it-Q4_K_M.gguf"
 
 mkdir -p $MODEL_DIR
 
-echo "Downloading Gemma 2 2B (Q4_K_M) - ~1.6GB..."
+echo "Downloading Gemma 4 E2B IT (Q4_K_M) - ~3.4GB..."
 echo "This will take a few minutes depending on your connection."
 
 curl -L -C - "$URL" -o "$MODEL_DIR/$MODEL_FILE"
