@@ -18,7 +18,7 @@ class SmartModelRouter:
     def route_cluster(articles: list[dict], lang: str = "sr") -> str:
         """
         Determines the optimal LLM provider or local fallback for a given news cluster.
-        Returns one of: 'enhanced_fallback', 'local', 'mistral_small', 'mistral_large'.
+        Returns one of: 'enhanced_fallback', 'local', 'mistral_small', 'mistral_large', 'nvidia'.
         """
         if not articles:
             return "enhanced_fallback"
@@ -82,12 +82,9 @@ class SmartModelRouter:
 
         # Medium Complexity: Standard news, moderate cluster size
         if article_count >= 3 or has_high_weight:
-            # Route to the local Gemma 4 E2B fallback if available, otherwise Mistral Small
-            if local_available and prefer_local_synthesis:
-                return "local"
             return "mistral_small"
 
         # Low Complexity: 1-2 articles, straightforward routine news
-        if local_available:
-            return "local"
-        return "enhanced_fallback"
+        # Always try Gemma 4 E2B first, then enhanced fallback
+        # Gemma 4 E2B will handle its own fallback if model is not available
+        return "local"
