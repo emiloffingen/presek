@@ -1158,7 +1158,7 @@ def test_fastapi_proxy_ignores_unsafe_db_local_image_path(mock_all):
         response = asyncio.run(system_routes.proxy_image("https://example.com/image.jpg", None))
 
     assert response.media_type == "image/svg+xml"
-    assert response.headers["X-Proxy-Fallback"] == "fetch_failed"
+    assert response.headers["X-Proxy-Fallback"] == "http_404"
 
 
 def test_fastapi_proxy_theme_parameter(mock_all):
@@ -1187,7 +1187,7 @@ def test_fastapi_proxy_theme_parameter(mock_all):
     ):
         response = asyncio.run(system_routes.proxy_image("https://example.com/image.jpg", theme="light"))
     assert response.media_type == "image/svg+xml"
-    assert response.headers["X-Proxy-Fallback"] == "fetch_failed"
+    assert response.headers["X-Proxy-Fallback"] == "http_404"
     # Ensure the returned body has the light theme background
     assert "stop-color: #f8fafc;" in response.content
 
