@@ -12,13 +12,15 @@ This document defines the visual and structural language of the Presek platform:
 ## 1. Typography
 
 ### Primary Font Families
-- **Headline Serif (`--font-serif`, `--font-serif-display`):** `Noto Serif Display`, falling back to `Noto Serif`
-  - Used for: Major mastheads, cluster titles, section headers.
+- **Headline Serif (`--font-serif`):** `Noto Serif`, falling back to `Source Serif 4`
+  - Used for: Cluster titles, section headers, article headlines.
   - Style: Black (900) weight, tight tracking, compact line-height.
+- **Display Serif (`--font-serif-display`):** `Noto Serif Display`, falling back to `Noto Serif`
+  - Used for: Major mastheads and oversized hero treatments only.
 - **Body Serif (`--font-nyt-body`):** `Source Serif 4`
   - Used for: Article summaries, briefings, long-form prose.
   - Style: Balanced line-height (1.62 - 1.75) for maximum readability.
-- **Interface Sans (`--font-ui`, `--font-sans`):** `IBM Plex Sans Condensed`, falling back to `Manrope`
+- **Interface Sans (`--font-ui`, `--font-sans`, `--font-ui-condensed`):** `Manrope`, falling back to system Noto/DejaVu/Arial sans fonts
   - Used for: Navigation, metadata, labels, buttons.
   - Style: Medium/bold weights (600-700), wide tracking (0.1em) for kickers and metadata.
 
@@ -32,10 +34,11 @@ This document defines the visual and structural language of the Presek platform:
 - Use exact self-hosted `@fontsource` weights instead of package defaults.
 - Headline weights: `Noto Serif Display` 700/900 plus 900 italic; `Noto Serif` 700/900 plus 900 italic for script fallback.
 - Body weights: `Source Serif 4` 400/500/600 plus 400 italic.
-- UI weights: `IBM Plex Sans Condensed` 500/600/700; `Manrope` 600/700/800 as fallback and utility sans.
+- UI weights: `Manrope` 600/700/800 as the primary UI family. `IBM Plex Sans Condensed` remains available as a Latin-safe fallback, but Macedonian Cyrillic UI text uses Manrope to avoid mixed-font fallback.
 
 ### Cyrillic Optimization
-- **Macedonian Vertical Rhythm:** Cyrillic headlines use an increased `line-height` (1.12 - 1.15) to prevent collision of descenders and ascenders (e.g., Dj, j, c).
+- **Macedonian Vertical Rhythm:** Cyrillic headlines use an increased `line-height` (1.12 - 1.15) to prevent collision of ascenders and descenders.
+- **Script Coverage:** Serbian Latin and Macedonian Cyrillic must use families with complete Latin-ext and Cyrillic coverage. Avoid condensed UI faces unless their main Cyrillic block is present.
 - **Features:** `font-variant-ligatures: common-ligatures` and `font-kerning: normal` are enabled globally for serif text.
 
 ## 2. Grid & Structural Rules

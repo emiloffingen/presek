@@ -225,7 +225,7 @@ const organizationSchema = {
     }
 </style>
 
-	<body id="top" class:list={["antialiased min-h-screen bg-background text-foreground transition-colors duration-300 overflow-x-hidden w-full", { "script-cyrillic": lang === 'mk' }]}>
+	<body id="top" class:list={["antialiased min-h-screen bg-background text-foreground transition-colors duration-300 overflow-x-hidden w-full", { "script-latin": lang === 'sr', "script-cyrillic": lang === 'mk' }]}>
 		<div class="noise-overlay" aria-hidden="true"></div>
 		<div id="loading-bar" class="fixed top-0 left-0 z-[9999] transition-all duration-300 opacity-0 w-0"></div>
 		<slot />
@@ -494,9 +494,23 @@ const organizationSchema = {
     text-wrap: pretty;
     }
 
-    /* Cyrillic Readability Polish */
+    /* Local script readability polish */
+    .script-latin {
+    --font-serif: "Noto Serif", "Source Serif 4", Georgia, serif;
+    --font-serif-display: "Noto Serif Display", "Noto Serif", Georgia, serif;
+    --font-nyt-body: "Source Serif 4", "Noto Serif", Georgia, serif;
+    --font-sans: "Manrope", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
+    --font-ui: "Manrope", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
+    --font-ui-condensed: "Manrope", "IBM Plex Sans Condensed", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
+    }
+
     .script-cyrillic {
-    --font-serif: "Georgia", serif; /* Georgia handles Cyrillic italics beautifully */
+    --font-serif: "Noto Serif", "Source Serif 4", Georgia, serif;
+    --font-serif-display: "Noto Serif Display", "Noto Serif", Georgia, serif;
+    --font-nyt-body: "Source Serif 4", "Noto Serif", Georgia, serif;
+    --font-sans: "Manrope", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
+    --font-ui: "Manrope", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
+    --font-ui-condensed: "Manrope", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
     line-height: 1.55;
     }
 

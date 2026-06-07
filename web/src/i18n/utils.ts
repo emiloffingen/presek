@@ -16,7 +16,18 @@ export function getLangFromUrl(url: URL, hostname?: string | null) {
 }
 
 export function useTranslations(lang: keyof typeof ui) {
-  return function t(key: keyof typeof ui[typeof defaultLang]) {
-    return ui[lang][key] || ui[defaultLang][key];
+  return function t(
+    key: keyof typeof ui[typeof defaultLang],
+    params?: Record<string, string | number>
+  ) {
+    let value: string = ui[lang][key] || ui[defaultLang][key];
+
+    if (params) {
+      for (const [paramKey, paramValue] of Object.entries(params)) {
+        value = value.replaceAll(`{${paramKey}}`, String(paramValue));
+      }
+    }
+
+    return value;
   }
 }
