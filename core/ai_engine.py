@@ -495,9 +495,15 @@ async def _call_ai_async(
             if res:
                 AI_LATENCY.labels(provider=provider_name, task_type=task_type).observe(time.time() - start_time)
                 AI_CALLS.labels(provider=provider_name, task_type=task_type, status="success").inc()
+                
+                # Update router performance metrics
+                from core.llm_router import SmartModelRouter
+                SmartModelRouter._update_performance_metrics(provider_name, True, time.time() - start_time)
+                
                 return res, provider_name
             else:
                 AI_CALLS.labels(provider=provider_name, task_type=task_type, status="failure").inc()
+                SmartModelRouter._update_performance_metrics(provider_name, False, time.time() - start_time)
         except Exception as e:
             AI_CALLS.labels(provider=provider_name, task_type=task_type, status="error").inc()
             log.error(f"[ai/cascade] Provider {provider_name} failed: {e}")

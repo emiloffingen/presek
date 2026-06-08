@@ -1288,6 +1288,17 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                     lang=lang,
                 )
                 record_runtime_event("synthesis_path", mode=provider or "unknown", fast_mode=fast_mode, lang=lang)
+                
+                # Record quality feedback for router
+                if provider and not fast_mode:  # Only for full synthesis, not fast mode
+                    quality_score = _score_synthesis_quality(
+                        synthetic_headline,
+                        generated_article,
+                        key_facts,
+                        lang
+                    )
+                    from core.llm_router import SmartModelRouter
+                    SmartModelRouter._record_quality_feedback(provider, cluster_id, quality_score)
 
                 # Phase 3: Deep Local Analyst (SKIP in fast_mode)
                 # Only run shared cluster-wide logic once (on first successful lang, usually sr)
