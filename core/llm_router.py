@@ -286,9 +286,13 @@ class SmartModelRouter:
             return "mistral_small"
 
         # Low Complexity: 1-2 articles, straightforward routine news
-        # Always try Gemma 4 E2B first, then enhanced fallback
-        # Gemma 4 E2B will handle its own fallback if model is not available
-        routing_decision['chosen_provider'] = "local"
-        routing_decision['reason'] = "low_complexity"
+        if local_available:
+            routing_decision['chosen_provider'] = "local"
+            routing_decision['reason'] = "low_complexity"
+            log.info(f"[router] Decision: {json.dumps(routing_decision, ensure_ascii=False)}")
+            return "local"
+
+        routing_decision['chosen_provider'] = "mistral_small"
+        routing_decision['reason'] = "low_complexity_local_unavailable"
         log.info(f"[router] Decision: {json.dumps(routing_decision, ensure_ascii=False)}")
-        return "local"
+        return "mistral_small"

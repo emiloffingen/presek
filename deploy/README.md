@@ -1,263 +1,129 @@
 # Presek Production Deployment
 
-This directory contains scripts and configuration for deploying Presek to production environments.
+Scripts and configuration for deploying Presek to the release runtime at `~/presek-runtime`.
 
-## Deployment Options
-
-### 1. Full Production Deployment (Recommended)
+## Supported Production Path
 
 ```bash
-# On a fresh Ubuntu 22.04 server:
-sudo bash deploy/production_deploy.sh
+# 1. Bootstrap runtime (once, or when uv.lock / web deps change)
+APP_ROOT=/home/emiloffingen/presek-runtime bash deploy/bootstrap_runtime_root.sh
+
+# 2. Install systemd/nginx units (once, or when deploy/systemd changes)
+sudo APP_ROOT=/home/emiloffingen/presek-runtime INSTALL_NGINX=0 bash deploy/install_server.sh
+
+# 3. Deploy a release (every change)
+APP_ROOT=/home/emiloffingen/presek-runtime \
+DEPLOY_GIT_DIR=/home/emiloffingen/presek \
+bash deploy/deploy_release.sh
 ```
 
-This script will:
-- Install all dependencies (Python, PostgreSQL, Redis, Nginx)
-- Set up system users and permissions
-- Configure database and Redis
-- Build the frontend
-- Set up systemd services
-- Configure SSL certificates
-- Set up monitoring and logging
+CI uses `deploy/ci_deploy.sh`, which sets `DEPLOY_GIT_DIR` and runs `deploy_release.sh`.
 
-### 2. Manual Deployment Steps
+## How `deploy_release.sh` Works
 
-If you prefer manual control:
+1. Acquires a deploy lock (`$APP_ROOT/.deploy.lock`)
+2. Pulls latest code from `DEPLOY_GIT_DIR` (if set)
+3. Runs preflight checks (env, venv, nginx, service status)
+4. Updates Python/web deps via `bootstrap_runtime_root.sh` when lock files change
+5. Copies code into `$APP_ROOT/releases/<timestamp>/`
+6. Builds the Astro frontend (`npm ci` when no shared `node_modules`)
+7. Backs up PostgreSQL (fails deploy if backup fails in full mode)
+8. Runs Alembic migrations (fails deploy on error, before switching release)
+9. Switches `$APP_ROOT/current` symlink
+10. Restarts FastAPI, Astro, and workers; waits for health checks
+11. Runs post-deploy smoke tests; auto-rolls back on failure
+12. Prunes old releases
+
+## Deploy Modes
+
+| Mode | Use case |
+|------|----------|
+| `full` (default) | Complete deploy with backup, migrations, smoke tests |
+| `frontend` | Rebuild web, restart Astro only |
+| `backend` | Skip web build, restart API/workers |
+| `workers` | Restart background workers only |
+| `ops` | Copy release only, no build/DB/restart |
+| `fast` | Skip DB backup and migrations |
 
 ```bash
-# 1. Install dependencies
-sudo apt update
-sudo apt install -y python3 python3-venv python3-pip nginx postgresql redis-server
-
-# 2. Create user and directories
-sudo useradd --system presek
-sudo mkdir -p /opt/presek /var/log/presek /etc/presek
-sudo chown -R presek:presek /opt/presek /var/log/presek
-
-# 3. Copy application files
-# (Copy your Presek code to /opt/presek)
-
-# 4. Set up configuration
-sudo cp deploy/production_config.example /etc/presek/environment
-sudo chmod 640 /etc/presek/environment
-sudo chown root:presek /etc/presek/environment
-
-# 5. Edit configuration
-sudo nano /etc/presek/environment
-
-# 6. Set up Python environment
-python3 -m venv /opt/presek/venv
-source /opt/presek/venv/bin/activate
-pip install -r requirements.txt
-
-# 7. Build frontend
-cd /opt/presek/web
-npm install
-npm run build
-
-# 8. Set up services
-sudo cp deploy/systemd/presek.service /etc/systemd/system/
-sudo cp deploy/systemd/presek-worker.service /etc/systemd/system/
-sudo cp deploy/systemd/presek-beat.service /etc/systemd/system/
-
-# 9. Set up Nginx
-sudo cp deploy/nginx/presek.conf /etc/nginx/sites-available/
-sudo ln -s /etc/nginx/sites-available/presek.conf /etc/nginx/sites-enabled/
-
-# 10. Start services
-sudo systemctl daemon-reload
-sudo systemctl enable presek presek-worker presek-beat nginx postgresql redis
-sudo systemctl start presek presek-worker presek-beat nginx postgresql redis
+DEPLOY_MODE=frontend bash deploy/deploy_release.sh
 ```
 
-## Configuration Files
+## Key Environment Variables
 
-### Main Configuration
-- `/etc/presek/environment` - Main environment variables
-- `/etc/presek/jwt_secret` - JWT secret key
-- `/etc/presek/db_password` - Database password
-- `/etc/presek/redis_password` - Redis password
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `APP_ROOT` | `~/presek-runtime` | Runtime root |
+| `DEPLOY_GIT_DIR` | unset | Git checkout to pull and deploy from |
+| `DEPLOY_GIT_BRANCH` | `main` | Branch to deploy |
+| `REQUIRE_DB_BACKUP` | `1` in full mode | Fail if pre-deploy backup fails |
+| `RUN_PREFLIGHT` | `1` in full mode | Run pre-deploy checks |
+| `RUN_SMOKE_CHECKS` | `1` | Run post-deploy smoke tests |
+| `AUTO_ROLLBACK_ON_FAILURE` | `1` | Roll back on smoke/health failure |
+| `PRUNE_RELEASES` | `1` | Prune old releases after success |
+| `ALLOW_CURRENT_SOURCE` | `0` | Allow deploying from `current` release dir |
 
-### Service Configuration
-- `/etc/systemd/system/presek.service` - Main API service
-- `/etc/systemd/system/presek-worker.service` - Celery worker
-- `/etc/systemd/system/presek-beat.service` - Celery beat (scheduled tasks)
-- `/etc/nginx/sites-available/presek.conf` - Nginx configuration
+## Rollback
 
-## Security Configuration
-
-### CSP (Content Security Policy)
-The production deployment uses a strict CSP:
-```
-default-src 'self';
-script-src 'self' 'nonce-{csp_nonce}';
-style-src 'self' 'nonce-{csp_nonce}';
-font-src 'self';
-img-src 'self' data: blob:;
-connect-src 'self' wss:;
-frame-src 'none';
-frame-ancestors 'none';
-base-uri 'self';
-form-action 'self';
-object-src 'none';
-media-src 'self' data:;
-worker-src 'self' blob:
-```
-
-### Security Headers
-- `X-Content-Type-Options: nosniff`
-- `X-Frame-Options: DENY`
-- `X-XSS-Protection: 1; mode=block`
-- `Referrer-Policy: no-referrer-when-downgrade`
-- `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`
-
-## Monitoring and Maintenance
-
-### Logs
-- `/var/log/presek/presek.out.log` - API output
-- `/var/log/presek/presek.err.log` - API errors
-- `/var/log/presek/celery.out.log` - Celery worker output
-- `/var/log/presek/celery.err.log` - Celery worker errors
-- `/var/log/nginx/access.log` - Web access logs
-- `/var/log/nginx/error.log` - Web server errors
-
-### Backup and Restore
-
-**Backup:**
 ```bash
-sudo presek-backup
+APP_ROOT=/home/emiloffingen/presek-runtime bash deploy/rollback_release.sh
 ```
 
-**Restore:**
-```bash
-sudo presek-restore /var/backups/presek/db_backup_20240101_120000.dump
-```
+Manual rollback is also triggered automatically when post-deploy smoke checks fail.
 
-### Monitoring Commands
+## CI/CD
 
-**Check service status:**
-```bash
-sudo systemctl status presek presek-worker presek-beat nginx postgresql redis
-```
+GitHub Actions SSH deploy requires:
 
-**View logs:**
-```bash
-tail -f /var/log/presek/presek.out.log
-tail -f /var/log/presek/presek.err.log
-```
+- `DEPLOY_SSH_HOST`, `DEPLOY_SSH_USER`, `DEPLOY_SSH_KEY`
+- Optional: `DEPLOY_APP_ROOT`, `DEPLOY_GIT_DIR`, `DEPLOY_GIT_BRANCH`
 
-**Check API health:**
-```bash
-curl -s http://localhost:8000/api/health | jq .
-```
+The server must have a git clone at `DEPLOY_GIT_DIR`. CI pulls latest `main` then deploys.
 
-## Scaling Options
+Docker images built in CI are optional registry artifacts; production runs via systemd on the host.
 
-### Database Read Replicas
-Edit `/etc/presek/environment`:
-```
-USE_READ_REPLICA=true
-DATABASE_READ_REPLICA_URL=postgresql://user:pass@replica-host:5432/presek
-```
+## Configuration Layout
 
-### Horizontal Scaling
-For multiple API instances:
-1. Set up a load balancer (Nginx, HAProxy)
-2. Configure Redis session storage
-3. Use shared storage for uploads
-4. Configure database connection pooling
+| Path | Purpose |
+|------|---------|
+| `$APP_ROOT/shared/.env` | Production environment variables |
+| `$APP_ROOT/venv` | Python virtualenv (symlink to versioned env) |
+| `$APP_ROOT/shared/web-node_modules` | Shared Astro dependencies |
+| `$APP_ROOT/current` | Symlink to active release |
+| `$APP_ROOT/previous` | Symlink to prior release (rollback) |
+| `$APP_ROOT/shared/backups` | PostgreSQL backups |
 
-### GPU Acceleration
-Edit `/etc/presek/environment`:
-```
-ENABLE_GPU_ACCELERATION=true
-```
-Requires CUDA and compatible GPU.
+## Maintenance Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `backup_postgres.sh` | Manual or cron DB backup |
+| `smoke_check.sh` | Full application health verification |
+| `preflight_check.sh` | Pre-deploy checks (set `SKIP_SMOKE=1` for deploy integration) |
+| `runtime_status.sh` | Runtime layout and service summary |
+| `prune_releases.sh` | Release disk retention (`DRY_RUN=1` to preview) |
+| `crontab` | Example cron entries for backups, health, pruning |
+
+## Legacy: `production_deploy.sh`
+
+`deploy/production_deploy.sh` is a **legacy greenfield installer** for `/opt/presek` (Gunicorn + Celery on port 8000). It does not match the current FastAPI/Astro release runtime. Do not use it on an existing `presek-runtime` server.
+
+`deploy/dry-run-deploy.sh` simulates that legacy script only.
 
 ## Troubleshooting
 
-### Common Issues
+**Deploy blocked: "started from the current release"**
+Set `DEPLOY_GIT_DIR` to your git checkout, or use `deploy/ci_deploy.sh`.
 
-**API not starting:**
+**Migration failed**
+Deploy aborts before switching `current`. Fix the migration, then redeploy.
+
+**Smoke checks failed after deploy**
+Deploy auto-rolls back to `previous` when `AUTO_ROLLBACK_ON_FAILURE=1`.
+
+**Check logs**
 ```bash
-journalctl -u presek.service -f
+sudo journalctl -u presek-fastapi-unified.service -f
+sudo journalctl -u presek-astro.service -f
+tail -f $APP_ROOT/shared/logs/backup.log
 ```
-
-**Database connection issues:**
-```bash
-sudo -u postgres psql -c "\l"
-sudo -u postgres psql -d presek -c "\dt"
-```
-
-**Redis connection issues:**
-```bash
-redis-cli ping
-redis-cli -a your_password ping
-```
-
-**Frontend not loading:**
-```bash
-ls -la /opt/presek/web/dist
-sudo systemctl restart nginx
-```
-
-### Debugging Tips
-
-1. **Check all service logs**
-2. **Verify configuration files**
-3. **Test database connections manually**
-4. **Check network/firewall settings**
-5. **Verify file permissions**
-
-## Upgrade Process
-
-1. **Backup current installation:**
-   ```bash
-   sudo presek-backup
-   ```
-
-2. **Stop services:**
-   ```bash
-   sudo systemctl stop presek presek-worker presek-beat
-   ```
-
-3. **Update code:**
-   ```bash
-   cd /opt/presek
-   git pull origin main
-   ```
-
-4. **Update dependencies:**
-   ```bash
-   source venv/bin/activate
-   pip install -r requirements.txt
-   cd web && npm install && npm run build
-   ```
-
-5. **Restart services:**
-   ```bash
-   sudo systemctl start presek presek-worker presek-beat
-   ```
-
-6. **Verify:**
-   ```bash
-   curl -s http://localhost:8000/api/health
-   ```
-
-## Security Best Practices
-
-1. **Keep secrets secure** - Never commit configuration files to version control
-2. **Regular updates** - Update dependencies monthly
-3. **Monitor logs** - Set up log monitoring and alerts
-4. **Backup regularly** - Automate daily backups
-5. **Security patches** - Apply OS and software updates promptly
-6. **Rate limiting** - Monitor and adjust as needed
-7. **SSL certificates** - Renew automatically with certbot
-
-## Support
-
-For issues with production deployment:
-1. Check logs first
-2. Review configuration files
-3. Test individual components
-4. Consult the main README.md for application-specific details

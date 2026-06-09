@@ -38,13 +38,15 @@ class TestAstroFrontendIntegrity:
         assert "{shouldLoadAdsense && (" in layout
         assert "pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" in layout
 
-        assert "url.pathname.startsWith('/mk')" in middleware
+        assert "pathname.startsWith('/mk')" in middleware
         assert "https://presek.mk" in middleware
 
     def test_canonical_url_uses_logic(self):
         layout = _read("web/src/layouts/Layout.astro")
-        # Ensure canonical logic is present
-        assert "function buildCanonicalUrl" in layout
+        locale_paths = _read("web/src/lib/localePaths.ts")
+        # Canonical URL logic lives in the shared locale helper.
+        assert "function buildCanonicalUrl" in locale_paths
+        assert "buildCanonicalUrl" in layout
         assert "canonicalUrl" in layout
 
     def test_astro_config_has_correct_routing(self):
@@ -145,7 +147,7 @@ class TestAstroFrontendIntegrity:
         assert "Tema trenutno nije dostupna." not in topic_page
         assert "pojavljivanja" not in topic_page
 
-        assert "href={lang === 'sr' ? '/' : '/mk'}" in entity_page
+        assert "homePath(lang, hostHeader)" in entity_page
         assert 'lang={lang}' in entity_page
 
     def test_editorial_interactive_widgets_avoid_placeholder_and_nan_output(self):
@@ -365,6 +367,17 @@ class TestDeploymentIntegrity:
         assert "restart_services_in_order" in deploy_script
         assert "presek-fastapi-unified.service" in deploy_script
         assert "presek-astro.service" in deploy_script
+
+    def test_deploy_runs_post_deploy_smoke_and_auto_rollback(self):
+        deploy_script = _read("deploy/deploy_release.sh")
+        assert "run_post_deploy_smoke_checks" in deploy_script
+        assert "attempt_auto_rollback" in deploy_script
+        assert "AUTO_ROLLBACK_ON_FAILURE" in deploy_script
+
+    def test_ci_deploy_entrypoint_exists(self):
+        ci_deploy = _read("deploy/ci_deploy.sh")
+        assert "deploy/deploy_release.sh" in ci_deploy
+        assert "DEPLOY_GIT_DIR" in ci_deploy
 
     def test_runtime_config_does_not_embed_seed_source_catalog(self):
         config = _read("core/config.py")

@@ -331,6 +331,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build Docker image
+        # Optional registry artifact; production deploy uses release scripts on the host.
         run: docker build -t presek:${{ github.sha }} .
 
       - name: Push Docker image
@@ -351,12 +352,15 @@ jobs:
           script: |
             set -euo pipefail
             APP_ROOT="${{ secrets.DEPLOY_APP_ROOT || '/home/emiloffingen/presek-runtime' }}"
-            cd "${APP_ROOT}/current" || cd "${APP_ROOT}"
-            bash deploy/deploy_release.sh
+            DEPLOY_GIT_DIR="${{ secrets.DEPLOY_GIT_DIR || '/home/emiloffingen/presek' }}"
+            DEPLOY_GIT_BRANCH="${{ secrets.DEPLOY_GIT_BRANCH || 'main' }}"
+            APP_ROOT="$APP_ROOT" DEPLOY_GIT_DIR="$DEPLOY_GIT_DIR" DEPLOY_GIT_BRANCH="$DEPLOY_GIT_BRANCH" \
+              bash "$DEPLOY_GIT_DIR/deploy/ci_deploy.sh"
 
       - name: Remote deploy not configured
         if: ${{ secrets.DEPLOY_SSH_HOST == '' || secrets.DEPLOY_SSH_USER == '' || secrets.DEPLOY_SSH_KEY == '' }}
         run: |
           echo "Skipping SSH deploy. Configure DEPLOY_SSH_HOST, DEPLOY_SSH_USER, and DEPLOY_SSH_KEY to enable CI deploy."
-          echo "Production deploys normally run: APP_ROOT=/home/emiloffingen/presek-runtime bash deploy/deploy_release.sh"
+          echo "Production deploys normally run:"
+          echo "  APP_ROOT=/home/emiloffingen/presek-runtime DEPLOY_GIT_DIR=/home/emiloffingen/presek bash deploy/ci_deploy.sh"
           echo "Built image tag: presek:${{ github.sha }}"

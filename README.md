@@ -19,7 +19,7 @@ Presek is a news aggregation and analysis app with:
 - Supported production path:
   1. `APP_ROOT=/home/emiloffingen/presek-runtime bash deploy/bootstrap_runtime_root.sh`
   2. `sudo APP_ROOT=/home/emiloffingen/presek-runtime INSTALL_NGINX=0 bash deploy/install_server.sh`
-  3. `APP_ROOT=/home/emiloffingen/presek-runtime bash deploy/deploy_release.sh`
+  3. `APP_ROOT=/home/emiloffingen/presek-runtime DEPLOY_GIT_DIR=/home/emiloffingen/presek bash deploy/ci_deploy.sh`
 
 If a change touches `deploy/systemd/*` or `deploy/install_server.sh`, run step 2 before step 3 so the installed units match the release code.
 

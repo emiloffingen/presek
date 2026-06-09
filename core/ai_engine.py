@@ -35,8 +35,6 @@ def _mark_provider_cooldown(provider_name: str, retry_after: str | None = None):
     _PROVIDER_COOLDOWN_UNTIL[provider_name] = time.time() + max(1, cooldown_seconds)
 
 
-from nlp import synthesize_locally
-
 # =============================================================================
 # Prompt Injection Protection
 # =============================================================================
@@ -357,7 +355,7 @@ class LocalProvider(AIProvider):
             )
             if res:
                 return res
-            return synthesize_locally([], topic=topic)
+            return None
 
         if "summarize" in lowered_system or task_type == "summarize":
             res = analyst.analyze(prompt, system, max_tokens=max_tokens, lang=lang)
@@ -422,6 +420,105 @@ async def _stream_with_initial_chunk(
         yield chunk
 
 
+def _parsed_json_dict(res: str | None) -> dict | None:
+    if not res:
+        return None
+    parsed = clean_json_response(res)
+    if isinstance(parsed, dict) and parsed:
+        return parsed
+    return None
+
+
+def build_provider_fallback_order(
+    task_type: str = "default",
+    provider_override: str | None = None,
+    exclude_providers: list[str] | None = None,
+) -> list[str]:
+    """Build provider cascade order with optional primary override and exclusions."""
+    if task_type == "research":
+        base_order = list(PROVIDER_FALLBACK_ORDER_RESEARCH)
+    elif task_type in ("summarize", "synthesis"):
+        try:
+            from core.llm_router import SmartModelRouter
+
+            base_order = SmartModelRouter.get_dynamic_fallback_order(task_type)
+        except Exception as exc:
+            log.debug(f"[ai/cascade] Dynamic fallback order unavailable: {exc}")
+            base_order = list(PROVIDER_FALLBACK_ORDER_SUMMARY)
+    else:
+        base_order = list(PROVIDER_FALLBACK_ORDER)
+
+    base_order = [provider for provider in base_order if provider in PROVIDERS]
+
+    if provider_override and provider_override in PROVIDERS:
+        order = [provider_override]
+        for provider in base_order:
+            if provider not in order:
+                order.append(provider)
+    else:
+        order = list(base_order)
+
+    if "local" in PROVIDERS and "local" not in order:
+        order.append("local")
+
+    excluded = set(exclude_providers or [])
+    return [provider for provider in order if provider not in excluded]
+
+
+def _record_provider_outcome(provider_name: str, task_type: str, success: bool, duration: float) -> None:
+    try:
+        from core.llm_router import SmartModelRouter
+
+        SmartModelRouter._update_performance_metrics(provider_name, success, duration)
+    except Exception as exc:
+        log.debug(f"[ai/cascade] Failed to record provider metrics: {exc}")
+
+
+def _invoke_provider_call(
+    provider,
+    provider_name: str,
+    prompt: str,
+    system: str,
+    max_tokens: int,
+    json_mode: bool,
+    topic: str | None,
+    task_type: str,
+    lang: str,
+    response_schema: Any,
+) -> str | None:
+    res = provider.call(
+        prompt,
+        system,
+        max_tokens,
+        json_mode,
+        topic=topic,
+        task_type=task_type,
+        lang=lang,
+        response_schema=response_schema,
+    )
+
+    if json_mode and res and not _parsed_json_dict(res):
+        log.warning(f"[ai/cascade] Provider {provider_name} returned malformed JSON, retrying once...")
+        res = provider.call(
+            prompt + "\n\nCRITICAL: Return valid JSON only.",
+            system,
+            max_tokens,
+            json_mode,
+            topic=topic,
+            task_type=task_type,
+            lang=lang,
+            response_schema=response_schema,
+        )
+        if res and not _parsed_json_dict(res):
+            AI_CALLS.labels(provider=provider_name, task_type=task_type, status="malformed_json").inc()
+            log.warning(
+                f"[ai/cascade] Provider {provider_name} still returned malformed JSON for task {task_type}, trying next provider"
+            )
+            return None
+
+    return res
+
+
 async def _call_ai_async(
     prompt: str,
     system: str,
@@ -432,9 +529,10 @@ async def _call_ai_async(
     topic: str = None,
     lang: str = "sr",
     response_schema: Any = None,
+    provider_override: str | None = None,
+    exclude_providers: list[str] | None = None,
 ):
-    """Entrypoint with cascading failover."""
-    # Sanitize prompts to prevent injection attacks
+    """Async entrypoint with cascading failover."""
     try:
         system = sanitize_ai_system_prompt(system)
         prompt = sanitize_ai_user_prompt(prompt)
@@ -443,16 +541,10 @@ async def _call_ai_async(
         AI_CALLS.labels(provider="sanitization", task_type=task_type, status="blocked").inc()
         return None, None
 
-    if task_type == "research":
-        fallback_order = list(PROVIDER_FALLBACK_ORDER_RESEARCH)
-    elif task_type in ("summarize", "synthesis"):
-        fallback_order = list(PROVIDER_FALLBACK_ORDER_SUMMARY)
-    else:
-        fallback_order = list(PROVIDER_FALLBACK_ORDER)
-    
-    # Always ensure local is the absolute final fallback if not already present
-    if "local" not in fallback_order:
-        fallback_order.append("local")
+    fallback_order = build_provider_fallback_order(task_type, provider_override, exclude_providers)
+    if not fallback_order:
+        log.error(f"[ai/cascade] No providers left in fallback order for task {task_type}")
+        return None, None
 
     for provider_name in fallback_order:
         provider = PROVIDERS[provider_name]
@@ -471,50 +563,55 @@ async def _call_ai_async(
                     first_chunk = await anext(generator)
                 except StopAsyncIteration:
                     AI_CALLS.labels(provider=provider_name, task_type=task_type, status="empty").inc()
+                    _record_provider_outcome(provider_name, task_type, False, time.time() - start_time)
                     continue
                 if first_chunk:
-                    AI_LATENCY.labels(provider=provider_name, task_type=task_type).observe(time.time() - start_time)
+                    duration = time.time() - start_time
+                    AI_LATENCY.labels(provider=provider_name, task_type=task_type).observe(duration)
                     AI_CALLS.labels(provider=provider_name, task_type=task_type, status="success").inc()
+                    _record_provider_outcome(provider_name, task_type, True, duration)
                     return (
                         _stream_with_initial_chunk(generator, first_chunk),
                         provider_name,
                     )
+                _record_provider_outcome(provider_name, task_type, False, time.time() - start_time)
                 continue
 
             res = await asyncio.to_thread(
-                provider.call,
+                _invoke_provider_call,
+                provider,
+                provider_name,
                 prompt,
                 system,
                 max_tokens,
                 json_mode,
-                topic=topic,
-                task_type=task_type,
-                lang=lang,
-                response_schema=response_schema,
+                topic,
+                task_type,
+                lang,
+                response_schema,
             )
+            duration = time.time() - start_time
             if res:
-                AI_LATENCY.labels(provider=provider_name, task_type=task_type).observe(time.time() - start_time)
+                AI_LATENCY.labels(provider=provider_name, task_type=task_type).observe(duration)
                 AI_CALLS.labels(provider=provider_name, task_type=task_type, status="success").inc()
-                
-                # Update router performance metrics
-                from core.llm_router import SmartModelRouter
-                SmartModelRouter._update_performance_metrics(provider_name, True, time.time() - start_time)
-                
+                _record_provider_outcome(provider_name, task_type, True, duration)
                 return res, provider_name
-            else:
-                AI_CALLS.labels(provider=provider_name, task_type=task_type, status="failure").inc()
-                SmartModelRouter._update_performance_metrics(provider_name, False, time.time() - start_time)
+
+            AI_CALLS.labels(provider=provider_name, task_type=task_type, status="failure").inc()
+            _record_provider_outcome(provider_name, task_type, False, duration)
+            log.warning(f"[ai/cascade] Provider {provider_name} returned empty response for task {task_type}")
         except Exception as e:
             AI_CALLS.labels(provider=provider_name, task_type=task_type, status="error").inc()
+            _record_provider_outcome(provider_name, task_type, False, time.time() - start_time)
             log.error(f"[ai/cascade] Provider {provider_name} failed: {e}")
 
-            # If rate limited, wait a bit before trying the next fallback
             if "429" in str(e):
                 log.info(f"[ai/cascade] Rate limit hit for {provider_name}, sleeping 2s...")
                 time.sleep(2)
 
             continue
 
+    log.error(f"[ai/cascade] All providers in {fallback_order} failed for task {task_type}")
     return None, None
 
 
@@ -527,10 +624,10 @@ def _call_ai(
     topic: str = None,
     lang: str = "sr",
     response_schema: Any = None,
-    provider_override: str = None,
+    provider_override: str | None = None,
+    exclude_providers: list[str] | None = None,
 ):
     """Synchronous AI entrypoint with cascading failover."""
-    # Sanitize prompts to prevent injection attacks
     try:
         system = sanitize_ai_system_prompt(system)
         prompt = sanitize_ai_user_prompt(prompt)
@@ -539,31 +636,10 @@ def _call_ai(
         AI_CALLS.labels(provider="sanitization", task_type=task_type, status="blocked").inc()
         return None, None
 
-    if provider_override == "local" and provider_override in PROVIDERS:
-        fallback_order = ["local"]
-    elif provider_override and provider_override in PROVIDERS:
-        base_order = []
-        if task_type == "research":
-            base_order = list(PROVIDER_FALLBACK_ORDER_RESEARCH)
-        elif task_type in ("summarize", "synthesis"):
-            base_order = list(PROVIDER_FALLBACK_ORDER_SUMMARY)
-        else:
-            base_order = list(PROVIDER_FALLBACK_ORDER)
-        
-        fallback_order = [provider_override]
-        for p in base_order:
-            if p not in fallback_order:
-                fallback_order.append(p)
-    elif task_type == "research":
-        fallback_order = list(PROVIDER_FALLBACK_ORDER_RESEARCH)
-    elif task_type in ("summarize", "synthesis"):
-        fallback_order = list(PROVIDER_FALLBACK_ORDER_SUMMARY)
-    else:
-        fallback_order = list(PROVIDER_FALLBACK_ORDER)
-    
-    # Always ensure local is the absolute final fallback if not already present
-    if "local" not in fallback_order:
-        fallback_order.append("local")
+    fallback_order = build_provider_fallback_order(task_type, provider_override, exclude_providers)
+    if not fallback_order:
+        log.error(f"[ai/cascade] No providers left in fallback order for task {task_type}")
+        return None, None
 
     for provider_name in fallback_order:
         provider = PROVIDERS[provider_name]
@@ -576,34 +652,33 @@ def _call_ai(
             continue
         start_time = time.time()
         try:
-            res = provider.call(prompt, system, max_tokens, json_mode, topic=topic, task_type=task_type, lang=lang, response_schema=response_schema)
-            
-            # Self-Correction Loop: If json_mode is requested but output is malformed, re-prompt once
-            if json_mode and res and not clean_json_response(res):
-                log.warning(f"[ai/cascade] Provider {provider_name} returned malformed JSON, retrying once...")
-                res = provider.call(prompt + "\n\nCRITICAL: Return valid JSON only.", system, max_tokens, json_mode, topic=topic, task_type=task_type, lang=lang, response_schema=response_schema)
-                if res and not clean_json_response(res):
-                    AI_CALLS.labels(provider=provider_name, task_type=task_type, status="malformed_json").inc()
-                    log.warning(
-                        f"[ai/cascade] Provider {provider_name} still returned malformed JSON for task {task_type}, trying next provider"
-                    )
-                    continue
-
+            res = _invoke_provider_call(
+                provider,
+                provider_name,
+                prompt,
+                system,
+                max_tokens,
+                json_mode,
+                topic,
+                task_type,
+                lang,
+                response_schema,
+            )
+            duration = time.time() - start_time
             if res:
-                duration = time.time() - start_time
                 AI_CALLS.labels(provider=provider_name, task_type=task_type, status="success").inc()
                 AI_LATENCY.labels(provider=provider_name, task_type=task_type).observe(duration)
-                
-                # Check response cache metadata to avoid saving duplicate content
+                _record_provider_outcome(provider_name, task_type, True, duration)
                 return res, provider_name
-            else:
-                AI_CALLS.labels(provider=provider_name, task_type=task_type, status="failure").inc()
-                log.warning(f"[ai/cascade] Provider {provider_name} returned empty response for task {task_type}")
+
+            AI_CALLS.labels(provider=provider_name, task_type=task_type, status="failure").inc()
+            _record_provider_outcome(provider_name, task_type, False, duration)
+            log.warning(f"[ai/cascade] Provider {provider_name} returned empty response for task {task_type}")
         except Exception as e:
             AI_CALLS.labels(provider=provider_name, task_type=task_type, status="error").inc()
+            _record_provider_outcome(provider_name, task_type, False, time.time() - start_time)
             log.error(f"[ai/cascade] Provider {provider_name} failed: {e}")
 
-            # If rate limited, wait a bit before trying the next fallback
             if "429" in str(e):
                 log.info(f"[ai/cascade] Rate limit hit for {provider_name}, sleeping 2s...")
                 time.sleep(2)
@@ -614,8 +689,6 @@ def _call_ai(
     return None, None
 
 
-# ... (existing imports)
-
 async def async_call_ai(
     prompt: str,
     system: str,
@@ -625,12 +698,23 @@ async def async_call_ai(
     topic: str = None,
     lang: str = "sr",
     response_schema: Any = None,
+    provider_override: str | None = None,
+    exclude_providers: list[str] | None = None,
 ):
-    """
-    Asynchronous version of the AI provider cascade.
-    Wraps blocking provider calls in a thread executor to keep the event loop free.
-    """
-    return await asyncio.to_thread(_call_ai, prompt, system, task_type, max_tokens, json_mode, topic, lang, response_schema)
+    """Asynchronous AI provider cascade."""
+    return await _call_ai_async(
+        prompt,
+        system,
+        task_type,
+        max_tokens,
+        json_mode,
+        topic=topic,
+        lang=lang,
+        response_schema=response_schema,
+        provider_override=provider_override,
+        exclude_providers=exclude_providers,
+    )
+
 
 def sync_call_ai(
     prompt: str,
@@ -641,10 +725,22 @@ def sync_call_ai(
     topic: str = None,
     lang: str = "sr",
     response_schema: Any = None,
-    provider_override: str = None,
+    provider_override: str | None = None,
+    exclude_providers: list[str] | None = None,
 ):
     """Backwards-compatible alias for synchronous callers."""
-    return _call_ai(prompt, system, task_type, max_tokens, json_mode, topic=topic, lang=lang, response_schema=response_schema, provider_override=provider_override)
+    return _call_ai(
+        prompt,
+        system,
+        task_type,
+        max_tokens,
+        json_mode,
+        topic=topic,
+        lang=lang,
+        response_schema=response_schema,
+        provider_override=provider_override,
+        exclude_providers=exclude_providers,
+    )
 
 
 

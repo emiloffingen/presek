@@ -2,8 +2,9 @@
 # Dry Run Deployment Script for Presek
 # This script simulates the deployment without making actual changes
 
-echo "=== DRY RUN: Presek Deployment Simulation ==="
-echo "This shows what the production_deploy.sh script would do"
+echo "=== DRY RUN: Legacy Presek Deployment Simulation ==="
+echo "This shows what the LEGACY production_deploy.sh script would do"
+echo "Supported production deploys use deploy_release.sh / ci_deploy.sh instead"
 echo "No actual changes will be made to your system"
 echo ""
 

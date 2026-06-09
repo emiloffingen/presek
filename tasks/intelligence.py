@@ -229,65 +229,132 @@ def _build_cluster_synthesis_prompt(article_rows, lang="sr", history_context="",
     return "\n\n".join(part for part in prompt_parts if part)
 
 
-def _try_local_synthesis_before_fallback(article_rows, full_prompt, system_prompt, lang="sr", max_tokens=3000):
-    """Use the local Gemma provider before dropping to deterministic enhanced fallback."""
-    raw, provider = _call_ai(
-        full_prompt,
-        system_prompt,
-        json_mode=True,
-        task_type="synthesis",
-        max_tokens=max_tokens,
-        lang=lang,
-        provider_override="local",
-    )
-    if not raw or provider != "local":
-        return None, provider, None
-
-    try:
-        data = clean_json_response(raw)
-        if not isinstance(data, dict):
-            return None, provider, None
-    except Exception as exc:
-        log.warning(f"[tasks/synthesis] Local Gemma fallback returned malformed JSON: {exc}")
-        return None, provider, None
-
-    summary = data.get("summary", "")
-    if isinstance(summary, list):
-        summary = "\n".join(str(item) for item in summary)
-    generated_article = data.get("article") or data.get("generated_article") or ""
-    if not summary and not generated_article:
-        return None, provider, None
-
-    summary = validate_person_names(str(summary))
-    generated_article = validate_person_names(str(generated_article))
-    synthetic_headline = validate_person_names(str(data.get("synthetic_headline") or ""))
-    synthetic_standfirst = validate_person_names(str(data.get("synthetic_standfirst") or ""))
-    perspectives = data.get("perspectives") or []
-    if not isinstance(perspectives, list):
-        perspectives = []
-
-    summary, generated_article, perspectives = _sanitize_synthesis_outputs(
-        summary,
-        generated_article,
-        perspectives,
-        article_rows,
-        lang=lang,
-    )
-
-    result = {
-        "summary": summary,
-        "generated_article": generated_article,
-        "synthetic_headline": synthetic_headline,
-        "synthetic_standfirst": synthetic_standfirst,
-        "perspectives": perspectives,
-        "key_facts": data.get("key_facts") if isinstance(data.get("key_facts"), list) else [],
-        "analyst_entities": data.get("analyst_entities") if isinstance(data.get("analyst_entities"), list) else [],
-    }
-
+def _resolve_generation_model(provider: str | None):
+    if not provider:
+        return None
     from core.ai_engine import PROVIDERS
 
-    provider_model = getattr(PROVIDERS.get("local"), "model", None) or "local"
-    return result, "local", provider_model
+    provider_obj = PROVIDERS.get(provider)
+    if provider_obj and getattr(provider_obj, "model", None):
+        return provider_obj.model
+    return provider
+
+
+def _generate_synthesis_via_cascade(
+    article_rows,
+    full_prompt,
+    system_prompt,
+    lang="sr",
+    max_tokens=3000,
+    fast_mode=False,
+    current_context=None,
+    legacy_summary=None,
+):
+    """Run router-directed provider cascade with JSON, grounding, and quality gates."""
+    from core.ai_engine import build_provider_fallback_order
+    from core.llm_router import SmartModelRouter
+
+    if not article_rows:
+        return {
+            "status": "deterministic",
+            "provider": "enhanced_fallback",
+            "model": "enhanced_fallback",
+            "fallback_reason": "router_empty_articles",
+            "res_data": None,
+            "quality_score": None,
+            "raw": None,
+        }
+
+    primary_provider = SmartModelRouter.route_cluster(article_rows, lang=lang)
+    if primary_provider == "enhanced_fallback":
+        return {
+            "status": "deterministic",
+            "provider": "enhanced_fallback",
+            "model": "enhanced_fallback",
+            "fallback_reason": "router_selected_fallback",
+            "res_data": None,
+            "quality_score": None,
+            "raw": None,
+        }
+
+    exclude_providers: list[str] = []
+    last_fallback_reason = None
+    max_attempts = len(build_provider_fallback_order("synthesis", primary_provider))
+
+    while len(exclude_providers) < max_attempts:
+        raw, provider = _call_ai(
+            full_prompt,
+            system_prompt,
+            json_mode=True,
+            task_type="synthesis",
+            max_tokens=max_tokens,
+            lang=lang,
+            provider_override=primary_provider,
+            exclude_providers=exclude_providers,
+        )
+        if not raw or not provider:
+            last_fallback_reason = last_fallback_reason or "provider_returned_no_content"
+            break
+
+        try:
+            res_data = clean_json_response(raw)
+            if not isinstance(res_data, dict):
+                raise ValueError("Parsed JSON is not a dictionary")
+        except Exception as exc:
+            log.error(f"[tasks/synthesis] JSON parse error from {provider}: {exc}")
+            last_fallback_reason = "malformed_json"
+            exclude_providers.append(provider)
+            continue
+
+        summary = res_data.get("summary", "")
+        generated_article = res_data.get("article", "") or res_data.get("generated_article", "")
+        synthetic_headline = res_data.get("synthetic_headline", "")
+        if isinstance(summary, list):
+            summary = "\n".join(str(s) for s in summary)
+
+        if not summary or not generated_article:
+            last_fallback_reason = "partial_response"
+            exclude_providers.append(provider)
+            continue
+
+        comparison_text = f"{summary}\n{generated_article}"
+        if not fast_mode and not _is_grounded_synthesis(comparison_text, current_context or legacy_summary):
+            log.warning(f"[tasks/synthesis] Hallucination gate failed for provider {provider}")
+            last_fallback_reason = "hallucination_gate_failed"
+            exclude_providers.append(provider)
+            continue
+
+        key_facts = res_data.get("key_facts", [])
+        article_score = _score_synthesis_quality(synthetic_headline, generated_article, key_facts, lang)
+        summary_score = _score_editorial_summary(summary, generated_article, lang)
+        quality_score = round((article_score * 0.65) + (summary_score * 0.35), 3)
+        if not fast_mode and quality_score < 0.7:
+            log.warning(
+                f"[tasks/synthesis] Quality score {quality_score:.2f} below threshold for provider {provider}"
+            )
+            last_fallback_reason = "failed_quality_score"
+            exclude_providers.append(provider)
+            continue
+
+        return {
+            "status": "success",
+            "provider": provider,
+            "model": _resolve_generation_model(provider),
+            "fallback_reason": None,
+            "res_data": res_data,
+            "quality_score": quality_score,
+            "raw": raw,
+        }
+
+    return {
+        "status": "exhausted",
+        "provider": None,
+        "model": None,
+        "fallback_reason": last_fallback_reason or "cascade_exhausted",
+        "res_data": None,
+        "quality_score": None,
+        "raw": None,
+    }
 
 
 def _normalize_cluster_synthesis(summary, perspectives, article_rows, lang="mk"):
@@ -1174,92 +1241,33 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
 
             system_prompt = SYNTHESIS_SYSTEM_PROMPT_MK if lang == "mk" else SYNTHESIS_SYSTEM_PROMPT_SR
 
-            from core.llm_router import SmartModelRouter
-            target_model = SmartModelRouter.route_cluster(article_rows, lang=lang)
+            cascade = _generate_synthesis_via_cascade(
+                article_rows,
+                full_prompt,
+                system_prompt,
+                lang=lang,
+                max_tokens=max_tokens,
+                fast_mode=fast_mode,
+                current_context=current_context,
+                legacy_summary=legacy_summary,
+            )
 
-            provider = "enhanced_fallback" if target_model == "enhanced_fallback" else None
-            model = None
-            quality_score = None
-            fallback_reason = None
-            raw = None
+            provider = cascade.get("provider")
+            model = cascade.get("model")
+            quality_score = cascade.get("quality_score")
+            fallback_reason = cascade.get("fallback_reason")
+            raw = cascade.get("raw")
+            res_data = cascade.get("res_data") or {}
 
-            if target_model == "enhanced_fallback":
-                log.info(f"Router selected local enhanced fallback for cluster {cluster_id} ({lang})")
-                provider = "enhanced_fallback"
-                model = "enhanced_fallback"
-                fallback_reason = "router_selected_fallback"
-            else:
-                raw, provider = _call_ai(
-                    full_prompt,
-                    system_prompt,
-                    json_mode=True,
-                    task_type="synthesis",
-                    max_tokens=max_tokens,
-                    lang=lang,
-                    provider_override=target_model,
-                )
-                if provider:
-                    from core.ai_engine import PROVIDERS
-                    p_obj = PROVIDERS.get(provider)
-                    if p_obj and hasattr(p_obj, "model") and p_obj.model:
-                        model = p_obj.model
-                    else:
-                        model = provider
-                else:
-                    fallback_reason = "provider_returned_no_content"
-
-            res_data = {}
-            if raw:
-                try:
-                    res = clean_json_response(raw)
-                    if not isinstance(res, dict):
-                        raise ValueError("Parsed JSON is not a dictionary")
-                    res_data = res
-                except Exception as e:
-                    log.error(f"[tasks/synthesis] JSON Parse Error for {cluster_id} ({lang}): {e}. Raw: {raw[:200]}")
-                    fallback_reason = "malformed_json"
-                    raw = None
-
-            if raw:
-                # Merge if partial response (missing summary or article)
-                if not res_data.get("summary") or not res_data.get("article"):
-                    fallback_reason = "partial_response"
-                
+            if cascade["status"] == "success":
                 summary = res_data.get("summary", "")
-                generated_article = res_data.get("article", "")
+                generated_article = res_data.get("article", "") or res_data.get("generated_article", "")
                 synthetic_headline = res_data.get("synthetic_headline", "")
                 synthetic_standfirst = res_data.get("synthetic_standfirst", "")
                 perspectives = res_data.get("perspectives", [])
-
-                # Ensure summary is a string for validation and comparison
                 if isinstance(summary, list):
                     summary = "\n".join(str(s) for s in summary)
 
-                # AI Quality Gate: Hallucination Scanner (SKIP in fast_mode)
-                comparison_text = (summary or "") + "\n" + (generated_article or "")
-                if (
-                    not fast_mode
-                    and not _is_grounded_synthesis(comparison_text, current_context or legacy_summary)
-                ):
-                    log.warning(f"Hallucination gate failed for cluster {cluster_id} ({lang})")
-                    fallback_reason = "hallucination_gate_failed"
-                    raw = None
-
-            if raw:
-                # Quality Score evaluation
-                key_facts = res_data.get("key_facts", [])
-                article_score = _score_synthesis_quality(synthetic_headline, generated_article, key_facts, lang)
-                summary_score = _score_editorial_summary(summary, generated_article, lang)
-                quality_score = round((article_score * 0.65) + (summary_score * 0.35), 3)
-                if quality_score < 0.7:
-                    log.warning(
-                        f"Quality score {quality_score:.2f} below threshold (0.7) for cluster {cluster_id} ({lang}) "
-                        f"(article={article_score:.2f}, summary={summary_score:.2f})"
-                    )
-                    fallback_reason = "failed_quality_score"
-                    raw = None
-
-            if raw:
                 verification_report = res_data.get("verification_report")
                 quote = validate_person_names(res_data.get("quote", ""))
 
@@ -1290,14 +1298,9 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 record_runtime_event("synthesis_path", mode=provider or "unknown", fast_mode=fast_mode, lang=lang)
                 
                 # Record quality feedback for router
-                if provider and not fast_mode:  # Only for full synthesis, not fast mode
-                    quality_score = _score_synthesis_quality(
-                        synthetic_headline,
-                        generated_article,
-                        key_facts,
-                        lang
-                    )
+                if provider and not fast_mode and quality_score is not None:
                     from core.llm_router import SmartModelRouter
+
                     SmartModelRouter._record_quality_feedback(provider, cluster_id, quality_score)
 
                 # Phase 3: Deep Local Analyst (SKIP in fast_mode)
@@ -1391,39 +1394,23 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                     shared_computed = True
 
             else:
-                if provider == "enhanced_fallback":
-                    log.info(f"Using pre-computed enhanced fallback for {cluster_id} ({lang})")
+                if cascade["status"] == "deterministic":
+                    log.info(f"Using deterministic enhanced fallback for {cluster_id} ({lang})")
                 else:
                     log.warning(
-                        f"[tasks/synthesis] AI provider {provider} failed checks or returned no content for {cluster_id} ({lang}), trying local Gemma before enhanced fallback"
+                        f"[tasks/synthesis] Provider cascade exhausted for {cluster_id} ({lang}); "
+                        f"reason={fallback_reason}"
                     )
-                local_result, local_provider, local_model = _try_local_synthesis_before_fallback(
-                    article_rows,
-                    full_prompt,
-                    system_prompt,
-                    lang=lang,
-                    max_tokens=max_tokens,
-                )
-                if local_result:
-                    provider = local_provider
-                    model = local_model
-                    fallback_reason = fallback_reason or "local_gemma_after_remote_failure"
-                    summary = local_result.get("summary", "")
-                    perspectives = local_result.get("perspectives", [])
-                    synthetic_headline = local_result.get("synthetic_headline", "")
-                    synthetic_standfirst = local_result.get("synthetic_standfirst", "")
-                    generated_article = local_result.get("generated_article", "")
-                    record_runtime_event("synthesis_path", mode=provider, fast_mode=fast_mode, lang=lang)
-                else:
-                    provider = "enhanced_fallback"
-                    model = "enhanced_fallback"
-                    fallback_reason = fallback_reason or "enhanced_fallback_after_local_failure"
-                    fallback = synthesize_cluster_fallback(article_rows, lang=lang)
-                    summary = fallback.get("summary", "")
-                    perspectives = fallback.get("perspectives", [])
-                    synthetic_headline = fallback.get("synthetic_headline", "")
-                    synthetic_standfirst = fallback.get("synthetic_standfirst", "")
-                    generated_article = fallback.get("generated_article", "")
+                provider = "enhanced_fallback"
+                model = "enhanced_fallback"
+                fallback_reason = fallback_reason or "enhanced_fallback_after_cascade_exhausted"
+                fallback = synthesize_cluster_fallback(article_rows, lang=lang)
+                summary = fallback.get("summary", "")
+                perspectives = fallback.get("perspectives", [])
+                synthetic_headline = fallback.get("synthetic_headline", "")
+                synthetic_standfirst = fallback.get("synthetic_standfirst", "")
+                generated_article = fallback.get("generated_article", "")
+                record_runtime_event("synthesis_path", mode=provider, fast_mode=fast_mode, lang=lang)
                 verification_report = None
                 quote = ""
                 current_sentiment_data = shared_metrics["sentiment_data"]
@@ -2651,20 +2638,37 @@ def backfill_cluster_summaries_task(days=30, lang="sr"):
 
                 system_prompt = SYNTHESIS_SYSTEM_PROMPT_MK if lang == "mk" else SYNTHESIS_SYSTEM_PROMPT_SR
                 full_prompt = _build_cluster_synthesis_prompt(article_rows, lang=lang)
-                fallback_result, generation_provider, generation_model = _try_local_synthesis_before_fallback(
+                cascade = _generate_synthesis_via_cascade(
                     article_rows,
                     full_prompt,
                     system_prompt,
                     lang=lang,
                     max_tokens=3000,
+                    fast_mode=True,
                 )
-                fallback_reason = "backfill_local_gemma"
+                generation_provider = cascade.get("provider")
+                generation_model = cascade.get("model")
+                fallback_reason = cascade.get("fallback_reason")
 
-                if not fallback_result:
+                if cascade["status"] == "success":
+                    res_data = cascade["res_data"]
+                    fallback_result = {
+                        "summary": res_data.get("summary", ""),
+                        "generated_article": res_data.get("article", "") or res_data.get("generated_article", ""),
+                        "synthetic_headline": res_data.get("synthetic_headline", ""),
+                        "synthetic_standfirst": res_data.get("synthetic_standfirst", ""),
+                        "perspectives": res_data.get("perspectives", []),
+                        "key_facts": res_data.get("key_facts", []),
+                        "analyst_entities": res_data.get("analyst_entities", []),
+                    }
+                    if isinstance(fallback_result["summary"], list):
+                        fallback_result["summary"] = "\n".join(str(s) for s in fallback_result["summary"])
+                    fallback_reason = None
+                else:
                     fallback_result = synthesize_cluster_fallback(article_rows, lang=lang)
                     generation_provider = "enhanced_fallback"
                     generation_model = "enhanced_fallback"
-                    fallback_reason = "backfill_enhanced_fallback_after_local_failure"
+                    fallback_reason = "backfill_enhanced_fallback_after_cascade_exhausted"
 
                 if fallback_result["summary"] or fallback_result["generated_article"]:
                     # Store the summary in database

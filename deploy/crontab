@@ -1,36 +1,38 @@
-# Presek Backup Crontab
-# Install with: crontab /path/to/this/file
-# Or add to root crontab with: crontab -e
+# Presek production crontab
+# Install with: crontab deploy/crontab
+# Or merge entries into the server user's crontab with: crontab -e
+#
+# Default paths: APP_ROOT=/home/emiloffingen/presek-runtime, DEPLOY_GIT_DIR=/home/emiloffingen/presek
 
 # ============================================================================
 # PostgreSQL Backups
 # ============================================================================
 # Daily backup at 2:00 AM
-0 2 * * * /bin/bash /home/emiloffingen/presek/deploy/backup_postgres.sh >> /home/emiloffingen/presek/logs/backup.log 2>&1
+0 2 * * * APP_ROOT=/home/emiloffingen/presek-runtime /bin/bash /home/emiloffingen/presek/deploy/backup_postgres.sh >> /home/emiloffingen/presek-runtime/shared/logs/backup.log 2>&1
 
 # ============================================================================
 # Log Rotation
 # ============================================================================
 # Rotate backup logs weekly
-0 3 * * 0 find /home/emiloffingen/presek/logs/backup*.log -mtime +30 -delete
+0 3 * * 0 find /home/emiloffingen/presek-runtime/shared/logs/backup*.log -mtime +30 -delete
 
 # Vacuum system journals daily to prevent disk space exhaustion (keep 3 days)
-0 4 * * * sudo journalctl --vacuum-time=3d >> /home/emiloffingen/presek/logs/cron_vacuum.log 2>&1
+0 4 * * * sudo journalctl --vacuum-time=3d >> /home/emiloffingen/presek-runtime/shared/logs/cron_vacuum.log 2>&1
 
 # ============================================================================
 # Database Maintenance
 # ============================================================================
 # Weekly PostgreSQL optimization
-0 5 * * 0 /usr/bin/psql -d presek -c "VACUUM ANALYZE;" >> /home/emiloffingen/presek/logs/cron_optimize.log 2>&1
+0 5 * * 0 /usr/bin/psql -d presek -c "VACUUM ANALYZE;" >> /home/emiloffingen/presek-runtime/shared/logs/cron_optimize.log 2>&1
 
 # ============================================================================
 # Health Checks
 # ============================================================================
-# Daily health check at 3:00 AM
-0 3 * * * curl -sSf http://localhost:8000/api/health || echo "Health check failed at $(date)" >> /home/emiloffingen/presek/logs/health_check.log 2>&1
+# Daily health check at 3:00 AM (FastAPI unified service)
+0 3 * * * curl -sSf http://127.0.0.1:5001/api/health || echo "Health check failed at $(date)" >> /home/emiloffingen/presek-runtime/shared/logs/health_check.log 2>&1
 
 # ============================================================================
-# Certificate Renewal (if using Let's Encrypt)
+# Release Retention
 # ============================================================================
-# Uncomment if using certbot
-# 0 3 * * * certbot renew --quiet --post-hook "systemctl reload nginx"
+# Weekly release pruning dry-run (review log before enabling destructive prune)
+0 6 * * 0 APP_ROOT=/home/emiloffingen/presek-runtime KEEP_EXTRA=2 DRY_RUN=1 /bin/bash /home/emiloffingen/presek/deploy/prune_releases.sh >> /home/emiloffingen/presek-runtime/shared/logs/prune_releases.log 2>&1

@@ -36,7 +36,7 @@ This now checks:
 
 ```sh
 sudo APP_ROOT=/home/emiloffingen/presek-runtime INSTALL_NGINX=0 bash deploy/install_server.sh
-APP_ROOT=/home/emiloffingen/presek-runtime bash deploy/deploy_release.sh
+APP_ROOT=/home/emiloffingen/presek-runtime DEPLOY_GIT_DIR=/home/emiloffingen/presek bash deploy/ci_deploy.sh
 ```
 
 Skip the `install_server.sh` step only when the release does not change systemd or installer files.

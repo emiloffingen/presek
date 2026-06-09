@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-SOURCE_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SOURCE_ROOT="${SOURCE_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 APP_ROOT="${APP_ROOT:-$HOME/presek-runtime}"
 SHARED_DIR="$APP_ROOT/shared"
 VENV_DIR="${VENV_DIR:-$APP_ROOT/venv}"
@@ -56,7 +56,9 @@ ensure_runtime_venv() {
   fi
 
   if [ -x "$versioned_venv/bin/python3" ] && [ "$FORCE_BOOTSTRAP" != "1" ]; then
-    ok "Runtime venv already exists"
+    info "Refreshing runtime venv packages from lock file"
+    UV_PROJECT_ENVIRONMENT="$versioned_venv" uv sync --frozen --no-dev --no-install-project --directory "$SOURCE_ROOT"
+    ok "Runtime venv is up to date"
   else
     rm -rf "$versioned_venv"
     info "Creating runtime venv at $versioned_venv"

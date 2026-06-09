@@ -109,7 +109,7 @@ This document provides a comprehensive checklist for deploying Presek in product
 
 3. **Deploy release**
    ```bash
-   APP_ROOT=/home/emiloffingen/presek-runtime bash deploy/deploy_release.sh
+   APP_ROOT=/home/emiloffingen/presek-runtime DEPLOY_GIT_DIR=/home/emiloffingen/presek bash deploy/ci_deploy.sh
    ```
 
 4. **Set up systemd services**
@@ -207,7 +207,7 @@ This document provides a comprehensive checklist for deploying Presek in product
 
 2. **Deploy update**
    ```bash
-   APP_ROOT=/home/emiloffingen/presek-runtime bash deploy/deploy_release.sh
+   APP_ROOT=/home/emiloffingen/presek-runtime DEPLOY_GIT_DIR=/home/emiloffingen/presek bash deploy/ci_deploy.sh
    ```
 
 3. **Restart services**

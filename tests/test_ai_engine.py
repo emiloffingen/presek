@@ -3,7 +3,7 @@ from unittest.mock import Mock
 import sys
 import types
 
-from core.ai_engine import LocalProvider, _call_ai
+from core.ai_engine import LocalProvider, _call_ai, build_provider_fallback_order
 
 
 def test_clean_json_response_raw_text():
@@ -156,7 +156,27 @@ def test_local_provider_uses_macedonian_compact_synthesis_prompt(monkeypatch):
     assert kwargs["force_local"] is True
 
 
-def test_provider_override_local_does_not_cascade_to_remote(monkeypatch):
+def test_local_provider_returns_none_when_synthesis_fails(monkeypatch):
+    analyst = Mock()
+    analyst.analyze.return_value = None
+    module = types.ModuleType("nlp.local_analyst")
+    module.analyst = analyst
+    monkeypatch.setitem(sys.modules, "nlp.local_analyst", module)
+
+    provider = LocalProvider()
+    result = provider.call(
+        "context",
+        "synthesis prompt",
+        max_tokens=1200,
+        json_mode=True,
+        task_type="synthesis",
+        lang="sr",
+    )
+
+    assert result is None
+
+
+def test_provider_override_local_cascades_to_remote(monkeypatch):
     local_provider = Mock()
     local_provider.call.return_value = None
     remote_provider = Mock()
@@ -171,6 +191,14 @@ def test_provider_override_local_does_not_cascade_to_remote(monkeypatch):
             "nvidia": remote_provider,
         },
     )
+    monkeypatch.setattr(
+        "core.ai_engine.PROVIDER_FALLBACK_ORDER_SUMMARY",
+        ["mistral_small", "mistral_large", "nvidia", "local"],
+    )
+    monkeypatch.setattr(
+        "core.llm_router.SmartModelRouter.get_dynamic_fallback_order",
+        lambda task_type="synthesis": ["mistral_small", "mistral_large", "nvidia", "local"],
+    )
 
     raw, provider = _call_ai(
         "prompt",
@@ -180,10 +208,38 @@ def test_provider_override_local_does_not_cascade_to_remote(monkeypatch):
         provider_override="local",
     )
 
-    assert raw is None
-    assert provider is None
+    assert raw == '{"summary":["remote"],"article":"remote"}'
+    assert provider == "mistral_small"
     assert local_provider.call.call_count == 1
-    assert remote_provider.call.call_count == 0
+    assert remote_provider.call.call_count == 1
+
+
+def test_build_provider_fallback_order_excludes_providers(monkeypatch):
+    monkeypatch.setattr(
+        "core.ai_engine.PROVIDERS",
+        {
+            "local": Mock(),
+            "mistral_large": Mock(),
+            "mistral_small": Mock(),
+            "nvidia": Mock(),
+        },
+    )
+    monkeypatch.setattr(
+        "core.ai_engine.PROVIDER_FALLBACK_ORDER_SUMMARY",
+        ["mistral_small", "mistral_large", "nvidia", "local"],
+    )
+    monkeypatch.setattr(
+        "core.llm_router.SmartModelRouter.get_dynamic_fallback_order",
+        lambda task_type="synthesis": ["mistral_small", "mistral_large", "nvidia", "local"],
+    )
+
+    order = build_provider_fallback_order(
+        "synthesis",
+        provider_override="mistral_small",
+        exclude_providers=["mistral_small"],
+    )
+
+    assert order == ["mistral_large", "nvidia", "local"]
 
 
 def test_call_ai_skips_rate_limited_provider(monkeypatch):

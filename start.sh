@@ -320,7 +320,7 @@ touch "$WEB_LOG" "$WORKER_LOG" "$BEAT_LOG"
 load_env
 
 warn "start.sh is for repo-local/manual use only."
-warn "Supported production path is: deploy/bootstrap_runtime_root.sh -> deploy/install_server.sh -> deploy/deploy_release.sh"
+warn "Supported production path is: deploy/bootstrap_runtime_root.sh -> deploy/install_server.sh -> deploy/ci_deploy.sh"
 assert_manual_mode_safe
 
 case "${1:-}" in

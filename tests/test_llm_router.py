@@ -31,9 +31,8 @@ def test_route_cluster_low_complexity():
         {"title": "Obicna vest o vremenu", "description": "Danas ce sijati sunce na Balkanu."},
         {"title": "Jos jedna vest o vremenu", "description": "Meteorolozi najavljuju toplo leto."},
     ]
-    # Low complexity always routes to local; ai_engine handles fallback if unavailable.
     with _router_env(local_available=False):
-        assert SmartModelRouter.route_cluster(articles) == "local"
+        assert SmartModelRouter.route_cluster(articles) == "mistral_small"
 
     with _router_env(
         local_available=True,
@@ -46,7 +45,7 @@ def test_route_cluster_low_complexity():
         local_available=False,
         LOCAL_MODEL_PATH="/path/to/model",
     ):
-        assert SmartModelRouter.route_cluster(articles) == "local"
+        assert SmartModelRouter.route_cluster(articles) == "mistral_small"
 
 
 def test_route_cluster_medium_complexity_by_count():

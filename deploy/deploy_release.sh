@@ -7,6 +7,15 @@
 #   DEPLOY_MODE=workers bash deploy/deploy_release.sh   # restart workers only
 #   DEPLOY_MODE=ops bash deploy/deploy_release.sh       # copy release, no build/DB/restart
 #   DEPLOY_MODE=fast bash deploy/deploy_release.sh      # skip DB backup/migrations
+#
+# Environment:
+#   DEPLOY_GIT_DIR       Git checkout to pull and deploy from (recommended for CI/manual)
+#   DEPLOY_GIT_BRANCH    Branch to deploy (default: main)
+#   REQUIRE_DB_BACKUP    Fail deploy if backup fails (default: 1 for full mode)
+#   RUN_PREFLIGHT        Run pre-deploy checks (default: 1 for full mode)
+#   RUN_SMOKE_CHECKS     Run post-deploy smoke tests (default: 1)
+#   AUTO_ROLLBACK_ON_FAILURE  Roll back on smoke/health failure (default: 1)
+#   PRUNE_RELEASES       Prune old releases after success (default: 1)
 
 set -euo pipefail
 
@@ -38,11 +47,18 @@ RUN_MIGRATIONS=1
 RESTART_FASTAPI=1
 RESTART_ASTRO=1
 RESTART_WORKERS=1
+REQUIRE_DB_BACKUP="${REQUIRE_DB_BACKUP:-}"
+RUN_PREFLIGHT="${RUN_PREFLIGHT:-}"
+RUN_SMOKE_CHECKS="${RUN_SMOKE_CHECKS:-1}"
+AUTO_ROLLBACK_ON_FAILURE="${AUTO_ROLLBACK_ON_FAILURE:-1}"
+PRUNE_RELEASES="${PRUNE_RELEASES:-1}"
+SKIP_RUNTIME_BOOTSTRAP="${SKIP_RUNTIME_BOOTSTRAP:-0}"
 
 # Logging helpers
 info() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] $*"; }
 error() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $*" >&2; }
 ok() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] [OK]   $*"; }
+warn() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] [WARN] $*"; }
 fail() { echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $*" >&2; exit 1; }
 
 need_cmd() {
@@ -51,9 +67,8 @@ need_cmd() {
 
 # Discover services dynamically from source directory
 discover_app_services() {
-    local SYSTEMD_DIR="$SOURCE_ROOT/deploy/systemd"
+    local SYSTEMD_DIR="$1"
 
-    # Discover only service units from the source directory.
     local services=()
     while IFS= read -r -d '' file; do
         services+=("$(basename "$file")")
@@ -65,8 +80,6 @@ discover_app_services() {
 
     echo "${services[@]}"
 }
-
-APP_SERVICES=($(discover_app_services))
 
 configure_deploy_mode() {
     case "$DEPLOY_MODE" in
@@ -106,13 +119,69 @@ configure_deploy_mode() {
             ;;
     esac
 
+    if [ -z "$REQUIRE_DB_BACKUP" ]; then
+        if [ "$RUN_DB_BACKUP" = "1" ]; then
+            REQUIRE_DB_BACKUP=1
+        else
+            REQUIRE_DB_BACKUP=0
+        fi
+    fi
+    if [ -z "$RUN_PREFLIGHT" ]; then
+        if [ "$DEPLOY_MODE" = "full" ]; then
+            RUN_PREFLIGHT=1
+        else
+            RUN_PREFLIGHT=0
+        fi
+    fi
+
     # Explicit environment overrides. SKIP_*=1 disables; FORCE_*=1 enables.
     if [ "${SKIP_FRONTEND_BUILD:-0}" = "1" ]; then RUN_FRONTEND_BUILD=0; fi
     if [ "${FORCE_FRONTEND_BUILD:-0}" = "1" ]; then RUN_FRONTEND_BUILD=1; fi
-    if [ "${SKIP_DB_BACKUP:-0}" = "1" ]; then RUN_DB_BACKUP=0; fi
-    if [ "${FORCE_DB_BACKUP:-0}" = "1" ]; then RUN_DB_BACKUP=1; fi
+    if [ "${SKIP_DB_BACKUP:-0}" = "1" ]; then RUN_DB_BACKUP=0; REQUIRE_DB_BACKUP=0; fi
+    if [ "${FORCE_DB_BACKUP:-0}" = "1" ]; then RUN_DB_BACKUP=1; REQUIRE_DB_BACKUP=1; fi
     if [ "${SKIP_MIGRATIONS:-0}" = "1" ]; then RUN_MIGRATIONS=0; fi
     if [ "${FORCE_MIGRATIONS:-0}" = "1" ]; then RUN_MIGRATIONS=1; fi
+}
+
+resolve_git_source() {
+    if [ -z "${DEPLOY_GIT_DIR:-}" ] && [ -d "$SOURCE_ROOT/.git" ]; then
+        DEPLOY_GIT_DIR="$SOURCE_ROOT"
+        info "Using SOURCE_ROOT as DEPLOY_GIT_DIR: $DEPLOY_GIT_DIR"
+    fi
+
+    if [ -z "${DEPLOY_GIT_DIR:-}" ]; then
+        return
+    fi
+
+    [ -d "$DEPLOY_GIT_DIR" ] || fail "DEPLOY_GIT_DIR does not exist: $DEPLOY_GIT_DIR"
+    SOURCE_ROOT="$(cd "$DEPLOY_GIT_DIR" && pwd)"
+    COPY_ROOT="$SOURCE_ROOT"
+
+    if [ ! -d "$SOURCE_ROOT/.git" ]; then
+        fail "DEPLOY_GIT_DIR is not a git checkout: $SOURCE_ROOT"
+    fi
+
+    local branch="${DEPLOY_GIT_BRANCH:-main}"
+    info "Updating git source at $SOURCE_ROOT (branch: $branch)"
+    cd "$SOURCE_ROOT"
+    git fetch origin "$branch" || git fetch origin
+    git checkout "$branch"
+    git pull --ff-only origin "$branch" || fail "git pull --ff-only failed in $SOURCE_ROOT"
+    ok "Git source updated to $(git rev-parse --short HEAD)"
+}
+
+guard_against_current_release_source() {
+    if [ -n "${DEPLOY_GIT_DIR:-}" ]; then
+        return
+    fi
+
+    local current_path=""
+    if [ -L "$CURRENT_LINK" ]; then
+        current_path="$(readlink -f "$CURRENT_LINK")"
+        if [ "$SOURCE_ROOT" = "$current_path" ] && [ "${ALLOW_CURRENT_SOURCE:-0}" != "1" ]; then
+            fail "Deploy started from the current release ($SOURCE_ROOT). Set DEPLOY_GIT_DIR to your git checkout or ALLOW_CURRENT_SOURCE=1 to override."
+        fi
+    fi
 }
 
 stage_clean_git_source_if_needed() {
@@ -141,6 +210,32 @@ stage_clean_git_source_if_needed() {
     COPY_ROOT="$STAGED_SOURCE_DIR"
 }
 
+ensure_runtime_bootstrap() {
+    if [ "$SKIP_RUNTIME_BOOTSTRAP" = "1" ] || [ "$DEPLOY_MODE" = "ops" ]; then
+        info "Skipping runtime bootstrap for DEPLOY_MODE=$DEPLOY_MODE"
+        return
+    fi
+
+    local bootstrap_script="$COPY_ROOT/deploy/bootstrap_runtime_root.sh"
+    [ -f "$bootstrap_script" ] || fail "Missing bootstrap script: $bootstrap_script"
+
+    info "Ensuring runtime Python and web dependencies are up to date..."
+    SOURCE_ROOT="$COPY_ROOT" APP_ROOT="$APP_ROOT" bash "$bootstrap_script"
+}
+
+run_preflight_checks() {
+    if [ "$RUN_PREFLIGHT" != "1" ]; then
+        info "Skipping preflight checks"
+        return
+    fi
+
+    local preflight_script="$COPY_ROOT/deploy/preflight_check.sh"
+    [ -f "$preflight_script" ] || fail "Missing preflight script: $preflight_script"
+
+    info "Running pre-deployment preflight checks..."
+    SKIP_SMOKE=1 APP_ROOT="$APP_ROOT" bash "$preflight_script"
+}
+
 has_service() {
     local wanted="$1"
     local service
@@ -167,7 +262,8 @@ wait_http_status() {
         sleep 2
     done
 
-    fail "$name did not become ready (last HTTP code: ${code:-none})"
+    error "$name did not become ready (last HTTP code: ${code:-none})"
+    return 1
 }
 
 restart_services_in_order() {
@@ -182,13 +278,13 @@ restart_services_in_order() {
     if [ "$RESTART_FASTAPI" = "1" ] && has_service "presek-fastapi-unified.service"; then
         info "Restarting unified FastAPI service"
         sudo systemctl restart presek-fastapi-unified.service
-        wait_http_status "FastAPI Unified" "http://127.0.0.1:5001/api/health"
+        wait_http_status "FastAPI Unified" "http://127.0.0.1:5001/api/health" || return 1
     fi
 
     if [ "$RESTART_ASTRO" = "1" ] && has_service "presek-astro.service"; then
         info "Restarting Astro"
         sudo systemctl restart presek-astro.service
-        wait_http_status "Astro" "http://127.0.0.1:3000"
+        wait_http_status "Astro" "http://127.0.0.1:3000" || return 1
     fi
 
     if [ "$RESTART_WORKERS" = "1" ]; then
@@ -230,6 +326,99 @@ switch_current_release() {
     fi
 }
 
+warn_about_schema_rollback() {
+    if [ "${SCHEMA_UPDATED:-0}" = "1" ]; then
+        if [ "${DB_BACKUP_CREATED:-0}" = "1" ]; then
+            warn "Code rolled back after schema migrations. Restore the pre-deploy database backup if the previous release is not schema-compatible."
+        else
+            warn "Code rolled back after schema migrations without an automatic backup. Verify database compatibility before trusting the restored release."
+        fi
+    fi
+}
+
+attempt_auto_rollback() {
+    local reason="$1"
+
+    if [ "$AUTO_ROLLBACK_ON_FAILURE" != "1" ]; then
+        warn "AUTO_ROLLBACK_ON_FAILURE=0; leaving current release in place after $reason"
+        return 1
+    fi
+
+    warn "Attempting automatic rollback after $reason"
+    rollback_to_previous_release
+}
+
+rollback_to_previous_release() {
+    local rollback_target=""
+
+    if [ ! -L "$PREVIOUS_LINK" ]; then
+        error "No previous release symlink available for rollback"
+        return 1
+    fi
+
+    rollback_target="$(readlink -f "$PREVIOUS_LINK")"
+    [ -d "$rollback_target" ] || fail "Previous release target is missing: $rollback_target"
+
+    info "Rolling back from $(basename "$(readlink -f "$CURRENT_LINK")") to $(basename "$rollback_target")"
+    ln -sfn "$rollback_target" "$CURRENT_LINK"
+    if ! restart_services_in_order; then
+        error "Rollback completed symlink switch but service restart failed"
+        return 1
+    fi
+    warn_about_schema_rollback
+    ok "Rollback to $(basename "$rollback_target") completed"
+    return 0
+}
+
+run_post_deploy_smoke_checks() {
+    if [ "$RUN_SMOKE_CHECKS" != "1" ] || [ "$SKIP_RESTART" = "1" ]; then
+        info "Skipping post-deploy smoke checks"
+        return 0
+    fi
+
+    local smoke_script="$RELEASE_DIR/deploy/smoke_check.sh"
+    [ -f "$smoke_script" ] || fail "Missing smoke check script: $smoke_script"
+
+    info "Running post-deploy smoke checks..."
+    if APP_ROOT="$APP_ROOT" ENABLE_PUBLIC_CHECK="${ENABLE_PUBLIC_CHECK:-0}" bash "$smoke_script"; then
+        ok "Post-deploy smoke checks passed"
+        return 0
+    fi
+
+    error "Post-deploy smoke checks failed"
+    attempt_auto_rollback "smoke check failure" || true
+    return 1
+}
+
+prune_old_releases() {
+    if [ "$PRUNE_RELEASES" != "1" ]; then
+        return
+    fi
+
+    local prune_script="$RELEASE_DIR/deploy/prune_releases.sh"
+    [ -f "$prune_script" ] || return
+
+    info "Pruning old releases..."
+    KEEP_EXTRA="${KEEP_EXTRA:-2}" DRY_RUN=0 APP_ROOT="$APP_ROOT" bash "$prune_script" || warn "Release pruning failed (non-fatal)"
+}
+
+install_frontend_dependencies() {
+    local web_dir="$1"
+    cd "$web_dir"
+
+    if [ -L "$SHARED_WEB_NODE_MODULES" ] || [ -d "$SHARED_WEB_NODE_MODULES" ]; then
+        ln -sfn "$SHARED_WEB_NODE_MODULES" "node_modules"
+        return
+    fi
+
+    if [ -f package-lock.json ]; then
+        npm ci --silent
+    else
+        warn "package-lock.json missing; falling back to npm install"
+        npm install --silent
+    fi
+}
+
 # 1. Environment Validation
 info "Validating deployment environment..."
 configure_deploy_mode
@@ -240,17 +429,31 @@ need_cmd tar
 need_cmd curl
 need_cmd sudo
 need_cmd flock
-if [ "$RUN_FRONTEND_BUILD" = "1" ]; then
+if [ "$DEPLOY_MODE" != "ops" ] && [ "$SKIP_RUNTIME_BOOTSTRAP" != "1" ]; then
+    need_cmd uv
+    need_cmd npm
+elif [ "$RUN_FRONTEND_BUILD" = "1" ]; then
     need_cmd npm
 fi
 [ -d "$APP_ROOT" ] || fail "APP_ROOT $APP_ROOT does not exist"
-[ -d "$VENV_DIR" ] || fail "VENV_DIR $VENV_DIR does not exist"
 
 LOCK_FILE="$APP_ROOT/.deploy.lock"
 exec 9>"$LOCK_FILE"
 flock -n 9 || fail "Another deploy or rollback is already in progress (lock: $LOCK_FILE)"
 
+resolve_git_source
+guard_against_current_release_source
 stage_clean_git_source_if_needed
+
+APP_SERVICES=($(discover_app_services "$COPY_ROOT/deploy/systemd"))
+
+if [ "$DEPLOY_MODE" != "ops" ] && [ "$SKIP_RUNTIME_BOOTSTRAP" != "1" ]; then
+    ensure_runtime_bootstrap
+elif [ ! -d "$VENV_DIR" ]; then
+    fail "VENV_DIR $VENV_DIR does not exist (run bootstrap_runtime_root.sh first)"
+fi
+
+run_preflight_checks
 
 # 2. Release Management
 RELEASE_ID=$(date -u +%Y%m%dT%H%M%SZ)
@@ -281,12 +484,7 @@ ln -sfn "$SHARED_DIR/static/uploads" "$RELEASE_DIR/static/uploads"
 # 3. Build Frontend
 if [ "$RUN_FRONTEND_BUILD" = "1" ]; then
     info "Building frontend..."
-    cd "$RELEASE_DIR/web"
-    if [ -d "$SHARED_WEB_NODE_MODULES" ]; then
-        ln -sfn "$SHARED_WEB_NODE_MODULES" "node_modules"
-    else
-        npm install --silent
-    fi
+    install_frontend_dependencies "$RELEASE_DIR/web"
     npm run build --silent
 else
     info "Skipping frontend build for DEPLOY_MODE=$DEPLOY_MODE"
@@ -296,20 +494,22 @@ else
     else
         fail "Cannot skip frontend build: current release web/dist is missing"
     fi
-    if [ -d "$SHARED_WEB_NODE_MODULES" ]; then
+    if [ -L "$SHARED_WEB_NODE_MODULES" ] || [ -d "$SHARED_WEB_NODE_MODULES" ]; then
         ln -sfn "$SHARED_WEB_NODE_MODULES" "$RELEASE_DIR/web/node_modules"
     fi
 fi
 
 # 4. Backup database & Update Backend migrations
 DB_BACKUP_CREATED=0
-if [ "$RUN_DB_BACKUP" = "1" ] && [ -f "$SOURCE_ROOT/deploy/backup_postgres.sh" ]; then
+if [ "$RUN_DB_BACKUP" = "1" ] && [ -f "$COPY_ROOT/deploy/backup_postgres.sh" ]; then
     info "Backing up database..."
-    if APP_ROOT="$APP_ROOT" ENV_FILE="$SHARED_DIR/.env" bash "$SOURCE_ROOT/deploy/backup_postgres.sh" >/dev/null 2>&1; then
+    if APP_ROOT="$APP_ROOT" ENV_FILE="$SHARED_DIR/.env" bash "$COPY_ROOT/deploy/backup_postgres.sh"; then
         DB_BACKUP_CREATED=1
         ok "Automatic database backup created successfully"
+    elif [ "$REQUIRE_DB_BACKUP" = "1" ]; then
+        fail "Database backup failed and REQUIRE_DB_BACKUP=1"
     else
-        info "Database backup skipped or failed (unconfigured environment or missing utility)"
+        warn "Database backup failed (continuing because REQUIRE_DB_BACKUP=0)"
     fi
 else
     info "Skipping database backup for DEPLOY_MODE=$DEPLOY_MODE"
@@ -318,6 +518,7 @@ fi
 cd "$RELEASE_DIR"
 if [ -f "$SHARED_DIR/.env" ]; then
     set -a
+    # shellcheck source=/dev/null
     source "$SHARED_DIR/.env"
     set +a
 fi
@@ -329,7 +530,7 @@ if [ "$RUN_MIGRATIONS" = "1" ]; then
         SCHEMA_UPDATED=1
         ok "Database migrations applied successfully"
     else
-        info "Alembic migrations failed or not configured, skipping..."
+        fail "Alembic migrations failed — aborting deploy before switching release"
     fi
 else
     info "Skipping migrations for DEPLOY_MODE=$DEPLOY_MODE"
@@ -350,6 +551,16 @@ switch_current_release
 
 # 6. Restart Services
 info "Restarting services..."
-restart_services_in_order
+if ! restart_services_in_order; then
+    attempt_auto_rollback "service restart failure" || true
+    fail "Deployment $RELEASE_ID failed during service restart"
+fi
+
+# 7. Post-deploy verification
+if ! run_post_deploy_smoke_checks; then
+    fail "Deployment $RELEASE_ID failed verification"
+fi
+
+prune_old_releases
 
 ok "Deployment $RELEASE_ID successful!"

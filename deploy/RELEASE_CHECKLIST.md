@@ -20,8 +20,11 @@
 
 - If systemd or installer files changed, run:
   - `sudo APP_ROOT=/home/emiloffingen/presek-runtime INSTALL_NGINX=0 bash deploy/install_server.sh`
-- Run:
-  - `APP_ROOT=/home/emiloffingen/presek-runtime bash deploy/deploy_release.sh`
+- Run (pulls latest `main` from the server git checkout):
+  - `APP_ROOT=/home/emiloffingen/presek-runtime DEPLOY_GIT_DIR=/home/emiloffingen/presek bash deploy/ci_deploy.sh`
+- Or, from an already-updated checkout:
+  - `APP_ROOT=/home/emiloffingen/presek-runtime DEPLOY_GIT_DIR=/home/emiloffingen/presek bash deploy/deploy_release.sh`
+- Deploy now runs preflight, post-deploy smoke checks, and auto-rollback on failure.
 - Confirm:
   - `APP_ROOT=/home/emiloffingen/presek-runtime bash deploy/runtime_status.sh`
   - `sudo systemctl status presek.target --no-pager`

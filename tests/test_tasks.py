@@ -256,6 +256,47 @@ class TestRepairSplitClustersTask:
 
 
 class TestSynthesizeClusterTaskQuality:
+    def test_generate_synthesis_via_cascade_retries_after_quality_failure(self):
+        from tasks.intelligence import _generate_synthesis_via_cascade
+
+        article_rows = [
+            {"title": "Vest 1", "description": "Opis 1", "source": "MIA"},
+            {"title": "Vest 2", "description": "Opis 2", "source": "Beta"},
+        ]
+        bad_payload = '{"summary":["bad"],"article":"","synthetic_headline":"H","key_facts":[]}'
+        good_payload = (
+            '{"summary":["Dobar rezime sa vise konteksta"],"article":"'
+            + ("Dugačak članak sa dovoljno konteksta. " * 20)
+            + '","synthetic_headline":"Naslov","key_facts":["fakt 1","fakt 2","fakt 3","fakt 4"]}'
+        )
+
+        with (
+            patch("core.llm_router.SmartModelRouter.route_cluster", return_value="local"),
+            patch(
+                "tasks.intelligence._call_ai",
+                side_effect=[
+                    (bad_payload, "local"),
+                    (good_payload, "mistral_small"),
+                ],
+            ),
+            patch("tasks.intelligence._is_grounded_synthesis", return_value=True),
+            patch("tasks.intelligence._score_synthesis_quality", return_value=0.9),
+            patch("tasks.intelligence._score_editorial_summary", return_value=0.9),
+        ):
+            result = _generate_synthesis_via_cascade(
+                article_rows,
+                "full prompt",
+                "system prompt",
+                lang="sr",
+                max_tokens=1200,
+                fast_mode=False,
+                current_context="source context",
+            )
+
+        assert result["status"] == "success"
+        assert result["provider"] == "mistral_small"
+        assert result["res_data"]["synthetic_headline"] == "Naslov"
+
     def test_cluster_synthesis_languages_follow_article_countries(self):
         assert _langs_for_cluster_articles([{"country": "MK"}, {"country": "MK"}]) == ["mk"]
         assert _langs_for_cluster_articles([{"country": "RS"}]) == ["sr"]
@@ -299,8 +340,19 @@ class TestSynthesizeClusterTaskQuality:
         with (
             patch("core.config.AUTO_SUMMARIZE_MIN_SRC", 1),
             patch("core.database.db_manager") as mock_db,
-            patch("tasks.intelligence._try_local_synthesis_before_fallback", return_value=(None, "local", None)),
-            patch("nlp.generation.synthesize_cluster_fallback", return_value=fallback_result),
+            patch(
+                "tasks.intelligence._generate_synthesis_via_cascade",
+                return_value={
+                    "status": "exhausted",
+                    "provider": None,
+                    "model": None,
+                    "fallback_reason": "cascade_exhausted",
+                    "res_data": None,
+                    "quality_score": None,
+                    "raw": None,
+                },
+            ),
+            patch("tasks.intelligence.synthesize_cluster_fallback", return_value=fallback_result),
             patch("tasks.intelligence.record_runtime_event") as mock_event,
         ):
             mock_db.execute.side_effect = [
@@ -319,7 +371,7 @@ class TestSynthesizeClusterTaskQuality:
         assert insert_params[-3:] == (
             "enhanced_fallback",
             "enhanced_fallback",
-            "backfill_enhanced_fallback_after_local_failure",
+            "backfill_enhanced_fallback_after_cascade_exhausted",
         )
         mock_event.assert_called_once_with(
             "synthesis_path",

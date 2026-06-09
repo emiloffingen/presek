@@ -595,8 +595,8 @@ USE_READ_REPLICA = bool(DATABASE_READ_REPLICA_URL)
 
 # ── AI Routing Configuration ────────────────────────────────────
 PROVIDER_FALLBACK_ORDER_RESEARCH = ["mistral_large", "mistral_small", "nvidia", "local"]
-PROVIDER_FALLBACK_ORDER_SUMMARY = ["mistral_large", "mistral_small", "nvidia", "local"]
-PROVIDER_FALLBACK_ORDER = ["mistral_large", "mistral_small", "nvidia", "local"]  # default
+PROVIDER_FALLBACK_ORDER_SUMMARY = ["mistral_small", "mistral_large", "nvidia", "local"]
+PROVIDER_FALLBACK_ORDER = ["mistral_small", "mistral_large", "nvidia", "local"]  # default
 
 # ── Clustering Parameters ───────────────────────────────────────
 CLUSTERING_THRESHOLDS = {

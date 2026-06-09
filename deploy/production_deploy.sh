@@ -1,6 +1,10 @@
 #!/bin/bash
-# Production Deployment Script for Presek
-# Usage: bash deploy/production_deploy.sh
+# LEGACY: Full greenfield installer for /opt/presek (Gunicorn + Celery on :8000).
+# The supported production path is the release runtime at ~/presek-runtime:
+#   bootstrap_runtime_root.sh -> install_server.sh -> deploy_release.sh
+# Do not use this script on an existing release-runtime server.
+#
+# Usage: sudo bash deploy/production_deploy.sh
 
 set -eo pipefail
 
@@ -214,55 +218,54 @@ EOF
 
 # Create backup script
 echo -e "${YELLOW}Creating backup script...${NC}"
-cat > /usr/local/bin/presek-backup << 'EOF'
+cat > /usr/local/bin/presek-backup << EOF
 #!/bin/bash
 # Presek Backup Script
 
 BACKUP_DIR="$BACKUP_DIR"
-DATE=$(date +%Y%m%d_%H%M%S)
+CONFIG_DIR="$CONFIG_DIR"
+DATE=\$(date +%Y%m%d_%H%M%S)
 DB_USER="presek"
 DB_NAME="presek"
 
 # Database backup
-pg_dump -U "$DB_USER" -d "$DB_NAME" -F c -f "$BACKUP_DIR/db_backup_$DATE.dump"
+pg_dump -U "\$DB_USER" -d "\$DB_NAME" -F c -f "\$BACKUP_DIR/db_backup_\$DATE.dump"
 
 # Configuration backup
-cp "$CONFIG_DIR/environment" "$BACKUP_DIR/config_backup_$DATE.env"
+cp "\$CONFIG_DIR/environment" "\$BACKUP_DIR/config_backup_\$DATE.env"
 
 # Clean up old backups (keep last 30 days)
-find "$BACKUP_DIR" -name "*.dump" -type f -mtime +30 -delete
-find "$BACKUP_DIR" -name "*.env" -type f -mtime +30 -delete
+find "\$BACKUP_DIR" -name "*.dump" -type f -mtime +30 -delete
+find "\$BACKUP_DIR" -name "*.env" -type f -mtime +30 -delete
 
-echo "Backup completed: $BACKUP_DIR/db_backup_$DATE.dump"
+echo "Backup completed: \$BACKUP_DIR/db_backup_\$DATE.dump"
 EOF
 
 chmod +x /usr/local/bin/presek-backup
 
 # Create restore script
 echo -e "${YELLOW}Creating restore script...${NC}"
-cat > /usr/local/bin/presek-restore << 'EOF'
+cat > /usr/local/bin/presek-restore << EOF
 #!/bin/bash
 # Presek Restore Script
 
-BACKUP_DIR="$BACKUP_DIR"
 DB_USER="presek"
 DB_NAME="presek"
 
-if [ $# -eq 0 ]; then
-    echo "Usage: $0 <backup_file.dump>"
+if [ \$# -eq 0 ]; then
+    echo "Usage: \$0 <backup_file.dump>"
     exit 1
 fi
 
-BACKUP_FILE="$1"
+BACKUP_FILE="\$1"
 
-if [ ! -f "$BACKUP_FILE" ]; then
-    echo "Error: Backup file not found: $BACKUP_FILE"
+if [ ! -f "\$BACKUP_FILE" ]; then
+    echo "Error: Backup file not found: \$BACKUP_FILE"
     exit 1
 fi
 
-# Restore database
-echo "Restoring database from $BACKUP_FILE..."
-pg_restore -U "$DB_USER" -d "$DB_NAME" -c "$BACKUP_FILE"
+echo "Restoring database from \$BACKUP_FILE..."
+pg_restore -U "\$DB_USER" -d "\$DB_NAME" -c "\$BACKUP_FILE"
 
 echo "Restore completed successfully"
 EOF
