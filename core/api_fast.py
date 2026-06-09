@@ -370,14 +370,27 @@ async def health_check():
         log.error(f"Health check error (redis/freshness): {e}")
 
     synthesis_quality = health.get_synthesis_quality_snapshot()
+    celery_queue = health._probe_celery_queue()
+    celery_public = {
+        "celery_depth": celery_queue.get("celery_depth", 0),
+        "warn_depth": celery_queue.get("warn_depth", 100),
+        "degraded": celery_queue.get("degraded", False),
+    }
+    operational_status = health.get_operational_status(
+        db_status["ok"],
+        redis_status["ok"],
+        synthesis_quality,
+        celery_queue,
+    )
 
     return {
-        "status": "healthy" if db_status["ok"] and redis_status["ok"] else "degraded",
+        "status": operational_status,
         "version": APP_VERSION,
         "uptime_seconds": int(time.time() - _start_time),
         "database": db_public,
         "redis": redis_public,
         "freshness": _freshness_payload(last_refresh.get("time")),
+        "celery_queue": celery_public,
         "synthesis_quality": synthesis_quality,
         "time": datetime.datetime.now().isoformat(),
     }

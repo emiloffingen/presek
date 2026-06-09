@@ -20,6 +20,8 @@ _TASK_REDIS_KEY = "presek:task_statuses"
 _SOURCE_REDIS_KEY = "presek:source_statuses"
 _SOURCE_POLICY_REDIS_KEY = "presek:source_policies"
 _SYNTHESIS_QUALITY_REDIS_KEY = "presek:synthesis_quality"
+_CELERY_QUEUE_WARN_DEPTH = 100
+_CELERY_QUEUE_CRITICAL_DEPTH = 500
 AUTO_PAUSE_ERROR_STREAK = 3
 AUTO_FLAG_LOW_ACCEPT_STREAK = 3
 LOW_ACCEPTANCE_THRESHOLD = 0.2
@@ -257,6 +259,23 @@ def _freshness_payload(last_refresh_time: str | None):
     }
 
 
+def _probe_celery_queue():
+    result = {
+        "celery_depth": 0,
+        "warn_depth": _CELERY_QUEUE_WARN_DEPTH,
+        "critical_depth": _CELERY_QUEUE_CRITICAL_DEPTH,
+        "degraded": False,
+        "error": "",
+    }
+    try:
+        depth = int(_get_redis().llen("celery") or 0)
+        result["celery_depth"] = depth
+        result["degraded"] = depth >= _CELERY_QUEUE_WARN_DEPTH
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
 def get_synthesis_quality_snapshot():
     """Return the latest synthesis quality snapshot written by monitor_synthesis_quality.py."""
     try:
@@ -267,6 +286,20 @@ def get_synthesis_quality_snapshot():
     except Exception as e:
         log.debug(f"Failed to load synthesis quality snapshot: {e}")
         return {}
+
+
+def get_operational_status(db_ok: bool, redis_ok: bool, synthesis_quality: dict, celery_queue: dict):
+    """Derive a coarse operational status for health checks and smoke tests."""
+    if not db_ok or not redis_ok:
+        return "degraded"
+
+    if synthesis_quality.get("status") == "critical":
+        return "degraded"
+    if celery_queue.get("celery_depth", 0) >= _CELERY_QUEUE_CRITICAL_DEPTH:
+        return "degraded"
+    if synthesis_quality.get("status") == "warn" or celery_queue.get("degraded"):
+        return "busy"
+    return "healthy"
 
 
 def record_task_event(task_name: str, status: str, detail: str | None = None):

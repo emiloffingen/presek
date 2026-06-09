@@ -44,4 +44,4 @@
 # Synthesis Quality Monitoring
 # ============================================================================
 # Hourly synthesis quality check; writes snapshot to Redis for /api/health
-0 * * * * cd /home/emiloffingen/presek && /home/emiloffingen/presek-runtime/venv/bin/python scripts/monitor_synthesis_quality.py --write-redis >> /home/emiloffingen/presek-runtime/shared/logs/synthesis_quality.log 2>&1
+0 * * * * cd /home/emiloffingen/presek && /home/emiloffingen/presek-runtime/venv/bin/python scripts/monitor_synthesis_quality.py --write-redis --notify >> /home/emiloffingen/presek-runtime/shared/logs/synthesis_quality.log 2>&1
