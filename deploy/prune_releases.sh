@@ -14,6 +14,24 @@ warn() { echo -e "${YELLOW}!${RESET}  $*"; }
 fail() { echo -e "${RED}x${RESET}  $*"; exit 1; }
 info() { echo -e "${BLUE}>${RESET}  $*"; }
 
+remove_release() {
+  local release="$1"
+  if rm -rf "$release" 2>/dev/null; then
+    return 0
+  fi
+
+  warn "permission denied; retrying with sudo for $(basename "$release")"
+  if command -v sudo >/dev/null 2>&1; then
+    if sudo -n rm -rf "$release" 2>/dev/null || sudo rm -rf "$release" 2>/dev/null; then
+      ok "removed (sudo) $(basename "$release")"
+      return 0
+    fi
+  fi
+
+  warn "could not remove $(basename "$release")"
+  return 1
+}
+
 main() {
   [ -d "$RELEASES_DIR" ] || fail "Missing releases directory: $RELEASES_DIR"
   [ -L "$CURRENT_LINK" ] || fail "Missing current symlink: $CURRENT_LINK"
@@ -61,7 +79,7 @@ main() {
     else
       warn "prune         $(basename "$release")"
       if [ "$DRY_RUN" = "0" ]; then
-        rm -rf "$release"
+        remove_release "$release" || true
       fi
     fi
   done

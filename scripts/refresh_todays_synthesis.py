@@ -12,7 +12,7 @@ from tasks.intelligence import synthesize_cluster_task
 
 def _parse_args():
     parser = argparse.ArgumentParser(
-        description="Refresh today's local/fallback synthesis rows using the current synthesis logic."
+        description="Refresh local/fallback synthesis rows using the current synthesis logic."
     )
     parser.add_argument(
         "--provider",
@@ -20,8 +20,19 @@ def _parse_args():
         default=None,
         help="Generation provider to refresh. Can be repeated. Default: local and enhanced_fallback.",
     )
+    parser.add_argument(
+        "--days",
+        type=int,
+        default=1,
+        help="Lookback window in days (default: 1 = today only).",
+    )
     parser.add_argument("--cluster-id", action="append", help="Specific cluster ID to refresh. Can be repeated.")
     parser.add_argument("--limit", type=int, default=0, help="Maximum number of clusters to process.")
+    parser.add_argument(
+        "--queue",
+        action="store_true",
+        help="Queue Celery synthesis tasks instead of running synchronously.",
+    )
     parser.add_argument("--dry-run", action="store_true", help="List clusters without regenerating synthesis.")
     parser.add_argument(
         "--target-provider",
@@ -44,14 +55,14 @@ def _load_cluster_ids(args):
     sql = """
         SELECT DISTINCT cluster_id
         FROM cluster_summaries
-        WHERE created_at >= CURRENT_DATE
+        WHERE created_at >= NOW() - make_interval(days => %s)
           AND (
             generation_provider = ANY(%s)
             OR (%s AND (generation_provider IS NULL OR generation_provider = ''))
           )
         ORDER BY cluster_id
     """
-    rows = db.execute(sql, (args.provider, include_missing_provider))
+    rows = db.execute(sql, (args.days, args.provider, include_missing_provider))
     cluster_ids = [row["cluster_id"] for row in rows]
     if args.limit and args.limit > 0:
         cluster_ids = cluster_ids[: args.limit]
@@ -63,9 +74,11 @@ def main():
     if args.provider is None:
         args.provider = ["local", "enhanced_fallback"]
 
-    print("--- Starting Today's Synthesis Refresh ---")
+    print("--- Starting Synthesis Refresh ---")
+    print(f"Window: last {args.days} day(s)")
     print(f"Providers: {args.provider}")
     print(f"Target provider: {args.target_provider or 'router'}")
+    print(f"Queue via Celery: {args.queue}")
     print(f"Delete first: {args.delete_first}")
 
     cluster_ids = _load_cluster_ids(args)
@@ -80,6 +93,8 @@ def main():
 
         SmartModelRouter.route_cluster = staticmethod(lambda _articles, lang="sr": args.target_provider)
 
+    from tasks.intelligence import _build_cluster_synthesis_content, _load_cluster_articles_for_synthesis
+
     for idx, cid in enumerate(cluster_ids, 1):
         print(f"\n[{idx}/{len(cluster_ids)}] Processing cluster {cid}...")
 
@@ -88,11 +103,21 @@ def main():
                 print(f"  Clearing existing summaries for {cid}...")
                 db.execute("DELETE FROM cluster_summaries WHERE cluster_id = %s", (cid,), fetch=False)
 
+            if args.queue:
+                article_rows = _load_cluster_articles_for_synthesis(cid)
+                content = _build_cluster_synthesis_content(article_rows)
+                if not content:
+                    print(f"  Skipping {cid}: no synthesis content available")
+                    continue
+                print("  Queueing synthesize_cluster_task via Celery...")
+                synthesize_cluster_task.delay(cid, content, fast_mode=False)
+                print("  Task queued.")
+                continue
+
             print("  Triggering synthesize_cluster_task...")
             synthesize_cluster_task(cid, None, fast_mode=False)
             print("  Task finished.")
 
-            # Verify new status
             new_rows = db.execute(
                 "SELECT lang, generation_provider, generation_model FROM cluster_summaries WHERE cluster_id = %s",
                 (cid,),

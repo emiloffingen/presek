@@ -369,6 +369,8 @@ async def health_check():
     except Exception as e:
         log.error(f"Health check error (redis/freshness): {e}")
 
+    synthesis_quality = health.get_synthesis_quality_snapshot()
+
     return {
         "status": "healthy" if db_status["ok"] and redis_status["ok"] else "degraded",
         "version": APP_VERSION,
@@ -376,6 +378,7 @@ async def health_check():
         "database": db_public,
         "redis": redis_public,
         "freshness": _freshness_payload(last_refresh.get("time")),
+        "synthesis_quality": synthesis_quality,
         "time": datetime.datetime.now().isoformat(),
     }
 

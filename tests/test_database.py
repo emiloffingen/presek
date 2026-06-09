@@ -119,6 +119,21 @@ class TestDatabaseManagerExecute:
             manager.execute("SELECT boom")
         mock_conn.rollback.assert_called_once()
 
+    def test_get_db_size_returns_float(self):
+        from core.database import DatabaseManager
+
+        manager = DatabaseManager.__new__(DatabaseManager)
+        manager.execute_one = MagicMock(return_value={"mb": 128.4})
+        assert manager.get_db_size() == 128.4
+        manager.execute_one.assert_called_once()
+
+    def test_get_db_size_returns_zero_when_missing(self):
+        from core.database import DatabaseManager
+
+        manager = DatabaseManager.__new__(DatabaseManager)
+        manager.execute_one = MagicMock(return_value=None)
+        assert manager.get_db_size() == 0.0
+
 
 class TestGetDb:
     def test_get_db_returns_wrapper(self):

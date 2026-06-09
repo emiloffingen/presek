@@ -36,3 +36,12 @@
 # ============================================================================
 # Weekly release pruning dry-run (review log before enabling destructive prune)
 0 6 * * 0 APP_ROOT=/home/emiloffingen/presek-runtime KEEP_EXTRA=2 DRY_RUN=1 /bin/bash /home/emiloffingen/presek/deploy/prune_releases.sh >> /home/emiloffingen/presek-runtime/shared/logs/prune_releases.log 2>&1
+
+# Monthly release pruning (sudo fallback handles legacy root-owned web/dist artifacts)
+0 7 1 * * APP_ROOT=/home/emiloffingen/presek-runtime KEEP_EXTRA=2 DRY_RUN=0 /bin/bash /home/emiloffingen/presek/deploy/prune_releases.sh >> /home/emiloffingen/presek-runtime/shared/logs/prune_releases.log 2>&1
+
+# ============================================================================
+# Synthesis Quality Monitoring
+# ============================================================================
+# Hourly synthesis quality check; writes snapshot to Redis for /api/health
+0 * * * * cd /home/emiloffingen/presek && /home/emiloffingen/presek-runtime/venv/bin/python scripts/monitor_synthesis_quality.py --write-redis >> /home/emiloffingen/presek-runtime/shared/logs/synthesis_quality.log 2>&1

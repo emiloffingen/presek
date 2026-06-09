@@ -101,7 +101,9 @@ Docker images built in CI are optional registry artifacts; production runs via s
 | `smoke_check.sh` | Full application health verification |
 | `preflight_check.sh` | Pre-deploy checks (set `SKIP_SMOKE=1` for deploy integration) |
 | `runtime_status.sh` | Runtime layout and service summary |
-| `prune_releases.sh` | Release disk retention (`DRY_RUN=1` to preview) |
+| `prune_releases.sh` | Release disk retention (`DRY_RUN=1` to preview; sudo fallback for root-owned artifacts) |
+| `scripts/monitor_synthesis_quality.py` | Hourly synthesis provider/fallback monitoring |
+| `scripts/refresh_todays_synthesis.py` | Re-synthesize fallback clusters (`--days`, `--queue`) |
 | `crontab` | Example cron entries for backups, health, pruning |
 
 ## Legacy: `production_deploy.sh`

@@ -330,6 +330,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Validate deploy scripts
+        run: |
+          set -euo pipefail
+          for script in \
+            deploy/ci_deploy.sh \
+            deploy/deploy_release.sh \
+            deploy/bootstrap_runtime_root.sh \
+            deploy/preflight_check.sh \
+            deploy/prune_releases.sh \
+            deploy/rollback_release.sh; do
+            bash -n "$script"
+          done
+          echo "Deploy script syntax checks passed"
+
       - name: Build Docker image
         # Optional registry artifact; production deploy uses release scripts on the host.
         run: docker build -t presek:${{ github.sha }} .

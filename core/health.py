@@ -19,6 +19,7 @@ _REDIS_KEY = "presek:last_refresh"
 _TASK_REDIS_KEY = "presek:task_statuses"
 _SOURCE_REDIS_KEY = "presek:source_statuses"
 _SOURCE_POLICY_REDIS_KEY = "presek:source_policies"
+_SYNTHESIS_QUALITY_REDIS_KEY = "presek:synthesis_quality"
 AUTO_PAUSE_ERROR_STREAK = 3
 AUTO_FLAG_LOW_ACCEPT_STREAK = 3
 LOW_ACCEPTANCE_THRESHOLD = 0.2
@@ -254,6 +255,18 @@ def _freshness_payload(last_refresh_time: str | None):
         "age_minutes": age_minutes,
         "label": "Osvezuvanjeto docni",
     }
+
+
+def get_synthesis_quality_snapshot():
+    """Return the latest synthesis quality snapshot written by monitor_synthesis_quality.py."""
+    try:
+        raw = _get_redis().get(_SYNTHESIS_QUALITY_REDIS_KEY)
+        if not raw:
+            return {}
+        return json.loads(raw.decode() if isinstance(raw, bytes) else raw)
+    except Exception as e:
+        log.debug(f"Failed to load synthesis quality snapshot: {e}")
+        return {}
 
 
 def record_task_event(task_name: str, status: str, detail: str | None = None):

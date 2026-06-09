@@ -421,6 +421,16 @@ class DatabaseManager:
         results = self.execute(sql, params, read_only=read_only)
         return results[0] if results else None
 
+    def get_db_size(self):
+        """Return current database size in megabytes."""
+        row = self.execute_one(
+            "SELECT ROUND(pg_database_size(current_database()) / 1048576.0, 1) AS mb",
+            read_only=True,
+        )
+        if not row or row.get("mb") is None:
+            return 0.0
+        return float(row["mb"])
+
     async def async_execute(self, sql, params=None, fetch=True, read_only=None):
         """Asynchronous execution via native psycopg 3 async pool."""
         return await async_db.execute(sql, params, fetch, read_only)
