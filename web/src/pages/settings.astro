@@ -170,7 +170,7 @@ import '../styles/settings-premium.css';
     const desc = document.getElementById('sync-status-desc');
     const badge = document.getElementById('sync-tab-badge');
     
-    const isMK = window.location.pathname.includes('/mk/');
+    const isMK = window.location.hostname.includes('presek.mk') || window.location.pathname.startsWith('/mk');
 
     if (token) {
       if (dot) dot.className = 'status-dot active';

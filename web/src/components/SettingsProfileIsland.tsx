@@ -1,3 +1,4 @@
+import { localePathForLang } from '../lib/localePaths';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowUpRight, Clock3, Newspaper, Sparkles, X, Trash2, Check } from 'lucide-react';
 import { useStore } from '@nanostores/react';
@@ -329,7 +330,7 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
             {recentItems.map((item: any) => (
               <a
                 key={item.clusterId}
-                href={isMK ? `/mk/cluster/${item.clusterId}` : `/cluster/${item.clusterId}`}
+                href={localePathForLang(`/cluster/${item.clusterId}`, isMK ? 'mk' : 'sr')}
                 className="flex items-start justify-between gap-4 p-4 bg-secondary/20 hover:bg-secondary/40 border border-border/40 hover:border-border rounded-xl transition-all group"
               >
                 <div className="min-w-0">

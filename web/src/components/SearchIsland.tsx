@@ -1,3 +1,4 @@
+import { localePath, localePathForLang } from '../lib/localePaths';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { navigate } from 'astro:transitions/client';
@@ -221,10 +222,10 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
   ];
 
   const SEARCH_ACTIONS: SearchAction[] = [
-    { id: 'act-briefing', label: lang === 'sr' ? 'Dnevni Brifing' : 'Дневен Брифинг', icon: Zap, href: lang === 'sr' ? '/briefing' : '/mk/briefing', category: 'NAVIGATION', desc: lang === 'sr' ? 'Pregled najvažnijih vesti u formi brifinga.' : 'Преглед на најважните вести во форма на брифинг.' },
-    { id: 'act-foryou', label: lang === 'sr' ? 'Za Vas' : 'За Вас', icon: Compass, href: lang === 'sr' ? '/for-you' : '/mk/for-you', category: 'NAVIGATION', desc: lang === 'sr' ? 'Personalizovan pregled vesti prema vašim interesovanjima.' : 'Персонализиран преглед на вести според вашите интереси.' },
-    { id: 'act-pulse', label: lang === 'sr' ? 'Informativni Ritam' : 'Информативен Ритам', icon: Activity, href: lang === 'sr' ? '/pulse' : '/mk/pulse', category: 'NAVIGATION', desc: lang === 'sr' ? 'Pratite trendove i medijski pluralizam.' : 'Следете ги трендовите и медиумскиот плурализам.' },
-    { id: 'act-archive', label: lang === 'sr' ? 'Arhiva vesti' : 'Архива на вести', icon: Archive, href: lang === 'sr' ? '/archive' : '/mk/archive', category: 'NAVIGATION', desc: lang === 'sr' ? 'Pretražite sve dosadašnje objave.' : 'Пребарајте ги сите досегашни објави.' },
+    { id: 'act-briefing', label: lang === 'sr' ? 'Dnevni Brifing' : 'Дневен Брифинг', icon: Zap, href: localePathForLang('/briefing', lang), category: 'NAVIGATION', desc: lang === 'sr' ? 'Pregled najvažnijih vesti u formi brifinga.' : 'Преглед на најважните вести во форма на брифинг.' },
+    { id: 'act-foryou', label: lang === 'sr' ? 'Za Vas' : 'За Вас', icon: Compass, href: localePathForLang('/for-you', lang), category: 'NAVIGATION', desc: lang === 'sr' ? 'Personalizovan pregled vesti prema vašim interesovanjima.' : 'Персонализиран преглед на вести според вашите интереси.' },
+    { id: 'act-pulse', label: lang === 'sr' ? 'Informativni Ritam' : 'Информативен Ритам', icon: Activity, href: localePathForLang('/pulse', lang), category: 'NAVIGATION', desc: lang === 'sr' ? 'Pratite trendove i medijski pluralizam.' : 'Следете ги трендовите и медиумскиот плурализам.' },
+    { id: 'act-archive', label: lang === 'sr' ? 'Arhiva vesti' : 'Архива на вести', icon: Archive, href: localePathForLang('/archive', lang), category: 'NAVIGATION', desc: lang === 'sr' ? 'Pretražite sve dosadašnje objave.' : 'Пребарајте ги сите досегашни објави.' },
   ];
 
   const CATEGORIES = [
@@ -472,15 +473,13 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
     closeSearch();
     const tsPart = timespan !== 'all' ? `&timespan=${timespan}` : '';
     const catPart = categoryFilter !== 'all' ? `&category=${encodeURIComponent(categoryFilter)}` : '';
-    const prefix = lang === 'sr' ? '' : '/mk';
-    navigate(`${prefix}/?q=${encodeURIComponent(cleanQuery)}${tsPart}${catPart}`);
+    navigate(`${localePathForLang('/', lang)}?q=${encodeURIComponent(cleanQuery)}${tsPart}${catPart}`);
   };
 
   const navigateToCluster = (clusterId: string) => {
     if (!clusterId) return;
     closeSearch();
-    const prefix = lang === 'sr' ? '' : '/mk';
-    navigate(`${prefix}/cluster/${clusterId}`);
+    navigate(`${localePathForLang(`/cluster/${clusterId}`, lang)}`);
   };
 
   const onDialogKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {

@@ -21,6 +21,7 @@ import { cleanAndDecode, extractCleanSummaryText, getStoryPreviewText, highlight
 import { apiBaseUrl } from '../../lib/apiBase';
 import type { NewsCluster } from '../../types';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+import { localePath, homePath } from '../../lib/localePaths';
 import { buildHomepageSections } from '../../lib/homepageSections';
 import { fetchJsonCached } from '../../lib/apiCache';
 
@@ -30,7 +31,7 @@ const effectiveUrl = new URL(requestUrl);
 effectiveUrl.hostname = hostHeader;
 const lang = getLangFromUrl(effectiveUrl);
 const t = useTranslations(lang);
-const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
+const l = (path: string) => localePath(path, lang, hostHeader);
 
 const API_URL = apiBaseUrl();
 

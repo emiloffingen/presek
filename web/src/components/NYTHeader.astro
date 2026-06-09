@@ -8,6 +8,7 @@ import { apiBaseUrl } from '../lib/apiBase';
 import { getEditionStr } from '../utils/textUtils';
 import Branding from './Branding.astro';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
+import { localePath, homePath } from '../lib/localePaths';
 
 interface Props {
     category?: string | null;
@@ -24,7 +25,7 @@ const { category, topic, entity, subcategory, q, stats: propStats, latestTickerI
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
-const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
+const l = (path: string) => localePath(path, lang, hostHeader);
 
 const currentDate = new Intl.DateTimeFormat(lang === 'sr' ? 'sr-RS' : 'mk-MK', {
     weekday: 'short',

@@ -9,6 +9,9 @@ import AccountSyncIsland from '../../components/AccountSyncIsland.tsx';
 import OnboardingIsland from '../../components/OnboardingIsland.tsx';
 import { KeyRound, Radio, ShieldCheck, UserCircle2, Sparkles, ArrowUpRight } from 'lucide-react';
 import '../../styles/settings-premium.css';
+import { localePath } from '../../lib/localePaths';
+
+const hostHeader = Astro.request?.headers.get('host');
 ---
 
 <Layout title="Подесувања — Пресек" description="Управувајте со синхронизацијата, следењето и доставата на брифингот во Пресек." robots="noindex, follow">
@@ -66,9 +69,9 @@ import '../../styles/settings-premium.css';
           <div class="sidebar-help-links hidden lg:block mt-8 pt-6 border-t border-border/40">
             <h4 class="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-4">Помош и Поддршка</h4>
             <div class="flex flex-col gap-2.5 text-xs font-semibold text-muted-foreground">
-              <a href="/mk/briefing" class="flex justify-between items-center hover:text-nyt-accent transition-colors">Отворете брифинг <ArrowUpRight size={12} /></a>
-              <a href="/mk/izvori" class="flex justify-between items-center hover:text-nyt-accent transition-colors">Уредете извори <ArrowUpRight size={12} /></a>
-              <a href="/mk/contact" class="flex justify-between items-center hover:text-nyt-accent transition-colors">Кореспонденција <ArrowUpRight size={12} /></a>
+              <a href={localePath('/briefing', 'mk', hostHeader)} class="flex justify-between items-center hover:text-nyt-accent transition-colors">Отворете брифинг <ArrowUpRight size={12} /></a>
+              <a href={localePath('/izvori', 'mk', hostHeader)} class="flex justify-between items-center hover:text-nyt-accent transition-colors">Уредете извори <ArrowUpRight size={12} /></a>
+              <a href={localePath('/contact', 'mk', hostHeader)} class="flex justify-between items-center hover:text-nyt-accent transition-colors">Кореспонденција <ArrowUpRight size={12} /></a>
             </div>
           </div>
         </aside>
@@ -123,9 +126,9 @@ import '../../styles/settings-premium.css';
           <div class="block lg:hidden mt-12 pt-6 border-t border-border/40">
             <h4 class="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-4">Помош и Поддршка</h4>
             <div class="grid grid-cols-3 gap-4 text-xs font-semibold text-muted-foreground">
-              <a href="/mk/briefing" class="flex justify-between items-center hover:text-nyt-accent transition-colors">Брифинг <ArrowUpRight size={12} /></a>
-              <a href="/mk/izvori" class="flex justify-between items-center hover:text-nyt-accent transition-colors">Извори <ArrowUpRight size={12} /></a>
-              <a href="/mk/contact" class="flex justify-between items-center hover:text-nyt-accent transition-colors">Контакт <ArrowUpRight size={12} /></a>
+              <a href={localePath('/briefing', 'mk', hostHeader)} class="flex justify-between items-center hover:text-nyt-accent transition-colors">Брифинг <ArrowUpRight size={12} /></a>
+              <a href={localePath('/izvori', 'mk', hostHeader)} class="flex justify-between items-center hover:text-nyt-accent transition-colors">Извори <ArrowUpRight size={12} /></a>
+              <a href={localePath('/contact', 'mk', hostHeader)} class="flex justify-between items-center hover:text-nyt-accent transition-colors">Контакт <ArrowUpRight size={12} /></a>
             </div>
           </div>
         </div>
@@ -170,7 +173,7 @@ import '../../styles/settings-premium.css';
     const desc = document.getElementById('sync-status-desc');
     const badge = document.getElementById('sync-tab-badge');
     
-    const isMK = window.location.pathname.includes('/mk/');
+    const isMK = window.location.hostname.includes('presek.mk') || window.location.pathname.startsWith('/mk');
 
     if (token) {
       if (dot) dot.className = 'status-dot active';

@@ -1,3 +1,4 @@
+import { localePathForLang } from '../lib/localePaths';
 import React, { useState, useEffect, useRef } from 'react';
 import { apiBaseUrl } from '../lib/apiBase';
 import { 
@@ -610,7 +611,7 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
                 </div>
 
                 <a 
-                  href={`${lang === 'sr' ? '/subjekt' : '/mk/subjekt'}/${encodeURIComponent(selectedNode.id)}`}
+                  href={`${localePathForLang('/subjekt', lang)}/${encodeURIComponent(selectedNode.id)}`}
                   className="w-full mt-3 text-center bg-black text-white hover:bg-nyt-accent font-black py-2.5 text-xs uppercase tracking-wider transition-colors duration-150"
                 >
                   {t.viewProfile}

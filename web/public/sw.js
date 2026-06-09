@@ -25,7 +25,6 @@ const STATIC_ASSETS = [
   '/img/fallbacks/news-local.svg',
   '/manifest.json',
   '/offline',
-  '/mk/offline'
 ];
 
 function offlineApiResponse() {
@@ -36,9 +35,7 @@ function offlineApiResponse() {
 }
 
 function offlinePageFor(url) {
-  return url.hostname.includes('presek.mk') || url.pathname.startsWith('/mk')
-    ? '/mk/offline'
-    : '/offline';
+  return '/offline';
 }
 
 self.addEventListener('install', e => {

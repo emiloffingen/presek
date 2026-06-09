@@ -4,11 +4,12 @@ import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
+import { localePath, homePath } from '../lib/localePaths';
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
-const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
+const l = (path: string) => localePath(path, lang, hostHeader);
 ---
 
 <Layout

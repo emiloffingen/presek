@@ -4,6 +4,7 @@ import { getDisplayTitle, highlightScores, getDesignCardContext, transliterate }
 import type { NewsCluster } from '../../types';
 import { Zap, Palette, Building2, TrendingUp, Award, Cpu, Newspaper, ArrowRight } from 'lucide-react';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+import { localePath, homePath } from '../../lib/localePaths';
 import MeshGradient from './MeshGradient.astro';
 
 interface Props {
@@ -70,7 +71,7 @@ const IconComponent =
     cardContext.icon === 'cpu' ? Cpu :
     Newspaper;
 
-const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
+const l = (path: string) => localePath(path, lang, hostHeader);
 
 const consensusSuffix = (() => {
     const count = Number((leadCluster as any).sources_count || (leadCluster as any).source_count || leadCluster.articles.length);

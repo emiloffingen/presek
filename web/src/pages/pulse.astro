@@ -18,11 +18,6 @@ const API_URL = apiBaseUrl();
 const lang = getLangFromUrl(Astro.url);
 const isMK = lang === 'mk';
 
-// Force redirect presek.mk/pulse to /mk/pulse to ensure consistent localized routing
-if ((Astro.url.hostname === 'presek.mk' || Astro.url.hostname === 'www.presek.mk') && !Astro.url.pathname.startsWith('/mk/')) {
-    return Astro.redirect('/mk/pulse');
-}
-
 let initialPulseData = null;
 let globalPulse: any = null;
 let categories: string[] = [];

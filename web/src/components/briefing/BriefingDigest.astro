@@ -1,11 +1,12 @@
 ---
 import { getLangFromUrl } from '../../i18n/utils';
+import { localePath, homePath } from '../../lib/localePaths';
 import { getStoryPreviewText } from '../../utils/textUtils';
 const { homeData } = Astro.props;
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
 const isMK = lang === 'mk';
-const l = (path: string) => isMK ? `/mk${path}` : path;
+const l = (path: string) => localePath(path, isMK ? 'mk' : 'sr', hostHeader);
 ---
 
 {homeData && homeData.developing && (

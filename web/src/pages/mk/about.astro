@@ -4,6 +4,7 @@ import NYTHeader from '../../components/NYTHeader.astro';
 import Footer from '../../components/Footer.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+import { localePath, homePath } from '../../lib/localePaths';
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
@@ -78,10 +79,10 @@ const t = useTranslations(lang);
                 <section class="rail-block">
                     <p class="rail-kicker">понатаму</p>
                     <div class="rail-directory">
-                        <a href="/mk/editorial" class="dir-link"><span class="name">Стандарди</span></a>
-                        <a href="/mk/briefing" class="dir-link"><span class="name">Брифинг</span></a>
-                        <a href="/mk/for-you" class="dir-link"><span class="name">За Вас</span></a>
-                        <a href="/mk/izvori" class="dir-link"><span class="name">Извори</span></a>
+                        <a href={localePath('/editorial', 'mk', hostHeader)} class="dir-link"><span class="name">Стандарди</span></a>
+                        <a href={localePath('/briefing', 'mk', hostHeader)} class="dir-link"><span class="name">Брифинг</span></a>
+                        <a href={localePath('/for-you', 'mk', hostHeader)} class="dir-link"><span class="name">За Вас</span></a>
+                        <a href={localePath('/izvori', 'mk', hostHeader)} class="dir-link"><span class="name">Извори</span></a>
                     </div>
                 </section>
             </aside>

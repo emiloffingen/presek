@@ -11,6 +11,7 @@ import { sanitizeHtml } from '../../lib/sanitize';
 import { CalendarDays, ChevronRight, Hash, Building2, Sparkles, Search, Activity } from 'lucide-react';
 
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+import { localePath, homePath } from '../../lib/localePaths';
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
@@ -63,8 +64,7 @@ const buildFilterHref = (kind: 'source' | 'topic' | 'q', value: string) => {
   if (kind === 'source') { if (value) params.set('source', value); if (topic) params.set('topic', topic); if (q) params.set('q', q); }
   else if (kind === 'topic') { if (source) params.set('source', source); if (value) params.set('topic', value); if (q) params.set('q', q); }
   else { if (source) params.set('source', source); if (topic) params.set('topic', topic); if (value) params.set('q', value); }
-  const prefix = isMK ? '/mk' : '';
-  return `${prefix}/archive?${params.toString()}`;
+  return `${localePath('/archive', isMK ? 'mk' : 'sr', hostHeader)}?${params.toString()}`;
 };
 
 const formattedDisplayDate = new Date(archive.date).toLocaleDateString(isMK ? 'mk-MK' : 'sr-RS', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -154,14 +154,14 @@ function formatBriefingItem(item: string) {
 
                     <div class="flex items-center gap-1">
                         <a
-                            href={`${isMK ? '/mk' : ''}/archive?date=${new Date(new Date(date).getTime() - 86400000).toISOString().split('T')[0]}`}
+                            href={`${localePath('/archive', isMK ? 'mk' : 'sr', hostHeader)}?date=${new Date(new Date(date).getTime() - 86400000).toISOString().split('T')[0]}`}
                             class="archive-nav-btn"
                         >
                             ← {isMK ? 'ПРЕТХОДЕН' : 'PRETHODNI'}
                         </a>
                         {new Date(date) < new Date(new Date().toISOString().split('T')[0]) && (
                             <a
-                                  href={`${isMK ? '/mk' : ''}/archive?date=${new Date(new Date(date).getTime() + 86400000).toISOString().split('T')[0]}`}
+                                  href={`${localePath('/archive', isMK ? 'mk' : 'sr', hostHeader)}?date=${new Date(new Date(date).getTime() + 86400000).toISOString().split('T')[0]}`}
                                   class="archive-nav-btn"
                             >
                                 {isMK ? 'СЛЕДЕН' : 'SLEDEĆI'} →
@@ -220,7 +220,7 @@ function formatBriefingItem(item: string) {
                         {source && <span class="px-3 py-1 bg-foreground text-background rounded-full font-sans text-[10px] font-black uppercase tracking-widest flex items-center gap-[var(--grid-gap)]">🏢 {source} <a href={buildFilterHref('source', '')} class="ml-1 opacity-60 hover:opacity-100">×</a></span>}
                         {topic && <span class="px-3 py-1 bg-foreground text-background rounded-full font-sans text-[10px] font-black uppercase tracking-widest flex items-center gap-[var(--grid-gap)]"># {topic} <a href={buildFilterHref('topic', '')} class="ml-1 opacity-60 hover:opacity-100">×</a></span>}
                     </div>
-                    <a href={`${isMK ? '/mk' : ''}/archive?date=${date}`} class="ml-auto font-sans text-[10px] font-black uppercase tracking-widest text-nyt-accent underline decoration-2 underline-offset-4">{t('archive.clear')}</a>
+                    <a href={`${localePath('/archive', isMK ? 'mk' : 'sr', hostHeader)}?date=${date}`} class="ml-auto font-sans text-[10px] font-black uppercase tracking-widest text-nyt-accent underline decoration-2 underline-offset-4">{t('archive.clear')}</a>
                 </div>
             ) : null}
 
@@ -235,7 +235,7 @@ function formatBriefingItem(item: string) {
                     <div class="py-32 text-center border-2 border-dashed border-border rounded-2xl">
                         <h2 class="font-serif text-3xl font-black italic mb-4">{t('archive.empty')}</h2>
                         <p class="font-nyt-body text-muted-foreground">{isMK ? 'Пробајте со друг датум или прилагодете ги филтрите за пребарување.' : 'Probajte sa drugim datumom ili prilagodite filtere pretrage.'}</p>
-                        <a href={isMK ? "/mk/archive" : "/archive"} class="mt-8 inline-block px-8 py-3 bg-foreground text-background font-sans text-[10px] font-black uppercase tracking-widest hover:bg-nyt-accent transition-all">{t('archive.back_today')}</a>
+                        <a href={localePath('/archive', isMK ? 'mk' : 'sr', hostHeader)} class="mt-8 inline-block px-8 py-3 bg-foreground text-background font-sans text-[10px] font-black uppercase tracking-widest hover:bg-nyt-accent transition-all">{t('archive.back_today')}</a>
                     </div>
                 )}
             </div>
@@ -243,7 +243,7 @@ function formatBriefingItem(item: string) {
 
         <aside class="broadsheet-rail pl-4">
             <div class="rail-nav-block mb-12">
-                <a href={isMK ? "/mk/archive" : "/archive"} class="group flex items-center justify-between p-4 bg-foreground text-background rounded-sm transition-all hover:bg-nyt-accent shadow-lg shadow-black/5 hover:-translate-y-1">
+                <a href={localePath('/archive', isMK ? 'mk' : 'sr', hostHeader)} class="group flex items-center justify-between p-4 bg-foreground text-background rounded-sm transition-all hover:bg-nyt-accent shadow-lg shadow-black/5 hover:-translate-y-1">
                     <span class="font-sans text-[11px] font-black uppercase tracking-widest">{t('archive.back_today')}</span>
                     <ChevronRight size={16} />
                 </a>
@@ -264,7 +264,7 @@ function formatBriefingItem(item: string) {
                                 <img src={onThisDay.image} alt="" class="w-full aspect-video object-cover transition-transform group-hover:scale-105 duration-700" />
                             </div>
                         )}
-                        <a href={isMK ? `/mk/cluster/${onThisDay.cluster_id}` : `/cluster/${onThisDay.cluster_id}`} class="block group">
+                        <a href={localePath(`/cluster/${onThisDay.cluster_id}`, isMK ? 'mk' : 'sr', hostHeader)} class="block group">
                             <h4 class="font-serif font-black text-lg leading-tight group-hover:text-nyt-accent transition-colors mb-3">{onThisDay.title}</h4>
                         </a>
                         <p class="font-nyt-body text-sm leading-relaxed text-muted-foreground line-clamp-4 italic">"{onThisDay.summary}"</p>

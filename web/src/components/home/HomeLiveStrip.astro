@@ -2,6 +2,7 @@
 import { Activity, ChevronRight } from 'lucide-react';
 import { getDisplayTitle } from '../../utils/textUtils';
 import { useTranslations } from '../../i18n/utils';
+import { localePath, homePath } from '../../lib/localePaths';
 import type { ui } from '../../i18n/ui';
 
 interface Props {
@@ -12,7 +13,7 @@ interface Props {
 
 const { articles, getTimeStr, lang } = Astro.props;
 const t = useTranslations(lang);
-const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
+const l = (path: string) => localePath(path, lang, hostHeader);
 ---
 
 {articles.length > 0 && (

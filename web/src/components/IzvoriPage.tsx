@@ -1,3 +1,4 @@
+import { homePath, localePathForLang } from '../lib/localePaths';
 import React, { useEffect, useMemo, useState } from 'react';
 import { apiBaseUrl } from '../lib/apiBase';
 import { Search, ShieldCheck, Zap, Activity, ChevronRight, Globe, Compass, HelpCircle } from 'lucide-react';
@@ -248,7 +249,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
       <a
         key={source.source}
         id={rowId}
-        href={`${lang === 'mk' ? '/mk' : ''}/?source=${encodeURIComponent(source.source)}`}
+        href={`${localePathForLang('/', lang)}?source=${encodeURIComponent(source.source)}`}
         className={`editorial-source-item group no-underline transition-all duration-300 ${isSelected ? 'border-l-4 border-l-nyt-accent pl-4 bg-nyt-accent/5' : ''}`}
         onClick={(e) => {
           // If they click on the item directly, let normal navigation run, but record selection state

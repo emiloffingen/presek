@@ -1,5 +1,6 @@
 ---
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+import { localePath, homePath } from '../../lib/localePaths';
 
 interface Props {
 	trending: any[];
@@ -9,7 +10,7 @@ const { trending } = Astro.props;
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
-const l = (path: string) => (lang === 'mk' ? `/mk${path}` : path);
+const l = (path: string) => localePath(path, lang, hostHeader);
 ---
 
 <div class="empty-state">

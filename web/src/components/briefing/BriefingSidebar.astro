@@ -2,6 +2,7 @@
 import { Zap, Activity, Users, MapPin, Calendar } from 'lucide-react';
 import NewsletterIsland from '../NewsletterIsland.tsx';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+import { localePath, homePath } from '../../lib/localePaths';
 
 interface Props {
 	stats: any;
@@ -38,7 +39,7 @@ function getTimeStr(dateStr: string) {
     }
 }
 
-const l = (path: string) => isMK ? `/mk${path}` : path;
+const l = (path: string) => localePath(path, isMK ? 'mk' : 'sr', hostHeader);
 ---
 
 <aside class="briefing-sidebar">

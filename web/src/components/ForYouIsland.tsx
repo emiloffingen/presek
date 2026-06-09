@@ -12,6 +12,7 @@ import {
   sendSuggestionEvents,
 } from '../lib/personalization.js';
 import { sanitizeHtml } from '../lib/sanitize';
+import { localePathForLang } from '../lib/localePaths';
 import { getDisplayTitle, getStoryPreviewText, highlightScores, getPersonalizedText } from '../utils/textUtils';
 
 function getSummary(cluster: any, lang: string) {
@@ -196,7 +197,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
             const isSemantic = Boolean(item.similarity);
 
             return (
-              <a key={cluster.cluster_id} href={lang === 'sr' ? `/cluster/${cluster.cluster_id}` : `/mk/cluster/${cluster.cluster_id}`} className={`for-you-card ${isSemantic ? 'premium-spotlight' : ''}`} aria-label={`Otvori: ${title}`}>
+              <a key={cluster.cluster_id} href={localePathForLang(`/cluster/${cluster.cluster_id}`, lang)} className={`for-you-card ${isSemantic ? 'premium-spotlight' : ''}`} aria-label={`Otvori: ${title}`}>
                 <p className={`for-you-card-kicker ${isSemantic ? 'text-nyt-accent' : ''} flex items-center gap-[var(--grid-gap)] px-3 py-1 bg-secondary/10 rounded-full w-fit mb-4 min-w-max`}>
                   {isSemantic ? <BrainCircuit size={12} /> : <Compass size={12} />}
                   <span className="leading-none">{isSemantic ? (lang === 'sr' ? 'Semantička preporuka' : 'Семантичка препорака') : (item.reason || (lang === 'sr' ? 'Srodna tema' : 'Сродна тема'))}</span>
@@ -241,7 +242,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
             const summary = getSummary(cluster, lang);
             const title = getTitle(cluster, lang);
             return (
-              <a key={cluster.cluster_id} href={lang === 'sr' ? `/cluster/${cluster.cluster_id}` : `/mk/cluster/${cluster.cluster_id}`} className="for-you-card" aria-label={`Otvori: ${title}`}>
+              <a key={cluster.cluster_id} href={localePathForLang(`/cluster/${cluster.cluster_id}`, lang)} className="for-you-card" aria-label={`Otvori: ${title}`}>
                 <p className="for-you-card-kicker flex items-center gap-[var(--grid-gap)] px-3 py-1 bg-secondary/10 rounded-full w-fit mb-4 min-w-max">
                   <Clock3 size={12} />
                   <span className="leading-none">{lang === 'sr' ? 'Aktuelno u trenutku' : 'Актуелно во моментот'}</span>

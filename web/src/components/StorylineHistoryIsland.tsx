@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { History, ArrowRight, Calendar } from 'lucide-react';
+import { localePathForLang } from '../lib/localePaths';
 
 interface StorylineItem {
     cluster_id: string;
@@ -49,7 +50,7 @@ const StorylineHistoryIsland: React.FC<{ clusterId: string; apiUrl: string; lang
                                 </span>
                             </div>
 
-                            <a href={isMK ? `/mk/cluster/${item.cluster_id}` : `/cluster/${item.cluster_id}`} className="group flex-1 flex gap-[var(--grid-gap)] items-start">
+                            <a href={localePathForLang(`/cluster/${item.cluster_id}`, isMK ? 'mk' : 'sr')} className="group flex-1 flex gap-[var(--grid-gap)] items-start">
                                 <div className="flex-1">
                                     <h3 className="font-serif font-bold text-base md:text-lg leading-tight group-hover:text-nyt-accent transition-colors">
                                         {item.title}

@@ -7,6 +7,7 @@ import { Clock, Layers, ShieldCheck, Globe, Zap, AlertCircle, Palette, Building2
 import type { NewsCluster, Article } from '../types';
 import type { ui } from '../i18n/ui';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
+import { localePath, homePath } from '../lib/localePaths';
 
 interface Props {
 	cluster: NewsCluster;
@@ -21,7 +22,7 @@ const hostHeader = Astro.request?.headers.get('host');
 const urlLang = getLangFromUrl(Astro.url, hostHeader);
 const lang = (propLang === 'mk' || propLang === 'sr' ? propLang : urlLang) as keyof typeof ui;
 const t = useTranslations(lang);
-const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
+const l = (path: string) => localePath(path, lang, hostHeader);
 
 const main = cluster.articles?.[0];
 if (!main) return;

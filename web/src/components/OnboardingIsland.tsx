@@ -1,3 +1,4 @@
+import { localePathForLang } from '../lib/localePaths';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, CheckCircle2, Sparkles, X } from 'lucide-react';
 import { useStore } from '@nanostores/react';
@@ -183,7 +184,7 @@ export default function OnboardingIsland({ compact = false, lang = 'sr' }: { com
       )}
 
       <div className="onboarding-actions">
-        <a href={isMK ? "/mk/settings" : "/settings"} className="onboarding-action">{isMK ? 'Отвори подесувања' : 'Otvori podešavanja'}</a>
+        <a href={localePathForLang('/settings', isMK ? 'mk' : 'sr')} className="onboarding-action">{isMK ? 'Отвори подесувања' : 'Otvori podešavanja'}</a>
         <button type="button" className="onboarding-action secondary" onClick={markDone}>{isMK ? 'Скриј водич' : 'Sakrij vodič'}</button>
       </div>
     </section>

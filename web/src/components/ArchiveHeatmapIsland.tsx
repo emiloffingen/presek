@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Loader2, CalendarRange } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
+import { localePathForLang } from '../lib/localePaths';
 
 interface HeatmapDay {
   day: string;
@@ -131,7 +132,7 @@ export default function ArchiveHeatmapIsland({ selectedDate, lang = 'sr' }: Prop
             return (
               <a
                 key={dayData.day}
-                href={`${isMK ? '/mk' : ''}/archive?date=${dayData.day}`}
+                href={`${localePathForLang('/archive', isMK ? 'mk' : 'sr')}?date=${dayData.day}`}
                 className={`group flex flex-col items-center justify-end h-full gap-1 ${isActive ? 'scale-110 z-20' : ''}`}
                 title={`${getLabel(dayData.day)}: ${dayData.total_clusters} ${isMK ? 'вести' : 'vesti'}, ${dayData.breaking_clusters} ${isMK ? 'итни' : 'hitni'}`}
               >

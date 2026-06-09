@@ -65,9 +65,9 @@ import Breadcrumbs from '../../components/Breadcrumbs.astro';
                 <section class="rail-block">
                     <p class="rail-kicker">Поврзано</p>
                     <div class="rail-directory">
-                        <a href="/mk/about" class="dir-link"><span class="name">За проектот</span></a>
-                        <a href="/mk/privacy" class="dir-link"><span class="name">Приватност</span></a>
-                        <a href="/mk/contact" class="dir-link"><span class="name">Контакт</span></a>
+                        <a href={localePath('/about', 'mk', hostHeader)} class="dir-link"><span class="name">За проектот</span></a>
+                        <a href={localePath('/privacy', 'mk', hostHeader)} class="dir-link"><span class="name">Приватност</span></a>
+                        <a href={localePath('/contact', 'mk', hostHeader)} class="dir-link"><span class="name">Контакт</span></a>
                     </div>
                 </section>
             </aside>

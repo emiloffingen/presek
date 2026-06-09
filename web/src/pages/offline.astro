@@ -4,11 +4,12 @@ import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import { WifiOff, BookOpen, Clock } from 'lucide-react';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
+import { localePath, homePath } from '../lib/localePaths';
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
-const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
+const l = (path: string) => localePath(path, lang, hostHeader);
 ---
 
 <Layout title={t('offline.title')} robots="noindex">

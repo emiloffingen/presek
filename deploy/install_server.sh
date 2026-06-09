@@ -7,11 +7,15 @@ NGINX_DIR="$APP_DIR/deploy/nginx"
 SMOKE_SCRIPT="$APP_DIR/deploy/smoke_check.sh"
 
 DOMAIN="${DOMAIN:-presek.live}"
+MK_DOMAIN="${MK_DOMAIN:-presek.mk}"
 SERVER_USER="${SERVER_USER:-emiloffingen}"
 APP_ROOT="${APP_ROOT:-/home/emiloffingen/presek-runtime}"
 CERT_FULLCHAIN="${CERT_FULLCHAIN:-/etc/ssl/cloudflare/presek.live/fullchain.pem}"
 CERT_PRIVKEY="${CERT_PRIVKEY:-/etc/ssl/cloudflare/presek.live/privkey.pem}"
+MK_CERT_FULLCHAIN="${MK_CERT_FULLCHAIN:-/etc/ssl/cloudflare/presek.mk/fullchain.pem}"
+MK_CERT_PRIVKEY="${MK_CERT_PRIVKEY:-/etc/ssl/cloudflare/presek.mk/privkey.pem}"
 INSTALL_NGINX="${INSTALL_NGINX:-auto}"
+INSTALL_MK_NGINX="${INSTALL_MK_NGINX:-auto}"
 CURRENT_ROOT="$APP_ROOT/current"
 SHARED_ROOT="$APP_ROOT/shared"
 
@@ -63,6 +67,22 @@ replace_paths() {
     "$src" > "$dest"
 }
 
+replace_mk_paths() {
+  local src="$1"
+  local dest="$2"
+
+  sed \
+    -e "s|/home/emiloffingen/presek-runtime|$APP_ROOT|g" \
+    -e "s|User=emiloffingen|User=$SERVER_USER|g" \
+    -e "s|/etc/ssl/cloudflare/presek.mk/fullchain.pem|$MK_CERT_FULLCHAIN|g" \
+    -e "s|/etc/ssl/cloudflare/presek.mk/privkey.pem|$MK_CERT_PRIVKEY|g" \
+    -e "s|server_name presek.mk www.presek.mk;|server_name $MK_DOMAIN www.$MK_DOMAIN;|g" \
+    -e "s|server_name www.presek.mk;|server_name www.$MK_DOMAIN;|g" \
+    -e "s|server_name presek.mk;|server_name $MK_DOMAIN;|g" \
+    -e "s|https://presek.mk|https://$MK_DOMAIN|g" \
+    "$src" > "$dest"
+}
+
 main() {
   need_cmd systemctl
   need_cmd sed
@@ -80,6 +100,14 @@ main() {
       INSTALL_NGINX=1
     else
       INSTALL_NGINX=nossl
+    fi
+  fi
+
+  if [ "$INSTALL_MK_NGINX" = "auto" ]; then
+    if [ -f "$MK_CERT_FULLCHAIN" ] && [ -f "$MK_CERT_PRIVKEY" ]; then
+      INSTALL_MK_NGINX=1
+    else
+      INSTALL_MK_NGINX=0
     fi
   fi
 
@@ -134,6 +162,15 @@ main() {
     cp "$NGINX_DIR/presek-routes.conf" "/etc/nginx/snippets/presek-routes.conf"
     ln -sfn "$SITE_AVAILABLE" "$SITE_ENABLED"
 
+    if [ "$INSTALL_MK_NGINX" = "1" ]; then
+      MK_SITE_NAME="$MK_DOMAIN.conf"
+      MK_SITE_AVAILABLE="/etc/nginx/sites-available/$MK_SITE_NAME"
+      MK_SITE_ENABLED="/etc/nginx/sites-enabled/$MK_SITE_NAME"
+      replace_mk_paths "$NGINX_DIR/presek-mk.conf" "$MK_SITE_AVAILABLE"
+      cp "$NGINX_DIR/presek-routes-mk.conf" "/etc/nginx/snippets/presek-routes-mk.conf"
+      ln -sfn "$MK_SITE_AVAILABLE" "$MK_SITE_ENABLED"
+    fi
+
     if [ -e "$LEGACY_SITE_ENABLED" ] && grep -q "server_name .*presek.live" "$LEGACY_SITE_ENABLED"; then
       mv "$LEGACY_SITE_ENABLED" "$DISABLED_SITES_DIR/presek.enabled.disabled.$(date +%Y%m%d%H%M%S)"
     fi
@@ -167,7 +204,10 @@ main() {
   echo "  $APP_ROOT"
   if [ "$INSTALL_NGINX" = "1" ]; then
     echo "nginx:"
-    echo "  updated"
+    echo "  updated ($DOMAIN)"
+    if [ "$INSTALL_MK_NGINX" = "1" ]; then
+      echo "  updated ($MK_DOMAIN)"
+    fi
   else
     echo "nginx:"
     echo "  unchanged"

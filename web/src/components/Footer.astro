@@ -2,13 +2,14 @@
 import Branding from './Branding.astro';
 import { Activity, Globe, ShieldCheck, Mail, ArrowUpRight, Zap } from 'lucide-react';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
+import { localePath, homePath } from '../lib/localePaths';
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
 const { hideSystemPulse = false } = Astro.props;
 
-const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
+const l = (path: string) => localePath(path, lang, hostHeader);
 ---
 <footer class="editorial-footer site-layout">
     <div class="footer-precision-rules">

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Radio, RefreshCcw } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
+import { localePathForLang } from '../lib/localePaths';
 import { getDisplayTitle, getPersonalizedText } from '../utils/textUtils';
 
 interface ArticleLike {
@@ -146,7 +147,7 @@ export default function HomeLiveUpdatesIsland({ excludeClusterIds = [], initialC
           const article = cluster.articles?.[0] || {};
           const title = getPersonalizedText(getDisplayTitle(article, '', lang), lang);
           return (
-            <a key={cluster.cluster_id} href={isMK ? `/mk/cluster/${cluster.cluster_id}` : `/cluster/${cluster.cluster_id}`} className="live-now-card group">
+            <a key={cluster.cluster_id} href={localePathForLang(`/cluster/${cluster.cluster_id}`, isMK ? 'mk' : 'sr')} className="live-now-card group">
               <div className="live-now-meta flex items-center justify-between gap-[var(--grid-gap)] mb-2">
                 <span className="live-now-source text-[10px] font-black uppercase tracking-widest text-nyt-accent group-hover:text-foreground transition-colors">{article.source || 'izvor'}</span>
                 <span className="text-[10px] font-bold text-muted-foreground tabular-nums">{getTimeStr(article.ingested_at || article.created_at, lang)}</span>

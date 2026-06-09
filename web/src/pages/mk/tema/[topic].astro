@@ -12,11 +12,12 @@ import { apiBaseUrl } from '../../../lib/apiBase';
 import { cleanAndDecode, getDisplaySummary, normalizeEntityOrTag } from '../../../utils/textUtils';
 import { ArrowRight, Clock3, Newspaper, Sparkles } from 'lucide-react';
 import { getLangFromUrl, useTranslations } from '../../../i18n/utils';
+import { localePath, homePath } from '../../../lib/localePaths';
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
-const l = (path: string) => `/mk${path}`;
+const l = (path: string) => localePath(path, 'mk', hostHeader);
 
 const rawTopicParam = Astro.params.topic || '';
 const topic = (() => {
@@ -196,7 +197,7 @@ function topicIntro() {
 
 	<main class="site-layout py-[var(--page-py)]">
 		{(error || !clusters.length) && (
-			<Breadcrumbs items={[{ label: "Теми", href: "/mk" }, { label: topic || "Тема" }]} />
+			<Breadcrumbs items={[{ label: "Теми", href: homePath('mk', hostHeader) }, { label: topic || "Тема" }]} />
 		)}
 
 		{error && (

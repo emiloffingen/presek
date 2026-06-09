@@ -3,6 +3,9 @@ import Layout from '../../layouts/Layout.astro';
 import NYTHeader from '../../components/NYTHeader.astro';
 import Footer from '../../components/Footer.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import { homePath, localePath } from '../../lib/localePaths';
+
+const hostHeader = Astro.request?.headers.get('host');
 
 Astro.response.status = 404;
 ---
@@ -21,9 +24,9 @@ Astro.response.status = 404;
 				</p>
 
 				<div class="not-found-actions">
-					<a href="/mk" class="not-found-link not-found-link-primary">Почетна</a>
-					<a href="/mk/archive" class="not-found-link">Архива</a>
-					<a href="/mk/briefing" class="not-found-link">Брифинг</a>
+					<a href={homePath('mk', hostHeader)} class="not-found-link not-found-link-primary">Почетна</a>
+					<a href={localePath('/archive', 'mk', hostHeader)} class="not-found-link">Архива</a>
+					<a href={localePath('/briefing', 'mk', hostHeader)} class="not-found-link">Брифинг</a>
 				</div>
 			</div>
 
@@ -38,10 +41,10 @@ Astro.response.status = 404;
 				<div class="rail-card">
 					<h2 class="rail-card-title">Брзе путање</h2>
 					<div class="not-found-list">
-						<a href="/mk/archive">Прелистај дан по дан</a>
-						<a href="/mk/izvori">Погледај изворе</a>
-						<a href="/mk/pulse">Упореди медије</a>
-						<a href="/mk/contact">Пријави неисправан линк</a>
+						<a href={localePath('/archive', 'mk', hostHeader)}>Прелистај дан по дан</a>
+						<a href={localePath('/izvori', 'mk', hostHeader)}>Погледај изворе</a>
+						<a href={localePath('/pulse', 'mk', hostHeader)}>Упореди медије</a>
+						<a href={localePath('/contact', 'mk', hostHeader)}>Пријави неисправан линк</a>
 					</div>
 				</div>
 			</aside>

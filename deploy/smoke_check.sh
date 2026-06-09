@@ -11,6 +11,8 @@ ADMIN_URL="${ADMIN_URL:-http://127.0.0.1:3000/admin}"
 ADMIN_API_URL="${ADMIN_API_URL:-http://127.0.0.1:5001/api/admin/dashboard}"
 ENABLE_FASTAPI_CHECK="${ENABLE_FASTAPI_CHECK:-1}"
 ENABLE_PUBLIC_CHECK="${ENABLE_PUBLIC_CHECK:-0}"
+ENABLE_MK_PUBLIC_CHECK="${ENABLE_MK_PUBLIC_CHECK:-$ENABLE_PUBLIC_CHECK}"
+MK_PUBLIC_URL="${MK_PUBLIC_URL:-https://presek.mk/}"
 ENABLE_PUBLIC_SECURITY_HEADER_CHECK="${ENABLE_PUBLIC_SECURITY_HEADER_CHECK:-1}"
 ENABLE_ADMIN_CHECK="${ENABLE_ADMIN_CHECK:-1}"
 MAX_ATTEMPTS="${MAX_ATTEMPTS:-15}"
@@ -229,6 +231,19 @@ main() {
     fi
   else
     warn "Skipping public URL check (set ENABLE_PUBLIC_CHECK=1 to enable)"
+  fi
+
+  if [ "$ENABLE_MK_PUBLIC_CHECK" = "1" ]; then
+    mk_base="${MK_PUBLIC_URL%/}"
+    wait_http_ok "MK public site" "$MK_PUBLIC_URL" 200 || wait_http_ok "MK public site" "$MK_PUBLIC_URL" 301
+    wait_http_ok "MK briefing" "$mk_base/briefing" 200
+    wait_http_ok "MK legacy /mk redirect" "$mk_base/mk/briefing" 301
+    wait_health_ready "MK API health" "$mk_base/api/health" 1 1
+    if [ "$ENABLE_PUBLIC_SECURITY_HEADER_CHECK" = "1" ]; then
+      wait_header_contains "MK site HSTS" "$MK_PUBLIC_URL" "Strict-Transport-Security" "max-age=63072000"
+    fi
+  else
+    warn "Skipping presek.mk public checks (set ENABLE_MK_PUBLIC_CHECK=1 to enable)"
   fi
 
   ok "Smoke checks passed"

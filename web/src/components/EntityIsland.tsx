@@ -1,3 +1,4 @@
+import { localePathForLang } from '../lib/localePaths';
 import React, { useEffect, useState } from 'react';
 import {
   Building2,
@@ -327,14 +328,14 @@ export default function EntityIsland({
             </p>
             <div className="entity-chip-list">
               {contextEntities.map(([entity, count]) => (
-                <a key={entity} href={lang === 'sr' ? `/subjekt/${encodeURIComponent(entity)}` : `/mk/subjekt/${encodeURIComponent(entity)}`} className="entity-chip entity-chip-link">
+                <a key={entity} href={localePathForLang(`/subjekt/${encodeURIComponent(entity)}`, lang)} className="entity-chip entity-chip-link">
                   {entity} · {count}
                 </a>
               ))}
               {contextEntities.length === 0 && (
                 <div className="flex flex-wrap gap-[var(--grid-gap)]">
                   {related.map(r => (
-                    <a key={r.related_entity} href={lang === 'sr' ? `/subjekt/${encodeURIComponent(r.related_entity)}` : `/mk/subjekt/${encodeURIComponent(r.related_entity)}`} className="entity-chip entity-chip-link">
+                    <a key={r.related_entity} href={localePathForLang(`/subjekt/${encodeURIComponent(r.related_entity)}`, lang)} className="entity-chip entity-chip-link">
                       {r.related_entity}
                     </a>
                   ))}
@@ -354,7 +355,7 @@ export default function EntityIsland({
             </p>
             <div className="space-y-4">
               {relationBands.strongest.map((rel) => (
-                <a key={rel.related_entity} href={lang === 'sr' ? `/subjekt/${encodeURIComponent(rel.related_entity)}` : `/mk/subjekt/${encodeURIComponent(rel.related_entity)}`} className="entity-related-link">
+                <a key={rel.related_entity} href={localePathForLang(`/subjekt/${encodeURIComponent(rel.related_entity)}`, lang)} className="entity-related-link">
                   <div>
                     <span className="entity-related-name">{rel.related_entity}</span>
                     <p className="entity-related-band">{t('entity.tight_bond')}</p>
@@ -383,9 +384,9 @@ export default function EntityIsland({
           <div className="rail-card">
             <h3 className="rail-card-title uppercase tracking-[0.14em] md:tracking-widest text-[9px] md:text-[10px]">{t('entity.further')}</h3>
             <div className="flex flex-col gap-2 md:gap-[var(--grid-gap)]">
-              <a href={lang === 'sr' ? "/archive" : "/mk/archive"} className="entity-related-jump">{t('entity.open_archive')}</a>
-              <a href={lang === 'sr' ? "/izvori" : "/mk/izvori"} className="entity-related-jump">{t('entity.open_sources')}</a>
-              <a href={lang === 'sr' ? "/pulse" : "/mk/pulse"} className="entity-related-jump">{t('entity.compare_media')}</a>
+              <a href={localePathForLang('/archive', lang)} className="entity-related-jump">{t('entity.open_archive')}</a>
+              <a href={localePathForLang('/izvori', lang)} className="entity-related-jump">{t('entity.open_sources')}</a>
+              <a href={localePathForLang('/pulse', lang)} className="entity-related-jump">{t('entity.compare_media')}</a>
             </div>
           </div>
         </aside>

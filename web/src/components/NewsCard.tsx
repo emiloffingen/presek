@@ -3,6 +3,7 @@ import { ShieldCheck, Globe, CheckCircle2, Activity, Clock, Layers, Palette, Arr
 import { chooseClusterImage } from '../utils/imageSelection';
 import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, getDesignCardContext, slugify } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
+import { localePathForLang } from '../lib/localePaths';
 import type { NewsCluster, Article } from '../types';
 
 interface NewsCardProps {
@@ -46,7 +47,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   lang = 'sr'
 }) => {
   const t = (key: string) => _T[key]?.[lang] || key;
-  const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
+  const l = (path: string) => localePathForLang(path, lang as 'sr' | 'mk');
 
   const main = cluster.articles?.[0];
   if (!main) return null;

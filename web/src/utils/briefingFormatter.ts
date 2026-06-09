@@ -1,4 +1,5 @@
 import { sanitizeHtml } from '../lib/sanitize';
+import { localePath } from '../lib/localePaths';
 
 function stripDecorativePrefix(text: string): string {
     return text
@@ -11,10 +12,10 @@ function stripDecorativePrefix(text: string): string {
  * A specialized formatter for the Daily Briefing markdown content.
  * Converts markdown-like structures into styled HTML for the Briefing layout.
  */
-export function formatBriefing(markdown: string, lang = 'sr'): string {
+export function formatBriefing(markdown: string, lang = 'sr', hostname?: string | null): string {
     if (!markdown) return "";
     const isMK = lang === 'mk';
-    const l = (path: string) => isMK ? `/mk${path}` : path;
+    const l = (path: string) => localePath(path, isMK ? 'mk' : 'sr', hostname);
 
     let html = markdown.trim();
     let sectionIndex = 0;

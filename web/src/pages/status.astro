@@ -4,6 +4,7 @@ import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import { apiBaseUrl } from '../lib/apiBase';
+import { isHealthyStatus } from '../lib/localePaths';
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
@@ -26,6 +27,8 @@ try {
 } catch (e) {
     console.error("[Status Page] Fetch error:", e);
 }
+
+const isHealthy = isHealthyStatus(healthData.status);
 
 const formattedUptime = (seconds: number) => {
     if (!seconds) return "0s";
@@ -75,10 +78,10 @@ const formattedUptime = (seconds: number) => {
                     <span class="status-title">{lang === 'sr' ? "SISTEMSKI STATUS" : "СИСТЕМСКИ СТАТУС"}</span>
                     <span class={`status-badge-pill ${healthData.status}`}>
                         <span class="relative flex h-2.5 w-2.5 pulse-container">
-                            <span class={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${healthData.status === 'ok' ? 'bg-emerald-400' : 'bg-red-400'}`}></span>
-                            <span class={`relative inline-flex rounded-full h-2.5 w-2.5 ${healthData.status === 'ok' ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
+                            <span class={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isHealthy ? 'bg-emerald-400' : 'bg-red-400'}`}></span>
+                            <span class={`relative inline-flex rounded-full h-2.5 w-2.5 ${isHealthy ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
                         </span>
-                        {healthData.status === 'ok' 
+                        {isHealthy
                             ? (lang === 'sr' ? "AKTIVAN" : "АКТИВЕН") 
                             : (lang === 'sr' ? "DEGRADIRAN" : "ДЕГРАДИРАН")}
                     </span>

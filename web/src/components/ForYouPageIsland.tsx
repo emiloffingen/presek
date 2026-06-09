@@ -1,3 +1,4 @@
+import { localePathForLang } from '../lib/localePaths';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowUpRight,
@@ -260,7 +261,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
               <span>{isMK ? 'Приоритет' : 'Prioritet'}</span>
               <h2>{isMK ? 'Најрелевантно сега' : 'Najrelevantnije sada'}</h2>
             </div>
-            <a href={isMK ? '/mk/settings' : '/settings'} className="for-you-text-link">
+            <a href={localePathForLang('/settings', isMK ? 'mk' : 'sr')} className="for-you-text-link">
               <SlidersHorizontal size={14} /> {isMK ? 'Прилагоди' : 'Podesi'}
             </a>
           </section>
@@ -370,7 +371,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
               <h3><Radio size={16} /> {isMK ? 'Следно' : 'Sledeće'}</h3>
               <div className="next-stack">
                 {queueClusters.map((cluster) => (
-                  <a key={cluster.cluster_id} href={isMK ? `/mk/cluster/${cluster.cluster_id}` : `/cluster/${cluster.cluster_id}`} className="next-item">
+                  <a key={cluster.cluster_id} href={localePathForLang(`/cluster/${cluster.cluster_id}`, isMK ? 'mk' : 'sr')} className="next-item">
                     <span>{formatTime(clusterTime(cluster), lang)}</span>
                     <strong>{clusterTitle(cluster)}</strong>
                     <ArrowUpRight size={13} />

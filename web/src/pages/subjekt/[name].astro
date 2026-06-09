@@ -11,6 +11,7 @@ import { cleanAndDecode, isMostlyCyrillic } from '../../utils/textUtils';
 import { sanitizeHtml } from '../../lib/sanitize';
 
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+import { homePath } from '../../lib/localePaths';
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
@@ -65,7 +66,7 @@ const nameIsCyrillic = isMostlyCyrillic(decodedName);
             <div class="empty-state">
                 <p class="empty-kicker">{lang === 'sr' ? 'GREŠKA' : 'ГРЕШКА'}</p>
                 <h2>{error}</h2>
-                <a href={lang === 'sr' ? '/' : '/mk'} class="clear-filter mt-4">{lang === 'sr' ? 'Vrati se na početnu' : 'Врати се на почетна'}</a>
+                <a href={homePath(lang, hostHeader)} class="clear-filter mt-4">{lang === 'sr' ? 'Vrati se na početnu' : 'Врати се на почетна'}</a>
             </div>
         ) : (
             <div class="broadsheet-grid">

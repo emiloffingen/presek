@@ -1,17 +1,17 @@
 import type { APIRoute } from 'astro';
+import { isMkHost } from '../lib/localePaths';
 
 export const GET: APIRoute = async ({ request }) => {
   const url = new URL(request.url);
   const host = request.headers.get('host') || url.hostname;
-  const isMk = host.includes('presek.mk') || url.pathname.startsWith('/mk');
-  const basePath = isMk ? '/mk' : '';
-  const startUrl = `${basePath || '/' }${basePath ? '/' : ''}?utm_source=pwa`;
-  const scope = basePath ? `${basePath}/` : '/';
+  const isMk = isMkHost(host) || url.pathname.startsWith('/mk');
+  const startUrl = '/?utm_source=pwa';
+  const scope = '/';
   const shortcuts = isMk
     ? [
-        { name: 'Дневен брифинг', short_name: 'Брифинг', url: '/mk/briefing' },
-        { name: 'Медиумски пулс', short_name: 'Пулс', url: '/mk/pulse' },
-        { name: 'Извори', short_name: 'Извори', url: '/mk/izvori' },
+        { name: 'Дневен брифинг', short_name: 'Брифинг', url: '/briefing' },
+        { name: 'Медиумски пулс', short_name: 'Пулс', url: '/pulse' },
+        { name: 'Извори', short_name: 'Извори', url: '/izvori' },
       ]
     : [
         { name: 'Dnevni brifing', short_name: 'Brifing', url: '/briefing' },

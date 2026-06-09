@@ -1,6 +1,7 @@
 ---
 import type { NewsCluster } from '../../types';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+import { localePath, homePath } from '../../lib/localePaths';
 import type { ui } from '../../i18n/ui';
 import { chooseClusterImage } from '../../utils/imageSelection';
 import { getStoryPreviewText } from '../../utils/textUtils';
@@ -16,7 +17,7 @@ const hostHeader = Astro.request?.headers.get('host');
 const urlLang = getLangFromUrl(Astro.url, hostHeader || undefined);
 const lang = propLang || urlLang;
 const t = useTranslations(lang);
-const l = (path: string) => lang === 'sr' ? path : `/mk${path}`;
+const l = (path: string) => localePath(path, lang, hostHeader);
 
 function getSourceBadgeLabel(count: number) {
     if (lang === 'sr') {

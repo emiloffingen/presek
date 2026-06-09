@@ -14,9 +14,11 @@ import { apiBaseUrl } from '../../lib/apiBase';
 import { formatBriefing } from '../../utils/briefingFormatter';
 import { Newspaper, Timer, ChevronRight } from 'lucide-react';
 import { getLangFromUrl } from '../../i18n/utils';
+import { localePath, homePath } from '../../lib/localePaths';
 
 const API_URL = apiBaseUrl();
-const lang = getLangFromUrl(Astro.url);
+const hostHeader = Astro.request?.headers.get('host');
+const lang = getLangFromUrl(Astro.url, hostHeader);
 const isMK = lang === 'mk';
 
 const url = new URL(Astro.request.url);
@@ -48,7 +50,7 @@ try {
     error = isMK ? "Грешка при вчитување на податоците." : "Greška pri učitavanju podataka.";
 }
 
-const formattedBriefing = briefingData?.content ? formatBriefing(briefingData.content, lang) : "";
+const formattedBriefing = briefingData?.content ? formatBriefing(briefingData.content, lang, hostHeader) : "";
 
 const displayDate = briefingData?.date
     ? new Date(briefingData.date).toLocaleDateString(isMK ? 'mk-MK' : 'sr-RS', {
@@ -68,7 +70,7 @@ const displayDate = briefingData?.date
             {error ? (
                 <div class="py-20 text-center animate-rise">
                     <h2 class="font-serif text-3xl mb-6 font-black italic">{error}</h2>
-                    <a href={isMK ? '/mk/briefing' : '/briefing'} class="inline-flex items-center gap-[var(--grid-gap)] px-6 py-3 bg-foreground text-background font-sans font-black text-xs uppercase tracking-widest hover:bg-nyt-accent transition-colors">
+                    <a href={localePath('/briefing', lang, hostHeader)} class="inline-flex items-center gap-[var(--grid-gap)] px-6 py-3 bg-foreground text-background font-sans font-black text-xs uppercase tracking-widest hover:bg-nyt-accent transition-colors">
                         {isMK ? 'Врати се на последното издание' : 'Vrati se na poslednje izdanje'}
                     </a>
                 </div>
@@ -111,7 +113,7 @@ const displayDate = briefingData?.date
                             <div class="mt-40 pt-16 border-t-4 border-foreground">
                                 <div class="flex items-center justify-between mb-12">
                                     <h2 class="font-serif text-4xl font-black italic">{isMK ? 'Продолжете со читање' : 'Nastavite sa čitanjem'}</h2>
-                                    <a href={isMK ? '/mk' : '/'} class="flex items-center gap-[var(--grid-gap)] font-black text-[10px] uppercase tracking-widest text-nyt-accent hover:underline">
+                                    <a href={homePath(lang, hostHeader)} class="flex items-center gap-[var(--grid-gap)] font-black text-[10px] uppercase tracking-widest text-nyt-accent hover:underline">
                                         {isMK ? 'НАСЛОВНА' : 'NASLOVNA'} <ChevronRight size={14} />
                                     </a>
                                 </div>

@@ -1,3 +1,4 @@
+import { absoluteLocaleUrl, localePathForLang } from '../lib/localePaths';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Bell, BellRing, Copy, Mail, Radio, Save } from 'lucide-react';
 import { useStore } from '@nanostores/react';
@@ -105,7 +106,7 @@ export default function BriefingDeliveryIsland({
 
   const mailHref = useMemo(() => {
     const subject = encodeURIComponent(`Presek brifing · ${dateLabel}`);
-    const briefingUrl = isMK ? 'https://presek.mk/mk/briefing' : 'https://presek.live/briefing';
+    const briefingUrl = absoluteLocaleUrl('/briefing', isMK ? 'mk' : 'sr');
     const body = encodeURIComponent(`${digest}\n\n${briefingUrl}`);
     return `mailto:?subject=${subject}&body=${body}`;
   }, [dateLabel, digest, isMK]);
@@ -160,7 +161,7 @@ export default function BriefingDeliveryIsland({
 
   const copyDigest = async () => {
     try {
-      const briefingUrl = isMK ? 'https://presek.mk/mk/briefing' : 'https://presek.live/briefing';
+      const briefingUrl = absoluteLocaleUrl('/briefing', isMK ? 'mk' : 'sr');
       await navigator.clipboard.writeText(`${dateLabel}\n\n${digest}\n\n${briefingUrl}`);
       setCopyState('done');
       if (typeof window !== 'undefined') window.setTimeout(() => setCopyState('idle'), 1800);
@@ -241,7 +242,7 @@ export default function BriefingDeliveryIsland({
         </div>
 
         <div className="delivery-actions">
-          <a href={isMK ? '/mk/settings' : '/settings'} className="delivery-action">
+          <a href={localePathForLang('/settings', isMK ? 'mk' : 'sr')} className="delivery-action">
             <Radio size={14} />
             <span className="delivery-action-content">
               <span className="delivery-action-label">{isMK ? 'Отворете подесувања' : 'Otvorite podešavanja'}</span>
