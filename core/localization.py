@@ -92,7 +92,7 @@ class LocalizationEngine:
                 try:
                     from utils.cache import delete_cache_prefix
                     delete_cache_prefix("api:news:v2:")
-                    delete_cache_prefix("api:home:v2:")
+                    delete_cache_prefix("api:home:")
                     log.info("Successfully invalidated news and homepage caches to apply new rules immediately.")
                 except Exception as cache_err:
                     log.debug(f"Redis cache invalidation skipped during localization update: {cache_err}")

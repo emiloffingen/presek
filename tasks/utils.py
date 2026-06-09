@@ -55,7 +55,7 @@ def invalidate_public_data_caches():
     delete_cache_prefix("api:top-entities:")
     delete_cache_prefix("api:stats:summary:")
     delete_cache_prefix("stats:intel_summary:")
-    delete_cache("api:trending")
+    delete_cache_prefix("api:trending:")
 
 
 def safe_async_run(coro):
@@ -73,9 +73,8 @@ def safe_async_run(coro):
 
 def invalidate_cluster_caches(cluster_id=None):
     if cluster_id:
-        # Use both the raw prefix and the API prefix to be safe
         delete_cache(f"cluster:detail:{cluster_id}")
-        delete_cache(f"api:cluster:detail:v2:{cluster_id}")
+        delete_cache_prefix(f"api:cluster:detail:v3:{cluster_id}")
     invalidate_public_data_caches()
 
 

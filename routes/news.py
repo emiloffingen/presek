@@ -129,13 +129,15 @@ _PUBLIC_ARTICLE_FIELDS = {
 }
 
 
-def _public_article_payload(article, lang="sr"):
+def _public_article_payload(article, lang="sr", include_full_content: bool = False):
     from core.language import transliterate_cyr_to_lat, transliterate_lat_to_cyr
     from nlp.categories import normalize_headline
 
     res = {}
     for key, value in article.items():
         if key not in _PUBLIC_ARTICLE_FIELDS:
+            continue
+        if key == "full_content" and not include_full_content:
             continue
         if key == "title":
             val = normalize_headline(value)
@@ -381,6 +383,7 @@ async def fetch_news_data(
         page_size = max(1, min(int(page_size or 24), 100))
         row_limit = _news_row_limit(page, page_size)
         if q:
+            row_limit = min(row_limit, 500)
             q = q.strip()[:API_MAX_Q_LEN]
 
         # Map country to MK/RS if not provided but lang is
@@ -934,7 +937,9 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
         articles = annotate_cluster_articles(rows, prefer_recent=True)
         for a in articles:
             a["reading_time"] = calculate_reading_time(a.get("description", ""))
-        public_articles = [_public_article_payload(article, lang=lang) for article in articles]
+        public_articles = [
+            _public_article_payload(article, lang=lang, include_full_content=True) for article in articles
+        ]
 
         log.debug(f"[debug] Fetching summary for cluster_id: '{cluster_id}' ({lang})")
         s_row = await db.async_execute_one(

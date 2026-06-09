@@ -243,7 +243,7 @@ def test_fastapi_news_scales_query_fetch_limit_with_page_depth(mock_all):
     ):
         asyncio.run(news_routes.get_news(q="Ekonomija", page=3, page_size=25))
     assert mock_all["db"].async_search_articles.called
-    assert mock_all["db"].async_search_articles.call_args.kwargs["limit"] == 1200
+    assert mock_all["db"].async_search_articles.call_args.kwargs["limit"] == 500
 
 
 def test_fastapi_profile_sync_init_creates_token(mock_all):
@@ -624,23 +624,8 @@ def test_home_route_composes_named_slots(mock_all):
             }
         ],
     }
-    recent_payload = {
-        "status": "success",
-        "clusters": [
-            {
-                "cluster_id": "lead",
-                "articles": [
-                    {
-                        "title": "Lead",
-                        "source": "MIA",
-                        "topic": "Politika",
-                        "category": "Srbija",
-                        "created_at": "2026-04-22T18:00:00Z",
-                        "link": "https://lead",
-                    }
-                ],
-                "is_breaking": True,
-            },
+    news_payload["clusters"].extend(
+        [
             {
                 "cluster_id": "live-1",
                 "articles": [
@@ -697,13 +682,13 @@ def test_home_route_composes_named_slots(mock_all):
                 ],
                 "is_breaking": False,
             },
-        ],
-    }
+        ]
+    )
 
     with (
         patch(
             "routes.home.fetch_news_data",
-            new=AsyncMock(side_effect=[news_payload, recent_payload]),
+            new=AsyncMock(return_value=news_payload),
         ),
         patch("routes.home.cached_response", return_value=None),
         patch("routes.home.set_cache"),
@@ -755,9 +740,13 @@ def test_home_route_composes_named_slots(mock_all):
         "foryou-5",
         "foryou-6",
         "wire-1",
+        "live-1",
+        "junk-1",
+        "wire-2",
+        "wire-3",
     ]
-    assert [item["cluster_id"] for item in data["live_now"]] == ["wire-2", "live-1"]
-    assert [item["title"] for item in data["latest_wire"]] == [
+    assert [item["cluster_id"] for item in data["live_now"]] == ["wire-2", "live-1", "foryou-1", "foryou-2"]
+    assert [item["title"] for item in data["latest_wire"][:3]] == [
         "Teska soobracajka na ekspresniot pat kaj Rankovce",
         "Sobranieto otvori rasprava za budzetot",
         "Lead",

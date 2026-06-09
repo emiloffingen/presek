@@ -9,6 +9,7 @@ import {
   Globe, ShieldCheck, Activity, BookOpen, ExternalLink,
   History, Compass, SlidersHorizontal
 } from 'lucide-react';
+import { fetchJsonCached } from '../lib/apiCache';
 import { getDisplaySummary, getDisplayTitle } from '../utils/textUtils';
 
 // Transliteration character mapping for Cyrillic/Latin script-agnostic matching
@@ -413,9 +414,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
         const url = `/api/news?q=${encodeURIComponent(trimmed)}&page_size=12&lang=${lang}`;
         const timespanPart = timespan !== 'all' ? `&timespan=${timespan}` : '';
         const categoryPart = categoryFilter !== 'all' ? `&category=${encodeURIComponent(categoryFilter)}` : '';
-        const res = await fetch(url + timespanPart + categoryPart);
-        if (!res.ok) throw new Error(lang === 'sr' ? 'Greška pri pretraživanju.' : 'Грешка при пребарувањето.');
-        const data = await res.json();
+        const data = await fetchJsonCached(url + timespanPart + categoryPart, 120_000);
         const nextSuggestions = Array.isArray(data?.clusters)
           ? data.clusters.map((cluster: any) => {
               const article = cluster.articles?.[0] || {};

@@ -991,8 +991,18 @@ def generate_cover_art(safe_id: str, svg_content: str) -> str | None:
 def auto_summarize_top_clusters(target_cluster_ids: list[str] = None):
     """Dispatch synthesis tasks for the top recent clusters or specific target clusters."""
     try:
-        from core.config import AUTO_SUMMARIZE_MIN_SRC, AUTO_SUMMARIZE_TOP_N
+        from core.config import (
+            AUTO_SUMMARIZE_DELAY,
+            AUTO_SUMMARIZE_FRESH_HOURS,
+            AUTO_SUMMARIZE_MIN_SRC,
+            AUTO_SUMMARIZE_TOP_N,
+        )
         from core.database import db_manager as db
+        from tasks.utils import get_celery_queue_depth
+
+        if not target_cluster_ids and get_celery_queue_depth() >= 100:
+            log.info("[ai/auto_summarize] Skipping cycle while celery queue backlog is high.")
+            return
 
         if target_cluster_ids:
             rows = db.execute(
@@ -1012,8 +1022,25 @@ def auto_summarize_top_clusters(target_cluster_ids: list[str] = None):
         for r in rows:
             clusters_map[r["cluster_id"]].append(r)
 
+        candidate_ids = list(clusters_map.keys())
+        fresh_summary_ids = set()
+        if candidate_ids:
+            fresh_rows = db.execute(
+                """
+                SELECT DISTINCT cluster_id
+                FROM cluster_summaries
+                WHERE cluster_id = ANY(%s)
+                  AND created_at >= NOW() - make_interval(hours => %s)
+                  AND COALESCE(generation_provider, '') NOT IN ('enhanced_fallback', '')
+                """,
+                (candidate_ids, AUTO_SUMMARIZE_FRESH_HOURS),
+            )
+            fresh_summary_ids = {row["cluster_id"] for row in fresh_rows}
+
         ranked = []
         for cid, arts in clusters_map.items():
+            if cid in fresh_summary_ids:
+                continue
             unique_sources = {a.get("source") for a in arts if a.get("source")}
             if len(unique_sources) < AUTO_SUMMARIZE_MIN_SRC:
                 continue
@@ -1028,16 +1055,10 @@ def auto_summarize_top_clusters(target_cluster_ids: list[str] = None):
 
         from tasks.intelligence import synthesize_cluster_task
 
-        for cid, arts, src_count, dt in top:
-            # Aggregate article content for the synthesizer
+        for idx, (cid, arts, _src_count, _dt) in enumerate(top):
             content = "\n\n".join([(a.get("title") or "") + ": " + (a.get("summary") or "") for a in arts])
-            synthesize_cluster_task.delay(cid, content=content)
-
-        # Also trigger backfill for older clusters that might have been missed
-        from tasks.intelligence import backfill_cluster_summaries_task
-
-        backfill_cluster_summaries_task.delay(days=7, lang="sr")  # Backfill last 7 days for Serbian
-        backfill_cluster_summaries_task.delay(days=7, lang="mk")  # Backfill last 7 days for Macedonian
+            countdown = int(idx * AUTO_SUMMARIZE_DELAY)
+            synthesize_cluster_task.apply_async((cid, content), {"fast_mode": False}, countdown=countdown)
 
     except Exception as e:
         log.error(f"[ai/auto_summarize] Orchestration failed: {e}")

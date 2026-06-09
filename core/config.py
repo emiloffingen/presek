@@ -392,9 +392,10 @@ LANGUAGE_CONFIG = {
     },
 }
 
-AUTO_SUMMARIZE_TOP_N = 40  # summarize the top N clusters each cycle
-AUTO_SUMMARIZE_MIN_SRC = 2  # only clusters with 2+ sources get synthesis
-AUTO_SUMMARIZE_DELAY = 1.5  # seconds between API calls (rate limit protection)
+AUTO_SUMMARIZE_TOP_N = int(os.environ.get("AUTO_SUMMARIZE_TOP_N", "20"))
+AUTO_SUMMARIZE_MIN_SRC = int(os.environ.get("AUTO_SUMMARIZE_MIN_SRC", "2"))
+AUTO_SUMMARIZE_DELAY = float(os.environ.get("AUTO_SUMMARIZE_DELAY", "1.5"))
+AUTO_SUMMARIZE_FRESH_HOURS = int(os.environ.get("AUTO_SUMMARIZE_FRESH_HOURS", "6"))
 
 # ── API limits ────────────────────────────────────────────────────
 API_MAX_PAGE = 1000  # Maximum page number for pagination

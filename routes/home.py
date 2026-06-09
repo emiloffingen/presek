@@ -289,6 +289,14 @@ def _is_live_now_candidate(cluster):
     return len(cluster.get("articles") or []) >= 2
 
 
+def _clusters_sorted_by_recency(clusters):
+    return sorted(
+        clusters or [],
+        key=lambda cluster: _parse_time(_article_freshness_time(_primary_article(cluster))),
+        reverse=True,
+    )
+
+
 def _rank_live_now_clusters(items, exclude_cluster_ids=None, limit=4):
     exclude = set(exclude_cluster_ids or [])
     source_count = {}
@@ -585,7 +593,6 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
         # Fetch all dependencies in parallel
         results = await asyncio.gather(
             fetch_news_data(sort="score", page_size=56, lang=lang),
-            fetch_news_data(sort="recent", page_size=20, lang=lang),
             get_trending_route(lang=lang),
             get_top_entities(limit=12, lang=lang),
             get_stats_summary(lang=lang),
@@ -593,7 +600,7 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
             return_exceptions=True,
         )
 
-        news_result, recent_result, trending, top_entities, stats, synthesis_picks = results
+        news_result, trending, top_entities, stats, synthesis_picks = results
 
         # Basic error check (ensure news_result is a dict)
         if isinstance(news_result, Exception):
@@ -603,8 +610,6 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
             raise RuntimeError("Homepage news payload unavailable")
 
         # Unpack other results, handling exceptions
-        if isinstance(recent_result, Exception):
-            recent_result = {}
         if isinstance(trending, Exception):
             trending = []
         if isinstance(top_entities, Exception):
@@ -724,7 +729,7 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
             ]
             if cluster_id
         ]
-        recent_clusters = recent_result.get("clusters") if isinstance(recent_result, dict) else []
+        recent_clusters = _clusters_sorted_by_recency(clusters)
         live_now = _rank_live_now_clusters(recent_clusters, exclude_cluster_ids=excluded_cluster_ids, limit=4)
         for idx, cluster in enumerate(live_now):
             should_generate = (
