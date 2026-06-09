@@ -13,7 +13,8 @@ interface Props {
 }
 
 const { stats, health, leadCluster, briefing, historicalDates = [] } = Astro.props;
-const lang = getLangFromUrl(Astro.url);
+const hostHeader = Astro.request?.headers.get('host');
+const lang = getLangFromUrl(Astro.url, hostHeader);
 const isMK = lang === 'mk';
 const t = useTranslations(lang);
 

@@ -12,6 +12,7 @@ interface Props {
 }
 
 const { articles, getTimeStr, lang } = Astro.props;
+const hostHeader = Astro.request?.headers.get('host');
 const t = useTranslations(lang);
 const l = (path: string) => localePath(path, lang, hostHeader);
 ---

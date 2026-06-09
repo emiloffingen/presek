@@ -25,14 +25,14 @@ export const onRequest = defineMiddleware((context, next) => {
 
   if ((hostname === 'presek.mk' || hostname === 'www.presek.mk') && (pathname === '/mk' || pathname.startsWith('/mk/'))) {
     const targetPath = stripMkPrefix(pathname) || '/';
-    const target = new URL(`${targetPath}${url.search}`, url.origin);
+    const target = new URL(`${targetPath}${url.search}`, 'https://presek.mk');
     return Response.redirect(target, 301);
   }
 
   if ((hostname === 'presek.mk' || hostname === 'www.presek.mk') && shouldRewriteMkDomainToInternal(pathname)) {
     const internalPath = withMkPrefix(pathname);
     if (internalPath !== pathname) {
-      return context.rewrite(new URL(`${internalPath}${url.search}`, url.origin));
+      return next(`${internalPath}${url.search}`);
     }
   }
 

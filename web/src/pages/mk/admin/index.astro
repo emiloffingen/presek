@@ -3,7 +3,9 @@ import Layout from '../../../layouts/Layout.astro';
 import Footer from '../../../components/Footer.astro';
 import AdminDashboard from '../../../components/AdminDashboard.tsx';
 import { APP_VERSION } from '../../../lib/version';
+import { homePath } from '../../../lib/localePaths';
 
+const hostHeader = Astro.request?.headers.get('host');
 const versionLabel = APP_VERSION;
 ---
 

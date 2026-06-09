@@ -1,7 +1,9 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import { apiBaseUrl } from '../../../lib/apiBase';
+import { localePath } from '../../../lib/localePaths';
 
+const hostHeader = Astro.request?.headers.get('host');
 const API_URL = apiBaseUrl();
 let health: any = null;
 let error = '';
