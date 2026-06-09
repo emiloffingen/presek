@@ -195,6 +195,10 @@ jobs:
         working-directory: web
         run: npm test
 
+      - name: Run frontend component tests (Cypress)
+        working-directory: web
+        run: npm run test:component
+
       - name: Build frontend
         working-directory: web
         run: npm run build
@@ -304,7 +308,7 @@ jobs:
           ENV: test
         run: |
           source .venv/bin/activate
-          uvicorn api_fast:app --host 0.0.0.0 --port 8000 &
+          uvicorn core.api_fast:app --host 0.0.0.0 --port 8000 &
           sleep 10
           curl -s http://localhost:8000/api/health || true
 
@@ -320,22 +324,39 @@ jobs:
     name: Deploy
     runs-on: ubuntu-latest
     needs: [build, load-test, security-scan]
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build and push Docker image
+      - name: Build Docker image
+        run: docker build -t presek:${{ github.sha }} .
+
+      - name: Push Docker image
+        if: ${{ secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != '' }}
         run: |
           echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-          docker build -t presek:latest -t presek:${{ github.sha }} .
+          docker tag presek:${{ github.sha }} presek:latest
           docker push presek:latest
           docker push presek:${{ github.sha }}
 
-      - name: Deploy to server
+      - name: Deploy to server via SSH
+        if: ${{ secrets.DEPLOY_SSH_HOST != '' && secrets.DEPLOY_SSH_USER != '' && secrets.DEPLOY_SSH_KEY != '' }}
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_SSH_HOST }}
+          username: ${{ secrets.DEPLOY_SSH_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            APP_ROOT="${{ secrets.DEPLOY_APP_ROOT || '/home/emiloffingen/presek-runtime' }}"
+            cd "${APP_ROOT}/current" || cd "${APP_ROOT}"
+            bash deploy/deploy_release.sh
+
+      - name: Remote deploy not configured
+        if: ${{ secrets.DEPLOY_SSH_HOST == '' || secrets.DEPLOY_SSH_USER == '' || secrets.DEPLOY_SSH_KEY == '' }}
         run: |
-          # This would be customized for your deployment
-          # Example: ssh user@server "cd /path/to/app && ./deploy.sh"
-          echo "Deployment would be triggered here"
-          echo "Image: presek:${{ github.sha }}"
+          echo "Skipping SSH deploy. Configure DEPLOY_SSH_HOST, DEPLOY_SSH_USER, and DEPLOY_SSH_KEY to enable CI deploy."
+          echo "Production deploys normally run: APP_ROOT=/home/emiloffingen/presek-runtime bash deploy/deploy_release.sh"
+          echo "Built image tag: presek:${{ github.sha }}"

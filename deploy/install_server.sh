@@ -161,7 +161,7 @@ main() {
   echo "Check services with:"
   echo "  sudo systemctl status presek.target"
   echo "  sudo systemctl status presek-ingestion-worker.service"
-  echo "  sudo journalctl -u presek-fastapi.service -f"
+  echo "  sudo journalctl -u presek-fastapi-unified.service -f"
   echo "  sudo journalctl -u presek-ingestion-worker.service -f"
   echo "Release root:"
   echo "  $APP_ROOT"

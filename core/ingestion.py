@@ -735,7 +735,7 @@ async def fetch_feed_async(client: httpx.AsyncClient, source: Dict[str, Any]) ->
 
                 if attempt < max_retries - 1:
                     log.debug(f"[ingest] {name}: got {'CF challenge' if is_cf_challenge else '403'}, trying cloudscraper (attempt {attempt + 1})")
-                    loop = asyncio.get_event_loop()
+                    loop = asyncio.get_running_loop()
                     try:
                         content = await loop.run_in_executor(None, _fetch_with_cloudscraper, url, timeout)
                         cleaned_content = cleanup_rss_xml(content)
@@ -765,7 +765,7 @@ async def fetch_feed_async(client: httpx.AsyncClient, source: Dict[str, Any]) ->
             resp.raise_for_status()
 
             # Parse RSS in a thread pool since feedparser is blocking/CPU heavy
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             cleaned_content = cleanup_rss_xml(resp.content)
             feed = await loop.run_in_executor(None, feedparser.parse, cleaned_content)
 
@@ -1017,7 +1017,7 @@ async def ingest_all_sources_async():
 
     # Generate embeddings in one batch
     texts_to_embed = [f"{c['title']} {c['desc'][:200]}" for c in candidates]
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     embeddings = await loop.run_in_executor(None, generate_embeddings_batch, texts_to_embed)
 
     # 4. Clustering & DB Preparation

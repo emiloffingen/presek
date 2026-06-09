@@ -57,10 +57,11 @@ This document provides a comprehensive checklist for deploying Presek in product
    # Edit .env with your configuration
    ```
 
-3. **Set up Python virtualenv**
+3. **Set up Python environment**
    ```bash
-   python -m venv venv
-   source venv/bin/activate
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   uv venv
+   source .venv/bin/activate
    uv sync
    ```
 
@@ -85,13 +86,13 @@ This document provides a comprehensive checklist for deploying Presek in product
 
    # Or manually:
    # FastAPI
-   uvicorn api_fast:app --host 0.0.0.0 --port 8000 --workers 4
+   uvicorn core.api_fast:app --host 0.0.0.0 --port 8000 --workers 4
 
    # Celery worker
-   celery -A celery_app worker --loglevel=info --concurrency=4
+   celery -A core.celery_app worker --loglevel=info --concurrency=4
 
    # Celery beat
-   celery -A celery_app beat --loglevel=info
+   celery -A core.celery_app beat --loglevel=info
    ```
 
 ### Option B: Production Deployment (Recommended)
@@ -118,23 +119,37 @@ This document provides a comprehensive checklist for deploying Presek in product
    sudo systemctl daemon-reload
 
    # Enable and start services
-   sudo systemctl enable presek-fastapi.service
+   sudo systemctl enable presek.target
+   sudo systemctl enable presek-fastapi-unified.service
    sudo systemctl enable presek-worker.service
+   sudo systemctl enable presek-worker-ingestion.service
+   sudo systemctl enable presek-worker-delivery.service
+   sudo systemctl enable presek-worker-fasttrack.service
    sudo systemctl enable presek-beat.service
    sudo systemctl enable presek-astro.service
 
-   sudo systemctl start presek-fastapi.service
-   sudo systemctl start presek-worker.service
-   sudo systemctl start presek-beat.service
+   sudo systemctl start presek.target
+   ```
+
+   Or start individually:
+   ```bash
+   sudo systemctl start presek-fastapi-unified.service
    sudo systemctl start presek-astro.service
+   sudo systemctl start presek-worker.service
+   sudo systemctl start presek-worker-ingestion.service
+   sudo systemctl start presek-worker-delivery.service
+   sudo systemctl start presek-worker-fasttrack.service
+   sudo systemctl start presek-beat.service
    ```
 
 5. **Set up nginx**
    ```bash
-   sudo cp deploy/nginx/presek.conf /etc/nginx/sites-available/presek
-   sudo ln -s /etc/nginx/sites-available/presek /etc/nginx/sites-enabled/
+   sudo cp deploy/nginx/presek.live.conf /etc/nginx/sites-available/presek
+   sudo cp deploy/nginx/presek-routes.conf /etc/nginx/snippets/presek-routes.conf
+   sudo cp deploy/nginx/security-headers.conf /etc/nginx/snippets/presek-security-headers.conf
+   sudo ln -sf /etc/nginx/sites-available/presek /etc/nginx/sites-enabled/presek
    sudo nginx -t
-   sudo systemctl restart nginx
+   sudo systemctl reload nginx
    ```
 
 6. **Set up SSL (with Let's Encrypt)**
@@ -197,10 +212,13 @@ This document provides a comprehensive checklist for deploying Presek in product
 
 3. **Restart services**
    ```bash
-   sudo systemctl restart presek-fastapi.service
-   sudo systemctl restart presek-worker.service
-   sudo systemctl restart presek-beat.service
+   sudo systemctl restart presek-fastapi-unified.service
    sudo systemctl restart presek-astro.service
+   sudo systemctl restart presek-worker.service
+   sudo systemctl restart presek-worker-ingestion.service
+   sudo systemctl restart presek-worker-delivery.service
+   sudo systemctl restart presek-worker-fasttrack.service
+   sudo systemctl restart presek-beat.service
    ```
 
 4. **Verify deployment**
@@ -324,7 +342,7 @@ server {
 - Test connection: `redis-cli -u $REDIS_URL ping`
 
 **Issue: Services won't start**
-- Check logs: `journalctl -u presek-fastapi.service -f`
+- Check logs: `journalctl -u presek-fastapi-unified.service -f`
 - Check environment variables are set
 - Verify all dependencies are installed
 
@@ -345,7 +363,7 @@ server {
 systemctl status presek-*.service
 
 # View logs
-journalctl -u presek-fastapi.service -n 100
+journalctl -u presek-fastapi-unified.service -n 100
 journalctl -u presek-worker.service -n 100
 
 # Test database connection

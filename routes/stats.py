@@ -653,10 +653,7 @@ async def get_stats_full(request: Request, lang: str = "sr", authorized: str = D
                 if lang == "sr"
                 else "Статистиката се генерира, обидете се повторно за кратко."
             )
-            return JSONResponse(
-                status_code=429,
-                content={"message": message},
-            )
+            return _error_json(message, 429)
     except Exception as e:
         log.warning(f"Redis lock check failed for stats: {e}")
 

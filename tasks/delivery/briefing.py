@@ -323,7 +323,53 @@ def _build_daily_brief_context(clusters):
 
 
 def _is_grounded_daily_brief(brief: str, context: str) -> bool:
-    return True  # Temporarily disabled to allow Mistral's global analysis
+    """Stricter than cluster synthesis: named entities in the brief must appear in context."""
+    if not brief or not context:
+        return True
+
+    from nlp.keywords import _extract_capitalized_phrases
+    from nlp.utils import transliterate
+
+    source_latin = transliterate(context).casefold()
+    context_entities = {
+        transliterate(phrase).casefold()
+        for phrase in _extract_capitalized_phrases(context)
+        if len(str(phrase or "").strip()) >= 4
+    }
+
+    role_prefixes = {"od", "vo", "na", "so", "za", "niz", "u", "iz", "premierot", "ministarot", "pretsedatelot"}
+
+    for phrase in _extract_capitalized_phrases(brief):
+        clean = str(phrase or "").strip().replace("\n", " ")
+        if len(clean) < 4:
+            continue
+
+        words = [part for part in clean.replace("-", " ").split() if part]
+        if words and words[0].casefold() in role_prefixes:
+            words = words[1:]
+            clean = " ".join(words)
+            if len(clean) < 3:
+                continue
+
+        if len(words) < 2 and not clean.isupper():
+            continue
+
+        folded = transliterate(clean).casefold()
+        if folded in context_entities or folded in source_latin:
+            continue
+
+        significant_words = [
+            transliterate(word).casefold()
+            for word in words
+            if len(word) >= 4 and transliterate(word).casefold() not in role_prefixes
+        ]
+        if significant_words and all(word in source_latin for word in significant_words):
+            continue
+
+        log.warning(f"[briefing] Ungrounded entity in daily brief: {clean}")
+        return False
+
+    return True
 
 
 def _has_valid_daily_brief_structure(brief: str, lang: str = "sr") -> bool:

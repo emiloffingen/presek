@@ -370,7 +370,7 @@ class SecurityAudit:
         """Check for security-related environment variable configurations."""
         print("[*] Checking environment variable security...")
 
-        config_file = self.project_root / "config.py"
+        config_file = self.project_root / "core" / "config.py"
         if not config_file.exists():
             return
 
@@ -408,7 +408,7 @@ class SecurityAudit:
         """Check database security configurations."""
         print("[*] Checking database security...")
 
-        config_file = self.project_root / "config.py"
+        config_file = self.project_root / "core" / "config.py"
         if not config_file.exists():
             return
 
@@ -419,7 +419,7 @@ class SecurityAudit:
                 {"message": "Database uses psycopg (parameterized queries by default)", "category": "Database Security"}
             )
 
-        db_config = self.project_root / "database.py"
+        db_config = self.project_root / "core" / "database.py"
         if db_config.exists():
             db_content = db_config.read_text()
             if "pool" in db_content.lower() or "connection" in db_content.lower():

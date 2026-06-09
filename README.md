@@ -23,6 +23,11 @@ Presek is a news aggregation and analysis app with:
 
 If a change touches `deploy/systemd/*` or `deploy/install_server.sh`, run step 2 before step 3 so the installed units match the release code.
 
+## Dependencies
+
+- Python dependencies are managed with **uv** via `pyproject.toml` and `uv.lock`.
+- `requirements.txt` is kept for compatibility with older tooling; regenerate it after dependency changes if needed.
+
 ## Common Commands
 
 Backend tests:

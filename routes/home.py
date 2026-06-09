@@ -18,6 +18,14 @@ from .system import get_trending_route
 
 log = logging.getLogger("presek")
 router = APIRouter()
+_background_tasks: set[asyncio.Task] = set()
+
+
+def _schedule_background_task(coro) -> asyncio.Task:
+    task = asyncio.create_task(coro)
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
+    return task
 
 
 class HomeResponse(BaseModel):
@@ -87,7 +95,7 @@ async def _ensure_cluster_audio(cluster: Dict[str, Any], generate: bool = False)
                 log.info(f"[home] Cluster {cluster_id} has synthesis, ensuring audio generation")
                 
                 # Generate audio in background (non-blocking)
-                asyncio.create_task(_generate_cluster_audio_background(cluster_id, content, lang))
+                _schedule_background_task(_generate_cluster_audio_background(cluster_id, content, lang))
                 log.info(f"[home] Audio will be generated for cluster {cluster_id} in background")
     except Exception as e:
         log.error(f"[home] Error checking cluster audio for {cluster_id}: {e}")

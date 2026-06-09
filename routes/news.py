@@ -6,7 +6,7 @@ from collections import defaultdict
 from typing import Any, List, Optional
 
 from fastapi import APIRouter, HTTPException, Query, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from core.config import API_MAX_PAGE, API_MAX_Q_LEN, BREAKING_SCORE_THRESHOLD
@@ -28,7 +28,7 @@ from utils import (
     set_cache,
 )
 
-from .common import _news_row_limit, cleanAndDecode
+from .common import _error_json, _news_row_limit, cleanAndDecode
 from .security import validate_cluster_id
 
 log = logging.getLogger("presek")
@@ -355,7 +355,7 @@ async def get_news(
         )
     except Exception as e:
         log.error(f"News Route Error in Endpoint: {e}", exc_info=True)
-        return JSONResponse(status_code=500, content={"message": "Internal server error"})
+        return _error_json("Internal server error", 500)
 
 
 async def fetch_news_data(
@@ -824,7 +824,7 @@ async def semantic_search(
         log.error(f"Semantic Search Route Error: {e}", exc_info=True)
         if isinstance(e, HTTPException):
             raise e
-        return JSONResponse(status_code=500, content={"message": "Internal server error"})
+        return _error_json("Internal server error", 500)
 
 def _looks_like_leaked_json_fragment(text: str) -> bool:
     clean = str(text or "").strip()
@@ -1373,7 +1373,7 @@ async def get_cluster_history(cluster_id: str, lang: Optional[str] = "sr"):
         return {"status": "success", "history": history}
     except Exception as e:
         log.error(f"Cluster History Error: {e}", exc_info=True)
-        return JSONResponse(status_code=500, content={"message": "Internal server error"})
+        return _error_json("Internal server error", 500)
 
 
 @router.get("/cluster/{cluster_id}/historical")
@@ -1455,7 +1455,7 @@ async def get_historical_events(cluster_id: str):
         return res
     except Exception as e:
         log.error(f"Historical Search Error: {e}", exc_info=True)
-        return JSONResponse(status_code=500, content={"message": "Internal server error"})
+        return _error_json("Internal server error", 500)
 
 
 @router.get("/live")
@@ -1485,7 +1485,7 @@ async def get_cluster_audio(cluster_id: str, lang: Optional[str] = "sr"):
     content = s_row.get("generated_article") or s_row.get("summary")
     
     from core.audio_service import AudioService
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     audio_url = await loop.run_in_executor(
         None, AudioService.generate_cluster_audio, cluster_id, content, lang
     )

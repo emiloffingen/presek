@@ -5,7 +5,10 @@ set -euo pipefail
 
 APP_DIR="$(cd "$(dirname "$0")" && pwd)"
 SESSION="${SCREEN_SESSION_NAME:-presek}"
-VENV="$APP_DIR/venv"
+VENV="$APP_DIR/.venv"
+if [ ! -d "$VENV" ] && [ -d "$APP_DIR/venv" ]; then
+  VENV="$APP_DIR/venv"
+fi
 PYTHON="$VENV/bin/python3"
 CELERY="$VENV/bin/celery"
 UVICORN="$VENV/bin/uvicorn"
@@ -147,7 +150,7 @@ assert_manual_mode_safe() {
   local active_units=()
   local units=(
     presek.target
-    presek-fastapi.service
+    presek-fastapi-unified.service
     presek-astro.service
     presek-worker.service
     presek-worker-ingestion.service

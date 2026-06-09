@@ -317,7 +317,7 @@ _embedding_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="embe
 
 async def generate_embedding_async(text: str) -> list[float] | None:
     """Async version: Generate a single embedding vector for the given text."""
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(_embedding_executor, generate_embedding, text)
 
 
@@ -327,13 +327,13 @@ async def generate_embeddings_batch_async(texts: list[str]) -> list[list[float] 
     Runs the synchronous model.encode() in a thread pool to avoid
     blocking the event loop. This is critical for API responsiveness.
     """
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(_embedding_executor, generate_embeddings_batch, texts)
 
 
 async def get_query_embedding_async(text: str) -> list[float] | None:
     """Async version of generate_query_embedding with Redis caching."""
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(_embedding_executor, generate_query_embedding, text)
 
 

@@ -10,7 +10,7 @@ These units are the supported production runtime for `presek.live`.
 - `presek-worker-ingestion.service`: dedicated Celery worker for `fast-track`
 - `presek-worker-delivery.service`: dedicated Celery worker for `delivery`
 - `presek-beat.service`: Celery beat scheduler
-- `presek-fastapi.service`: FastAPI on `127.0.0.1:5001`
+- `presek-fastapi-unified.service`: FastAPI on `127.0.0.1:5001`
 - `presek-astro.service`: Astro frontend on `127.0.0.1:3000`
 - `presek.target`: starts the full stack
 
@@ -55,8 +55,8 @@ sudo APP_ROOT=/home/emiloffingen/presek-runtime INSTALL_NGINX=0 bash deploy/inst
 
 ```sh
 sudo systemctl status presek.target
-sudo systemctl status presek-fastapi.service
-sudo journalctl -u presek-fastapi.service -f
+sudo systemctl status presek-fastapi-unified.service
+sudo journalctl -u presek-fastapi-unified.service -f
 sudo journalctl -u presek-worker.service -f
 sudo journalctl -u presek-worker-ingestion.service -f
 sudo journalctl -u presek-worker-delivery.service -f
@@ -68,7 +68,7 @@ bash deploy/backup_postgres.sh
 
 ## Notes
 
-- `presek-fastapi.service` is the public API service.
+- `presek-fastapi-unified.service` is the public API service.
 - `presek-astro.service` runs from `current/web` and still guards against stale or broken `dist` output.
 - `presek-ingestion-worker.service` keeps RSS fetches moving even when slower AI follow-up tasks backlog.
 - `presek-beat.service` stores scheduler state in `shared/celerybeat-schedule`, not inside a release.

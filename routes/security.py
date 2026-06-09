@@ -192,10 +192,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "magnetometer=(), microphone=(), payment=(), usb=()"
         )
 
-        # Cross-Origin policies
+        # Cross-Origin policies (COEP only on HTML — require-corp breaks third-party API assets)
         response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
         response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
-        response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
+        if "text/html" in content_type:
+            response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
 
         # Additional security headers
         response.headers["X-DNS-Prefetch-Control"] = "off"

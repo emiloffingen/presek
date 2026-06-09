@@ -596,8 +596,7 @@ class TestDailyBriefTaskQuality:
             "- Zosto e vazno: Politickiot sudir se prodlabocuva.\n"
         )
 
-        # Note: _is_grounded_daily_brief is currently hardcoded to return True
-        assert tasks.delivery.briefing._is_grounded_daily_brief(brief, context) is True
+        assert tasks.delivery.briefing._is_grounded_daily_brief(brief, context) is False
 
     def test_accepts_daily_brief_when_named_entities_are_in_context(self):
 

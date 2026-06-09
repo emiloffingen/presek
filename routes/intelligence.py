@@ -1498,7 +1498,7 @@ async def get_briefing_audio(date: Optional[str] = None, lang: str = "sr"):
     content = str(row["content"])
 
     from core.audio_service import AudioService
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     audio_url = await loop.run_in_executor(
         None, AudioService.generate_briefing_audio, target_date, content, lang
     )

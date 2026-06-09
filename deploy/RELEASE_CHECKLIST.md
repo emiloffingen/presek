@@ -26,7 +26,7 @@
   - `APP_ROOT=/home/emiloffingen/presek-runtime bash deploy/runtime_status.sh`
   - `sudo systemctl status presek.target --no-pager`
   - `sudo systemctl status presek-ingestion-worker.service --no-pager`
-  - `sudo journalctl -u presek-fastapi.service -n 50 --no-pager`
+  - `sudo journalctl -u presek-fastapi-unified.service -n 50 --no-pager`
   - `sudo journalctl -u presek-astro.service -n 50 --no-pager`
   - `sudo journalctl -u presek-worker.service -n 50 --no-pager`
   - `sudo journalctl -u presek-ingestion-worker.service -n 50 --no-pager`

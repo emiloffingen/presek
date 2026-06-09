@@ -8,6 +8,10 @@ from nlp.generation import _extract_sports_scores
 
 log = logging.getLogger("presek.router")
 
+_ROUTER_PERF_KEY = "router:provider_performance:v1"
+_ROUTER_QUALITY_KEY = "router:provider_quality:v1"
+_ROUTER_METRICS_TTL = 86400
+
 
 def _local_model_available() -> bool:
     configured_path = os.environ.get("LOCAL_MODEL_PATH")
@@ -19,7 +23,60 @@ def _local_model_available() -> bool:
 class SmartModelRouter:
     _provider_performance = {}  # {provider: {success: int, total: int, latency: [float]}}
     _provider_quality = {}    # {provider: [{cluster_id: str, score: float, timestamp: datetime}]}
-    
+    _metrics_loaded = False
+
+    @staticmethod
+    def _load_metrics_from_redis() -> None:
+        if SmartModelRouter._metrics_loaded:
+            return
+        SmartModelRouter._metrics_loaded = True
+        try:
+            from utils.cache import redis_client
+
+            perf_raw = redis_client.get(_ROUTER_PERF_KEY)
+            if perf_raw:
+                SmartModelRouter._provider_performance.update(json.loads(perf_raw))
+
+            quality_raw = redis_client.get(_ROUTER_QUALITY_KEY)
+            if quality_raw:
+                loaded = json.loads(quality_raw)
+                for provider, samples in loaded.items():
+                    SmartModelRouter._provider_quality[provider] = [
+                        {
+                            **sample,
+                            "timestamp": datetime.datetime.fromisoformat(sample["timestamp"]),
+                        }
+                        for sample in samples
+                    ]
+        except Exception as e:
+            log.debug(f"[router] Failed to load metrics from Redis: {e}")
+
+    @staticmethod
+    def _persist_metrics_to_redis() -> None:
+        try:
+            from utils.cache import redis_client
+
+            redis_client.setex(
+                _ROUTER_PERF_KEY,
+                _ROUTER_METRICS_TTL,
+                json.dumps(SmartModelRouter._provider_performance),
+            )
+            quality_payload = {
+                provider: [
+                    {
+                        **sample,
+                        "timestamp": sample["timestamp"].isoformat()
+                        if isinstance(sample.get("timestamp"), datetime.datetime)
+                        else sample.get("timestamp"),
+                    }
+                    for sample in samples
+                ]
+                for provider, samples in SmartModelRouter._provider_quality.items()
+            }
+            redis_client.setex(_ROUTER_QUALITY_KEY, _ROUTER_METRICS_TTL, json.dumps(quality_payload))
+        except Exception as e:
+            log.debug(f"[router] Failed to persist metrics to Redis: {e}")
+
     @staticmethod
     def _update_performance_metrics(provider, success, latency):
         """Update performance statistics for a provider"""
@@ -34,6 +91,8 @@ class SmartModelRouter:
         # Keep last 100 samples
         if len(SmartModelRouter._provider_performance[provider]['latency']) > 100:
             SmartModelRouter._provider_performance[provider]['latency'] = SmartModelRouter._provider_performance[provider]['latency'][-100:]
+
+        SmartModelRouter._persist_metrics_to_redis()
 
     @staticmethod
     def _get_provider_performance(provider):
@@ -60,9 +119,12 @@ class SmartModelRouter:
         if len(SmartModelRouter._provider_quality[provider]) > 1000:
             SmartModelRouter._provider_quality[provider] = SmartModelRouter._provider_quality[provider][-1000:]
 
+        SmartModelRouter._persist_metrics_to_redis()
+
     @staticmethod
     def get_dynamic_fallback_order(task_type="synthesis"):
         """Generate fallback order based on recent provider performance"""
+        SmartModelRouter._load_metrics_from_redis()
         from core.config import PROVIDER_FALLBACK_ORDER_SUMMARY
         
         base_order = list(PROVIDER_FALLBACK_ORDER_SUMMARY)
@@ -91,8 +153,9 @@ class SmartModelRouter:
     def route_cluster(articles: list[dict], lang: str = "sr") -> str:
         """
         Determines the optimal LLM provider or local fallback for a given news cluster.
-        Returns one of: 'enhanced_fallback', 'local', 'mistral_small', 'mistral_large', 'nvidia'.
+        Returns one of: 'local', 'mistral_small', 'mistral_large', 'nvidia', or 'enhanced_fallback' (empty input only).
         """
+        SmartModelRouter._load_metrics_from_redis()
         if not articles:
             return "enhanced_fallback"
 

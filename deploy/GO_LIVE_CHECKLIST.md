@@ -46,7 +46,7 @@ Skip the `install_server.sh` step only when the release does not change systemd 
 ```sh
 sudo systemctl status presek.target --no-pager
 sudo journalctl -u presek-astro.service -n 50 --no-pager
-sudo journalctl -u presek-fastapi.service -n 50 --no-pager
+sudo journalctl -u presek-fastapi-unified.service -n 50 --no-pager
 sudo journalctl -u presek-worker.service -n 50 --no-pager
 sudo journalctl -u presek-ingestion-worker.service -n 50 --no-pager
 sudo journalctl -u presek-beat.service -n 50 --no-pager
