@@ -140,16 +140,51 @@ PY
   return 1
 }
 
-main() {
-  need_cmd curl
-  need_cmd python3
-
-  if [ -z "${PRESEK_ADMIN_TOKEN:-}" ] && [ -n "${APP_ROOT:-}" ] && [ -f "$APP_ROOT/shared/.env" ]; then
+load_shared_env() {
+  if [ -n "${APP_ROOT:-}" ] && [ -f "$APP_ROOT/shared/.env" ]; then
     set -a
     # shellcheck source=/dev/null
     source "$APP_ROOT/shared/.env"
     set +a
+    return
   fi
+
+  if [ -f "$APP_DIR/.env" ]; then
+    set -a
+    # shellcheck source=/dev/null
+    source "$APP_DIR/.env"
+    set +a
+  fi
+}
+
+mint_admin_jwt() {
+  local python_bin="python3"
+  local release_root="$APP_DIR"
+
+  if [ -n "${APP_ROOT:-}" ]; then
+    if [ -x "$APP_ROOT/venv/bin/python3" ]; then
+      python_bin="$APP_ROOT/venv/bin/python3"
+    fi
+    if [ -d "$APP_ROOT/current" ]; then
+      release_root="$(readlink -f "$APP_ROOT/current")"
+    fi
+  elif [ -x "$APP_DIR/.venv/bin/python3" ]; then
+    python_bin="$APP_DIR/.venv/bin/python3"
+  fi
+
+  [ -n "${JWT_SECRET:-}" ] || fail "JWT_SECRET is required to mint an admin JWT for smoke checks"
+
+  (
+    cd "$release_root"
+    PYTHONPATH="$release_root" "$python_bin" -c "from core.auth import create_admin_jwt; print(create_admin_jwt(), end='')"
+  )
+}
+
+main() {
+  need_cmd curl
+  need_cmd python3
+
+  load_shared_env
 
   wait_health_ready "API health" "$HEALTH_URL" 1 1
   wait_http_ok "Astro frontend" "$ASTRO_URL" 200
@@ -164,10 +199,19 @@ main() {
   if [ "$ENABLE_ADMIN_CHECK" = "1" ]; then
     wait_http_ok "Admin page" "$ADMIN_URL" 200
     wait_http_ok "Admin API without token" "$ADMIN_API_URL" 403
-    if [ -n "${PRESEK_ADMIN_TOKEN:-}" ]; then
-      wait_http_ok_header "Admin API with token" "$ADMIN_API_URL" "Authorization: Bearer $PRESEK_ADMIN_TOKEN" 200
-    else
-      warn "Skipping admin token smoke check because PRESEK_ADMIN_TOKEN is not available"
+
+    admin_auth_checked=0
+    if [ -n "${JWT_SECRET:-}" ]; then
+      admin_jwt="$(mint_admin_jwt)"
+      wait_http_ok_header "Admin API with JWT" "$ADMIN_API_URL" "Authorization: Bearer $admin_jwt" 200
+      admin_auth_checked=1
+    elif [ "${ALLOW_STATIC_ADMIN_TOKEN:-false}" = "true" ] && [ -n "${PRESEK_ADMIN_TOKEN:-}" ]; then
+      wait_http_ok_header "Admin API with static token" "$ADMIN_API_URL" "Authorization: Bearer $PRESEK_ADMIN_TOKEN" 200
+      admin_auth_checked=1
+    fi
+
+    if [ "$admin_auth_checked" = "0" ]; then
+      warn "Skipping admin auth smoke check (set JWT_SECRET or ALLOW_STATIC_ADMIN_TOKEN=true with PRESEK_ADMIN_TOKEN)"
     fi
   fi
 
