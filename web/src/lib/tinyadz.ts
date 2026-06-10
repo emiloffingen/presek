@@ -32,9 +32,9 @@ export function shouldLoadTinyAdzScript(lang: 'sr' | 'mk', hostname: string): bo
   return false;
 }
 
-/** Inlined `<div ta-ad-container>` slots are MK-only for now. */
+/** Inlined `<div ta-ad-container>` slots on presek.mk and presek.live. */
 export function shouldShowTinyAdzInlinedAds(lang: 'sr' | 'mk', hostname: string): boolean {
-  return lang === 'mk' && isMkHost(normalizeHost(hostname));
+  return shouldLoadTinyAdzScript(lang, hostname);
 }
 
 /** @deprecated Use shouldLoadTinyAdzScript or shouldShowTinyAdzInlinedAds. */

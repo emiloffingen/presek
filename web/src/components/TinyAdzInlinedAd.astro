@@ -14,7 +14,11 @@ const lang = getLangFromUrl(requestUrl, hostHeader);
 ---
 
 {shouldShowTinyAdzInlinedAds(lang, hostHeader) && (
-  <div ta-ad-container="" class:list={['tinyadz-inlined', className]} aria-label="Реклама" />
+  <div
+    ta-ad-container=""
+    class:list={['tinyadz-inlined', className]}
+    aria-label={lang === 'sr' ? 'Oglas' : 'Реклама'}
+  />
 )}
 
 <style>

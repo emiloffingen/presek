@@ -20,6 +20,26 @@ MK_PAGES_WITH_INLINE_AD = [
     "web/src/pages/mk/tema/[topic].astro",
 ]
 
+LIVE_PAGES_WITH_RAIL_AD = [
+    "web/src/pages/archive.astro",
+    "web/src/pages/subjekt/[name].astro",
+    "web/src/pages/analize.astro",
+    "web/src/pages/about.astro",
+    "web/src/pages/methodology.astro",
+    "web/src/pages/editorial.astro",
+    "web/src/pages/support.astro",
+    "web/src/pages/tema/[topic].astro",
+    "web/src/pages/cluster/[slug].astro",
+]
+
+LIVE_PAGES_WITH_INLINE_AD = [
+    "web/src/pages/for-you.astro",
+    "web/src/pages/izvori.astro",
+    "web/src/pages/grafik.astro",
+    "web/src/pages/pulse.astro",
+    "web/src/pages/tema/[topic].astro",
+]
+
 SHARED_COMPONENTS_WITH_AD = [
     "web/src/components/home/HomeRail.astro",
     "web/src/components/briefing/BriefingSidebar.astro",
@@ -72,6 +92,18 @@ def test_mk_content_pages_include_tinyadz_slots():
         source = Path(path).read_text(encoding="utf-8")
         assert "TinyAdzInlinedAd" in source, path
 
+
+def test_live_content_pages_include_tinyadz_slots():
+    for path in LIVE_PAGES_WITH_RAIL_AD:
+        source = Path(path).read_text(encoding="utf-8")
+        assert "TinyAdzRailAd" in source, path
+
+    for path in LIVE_PAGES_WITH_INLINE_AD:
+        source = Path(path).read_text(encoding="utf-8")
+        assert "TinyAdzInlinedAd" in source, path
+
+
+def test_shared_components_include_tinyadz_slots():
     for path in SHARED_COMPONENTS_WITH_AD:
         source = Path(path).read_text(encoding="utf-8")
         assert "TinyAdzRailAd" in source, path

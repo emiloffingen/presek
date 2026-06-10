@@ -4,6 +4,7 @@ import NYTHeader from '../components/NYTHeader.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import IntelligenceGraph from '../components/IntelligenceGraph';
 import Footer from '../components/Footer.astro';
+import TinyAdzInlinedAd from '../components/TinyAdzInlinedAd.astro';
 ---
 
 <Layout 
@@ -14,6 +15,7 @@ import Footer from '../components/Footer.astro';
 
 	<main class="site-layout broadsheet-layout py-[var(--page-py)] animate-rise">
 		<Breadcrumbs items={[{ label: "grafik" }]} />
+		<TinyAdzInlinedAd class="page-inline-ad mb-10" />
 		<IntelligenceGraph lang="sr" client:load />
 	</main>
 	<Footer />

@@ -12,6 +12,7 @@ import { CalendarDays, ChevronRight, Hash, Building2, Sparkles, Search, Activity
 
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import { localePath, homePath } from '../lib/localePaths';
+import TinyAdzRailAd from '../components/TinyAdzRailAd.astro';
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
@@ -242,6 +243,8 @@ function formatBriefingItem(item: string) {
         </section>
 
         <aside class="broadsheet-rail pl-4">
+            <TinyAdzRailAd />
+
             <div class="rail-nav-block mb-12">
                 <a href={localePath('/archive', isMK ? 'mk' : 'sr', hostHeader)} class="group flex items-center justify-between p-4 bg-foreground text-background rounded-sm transition-all hover:bg-nyt-accent shadow-lg shadow-black/5 hover:-translate-y-1">
                     <span class="font-sans text-[11px] font-black uppercase tracking-widest">{t('archive.back_today')}</span>

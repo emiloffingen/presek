@@ -13,6 +13,8 @@ import { cleanAndDecode, getDisplaySummary, normalizeEntityOrTag } from '../../u
 import { ArrowRight, Clock3, Newspaper, Sparkles } from 'lucide-react';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import { localePath, homePath } from '../../lib/localePaths';
+import TinyAdzRailAd from '../../components/TinyAdzRailAd.astro';
+import TinyAdzInlinedAd from '../../components/TinyAdzInlinedAd.astro';
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
@@ -291,6 +293,8 @@ function topicIntro() {
 							</section>
 						)}
 
+						<TinyAdzInlinedAd class="topic-inline-ad mb-10" />
+
 						{keyAngles.length > 0 && (
 							<section class="topic-angles">
 								<div class="section-heading-row">
@@ -347,6 +351,8 @@ function topicIntro() {
 					</div>
 
 					<aside class="topic-rail">
+						<TinyAdzRailAd />
+
 						{tagRows.length > 0 && (
 							<section class="rail-card">
 								<h3 class="rail-card-title">Imena i uglovi</h3>
