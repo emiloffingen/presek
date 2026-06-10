@@ -790,8 +790,15 @@ def find_or_create_cluster(
         if os.environ.get("REDIS_URL"):
             try:
                 from tasks.intelligence import refresh_cluster_centroid_task
+                from tasks.utils import schedule_task_once
 
-                refresh_cluster_centroid_task.apply_async(args=(best_cid,), countdown=30)
+                schedule_task_once(
+                    f"lock:centroid_refresh:{best_cid}",
+                    300,
+                    refresh_cluster_centroid_task,
+                    args=(best_cid,),
+                    countdown=30,
+                )
             except Exception as e:
                 log.warning(f"[clustering] centroid refresh dispatch failed for {best_cid}: {e}")
         return best_cid

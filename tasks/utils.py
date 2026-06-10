@@ -92,6 +92,14 @@ def get_celery_queue_depth(queue_name="celery"):
         return 0
 
 
+def schedule_task_once(lock_key: str, ttl_seconds: int, task, *, args=None, kwargs=None, countdown=0) -> bool:
+    """Schedule a Celery task only if no matching lock is already held."""
+    if not acquire_task_lock(lock_key, ttl_seconds):
+        return False
+    task.apply_async(args=args or (), kwargs=kwargs or {}, countdown=max(0, int(countdown)))
+    return True
+
+
 def acquire_task_lock(lock_key: str, ttl_seconds: int = 300) -> bool:
     try:
         return bool(redis_client.set(lock_key, "1", ex=int(ttl_seconds), nx=True))

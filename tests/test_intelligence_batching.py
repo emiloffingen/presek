@@ -15,17 +15,14 @@ class TestIntelligenceBatching:
         assert task.delay.call_args_list[1].args[0] == ids[20:40]
         assert task.delay.call_args_list[2].args[0] == ids[40:45]
 
-    def test_backfill_defers_when_queue_backlogged(self):
+    def test_backfill_skips_when_queue_backlogged(self):
         with (
             patch("tasks.intelligence._queue_backlog_high", return_value=True),
             patch.object(backfill_cluster_summaries_task, "apply_async") as mock_apply,
         ):
             backfill_cluster_summaries_task(days=7, lang="mk", offset=12)
 
-        mock_apply.assert_called_once_with(
-            kwargs={"days": 7, "lang": "mk", "offset": 12},
-            countdown=180,
-        )
+        mock_apply.assert_not_called()
 
     def test_metadata_batches_target_clusters(self):
         with (

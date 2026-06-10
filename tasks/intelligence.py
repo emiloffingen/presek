@@ -25,6 +25,7 @@ from tasks.utils import (
     log,
     record_runtime_event,
     redis_client,
+    schedule_task_once,
 )
 from utils import get_dominant_color
 
@@ -1833,11 +1834,7 @@ def generate_cluster_metadata_task(hours=24, target_clusters=None):
     """Tag recent clusters with metadata (entities, source count, centroid, and representative image)."""
     try:
         if _queue_backlog_high():
-            log.info("[tasks] Deferring cluster metadata generation while queue backlog is high.")
-            generate_cluster_metadata_task.apply_async(
-                kwargs={"hours": hours, "target_clusters": target_clusters},
-                countdown=120,
-            )
+            log.info("[tasks] Skipping cluster metadata generation while queue backlog is high.")
             return
 
         if target_clusters:
@@ -1983,12 +1980,21 @@ def generate_cluster_metadata_task(hours=24, target_clusters=None):
         utils.record_task_event("cluster_metadata", "ok", "clusters:recent")
         if has_more:
             if pending_ids is not None:
-                generate_cluster_metadata_task.apply_async(
+                schedule_task_once(
+                    "lock:cluster_metadata_batch",
+                    120,
+                    generate_cluster_metadata_task,
                     kwargs={"hours": hours, "target_clusters": pending_ids},
                     countdown=30,
                 )
             else:
-                generate_cluster_metadata_task.apply_async(kwargs={"hours": hours}, countdown=30)
+                schedule_task_once(
+                    "lock:cluster_metadata_sweep",
+                    120,
+                    generate_cluster_metadata_task,
+                    kwargs={"hours": hours},
+                    countdown=30,
+                )
     except Exception as e:
         from tasks import utils
 
@@ -2629,11 +2635,7 @@ def backfill_cluster_summaries_task(days=30, lang="sr", offset=0):
     """Generate cluster summaries for all existing clusters that don't have them yet."""
     try:
         if _queue_backlog_high():
-            log.info(f"[tasks] Deferring summary backfill (lang={lang}) while queue backlog is high.")
-            backfill_cluster_summaries_task.apply_async(
-                kwargs={"days": days, "lang": lang, "offset": offset},
-                countdown=180,
-            )
+            log.info(f"[tasks] Skipping summary backfill (lang={lang}) while queue backlog is high.")
             return
 
         from core.config import AUTO_SUMMARIZE_MIN_SRC
@@ -2777,7 +2779,10 @@ def backfill_cluster_summaries_task(days=30, lang="sr", offset=0):
 
         log.info(f"[tasks] Completed backfill for {lang} language clusters")
         if has_more:
-            backfill_cluster_summaries_task.apply_async(
+            schedule_task_once(
+                f"lock:backfill_summaries:{lang}",
+                180,
+                backfill_cluster_summaries_task,
                 kwargs={"days": days, "lang": lang, "offset": offset + _BACKFILL_BATCH_SIZE},
                 countdown=60,
             )
