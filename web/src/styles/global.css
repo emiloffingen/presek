@@ -8,10 +8,19 @@
 @import "@fontsource/source-serif-4/400.css";
 @import "@fontsource/source-serif-4/500.css";
 @import "@fontsource/source-serif-4/600.css";
+@import "@fontsource/source-serif-4/700.css";
+@import "@fontsource/source-serif-4/800.css";
+@import "@fontsource/source-serif-4/900.css";
 @import "@fontsource/source-serif-4/400-italic.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource/ibm-plex-sans/700.css";
 @import "@fontsource/ibm-plex-sans-condensed/500.css";
 @import "@fontsource/ibm-plex-sans-condensed/600.css";
 @import "@fontsource/ibm-plex-sans-condensed/700.css";
+@import "@fontsource/noto-sans/400.css";
+@import "@fontsource/noto-sans/600.css";
+@import "@fontsource/noto-sans/700.css";
 @import "@fontsource/manrope/600.css";
 @import "@fontsource/manrope/700.css";
 @import "@fontsource/manrope/800.css";
@@ -29,6 +38,8 @@
   --font-ui: "Manrope", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
   --font-ui-condensed: "Manrope", "IBM Plex Sans Condensed", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
   --font-ui-wide: "Manrope", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
+  --font-serif-mk: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-ui-mk: "IBM Plex Sans", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
 
   /* NYT Palette - Now using reactive variables */
   --color-nyt-black: var(--nyt-black);
@@ -264,6 +275,18 @@
 }
 
 /* Cyrillic vertical rhythm adjustment for Macedonian headlines to prevent overlap of ascenders/descenders */
+html[lang="mk"] {
+  --font-serif: var(--font-serif-mk);
+  --font-serif-display: var(--font-serif-mk);
+  --font-nyt-body: var(--font-serif-mk);
+  --font-sans: var(--font-ui-mk);
+  --font-ui: var(--font-ui-mk);
+  --font-ui-condensed: var(--font-ui-mk);
+  --font-ui-wide: var(--font-ui-mk);
+  --nyt-font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --nyt-font-sans: "IBM Plex Sans", "Noto Sans", sans-serif;
+}
+
 html[lang="mk"] h1,
 html[lang="mk"] h2,
 html[lang="mk"] h3,
@@ -272,6 +295,7 @@ html[lang="mk"] h5,
 html[lang="mk"] h6,
 html[lang="mk"] .headline,
 html[lang="mk"] .editorial-headline {
+  font-family: var(--font-serif-mk);
   line-height: 1.15 !important;
 }
 
