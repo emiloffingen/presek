@@ -3,7 +3,7 @@
  * Used by multiple cluster components to avoid code duplication.
  */
 
-import { cleanAndDecode, parseFootnotes } from './textUtils';
+import { cleanAndDecode, parseFootnotes, stripCitationMarkers } from './textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
 
 /**
@@ -15,7 +15,7 @@ import { sanitizeHtml } from '../lib/sanitize';
  * - Converts *text* to <em>text</em>
  * - Converts (izvor: Name) or (Name) to <span class="citation-badge">Name</span>
  * - Handles footnotes if hasCitationSources is true
- * - Removes [1], [2] etc. citation markers if !hasCitationSources
+ * - Removes [1], [2], [1,2,3,4] etc. citation markers if !hasCitationSources
  *
  * @param text - The raw synthesis text
  * @param hasCitationSources - Whether to parse footnotes
@@ -42,5 +42,5 @@ export function renderSynthesisHtml(text: string, hasCitationSources: boolean = 
 	});
 
 	if (hasCitationSources) return sanitizeHtml(parseFootnotes(clean));
-	return sanitizeHtml(clean.replace(/\[(\d+)\]/g, '').replace(/\s{2,}/g, ' ').trim());
+	return sanitizeHtml(stripCitationMarkers(clean));
 }

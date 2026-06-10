@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getStoryPreviewText, isSyntheticStandfirstBoilerplate } from '../utils/textUtils.ts';
+import { getStoryPreviewText, isSyntheticStandfirstBoilerplate, stripCitationMarkers } from '../utils/textUtils.ts';
 
 test('story previews skip generated standfirst boilerplate', () => {
   const cluster = {
@@ -33,4 +33,16 @@ test('story previews keep meaningful synthetic standfirsts', () => {
     getStoryPreviewText(cluster, cluster.articles[0], 'mk'),
     'Партиите влегуваат во нов круг разговори по серија спротивставени изјави.'
   );
+});
+
+test('stripCitationMarkers removes comma-separated citation groups', () => {
+  const input = 'Svi izvori se slažu oko toga [1,2,3,4]. Kolona je krenula u 11 sati [2, 4].';
+  assert.equal(
+    stripCitationMarkers(input),
+    'Svi izvori se slažu oko toga. Kolona je krenula u 11 sati.'
+  );
+});
+
+test('stripCitationMarkers removes single citation markers', () => {
+  assert.equal(stripCitationMarkers('Potvrđeno u više medija [1].'), 'Potvrđeno u više medija.');
 });

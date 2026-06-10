@@ -421,6 +421,28 @@ export function getDesignCardContext(cluster: any) {
 }
 
 /**
+ * Expands [1, 2, 3] style markers into [1][2][3] for downstream handling.
+ */
+export function normalizeCitationMarkers(text: string): string {
+    if (!text) return '';
+    return text.replace(/\[(\d+(?:\s*,\s*\d+)+)\]/g, (_match, digits) =>
+        digits.split(',').map((d: string) => `[${d.trim()}]`).join('')
+    );
+}
+
+/**
+ * Removes inline numeric citation markers from synthesis prose.
+ */
+export function stripCitationMarkers(text: string): string {
+    if (!text) return '';
+    return normalizeCitationMarkers(text)
+        .replace(/\[\d+\]/g, '')
+        .replace(/\s+([,.;:!?])/g, '$1')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+}
+
+/**
  * Converts [1], [2], [1, 2] or even raw trailing numbers like "fact 46" into superscript links.
  */
 export function parseFootnotes(text: string): string {
@@ -434,14 +456,11 @@ export function parseFootnotes(text: string): string {
     processed = processed.replace(/\s(\d{1,3})(?=\.|\,|$|\s)/g, ' [$1]');
 
     // 2. Handle [1, 2, 3] style (comma separated inside brackets)
-    // Splits them into individual [1][2][3] for the next pass
-    processed = processed.replace(/\[(\d+(?:\s*,\s*\d+)+)\]/g, (match, digits) => {
-        return digits.split(',').map((d: string) => `[${d.trim()}]`).join('');
-    });
+    processed = normalizeCitationMarkers(processed);
 
     // 3. Convert all [N] into superscript links
-    return processed.replace(/\[(\d+)\]/g, (match, num) => {
-        return `<sup class="text-nyt-accent font-black ml-0.5 cursor-help" title="izvor ${num}">${num}</sup>`;
+    return processed.replace(/\[(\d+)\]/g, (_match, num) => {
+        return `<sup class="citation-ref-wrap"><a href="#citation-${num}" class="citation-ref" title="izvor ${num}">${num}</a></sup>`;
     });
 }
 
