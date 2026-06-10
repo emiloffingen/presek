@@ -69,6 +69,12 @@ function getBentoSpan(cluster: NewsCluster, index: number): '1x1' | '2x1' | '2x2
     }
 
     @media (max-width: 640px) {
+        .bento-box-grid > .bento-item:nth-child(n+6) {
+            display: none;
+        }
+    }
+
+    @media (max-width: 640px) {
         .supporting-band {
             margin-top: 0.5rem;
         }

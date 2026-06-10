@@ -14,6 +14,7 @@ import FilterHeader from './FilterHeader.astro';
 import HomeRail from './HomeRail.astro';
 import EmptyState from './EmptyState.astro';
 import HomeLiveStrip from './HomeLiveStrip.astro';
+import HomeBriefingTeaser from './HomeBriefingTeaser.astro';
 import TrendingPreviewRail from './TrendingPreviewRail.astro';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { chooseClusterImage } from '../../utils/imageSelection';
@@ -408,7 +409,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 		)}
 
 		<div class="broadsheet-grid px-3 sm:px-4 md:px-8 xl:px-10">
-			<div class="broadsheet-main">
+			<div class="broadsheet-main home-mobile-feed">
                 {error && (
                     <div class="error-panel">
                         <p>{error}</p>
@@ -422,7 +423,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
                 )}
 
 				{leadCluster && (
-					<div class="section-wrapper lead-wrapper">
+					<div class="section-wrapper lead-wrapper home-mobile-order-lead">
 						<LeadHero
 							leadCluster={leadCluster}
 							leadTitle={leadTitle}
@@ -457,8 +458,16 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 					</div>
 				)}
 
+				{!error && isHomepage && briefing && (
+					<HomeBriefingTeaser briefing={briefing} getBriefingSnippet={getBriefingSnippet} />
+				)}
+
                 {/* ── SISTEMSKI SIGNAL (SYSTEM PULSE STATS) ── */}
                 {!error && isHomepage && stats && (
+                    <details class="home-mobile-stats-details home-mobile-order-stats">
+                        <summary class="home-mobile-stats-summary">
+                            {lang === 'sr' ? 'Sistemski pregled' : 'Системски преглед'}
+                        </summary>
                     <div class="home-system-stats-panel">
                         <div class="stats-panel-header">
                             <span class="pulse-indicator">
@@ -500,18 +509,23 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
                             )}
                         </div>
                     </div>
+                    </details>
                 )}
 
                 {!error && isHomepage && (
-                    <HomeLiveStrip articles={topWireArticles} getTimeStr={getTimeStr} lang={lang} />
+                    <div class="home-mobile-order-live">
+                        <HomeLiveStrip articles={topWireArticles} getTimeStr={getTimeStr} lang={lang} />
+                    </div>
                 )}
 
                 {!error && isHomepage && (
-                    <TrendingPreviewRail clusters={displayedTrendingClusters} lang={lang} />
+                    <div class="home-mobile-order-trending">
+                        <TrendingPreviewRail clusters={displayedTrendingClusters} lang={lang} />
+                    </div>
                 )}
 
 				{leadCluster && supportingClusters.length > 0 && (
-					<div class="section-wrapper">
+					<div class="section-wrapper home-mobile-order-supporting">
 						<SupportingBand
 							supportingFeatured={supportingFeatured}
 							supportingCompact={supportingCompact}
@@ -521,7 +535,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 				)}
 
 				{isHomepage && synthesisPicks && synthesisPicks.length > 0 && (
-					<div class="section-wrapper">
+					<div class="section-wrapper home-mobile-order-synthesis">
 						<SynthesisPicksSection
 							synthesisPicks={synthesisPicks}
 							lang={lang}
@@ -746,6 +760,35 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 
 	<Footer />
 </Layout>
+
+<script is:inline>
+	(function syncHomeStatsDetails() {
+		const apply = () => {
+			const details = document.querySelector('.home-mobile-stats-details');
+			if (!details) return;
+			if (window.matchMedia('(min-width: 769px)').matches) {
+				details.setAttribute('open', '');
+			} else if (!details.dataset.userToggled) {
+				details.removeAttribute('open');
+			}
+		};
+
+		const bind = () => {
+			const details = document.querySelector('.home-mobile-stats-details');
+			if (details && !details.dataset.bound) {
+				details.dataset.bound = '1';
+				details.addEventListener('toggle', () => {
+					details.dataset.userToggled = '1';
+				});
+			}
+			apply();
+		};
+
+		bind();
+		window.addEventListener('resize', apply, { passive: true });
+		document.addEventListener('astro:page-load', bind);
+	})();
+</script>
 
 <style>
     /* ── Broadsheet Layout ───────────────────────────── */
@@ -1396,6 +1439,77 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
         }
         .stats-grid-item::after {
             display: none;
+        }
+    }
+
+    /* ── Mobile feed reorder ─────────────────────────── */
+    @media (max-width: 768px) {
+        .home-mobile-feed {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .home-mobile-order-lead { order: 1; }
+        .home-mobile-order-briefing { order: 2; }
+        .home-mobile-order-trending { order: 3; }
+        .home-mobile-order-synthesis { order: 4; }
+        .home-mobile-order-supporting { order: 5; }
+        .home-mobile-order-stats { order: 6; }
+        .home-mobile-order-live { order: 7; display: none; }
+
+        .home-mobile-stats-details {
+            margin: 0 0 1rem;
+            border: 1px solid color-mix(in srgb, var(--foreground) 12%, var(--border));
+            background: color-mix(in srgb, var(--secondary) 42%, var(--background));
+        }
+
+        .home-mobile-stats-summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.85rem 1rem;
+            font-family: var(--font-sans);
+            font-size: 0.62rem;
+            font-weight: 900;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--foreground);
+            cursor: pointer;
+            list-style: none;
+        }
+
+        .home-mobile-stats-summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .home-mobile-stats-summary::after {
+            content: '+';
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--nyt-accent);
+        }
+
+        .home-mobile-stats-details[open] .home-mobile-stats-summary::after {
+            content: '−';
+        }
+
+        .home-mobile-stats-details .home-system-stats-panel {
+            margin: 0;
+            border: none;
+            border-top: 1px solid color-mix(in srgb, var(--foreground) 12%, var(--border));
+            border-radius: 0;
+            box-shadow: none;
+        }
+    }
+
+    @media (min-width: 769px) {
+        .home-mobile-stats-summary {
+            display: none;
+        }
+
+        .home-mobile-stats-details {
+            border: none;
+            background: transparent;
         }
     }
 </style>

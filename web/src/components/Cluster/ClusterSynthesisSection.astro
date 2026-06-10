@@ -1,0 +1,224 @@
+---
+import { BookOpen, Clock3, Newspaper, RefreshCw } from 'lucide-react';
+import EditorialNarrative from './EditorialNarrative.astro';
+import AudioPlayer from '../audio/AudioPlayer.astro';
+
+interface SynthesisItem {
+	content: string;
+	type?: string;
+}
+
+interface Props {
+	lang: 'sr' | 'mk';
+	clusterId: string;
+	primaryNarrativeLabel: string;
+	primaryNarrativeEyebrow: string;
+	hasGeneratedNarrative: boolean;
+	hasStrongLeadNarrative: boolean;
+	generatedArticle: string;
+	synthesisItems: SynthesisItem[];
+	hasCitationSources: boolean;
+	entities?: string[];
+	uniqueSourcesCount: number;
+	synthesisFreshness?: {
+		is_stale?: boolean;
+		reasons?: string[];
+		new_article_count?: number;
+	};
+}
+
+const {
+	lang,
+	clusterId,
+	primaryNarrativeLabel,
+	primaryNarrativeEyebrow,
+	hasGeneratedNarrative,
+	hasStrongLeadNarrative,
+	generatedArticle,
+	synthesisItems,
+	hasCitationSources,
+	entities,
+	uniqueSourcesCount,
+	synthesisFreshness = {},
+} = Astro.props;
+
+const synthesisReady = hasGeneratedNarrative || synthesisItems.length > 0;
+const reasons = synthesisFreshness.reasons || [];
+const isMissing = reasons.includes('missing_synthesis');
+const isStale = Boolean(synthesisFreshness.is_stale);
+const newArticleCount = Number(synthesisFreshness.new_article_count || 0);
+
+const pendingTitle = lang === 'sr' ? 'Sinteza u pripremi' : 'Синтезата се подготвува';
+const pendingBody =
+	lang === 'sr'
+		? `${uniqueSourcesCount} izvora je povezano u klaster. Urednički pregled se generiše i uskoro će biti dostupan.`
+		: `${uniqueSourcesCount} извори се поврзани во кластерот. Уредничкиот преглед се генерира и наскоро ќе биде достапен.`;
+
+const staleTitle = lang === 'sr' ? 'Sinteza se osvežava' : 'Синтезата се освежува';
+const staleBody =
+	lang === 'sr'
+		? newArticleCount > 0
+			? `Stiglo je ${newArticleCount} novih objava. Pregled se ažurira da uključi najnovije izvore.`
+			: 'Pregled je zastareo u odnosu na izvore; ažuriranje je u toku.'
+		: newArticleCount > 0
+			? `Пристигнаа ${newArticleCount} нови објави. Прегледот се ажурира со најновите извори.`
+			: 'Прегледот е застарен според изворите; ажурирањето е во тек.';
+
+const staleBanner =
+	lang === 'sr'
+		? 'Stigli su noviji izvori — pregled ispod može biti delimično zastareo.'
+		: 'Пристигнаа понови извори — прегледот подолу може делумно да биде застарен.';
+
+const sourcesCta = lang === 'sr' ? 'Pogledaj izvore' : 'Погледни извори';
+---
+
+<section class="editorial-section narrative-section mb-24" id="cluster-synthesis">
+	<div class="section-eyebrow narrative-eyebrow mb-16">
+		<div class="section-title-lockup">
+			<Newspaper size={16} className="section-title-icon text-muted-foreground" />
+			<div class="section-title-copy">
+				<h2 class="section-label">{primaryNarrativeLabel}</h2>
+				<span class="section-sub-label">{primaryNarrativeEyebrow}</span>
+			</div>
+		</div>
+
+		{synthesisReady && (
+			<div class="narrative-audio-wrap">
+				<AudioPlayer
+					type="cluster"
+					clusterId={clusterId}
+					lang={lang}
+					title={lang === 'sr' ? 'Audio sinteza' : 'Аудио синтеза'}
+				/>
+			</div>
+		)}
+
+		<div class="section-divider"></div>
+	</div>
+
+	{synthesisReady ? (
+		<>
+			{isStale && !isMissing && (
+				<div class="synthesis-state-banner synthesis-state-banner-stale" role="status">
+					<RefreshCw size={15} />
+					<p>{staleBanner}</p>
+				</div>
+			)}
+			<EditorialNarrative
+				hasStrongLeadNarrative={hasStrongLeadNarrative}
+				generatedArticle={generatedArticle}
+				synthesisItems={synthesisItems}
+				hasCitationSources={hasCitationSources}
+				entities={entities}
+			/>
+			<p class="synthesis-provenance-note">
+				{lang === 'sr'
+					? `Ovaj pregled je automatski sastavljen iz ${uniqueSourcesCount} javno dostupnih izvora. Originalne objave proverite u listi izvora ispod.`
+					: `Овој пресек е автоматски составен од ${uniqueSourcesCount} јавно достапни извори. Оригиналните објави проверете ги во листата на извори подолу.`}
+			</p>
+		</>
+	) : (
+		<div class:list={['synthesis-state-panel', isMissing ? 'is-pending' : 'is-stale']} role="status">
+			<div class="synthesis-state-icon">
+				{isMissing ? <Clock3 size={22} /> : <RefreshCw size={22} />}
+			</div>
+			<div class="synthesis-state-copy">
+				<h3>{isMissing ? pendingTitle : staleTitle}</h3>
+				<p>{isMissing ? pendingBody : staleBody}</p>
+			</div>
+			<a href="#cluster-sources" class="synthesis-state-cta">
+				<BookOpen size={14} />
+				{sourcesCta}
+			</a>
+		</div>
+	)}
+</section>
+
+<style>
+	.synthesis-state-banner {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.65rem;
+		margin-bottom: 1.25rem;
+		padding: 0.85rem 1rem;
+		border: 1px solid color-mix(in srgb, var(--editorial-watch) 35%, var(--border));
+		background: color-mix(in srgb, var(--editorial-watch) 8%, var(--background));
+		color: color-mix(in srgb, var(--foreground) 82%, var(--secondary-foreground));
+		font-family: var(--font-nyt-body);
+		font-size: 0.88rem;
+		line-height: 1.45;
+	}
+
+	.synthesis-state-banner p {
+		margin: 0;
+	}
+
+	.synthesis-state-panel {
+		display: grid;
+		gap: 1rem;
+		padding: 1.35rem 1.2rem;
+		border: 1px solid color-mix(in srgb, var(--foreground) 12%, var(--border));
+		background: color-mix(in srgb, var(--secondary) 38%, var(--background));
+	}
+
+	.synthesis-state-panel.is-pending {
+		border-left: 4px solid var(--nyt-accent);
+	}
+
+	.synthesis-state-panel.is-stale {
+		border-left: 4px solid var(--editorial-watch);
+	}
+
+	.synthesis-state-icon {
+		color: var(--nyt-accent);
+	}
+
+	.synthesis-state-panel.is-stale .synthesis-state-icon {
+		color: var(--editorial-watch);
+	}
+
+	.synthesis-state-copy h3 {
+		margin: 0 0 0.45rem;
+		font-family: var(--font-serif);
+		font-size: 1.35rem;
+		font-weight: 800;
+		line-height: 1.15;
+	}
+
+	.synthesis-state-copy p {
+		margin: 0;
+		font-family: var(--font-nyt-body);
+		font-size: 0.95rem;
+		line-height: 1.55;
+		color: color-mix(in srgb, var(--foreground) 78%, var(--secondary-foreground));
+	}
+
+	.synthesis-state-cta {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+		width: fit-content;
+		font-family: var(--font-ui);
+		font-size: 0.62rem;
+		font-weight: 800;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--nyt-accent);
+		text-decoration: none;
+	}
+
+	.synthesis-state-cta:hover {
+		text-decoration: underline;
+	}
+
+	@media (min-width: 640px) {
+		.synthesis-state-panel {
+			grid-template-columns: auto minmax(0, 1fr);
+			align-items: start;
+		}
+
+		.synthesis-state-cta {
+			grid-column: 2;
+		}
+	}
+</style>

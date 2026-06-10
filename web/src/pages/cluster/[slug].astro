@@ -19,7 +19,6 @@ import { chooseClusterImage } from '../../utils/imageSelection';
 
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import { buildCanonicalUrl, localePath, homePath } from '../../lib/localePaths';
-import AudioPlayer from '../../components/audio/AudioPlayer.astro';
 import TinyAdzInlinedAd from '../../components/TinyAdzInlinedAd.astro';
 import TinyAdzRailAd from '../../components/TinyAdzRailAd.astro';
 
@@ -126,7 +125,7 @@ import HeroVisual from '../../components/Cluster/HeroVisual.astro';
 import CitationSources from '../../components/Cluster/CitationSources.astro';
 import CredibilityAnalysis from '../../components/Cluster/CredibilityAnalysis.astro';
 import ArticleItem from '../../components/Cluster/ArticleItem.astro';
-import EditorialNarrative from '../../components/Cluster/EditorialNarrative.astro';
+import ClusterSynthesisSection from '../../components/Cluster/ClusterSynthesisSection.astro';
 import type { Article, ClusterDetail } from '../../types';
 
 const { slug } = Astro.params;
@@ -719,53 +718,26 @@ const articleSchema = cluster ? {
 							</div>
 						)}
 
-						<TinyAdzInlinedAd class="cluster-inlined-ad mb-12" />
+						<div class="editorial-grid">
+						{/* 3. MAIN COLUMN */}
+						<div class="editorial-main-col">
 
-					<div class="editorial-grid">
-					{/* 3. MAIN COLUMN */}
-					<div class="editorial-main-col">
+							<ClusterSynthesisSection
+								lang={lang}
+								clusterId={id || ''}
+								primaryNarrativeLabel={primaryNarrativeLabel}
+								primaryNarrativeEyebrow={primaryNarrativeEyebrow}
+								hasGeneratedNarrative={hasGeneratedNarrative}
+								hasStrongLeadNarrative={hasStrongLeadNarrative}
+								generatedArticle={generatedArticle}
+								synthesisItems={synthesisItems}
+								hasCitationSources={hasCitationSources}
+								entities={cluster.entities}
+								uniqueSourcesCount={uniqueSourcesCount}
+								synthesisFreshness={synthesisFreshness}
+							/>
 
-						{/* NARRATIVE SECTION */}
-						{(hasGeneratedNarrative || synthesisItems.length > 0) && (
-						<section class="editorial-section narrative-section mb-24" id="cluster-synthesis">
-							<div class="section-eyebrow narrative-eyebrow mb-16">
-                                <div class="section-title-lockup">
-                                    <Newspaper size={16} className="section-title-icon text-muted-foreground" />
-                                    <div class="section-title-copy">
-                                        <h2 class="section-label">{primaryNarrativeLabel}</h2>
-                                        <span class="section-sub-label">{primaryNarrativeEyebrow}</span>
-                                    </div>
-                                </div>
-
-                                <!-- Premium TTS Play Button -->
-                                {cluster && (
-                                    <div class="narrative-audio-wrap">
-                                        <AudioPlayer 
-                                            type="cluster"
-                                            clusterId={id}
-                                            lang={lang}
-                                            title={lang === 'sr' ? 'Audio sinteza' : 'Аудио синтеза'}
-                                        />
-                                    </div>
-                                )}
-
-								<div class="section-divider"></div>
-							</div>
-
-                            <EditorialNarrative
-                                hasStrongLeadNarrative={hasStrongLeadNarrative}
-                                generatedArticle={generatedArticle}
-                                synthesisItems={synthesisItems}
-                                hasCitationSources={hasCitationSources}
-                            entities={cluster.entities}
-                            />
-                            <p class="synthesis-provenance-note">
-                                {lang === 'sr'
-                                    ? `Ovaj pregled je automatski sastavljen iz ${uniqueSourcesCount} javno dostupnih izvora. Originalne objave proverite u listi izvora ispod.`
-                                    : `Овој пресек е автоматски составен од ${uniqueSourcesCount} јавно достапни извори. Оригиналните објави проверете ги во листата на извори подолу.`}
-                            </p>
-                        </section>
-                        )}
+							<TinyAdzInlinedAd class="cluster-inlined-ad mb-12" />
 
 						{/* ANALYSIS SECTION: Fact Check & Comparison */}
 						{(hasFactcheck || perspectives.length > 0) && (

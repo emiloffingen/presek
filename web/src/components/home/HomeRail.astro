@@ -90,7 +90,7 @@ const uniqueEntities = Array.from(uniqueEntitiesMap.values())
 	<TinyAdzRailAd class="rail-inlined-ad" />
 
 	{briefing && briefing.content && (
-		<section class="rail-block">
+		<section class="rail-block rail-briefing-block">
 			<h3 class="rail-section-title">{t('nav.briefing')}</h3>
 			<p class="rail-brief-text">
 				{getBriefingSnippet(briefing.content)}
@@ -245,4 +245,10 @@ const uniqueEntities = Array.from(uniqueEntitiesMap.values())
     .rail-tag-cloud { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; padding-top: 0.75rem; }
     .rail-tag-cloud a { padding: 0.35rem 0.75rem; border: 1px solid var(--border); font-family: var(--font-sans); font-size: 0.58rem; font-weight: 900; text-transform: uppercase; color: var(--foreground); text-decoration: none; white-space: nowrap; border-radius: 0px; background: color-mix(in srgb, var(--secondary) 30%, transparent); transition: all 0.2s ease; }
     .rail-tag-cloud a:hover { background: var(--foreground); color: var(--background); border-color: var(--foreground); transform: translateY(-1px); }
+
+    @media (max-width: 768px) {
+        .rail-briefing-block {
+            display: none;
+        }
+    }
 </style>
