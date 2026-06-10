@@ -429,10 +429,11 @@ async def image_proxy(
     t: str | None = None,
     cat: str | None = None,
     theme: str | None = None,
+    lang: str | None = None,
 ):
     from routes.system import proxy_image
 
-    return await proxy_image(url=url, w=w, cid=cid, t=t, cat=cat, theme=theme)
+    return await proxy_image(url=url, w=w, cid=cid, t=t, cat=cat, theme=theme, lang=lang)
 
 
 # Legacy/Helper endpoints
