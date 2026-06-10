@@ -623,7 +623,7 @@ const articleSchema = cluster ? {
 								{new Date(cluster.articles?.[0].created_at || '').toLocaleDateString(lang === 'sr' ? 'sr-RS' : 'mk-MK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
 							</span>
 						</div>
-						<h1 class:list={["headline is-visible font-serif text-5xl md:text-7xl font-black leading-[1.05] tracking-tight text-foreground mb-6", { "headline-cyrillic": headlineIsCyrillic }]}>
+						<h1 class:list={["headline is-visible font-serif text-5xl md:text-7xl font-black leading-[1.12] tracking-tight text-foreground mb-6", { "headline-cyrillic": headlineIsCyrillic }]}>
 							{displayHeadline}
 						</h1>
 						<div class="header-meta cluster-meta-row flex flex-wrap items-center gap-x-8 gap-y-3 text-muted-foreground">

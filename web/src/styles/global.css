@@ -274,7 +274,7 @@
   }
 }
 
-/* Cyrillic vertical rhythm adjustment for Macedonian headlines to prevent overlap of ascenders/descenders */
+/* Macedonian font stack */
 html[lang="mk"] {
   --font-serif: var(--font-serif-mk);
   --font-serif-display: var(--font-serif-mk);
@@ -296,6 +296,17 @@ html[lang="mk"] h6,
 html[lang="mk"] .headline,
 html[lang="mk"] .editorial-headline {
   font-family: var(--font-serif-mk);
+  line-height: 1.15 !important;
+}
+
+html[lang="sr-Latn"] h1,
+html[lang="sr-Latn"] h2,
+html[lang="sr-Latn"] h3,
+html[lang="sr-Latn"] h4,
+html[lang="sr-Latn"] h5,
+html[lang="sr-Latn"] h6,
+html[lang="sr-Latn"] .headline,
+html[lang="sr-Latn"] .editorial-headline {
   line-height: 1.15 !important;
 }
 
@@ -458,7 +469,7 @@ h6,
 .headline {
   font-family: var(--font-serif);
   font-weight: 900;
-  line-height: 1.05;
+  line-height: 1.15;
   letter-spacing: -0.012em;
   color: var(--foreground);
   text-wrap: balance;
@@ -469,6 +480,17 @@ h6,
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  padding-bottom: 0.06em;
+}
+
+/* Full-page titles should not be line-clamped */
+h1.headline.is-visible,
+.editorial-header-v2 h1.headline {
+  display: block;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: unset;
+  overflow: visible;
+  padding-bottom: 0;
 }
 
 .headline-cyrillic,
@@ -505,12 +527,13 @@ button:focus-visible,
   font-weight: 900;
   margin-bottom: 1rem;
   letter-spacing: -0.018em;
-  line-height: 1.02;
+  line-height: 1.12;
   text-wrap: balance;
   display: -webkit-box;
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  padding-bottom: 0.06em;
   background: none;
   -webkit-text-fill-color: currentColor;
   filter: none;
@@ -773,7 +796,7 @@ button:focus-visible,
     font-family: var(--font-serif);
     font-size: var(--text-2xl);
     font-weight: 900;
-    line-height: 1.04;
+    line-height: 1.14;
     letter-spacing: -0.012em;
     margin-bottom: 0.25rem;
     color: var(--foreground);
@@ -785,7 +808,7 @@ button:focus-visible,
 
   .headline-lead {
     font-size: clamp(1.8rem, 5vw, 3.4rem);
-    line-height: 0.96;
+    line-height: 1.1;
     letter-spacing: -0.015em;
   }
 
@@ -4176,7 +4199,7 @@ button:active,
   /* Typography adjustments for mobile density */
   .headline-lead {
     font-size: 2.25rem !important;
-    line-height: 1.05 !important;
+    line-height: 1.12 !important;
   }
 
   /* Prevent overflow from wide components */
