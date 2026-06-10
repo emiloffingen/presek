@@ -6,8 +6,10 @@ These units are the supported production runtime for `presek.live`.
 
 ## Services
 
-- `presek-worker.service`: Celery worker for `celery`, `intel-heavy`, and `maintenance`
-- `presek-worker-ingestion.service`: dedicated Celery worker for `fast-track`
+- `presek-worker.service`: Celery worker for `celery` and `intel-heavy`
+- `presek-worker-ingestion.service`: dedicated Celery worker for `ingestion`
+- `presek-worker-fasttrack.service`: dedicated Celery worker for `fast-track`
+- `presek-worker-maintenance.service`: dedicated Celery worker for `maintenance`
 - `presek-worker-delivery.service`: dedicated Celery worker for `delivery`
 - `presek-beat.service`: Celery beat scheduler
 - `presek-fastapi-unified.service`: FastAPI on `127.0.0.1:5001`
@@ -60,6 +62,7 @@ sudo journalctl -u presek-fastapi-unified.service -f
 sudo journalctl -u presek-worker.service -f
 sudo journalctl -u presek-worker-ingestion.service -f
 sudo journalctl -u presek-worker-delivery.service -f
+sudo journalctl -u presek-worker-maintenance.service -f
 sudo systemctl restart presek-astro.service
 sudo systemctl stop presek.target
 bash deploy/smoke_check.sh

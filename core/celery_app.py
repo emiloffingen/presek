@@ -210,6 +210,24 @@ celery_app.conf.update(
     task_annotations={
         "tasks.ingestion_task.crawl_article_task": {"rate_limit": "100/m"},
         "tasks.intelligence.generate_embeddings_task": {"rate_limit": "30/m"},
+        "tasks.intelligence.generate_cluster_metadata_task": {
+            "rate_limit": "30/m",
+            "soft_time_limit": 600,
+            "time_limit": 900,
+        },
+        "tasks.intelligence.backfill_cluster_summaries_task": {
+            "rate_limit": "6/h",
+            "soft_time_limit": 900,
+            "time_limit": 1200,
+        },
+        "tasks.intelligence.summarize_articles_batch_task": {
+            "soft_time_limit": 600,
+            "time_limit": 900,
+        },
+        "tasks.intelligence.synthesize_cluster_task": {
+            "soft_time_limit": 600,
+            "time_limit": 900,
+        },
     },
     # Worker prefetch multiplier - reduce from default 4 to 1 to prevent memory over-commitment
     worker_prefetch_multiplier=1,

@@ -80,7 +80,13 @@ def invalidate_cluster_caches(cluster_id=None):
 
 def get_celery_queue_depth(queue_name="celery"):
     try:
-        return int(redis_client.llen(queue_name) or 0)
+        if queue_name != "celery":
+            return int(redis_client.llen(queue_name) or 0)
+
+        from core.health import MONITORED_CELERY_QUEUES
+
+        depths = [int(redis_client.llen(name) or 0) for name in MONITORED_CELERY_QUEUES]
+        return max(depths) if depths else 0
     except Exception as e:
         log.debug(f"Failed to get queue depth for {queue_name}: {e}")
         return 0

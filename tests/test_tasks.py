@@ -305,14 +305,17 @@ class TestSynthesizeClusterTaskQuality:
     def test_backfill_filters_clusters_and_articles_by_language_country(self):
         from tasks.intelligence import backfill_cluster_summaries_task
 
-        with patch("core.database.db_manager") as mock_db:
+        with (
+            patch("tasks.intelligence.get_celery_queue_depth", return_value=0),
+            patch("core.database.db_manager") as mock_db,
+        ):
             mock_db.execute.return_value = []
 
             backfill_cluster_summaries_task(days=2, lang="sr")
 
         query, params = mock_db.execute.call_args.args
         assert "a.country = %s" in query
-        assert params == ("RS", 2, "sr")
+        assert params == ("RS", 2, "sr", 8 + 1, 0)
 
     def test_backfill_summary_records_generation_metadata(self):
         from tasks.intelligence import backfill_cluster_summaries_task
@@ -338,6 +341,7 @@ class TestSynthesizeClusterTaskQuality:
         }
 
         with (
+            patch("tasks.intelligence.get_celery_queue_depth", return_value=0),
             patch("core.config.AUTO_SUMMARIZE_MIN_SRC", 1),
             patch("core.database.db_manager") as mock_db,
             patch(

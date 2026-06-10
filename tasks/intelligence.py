@@ -63,6 +63,20 @@ from core.embeddings import average_embeddings, parse_embedding_value
 
 _analyst_semaphore = threading.Semaphore(2)
 _BACKFILL_QUEUE_DEPTH_LIMIT = 100
+_BACKFILL_BATCH_SIZE = int(os.environ.get("BACKFILL_CLUSTERS_PER_RUN", "8"))
+_METADATA_BATCH_SIZE = int(os.environ.get("CLUSTER_METADATA_BATCH_SIZE", "25"))
+_ARTICLE_BATCH_SIZE = int(os.environ.get("ARTICLE_BATCH_SIZE", "20"))
+
+
+def _queue_backlog_high(limit=_BACKFILL_QUEUE_DEPTH_LIMIT) -> bool:
+    return get_celery_queue_depth() >= limit
+
+
+def _dispatch_batched(task, ids, batch_size=_ARTICLE_BATCH_SIZE):
+    if not ids:
+        return
+    for start in range(0, len(ids), batch_size):
+        task.delay(ids[start : start + batch_size])
 
 # Ensure project root is in path for Celery workers
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -1676,7 +1690,10 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
         try:
             invalidate_cluster_caches(cluster_id)
             if os.environ.get("REDIS_URL"):
-                generate_cluster_metadata_task.delay()
+                generate_cluster_metadata_task.apply_async(
+                    kwargs={"target_clusters": [cluster_id]},
+                    countdown=5,
+                )
         except Exception as err:
             log.warning(f"[tasks] Finalization error for {cluster_id}: {err}")
     else:
@@ -1815,7 +1832,17 @@ def recategorize_clusters_task(*args, **kwargs):
 def generate_cluster_metadata_task(hours=24, target_clusters=None):
     """Tag recent clusters with metadata (entities, source count, centroid, and representative image)."""
     try:
+        if _queue_backlog_high():
+            log.info("[tasks] Deferring cluster metadata generation while queue backlog is high.")
+            generate_cluster_metadata_task.apply_async(
+                kwargs={"hours": hours, "target_clusters": target_clusters},
+                countdown=120,
+            )
+            return
+
         if target_clusters:
+            batch_ids = list(target_clusters)[:_METADATA_BATCH_SIZE]
+            pending_ids = list(target_clusters)[_METADATA_BATCH_SIZE:]
             rows = db.execute(
                 """
                 SELECT cluster_id, array_agg(DISTINCT source) as sources, array_agg(DISTINCT title) as titles,
@@ -1825,8 +1852,9 @@ def generate_cluster_metadata_task(hours=24, target_clusters=None):
                 FROM articles WHERE cluster_id = ANY(%s)
                 GROUP BY cluster_id
             """,
-                (target_clusters,),
+                (batch_ids,),
             )
+            has_more = bool(pending_ids)
         else:
             cutoff = datetime.datetime.now() - datetime.timedelta(hours=int(hours or 24))
             rows = db.execute(
@@ -1837,9 +1865,14 @@ def generate_cluster_metadata_task(hours=24, target_clusters=None):
                        array_agg(embedding) FILTER (WHERE embedding IS NOT NULL) as embeddings
                 FROM articles WHERE created_at >= %s
                 GROUP BY cluster_id
+                ORDER BY MAX(created_at) DESC
+                LIMIT %s
             """,
-                (cutoff,),
+                (cutoff, _METADATA_BATCH_SIZE + 1),
             )
+            has_more = len(rows) > _METADATA_BATCH_SIZE
+            rows = rows[:_METADATA_BATCH_SIZE]
+            pending_ids = None
         for r in rows:
             entities = db.execute(
                 "SELECT entity_name, entity_type FROM cluster_entities WHERE cluster_id = %s",
@@ -1948,6 +1981,14 @@ def generate_cluster_metadata_task(hours=24, target_clusters=None):
         from tasks import utils
 
         utils.record_task_event("cluster_metadata", "ok", "clusters:recent")
+        if has_more:
+            if pending_ids is not None:
+                generate_cluster_metadata_task.apply_async(
+                    kwargs={"hours": hours, "target_clusters": pending_ids},
+                    countdown=30,
+                )
+            else:
+                generate_cluster_metadata_task.apply_async(kwargs={"hours": hours}, countdown=30)
     except Exception as e:
         from tasks import utils
 
@@ -2584,9 +2625,17 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
 
 
 @celery_app.task
-def backfill_cluster_summaries_task(days=30, lang="sr"):
+def backfill_cluster_summaries_task(days=30, lang="sr", offset=0):
     """Generate cluster summaries for all existing clusters that don't have them yet."""
     try:
+        if _queue_backlog_high():
+            log.info(f"[tasks] Deferring summary backfill (lang={lang}) while queue backlog is high.")
+            backfill_cluster_summaries_task.apply_async(
+                kwargs={"days": days, "lang": lang, "offset": offset},
+                countdown=180,
+            )
+            return
+
         from core.config import AUTO_SUMMARIZE_MIN_SRC
         from core.database import db_manager as db
 
@@ -2604,16 +2653,19 @@ def backfill_cluster_summaries_task(days=30, lang="sr"):
                 SELECT 1 FROM cluster_summaries cs
                 WHERE cs.cluster_id = a.cluster_id AND cs.lang = %s
             )
+            ORDER BY a.cluster_id
+            LIMIT %s OFFSET %s
             """,
-            (target_country, days, lang),
+            (target_country, days, lang, _BACKFILL_BATCH_SIZE + 1, offset),
         )
 
         if not rows:
             log.info(f"[tasks] No clusters found for backfill (lang={lang})")
             return
 
-        cluster_ids = [row["cluster_id"] for row in rows]
-        log.info(f"[tasks] Backfilling summaries for {len(cluster_ids)} clusters (lang={lang})")
+        has_more = len(rows) > _BACKFILL_BATCH_SIZE
+        cluster_ids = [row["cluster_id"] for row in rows[:_BACKFILL_BATCH_SIZE]]
+        log.info(f"[tasks] Backfilling summaries for {len(cluster_ids)} clusters (lang={lang}, offset={offset})")
 
         for cluster_id in cluster_ids:
             try:
@@ -2724,6 +2776,11 @@ def backfill_cluster_summaries_task(days=30, lang="sr"):
                 log.warning(f"[tasks] Failed to generate summary for cluster {cluster_id}: {e}")
 
         log.info(f"[tasks] Completed backfill for {lang} language clusters")
+        if has_more:
+            backfill_cluster_summaries_task.apply_async(
+                kwargs={"days": days, "lang": lang, "offset": offset + _BACKFILL_BATCH_SIZE},
+                countdown=60,
+            )
 
     except Exception as e:
         log.error(f"[tasks] Backfill cluster summaries failed: {e}")

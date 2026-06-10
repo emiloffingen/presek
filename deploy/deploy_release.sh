@@ -245,6 +245,11 @@ has_service() {
     return 1
 }
 
+unit_is_installed() {
+    local unit="$1"
+    systemctl list-unit-files "$unit" --no-legend 2>/dev/null | grep -q .
+}
+
 wait_http_status() {
     local name="$1"
     local url="$2"
@@ -293,7 +298,11 @@ restart_services_in_order() {
                 presek-fastapi-unified.service|presek-astro.service|cloudflare-realip-update.service)
                     ;;
                 *)
-                    remaining_services+=("$service")
+                    if unit_is_installed "$service"; then
+                        remaining_services+=("$service")
+                    else
+                        warn "Skipping restart for missing unit: $service"
+                    fi
                     ;;
             esac
         done

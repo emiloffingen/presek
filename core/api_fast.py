@@ -373,8 +373,11 @@ async def health_check():
     celery_queue = health._probe_celery_queue()
     celery_public = {
         "celery_depth": celery_queue.get("celery_depth", 0),
+        "total_depth": celery_queue.get("total_depth", 0),
         "warn_depth": celery_queue.get("warn_depth", 100),
+        "critical_depth": celery_queue.get("critical_depth", 500),
         "degraded": celery_queue.get("degraded", False),
+        "queues": celery_queue.get("queues", {}),
     }
     operational_status = health.get_operational_status(
         db_status["ok"],

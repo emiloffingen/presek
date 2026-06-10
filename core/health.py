@@ -22,6 +22,14 @@ _SOURCE_POLICY_REDIS_KEY = "presek:source_policies"
 _SYNTHESIS_QUALITY_REDIS_KEY = "presek:synthesis_quality"
 _CELERY_QUEUE_WARN_DEPTH = 100
 _CELERY_QUEUE_CRITICAL_DEPTH = 500
+MONITORED_CELERY_QUEUES = (
+    "celery",
+    "ingestion",
+    "fast-track",
+    "intel-heavy",
+    "delivery",
+    "maintenance",
+)
 AUTO_PAUSE_ERROR_STREAK = 3
 AUTO_FLAG_LOW_ACCEPT_STREAK = 3
 LOW_ACCEPTANCE_THRESHOLD = 0.2
@@ -262,15 +270,30 @@ def _freshness_payload(last_refresh_time: str | None):
 def _probe_celery_queue():
     result = {
         "celery_depth": 0,
+        "total_depth": 0,
         "warn_depth": _CELERY_QUEUE_WARN_DEPTH,
         "critical_depth": _CELERY_QUEUE_CRITICAL_DEPTH,
         "degraded": False,
+        "queues": {},
         "error": "",
     }
     try:
-        depth = int(_get_redis().llen("celery") or 0)
-        result["celery_depth"] = depth
-        result["degraded"] = depth >= _CELERY_QUEUE_WARN_DEPTH
+        redis = _get_redis()
+        max_depth = 0
+        total_depth = 0
+        queues = {}
+        for queue_name in MONITORED_CELERY_QUEUES:
+            depth = int(redis.llen(queue_name) or 0)
+            queues[queue_name] = {
+                "depth": depth,
+                "degraded": depth >= _CELERY_QUEUE_WARN_DEPTH,
+            }
+            max_depth = max(max_depth, depth)
+            total_depth += depth
+        result["queues"] = queues
+        result["celery_depth"] = max_depth
+        result["total_depth"] = total_depth
+        result["degraded"] = max_depth >= _CELERY_QUEUE_WARN_DEPTH
     except Exception as exc:
         result["error"] = str(exc)
     return result

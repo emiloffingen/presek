@@ -89,9 +89,14 @@ def _is_fallback_provider(provider: str) -> bool:
 
 def _celery_queue_depth(queue_name: str = "celery") -> int:
     try:
-        from utils import redis_client
+        if queue_name != "celery":
+            from utils import redis_client
 
-        return int(redis_client.llen(queue_name) or 0)
+            return int(redis_client.llen(queue_name) or 0)
+
+        from core.health import _probe_celery_queue
+
+        return int(_probe_celery_queue().get("celery_depth", 0))
     except Exception as exc:
         log.warning(f"[synthesis-monitor] Failed to read queue depth: {exc}")
         return 0

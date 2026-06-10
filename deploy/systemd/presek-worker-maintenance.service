@@ -1,5 +1,5 @@
 [Unit]
-Description=Presek Celery worker (intelligence/default)
+Description=Presek Celery worker (maintenance)
 After=network-online.target presek-fastapi-unified.service postgresql.service redis.service
 Wants=network-online.target
 PartOf=presek.target
@@ -14,17 +14,17 @@ Environment=HF_HOME=/home/emiloffingen/presek-runtime/shared/huggingface
 Environment=HF_HUB_CACHE=/home/emiloffingen/presek-runtime/shared/huggingface/hub
 Environment=SENTENCE_TRANSFORMERS_HOME=/home/emiloffingen/presek-runtime/shared/huggingface/sentence_transformers
 WorkingDirectory=/home/emiloffingen/presek-runtime/current
-ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && set -a && source /home/emiloffingen/presek-runtime/shared/.env && set +a && exec /home/emiloffingen/presek-runtime/venv/bin/celery -A core.celery_app worker --loglevel=info -n intel-heavy@%h --concurrency=1 --queues=celery,intel-heavy --max-memory-per-child=400000'
+ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && set -a && source /home/emiloffingen/presek-runtime/shared/.env && set +a && exec /home/emiloffingen/presek-runtime/venv/bin/celery -A core.celery_app worker --loglevel=info -n maintenance@%h --concurrency=1 --queues=maintenance --max-memory-per-child=300000'
 Restart=always
 RestartSec=5
 TimeoutStartSec=180
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=presek-worker
-Nice=10
-CPUWeight=50
-MemoryHigh=2000M
-MemoryMax=2500M
+SyslogIdentifier=presek-worker-maintenance
+Nice=15
+CPUWeight=30
+MemoryHigh=1600M
+MemoryMax=2048M
 ProtectSystem=strict
 ProtectHome=read-only
 NoNewPrivileges=yes

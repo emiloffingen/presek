@@ -1207,6 +1207,7 @@ async def ingest_all_sources_async():
 
                 from tasks.ingestion_task import crawl_article_task
                 from tasks.intelligence import (
+                    _dispatch_batched,
                     detect_global_stories_batch_task,
                     standardize_article_styles_batch_task,
                     summarize_articles_batch_task,
@@ -1217,15 +1218,15 @@ async def ingest_all_sources_async():
                     crawl_article_task.delay(art["id"], art["link"])
 
                 # 2. Batch Global Story Detection
-                detect_global_stories_batch_task.delay(inserted_ids)
+                _dispatch_batched(detect_global_stories_batch_task, inserted_ids)
 
                 # 3. Batch Style Normalization
                 credibility_ids = [art["id"] for art in inserted_data if art.get("credibility", 1.5) < 1.2]
                 if credibility_ids:
-                    standardize_article_styles_batch_task.delay(credibility_ids)
+                    _dispatch_batched(standardize_article_styles_batch_task, credibility_ids)
 
                 # 4. Batch Summarization
-                summarize_articles_batch_task.delay(inserted_ids)
+                _dispatch_batched(summarize_articles_batch_task, inserted_ids)
 
     current_statuses = get_source_statuses()
     for source_name, stats in source_stats.items():

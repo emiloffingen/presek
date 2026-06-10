@@ -606,7 +606,8 @@ async def _call_ai_async(
             log.error(f"[ai/cascade] Provider {provider_name} failed: {e}")
 
             if "429" in str(e):
-                log.info(f"[ai/cascade] Rate limit hit for {provider_name}, sleeping 2s...")
+                _mark_provider_cooldown(provider_name)
+                log.info(f"[ai/cascade] Rate limit hit for {provider_name}, backing off...")
                 time.sleep(2)
 
             continue
@@ -680,7 +681,8 @@ def _call_ai(
             log.error(f"[ai/cascade] Provider {provider_name} failed: {e}")
 
             if "429" in str(e):
-                log.info(f"[ai/cascade] Rate limit hit for {provider_name}, sleeping 2s...")
+                _mark_provider_cooldown(provider_name)
+                log.info(f"[ai/cascade] Rate limit hit for {provider_name}, backing off...")
                 time.sleep(2)
 
             continue
