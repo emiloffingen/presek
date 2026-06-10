@@ -32,22 +32,29 @@ def test_tinyadz_helper_module_exists():
     source = helper.read_text(encoding="utf-8")
     assert "scripts/v2.0/main.js" in source
     assert "6a2995c32b7233c34b097a9c" in source
+    assert "6a29a71de09ffcc4c9bbd83e" in source
 
 
-def test_layout_wires_tinyadz_for_mk():
+def test_layout_wires_tinyadz_for_mk_and_live():
     layout = Path("web/src/layouts/Layout.astro").read_text(encoding="utf-8")
     script = Path("web/src/components/TinyAdzScript.astro").read_text(encoding="utf-8")
+    helper = Path("web/src/lib/tinyadz.ts").read_text(encoding="utf-8")
     assert "TinyAdzScript" in layout
+    assert "shouldLoadTinyAdzScript" in layout
+    assert "tinyAdzSiteId" in layout
+    assert "siteId={tinyAdzSite}" in layout
     assert 'site-id={siteId}' in script
     assert 'data-site-id={siteId}' in script
     assert "transition:persist" in script
     assert "requestNextAd" in script
+    assert "presek.live" in helper
+    assert "presek.mk" in helper
 
 
 def test_tinyadz_inlined_container_component():
     component = Path("web/src/components/TinyAdzInlinedAd.astro").read_text(encoding="utf-8")
     assert 'ta-ad-container=""' in component
-    assert "shouldLoadTinyAdz" in component
+    assert "shouldShowTinyAdzInlinedAds" in component
 
 
 def test_tinyadz_rail_wrapper_exists():
@@ -70,7 +77,8 @@ def test_mk_content_pages_include_tinyadz_slots():
         assert "TinyAdzRailAd" in source, path
 
 
-def test_production_config_documents_tinyadz_site_id():
+def test_production_config_documents_tinyadz_site_ids():
     example = Path("deploy/production_config.example").read_text(encoding="utf-8")
     assert "PUBLIC_TINYADZ_SITE_ID=6a2995c32b7233c34b097a9c" in example
+    assert "PUBLIC_TINYADZ_LIVE_SITE_ID=6a29a71de09ffcc4c9bbd83e" in example
     assert "PUBLIC_TINYADZ_TEST_MODE=false" in example

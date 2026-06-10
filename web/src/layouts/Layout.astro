@@ -9,7 +9,7 @@ import TinyAdzScript from '../components/TinyAdzScript.astro';
 import { ClientRouter } from 'astro:transitions';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import { buildCanonicalUrl, hreflangAlternates, siteOrigin } from '../lib/localePaths';
-import { shouldLoadTinyAdz } from '../lib/tinyadz';
+import { shouldLoadTinyAdzScript, tinyAdzSiteId } from '../lib/tinyadz';
 
 interface Props {
 	title: string;
@@ -58,7 +58,8 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 const { sr: srHref, mk: mkHref } = hreflangAlternates(requestUrl.pathname);
 const normalizedHost = hostHeader.split(':')[0].toLowerCase();
 const shouldLoadAdsense = lang === 'sr' && (normalizedHost === 'presek.live' || normalizedHost === 'www.presek.live');
-const loadTinyAdz = shouldLoadTinyAdz(lang, hostHeader);
+const loadTinyAdz = shouldLoadTinyAdzScript(lang, hostHeader);
+const tinyAdzSite = loadTinyAdz ? tinyAdzSiteId(lang, hostHeader) : '';
 
 const organizationSchema = {
 	"@context": "https://schema.org",
@@ -440,7 +441,7 @@ const organizationSchema = {
 			checkAllImages();
 			document.addEventListener('astro:page-load', checkAllImages);
 		</script>
-		{loadTinyAdz && <TinyAdzScript />}
+		{loadTinyAdz && <TinyAdzScript siteId={tinyAdzSite} />}
 	</body>
 </html>
 

@@ -1,7 +1,11 @@
 ---
-import { tinyAdzSiteId, tinyAdzTestMode, TINYADZ_SCRIPT_URL } from '../lib/tinyadz';
+import { tinyAdzTestMode, TINYADZ_SCRIPT_URL } from '../lib/tinyadz';
 
-const siteId = tinyAdzSiteId();
+interface Props {
+  siteId: string;
+}
+
+const { siteId } = Astro.props;
 const testMode = String(tinyAdzTestMode());
 ---
 
