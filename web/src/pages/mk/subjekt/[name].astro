@@ -12,6 +12,7 @@ import { sanitizeHtml } from '../../../lib/sanitize';
 
 import { getLangFromUrl, useTranslations } from '../../../i18n/utils';
 import { homePath } from '../../../lib/localePaths';
+import TinyAdzRailAd from '../../../components/TinyAdzRailAd.astro';
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
@@ -106,6 +107,8 @@ const nameIsCyrillic = isMostlyCyrillic(decodedName);
                 </div>
 
                 <aside class="broadsheet-rail">
+                    <TinyAdzRailAd />
+
                     <section class="rail-block rail-block-alt">
                         <p class="rail-kicker">{lang === 'sr' ? 'Za profil' : 'За профилот'}</p>
                         <h3 class="rail-title">{lang === 'sr' ? 'POVEZANOST' : 'ПОВРЗАНОСТ'}</h3>

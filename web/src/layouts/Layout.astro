@@ -5,9 +5,11 @@
 import '../styles/global.css';
 import '../lib/transliterationInit.js';
 import ConsentBanner from '../components/ConsentBanner';
+import TinyAdzScript from '../components/TinyAdzScript.astro';
 import { ClientRouter } from 'astro:transitions';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import { buildCanonicalUrl, hreflangAlternates, siteOrigin } from '../lib/localePaths';
+import { shouldLoadTinyAdz } from '../lib/tinyadz';
 
 interface Props {
 	title: string;
@@ -56,6 +58,7 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 const { sr: srHref, mk: mkHref } = hreflangAlternates(requestUrl.pathname);
 const normalizedHost = hostHeader.split(':')[0].toLowerCase();
 const shouldLoadAdsense = lang === 'sr' && (normalizedHost === 'presek.live' || normalizedHost === 'www.presek.live');
+const loadTinyAdz = shouldLoadTinyAdz(lang, hostHeader);
 
 const organizationSchema = {
 	"@context": "https://schema.org",
@@ -437,6 +440,7 @@ const organizationSchema = {
 			checkAllImages();
 			document.addEventListener('astro:page-load', checkAllImages);
 		</script>
+		{loadTinyAdz && <TinyAdzScript />}
 	</body>
 </html>
 
@@ -444,6 +448,18 @@ const organizationSchema = {
 	:root {
 		--layout-cache-bust-20260409: 1;
 	}
+
+    /* TinyAdz corner mini popup sits above site chrome (consent banner, loading bar). */
+    iframe.corner-popup {
+        z-index: 10050 !important;
+    }
+
+    [ta-ad-container] iframe.inlined-ta-ad,
+    .tinyadz-inlined iframe.inlined-ta-ad {
+        width: 100%;
+        max-width: 900px;
+        margin-inline: auto;
+    }
 
     *, *::before, *::after {
         box-sizing: border-box;

@@ -1,0 +1,19 @@
+---
+import TinyAdzInlinedAd from './TinyAdzInlinedAd.astro';
+
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<TinyAdzInlinedAd class:list={['page-rail-ad', className]} />
+
+<style>
+  .page-rail-ad {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+</style>

@@ -1,0 +1,32 @@
+---
+import { getLangFromUrl } from '../i18n/utils';
+import { shouldLoadTinyAdz } from '../lib/tinyadz';
+
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+
+const requestUrl = Astro.request ? new URL(Astro.request.url) : Astro.url;
+const hostHeader = Astro.request?.headers.get('host') || requestUrl.hostname;
+const lang = getLangFromUrl(requestUrl, hostHeader);
+---
+
+{shouldLoadTinyAdz(lang, hostHeader) && (
+  <div ta-ad-container="" class:list={['tinyadz-inlined', className]} aria-label="Реклама" />
+)}
+
+<style>
+  .tinyadz-inlined {
+    width: 100%;
+    min-width: 250px;
+    min-height: 100px;
+    max-width: 900px;
+    margin-inline: auto;
+  }
+
+  :global(.page-inline-ad) {
+    margin-bottom: 2.5rem;
+  }
+</style>

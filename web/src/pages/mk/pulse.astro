@@ -9,6 +9,7 @@ import { apiBaseUrl } from '../../lib/apiBase';
 import { getLangFromUrl } from '../../i18n/utils';
 import { APP_VERSION } from '../../lib/version';
 import { Activity, Timer, Zap } from 'lucide-react';
+import TinyAdzInlinedAd from '../../components/TinyAdzInlinedAd.astro';
 
 const API_URL = apiBaseUrl();
 const lang = getLangFromUrl(Astro.url);
@@ -124,6 +125,8 @@ const formatCount = (value: number | null | undefined) => value ? String(Math.ro
                 <span class="deck-item"><strong class="mr-1.5">{formatCount(globalPulse?.last_24h)}</strong> {isMK ? 'Објави денес' : 'Objava danas'}</span>
             </div>
         </header>
+
+        <TinyAdzInlinedAd class="page-inline-ad mb-10" />
 
         <PulseClientContainer
             client:load

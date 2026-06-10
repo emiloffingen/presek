@@ -7,6 +7,7 @@ import NewsletterIsland from '../NewsletterIsland.tsx';
 import { getDisplayTitle } from '../../utils/textUtils';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import { localePath, homePath } from '../../lib/localePaths';
+import TinyAdzRailAd from '../TinyAdzRailAd.astro';
 
 
 interface Props {
@@ -86,6 +87,8 @@ const uniqueEntities = Array.from(uniqueEntitiesMap.values())
 
 <aside class="broadsheet-rail">
 
+	<TinyAdzRailAd class="rail-inlined-ad" />
+
 	{briefing && briefing.content && (
 		<section class="rail-block">
 			<h3 class="rail-section-title">{t('nav.briefing')}</h3>
@@ -132,6 +135,13 @@ const uniqueEntities = Array.from(uniqueEntitiesMap.values())
 </aside>
 
 <style>
+    .rail-inlined-ad {
+        grid-column: 1 / -1;
+        padding-bottom: 1.5rem;
+        margin-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border);
+    }
+
     .broadsheet-rail {
         display: grid;
         grid-template-columns: 1fr;

@@ -4,6 +4,7 @@ import NYTHeader from '../../components/NYTHeader.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import IzvoriPage from '../../components/IzvoriPage';
 import Footer from '../../components/Footer.astro';
+import TinyAdzInlinedAd from '../../components/TinyAdzInlinedAd.astro';
 ---
 
 <Layout title="Медиумски извори — Пресек" description="Комплетен преглед на сите медиумски извори што Пресек ги следи — рангирани по активност и доверливост.">
@@ -11,6 +12,7 @@ import Footer from '../../components/Footer.astro';
 
 	<main class="site-layout broadsheet-layout py-[var(--page-py)]">
 		<Breadcrumbs items={[{ label: "извори" }]} />
+		<TinyAdzInlinedAd class="page-inline-ad mb-10" />
 		<IzvoriPage lang="mk" client:load />
 	</main>
 	<Footer />

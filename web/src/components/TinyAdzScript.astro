@@ -1,0 +1,23 @@
+---
+import { tinyAdzSiteId, tinyAdzTestMode, TINYADZ_SCRIPT_URL } from '../lib/tinyadz';
+
+const siteId = tinyAdzSiteId();
+const testMode = String(tinyAdzTestMode());
+---
+
+<script
+	transition:persist="tinyadz-main"
+	src={TINYADZ_SCRIPT_URL}
+	site-id={siteId}
+	data-site-id={siteId}
+	data-test-mode={testMode}
+	async
+></script>
+
+<script is:inline>
+	document.addEventListener('astro:page-load', () => {
+		if (window.$tam && typeof window.$tam.requestNextAd === 'function') {
+			window.$tam.requestNextAd();
+		}
+	});
+</script>

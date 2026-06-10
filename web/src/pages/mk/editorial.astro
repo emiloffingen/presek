@@ -4,6 +4,7 @@ import NYTHeader from '../../components/NYTHeader.astro';
 import Footer from '../../components/Footer.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { localePath } from '../../lib/localePaths';
+import TinyAdzRailAd from '../../components/TinyAdzRailAd.astro';
 
 const hostHeader = Astro.request?.headers.get('host');
 ---
@@ -59,6 +60,8 @@ const hostHeader = Astro.request?.headers.get('host');
             </div>
 
             <aside class="broadsheet-rail">
+                <TinyAdzRailAd />
+
                 <section class="rail-block rail-block-alt">
                     <p class="rail-kicker">Фокус</p>
                     <h3 class="rail-title">АУТОМАТИЗАЦИЈА</h3>
