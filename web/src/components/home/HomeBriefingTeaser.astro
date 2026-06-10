@@ -19,7 +19,7 @@ const snippet = briefing?.content ? getBriefingSnippet(briefing.content) : '';
 
 {snippet && (
 	<section class="home-briefing-teaser home-mobile-order-briefing" aria-label={t('nav.briefing')}>
-		<p class="home-briefing-kicker">{t('nav.briefing')}</p>
+		<p class="type-kicker">{t('nav.briefing')}</p>
 		<p class="home-briefing-text">{snippet}</p>
 		<a href={l('/briefing')} class="home-briefing-cta">
 			{t('rail.full_overview')} <TrendingUp size={10} />
@@ -37,14 +37,8 @@ const snippet = briefing?.content ? getBriefingSnippet(briefing.content) : '';
 		background: color-mix(in srgb, var(--nyt-accent) 5%, var(--background));
 	}
 
-	.home-briefing-kicker {
-		margin: 0 0 0.45rem;
-		font-family: var(--font-ui);
-		font-size: 0.58rem;
-		font-weight: 900;
-		letter-spacing: 0.16em;
-		text-transform: uppercase;
-		color: var(--nyt-accent);
+	.home-briefing-teaser .type-kicker {
+		margin-bottom: 0.45rem;
 	}
 
 	.home-briefing-text {

@@ -547,9 +547,9 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 				{isHomepage && perspectivesClusters && perspectivesClusters.length > 0 && (
 					<div class="section-wrapper analysis-band perspectives-section">
 						<div class="section-heading-row">
-							<span class="text-[10px] font-black uppercase tracking-[0.25em] text-nyt-accent block mb-2">{t('home.perspectives_title')}</span>
-							<h2 class="font-serif text-3xl font-black italic">{t('home.perspectives_subtitle')}</h2>
-							<p class="text-sm text-muted-foreground mt-2 max-w-2xl">{t('home.perspectives_desc')}</p>
+							<span class="type-kicker">{t('home.perspectives_title')}</span>
+							<h2 class="type-section-title">{t('home.perspectives_subtitle')}</h2>
+							<p class="type-section-deck">{t('home.perspectives_desc')}</p>
 						</div>
 						
 						<div class="analysis-grid">
@@ -571,12 +571,12 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 													<div class="analysis-meter">
 														<div class={`h-full bg-gradient-to-r ${gaugeColor}`} style={`width: ${pluralismVal}%`}></div>
 													</div>
-													<span class="text-[10px] font-black text-foreground/80">{pluralismVal}%</span>
+													<span class="type-meta text-foreground/80">{pluralismVal}%</span>
 												</div>
 											</div>
 											
 											<a href={l(`/cluster/${cluster.cluster_id}`)} class="block group/title">
-												<h3 class="font-serif text-lg font-black leading-tight text-foreground group-hover/title:text-nyt-accent transition-colors duration-200 line-clamp-3 mb-3">
+												<h3 class="type-card-title group-hover/title:text-nyt-accent transition-colors duration-200 line-clamp-3 mb-3">
 													{cluster.synthetic_headline || cluster.articles?.[0]?.title}
 												</h3>
 											</a>
@@ -614,9 +614,9 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 				{isHomepage && radarClusters && radarClusters.length > 0 && (
 					<div class="section-wrapper analysis-band radar-section">
 						<div class="section-heading-row">
-							<span class="text-[10px] font-black uppercase tracking-[0.25em] text-red-500 dark:text-red-400 block mb-2">{t('home.radar_title')}</span>
-							<h2 class="font-serif text-3xl font-black italic">{t('home.radar_subtitle')}</h2>
-							<p class="text-sm text-muted-foreground mt-2 max-w-2xl">{t('home.radar_desc')}</p>
+							<span class="type-kicker text-red-500 dark:text-red-400">{t('home.radar_title')}</span>
+							<h2 class="type-section-title">{t('home.radar_subtitle')}</h2>
+							<p class="type-section-deck">{t('home.radar_desc')}</p>
 						</div>
 						
 						<div class="analysis-grid">
@@ -631,7 +631,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 														<span class="fact-status-ping animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"></span>
 														<span class="fact-status-dot relative inline-flex rounded-full h-2 w-2"></span>
 													</span>
-													<span class="fact-status-label text-[9px] font-black uppercase tracking-widest">
+													<span class="type-meta fact-status-label">
 														{factsConfirmedLabel}
 													</span>
 												</div>
@@ -641,7 +641,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 											</div>
 											
 											<a href={l(`/cluster/${cluster.cluster_id}`)} class="block group/title">
-												<h3 class="font-serif text-lg font-black leading-tight text-foreground group-hover/title:text-red-500 transition-colors duration-200 line-clamp-3 mb-3">
+												<h3 class="type-card-title group-hover/title:text-red-500 transition-colors duration-200 line-clamp-3 mb-3">
 													{cluster.synthetic_headline || factCheckedArticle?.title}
 												</h3>
 											</a>
@@ -668,9 +668,9 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
                 {isHomepage && consensusClusters.length > 0 && (
                     <div class="section-wrapper consensus-section bg-secondary/10 p-8 border-y border-border/40">
                             <div class="section-heading-row mb-8">
-                                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent block mb-2">{t('home.consensus_title')}</span>
-                                <h2 class="font-serif text-3xl font-black italic">{t('home.consensus_subtitle')}</h2>
-                                <p class="text-sm text-muted-foreground mt-2">{t('home.consensus_desc')}</p>
+                                <span class="type-kicker">{t('home.consensus_title')}</span>
+                                <h2 class="type-section-title">{t('home.consensus_subtitle')}</h2>
+                                <p class="type-section-deck">{t('home.consensus_desc')}</p>
                             </div>
                             <div class="consensus-carousel-wrap">
                                 <button 
@@ -870,10 +870,10 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
     .home-evidence-item span {
         display: block;
         margin-bottom: 0.28rem;
-        font-family: var(--font-sans);
-        font-size: 0.56rem;
-        font-weight: 950;
-        letter-spacing: 0.14em;
+        font-family: var(--font-ui);
+        font-size: var(--text-xs);
+        font-weight: 700;
+        letter-spacing: 0.06em;
         text-transform: uppercase;
         color: color-mix(in srgb, var(--foreground) 68%, var(--muted-foreground));
     }
@@ -965,10 +965,10 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
     .analysis-eyebrow,
     .analysis-foot-label,
     .analysis-source-chip {
-        font-family: var(--font-sans);
-        font-size: 0.6rem;
-        font-weight: 950;
-        letter-spacing: 0.11em;
+        font-family: var(--font-ui);
+        font-size: var(--text-xs);
+        font-weight: 700;
+        letter-spacing: 0.06em;
         text-transform: uppercase;
     }
 
@@ -1309,11 +1309,11 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
     }
     
     .stats-panel-title {
-        font-family: var(--font-sans);
-        font-size: 0.64rem;
-        font-weight: 950;
+        font-family: var(--font-ui);
+        font-size: var(--text-xs);
+        font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.24em;
+        letter-spacing: 0.08em;
         color: var(--foreground);
         line-height: 1.25;
         opacity: 0.9;
@@ -1362,11 +1362,11 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
     }
     
     .stats-item-label {
-        font-family: var(--font-sans);
-        font-size: 0.6rem;
-        font-weight: 850;
+        font-family: var(--font-ui);
+        font-size: var(--text-xs);
+        font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.06em;
         color: color-mix(in srgb, var(--foreground) 64%, var(--muted-foreground));
         transition: color 0.3s var(--ease-editorial);
     }
@@ -1468,10 +1468,10 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
             align-items: center;
             justify-content: space-between;
             padding: 0.85rem 1rem;
-            font-family: var(--font-sans);
-            font-size: 0.62rem;
-            font-weight: 900;
-            letter-spacing: 0.16em;
+            font-family: var(--font-ui);
+            font-size: var(--text-xs);
+            font-weight: 700;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
             color: var(--foreground);
             cursor: pointer;

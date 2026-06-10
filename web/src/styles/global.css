@@ -351,17 +351,79 @@ h6,
 }
 
 .kicker {
-  font-family: var(--font-ui-condensed);
-  font-size: 0.62rem;
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.08em;
   color: var(--nyt-accent);
   display: block;
   margin-bottom: 0.5rem;
   line-height: 1.25;
   white-space: normal;
   word-break: break-word;
+}
+
+/* Shared editorial type roles: display / body / ui */
+.type-kicker {
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.25;
+  color: var(--nyt-accent);
+  display: block;
+  margin-bottom: 0.45rem;
+}
+
+.type-section-title {
+  font-family: var(--font-serif);
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  color: var(--foreground);
+  font-style: normal;
+  text-wrap: balance;
+  margin: 0;
+}
+
+.type-section-deck {
+  font-family: var(--font-nyt-body);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--muted-foreground);
+  max-width: 42rem;
+  margin: 0.5rem 0 0;
+}
+
+.type-card-title {
+  font-family: var(--font-serif);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--foreground);
+  text-wrap: pretty;
+}
+
+.type-meta,
+.type-ui-label {
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.25;
+}
+
+@media (max-width: 768px) {
+  .type-kicker,
+  .type-meta,
+  .type-ui-label,
+  .kicker {
+    letter-spacing: 0.06em;
+  }
 }
 
 .kicker-secondary {
@@ -1226,12 +1288,23 @@ button:focus-visible,
     mix-blend-mode: soft-light;
   }
   h1,
+  h2 {
+    @apply font-black leading-tight;
+  }
+
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-bold leading-tight;
+  }
+
+  h1,
   h2,
   h3,
   h4,
   h5,
   h6 {
-    @apply font-black leading-tight;
     font-family: "Noto Serif", "Georgia", "Times New Roman", serif;
     letter-spacing: -0.02em;
     text-wrap: balance;
@@ -1388,21 +1461,21 @@ button:focus-visible,
 }
 
 .nyt-section-label {
-  font-family: "Manrope", sans-serif;
-  font-size: 0.68rem;
-  font-weight: 900;
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  line-height: 1.15;
+  letter-spacing: 0.08em;
+  line-height: 1.25;
   color: var(--foreground);
   opacity: 0.9;
 }
 
 /* Accessible variant */
 .high-contrast .nyt-section-label {
-  font-size: 0.75rem;
+  font-size: var(--text-sm);
   opacity: 1;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.08em;
 }
 
 .high-contrast .micro-label {
@@ -2270,10 +2343,10 @@ button:active,
 }
 
 .editorial-byline {
-  font-family: var(--font-sans);
-  font-size: 0.62rem;
-  font-weight: 900;
-  letter-spacing: 0.1em;
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--foreground);
   margin-bottom: 0.75rem;
