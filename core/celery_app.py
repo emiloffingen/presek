@@ -107,7 +107,10 @@ celery_app.conf.update(
     task_routes={
         "tasks.ingestion_task.run_ingestion": {"queue": "ingestion"},
         "tasks.ingestion_task.auto_repair_sources_task": {"queue": "maintenance"},
+        "tasks.ingestion_task.repair_single_source_task": {"queue": "maintenance"},
         "tasks.ingestion_task.crawl_article_task": {"queue": "ingestion"},
+        "tasks.ingestion_task.process_article_image_task": {"queue": "ingestion"},
+        "tasks.ingestion_task.post_crawl_invalidation_task": {"queue": "ingestion"},
         "tasks.intelligence.synthesize_cluster_task": {"queue": "fast-track"},
         "tasks.intelligence.auto_summarize_task": {"queue": "fast-track"},
         "tasks.intelligence.*": {"queue": "intel-heavy"},

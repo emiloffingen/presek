@@ -5,6 +5,16 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 
+def _fresh_database_manager():
+    """Return an isolated DatabaseManager without touching the process singleton."""
+    from core.database import DatabaseManager
+
+    manager = object.__new__(DatabaseManager)
+    manager._pool = None
+    manager._read_pool = None
+    return manager
+
+
 class TestDBWrapper:
     """Tests for the DBWrapper connection wrapper."""
 
@@ -78,7 +88,7 @@ class TestDatabaseManagerExecute:
         mock_conn.cursor.return_value.__exit__ = MagicMock(return_value=False)
         mock_cursor.fetchall.return_value = [{"id": 1}]
 
-        manager = DatabaseManager.__new__(DatabaseManager)
+        manager = _fresh_database_manager()
         manager._pool = mock_pool
         manager._read_pool = None
         result = manager.execute("SELECT 1")
@@ -95,7 +105,7 @@ class TestDatabaseManagerExecute:
         mock_conn.cursor.return_value.__enter__ = MagicMock(return_value=mock_cursor)
         mock_conn.cursor.return_value.__exit__ = MagicMock(return_value=False)
 
-        manager = DatabaseManager.__new__(DatabaseManager)
+        manager = _fresh_database_manager()
         manager._pool = mock_pool
         manager._read_pool = None
         manager.execute("INSERT INTO foo VALUES (1)", fetch=False)
@@ -112,7 +122,7 @@ class TestDatabaseManagerExecute:
         mock_conn.cursor.return_value.__enter__ = MagicMock(return_value=mock_cursor)
         mock_conn.cursor.return_value.__exit__ = MagicMock(return_value=False)
 
-        manager = DatabaseManager.__new__(DatabaseManager)
+        manager = _fresh_database_manager()
         manager._pool = mock_pool
         manager._read_pool = None
         with pytest.raises(Exception):
@@ -122,7 +132,7 @@ class TestDatabaseManagerExecute:
     def test_get_db_size_returns_float(self):
         from core.database import DatabaseManager
 
-        manager = DatabaseManager.__new__(DatabaseManager)
+        manager = _fresh_database_manager()
         manager.execute_one = MagicMock(return_value={"mb": 128.4})
         assert manager.get_db_size() == 128.4
         manager.execute_one.assert_called_once()
@@ -130,7 +140,7 @@ class TestDatabaseManagerExecute:
     def test_get_db_size_returns_zero_when_missing(self):
         from core.database import DatabaseManager
 
-        manager = DatabaseManager.__new__(DatabaseManager)
+        manager = _fresh_database_manager()
         manager.execute_one = MagicMock(return_value=None)
         assert manager.get_db_size() == 0.0
 
@@ -148,7 +158,7 @@ class TestGetDb:
         """search_articles returns [] for empty/too-long queries."""
         from core.database import DatabaseManager
 
-        manager = DatabaseManager.__new__(DatabaseManager)
+        manager = _fresh_database_manager()
         manager._pool = MagicMock()
         assert manager.search_articles("") == []
         assert manager.search_articles("x" * 501) == []
@@ -160,7 +170,7 @@ class TestSchemaMigrations:
 
         from core.database import DatabaseManager
 
-        manager = DatabaseManager.__new__(DatabaseManager)
+        manager = _fresh_database_manager()
 
         with (
             patch("alembic.command.upgrade") as mock_upgrade,
