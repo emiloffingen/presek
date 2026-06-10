@@ -6,6 +6,7 @@ import { Zap, Palette, Building2, TrendingUp, Award, Cpu, Newspaper, ArrowRight 
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import { localePath, homePath } from '../../lib/localePaths';
 import MeshGradient from './MeshGradient.astro';
+import { buildEmergencyFallbackUrl } from '../../utils/imageSelection';
 
 interface Props {
     leadCluster: NewsCluster;
@@ -98,7 +99,7 @@ const getProxiedUrl = (width: number) => {
 
 const leadSrcset = leadVisual?.proxiedUrl ? [400, 600, 800, 1000, 1200].map(w => `${getProxiedUrl(w)} ${w}w`).join(', ') : '';
 const leadSizes = "(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 1200px";
-const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general.svg';
+const fallbackImageUrl = leadVisual?.fallbackUrl || buildEmergencyFallbackUrl(lang as 'sr' | 'mk');
 
 ---
 
@@ -139,12 +140,8 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
                     </div>
                 </Fragment>
             ) : (
-                <div class="lead-media-placeholder design-card topic-fallback-card" style={`--placeholder-bg: ${tintColor};`}>
+                <div class="lead-media-placeholder topic-fallback-card topic-fallback-card--proxy-only">
                     <img src={fallbackImageUrl} alt="" width="1200" height="760" class="article-image article-image-fallback is-loaded" loading="eager" decoding="async" />
-                    <div class="topic-fallback-scrim"></div>
-                    <div class="design-card-ribbon">
-                        <span>{cardLabel}</span>
-                    </div>
                 </div>
             )}
         </div>
@@ -264,20 +261,8 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || '/img/fallbacks/news-general
                     </div>
                 </Fragment>
             ) : (
-                <div class="lead-media-placeholder lead-media-editorial-card topic-fallback-card" style={`--placeholder-bg: ${tintColor};`}>
+                <div class="lead-media-placeholder topic-fallback-card topic-fallback-card--proxy-only">
                     <img src={fallbackImageUrl} alt="" width="1200" height="760" class="article-image article-image-fallback is-loaded" loading="eager" decoding="async" />
-                    <div class="topic-fallback-scrim"></div>
-                    <div class="lead-media-topline">
-                        <p class="lead-media-kicker">{mediaLabel}</p>
-                        <div class="lead-media-status">
-                           {leadCluster.is_breaking && <Zap size={10} fill="currentColor" />}
-                           <p class="lead-media-chip">{leadCluster.articles.length} {leadCluster.articles.length === 1 ? t('news.source') : t('news.sources')}</p>
-                        </div>
-                    </div>
-                    <div class="lead-media-source-row">
-                        <span>{leadCluster.articles?.[0].source}</span>
-                        <span>{t('lead.full_synthesis')} →</span>
-                    </div>
                 </div>
             )}
         </div>

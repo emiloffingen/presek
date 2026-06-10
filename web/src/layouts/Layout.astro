@@ -385,10 +385,16 @@ const organizationSchema = {
 				}
 			};
 
+			const emergencyFallbackUrl = () => {
+				const pageLang = document.documentElement.lang === 'mk' ? 'mk' : 'sr';
+				const cat = pageLang === 'mk' ? 'вести' : 'vesti';
+				return `/proxy?cat=${encodeURIComponent(cat)}&lang=${pageLang}&w=720`;
+			};
+
 			const handleImageError = (img: HTMLImageElement) => {
 				if (img.classList.contains('article-image') && !img.classList.contains('article-image-fallback')) {
 					img.removeAttribute('srcset');
-					const fallbackUrl = img.getAttribute('data-fallback-url') || '/img/fallbacks/news-general.svg';
+					const fallbackUrl = img.getAttribute('data-fallback-url') || emergencyFallbackUrl();
 					img.src = fallbackUrl;
 					img.classList.add('is-loaded', 'article-image-fallback');
 					const imageWrap = img.closest('.image-wrap');
@@ -399,12 +405,22 @@ const organizationSchema = {
 				}
 				if (img.classList.contains('lead-media-image') && !img.classList.contains('lead-media-fallback-image')) {
 					img.removeAttribute('srcset');
-					const fallbackUrl = img.getAttribute('data-fallback-url') || '/img/fallbacks/news-general.svg';
+					const fallbackUrl = img.getAttribute('data-fallback-url') || emergencyFallbackUrl();
 					img.src = fallbackUrl;
 					img.classList.add('is-loaded', 'lead-media-fallback-image');
 					const parent = img.parentElement;
 					if (parent) {
 						parent.classList.add('media-ready', 'lead-media-frame-fallback');
+					}
+				}
+				if (img.classList.contains('hero-main-image') && !img.classList.contains('article-image-fallback')) {
+					img.removeAttribute('srcset');
+					const fallbackUrl = img.getAttribute('data-fallback-url') || emergencyFallbackUrl();
+					img.src = fallbackUrl;
+					img.classList.add('is-loaded', 'article-image-fallback');
+					const card = img.closest('.hero-visual-card');
+					if (card) {
+						card.classList.add('is-weak', 'is-proxy-fallback');
 					}
 				}
 			};

@@ -61,7 +61,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
     cluster.is_breaking ? t('news.urgent') :
     t('news.ongoing');
 
-  const selectedImage = chooseClusterImage(cluster, isLead ? 'hero' : 'card');
+  const selectedImage = chooseClusterImage(cluster, isLead ? 'hero' : 'card', lang as 'sr' | 'mk');
   const thumbSrc = selectedImage.proxiedUrl;
   const isFallbackArt = selectedImage.isWeak;
   const fallbackImageUrl = selectedImage.fallbackUrl;
@@ -184,7 +184,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         >
           <a href={clusterUrl} className="block h-full" data-testid="cluster-link">
             {isFallbackArt ? (
-              <div className="article-image-placeholder design-card topic-fallback-card" style={{ '--placeholder-bg': tintColor } as any}>
+              <div className="article-image-placeholder topic-fallback-card topic-fallback-card--proxy-only">
                 <img
                   src={fallbackImageUrl}
                   alt=""
@@ -194,10 +194,6 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                   loading="lazy"
                   decoding="async"
                 />
-                <div className="topic-fallback-scrim"></div>
-                <div className="design-card-ribbon">
-                    <span>{cardLabel}</span>
-                </div>
               </div>
             ) : (
               <div className="runtime-image-container relative w-full h-full">
@@ -208,6 +204,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                   height="500"
                   className="article-image is-loaded w-full h-full object-cover rounded-md"
                   loading={isLead ? 'eager' : 'lazy'}
+                  data-fallback-url={fallbackImageUrl}
                   onError={(event) => {
                     const image = event.currentTarget;
                     image.onerror = null;
@@ -221,10 +218,6 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                     }
                   }}
                 />
-                <div className="topic-fallback-scrim runtime-fallback-only"></div>
-                <div className="design-card-ribbon runtime-fallback-only">
-                    <span>{cardLabel}</span>
-                </div>
               </div>
             )}
           </a>

@@ -1,8 +1,8 @@
-// Presek — Service Worker v27
+// Presek — Service Worker v28
 // Astro-only frontend caching: Stale-While-Revalidate for API and Cache-First for static assets
 
-const CACHE_NAME = 'presek-v27';
-const API_CACHE_NAME = 'presek-api-v27';
+const CACHE_NAME = 'presek-v28';
+const API_CACHE_NAME = 'presek-api-v28';
 const API_CACHE_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes max staleness for API
 
 // Core static assets that are shared across the Astro frontend
@@ -15,14 +15,6 @@ const STATIC_ASSETS = [
   '/img/icons/presek-maskable-512.png',
   '/img/icons/presek-apple-touch.png',
   '/img/placeholder.svg',
-  '/img/fallbacks/news-general.svg',
-  '/img/fallbacks/news-politics.svg',
-  '/img/fallbacks/news-economy.svg',
-  '/img/fallbacks/news-sport.svg',
-  '/img/fallbacks/news-tech.svg',
-  '/img/fallbacks/news-culture.svg',
-  '/img/fallbacks/news-world.svg',
-  '/img/fallbacks/news-local.svg',
   '/manifest.json',
   '/offline',
 ];

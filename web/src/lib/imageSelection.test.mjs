@@ -15,6 +15,7 @@ test('chooseClusterImage uses story-specific proxy fallback for missing visuals'
   assert.match(selected.proxiedUrl, /cid=cluster-1/);
   assert.match(selected.proxiedUrl, /t=/);
   assert.match(selected.proxiedUrl, /cat=/);
+  assert.match(selected.proxiedUrl, /lang=sr/);
 });
 
 test('chooseClusterImage replaces weak source images with smart fallback', () => {
@@ -28,4 +29,26 @@ test('chooseClusterImage replaces weak source images with smart fallback', () =>
   assert.equal(selected.isWeak, true);
   assert.match(selected.proxiedUrl, /^\/proxy\?/);
   assert.doesNotMatch(selected.proxiedUrl, /url=https/);
+});
+
+test('chooseClusterImage passes lang to proxy fallback', () => {
+  const selected = chooseClusterImage({
+    cluster_id: 'cluster-mk',
+    synthetic_headline: 'Тест наслов',
+    articles: [{ category: 'Политика', source: 'MIA' }],
+  }, 'card', 'mk');
+
+  assert.match(selected.fallbackUrl, /lang=mk/);
+  assert.match(selected.proxiedUrl, /lang=mk/);
+});
+
+test('staticFallbackUrl matches proxy fallbackUrl', () => {
+  const selected = chooseClusterImage({
+    cluster_id: 'cluster-3',
+    synthetic_headline: 'Fallback alias check',
+    articles: [{ category: 'Sport', source: 'Portal' }],
+  });
+
+  assert.equal(selected.staticFallbackUrl, selected.fallbackUrl);
+  assert.match(selected.fallbackUrl, /^\/proxy\?/);
 });

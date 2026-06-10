@@ -274,15 +274,18 @@ const shareDescription = synthesisItems[0]?.content || mainArticle?.description 
 
 function getLeadVisual(c: ClusterDetail | null) {
     if (!c) return null;
-    const selected = chooseClusterImage(c, 'hero');
+    const selected = chooseClusterImage(c, 'hero', 'mk');
     return {
-        src: selected.proxiedUrl || selected.staticFallbackUrl || '/img/placeholder.svg',
-        rawUrl: selected.rawUrl || selected.fallbackUrl || selected.staticFallbackUrl || '',
+        src: selected.proxiedUrl || selected.fallbackUrl,
+        rawUrl: selected.rawUrl || null,
         isWeak: selected.isWeak,
+        fallbackUrl: selected.fallbackUrl,
     };
 }
 const leadVisual = getLeadVisual(cluster);
-const imageUrl = leadVisual && !leadVisual.isWeak ? leadVisual.src : '/img/presek_emblem.png';
+const imageUrl = leadVisual && !leadVisual.isWeak
+    ? leadVisual.src
+    : (leadVisual?.fallbackUrl || '/img/presek_emblem.png');
 
 const headerBriefItems = synthesisItems.length > 0 
     ? synthesisItems.map((item: SynthesisItem) => item.content).filter((line: string) => line.trim().length > 4).slice(0, 4)
@@ -520,7 +523,7 @@ const articleSchema = cluster ? {
 	"@type": "NewsArticle",
 	"headline": displayHeadline,
 	"description": cluster.generated_article?.slice(0, 200) || cluster.synthesis?.slice(0, 200) || displayHeadline,
-	"image": cluster.representative_image || (leadVisual?.rawUrl?.startsWith('http') ? leadVisual.rawUrl : `${SITE_URL}/img/presek_emblem.png`),
+	"image": cluster.representative_image || (leadVisual?.rawUrl?.startsWith('http') ? leadVisual.rawUrl : imageUrl),
 	"datePublished": cluster.articles?.[cluster.articles.length - 1]?.created_at,
 	"dateModified": cluster.synthesis_updated_at || cluster.articles?.[0]?.created_at,
 	"author": {

@@ -17,6 +17,8 @@ type ClusterLike = {
   synthetic_standfirst?: string | null;
 };
 
+export type SiteLang = 'sr' | 'mk';
+
 const WEAK_VISUAL_TOKENS = [
   '.svg',
   'placeholder',
@@ -131,17 +133,6 @@ const VARIANT_WIDTH: Record<ImageVariant, number> = {
 
 type FallbackKind = 'politics' | 'economy' | 'sport' | 'tech' | 'culture' | 'world' | 'local' | 'general';
 
-const FALLBACK_ART: Record<FallbackKind, string> = {
-  politics: '/img/fallbacks/news-politics.svg',
-  economy: '/img/fallbacks/news-economy.svg',
-  sport: '/img/fallbacks/news-sport.svg',
-  tech: '/img/fallbacks/news-tech.svg',
-  culture: '/img/fallbacks/news-culture.svg',
-  world: '/img/fallbacks/news-world.svg',
-  local: '/img/fallbacks/news-local.svg',
-  general: '/img/fallbacks/news-general.svg',
-};
-
 function normalizeText(value?: string | null) {
   return String(value || '').toLowerCase();
 }
@@ -192,22 +183,46 @@ function getFallbackKind(cluster: ClusterLike): FallbackKind {
   return 'general';
 }
 
-export function getFallbackImage(cluster: ClusterLike) {
-  const kind = getFallbackKind(cluster);
+export function buildProxyFallbackUrl(
+  cluster: ClusterLike,
+  lang: SiteLang = 'sr',
+  variant: ImageVariant = 'card',
+) {
   const context = fallbackContext(cluster);
   const params = new URLSearchParams();
   if (context.cid) params.set('cid', context.cid);
   if (context.title) params.set('t', context.title);
   if (context.category) params.set('cat', context.category);
+  params.set('lang', lang);
+  params.set('w', String(VARIANT_WIDTH[variant]));
+  return `/proxy?${params.toString()}`;
+}
+
+export function buildEmergencyFallbackUrl(lang: SiteLang = 'sr') {
+  const params = new URLSearchParams({
+    cat: lang === 'mk' ? 'вести' : 'vesti',
+    lang,
+    w: '720',
+  });
+  return `/proxy?${params.toString()}`;
+}
+
+export function getFallbackImage(cluster: ClusterLike, lang: SiteLang = 'sr', variant: ImageVariant = 'card') {
+  const kind = getFallbackKind(cluster);
+  const smartSrc = buildProxyFallbackUrl(cluster, lang, variant);
 
   return {
     kind,
-    src: FALLBACK_ART[kind],
-    smartSrc: `/proxy?${params.toString()}`,
+    src: smartSrc,
+    smartSrc,
   };
 }
 
-export function chooseClusterImage(cluster: ClusterLike, variant: ImageVariant = 'card') {
+export function chooseClusterImage(
+  cluster: ClusterLike,
+  variant: ImageVariant = 'card',
+  lang: SiteLang = 'sr',
+) {
   const articles = cluster?.articles || [];
   const representativeSource = articles.find((article) => article.image_url === cluster?.representative_image)?.source;
 
@@ -232,7 +247,7 @@ export function chooseClusterImage(cluster: ClusterLike, variant: ImageVariant =
   const chosen = ranked[0]?.url || '';
   const width = VARIANT_WIDTH[variant];
   const isWeak = isWeakVisual(chosen);
-  const fallback = getFallbackImage(cluster);
+  const fallback = getFallbackImage(cluster, lang, variant);
 
   const context = fallbackContext(cluster);
 
@@ -240,7 +255,8 @@ export function chooseClusterImage(cluster: ClusterLike, variant: ImageVariant =
   if (chosen) {
     const params = new URLSearchParams({
       url: chosen,
-      w: width.toString()
+      w: width.toString(),
+      lang,
     });
     if (context.cid) params.set('cid', context.cid);
     if (context.title) params.set('t', context.title);
@@ -253,7 +269,8 @@ export function chooseClusterImage(cluster: ClusterLike, variant: ImageVariant =
     proxiedUrl: isWeak ? fallback.smartSrc : proxiedUrl,
     isWeak,
     fallbackUrl: fallback.smartSrc,
-    staticFallbackUrl: fallback.src,
+    /** @deprecated Use fallbackUrl — kept for callers that still read this field */
+    staticFallbackUrl: fallback.smartSrc,
     fallbackKind: fallback.kind,
   };
 }

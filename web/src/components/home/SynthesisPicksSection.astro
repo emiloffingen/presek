@@ -63,7 +63,7 @@ function getPluralismLabel(value: number) {
                 {synthesisPicks.map((cluster) => {
                     const artCount = cluster.articles?.length || 0;
                     const pluralismVal = cluster.pluralism_score || 50;
-                    const imageObj = chooseClusterImage(cluster, 'card');
+                    const imageObj = chooseClusterImage(cluster, 'card', lang as 'sr' | 'mk');
                     const visualImage = imageObj.proxiedUrl || imageObj.fallbackUrl || imageObj.staticFallbackUrl;
                     const sourceNames = Array.from(new Set((cluster.articles || []).map(a => a.source).filter(Boolean))).slice(0, 2);
                     const primaryMeta = [

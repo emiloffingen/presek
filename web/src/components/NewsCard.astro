@@ -36,7 +36,7 @@ const significanceLabel =
 	cluster.is_breaking ? t('news.urgent') :
 	t('news.ongoing');
 
-const selectedImage = chooseClusterImage(cluster, isLead ? 'hero' : 'card');
+const selectedImage = chooseClusterImage(cluster, isLead ? 'hero' : 'card', lang as 'sr' | 'mk');
 const thumbSrc = selectedImage.proxiedUrl;
 const isFallbackArt = selectedImage.isWeak;
 const fallbackImageUrl = selectedImage.fallbackUrl;
@@ -172,7 +172,7 @@ function getTimeStr(dateStr: string) {
     <div class:list={["image-wrap", { "image-wrap-fallback": isFallbackArt }]} data-image-state={isFallbackArt ? 'fallback' : 'loading'} style={!isFallbackArt ? `--placeholder-bg: ${tintColor}` : undefined}>
         <a href={clusterUrl} class="block h-full" data-testid="cluster-link">
             {isFallbackArt ? (
-                <div class="article-image-placeholder design-card topic-fallback-card" style={`--placeholder-bg: ${tintColor};`}>
+                <div class="article-image-placeholder topic-fallback-card topic-fallback-card--proxy-only">
                     <img
                         src={fallbackImageUrl}
                         alt=""
@@ -182,10 +182,6 @@ function getTimeStr(dateStr: string) {
                         loading="lazy"
                         decoding="async"
                     />
-                    <div class="topic-fallback-scrim"></div>
-                    <div class="design-card-ribbon">
-                        <span>{cardLabel}</span>
-                    </div>
                 </div>
             ) : (
                 <div class="runtime-image-container relative w-full h-full">
@@ -203,10 +199,6 @@ function getTimeStr(dateStr: string) {
                         fetchpriority={isLead ? "high" : "auto"}
                         data-fallback-url={fallbackImageUrl}
                     />
-                    <div class="topic-fallback-scrim runtime-fallback-only"></div>
-                    <div class="design-card-ribbon runtime-fallback-only">
-                        <span>{cardLabel}</span>
-                    </div>
                 </div>
             )}
         </a>

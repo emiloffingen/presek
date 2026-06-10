@@ -218,7 +218,7 @@ const focusEntities = topEntities
     .slice(0, 10);
 
 const leadCluster = clusters[0] ?? null;
-const leadVisual = leadCluster ? chooseClusterImage(leadCluster, 'hero') : null;
+const leadVisual = leadCluster ? chooseClusterImage(leadCluster, 'hero', lang as 'sr' | 'mk') : null;
 
 function getLeadSignal(cluster: NewsCluster) {
 	const count = cluster?.articles?.length || 0;

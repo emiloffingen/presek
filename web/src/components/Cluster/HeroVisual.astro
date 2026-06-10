@@ -17,30 +17,25 @@ const { leadVisual, dominantColor, displayHeadline, id, category, sourcePreview,
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
+const fallbackImageUrl = leadVisual?.fallbackUrl || leadVisual?.src || '';
 ---
 
 <div class="hero-visual-area">
-	{leadVisual && leadVisual.rawUrl ? (
-		<div class:list={["hero-visual-card shadow-editorial", leadVisual.isWeak ? "is-weak" : ""]}>
+	{leadVisual?.src ? (
+		<div class:list={["hero-visual-card shadow-editorial", leadVisual.isWeak ? "is-weak is-proxy-fallback" : ""]}>
 			{dominantColor && !leadVisual.isWeak && (
 				<div class="hero-visual-aura" style={`background-color: ${dominantColor};`}></div>
 			)}
 
-			{leadVisual.isWeak ? (
-				<div class="hero-fallback">
-					<p class="hero-fallback-kicker">{lang === 'sr' ? 'PRESEK.rs' : 'PRESEK.mk'} {lang === 'sr' ? 'PREGLED' : 'ПРЕГЛЕД'}</p>
-					<h2 class="font-serif font-black">{category || (lang === 'sr' ? 'glavna priča' : 'главна приказна')}</h2>
-					<p class="hero-fallback-meta">{articlesCount} {lang === 'sr' ? (articlesCount === 1 ? 'izvor' : 'izvora') : (articlesCount === 1 ? 'извор' : 'извори')} · {sourcePreview.slice(0, 2).join(' · ')}</p>
-				</div>
-			) : (
-				<img
-					src={leadVisual.src}
-					alt={displayHeadline}
-					class="hero-main-image"
-					transition:name={`cluster-image-${id}`}
-					loading="eager"
-				/>
-			)}
+			<img
+				src={leadVisual.src}
+				alt={displayHeadline}
+				class="hero-main-image"
+				transition:name={`cluster-image-${id}`}
+				loading="eager"
+				decoding="async"
+				data-fallback-url={fallbackImageUrl}
+			/>
 			<div class="hero-caption py-3 px-4 bg-background/80 backdrop-blur-sm border-t border-border/40 uppercase font-bold tracking-widest text-muted-foreground">
 				{t('cluster.hero_caption')} · {articlesCount} {t('cluster.newsrooms_analyzed')}
 			</div>
@@ -92,39 +87,9 @@ const t = useTranslations(lang);
 		opacity: 1;
 	}
 
-	.hero-fallback {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		align-items: center;
-		padding: 4rem 2rem;
-		text-align: center;
-		background: linear-gradient(135deg, var(--secondary) 0%, var(--background) 100%);
-	}
-
-	.hero-fallback-kicker {
-		font-family: var(--font-sans);
-		font-size: 0.68rem;
-		font-weight: 950;
-		text-transform: uppercase;
-		letter-spacing: 0.15em;
-		color: var(--nyt-accent);
-		margin-bottom: 1rem;
-	}
-
-	.hero-fallback h2 {
-		font-size: 2.5rem;
-		margin-bottom: 1rem;
-		line-height: 1.1;
-	}
-
-	.hero-fallback-meta {
-		font-family: var(--font-sans);
-		font-size: 0.78rem;
-		font-weight: 800;
-		text-transform: uppercase;
-		color: var(--muted-foreground);
+	.hero-visual-card.is-proxy-fallback .hero-main-image {
+		object-fit: cover;
+		background: #111827;
 	}
 
     .hero-caption {

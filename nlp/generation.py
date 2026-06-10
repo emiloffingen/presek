@@ -1437,10 +1437,10 @@ def _build_minimum_cluster_summary(articles, comparison=None, lang="mk"):
     return f"• {t['sto_se_slucuva']}: {lead['title']}\n• {t['pokrienost']}: {len(articles)} {t['izvori']}, {t['sledeno_od']} i {_source_list(articles)}."
 
 
-def generate_local_placeholder(cluster_id, title, category="vesti", theme=None):
+def generate_local_placeholder(cluster_id, title, category="vesti", theme=None, lang="sr"):
     import hashlib
 
-    # 1. Deterministic seed from cluster_id
+    lang = "mk" if str(lang or "sr").lower().startswith("mk") else "sr"
     seed = int(hashlib.md5(str(cluster_id).encode()).hexdigest(), 16)
     category_raw = str(category or "vesti")
     category_l = category_raw.casefold()
@@ -1729,6 +1729,41 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None):
 
     art_svg = art_templates.get(category_key, art_templates["default"])
 
+    status_label = "ПРЕГЛЕД НА ВЕСТИ" if lang == "mk" else "PREGLED VESTI"
+    site_label = "PRESEK.MK" if lang == "mk" else "PRESEK"
+    category_labels_mk = {
+        "Sport": "СПОРТ",
+        "Ekonomija": "ЕКОНОМИЈА",
+        "Tehnologija": "ТЕХНОЛОГИЈА",
+        "Zabava": "КУЛТУРА",
+        "Hronika": "ХРОНИКА",
+        "Makedonija": "МАКЕДОНИЈА",
+        "Srbija": "СРБИЈА",
+        "Balkan": "БАЛКАН",
+        "Evropa": "ЕВРОПА",
+        "Amerika": "АМЕРИКА",
+        "Svet": "СВЕТ",
+        "default": "ВЕСТИ",
+    }
+    category_labels_sr = {
+        "Sport": "SPORT",
+        "Ekonomija": "EKONOMIJA",
+        "Tehnologija": "TEHNOLOGIJA",
+        "Zabava": "KULTURA",
+        "Hronika": "HRONIKA",
+        "Makedonija": "MAKEDONIJA",
+        "Srbija": "SRBIJA",
+        "Balkan": "BALKAN",
+        "Evropa": "EVROPA",
+        "Amerika": "AMERIKA",
+        "Svet": "SVET",
+        "default": "VESTI",
+    }
+    category_label = (category_labels_mk if lang == "mk" else category_labels_sr).get(
+        category_key,
+        category_key.upper(),
+    )
+
     # Define color scheme support style for browser/image-tag content evaluation
     color_scheme_style = 'style="color-scheme: light dark;"'
 
@@ -1782,7 +1817,7 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None):
         
         # 5. Editorial status
         '<circle cx="80" cy="75" r="4" fill="var(--art-accent)" opacity="0.72" />',
-        '<text x="96" y="79" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="900" letter-spacing="2" fill="var(--text-meta)" opacity="var(--meta-opacity)">PREGLED VESTI</text>',
+        f'<text x="96" y="79" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="900" letter-spacing="2" fill="var(--text-meta)" opacity="var(--meta-opacity)">{status_label}</text>',
         
         # 6. Beautiful Category Vector Art
         f'{art_svg}',
@@ -1793,8 +1828,8 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None):
         '</text>',
         
         # 8. Premium Branding Metadata
-        '<text x="80" y="378" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" letter-spacing="4" fill="var(--text-meta)" opacity="var(--meta-opacity)">PRESEK</text>',
-        f'<text x="720" y="378" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" letter-spacing="2" fill="var(--art-accent)" opacity="var(--category-opacity)">{category_key.upper()}</text>',
+        f'<text x="80" y="378" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" letter-spacing="4" fill="var(--text-meta)" opacity="var(--meta-opacity)">{site_label}</text>',
+        f'<text x="720" y="378" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" letter-spacing="2" fill="var(--art-accent)" opacity="var(--category-opacity)">{category_label}</text>',
         
         '</svg>'
     ]

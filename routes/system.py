@@ -647,6 +647,7 @@ async def proxy_image(
     t: Optional[str] = None,
     cat: Optional[str] = None,
     theme: Optional[str] = None,
+    lang: Optional[str] = None,
 ):
     """
     Proxy images to avoid CORS and mixed content issues.
@@ -657,7 +658,7 @@ async def proxy_image(
         try:
             from nlp.generation import generate_local_placeholder
 
-            svg = generate_local_placeholder(cid or "px", t or "vest", cat or "vesti", theme=theme)
+            svg = generate_local_placeholder(cid or "px", t or "vest", cat or "vesti", theme=theme, lang=lang or "sr")
             log.warning(f"[proxy] Serving fallback for {url or 'unknown'}: {reason}")
 
             return Response(
