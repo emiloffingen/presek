@@ -388,4 +388,22 @@ const renderSynthesisHtml = (text: string) => {
         background: var(--nyt-accent);
         color: white;
     }
+
+    :global(.citation-ref-wrap) {
+        margin-left: 0.12rem;
+        font-size: 0.72em;
+        line-height: 1;
+        vertical-align: super;
+    }
+
+    :global(.citation-ref) {
+        color: var(--nyt-accent);
+        font-weight: 800;
+        text-decoration: none;
+    }
+
+    :global(.citation-ref:hover) {
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
 </style>

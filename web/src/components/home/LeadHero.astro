@@ -21,6 +21,8 @@ interface Props {
     filtered?: boolean;
     filterLabel?: string | null;
     lang?: string;
+    compact?: boolean;
+    showHeroVisual?: boolean;
 }
 
 const {
@@ -35,7 +37,9 @@ const {
     getTimeStr,
     filtered = false,
     filterLabel = null,
-    lang: propLang
+    lang: propLang,
+    compact = false,
+    showHeroVisual = true,
 } = Astro.props;
 
 const hostHeader = Astro.request?.headers.get('host');
@@ -100,14 +104,15 @@ const getProxiedUrl = (width: number) => {
 const leadSrcset = leadVisual?.proxiedUrl ? [400, 600, 800, 1000, 1200].map(w => `${getProxiedUrl(w)} ${w}w`).join(', ') : '';
 const leadSizes = "(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 1200px";
 const fallbackImageUrl = leadVisual?.fallbackUrl || buildEmergencyFallbackUrl(lang as 'sr' | 'mk');
+const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl && !leadVisual?.isWeak);
 
 ---
 
-<section class:list={["lead-hero", { "lead-hero-filtered": filtered }]} style={`--dominant-color: ${tintColor};`}>
+<section class:list={["lead-hero", { "lead-hero-filtered": filtered, "lead-hero-compact": compact, "lead-hero-no-visual": !showHeroVisual }]} style={`--dominant-color: ${tintColor};`}>
     <MeshGradient color={tintColor} />
+    {showHeroVisual && showLeadMedia && (
     <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="lead-media lead-media-mobile" aria-hidden="true" tabindex="-1" data-testid="cluster-link">
-        <div class:list={["lead-media-frame shadow-editorial", { "lead-media-frame-fallback": leadVisual?.isWeak }]}>
-	            {leadVisual?.proxiedUrl && !leadVisual.isWeak ? (
+        <div class="lead-media-frame shadow-editorial">
 	                <Fragment>
 	                    <div class="lead-media-loading-shell" aria-hidden="true">
 	                        <div class="lead-media-loading-kicker">{mediaLabel}</div>
@@ -139,13 +144,9 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || buildEmergencyFallbackUrl(la
                         </div>
                     </div>
                 </Fragment>
-            ) : (
-                <div class="lead-media-placeholder topic-fallback-card topic-fallback-card--proxy-only">
-                    <img src={fallbackImageUrl} alt="" width="1200" height="760" class="article-image article-image-fallback is-loaded" loading="eager" decoding="async" />
-                </div>
-            )}
         </div>
     </a>
+    )}
     <div class="lead-copy">
         <div class="lead-edition-bar" role="note" aria-label={t('lead.narrative_kicker')}>
             <span class="lead-edition-label">{t('lead.narrative_kicker')}</span>
@@ -176,7 +177,7 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || buildEmergencyFallbackUrl(la
             <p class:list={["lead-summary", { "lead-summary-cyrillic": leadSummaryIsCyrillic }]} set:html={sanitizeHtml(finalLeadSummary)}></p>
         )}
 
-        {leadCluster.key_facts && leadCluster.key_facts.length > 0 && (
+        {!compact && leadCluster.key_facts && leadCluster.key_facts.length > 0 && (
             <div class="editorial-insight-panel" aria-label={t('lead.system_insight')}>
                 <div class="insight-header">
                     <span class="insight-label">{t('lead.system_insight').toUpperCase()}</span>
@@ -207,7 +208,7 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || buildEmergencyFallbackUrl(la
             <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="lead-meta-link text-[10px] font-black uppercase tracking-widest text-nyt-accent hover:underline decoration-2 underline-offset-4" data-testid="cluster-link">{t('lead.full_synthesis')}</a>
         </div>
 
-        {relatedArticles.length > 0 && (
+        {!compact && relatedArticles.length > 0 && (
             <div class="lead-follow-strip">
                 <p class="lead-follow-kicker">{t('lead.key_perspectives')}</p>
                 <ul class="lead-related">
@@ -227,9 +228,9 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || buildEmergencyFallbackUrl(la
         )}
     </div>
 
+    {showHeroVisual && showLeadMedia && (
     <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="lead-media lead-media-desktop" aria-hidden="true" tabindex="-1" data-testid="cluster-link">
-        <div class:list={["lead-media-frame shadow-editorial", { "lead-media-frame-fallback": leadVisual?.isWeak }]}>
-	            {leadVisual?.proxiedUrl && !leadVisual.isWeak ? (
+        <div class="lead-media-frame shadow-editorial">
 	                <Fragment>
 	                    <div class="lead-media-loading-shell" aria-hidden="true">
 	                        <div class="lead-media-loading-kicker">{mediaLabel}</div>
@@ -260,13 +261,9 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || buildEmergencyFallbackUrl(la
                         </div>
                     </div>
                 </Fragment>
-            ) : (
-                <div class="lead-media-placeholder topic-fallback-card topic-fallback-card--proxy-only">
-                    <img src={fallbackImageUrl} alt="" width="1200" height="760" class="article-image article-image-fallback is-loaded" loading="eager" decoding="async" />
-                </div>
-            )}
         </div>
     </a>
+    )}
 </section>
 
 <style>
@@ -285,6 +282,36 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || buildEmergencyFallbackUrl(la
 
     :global(.dark) .lead-hero {
         background-image: radial-gradient(circle at 80% 20%, color-mix(in srgb, var(--dominant-color, var(--nyt-accent)) 8%, transparent), transparent 75%);
+    }
+
+    .lead-hero-compact {
+        padding-bottom: clamp(0.75rem, 1.4vw, 1.25rem);
+        margin-bottom: 0.85rem;
+    }
+
+    .lead-hero-compact .lead-edition-bar {
+        margin-bottom: 0.55rem;
+        padding: 0.35rem 0.65rem;
+    }
+
+    .lead-hero-compact .lead-summary {
+        font-size: var(--text-base);
+        line-height: 1.5;
+    }
+
+    .lead-hero-compact .lead-summary::first-letter {
+        font-size: clamp(2.4rem, 4vw, 3rem);
+        margin-right: 0.45rem;
+    }
+
+    .lead-hero-no-visual .lead-copy .headline-lead {
+        max-width: 24ch;
+    }
+
+    @media (min-width: 960px) {
+        .lead-hero-no-visual {
+            grid-template-columns: minmax(0, 1fr);
+        }
     }
 
     .lead-kicker-v2 {

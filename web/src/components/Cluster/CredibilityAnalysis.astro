@@ -8,6 +8,8 @@ interface Props {
 	verificationReport: any;
 	perspectives: any[];
 	hasCitationSources: boolean;
+	showPerspectives?: boolean;
+	consensusNote?: string | null;
 	lang?: 'sr' | 'mk';
 	pluralismScore?: number;
 	toneAnalysis?: {
@@ -17,7 +19,17 @@ interface Props {
 	};
 }
 
-const { hasFactcheck, verificationReport, perspectives, hasCitationSources, lang: propLang, pluralismScore, toneAnalysis } = Astro.props;
+const {
+	hasFactcheck,
+	verificationReport,
+	perspectives,
+	hasCitationSources,
+	showPerspectives = true,
+	consensusNote = null,
+	lang: propLang,
+	pluralismScore,
+	toneAnalysis,
+} = Astro.props;
 
 const requestUrl = Astro.request ? new URL(Astro.request.url) : Astro.url;
 const hostHeader = Astro.request?.headers.get('host') || requestUrl.hostname;
@@ -177,7 +189,7 @@ const signalSummary = pluralismLabel && objectivityLabel
 		</div>
 	)}
 
-	{displayPerspectives.length > 0 && (
+	{(showPerspectives ? displayPerspectives.length > 0 : Boolean(consensusNote)) && (
 		<div class="perspectives-area mt-10">
             <div class="analysis-bento-grid">
                 {shouldShowSignalCard && (
@@ -217,15 +229,24 @@ const signalSummary = pluralismLabel && objectivityLabel
 
                 <!-- Perspectives Cards -->
                 <div class="perspectives-list-card">
-                    <h4 class="perspectives-label">{t('cluster.factcheck.diversity')}</h4>
-                    <div class="perspective-grid-v2">
-                        {displayPerspectives.map((p: any) => (
-                            <div class="editorial-angle-card">
-                                <h5 class="angle-title" set:html={renderSynthesisHtml(p.angle)}></h5>
-                                <p class="angle-content" set:html={renderSynthesisHtml(p.content)}></p>
+                    {showPerspectives ? (
+                        <>
+                            <h4 class="perspectives-label">{t('cluster.factcheck.diversity')}</h4>
+                            <div class="perspective-grid-v2">
+                                {displayPerspectives.map((p: any) => (
+                                    <div class="editorial-angle-card">
+                                        <h5 class="angle-title" set:html={renderSynthesisHtml(p.angle)}></h5>
+                                        <p class="angle-content" set:html={renderSynthesisHtml(p.content)}></p>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
+                        </>
+                    ) : consensusNote ? (
+                        <div class="consensus-note-card">
+                            <h4 class="perspectives-label">{lang === 'sr' ? 'Pokrivenost izvora' : 'Покриеност на извори'}</h4>
+                            <p class="consensus-note-copy">{consensusNote}</p>
+                        </div>
+                    ) : null}
                 </div>
             </div>
 		</div>
@@ -353,6 +374,20 @@ const signalSummary = pluralismLabel && objectivityLabel
 
     .perspectives-label {
         margin: 0 0 1rem;
+    }
+
+    .consensus-note-card {
+        padding: 1rem 1.1rem;
+        border: 1px solid color-mix(in srgb, var(--foreground) 12%, var(--border));
+        background: color-mix(in srgb, var(--secondary) 28%, var(--background));
+    }
+
+    .consensus-note-copy {
+        margin: 0;
+        font-family: var(--font-nyt-body);
+        font-size: 0.95rem;
+        line-height: 1.55;
+        color: color-mix(in srgb, var(--foreground) 78%, var(--secondary-foreground));
     }
 
 	.perspectives-area {

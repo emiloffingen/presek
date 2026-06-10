@@ -25,6 +25,11 @@ import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import { localePath, homePath } from '../../lib/localePaths';
 import { buildHomepageSections } from '../../lib/homepageSections';
 import { fetchJsonCached } from '../../lib/apiCache';
+import {
+	buildHomepageSynthesisExcludeIds,
+	filterSynthesisPicks,
+	selectVisibleAnalysisBands,
+} from '../../lib/homepageLayout';
 
 const requestUrl = Astro.request ? new URL(Astro.request.url) : Astro.url;
 const hostHeader = Astro.request?.headers.get('host') || requestUrl.hostname;
@@ -283,6 +288,22 @@ const {
     topWireArticles,
 } = homepageSections;
 
+const showLeadHeroVisual = Boolean(leadVisual && !leadVisual.isWeak);
+const displayedSynthesisPicks = isHomepage
+    ? filterSynthesisPicks(synthesisPicks, buildHomepageSynthesisExcludeIds(leadCluster, supportingClusters))
+    : synthesisPicks;
+const analysisBands = isHomepage
+    ? selectVisibleAnalysisBands({
+        radarCount: radarClusters.length,
+        perspectivesCount: perspectivesClusters.length,
+        consensusCount: consensusClusters.length,
+    })
+    : {
+        radar: radarClusters.length > 0,
+        perspectives: perspectivesClusters.length > 0,
+        consensus: consensusClusters.length > 0,
+    };
+
 function getTimeStr(dateStr: string) {
     try {
         const date = new Date(dateStr);
@@ -437,6 +458,8 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 							filtered={!isHomepage}
 							filterLabel={activeFilterLabel}
                             lang={lang}
+                            compact={isHomepage}
+                            showHeroVisual={showLeadHeroVisual}
 						/>
                         {leadStatus && leadEvidenceItems.length > 0 && (
                             <div class:list={["home-evidence-strip", `tone-${leadStatus.tone}`]}>
@@ -518,12 +541,6 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
                     </div>
                 )}
 
-                {!error && isHomepage && (
-                    <div class="home-mobile-order-trending">
-                        <TrendingPreviewRail clusters={displayedTrendingClusters} lang={lang} />
-                    </div>
-                )}
-
 				{leadCluster && supportingClusters.length > 0 && (
 					<div class="section-wrapper home-mobile-order-supporting">
 						<SupportingBand
@@ -534,17 +551,24 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 					</div>
 				)}
 
-				{isHomepage && synthesisPicks && synthesisPicks.length > 0 && (
+                {!error && isHomepage && (
+                    <div class="home-mobile-order-trending">
+                        <TrendingPreviewRail clusters={displayedTrendingClusters} lang={lang} />
+                    </div>
+                )}
+
+				{isHomepage && displayedSynthesisPicks.length > 0 && (
 					<div class="section-wrapper home-mobile-order-synthesis">
 						<SynthesisPicksSection
-							synthesisPicks={synthesisPicks}
+							synthesisPicks={displayedSynthesisPicks}
 							lang={lang}
 						/>
 					</div>
 				)}
 
+				<div class="home-mobile-order-analysis">
 				{/* ── UGAO GLEDANJA (PERSPECTIVE SPECTRUM) ── */}
-				{isHomepage && perspectivesClusters && perspectivesClusters.length > 0 && (
+				{isHomepage && analysisBands.perspectives && perspectivesClusters && perspectivesClusters.length > 0 && (
 					<div class="section-wrapper analysis-band perspectives-section">
 						<div class="section-heading-row">
 							<span class="type-kicker">{t('home.perspectives_title')}</span>
@@ -611,7 +635,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 				)}
 
 				{/* ── MEDIJSKI RADAR (FACT-CHECK RADAR) ── */}
-				{isHomepage && radarClusters && radarClusters.length > 0 && (
+				{isHomepage && analysisBands.radar && radarClusters && radarClusters.length > 0 && (
 					<div class="section-wrapper analysis-band radar-section">
 						<div class="section-heading-row">
 							<span class="type-kicker text-red-500 dark:text-red-400">{t('home.radar_title')}</span>
@@ -665,7 +689,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 				)}
 
                 {/* THE BIG PICTURE (HIGH CONSENSUS) */}
-                {isHomepage && consensusClusters.length > 0 && (
+                {isHomepage && analysisBands.consensus && consensusClusters.length > 0 && (
                     <div class="section-wrapper consensus-section bg-secondary/10 p-8 border-y border-border/40">
                             <div class="section-heading-row mb-8">
                                 <span class="type-kicker">{t('home.consensus_title')}</span>
@@ -701,6 +725,9 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 	                        </div>
                 )}
 
+				</div>
+
+                <div class="home-mobile-order-feed">
                 {forYouClusters.length > 0 && (
 					<div class="section-wrapper for-you-wrapper">
 					    <ForYouIsland client:visible clusters={forYouClusters} excludeClusterIds={excludedClusterIds} lang={lang} />
@@ -743,6 +770,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 						/>
 					</div>
 				)}
+                </div>
 			</div>
 			{/* HomeRail rendered horizontally at the bottom of the main feed */}
 			<div class="w-full mt-16 pt-12">
@@ -1451,11 +1479,13 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 
         .home-mobile-order-lead { order: 1; }
         .home-mobile-order-briefing { order: 2; }
-        .home-mobile-order-trending { order: 3; }
-        .home-mobile-order-synthesis { order: 4; }
-        .home-mobile-order-supporting { order: 5; }
-        .home-mobile-order-stats { order: 6; }
-        .home-mobile-order-live { order: 7; display: none; }
+        .home-mobile-order-supporting { order: 3; }
+        .home-mobile-order-feed { order: 4; }
+        .home-mobile-order-trending { order: 5; }
+        .home-mobile-order-synthesis { order: 6; }
+        .home-mobile-order-analysis { order: 7; }
+        .home-mobile-order-stats { order: 8; }
+        .home-mobile-order-live { order: 9; display: none; }
 
         .home-mobile-stats-details {
             margin: 0 0 1rem;

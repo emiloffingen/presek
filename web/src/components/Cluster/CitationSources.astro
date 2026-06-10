@@ -12,7 +12,7 @@ const { citationSources } = Astro.props;
 	<h4 class="citation-heading">REFERENTNI izvori</h4>
 	<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-[var(--grid-gap)]">
 		{citationSources.map((art: any) => (
-			<div class="citation-card group">
+			<div class="citation-card group" id={`citation-${art.index}`}>
 				<span class="citation-idx">[{art.index}]</span>
 				<div class="citation-body">
 					<p class="citation-source">{art.source}</p>
@@ -30,6 +30,7 @@ const { citationSources } = Astro.props;
 		display: flex;
 		gap: 1rem;
 		align-items: flex-start;
+		scroll-margin-top: 6rem;
 	}
 	.citation-idx {
 		font-family: var(--font-sans);

@@ -132,9 +132,12 @@ class TestAstroFrontendIntegrity:
 
     def test_generated_article_footnotes_are_sanitized_before_html_rendering(self):
         cluster_page = _read("web/src/pages/cluster/[slug].astro")
+        layout = _read("web/src/lib/clusterPageLayout.ts")
         text_utils = _read("web/src/utils/textUtils.ts")
 
-        assert "const hasCitationSources = false;" in cluster_page
+        assert "resolveHasCitationSources" in cluster_page
+        assert "shouldShowExecutiveSummary" in layout
+        assert "stripCitationMarkers" in text_utils
         assert "timeZone: 'Europe/Skopje'" in text_utils
 
     def test_macedonian_topic_and_entity_pages_keep_locale_contract(self):

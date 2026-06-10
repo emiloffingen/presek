@@ -87,11 +87,13 @@ export function buildHomepageSections(input: HomepageSectionsInput) {
         supportingClusters = input.clusters.slice(1, 5);
     }
 
-    const filteredSupporting = supportingClusters.filter((cluster) => !usedIds.has(cluster.cluster_id));
-    const supportingFeatured = filteredSupporting.slice(0, 2);
+    const filteredSupporting = supportingClusters
+        .filter((cluster) => !usedIds.has(cluster.cluster_id))
+        .slice(0, 3);
+    const supportingFeatured = filteredSupporting.slice(0, 1);
     supportingFeatured.forEach((cluster) => usedIds.add(cluster.cluster_id));
 
-    const supportingCompact = filteredSupporting.slice(2).filter((cluster) => !usedIds.has(cluster.cluster_id));
+    const supportingCompact = filteredSupporting.slice(1).filter((cluster) => !usedIds.has(cluster.cluster_id));
     supportingCompact.forEach((cluster) => usedIds.add(cluster.cluster_id));
 
     if (!input.isHomepage) {
@@ -120,7 +122,7 @@ export function buildHomepageSections(input: HomepageSectionsInput) {
     consensusClusters.forEach((cluster) => usedIds.add(cluster.cluster_id));
 
     const perspectivesClusters = input.clusters
-        .filter((cluster) => (cluster.pluralism_score || 0) >= 40 && !usedIds.has(cluster.cluster_id))
+        .filter((cluster) => (cluster.pluralism_score || 0) >= 55 && !usedIds.has(cluster.cluster_id))
         .sort((left, right) => (right.pluralism_score || 0) - (left.pluralism_score || 0))
         .slice(0, 3);
     perspectivesClusters.forEach((cluster) => usedIds.add(cluster.cluster_id));

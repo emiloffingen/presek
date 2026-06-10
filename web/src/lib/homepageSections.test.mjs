@@ -81,3 +81,36 @@ test('buildHomepageSections keeps later analysis sections from being starved by 
   assert.deepEqual(sections.radarClusters.map((item) => item.cluster_id), ['radar-after-featured']);
   assert.equal(sections.developmentsCompact.length, 0);
 });
+
+test('buildHomepageSections requires higher pluralism for perspectives band', () => {
+  const clusters = [
+    cluster('lead', 3),
+    cluster('support-1', 2),
+    cluster('support-2', 2),
+    cluster('support-3', 2),
+    cluster('dev-1', 3),
+    cluster('dev-2', 3),
+    cluster('dev-3', 3),
+    cluster('dev-4', 3),
+    cluster('dev-5', 3),
+    cluster('dev-6', 3),
+    cluster('low-pluralism', 2, { pluralism_score: 48 }),
+    cluster('high-pluralism', 2, { pluralism_score: 62 }),
+  ];
+
+  const sections = buildHomepageSections({
+    clusters,
+    leadCluster: clusters[0],
+    supportingClusters: clusters.slice(1, 4),
+    forYouClusters: [],
+    feedClusters: clusters.slice(4),
+    wireClusters: [],
+    wireArticles: [],
+    excludedClusterIds: [],
+    isHomepage: true,
+  });
+
+  assert.deepEqual(sections.perspectivesClusters.map((item) => item.cluster_id), ['high-pluralism']);
+  assert.equal(sections.supportingFeatured.length, 1);
+  assert.equal(sections.supportingCompact.length, 2);
+});
