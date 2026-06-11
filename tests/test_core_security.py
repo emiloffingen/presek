@@ -128,14 +128,12 @@ def test_environment_validation(monkeypatch):
 def test_security_constants():
     """Test security-related constants and configurations."""
     print("Testing security constants...")
-    
-    # Test that security constants are properly defined
-    MAX_REQUEST_BODY_SIZE = 10 * 1024 * 1024  # 10 MB
-    MAX_QUERY_PARAM_LENGTH = 1000
-    MAX_HEADER_VALUE_LENGTH = 2000
-    
+
+    from core.config import API_MAX_Q_LEN
+    from routes.security import MAX_HEADER_VALUE_LENGTH, MAX_QUERY_PARAM_LENGTH, MAX_REQUEST_BODY_SIZE
+
     assert MAX_REQUEST_BODY_SIZE == 10485760, "Max request body size should be 10MB"
-    assert MAX_QUERY_PARAM_LENGTH == 1000, "Max query param length should be 1000"
+    assert MAX_QUERY_PARAM_LENGTH == API_MAX_Q_LEN, "Query param limit should match API_MAX_Q_LEN"
     assert MAX_HEADER_VALUE_LENGTH == 2000, "Max header value length should be 2000"
     
     # Test JWT constants

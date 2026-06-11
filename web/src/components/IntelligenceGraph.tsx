@@ -1,6 +1,7 @@
 import { localePathForLang } from '../lib/localePaths';
 import React, { useState, useEffect, useRef } from 'react';
 import { apiBaseUrl } from '../lib/apiBase';
+import { buildCsrfHeadersAsync } from '../lib/personalization.js';
 import { 
   Search, 
   Settings, 
@@ -303,7 +304,7 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
     }
   };
 
-  const generateGroupSynthesis = () => {
+  const generateGroupSynthesis = async () => {
     if (selectedNodes.length === 0) return;
     setSynthesisLoading(true);
     setSynthesis(null);
@@ -313,7 +314,8 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
     fetch(`${API_URL}/intelligence/synthesize-nodes`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...(await buildCsrfHeadersAsync()),
       },
       body: JSON.stringify({
         entities: selectedNodes,

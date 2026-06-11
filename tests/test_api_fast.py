@@ -1277,6 +1277,21 @@ def test_request_size_middleware_rejects_large_content_length():
     assert exc.value.status_code == 413
 
 
+def test_request_size_middleware_rejects_long_query_param():
+    from routes.security import MAX_QUERY_PARAM_LENGTH, RequestSizeMiddleware
+
+    request = types.SimpleNamespace(
+        headers={},
+        query_params={"q": "x" * (MAX_QUERY_PARAM_LENGTH + 1)},
+    )
+    middleware = RequestSizeMiddleware(app=MagicMock())
+
+    with pytest.raises(Exception) as exc:
+        asyncio.run(middleware.dispatch(request, AsyncMock()))
+
+    assert exc.value.status_code == 400
+
+
 def test_stats_summary_includes_intelligence_payload(mock_all):
     import routes.stats
 

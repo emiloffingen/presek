@@ -390,7 +390,7 @@ async def get_deep_research(request: Request, cluster_id: str, mode: str = "fact
     # Caching check
     effective_lang = lang if lang in _RESEARCH_MODE_QUERIES else "sr"
     query = clean_query if clean_mode == "custom" else _RESEARCH_MODE_QUERIES[effective_lang][clean_mode]
-    query_hash = hashlib.sha1(query.encode("utf-8")).hexdigest()[:12]
+    query_hash = hashlib.sha1(query.encode("utf-8"), usedforsecurity=False).hexdigest()[:12]
     cache_key = f"api:intelligence:research:cascade:{cluster_id}:{clean_mode}:{query_hash}:{lang}:v3"
     cached = cached_response(cache_key)
     if cached:
@@ -1005,7 +1005,11 @@ class NodeSynthesisRequest(BaseModel):
 
 @router.post("/intelligence/synthesize-nodes")
 @custom_rate_limit("10/minute")
-async def synthesize_nodes(request: Request, payload: NodeSynthesisRequest):
+async def synthesize_nodes(
+    request: Request,
+    payload: NodeSynthesisRequest,
+    csrf_valid: bool = Depends(verify_csrf_token),
+):
     """
     Local Analyst: Dynamically synthesize a broadsheet intelligence briefing
     for a multi-select group of entities/nodes in recent news.
@@ -1262,7 +1266,10 @@ async def compare_sources(s1: str, s2: str):
 
 @router.post("/intelligence/recommendations")
 @custom_rate_limit("10/minute")
-async def get_personalized_recommendations(request: Request):
+async def get_personalized_recommendations(
+    request: Request,
+    csrf_valid: bool = Depends(verify_csrf_token),
+):
     try:
         payload = await request.json()
     except Exception:

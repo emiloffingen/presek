@@ -1441,7 +1441,7 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None, 
     import hashlib
 
     lang = "mk" if str(lang or "sr").lower().startswith("mk") else "sr"
-    seed = int(hashlib.md5(str(cluster_id).encode()).hexdigest(), 16)
+    seed = int(hashlib.md5(str(cluster_id).encode(), usedforsecurity=False).hexdigest(), 16)
     category_raw = str(category or "vesti")
     category_l = category_raw.casefold()
     title = str(title or "Presek")

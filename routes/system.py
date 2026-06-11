@@ -639,6 +639,38 @@ def _path_is_relative_to(candidate: Path, root: Path) -> bool:
         return False
 
 
+def _allowed_static_roots() -> list[Path]:
+    roots = [_STATIC_ROOT.resolve()]
+    shared_root = (_APP_ROOT.parent.parent / "shared" / "static").resolve()
+    if shared_root.exists():
+        roots.append(shared_root)
+    runtime_shared = Path("/home/emiloffingen/presek-runtime/shared/static").resolve()
+    if runtime_shared.exists():
+        roots.append(runtime_shared)
+    unique: list[Path] = []
+    for root in roots:
+        if root not in unique:
+            unique.append(root)
+    return unique
+
+
+def _resolve_safe_static_relative(relative: str) -> Path | None:
+    raw = str(relative or "")
+    if raw.startswith(("/", "\\")):
+        return None
+    local_rel = raw.lstrip("/")
+    if local_rel.startswith("static/"):
+        local_rel = local_rel[len("static/") :].lstrip("/")
+    if not local_rel or ".." in local_rel.split("/") or "\\" in local_rel:
+        return None
+
+    candidate = (_STATIC_ROOT / local_rel).resolve()
+    for root in _allowed_static_roots():
+        if _path_is_relative_to(candidate, root):
+            return candidate
+    return None
+
+
 @router.get("/proxy")
 async def proxy_image(
     url: str = Query(""),
@@ -683,23 +715,9 @@ async def proxy_image(
         if url.startswith("/static/"):
             relative = url[len("/static/") :].lstrip("/")
             try:
-                candidate = (_STATIC_ROOT / relative).resolve()
-                allowed_roots = [
-                    _STATIC_ROOT.resolve(),
-                    (_APP_ROOT.parent.parent / "shared" / "static").resolve(),
-                ]
-
-                is_safe = False
-                for root in allowed_roots:
-                    try:
-                        candidate.relative_to(root)
-                        is_safe = True
-                        break
-                    except ValueError:
-                        continue
-
-                if not is_safe:
-                    log.warning(f"[proxy/static] Path traversal attempt or invalid root for {url}: {candidate}")
+                candidate = _resolve_safe_static_relative(relative)
+                if not candidate:
+                    log.warning(f"[proxy/static] Path traversal attempt or invalid root for {url}")
                     return serve_fallback("security_block")
 
                 if not candidate.exists() or not candidate.is_file():
@@ -755,12 +773,8 @@ async def proxy_image(
                 (url,),
             )
             if local_img_row:
-                local_rel = local_img_row["local_image_path"].lstrip("/")
-                if local_rel.startswith("static/"):
-                    local_rel = local_rel[len("static/") :].lstrip("/")
-
-                local_full = (_STATIC_ROOT / local_rel).resolve()
-                if local_full.exists() and local_full.is_file():
+                local_full = _resolve_safe_static_relative(local_img_row["local_image_path"])
+                if local_full and local_full.exists() and local_full.is_file():
                     with open(local_full, "rb") as f:
                         img_data = f.read()
                     log.info(f"[proxy] Using local master for {url}")

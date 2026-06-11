@@ -275,6 +275,28 @@ class TestAstroFrontendIntegrity:
         assert '@router.post("/intelligence/recommendations")' in intelligence
         recommendations_block = intelligence.split('@router.post("/intelligence/recommendations")', 1)[1].split("@router.", 1)[0]
         assert "@custom_rate_limit" in recommendations_block
+        assert "verify_csrf_token" in recommendations_block
+
+    def test_synthesize_nodes_route_requires_csrf(self):
+        intelligence = _read("routes/intelligence.py")
+        synthesize_block = intelligence.split('@router.post("/intelligence/synthesize-nodes")', 1)[1].split("@router.", 1)[0]
+        assert "@custom_rate_limit" in synthesize_block
+        assert "verify_csrf_token" in synthesize_block
+
+    def test_intelligence_graph_sends_csrf_for_synthesis(self):
+        graph = _read("web/src/components/IntelligenceGraph.tsx")
+        assert "buildCsrfHeadersAsync" in graph
+        assert "intelligence/synthesize-nodes" in graph
+
+    def test_static_mount_disables_symlink_following(self):
+        api_fast = _read("core/api_fast.py")
+        assert 'StaticFiles(directory="static", follow_symlink=False)' in api_fast
+        assert "serve_uploaded_image" in api_fast
+
+    def test_request_size_limit_matches_api_max_query_length(self):
+        security = _read("routes/security.py")
+        assert "from core.config import API_MAX_Q_LEN" in security
+        assert "MAX_QUERY_PARAM_LENGTH = API_MAX_Q_LEN" in security
 
     def test_delivery_component_decodes_vapid_key_before_subscribing(self):
         delivery = _read("web/src/components/BriefingDeliveryIsland.tsx")

@@ -48,3 +48,22 @@ class TestMetricsAccess:
 
         assert response.status_code == 403
         assert response.body == b'{"detail":"Forbidden"}'
+
+
+class TestUploadImageFilePath:
+    def test_rejects_path_traversal(self):
+        assert api_fast._upload_image_file_path("../.env") is None
+        assert api_fast._upload_image_file_path("audio/briefing.mp3") is None
+        assert api_fast._upload_image_file_path("art_abc.webp") is None
+
+    def test_accepts_safe_filename(self, tmp_path, monkeypatch):
+        uploads_dir = tmp_path / "uploads"
+        uploads_dir.mkdir()
+        image_path = uploads_dir / "art_42.webp"
+        image_path.write_bytes(b"webp")
+
+        monkeypatch.setattr(api_fast, "_STATIC_ROOT", str(tmp_path))
+        monkeypatch.setattr(api_fast, "_UPLOADS_DIR", str(uploads_dir))
+
+        resolved = api_fast._upload_image_file_path("art_42.webp")
+        assert resolved == str(image_path.resolve())

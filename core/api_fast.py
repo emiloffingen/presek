@@ -171,48 +171,6 @@ def get_csrf_token():
 
 
 # =============================================================================
-# Security: Input Length Validation Middleware
-# =============================================================================
-
-MAX_QUERY_PARAM_LENGTH = 500
-MAX_BODY_SIZE = 10 * 1024 * 1024  # 10MB
-
-
-@app.middleware("http")
-async def validate_input_length(request: Request, call_next):
-    """Validate query parameter and body length to prevent DoS attacks."""
-    # Check query parameters
-    for name, value in request.query_params.items():
-        if len(value) > MAX_QUERY_PARAM_LENGTH:
-            return JSONResponse(
-                status_code=400,
-                content={
-                    "error": f"Parametarot '{name}' ja nadminuva maksimalnata dolzina od {MAX_QUERY_PARAM_LENGTH} karakteri"
-                },
-            )
-
-    # Check Content-Length for POST/PUT/PATCH requests
-    if request.method in ("POST", "PUT", "PATCH"):
-        content_length = request.headers.get("content-length")
-        if content_length:
-            try:
-                if int(content_length) > MAX_BODY_SIZE:
-                    return JSONResponse(
-                        status_code=413,
-                        content={
-                            "error": f"Goleminata na baranjeto me nadminuva maksimalnata dozvolena golemina od {MAX_BODY_SIZE // (1024*1024)}MB"
-                        },
-                    )
-            except ValueError:
-                return JSONResponse(
-                    status_code=400,
-                    content={"error": "Nevaliden Content-Length naslov"},
-                )
-
-    return await call_next(request)
-
-
-# =============================================================================
 # Rate Limit Exceeded Handler
 # =============================================================================
 if _rate_limiter_enabled:
@@ -232,11 +190,13 @@ if _rate_limiter_enabled:
 
 
 _AUDIO_FILENAME_RE = re.compile(r"^[A-Za-z0-9_.-]+\.mp3$")
+_UPLOAD_IMAGE_FILENAME_RE = re.compile(r"^art_\d+\.webp$")
 _GENERATED_FILENAME_RE = re.compile(r"^[A-Za-z0-9_.-]+\.(?:jpg|jpeg|png|svg|webp)$", re.IGNORECASE)
 _STATIC_ROOT = "/home/emiloffingen/presek-runtime/shared/static"
 if not os.path.exists(_STATIC_ROOT):
     _STATIC_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "static"))
 _AUDIO_UPLOAD_DIR = os.path.join(_STATIC_ROOT, "uploads", "audio")
+_UPLOADS_DIR = os.path.join(_STATIC_ROOT, "uploads")
 _GENERATED_DIR = os.path.join(_STATIC_ROOT, "generated")
 _LOCAL_METRICS_CLIENTS = frozenset({"127.0.0.1", "::1", "::ffff:127.0.0.1"})
 
@@ -260,6 +220,19 @@ def _generated_file_path(filename: str) -> str | None:
     candidate = os.path.abspath(os.path.join(generated_root, filename))
     try:
         if os.path.commonpath([candidate, generated_root]) != generated_root:
+            return None
+    except ValueError:
+        return None
+    return candidate
+
+
+def _upload_image_file_path(filename: str) -> str | None:
+    if not _UPLOAD_IMAGE_FILENAME_RE.fullmatch(filename):
+        return None
+    upload_root = os.path.abspath(_UPLOADS_DIR)
+    candidate = os.path.abspath(os.path.join(upload_root, filename))
+    try:
+        if os.path.commonpath([candidate, upload_root]) != upload_root:
             return None
     except ValueError:
         return None
@@ -346,8 +319,17 @@ async def serve_uploaded_audio(filename: str, request: Request):
     )
 
 
+@app.api_route("/static/uploads/{filename}", methods=["GET", "HEAD"])
+async def serve_uploaded_image(filename: str):
+    """Serve optimized article images from shared uploads storage."""
+    path = _upload_image_file_path(filename)
+    if not path or not os.path.isfile(path):
+        return JSONResponse(status_code=404, content={"detail": "File not found"})
+    return FileResponse(path, headers={"Cache-Control": "public, max-age=3600"})
+
+
 # Mount static files
-app.mount("/static", StaticFiles(directory="static", follow_symlink=True), name="static")
+app.mount("/static", StaticFiles(directory="static", follow_symlink=False), name="static")
 
 
 

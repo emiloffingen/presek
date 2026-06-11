@@ -593,7 +593,7 @@ class AudioService:
             log.warning("[audio] Empty cluster content, skipping audio synthesis.")
             return None
 
-        content_hash = hashlib.md5(clean_text.encode('utf-8')).hexdigest()
+        content_hash = hashlib.md5(clean_text.encode('utf-8'), usedforsecurity=False).hexdigest()
         hash_filepath = filepath.replace(".mp3", ".hash")
 
         # Stale check: if force is False but file exists, verify its content hash

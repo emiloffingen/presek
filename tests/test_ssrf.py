@@ -47,3 +47,11 @@ def test_is_safe_url_invalid_scheme():
 def test_is_safe_url_metadata_markers():
     assert is_safe_url("http://metadata.internal.evil.com") is False
     assert is_safe_url("http://169.254.1.1.evil.com") is False
+
+
+def test_resolve_safe_static_relative_blocks_traversal():
+    from routes.system import _resolve_safe_static_relative
+
+    assert _resolve_safe_static_relative("../../../etc/passwd") is None
+    assert _resolve_safe_static_relative("/etc/passwd") is None
+    assert _resolve_safe_static_relative("uploads\\art_1.webp") is None
