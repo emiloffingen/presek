@@ -97,12 +97,12 @@ celery_app.conf.update(
     worker_max_tasks_per_child=1000,  # Increased from 100 to 1000 to minimize model reload overhead
     task_default_rate_limit="100/m",  # Global rate limit: 100 tasks per minute
     task_queues=(
-        Queue("celery"),
-        Queue("ingestion"),
-        Queue("fast-track"),
-        Queue("intel-heavy"),
-        Queue("delivery"),
-        Queue("maintenance"),
+        Queue("celery", routing_key="celery"),
+        Queue("ingestion", routing_key="ingestion"),
+        Queue("fast-track", routing_key="fast-track"),
+        Queue("intel-heavy", routing_key="intel-heavy"),
+        Queue("delivery", routing_key="delivery"),
+        Queue("maintenance", routing_key="maintenance"),
     ),
     task_routes={
         "tasks.ingestion_task.run_ingestion": {"queue": "ingestion"},
@@ -219,7 +219,8 @@ celery_app.conf.update(
             "time_limit": 900,
         },
         "tasks.intelligence.backfill_cluster_summaries_task": {
-            "rate_limit": "6/h",
+            # No rate_limit: backlog gating handles load; a low limit blocks prefetch slots
+            # and stalls the entire intel-heavy worker when many chained backfills exist.
             "soft_time_limit": 900,
             "time_limit": 1200,
         },
@@ -236,8 +237,8 @@ celery_app.conf.update(
     worker_prefetch_multiplier=1,
     # Disable result persistence for tasks that don't need it (reduces memory/RPC overhead)
     result_expires=3600,  # Results expire after 1 hour
-    # Concurrent task execution limits per worker
-    worker_concurrency=2,  # Reduced from 4 to 2 to minimize CPU contention on 2-core system
+    # Default when workers omit --concurrency (production units set this explicitly).
+    worker_concurrency=int(os.environ.get("CELERY_WORKER_CONCURRENCY", "4")),
 )
 
 # Setup logging for Celery workers

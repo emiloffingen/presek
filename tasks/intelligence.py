@@ -62,15 +62,21 @@ from core.config import CLUSTER_LOOKBACK
 from core.database import db_manager as db
 from core.embeddings import average_embeddings, parse_embedding_value
 
-_analyst_semaphore = threading.Semaphore(2)
+_analyst_semaphore = threading.Semaphore(int(os.environ.get("INTEL_ANALYST_CONCURRENCY", "6")))
 _BACKFILL_QUEUE_DEPTH_LIMIT = 100
+_INTEL_QUEUE_DEFER_LIMIT = int(os.environ.get("INTEL_QUEUE_DEFER_LIMIT", "150"))
 _BACKFILL_BATCH_SIZE = int(os.environ.get("BACKFILL_CLUSTERS_PER_RUN", "8"))
 _METADATA_BATCH_SIZE = int(os.environ.get("CLUSTER_METADATA_BATCH_SIZE", "25"))
 _ARTICLE_BATCH_SIZE = int(os.environ.get("ARTICLE_BATCH_SIZE", "20"))
 
 
 def _queue_backlog_high(limit=_BACKFILL_QUEUE_DEPTH_LIMIT) -> bool:
-    return get_celery_queue_depth() >= limit
+    return get_celery_queue_depth("intel-heavy") >= limit
+
+
+def intelligence_batches_deferred() -> bool:
+    """True when article-level intelligence work should wait for queue space."""
+    return get_celery_queue_depth("intel-heavy") >= _INTEL_QUEUE_DEFER_LIMIT
 
 
 def _dispatch_batched(task, ids, batch_size=_ARTICLE_BATCH_SIZE):
@@ -2778,13 +2784,19 @@ def backfill_cluster_summaries_task(days=30, lang="sr", offset=0):
                 log.warning(f"[tasks] Failed to generate summary for cluster {cluster_id}: {e}")
 
         log.info(f"[tasks] Completed backfill for {lang} language clusters")
-        if has_more:
+        if has_more and not _queue_backlog_high():
             schedule_task_once(
                 f"lock:backfill_summaries:{lang}",
                 180,
                 backfill_cluster_summaries_task,
                 kwargs={"days": days, "lang": lang, "offset": offset + _BACKFILL_BATCH_SIZE},
                 countdown=60,
+            )
+        elif has_more:
+            log.info(
+                "[tasks] Deferring next summary backfill page (lang=%s, offset=%s) while queue backlog is high.",
+                lang,
+                offset + _BACKFILL_BATCH_SIZE,
             )
 
     except Exception as e:

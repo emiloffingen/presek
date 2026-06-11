@@ -1209,6 +1209,7 @@ async def ingest_all_sources_async():
                 from tasks.intelligence import (
                     _dispatch_batched,
                     detect_global_stories_batch_task,
+                    intelligence_batches_deferred,
                     standardize_article_styles_batch_task,
                     summarize_articles_batch_task,
                 )
@@ -1217,16 +1218,22 @@ async def ingest_all_sources_async():
                 for art in inserted_data:
                     crawl_article_task.delay(art["id"], art["link"])
 
-                # 2. Batch Global Story Detection
-                _dispatch_batched(detect_global_stories_batch_task, inserted_ids)
+                if intelligence_batches_deferred():
+                    log.info(
+                        "[ingestion] Deferring intelligence batches for %s new articles while intel-heavy backlog is high",
+                        len(inserted_ids),
+                    )
+                else:
+                    # 2. Batch Global Story Detection
+                    _dispatch_batched(detect_global_stories_batch_task, inserted_ids)
 
-                # 3. Batch Style Normalization
-                credibility_ids = [art["id"] for art in inserted_data if art.get("credibility", 1.5) < 1.2]
-                if credibility_ids:
-                    _dispatch_batched(standardize_article_styles_batch_task, credibility_ids)
+                    # 3. Batch Style Normalization
+                    credibility_ids = [art["id"] for art in inserted_data if art.get("credibility", 1.5) < 1.2]
+                    if credibility_ids:
+                        _dispatch_batched(standardize_article_styles_batch_task, credibility_ids)
 
-                # 4. Batch Summarization
-                _dispatch_batched(summarize_articles_batch_task, inserted_ids)
+                    # 4. Batch Summarization
+                    _dispatch_batched(summarize_articles_batch_task, inserted_ids)
 
     current_statuses = get_source_statuses()
     for source_name, stats in source_stats.items():
