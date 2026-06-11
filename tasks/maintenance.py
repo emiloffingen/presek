@@ -60,6 +60,64 @@ def prune_intel_queue_task(defer_threshold=None, dry_run=False):
 
 
 @celery_app.task
+def refresh_synthesis_quality_task():
+    """Refresh the Redis synthesis quality snapshot used by /api/health."""
+    try:
+        from scripts.monitor_synthesis_quality import build_snapshot, _write_redis
+
+        snapshot = build_snapshot()
+        _write_redis(snapshot)
+        log.info(
+            "[maintenance] Refreshed synthesis quality snapshot: status=%s queue=%s",
+            snapshot.get("status"),
+            snapshot.get("celery_queue_depth"),
+        )
+        return snapshot
+    except Exception as e:
+        log.error(f"[maintenance] refresh_synthesis_quality failed: {e}", exc_info=True)
+        raise
+
+
+@celery_app.task
+def catch_up_recent_summaries_task(hours=72, limit=200):
+    """Enqueue summarize batches for recent articles missing summaries when the queue has headroom."""
+    from tasks.intelligence import (
+        _dispatch_batched,
+        intelligence_batches_deferred,
+        intelligence_secondary_deferred,
+        summarize_articles_batch_task,
+    )
+
+    if intelligence_batches_deferred() or intelligence_secondary_deferred():
+        log.info("[maintenance] Skipping recent summary catch-up while intel-heavy backlog is high.")
+        return {"skipped": True, "reason": "backlog_high"}
+
+    try:
+        rows = db.execute(
+            """
+            SELECT id
+            FROM articles
+            WHERE summary IS NULL
+              AND created_at >= NOW() - make_interval(hours => %s)
+            ORDER BY created_at DESC
+            LIMIT %s
+            """,
+            (max(1, int(hours)), max(1, int(limit))),
+            read_only=True,
+        ) or []
+        article_ids = [int(row["id"]) for row in rows]
+        if not article_ids:
+            return {"enqueued": 0}
+
+        _dispatch_batched(summarize_articles_batch_task, article_ids)
+        log.info("[maintenance] Enqueued summary catch-up for %s recent articles", len(article_ids))
+        return {"enqueued": len(article_ids)}
+    except Exception as e:
+        log.error(f"[maintenance] catch_up_recent_summaries failed: {e}", exc_info=True)
+        raise
+
+
+@celery_app.task
 def validate_cluster_images_task():
     """
     Checks the representative_image for the 100 most recent active clusters.

@@ -34,7 +34,7 @@ class TestMonitorSynthesisQuality:
         assert report["fallback_ratio"] == 0.2
         assert report["providers"]["mistral_small"] == 70
 
-    @patch("scripts.monitor_synthesis_quality._celery_queue_depth", return_value=120)
+    @patch("scripts.monitor_synthesis_quality._celery_queue_depth", return_value=160)
     @patch("scripts.monitor_synthesis_quality.build_report")
     def test_build_snapshot_marks_warn_on_queue(self, mock_build_report, _mock_depth):
         mock_build_report.side_effect = [
@@ -45,7 +45,7 @@ class TestMonitorSynthesisQuality:
         snapshot = build_snapshot()
 
         assert snapshot["status"] == "warn"
-        assert snapshot["celery_queue_depth"] == 120
+        assert snapshot["celery_queue_depth"] == 160
         assert snapshot["primary"]["fallback_ratio"] == 0.1
 
     def test_evaluate_report_warn_and_critical(self):

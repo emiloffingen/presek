@@ -162,6 +162,14 @@ celery_app.conf.update(
             "task": "tasks.maintenance.prune_intel_queue_task",
             "schedule": 900.0,  # Every 15 minutes
         },
+        "refresh-synthesis-quality": {
+            "task": "tasks.maintenance.refresh_synthesis_quality_task",
+            "schedule": 900.0,  # Every 15 minutes
+        },
+        "catch-up-recent-summaries": {
+            "task": "tasks.maintenance.catch_up_recent_summaries_task",
+            "schedule": 1800.0,  # Every 30 minutes
+        },
         "generate-daily-briefing-sr": {
             "task": "tasks.delivery.briefing.generate_daily_brief_task",
             "kwargs": {"lang": "sr"},

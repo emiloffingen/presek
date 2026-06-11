@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -17,8 +18,8 @@ log = get_logger("presek_synthesis_monitor")
 _REDIS_KEY = "presek:synthesis_quality"
 _ALERT_COOLDOWN_KEY = "presek:ops_alert:synthesis"
 _ALERT_COOLDOWN_SECONDS = 6 * 3600
-_QUEUE_WARN_DEPTH = 100
-_QUEUE_CRITICAL_DEPTH = 500
+_QUEUE_WARN_DEPTH = int(os.environ.get("CELERY_QUEUE_WARN_DEPTH", "150"))
+_QUEUE_CRITICAL_DEPTH = int(os.environ.get("CELERY_QUEUE_CRITICAL_DEPTH", "500"))
 _FALLBACK_RATIO_WARN = 0.35
 _FALLBACK_RATIO_CRITICAL = 0.55
 

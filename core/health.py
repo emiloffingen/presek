@@ -20,8 +20,8 @@ _TASK_REDIS_KEY = "presek:task_statuses"
 _SOURCE_REDIS_KEY = "presek:source_statuses"
 _SOURCE_POLICY_REDIS_KEY = "presek:source_policies"
 _SYNTHESIS_QUALITY_REDIS_KEY = "presek:synthesis_quality"
-_CELERY_QUEUE_WARN_DEPTH = 100
-_CELERY_QUEUE_CRITICAL_DEPTH = 500
+_CELERY_QUEUE_WARN_DEPTH = int(os.environ.get("CELERY_QUEUE_WARN_DEPTH", "150"))
+_CELERY_QUEUE_CRITICAL_DEPTH = int(os.environ.get("CELERY_QUEUE_CRITICAL_DEPTH", "500"))
 MONITORED_CELERY_QUEUES = (
     "celery",
     "ingestion",
