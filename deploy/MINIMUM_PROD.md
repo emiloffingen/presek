@@ -52,6 +52,15 @@ Logs land in `$APP_ROOT/shared/logs/baselines/`.
 
 When `DATABASE_READ_REPLICA_URL` is set in shared `.env`, SELECT/WITH queries auto-route to the replica pool. Writes and Celery tasks stay on primary.
 
+Install on the host (logical replication to `presek_replica`):
+
+```bash
+sudo APP_ROOT=/home/emiloffingen/presek-runtime \
+  bash /home/emiloffingen/presek-runtime/current/deploy/install_read_replica.sh
+
+sudo systemctl restart presek-fastapi-unified
+```
+
 Verify routing in metrics:
 
 ```bash

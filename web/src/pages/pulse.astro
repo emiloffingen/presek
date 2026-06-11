@@ -1,8 +1,4 @@
 ---
-// This is the Serbian (default) Pulse page.
-// The Macedonian version is at /mk/pulse.astro
-// We keep this here for presek.live and root-level /pulse access.
-
 import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
@@ -15,8 +11,9 @@ import { APP_VERSION } from '../lib/version';
 import { Activity, Timer, Zap } from 'lucide-react';
 import TinyAdzInlinedAd from '../components/TinyAdzInlinedAd.astro';
 
+const hostHeader = Astro.request?.headers.get('host');
 const API_URL = apiBaseUrl();
-const lang = getLangFromUrl(Astro.url);
+const lang = getLangFromUrl(Astro.url, hostHeader);
 const isMK = lang === 'mk';
 
 let initialPulseData = null;
@@ -398,5 +395,7 @@ const formatCount = (value: number | null | undefined) => value ? String(Math.ro
             padding: 0.2rem 0.5rem;
             font-size: 0.48rem;
         }
+        .intro-greeting { font-size: 1.5rem; }
+        .intro-copy { font-size: 0.92rem; }
     }
 </style>

@@ -85,6 +85,7 @@ def test_mk_mirror_pages_rewrite_to_live_templates_with_ads():
         "web/src/pages/mk/about.astro": "web/src/pages/about.astro",
         "web/src/pages/mk/methodology.astro": "web/src/pages/methodology.astro",
         "web/src/pages/mk/support.astro": "web/src/pages/support.astro",
+        "web/src/pages/mk/pulse.astro": "web/src/pages/pulse.astro",
     }
     for mk_path, live_path in rewrite_targets.items():
         mk_source = Path(mk_path).read_text(encoding="utf-8")
