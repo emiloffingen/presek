@@ -81,16 +81,16 @@ groups:
           description: "intel-heavy queue depth is {{ $value }} (threshold: 150)"
 
       - alert: CeleryQueueBacklog
-        expr: celery_queue_length{job="celery"} > 100
+        expr: sum(presek_celery_queue_depth{job="presek-api"}) > 100
         for: 15m
         labels:
           severity: warning
         annotations:
           summary: "Celery queue backlog"
-          description: "Celery queue has {{ $value }} pending tasks (threshold: 100)"
+          description: "Total Celery queue depth is {{ $value }} (threshold: 100)"
 
       - alert: CeleryWorkerDown
-        expr: celery_workers{job="celery"} < 1
+        expr: sum(celery_worker_up{job="celery"}) < 1
         for: 5m
         labels:
           severity: critical

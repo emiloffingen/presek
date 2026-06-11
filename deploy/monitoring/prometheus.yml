@@ -11,7 +11,7 @@ alerting:
   alertmanagers:
     - static_configs:
         - targets:
-          # - alertmanager:9093
+          - localhost:9093
 
 # Rule files
 rule_files:
@@ -57,8 +57,8 @@ scrape_configs:
       - targets: ["localhost:9113"]
     scrape_interval: 15s
 
-  # Celery metrics
+  # Celery metrics (danihodovic/celery-exporter)
   - job_name: "celery"
     static_configs:
-      - targets: ["localhost:9800"]
+      - targets: ["localhost:9808"]
     scrape_interval: 15s

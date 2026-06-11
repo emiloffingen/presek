@@ -42,5 +42,7 @@ Logs land in `$APP_ROOT/shared/logs/baselines/`.
 ## Monitoring hooks
 
 - **Synthesis quality:** `scripts/monitor_synthesis_quality.py` (cron every 15 min; see `deploy/crontab`)
-- **Prometheus:** optional host install via `deploy/install_prometheus.sh`
+- **Prometheus:** `sudo bash deploy/install_prometheus.sh`
+- **Alertmanager + exporters + ntfy:** `sudo bash deploy/install_monitoring_exporters.sh`
 - **Metrics:** `http://127.0.0.1:5001/metrics` (localhost only; includes `presek_celery_queue_depth`)
+- **Alerts:** Alertmanager on `127.0.0.1:9093` forwards to ntfy via `NTFY_TOPIC` / `NTFY_TOKEN`
