@@ -11,7 +11,7 @@ from core.celery_app import celery_app
 from core.database import db_manager as db
 from core.database import prune_db
 from core.image_service import image_service
-from tasks.utils import invalidate_public_data_caches, log
+from tasks.utils import invalidate_public_data_caches, log, reprioritize_intel_queue
 
 
 @celery_app.task
@@ -37,6 +37,26 @@ def run_prune_db():
         asyncio.run(image_service.cleanup_storage(active_art_ids))
     except Exception as e:
         log.error(f"[tasks] cleanup_storage failed: {e}", exc_info=True)
+
+
+@celery_app.task
+def prune_intel_queue_task(defer_threshold=None, dry_run=False):
+    """Drop deferrable intel-heavy tasks and prioritize summarize batches when congested."""
+    threshold = int(defer_threshold or os.environ.get("INTEL_QUEUE_SECONDARY_DEFER_LIMIT", "150"))
+    try:
+        result = reprioritize_intel_queue(defer_threshold=threshold, dry_run=bool(dry_run))
+        if result.get("removed"):
+            log.info(
+                "[maintenance] Pruned intel-heavy queue: removed=%s priority=%s depth=%s->%s",
+                result["removed"],
+                result["priority_count"],
+                result["depth_before"],
+                result["depth_after"],
+            )
+        return result
+    except Exception as e:
+        log.error(f"[maintenance] prune_intel_queue failed: {e}", exc_info=True)
+        raise
 
 
 @celery_app.task

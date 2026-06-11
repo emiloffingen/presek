@@ -92,6 +92,89 @@ def get_celery_queue_depth(queue_name="celery"):
         return 0
 
 
+INTEL_QUEUE_NAME = "intel-heavy"
+INTEL_PRIORITY_TASKS = frozenset(
+    {
+        "tasks.intelligence.summarize_articles_batch_task",
+        "tasks.intelligence.summarize_article_task",
+    }
+)
+INTEL_DEFERRABLE_TASKS = frozenset(
+    {
+        "tasks.intelligence.detect_global_stories_batch_task",
+        "tasks.intelligence.standardize_article_styles_batch_task",
+        "tasks.intelligence.backfill_cluster_summaries_task",
+        "tasks.intelligence.classify_topics_task",
+        "tasks.intelligence.recategorize_clusters_task",
+        "tasks.intelligence.recluster_recent_articles_task",
+        "tasks.intelligence.refine_knowledge_graph_sentiment_task",
+        "tasks.intelligence.backfill_cover_art_task",
+        "tasks.intelligence.repair_split_clusters_task",
+        "tasks.intelligence.extract_entities_task",
+        "tasks.intelligence.discover_storylines_task",
+        "tasks.intelligence.detect_global_story_task",
+        "tasks.intelligence.standardize_article_style_task",
+    }
+)
+
+
+def _parse_queue_task_name(raw_message: str) -> str:
+    import json
+
+    body = json.loads(raw_message)
+    return str((body.get("headers") or {}).get("task") or "")
+
+
+def reprioritize_intel_queue(*, defer_threshold: int = 150, dry_run: bool = False) -> dict:
+    """Drop deferrable intel-heavy tasks and move summarize batches to the queue head."""
+    depth_before = get_celery_queue_depth(INTEL_QUEUE_NAME)
+    if depth_before < defer_threshold:
+        return {
+            "skipped": True,
+            "reason": "below_threshold",
+            "depth_before": depth_before,
+            "defer_threshold": defer_threshold,
+        }
+
+    raw_items = redis_client.lrange(INTEL_QUEUE_NAME, 0, -1) or []
+    priority_items = []
+    kept_other = []
+    removed = 0
+
+    for raw in raw_items:
+        if isinstance(raw, bytes):
+            raw = raw.decode("utf-8")
+        task_name = _parse_queue_task_name(raw)
+        if task_name in INTEL_PRIORITY_TASKS:
+            priority_items.append(raw)
+        elif task_name in INTEL_DEFERRABLE_TASKS:
+            removed += 1
+        else:
+            kept_other.append(raw)
+
+    rebuilt = priority_items + kept_other
+    result = {
+        "skipped": False,
+        "depth_before": depth_before,
+        "depth_after": len(rebuilt),
+        "removed": removed,
+        "priority_count": len(priority_items),
+        "kept_other_count": len(kept_other),
+        "dry_run": dry_run,
+    }
+
+    if dry_run:
+        return result
+
+    pipe = redis_client.pipeline()
+    pipe.delete(INTEL_QUEUE_NAME)
+    if rebuilt:
+        pipe.rpush(INTEL_QUEUE_NAME, *rebuilt)
+    pipe.execute()
+    result["depth_after"] = get_celery_queue_depth(INTEL_QUEUE_NAME)
+    return result
+
+
 def schedule_task_once(lock_key: str, ttl_seconds: int, task, *, args=None, kwargs=None, countdown=0) -> bool:
     """Schedule a Celery task only if no matching lock is already held."""
     if not acquire_task_lock(lock_key, ttl_seconds):

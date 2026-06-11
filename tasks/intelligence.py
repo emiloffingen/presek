@@ -116,6 +116,8 @@ def summarize_articles_batch_task(article_ids):
 @celery_app.task
 def detect_global_stories_batch_task(article_ids):
     """Batch processes global story detection for articles."""
+    if _skip_when_intel_backlog("global story detection batch"):
+        return
     for article_id in article_ids:
         detect_global_story_task(article_id)
 
@@ -123,6 +125,8 @@ def detect_global_stories_batch_task(article_ids):
 @celery_app.task
 def standardize_article_styles_batch_task(article_ids):
     """Batch processes style standardization for articles."""
+    if _skip_when_intel_backlog("style standardization batch"):
+        return
     for article_id in article_ids:
         standardize_article_style_task(article_id)
 
@@ -2663,6 +2667,18 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
         return False
 
     return True
+
+
+@celery_app.task
+def schedule_backfill_cluster_summaries_task(lang="sr"):
+    """Beat entrypoint that avoids enqueueing backfill while intel-heavy is congested."""
+    if intelligence_secondary_deferred():
+        log.info(
+            "[tasks] Skipping scheduled summary backfill dispatch (lang=%s) while intel-heavy backlog is high.",
+            lang,
+        )
+        return
+    backfill_cluster_summaries_task.delay(lang=lang)
 
 
 @celery_app.task
