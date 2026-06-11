@@ -1210,6 +1210,7 @@ async def ingest_all_sources_async():
                     _dispatch_batched,
                     detect_global_stories_batch_task,
                     intelligence_batches_deferred,
+                    intelligence_secondary_deferred,
                     standardize_article_styles_batch_task,
                     summarize_articles_batch_task,
                 )
