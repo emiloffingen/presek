@@ -62,21 +62,36 @@ from core.config import CLUSTER_LOOKBACK
 from core.database import db_manager as db
 from core.embeddings import average_embeddings, parse_embedding_value
 
-_analyst_semaphore = threading.Semaphore(int(os.environ.get("INTEL_ANALYST_CONCURRENCY", "6")))
+_analyst_semaphore = threading.Semaphore(int(os.environ.get("INTEL_ANALYST_CONCURRENCY", "4")))
 _BACKFILL_QUEUE_DEPTH_LIMIT = 100
-_INTEL_QUEUE_DEFER_LIMIT = int(os.environ.get("INTEL_QUEUE_DEFER_LIMIT", "150"))
+_INTEL_QUEUE_SECONDARY_DEFER_LIMIT = int(os.environ.get("INTEL_QUEUE_SECONDARY_DEFER_LIMIT", "150"))
+_INTEL_QUEUE_FULL_DEFER_LIMIT = int(os.environ.get("INTEL_QUEUE_FULL_DEFER_LIMIT", "800"))
+# Backwards-compatible alias for callers expecting the old name.
+_INTEL_QUEUE_DEFER_LIMIT = _INTEL_QUEUE_FULL_DEFER_LIMIT
 _BACKFILL_BATCH_SIZE = int(os.environ.get("BACKFILL_CLUSTERS_PER_RUN", "8"))
 _METADATA_BATCH_SIZE = int(os.environ.get("CLUSTER_METADATA_BATCH_SIZE", "25"))
-_ARTICLE_BATCH_SIZE = int(os.environ.get("ARTICLE_BATCH_SIZE", "20"))
+_ARTICLE_BATCH_SIZE = int(os.environ.get("ARTICLE_BATCH_SIZE", "10"))
 
 
 def _queue_backlog_high(limit=_BACKFILL_QUEUE_DEPTH_LIMIT) -> bool:
     return get_celery_queue_depth("intel-heavy") >= limit
 
 
+def intelligence_secondary_deferred() -> bool:
+    """True when non-critical intel work (detect/standardize/beat) should wait."""
+    return get_celery_queue_depth("intel-heavy") >= _INTEL_QUEUE_SECONDARY_DEFER_LIMIT
+
+
 def intelligence_batches_deferred() -> bool:
-    """True when article-level intelligence work should wait for queue space."""
-    return get_celery_queue_depth("intel-heavy") >= _INTEL_QUEUE_DEFER_LIMIT
+    """True when even summarize batches should wait for queue space."""
+    return get_celery_queue_depth("intel-heavy") >= _INTEL_QUEUE_FULL_DEFER_LIMIT
+
+
+def _skip_when_intel_backlog(task_label: str) -> bool:
+    if intelligence_secondary_deferred():
+        log.info("[tasks] Skipping %s while intel-heavy backlog is high.", task_label)
+        return True
+    return False
 
 
 def _dispatch_batched(task, ids, batch_size=_ARTICLE_BATCH_SIZE):
@@ -1738,6 +1753,8 @@ def refresh_cluster_centroid_task(cluster_id):
 @celery_app.task
 def extract_entities_task(*args, hours=24, target_clusters=None, **kwargs):
     """Extract entities for top clusters using local hybrid logic (Lexicon + spaCy + Regex)."""
+    if _skip_when_intel_backlog("entity extraction"):
+        return
     try:
         if target_clusters:
             rows = db.execute(
@@ -1788,6 +1805,8 @@ def extract_entities_task(*args, hours=24, target_clusters=None, **kwargs):
 @celery_app.task
 def classify_topics_task(*args, **kwargs):
     """Classify default 'vesti' clusters using local rule-based detection."""
+    if _skip_when_intel_backlog("topic classification"):
+        return
     try:
         # Increased limit as local classification is nearly free
         rows = db.execute("SELECT cluster_id, title FROM articles WHERE topic = 'vesti' LIMIT 200")
@@ -1811,6 +1830,8 @@ def classify_topics_task(*args, **kwargs):
 @celery_app.task
 def recategorize_clusters_task(*args, **kwargs):
     """Verify if 'Srbija' articles belong in specialized categories using rule-based detection."""
+    if _skip_when_intel_backlog("cluster recategorization"):
+        return
     try:
         rows = db.execute("SELECT cluster_id, title, description FROM articles WHERE category = 'Srbija' LIMIT 20")
         for r in rows:
@@ -2008,9 +2029,11 @@ def generate_cluster_metadata_task(hours=24, target_clusters=None):
         log.error(f"[tasks] Cluster metadata generation failed: {e}")
 
 
-@celery_app.task(rate_limit="1/h")
+@celery_app.task
 def recluster_recent_articles_task(hours=24, limit=800):
     """Re-assign cluster IDs for recent articles using the current clustering logic."""
+    if _skip_when_intel_backlog("recent recluster"):
+        return
     try:
         import core.clustering as clustering
 
@@ -2166,9 +2189,11 @@ def recluster_recent_articles_task(hours=24, limit=800):
         raise
 
 
-@celery_app.task(rate_limit="1/h")
+@celery_app.task
 def repair_split_clusters_task(hours=48, limit=1200, dry_run=False):
     """Merge recent near-duplicate clusters that ingestion split too conservatively."""
+    if _skip_when_intel_backlog("split cluster repair"):
+        return
     try:
         hours = max(1, int(hours or 48))
         limit = max(2, int(limit or 1200))
@@ -2317,6 +2342,8 @@ def backfill_cover_art_single_task(cluster_id, title):
 @celery_app.task
 def backfill_cover_art_task():
     """Queue cover art generation for clusters that lack a strong visual."""
+    if _skip_when_intel_backlog("cover art backfill"):
+        return
     lock_key = "lock:backfill_cover_art"
     cooldown_key = "ai:cover_art:pollinations:cooldown"
     try:
@@ -2327,7 +2354,7 @@ def backfill_cover_art_task():
         log.warning(f"Redis lock check failed for backfill_cover_art: {e}")
 
     try:
-        if get_celery_queue_depth() >= _BACKFILL_QUEUE_DEPTH_LIMIT:
+        if get_celery_queue_depth("intel-heavy") >= _BACKFILL_QUEUE_DEPTH_LIMIT:
             log.info("[tasks] Backfill cover art skipping: queue depth limit exceeded.")
             return
 
@@ -2384,6 +2411,8 @@ def generate_embeddings_task():
 @celery_app.task
 def discover_storylines_task():
     """Discover evolving storylines from news clusters."""
+    if _skip_when_intel_backlog("storyline discovery"):
+        return
     try:
         from core.topic_discovery import discovery_engine
 
@@ -2807,6 +2836,8 @@ def backfill_cluster_summaries_task(days=30, lang="sr", offset=0):
 @celery_app.task
 def refine_knowledge_graph_sentiment_task():
     """Asynchronously refine entities and relationships in the knowledge graph using deep LLM sentiment analysis."""
+    if _skip_when_intel_backlog("knowledge graph sentiment refinement"):
+        return
     try:
         # Fetch articles from the last 2 hours
         cutoff = datetime.datetime.now() - datetime.timedelta(hours=2)

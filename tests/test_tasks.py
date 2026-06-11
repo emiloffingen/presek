@@ -134,6 +134,7 @@ class TestRepairSplitClustersTask:
         ]
 
         with (
+            patch("tasks.intelligence.get_celery_queue_depth", return_value=0),
             patch("tasks.intelligence.db") as mock_db,
             patch("tasks.intelligence.invalidate_public_data_caches") as mock_invalidate,
             patch("tasks.utils.record_task_event"),
@@ -195,6 +196,7 @@ class TestRepairSplitClustersTask:
         ]
 
         with (
+            patch("tasks.intelligence.get_celery_queue_depth", return_value=0),
             patch("tasks.intelligence.db") as mock_db,
             patch("tasks.intelligence.invalidate_public_data_caches"),
             patch("tasks.utils.record_task_event"),
@@ -496,6 +498,7 @@ class TestReclusterRecentArticlesTask:
         ]
 
         with (
+            patch("tasks.intelligence.get_celery_queue_depth", return_value=0),
             patch("tasks.intelligence.db") as mock_db,
             patch("core.clustering.find_or_create_cluster", return_value="old-a"),
             patch("tasks.intelligence.invalidate_public_data_caches") as mock_invalidate,

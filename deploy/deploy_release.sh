@@ -271,10 +271,35 @@ wait_http_status() {
     return 1
 }
 
+sync_systemd_units() {
+    local systemd_dir="$RELEASE_DIR/deploy/systemd"
+    if [ ! -d "$systemd_dir" ]; then
+        warn "No systemd directory in release; skipping unit sync"
+        return 0
+    fi
+
+    info "Installing updated systemd units from release..."
+    local unit_path unit_name tmp_unit
+    for unit_path in "$systemd_dir"/*.service "$systemd_dir"/*.target "$systemd_dir"/*.timer; do
+        [ -f "$unit_path" ] || continue
+        unit_name="$(basename "$unit_path")"
+        tmp_unit="$(mktemp)"
+        sed -e "s|/home/emiloffingen/presek-runtime|$APP_ROOT|g" "$unit_path" > "$tmp_unit"
+        sudo install -m 644 "$tmp_unit" "/etc/systemd/system/$unit_name"
+        rm -f "$tmp_unit"
+    done
+    sudo systemctl daemon-reload
+    ok "Systemd units synced from release"
+}
+
 restart_services_in_order() {
     if [ "$SKIP_RESTART" = "1" ]; then
         info "SKIP_RESTART is set, skipping systemctl restart"
         return
+    fi
+
+    if [ "$RESTART_WORKERS" = "1" ] || [ "$RESTART_FASTAPI" = "1" ]; then
+        sync_systemd_units
     fi
 
     local remaining_services=()

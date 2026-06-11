@@ -1220,20 +1220,28 @@ async def ingest_all_sources_async():
 
                 if intelligence_batches_deferred():
                     log.info(
-                        "[ingestion] Deferring intelligence batches for %s new articles while intel-heavy backlog is high",
+                        "[ingestion] Deferring all intelligence batches for %s new articles while intel-heavy backlog is high",
                         len(inserted_ids),
                     )
                 else:
-                    # 2. Batch Global Story Detection
-                    _dispatch_batched(detect_global_stories_batch_task, inserted_ids)
-
-                    # 3. Batch Style Normalization
-                    credibility_ids = [art["id"] for art in inserted_data if art.get("credibility", 1.5) < 1.2]
-                    if credibility_ids:
-                        _dispatch_batched(standardize_article_styles_batch_task, credibility_ids)
-
-                    # 4. Batch Summarization
+                    # Always prioritize summarization for new articles.
                     _dispatch_batched(summarize_articles_batch_task, inserted_ids)
+
+                    if intelligence_secondary_deferred():
+                        log.info(
+                            "[ingestion] Deferring secondary intelligence batches for %s new articles while intel-heavy backlog is high",
+                            len(inserted_ids),
+                        )
+                    else:
+                        # Batch global story detection
+                        _dispatch_batched(detect_global_stories_batch_task, inserted_ids)
+
+                        # Batch style normalization (low-credibility sources only)
+                        credibility_ids = [
+                            art["id"] for art in inserted_data if art.get("credibility", 1.5) < 1.2
+                        ]
+                        if credibility_ids:
+                            _dispatch_batched(standardize_article_styles_batch_task, credibility_ids)
 
     current_statuses = get_source_statuses()
     for source_name, stats in source_stats.items():
