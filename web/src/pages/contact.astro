@@ -2,25 +2,29 @@
 import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
-import Breadcrumbs from '../components/Breadcrumbs.astro';
-import { Mail, MessageSquare, Info } from 'lucide-react';
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
+
+const hostHeader = Astro.request?.headers.get('host');
+const lang = getLangFromUrl(Astro.url, hostHeader);
+const t = useTranslations(lang);
+const brand = lang === 'mk' ? 'Presek.live' : 'Presek.rs';
 ---
 
 <Layout
-    title="Контакт — Пресек"
-    description="Контактирајте тим Пресека за сарадњу, предлоге или техничку подршку."
+    title={t('contact.title')}
+    description={t('contact.description')}
 >
     <NYTHeader />
     <main class="site-layout broadsheet-layout py-[var(--page-py)]">
         <header class="editorial-masthead mb-12">
             <div class="masthead-top">
-                <span class="masthead-kicker">КОРЕСПОНДЕНЦИЈА И ПОДРШКА</span>
+                <span class="masthead-kicker">{t('contact.kicker')}</span>
             </div>
             <div class="masthead-main">
-                <h1 class="masthead-title">Контакт <span>Информације</span></h1>
+                <h1 class="masthead-title">{t('contact.heading')} <span>{t('contact.heading_span')}</span></h1>
             </div>
             <p class="masthead-intro">
-                Отворени смо за ваше предлоге, питања и нове идеје за сарадњу. Комуникација са нашим читаоцима и партнерима је кључна за развој платформе.
+                {t('contact.intro')}
             </p>
         </header>
 
@@ -28,24 +32,24 @@ import { Mail, MessageSquare, Info } from 'lucide-react';
             <div class="broadsheet-main">
                 <article class="prose-editorial">
                     <p class="first-paragraph">
-                        Пресек 5.48 је динамичан пројекат у сталној еволуцији. Ваша сарадња је кључна како бисмо унапредили наше системе обраде, оштрили уредничку синтезу и учинили корисничко искуство још транспарентнијим и кориснијим за јавност.
+                        {t('contact.lead')}
                     </p>
 
                     <div class="contact-channels space-y-8 my-10">
                         <div class="channel-item p-8 border border-border bg-secondary/10">
-                            <h3 class="font-serif text-2xl font-black mb-4">Редакцијска кореспонденција</h3>
-                            <p class="mb-6">За сва општа питања, медијске упите или институционалну сарадњу, контактирајте нас путем наше званичне адресе:</p>
+                            <h3 class="font-serif text-2xl font-black mb-4">{t('contact.editorial_title')}</h3>
+                            <p class="mb-6">{t('contact.editorial_body')}</p>
                             <a href="mailto:contact@presek.live" class="text-2xl font-black text-nyt-accent underline">contact@presek.live</a>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-[var(--grid-gap)]">
                             <div class="channel-item p-6 border border-border">
-                                <h4 class="font-sans font-black text-[10px] uppercase tracking-widest mb-3">Сарадња са медијима</h4>
-                                <p class="text-sm leading-relaxed">Ако ваша редакција жели да буде део нашег система мапирања плурализма, молимо вас да пошаљете информације о вашим званичним каналима дистрибуције.</p>
+                                <h4 class="font-sans font-black text-[10px] uppercase tracking-widest mb-3">{t('contact.media_title')}</h4>
+                                <p class="text-sm leading-relaxed">{t('contact.media_body')}</p>
                             </div>
                             <div class="channel-item p-6 border border-border">
-                                <h4 class="font-sans font-black text-[10px] uppercase tracking-widest mb-3">Оперативне напомене</h4>
-                                <p class="text-sm leading-relaxed">Приметили сте технички пропуст или нетачност у системском груписању? Пошаљите нам детаљан опис за бржу корекцију од стране нашег тима.</p>
+                                <h4 class="font-sans font-black text-[10px] uppercase tracking-widest mb-3">{t('contact.ops_title')}</h4>
+                                <p class="text-sm leading-relaxed">{t('contact.ops_body')}</p>
                             </div>
                         </div>
                     </div>
@@ -54,14 +58,14 @@ import { Mail, MessageSquare, Info } from 'lucide-react';
 
             <aside class="broadsheet-rail">
                 <section class="rail-block rail-block-alt">
-                    <p class="rail-kicker">одговор</p>
-                    <h3 class="rail-title">ВРЕМЕНСКИ ОКВИР</h3>
-                    <p class="rail-text">Настојимо да одговоримо на све легитимне захтеве у року од 24 до 48 сати.</p>
+                    <p class="rail-kicker">{t('contact.rail_kicker')}</p>
+                    <h3 class="rail-title">{t('contact.rail_title')}</h3>
+                    <p class="rail-text">{t('contact.rail_text')}</p>
                 </section>
 
                 <div class="rail-meta-box">
-                    <p class="text-[10px] font-black uppercase tracking-widest mb-4 opacity-50">КОМУНИКАЦИЈА</p>
-                    <p class="text-xs leading-relaxed italic">Presek.rs цени конструктивне критике и сугестије из заједнице.</p>
+                    <p class="text-[10px] font-black uppercase tracking-widest mb-4 opacity-50">{t('contact.rail_meta_label')}</p>
+                    <p class="text-xs leading-relaxed italic">{t('contact.rail_meta_text').replace('{brand}', brand)}</p>
                 </div>
             </aside>
         </div>

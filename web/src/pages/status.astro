@@ -35,78 +35,68 @@ const formattedUptime = (seconds: number) => {
     const d = Math.floor(seconds / (3600 * 24));
     const h = Math.floor((seconds % (3600 * 24)) / 3600);
     const m = Math.floor((seconds % 3600) / 60);
-    
+
     const parts = [];
-    if (lang === 'sr') {
-        if (d > 0) parts.push(`${d}d`);
-        if (h > 0) parts.push(`${h}h`);
-        if (m > 0) parts.push(`${m}m`);
-    } else {
-        if (d > 0) parts.push(`${d}д`);
-        if (h > 0) parts.push(`${h}ч`);
-        if (m > 0) parts.push(`${m}м`);
-    }
+    if (d > 0) parts.push(`${d}${t('status.uptime_day')}`);
+    if (h > 0) parts.push(`${h}${t('status.uptime_hour')}`);
+    if (m > 0) parts.push(`${m}${t('status.uptime_min')}`);
     return parts.join(' ') || `${seconds}s`;
 };
 ---
 
 <Layout
-    title={lang === 'sr' ? "Status sistema — Presek" : "Статус на системот — Пресек"}
-    description={lang === 'sr' ? "Prikaz statusa rada i zdravlja sistema Presek, baza podataka, keša i pozadinskih servisa." : "Приказ на статусот на работа и здравјето на системот Пресек, база на податоци, кеш и позадински сервиси."}
+    title={t('status.title')}
+    description={t('status.description')}
 >
     <NYTHeader />
     <main class="site-layout py-[var(--page-py)]" id="system-status-main">
         <header class="editorial-masthead mb-12">
             <div class="masthead-top">
-                <span class="masthead-kicker">{lang === 'sr' ? "OPERATIVNI MONITORING" : "ОПЕРАТИВЕН МОНИТОРИНГ"}</span>
+                <span class="masthead-kicker">{t('status.kicker')}</span>
             </div>
             <div class="masthead-main">
                 <h1 class="masthead-title">
-                    {lang === 'sr' ? "Status Sistema" : "Статус на Системот"} <span>{lang === 'sr' ? "i metrika" : "и метрика"}</span>
+                    {t('status.heading')} <span>{t('status.heading_span')}</span>
                 </h1>
             </div>
             <p class="masthead-intro">
-                {lang === 'sr' 
-                    ? "Pregled performansi, stabilnosti i rada pozadinske infrastrukture agregatora vesti."
-                    : "Преглед на перформансите, стабилноста и работата на позадинската инфраструктура на агрегаторот на вести."}
+                {t('status.intro')}
             </p>
         </header>
 
         <div class="status-grid">
             <div class="status-overview-card" id="status-card-root">
                 <div class="status-header">
-                    <span class="status-title">{lang === 'sr' ? "SISTEMSKI STATUS" : "СИСТЕМСКИ СТАТУС"}</span>
+                    <span class="status-title">{t('status.system_status')}</span>
                     <span class={`status-badge-pill ${healthData.status}`}>
                         <span class="relative flex h-2.5 w-2.5 pulse-container">
                             <span class={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isHealthy ? 'bg-emerald-400' : 'bg-red-400'}`}></span>
                             <span class={`relative inline-flex rounded-full h-2.5 w-2.5 ${isHealthy ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
                         </span>
-                        {isHealthy
-                            ? (lang === 'sr' ? "AKTIVAN" : "АКТИВЕН") 
-                            : (lang === 'sr' ? "DEGRADIRAN" : "ДЕГРАДИРАН")}
+                        {isHealthy ? t('footer.active') : t('status.degraded')}
                     </span>
                 </div>
                 
                 <div class="metrics-grid">
                     <div class="metric-card" id="metric-db">
-                        <div class="metric-label">{lang === 'sr' ? "BAZA PODATAKA" : "БАЗА НА ПОДАТОЦИ"}</div>
+                        <div class="metric-label">{t('status.database')}</div>
                         <div class="metric-value">{healthData.database.ok ? "OK" : "ERROR"}</div>
-                        <div class="metric-sub">{healthData.database.article_count.toLocaleString()} {lang === 'sr' ? "članaka" : "артикли"} | {healthData.database.size_mb.toFixed(1)} MB</div>
+                        <div class="metric-sub">{healthData.database.article_count.toLocaleString()} {t('status.articles')} | {healthData.database.size_mb.toFixed(1)} MB</div>
                     </div>
                     <div class="metric-card" id="metric-redis">
-                        <div class="metric-label">{lang === 'sr' ? "REDIS KEŠ & RED" : "REDIS КЕШ И РЕД"}</div>
+                        <div class="metric-label">{t('status.redis')}</div>
                         <div class="metric-value">{healthData.redis.ok ? "OK" : "ERROR"}</div>
-                        <div class="metric-sub">{lang === 'sr' ? "Komunikacija aktivna" : "Комуникацијата е активна"}</div>
+                        <div class="metric-sub">{t('status.redis_active')}</div>
                     </div>
                     <div class="metric-card" id="metric-uptime">
-                        <div class="metric-label">{lang === 'sr' ? "VREME RADA" : "ВРЕМЕ НА РАБОТА"}</div>
+                        <div class="metric-label">{t('status.uptime')}</div>
                         <div class="metric-value">{formattedUptime(healthData.uptime_seconds)}</div>
-                        <div class="metric-sub">{lang === 'sr' ? "Uptime pozadinskog servisa" : "Uptime на позадинскиот сервис"}</div>
+                        <div class="metric-sub">{t('status.uptime_sub')}</div>
                     </div>
                     <div class="metric-card" id="metric-version">
-                        <div class="metric-label">{lang === 'sr' ? "VERZIJA" : "ВЕРЗИЈА"}</div>
+                        <div class="metric-label">{t('status.version')}</div>
                         <div class="metric-value">v{healthData.version || "6.2.0"}</div>
-                        <div class="metric-sub">{lang === 'sr' ? "Presek Proizvodno Izdanje" : "Пресек Производно Издание"}</div>
+                        <div class="metric-sub">{t('status.version_sub')}</div>
                     </div>
                 </div>
             </div>

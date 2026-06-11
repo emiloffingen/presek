@@ -36,6 +36,10 @@ DATABASE_URL=postgresql://presek:your_db_password@localhost/presek
 DATABASE_READ_REPLICA_URL=postgresql://presek:your_db_password@replica-host/presek
 USE_READ_REPLICA=true
 
+# Split Python venvs (optional — see deploy/setup_split_venvs.sh)
+# PRESEK_API_VENV=/home/emiloffingen/presek-runtime/venv-api
+# PRESEK_WORKER_VENV=/home/emiloffingen/presek-runtime/venv-worker
+
 # Connection pool settings
 DB_POOL_MINCONN=2
 DB_POOL_MAXCONN=10

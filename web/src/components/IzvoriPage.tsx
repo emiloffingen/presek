@@ -33,13 +33,16 @@ interface SourceRow {
   paused_at?: string | null;
 }
 
-function formatLastFetched(value?: string, lang: 'sr' | 'mk' = 'sr') {
-  if (!value) return lang === 'mk' ? 'Нема свеж сигнал' : 'Nema svež signal';
+const HIGH_TRUST_TIERS = new Set(['Visoko poverenje', 'Висока доверба']);
+const VERIFIED_TIERS = new Set(['Potvrden izvor', 'Потврден извор']);
+
+function formatLastFetched(value: string | undefined, noSignalLabel: string, locale: string) {
+  if (!value) return noSignalLabel;
   try {
     const date = new Date(value);
-    return date.toLocaleString(lang === 'mk' ? 'mk-MK' : 'sr-RS', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleString(locale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
   } catch {
-    return lang === 'mk' ? 'Нема свеж сигнал' : 'Nema svež signal';
+    return noSignalLabel;
   }
 }
 
@@ -170,6 +173,8 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTier, setFilterTier] = useState<string>('all');
   const t = useTranslations(lang);
+  const dateLocale = lang === 'mk' ? 'mk-MK' : 'sr-RS';
+  const defaultCountry = lang === 'mk' ? 'MK' : 'RS';
 
   // New interactive graph states
   const [graphSearch, setGraphSearch] = useState('');
@@ -200,9 +205,9 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
     const q = searchTerm.trim().toLowerCase();
     if (q) results = results.filter((s) => s.source?.toLowerCase().includes(q));
     if (filterTier === 'high') {
-      results = results.filter(s => s.trust_tier === 'Visoko poverenje' || s.trust_tier === 'Висока доверба');
+      results = results.filter((s) => HIGH_TRUST_TIERS.has(s.trust_tier));
     } else if (filterTier === 'verified') {
-      results = results.filter(s => s.trust_tier === 'Potvrden izvor' || s.trust_tier === 'Потврден извор');
+      results = results.filter((s) => VERIFIED_TIERS.has(s.trust_tier));
     }
     return results;
   }, [sources, searchTerm, filterTier]);
@@ -220,9 +225,9 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
     const q = searchTerm.trim().toLowerCase();
     if (q && !s.source.toLowerCase().includes(q)) return false;
     if (filterTier === 'high') {
-      if (s.trust_tier !== 'Visoko poverenje' && s.trust_tier !== 'Висока доверба') return false;
+      if (!HIGH_TRUST_TIERS.has(s.trust_tier)) return false;
     } else if (filterTier === 'verified') {
-      if (s.trust_tier !== 'Potvrden izvor' && s.trust_tier !== 'Потврден извор') return false;
+      if (!VERIFIED_TIERS.has(s.trust_tier)) return false;
     }
     return true;
   };
@@ -260,20 +265,20 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
           <div className="item-head mb-2">
             <div className={`health-dot ${health}`} title={health === 'active' ? t('sources.health_active') : health === 'stale' ? t('sources.health_stale') : t('sources.health_critical')}></div>
             <h3 className="section-heading group-hover:text-nyt-accent transition-colors">{source.source}</h3>
-            {(source.trust_tier === 'Visoko poverenje' || source.trust_tier === 'Висока доверба') && (
+            {HIGH_TRUST_TIERS.has(source.trust_tier) && (
               <ShieldCheck size={14} className="text-nyt-accent" />
             )}
           </div>
           <p className="item-tendency font-nyt-body text-sm text-muted-foreground line-clamp-1 mb-2 md:mb-3">{source.tendency}</p>
           <div className="item-meta flex items-center gap-2 md:gap-[var(--grid-gap)]">
-            <span className="px-2 py-0.5 bg-foreground text-background font-sans text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] md:tracking-widest">{source.country || (lang === 'mk' ? 'MK' : 'RS')}</span>
+            <span className="px-2 py-0.5 bg-foreground text-background font-sans text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] md:tracking-widest">{source.country || defaultCountry}</span>
             <div className="flex gap-1.5">
               {source.top_categories?.slice(0, 2).map(cat => (
                 <span key={cat} className="px-2 py-0.5 border border-border rounded-none font-sans text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground/80">{cat}</span>
               ))}
             </div>
             <span className="font-sans text-[9px] md:text-[10px] font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground/40 ml-auto flex items-center gap-1.5">
-              <Activity size={10} /> {formatLastFetched(source.last_fetched, lang as 'sr' | 'mk')}
+              <Activity size={10} /> {formatLastFetched(source.last_fetched, t('sources.no_signal'), dateLocale)}
             </span>
           </div>
         </div>
@@ -305,8 +310,8 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
               else if (value > 0.5) opacity = 'opacity-60';
               else if (value > 0.2) opacity = 'opacity-40';
 
-              if (source.trust_tier === 'Visoko poverenje' || source.trust_tier === 'Висока доверба') bgClass = 'bg-emerald-500';
-              else if (source.trust_tier === 'Potvrden izvor' || source.trust_tier === 'Потврден извор') bgClass = 'bg-nyt-accent';
+              if (HIGH_TRUST_TIERS.has(source.trust_tier)) bgClass = 'bg-emerald-500';
+              else if (VERIFIED_TIERS.has(source.trust_tier)) bgClass = 'bg-nyt-accent';
 
               const height = Math.min(100, Math.max(15, value * 100));
 
@@ -323,21 +328,6 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
       </a>
     );
   };
-
-  // Localized string values for the dashboard
-  const spectrumTitle = lang === 'mk' ? 'Медиумски Спектар на Плурализам' : 'Medijski Spektar Pluralizma';
-  const spectrumSubtitle = lang === 'mk'
-    ? 'Интерактивно дводимензионално мапирање на изворите. Кликнете на круг за брз скок до детални податоци.'
-    : 'Interaktivno dvodimenzionalno mapiranje medija. Kliknite na krug za brzi skok do detaljnih podataka.';
-  const labelIndependence = lang === 'mk' ? 'Независни / Истражувачки' : 'Nezavisni / Analitički';
-  const labelTabloids = lang === 'mk' ? 'Сензационалистички / Таблоиди' : 'Senzacionalistički / Tabloidi';
-  const labelConsensus = lang === 'mk' ? 'Висок Консензус' : 'Uglavnom Konsenzus';
-  const labelExclusives = lang === 'mk' ? 'Ексклузиви / Осамен Лидер' : 'Ekskluzive / Usamljeni Lider';
-  const labelMainstream = lang === 'mk' ? 'Центар (Мејнстрим)' : 'Centar (Mainstream)';
-  const searchLabel = lang === 'mk' ? 'Пребарај извор за лоцирање на графиконот...' : 'Pretraži izvor za lociranje na grafikonu...';
-  const hoverInstruction = lang === 'mk' 
-    ? 'Поминете со глушецот за статистика или кликнете за фокусирање.' 
-    : 'Pređite mišem za statistiku ili kliknite za fokusiranje.';
 
   return (
     <div className="broadsheet-sources pt-8 md:pt-12">
@@ -397,9 +387,9 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
             <div>
               <div className="flex items-center gap-2 mb-1.5">
                 <Compass className="text-nyt-accent shrink-0" size={20} />
-                <h2 className="font-serif font-black text-xl md:text-2xl text-foreground leading-none">{spectrumTitle}</h2>
+                <h2 className="font-serif font-black text-xl md:text-2xl text-foreground leading-none">{t('sources.spectrum_title')}</h2>
               </div>
-              <p className="font-serif text-sm italic text-muted-foreground/90">{spectrumSubtitle}</p>
+              <p className="font-serif text-sm italic text-muted-foreground/90">{t('sources.spectrum_subtitle')}</p>
             </div>
             
             {/* Interactive Graph Finder */}
@@ -408,7 +398,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                 type="text"
                 value={graphSearch}
                 onChange={(e) => setGraphSearch(e.target.value)}
-                placeholder={searchLabel}
+                placeholder={t('sources.graph_search_placeholder')}
                 className="w-full bg-background border border-border rounded-none py-1.5 pl-3 pr-8 text-xs font-sans placeholder:italic placeholder:opacity-50 focus:border-nyt-accent focus:ring-1 focus:ring-nyt-accent/30 outline-none transition-all"
               />
               <div className="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none opacity-40">
@@ -439,30 +429,30 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
 
                 {/* Quadrant Text Overlays (Styled Broadsheet Badges) */}
                 <div className="absolute top-3 left-4 text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] text-muted-foreground/35 bg-secondary/20 dark:bg-secondary/10 px-2 py-0.5 border border-border/10 rounded-none pointer-events-none">
-                  {lang === 'mk' ? 'Независен Консензус' : 'Nezavisni Konsenzus'}
+                  {t('sources.quadrant_independent_consensus')}
                 </div>
                 <div className="absolute bottom-3 left-4 text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] text-muted-foreground/35 bg-secondary/20 dark:bg-secondary/10 px-2 py-0.5 border border-border/10 rounded-none pointer-events-none">
-                  {lang === 'mk' ? 'Истражувачки Ексклузиви' : 'Istraživačke Ekskluzive'}
+                  {t('sources.quadrant_investigative_exclusives')}
                 </div>
                 <div className="absolute top-3 right-4 text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] text-muted-foreground/35 bg-secondary/20 dark:bg-secondary/10 px-2 py-0.5 border border-border/10 rounded-none pointer-events-none">
-                  {lang === 'mk' ? 'Сензационалистички Консензус' : 'Senzacionalistički Konsenzus'}
+                  {t('sources.quadrant_sensational_consensus')}
                 </div>
                 <div className="absolute bottom-3 right-4 text-[8px] md:text-[9px] font-black uppercase tracking-[0.14em] text-muted-foreground/35 bg-secondary/20 dark:bg-secondary/10 px-2 py-0.5 border border-border/10 rounded-none pointer-events-none">
-                  {lang === 'mk' ? 'Таблоидни Ексклузиви' : 'Tabloidne Ekskluzive'}
+                  {t('sources.quadrant_tabloid_exclusives')}
                 </div>
 
                 {/* Core Axis Anchors with Directional Indicators */}
                 <div className="absolute top-2.5 left-1/2 -translate-x-1/2 font-sans text-[8px] font-black uppercase tracking-[0.18em] text-muted-foreground/45 pointer-events-none flex items-center gap-1">
-                  ▲ {labelConsensus}
+                  ▲ {t('sources.label_consensus')}
                 </div>
                 <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 font-sans text-[8px] font-black uppercase tracking-[0.18em] text-muted-foreground/45 pointer-events-none flex items-center gap-1">
-                  ▼ {labelExclusives}
+                  ▼ {t('sources.label_exclusives')}
                 </div>
                 <div className="absolute top-1/2 -translate-y-1/2 left-3.5 font-sans text-[8px] font-black uppercase tracking-[0.18em] text-muted-foreground/45 pointer-events-none vertical-text flex items-center gap-1">
-                  ◀ {labelIndependence}
+                  ◀ {t('sources.label_independence')}
                 </div>
                 <div className="absolute top-1/2 -translate-y-1/2 right-3.5 font-sans text-[8px] font-black uppercase tracking-[0.18em] text-muted-foreground/45 pointer-events-none vertical-text flex items-center gap-1">
-                  ▶ {labelTabloids}
+                  ▶ {t('sources.label_tabloids')}
                 </div>
 
                 {/* Center marker */}
@@ -485,9 +475,9 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                   
                   // Color codes (High-end glossy bead border styling)
                   let colorClass = 'bg-muted-foreground/70 dark:bg-muted-foreground/50 border border-background dark:border-background/60 shadow-[0_0_8px_rgba(156,163,175,0.3)]';
-                  if (s.trust_tier === 'Visoko poverenje' || s.trust_tier === 'Висока доверба') {
+                  if (HIGH_TRUST_TIERS.has(s.trust_tier)) {
                     colorClass = 'bg-emerald-500 border border-background dark:border-background/60 shadow-[0_0_12px_rgba(16,185,129,0.7)]';
-                  } else if (s.trust_tier === 'Potvrden izvor' || s.trust_tier === 'Потврден извор') {
+                  } else if (VERIFIED_TIERS.has(s.trust_tier)) {
                     colorClass = 'bg-nyt-accent border border-background dark:border-background/60 shadow-[0_0_12px_rgba(235,94,40,0.7)]';
                   }
                   
@@ -543,26 +533,26 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                       <div className="flex items-center justify-between mb-1.5">
                         <h4 className="font-serif font-black text-sm text-foreground leading-tight">{hoveredSource.source}</h4>
                         <span className="px-1.5 py-0.5 bg-foreground text-background font-sans text-[8px] font-black uppercase rounded-none">
-                          {hoveredSource.country || (lang === 'mk' ? 'MK' : 'RS')}
+                          {hoveredSource.country || defaultCountry}
                         </span>
                       </div>
                       <p className="text-[11px] text-muted-foreground italic mb-3 line-clamp-1">{hoveredSource.tendency}</p>
                       
                       <div className="grid grid-cols-2 gap-2 text-[9px] font-sans border-t border-border/60 pt-2.5">
                         <div className="flex flex-col">
-                          <span className="font-black uppercase tracking-wider text-muted-foreground/60">{lang === 'mk' ? 'Квалитет' : 'Kvalitet'}</span>
+                          <span className="font-black uppercase tracking-wider text-muted-foreground/60">{t('sources.hover_quality')}</span>
                           <strong className="text-xs font-black text-nyt-accent">{reliability}</strong>
                         </div>
                         <div className="flex flex-col">
-                          <span className="font-black uppercase tracking-wider text-muted-foreground/60">{lang === 'mk' ? 'Консензус' : 'Konsenzus'}</span>
+                          <span className="font-black uppercase tracking-wider text-muted-foreground/60">{t('sources.hover_consensus')}</span>
                           <strong className="text-xs font-black text-foreground">{formatPercent(hoveredSource.corroboration_rate)}</strong>
                         </div>
                         <div className="flex flex-col mt-1">
-                          <span className="font-black uppercase tracking-wider text-muted-foreground/60">{lang === 'mk' ? '24ч Обем' : '24h Obim'}</span>
+                          <span className="font-black uppercase tracking-wider text-muted-foreground/60">{t('sources.hover_volume_24h')}</span>
                           <strong className="text-xs font-black text-foreground">{hoveredSource.recent_volume}</strong>
                         </div>
                         <div className="flex flex-col mt-1">
-                          <span className="font-black uppercase tracking-wider text-muted-foreground/60">{lang === 'mk' ? 'Прв во вести' : 'Prvi lider'}</span>
+                          <span className="font-black uppercase tracking-wider text-muted-foreground/60">{t('sources.hover_first_leader')}</span>
                           <strong className="text-xs font-black text-foreground">+{hoveredSource.speed_first_count}</strong>
                         </div>
                       </div>
@@ -578,37 +568,34 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
               </div>
               <div className="flex items-center gap-1.5 mt-3 justify-end text-[10px] font-sans font-bold text-muted-foreground/75">
                 <HelpCircle size={12} />
-                <span>{hoverInstruction}</span>
+                <span>{t('sources.graph_hover_hint')}</span>
               </div>
             </div>
 
             {/* Sidebar Quadrant Legend */}
             <div className="lg:col-span-1 flex flex-col justify-between gap-4 p-4 bg-background/50 border border-border/60 rounded-none">
               <div>
-                <h4 className="font-sans text-[10px] font-black uppercase tracking-wider border-b border-border/50 pb-2 mb-3 text-foreground">{lang === 'mk' ? 'ГРАФИКОН ЛЕГЕНДА' : 'GRAFIKON LEGENDA'}</h4>
+                <h4 className="font-sans text-[10px] font-black uppercase tracking-wider border-b border-border/50 pb-2 mb-3 text-foreground">{t('sources.graph_legend')}</h4>
                 <div className="space-y-4 text-xs">
                   <div>
-                    <span className="inline-block px-1.5 py-0.5 rounded-none bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-sans text-[9px] font-black tracking-wider uppercase mb-1">{lang === 'mk' ? 'Висока Доверба' : 'Visoko poverenje'}</span>
+                    <span className="inline-block px-1.5 py-0.5 rounded-none bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-sans text-[9px] font-black tracking-wider uppercase mb-1">{t('sources.high_trust')}</span>
                     <p className="text-[11px] text-muted-foreground leading-snug">
-                      {lang === 'mk' ? 'Реномирани извори со стабилно, темелно и верификувано известување.' : 'Renomirani izvori sa stabilnim, temeljnim i verifikovanim izveštavanjem.'}
+                      {t('sources.legend_high_trust_desc')}
                     </p>
                   </div>
                   <div>
-                    <span className="inline-block px-1.5 py-0.5 rounded-none bg-nyt-accent/10 text-nyt-accent font-sans text-[9px] font-black tracking-wider uppercase mb-1">{lang === 'mk' ? 'Потврдени извори' : 'Potvrđeni izvori'}</span>
+                    <span className="inline-block px-1.5 py-0.5 rounded-none bg-nyt-accent/10 text-nyt-accent font-sans text-[9px] font-black tracking-wider uppercase mb-1">{t('sources.verified')}</span>
                     <p className="text-[11px] text-muted-foreground leading-snug">
-                      {lang === 'mk' ? 'Актуелни професионални медиуми кои се редовно верификувани.' : 'Aktuelni profesionalni mediji koji se redovno verifikuju.'}
+                      {t('sources.legend_verified_desc')}
                     </p>
                   </div>
                 </div>
               </div>
 
               <div className="border-t border-border/40 pt-3">
-                <h5 className="font-sans text-[9px] font-black uppercase tracking-widest text-foreground mb-1">{lang === 'mk' ? 'АГЛИ НА ИЗВЕСТУВАЊЕ' : 'UGLOVI IZVEŠTAVANJA'}</h5>
+                <h5 className="font-sans text-[9px] font-black uppercase tracking-widest text-foreground mb-1">{t('sources.reporting_angles_title')}</h5>
                 <p className="text-[10px] text-muted-foreground/80 leading-relaxed">
-                  {lang === 'mk'
-                    ? 'Колку е полево медиумот, толку поексклузивни или истражувачки агли користи. Десната страна претставува сензационализам или широк мејнстрим опсег.'
-                    : 'Koliko je medij levo, toliko više ekskluzivnih ili istraživačkih uglova koristi. Desna strana predstavlja senzacionalizam ili široki mainstream opseg.'
-                  }
+                  {t('sources.reporting_angles_desc')}
                 </p>
               </div>
             </div>

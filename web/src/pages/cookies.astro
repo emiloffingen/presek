@@ -2,25 +2,32 @@
 import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
-import Breadcrumbs from '../components/Breadcrumbs.astro';
 import { Cookie, ShieldCheck, Lock } from 'lucide-react';
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
+import { localePath } from '../lib/localePaths';
+
+const hostHeader = Astro.request?.headers.get('host');
+const lang = getLangFromUrl(Astro.url, hostHeader);
+const t = useTranslations(lang);
+const site = lang === 'mk' ? 'Presek.mk' : 'Presek.live';
+const privacyHref = localePath('/privacy', lang, hostHeader);
 ---
 
 <Layout
-    title="Политика колачића — Пресек"
-    description="Информације о томе како користимо колачиће како бисмо унапредили ваше корисничко искуство."
+    title={t('legal.cookies.title')}
+    description={t('legal.cookies.description')}
 >
     <NYTHeader />
     <main class="site-layout broadsheet-layout py-[var(--page-py)]">
         <header class="editorial-masthead mb-12">
             <div class="masthead-top">
-                <span class="masthead-kicker">ПРАВНО И ПРИВАТНОСТ</span>
+                <span class="masthead-kicker">{t('legal.cookies.kicker')}</span>
             </div>
             <div class="masthead-main">
-                <h1 class="masthead-title">Политика <span>Колачића</span></h1>
+                <h1 class="masthead-title">{t('legal.cookies.heading_prefix')} <span>{t('legal.cookies.heading_span')}</span></h1>
             </div>
             <p class="masthead-intro">
-                Транспарентност у дигиталној обради: Објашњење како Пресек.ливе користи колачиће за функционалност и перформансе.
+                {t('legal.cookies.intro').replace('{site}', site)}
             </p>
         </header>
 
@@ -28,58 +35,58 @@ import { Cookie, ShieldCheck, Lock } from 'lucide-react';
             <div class="broadsheet-main">
                 <article class="prose-editorial">
                     <p class="first-paragraph">
-                        Колачићи су мале текстуалне датотеке које се чувају на вашем уређају приликом посете веб-страници. Пресек користи минималан број колачића искључиво како би омогућио техничку функционалност и заштиту сервиса.
+                        {t('legal.cookies.lead')}
                     </p>
 
-                    <h2>Шта користимо?</h2>
-                    <p>Наш систем користи колачиће за следеће сврхе:</p>
+                    <h2>{t('legal.cookies.section_what')}</h2>
+                    <p>{t('legal.cookies.section_what_body')}</p>
 
                     <div class="cookie-types space-y-8 my-10">
                         <div class="type-item flex gap-[var(--grid-gap)] p-6 border border-border bg-secondary/10">
                             <ShieldCheck className="text-nyt-accent shrink-0" size={24} />
                             <div>
-                                <h4 class="font-sans font-black text-[10px] uppercase tracking-widest mb-2">Неопходни колачићи</h4>
-                                <p class="text-sm leading-relaxed">Ови колачићи су критични за безбедност и основне функције сајта (нпр. заштита од CSRF напада). Без њих, сервис не може исправно да функционише.</p>
+                                <h4 class="font-sans font-black text-[10px] uppercase tracking-widest mb-2">{t('legal.cookies.essential_title')}</h4>
+                                <p class="text-sm leading-relaxed">{t('legal.cookies.essential_body')}</p>
                             </div>
                         </div>
 
                         <div class="type-item flex gap-[var(--grid-gap)] p-6 border border-border">
                             <Cookie className="text-nyt-accent shrink-0" size={24} />
                             <div>
-                                <h4 class="font-sans font-black text-[10px] uppercase tracking-widest mb-2">Преференције корисника</h4>
-                                <p class="text-sm leading-relaxed">Чувамо ваше опције за тамну/светлу тему или подешавања језика на локалном нивоу како не бисте морали поново да бирате приликом сваке посете.</p>
+                                <h4 class="font-sans font-black text-[10px] uppercase tracking-widest mb-2">{t('legal.cookies.prefs_title')}</h4>
+                                <p class="text-sm leading-relaxed">{t('legal.cookies.prefs_body')}</p>
                             </div>
                         </div>
 
                         <div class="type-item flex gap-[var(--grid-gap)] p-6 border border-border">
                             <Lock className="text-nyt-accent shrink-0" size={24} />
                             <div>
-                                <h4 class="font-sans font-black text-[10px] uppercase tracking-widest mb-2">Аналитика сесија</h4>
-                                <p class="text-sm leading-relaxed">Користимо анонимне податке како бисмо разумели како се корисници крећу кроз категорије, са циљем да унапредимо брзину учитавања најпосећенијих тема.</p>
+                                <h4 class="font-sans font-black text-[10px] uppercase tracking-widest mb-2">{t('legal.cookies.analytics_title')}</h4>
+                                <p class="text-sm leading-relaxed">{t('legal.cookies.analytics_body')}</p>
                             </div>
                         </div>
                     </div>
 
-                    <h2>Ваш избор</h2>
+                    <h2>{t('legal.cookies.section_choice')}</h2>
                     <p>
-                        Већина прегледача вам омогућава да контролишете или бришете колачиће кроз своја подешавања. Имајте на уму да онемогућавање одређених колачића може утицати на корисничко искуство на Пресеку.
+                        {t('legal.cookies.choice_body')}
                     </p>
                     <p>
-                        Уколико имате питања у вези са нашом употребом колачића, молимо вас контактирајте нас на <a href="mailto:contact@presek.live" class="text-nyt-accent underline">contact@presek.live</a>.
+                        {t('legal.cookies.contact_prefix')} <a href="mailto:contact@presek.live" class="text-nyt-accent underline">contact@presek.live</a>.
                     </p>
                 </article>
             </div>
 
             <aside class="broadsheet-rail">
                 <section class="rail-block">
-                    <p class="rail-kicker">Повезано</p>
-                    <h3 class="rail-title">ПРИВАТНОСТ</h3>
-                    <a href="/privacy" class="block p-4 border border-border hover:bg-secondary transition-colors text-sm font-bold uppercase tracking-tight">Политика приватности →</a>
+                    <p class="rail-kicker">{t('legal.cookies.rail_related_kicker')}</p>
+                    <h3 class="rail-title">{t('legal.cookies.rail_privacy_title')}</h3>
+                    <a href={privacyHref} class="block p-4 border border-border hover:bg-secondary transition-colors text-sm font-bold uppercase tracking-tight">{t('legal.cookies.rail_privacy_link')}</a>
                 </section>
 
                 <div class="rail-meta-box">
-                    <p class="text-[10px] font-black uppercase tracking-widest mb-4 opacity-50">АЖУРИРАНО</p>
-                    <p class="text-xs">Последња измена: 25. април 2026.</p>
+                    <p class="text-[10px] font-black uppercase tracking-widest mb-4 opacity-50">{t('legal.cookies.rail_updated_label')}</p>
+                    <p class="text-xs">{t('legal.cookies.rail_updated_date')}</p>
                 </div>
             </aside>
         </div>

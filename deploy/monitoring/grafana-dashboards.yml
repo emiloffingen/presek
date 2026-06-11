@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: presek
+    orgId: 1
+    folder: Presek
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /etc/grafana/dashboards

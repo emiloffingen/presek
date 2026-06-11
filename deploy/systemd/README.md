@@ -25,6 +25,7 @@ All services restart automatically and log to the systemd journal.
 - Shared env: `/home/emiloffingen/presek-runtime/shared/.env`
 - Shared Astro dependencies: `/home/emiloffingen/presek-runtime/shared/web-node_modules`
 - Python virtualenv: `/home/emiloffingen/presek-runtime/venv`
+- Optional split venvs: set `PRESEK_API_VENV` / `PRESEK_WORKER_VENV` in shared `.env` (see `deploy/setup_split_venvs.sh`)
 - Service user: `emiloffingen`
 - `.env` is a shell-compatible file and is sourced with `bash`
 

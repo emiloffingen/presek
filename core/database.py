@@ -10,8 +10,29 @@ import alembic.config
 import psycopg
 import psycopg_pool
 from psycopg.rows import dict_row
+from prometheus_client import Counter, REGISTRY
 
 from core.version import APP_VERSION_LABEL
+
+
+def _get_db_query_counter() -> Counter:
+    metric_name = "presek_db_queries_total"
+    existing = REGISTRY._names_to_collectors.get(metric_name)
+    if existing is not None:
+        return existing
+    return Counter(
+        metric_name,
+        "Database queries routed to primary or read replica",
+        ["pool"],
+    )
+
+
+_DB_QUERY_TOTAL = _get_db_query_counter()
+
+
+def _record_db_query(*, read_only: bool, used_replica: bool) -> None:
+    pool = "replica" if read_only and used_replica else "primary"
+    _DB_QUERY_TOTAL.labels(pool=pool).inc()
 
 # --- Security: Input Validation for SQL ---
 
@@ -247,7 +268,9 @@ class AsyncDatabaseManager:
                 read_only = any(cleaned_sql.startswith(prefix) for prefix in ("SELECT", "WITH", "SHOW", "EXPLAIN"))
 
             pool = self._read_pool if read_only and getattr(self, "_read_pool", None) else self._pool
-            if pool == self._read_pool:
+            used_replica = pool is getattr(self, "_read_pool", None) and getattr(self, "_read_pool", None) is not None
+            _record_db_query(read_only=read_only, used_replica=used_replica)
+            if used_replica:
                 log.debug(f"Routing async query to read replica pool: {sql[:100]}")
             async with pool.connection() as conn:
                 async with conn.cursor() as cur:
@@ -395,7 +418,10 @@ class DatabaseManager:
                 read_only = any(cleaned_sql.startswith(prefix) for prefix in ("SELECT", "WITH", "SHOW", "EXPLAIN"))
 
             # Route read-only queries to replica if available
-            pool = getattr(self, "_read_pool", None) if read_only and getattr(self, "_read_pool", None) else self._pool
+            read_pool = getattr(self, "_read_pool", None)
+            pool = read_pool if read_only and read_pool else self._pool
+            used_replica = pool is read_pool and read_pool is not None
+            _record_db_query(read_only=read_only, used_replica=used_replica)
             conn = pool.getconn() if pool else self.get_conn()
 
             with conn.cursor() as cur:

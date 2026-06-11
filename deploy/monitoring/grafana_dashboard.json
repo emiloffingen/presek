@@ -842,7 +842,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(http_requests_total{job=\"presek-api", status=~\"5..\"}[1m])) by (status)",
+          "expr": "sum(rate(http_requests_total{job=\"presek-api\", status=~\"5..\"}[1m])) by (status)",
           "legendFormat": "{{status}} Errors",
           "range": true,
           "refId": "A"

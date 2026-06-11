@@ -46,6 +46,14 @@ ensure_shared_env() {
 }
 
 ensure_runtime_venv() {
+  if [ "${SPLIT_VENVS:-0}" = "1" ]; then
+    info "SPLIT_VENVS=1 — creating API and worker venvs"
+    SOURCE_ROOT="$SOURCE_ROOT" APP_ROOT="$APP_ROOT" FORCE_BOOTSTRAP="$FORCE_BOOTSTRAP" \
+      bash "$SOURCE_ROOT/deploy/setup_split_venvs.sh"
+    ok "Split venvs installed (venv-api + venv-worker)"
+    return 0
+  fi
+
   local lock_hash versioned_venv
   lock_hash="$(sha256sum "$SOURCE_ROOT/uv.lock" | awk '{print $1}')"
   versioned_venv="$PYTHON_ENVS_DIR/$lock_hash"

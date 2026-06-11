@@ -524,6 +524,7 @@ async def fetch_synthesis_picks(lang: str = "sr") -> List[Dict[str, Any]]:
         WHERE cluster_id = ANY(%s) AND lang = %s
         """,
         (cids, lang),
+        read_only=True,
     )
     summary_map = {r["cluster_id"]: r for r in summary_rows}
 
