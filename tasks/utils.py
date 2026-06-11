@@ -115,6 +115,8 @@ INTEL_DEFERRABLE_TASKS = frozenset(
         "tasks.intelligence.discover_storylines_task",
         "tasks.intelligence.detect_global_story_task",
         "tasks.intelligence.standardize_article_style_task",
+        "tasks.intelligence.schedule_backfill_historical_summaries_task",
+        "tasks.intelligence.backfill_historical_article_summaries_task",
     }
 )
 

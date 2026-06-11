@@ -15,7 +15,12 @@ from tasks.intelligence import backfill_historical_article_summaries_task
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--limit", type=int, default=int(os.environ.get("HISTORICAL_SUMMARY_DISPATCH_LIMIT", "80")))
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Article count to enqueue (default: adaptive headroom sizing).",
+    )
     parser.add_argument("--reset-cursor", action="store_true")
     args = parser.parse_args()
 

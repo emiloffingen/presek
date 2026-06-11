@@ -19,12 +19,14 @@ from nlp import (
 from nlp.categories import detect_category, detect_topic
 from nlp.local_analyst import analyst
 from tasks.utils import (
+    acquire_task_lock,
     get_celery_queue_depth,
     invalidate_cluster_caches,
     invalidate_public_data_caches,
     log,
     record_runtime_event,
     redis_client,
+    release_task_lock,
     schedule_task_once,
 )
 from utils import get_dominant_color
@@ -74,6 +76,7 @@ _METADATA_BATCH_SIZE = int(os.environ.get("CLUSTER_METADATA_BATCH_SIZE", "25"))
 _ARTICLE_BATCH_SIZE = int(os.environ.get("ARTICLE_BATCH_SIZE", "10"))
 _REMOTE_SUMMARY_PROVIDERS = ["mistral_small", "mistral_large", "nvidia"]
 _HISTORICAL_SUMMARY_CURSOR_KEY = "backfill:article_summaries:cursor"
+_HISTORICAL_SUMMARY_LOCK_KEY = "lock:backfill:historical_summaries"
 _HISTORICAL_SUMMARY_DISPATCH_LIMIT = int(os.environ.get("HISTORICAL_SUMMARY_DISPATCH_LIMIT", "80"))
 _HISTORICAL_SUMMARY_DISPATCH_MAX = int(os.environ.get("HISTORICAL_SUMMARY_DISPATCH_MAX", "240"))
 _HISTORICAL_SUMMARY_QUEUE_BUFFER = int(os.environ.get("HISTORICAL_SUMMARY_QUEUE_BUFFER", "20"))
@@ -165,10 +168,12 @@ def standardize_article_styles_batch_task(article_ids):
 def summarize_article_task(article_id, final_title=None, local_only=False):
     """Refines article content using AI summarization."""
     row = db.execute_one(
-        "SELECT title, description, full_content, topic, category FROM articles WHERE id = %s",
+        "SELECT title, description, full_content, topic, category, summary FROM articles WHERE id = %s",
         (article_id,),
     )
     if not row:
+        return
+    if row.get("summary"):
         return
 
     title = final_title or row.get("title")
@@ -2714,7 +2719,14 @@ def schedule_backfill_historical_summaries_task():
         log.info("[tasks] Skipping historical summary backfill because local Gemma model is unavailable.")
         return {"skipped": True, "reason": "local_model_missing"}
 
-    return backfill_historical_article_summaries_task.delay()
+    if not acquire_task_lock(_HISTORICAL_SUMMARY_LOCK_KEY, 1200):
+        log.info("[tasks] Skipping historical summary backfill because a run is already in progress.")
+        return {"skipped": True, "reason": "already_running"}
+
+    try:
+        return backfill_historical_article_summaries_task()
+    finally:
+        release_task_lock(_HISTORICAL_SUMMARY_LOCK_KEY)
 
 
 @celery_app.task
@@ -2730,43 +2742,35 @@ def backfill_historical_article_summaries_task(limit=None):
         return {"skipped": True, "reason": "local_model_missing"}
 
     dispatch_limit = _historical_summary_dispatch_limit(limit)
-    try:
-        cursor_raw = redis_client.get(_HISTORICAL_SUMMARY_CURSOR_KEY)
-        cursor_id = int(cursor_raw or 0)
-    except Exception:
-        cursor_id = 0
-
     rows = db.execute(
         """
         SELECT id
         FROM articles
         WHERE summary IS NULL
-          AND id > %s
         ORDER BY id ASC
         LIMIT %s
         """,
-        (cursor_id, dispatch_limit),
+        (dispatch_limit,),
         read_only=True,
     ) or []
     article_ids = [int(row["id"]) for row in rows]
     if not article_ids:
-        log.info("[tasks] Historical summary backfill complete at cursor %s.", cursor_id)
-        return {"enqueued": 0, "cursor_id": cursor_id, "complete": True}
+        log.info("[tasks] Historical summary backfill complete.")
+        return {"enqueued": 0, "complete": True}
 
     _dispatch_batched(summarize_articles_local_batch_task, article_ids)
-    next_cursor = max(article_ids)
+    high_water = max(article_ids)
     try:
-        redis_client.set(_HISTORICAL_SUMMARY_CURSOR_KEY, str(next_cursor))
+        redis_client.set(_HISTORICAL_SUMMARY_CURSOR_KEY, str(high_water))
     except Exception as exc:
-        log.warning("[tasks] Failed to persist historical summary cursor: %s", exc)
+        log.warning("[tasks] Failed to persist historical summary high-water mark: %s", exc)
 
     log.info(
-        "[tasks] Enqueued Gemma-only historical summary backfill for %s articles (cursor %s -> %s).",
+        "[tasks] Enqueued Gemma-only historical summary backfill for %s articles (high_water=%s).",
         len(article_ids),
-        cursor_id,
-        next_cursor,
+        high_water,
     )
-    return {"enqueued": len(article_ids), "cursor_id": next_cursor, "complete": False}
+    return {"enqueued": len(article_ids), "high_water": high_water, "complete": False}
 
 
 @celery_app.task
