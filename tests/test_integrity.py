@@ -272,6 +272,9 @@ class TestAstroFrontendIntegrity:
     def test_recommendations_route_imports_list_validator(self):
         intelligence = _read("routes/intelligence.py")
         assert "validate_list_param" in intelligence
+        assert '@router.post("/intelligence/recommendations")' in intelligence
+        recommendations_block = intelligence.split('@router.post("/intelligence/recommendations")', 1)[1].split("@router.", 1)[0]
+        assert "@custom_rate_limit" in recommendations_block
 
     def test_delivery_component_decodes_vapid_key_before_subscribing(self):
         delivery = _read("web/src/components/BriefingDeliveryIsland.tsx")

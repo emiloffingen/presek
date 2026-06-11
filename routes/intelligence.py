@@ -1261,6 +1261,7 @@ async def compare_sources(s1: str, s2: str):
 
 
 @router.post("/intelligence/recommendations")
+@custom_rate_limit("10/minute")
 async def get_personalized_recommendations(request: Request):
     try:
         payload = await request.json()
