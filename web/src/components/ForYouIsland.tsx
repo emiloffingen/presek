@@ -12,7 +12,7 @@ import {
   sendSuggestionEvents,
 } from '../lib/personalization.js';
 import { sanitizeHtml } from '../lib/sanitize';
-import { localePathForLang } from '../lib/localePaths';
+import { localePathForLang, type Locale } from '../lib/localePaths';
 import { getDisplayTitle, getStoryPreviewText, highlightScores, getPersonalizedText } from '../utils/textUtils';
 
 function getSummary(cluster: any, lang: string) {
@@ -30,7 +30,7 @@ function getTitle(cluster: any, lang: string) {
 interface ForYouIslandProps {
   clusters?: any[];
   excludeClusterIds?: string[];
-  lang?: string;
+  lang?: Locale;
 }
 
 export default function ForYouIsland({ clusters = [], excludeClusterIds = [], lang = 'sr' }: ForYouIslandProps) {

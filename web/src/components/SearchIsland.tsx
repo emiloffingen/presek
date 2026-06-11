@@ -1,4 +1,4 @@
-import { localePath, localePathForLang } from '../lib/localePaths';
+import { localePath, localePathForLang, type Locale } from '../lib/localePaths';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { navigate } from 'astro:transitions/client';
@@ -190,7 +190,7 @@ type SearchAction = {
 
 const FOCUSABLE_SELECTOR = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
-export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initialQuery?: string | null, lang?: string }) {
+export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initialQuery?: string | null, lang?: Locale }) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState(initialQuery || '');
   const [timespan, setTimespan] = useState('all');

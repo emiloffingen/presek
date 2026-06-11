@@ -599,7 +599,7 @@ const articleSchema = cluster ? {
 <Layout
 	title={displayHeadline}
 	description={cluster?.generated_article?.slice(0, 160) || cluster?.synthesis?.slice(0, 160) || shareDescription}
-	image={socialImageUrl}
+	image={socialImageUrl || undefined}
 	type="article"
 	canonical={canonicalUrl}
 	schema={articleSchema || undefined}
@@ -766,7 +766,7 @@ const articleSchema = cluster ? {
 								primaryNarrativeEyebrow={primaryNarrativeEyebrow}
 								hasGeneratedNarrative={hasGeneratedNarrative}
 								hasStrongLeadNarrative={hasStrongLeadNarrative}
-								generatedArticle={generatedArticle}
+								generatedArticle={generatedArticle ?? ''}
 								synthesisItems={synthesisItems}
 								hasCitationSources={hasCitationSources}
 								entities={cluster.entities}
