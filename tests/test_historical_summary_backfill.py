@@ -16,7 +16,6 @@ class TestHistoricalSummaryBackfill:
         mock_redis = patch("tasks.intelligence.redis_client")
         with (
             patch("tasks.intelligence.intelligence_secondary_deferred", return_value=False),
-            patch("tasks.intelligence.get_celery_queue_depth", return_value=10),
             patch("core.llm_router._local_model_available", return_value=True),
             patch("tasks.intelligence.db") as mock_db,
             patch("tasks.intelligence._dispatch_batched") as mock_dispatch,
@@ -29,6 +28,22 @@ class TestHistoricalSummaryBackfill:
         assert result == {"enqueued": 2, "cursor_id": 102, "complete": False}
         mock_dispatch.assert_called_once()
         redis_mock.set.assert_called_once_with("backfill:article_summaries:cursor", "102")
+
+    def test_runs_when_queue_below_secondary_defer_limit(self):
+        mock_redis = patch("tasks.intelligence.redis_client")
+        with (
+            patch("tasks.intelligence.intelligence_secondary_deferred", return_value=False),
+            patch("core.llm_router._local_model_available", return_value=True),
+            patch("tasks.intelligence.db") as mock_db,
+            patch("tasks.intelligence._dispatch_batched") as mock_dispatch,
+            mock_redis as redis_mock,
+        ):
+            redis_mock.get.return_value = None
+            mock_db.execute.return_value = [{"id": 1}]
+            result = backfill_historical_article_summaries_task(limit=1)
+
+        assert result == {"enqueued": 1, "cursor_id": 1, "complete": False}
+        mock_dispatch.assert_called_once()
 
 
 class TestLocalOnlySummarize:

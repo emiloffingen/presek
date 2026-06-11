@@ -74,7 +74,6 @@ _ARTICLE_BATCH_SIZE = int(os.environ.get("ARTICLE_BATCH_SIZE", "10"))
 _REMOTE_SUMMARY_PROVIDERS = ["mistral_small", "mistral_large", "nvidia"]
 _HISTORICAL_SUMMARY_CURSOR_KEY = "backfill:article_summaries:cursor"
 _HISTORICAL_SUMMARY_DISPATCH_LIMIT = int(os.environ.get("HISTORICAL_SUMMARY_DISPATCH_LIMIT", "80"))
-_HISTORICAL_SUMMARY_QUEUE_HEADROOM = int(os.environ.get("HISTORICAL_SUMMARY_QUEUE_HEADROOM", "80"))
 
 
 def _queue_backlog_high(limit=_BACKFILL_QUEUE_DEPTH_LIMIT) -> bool:
@@ -2691,14 +2690,6 @@ def schedule_backfill_historical_summaries_task():
         log.info("[tasks] Skipping scheduled historical summary backfill while intel-heavy backlog is high.")
         return {"skipped": True, "reason": "backlog_high"}
 
-    if get_celery_queue_depth("intel-heavy") >= _HISTORICAL_SUMMARY_QUEUE_HEADROOM:
-        log.info(
-            "[tasks] Skipping scheduled historical summary backfill while intel-heavy depth is %s (headroom=%s).",
-            get_celery_queue_depth("intel-heavy"),
-            _HISTORICAL_SUMMARY_QUEUE_HEADROOM,
-        )
-        return {"skipped": True, "reason": "queue_headroom"}
-
     if not _local_model_available():
         log.info("[tasks] Skipping historical summary backfill because local Gemma model is unavailable.")
         return {"skipped": True, "reason": "local_model_missing"}
@@ -2714,9 +2705,6 @@ def backfill_historical_article_summaries_task(limit=None):
     if intelligence_secondary_deferred():
         log.info("[tasks] Skipping historical summary backfill while intel-heavy backlog is high.")
         return {"skipped": True, "reason": "backlog_high"}
-
-    if get_celery_queue_depth("intel-heavy") >= _HISTORICAL_SUMMARY_QUEUE_HEADROOM:
-        return {"skipped": True, "reason": "queue_headroom"}
 
     if not _local_model_available():
         return {"skipped": True, "reason": "local_model_missing"}
