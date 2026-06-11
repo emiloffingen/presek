@@ -71,6 +71,10 @@ _INTEL_QUEUE_DEFER_LIMIT = _INTEL_QUEUE_FULL_DEFER_LIMIT
 _BACKFILL_BATCH_SIZE = int(os.environ.get("BACKFILL_CLUSTERS_PER_RUN", "8"))
 _METADATA_BATCH_SIZE = int(os.environ.get("CLUSTER_METADATA_BATCH_SIZE", "25"))
 _ARTICLE_BATCH_SIZE = int(os.environ.get("ARTICLE_BATCH_SIZE", "10"))
+_REMOTE_SUMMARY_PROVIDERS = ["mistral_small", "mistral_large", "nvidia"]
+_HISTORICAL_SUMMARY_CURSOR_KEY = "backfill:article_summaries:cursor"
+_HISTORICAL_SUMMARY_DISPATCH_LIMIT = int(os.environ.get("HISTORICAL_SUMMARY_DISPATCH_LIMIT", "80"))
+_HISTORICAL_SUMMARY_QUEUE_HEADROOM = int(os.environ.get("HISTORICAL_SUMMARY_QUEUE_HEADROOM", "80"))
 
 
 def _queue_backlog_high(limit=_BACKFILL_QUEUE_DEPTH_LIMIT) -> bool:
@@ -114,6 +118,13 @@ def summarize_articles_batch_task(article_ids):
 
 
 @celery_app.task
+def summarize_articles_local_batch_task(article_ids):
+    """Batch summarize using local Gemma only (no paid/limited API providers)."""
+    for article_id in article_ids:
+        summarize_article_task(article_id, local_only=True)
+
+
+@celery_app.task
 def detect_global_stories_batch_task(article_ids):
     """Batch processes global story detection for articles."""
     if _skip_when_intel_backlog("global story detection batch"):
@@ -132,7 +143,7 @@ def standardize_article_styles_batch_task(article_ids):
 
 
 @celery_app.task(rate_limit="50/m", autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
-def summarize_article_task(article_id, final_title=None):
+def summarize_article_task(article_id, final_title=None, local_only=False):
     """Refines article content using AI summarization."""
     row = db.execute_one(
         "SELECT title, description, full_content, topic, category FROM articles WHERE id = %s",
@@ -173,6 +184,8 @@ def summarize_article_task(article_id, final_title=None):
         topic=topic,
         json_mode=False,
         lang=lang,
+        provider_override="local" if local_only else None,
+        exclude_providers=_REMOTE_SUMMARY_PROVIDERS if local_only else None,
     )
 
     final_text = None
@@ -2667,6 +2680,85 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
         return False
 
     return True
+
+
+@celery_app.task
+def schedule_backfill_historical_summaries_task():
+    """Beat entrypoint for Gemma-only historical article summary backfill."""
+    from core.llm_router import _local_model_available
+
+    if intelligence_secondary_deferred():
+        log.info("[tasks] Skipping scheduled historical summary backfill while intel-heavy backlog is high.")
+        return {"skipped": True, "reason": "backlog_high"}
+
+    if get_celery_queue_depth("intel-heavy") >= _HISTORICAL_SUMMARY_QUEUE_HEADROOM:
+        log.info(
+            "[tasks] Skipping scheduled historical summary backfill while intel-heavy depth is %s (headroom=%s).",
+            get_celery_queue_depth("intel-heavy"),
+            _HISTORICAL_SUMMARY_QUEUE_HEADROOM,
+        )
+        return {"skipped": True, "reason": "queue_headroom"}
+
+    if not _local_model_available():
+        log.info("[tasks] Skipping historical summary backfill because local Gemma model is unavailable.")
+        return {"skipped": True, "reason": "local_model_missing"}
+
+    return backfill_historical_article_summaries_task.delay()
+
+
+@celery_app.task
+def backfill_historical_article_summaries_task(limit=None):
+    """Enqueue Gemma-only summary batches for the oldest unsummarized articles."""
+    from core.llm_router import _local_model_available
+
+    if intelligence_secondary_deferred():
+        log.info("[tasks] Skipping historical summary backfill while intel-heavy backlog is high.")
+        return {"skipped": True, "reason": "backlog_high"}
+
+    if get_celery_queue_depth("intel-heavy") >= _HISTORICAL_SUMMARY_QUEUE_HEADROOM:
+        return {"skipped": True, "reason": "queue_headroom"}
+
+    if not _local_model_available():
+        return {"skipped": True, "reason": "local_model_missing"}
+
+    dispatch_limit = max(1, int(limit or _HISTORICAL_SUMMARY_DISPATCH_LIMIT))
+    try:
+        cursor_raw = redis_client.get(_HISTORICAL_SUMMARY_CURSOR_KEY)
+        cursor_id = int(cursor_raw or 0)
+    except Exception:
+        cursor_id = 0
+
+    rows = db.execute(
+        """
+        SELECT id
+        FROM articles
+        WHERE summary IS NULL
+          AND id > %s
+        ORDER BY id ASC
+        LIMIT %s
+        """,
+        (cursor_id, dispatch_limit),
+        read_only=True,
+    ) or []
+    article_ids = [int(row["id"]) for row in rows]
+    if not article_ids:
+        log.info("[tasks] Historical summary backfill complete at cursor %s.", cursor_id)
+        return {"enqueued": 0, "cursor_id": cursor_id, "complete": True}
+
+    _dispatch_batched(summarize_articles_local_batch_task, article_ids)
+    next_cursor = max(article_ids)
+    try:
+        redis_client.set(_HISTORICAL_SUMMARY_CURSOR_KEY, str(next_cursor))
+    except Exception as exc:
+        log.warning("[tasks] Failed to persist historical summary cursor: %s", exc)
+
+    log.info(
+        "[tasks] Enqueued Gemma-only historical summary backfill for %s articles (cursor %s -> %s).",
+        len(article_ids),
+        cursor_id,
+        next_cursor,
+    )
+    return {"enqueued": len(article_ids), "cursor_id": next_cursor, "complete": False}
 
 
 @celery_app.task

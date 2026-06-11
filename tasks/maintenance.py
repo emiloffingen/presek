@@ -85,7 +85,7 @@ def catch_up_recent_summaries_task(hours=72, limit=200):
         _dispatch_batched,
         intelligence_batches_deferred,
         intelligence_secondary_deferred,
-        summarize_articles_batch_task,
+        summarize_articles_local_batch_task,
     )
 
     if intelligence_batches_deferred() or intelligence_secondary_deferred():
@@ -109,8 +109,8 @@ def catch_up_recent_summaries_task(hours=72, limit=200):
         if not article_ids:
             return {"enqueued": 0}
 
-        _dispatch_batched(summarize_articles_batch_task, article_ids)
-        log.info("[maintenance] Enqueued summary catch-up for %s recent articles", len(article_ids))
+        _dispatch_batched(summarize_articles_local_batch_task, article_ids)
+        log.info("[maintenance] Enqueued Gemma-only summary catch-up for %s recent articles", len(article_ids))
         return {"enqueued": len(article_ids)}
     except Exception as e:
         log.error(f"[maintenance] catch_up_recent_summaries failed: {e}", exc_info=True)

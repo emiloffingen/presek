@@ -15,12 +15,13 @@ class TestCatchUpRecentSummaries:
             patch("tasks.intelligence.intelligence_batches_deferred", return_value=False),
             patch("tasks.maintenance.db") as mock_db,
             patch("tasks.intelligence._dispatch_batched") as mock_dispatch,
+            patch("tasks.intelligence.summarize_articles_local_batch_task") as mock_task,
         ):
             mock_db.execute.return_value = [{"id": 1}, {"id": 2}, {"id": 3}]
             result = catch_up_recent_summaries_task(hours=24, limit=50)
 
         assert result == {"enqueued": 3}
-        mock_dispatch.assert_called_once()
+        mock_dispatch.assert_called_once_with(mock_task, [1, 2, 3])
 
 
 class TestRefreshSynthesisQuality:

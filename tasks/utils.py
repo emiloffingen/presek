@@ -96,6 +96,7 @@ INTEL_QUEUE_NAME = "intel-heavy"
 INTEL_PRIORITY_TASKS = frozenset(
     {
         "tasks.intelligence.summarize_articles_batch_task",
+        "tasks.intelligence.summarize_articles_local_batch_task",
         "tasks.intelligence.summarize_article_task",
     }
 )
