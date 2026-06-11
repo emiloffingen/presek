@@ -69,11 +69,11 @@ async def test_timeline_consolidation_merges_duplicates(mock_db):
         assert timeline[1]["source"] == "MIA"
 
 
+@patch("tasks.intelligence.get_celery_queue_depth", return_value=0)
 @patch("tasks.intelligence.db")
-@patch("nlp.local_analyst.LocalAnalyst.analyze")
-def test_refine_knowledge_graph_sentiment_task_updates_db(mock_analyze, mock_db, monkeypatch):
+@patch("nlp.analyze_sentiment_locally", return_value=1.5)
+def test_refine_knowledge_graph_sentiment_task_updates_db(mock_analyze, mock_db, _mock_queue_depth):
     # Test that refine_knowledge_graph_sentiment_task refines sentiment in the database
-    monkeypatch.setenv("LOCAL_MODEL_PATH", "/path/to/local/model")
     mock_db.execute.return_value = [
         {
             "cluster_id": "c1",
@@ -81,8 +81,7 @@ def test_refine_knowledge_graph_sentiment_task_updates_db(mock_analyze, mock_db,
             "desc": "Izuzetno dobar razvoj dogadjaja na svim poljima."
         }
     ]
-    mock_analyze.return_value = "1.5" # Positive sentiment from mock local LLM
-    
+
     with patch("core.entities.extract_entities", return_value=[{"name": "Vlada", "type": "ORG"}]):
         refine_knowledge_graph_sentiment_task()
         

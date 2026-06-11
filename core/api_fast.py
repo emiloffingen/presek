@@ -232,10 +232,13 @@ if _rate_limiter_enabled:
 
 
 _AUDIO_FILENAME_RE = re.compile(r"^[A-Za-z0-9_.-]+\.mp3$")
+_GENERATED_FILENAME_RE = re.compile(r"^[A-Za-z0-9_.-]+\.(?:jpg|jpeg|png|svg|webp)$", re.IGNORECASE)
 _STATIC_ROOT = "/home/emiloffingen/presek-runtime/shared/static"
 if not os.path.exists(_STATIC_ROOT):
     _STATIC_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "static"))
 _AUDIO_UPLOAD_DIR = os.path.join(_STATIC_ROOT, "uploads", "audio")
+_GENERATED_DIR = os.path.join(_STATIC_ROOT, "generated")
+_LOCAL_METRICS_CLIENTS = frozenset({"127.0.0.1", "::1", "::ffff:127.0.0.1"})
 
 
 def _audio_file_path(filename: str) -> str | None:
@@ -248,6 +251,24 @@ def _audio_file_path(filename: str) -> str | None:
     except ValueError:
         return None
     return candidate
+
+
+def _generated_file_path(filename: str) -> str | None:
+    if not _GENERATED_FILENAME_RE.fullmatch(filename):
+        return None
+    generated_root = os.path.abspath(_GENERATED_DIR)
+    candidate = os.path.abspath(os.path.join(generated_root, filename))
+    try:
+        if os.path.commonpath([candidate, generated_root]) != generated_root:
+            return None
+    except ValueError:
+        return None
+    return candidate
+
+
+def _is_local_metrics_client(request: Request) -> bool:
+    client_host = str(getattr(getattr(request, "client", None), "host", "") or "")
+    return client_host in _LOCAL_METRICS_CLIENTS
 
 
 def _iter_file_range(path: str, start: int, end: int, chunk_size: int = 64 * 1024):
@@ -414,9 +435,12 @@ async def version_info():
 
 
 @app.get("/metrics")
+@app.get("/api/metrics")
 @exempt_from_rate_limit
-async def metrics():
-    """Expose Prometheus metrics."""
+async def metrics(request: Request):
+    """Expose Prometheus metrics to local scrapers only."""
+    if not _is_local_metrics_client(request):
+        return JSONResponse(status_code=403, content={"detail": "Forbidden"})
     return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
@@ -459,7 +483,10 @@ async def sw_js():
 
 @app.get("/static/generated/{filename}")
 async def get_generated_image(filename: str):
-    return FileResponse(os.path.join("static", "generated", filename))
+    path = _generated_file_path(filename)
+    if not path or not os.path.isfile(path):
+        return JSONResponse(status_code=404, content={"detail": "File not found"})
+    return FileResponse(path)
 
 
 @app.get("/api/delivery/track/{event_type}")

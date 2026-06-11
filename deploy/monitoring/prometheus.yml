@@ -24,11 +24,11 @@ scrape_configs:
     static_configs:
       - targets: ["localhost:9090"]
 
-  # Presek API metrics
+  # Presek API metrics (local FastAPI bind only)
   - job_name: "presek-api"
-    metrics_path: "/api/metrics"
+    metrics_path: "/metrics"
     static_configs:
-      - targets: ["localhost:8000"]
+      - targets: ["localhost:5001"]
     scheme: http
     scrape_interval: 10s
     scrape_timeout: 5s
