@@ -71,6 +71,15 @@ groups:
           description: "Redis memory usage is {{ $value }} (threshold: 90%)"
 
       # Celery Alerts
+      - alert: IntelHeavyQueueBacklog
+        expr: presek_celery_queue_depth{queue="intel-heavy"} > 150
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Intel-heavy Celery backlog"
+          description: "intel-heavy queue depth is {{ $value }} (threshold: 150)"
+
       - alert: CeleryQueueBacklog
         expr: celery_queue_length{job="celery"} > 100
         for: 15m

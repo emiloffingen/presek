@@ -491,7 +491,7 @@ async def fetch_synthesis_picks(lang: str = "sr") -> List[Dict[str, Any]]:
         ORDER BY s.created_at DESC
         LIMIT 4
     """
-    rows = await db.async_execute(sql, (lang,))
+    rows = await db.async_execute(sql, (lang,), read_only=True)
     cids = [r["cluster_id"] for r in rows]
     if not cids:
         return []
@@ -500,6 +500,7 @@ async def fetch_synthesis_picks(lang: str = "sr") -> List[Dict[str, Any]]:
     art_rows = await db.async_execute(
         "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
         (cids,),
+        read_only=True,
     )
 
     clusters_grouped = defaultdict(list)
@@ -510,6 +511,7 @@ async def fetch_synthesis_picks(lang: str = "sr") -> List[Dict[str, Any]]:
     meta_rows = await db.async_execute(
         "SELECT cluster_id, representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = ANY(%s)",
         (cids,),
+        read_only=True,
     )
     meta_map = {r["cluster_id"]: r for r in meta_rows}
 

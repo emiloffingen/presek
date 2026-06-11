@@ -4,10 +4,7 @@ MK_PAGES_WITH_RAIL_AD = [
     "web/src/pages/mk/archive.astro",
     "web/src/pages/mk/subjekt/[name].astro",
     "web/src/pages/mk/analize.astro",
-    "web/src/pages/mk/about.astro",
-    "web/src/pages/mk/methodology.astro",
     "web/src/pages/mk/editorial.astro",
-    "web/src/pages/mk/support.astro",
     "web/src/pages/mk/tema/[topic].astro",
     "web/src/pages/mk/cluster/[slug].astro",
 ]
@@ -81,6 +78,19 @@ def test_tinyadz_rail_wrapper_exists():
     rail = Path("web/src/components/TinyAdzRailAd.astro").read_text(encoding="utf-8")
     assert "TinyAdzInlinedAd" in rail
     assert "page-rail-ad" in rail
+
+
+def test_mk_mirror_pages_rewrite_to_live_templates_with_ads():
+    rewrite_targets = {
+        "web/src/pages/mk/about.astro": "web/src/pages/about.astro",
+        "web/src/pages/mk/methodology.astro": "web/src/pages/methodology.astro",
+        "web/src/pages/mk/support.astro": "web/src/pages/support.astro",
+    }
+    for mk_path, live_path in rewrite_targets.items():
+        mk_source = Path(mk_path).read_text(encoding="utf-8")
+        live_source = Path(live_path).read_text(encoding="utf-8")
+        assert "Astro.rewrite" in mk_source, mk_path
+        assert "TinyAdzRailAd" in live_source, live_path
 
 
 def test_mk_content_pages_include_tinyadz_slots():

@@ -96,6 +96,8 @@ async def get_admin_dashboard(authorized: bool = Depends(verify_admin)):
     total_clusters_row = await db.async_execute("SELECT COUNT(DISTINCT cluster_id) as count FROM articles")
     total_clusters = total_clusters_row[0]["count"] if total_clusters_row else 0
 
+    from core.queue_status import queue_status_payload
+
     return {
         "status": "success",
         "timestamp": datetime.datetime.now().isoformat(),
@@ -132,6 +134,7 @@ async def get_admin_dashboard(authorized: bool = Depends(verify_admin)):
             "total_summaries": total_summaries,
             "total_clusters": total_clusters,
         },
+        "queues": queue_status_payload(),
         "system": version_payload(),
     }
 

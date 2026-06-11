@@ -12,7 +12,11 @@ from fastapi import HTTPException, Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
-from core.config import API_MAX_Q_LEN
+from core.limits import (
+    MAX_HEADER_VALUE_LENGTH,
+    MAX_QUERY_PARAM_LENGTH,
+    MAX_REQUEST_BODY_SIZE,
+)
 
 log = logging.getLogger("presek")
 
@@ -337,10 +341,6 @@ def verify_sync_token(request: Request) -> str:
 # =============================================================================
 # Request Size Limiting Middleware
 # =============================================================================
-
-MAX_REQUEST_BODY_SIZE = 10 * 1024 * 1024  # 10 MB
-MAX_QUERY_PARAM_LENGTH = API_MAX_Q_LEN
-MAX_HEADER_VALUE_LENGTH = 2000
 
 
 class RequestSizeMiddleware(BaseHTTPMiddleware):

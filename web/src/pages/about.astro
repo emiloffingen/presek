@@ -21,13 +21,13 @@ const l = (path: string) => localePath(path, lang, hostHeader);
     <main class="site-layout broadsheet-layout py-[var(--page-py)]">
         <header class="editorial-masthead mb-12">
             <div class="masthead-top">
-                <span class="masthead-kicker">{lang === 'sr' ? 'MISIJA I VIZIJA' : 'МИСИЈА И ВИЗИЈА'}</span>
+                <span class="masthead-kicker">{t('about.masthead_kicker')}</span>
             </div>
             <div class="masthead-main">
-                <h1 class="masthead-title">{lang === 'sr' ? 'Jasniji pregled' : 'Јаснији преглед'} <span>{lang === 'sr' ? 'dana' : 'дана'}</span></h1>
+                <h1 class="masthead-title">{t('about.masthead_title')} <span>{t('about.masthead_title_span')}</span></h1>
             </div>
             <p class="masthead-intro">
-                {t('footer.ethos')}
+                {t('about.masthead_intro')}
             </p>
         </header>
 

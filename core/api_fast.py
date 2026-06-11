@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+from prometheus_client import CONTENT_TYPE_LATEST, Gauge, generate_latest
 
 from core.limiter import RateLimitExceeded, _rate_limiter_enabled, exempt_from_rate_limit, limiter
 from routes.security import generate_csrf_token, verify_csrf_token
@@ -199,6 +199,11 @@ _AUDIO_UPLOAD_DIR = os.path.join(_STATIC_ROOT, "uploads", "audio")
 _UPLOADS_DIR = os.path.join(_STATIC_ROOT, "uploads")
 _GENERATED_DIR = os.path.join(_STATIC_ROOT, "generated")
 _LOCAL_METRICS_CLIENTS = frozenset({"127.0.0.1", "::1", "::ffff:127.0.0.1"})
+_CELERY_QUEUE_DEPTH = Gauge(
+    "presek_celery_queue_depth",
+    "Pending Celery tasks by queue",
+    ["queue"],
+)
 
 
 def _audio_file_path(filename: str) -> str | None:
@@ -423,6 +428,13 @@ async def metrics(request: Request):
     """Expose Prometheus metrics to local scrapers only."""
     if not _is_local_metrics_client(request):
         return JSONResponse(status_code=403, content={"detail": "Forbidden"})
+    try:
+        from core.queue_status import get_all_queue_depths
+
+        for queue, depth in get_all_queue_depths().items():
+            _CELERY_QUEUE_DEPTH.labels(queue=queue).set(depth)
+    except Exception as exc:
+        log.warning("Failed to refresh Celery queue metrics: %s", exc)
     return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 

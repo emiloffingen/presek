@@ -167,7 +167,7 @@ jobs:
           ENV: test
         run: |
           source .venv/bin/activate
-          python -m pytest tests/ -v --tb=short --timeout=60 -x
+          python -m pytest tests/ -v --tb=short --timeout=60
 
   # ============================================================================
   # Frontend Tests

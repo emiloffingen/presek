@@ -63,13 +63,14 @@ from core.celery_app import celery_app
 from core.config import CLUSTER_LOOKBACK
 from core.database import db_manager as db
 from core.embeddings import average_embeddings, parse_embedding_value
+from core.limits import (
+    BACKFILL_QUEUE_DEPTH_LIMIT as _BACKFILL_QUEUE_DEPTH_LIMIT,
+    INTEL_QUEUE_FULL_DEFER_LIMIT as _INTEL_QUEUE_FULL_DEFER_LIMIT,
+    INTEL_QUEUE_SECONDARY_DEFER_LIMIT as _INTEL_QUEUE_SECONDARY_DEFER_LIMIT,
+    INTEL_QUEUE_SOFT_DEFER_LIMIT as _INTEL_QUEUE_SOFT_DEFER_LIMIT,
+)
 
 _analyst_semaphore = threading.Semaphore(int(os.environ.get("INTEL_ANALYST_CONCURRENCY", "4")))
-_BACKFILL_QUEUE_DEPTH_LIMIT = 100
-_INTEL_QUEUE_SOFT_DEFER_LIMIT = int(os.environ.get("INTEL_QUEUE_SOFT_DEFER_LIMIT", "80"))
-_INTEL_QUEUE_SECONDARY_DEFER_LIMIT = int(os.environ.get("INTEL_QUEUE_SECONDARY_DEFER_LIMIT", "150"))
-_INTEL_QUEUE_FULL_DEFER_LIMIT = int(os.environ.get("INTEL_QUEUE_FULL_DEFER_LIMIT", "800"))
-# Backwards-compatible alias for callers expecting the old name.
 _INTEL_QUEUE_DEFER_LIMIT = _INTEL_QUEUE_FULL_DEFER_LIMIT
 _BACKFILL_BATCH_SIZE = int(os.environ.get("BACKFILL_CLUSTERS_PER_RUN", "8"))
 _METADATA_BATCH_SIZE = int(os.environ.get("CLUSTER_METADATA_BATCH_SIZE", "25"))

@@ -295,8 +295,10 @@ class TestAstroFrontendIntegrity:
 
     def test_request_size_limit_matches_api_max_query_length(self):
         security = _read("routes/security.py")
-        assert "from core.config import API_MAX_Q_LEN" in security
-        assert "MAX_QUERY_PARAM_LENGTH = API_MAX_Q_LEN" in security
+        assert "from core.limits import" in security
+        assert "MAX_QUERY_PARAM_LENGTH" in security
+        limits = _read("core/limits.py")
+        assert "MAX_QUERY_PARAM_LENGTH = API_MAX_Q_LEN" in limits
 
     def test_delivery_component_decodes_vapid_key_before_subscribing(self):
         delivery = _read("web/src/components/BriefingDeliveryIsland.tsx")

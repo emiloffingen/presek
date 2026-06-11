@@ -1,0 +1,17 @@
+"""Centralized runtime limits for API, security middleware, and worker backpressure."""
+
+import os
+
+from core.config import API_MAX_PAGE, API_MAX_Q_LEN
+
+MAX_REQUEST_BODY_SIZE = 10 * 1024 * 1024  # 10 MB
+MAX_QUERY_PARAM_LENGTH = API_MAX_Q_LEN
+MAX_HEADER_VALUE_LENGTH = 2000
+
+INTEL_QUEUE_SOFT_DEFER_LIMIT = int(os.environ.get("INTEL_QUEUE_SOFT_DEFER_LIMIT", "80"))
+INTEL_QUEUE_SECONDARY_DEFER_LIMIT = int(os.environ.get("INTEL_QUEUE_SECONDARY_DEFER_LIMIT", "150"))
+INTEL_QUEUE_FULL_DEFER_LIMIT = int(os.environ.get("INTEL_QUEUE_FULL_DEFER_LIMIT", "800"))
+BACKFILL_QUEUE_DEPTH_LIMIT = int(os.environ.get("BACKFILL_QUEUE_DEPTH_LIMIT", "100"))
+
+CELERY_QUEUE_WARN_DEPTH = int(os.environ.get("CELERY_QUEUE_WARN_DEPTH", "150"))
+CELERY_QUEUE_CRITICAL_DEPTH = int(os.environ.get("CELERY_QUEUE_CRITICAL_DEPTH", "500"))

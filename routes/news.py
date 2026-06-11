@@ -400,6 +400,7 @@ async def fetch_news_data(
                 WHERE LOWER(name) = LOWER(%s)
             """,
                 (q,),
+                read_only=True,
             )
             if e_row:
                 entity_info = dict(e_row)
@@ -443,12 +444,13 @@ async def fetch_news_data(
             query += " GROUP BY cluster_id ORDER BY last_article DESC LIMIT %s"
             params.append(page_size * (page + 1))
 
-            rows = await db.async_execute(query, tuple(params))
+            rows = await db.async_execute(query, tuple(params), read_only=True)
             cids = [r["cluster_id"] for r in rows[page * page_size : (page + 1) * page_size]]
             rows = (
                 await db.async_execute(
                     "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
                     (cids,),
+                    read_only=True,
                 )
                 if cids
                 else []
@@ -486,13 +488,14 @@ async def fetch_news_data(
             query += " GROUP BY a.cluster_id ORDER BY last_article DESC LIMIT %s"
             params.append(page_size * (page + 1))
 
-            rows = await db.async_execute(query, tuple(params))
+            rows = await db.async_execute(query, tuple(params), read_only=True)
             cids = [r["cluster_id"] for r in rows]
 
             rows = (
                 await db.async_execute(
                     "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
                     (cids,),
+                    read_only=True,
                 )
                 if cids
                 else []
@@ -521,13 +524,14 @@ async def fetch_news_data(
             query += " GROUP BY a.cluster_id ORDER BY last_article DESC LIMIT %s"
             params.append(page_size * (page + 1))
 
-            rows = await db.async_execute(query, tuple(params))
+            rows = await db.async_execute(query, tuple(params), read_only=True)
             cids = [r["cluster_id"] for r in rows]
 
             rows = (
                 await db.async_execute(
                     "SELECT a.*, s.synthetic_headline, s.synthetic_standfirst FROM articles a LEFT JOIN cluster_summaries s ON a.cluster_id = s.cluster_id AND s.lang = %s WHERE a.cluster_id = ANY(%s) ORDER BY a.created_at DESC",
                     (lang, cids),
+                    read_only=True,
                 )
                 if cids
                 else []
@@ -547,12 +551,13 @@ async def fetch_news_data(
             query += " GROUP BY m.cluster_id, m.updated_at ORDER BY m.updated_at DESC LIMIT %s"
             params.append(page_size * (page + 1))
 
-            rows = await db.async_execute(query, tuple(params))
+            rows = await db.async_execute(query, tuple(params), read_only=True)
             cids = [r["cluster_id"] for r in rows[page * page_size : (page + 1) * page_size]]
             rows = (
                 await db.async_execute(
                     "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
                     (cids,),
+                    read_only=True,
                 )
                 if cids
                 else []
@@ -573,12 +578,13 @@ async def fetch_news_data(
             query += " GROUP BY m.cluster_id, m.updated_at ORDER BY m.updated_at DESC LIMIT %s"
             params.append(page_size * (page + 1))
 
-            rows = await db.async_execute(query, tuple(params))
+            rows = await db.async_execute(query, tuple(params), read_only=True)
             cids = [r["cluster_id"] for r in rows[page * page_size : (page + 1) * page_size]]
             rows = (
                 await db.async_execute(
                     "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
                     (cids,),
+                    read_only=True,
                 )
                 if cids
                 else []
@@ -661,7 +667,7 @@ async def fetch_news_data(
                 g_query += " AND country = %s"
                 g_params.append(country)
             g_query += " ORDER BY created_at DESC LIMIT 100"
-            g_rows = await db.async_execute(g_query, tuple(g_params))
+            g_rows = await db.async_execute(g_query, tuple(g_params), read_only=True)
             if g_rows:
                 g_grouped = defaultdict(list)
                 for r in g_rows:
@@ -687,6 +693,7 @@ async def fetch_news_data(
             await db.async_execute(
                 "SELECT cluster_id, representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = ANY(%s)",
                 (all_cids,),
+                read_only=True,
             )
             if all_cids
             else []
@@ -702,6 +709,7 @@ async def fetch_news_data(
             WHERE cluster_id = ANY(%s) AND lang = %s
             """,
                 (all_cids, lang),
+                read_only=True,
             )
             if all_cids
             else []
@@ -928,6 +936,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
         rows = await db.async_execute(
             "SELECT * FROM articles WHERE cluster_id = %s AND country = %s ORDER BY created_at DESC",
             (cluster_id, country_filter),
+            read_only=True,
         )
         if not rows:
             raise HTTPException(status_code=404, detail="klaster nije pronadjen")
@@ -952,6 +961,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
             WHERE cluster_id = %s AND lang = %s
             """,
             (cluster_id, lang),
+            read_only=True,
         )
 
         # Fallback to Serbian if the requested language summary is missing
@@ -967,6 +977,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                 WHERE cluster_id = %s AND lang = 'sr'
                 """,
                 (cluster_id,),
+                read_only=True,
             )
 
         log.debug(f"[debug] s_row found: {bool(s_row)}")
@@ -1015,6 +1026,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
         cluster_meta = await db.async_execute_one(
             "SELECT tags, topics, representative_image, dominant_color, centroid FROM cluster_metadata WHERE cluster_id = %s",
             (cluster_id,),
+            read_only=True,
         )
 
         tags = filter_cluster_tags((cluster_meta.get("tags") or []) if cluster_meta else [])
@@ -1059,7 +1071,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                 ORDER BY m.centroid <=> %s::vector
                 LIMIT 15
             """
-            related_results = await db.async_execute(related_query, (vec_str, cluster_id, country_filter, vec_str))
+            related_results = await db.async_execute(related_query, (vec_str, cluster_id, country_filter, vec_str), read_only=True)
 
             related_cids = []
             for r in related_results:
@@ -1072,6 +1084,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                 r_rows = await db.async_execute(
                     "SELECT a.*, COALESCE(m.tags, '{}') as cluster_tags FROM articles a LEFT JOIN cluster_metadata m ON a.cluster_id = m.cluster_id WHERE a.cluster_id = ANY(%s)",
                     (related_cids,),
+                    read_only=True,
                 )
                 synthesis_ids = set(await db.async_get_synthesis_ids(related_cids)) if related_cids else set()
                 scored_related = build_read_next_clusters(
@@ -1145,6 +1158,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                     LIMIT 200
                 """,
                     tuple(fallback_params),
+                    read_only=True,
                 )
                 scored_related = build_read_next_clusters(
                     cluster_id,
@@ -1349,6 +1363,7 @@ async def get_cluster_history(cluster_id: str, lang: Optional[str] = "sr"):
             LIMIT 20
         """,
             (cluster_id, lang),
+            read_only=True,
         )
 
         def _parse_maybe_json(val):
@@ -1397,6 +1412,7 @@ async def get_historical_events(cluster_id: str):
         vec_rows = await db.async_execute(
             "SELECT embedding FROM articles WHERE cluster_id = %s AND embedding IS NOT NULL",
             (cluster_id,),
+            read_only=True,
         )
         if not vec_rows:
             return {"status": "success", "events": []}
@@ -1441,6 +1457,7 @@ async def get_historical_events(cluster_id: str):
             LIMIT 5
         """,
             (vec_str, cluster_id),
+            read_only=True,
         )
 
         events = []

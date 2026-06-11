@@ -167,6 +167,47 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
             ok={data.redis?.ok}
           />
 
+          {data.queues && (
+            <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-6">
+              <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-[var(--grid-gap)] mb-4">
+                <BarChart3 size={14} className="text-zinc-500" />
+                {lang === 'sr' ? 'CELERY REDOVI' : 'CELERY РЕДОВИ'}
+              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-[10px] font-black uppercase text-zinc-500">intel-heavy</span>
+                <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${
+                  data.queues.intel_status === 'ok' ? 'bg-emerald-500/10 text-emerald-500'
+                  : data.queues.intel_status === 'elevated' ? 'bg-yellow-500/10 text-yellow-500'
+                  : data.queues.intel_status === 'busy' ? 'bg-orange-500/10 text-orange-500'
+                  : 'bg-red-500/10 text-red-500'
+                }`}>
+                  {data.queues.intel_status}
+                </span>
+              </div>
+              <div className="space-y-2">
+                {Object.entries(data.queues.depths || {}).map(([name, depth]: [string, any]) => {
+                  const numericDepth = Number(depth) || 0;
+                  const full = data.queues.thresholds?.full || 800;
+                  const pct = Math.min(100, Math.round((numericDepth / full) * 100));
+                  return (
+                    <div key={name}>
+                      <div className="flex justify-between text-[9px] font-mono text-zinc-500 mb-1">
+                        <span>{name}</span>
+                        <span>{numericDepth}</span>
+                      </div>
+                      <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${name === 'intel-heavy' && numericDepth >= (data.queues.thresholds?.secondary || 150) ? 'bg-red-500' : 'bg-nyt-accent'}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="bg-nyt-accent/5 border border-nyt-accent/20 rounded-2xl p-6">
             <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-[var(--grid-gap)] mb-4 text-nyt-accent">
               <Zap size={14} /> {lang === 'sr' ? 'SISTEMSKA KASKADA' : 'СИСТЕМСКА КАСКАДА'}

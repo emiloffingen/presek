@@ -367,7 +367,7 @@ def test_global_pulse_uses_common_intelligence_summary_builder(mock_all):
             return {"n": 4}
         raise AssertionError(f"Unexpected query: {query}")
 
-    async def async_execute_side_effect(query, params=None, fetch=True):
+    async def async_execute_side_effect(query, params=None, fetch=True, **kwargs):
         if "date_trunc" in query and "t" in query and "ORDER BY t" in query:
             return [{"t": "2026-04-22T10:00:00Z", "n": 3}]
         if "GROUP BY a.category" in query or ("GROUP BY category" in query and "ORDER BY n DESC" in query):
@@ -893,7 +893,7 @@ def test_home_latest_wire_route_uses_backend_selection(mock_all):
 def test_news_topic_response_filters_mixed_cluster_articles(mock_all):
     import routes.news as news
 
-    async def execute_side_effect(query, params=None, fetch=True):
+    async def execute_side_effect(query, params=None, fetch=True, **kwargs):
         if "WITH topic_clusters AS" in query:
             return [{"cluster_id": "mixed", "last_article": "2026-04-22T20:00:00Z"}]
         if "WHERE cluster_id = ANY" in query or "WHERE a.cluster_id = ANY" in query:
@@ -951,7 +951,7 @@ def test_news_topic_response_filters_mixed_cluster_articles(mock_all):
 def test_news_entity_response_merges_metadata_and_article_matches(mock_all):
     import routes.news as news
 
-    async def execute_side_effect(query, params=None, fetch=True):
+    async def execute_side_effect(query, params=None, fetch=True, **kwargs):
         if "WITH entity_clusters AS" in query:
             return [
                 {
@@ -1028,7 +1028,7 @@ def test_news_entity_response_merges_metadata_and_article_matches(mock_all):
 def test_news_category_response_filters_mixed_cluster_articles(mock_all):
     import routes.news as news
 
-    async def execute_side_effect(query, params=None, fetch=True):
+    async def execute_side_effect(query, params=None, fetch=True, **kwargs):
         if "FROM cluster_metadata m" in query and "WHERE m.category = %s" in query:
             return [{"cluster_id": "mixed-geo", "last_article": "2026-04-22T20:00:00Z"}]
         if "SELECT * FROM articles WHERE cluster_id = ANY" in query:
@@ -1241,7 +1241,7 @@ def test_fastapi_get_cluster_share_card_blocks_unresolved_remote_backgrounds(moc
 def test_fastapi_historical_events_formats_pgvector_parameter(mock_all):
     import routes.news
 
-    async def async_execute_side_effect(query, params=None, fetch=True):
+    async def async_execute_side_effect(query, params=None, fetch=True, **kwargs):
         if "SELECT embedding FROM articles" in query:
             return [{"embedding": "[0.1,0.2,0.3]"}]
         if "WITH archive_pool AS" in query:
@@ -1356,7 +1356,7 @@ def test_global_pulse_uses_ingestion_aware_window_and_filters_blank_categories(
             return {"n": 4}
         raise AssertionError(f"Unexpected query: {query}")
 
-    async def execute_side_effect(query, params=None, fetch=True):
+    async def execute_side_effect(query, params=None, fetch=True, **kwargs):
         if "date_trunc" in query and "COALESCE" in query:
             return [{"t": "2026-04-22T10:00:00Z", "n": 3}]
         if "FROM articles a" in query and "GROUP BY a.category ORDER BY n DESC" in query:
@@ -1411,7 +1411,7 @@ def test_global_pulse_uses_ingestion_aware_window_and_filters_blank_categories(
 def test_navigation_counts_use_article_level_classifications(mock_all):
     import routes.system as system
 
-    async def execute_side_effect(query, params=None, fetch=True):
+    async def execute_side_effect(query, params=None, fetch=True, **kwargs):
         if "FROM cluster_metadata m" in query and "score_cluster" not in query:
             return []
         if "SELECT category, topic, COUNT(DISTINCT cluster_id) as n" in query:
@@ -1472,7 +1472,7 @@ def test_editorial_signals_prefer_ingested_at_for_freshness(mock_all):
 def test_synthesis_homepage_boost(mock_all):
     import routes.news as news
 
-    async def execute_side_effect(query, params=None, fetch=True):
+    async def execute_side_effect(query, params=None, fetch=True, **kwargs):
         if "FROM cluster_metadata m" in query:
             return [
                 {"cluster_id": "c1", "last_article": "2026-04-22T18:10:00Z"},
@@ -1536,7 +1536,7 @@ def test_synthesis_homepage_boost(mock_all):
 def test_fastapi_network_graph(mock_all):
     import routes.intelligence as intelligence
 
-    async def execute_side_effect(query, params=None):
+    async def execute_side_effect(query, params=None, **kwargs):
         if "FROM knowledge_relationships" in query:
             return [
                 {"entity_a": "Vučić", "entity_b": "Vlada", "weight": 5, "count_a_to_b": 4, "count_b_to_a": 1},
@@ -1627,7 +1627,7 @@ def test_fastapi_synthesize_nodes_endpoint(mock_all):
     from routes.intelligence import NodeSynthesisRequest
     import datetime
 
-    async def execute_side_effect(query, params=None):
+    async def execute_side_effect(query, params=None, **kwargs):
         if "FROM entity_mentions_daily" in query:
             return [{"cluster_id": "cluster_abc"}]
         if "FROM articles" in query:
