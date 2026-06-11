@@ -126,14 +126,15 @@ def _parse_queue_task_name(raw_message: str) -> str:
     return str((body.get("headers") or {}).get("task") or "")
 
 
-def reprioritize_intel_queue(*, defer_threshold: int = 150, dry_run: bool = False) -> dict:
+def reprioritize_intel_queue(*, defer_threshold: int = 150, groom_threshold: int = 80, dry_run: bool = False) -> dict:
     """Drop deferrable intel-heavy tasks and move summarize batches to the queue head."""
     depth_before = get_celery_queue_depth(INTEL_QUEUE_NAME)
-    if depth_before < defer_threshold:
+    if depth_before < groom_threshold:
         return {
             "skipped": True,
-            "reason": "below_threshold",
+            "reason": "below_groom_threshold",
             "depth_before": depth_before,
+            "groom_threshold": groom_threshold,
             "defer_threshold": defer_threshold,
         }
 
@@ -162,6 +163,8 @@ def reprioritize_intel_queue(*, defer_threshold: int = 150, dry_run: bool = Fals
         "priority_count": len(priority_items),
         "kept_other_count": len(kept_other),
         "dry_run": dry_run,
+        "groom_threshold": groom_threshold,
+        "defer_threshold": defer_threshold,
     }
 
     if dry_run:

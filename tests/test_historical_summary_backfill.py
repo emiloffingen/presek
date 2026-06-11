@@ -45,6 +45,26 @@ class TestHistoricalSummaryBackfill:
         assert result == {"enqueued": 1, "cursor_id": 1, "complete": False}
         mock_dispatch.assert_called_once()
 
+    def test_scales_dispatch_limit_with_queue_headroom(self):
+        mock_redis = patch("tasks.intelligence.redis_client")
+        with (
+            patch("tasks.intelligence.intelligence_secondary_deferred", return_value=False),
+            patch("tasks.intelligence.get_celery_queue_depth", return_value=92),
+            patch("core.llm_router._local_model_available", return_value=True),
+            patch("tasks.intelligence.db") as mock_db,
+            patch("tasks.intelligence._dispatch_batched") as mock_dispatch,
+            mock_redis as redis_mock,
+        ):
+            redis_mock.get.return_value = "80"
+            mock_db.execute.return_value = [{"id": i} for i in range(81, 321)]
+            result = backfill_historical_article_summaries_task()
+
+        assert result["enqueued"] == 240
+        assert result["cursor_id"] == 320
+        mock_dispatch.assert_called_once()
+        article_ids = mock_dispatch.call_args.args[1]
+        assert len(article_ids) == 240
+
 
 class TestLocalOnlySummarize:
     def test_uses_local_provider_override(self):

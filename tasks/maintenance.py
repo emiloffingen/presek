@@ -43,8 +43,9 @@ def run_prune_db():
 def prune_intel_queue_task(defer_threshold=None, dry_run=False):
     """Drop deferrable intel-heavy tasks and prioritize summarize batches when congested."""
     threshold = int(defer_threshold or os.environ.get("INTEL_QUEUE_SECONDARY_DEFER_LIMIT", "150"))
+    groom = int(os.environ.get("INTEL_QUEUE_GROOM_DEPTH", "80"))
     try:
-        result = reprioritize_intel_queue(defer_threshold=threshold, dry_run=bool(dry_run))
+        result = reprioritize_intel_queue(defer_threshold=threshold, groom_threshold=groom, dry_run=bool(dry_run))
         if result.get("removed"):
             log.info(
                 "[maintenance] Pruned intel-heavy queue: removed=%s priority=%s depth=%s->%s",

@@ -172,7 +172,7 @@ celery_app.conf.update(
         },
         "backfill-historical-summaries": {
             "task": "tasks.intelligence.schedule_backfill_historical_summaries_task",
-            "schedule": crontab(minute=20, hour="*/2"),  # Every 2 hours, Gemma-only
+            "schedule": 1800.0,  # Every 30 minutes, Gemma-only
         },
         "generate-daily-briefing-sr": {
             "task": "tasks.delivery.briefing.generate_daily_brief_task",

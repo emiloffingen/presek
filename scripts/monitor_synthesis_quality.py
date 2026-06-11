@@ -121,10 +121,31 @@ def build_report(days: int):
     }
 
 
+def _unsummarized_counts():
+    rows = db.execute(
+        """
+        SELECT
+            COUNT(*) FILTER (WHERE summary IS NULL) AS total,
+            COUNT(*) FILTER (
+                WHERE summary IS NULL
+                  AND created_at >= NOW() - interval '24 hours'
+            ) AS last_24h
+        FROM articles
+        """,
+        read_only=True,
+    )
+    row = rows[0] if rows else {}
+    return {
+        "unsummarized_total": int(row.get("total") or 0),
+        "unsummarized_24h": int(row.get("last_24h") or 0),
+    }
+
+
 def build_snapshot(primary_days: int = 1, history_days: int = 7):
     primary = build_report(primary_days)
     history = build_report(history_days)
     queue_depth = _celery_queue_depth()
+    unsummarized = _unsummarized_counts()
 
     status = "ok"
     if (
@@ -145,6 +166,8 @@ def build_snapshot(primary_days: int = 1, history_days: int = 7):
         "celery_queue_depth": queue_depth,
         "celery_queue_warn_depth": _QUEUE_WARN_DEPTH,
         "celery_queue_critical_depth": _QUEUE_CRITICAL_DEPTH,
+        "unsummarized_total": unsummarized["unsummarized_total"],
+        "unsummarized_24h": unsummarized["unsummarized_24h"],
         "checked_at": datetime.now(timezone.utc).isoformat(),
     }
 

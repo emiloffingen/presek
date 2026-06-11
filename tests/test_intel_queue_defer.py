@@ -3,10 +3,19 @@ from unittest.mock import patch
 from tasks.intelligence import (
     intelligence_batches_deferred,
     intelligence_secondary_deferred,
+    intelligence_soft_deferred,
 )
 
 
 class TestIntelQueueDefer:
+    def test_soft_deferred_at_80(self):
+        with patch("tasks.intelligence.get_celery_queue_depth", return_value=80):
+            assert intelligence_soft_deferred() is True
+
+    def test_soft_not_deferred_below_threshold(self):
+        with patch("tasks.intelligence.get_celery_queue_depth", return_value=79):
+            assert intelligence_soft_deferred() is False
+
     def test_secondary_deferred_at_150(self):
         with patch("tasks.intelligence.get_celery_queue_depth", return_value=150):
             assert intelligence_secondary_deferred() is True

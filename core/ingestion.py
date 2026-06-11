@@ -1210,7 +1210,7 @@ async def ingest_all_sources_async():
                     _dispatch_batched,
                     detect_global_stories_batch_task,
                     intelligence_batches_deferred,
-                    intelligence_secondary_deferred,
+                    intelligence_soft_deferred,
                     standardize_article_styles_batch_task,
                     summarize_articles_batch_task,
                 )
@@ -1228,7 +1228,7 @@ async def ingest_all_sources_async():
                     # Always prioritize summarization for new articles.
                     _dispatch_batched(summarize_articles_batch_task, inserted_ids)
 
-                    if intelligence_secondary_deferred():
+                    if intelligence_soft_deferred():
                         log.info(
                             "[ingestion] Deferring secondary intelligence batches for %s new articles while intel-heavy backlog is high",
                             len(inserted_ids),

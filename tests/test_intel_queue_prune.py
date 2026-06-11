@@ -9,11 +9,32 @@ def _message(task_name: str) -> str:
 
 
 class TestReprioritizeIntelQueue:
-    def test_skips_when_below_threshold(self):
+    def test_skips_when_below_groom_threshold(self):
         with patch("tasks.utils.get_celery_queue_depth", return_value=50):
-            result = reprioritize_intel_queue(defer_threshold=150)
+            result = reprioritize_intel_queue(defer_threshold=150, groom_threshold=80)
         assert result["skipped"] is True
-        assert result["reason"] == "below_threshold"
+        assert result["reason"] == "below_groom_threshold"
+
+    def test_grooms_when_above_soft_threshold(self):
+        messages = [
+            _message("tasks.intelligence.extract_entities_task"),
+            _message("tasks.intelligence.summarize_articles_local_batch_task"),
+            _message("tasks.intelligence.detect_global_stories_batch_task"),
+        ]
+        mock_redis = MagicMock()
+        mock_redis.lrange.return_value = messages
+        mock_pipe = MagicMock()
+        mock_redis.pipeline.return_value = mock_pipe
+
+        with (
+            patch("tasks.utils.get_celery_queue_depth", side_effect=[92, 1]),
+            patch("tasks.utils.redis_client", mock_redis),
+        ):
+            result = reprioritize_intel_queue(defer_threshold=150, groom_threshold=80)
+
+        assert result["removed"] == 2
+        assert result["priority_count"] == 1
+        assert result["depth_after"] == 1
 
     def test_keeps_summarize_and_drops_secondary_tasks(self):
         messages = [
