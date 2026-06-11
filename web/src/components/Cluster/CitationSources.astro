@@ -3,23 +3,22 @@ import { cleanAndDecode } from '../../utils/textUtils';
 
 interface Props {
 	citationSources: any[];
+	lang?: 'sr' | 'mk';
 }
 
-const { citationSources } = Astro.props;
+const { citationSources, lang = 'sr' } = Astro.props;
+const heading = lang === 'mk' ? 'Поврзани извори' : 'Povezani izvori';
 ---
 
 <footer class="narrative-citations mt-12 p-8 bg-secondary/10 border border-border/40 rounded-lg">
-	<h4 class="citation-heading">REFERENTNI izvori</h4>
+	<h4 class="citation-heading">{heading}</h4>
 	<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-[var(--grid-gap)]">
 		{citationSources.map((art: any) => (
-			<div class="citation-card group" id={`citation-${art.index}`}>
-				<span class="citation-idx">[{art.index}]</span>
-				<div class="citation-body">
-					<p class="citation-source">{art.source}</p>
-					<a href={art.link} target="_blank" rel="noopener noreferrer" class="citation-link">
-						{cleanAndDecode(art.title)}
-					</a>
-				</div>
+			<div class="citation-card group">
+				<p class="citation-source">{art.source}</p>
+				<a href={art.link} target="_blank" rel="noopener noreferrer" class="citation-link">
+					{cleanAndDecode(art.title)}
+				</a>
 			</div>
 		))}
 	</div>
@@ -28,19 +27,8 @@ const { citationSources } = Astro.props;
 <style>
 	.citation-card {
 		display: flex;
-		gap: 1rem;
-		align-items: flex-start;
-		scroll-margin-top: 6rem;
-	}
-	.citation-idx {
-		font-family: var(--font-sans);
-		font-size: 0.68rem;
-		font-weight: 900;
-		color: var(--nyt-accent);
-		margin-top: 0.2rem;
-	}
-	.citation-body {
-		flex: 1;
+		flex-direction: column;
+		gap: 0.35rem;
 		min-width: 0;
 	}
 	.citation-source {

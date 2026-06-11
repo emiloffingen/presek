@@ -14,7 +14,7 @@ import SourceComparisonIsland from '../../components/SourceComparisonIsland.tsx'
 import ClusterFollowSuggestionsIsland from '../../components/ClusterFollowSuggestionsIsland.tsx';
 import NewsletterIsland from '../../components/NewsletterIsland.tsx';
 import { apiBaseUrl } from '../../lib/apiBase';
-import { cleanAndDecode, isMostlyCyrillic, getEditionStr, parseFootnotes, deShout, slugify, normalizeAndDeduplicateTags } from '../../utils/textUtils';
+import { cleanAndDecode, isMostlyCyrillic, getEditionStr, stripCitationMarkers, deShout, slugify, normalizeAndDeduplicateTags } from '../../utils/textUtils';
 import { chooseClusterImage } from '../../utils/imageSelection';
 
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
@@ -545,6 +545,9 @@ if (isBreakingFlag && totalSourcesCount >= 4) {
 // Prefer a high-res representative image or the lead article visual for social sharing.
 // Generated SVG is used only as a last resort fallback.
 const socialImageUrl = cluster?.representative_image || (leadVisual && !leadVisual.isWeak ? leadVisual.rawUrl : imageUrl);
+const schemaArticleBody = stripCitationMarkers(
+	cluster?.generated_article || cluster?.synthesis || displayHeadline || ''
+);
 
 const articleSchema = cluster ? {
 	"@context": "https://schema.org",
@@ -576,7 +579,7 @@ const articleSchema = cluster ? {
 		"@id": canonicalUrl
 	},
 	"articleSection": cluster.articles?.[0]?.category || "News",
-	"articleBody": cluster.generated_article || cluster.synthesis || displayHeadline,
+	"articleBody": schemaArticleBody,
 	"speakable": {
 		"@type": "SpeakableSpecification",
 		"xpath": [
@@ -773,7 +776,7 @@ const articleSchema = cluster ? {
 							/>
 
 							{hasCitationSources && (
-								<CitationSources citationSources={citationSources} />
+								<CitationSources citationSources={citationSources} lang={lang} />
 							)}
 
 							<TinyAdzInlinedAd class="cluster-inlined-ad mb-12" />
