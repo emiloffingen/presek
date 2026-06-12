@@ -76,7 +76,7 @@ function getPluralismLabel(value: number) {
                             <a href={getClusterUrl(cluster)} class="synthesis-card-link">
                                 {visualImage && (
                                     <div class="card-image-wrapper">
-                                        <img src={visualImage} alt={cluster.synthetic_headline || ''} class="card-image" loading="lazy" />
+                                        <img src={visualImage} alt={cluster.synthetic_headline || ''} class="card-image" loading="lazy" decoding="async" width="640" height="427" />
                                     </div>
                                 )}
 

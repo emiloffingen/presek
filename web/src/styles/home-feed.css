@@ -1,0 +1,315 @@
+/* Home Feed styles extracted from global.css */
+
+.for-you-follow-block {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 1.1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+}
+
+.for-you-follow-head {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.for-you-follow-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+.for-you-follow-card {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--background) 92%, var(--secondary) 8%);
+}
+
+.for-you-follow-kicker {
+  margin: 0 0 0.2rem;
+  font-family: var(--font-sans);
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--muted-foreground) 92%, var(--foreground) 8%);
+}
+
+.for-you-follow-card strong {
+  display: block;
+  margin: 0 0 0.2rem;
+  font-family: var(--font-serif);
+  font-size: 0.95rem;
+  line-height: 1.15;
+  color: var(--foreground);
+}
+
+.for-you-follow-card p {
+  margin: 0;
+  font-family: var(--font-nyt-body);
+  font-size: 0.86rem;
+  line-height: 1.4;
+  color: var(--secondary-foreground);
+}
+
+.for-you-follow-block {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.for-you-follow-head {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.for-you-follow-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+}
+
+.for-you-follow-card {
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.9rem;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--card) 94%, var(--accent) 6%);
+}
+
+.for-you-follow-kicker {
+  margin: 0 0 0.2rem;
+  font-family: var(--font-sans);
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.for-you-follow-card strong {
+  display: block;
+  margin: 0 0 0.25rem;
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  line-height: 1.15;
+  color: var(--foreground);
+}
+
+.for-you-follow-card p {
+  margin: 0;
+  font-family: var(--font-nyt-body);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--secondary-foreground);
+}
+
+/* News Feed Grid */
+@keyframes fadeInUpStagger {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.news-feed-grid > *,
+.for-you-grid > * {
+  animation: fadeInUpStagger 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.news-feed-grid > *:nth-child(1),
+.for-you-grid > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.news-feed-grid > *:nth-child(2),
+.for-you-grid > *:nth-child(2) {
+  animation-delay: 40ms;
+}
+.news-feed-grid > *:nth-child(3),
+.for-you-grid > *:nth-child(3) {
+  animation-delay: 80ms;
+}
+.news-feed-grid > *:nth-child(4),
+.for-you-grid > *:nth-child(4) {
+  animation-delay: 120ms;
+}
+.news-feed-grid > *:nth-child(5),
+.for-you-grid > *:nth-child(5) {
+  animation-delay: 160ms;
+}
+.news-feed-grid > *:nth-child(6),
+.for-you-grid > *:nth-child(6) {
+  animation-delay: 200ms;
+}
+.news-feed-grid > *:nth-child(7),
+.for-you-grid > *:nth-child(7) {
+  animation-delay: 240ms;
+}
+.news-feed-grid > *:nth-child(8),
+.for-you-grid > *:nth-child(8) {
+  animation-delay: 280ms;
+}
+.news-feed-grid > *:nth-child(9),
+.for-you-grid > *:nth-child(9) {
+  animation-delay: 320ms;
+}
+.news-feed-grid > *:nth-child(10),
+.for-you-grid > *:nth-child(10) {
+  animation-delay: 360ms;
+}
+.news-feed-grid > *:nth-child(n + 11),
+.for-you-grid > *:nth-child(n + 11) {
+  animation-delay: 400ms;
+}
+
+.news-feed-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 2rem;
+  row-gap: 1.25rem;
+  align-items: stretch;
+}
+
+.news-feed-grid-compact {
+  row-gap: 0.85rem;
+}
+
+@media (min-width: 1024px) {
+  .news-feed-grid {
+    grid-template-columns: repeat(3, 1fr);
+    column-gap: 1.5rem;
+    row-gap: 1.5rem;
+  }
+  .lead-story {
+    grid-column: 1 / -1;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--foreground) !important;
+    margin-bottom: 1.5rem;
+  }
+}
+
+@media (min-width: 1440px) {
+  .news-feed-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 1800px) {
+  .news-feed-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+.for-you-module {
+  margin-top: 1.35rem;
+  padding-top: 1.3rem;
+  border-top: 1px solid var(--border);
+}
+
+.for-you-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+}
+
+.for-you-kicker,
+.for-you-note,
+.for-you-card-kicker,
+.for-you-card-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.for-you-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.for-you-kicker,
+.for-you-card-kicker,
+.for-you-card-cta {
+  color: var(--nyt-accent);
+}
+
+.for-you-note,
+.for-you-card-meta {
+  color: var(--muted-foreground);
+}
+
+.for-you-head h2 {
+  margin: 0;
+  font-size: clamp(1.4rem, 1.18rem + 0.65vw, 1.95rem);
+  line-height: 1.03;
+  letter-spacing: -0.02em;
+}
+
+.for-you-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+}
+
+.for-you-card {
+  display: block;
+  padding: 0.95rem;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--background) 92%, var(--secondary) 8%);
+  text-decoration: none;
+  color: inherit;
+}
+
+.for-you-card h3 {
+  margin: 0.45rem 0;
+  font-size: 1.08rem;
+  line-height: 1.35;
+  letter-spacing: 0.025em;
+}
+
+.for-you-card-copy {
+  margin: 0 0 0.65rem;
+  font-family: var(--font-nyt-body);
+  font-size: 0.94rem;
+  line-height: 1.55;
+  color: var(--secondary-foreground);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.for-you-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.for-you-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}

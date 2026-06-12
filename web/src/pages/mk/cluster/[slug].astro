@@ -876,24 +876,9 @@ const articleSchema = cluster ? {
                                     </div>
                                     <span class="advanced-toggle-label">{lang === 'sr' ? 'Otvori' : 'Отвори'}</span>
                                 </summary>
-                                <div class="deep-dive-tabs">
-                                    <input type="radio" name="deep-dive-tabs" id="deep-tab-history" checked />
-                                    {allSourcesNames.length >= 2 && <input type="radio" name="deep-dive-tabs" id="deep-tab-sources" />}
-
-                                    <div class="deep-tab-list" role="tablist" aria-label={t('cluster.deep_synthesis')}>
-                                        <label for="deep-tab-history" class="deep-tab-trigger">{lang === 'sr' ? 'Razvoj priče' : 'Развој на приказната'}</label>
-                                        {allSourcesNames.length >= 2 && <label for="deep-tab-sources" class="deep-tab-trigger">{lang === 'sr' ? 'Izvori' : 'Извори'}</label>}
-                                    </div>
-
-                                    <div class="deep-tab-panel deep-tab-history">
-                                        <StorylineHistoryIsland client:visible clusterId={id || ''} apiUrl={API_URL} lang={lang} />
-                                        <ClusterHistoryIsland client:visible clusterId={id || ''} lang={lang} />
-                                    </div>
-                                    {allSourcesNames.length >= 2 && (
-                                        <div class="deep-tab-panel deep-tab-sources">
-                                            <SourceComparisonIsland allSources={allSourcesNames} lang={lang} client:visible />
-                                        </div>
-                                    )}
+                                <div class="deep-dive-history">
+                                    <StorylineHistoryIsland client:visible clusterId={id || ''} apiUrl={API_URL} lang={lang} />
+                                    <ClusterHistoryIsland client:visible clusterId={id || ''} lang={lang} />
                                 </div>
                             </details>
                         </section>
@@ -908,7 +893,7 @@ const articleSchema = cluster ? {
 								<div class="sidebar-module compare-source-diff-panel sidebar-deferred source-comparison-panel">
 									<h4 class="sidebar-label">{t('cluster.compare_sources')}</h4>
 									<div class="mt-4">
-										<SourceComparisonIsland allSources={allSourcesNames} lang={lang} client:visible />
+										<SourceComparisonIsland allSources={allSourcesNames} lang={lang} client:idle />
 									</div>
 								</div>
 							)}
@@ -1600,55 +1585,12 @@ const articleSchema = cluster ? {
         border-color: var(--foreground);
     }
 
-    .advanced-tools-details .deep-dive-tabs {
+    .advanced-tools-details .deep-dive-history {
         margin-top: 1.75rem;
         padding-top: 1.5rem;
         border-top: 1px solid var(--border);
-    }
-
-    .deep-dive-tabs > input {
-        position: absolute;
-        opacity: 0;
-        pointer-events: none;
-    }
-
-    .deep-tab-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        padding-bottom: 1.25rem;
-        border-bottom: 1px solid var(--border);
-        margin-bottom: 1.5rem;
-    }
-
-    .deep-tab-trigger {
-        cursor: pointer;
-        border: 1px solid var(--border);
-        background: var(--background);
-        padding: 0.75rem 1rem;
-        font-family: var(--font-ui);
-        font-size: 0.68rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--muted-foreground);
-        transition: all 0.2s ease;
-    }
-
-    .deep-tab-panel {
-        display: none;
-    }
-
-    #deep-tab-history:checked ~ .deep-tab-list label[for="deep-tab-history"],
-    #deep-tab-sources:checked ~ .deep-tab-list label[for="deep-tab-sources"] {
-        background: var(--foreground);
-        border-color: var(--foreground);
-        color: var(--background);
-    }
-
-    #deep-tab-history:checked ~ .deep-tab-history,
-    #deep-tab-sources:checked ~ .deep-tab-sources {
-        display: block;
+        display: grid;
+        gap: 1.5rem;
     }
 
 	/* --- RELATED CARDS --- */
