@@ -1,12 +1,22 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useMemo } from 'react';
 import { Activity, Zap, ShieldCheck, Globe, Timer, Loader2, BarChart3, TrendingUp, Users, Info, ChevronRight, Target } from 'lucide-react';
-import PulseLandscapeIsland from './PulseLandscapeIsland';
 import SourceComparisonIsland from './SourceComparisonIsland';
-import PulseHeatmapIsland from './pulse/PulseHeatmapIsland';
-import DivergenceGaugeIsland from './pulse/DivergenceGaugeIsland';
-import SentimentRadarIsland from './pulse/SentimentRadarIsland';
 import { apiBaseUrl } from '../lib/apiBase';
 import { useTranslations } from '../i18n/utils';
+
+const PulseLandscapeIsland = lazy(() => import('./PulseLandscapeIsland'));
+const PulseHeatmapIsland = lazy(() => import('./pulse/PulseHeatmapIsland'));
+const DivergenceGaugeIsland = lazy(() => import('./pulse/DivergenceGaugeIsland'));
+const SentimentRadarIsland = lazy(() => import('./pulse/SentimentRadarIsland'));
+
+function PulseChartFallback({ tall = false }: { tall?: boolean }) {
+    return (
+        <div
+            className={`pulse-chart-skeleton ${tall ? 'pulse-chart-skeleton--tall' : ''}`}
+            aria-hidden="true"
+        />
+    );
+}
 
 interface PulseRow {
     source: string;
@@ -167,15 +177,21 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
             {/* NEW: COMMAND CENTER GRID */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-[var(--grid-gap)] mb-10 md:mb-16">
                 <div className="lg:col-span-2">
-                    <PulseHeatmapIsland lang={lang} />
+                    <Suspense fallback={<PulseChartFallback tall />}>
+                        <PulseHeatmapIsland lang={lang} />
+                    </Suspense>
                 </div>
                 <div className="grid grid-cols-1 gap-[var(--grid-gap)]">
-                    <DivergenceGaugeIsland
-                        pluralism_pct={intelligence.pluralism?.pluralism_pct}
-                        high_consensus_pct={intelligence.pluralism?.high_consensus_pct}
-                        lang={lang}
-                    />
-                    <SentimentRadarIsland data={topicPulse} lang={lang} />
+                    <Suspense fallback={<PulseChartFallback />}>
+                        <DivergenceGaugeIsland
+                            pluralism_pct={intelligence.pluralism?.pluralism_pct}
+                            high_consensus_pct={intelligence.pluralism?.high_consensus_pct}
+                            lang={lang}
+                        />
+                    </Suspense>
+                    <Suspense fallback={<PulseChartFallback />}>
+                        <SentimentRadarIsland data={topicPulse} lang={lang} />
+                    </Suspense>
                 </div>
             </div>
 
@@ -286,10 +302,12 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                                 <BarChart3 size={12} /> {isMK ? 'Аналитика по теми' : 'Analitika po temama'}
                             </div>
                         </div>
-                        <PulseLandscapeIsland data={pulseData} loading={loading} lang={lang} onSourceClick={(s) => {
-                            const el = document.getElementById('leaderboard');
-                            if (el) el.scrollIntoView({ behavior: 'smooth' });
-                        }} />
+                        <Suspense fallback={<PulseChartFallback tall />}>
+                            <PulseLandscapeIsland data={pulseData} loading={loading} lang={lang} onSourceClick={(s) => {
+                                const el = document.getElementById('leaderboard');
+                                if (el) el.scrollIntoView({ behavior: 'smooth' });
+                            }} />
+                        </Suspense>
                     </section>
 
                     {/* 2. KEY ACTORS GRID */}

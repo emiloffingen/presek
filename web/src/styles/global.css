@@ -19,6 +19,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "./layout.css";
+@import "./nyt-header.css";
 @import "./lead-hero.css";
 @import "./cluster-reading.css";
 @import "./next-level.css";

@@ -197,6 +197,29 @@
     border-top: 4px solid var(--nyt-accent);
 }
 
+/* Lazy chart placeholders */
+.pulse-chart-skeleton {
+    min-height: 11rem;
+    border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+    background: linear-gradient(
+        110deg,
+        color-mix(in srgb, var(--secondary) 70%, var(--background)) 30%,
+        color-mix(in srgb, var(--card) 90%, var(--background)) 50%,
+        color-mix(in srgb, var(--secondary) 70%, var(--background)) 70%
+    );
+    background-size: 200% 100%;
+    animation: pulse-chart-shimmer 1.2s ease-in-out infinite;
+}
+
+.pulse-chart-skeleton--tall {
+    min-height: 18rem;
+}
+
+@keyframes pulse-chart-shimmer {
+    0% { background-position: 100% 0; }
+    100% { background-position: -100% 0; }
+}
+
 /* Key Actors Polish */
 .actor-grid-box {
     display: grid;
