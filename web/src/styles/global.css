@@ -23,6 +23,7 @@
 @import "./editorial-imagery.css";
 @import "./editorial-layout.css";
 @import "./home-feed.css";
+@import "./search-command.css";
 @import "./page-systems.css";
 @import "./settings-surfaces.css";
 @import "./ui-primitives.css";
@@ -527,6 +528,11 @@ h1.headline-lead,
 /* Accessibility: Enhanced Focus Rings */
 a:focus-visible,
 button:focus-visible,
+summary:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[role="tab"]:focus-visible,
 [tabindex]:focus-visible {
   outline: 2px solid var(--nyt-accent) !important;
   outline-offset: 4px !important;
@@ -535,6 +541,11 @@ button:focus-visible,
 
 .dark a:focus-visible,
 .dark button:focus-visible,
+.dark summary:focus-visible,
+.dark input:focus-visible,
+.dark textarea:focus-visible,
+.dark select:focus-visible,
+.dark [role="tab"]:focus-visible,
 .dark [tabindex]:focus-visible {
   outline-color: var(--nyt-accent) !important;
 }

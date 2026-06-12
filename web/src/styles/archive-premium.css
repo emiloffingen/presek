@@ -79,17 +79,18 @@
     border: 1px solid var(--border);
     padding: 0.5rem 2.2rem 0.5rem 1rem;
     border-radius: var(--radius-lg, 0px);
-    font-family: var(--font-sans);
+    font-family: var(--font-ui);
     font-size: var(--text-ui-kicker);
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    font-weight: 600;
+    letter-spacing: 0.02em;
     outline: none;
     cursor: pointer;
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.archive-date-input:focus, .archive-date-input:hover {
+.archive-date-input:focus-visible,
+.archive-date-input:focus,
+.archive-date-input:hover {
     border-color: var(--nyt-accent);
     background: color-mix(in srgb, var(--card) 90%, transparent);
     box-shadow: 0 0 10px -2px color-mix(in srgb, var(--nyt-accent) 15%, transparent);
@@ -100,11 +101,10 @@
     background: color-mix(in srgb, var(--card) 50%, transparent);
     border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
     border-radius: var(--radius-lg, 0px);
-    font-family: var(--font-sans);
+    font-family: var(--font-ui);
     font-size: var(--text-ui-min);
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    font-weight: 600;
+    letter-spacing: 0.02em;
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -126,9 +126,12 @@
     transition: all 0.3s ease;
 }
 
+.archive-search-input:focus-visible,
 .archive-search-input:focus {
     border-color: var(--nyt-accent);
     box-shadow: 0 4px 12px -8px color-mix(in srgb, var(--nyt-accent) 30%, transparent);
+    outline: 2px solid var(--nyt-accent);
+    outline-offset: 3px;
 }
 
 /* 4. Pulse Dashboard Expansion */

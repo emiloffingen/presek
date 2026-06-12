@@ -225,7 +225,7 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl && !leadV
                 <span class="opacity-30">·</span>
                 <span>{leadCluster.articles.length} {leadCluster.articles.length === 1 ? t('news.source') : t('news.sources')}</span>
             </div>
-            <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="lead-meta-link text-[10px] font-black uppercase tracking-widest text-nyt-accent hover:underline decoration-2 underline-offset-4" data-testid="cluster-link">{t('lead.full_synthesis')}</a>
+            <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="lead-meta-link ui-kicker ui-kicker--accent hover:underline decoration-2 underline-offset-4" data-testid="cluster-link">{t('lead.full_synthesis')}</a>
         </div>
 
         {!compact && relatedArticles.length > 0 && (

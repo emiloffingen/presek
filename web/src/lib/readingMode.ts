@@ -40,9 +40,9 @@ function syncClusterReadingDom(mode: ReadingMode) {
     article?.classList.add('reader-focused');
   } else if (mode === 'compare') {
     document.body.classList.add('compare-mode');
-    if (sidebarDetails instanceof HTMLDetailsElement) {
-      sidebarDetails.open = true;
-    }
+    window.dispatchEvent(
+      new CustomEvent('presek:sidebar-tab', { detail: { tab: 'compare' } }),
+    );
   }
 }
 

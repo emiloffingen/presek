@@ -43,15 +43,15 @@
 
 .pulse-status-label {
     font-size: var(--text-ui-min);
-    font-weight: 900;
-    letter-spacing: 0.1em;
-    opacity: 0.6;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    opacity: 0.65;
 }
 
 .pulse-status-value {
     font-size: 0.65rem;
-    font-weight: 850;
-    letter-spacing: 0.05em;
+    font-weight: 600;
+    letter-spacing: 0.03em;
 }
 
 .pulse-status-indicator-dot {
@@ -113,9 +113,9 @@
     border-radius: 9999px;
     font-family: var(--font-sans);
     font-size: 0.65rem;
-    font-weight: 900;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.05em;
     cursor: pointer;
     border: 1px solid transparent;
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
@@ -294,8 +294,8 @@
 .actor-type-chip {
     font-family: var(--font-ui);
     font-size: 0.69rem;
-    font-weight: 800;
-    letter-spacing: 0.1em;
+    font-weight: 700;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
     color: var(--nyt-accent);
     background: color-mix(in srgb, var(--nyt-accent) 8%, transparent);
@@ -305,8 +305,8 @@
 .actor-rank-badge {
     font-family: var(--font-ui);
     font-size: 0.69rem;
-    font-weight: 900;
-    letter-spacing: 0.12em;
+    font-weight: 700;
+    letter-spacing: 0.06em;
     color: var(--muted-foreground);
 }
 
@@ -332,8 +332,8 @@
 .actor-sentiment-label {
     font-family: var(--font-ui);
     font-size: 0.69rem;
-    font-weight: 800;
-    letter-spacing: 0.06em;
+    font-weight: 600;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
 }
 

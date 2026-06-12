@@ -255,7 +255,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
             <div className="pulse-premium-card mb-12 md:mb-20 flex flex-col md:flex-row gap-4 md:gap-[var(--grid-gap)] items-start md:items-center border-l-4 border-l-nyt-accent shadow-premium backdrop-blur-md">
                 <div className="flex-1 w-full">
                     <div className="flex items-center gap-2 md:gap-[var(--grid-gap)] mb-2">
-                         <h3 className="text-[11px] md:text-[11px] font-black uppercase tracking-[0.14em] md:tracking-widest text-nyt-accent">{isMK ? 'Клучни увиди' : 'Ključni uvidi'}</h3>
+                         <h3 className="ui-kicker ui-kicker--accent">{isMK ? 'Клучни увиди' : 'Ključni uvidi'}</h3>
                          <span className="h-px flex-1 bg-nyt-accent/10"></span>
                     </div>
                     <p className="font-serif italic text-base md:text-xl leading-snug">
@@ -270,7 +270,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                 <div className="flex-1 w-full grid grid-cols-2 gap-3 md:gap-[var(--grid-gap)] border-t md:border-t-0 md:border-l border-border pt-4 md:pt-0 md:pl-8">
                     <div className="group cursor-help relative">
                         <div className="flex items-center gap-1.5 mb-1">
-                            <span className="block text-[11px] md:text-[11px] font-black uppercase text-muted-foreground">{isMK ? 'Транспарентност' : 'Transparentnost'}</span>
+                            <span className="block ui-kicker">{isMK ? 'Транспарентност' : 'Transparentnost'}</span>
                             <Info size={8} className="opacity-40 group-hover:opacity-100" />
                         </div>
                         <span className="text-lg md:text-xl font-black">{intelligence.synthesis_transparency?.systemic_ratio > 0 ? `${intelligence.synthesis_transparency?.systemic_ratio}%` : '–'}</span>
@@ -279,7 +279,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                         </div>
                     </div>
                     <div>
-                        <span className="block text-[11px] md:text-[11px] font-black uppercase text-muted-foreground mb-1">{isMK ? 'Стабилност' : 'Stabilnost'}</span>
+                        <span className="block ui-kicker mb-1">{isMK ? 'Стабилност' : 'Stabilnost'}</span>
                         <div className="flex items-center gap-2 md:gap-[var(--grid-gap)]">
                              <span className="text-lg md:text-xl font-black text-emerald-600">{isMK ? 'Оптимална' : 'Optimalna'}</span>
                              <div className="flex gap-0.5">
@@ -298,7 +298,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                     <section className="mb-12 md:mb-16">
                         <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:justify-between mb-5 md:mb-8 border-b border-border pb-3 md:pb-4">
                             <h2 className="section-title-italic !mb-0 text-[1.45rem] md:text-3xl">{isMK ? 'Редакциски Хоризонт' : 'Redakcijski Horizont'}</h2>
-                            <div className="flex items-center gap-2 md:gap-[var(--grid-gap)] text-[11px] md:text-[11px] font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground">
+                            <div className="flex items-center gap-2 md:gap-[var(--grid-gap)] ui-kicker">
                                 <BarChart3 size={12} /> {isMK ? 'Аналитика по теми' : 'Analitika po temama'}
                             </div>
                         </div>
@@ -314,7 +314,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                     <section className="mb-14 md:mb-20">
                         <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:justify-between mb-5 md:mb-8 border-b border-border pb-3 md:pb-4">
                             <h2 className="section-title-italic !mb-0 text-[1.45rem] md:text-3xl">{isMK ? 'Клучни актери' : 'Ključni akteri'}</h2>
-                            <div className="flex items-center gap-2 md:gap-[var(--grid-gap)] text-[11px] md:text-[11px] font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground">
+                            <div className="flex items-center gap-2 md:gap-[var(--grid-gap)] ui-kicker">
                                 <Users size={12} /> {isMK ? 'во фокус' : 'u fokusu'}
                             </div>
                         </div>
@@ -377,7 +377,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
 
                 <aside className="broadsheet-rail">
                     <section className="pulse-premium-card mb-6">
-                        <p className="rail-kicker text-nyt-accent uppercase font-black text-[11px] tracking-wider">{isMK ? 'Методологија' : 'Metodologija'}</p>
+                        <p className="rail-kicker ui-kicker ui-kicker--accent">{isMK ? 'Методологија' : 'Metodologija'}</p>
                         <h3 className="rail-title italic font-serif text-lg font-black mt-1 mb-2">{isMK ? 'Уреднички Алгоритам' : 'Urednički Algoritam'}</h3>
                         <p className="rail-text text-xs text-muted-foreground leading-relaxed">
                             {isMK

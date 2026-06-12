@@ -237,7 +237,7 @@ export default function EntityIsland({
                 {sentimentLabel(profile.sentiment_score, t)}
                 </strong>
                 {trend !== 'stable' && (
-                    <span className={`text-[9px] font-black uppercase tracking-tighter ${trend === 'improving' ? 'text-green-600' : 'text-nyt-red'}`}>
+                    <span className={`ui-status ${trend === 'improving' ? 'text-green-600' : 'text-nyt-red'}`}>
                         {trend === 'improving' ? t('entity.trend_pos') : t('entity.trend_crit')}
                     </span>
                 )}
@@ -268,7 +268,7 @@ export default function EntityIsland({
             <section className="entity-summary">
               <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:justify-between mb-3 md:mb-4">
                 <h2 className="entity-section-title flex items-center gap-2 md:gap-[var(--grid-gap)] m-0"><TrendingUp size={14} /> {t('entity.dynamics')}</h2>
-                <span className="text-[9px] md:text-[10px] font-bold text-muted-foreground uppercase tracking-[0.14em] md:tracking-widest">{t('entity.last_14_days')}</span>
+                <span className="ui-kicker">{t('entity.last_14_days')}</span>
               </div>
               <div className="entity-pulse h-28 md:h-32 flex items-end gap-1 px-1 md:px-2">
                 {timeline.map((item) => (
@@ -283,7 +283,7 @@ export default function EntityIsland({
                   </div>
                 ))}
               </div>
-              <div className="flex justify-between mt-2 px-1 text-[8px] md:text-[9px] font-bold text-muted-foreground uppercase tracking-tight">
+              <div className="flex justify-between mt-2 px-1 ui-kicker text-[8px] md:text-[9px]">
                   <span>{timeline[0]?.label}</span>
                   <span>{timeline[Math.floor(timeline.length/2)]?.label}</span>
                   <span>{timeline[timeline.length-1]?.label}</span>
@@ -295,7 +295,7 @@ export default function EntityIsland({
               <div className="space-y-3 mt-4">
                 {leadingCategories.map((c) => (
                   <div key={c.category} className="flex items-center justify-between">
-                    <span className="font-sans font-bold text-[10px] md:text-[11px] uppercase tracking-wide">{c.category}</span>
+                    <span className="ui-kicker">{c.category}</span>
                     <div className="flex items-center gap-2 md:gap-[var(--grid-gap)]">
                       <div className="w-20 md:w-24 h-1.5 bg-secondary rounded-full overflow-hidden">
                         <div
@@ -309,7 +309,7 @@ export default function EntityIsland({
                 ))}
                 {leadingCategories.length === 0 && <p className="text-xs text-muted italic">{t('entity.no_thematic_data')}</p>}
                 {categories && categories.length > leadingCategories.length && (
-                  <p className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground pt-1">
+                  <p className="ui-kicker pt-1">
                     {lang === 'sr'
                       ? `Prikazani su vodeći ${leadingCategories.length} tematski pravci.`
                       : `Прикажани се водечките ${leadingCategories.length} тематски правци.`}
@@ -382,7 +382,7 @@ export default function EntityIsland({
           </div>
 
           <div className="rail-card">
-            <h3 className="rail-card-title uppercase tracking-[0.14em] md:tracking-widest text-[9px] md:text-[10px]">{t('entity.further')}</h3>
+            <h3 className="rail-card-title ui-kicker">{t('entity.further')}</h3>
             <div className="flex flex-col gap-2 md:gap-[var(--grid-gap)]">
               <a href={localePathForLang('/archive', lang)} className="entity-related-jump">{t('entity.open_archive')}</a>
               <a href={localePathForLang('/izvori', lang)} className="entity-related-jump">{t('entity.open_sources')}</a>

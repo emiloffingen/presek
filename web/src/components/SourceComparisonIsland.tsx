@@ -59,7 +59,7 @@ export default function SourceComparisonIsland({ allSources, lang = 'sr' }: { al
 
     return (
       <div className="space-y-4">
-        <p className="text-[11px] font-black uppercase tracking-[0.15em] text-muted-foreground text-center" title={tooltip}>{label}</p>
+        <p className="ui-kicker text-center" title={tooltip}>{label}</p>
         <div className="flex items-center gap-[var(--grid-gap)]">
           <div className="flex-1 text-right">
             <span className={`font-serif font-black text-3xl tabular-nums ${isWinner1 ? 'text-nyt-accent' : 'text-foreground/40'}`}>{p1}%</span>
@@ -91,7 +91,7 @@ export default function SourceComparisonIsland({ allSources, lang = 'sr' }: { al
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-[var(--grid-gap)] mb-12">
         <div className="space-y-2">
-            <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">{isMK ? 'ПРВ ИЗВОР' : 'PRVI IZVOR'}</label>
+            <label className="ui-kicker text-muted-foreground ml-1">{isMK ? 'Прв извор' : 'Prvi izvor'}</label>
             <select
             value={s1}
             onChange={e => setS1(e.target.value)}
@@ -102,7 +102,7 @@ export default function SourceComparisonIsland({ allSources, lang = 'sr' }: { al
             </select>
         </div>
         <div className="space-y-2">
-            <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">{isMK ? 'ВТОР ИЗВОР' : 'DRUGI IZVOR'}</label>
+            <label className="ui-kicker text-muted-foreground ml-1">{isMK ? 'Втор извор' : 'Drugi izvor'}</label>
             <select
             value={s2}
             onChange={e => setS2(e.target.value)}
@@ -117,7 +117,7 @@ export default function SourceComparisonIsland({ allSources, lang = 'sr' }: { al
       {loading ? (
         <div className="py-20 flex flex-col items-center gap-[var(--grid-gap)]">
             <Loader2 className="animate-spin text-nyt-accent" size={32} />
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{isMK ? 'Пресметување...' : 'Izračunavanje...'}</p>
+            <p className="ui-kicker text-muted-foreground">{isMK ? 'Пресметување...' : 'Izračunavanje...'}</p>
         </div>
       ) : m1 && m2 ? (
         <div className="space-y-12">
@@ -126,7 +126,7 @@ export default function SourceComparisonIsland({ allSources, lang = 'sr' }: { al
 
           {overlap && (
             <div className="space-y-5 pt-6 border-t border-zinc-100 dark:border-zinc-800">
-              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground text-center">{isMK ? 'Тематско преклопување' : 'Tematsko Preklapanje'}</p>
+              <p className="ui-kicker text-muted-foreground text-center">{isMK ? 'Тематско преклопување' : 'Tematsko preklapanje'}</p>
 
               <div className="flex w-full h-10 rounded-xl overflow-hidden border-2 border-zinc-100 dark:border-zinc-800 shadow-sm p-1 gap-1">
                 {(() => {
@@ -144,7 +144,7 @@ export default function SourceComparisonIsland({ allSources, lang = 'sr' }: { al
                         style={{ width: `${Math.max((overlap.shared_clusters / totalOverlap) * 100, 20)}%` }}
                       >
                         <span className="text-[11px] font-black leading-none">{overlap.shared_clusters}</span>
-                        <span className="text-[7px] font-black uppercase mt-0.5">{isMK ? 'заеднички' : 'zajednički'}</span>
+                        <span className="ui-kicker text-[7px] mt-0.5">{isMK ? 'заеднички' : 'zajednički'}</span>
                       </div>
                       <div
                         className="h-full bg-nyt-red rounded-r-lg flex flex-col items-center justify-center text-white transition-all hover:brightness-110"
@@ -157,7 +157,7 @@ export default function SourceComparisonIsland({ allSources, lang = 'sr' }: { al
                 })()}
               </div>
 
-              <div className="flex justify-between text-[10px] font-black uppercase tracking-tighter text-zinc-500 px-1">
+              <div className="flex justify-between ui-kicker text-zinc-500 px-1">
                   <span className="w-1/3 truncate" title={s1}>{s1} {isMK ? 'сам' : 'sam'}</span>
                   <span className="w-1/3 text-center">{isMK ? 'Заеднички интерес' : 'Zajednički interes'}</span>
                   <span className="w-1/3 text-right truncate" title={s2}>{s2} {isMK ? 'сам' : 'sam'}</span>
@@ -167,14 +167,14 @@ export default function SourceComparisonIsland({ allSources, lang = 'sr' }: { al
 
           <div className="pt-8 border-t border-zinc-200 dark:border-zinc-800 flex justify-between gap-[var(--grid-gap)]">
             <div className="text-center flex-1 p-4 bg-zinc-50 dark:bg-zinc-900 rounded-lg border border-zinc-100 dark:border-zinc-800">
-                <p className="text-[10px] font-black uppercase tracking-widest text-nyt-accent mb-2">{s1}</p>
+                <p className="ui-kicker ui-kicker--accent mb-2">{s1}</p>
                 <div className="flex items-baseline justify-center gap-1">
                     <span className="text-2xl font-black tabular-nums">{m1.cluster_count}</span>
                     <span className="text-[10px] font-bold text-muted-foreground">{isMK ? 'вести' : 'vesti'}</span>
                 </div>
             </div>
             <div className="text-center flex-1 p-4 bg-zinc-50 dark:bg-zinc-900 rounded-lg border border-zinc-100 dark:border-zinc-800">
-                <p className="text-[10px] font-black uppercase tracking-widest text-nyt-red mb-2">{s2}</p>
+                <p className="ui-kicker text-nyt-red mb-2">{s2}</p>
                 <div className="flex items-baseline justify-center gap-1">
                     <span className="text-2xl font-black tabular-nums">{m2.cluster_count}</span>
                     <span className="text-[10px] font-bold text-muted-foreground">{isMK ? 'vesti' : 'vesti'}</span>

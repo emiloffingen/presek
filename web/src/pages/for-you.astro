@@ -41,8 +41,8 @@ try {
     <main class="site-layout page-content-top pb-[var(--page-py)]">
         <Breadcrumbs items={[{ label: t('nav.for_you') }]} />
         <TinyAdzInlinedAd class="page-inline-ad mb-10" />
-        <ErrorBoundary client:load lang={lang}>
-            <ForYouPageIsland client:load initialClusters={initialClusters} initialError={initialError} lang={lang} />
+        <ErrorBoundary client:idle lang={lang}>
+            <ForYouPageIsland client:idle initialClusters={initialClusters} initialError={initialError} lang={lang} />
         </ErrorBoundary>
     </main>
     <Footer />

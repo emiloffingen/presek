@@ -6,13 +6,11 @@ import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import ShareIsland from '../../components/ShareIsland.tsx';
 import ReaderTracker from '../../components/ReaderTracker.tsx';
 import PreferenceToggle from '../../components/PreferenceToggle.tsx';
-import { MediaPulseRadar } from '../../components/MediaPulseRadar.tsx';
+import ClusterSidebarTabs from '../../components/Cluster/ClusterSidebarTabs.tsx';
+import ClusterMobileFocusIsland from '../../components/Cluster/ClusterMobileFocusIsland.tsx';
+import ReadingModeToggle from '../../components/Cluster/ReadingModeToggle.tsx';
 import StorylineHistoryIsland from '../../components/StorylineHistoryIsland.tsx';
 import ClusterHistoryIsland from '../../components/ClusterHistoryIsland.tsx';
-import { SourceSpectrum } from '../../components/SourceSpectrum.tsx';
-import SourceComparisonIsland from '../../components/SourceComparisonIsland.tsx';
-import ClusterFollowSuggestionsIsland from '../../components/ClusterFollowSuggestionsIsland.tsx';
-import NewsletterIsland from '../../components/NewsletterIsland.tsx';
 import { apiBaseUrl } from '../../lib/apiBase';
 import { cleanAndDecode, isMostlyCyrillic, getEditionStr, stripCitationMarkers, deShout, slugify, normalizeAndDeduplicateTags } from '../../utils/textUtils';
 import { chooseClusterImage } from '../../utils/imageSelection';
@@ -128,7 +126,6 @@ const highlightFactText = (text: string) => {
 
 import { sanitizeHtml } from '../../lib/sanitize';
 import { Newspaper, Clock, Link2, Zap, Sparkles, ShieldCheck, TriangleAlert, BarChart3, Search, ExternalLink } from 'lucide-react';
-import EntityContextCard from '../../components/EntityContextCard.tsx';
 import HeroVisual from '../../components/Cluster/HeroVisual.astro';
 import ZenReadingContext from '../../components/Cluster/ZenReadingContext.tsx';
 import StoryFreshnessBadge from '../../components/StoryFreshnessBadge.astro';
@@ -381,6 +378,13 @@ const sentimentData = hasToneAnalysis ? {
     sentiment: (cluster?.sentiment && 'sentiment' in cluster.sentiment ? cluster.sentiment.sentiment : cluster?.sentiment) || { score: 0, tone: 'neutralno' },
     tone_analysis: rawToneAnalysis
 } : null;
+const showCompareTab = allSourcesNames.length >= 2;
+const showPulseTab = Boolean(
+    sentimentData &&
+    isFiniteMetric(sentimentData.tone_analysis?.objectivity) &&
+    isFiniteMetric(sentimentData.tone_analysis?.sensationalism) &&
+    isFiniteMetric(sentimentData.tone_analysis?.emotional_charge),
+);
 
 const firstArticle = cluster?.articles?.length
     ? [...cluster.articles].sort((left: Article, right: Article) => new Date(left.created_at).getTime() - new Date(right.created_at).getTime())[0]
@@ -643,6 +647,7 @@ const articleSchema = cluster ? {
     />
 
 	<ZenReadingContext headline={displayHeadline} lang={lang} client:idle />
+	<ClusterMobileFocusIsland lang={lang} client:idle />
 
 	<main class="site-layout py-0">
 		<div class="scroll-progress-container">
@@ -678,26 +683,27 @@ const articleSchema = cluster ? {
 							{displayHeadline}
 						</h1>
 						<ClusterStandfirst standfirst={cluster.synthetic_standfirst} lang={lang as 'sr' | 'mk'} />
-						<div class="header-meta cluster-meta-row flex flex-wrap items-center gap-x-8 gap-y-3 text-muted-foreground">
-							<div class="flex items-center gap-[var(--grid-gap)]">
-								<div class="w-3 h-3 rounded-full bg-nyt-accent"></div>
-								<span class="text-foreground">{cleanTopicLabel(cluster.articles?.[0].category) || (lang === 'sr' ? 'GENERALNO' : 'ГЕНЕРАЛНО')}</span>
+						<div class="cluster-meta-compact">
+							<span class="cluster-meta-chip">
+								{cleanTopicLabel(cluster.articles?.[0].category) || (lang === 'sr' ? 'Vesti' : 'Вести')}
+							</span>
+							<span class:list={["cluster-meta-chip", `tone-${clusterStatus.tone}`]}>
+								{uniqueSourcesCount} {newsroomCountLabel(uniqueSourcesCount)} · {clusterStatus.label}
+							</span>
+						</div>
+						<div class="cluster-header-toolbar">
+							<ClusterReadingNav
+								lang={lang as 'sr' | 'mk'}
+								primaryNarrativeLabel={primaryNarrativeLabel}
+								showKeyFacts={showKeyFactsBand}
+								showAnalysis={showCredibilitySection}
+							/>
+							<div class="header-actions cluster-header-actions">
+								<ReadingModeToggle lang={lang} client:idle />
+								<ShareIsland client:idle title={displayHeadline} url={canonicalUrl} />
 							</div>
-                            <span class="border-l border-border pl-8">{uniqueSourcesCount} {newsroomCountLabel(uniqueSourcesCount)}</span>
-                            <span class:list={["hidden md:inline border-l border-border pl-8 cluster-status-text", `tone-${clusterStatus.tone}`]}>{storyKindLabel}</span>
-                            <StoryFreshnessBadge
-                                class="hidden md:inline-flex border-l border-border pl-8"
-                                lang={lang}
-                                synthesisUpdatedAt={synthesisUpdatedAt}
-                                latestArticleAt={synthesisFreshness.latest_article_at || latestArticle?.ingested_at || latestArticle?.created_at}
-                                isStale={Boolean(synthesisFreshness.is_stale)}
-                                newArticleCount={Number(synthesisFreshness.new_article_count || 0)}
-                                pipelineBusy={pipelineBusy}
-                            />
-                        </div>
-					</div>
-					<div class="header-actions shrink-0 flex gap-[var(--grid-gap)] pb-1">
-						<ShareIsland client:idle title={displayHeadline} url={canonicalUrl} />
+						</div>
+						<p class="cluster-reading-hint">{t('reading.mode_hint')}</p>
 					</div>
 				</div>
 				<details class="cluster-source-details">
@@ -724,17 +730,14 @@ const articleSchema = cluster ? {
 									</div>
 								))}
 							</div>
-						</div>
-						<div class="reader-command-bar cluster-reading-bar" aria-label={lang === 'sr' ? 'Kontrole čitanja' : 'Контроли за читање'}>
-							<div class="reader-source-strip">
-								<span>{lang === 'sr' ? 'Izvori' : 'Извори'}</span>
-								<strong>{uniqueSourcesCount} {newsroomOverviewLabel(uniqueSourcesCount)}</strong>
-							</div>
-							<ClusterReadingNav
-								lang={lang as 'sr' | 'mk'}
-								primaryNarrativeLabel={primaryNarrativeLabel}
-								showKeyFacts={showKeyFactsBand}
-								showAnalysis={showCredibilitySection}
+							<StoryFreshnessBadge
+								class="cluster-source-freshness"
+								lang={lang}
+								synthesisUpdatedAt={synthesisUpdatedAt}
+								latestArticleAt={synthesisFreshness.latest_article_at || latestArticle?.ingested_at || latestArticle?.created_at}
+								isStale={Boolean(synthesisFreshness.is_stale)}
+								newArticleCount={Number(synthesisFreshness.new_article_count || 0)}
+								pipelineBusy={pipelineBusy}
 							/>
 						</div>
 					</div>
@@ -859,7 +862,7 @@ const articleSchema = cluster ? {
 										<summary class="flex items-center justify-between p-6 md:p-8 cursor-pointer hover:bg-secondary/10 transition-colors list-none">
 											<div class="flex items-center gap-[var(--grid-gap)]">
 												<div class="w-2 h-8 bg-nyt-accent"></div>
-												<h4 class="text-[11px] font-black uppercase tracking-[0.08em] text-foreground">
+												<h4 class="ui-kicker text-foreground">
 													{lang === 'sr' ? 'Pun izvorni zapis' : 'Целосен изворен запис'} ({sourceDocArticle.source})
 												</h4>
 											</div>
@@ -874,7 +877,7 @@ const articleSchema = cluster ? {
 												</div>
 											</div>
 											<div class="mt-8 flex justify-end">
-												<a href={sourceDocArticle.link} target="_blank" rel="noopener noreferrer" class="text-[11px] font-black uppercase tracking-[0.08em] text-nyt-accent hover:underline flex items-center gap-[var(--grid-gap)] bg-background px-6 py-3 rounded-full border border-nyt-accent/20 shadow-sm transition-all hover:shadow-md">
+												<a href={sourceDocArticle.link} target="_blank" rel="noopener noreferrer" class="ui-kicker ui-kicker--accent hover:underline flex items-center gap-[var(--grid-gap)] bg-background px-6 py-3 rounded-full border border-nyt-accent/20 shadow-sm transition-all hover:shadow-md">
 													{lang === 'sr' ? 'Pročitaj ceo zapis na' : 'Прочитај го целиот запис на'} {sourceDocArticle.source} <ExternalLink size={14} />
 												</a>
 											</div>
@@ -978,65 +981,22 @@ const articleSchema = cluster ? {
 					{/* 4. SIDEBAR COLUMN */}
 					<aside class="editorial-sidebar-col">
 						<div class="sticky-sidebar cluster-sidebar-stack">
-							<div class="sidebar-module sidebar-primary source-spectrum-panel">
-								<h4 class="sidebar-label">{t('cluster.source_spectrum')}</h4>
-								<div class="mt-6">
-									<SourceSpectrum articles={cluster.articles.map((a: Article) => ({ source: a.source })) as any} lang={lang} client:visible />
-								</div>
+							<ClusterSidebarTabs
+								client:visible
+								lang={lang}
+								articles={cluster.articles.map((a: Article) => ({ source: a.source }))}
+								allSourcesNames={allSourcesNames}
+								sentimentData={sentimentData}
+								showCompare={showCompareTab}
+								showPulse={showPulseTab}
+								topic={cluster.topics?.[0] || ''}
+								source={cluster.articles?.[0]?.source || ''}
+								adjacentTopic={adjacentTopic}
+								keyEntities={keyEntities}
+							/>
+							<div class="sidebar-module sidebar-ad-slot">
+								<TinyAdzRailAd />
 							</div>
-
-							<details class="cluster-sidebar-details">
-								<summary class="cluster-sidebar-details-summary">
-									<span class="cluster-sidebar-details-title">{t('cluster.sidebar_more')}</span>
-									<span class="cluster-sidebar-details-hint">{t('cluster.sidebar_more_hint')}</span>
-								</summary>
-								<div class="cluster-sidebar-details-body">
-									{allSourcesNames.length >= 2 && (
-										<div class="sidebar-module compare-source-diff-panel source-comparison-panel">
-											<h4 class="sidebar-label">{t('cluster.compare_sources')}</h4>
-											<div class="mt-4">
-												<SourceComparisonIsland allSources={allSourcesNames} lang={lang} client:visible />
-											</div>
-										</div>
-									)}
-
-									{sentimentData && isFiniteMetric(sentimentData.tone_analysis?.objectivity) && isFiniteMetric(sentimentData.tone_analysis?.sensationalism) && isFiniteMetric(sentimentData.tone_analysis?.emotional_charge) && (
-										<div class="sidebar-module source-spectrum-panel">
-											<h4 class="sidebar-label">{t('cluster.media_pulse')}</h4>
-											<div class="mt-4">
-												<MediaPulseRadar data={sentimentData} lang={lang} client:visible />
-											</div>
-										</div>
-									)}
-
-									<div class="sidebar-module sidebar-ad-slot">
-										<TinyAdzRailAd />
-									</div>
-
-									<div class="sidebar-module sidebar-newsletter-slot">
-										<NewsletterIsland lang={lang} client:visible />
-									</div>
-
-									<ClusterFollowSuggestionsIsland
-										topic={cluster.topics?.[0] || ''}
-										source={cluster.articles?.[0]?.source || ''}
-										adjacentTopic={adjacentTopic}
-										lang={lang}
-										client:visible
-									/>
-
-									{keyEntities && keyEntities.length > 0 && (
-										<div class="sidebar-module">
-											<h4 class="sidebar-label">{t('cluster.key_entities')}</h4>
-											<div class="flex flex-col gap-[var(--grid-gap)] mt-4">
-												{keyEntities.map((name: string) => (
-													<EntityContextCard name={name} lang={lang} client:visible />
-												))}
-											</div>
-										</div>
-									)}
-								</div>
-							</details>
 						</div>
 					</aside>
 				</div>

@@ -38,17 +38,33 @@
 
 .briefing-status-label {
     font-size: var(--text-ui-min);
-    font-weight: 900;
-    letter-spacing: 0.1em;
+    font-weight: 700;
+    letter-spacing: 0.05em;
     color: var(--muted-foreground);
     text-transform: uppercase;
 }
 
 .briefing-status-value {
     font-size: var(--text-ui-min);
-    font-weight: 850;
-    letter-spacing: 0.05em;
+    font-weight: 600;
+    letter-spacing: 0.03em;
     color: var(--foreground);
+}
+
+.custom-toggle-btn > strong {
+    font-size: var(--text-ui-min) !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.04em !important;
+    text-transform: uppercase;
+}
+
+.briefing-deck-label {
+    display: block;
+    font-family: var(--font-ui);
+    font-size: var(--text-ui-min);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
 }
 
 .briefing-pulse-emerald {
@@ -198,8 +214,8 @@
     margin: 0 0 0.35rem;
     font-family: var(--font-sans);
     font-size: var(--text-ui-min);
-    font-weight: 900;
-    letter-spacing: 0.16em;
+    font-weight: 700;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--nyt-accent);
 }
@@ -281,8 +297,8 @@
     border-radius: 999px;
     font-family: var(--font-sans);
     font-size: var(--text-ui-min);
-    font-weight: 900;
-    letter-spacing: 0.08em;
+    font-weight: 600;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--muted-foreground);
 }
@@ -321,8 +337,8 @@
     color: var(--muted-foreground);
     font-family: var(--font-sans);
     font-size: var(--text-ui-kicker);
-    font-weight: 900;
-    letter-spacing: 0.12em;
+    font-weight: 700;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
     cursor: pointer;
 }

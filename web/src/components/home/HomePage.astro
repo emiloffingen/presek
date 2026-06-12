@@ -12,6 +12,9 @@ import LeadHero from './LeadHero.astro';
 import SupportingBand from './SupportingBand.astro';
 import SynthesisPicksSection from './SynthesisPicksSection.astro';
 import DevelopmentsSection from './DevelopmentsSection.astro';
+import HomeUnifiedFeed from './HomeUnifiedFeed.astro';
+import HomePregledTeaser from './HomePregledTeaser.astro';
+import { buildUnifiedFeedItems } from '../../lib/unifiedFeed';
 import FilterHeader from './FilterHeader.astro';
 import HomeRail from './HomeRail.astro';
 import EmptyState from './EmptyState.astro';
@@ -324,6 +327,16 @@ const {
     topWireArticles,
 } = homepageSections;
 
+const unifiedFeedItems = isHomepage
+    ? buildUnifiedFeedItems({
+        developmentsFeatured,
+        developmentsCompact,
+        globalClusters,
+        wireClusters,
+    })
+    : [];
+const pluralismPct = stats?.intelligence?.pluralism?.pluralism_pct ?? null;
+
 const showLeadHeroVisual = Boolean(leadVisual && !leadVisual.isWeak);
 const displayedSynthesisPicks = isHomepage
     ? filterSynthesisPicks(synthesisPicks, buildHomepageSynthesisExcludeIds(leadCluster, supportingClusters))
@@ -573,10 +586,8 @@ if (forYouClusters.length > 0) {
                 {!error && isHomepage && (
                     <div class="home-mobile-order-edition">
                         <DailyEditionBar lang={lang} />
-                        {isPregled ? (
+                        {isPregled && (
                             <a href={l('/')} class="home-pregled-nav-link">{t('home.back_to_feed')}</a>
-                        ) : (
-                            <a href={l('/pregled')} class="home-pregled-nav-link">{t('home.mode_analiza')}</a>
                         )}
                     </div>
                 )}
@@ -619,7 +630,6 @@ if (forYouClusters.length > 0) {
 
 				{leadCluster && !isPregled && (
 					<div class="section-wrapper lead-wrapper home-mobile-order-lead home-feed-only">
-                        <p class="editorial-lead-boundary-label">{t('home.editorial_lead_boundary')}</p>
 						<LeadHero
 							leadCluster={leadCluster}
 							leadTitle={leadTitle}
@@ -648,6 +658,12 @@ if (forYouClusters.length > 0) {
                         )}
 					</div>
 				)}
+
+                {!error && isHomepage && !isPregled && (
+                    <div class="section-wrapper home-mobile-order-pregled-teaser home-feed-only">
+                        <HomePregledTeaser lang={lang} pluralismPct={pluralismPct} />
+                    </div>
+                )}
 
                 {!error && isHomepage && stats && (
                     <div class="homepage-analiza-only">
@@ -857,42 +873,48 @@ if (forYouClusters.length > 0) {
                     </div>
 				)}
 
-				{(developmentsFeatured.length > 0 || developmentsCompact.length > 0) && (
-					<div class="section-wrapper">
-						<DevelopmentsSection
-							title={t('home.developing_title')}
-							note={t('home.developing_desc')}
-							developmentsFeatured={developmentsFeatured}
-							developmentsCompact={developmentsCompact}
-                            tone="developing"
-						/>
-					</div>
-				)}
-
-				{globalClusters.length > 0 && (
-					<div class="section-wrapper">
-						<DevelopmentsSection
-							title={t('home.global_title')}
-							note={t('home.global_desc')}
-							developmentsFeatured={globalClusters.slice(0, 2)}
-							developmentsCompact={globalClusters.slice(2)}
-                            tone="global"
-						/>
-					</div>
-				)}
-
-				{wireClusters.length > 0 && (
-					<div class="section-wrapper">
-						<DevelopmentsSection
-							title={t('home.wire_title')}
-							note={t('home.wire_desc')}
-							developmentsFeatured={wireClusters}
-							developmentsCompact={[]}
-							variant="wire"
-                            tone="wire"
-						/>
-					</div>
-				)}
+                {isHomepage && unifiedFeedItems.length > 0 ? (
+                    <div class="section-wrapper">
+                        <HomeUnifiedFeed items={unifiedFeedItems} lang={lang} />
+                    </div>
+                ) : (
+                    <>
+                        {(developmentsFeatured.length > 0 || developmentsCompact.length > 0) && (
+                            <div class="section-wrapper">
+                                <DevelopmentsSection
+                                    title={t('home.developing_title')}
+                                    note={t('home.developing_desc')}
+                                    developmentsFeatured={developmentsFeatured}
+                                    developmentsCompact={developmentsCompact}
+                                    tone="developing"
+                                />
+                            </div>
+                        )}
+                        {globalClusters.length > 0 && (
+                            <div class="section-wrapper">
+                                <DevelopmentsSection
+                                    title={t('home.global_title')}
+                                    note={t('home.global_desc')}
+                                    developmentsFeatured={globalClusters.slice(0, 2)}
+                                    developmentsCompact={globalClusters.slice(2)}
+                                    tone="global"
+                                />
+                            </div>
+                        )}
+                        {wireClusters.length > 0 && (
+                            <div class="section-wrapper">
+                                <DevelopmentsSection
+                                    title={t('home.wire_title')}
+                                    note={t('home.wire_desc')}
+                                    developmentsFeatured={wireClusters}
+                                    developmentsCompact={[]}
+                                    variant="wire"
+                                    tone="wire"
+                                />
+                            </div>
+                        )}
+                    </>
+                )}
                 </div>
 			</div>
 			{/* HomeRail rendered horizontally at the bottom of the main feed */}

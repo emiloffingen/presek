@@ -159,9 +159,9 @@ export const MediaPulseRadar: React.FC<Props> = ({ data, lang = 'sr' }) => {
             <line x1="100" y1="100" x2={cx + radius * Math.sin(240 * Math.PI / 180)} y2={cy - radius * Math.cos(240 * Math.PI / 180)} stroke="currentColor" strokeWidth="1.5" className="text-border" />
 
             {/* Labels */}
-            <text x="100" y={cy - radius - 15} textAnchor="middle" className="text-[11px] font-black fill-muted-foreground uppercase tracking-[0.2em]">{labels.objectivity}</text>
-            <text x={cx + radius * Math.sin(120 * Math.PI / 180) + 18} y={cy - radius * Math.cos(120 * Math.PI / 180) + 18} textAnchor="middle" className="text-[11px] font-black fill-muted-foreground uppercase tracking-[0.2em]">{labels.sensationalism}</text>
-            <text x={cx + radius * Math.sin(240 * Math.PI / 180) - 18} y={cy - radius * Math.cos(240 * Math.PI / 180) + 18} textAnchor="middle" className="text-[11px] font-black fill-muted-foreground uppercase tracking-[0.2em]">{labels.emotions}</text>
+            <text x="100" y={cy - radius - 15} textAnchor="middle" className="text-[10px] font-semibold fill-muted-foreground">{labels.objectivity}</text>
+            <text x={cx + radius * Math.sin(120 * Math.PI / 180) + 18} y={cy - radius * Math.cos(120 * Math.PI / 180) + 18} textAnchor="middle" className="text-[10px] font-semibold fill-muted-foreground">{labels.sensationalism}</text>
+            <text x={cx + radius * Math.sin(240 * Math.PI / 180) - 18} y={cy - radius * Math.cos(240 * Math.PI / 180) + 18} textAnchor="middle" className="text-[10px] font-semibold fill-muted-foreground">{labels.emotions}</text>
 
             {/* Radar Scanning Line */}
             <line x1="100" y1="100" x2="100" y2={100 - radius} stroke="var(--nyt-accent)" strokeWidth="1.5" strokeOpacity="0.25" className="radar-sweep-line pointer-events-none" />
@@ -197,7 +197,7 @@ export const MediaPulseRadar: React.FC<Props> = ({ data, lang = 'sr' }) => {
               transform: 'translate(-50%, -120%)'
             }}
           >
-            <span className="uppercase text-[9px] tracking-widest opacity-80">{activeTooltip?.label}</span>
+            <span className="text-[9px] font-semibold opacity-80">{activeTooltip?.label}</span>
             <span className="text-sm">{activeTooltip?.value}</span>
           </div>
         </div>
@@ -205,7 +205,7 @@ export const MediaPulseRadar: React.FC<Props> = ({ data, lang = 'sr' }) => {
         {/* Text Metrics */}
         <div className="flex-1 w-full space-y-6">
           <div className="text-center md:text-left">
-            <span className="inline-block bg-nyt-accent/10 px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest text-nyt-accent mb-3">{labels.mediaPulse}</span>
+            <span className="inline-block bg-nyt-accent/10 px-3 py-1 rounded ui-kicker ui-kicker--accent mb-3">{labels.mediaPulse}</span>
             <p className="text-2xl font-serif font-black leading-tight text-foreground">
               {labels.tone}: <span className={getSentimentColor(sentiment.score)}>{sentiment.tone}</span>
             </p>
@@ -214,7 +214,7 @@ export const MediaPulseRadar: React.FC<Props> = ({ data, lang = 'sr' }) => {
           <div className="flex flex-col gap-4 pt-4 border-t border-border">
             <div className="space-y-1.5 pulse-stat-row">
               <div className="flex justify-between items-end">
-                <span className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.15em]">{labels.objectivity}</span>
+                <span className="ui-kicker">{labels.objectivity}</span>
                 <span className="text-lg font-black tabular-nums tracking-tighter">{objectivity.toFixed(0)}%</span>
               </div>
               <div className="h-2 w-full bg-secondary/40 rounded-full overflow-hidden border border-border/10 shadow-inner">
@@ -225,7 +225,7 @@ export const MediaPulseRadar: React.FC<Props> = ({ data, lang = 'sr' }) => {
             </div>
             <div className="space-y-1.5 pulse-stat-row">
               <div className="flex justify-between items-end">
-                <span className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.15em]">{labels.sensationalism}</span>
+                <span className="ui-kicker">{labels.sensationalism}</span>
                 <span className="text-lg font-black tabular-nums tracking-tighter">{sensationalism.toFixed(0)}%</span>
               </div>
               <div className="h-2 w-full bg-secondary/40 rounded-full overflow-hidden border border-border/10 shadow-inner">
@@ -236,7 +236,7 @@ export const MediaPulseRadar: React.FC<Props> = ({ data, lang = 'sr' }) => {
             </div>
             <div className="space-y-1.5 pulse-stat-row">
               <div className="flex justify-between items-end">
-                <span className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.15em]">{labels.emotionality}</span>
+                <span className="ui-kicker">{labels.emotionality}</span>
                 <span className="text-lg font-black tabular-nums tracking-tighter">{emotionalCharge.toFixed(0)}%</span>
               </div>
               <div className="h-2 w-full bg-secondary/40 rounded-full overflow-hidden border border-border/10 shadow-inner">

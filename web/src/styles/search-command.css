@@ -1,0 +1,58 @@
+/* Search command center — calmer chrome + keyboard focus */
+
+.search-cmd-input:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 4px;
+  border-color: var(--nyt-accent);
+}
+
+.search-cmd-toolbar-btn {
+  border-radius: 0;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.search-cmd-chip {
+  font-family: var(--font-ui);
+  font-size: var(--text-ui-min);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.search-cmd-action-title {
+  font-family: var(--font-ui);
+  font-size: 0.8125rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+.search-cmd-cta {
+  font-family: var(--font-ui);
+  font-size: var(--text-ui-min);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: none;
+}
+
+.search-cmd-footer-hint {
+  font-family: var(--font-ui);
+  font-size: var(--text-ui-min);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: none;
+  color: color-mix(in srgb, var(--muted-foreground) 72%, transparent);
+}
+
+.search-cmd-preview-badge {
+  font-family: var(--font-ui);
+  font-size: var(--text-ui-min);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.presek-search-trigger:focus-visible {
+  outline: 2px solid var(--nyt-accent);
+  outline-offset: 3px;
+}

@@ -1,0 +1,64 @@
+---
+import NewsCard from '../NewsCard.astro';
+import HomeFeedFilterIsland from './HomeFeedFilterIsland.tsx';
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+import type { UnifiedFeedItem } from '../../lib/unifiedFeed';
+import { countFeedBuckets } from '../../lib/unifiedFeed';
+
+interface Props {
+    items: UnifiedFeedItem[];
+    lang?: string;
+}
+
+const { items, lang: propLang } = Astro.props;
+const hostHeader = Astro.request?.headers.get('host');
+const lang = propLang || getLangFromUrl(Astro.url, hostHeader);
+const t = useTranslations(lang);
+const counts = countFeedBuckets(items);
+
+function getBentoSpan(cluster: UnifiedFeedItem['cluster']) {
+    const count = Number((cluster as any).sources_count || (cluster as any).source_count || cluster.articles?.length || 0);
+    const importanceScore = cluster.importance_score || 0;
+    if (count >= 6 || importanceScore > 0.85) return '2x2';
+    if (count >= 4 || importanceScore > 0.65) return '2x1';
+    return '1x1';
+}
+---
+
+{items.length > 0 && (
+    <section class="home-unified-feed motion-rise" data-home-unified-feed data-active-feed-filter="all">
+        <div class="home-unified-feed-header">
+            <div class="home-unified-feed-heading">
+                <p class="home-unified-feed-kicker">{t('home.feed_kicker')}</p>
+                <h2 class="home-unified-feed-title">{t('home.feed_title')}</h2>
+                <p class="home-unified-feed-note">{t('home.feed_note')}</p>
+            </div>
+            <HomeFeedFilterIsland client:idle lang={lang} counts={counts} />
+        </div>
+
+        <div class="home-unified-feed-grid">
+            {items.map((item, idx) => {
+                const span = item.variant === 'featured' ? getBentoSpan(item.cluster) : '1x1';
+                return (
+                    <div
+                        class:list={[
+                            'home-feed-item',
+                            `home-feed-item--${item.variant}`,
+                            item.variant === 'featured' ? `bento-${span}` : '',
+                        ]}
+                        data-feed-bucket={item.bucket}
+                        style={`animation-delay: ${idx * 0.05}s`}
+                    >
+                        {item.variant === 'wire' ? (
+                            <NewsCard cluster={item.cluster} variant="wire" lang={lang} />
+                        ) : item.variant === 'featured' ? (
+                            <NewsCard cluster={item.cluster} variant="featured" bentoSpan={span} lang={lang} />
+                        ) : (
+                            <NewsCard cluster={item.cluster} variant="compact" lang={lang} />
+                        )}
+                    </div>
+                );
+            })}
+        </div>
+    </section>
+)}

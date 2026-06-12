@@ -21,12 +21,13 @@ export default function HeaderScrollIsland() {
         header.classList.toggle('header--show-nav', scrollingUp && y > 96);
         header.classList.remove('header--hide-ticker');
       } else {
-        const compact = y > 120;
-        const hideTicker = y > 48;
+        const compact = y > 96;
+        const showTicker = scrollingUp && y > 24;
+        const showNav = scrollingUp && y > 72;
         header.classList.toggle('header--compact', compact);
-        header.classList.toggle('header--hide-ticker', hideTicker && !scrollingUp);
-        header.classList.toggle('header--show-nav', scrollingUp && y > 120);
-        header.classList.remove('header--show-ticker');
+        header.classList.toggle('header--show-ticker', showTicker);
+        header.classList.toggle('header--show-nav', showNav);
+        header.classList.remove('header--hide-ticker');
       }
 
       lastY = y;

@@ -54,8 +54,8 @@
 .daily-edition-kicker {
   font-family: var(--font-ui);
   font-size: var(--text-ui-kicker);
-  font-weight: 900;
-  letter-spacing: 0.1em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--nyt-accent);
 }
@@ -240,6 +240,16 @@
   pointer-events: none;
 }
 
+@media (min-width: 769px) {
+  .header-sticky-wrapper:not(.header--show-ticker) .unified-dispatch-bar {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    border-bottom-width: 0;
+    pointer-events: none;
+  }
+}
+
 .unified-dispatch-bar {
   transition:
     max-height 0.35s var(--ease-editorial),
@@ -290,12 +300,17 @@
 }
 
 .header-sticky-wrapper.header--compact {
-  box-shadow: var(--shadow-md);
+  border-bottom-color: var(--border);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--foreground) 6%, transparent), var(--shadow-sm);
 }
 
 /* ── Search promotion ─────────────────────────────── */
 .search-entry-wrap--desktop {
-  min-width: min(18rem, 42vw);
+  min-width: min(16rem, 38vw);
+}
+
+.presek-search-trigger .search-trigger-label {
+  letter-spacing: 0.01em;
 }
 
 .search-fab-mobile {
@@ -424,9 +439,9 @@ body.has-consent-banner .ui-concept-onboarding {
   gap: 0.35rem;
   font-family: var(--font-ui);
   font-size: var(--text-ui-kicker);
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: none;
   color: var(--muted-foreground);
   padding: 0.35rem 0.55rem;
   border: 1px solid transparent;

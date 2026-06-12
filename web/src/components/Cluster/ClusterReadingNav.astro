@@ -1,6 +1,5 @@
 ---
 import { BookOpen, ListChecks, Layers, ShieldCheck } from 'lucide-react';
-import ReadingModeToggle from './ReadingModeToggle.tsx';
 
 interface Props {
   lang: 'sr' | 'mk';
@@ -25,7 +24,6 @@ const analysisLabel = lang === 'sr' ? 'Analiza' : 'Анализа';
   {showAnalysis && (
     <a href="#cluster-analysis"><ShieldCheck size={14} /> {analysisLabel}</a>
   )}
-  <ReadingModeToggle lang={lang} client:idle />
 </nav>
 
 <style>

@@ -74,7 +74,7 @@ const displayDate = briefingData?.date
             {error ? (
                 <div class="py-20 text-center animate-rise">
                     <h2 class="font-serif text-3xl mb-6 font-black italic">{error}</h2>
-                    <a href={localePath('/briefing', lang, hostHeader)} class="inline-flex items-center gap-[var(--grid-gap)] px-6 py-3 bg-foreground text-background font-sans font-black text-xs uppercase tracking-widest hover:bg-nyt-accent transition-colors">
+                    <a href={localePath('/briefing', lang, hostHeader)} class="inline-flex items-center gap-[var(--grid-gap)] px-6 py-3 bg-foreground text-background font-sans ui-status hover:bg-nyt-accent transition-colors">
                         {isMK ? 'Врати се на последното издание' : 'Vrati se na poslednje izdanje'}
                     </a>
                 </div>
@@ -113,7 +113,7 @@ const displayDate = briefingData?.date
                                 quickRead={briefingData.quick_read}
                                 narratives={briefingData.metadata?.key_narratives || []}
                                 initialMode={quickMode ? 'quick' : 'full'}
-                                client:load
+                                client:idle
                             />
                         )}
 

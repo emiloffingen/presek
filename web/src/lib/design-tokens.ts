@@ -1,23 +1,57 @@
-// Design Tokens for UI Consistency
+// Design tokens mirrored from global.css — use in React islands for consistency.
 export const tokens = {
-    spacing: {
-        xs: '0.25rem',
-        sm: '0.5rem',
-        md: '1rem',
-        lg: '1.5rem',
-        xl: '2rem',
-    },
-    typography: {
-        fontFamily: 'system-ui, sans-serif',
-        scale: {
-            sm: '0.875rem',
-            md: '1rem',
-            lg: '1.25rem',
-            xl: '1.5rem',
-        }
-    },
-    animations: {
-        duration: '300ms',
-        easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-    }
-};
+  color: {
+    background: 'var(--background)',
+    foreground: 'var(--foreground)',
+    card: 'var(--card)',
+    muted: 'var(--muted)',
+    mutedForeground: 'var(--muted-foreground)',
+    border: 'var(--border)',
+    accent: 'var(--nyt-accent)',
+    accentRed: 'var(--nyt-red)',
+    link: 'var(--link)',
+    linkHover: 'var(--link-hover)',
+    secondary: 'var(--secondary)',
+    surfaceSoft: 'var(--surface-soft)',
+  },
+  font: {
+    serif: 'var(--font-serif)',
+    serifDisplay: 'var(--font-serif-display)',
+    ui: 'var(--font-ui)',
+    body: 'var(--font-nyt-body)',
+  },
+  spacing: {
+    xs: '0.25rem',
+    sm: '0.5rem',
+    md: '1rem',
+    lg: '1.5rem',
+    xl: '2rem',
+    gridGap: 'var(--grid-gap)',
+    sectionPy: 'var(--section-py)',
+    pagePy: 'var(--page-py)',
+  },
+  typography: {
+    uiMin: 'var(--text-ui-min)',
+    uiKicker: 'var(--text-ui-kicker)',
+    xs: 'var(--text-xs)',
+    sm: 'var(--text-sm)',
+    base: 'var(--text-base)',
+    lg: 'var(--text-lg)',
+    xl: 'var(--text-xl)',
+  },
+  radius: {
+    sm: 'var(--radius-sm)',
+    md: 'var(--radius-md)',
+    lg: 'var(--radius-lg)',
+  },
+  shadow: {
+    sm: 'var(--shadow-sm)',
+    md: 'var(--shadow-md)',
+    lg: 'var(--shadow-lg)',
+    editorial: 'var(--shadow-lg)',
+  },
+  motion: {
+    duration: 'var(--transition-base)',
+    easing: 'var(--ease-editorial)',
+  },
+} as const;

@@ -271,13 +271,13 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
           </div>
           <p className="item-tendency font-nyt-body text-sm text-muted-foreground line-clamp-1 mb-2 md:mb-3">{source.tendency}</p>
           <div className="item-meta flex items-center gap-2 md:gap-[var(--grid-gap)]">
-            <span className="px-2 py-0.5 bg-foreground text-background font-sans ui-label-min font-black uppercase tracking-[0.14em] md:tracking-widest">{source.country || defaultCountry}</span>
+            <span className="px-2 py-0.5 bg-foreground text-background ui-status">{source.country || defaultCountry}</span>
             <div className="flex gap-1.5">
               {source.top_categories?.slice(0, 2).map(cat => (
-                <span key={cat} className="px-2 py-0.5 border border-border rounded-none font-sans ui-label-min font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground/80">{cat}</span>
+                <span key={cat} className="px-2 py-0.5 border border-border rounded-none ui-status text-muted-foreground/80">{cat}</span>
               ))}
             </div>
-            <span className="font-sans ui-label-min font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground/40 ml-auto flex items-center gap-1.5">
+            <span className="ui-status text-muted-foreground/40 ml-auto flex items-center gap-1.5">
               <Activity size={10} /> {formatLastFetched(source.last_fetched, t('sources.no_signal'), dateLocale)}
             </span>
           </div>
@@ -285,11 +285,11 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
         <div className="item-stats flex items-center justify-end gap-3 md:gap-[var(--grid-gap)] ml-auto flex-1 min-w-[200px]">
           <div className="flex gap-3 md:gap-[var(--grid-gap)]">
             <div className="stat-box flex flex-col items-end">
-              <span className="ui-label-min font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground mb-0.5">{t('sources.news_24h')}</span>
+              <span className="ui-kicker text-muted-foreground mb-0.5">{t('sources.news_24h')}</span>
               <strong className="text-base md:text-lg font-black tabular-nums leading-none">{source.recent_volume}</strong>
             </div>
             <div className="stat-box flex flex-col items-end text-nyt-accent">
-              <span className="ui-label-min font-black uppercase tracking-[0.14em] md:tracking-widest opacity-60 mb-0.5">{t('sources.quality')}</span>
+              <span className="ui-kicker opacity-60 mb-0.5">{t('sources.quality')}</span>
               <strong className="text-base md:text-lg font-black tabular-nums leading-none">{reliabilityIndex}</strong>
             </div>
           </div>
@@ -333,7 +333,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
     <div className="broadsheet-sources">
       <header className="editorial-masthead mb-10 md:mb-16 border-t border-foreground pt-4">
         <div className="masthead-top mb-6 md:mb-8">
-          <span className="masthead-kicker ui-label-min tracking-[0.12em] text-nyt-accent">{t('sources.reputation')}</span>
+          <span className="masthead-kicker ui-kicker ui-kicker--accent">{t('sources.reputation')}</span>
         </div>
         <div className="masthead-main mb-8 md:mb-12">
           <h1 className="masthead-title font-serif text-4xl md:text-6xl font-black leading-[0.92] tracking-tighter">
@@ -428,30 +428,30 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                 </svg>
 
                 {/* Quadrant Text Overlays (Styled Broadsheet Badges) */}
-                <div className="absolute top-3 left-4 ui-label-min font-black uppercase tracking-[0.14em] text-muted-foreground/35 bg-secondary/20 dark:bg-secondary/10 px-2 py-0.5 border border-border/10 rounded-none pointer-events-none">
+                <div className="absolute top-3 left-4 ui-kicker text-muted-foreground/35 bg-secondary/20 dark:bg-secondary/10 px-2 py-0.5 border border-border/10 rounded-none pointer-events-none">
                   {t('sources.quadrant_independent_consensus')}
                 </div>
-                <div className="absolute bottom-3 left-4 ui-label-min font-black uppercase tracking-[0.14em] text-muted-foreground/35 bg-secondary/20 dark:bg-secondary/10 px-2 py-0.5 border border-border/10 rounded-none pointer-events-none">
+                <div className="absolute bottom-3 left-4 ui-kicker text-muted-foreground/35 bg-secondary/20 dark:bg-secondary/10 px-2 py-0.5 border border-border/10 rounded-none pointer-events-none">
                   {t('sources.quadrant_investigative_exclusives')}
                 </div>
-                <div className="absolute top-3 right-4 ui-label-min font-black uppercase tracking-[0.14em] text-muted-foreground/35 bg-secondary/20 dark:bg-secondary/10 px-2 py-0.5 border border-border/10 rounded-none pointer-events-none">
+                <div className="absolute top-3 right-4 ui-kicker text-muted-foreground/35 bg-secondary/20 dark:bg-secondary/10 px-2 py-0.5 border border-border/10 rounded-none pointer-events-none">
                   {t('sources.quadrant_sensational_consensus')}
                 </div>
-                <div className="absolute bottom-3 right-4 ui-label-min font-black uppercase tracking-[0.14em] text-muted-foreground/35 bg-secondary/20 dark:bg-secondary/10 px-2 py-0.5 border border-border/10 rounded-none pointer-events-none">
+                <div className="absolute bottom-3 right-4 ui-kicker text-muted-foreground/35 bg-secondary/20 dark:bg-secondary/10 px-2 py-0.5 border border-border/10 rounded-none pointer-events-none">
                   {t('sources.quadrant_tabloid_exclusives')}
                 </div>
 
                 {/* Core Axis Anchors with Directional Indicators */}
-                <div className="absolute top-2.5 left-1/2 -translate-x-1/2 ui-label-min tracking-[0.18em] text-muted-foreground/45 pointer-events-none flex items-center gap-1">
+                <div className="absolute top-2.5 left-1/2 -translate-x-1/2 ui-kicker text-muted-foreground/45 pointer-events-none flex items-center gap-1">
                   ▲ {t('sources.label_consensus')}
                 </div>
-                <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 ui-label-min tracking-[0.18em] text-muted-foreground/45 pointer-events-none flex items-center gap-1">
+                <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 ui-kicker text-muted-foreground/45 pointer-events-none flex items-center gap-1">
                   ▼ {t('sources.label_exclusives')}
                 </div>
-                <div className="absolute top-1/2 -translate-y-1/2 left-3.5 ui-label-min tracking-[0.18em] text-muted-foreground/45 pointer-events-none vertical-text flex items-center gap-1">
+                <div className="absolute top-1/2 -translate-y-1/2 left-3.5 ui-kicker text-muted-foreground/45 pointer-events-none vertical-text flex items-center gap-1">
                   ◀ {t('sources.label_independence')}
                 </div>
-                <div className="absolute top-1/2 -translate-y-1/2 right-3.5 ui-label-min tracking-[0.18em] text-muted-foreground/45 pointer-events-none vertical-text flex items-center gap-1">
+                <div className="absolute top-1/2 -translate-y-1/2 right-3.5 ui-kicker text-muted-foreground/45 pointer-events-none vertical-text flex items-center gap-1">
                   ▶ {t('sources.label_tabloids')}
                 </div>
 
@@ -540,19 +540,19 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                       
                       <div className="grid grid-cols-2 gap-2 ui-label-min border-t border-border/60 pt-2.5">
                         <div className="flex flex-col">
-                          <span className="font-black uppercase tracking-wider text-muted-foreground/60">{t('sources.hover_quality')}</span>
+                          <span className="ui-kicker text-muted-foreground/60">{t('sources.hover_quality')}</span>
                           <strong className="text-xs font-black text-nyt-accent">{reliability}</strong>
                         </div>
                         <div className="flex flex-col">
-                          <span className="font-black uppercase tracking-wider text-muted-foreground/60">{t('sources.hover_consensus')}</span>
+                          <span className="ui-kicker text-muted-foreground/60">{t('sources.hover_consensus')}</span>
                           <strong className="text-xs font-black text-foreground">{formatPercent(hoveredSource.corroboration_rate)}</strong>
                         </div>
                         <div className="flex flex-col mt-1">
-                          <span className="font-black uppercase tracking-wider text-muted-foreground/60">{t('sources.hover_volume_24h')}</span>
+                          <span className="ui-kicker text-muted-foreground/60">{t('sources.hover_volume_24h')}</span>
                           <strong className="text-xs font-black text-foreground">{hoveredSource.recent_volume}</strong>
                         </div>
                         <div className="flex flex-col mt-1">
-                          <span className="font-black uppercase tracking-wider text-muted-foreground/60">{t('sources.hover_first_leader')}</span>
+                          <span className="ui-kicker text-muted-foreground/60">{t('sources.hover_first_leader')}</span>
                           <strong className="text-xs font-black text-foreground">+{hoveredSource.speed_first_count}</strong>
                         </div>
                       </div>
@@ -575,7 +575,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
             {/* Sidebar Quadrant Legend */}
             <div className="lg:col-span-1 flex flex-col justify-between gap-4 p-4 bg-background/50 border border-border/60 rounded-none">
               <div>
-                <h4 className="ui-label border-b border-border/50 pb-2 mb-3 text-foreground">{t('sources.graph_legend')}</h4>
+                <h4 className="ui-kicker border-b border-border/50 pb-2 mb-3 text-foreground">{t('sources.graph_legend')}</h4>
                 <div className="space-y-4 text-xs">
                   <div>
                     <span className="inline-block px-1.5 py-0.5 rounded-none bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ui-label-min mb-1">{t('sources.high_trust')}</span>
@@ -593,7 +593,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
               </div>
 
               <div className="border-t border-border/40 pt-3">
-                <h5 className="ui-label-min text-foreground mb-1">{t('sources.reporting_angles_title')}</h5>
+                <h5 className="ui-kicker text-foreground mb-1">{t('sources.reporting_angles_title')}</h5>
                 <p className="text-xs text-muted-foreground/80 leading-relaxed">
                   {t('sources.reporting_angles_desc')}
                 </p>
@@ -637,7 +637,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
 
         <aside className="broadsheet-rail pl-0 md:pl-4">
           <section className="rail-module mb-8 md:mb-12 p-4 md:p-8 bg-nyt-accent/5 border border-nyt-accent/10 rounded-none">
-            <span className="block font-sans ui-label-min font-black uppercase tracking-[0.16em] md:tracking-[0.2em] text-nyt-accent mb-3 md:mb-4">{t('briefing.system_balance')}</span>
+            <span className="block ui-kicker ui-kicker--accent mb-3 md:mb-4">{t('briefing.system_balance')}</span>
             <h3 className="section-heading mb-4 leading-tight tracking-tight">{t('sources.qi_title')}</h3>
             <p className="font-nyt-body text-sm leading-relaxed text-muted-foreground">
               {t('sources.qi_desc')}
@@ -647,11 +647,11 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
           <details className="izvori-rail-context">
             <summary className="izvori-rail-context-summary">
               <span>{lang === 'mk' ? 'Контекст и методологија' : 'Kontekst i metodologija'}</span>
-              <span className="izvori-rail-context-hint ui-label-min text-muted-foreground">{lang === 'mk' ? 'ОТВОРИ' : 'OTVORI'}</span>
+              <span className="izvori-rail-context-hint ui-kicker text-muted-foreground">{lang === 'mk' ? 'Отвори' : 'Otvori'}</span>
             </summary>
             <div className="izvori-rail-context-body">
               <section className="rail-module mb-8 md:mb-12">
-                <h3 className="ui-label text-foreground mb-4 md:mb-6 pb-2 border-b-2 border-foreground">{t('sources.fastest_today')}</h3>
+                <h3 className="ui-kicker text-foreground mb-4 md:mb-6 pb-2 border-b-2 border-foreground">{t('sources.fastest_today')}</h3>
                 <div className="flex flex-col gap-1">
                   {fastMovers.map(s => (
                     <div key={s.source} className="flex items-center justify-between py-2 border-b border-border/40 hover:bg-secondary/10 px-1 transition-all gap-2">
@@ -663,22 +663,22 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
               </section>
 
               <div className="rail-methodology-module p-4 md:p-6 bg-secondary/10 border border-border/40 rounded-none">
-                <h4 className="ui-label-min border-b border-border pb-3 mb-4">{t('sources.methodology')}</h4>
+                <h4 className="ui-kicker border-b border-border pb-3 mb-4">{t('sources.methodology')}</h4>
                 <ul className="space-y-3 md:space-y-4">
                   <li className="flex flex-col gap-1">
-                    <span className="ui-label-min text-foreground">{t('sources.trust')}</span>
+                    <span className="ui-kicker text-foreground">{t('sources.trust')}</span>
                     <span className="text-xs text-muted-foreground leading-snug">
                       {t('sources.trust_desc')}
                     </span>
                   </li>
                   <li className="flex flex-col gap-1">
-                    <span className="ui-label-min text-foreground">{t('sources.leadership')}</span>
+                    <span className="ui-kicker text-foreground">{t('sources.leadership')}</span>
                     <span className="text-xs text-muted-foreground leading-snug">
                       {t('sources.leadership_desc')}
                     </span>
                   </li>
                   <li className="flex flex-col gap-1">
-                    <span className="ui-label-min text-foreground">{t('sources.confirmation')}</span>
+                    <span className="ui-kicker text-foreground">{t('sources.confirmation')}</span>
                     <span className="text-xs text-muted-foreground leading-snug">
                       {t('sources.confirmation_desc')}
                     </span>
@@ -720,9 +720,8 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
           list-style: none;
           font-family: var(--font-ui);
           font-size: var(--text-ui-kicker);
-          font-weight: 800;
-          letter-spacing: 0.06em;
-          text-transform: uppercase;
+          font-weight: 700;
+          letter-spacing: 0.04em;
         }
 
         .izvori-rail-context-summary::-webkit-details-marker { display: none; }

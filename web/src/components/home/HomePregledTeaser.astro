@@ -1,0 +1,36 @@
+---
+import { ArrowRight, BarChart3 } from 'lucide-react';
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+import { localePath } from '../../lib/localePaths';
+
+interface Props {
+    lang?: string;
+    pluralismPct?: number | null;
+}
+
+const hostHeader = Astro.request?.headers.get('host');
+const lang = Astro.props.lang || getLangFromUrl(Astro.url, hostHeader);
+const t = useTranslations(lang);
+const pregledHref = localePath('/pregled', lang, hostHeader);
+const pluralismPct = Astro.props.pluralismPct;
+---
+
+<a href={pregledHref} class="home-pregled-teaser">
+    <div class="home-pregled-teaser-icon" aria-hidden="true">
+        <BarChart3 size={18} strokeWidth={2.25} />
+    </div>
+    <div class="home-pregled-teaser-copy">
+        <p class="home-pregled-teaser-kicker">{t('home.pregled_cta_kicker')}</p>
+        <h2 class="home-pregled-teaser-title">{t('home.pregled_cta_title')}</h2>
+        <p class="home-pregled-teaser-deck">{t('home.pregled_cta_deck')}</p>
+        {typeof pluralismPct === 'number' && pluralismPct > 0 && (
+            <p class="home-pregled-teaser-stat">
+                {t('home.pregled_cta_stat').replace('{pct}', String(pluralismPct))}
+            </p>
+        )}
+    </div>
+    <span class="home-pregled-teaser-action">
+        {t('home.pregled_cta_action')}
+        <ArrowRight size={14} strokeWidth={2.5} aria-hidden="true" />
+    </span>
+</a>

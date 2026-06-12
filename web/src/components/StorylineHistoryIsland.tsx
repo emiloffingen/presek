@@ -32,7 +32,7 @@ const StorylineHistoryIsland: React.FC<{ clusterId: string; apiUrl: string; lang
         <section className="mt-16 pt-12 border-t border-border">
             <div className="flex items-center gap-[var(--grid-gap)] mb-10">
                 <History size={20} className="text-nyt-accent" />
-                <h2 className="font-sans text-xs font-black uppercase tracking-widest">
+                <h2 className="ui-kicker">
                     {isMK ? 'Хронологија на развојот' : 'Hronologija razvoja'}
                 </h2>
             </div>
@@ -45,7 +45,7 @@ const StorylineHistoryIsland: React.FC<{ clusterId: string; apiUrl: string; lang
 
                         <div className="flex flex-col md:flex-row md:items-start gap-5">
                             <div className="md:w-32 flex-shrink-0 pt-1">
-                                <span className="font-sans text-[10px] font-black uppercase text-muted-foreground flex items-center gap-1">
+                                <span className="ui-kicker flex items-center gap-1">
                                     <Calendar size={10} />
                                     {new Date(item.first_seen).toLocaleDateString(isMK ? 'mk-MK' : 'sr-RS', { day: 'numeric', month: 'short' })}
                                 </span>
@@ -56,7 +56,7 @@ const StorylineHistoryIsland: React.FC<{ clusterId: string; apiUrl: string; lang
                                     <h3 className="font-serif font-bold text-base md:text-lg leading-tight group-hover:text-nyt-accent transition-colors">
                                         {item.title}
                                     </h3>
-                                    <div className="mt-2 flex items-center gap-[var(--grid-gap)] text-[10px] font-black uppercase text-nyt-accent opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="mt-2 flex items-center gap-[var(--grid-gap)] ui-kicker ui-kicker--accent opacity-0 group-hover:opacity-100 transition-opacity">
                                         {isMK ? 'Види ги деталите' : 'Vidi detalje'} <ArrowRight size={12} />
                                     </div>
                                 </div>

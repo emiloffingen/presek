@@ -11,6 +11,7 @@ import { getEditionStr } from '../utils/textUtils';
 import Branding from './Branding.astro';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import { localePath, homePath } from '../lib/localePaths';
+import { filterTrendingNavItems } from '../lib/navEntityFilter';
 
 interface Props {
     category?: string | null;
@@ -95,9 +96,16 @@ try {
 const hasBreaking = navigationData.breaking.length > 0;
 const breakingItems = hasBreaking ? navigationData.breaking.slice(0, 5) : latestTickerItems;
 const hasTicker = breakingItems.length > 0;
-const visibleSections = (navigationData.sections || []).filter((section: any) => Array.isArray(section?.items) && section.items.length > 0);
-const primaryNavSections = visibleSections.slice(0, 2);
-const overflowNavSections = visibleSections.slice(2);
+const visibleSections = (navigationData.sections || [])
+    .map((section: any) => ({
+        ...section,
+        items: filterTrendingNavItems(section?.items || []),
+    }))
+    .filter((section: any) => Array.isArray(section?.items) && section.items.length > 0);
+const nonTrendingSections = visibleSections.filter((section: any) => section.type !== 'trending');
+const trendingSections = visibleSections.filter((section: any) => section.type === 'trending');
+const primaryNavSections = nonTrendingSections.slice(0, 2);
+const overflowNavSections = [...nonTrendingSections.slice(2), ...trendingSections];
 const overflowNavItems = overflowNavSections.flatMap((section: any) => section.items || []);
 
 const pregledHref = l('/pregled');

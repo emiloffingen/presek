@@ -352,7 +352,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
           <details className="for-you-rail-context">
             <summary className="for-you-rail-context-summary">
               <span>{isMK ? 'Контекст и сигнали' : 'Kontekst i signali'}</span>
-              <span className="for-you-rail-context-hint ui-label-min">{isMK ? 'ОТВОРИ' : 'OTVORI'}</span>
+              <span className="for-you-rail-context-hint ui-kicker text-muted-foreground">{isMK ? 'Отвори' : 'Otvori'}</span>
             </summary>
             <div className="for-you-rail-context-body">
               {categoryLeaders.length > 0 && (
