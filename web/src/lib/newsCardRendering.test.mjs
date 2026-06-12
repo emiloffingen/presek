@@ -22,3 +22,12 @@ test('generic news cards render regular summaries, not synthesis previews', () =
     assert.doesNotMatch(source, /has-synthesis/);
   }
 });
+
+test('compact news cards do not hide their image wrapper globally', () => {
+  const astroCard = readComponent('components/NewsCard.astro');
+
+  assert.doesNotMatch(
+    astroCard,
+    /\.nyt-article\.variant-compact\s+\.image-wrap,\s*\n\s*\.nyt-article\.variant-wire\s+\.image-wrap\s*\{\s*display:\s*none;/,
+  );
+});
