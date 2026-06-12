@@ -8,6 +8,10 @@
 #   PRESEK_API_VENV=/home/emiloffingen/presek-runtime/venv-api
 #   PRESEK_WORKER_VENV=/home/emiloffingen/presek-runtime/venv-worker
 #
+# API import contract (forbidden worker deps in API surface):
+#   deploy/python_env_contract.json
+#   scripts/check_api_venv_imports.py
+#
 # Systemd units already honor PRESEK_API_VENV / PRESEK_WORKER_VENV when present.
 set -euo pipefail
 
@@ -75,6 +79,12 @@ main() {
   # API: shared base + web/search stack (no torch/playwright/llama-cpp).
   install_grouped_venv "venv-api" "$API_VENV" api
 
+  echo "> Verifying API venv import contract"
+  if ! CSRF_TOKEN_SECRET=deploy-check ENV=production "$API_VENV/bin/python3" "$SOURCE_ROOT/scripts/check_api_venv_imports.py"; then
+    echo "API venv failed import contract (see deploy/python_env_contract.json)" >&2
+    exit 1
+  fi
+
   # Workers: shared base + API NLP helpers + full intelligence stack.
   install_grouped_venv "venv-worker" "$WORKER_VENV" api worker
 
@@ -88,6 +98,7 @@ main() {
 Split venvs ready:
   API venv:    $API_VENV
   Worker venv: $WORKER_VENV
+  Contract:    $SOURCE_ROOT/deploy/python_env_contract.json
 
 Add to $APP_ROOT/shared/.env:
   PRESEK_API_VENV=$API_VENV

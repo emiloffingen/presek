@@ -227,11 +227,13 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
     <section className="for-you-module" aria-labelledby="discover-title">
       <div className="for-you-head">
         <div>
-          <p className="for-you-kicker"><Compass size={14} /> {lang === 'sr' ? 'Otkrijte' : 'Откријте'}</p>
-          <h2 id="discover-title">{lang === 'sr' ? 'Najnovije za Vas' : 'Најново за Вас'}</h2>
+          <p className="for-you-kicker"><Compass size={14} /> {lang === 'sr' ? 'Za vas' : 'За вас'}</p>
+          <h2 id="discover-title">{lang === 'sr' ? 'Početne preporuke' : 'Почетни препораки'}</h2>
         </div>
         <p className="for-you-note">
-          {lang === 'sr' ? 'Početni izbor dok ne postavite šta želite da pratite.' : 'Почетен избор додека не поставите што сакате да следите.'}
+          {lang === 'sr'
+            ? 'Izbor po vašim temama dok ne pratite izvore. Ovo nije naslovna priča.'
+            : 'Избор по вашите теми додека не следите извори. Ова не е насловна приказна.'}
         </p>
       </div>
 

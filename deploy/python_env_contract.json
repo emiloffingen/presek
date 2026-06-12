@@ -1,0 +1,16 @@
+{
+  "description": "Machine-readable split between API-safe and worker-only Python dependencies.",
+  "api_dependency_groups": ["api"],
+  "worker_dependency_groups": ["api", "worker"],
+  "forbidden_modules": ["llama_cpp", "torch", "playwright", "omnivoice"],
+  "runtime_imports": ["nlp.local_analyst", "routes.news", "core.api_fast"],
+  "static_scan_paths": [
+    "routes",
+    "core/api_fast.py",
+    "core/database.py",
+    "core/health.py",
+    "core/api_helpers.py",
+    "nlp/local_analyst.py",
+    "nlp/__init__.py"
+  ]
+}

@@ -141,6 +141,15 @@ jobs:
           source .venv/bin/activate
           uv sync --dev
 
+      - name: Verify API-only venv import contract
+        env:
+          CSRF_TOKEN_SECRET: test-secret-for-ci
+          ENV: test
+        run: |
+          uv venv .venv-api-ci
+          UV_PROJECT_ENVIRONMENT=.venv-api-ci uv sync --frozen --no-dev --no-default-groups --group api --directory .
+          .venv-api-ci/bin/python scripts/check_api_venv_imports.py
+
       - name: Run linting
         run: |
           source .venv/bin/activate
@@ -211,6 +220,22 @@ jobs:
         env:
           CHROME_PATH: /usr/bin/chromium
         run: npm run perf:lighthouse:ci
+
+      - name: Lighthouse MK homepage audit
+        working-directory: web
+        env:
+          CHROME_PATH: /usr/bin/chromium
+        run: npm run perf:lighthouse:ci:mk
+
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-reports
+          path: |
+            web/lighthouse-homepage.json
+            web/lighthouse-homepage-mk.json
+          if-no-files-found: ignore
 
   # ============================================================================
   # Build

@@ -7,6 +7,7 @@ import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import { localePath, homePath } from '../../lib/localePaths';
 import MeshGradient from './MeshGradient.astro';
 import { buildEmergencyFallbackUrl } from '../../utils/imageSelection';
+import StoryFreshnessBadge from '../StoryFreshnessBadge.astro';
 
 interface Props {
     leadCluster: NewsCluster;
@@ -23,6 +24,7 @@ interface Props {
     lang?: string;
     compact?: boolean;
     showHeroVisual?: boolean;
+    pipelineBusy?: boolean;
 }
 
 const {
@@ -40,6 +42,7 @@ const {
     lang: propLang,
     compact = false,
     showHeroVisual = true,
+    pipelineBusy = false,
 } = Astro.props;
 
 const hostHeader = Astro.request?.headers.get('host');
@@ -49,6 +52,7 @@ const t = useTranslations(lang);
 
 const tintColor = dominantColor || '#1e40af';
 const primaryArticle = leadCluster.articles?.[0] || {};
+const leadFreshness = leadCluster.synthesis_freshness || {};
 const primaryDisplayTitle = getDisplayTitle(primaryArticle, t('lead.title_prefix'));
 const relatedArticles = leadCluster.articles.slice(1, 4);
 const mediaLabel = filterLabel || primaryArticle.topic || primaryArticle.category || t('lead.theme_fallback');
@@ -168,13 +172,26 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl && !leadV
                     </span>
                 )}
                 <span class="time-stamp-v2" aria-label={t('header.latest')}>{getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)}</span>
+                <StoryFreshnessBadge
+                    lang={lang as 'sr' | 'mk'}
+                    synthesisUpdatedAt={leadCluster.synthesis_updated_at || leadFreshness.synthesis_updated_at}
+                    latestArticleAt={leadFreshness.latest_article_at || leadCluster.articles?.[0]?.ingested_at || leadCluster.articles?.[0]?.created_at}
+                    isStale={Boolean(leadFreshness.is_stale)}
+                    newArticleCount={Number(leadFreshness.new_article_count || 0)}
+                    pipelineBusy={pipelineBusy}
+                />
             </div>
         </div>
         <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="no-underline group" data-testid="cluster-link">
             <h1 class:list={["headline headline-lead transition-transform duration-500 group-hover:translate-x-1", { "headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(finalLeadTitle)}></h1>
         </a>
         {finalLeadSummary && (
-            <p class:list={["lead-summary", { "lead-summary-cyrillic": leadSummaryIsCyrillic }]} set:html={sanitizeHtml(finalLeadSummary)}></p>
+            <div class="lead-summary-block">
+                {compact && (
+                    <p class="lead-why-kicker">{t('lead.why_it_matters')}</p>
+                )}
+                <p class:list={["lead-summary", { "lead-summary-cyrillic": leadSummaryIsCyrillic }]} set:html={sanitizeHtml(finalLeadSummary)}></p>
+            </div>
         )}
 
         {!compact && leadCluster.key_facts && leadCluster.key_facts.length > 0 && (

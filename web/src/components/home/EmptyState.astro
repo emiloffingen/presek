@@ -4,9 +4,10 @@ import { localePath, homePath } from '../../lib/localePaths';
 
 interface Props {
 	trending: any[];
+	errorMessage?: string | null;
 }
 
-const { trending } = Astro.props;
+const { trending, errorMessage = null } = Astro.props;
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
@@ -14,6 +15,9 @@ const l = (path: string) => localePath(path, lang, hostHeader);
 ---
 
 <div class="home-empty-state">
+	{errorMessage && (
+		<p class="home-empty-error-note">{t('home.partial_error_note')}</p>
+	)}
 	<p class="home-empty-kicker">{t('home.empty_kicker')}</p>
 	<h2 class="home-empty-title">{t('home.empty_title')}</h2>
 	<p class="home-empty-copy">{t('home.empty_desc')}</p>

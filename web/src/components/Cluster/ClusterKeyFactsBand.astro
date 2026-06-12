@@ -1,0 +1,38 @@
+---
+import { useTranslations } from '../../i18n/utils';
+
+interface Props {
+  facts: string[];
+  lang: 'sr' | 'mk';
+}
+
+const { facts, lang } = Astro.props;
+const t = useTranslations(lang);
+const displayFacts = facts.slice(0, 5);
+
+const highlightFactText = (text: string) => {
+  let html = text;
+  const moneyRegex = /(\d+[\beta\s\.]*(?:евра|evra|денари|denara|динара|dinara|EUR|€)|половина милион евра|polovina milion evra|пола милион евра|pola miliona evra)/gi;
+  html = html.replace(moneyRegex, '<strong class="text-nyt-accent font-black">$1</strong>');
+  const locationRegex = /(ГП\s+Табановце|Табановце|Tabanovce|Германија|Germanija|Албанија|Albanija)/gi;
+  html = html.replace(locationRegex, '<strong class="text-foreground font-semibold">$1</strong>');
+  return html;
+};
+---
+
+{displayFacts.length > 0 && (
+  <section id="cluster-key-facts" class="cluster-key-facts-band mb-12 border-t border-border/40 pt-10">
+    <div class="section-eyebrow mb-8">
+      <h2 class="section-label">{t('cluster.key_facts_band')}</h2>
+      <div class="section-divider"></div>
+    </div>
+    <ul class="cluster-key-facts-list space-y-3">
+      {displayFacts.map((fact) => (
+        <li class="font-sans text-[15px] md:text-[16px] font-medium leading-relaxed text-foreground/85 flex items-start gap-3">
+          <span class="text-nyt-accent text-lg mt-[-2px] flex-shrink-0" aria-hidden="true">›</span>
+          <span class="flex-1" set:html={highlightFactText(fact)}></span>
+        </li>
+      ))}
+    </ul>
+  </section>
+)}

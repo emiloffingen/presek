@@ -47,9 +47,93 @@ from core.localization import (
     PROTECTED_NAMES,
 )
 
+# Latin diacritics + Cyrillic used across MK/SR newswire text.
+_SR_LATIN_LETTERS = "A-Za-z\u0106\u0107\u010C\u010D\u0110\u0111\u017D\u017E\u0160\u0161"
+_CYRILLIC_LETTERS = r"\u0400-\u04FF"
+WORD_CHAR_CLASS = rf"{_SR_LATIN_LETTERS}{_CYRILLIC_LETTERS}"
+WORD_TOKEN_RE = re.compile(rf"[{WORD_CHAR_CLASS}]{{3,}}", re.UNICODE)
+LAT_UPPER_CLASS = rf"A-Z\u0400-\u042F\u0106\u010C\u0110\u017D\u0160"
+LAT_LOWER_CLASS = rf"a-z0-9\u0430-\u044F\u0450-\u045F\u0107\u010d\u0111\u017e\u0161"
+_DIACRITIC_JOINERS = ("č", "ć", "š", "ž", "đ")
+_DIACRITIC_SPLIT_SUFFIXES = frozenset(
+    {
+        "enih",
+        "anih",
+        "nih",
+        "ama",
+        "ima",
+        "om",
+        "oj",
+        "og",
+        "eg",
+        "em",
+        "ju",
+        "ja",
+        "je",
+        "ji",
+        "ca",
+        "ce",
+        "cu",
+        "ka",
+        "ke",
+        "ki",
+        "ku",
+        "na",
+        "ne",
+        "ni",
+        "nu",
+        "ta",
+        "te",
+        "ti",
+        "tu",
+        "ga",
+        "ge",
+        "gi",
+        "gu",
+        "la",
+        "le",
+        "li",
+        "lu",
+        "ma",
+        "me",
+        "mi",
+        "mu",
+        "ra",
+        "re",
+        "ri",
+        "ru",
+        "va",
+        "ve",
+        "vi",
+        "vu",
+    }
+)
+
+
+def _repair_diacritic_fragment_tag(name: str) -> str:
+    clean = re.sub(r"\s+", " ", str(name or "").strip())
+    parts = clean.split(" ")
+    if len(parts) != 2:
+        return clean
+
+    left, right = parts
+    if any(ch in "čćšžđČĆŠŽĐ" for ch in clean):
+        return clean
+    if len(left) < 4 or len(right) < 3 or len(right) > 5:
+        return clean
+    if right.casefold() not in _DIACRITIC_SPLIT_SUFFIXES:
+        return clean
+
+    for joiner in _DIACRITIC_JOINERS:
+        merged = f"{left}{joiner}{right}"
+        if " " not in merged and len(merged) >= 6:
+            return merged
+    return clean
+
 
 def normalize_tag_name(name):
-    clean = re.sub(r"\s+", " ", str(name or "").strip(" -–—,.;:!?()[]{}\"'"))
+    clean = _repair_diacritic_fragment_tag(name)
+    clean = re.sub(r"\s+", " ", str(clean or "").strip(" -–—,.;:!?()[]{}\"'"))
     if not clean:
         return ""
 
@@ -108,7 +192,7 @@ def normalize_tag_name(name):
                     clean = re.sub(r"ski$", "", clean, flags=re.IGNORECASE)
 
     # 4. Capitalization fallback
-    if re.fullmatch(r"[A-Za-zA-Za-z\s-]+", clean) and clean.islower():
+    if re.fullmatch(rf"[{WORD_CHAR_CLASS}\s-]+", clean) and clean.islower():
         if " " in clean:
             parts = clean.split(" ")
             clean = parts[0].capitalize() + " " + " ".join(parts[1:])
@@ -223,6 +307,12 @@ def is_valid_focus_entity(name, entity_type=None):
         return False
     if len(words) > 1 and any(len(word) < 3 for word in words):
         return False
+    if (
+        len(words) == 2
+        and words[1] in _DIACRITIC_SPLIT_SUFFIXES
+        and not any(ch in "čćšžđ" for ch in lowered)
+    ):
+        return False
     # Single-token headline verbs / truncated verbal nouns scraped from titles.
     if len(words) == 1:
         token = words[0]
@@ -270,7 +360,7 @@ def filter_cluster_tags(tags, limit=10):
 def _tokenize_title_terms(text, lemmatize=False):
     tokens = [
         token
-        for token in re.findall(r"[A-Za-zA-Za-z0-9]{3,}", (text or "").lower())
+        for token in WORD_TOKEN_RE.findall((text or "").lower())
         if token not in STOPWORDS and token not in TAG_NOISE_WORDS and token not in SOURCE_NOISE_WORDS
     ]
     if lemmatize:
@@ -286,11 +376,10 @@ _sentence_tokens = _tokenize_title_terms
 def _extract_capitalized_phrases(text):
     if not text:
         return []
-    # Explicitly list Cyrillic characters to avoid range errors in some environments
-    # Supports both Latin and Cyrillic (Macedonian/Serbian)
-    upper = r"[A-Z\u0400-\u042F]"
-    lower = r"[a-z0-9\u0430-\u044F\u0450-\u045F]"
-    pattern = re.compile(rf"(?:\b{upper}{lower}+\b(?:[\s-]+\b{upper}{lower}+\b){{0,2}})")
+    pattern = re.compile(
+        rf"(?:\b[{LAT_UPPER_CLASS}][{LAT_LOWER_CLASS}]+\b"
+        rf"(?:[\s-]+\b[{LAT_UPPER_CLASS}][{LAT_LOWER_CLASS}]+\b){{0,2}})"
+    )
     return [match.group(0).strip() for match in pattern.finditer(text)]
 
 
@@ -430,7 +519,7 @@ def extract_keyphrases_locally(text, top_n=5):
                 key = clean.casefold()
                 if key in seen:
                     continue
-                tokens = [t for t in re.findall(r"[A-Za-z\w]+", key) if t]
+                tokens = [t for t in WORD_TOKEN_RE.findall(key) if t]
                 if not tokens:
                     continue
                 if all(t in STOPWORDS for t in tokens):
@@ -448,14 +537,14 @@ def extract_keyphrases_locally(text, top_n=5):
                 return ranked[:top_n]
 
     # Legacy fallback
-    words = re.findall(r"[A-Za-z\w]{4,}", text.lower())
+    words = WORD_TOKEN_RE.findall(text.lower())
     words = [w for w in words if w not in STOPWORDS and w not in SOURCE_NOISE_WORDS and w not in TAG_NOISE_WORDS]
 
     raw_sentences = re.split(r"[.!?]\s*", text.lower())
     bigrams = []
     trigrams = []
     for sent in raw_sentences:
-        sent_words = re.findall(r"[A-Za-z\w]{3,}", sent)
+        sent_words = WORD_TOKEN_RE.findall(sent)
         sent_words = [
             w for w in sent_words if w not in STOPWORDS and w not in SOURCE_NOISE_WORDS and w not in TAG_NOISE_WORDS
         ]

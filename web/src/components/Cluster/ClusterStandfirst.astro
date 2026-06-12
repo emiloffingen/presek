@@ -1,0 +1,27 @@
+---
+import {
+  cleanAndDecode,
+  extractCleanSummaryText,
+  getPersonalizedText,
+  isSyntheticStandfirstBoilerplate,
+} from '../../utils/textUtils';
+
+interface Props {
+  standfirst?: string | null;
+  lang: 'sr' | 'mk';
+}
+
+const { standfirst, lang } = Astro.props;
+
+const raw = extractCleanSummaryText(standfirst || '');
+const displayStandfirst =
+  raw && !isSyntheticStandfirstBoilerplate(raw)
+    ? getPersonalizedText(cleanAndDecode(raw), lang)
+    : null;
+---
+
+{displayStandfirst && (
+  <p class="cluster-standfirst font-serif text-xl md:text-2xl leading-relaxed text-foreground/80 mb-6 max-w-4xl">
+    {displayStandfirst}
+  </p>
+)}

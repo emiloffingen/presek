@@ -29,6 +29,7 @@ import {
 	shouldShowCredibilitySection,
 	shouldShowExecutiveSummary,
 	shouldShowHeroVisual,
+	shouldShowKeyFactsBand,
 	shouldShowPerspectives,
 } from '../../../lib/clusterPageLayout';
 
@@ -127,16 +128,20 @@ const highlightFactText = (text: string) => {
 };
 
 import { sanitizeHtml } from '../../../lib/sanitize';
-import { Newspaper, Clock, Link2, Zap, Sparkles, ShieldCheck, TriangleAlert, BarChart3, Radio, Search, ExternalLink, BookOpen, ListChecks } from 'lucide-react';
+import { Newspaper, Clock, Link2, Zap, Sparkles, ShieldCheck, TriangleAlert, BarChart3, Radio, Search, ExternalLink } from 'lucide-react';
 import EntityContextCard from '../../../components/EntityContextCard.tsx';
-import ReadingModeToggle from '../../../components/Cluster/ReadingModeToggle.tsx';
 import ZenReadingContext from '../../../components/Cluster/ZenReadingContext.tsx';
+import StoryFreshnessBadge from '../../../components/StoryFreshnessBadge.astro';
 import HeroVisual from '../../../components/Cluster/HeroVisual.astro';
 
 import CitationSources from '../../../components/Cluster/CitationSources.astro';
 import CredibilityAnalysis from '../../../components/Cluster/CredibilityAnalysis.astro';
 import ArticleItem from '../../../components/Cluster/ArticleItem.astro';
 import ClusterSynthesisSection from '../../../components/Cluster/ClusterSynthesisSection.astro';
+import ClusterStandfirst from '../../../components/Cluster/ClusterStandfirst.astro';
+import ClusterKeyFactsBand from '../../../components/Cluster/ClusterKeyFactsBand.astro';
+import ClusterReadingNav from '../../../components/Cluster/ClusterReadingNav.astro';
+import ClusterAnalysisSection from '../../../components/Cluster/ClusterAnalysisSection.astro';
 import type { Article, ClusterDetail } from '../../../types';
 
 const { slug } = Astro.params;
@@ -148,6 +153,7 @@ const idMatch = slug?.match(/^([0-9a-f]{8}-[0-9a-f]{3,4}|[0-9a-f]{8,12})/);
 const id = idMatch ? idMatch[0] : slug?.split('-')[0];
 
 let cluster: ClusterDetail | null = null;
+let pipeline: { busy?: boolean } | null = null;
 let error = null;
 
 try {
@@ -163,6 +169,7 @@ try {
     } else {
       const payload = await res.json();
       cluster = payload.data;
+      pipeline = payload.pipeline && typeof payload.pipeline === 'object' ? payload.pipeline : null;
     }
     } catch (e) {
     Astro.response.status = 500;
@@ -215,6 +222,7 @@ const citationSources = cluster?.citation_sources || [];
 
 const synthesisUpdatedAt = cluster?.synthesis_updated_at;
 const synthesisFreshness = cluster?.synthesis_freshness || { is_stale: false };
+const pipelineBusy = Boolean(pipeline?.busy);
 
 const perspectives = cluster?.perspectives || [];
 const verificationReport = cluster?.verification_report || null;
@@ -445,6 +453,11 @@ const showExecutiveSummary = shouldShowExecutiveSummary({
 	hasBriefItems: displayHeaderBriefItems.length > 0,
 	hasKeyFacts: Boolean(cluster?.key_facts?.length),
 });
+const showKeyFactsBand = shouldShowKeyFactsBand({
+	hasGeneratedNarrative,
+	hasKeyFacts: Boolean(cluster?.key_facts?.length),
+	showExecutiveSummary,
+});
 const showHeroVisual = shouldShowHeroVisual(clusterLayoutInput);
 const showPerspectivesBlock = shouldShowPerspectives(clusterLayoutInput);
 const showCredibilitySection = shouldShowCredibilitySection(clusterLayoutInput);
@@ -630,6 +643,7 @@ const articleSchema = cluster ? {
 						<h1 class:list={["headline is-visible font-serif text-5xl md:text-7xl font-black leading-[1.2] tracking-tight text-foreground mb-6", { "headline-cyrillic": headlineIsCyrillic }]}>
 							{displayHeadline}
 						</h1>
+						<ClusterStandfirst standfirst={cluster.synthetic_standfirst} lang={lang as 'sr' | 'mk'} />
 						<div class="header-meta cluster-meta-row flex flex-wrap items-center gap-x-8 gap-y-3 text-muted-foreground">
 							<div class="flex items-center gap-[var(--grid-gap)]">
 								<div class="w-3 h-3 rounded-full bg-nyt-accent"></div>
@@ -637,6 +651,15 @@ const articleSchema = cluster ? {
 							</div>
                             <span class="border-l border-border pl-8">{uniqueSourcesCount} {newsroomCountLabel(uniqueSourcesCount)}</span>
                             <span class:list={["hidden md:inline border-l border-border pl-8 cluster-status-text", `tone-${clusterStatus.tone}`]}>{storyKindLabel}</span>
+                            <StoryFreshnessBadge
+                                class="hidden md:inline-flex border-l border-border pl-8"
+                                lang={lang}
+                                synthesisUpdatedAt={synthesisUpdatedAt}
+                                latestArticleAt={synthesisFreshness.latest_article_at || latestArticle?.ingested_at || latestArticle?.created_at}
+                                isStale={Boolean(synthesisFreshness.is_stale)}
+                                newArticleCount={Number(synthesisFreshness.new_article_count || 0)}
+                                pipelineBusy={pipelineBusy}
+                            />
                         </div>
 					</div>
 					<div class="header-actions shrink-0 flex gap-[var(--grid-gap)] pb-1">
@@ -658,16 +681,17 @@ const articleSchema = cluster ? {
 						))}
 					</div>
 				</div>
-				<div class="reader-command-bar" aria-label={lang === 'sr' ? 'Kontrole čitanja' : 'Контроли за читање'}>
+				<div class="reader-command-bar cluster-reading-bar" aria-label={lang === 'sr' ? 'Kontrole čitanja' : 'Контроли за читање'}>
 					<div class="reader-source-strip">
 						<span>{lang === 'sr' ? 'Izvori' : 'Извори'}</span>
                         <strong>{uniqueSourcesCount} {newsroomOverviewLabel(uniqueSourcesCount)}</strong>
 					</div>
-					<div class="reader-actions">
-						<a href="#cluster-synthesis"><BookOpen size={14} /> {primaryNarrativeLabel}</a>
-						<a href="#cluster-sources"><ListChecks size={14} /> {lang === 'sr' ? 'Izvori' : 'Извори'}</a>
-						<ReadingModeToggle lang={lang} client:idle />
-					</div>
+					<ClusterReadingNav
+						lang={lang as 'sr' | 'mk'}
+						primaryNarrativeLabel={primaryNarrativeLabel}
+						showKeyFacts={showKeyFactsBand}
+						showAnalysis={showCredibilitySection}
+					/>
 				</div>
 			</header>
 
@@ -737,6 +761,10 @@ const articleSchema = cluster ? {
 						{/* 3. MAIN COLUMN */}
 						<div class="editorial-main-col">
 
+							{showKeyFactsBand && cluster.key_facts && (
+								<ClusterKeyFactsBand facts={cluster.key_facts} lang={lang as 'sr' | 'mk'} />
+							)}
+
 							<ClusterSynthesisSection
 								lang={lang}
 								clusterId={id || ''}
@@ -758,20 +786,6 @@ const articleSchema = cluster ? {
 							)}
 
 							<TinyAdzInlinedAd class="cluster-inlined-ad mb-12" />
-
-						{/* ANALYSIS SECTION: Fact Check & Comparison */}
-						{showCredibilitySection && (
-							<CredibilityAnalysis
-								hasFactcheck={hasFactcheck}
-								verificationReport={verificationReport}
-								perspectives={perspectives}
-								hasCitationSources={hasCitationSources}
-								showPerspectives={showPerspectivesBlock}
-								consensusNote={consensusNote}
-                                pluralismScore={cluster?.pluralism_score}
-                                toneAnalysis={sentimentData?.tone_analysis}
-							/>
-						)}
 
 						{/* ALL SOURCES LIST */}
 						<section class="editorial-section sources-section mb-24 border-t border-border/40 pt-12" id="cluster-sources">
@@ -826,6 +840,21 @@ const articleSchema = cluster ? {
 								))}
 							</div>
 						</section>
+
+						{showCredibilitySection && (
+							<ClusterAnalysisSection lang={lang as 'sr' | 'mk'}>
+								<CredibilityAnalysis
+									hasFactcheck={hasFactcheck}
+									verificationReport={verificationReport}
+									perspectives={perspectives}
+									hasCitationSources={hasCitationSources}
+									showPerspectives={showPerspectivesBlock}
+									consensusNote={consensusNote}
+									pluralismScore={cluster?.pluralism_score}
+									toneAnalysis={sentimentData?.tone_analysis}
+								/>
+							</ClusterAnalysisSection>
+						)}
 
 						{/* RELATED SECTION */}
 						{filteredRelated.length > 0 && (
@@ -1204,6 +1233,16 @@ const articleSchema = cluster ? {
         border-radius: 0;
         overflow: visible;
         box-shadow: none;
+    }
+
+    .cluster-reading-bar {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        padding: 0.65rem 0 0.35rem;
+        background: color-mix(in srgb, var(--background) 94%, transparent);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
     }
 
     .reader-source-strip,

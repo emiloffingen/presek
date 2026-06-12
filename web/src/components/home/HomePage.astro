@@ -15,6 +15,7 @@ import DevelopmentsSection from './DevelopmentsSection.astro';
 import FilterHeader from './FilterHeader.astro';
 import HomeRail from './HomeRail.astro';
 import EmptyState from './EmptyState.astro';
+import PipelineStatusNotice from '../PipelineStatusNotice.astro';
 import HomeLiveStrip from './HomeLiveStrip.astro';
 import HomeBriefingTeaser from './HomeBriefingTeaser.astro';
 import TrendingPreviewRail from './TrendingPreviewRail.astro';
@@ -81,6 +82,7 @@ let wireArticles = [];
 let excludedClusterIds: string[] = [];
 let synthesisPicks: NewsCluster[] = [];
 let homepageLeadDisplay: { title?: string; summary?: string; signal?: string } | null = null;
+let pipeline: { busy?: boolean; intel_heavy_depth?: number } | null = null;
 
 async function loadHomepageFallback() {
     const fallbackNewsUrl = new URL(`${API_URL}/news`);
@@ -169,6 +171,7 @@ if (isHomepage) {
         stats = home?.stats || null;
         briefing = home?.briefing || null;
         homepageLeadDisplay = home?.lead_display && typeof home.lead_display === 'object' ? home.lead_display : null;
+        pipeline = home?.pipeline && typeof home.pipeline === 'object' ? home.pipeline : null;
         excludedClusterIds = Array.isArray(home?.excluded_cluster_ids) ? home.excluded_cluster_ids : [];
         synthesisPicks = Array.isArray(home?.synthesis_picks) ? home.synthesis_picks : [];
         feedClusters = [...developingClusters, ...wireClusters];
@@ -178,7 +181,6 @@ if (isHomepage) {
         const recovered = await loadHomepageFallback();
         if (!recovered) {
             error = t('home.error');
-            Astro.response.status = 500;
         }
     }
 } else {
@@ -206,7 +208,6 @@ if (isHomepage) {
     } else {
         console.error('News fetch error:', newsResult.reason);
         error = t('home.error');
-        Astro.response.status = 500;
     }
 
     trending = trendResult.status === 'fulfilled' && Array.isArray(trendResult.value)
@@ -217,6 +218,10 @@ if (isHomepage) {
         : [];
     stats = statsResult.status === 'fulfilled' ? statsResult.value : null;
     briefing = briefingResult.status === 'fulfilled' ? briefingResult.value : null;
+}
+
+if (error && !clusters.length && !wireArticles.length && !trending.length && !globalClusters.length) {
+    Astro.response.status = 500;
 }
 
 const focusEntities = topEntities
@@ -244,11 +249,19 @@ function getLeadSummary(cluster: NewsCluster) {
 	return getStoryPreviewText(cluster, article, lang);
 }
 
+function toLeadWhySentence(text: string, maxLen = 220): string {
+	const trimmed = String(text || '').trim();
+	if (!trimmed) return '';
+	const sentenceMatch = trimmed.match(/^[^.!?…]+[.!?…]?/u);
+	const sentence = (sentenceMatch?.[0] || trimmed).trim();
+	return sentence.length > maxLen ? `${sentence.slice(0, maxLen - 1).trim()}…` : sentence;
+}
+
 const leadSignal = leadCluster ? getLeadSignal(leadCluster) : '';
 const homepageLeadSummary = extractCleanSummaryText(homepageLeadDisplay?.summary || '');
 const leadSummary = isHomepage && homepageLeadSummary && !isSyntheticStandfirstBoilerplate(homepageLeadSummary)
-    ? homepageLeadSummary
-    : (leadCluster ? getLeadSummary(leadCluster) : '');
+    ? toLeadWhySentence(homepageLeadSummary)
+    : (leadCluster ? toLeadWhySentence(getLeadSummary(leadCluster)) : '');
 const leadTitle = highlightScores(isHomepage
     ? String(homepageLeadDisplay?.title || '')
     : (leadCluster?.articles?.[0] ? cleanAndDecode(leadCluster.articles[0].title) : ''));
@@ -261,6 +274,16 @@ const finalLeadSignal = (effectiveLeadSignal === 'razvoj sto vredi da se sledi' 
 const leadTitleIsCyrillic = isMostlyCyrillic(leadTitle);
 const leadSummaryIsCyrillic = isMostlyCyrillic(leadSummary);
 const activeFilterLabel = subcategory || entity || category || topic || q || null;
+const pipelineBusy = Boolean(pipeline?.busy);
+const hasPartialFeedContent = Boolean(
+    leadCluster ||
+    supportingClusters.length > 0 ||
+    wireArticles.length > 0 ||
+    trending.length > 0 ||
+    forYouClusters.length > 0 ||
+    globalClusters.length > 0
+);
+const showEmptyState = !hasPartialFeedContent;
 
 const homepageSections = buildHomepageSections({
     clusters,
@@ -536,13 +559,18 @@ if (forYouClusters.length > 0) {
                     <div class="home-error-panel" role="alert">
                         <p class="home-error-kicker">{lang === 'sr' ? 'Greška' : 'Грешка'}</p>
                         <p class="home-error-copy">{error}</p>
+                        {hasPartialFeedContent && (
+                            <p class="home-error-note">{t('home.partial_error_note')}</p>
+                        )}
                     </div>
                 )}
 
+                {isHomepage && (
+                    <PipelineStatusNotice lang={lang as 'sr' | 'mk'} pipeline={pipeline} />
+                )}
 
-
-                {!error && clusters.length === 0 && (
-                    <EmptyState trending={trending} />
+                {showEmptyState && (
+                    <EmptyState trending={trending} errorMessage={error} />
                 )}
 
 				{leadCluster && (
@@ -562,6 +590,7 @@ if (forYouClusters.length > 0) {
                             lang={lang}
                             compact={isHomepage}
                             showHeroVisual={showLeadHeroVisual}
+                            pipelineBusy={pipelineBusy}
 						/>
                         {leadStatus && leadEvidenceItems.length > 0 && (
                             <LeadEvidenceChips
@@ -778,6 +807,7 @@ if (forYouClusters.length > 0) {
                 <div class="home-mobile-order-feed">
                 {forYouClusters.length > 0 && (
 					<div class="section-wrapper for-you-wrapper homepage-analiza-only" data-for-you-band>
+                        <p class="for-you-boundary-label">{t('home.for_you_boundary')}</p>
 					    <ForYouIsland client:idle clusters={forYouClusters} excludeClusterIds={excludedClusterIds} lang={lang} />
                     </div>
 				)}

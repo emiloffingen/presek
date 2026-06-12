@@ -331,6 +331,8 @@ async def get_archive(
             set_cache(cache_key, res, ttl=300)  # 5 mins for today
 
         return res
+    except HTTPException:
+        raise
     except ValueError:
         raise HTTPException(status_code=400, detail="Nevalidan format datuma. Koristite YYYY-MM-DD")
     except Exception as e:

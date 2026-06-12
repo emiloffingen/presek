@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from core.config import API_MAX_PAGE, API_MAX_Q_LEN, BREAKING_SCORE_THRESHOLD
 from core.database import db_manager as db
 from core.language import is_cyrillic_south_slavic, transliterate_cyr_to_lat, transliterate_lat_to_cyr
+from core.queue_status import reader_pipeline_status
 from nlp import filter_cluster_tags
 from utils import (
     _coerce_datetime,
@@ -704,7 +705,8 @@ async def fetch_news_data(
             await db.async_execute(
                 """
             SELECT cluster_id, synthetic_headline, synthetic_standfirst, key_facts,
-                   analyst_entities, pulse_score, pluralism_score, narrative_diversity
+                   analyst_entities, pulse_score, pluralism_score, narrative_diversity,
+                   created_at
             FROM cluster_summaries
             WHERE cluster_id = ANY(%s) AND lang = %s
             """,
@@ -726,6 +728,7 @@ async def fetch_news_data(
             editorial = _compute_editorial_signals(arts, s, homepage_score)
             meta = meta_map.get(cid, {})
             summary = summary_map.get(cid, {})
+            synthesis_freshness = assess_cluster_synthesis_freshness(arts, summary.get("created_at"))
             return {
                 "cluster_id": cid,
                 "articles": [_public_article_payload(article, lang=lang) for article in arts],
@@ -738,6 +741,8 @@ async def fetch_news_data(
                 "pulse_score": summary.get("pulse_score"),
                 "pluralism_score": summary.get("pluralism_score"),
                 "narrative_diversity": _parse_maybe_json(summary.get("narrative_diversity")),
+                "synthesis_updated_at": synthesis_freshness.get("synthesis_updated_at"),
+                "synthesis_freshness": synthesis_freshness,
                 "reading_time": main.get("reading_time", 1),
                 "score": round(s, 3),
                 "homepage_score": round(homepage_score, 3),
@@ -1307,6 +1312,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
 
         response = {
             "status": "success",
+            "pipeline": reader_pipeline_status(),
             "data": {
                 "cluster_id": cluster_id,
                 "articles": public_articles,

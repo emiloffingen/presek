@@ -75,6 +75,13 @@ export interface NewsCluster {
   display_name?: string;
   tags?: string[];
   topics?: string[];
+  synthesis_updated_at?: string | null;
+  synthesis_freshness?: {
+    is_stale?: boolean;
+    new_article_count?: number;
+    latest_article_at?: string | null;
+    synthesis_updated_at?: string | null;
+  };
 }
 
 export interface ClusterDetail extends NewsCluster {

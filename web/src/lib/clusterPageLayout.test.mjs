@@ -8,6 +8,7 @@ import {
   shouldShowCredibilitySection,
   shouldShowExecutiveSummary,
   shouldShowHeroVisual,
+  shouldShowKeyFactsBand,
   shouldShowPerspectives,
 } from './clusterPageLayout.ts';
 
@@ -85,4 +86,31 @@ test('citation sources resolve from API payload', () => {
 test('consensus note is localized', () => {
   assert.match(getConsensusNote('mk'), /Изворите/);
   assert.match(getConsensusNote('sr'), /Izvori/);
+});
+
+test('key facts band shows only with fresh synthesis outside executive summary', () => {
+  assert.equal(
+    shouldShowKeyFactsBand({
+      hasGeneratedNarrative: true,
+      hasKeyFacts: true,
+      showExecutiveSummary: false,
+    }),
+    true,
+  );
+  assert.equal(
+    shouldShowKeyFactsBand({
+      hasGeneratedNarrative: true,
+      hasKeyFacts: true,
+      showExecutiveSummary: true,
+    }),
+    false,
+  );
+  assert.equal(
+    shouldShowKeyFactsBand({
+      hasGeneratedNarrative: false,
+      hasKeyFacts: true,
+      showExecutiveSummary: true,
+    }),
+    false,
+  );
 });

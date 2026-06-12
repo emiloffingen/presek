@@ -43,6 +43,32 @@ test('buildHomepageSections gives developing stories priority over analysis buck
     sections.developmentsFeatured.map((item) => item.cluster_id),
     ['developing-1', 'developing-2', 'developing-3', 'developing-4'],
   );
+  assert.equal(sections.developmentsCompact.length, 0);
+});
+
+test('buildHomepageSections caps homepage developments to four featured and two compact', () => {
+  const clusters = [
+    cluster('lead', 3),
+    cluster('support-1', 2),
+    cluster('support-2', 2),
+    cluster('support-3', 2),
+    ...Array.from({ length: 10 }, (_, index) => cluster(`developing-${index + 1}`, 3)),
+  ];
+
+  const sections = buildHomepageSections({
+    clusters,
+    leadCluster: clusters[0],
+    supportingClusters: clusters.slice(1, 4),
+    forYouClusters: [],
+    feedClusters: clusters.slice(4),
+    wireClusters: [],
+    wireArticles: [],
+    excludedClusterIds: [],
+    isHomepage: true,
+  });
+
+  assert.equal(sections.developmentsFeatured.length, 4);
+  assert.equal(sections.developmentsCompact.length, 2);
 });
 
 test('buildHomepageSections keeps later analysis sections from being starved by compact developments', () => {
@@ -75,11 +101,11 @@ test('buildHomepageSections keeps later analysis sections from being starved by 
     isHomepage: true,
   });
 
-  assert.equal(sections.developmentsFeatured.length, 6);
+  assert.equal(sections.developmentsFeatured.length, 4);
   assert.deepEqual(sections.consensusClusters.map((item) => item.cluster_id), ['consensus-after-featured']);
   assert.deepEqual(sections.perspectivesClusters.map((item) => item.cluster_id), ['perspective-after-featured']);
   assert.deepEqual(sections.radarClusters.map((item) => item.cluster_id), ['radar-after-featured']);
-  assert.equal(sections.developmentsCompact.length, 0);
+  assert.equal(sections.developmentsCompact.length, 2);
 });
 
 test('buildHomepageSections requires higher pluralism for perspectives band', () => {

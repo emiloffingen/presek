@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from utils import cached_response, set_cache
 
 from core.audio_service import AudioService
+from core.queue_status import reader_pipeline_status
 from nlp import normalize_focus_entity_surface
 from .common import cleanAndDecode
 from .intelligence import get_top_entities
@@ -593,7 +594,7 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
         clusters = [c for c in clusters if c["cluster_id"] not in synthesis_pick_ids]
 
         lead = clusters[0] if clusters else None
-        supporting = clusters[1:5]
+        supporting = clusters[1:4]
         priority_audio_ids = set()
         priority_audio_budget = _AUDIO_PRIORITY_GENERATION_LIMIT
 
@@ -726,6 +727,7 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
 
         response = {
             "status": "success",
+            "pipeline": reader_pipeline_status(),
             "lead": _compact_home_cluster(_decorate_cluster_display(lead), max_articles=4),
             "lead_display": _build_lead_display(lead, lang=lang),
             "supporting": _compact_home_clusters(_decorate_clusters_display(supporting), max_articles=4),

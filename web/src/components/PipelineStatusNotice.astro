@@ -1,0 +1,27 @@
+---
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
+import { localePath } from '../lib/localePaths';
+
+interface Props {
+	lang?: 'sr' | 'mk';
+	pipeline?: {
+		busy?: boolean;
+		intel_heavy_depth?: number;
+	} | null;
+	class?: string;
+}
+
+const hostHeader = Astro.request?.headers.get('host');
+const lang = Astro.props.lang || getLangFromUrl(Astro.url, hostHeader);
+const t = useTranslations(lang);
+const l = (path: string) => localePath(path, lang, hostHeader);
+const { pipeline = null, class: className = '' } = Astro.props;
+const showNotice = Boolean(pipeline?.busy);
+---
+
+{showNotice && (
+	<aside class:list={['pipeline-status-notice', className]} role="status" aria-live="polite">
+		<p class="pipeline-status-copy">{t('pipeline.busy_notice')}</p>
+		<a href={l('/status')} class="pipeline-status-link">{t('pipeline.status_link')}</a>
+	</aside>
+)}

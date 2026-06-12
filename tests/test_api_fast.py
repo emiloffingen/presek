@@ -721,7 +721,6 @@ def test_home_route_composes_named_slots(mock_all):
         "support-1",
         "support-2",
         "support-3",
-        "support-4",
     ]
     assert [item["cluster_id"] for item in data["for_you_pool"]] == [
         "foryou-1",
@@ -745,7 +744,7 @@ def test_home_route_composes_named_slots(mock_all):
         "wire-2",
         "wire-3",
     ]
-    assert [item["cluster_id"] for item in data["live_now"]] == ["wire-2", "live-1", "foryou-1", "foryou-2"]
+    assert [item["cluster_id"] for item in data["live_now"]] == ["wire-2", "live-1", "support-4", "foryou-1"]
     assert [item["title"] for item in data["latest_wire"][:3]] == [
         "Teska soobracajka na ekspresniot pat kaj Rankovce",
         "Sobranieto otvori rasprava za budzetot",

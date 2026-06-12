@@ -52,6 +52,16 @@ export function shouldShowCredibilitySection(input: ClusterLayoutInput): boolean
   return input.hasFactcheck || shouldShowPerspectives(input) || shouldShowConsensusNote(input);
 }
 
+export function shouldShowKeyFactsBand(input: {
+  hasGeneratedNarrative: boolean;
+  hasKeyFacts: boolean;
+  showExecutiveSummary: boolean;
+}): boolean {
+  if (!input.hasKeyFacts || !input.hasGeneratedNarrative) return false;
+  if (input.showExecutiveSummary) return false;
+  return true;
+}
+
 export function getConsensusNote(lang: SiteLang): string {
   return lang === 'sr'
     ? 'Izvori prenose istu ili vrlo sličnu informaciju. Razlike su u dubini, naslovu i izboru detalja — ne u samoj činjenici događaja.'

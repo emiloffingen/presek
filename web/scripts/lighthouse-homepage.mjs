@@ -21,7 +21,19 @@ const THRESHOLDS = {
 const args = process.argv.slice(2);
 const usePreview = args.includes('--preview');
 const enforce = args.includes('--enforce');
-const filteredArgs = args.filter((a) => a !== '--preview' && a !== '--enforce');
+const pathFlagIndex = args.indexOf('--path');
+const labelFlagIndex = args.indexOf('--label');
+const previewPath = pathFlagIndex >= 0 ? args[pathFlagIndex + 1] || '/' : '/';
+const reportLabel = labelFlagIndex >= 0 ? args[labelFlagIndex + 1] || '' : '';
+const filteredArgs = args.filter(
+  (a, index) =>
+    a !== '--preview'
+    && a !== '--enforce'
+    && a !== '--path'
+    && a !== '--label'
+    && (pathFlagIndex < 0 || index !== pathFlagIndex + 1)
+    && (labelFlagIndex < 0 || index !== labelFlagIndex + 1),
+);
 
 function run(command, commandArgs, options = {}) {
   return new Promise((resolve, reject) => {
@@ -134,6 +146,11 @@ function summarize(reportPath) {
   return 0;
 }
 
+function reportFilename(label = '') {
+  if (!label) return 'lighthouse-homepage.json';
+  return `lighthouse-homepage-${label}.json`;
+}
+
 async function main() {
   let reportPath = filteredArgs[0];
   let previewProc = null;
@@ -144,11 +161,16 @@ async function main() {
       previewProc = await startPreview();
       const tmp = mkdtempSync(join(tmpdir(), 'presek-lh-'));
       reportPath = join(tmp, 'homepage.json');
-      const result = await runLighthouse('http://127.0.0.1:4321/', reportPath);
+      const previewUrl = new URL(previewPath, 'http://127.0.0.1:4321').toString();
+      console.log(`Running Lighthouse against preview ${previewUrl}`);
+      const result = await runLighthouse(previewUrl, reportPath);
       if (result === 'skipped') {
         process.exitCode = enforce ? 1 : 0;
         return;
       }
+      const savedReport = join(process.cwd(), reportFilename(reportLabel));
+      writeFileSync(savedReport, readFileSync(reportPath));
+      console.log(`Saved ${savedReport}`);
     } else if (!reportPath || reportPath.startsWith('http')) {
       const url = reportPath || 'https://presek.live/';
       const tmp = mkdtempSync(join(tmpdir(), 'presek-lh-'));
@@ -159,8 +181,9 @@ async function main() {
         process.exitCode = enforce ? 1 : 0;
         return;
       }
-      writeFileSync(join(process.cwd(), 'lighthouse-homepage.json'), readFileSync(reportPath));
-      console.log('Saved lighthouse-homepage.json');
+      const savedReport = join(process.cwd(), reportFilename(reportLabel));
+      writeFileSync(savedReport, readFileSync(reportPath));
+      console.log(`Saved ${savedReport}`);
     }
 
     if (!reportPath?.endsWith('.json')) {

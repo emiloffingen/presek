@@ -1,0 +1,42 @@
+---
+import { BookOpen, ListChecks, Layers, ShieldCheck } from 'lucide-react';
+import ReadingModeToggle from './ReadingModeToggle.tsx';
+
+interface Props {
+  lang: 'sr' | 'mk';
+  primaryNarrativeLabel: string;
+  showKeyFacts: boolean;
+  showAnalysis: boolean;
+}
+
+const { lang, primaryNarrativeLabel, showKeyFacts, showAnalysis } = Astro.props;
+
+const keyFactsLabel = lang === 'sr' ? 'Ključno' : 'Клучно';
+const sourcesLabel = lang === 'sr' ? 'Izvori' : 'Извори';
+const analysisLabel = lang === 'sr' ? 'Analiza' : 'Анализа';
+---
+
+<nav class="reader-actions cluster-reading-nav" aria-label={lang === 'sr' ? 'Navigacija kroz priču' : 'Навигација низ приказната'}>
+  <a href="#cluster-synthesis"><BookOpen size={14} /> {primaryNarrativeLabel}</a>
+  {showKeyFacts && (
+    <a href="#cluster-key-facts"><Layers size={14} /> {keyFactsLabel}</a>
+  )}
+  <a href="#cluster-sources"><ListChecks size={14} /> {sourcesLabel}</a>
+  {showAnalysis && (
+    <a href="#cluster-analysis"><ShieldCheck size={14} /> {analysisLabel}</a>
+  )}
+  <ReadingModeToggle lang={lang} client:idle />
+</nav>
+
+<style>
+  .cluster-reading-nav {
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 767px) {
+    .cluster-reading-nav a {
+      flex: 1 1 calc(50% - 0.25rem);
+      min-width: 0;
+    }
+  }
+</style>

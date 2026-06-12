@@ -7,6 +7,9 @@ HEALTH_URL="${HEALTH_URL:-http://127.0.0.1:5001/api/health}"
 ASTRO_URL="${ASTRO_URL:-http://127.0.0.1:3000}"
 FASTAPI_URL="${FASTAPI_URL:-http://127.0.0.1:5001/api/health}"
 HOME_API_URL="${HOME_API_URL:-http://127.0.0.1:5001/api/home}"
+MK_HOME_API_URL="${MK_HOME_API_URL:-http://127.0.0.1:5001/api/home?lang=mk}"
+SR_HOME_API_URL="${SR_HOME_API_URL:-http://127.0.0.1:5001/api/home?lang=sr}"
+CLUSTER_API_BASE="${CLUSTER_API_BASE:-http://127.0.0.1:5001/api/cluster}"
 ADMIN_URL="${ADMIN_URL:-http://127.0.0.1:3000/admin}"
 ADMIN_API_URL="${ADMIN_API_URL:-http://127.0.0.1:5001/api/admin/dashboard}"
 ENABLE_FASTAPI_CHECK="${ENABLE_FASTAPI_CHECK:-1}"
@@ -94,6 +97,51 @@ wait_header_contains() {
   done
 
   echo -e "${RED}x${RESET}  $name header check failed for ${header_name}: ${expected_fragment}" >&2
+  return 1
+}
+
+wait_cluster_api_from_home() {
+  local name="$1"
+  local home_url="$2"
+  local lang="$3"
+  local cluster_id=""
+  local cluster_url=""
+  local code=""
+  local body=""
+
+  info "Checking $name via $home_url"
+  for _ in $(seq 1 "$MAX_ATTEMPTS"); do
+    _tmp="$(mktemp)"
+    code="$(curl -sS -o "$_tmp" -w "%{http_code}" "$home_url" 2>/dev/null || true)"
+    body="$(cat "$_tmp" 2>/dev/null || true)"
+    rm -f "$_tmp" 2>/dev/null || true
+
+    if [ "$code" = "200" ]; then
+      cluster_id="$(printf '%s' "$body" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+lead = data.get('lead') or {}
+cluster_id = str(lead.get('cluster_id') or '').strip()
+if not cluster_id:
+    sys.exit(1)
+print(cluster_id)
+")"
+      if [ -n "$cluster_id" ]; then
+        if [[ "$home_url" == *"/home"* ]]; then
+          cluster_url="${home_url%%/home*}/cluster/${cluster_id}?lang=${lang}"
+        else
+          cluster_url="${CLUSTER_API_BASE}/${cluster_id}?lang=${lang}"
+        fi
+        if wait_http_ok "$name" "$cluster_url" 200 '"status":"success"'; then
+          return 0
+        fi
+        return 1
+      fi
+    fi
+    sleep "$SLEEP_SECONDS"
+  done
+
+  echo -e "${RED}x${RESET}  $name did not resolve a lead cluster (last HTTP code: ${code:-none})" >&2
   return 1
 }
 
@@ -196,6 +244,8 @@ main() {
   if [ "$ENABLE_FASTAPI_CHECK" = "1" ]; then
     wait_health_ready "FastAPI health" "$FASTAPI_URL" 1 1
     wait_http_ok "Homepage API" "$HOME_API_URL" 200 "\"status\":\"success\""
+    wait_cluster_api_from_home "SR cluster API" "$SR_HOME_API_URL" "sr"
+    wait_cluster_api_from_home "MK cluster API" "$MK_HOME_API_URL" "mk"
   fi
 
   if [ "$ENABLE_ADMIN_CHECK" = "1" ]; then
@@ -239,6 +289,7 @@ main() {
     wait_http_ok "MK briefing" "$mk_base/briefing" 200
     wait_http_ok "MK legacy /mk redirect" "$mk_base/mk/briefing" 301
     wait_health_ready "MK API health" "$mk_base/api/health" 1 1
+    wait_cluster_api_from_home "MK public cluster API" "${mk_base}/api/home?lang=mk" "mk"
     if [ "$ENABLE_PUBLIC_SECURITY_HEADER_CHECK" = "1" ]; then
       wait_header_contains "MK site HSTS" "$MK_PUBLIC_URL" "Strict-Transport-Security" "max-age=63072000"
     fi

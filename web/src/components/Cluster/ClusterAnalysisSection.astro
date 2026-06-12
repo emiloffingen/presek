@@ -1,0 +1,81 @@
+---
+import { ShieldCheck } from 'lucide-react';
+
+interface Props {
+  lang: 'sr' | 'mk';
+}
+
+const { lang } = Astro.props;
+const label = lang === 'sr' ? 'Analiza i provera' : 'Анализа и проверка';
+---
+
+<section id="cluster-analysis" class="cluster-analysis-section editorial-section mb-24 border-t border-border/40 pt-12">
+  <details class="cluster-analysis-details">
+    <summary class="cluster-analysis-summary">
+      <ShieldCheck size={18} />
+      <span>{label}</span>
+    </summary>
+    <div class="cluster-analysis-content">
+      <slot />
+    </div>
+  </details>
+</section>
+
+<style>
+  .cluster-analysis-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    list-style: none;
+    cursor: pointer;
+    padding: 0.85rem 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border);
+    font-family: var(--font-ui);
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--foreground);
+    background: var(--secondary);
+  }
+
+  .cluster-analysis-summary::-webkit-details-marker {
+    display: none;
+  }
+
+  @media (min-width: 768px) {
+    .cluster-analysis-summary {
+      display: none;
+    }
+
+    .cluster-analysis-details > .cluster-analysis-content {
+      display: block;
+    }
+  }
+</style>
+
+<script is:inline>
+  function syncClusterAnalysisOpenState() {
+    document.querySelectorAll('.cluster-analysis-details').forEach((details) => {
+      if (!(details instanceof HTMLDetailsElement)) return;
+      if (window.matchMedia('(min-width: 768px)').matches) {
+        details.open = true;
+      } else if (details.dataset.userToggled !== 'true') {
+        details.open = false;
+      }
+    });
+  }
+
+  document.querySelectorAll('.cluster-analysis-summary').forEach((summary) => {
+    summary.addEventListener('click', () => {
+      const details = summary.closest('.cluster-analysis-details');
+      if (details instanceof HTMLDetailsElement) {
+        details.dataset.userToggled = 'true';
+      }
+    });
+  });
+
+  syncClusterAnalysisOpenState();
+  window.addEventListener('resize', syncClusterAnalysisOpenState);
+</script>

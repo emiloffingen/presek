@@ -113,7 +113,9 @@ export function buildHomepageSections(input: HomepageSectionsInput) {
     const continuingClusters = feedClusters.filter(
         (cluster) => (cluster?.articles?.length || 0) >= 2 && !usedIds.has(cluster.cluster_id)
     );
-    const developmentsFeatured = continuingClusters.slice(0, 6);
+    const developmentsFeaturedLimit = input.isHomepage ? 4 : 6;
+    const developmentsCompactLimit = input.isHomepage ? 2 : 12;
+    const developmentsFeatured = continuingClusters.slice(0, developmentsFeaturedLimit);
     developmentsFeatured.forEach((cluster) => usedIds.add(cluster.cluster_id));
 
     const consensusClusters = input.clusters
@@ -132,7 +134,9 @@ export function buildHomepageSections(input: HomepageSectionsInput) {
         .slice(0, 3);
     radarClusters.forEach((cluster) => usedIds.add(cluster.cluster_id));
 
-    const developmentsCompact = continuingClusters.slice(6, 18).filter((cluster) => !usedIds.has(cluster.cluster_id));
+    const developmentsCompact = continuingClusters
+        .slice(developmentsFeaturedLimit, developmentsFeaturedLimit + developmentsCompactLimit)
+        .filter((cluster) => !usedIds.has(cluster.cluster_id));
     developmentsCompact.forEach((cluster) => usedIds.add(cluster.cluster_id));
 
     // Pick Trending clusters AFTER main sections are filled to ensure they get content in small locales

@@ -20,7 +20,9 @@
     "lint": "astro check --minimumSeverity warning",
     "perf:lighthouse": "node scripts/lighthouse-homepage.mjs --preview",
     "perf:lighthouse:ci": "node scripts/lighthouse-homepage.mjs --preview --enforce",
-    "perf:lighthouse:live": "node scripts/lighthouse-homepage.mjs https://presek.live/ --enforce"
+    "perf:lighthouse:ci:mk": "node scripts/lighthouse-homepage.mjs --preview --enforce --path /mk/ --label mk",
+    "perf:lighthouse:live": "node scripts/lighthouse-homepage.mjs https://presek.live/ --enforce",
+    "perf:lighthouse:live:mk": "node scripts/lighthouse-homepage.mjs https://presek.mk/ --enforce --label mk"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.9",

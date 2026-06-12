@@ -16,19 +16,42 @@ let healthData = {
     uptime_seconds: 0,
     database: { ok: false, article_count: 0, size_mb: 0 },
     redis: { ok: false },
-    version: "6.2.0"
+    version: "6.2.0",
+    freshness: { status: "stale", age_minutes: null, label: "" },
+    celery_queue: {
+        celery_depth: 0,
+        total_depth: 0,
+        warn_depth: 150,
+        critical_depth: 500,
+        degraded: false,
+        queues: {},
+    },
+    synthesis_quality: {},
 };
 
 try {
     const res = await fetch(`${API_URL}/health`);
     if (res.ok) {
-        healthData = await res.json();
+        healthData = { ...healthData, ...(await res.json()) };
     }
 } catch (e) {
     console.error("[Status Page] Fetch error:", e);
 }
 
 const isHealthy = isHealthyStatus(healthData.status);
+const isBusy = healthData.status === 'busy';
+const statusLabel = isHealthy
+    ? t('status.status_healthy')
+    : isBusy
+        ? t('status.status_busy')
+        : t('status.degraded');
+const statusClass = isHealthy ? 'ok' : isBusy ? 'busy' : 'degraded';
+const celeryQueue = healthData.celery_queue || {};
+const intelHeavyDepth = Number(celeryQueue?.queues?.['intel-heavy']?.depth ?? celeryQueue?.celery_depth ?? 0);
+const pipelineBusy = Boolean(celeryQueue?.degraded) || intelHeavyDepth >= Number(celeryQueue?.warn_depth || 150);
+const freshness = healthData.freshness || {};
+const synthesisQuality = healthData.synthesis_quality || {};
+const synthesisStatus = String(synthesisQuality?.status || 'unknown');
 
 const formattedUptime = (seconds: number) => {
     if (!seconds) return "0s";
@@ -68,12 +91,12 @@ const formattedUptime = (seconds: number) => {
             <div class="status-overview-card" id="status-card-root">
                 <div class="status-header">
                     <span class="status-title">{t('status.system_status')}</span>
-                    <span class={`status-badge-pill ${healthData.status}`}>
+                    <span class={`status-badge-pill ${statusClass}`}>
                         <span class="relative flex h-2.5 w-2.5 pulse-container">
-                            <span class={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isHealthy ? 'bg-emerald-400' : 'bg-red-400'}`}></span>
-                            <span class={`relative inline-flex rounded-full h-2.5 w-2.5 ${isHealthy ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
+                            <span class={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isHealthy ? 'bg-emerald-400' : isBusy ? 'bg-amber-400' : 'bg-red-400'}`}></span>
+                            <span class={`relative inline-flex rounded-full h-2.5 w-2.5 ${isHealthy ? 'bg-emerald-500' : isBusy ? 'bg-amber-500' : 'bg-red-500'}`}></span>
                         </span>
-                        {isHealthy ? t('footer.active') : t('status.degraded')}
+                        {statusLabel}
                     </span>
                 </div>
                 
@@ -100,6 +123,44 @@ const formattedUptime = (seconds: number) => {
                     </div>
                 </div>
             </div>
+
+            <section class="pipeline-status-card">
+                <div class="pipeline-status-header">
+                    <div>
+                        <h2 class="status-title">{t('status.pipeline_title')}</h2>
+                        <p class="pipeline-status-intro">{t('status.pipeline_intro')}</p>
+                    </div>
+                    <span class={`pipeline-pill ${pipelineBusy ? 'busy' : 'ok'}`}>
+                        {pipelineBusy ? t('status.pipeline_busy') : t('status.pipeline_ok')}
+                    </span>
+                </div>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">{t('status.pipeline_queue')}</div>
+                        <div class="metric-value">{intelHeavyDepth.toLocaleString()}</div>
+                        <div class="metric-sub">{t('status.pipeline_queue_sub')}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">{t('status.pipeline_freshness')}</div>
+                        <div class="metric-value">{freshness.label || freshness.status || '—'}</div>
+                        <div class="metric-sub">
+                            {freshness.age_minutes != null
+                                ? `${freshness.age_minutes} min`
+                                : t('status.uptime_sub')}
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">{t('status.pipeline_synthesis')}</div>
+                        <div class="metric-value">{synthesisStatus.toUpperCase()}</div>
+                        <div class="metric-sub">{t('status.pipeline_synthesis_sub')}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">{t('status.pipeline_total')}</div>
+                        <div class="metric-value">{Number(celeryQueue.total_depth || 0).toLocaleString()}</div>
+                        <div class="metric-sub">{t('status.pipeline_total_sub')}</div>
+                    </div>
+                </div>
+            </section>
         </div>
     </main>
     <Footer />
@@ -168,6 +229,63 @@ const formattedUptime = (seconds: number) => {
         background: color-mix(in srgb, var(--nyt-red) 8%, transparent);
         color: var(--nyt-red);
         border-color: color-mix(in srgb, var(--nyt-red) 20%, transparent);
+    }
+
+    .status-badge-pill.busy {
+        background: color-mix(in srgb, #f59e0b 8%, transparent);
+        color: #b45309;
+        border-color: color-mix(in srgb, #f59e0b 20%, transparent);
+    }
+
+    .pipeline-status-card {
+        margin-top: 1.5rem;
+        border: 1px solid var(--border);
+        background: var(--card);
+        padding: 2rem;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .pipeline-status-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .pipeline-status-intro {
+        margin: 0.65rem 0 0;
+        max-width: 42rem;
+        font-family: var(--font-sans);
+        font-size: 0.78rem;
+        line-height: 1.5;
+        color: var(--muted-foreground);
+    }
+
+    .pipeline-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.35rem 0.75rem;
+        font-family: var(--font-sans);
+        font-size: 0.58rem;
+        font-weight: 950;
+        letter-spacing: 0.08em;
+        border: 1px solid transparent;
+        white-space: nowrap;
+    }
+
+    .pipeline-pill.ok {
+        background: color-mix(in srgb, #10b981 8%, transparent);
+        color: #059669;
+        border-color: color-mix(in srgb, #10b981 20%, transparent);
+    }
+
+    .pipeline-pill.busy {
+        background: color-mix(in srgb, #f59e0b 8%, transparent);
+        color: #b45309;
+        border-color: color-mix(in srgb, #f59e0b 20%, transparent);
     }
 
     /* ── Metrics Grid ───────────────────────────────── */

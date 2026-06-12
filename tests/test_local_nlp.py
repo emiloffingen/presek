@@ -60,6 +60,31 @@ class TestTagFiltering:
 
         assert filter_cluster_tags(tags) == ["Izrael", "Iran"]
 
+    def test_repairs_diacritic_split_fragments(self):
+        assert filter_cluster_tags(["Osumnji enih"]) == ["Osumnjičenih"]
+        assert filter_cluster_tags(["osumnjičenih"]) == ["Osumnjičenih"]
+
+    def test_preserves_multi_word_entities_without_diacritic_split(self):
+        tags = filter_cluster_tags(["Evropska komisija", "Donald Tramp"])
+        assert "Evropska komisija" in tags
+        assert "Donald Tramp" in tags
+
+    def test_keeps_cyrillic_tags_intact(self):
+        tags = filter_cluster_tags(["Осумњичени", "Скопје"])
+        assert "Осумњичени" in tags
+        assert "Скопје" in tags
+
+    def test_extract_cluster_tags_preserves_serbian_diacritics(self):
+        titles = [
+            "Policija uhapsila osumnjičenih u Beogradu nakon racije",
+            "Tri osumnjičena lica privedena u centru grada",
+        ]
+        tags = extract_cluster_tags_locally(titles, top_n=6)
+        assert not any(" " in tag and tag.endswith("enih") for tag in tags)
+        assert any("osumnji" in tag.casefold() for tag in tags) or any(
+            tag.casefold() == "beograd" for tag in tags
+        )
+
     def test_rejects_generic_fragment_entities(self):
         assert not is_valid_focus_entity("Podgotvuva Napadi", None)
         assert not is_valid_focus_entity("Napadi Iranski", None)

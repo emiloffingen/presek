@@ -62,9 +62,11 @@ Imported from `HomePage.astro` / band components — not via `global.css`.
 
 ```bash
 cd web
-npm run perf:lighthouse        # advisory (local preview)
-npm run perf:lighthouse:ci     # enforced budgets (CI)
-npm run perf:lighthouse:live   # production URL
+npm run perf:lighthouse        # advisory (local preview, SR /)
+npm run perf:lighthouse:ci     # enforced budgets (CI, SR /)
+npm run perf:lighthouse:ci:mk  # enforced budgets (CI, MK /mk/)
+npm run perf:lighthouse:live   # production SR URL
+npm run perf:lighthouse:live:mk # production MK URL
 ```
 
 Budgets (see `scripts/lighthouse-homepage.mjs`): performance ≥ 72, LCP ≤ 4200 ms, CLS ≤ 0.12.

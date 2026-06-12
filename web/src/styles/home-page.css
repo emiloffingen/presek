@@ -590,6 +590,84 @@
     color: var(--foreground);
 }
 
+.home-error-note {
+    margin: 0.65rem 0 0;
+    font-family: var(--font-ui);
+    font-size: 0.72rem;
+    line-height: 1.4;
+    color: var(--muted-foreground);
+}
+
+.home-empty-error-note {
+    margin: 0 0 0.75rem;
+    padding: 0.65rem 0.75rem;
+    border-left: 3px solid var(--nyt-red);
+    font-family: var(--font-ui);
+    font-size: 0.72rem;
+    line-height: 1.4;
+    color: var(--muted-foreground);
+    background: color-mix(in srgb, var(--nyt-red) 4%, var(--background));
+}
+
+.lead-summary-block {
+    margin-bottom: 1rem;
+}
+
+.lead-why-kicker {
+    margin: 0 0 0.45rem;
+    font-family: var(--font-ui);
+    font-size: 0.62rem;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--nyt-accent);
+}
+
+.for-you-boundary-label {
+    margin: 0 0 0.85rem;
+    font-family: var(--font-ui);
+    font-size: 0.62rem;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--nyt-accent) 75%, var(--foreground));
+}
+
+.pipeline-status-notice {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem 1rem;
+    margin: 0 0 1.25rem;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid color-mix(in srgb, #f59e0b 24%, var(--border));
+    background: color-mix(in srgb, #f59e0b 6%, var(--background));
+}
+
+.pipeline-status-copy {
+    margin: 0;
+    flex: 1 1 16rem;
+    font-family: var(--font-ui);
+    font-size: 0.74rem;
+    line-height: 1.45;
+    color: var(--foreground);
+}
+
+.pipeline-status-link {
+    font-family: var(--font-ui);
+    font-size: 0.62rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--nyt-accent);
+    text-decoration: none;
+}
+
+.pipeline-status-link:hover {
+    text-decoration: underline;
+}
+
 /* ── Supporting Band & Developments Grids ────────── */
 .supporting-featured-grid,
 .news-feed-grid-featured {
