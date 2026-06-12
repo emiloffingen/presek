@@ -1,6 +1,7 @@
 ---
 import NewsCard from '../NewsCard.astro';
 import HomeFeedFilterIsland from './HomeFeedFilterIsland.tsx';
+import TinyAdzInlinedAd from '../TinyAdzInlinedAd.astro';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import type { UnifiedFeedItem } from '../../lib/unifiedFeed';
 import { countFeedBuckets } from '../../lib/unifiedFeed';
@@ -8,9 +9,10 @@ import { countFeedBuckets } from '../../lib/unifiedFeed';
 interface Props {
     items: UnifiedFeedItem[];
     lang?: string;
+    adInsertAfter?: number;
 }
 
-const { items, lang: propLang } = Astro.props;
+const { items, lang: propLang, adInsertAfter = 0 } = Astro.props;
 const hostHeader = Astro.request?.headers.get('host');
 const lang = propLang || getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
@@ -39,7 +41,14 @@ function getBentoSpan(cluster: UnifiedFeedItem['cluster']) {
         <div class="home-unified-feed-grid">
             {items.map((item, idx) => {
                 const span = item.variant === 'featured' ? getBentoSpan(item.cluster) : '1x1';
+                const showMidFeedAd = adInsertAfter > 0 && idx === adInsertAfter;
                 return (
+                    <>
+                        {showMidFeedAd && (
+                            <div class="home-feed-ad-break">
+                                <TinyAdzInlinedAd class="home-inline-ad home-inline-ad--mid-feed" />
+                            </div>
+                        )}
                     <div
                         class:list={[
                             'home-feed-item',
@@ -61,6 +70,7 @@ function getBentoSpan(cluster: UnifiedFeedItem['cluster']) {
                             <NewsCard cluster={item.cluster} variant="compact" lang={lang} />
                         )}
                     </div>
+                    </>
                 );
             })}
         </div>

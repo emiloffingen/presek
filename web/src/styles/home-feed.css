@@ -644,9 +644,35 @@
   white-space: nowrap;
 }
 
-.lead-synthesis-badge {
-  margin-left: 0.45rem;
-  color: var(--nyt-accent);
+.home-inline-ad-slot {
+  margin: 0.5rem 0 1.25rem;
+}
+
+.home-inline-ad-slot--pregled-top {
+  margin-top: 0.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.home-inline-ad-slot--feed-end {
+  margin-top: 1.5rem;
+}
+
+.home-inline-ad {
+  margin-bottom: 0;
+}
+
+.home-inline-ad--mid-feed {
+  margin-bottom: 0;
+}
+
+.home-feed-ad-break {
+  grid-column: 1 / -1;
+  padding: 0.15rem 0 0.35rem;
+}
+
+:global(.briefing-inline-ad),
+:global(.archive-inline-ad) {
+  max-width: 100%;
 }
 
 @media (min-width: 900px) {

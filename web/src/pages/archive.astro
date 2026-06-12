@@ -13,6 +13,7 @@ import { CalendarDays, ChevronRight, Hash, Building2, Sparkles, Search, Activity
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import { localePath, homePath } from '../lib/localePaths';
 import TinyAdzRailAd from '../components/TinyAdzRailAd.astro';
+import TinyAdzInlinedAd from '../components/TinyAdzInlinedAd.astro';
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
@@ -224,6 +225,8 @@ function formatBriefingItem(item: string) {
                     <a href={`${localePath('/archive', isMK ? 'mk' : 'sr', hostHeader)}?date=${date}`} class="ml-auto ui-label-min text-nyt-accent underline decoration-2 underline-offset-4">{t('archive.clear')}</a>
                 </div>
             ) : null}
+
+            <TinyAdzInlinedAd class="page-inline-ad archive-inline-ad mb-10" />
 
             <div class="archive-feed-list">
                 {error ? (
