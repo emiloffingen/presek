@@ -3,6 +3,7 @@ import SearchIsland from './SearchIsland';
 import ThemeIsland from './ThemeIsland';
 import TextScaleIsland from './TextScaleIsland';
 import HeaderScrollIsland from './HeaderScrollIsland';
+import NavOverflowMenu from './NavOverflowMenu.tsx';
 import ScriptSwitcher from './ScriptSwitcher.astro';
 import { ArrowLeftRight, Sparkles, BarChart3, Radio, ShieldCheck, Compass } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
@@ -253,22 +254,16 @@ function getRelativeTimeStr(dateStr?: string) {
                             </div>
                         );
                     })}
-                    {overflowNavItems.length > 0 && (
-                        <div class="nav-rail-group nav-rail-group--overflow">
-                            <details class="nav-overflow-menu">
-                                <summary>{t('home.nav_more')}</summary>
-                                <div class="nav-overflow-panel">
-                                    {overflowNavItems.map((item: any) => (
-                                        <a href={l(item.href)} class="nav-rail-link">
-                                            <span class="link-label">{item.label.replace('#', '')}</span>
-                                        </a>
-                                    ))}
-                                </div>
-                            </details>
-                        </div>
-                    )}
                 </div>
             </div>
+            {overflowNavItems.length > 0 && (
+                <NavOverflowMenu
+                    items={overflowNavItems}
+                    label={t('home.nav_more')}
+                    lang={lang}
+                    client:idle
+                />
+            )}
             <div class="nav-scroll-cue" aria-hidden="true">
                 <ArrowLeftRight size={14} strokeWidth={2.5} />
                 <span>{t('header.nav_scroll_hint')}</span>

@@ -165,19 +165,22 @@
     .activity-dot { width: 5px; height: 5px; background: var(--nyt-accent); border-radius: 50%; box-shadow: 0 0 8px var(--nyt-accent); }
 
     /* ── Discovery Navigation ────────────────────────── */
-    .discovery-nav-v2 { border-top: 1px solid var(--border); background: transparent; }
-    .nav-rail-wrapper { position: relative; }
+    .discovery-nav-v2 { border-top: 1px solid var(--border); background: transparent; overflow: visible; }
+    .nav-rail-wrapper { position: relative; display: flex; align-items: stretch; gap: 0; overflow: visible; }
     .nav-rail-wrapper.has-nav-scroll .nav-scroll-cue { opacity: 1; transform: translateY(-50%) translateX(0); }
     .nav-rail-wrapper.has-nav-scroll.has-nav-interacted .nav-scroll-cue,
     .nav-rail-wrapper.has-nav-scroll.is-at-end .nav-scroll-cue { opacity: 0; transform: translateY(-50%) translateX(0.35rem); }
     .nav-rail-scroll {
         overflow-x: auto;
+        overflow-y: visible;
         -webkit-overflow-scrolling: touch;
         display: flex;
         align-items: center;
         scroll-snap-type: x proximity;
         scrollbar-width: none;
         -ms-overflow-style: none;
+        flex: 1;
+        min-width: 0;
     }
     .nav-rail-scroll::-webkit-scrollbar { display: none; }
     .nav-rail-content { display: flex; align-items: center; min-width: max-content; padding: 0.35rem 0; }

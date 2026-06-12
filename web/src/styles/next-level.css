@@ -323,13 +323,17 @@ html[data-homepage-mode="vesti"] .homepage-analiza-only {
 }
 
 /* ── Nav overflow ───────────────────────────────────── */
-.nav-rail-group--overflow {
-  margin-left: 0.35rem;
-  padding-left: 0.55rem;
-  border-left: 1px solid var(--border);
+.nav-rail-overflow {
   position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  margin-left: 0.35rem;
+  padding: 0 0.55rem 0 0.65rem;
+  border-left: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
 }
 
+.nav-overflow-trigger,
 .nav-overflow-menu summary {
   list-style: none;
   cursor: pointer;
@@ -340,6 +344,14 @@ html[data-homepage-mode="vesti"] .homepage-analiza-only {
   text-transform: uppercase;
   color: var(--muted-foreground);
   padding: 0.35rem 0.55rem;
+  border: none;
+  background: transparent;
+  white-space: nowrap;
+}
+
+.nav-overflow-trigger:hover,
+.nav-overflow-menu summary:hover {
+  color: var(--foreground);
 }
 
 .nav-overflow-menu summary::-webkit-details-marker {
@@ -351,11 +363,20 @@ html[data-homepage-mode="vesti"] .homepage-analiza-only {
   right: 0;
   top: calc(100% + 0.35rem);
   min-width: 12rem;
+  max-height: min(60vh, 20rem);
+  overflow-y: auto;
   border: 1px solid var(--border);
   background: var(--popover);
   box-shadow: var(--shadow-lg);
   padding: 0.35rem;
-  z-index: 200;
+  z-index: 260;
+}
+
+.nav-overflow-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  white-space: normal;
 }
 
 /* ── Reading modes ──────────────────────────────────── */
