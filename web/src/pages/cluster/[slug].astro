@@ -21,7 +21,6 @@ import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import { buildCanonicalUrl, localePath, homePath } from '../../lib/localePaths';
 import TinyAdzInlinedAd from '../../components/TinyAdzInlinedAd.astro';
 import TinyAdzRailAd from '../../components/TinyAdzRailAd.astro';
-import ClusterSidebarToggle from '../../components/Cluster/ClusterSidebarToggle.tsx';
 import {
 	getConsensusNote,
 	resolveHasCitationSources,
@@ -128,7 +127,7 @@ const highlightFactText = (text: string) => {
 };
 
 import { sanitizeHtml } from '../../lib/sanitize';
-import { Newspaper, Clock, Link2, Zap, Sparkles, ShieldCheck, TriangleAlert, BarChart3, Radio, Search, ExternalLink } from 'lucide-react';
+import { Newspaper, Clock, Link2, Zap, Sparkles, ShieldCheck, TriangleAlert, BarChart3, Search, ExternalLink } from 'lucide-react';
 import EntityContextCard from '../../components/EntityContextCard.tsx';
 import HeroVisual from '../../components/Cluster/HeroVisual.astro';
 import ZenReadingContext from '../../components/Cluster/ZenReadingContext.tsx';
@@ -664,7 +663,7 @@ const articleSchema = cluster ? {
 		) : cluster && (
 			<article class="cluster-article-container" style={cluster.dominant_color ? `--cluster-accent: ${cluster.dominant_color};` : ''}>
 				{/* 1. THE LEDE */}
-			<header class="editorial-header-v2 py-10 md:py-12 mb-16 md:mb-20">
+			<header class="editorial-header-v2 py-6 md:py-8 mb-8 md:mb-12">
 				<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-[var(--grid-gap)]">
 					<div class="header-main-info flex-grow min-w-0">
 						<div class="edition-kicker flex items-center gap-[var(--grid-gap)] mb-6">
@@ -675,7 +674,7 @@ const articleSchema = cluster ? {
 								{new Date(cluster.articles?.[0].created_at || '').toLocaleDateString(lang === 'sr' ? 'sr-RS' : 'mk-MK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
 							</span>
 						</div>
-						<h1 class:list={["headline is-visible font-serif text-5xl md:text-7xl font-black leading-[1.2] tracking-tight text-foreground mb-6", { "headline-cyrillic": headlineIsCyrillic }]}>
+						<h1 class:list={["headline is-visible font-serif text-4xl md:text-6xl font-black leading-[1.2] tracking-tight text-foreground mb-5", { "headline-cyrillic": headlineIsCyrillic }]}>
 							{displayHeadline}
 						</h1>
 						<ClusterStandfirst standfirst={cluster.synthetic_standfirst} lang={lang as 'sr' | 'mk'} />
@@ -701,33 +700,45 @@ const articleSchema = cluster ? {
 						<ShareIsland client:idle title={displayHeadline} url={canonicalUrl} />
 					</div>
 				</div>
-                <div class:list={["cluster-evidence-strip mt-10", `tone-${clusterStatus.tone}`]}>
-                    <div class="cluster-evidence-status">
-                        <span>{clusterStatus.label}</span>
-                        <p>{clusterStatus.description}</p>
-                    </div>
-					<div class="cluster-evidence-grid">
-						{evidenceItems.map((item) => (
-							<div class="cluster-evidence-item">
-								<span>{item.label}</span>
-								<strong>{item.value}</strong>
-								{item.detail && <p>{item.detail}</p>}
+				<details class="cluster-source-details">
+					<summary class="cluster-source-details-summary">
+						<span class="cluster-source-details-title">
+							{lang === 'sr' ? 'Detalji izvora' : 'Детали за извори'}
+						</span>
+						<span class:list={["cluster-source-details-meta", `tone-${clusterStatus.tone}`]}>
+							{uniqueSourcesCount} {newsroomOverviewLabel(uniqueSourcesCount)} · {clusterStatus.label}
+						</span>
+					</summary>
+					<div class="cluster-source-details-body">
+						<div class:list={["cluster-evidence-strip", `tone-${clusterStatus.tone}`]}>
+							<div class="cluster-evidence-status">
+								<span>{clusterStatus.label}</span>
+								<p>{clusterStatus.description}</p>
 							</div>
-						))}
+							<div class="cluster-evidence-grid">
+								{evidenceItems.map((item) => (
+									<div class="cluster-evidence-item">
+										<span>{item.label}</span>
+										<strong>{item.value}</strong>
+										{item.detail && <p>{item.detail}</p>}
+									</div>
+								))}
+							</div>
+						</div>
+						<div class="reader-command-bar cluster-reading-bar" aria-label={lang === 'sr' ? 'Kontrole čitanja' : 'Контроли за читање'}>
+							<div class="reader-source-strip">
+								<span>{lang === 'sr' ? 'Izvori' : 'Извори'}</span>
+								<strong>{uniqueSourcesCount} {newsroomOverviewLabel(uniqueSourcesCount)}</strong>
+							</div>
+							<ClusterReadingNav
+								lang={lang as 'sr' | 'mk'}
+								primaryNarrativeLabel={primaryNarrativeLabel}
+								showKeyFacts={showKeyFactsBand}
+								showAnalysis={showCredibilitySection}
+							/>
+						</div>
 					</div>
-				</div>
-				<div class="reader-command-bar cluster-reading-bar" aria-label={lang === 'sr' ? 'Kontrole čitanja' : 'Контроли за читање'}>
-					<div class="reader-source-strip">
-						<span>{lang === 'sr' ? 'Izvori' : 'Извори'}</span>
-                        <strong>{uniqueSourcesCount} {newsroomOverviewLabel(uniqueSourcesCount)}</strong>
-					</div>
-					<ClusterReadingNav
-						lang={lang as 'sr' | 'mk'}
-						primaryNarrativeLabel={primaryNarrativeLabel}
-						showKeyFacts={showKeyFactsBand}
-						showAnalysis={showCredibilitySection}
-					/>
-				</div>
+				</details>
 			</header>
 
 					{showHeroVisual && (
@@ -947,19 +958,15 @@ const articleSchema = cluster ? {
 								</div>
 							</section>
 						)}
-                        {/* ADVANCED ANALYTICS */}
-                        <section class="editorial-section advanced-tools mb-24">
-                            <details class="advanced-tools-details">
-                                <summary class="advanced-tools-summary">
-                                    <div class="section-eyebrow">
-                                        <Radio size={20} className="text-muted-foreground" />
-                                        <h2 class="section-label">{t('cluster.deep_synthesis')}</h2>
-                                        <span class="section-sub-label">{lang === 'sr' ? 'Dodatni alati za kontekst' : 'Дополнителни алатки за контекст'}</span>
-                                        <div class="section-divider"></div>
-                                    </div>
-                                    <span class="advanced-toggle-label">{lang === 'sr' ? 'Otvori' : 'Отвори'}</span>
+                        <section class="editorial-section cluster-deep-tools mb-16">
+                            <details class="cluster-deep-tools-details">
+                                <summary class="cluster-deep-tools-summary">
+                                    <span class="cluster-deep-tools-title">{t('cluster.deep_synthesis')}</span>
+                                    <span class="cluster-deep-tools-hint">
+                                        {lang === 'sr' ? 'Vremenska linija i istorija klastera' : 'Временска линија и историја на кластерот'}
+                                    </span>
                                 </summary>
-                                <div class="deep-dive-history">
+                                <div class="cluster-deep-tools-body">
                                     <StorylineHistoryIsland client:visible clusterId={id || ''} apiUrl={API_URL} lang={lang} />
                                     <ClusterHistoryIsland client:visible clusterId={id || ''} lang={lang} />
                                 </div>
@@ -970,57 +977,66 @@ const articleSchema = cluster ? {
 
 					{/* 4. SIDEBAR COLUMN */}
 					<aside class="editorial-sidebar-col">
-						<ClusterSidebarToggle lang={lang} client:idle />
-						<div class="sticky-sidebar space-y-12">
-							{allSourcesNames.length >= 2 && (
-								<div class="sidebar-module compare-source-diff-panel sidebar-deferred source-comparison-panel">
-									<h4 class="sidebar-label">{t('cluster.compare_sources')}</h4>
-									<div class="mt-4">
-										<SourceComparisonIsland allSources={allSourcesNames} lang={lang} client:idle />
-									</div>
+						<div class="sticky-sidebar cluster-sidebar-stack">
+							<div class="sidebar-module sidebar-primary source-spectrum-panel">
+								<h4 class="sidebar-label">{t('cluster.source_spectrum')}</h4>
+								<div class="mt-6">
+									<SourceSpectrum articles={cluster.articles.map((a: Article) => ({ source: a.source })) as any} lang={lang} client:visible />
 								</div>
-							)}
-							<div class="sidebar-deferred"><TinyAdzRailAd /></div>
+							</div>
 
-                            {/* NEW: Data Anchors in Sidebar */}
-                            {sentimentData && isFiniteMetric(sentimentData.tone_analysis?.objectivity) && isFiniteMetric(sentimentData.tone_analysis?.sensationalism) && isFiniteMetric(sentimentData.tone_analysis?.emotional_charge) && (
-                                <div class="sidebar-module sidebar-deferred source-spectrum-panel">
-                                    <h4 class="sidebar-label">{t('cluster.media_pulse')}</h4>
-                                    <div class="mt-4">
-                                        <MediaPulseRadar data={sentimentData} lang={lang} client:visible />
-                                    </div>
-                                </div>
-                            )}
+							<details class="cluster-sidebar-details">
+								<summary class="cluster-sidebar-details-summary">
+									<span class="cluster-sidebar-details-title">{t('cluster.sidebar_more')}</span>
+									<span class="cluster-sidebar-details-hint">{t('cluster.sidebar_more_hint')}</span>
+								</summary>
+								<div class="cluster-sidebar-details-body">
+									{allSourcesNames.length >= 2 && (
+										<div class="sidebar-module compare-source-diff-panel source-comparison-panel">
+											<h4 class="sidebar-label">{t('cluster.compare_sources')}</h4>
+											<div class="mt-4">
+												<SourceComparisonIsland allSources={allSourcesNames} lang={lang} client:visible />
+											</div>
+										</div>
+									)}
 
-                            <div class="sidebar-module source-spectrum-panel source-comparison-panel">
-                                <h4 class="sidebar-label">{t('cluster.source_spectrum')}</h4>
-                                <div class="mt-6">
-                                    <SourceSpectrum articles={cluster.articles.map((a: Article) => ({ source: a.source })) as any} lang={lang} client:visible />
-                                </div>
-                            </div>
+									{sentimentData && isFiniteMetric(sentimentData.tone_analysis?.objectivity) && isFiniteMetric(sentimentData.tone_analysis?.sensationalism) && isFiniteMetric(sentimentData.tone_analysis?.emotional_charge) && (
+										<div class="sidebar-module source-spectrum-panel">
+											<h4 class="sidebar-label">{t('cluster.media_pulse')}</h4>
+											<div class="mt-4">
+												<MediaPulseRadar data={sentimentData} lang={lang} client:visible />
+											</div>
+										</div>
+									)}
 
-							<div class="sidebar-deferred">
-							    <NewsletterIsland lang={lang} client:visible />
-                            </div>
-
-							<ClusterFollowSuggestionsIsland
-								topic={cluster.topics?.[0] || ''}
-								source={cluster.articles?.[0]?.source || ''}
-								adjacentTopic={adjacentTopic}
-                                lang={lang}
-								client:visible
-							/>
-
-							{keyEntities && keyEntities.length > 0 && (
-								<div class="sidebar-module">
-									<h4 class="sidebar-label">{t('cluster.key_entities')}</h4>
-									<div class="flex flex-col gap-[var(--grid-gap)] mt-4">
-											{keyEntities.map((name: string) => (
-											<EntityContextCard name={name} lang="sr" client:visible />
-										))}
+									<div class="sidebar-module sidebar-ad-slot">
+										<TinyAdzRailAd />
 									</div>
+
+									<div class="sidebar-module sidebar-newsletter-slot">
+										<NewsletterIsland lang={lang} client:visible />
+									</div>
+
+									<ClusterFollowSuggestionsIsland
+										topic={cluster.topics?.[0] || ''}
+										source={cluster.articles?.[0]?.source || ''}
+										adjacentTopic={adjacentTopic}
+										lang={lang}
+										client:visible
+									/>
+
+									{keyEntities && keyEntities.length > 0 && (
+										<div class="sidebar-module">
+											<h4 class="sidebar-label">{t('cluster.key_entities')}</h4>
+											<div class="flex flex-col gap-[var(--grid-gap)] mt-4">
+												{keyEntities.map((name: string) => (
+													<EntityContextCard name={name} lang={lang} client:visible />
+												))}
+											</div>
+										</div>
+									)}
 								</div>
-							)}
+							</details>
 						</div>
 					</aside>
 				</div>
@@ -1393,6 +1409,7 @@ const articleSchema = cluster ? {
     :global(body.reader-mode-active .reader-source-strip),
     :global(body.reader-mode-active .editorial-sidebar-col),
     :global(body.reader-mode-active .related-section),
+    :global(body.reader-mode-active .cluster-deep-tools),
     :global(body.reader-mode-active .advanced-tools),
     :global(body.reader-mode-active .sources-section),
     :global(body.reader-mode-active .newsletter-island) {
@@ -1457,6 +1474,7 @@ const articleSchema = cluster ? {
 
     .cluster-article-container.reader-focused .editorial-sidebar-col,
     .cluster-article-container.reader-focused .related-section,
+    .cluster-article-container.reader-focused .cluster-deep-tools,
     .cluster-article-container.reader-focused .advanced-tools {
         display: none !important;
     }
@@ -1629,63 +1647,6 @@ const articleSchema = cluster ? {
 		display: block;
 	}
 
-    .advanced-tools {
-        border-radius: 0px;
-        box-shadow: inset 0 0 60px rgba(0,0,0,0.02);
-    }
-
-    .advanced-tools-details {
-        background: color-mix(in srgb, var(--secondary) 35%, transparent);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-md, 0px);
-        padding: 1.25rem;
-    }
-
-    .advanced-tools-summary {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        cursor: pointer;
-        list-style: none;
-    }
-
-    .advanced-tools-summary::-webkit-details-marker {
-        display: none;
-    }
-
-    .advanced-tools-summary .section-eyebrow {
-        flex: 1;
-        margin-bottom: 0;
-        min-width: 0;
-    }
-
-    .advanced-toggle-label {
-        flex-shrink: 0;
-        border: 1px solid var(--border);
-        padding: 0.55rem 0.85rem;
-        font-family: var(--font-ui);
-        font-size: 0.66rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.07em;
-        color: var(--muted-foreground);
-    }
-
-    .advanced-tools-details[open] .advanced-toggle-label {
-        background: var(--foreground);
-        color: var(--background);
-        border-color: var(--foreground);
-    }
-
-    .advanced-tools-details .deep-dive-history {
-        margin-top: 1.75rem;
-        padding-top: 1.5rem;
-        border-top: 1px solid var(--border);
-        display: grid;
-        gap: 1.5rem;
-    }
-
 	/* --- RELATED CARDS --- */
 	.related-card {
 		text-decoration: none;
@@ -1758,7 +1719,7 @@ const articleSchema = cluster ? {
             flex: 0 0 auto;
         }
 
-        .cluster-article-container.reader-focused .cluster-evidence-strip,
+        .cluster-article-container.reader-focused .cluster-source-details,
         .cluster-article-container.reader-focused .reader-source-strip,
         .cluster-article-container.reader-focused .hero-full,
         .cluster-article-container.reader-focused .executive-summary {
@@ -1789,11 +1750,9 @@ const articleSchema = cluster ? {
             border-right: none;
         }
 
-        .advanced-tools {
-            padding: 2.5rem 1rem !important;
+        .cluster-deep-tools {
             margin-left: -1rem;
             margin-right: -1rem;
-            border-radius: 0;
         }
 
 	        /* Improved touch targets */
@@ -1900,7 +1859,7 @@ const articleSchema = cluster ? {
 			.hero-full,
 			.executive-summary,
 			.editorial-section,
-			.advanced-tools {
+			.cluster-deep-tools {
 				margin-bottom: 1.4rem !important;
 			}
 
@@ -1983,16 +1942,20 @@ const articleSchema = cluster ? {
 					(!stored && legacy === 'true') ||
 					params.get('reader') === '1';
 				const compare = stored === 'compare';
-				const sidebar = document.querySelector('.editorial-sidebar-col');
+				const sidebarDetails = document.querySelector('.cluster-sidebar-details');
 				document.body.classList.remove('zen-mode', 'compare-mode', 'reader-mode-active');
 				article.classList.remove('reader-focused');
-				sidebar?.classList.remove('is-expanded');
+				if (sidebarDetails instanceof HTMLDetailsElement) {
+					sidebarDetails.open = false;
+				}
 				if (focus) {
 					document.body.classList.add('zen-mode', 'reader-mode-active');
 					article.classList.add('reader-focused');
 				} else if (compare) {
 					document.body.classList.add('compare-mode');
-					sidebar?.classList.add('is-expanded');
+					if (sidebarDetails instanceof HTMLDetailsElement) {
+						sidebarDetails.open = true;
+					}
 				}
 			} catch (e) {}
 		};

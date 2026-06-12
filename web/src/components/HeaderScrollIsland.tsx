@@ -8,15 +8,26 @@ export default function HeaderScrollIsland() {
     let lastY = window.scrollY;
     let ticking = false;
 
+    const mobileQuery = window.matchMedia('(max-width: 768px)');
+
     const update = () => {
       const y = window.scrollY;
-      const compact = y > 120;
-      const hideTicker = y > 48;
       const scrollingUp = y < lastY;
+      const isMobile = mobileQuery.matches;
 
-      header.classList.toggle('header--compact', compact);
-      header.classList.toggle('header--hide-ticker', hideTicker && !scrollingUp);
-      header.classList.toggle('header--show-nav', scrollingUp && y > 120);
+      if (isMobile) {
+        header.classList.toggle('header--compact', y > 40);
+        header.classList.toggle('header--show-ticker', y > 72 || (scrollingUp && y > 20));
+        header.classList.toggle('header--show-nav', scrollingUp && y > 96);
+        header.classList.remove('header--hide-ticker');
+      } else {
+        const compact = y > 120;
+        const hideTicker = y > 48;
+        header.classList.toggle('header--compact', compact);
+        header.classList.toggle('header--hide-ticker', hideTicker && !scrollingUp);
+        header.classList.toggle('header--show-nav', scrollingUp && y > 120);
+        header.classList.remove('header--show-ticker');
+      }
 
       lastY = y;
       ticking = false;

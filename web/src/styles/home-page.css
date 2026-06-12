@@ -290,7 +290,7 @@
 }
 
 .analysis-source-extra {
-    font-size: 0.56rem;
+    font-size: var(--text-ui-min);
     font-weight: 800;
     color: var(--muted-foreground);
     padding: 0.2rem 0.35rem;
@@ -306,7 +306,7 @@
 }
 
 .analysis-radar-source {
-    font-size: 0.62rem;
+    font-size: var(--text-ui-kicker);
     font-weight: 800;
     color: color-mix(in srgb, var(--foreground) 80%, var(--muted-foreground));
 }
@@ -359,7 +359,7 @@
 .consensus-lazy-meta {
     margin-top: auto;
     font-family: var(--font-ui);
-    font-size: 0.58rem;
+    font-size: var(--text-ui-min);
     font-weight: 800;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -376,7 +376,7 @@
 
 .analysis-band-kicker {
     font-family: var(--font-ui);
-    font-size: 0.58rem;
+    font-size: var(--text-ui-min);
     font-weight: 900;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -416,7 +416,7 @@
 
 .analysis-band-expand {
     font-family: var(--font-ui);
-    font-size: 0.62rem;
+    font-size: var(--text-ui-kicker);
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -470,7 +470,7 @@
 
 .analiza-nav-kicker {
     font-family: var(--font-ui);
-    font-size: 0.54rem;
+    font-size: var(--text-ui-min);
     font-weight: 900;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -487,7 +487,7 @@
 
 .analiza-nav-count {
     font-family: var(--font-ui);
-    font-size: 0.58rem;
+    font-size: var(--text-ui-min);
     font-weight: 800;
     letter-spacing: 0.08em;
     color: var(--nyt-accent);
@@ -506,7 +506,7 @@
 
 .home-empty-kicker {
     font-family: var(--font-ui);
-    font-size: 0.62rem;
+    font-size: var(--text-ui-kicker);
     font-weight: 900;
     letter-spacing: 0.18em;
     text-transform: uppercase;
@@ -575,7 +575,7 @@
 .home-error-kicker {
     margin: 0 0 0.35rem;
     font-family: var(--font-ui);
-    font-size: 0.62rem;
+    font-size: var(--text-ui-kicker);
     font-weight: 900;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -609,7 +609,7 @@
 .home-degraded-kicker {
     margin: 0 0 0.25rem;
     font-family: var(--font-ui);
-    font-size: 0.58rem;
+    font-size: var(--text-ui-min);
     font-weight: 900;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -642,7 +642,7 @@
 .lead-why-kicker {
     margin: 0 0 0.45rem;
     font-family: var(--font-ui);
-    font-size: 0.62rem;
+    font-size: var(--text-ui-kicker);
     font-weight: 900;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -652,7 +652,7 @@
 .for-you-boundary-label {
     margin: 0 0 0.85rem;
     font-family: var(--font-ui);
-    font-size: 0.62rem;
+    font-size: var(--text-ui-kicker);
     font-weight: 900;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -662,11 +662,17 @@
 .editorial-lead-boundary-label {
     margin: 0 0 0.75rem;
     font-family: var(--font-ui);
-    font-size: 0.62rem;
+    font-size: var(--text-ui-kicker);
     font-weight: 900;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--foreground);
+}
+
+@media (max-width: 768px) {
+    .editorial-lead-boundary-label {
+        display: none;
+    }
 }
 
 .pipeline-status-notice {
@@ -692,7 +698,7 @@
 
 .pipeline-status-link {
     font-family: var(--font-ui);
-    font-size: 0.62rem;
+    font-size: var(--text-ui-kicker);
     font-weight: 900;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -1146,7 +1152,7 @@
         flex-direction: column;
     }
 
-    .home-mobile-order-edition { order: 0; }
+    .home-mobile-order-edition { order: 2; }
     .home-mobile-order-lead { order: 1; }
     .home-mobile-order-briefing { order: 2; }
     .home-mobile-order-supporting { order: 3; }

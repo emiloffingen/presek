@@ -161,10 +161,10 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
         {topFocusTopic && (
           <div className="mt-6 p-4 bg-nyt-accent/5 border border-nyt-accent/20 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             <div>
-              <p className="text-[9px] font-black uppercase text-nyt-accent tracking-widest mb-0.5">{isMK ? 'Ваша примарна фокус тема' : 'Vaša primarna fokus tema'}</p>
+              <p className="text-[11px] font-black uppercase text-nyt-accent tracking-widest mb-0.5">{isMK ? 'Ваша примарна фокус тема' : 'Vaša primarna fokus tema'}</p>
               <h4 className="font-serif font-black text-lg italic">{topFocusTopic}</h4>
             </div>
-            <p className="text-[10px] text-muted-foreground leading-tight max-w-[200px]">
+            <p className="text-[11px] text-muted-foreground leading-tight max-w-[200px]">
               {isMK
                 ? 'Врз основа на последното читање. Го користиме за „За Вас“.'
                 : 'Na osnovu poslednjeg čitanja. Koristimo ga za „Za Vas“.'}
@@ -334,9 +334,9 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
                 className="flex items-start justify-between gap-4 p-4 bg-secondary/20 hover:bg-secondary/40 border border-border/40 hover:border-border rounded-xl transition-all group"
               >
                 <div className="min-w-0">
-                  <span className="inline-block text-[9px] font-black uppercase text-nyt-accent tracking-widest mb-1">{item.topic || (isMK ? 'кластер' : 'klaster')}</span>
+                  <span className="inline-block text-[11px] font-black uppercase text-nyt-accent tracking-widest mb-1">{item.topic || (isMK ? 'кластер' : 'klaster')}</span>
                   <h4 className="font-serif font-black text-sm sm:text-base leading-tight text-foreground group-hover:text-nyt-accent transition-colors line-clamp-2">{item.title}</h4>
-                  <span className="inline-block text-[10px] text-muted-foreground mt-1.5">{item.source || (isMK ? 'извор' : 'izvor')}</span>
+                  <span className="inline-block text-[11px] text-muted-foreground mt-1.5">{item.source || (isMK ? 'извор' : 'izvor')}</span>
                 </div>
                 <ArrowUpRight size={16} className="text-muted-foreground group-hover:text-nyt-accent group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0 mt-0.5" />
               </a>

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { useTranslations } from '../i18n/utils';
-import { updateHomepageMode } from '../lib/store';
+import { localePathForLang } from '../lib/localePaths';
 
 const STORAGE_KEY = 'ui-concepts-onboarding-dismissed';
 
@@ -23,26 +23,38 @@ export default function UiConceptOnboarding({ lang = 'sr' }: { lang?: string }) 
     if (localStorage.getItem(STORAGE_KEY) === '1') return;
     setLeadHref(document.querySelector<HTMLAnchorElement>('.lead-copy a[data-testid="cluster-link"]')?.href || '');
 
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
     let shown = false;
     const show = () => {
       if (shown) return;
+      if (document.body.classList.contains('has-consent-banner')) return;
       shown = true;
       setVisible(true);
     };
 
+    const scrollThreshold = isMobile ? 320 : 220;
     const onScroll = () => {
-      if (window.scrollY > 180) show();
+      if (window.scrollY > scrollThreshold) show();
     };
 
-    const timer = window.setTimeout(show, window.matchMedia('(max-width: 768px)').matches ? 10000 : 5500);
+    const timer = window.setTimeout(show, isMobile ? 18000 : 8000);
     window.addEventListener('scroll', onScroll, { passive: true });
-    if (window.scrollY > 180) show();
+    if (window.scrollY > scrollThreshold) show();
 
     return () => {
       window.clearTimeout(timer);
       window.removeEventListener('scroll', onScroll);
     };
   }, []);
+
+  useEffect(() => {
+    if (!visible) {
+      document.body.classList.remove('has-ui-onboarding');
+      return;
+    }
+    document.body.classList.add('has-ui-onboarding');
+    return () => document.body.classList.remove('has-ui-onboarding');
+  }, [visible]);
 
   useEffect(() => {
     if (!visible) return;
@@ -63,14 +75,9 @@ export default function UiConceptOnboarding({ lang = 'sr' }: { lang?: string }) 
   };
 
   const openAnalysis = () => {
-    updateHomepageMode('analiza');
-    document.documentElement.dataset.homepageMode = 'analiza';
     localStorage.setItem(STORAGE_KEY, '1');
     setVisible(false);
-    document.querySelector('[data-synthesis-band], [data-trending-strip], [data-perspectives-band]')?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-    });
+    window.location.assign(localePathForLang('/pregled', lang as 'sr' | 'mk'));
   };
 
   if (!visible) return null;

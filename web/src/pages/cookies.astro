@@ -18,10 +18,10 @@ const privacyHref = localePath('/privacy', lang, hostHeader);
     description={t('legal.cookies.description')}
 >
     <NYTHeader />
-    <main class="site-layout broadsheet-layout py-[var(--page-py)]">
+    <main class="site-layout broadsheet-layout page-content-top pb-[var(--page-py)]">
         <header class="editorial-masthead mb-12">
             <div class="masthead-top">
-                <span class="masthead-kicker">{t('legal.cookies.kicker')}</span>
+                <span class="masthead-kicker ui-label">{t('legal.cookies.kicker')}</span>
             </div>
             <div class="masthead-main">
                 <h1 class="masthead-title">{t('legal.cookies.heading_prefix')} <span>{t('legal.cookies.heading_span')}</span></h1>
@@ -31,8 +31,8 @@ const privacyHref = localePath('/privacy', lang, hostHeader);
             </p>
         </header>
 
-        <div class="broadsheet-grid">
-            <div class="broadsheet-main">
+        <div class="editorial-broadsheet-grid">
+            <div class="editorial-broadsheet-main">
                 <article class="prose-editorial">
                     <p class="first-paragraph">
                         {t('legal.cookies.lead')}
@@ -45,7 +45,7 @@ const privacyHref = localePath('/privacy', lang, hostHeader);
                         <div class="type-item flex gap-[var(--grid-gap)] p-6 border border-border bg-secondary/10">
                             <ShieldCheck className="text-nyt-accent shrink-0" size={24} />
                             <div>
-                                <h4 class="font-sans font-black text-[10px] uppercase tracking-widest mb-2">{t('legal.cookies.essential_title')}</h4>
+                                <h4 class="ui-label mb-2">{t('legal.cookies.essential_title')}</h4>
                                 <p class="text-sm leading-relaxed">{t('legal.cookies.essential_body')}</p>
                             </div>
                         </div>
@@ -53,7 +53,7 @@ const privacyHref = localePath('/privacy', lang, hostHeader);
                         <div class="type-item flex gap-[var(--grid-gap)] p-6 border border-border">
                             <Cookie className="text-nyt-accent shrink-0" size={24} />
                             <div>
-                                <h4 class="font-sans font-black text-[10px] uppercase tracking-widest mb-2">{t('legal.cookies.prefs_title')}</h4>
+                                <h4 class="ui-label mb-2">{t('legal.cookies.prefs_title')}</h4>
                                 <p class="text-sm leading-relaxed">{t('legal.cookies.prefs_body')}</p>
                             </div>
                         </div>
@@ -61,7 +61,7 @@ const privacyHref = localePath('/privacy', lang, hostHeader);
                         <div class="type-item flex gap-[var(--grid-gap)] p-6 border border-border">
                             <Lock className="text-nyt-accent shrink-0" size={24} />
                             <div>
-                                <h4 class="font-sans font-black text-[10px] uppercase tracking-widest mb-2">{t('legal.cookies.analytics_title')}</h4>
+                                <h4 class="ui-label mb-2">{t('legal.cookies.analytics_title')}</h4>
                                 <p class="text-sm leading-relaxed">{t('legal.cookies.analytics_body')}</p>
                             </div>
                         </div>
@@ -77,17 +77,25 @@ const privacyHref = localePath('/privacy', lang, hostHeader);
                 </article>
             </div>
 
-            <aside class="broadsheet-rail">
-                <section class="rail-block">
-                    <p class="rail-kicker">{t('legal.cookies.rail_related_kicker')}</p>
-                    <h3 class="rail-title">{t('legal.cookies.rail_privacy_title')}</h3>
-                    <a href={privacyHref} class="block p-4 border border-border hover:bg-secondary transition-colors text-sm font-bold uppercase tracking-tight">{t('legal.cookies.rail_privacy_link')}</a>
-                </section>
+            <aside class="editorial-broadsheet-rail">
+                <details class="editorial-rail-context">
+                    <summary class="editorial-rail-context-summary">
+                        <span class="ui-label">{t('editorial.rail_context')}</span>
+                        <span class="editorial-rail-context-hint ui-label-min text-muted-foreground">{t('editorial.rail_open')}</span>
+                    </summary>
+                    <div class="editorial-rail-context-body">
+                        <section class="editorial-rail-block">
+                            <p class="editorial-rail-kicker">{t('legal.cookies.rail_related_kicker')}</p>
+                            <h3 class="editorial-rail-title">{t('legal.cookies.rail_privacy_title')}</h3>
+                            <a href={privacyHref} class="block p-4 border border-border hover:bg-secondary transition-colors text-sm font-bold uppercase tracking-tight">{t('legal.cookies.rail_privacy_link')}</a>
+                        </section>
 
-                <div class="rail-meta-box">
-                    <p class="text-[10px] font-black uppercase tracking-widest mb-4 opacity-50">{t('legal.cookies.rail_updated_label')}</p>
-                    <p class="text-xs">{t('legal.cookies.rail_updated_date')}</p>
-                </div>
+                        <div class="editorial-rail-meta">
+                            <p class="ui-label-min text-muted-foreground mb-4 opacity-70">{t('legal.cookies.rail_updated_label')}</p>
+                            <p class="text-xs">{t('legal.cookies.rail_updated_date')}</p>
+                        </div>
+                    </div>
+                </details>
             </aside>
         </div>
     </main>
@@ -95,25 +103,5 @@ const privacyHref = localePath('/privacy', lang, hostHeader);
 </Layout>
 
 <style>
-    .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 2rem; margin-bottom: 3rem; }
-    .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
-    .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; margin: 1.5rem 0; letter-spacing: -0.02em; }
-    .masthead-title span { font-weight: 400; font-style: italic; }
-    .masthead-intro { font-family: var(--font-nyt-body); font-size: 1.15rem; line-height: 1.6; color: var(--secondary-foreground); max-width: 42rem; }
-
-    .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
-    @media (min-width: 1024px) {
-        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 320px; }
-        .broadsheet-main { border-right: 1px solid var(--border); padding-right: 3rem; }
-        .broadsheet-rail { align-self: start; }
-    }
-
-    .prose-editorial { font-family: var(--font-nyt-body); font-size: 1.1rem; line-height: 1.75; color: var(--secondary-foreground); }
     .prose-editorial h2 { font-family: var(--font-serif); font-size: 2rem; font-weight: 900; margin: 3rem 0 1.5rem; color: var(--foreground); }
-    .first-paragraph::first-letter { float: left; font-family: var(--font-serif); font-size: 5rem; font-weight: 900; line-height: 0.8; padding-top: 0.5rem; padding-right: 0.75rem; color: var(--foreground); }
-
-    .rail-block { margin-bottom: 2.5rem; }
-    .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
-    .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
-    .rail-meta-box { padding: 1.5rem; border: 1px solid var(--border); }
 </style>

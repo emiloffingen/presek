@@ -47,6 +47,9 @@ const l = (path: string) => localePath(path, isMK ? 'mk' : 'sr', hostHeader);
 <aside class="briefing-sidebar">
 	<TinyAdzRailAd />
 
+	<details class="briefing-sidebar-context">
+		<summary class="briefing-sidebar-context-summary">{t('briefing.sidebar_context')}</summary>
+		<div class="briefing-sidebar-context-body">
 	<section class="sidebar-module p-6 bg-secondary/10 border border-border rounded-xl mb-6 shadow-sm">
 			<NewsletterIsland lang={lang} client:visible />
 		</section>
@@ -55,13 +58,13 @@ const l = (path: string) => localePath(path, isMK ? 'mk' : 'sr', hostHeader);
 			<section class="sidebar-module">
 				<div class="flex items-center gap-[var(--grid-gap)] mb-6 pb-2 border-b border-border">
 					<Calendar size={14} className="text-foreground" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">{t('briefing.previous_editions')}</h4>
+					<h4 class="ui-label">{t('briefing.previous_editions')}</h4>
 				</div>
 				<div class="grid grid-cols-2 gap-[var(--grid-gap)]">
 					{historicalDates.map((d: any) => (
 						<a
 							href={`${l('/briefing')}?date=${d.day}`}
-							class={`text-[10px] font-black uppercase tracking-tighter hover:bg-secondary transition-all px-3 py-2 border border-border rounded flex items-center justify-center text-center ${briefing?.date === d.day ? 'bg-nyt-accent text-white border-nyt-accent' : 'text-muted-foreground bg-card'}`}
+							class={`ui-label-min hover:bg-secondary transition-all px-3 py-2 border border-border rounded flex items-center justify-center text-center ${briefing?.date === d.day ? 'bg-nyt-accent text-white border-nyt-accent' : 'text-muted-foreground bg-card'}`}
 						>
 							{new Date(d.day).toLocaleDateString(isMK ? 'mk-MK' : 'sr-RS', { day: 'numeric', month: 'short' })}
 						</a>
@@ -74,11 +77,11 @@ const l = (path: string) => localePath(path, isMK ? 'mk' : 'sr', hostHeader);
 			<section class="sidebar-module">
 				<div class="flex items-center gap-[var(--grid-gap)] mb-6 pb-2 border-b border-border">
 					<Activity size={14} className="text-emerald-600" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">{t('briefing.system_balance')}</h4>
+					<h4 class="ui-label">{t('briefing.system_balance')}</h4>
 				</div>
 				<div class="space-y-6">
 					<div>
-						<div class="flex justify-between text-[9px] font-black uppercase mb-2 opacity-60">
+						<div class="flex justify-between ui-label-min mb-2 opacity-60">
 							<span>{t('briefing.media_pluralism')}</span>
 							<span class="text-emerald-600">{stats.intelligence.pluralism.pluralism_pct}%</span>
 						</div>
@@ -87,7 +90,7 @@ const l = (path: string) => localePath(path, isMK ? 'mk' : 'sr', hostHeader);
 						</div>
 					</div>
 					<div>
-						<div class="flex justify-between text-[9px] font-black uppercase mb-2 opacity-60">
+						<div class="flex justify-between ui-label-min mb-2 opacity-60">
 							<span>{t('briefing.high_consensus')}</span>
 							<span class="text-blue-600">{stats.intelligence.pluralism.high_consensus_pct}%</span>
 						</div>
@@ -103,13 +106,13 @@ const l = (path: string) => localePath(path, isMK ? 'mk' : 'sr', hostHeader);
 			<section class="sidebar-module">
 				<div class="flex items-center gap-[var(--grid-gap)] mb-6 pb-2 border-b border-border">
 					<Users size={14} className="text-foreground" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">{t('briefing.key_actors')}</h4>
+					<h4 class="ui-label">{t('briefing.key_actors')}</h4>
 				</div>
 				<div class="flex flex-col gap-[var(--grid-gap)]">
 					{briefing.subjects.map((subject: any) => (
 						<a href={l(`/subjekt/${encodeURIComponent(subject.name)}`)} class="flex justify-between items-center text-sm font-serif group">
 							<span class="group-hover:text-nyt-accent transition-colors">{subject.name}</span>
-							<span class="text-[10px] font-sans font-black text-muted-foreground opacity-40">+{subject.total_mentions}</span>
+							<span class="ui-label-min text-muted-foreground opacity-40">+{subject.total_mentions}</span>
 						</a>
 					))}
 				</div>
@@ -120,11 +123,11 @@ const l = (path: string) => localePath(path, isMK ? 'mk' : 'sr', hostHeader);
 			<section class="sidebar-module">
 				<div class="flex items-center gap-[var(--grid-gap)] mb-6 pb-2 border-b border-border">
 					<MapPin size={14} className="text-foreground" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">{t('briefing.focus_locations')}</h4>
+					<h4 class="ui-label">{t('briefing.focus_locations')}</h4>
 				</div>
 				<div class="flex flex-wrap gap-[var(--grid-gap)]">
 					{briefing.locations.map((loc: any) => (
-						<span class="px-2 py-1 bg-secondary border border-border text-secondary-foreground text-[10px] font-sans font-black uppercase tracking-wider">
+						<span class="px-2 py-1 bg-secondary border border-border text-secondary-foreground ui-label-min">
 							{loc.name}
 						</span>
 					))}
@@ -136,25 +139,83 @@ const l = (path: string) => localePath(path, isMK ? 'mk' : 'sr', hostHeader);
 			<section class="sidebar-module">
 				<div class="flex items-center gap-[var(--grid-gap)] mb-6 pb-2 border-b border-border">
 					<Zap size={14} className="text-nyt-accent" />
-					<h4 class="text-[10px] font-black uppercase tracking-widest">{t('briefing.trending_now')}</h4>
+					<h4 class="ui-label">{t('briefing.trending_now')}</h4>
 				</div>
 				<a href={l(`/cluster/${leadCluster.cluster_id}`)} class="group block">
 					<p class="font-serif font-bold text-sm leading-snug group-hover:text-nyt-accent transition-colors">
 						{leadCluster.articles?.[0]?.title}
 					</p>
-					<span class="block mt-3 text-[9px] font-black uppercase text-muted-foreground opacity-60">
+					<span class="block mt-3 ui-label-min text-muted-foreground opacity-60">
 						{leadCluster.articles?.[0]?.source} · {getTimeStr(leadCluster.articles?.[0]?.created_at || leadCluster.articles?.[0]?.ingested_at)}
 					</span>
 				</a>
 			</section>
 		)}
-	</div>
+		</div>
+	</details>
 </aside>
 
 <style>
     .briefing-sidebar { display: flex; flex-direction: column; gap: 2rem; }
     .sidebar-module { border-top: 1px solid var(--border); padding-top: 1.5rem; }
     .sidebar-module:first-child { border-top: none; padding-top: 0; }
+
+    .briefing-sidebar-context {
+        border: 1px solid var(--border);
+        background: color-mix(in srgb, var(--secondary) 15%, var(--background));
+    }
+
+    .briefing-sidebar-context-summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem 0.9rem;
+        cursor: pointer;
+        list-style: none;
+        font-family: var(--font-ui);
+        font-size: var(--text-ui-kicker);
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .briefing-sidebar-context-summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .briefing-sidebar-context-summary::after {
+        content: '+';
+        color: var(--nyt-accent);
+        font-weight: 700;
+    }
+
+    .briefing-sidebar-context[open] .briefing-sidebar-context-summary::after {
+        content: '−';
+    }
+
+    .briefing-sidebar-context-body {
+        padding: 0.85rem 0.9rem 1rem;
+        border-top: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+
+    @media (min-width: 1100px) {
+        .briefing-sidebar-context {
+            border: none;
+            background: transparent;
+        }
+
+        .briefing-sidebar-context-summary {
+            display: none;
+        }
+
+        .briefing-sidebar-context-body {
+            padding: 0;
+            border-top: none;
+        }
+    }
 
     @media (max-width: 639.98px) {
         .briefing-sidebar {

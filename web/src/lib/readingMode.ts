@@ -30,13 +30,19 @@ function syncClusterReadingDom(mode: ReadingMode) {
   document.body.classList.remove('zen-mode', 'compare-mode', 'reader-mode-active');
   article?.classList.remove('reader-focused');
   sidebar?.classList.remove('is-expanded');
+  const sidebarDetails = document.querySelector('.cluster-sidebar-details');
+  if (sidebarDetails instanceof HTMLDetailsElement) {
+    sidebarDetails.open = false;
+  }
 
   if (mode === 'focus') {
     document.body.classList.add('zen-mode', 'reader-mode-active');
     article?.classList.add('reader-focused');
   } else if (mode === 'compare') {
     document.body.classList.add('compare-mode');
-    sidebar?.classList.add('is-expanded');
+    if (sidebarDetails instanceof HTMLDetailsElement) {
+      sidebarDetails.open = true;
+    }
   }
 }
 

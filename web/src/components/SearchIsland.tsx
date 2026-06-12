@@ -617,7 +617,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
           <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-border/40 bg-secondary/15 flex flex-col md:flex-row gap-4 md:items-center animate-in slide-in-from-top-4 duration-300">
             {/* Category Filter */}
             <div className="flex-1">
-              <span className="text-[9px] font-black uppercase tracking-[0.06em] text-muted-foreground block mb-2">
+              <span className="ui-label-min text-muted-foreground block mb-2">
                 {lang === 'sr' ? 'Tema' : 'Тема'}
               </span>
               <div className="flex flex-wrap gap-1.5">
@@ -639,7 +639,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
             
             {/* Timespan Filter */}
             <div className="shrink-0">
-              <span className="text-[9px] font-black uppercase tracking-[0.06em] text-muted-foreground block mb-2">
+              <span className="ui-label-min text-muted-foreground block mb-2">
                 {lang === 'sr' ? 'Vremenski okvir' : 'Временска рамка'}
               </span>
               <div className="flex gap-1.5">
@@ -676,7 +676,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
               <div className="space-y-6 sm:space-y-10">
                 {recentSearches.length > 0 && (
                   <section>
-                    <h3 className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.08em] sm:tracking-[0.1em] text-muted-foreground mb-3 sm:mb-4 flex items-center gap-[var(--grid-gap)]">
+                    <h3 className="ui-label-min sm:ui-label text-muted-foreground mb-3 sm:mb-4 flex items-center gap-[var(--grid-gap)]">
                        <History size={12} /> {lang === 'sr' ? 'POSLEDNJE PRETRAGE' : 'ПОСЛЕДНИ ПРЕБАРУВАЊА'}
                     </h3>
                     <div className="flex flex-wrap gap-2">
@@ -708,13 +708,13 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                 )}
 
                 <section>
-                  <h3 className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.08em] sm:tracking-[0.1em] text-muted-foreground mb-3 sm:mb-4 flex items-center gap-[var(--grid-gap)]">
+                  <h3 className="ui-label-min sm:ui-label text-muted-foreground mb-3 sm:mb-4 flex items-center gap-[var(--grid-gap)]">
                      <TrendingUp size={12} /> {lang === 'sr' ? 'TREND TEME' : 'ТРЕНД ТЕМИ'}
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-[var(--grid-gap)]">
                     {trendingItems.length > 0 ? trendingItems.map((item, i) => (
                       <button key={i} onClick={() => setQuery(item.word)} className="flex items-center gap-2 sm:gap-[var(--grid-gap)] p-2.5 sm:p-3 bg-secondary/30 hover:bg-secondary/60 rounded-none transition-all group text-left">
-                        <span className="text-[10px] font-black text-nyt-accent/40 group-hover:text-nyt-accent">{(i+1).toString().padStart(2, '0')}</span>
+                        <span className="ui-label-min text-nyt-accent/40 group-hover:text-nyt-accent">{(i+1).toString().padStart(2, '0')}</span>
                         <span className="font-serif font-black text-[13px] sm:text-sm truncate">{item.word}</span>
                       </button>
                     )) : [1,2,3,4,5,6].map(i => <div key={i} className="h-12 bg-secondary/20 animate-pulse rounded-none"></div>)}
@@ -722,7 +722,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                 </section>
 
                 <section>
-                  <h3 className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.08em] sm:tracking-[0.1em] text-muted-foreground mb-3 sm:mb-4 flex items-center gap-[var(--grid-gap)]">
+                  <h3 className="ui-label-min sm:ui-label text-muted-foreground mb-3 sm:mb-4 flex items-center gap-[var(--grid-gap)]">
                      <Zap size={12} /> {lang === 'sr' ? 'BRZE AKCIJE' : 'БРЗИ АКЦИИ'}
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-[var(--grid-gap)]">
@@ -733,7 +733,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                         </div>
                         <div>
                           <p className="text-xs sm:text-sm font-black uppercase tracking-[0.04em]">{action.label}</p>
-                          <p className="text-[10px] text-muted-foreground line-clamp-1">{action.desc}</p>
+                          <p className="ui-label-min text-muted-foreground line-clamp-1">{action.desc}</p>
                         </div>
                       </button>
                     ))}
@@ -751,7 +751,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                   <>
                     {entityResult && (
                       <section>
-                        <h3 className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.08em] sm:tracking-[0.1em] text-muted-foreground mb-3 sm:mb-4">{lang === 'sr' ? 'SUBJEKTI' : 'СУБЈЕКТИ'}</h3>
+                        <h3 className="ui-label-min sm:ui-label text-muted-foreground mb-3 sm:mb-4">{lang === 'sr' ? 'SUBJEKTI' : 'СУБЈЕКТИ'}</h3>
                         <button
                           onClick={() => navigateToQuery(entityResult.name)}
                           className={`w-full flex items-center gap-3 sm:gap-[var(--grid-gap)] p-3 sm:p-4 rounded-none border transition-all text-left ${activeIndex === 0 ? 'bg-nyt-accent/5 border-nyt-accent/30 ring-1 ring-nyt-accent/20' : 'bg-transparent border-transparent hover:bg-secondary/30'}`}
@@ -765,7 +765,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                           </div>
                           <div>
                             <p className="font-serif font-black text-lg sm:text-xl">{highlightMatch(entityResult.name, query)}</p>
-                            <p className="text-[10px] font-black uppercase tracking-[0.08em] text-muted-foreground">{entityResult.type} · {entityResult.total_mentions} {lang === 'sr' ? 'pominjanja' : 'споменувања'}</p>
+                            <p className="ui-label-min text-muted-foreground">{entityResult.type} · {entityResult.total_mentions} {lang === 'sr' ? 'pominjanja' : 'споменувања'}</p>
                           </div>
                           <ArrowUpRight size={16} className="ml-auto text-muted-foreground" />
                         </button>
@@ -774,7 +774,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
 
                     {suggestions.length > 0 && (
                       <section>
-                        <h3 className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.08em] sm:tracking-[0.1em] text-muted-foreground mb-3 sm:mb-4">{lang === 'sr' ? 'VESTI I PRIČE' : 'ВЕСТИ И ПРИКАЗНИ'}</h3>
+                        <h3 className="ui-label-min sm:ui-label text-muted-foreground mb-3 sm:mb-4">{lang === 'sr' ? 'VESTI I PRIČE' : 'ВЕСТИ И ПРИКАЗНИ'}</h3>
                         <div className="space-y-2">
                           {suggestions.map((item, idx) => {
                             const globalIdx = entityResult ? idx + 1 : idx;
@@ -793,16 +793,16 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                                 </div>
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-center gap-1.5 mb-1">
-                                    <span className={`text-[9px] font-black uppercase tracking-[0.06em] ${item.has_synthesis ? 'text-amber-600 dark:text-amber-400' : 'text-nyt-accent'}`}>{item.category}</span>
+                                    <span className={`ui-label-min ${item.has_synthesis ? 'text-amber-600 dark:text-amber-400' : 'text-nyt-accent'}`}>{item.category}</span>
                                     {item.has_synthesis && (
-                                      <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-none bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[8px] font-black uppercase tracking-[0.06em]">
+                                      <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-none bg-amber-500/10 text-amber-600 dark:text-amber-400 ui-label-min">
                                         <Sparkles size={8} fill="currentColor" />
                                         {lang === 'sr' ? 'Sinteza' : 'Синтеза'}
                                       </span>
                                     )}
                                   </div>
                                   <p className="font-serif font-black text-base sm:text-lg leading-tight line-clamp-2 group-hover:text-nyt-accent transition-colors">{highlightMatch(item.title, query)}</p>
-                                  <div className="flex items-center gap-2 sm:gap-[var(--grid-gap)] mt-1.5 sm:mt-2 text-[10px] font-black uppercase tracking-[0.08em] text-muted-foreground/60">
+                                  <div className="flex items-center gap-2 sm:gap-[var(--grid-gap)] mt-1.5 sm:mt-2 ui-label-min text-muted-foreground/60">
                                     <span>{item.source}</span>
                                     <span>{item.sourceCount} {item.sourceCount === 1 ? (lang === 'sr' ? 'izvor' : 'извор') : (lang === 'sr' ? 'izvora' : 'извори')}</span>
                                   </div>
@@ -819,7 +819,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
 
                 {filteredActions.length > 0 && (
                   <section>
-                    <h3 className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.08em] sm:tracking-[0.1em] text-muted-foreground mb-3 sm:mb-4">{lang === 'sr' ? 'AKCIJE' : 'АКЦИИ'}</h3>
+                    <h3 className="ui-label-min sm:ui-label text-muted-foreground mb-3 sm:mb-4">{lang === 'sr' ? 'AKCIJE' : 'АКЦИИ'}</h3>
                     <div className="grid grid-cols-1 gap-[var(--grid-gap)]">
                       {filteredActions.map((action, idx) => {
                         const globalIdx = (entityResult ? 1 : 0) + suggestions.length + idx;
@@ -833,7 +833,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                               <action.icon size={16} />
                             </div>
                             <span className="text-xs sm:text-sm font-black uppercase tracking-[0.04em]">{action.label}</span>
-                            <span className="hidden sm:inline text-[10px] text-muted-foreground opacity-60">→ {action.href}</span>
+                            <span className="hidden sm:inline ui-label-min text-muted-foreground opacity-60">→ {action.href}</span>
                           </button>
                         );
                       })}
@@ -866,14 +866,14 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
 
                     <div>
                       <div className="flex items-center gap-2 mb-3">
-                         <span className="px-2 py-1 bg-nyt-accent text-white text-[10px] font-black uppercase tracking-[0.08em] rounded">{selectedItem.data.category}</span>
+                         <span className="px-2 py-1 bg-nyt-accent text-white ui-label-min rounded">{selectedItem.data.category}</span>
                          {selectedItem.data.has_synthesis && (
-                           <span className="px-2 py-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[10px] font-black uppercase tracking-[0.08em] rounded flex items-center gap-1 shadow-sm shadow-amber-500/20">
+                           <span className="px-2 py-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white ui-label-min rounded flex items-center gap-1 shadow-sm shadow-amber-500/20">
                              <Sparkles size={10} fill="currentColor" />
                              {lang === 'sr' ? 'SISTEMSKA SINTEZA' : 'СИСТЕМСКА СИНТЕЗА'}
                            </span>
                          )}
-                         <span className="text-[10px] font-black uppercase tracking-[0.08em] text-muted-foreground flex items-center gap-1"><Clock size={12} /> {lang === 'sr' ? 'PRE 2 ČASA' : 'ПРЕД 2 ЧАСА'}</span>
+                         <span className="ui-label-min text-muted-foreground flex items-center gap-1"><Clock size={12} /> {lang === 'sr' ? 'PRE 2 ČASA' : 'ПРЕД 2 ЧАСА'}</span>
                       </div>
                       <h2 className="font-serif font-black text-2xl leading-tight mb-4">{selectedItem.data.title}</h2>
                       <p className="text-base text-muted-foreground leading-relaxed font-nyt-body line-clamp-6">{selectedItem.data.description}</p>
@@ -881,11 +881,11 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
 
                     <div className="grid grid-cols-2 gap-[var(--grid-gap)] py-6 border-y border-border/40">
                       <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.08em] text-muted-foreground mb-1">{lang === 'sr' ? 'izvori' : 'извори'}</p>
+                        <p className="ui-label-min text-muted-foreground mb-1">{lang === 'sr' ? 'izvori' : 'извори'}</p>
                         <p className="text-xl font-black">{selectedItem.data.sourceCount}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.08em] text-muted-foreground mb-1">{lang === 'sr' ? 'SKOR' : 'СКОР'}</p>
+                        <p className="ui-label-min text-muted-foreground mb-1">{lang === 'sr' ? 'SKOR' : 'СКОР'}</p>
                         <p className="text-xl font-black text-nyt-accent">{selectedItem.data.pulse_score || '8.2'}</p>
                       </div>
                     </div>
@@ -910,12 +910,12 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                         )}
                       </div>
                       <h2 className="font-serif font-black text-3xl mb-2">{selectedItem.data.name}</h2>
-                      <p className="px-4 py-1.5 bg-secondary border border-border rounded-none text-[10px] font-black uppercase tracking-[0.08em] text-muted-foreground">{selectedItem.data.type}</p>
+                      <p className="px-4 py-1.5 bg-secondary border border-border rounded-none ui-label-min text-muted-foreground">{selectedItem.data.type}</p>
                     </div>
 
                     <div className="space-y-4">
                        <div className="p-4 bg-background border border-border rounded-none">
-                          <p className="text-[10px] font-black uppercase tracking-[0.08em] text-muted-foreground mb-4">{lang === 'sr' ? 'MEDIJSKO PRISUSTVO' : 'МЕДИУМСКО ПРИСУСТВО'}</p>
+                          <p className="ui-label-min text-muted-foreground mb-4">{lang === 'sr' ? 'MEDIJSKO PRISUSTVO' : 'МЕДИУМСКО ПРИСУСТВО'}</p>
                           <div className="flex items-end gap-1 h-12 mb-2">
                             {[30, 50, 40, 80, 60, 90, 75, 85].map((h, i) => (
                               <div key={i} className="flex-1 bg-nyt-accent/20 rounded-t-sm group relative" style={{ height: `${h}%` }}>
@@ -928,7 +928,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
 
                        <div className="p-4 bg-background border border-border rounded-none flex items-center justify-between">
                           <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.08em] text-muted-foreground mb-1">SENTIMENT</p>
+                            <p className="ui-label-min text-muted-foreground mb-1">SENTIMENT</p>
                             <p className="font-serif font-black text-lg text-emerald-600">{lang === 'sr' ? 'POZITIVAN' : 'ПОЗИТИВЕН'}</p>
                           </div>
                           <Activity size={24} className="text-emerald-500" />
@@ -968,14 +968,14 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                    <Layout size={32} />
                 </div>
                 <p className="font-serif font-black text-xl mb-1">{lang === 'sr' ? 'Pregled' : 'Преглед'}</p>
-                <p className="text-[10px] font-black uppercase tracking-[0.08em]">{lang === 'sr' ? 'Izaberite stavku za detalje' : 'Изберете ставка за детали'}</p>
+                <p className="ui-label-min">{lang === 'sr' ? 'Izaberite stavku za detalje' : 'Изберете ставка за детали'}</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Command Footer */}
-        <div className="px-4 sm:px-6 py-2.5 sm:py-3 border-t border-border/40 bg-secondary/5 flex items-center justify-between text-[9px] sm:text-[10px] font-black uppercase tracking-[0.08em] text-muted-foreground/60">
+        <div className="px-4 sm:px-6 py-2.5 sm:py-3 border-t border-border/40 bg-secondary/5 flex items-center justify-between ui-label-min text-muted-foreground/60">
            <div className="hidden sm:flex items-center gap-[var(--grid-gap)]">
               <span className="flex items-center gap-[var(--grid-gap)]"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded-none">ENTER</kbd> {lang === 'sr' ? 'IZABERI' : 'ИЗБЕРИ'}</span>
               <span className="flex items-center gap-[var(--grid-gap)]"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded-none">↑</kbd><kbd className="px-1.5 py-0.5 bg-background border border-border rounded-none">↓</kbd> {lang === 'sr' ? 'NAVIGACIJA' : 'НАВИГАЦИЈА'}</span>
@@ -1002,12 +1002,12 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
       >
         <Search size={14} className="shrink-0 text-muted-foreground group-hover:text-nyt-accent transition-colors" />
         <span className="search-trigger-copy hidden min-w-0 flex-1 overflow-hidden h-4 sm:block">
-            <span className="text-[10px] font-black uppercase tracking-[0.08em] text-muted-foreground/50 group-hover:text-muted-foreground transition-colors animate-in slide-in-from-bottom-2 duration-300 block truncate">
+            <span className="text-[11px] font-black uppercase tracking-[0.06em] text-muted-foreground/50 group-hover:text-muted-foreground transition-colors animate-in slide-in-from-bottom-2 duration-300 block truncate">
                 {placeholders[placeholderIdx]}
             </span>
         </span>
-        <kbd className="hidden lg:flex items-center gap-1 px-1.5 py-0.5 bg-background/50 border border-border rounded-none text-[8px] font-black text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors">
-            <span className="text-[10px]">⌘</span>K
+        <kbd className="hidden lg:flex items-center gap-1 px-1.5 py-0.5 bg-background/50 border border-border rounded-none text-[11px] font-black text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors">
+            <span>⌘</span>K
         </kbd>
       </button>
 

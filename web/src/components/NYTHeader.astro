@@ -5,7 +5,7 @@ import TextScaleIsland from './TextScaleIsland';
 import HeaderScrollIsland from './HeaderScrollIsland';
 import NavOverflowMenu from './NavOverflowMenu.tsx';
 import ScriptSwitcher from './ScriptSwitcher.astro';
-import { ArrowLeftRight, Sparkles, BarChart3, Radio, ShieldCheck, Compass } from 'lucide-react';
+import { ArrowLeftRight, Sparkles, BarChart3, Radio, ShieldCheck, Compass, Search } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
 import { getEditionStr } from '../utils/textUtils';
 import Branding from './Branding.astro';
@@ -100,6 +100,10 @@ const primaryNavSections = visibleSections.slice(0, 2);
 const overflowNavSections = visibleSections.slice(2);
 const overflowNavItems = overflowNavSections.flatMap((section: any) => section.items || []);
 
+const pregledHref = l('/pregled');
+const normalizedPath = Astro.url.pathname.replace(/\/$/, '');
+const isPregledActive = normalizedPath === pregledHref.replace(/\/$/, '');
+
 // Idea A: Verification Counter Logic
 const intel = stats?.intelligence;
 const totalClusters = intel?.pluralism?.total_clusters || 0;
@@ -191,6 +195,17 @@ function getRelativeTimeStr(dateStr?: string) {
                 <div class="search-entry-wrap search-entry-wrap--desktop">
                     <SearchIsland initialQuery={q} client:idle lang={lang} />
                 </div>
+                {overflowNavItems.length > 0 && (
+                    <div class="topbar-mobile-overflow">
+                        <NavOverflowMenu
+                            items={overflowNavItems}
+                            label={t('home.nav_more')}
+                            lang={lang}
+                            client:idle
+                            client:media="(max-width: 768px)"
+                        />
+                    </div>
+                )}
             </div>
 
             <div class="topbar-branding">
@@ -204,8 +219,8 @@ function getRelativeTimeStr(dateStr?: string) {
                     <a href={l('/for-you')} class="user-action-link utility-desktop-only">{t('nav.for_you')}</a>
                     <div class="utility-inline">
                         <ScriptSwitcher />
-                        <ThemeIsland client:idle lang={lang} />
-                        <TextScaleIsland client:idle lang={lang} />
+                        <ThemeIsland client:idle client:media="(min-width: 769px)" lang={lang} />
+                        <TextScaleIsland client:idle client:media="(min-width: 769px)" lang={lang} />
                     </div>
                     <details class="utility-menu">
                         <summary class="utility-menu-trigger" aria-label={lang === 'sr' ? 'Podešavanja' : 'Поставки'}>
@@ -213,9 +228,10 @@ function getRelativeTimeStr(dateStr?: string) {
                         </summary>
                         <div class="utility-menu-panel">
                             <a href={l('/for-you')} class="utility-menu-link">{t('nav.for_you')}</a>
+                            <a href={pregledHref} class="utility-menu-link">{t('nav.pregled')}</a>
                             <ScriptSwitcher />
-                            <ThemeIsland client:idle lang={lang} />
-                            <TextScaleIsland client:idle lang={lang} />
+                            <ThemeIsland client:idle client:media="(max-width: 768px)" lang={lang} />
+                            <TextScaleIsland client:idle client:media="(max-width: 768px)" lang={lang} />
                         </div>
                     </details>
                 </div>
@@ -227,6 +243,13 @@ function getRelativeTimeStr(dateStr?: string) {
         <div class="nav-rail-wrapper">
             <div class="nav-rail-scroll hide-scrollbar">
                 <div class="nav-rail-content">
+                    <div class="nav-rail-group group-core">
+                        <div class="group-links">
+                            <a href={pregledHref} class={`nav-rail-link ${isPregledActive ? 'is-active' : ''}`}>
+                                <span class="link-label">{t('nav.pregled')}</span>
+                            </a>
+                        </div>
+                    </div>
                     {primaryNavSections.map((section: any, idx) => {
                         const isCore = section.type === 'core' || idx === 0;
                         const isMagazine = section.type === 'magazine';
@@ -262,6 +285,7 @@ function getRelativeTimeStr(dateStr?: string) {
                     label={t('home.nav_more')}
                     lang={lang}
                     client:idle
+                    client:media="(min-width: 769px)"
                 />
             )}
             <div class="nav-scroll-cue" aria-hidden="true">
@@ -275,6 +299,13 @@ function getRelativeTimeStr(dateStr?: string) {
 </div>
 
 <div class="search-fab-mobile">
-    <SearchIsland initialQuery={q} client:idle lang={lang} />
+    <button
+        type="button"
+        class="search-fab-trigger"
+        data-presek-search-fab
+        aria-label={lang === 'sr' ? 'Otvori pretragu' : 'Отвори пребарување'}
+    >
+        <Search size={18} strokeWidth={2.25} aria-hidden="true" />
+    </button>
 </div>
 

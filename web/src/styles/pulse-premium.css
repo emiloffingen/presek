@@ -42,7 +42,7 @@
 
 
 .pulse-status-label {
-    font-size: 0.55rem;
+    font-size: var(--text-ui-min);
     font-weight: 900;
     letter-spacing: 0.1em;
     opacity: 0.6;
@@ -411,7 +411,7 @@
     text-align: left;
     padding: 0.85rem 1rem;
     font-family: var(--font-sans);
-    font-size: 0.6rem;
+    font-size: var(--text-ui-min);
     font-weight: 950;
     border-bottom: 1px solid var(--border);
     color: var(--muted-foreground);
@@ -444,7 +444,7 @@
 
 .pulse-table-source-info span {
     font-family: var(--font-sans);
-    font-size: 0.55rem;
+    font-size: var(--text-ui-min);
     font-weight: 850;
     text-transform: uppercase;
     color: var(--muted-foreground);

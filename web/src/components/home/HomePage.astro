@@ -22,7 +22,6 @@ import TrendingPreviewRail from './TrendingPreviewRail.astro';
 import DailyEditionBar from './DailyEditionBar.astro';
 import HomeStatsTeaser from './HomeStatsTeaser.astro';
 import LeadEvidenceChips from './LeadEvidenceChips.astro';
-import HomepageModeToggle from './HomepageModeToggle.tsx';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { chooseClusterImage } from '../../utils/imageSelection';
 import { cleanAndDecode, extractCleanSummaryText, getStoryPreviewText, highlightScores, isMostlyCyrillic, isSyntheticStandfirstBoilerplate } from '../../utils/textUtils';
@@ -37,6 +36,13 @@ import {
 	filterSynthesisPicks,
 	selectVisibleAnalysisBands,
 } from '../../lib/homepageLayout';
+
+interface Props {
+    variant?: 'feed' | 'pregled';
+}
+
+const { variant = 'feed' } = Astro.props;
+const isPregled = variant === 'pregled';
 
 const requestUrl = Astro.request ? new URL(Astro.request.url) : Astro.url;
 const hostHeader = Astro.request?.headers.get('host') || requestUrl.hostname;
@@ -532,15 +538,30 @@ if (forYouClusters.length > 0) {
 ---
 
 <Layout
-	title={q || entity || subcategory || category || topic || t('layout.title')}
-	description={q || entity || subcategory || category || topic
+	title={isPregled
+		? t('home.pregled_title')
+		: q || entity || subcategory || category || topic || t('layout.title')}
+	description={isPregled
+		? t('home.pregled_deck')
+		: q || entity || subcategory || category || topic
 		? t('layout.filtered_description')
 		: t('layout.home_description')}
-    image={leadVisual?.proxiedUrl || undefined}
+    image={!isPregled ? (leadVisual?.proxiedUrl || undefined) : undefined}
 >
+    {isPregled && (
+        <script is:inline>
+            document.documentElement.dataset.homepageMode = 'analiza';
+        </script>
+    )}
     <NYTHeader q={q} category={category} topic={topic} entity={entity} subcategory={subcategory} stats={stats} latestTickerItems={topWireArticles} />
 
-	<main class="site-layout broadsheet-layout py-0 overflow-x-hidden max-w-full" data-testid="news-feed">
+	<main
+		class:list={[
+			'site-layout broadsheet-layout py-0 overflow-x-hidden max-w-full',
+			isPregled ? 'home-page-variant-pregled' : 'home-page-variant-feed',
+		]}
+		data-testid="news-feed"
+	>
 
 		{/* Filtering Status */}
 		{(q || category || topic || entity || subcategory) && (
@@ -552,8 +573,19 @@ if (forYouClusters.length > 0) {
                 {!error && isHomepage && (
                     <div class="home-mobile-order-edition">
                         <DailyEditionBar lang={lang} />
-                        <HomepageModeToggle client:idle lang={lang} />
+                        {isPregled ? (
+                            <a href={l('/')} class="home-pregled-nav-link">{t('home.back_to_feed')}</a>
+                        ) : (
+                            <a href={l('/pregled')} class="home-pregled-nav-link">{t('home.mode_analiza')}</a>
+                        )}
                     </div>
+                )}
+
+                {isPregled && isHomepage && (
+                    <header class="home-pregled-masthead home-mobile-order-lead">
+                        <h1 class="home-pregled-title">{t('home.pregled_title')}</h1>
+                        <p class="home-pregled-deck">{t('home.pregled_deck')}</p>
+                    </header>
                 )}
 
                 {error && (
@@ -585,8 +617,8 @@ if (forYouClusters.length > 0) {
                     <EmptyState trending={trending} errorMessage={error} />
                 )}
 
-				{leadCluster && (
-					<div class="section-wrapper lead-wrapper home-mobile-order-lead">
+				{leadCluster && !isPregled && (
+					<div class="section-wrapper lead-wrapper home-mobile-order-lead home-feed-only">
                         <p class="editorial-lead-boundary-label">{t('home.editorial_lead_boundary')}</p>
 						<LeadHero
 							leadCluster={leadCluster}
@@ -689,8 +721,8 @@ if (forYouClusters.length > 0) {
                     </div>
                 )}
 
-				{leadCluster && supportingClusters.length > 0 && (
-					<div class="section-wrapper home-mobile-order-supporting">
+				{leadCluster && supportingClusters.length > 0 && !isPregled && (
+					<div class="section-wrapper home-mobile-order-supporting home-feed-only">
 						<SupportingBand
 							supportingFeatured={supportingFeatured}
 							supportingCompact={supportingCompact}
@@ -817,7 +849,7 @@ if (forYouClusters.length > 0) {
 
 				</div>
 
-                <div class="home-mobile-order-feed">
+                <div class="home-mobile-order-feed home-feed-only">
                 {forYouClusters.length > 0 && (
 					<div class="section-wrapper for-you-wrapper homepage-analiza-only" data-for-you-band>
                         <p class="for-you-boundary-label">{t('home.for_you_boundary')}</p>
@@ -923,7 +955,8 @@ if (forYouClusters.length > 0) {
 		};
 
 		const applyAnalizaDefaults = () => {
-			if (document.documentElement.dataset.homepageMode !== 'analiza') return;
+			const isPregledView = document.querySelector('.home-page-variant-pregled');
+			if (!isPregledView && document.documentElement.dataset.homepageMode !== 'analiza') return;
 			const isDesktop = window.matchMedia('(min-width: 769px)').matches;
 
 			const openUnlessToggled = (selector, forceOpen) => {
@@ -952,11 +985,6 @@ if (forYouClusters.length > 0) {
 		window.addEventListener('resize', apply, { passive: true });
 		document.addEventListener('astro:page-load', bind);
 
-		const modeObserver = new MutationObserver(apply);
-		modeObserver.observe(document.documentElement, {
-			attributes: true,
-			attributeFilter: ['data-homepage-mode'],
-		});
 	})();
 </script>
 

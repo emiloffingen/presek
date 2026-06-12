@@ -1,99 +1,43 @@
-/* ── Homepage mode toggle ─────────────────────────── */
-.homepage-mode-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 0.35rem;
-}
-
-.homepage-mode-wrap--prominent {
-  margin-bottom: 0.65rem;
-}
-
-.homepage-mode-wrap--prominent .homepage-mode-toggle {
-  width: 100%;
-  max-width: 28rem;
-  border-color: color-mix(in srgb, var(--nyt-accent) 28%, var(--border));
-  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--nyt-accent) 35%, transparent);
-}
-
-.homepage-mode-wrap--prominent .homepage-mode-btn {
-  flex: 1;
-  text-align: center;
-}
-
-.homepage-mode-toggle {
-  display: inline-flex;
-  border: 1px solid var(--border);
-  background: var(--card);
-}
-
-.homepage-mode-btn {
+/* ── Pregled nav + masthead ───────────────────────── */
+.home-pregled-nav-link {
   font-family: var(--font-ui);
-  font-size: 0.69rem;
+  font-size: var(--text-ui-kicker);
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  padding: 0.55rem 0.85rem;
-  color: var(--muted-foreground);
-  transition: color var(--transition-base), background var(--transition-base);
+  color: var(--link);
+  text-decoration: none;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--link) 28%, var(--border));
+  background: color-mix(in srgb, var(--link) 5%, var(--card));
+  white-space: nowrap;
 }
 
-.homepage-mode-hint {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.65rem;
-  padding: 0.65rem 0.75rem;
-  border: 1px solid color-mix(in srgb, var(--nyt-accent) 25%, var(--border));
-  background: color-mix(in srgb, var(--nyt-accent) 6%, var(--card));
+.home-pregled-nav-link:hover {
+  color: var(--link-hover);
+  border-color: color-mix(in srgb, var(--link) 40%, var(--border));
 }
 
-.homepage-mode-hint p {
-  flex: 1;
+.home-pregled-masthead {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
+}
+
+.home-pregled-title {
+  font-family: var(--font-serif-display);
+  font-size: var(--text-3xl);
+  line-height: 1.1;
+  margin: 0 0 0.5rem;
+}
+
+.home-pregled-deck {
   font-family: var(--font-ui);
   font-size: var(--text-sm);
-  line-height: 1.45;
+  line-height: 1.5;
   color: var(--muted-foreground);
   margin: 0;
-}
-
-.homepage-mode-hint-dismiss {
-  font-family: var(--font-ui);
-  font-size: 0.69rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--link);
-  flex-shrink: 0;
-}
-
-.homepage-mode-cta {
-  font-family: var(--font-ui);
-  font-size: var(--text-sm);
-  font-weight: 700;
-  color: var(--link);
-  text-decoration: underline;
-  text-underline-offset: 0.15em;
-  padding: 0.15rem 0;
-}
-
-.homepage-mode-cta:hover {
-  color: var(--link-hover);
-}
-
-.homepage-mode-btn.is-active {
-  color: var(--foreground);
-  background: color-mix(in srgb, var(--nyt-accent) 8%, var(--secondary));
-  box-shadow: inset 0 -2px 0 var(--nyt-accent);
-}
-
-.homepage-mode-hint--vesti {
-  border-color: color-mix(in srgb, var(--foreground) 18%, var(--border));
-  background: color-mix(in srgb, var(--secondary) 55%, var(--card));
-}
-
-.homepage-mode-btn:hover {
-  color: var(--foreground);
+  max-width: 42rem;
 }
 
 /* ── Daily edition bar ──────────────────────────────── */
@@ -109,9 +53,9 @@
 
 .daily-edition-kicker {
   font-family: var(--font-ui);
-  font-size: 0.62rem;
+  font-size: var(--text-ui-kicker);
   font-weight: 900;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--nyt-accent);
 }
@@ -173,7 +117,7 @@
 
 .lead-evidence-status-label {
   font-family: var(--font-ui);
-  font-size: 0.6rem;
+  font-size: var(--text-ui-min);
   font-weight: 900;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -188,7 +132,7 @@
 
 .lead-evidence-chip {
   font-family: var(--font-ui);
-  font-size: 0.68rem;
+  font-size: var(--text-ui-kicker);
   padding: 0.2rem 0.55rem;
   border: 1px solid var(--border);
   background: var(--card);
@@ -204,7 +148,7 @@
 .lead-evidence-expand {
   margin-left: auto;
   font-family: var(--font-ui);
-  font-size: 0.58rem;
+  font-size: var(--text-ui-min);
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -232,7 +176,7 @@
 .lead-evidence-item span {
   display: block;
   font-family: var(--font-ui);
-  font-size: 0.58rem;
+  font-size: var(--text-ui-min);
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -250,7 +194,11 @@
 }
 
 /* ── Mode-gated homepage sections ───────────────────── */
-html[data-homepage-mode="vesti"] .homepage-analiza-only {
+.home-page-variant-feed .homepage-analiza-only {
+  display: none !important;
+}
+
+.home-page-variant-pregled .home-feed-only {
   display: none !important;
 }
 
@@ -279,6 +227,10 @@ html[data-homepage-mode="vesti"] .homepage-analiza-only {
   overflow: hidden;
   border-bottom-width: 0;
   pointer-events: none;
+  transition:
+    max-height 0.35s var(--ease-editorial),
+    opacity 0.3s ease,
+    border-bottom-width 0.3s ease;
 }
 
 .header-sticky-wrapper.header--compact:not(.header--show-nav) .discovery-nav-v2 {
@@ -286,6 +238,55 @@ html[data-homepage-mode="vesti"] .homepage-analiza-only {
   opacity: 0;
   overflow: hidden;
   pointer-events: none;
+}
+
+.unified-dispatch-bar {
+  transition:
+    max-height 0.35s var(--ease-editorial),
+    opacity 0.3s ease,
+    border-bottom-width 0.3s ease;
+}
+
+.discovery-nav-v2 {
+  transition:
+    max-height 0.35s var(--ease-editorial),
+    opacity 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .header-sticky-wrapper:not(.header--show-ticker) .unified-dispatch-bar {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    border-bottom-width: 0;
+    pointer-events: none;
+  }
+
+  .discovery-nav-v2 {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    pointer-events: none;
+    border-top-width: 0;
+  }
+
+  .header-sticky-wrapper.header--show-nav .discovery-nav-v2 {
+    max-height: 2.75rem;
+    opacity: 1;
+    pointer-events: auto;
+    border-top-width: 1px;
+  }
+
+  .topbar-mobile-overflow {
+    display: flex;
+    align-items: center;
+  }
+}
+
+@media (min-width: 769px) {
+  .topbar-mobile-overflow {
+    display: none;
+  }
 }
 
 .header-sticky-wrapper.header--compact {
@@ -301,6 +302,23 @@ html[data-homepage-mode="vesti"] .homepage-analiza-only {
   display: none;
 }
 
+/* Stacked bottom chrome: consent banner + onboarding + search FAB */
+body.has-consent-banner .search-fab-mobile {
+  bottom: 4.75rem;
+}
+
+body.has-ui-onboarding .search-fab-mobile {
+  bottom: 4.75rem;
+}
+
+body.has-consent-banner.has-ui-onboarding .search-fab-mobile {
+  bottom: 9rem;
+}
+
+body.has-consent-banner .ui-concept-onboarding {
+  bottom: 4.75rem;
+}
+
 @media (max-width: 768px) {
   .search-entry-wrap--desktop {
     display: none;
@@ -312,13 +330,27 @@ html[data-homepage-mode="vesti"] .homepage-analiza-only {
     right: 1rem;
     bottom: 1rem;
     z-index: 190;
+    transition: bottom 0.3s var(--ease-editorial);
+  }
+
+  .search-fab-trigger {
     width: 3rem;
     height: 3rem;
+    display: flex;
     align-items: center;
     justify-content: center;
     border: 1px solid var(--border);
     background: var(--card);
     box-shadow: var(--shadow-lg);
+    color: var(--foreground);
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .search-fab-trigger:hover {
+    border-color: color-mix(in srgb, var(--nyt-accent) 35%, var(--border));
+    background: color-mix(in srgb, var(--nyt-accent) 6%, var(--card));
+    color: var(--nyt-accent);
   }
 }
 
@@ -338,7 +370,7 @@ html[data-homepage-mode="vesti"] .homepage-analiza-only {
   list-style: none;
   cursor: pointer;
   font-family: var(--font-ui);
-  font-size: 0.62rem;
+  font-size: var(--text-ui-kicker);
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -391,7 +423,7 @@ html[data-homepage-mode="vesti"] .homepage-analiza-only {
   align-items: center;
   gap: 0.35rem;
   font-family: var(--font-ui);
-  font-size: 0.69rem;
+  font-size: var(--text-ui-kicker);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -427,9 +459,9 @@ html[data-homepage-mode="vesti"] .homepage-analiza-only {
 
 .ui-concept-kicker {
   font-family: var(--font-ui);
-  font-size: 0.58rem;
+  font-size: var(--text-ui-kicker);
   font-weight: 900;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--nyt-accent);
   margin-bottom: 0.45rem;
@@ -466,9 +498,9 @@ html[data-homepage-mode="vesti"] .homepage-analiza-only {
 
 .ui-concept-link {
   font-family: var(--font-ui);
-  font-size: 0.66rem;
+  font-size: var(--text-ui-min);
   font-weight: 850;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--nyt-accent);
   text-decoration: none;
@@ -483,7 +515,7 @@ html[data-homepage-mode="vesti"] .homepage-analiza-only {
 .ui-concept-secondary,
 .ui-concept-close {
   font-family: var(--font-ui);
-  font-size: 0.69rem;
+  font-size: var(--text-ui-kicker);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -508,9 +540,36 @@ html[data-homepage-mode="vesti"] .homepage-analiza-only {
 }
 
 @media (max-width: 768px) {
+  .home-mobile-order-edition {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .home-mobile-order-edition .daily-edition-bar {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0.35rem 0 0.45rem;
+    margin-bottom: 0;
+    border-bottom: none;
+  }
+
+  .home-mobile-order-edition .daily-edition-date {
+    font-size: var(--text-sm);
+  }
+
+  .home-mobile-order-edition .home-pregled-nav-link {
+    flex: 0 0 auto;
+    font-size: var(--text-ui-min);
+    padding: 0.38rem 0.5rem;
+  }
+
   .ui-concept-onboarding {
     bottom: 4.25rem;
     padding: 0.85rem 0.9rem;
+    transition: bottom 0.3s var(--ease-editorial);
   }
 
   .analysis-band-collapsible {
@@ -581,7 +640,7 @@ html[data-homepage-mode="vesti"] .homepage-analiza-only {
   align-items: center;
   gap: 0.35rem;
   font-family: var(--font-ui);
-  font-size: 0.69rem;
+  font-size: var(--text-ui-kicker);
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -631,7 +690,7 @@ html[data-homepage-mode="vesti"] .homepage-analiza-only {
 
 .source-timeline-jump {
   font-family: var(--font-ui);
-  font-size: 0.62rem;
+  font-size: var(--text-ui-kicker);
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -660,31 +719,6 @@ html[data-homepage-mode="vesti"] .homepage-analiza-only {
   .editorial-sidebar-col {
     order: 2;
   }
-
-  .editorial-sidebar-col .sidebar-deferred {
-    display: none;
-  }
-
-  .editorial-sidebar-col.is-expanded .sidebar-deferred {
-    display: block;
-  }
-}
-
-.cluster-sidebar-toggle {
-  display: none;
-}
-
-@media (max-width: 1023px) {
-  .cluster-sidebar-toggle {
-    display: inline-flex;
-    font-family: var(--font-ui);
-    font-size: 0.69rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--link);
-    margin-bottom: 0.75rem;
-  }
 }
 
 /* ── Pluralism conflict cards ─────────────────────── */
@@ -711,7 +745,7 @@ html[data-homepage-mode="vesti"] .homepage-analiza-only {
 
 .conflict-headline-kicker {
   font-family: var(--font-ui);
-  font-size: 0.69rem;
+  font-size: var(--text-ui-kicker);
   font-weight: 900;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -721,7 +755,7 @@ html[data-homepage-mode="vesti"] .homepage-analiza-only {
 
 .conflict-headline-variant {
   font-family: var(--font-ui);
-  font-size: 0.68rem;
+  font-size: var(--text-ui-kicker);
   line-height: 1.35;
   color: var(--muted-foreground);
 }

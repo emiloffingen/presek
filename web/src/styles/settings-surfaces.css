@@ -669,7 +669,7 @@
 
 .delivery-toggle strong {
   flex-shrink: 0;
-  font-size: 0.62rem;
+  font-size: var(--text-ui-kicker);
   color: var(--muted-foreground);
 }
 
@@ -840,7 +840,7 @@
   .scheduled-delivery-label span,
   .account-sync-kicker,
   .account-sync-label span {
-    font-size: 0.58rem;
+    font-size: var(--text-ui-min);
     letter-spacing: 0.05em;
   }
 
@@ -872,7 +872,7 @@
   .settings-stat-card span,
   .settings-recent-topic,
   .delivery-toggle strong {
-    font-size: 0.56rem;
+    font-size: var(--text-ui-min);
     letter-spacing: 0.05em;
   }
 
@@ -886,7 +886,7 @@
   .delivery-toggle,
   .delivery-action {
     padding: 0.62rem 0.7rem;
-    font-size: 0.6rem;
+    font-size: var(--text-ui-min);
     letter-spacing: 0.05em;
     min-height: 3rem;
   }
@@ -914,7 +914,7 @@
 
   .settings-chip {
     padding: 0.48rem 0.58rem;
-    font-size: 0.62rem;
+    font-size: var(--text-ui-kicker);
   }
 
   .settings-suggestion-value {

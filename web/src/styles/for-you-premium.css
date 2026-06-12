@@ -39,10 +39,10 @@
     gap: 0.5rem;
     margin-bottom: 0.85rem;
     font-family: var(--font-sans);
-    font-size: 0.68rem;
+    font-size: var(--text-ui-kicker);
     font-weight: 950;
     text-transform: uppercase;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.1em;
     color: var(--nyt-accent);
 }
 
@@ -88,10 +88,10 @@
     gap: 0.55rem;
     align-items: center;
     font-family: var(--font-sans);
-    font-size: 0.72rem;
+    font-size: var(--text-ui-kicker);
     font-weight: 950;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
 }
 
 .signal-head svg {
@@ -135,7 +135,7 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-md, 0px);
     font-family: var(--font-sans);
-    font-size: 0.72rem;
+    font-size: var(--text-ui-kicker);
     font-weight: 850;
     color: var(--muted-foreground);
 }
@@ -188,10 +188,10 @@
 .discover-suggestion span,
 .next-item span {
     font-family: var(--font-sans);
-    font-size: 0.65rem;
+    font-size: var(--text-ui-min);
     font-weight: 900;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
     color: var(--muted-foreground);
 }
 
@@ -212,10 +212,10 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-md, 0px);
     font-family: var(--font-sans);
-    font-size: 0.68rem;
+    font-size: var(--text-ui-kicker);
     font-weight: 900;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     color: var(--foreground);
 }
 
@@ -291,7 +291,7 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-md, 0px);
     font-family: var(--font-sans);
-    font-size: 0.62rem;
+    font-size: var(--text-ui-min);
     font-weight: 900;
     text-transform: uppercase;
     color: var(--muted-foreground);
@@ -491,11 +491,72 @@
     border: 1px solid color-mix(in srgb, var(--nyt-accent) 25%, var(--border));
     background: color-mix(in srgb, var(--nyt-accent) 8%, transparent);
     font-family: var(--font-sans);
-    font-size: 0.58rem;
+    font-size: var(--text-ui-min);
     font-weight: 900;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--nyt-accent);
+}
+
+.for-you-rail-context {
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--secondary) 15%, var(--background));
+}
+
+.for-you-rail-context-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 0.9rem;
+    cursor: pointer;
+    list-style: none;
+    font-family: var(--font-ui);
+    font-size: var(--text-ui-kicker);
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.for-you-rail-context-summary::-webkit-details-marker {
+    display: none;
+}
+
+.for-you-rail-context-hint {
+    color: var(--muted-foreground);
+}
+
+.for-you-rail-context-hint::after {
+    content: ' +';
+    color: var(--nyt-accent);
+}
+
+.for-you-rail-context[open] .for-you-rail-context-hint::after {
+    content: ' −';
+}
+
+.for-you-rail-context-body {
+    padding: 0.85rem 0.9rem 1rem;
+    border-top: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+    display: grid;
+    gap: 1.25rem;
+}
+
+@media (min-width: 981px) {
+    .for-you-rail-context {
+        border: none;
+        background: transparent;
+    }
+
+    .for-you-rail-context-summary {
+        display: none;
+    }
+
+    .for-you-rail-context-body {
+        padding: 0;
+        border-top: none;
+        display: grid;
+        gap: 1.4rem;
+    }
 }
 
 .personalization-why-chip--detail {

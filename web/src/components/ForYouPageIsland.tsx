@@ -243,15 +243,15 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
           <div className="signal-metrics">
             <span title={isMK ? 'Следени сигнали (теми и извори)' : 'Praćeni signali (teme i izvori)'}>
               <BellRing size={13} /> {followedTopics.length + followedSources.length}
-              <small className="ml-1 text-[9px] opacity-70 font-normal">{isMK ? 'сигнали' : 'signala'}</small>
+              <small className="ml-1 text-[11px] opacity-70 font-normal">{isMK ? 'сигнали' : 'signala'}</small>
             </span>
             <span title={isMK ? 'Препорачани приказни' : 'Preporučene priče'}>
               <Layers size={13} /> {mergedClusters.length}
-              <small className="ml-1 text-[9px] opacity-70 font-normal">{isMK ? 'вести' : 'vesti'}</small>
+              <small className="ml-1 text-[11px] opacity-70 font-normal">{isMK ? 'вести' : 'vesti'}</small>
             </span>
             <span title={isMK ? 'Опфатени извори' : 'Obuhvaćeni izvori'}>
               <Radio size={13} /> {sourceCount}
-              <small className="ml-1 text-[9px] opacity-70 font-normal">{isMK ? 'извори' : 'izvora'}</small>
+              <small className="ml-1 text-[11px] opacity-70 font-normal">{isMK ? 'извори' : 'izvora'}</small>
             </span>
           </div>
         </div>
@@ -349,56 +349,64 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
             </div>
           </section>
 
-          {categoryLeaders.length > 0 && (
-            <section className="rail-panel">
-              <h3><Layers size={16} /> {isMK ? 'Фокус денес' : 'Fokus danas'}</h3>
-              <div className="category-bars">
-                {categoryLeaders.map(([category, count]) => (
-                  <div key={category} className="category-row">
-                    <span>{category}</span>
-                    <strong>{count}</strong>
+          <details className="for-you-rail-context">
+            <summary className="for-you-rail-context-summary">
+              <span>{isMK ? 'Контекст и сигнали' : 'Kontekst i signali'}</span>
+              <span className="for-you-rail-context-hint ui-label-min">{isMK ? 'ОТВОРИ' : 'OTVORI'}</span>
+            </summary>
+            <div className="for-you-rail-context-body">
+              {categoryLeaders.length > 0 && (
+                <section className="rail-panel">
+                  <h3><Layers size={16} /> {isMK ? 'Фокус денес' : 'Fokus danas'}</h3>
+                  <div className="category-bars">
+                    {categoryLeaders.map(([category, count]) => (
+                      <div key={category} className="category-row">
+                        <span>{category}</span>
+                        <strong>{count}</strong>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </section>
-          )}
+                </section>
+              )}
 
-          {followSuggestions.length > 0 && (
-            <section className="rail-panel">
-              <h3><Compass size={16} /> {isMK ? 'Додај сигнал' : 'Dodaj signal'}</h3>
-              <div className="discover-stack">
-                {followSuggestions.map((item: any) => (
-                  <div key={`${item.kind}:${item.value}`} className="discover-suggestion">
-                    <div>
-                      <strong>{item.value}</strong>
-                      <span>{item.kind === 'topic' ? (isMK ? 'тема' : 'tema') : (isMK ? 'извор' : 'izvor')}</span>
-                    </div>
-                    <PreferenceToggle
-                      kind={item.kind as any}
-                      value={item.value}
-                      lang={lang}
-                      analyticsSurface="for_you_page_discover"
-                    />
+              {followSuggestions.length > 0 && (
+                <section className="rail-panel">
+                  <h3><Compass size={16} /> {isMK ? 'Додај сигнал' : 'Dodaj signal'}</h3>
+                  <div className="discover-stack">
+                    {followSuggestions.map((item: any) => (
+                      <div key={`${item.kind}:${item.value}`} className="discover-suggestion">
+                        <div>
+                          <strong>{item.value}</strong>
+                          <span>{item.kind === 'topic' ? (isMK ? 'тема' : 'tema') : (isMK ? 'извор' : 'izvor')}</span>
+                        </div>
+                        <PreferenceToggle
+                          kind={item.kind as any}
+                          value={item.value}
+                          lang={lang}
+                          analyticsSurface="for_you_page_discover"
+                        />
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </section>
-          )}
+                </section>
+              )}
 
-          {queueClusters.length > 0 && (
-            <section className="rail-panel">
-              <h3><Radio size={16} /> {isMK ? 'Следно' : 'Sledeće'}</h3>
-              <div className="next-stack">
-                {queueClusters.map((cluster) => (
-                  <a key={cluster.cluster_id} href={localePathForLang(`/cluster/${cluster.cluster_id}`, isMK ? 'mk' : 'sr')} className="next-item">
-                    <span>{formatTime(clusterTime(cluster), lang)}</span>
-                    <strong>{clusterTitle(cluster)}</strong>
-                    <ArrowUpRight size={13} />
-                  </a>
-                ))}
-              </div>
-            </section>
-          )}
+              {queueClusters.length > 0 && (
+                <section className="rail-panel">
+                  <h3><Radio size={16} /> {isMK ? 'Следно' : 'Sledeće'}</h3>
+                  <div className="next-stack">
+                    {queueClusters.map((cluster) => (
+                      <a key={cluster.cluster_id} href={localePathForLang(`/cluster/${cluster.cluster_id}`, isMK ? 'mk' : 'sr')} className="next-item">
+                        <span>{formatTime(clusterTime(cluster), lang)}</span>
+                        <strong>{clusterTitle(cluster)}</strong>
+                        <ArrowUpRight size={13} />
+                      </a>
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
+          </details>
         </aside>
       </div>
     </div>

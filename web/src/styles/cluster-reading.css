@@ -1,5 +1,244 @@
 /* Cluster reading modes: zen focus + source compare */
 
+/* ── Collapsed source details (default read mode) ─── */
+.cluster-source-details {
+  margin-top: 1.25rem;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--secondary) 18%, var(--background));
+}
+
+.cluster-source-details-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  cursor: pointer;
+  list-style: none;
+  font-family: var(--font-ui);
+  font-size: var(--text-ui-kicker);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.cluster-source-details-summary::-webkit-details-marker {
+  display: none;
+}
+
+.cluster-source-details-title {
+  color: var(--foreground);
+}
+
+.cluster-source-details-meta {
+  font-size: var(--text-ui-min);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--muted-foreground);
+  text-align: right;
+}
+
+.cluster-source-details-meta.tone-verified {
+  color: var(--editorial-positive);
+}
+
+.cluster-source-details-meta.tone-mixed {
+  color: var(--editorial-watch);
+}
+
+.cluster-source-details-meta.tone-early,
+.cluster-source-details-meta.tone-stale {
+  color: var(--nyt-red);
+}
+
+.cluster-source-details-body {
+  border-top: 1px solid var(--border);
+}
+
+.cluster-source-details .cluster-evidence-strip {
+  margin-top: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.cluster-source-details .reader-command-bar {
+  margin-top: 0;
+  padding: 0.65rem 0.9rem 0.5rem;
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.cluster-source-details[open] .cluster-reading-bar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: color-mix(in srgb, var(--background) 94%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+@media (max-width: 768px) {
+  .cluster-source-details-summary {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+
+  .cluster-source-details-meta {
+    text-align: left;
+  }
+}
+
+/* ── Sidebar progressive disclosure ───────────────── */
+.cluster-sidebar-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.sidebar-primary {
+  border-top: none;
+  padding-top: 0;
+}
+
+.cluster-sidebar-details {
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--secondary) 22%, var(--background));
+}
+
+.cluster-sidebar-details-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.cluster-sidebar-details-summary::-webkit-details-marker {
+  display: none;
+}
+
+.cluster-sidebar-details-title {
+  font-family: var(--font-ui);
+  font-size: var(--text-ui-kicker);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--foreground);
+}
+
+.cluster-sidebar-details-hint {
+  font-family: var(--font-ui);
+  font-size: var(--text-ui-min);
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-align: right;
+}
+
+.cluster-sidebar-details-summary::after {
+  content: '+';
+  flex-shrink: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--nyt-accent);
+  line-height: 1;
+}
+
+.cluster-sidebar-details[open] .cluster-sidebar-details-summary::after {
+  content: '−';
+}
+
+.cluster-sidebar-details-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 0.85rem 0.9rem 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+}
+
+.cluster-sidebar-details-body .sidebar-module {
+  border-top: none;
+  padding-top: 0;
+}
+
+@media (max-width: 768px) {
+  .cluster-sidebar-details-summary {
+    flex-wrap: wrap;
+  }
+
+  .cluster-sidebar-details-hint {
+    flex: 1 1 auto;
+    text-align: left;
+  }
+}
+
+/* ── Cluster deep tools (storyline / history) ─────── */
+.cluster-deep-tools-details {
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--secondary) 18%, var(--background));
+}
+
+.cluster-deep-tools-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.cluster-deep-tools-summary::-webkit-details-marker {
+  display: none;
+}
+
+.cluster-deep-tools-title {
+  font-family: var(--font-ui);
+  font-size: var(--text-ui-kicker);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--foreground);
+}
+
+.cluster-deep-tools-hint {
+  font-family: var(--font-ui);
+  font-size: var(--text-ui-min);
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-align: right;
+}
+
+.cluster-deep-tools-summary::after {
+  content: '+';
+  flex-shrink: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--nyt-accent);
+  line-height: 1;
+}
+
+.cluster-deep-tools-details[open] .cluster-deep-tools-summary::after {
+  content: '−';
+}
+
+.cluster-deep-tools-body {
+  display: grid;
+  gap: 1.25rem;
+  padding: 0.85rem 0.9rem 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+}
+
+@media (max-width: 768px) {
+  .cluster-deep-tools-summary {
+    flex-wrap: wrap;
+  }
+
+  .cluster-deep-tools-hint {
+    flex: 1 1 auto;
+    text-align: left;
+  }
+}
+
 /* ── Zen (focus) mode ─────────────────────────────── */
 body.zen-mode .site-header,
 body.zen-mode .site-footer,
@@ -8,6 +247,7 @@ body.zen-mode .executive-summary,
 body.zen-mode .citation-sources-box,
 body.zen-mode .cluster-articles-grid,
 body.zen-mode .editorial-sidebar-col,
+body.zen-mode .cluster-deep-tools,
 body.zen-mode .advanced-tools,
 body.zen-mode .editorial-section:not(.narrative-section):not(.related-section) {
   display: none !important;
@@ -18,8 +258,7 @@ body.zen-mode .editorial-lede .lede-toolbar,
 body.zen-mode .editorial-header-v2 .edition-kicker,
 body.zen-mode .editorial-header-v2 .header-meta,
 body.zen-mode .editorial-header-v2 .header-actions,
-body.zen-mode .editorial-header-v2 .cluster-evidence-strip,
-body.zen-mode .editorial-header-v2 .reader-command-bar {
+body.zen-mode .editorial-header-v2 .cluster-source-details {
   display: none !important;
 }
 
@@ -118,7 +357,9 @@ body.compare-mode .compare-source-diff-panel {
   background: color-mix(in srgb, var(--nyt-accent) 4%, var(--card));
 }
 
-body.compare-mode .sidebar-deferred:not(.compare-source-diff-panel) {
+body.compare-mode .cluster-sidebar-details .sidebar-module:not(.compare-source-diff-panel),
+body.compare-mode .cluster-sidebar-details .sidebar-newsletter-slot,
+body.compare-mode .cluster-sidebar-details .sidebar-ad-slot {
   display: none !important;
 }
 
@@ -131,8 +372,7 @@ body.compare-mode .cluster-articles-grid {
   display: block !important;
 }
 
-body.compare-mode .editorial-sidebar-col.is-expanded .sidebar-deferred,
-body.compare-mode .editorial-sidebar-col .sidebar-deferred.compare-source-diff-panel {
+body.compare-mode .cluster-sidebar-details[open] .compare-source-diff-panel {
   display: block !important;
 }
 

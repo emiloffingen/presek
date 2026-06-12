@@ -197,7 +197,7 @@ function topicIntro() {
 >
 	<NYTHeader topic={topic} />
 
-	<main class="site-layout py-[var(--page-py)]">
+	<main class="site-layout page-content-top pb-[var(--page-py)]">
 		{(error || !clusters.length) && (
 			<Breadcrumbs items={[{ label: "Теми", href: homePath('mk', hostHeader) }, { label: topic || "Тема" }]} />
 		)}
@@ -263,23 +263,29 @@ function topicIntro() {
 						</div>
 					</div>
 
-					<div class="topic-hero-side">
-						<div class="topic-note-card">
-							<p class="topic-note-label">Што го движи овој простор</p>
-							<ul class="topic-note-list">
-								{(synthesisLines.length > 0 ? synthesisLines : [leadSummary]).map((line: string) => (
-									<li>{line}</li>
-								))}
-							</ul>
+					<details class="topic-hero-context">
+						<summary class="topic-hero-context-summary">
+							<span class="ui-label">Контекст на темата</span>
+							<span class="topic-hero-context-hint ui-label-min text-muted-foreground">ОТВОРИ</span>
+						</summary>
+						<div class="topic-hero-side topic-hero-context-body">
+							<div class="topic-note-card">
+								<p class="topic-note-label">Што го движи овој простор</p>
+								<ul class="topic-note-list">
+									{(synthesisLines.length > 0 ? synthesisLines : [leadSummary]).map((line: string) => (
+										<li>{line}</li>
+									))}
+								</ul>
+							</div>
+							<TopicFollowSuggestionsIsland
+								client:visible
+								currentTopic={topic}
+								relatedTopics={topicFollowSuggestions}
+								strongSources={sourceFollowSuggestions}
+								lang={lang}
+							/>
 						</div>
-						<TopicFollowSuggestionsIsland
-							client:visible
-							currentTopic={topic}
-							relatedTopics={topicFollowSuggestions}
-							strongSources={sourceFollowSuggestions}
-                            lang={lang}
-						/>
-					</div>
+					</details>
 				</header>
 
 				<div class="topic-layout">
@@ -354,6 +360,12 @@ function topicIntro() {
 					<aside class="topic-rail">
 						<TinyAdzRailAd />
 
+						<details class="topic-rail-context">
+							<summary class="topic-rail-context-summary">
+								<span class="ui-label">Контекст и врски</span>
+								<span class="topic-rail-context-hint ui-label-min text-muted-foreground">ОТВОРИ</span>
+							</summary>
+							<div class="topic-rail-context-body">
 						{tagRows.length > 0 && (
 							<section class="rail-card">
 								<h3 class="rail-card-title">Имиња и агли</h3>
@@ -417,7 +429,8 @@ function topicIntro() {
 								</div>
 							</section>
 						)}
-
+							</div>
+						</details>
 					</aside>
 				</div>
 			</>
@@ -471,7 +484,7 @@ function topicIntro() {
 		padding: 0.7rem 1rem;
 		border: 1px solid var(--foreground);
 		font-family: var(--font-sans);
-		font-size: 0.68rem;
+		font-size: var(--text-ui-kicker);
 		font-weight: 900;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
@@ -484,12 +497,69 @@ function topicIntro() {
 		color: var(--foreground);
 		background: transparent;
 	}
-</style>
 
-<style>
-	.topic-page {
-		padding-top: 2rem;
-		padding-bottom: 4rem;
+	.topic-hero-context,
+	.topic-rail-context {
+		border: 1px solid var(--border);
+		background: color-mix(in srgb, var(--secondary) 12%, var(--background));
+	}
+
+	.topic-hero-context-summary,
+	.topic-rail-context-summary {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.75rem 0.9rem;
+		cursor: pointer;
+		list-style: none;
+	}
+
+	.topic-hero-context-summary::-webkit-details-marker,
+	.topic-rail-context-summary::-webkit-details-marker {
+		display: none;
+	}
+
+	.topic-hero-context-hint::after,
+	.topic-rail-context-hint::after {
+		content: ' +';
+		color: var(--nyt-accent);
+	}
+
+	.topic-hero-context[open] .topic-hero-context-hint::after,
+	.topic-rail-context[open] .topic-rail-context-hint::after {
+		content: ' −';
+	}
+
+	.topic-hero-context-body {
+		padding: 0.85rem 0.9rem 1rem;
+		border-top: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+	}
+
+	.topic-rail-context-body {
+		padding: 0.85rem 0.9rem 1rem;
+		border-top: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	@media (min-width: 720px) {
+		.topic-hero-context,
+		.topic-rail-context {
+			border: none;
+			background: transparent;
+		}
+
+		.topic-hero-context-summary,
+		.topic-rail-context-summary {
+			display: none;
+		}
+
+		.topic-hero-context-body,
+		.topic-rail-context-body {
+			padding: 0;
+			border-top: none;
+		}
 	}
 
 	.topic-hero {
@@ -503,10 +573,10 @@ function topicIntro() {
 
 	.topic-kicker,
 	.micro-label {
-		font-family: var(--font-sans);
-		font-size: 0.68rem;
+		font-family: var(--font-ui);
+		font-size: var(--text-ui-kicker);
 		font-weight: 900;
-		letter-spacing: 0.08em;
+		letter-spacing: 0.06em;
 		text-transform: uppercase;
 		color: var(--nyt-accent);
 	}
@@ -856,7 +926,7 @@ function topicIntro() {
 
 	.topic-source-row span {
 		font-family: var(--font-sans);
-		font-size: 0.68rem;
+		font-size: var(--text-ui-kicker);
 		font-weight: 700;
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
@@ -944,218 +1014,3 @@ function topicIntro() {
 	}
 
 	@media (max-width: 639px) {
-		.topic-page {
-			padding-top: 1.2rem;
-		}
-
-		.topic-empty {
-			padding: 2.5rem 0;
-		}
-
-		.topic-empty-inner {
-			padding: 0 0.85rem;
-		}
-
-		.topic-empty-title {
-			margin: 0.45rem 0 0.75rem;
-			font-size: clamp(1.7rem, 8vw, 2.5rem);
-		}
-
-		.topic-empty p {
-			font-size: 0.95rem;
-			line-height: 1.55;
-		}
-
-		.topic-empty-actions {
-			gap: 0.55rem;
-			margin-top: 1rem;
-		}
-
-		.topic-empty-link {
-			padding: 0.6rem 0.75rem;
-			font-size: 0.6rem;
-		}
-
-		.topic-hero {
-			gap: 1rem;
-			padding-bottom: 1rem;
-			margin-bottom: 1.2rem;
-		}
-
-		.topic-kicker,
-		.micro-label {
-			font-size: 0.56rem;
-			letter-spacing: 0.06em;
-		}
-
-		.topic-headline {
-			max-width: none;
-			margin: 0.35rem 0 0.55rem;
-			font-size: clamp(1.9rem, 8.4vw, 2.6rem);
-			line-height: 0.98;
-		}
-
-		.topic-actions {
-			margin-bottom: 0.65rem;
-		}
-
-		.topic-intro {
-			margin-bottom: 0.55rem;
-			font-size: 0.93rem;
-			line-height: 1.48;
-		}
-
-		.topic-summary {
-			font-size: 0.62rem;
-			letter-spacing: 0.05em;
-			line-height: 1.45;
-		}
-
-		.topic-stats {
-			grid-template-columns: 1fr 1fr;
-			gap: 0.65rem;
-			margin-top: 0.8rem;
-		}
-
-		.topic-stats strong {
-			margin-top: 0.25rem;
-			font-size: 1.35rem;
-		}
-
-		.topic-note-card,
-		.rail-card,
-		.topic-follow-suggestions {
-			padding: 0.85rem;
-		}
-
-		.topic-note-label,
-		.rail-card-title {
-			margin-bottom: 0.7rem;
-			font-size: 0.64rem;
-			letter-spacing: 0.06em;
-		}
-
-		.topic-note-list {
-			gap: 0.45rem;
-			padding-left: 0.85rem;
-			font-size: 0.88rem;
-			line-height: 1.45;
-		}
-
-		.topic-follow-suggestions {
-			gap: 0.7rem;
-		}
-
-		.topic-follow-suggestions-copy,
-		.topic-follow-suggestion-reason,
-		.topic-connection-copy,
-		.topic-related-link p,
-		.topic-angle-card p {
-			font-size: 0.86rem;
-			line-height: 1.42;
-		}
-
-		.topic-follow-suggestion-card {
-			gap: 0.55rem;
-			padding: 0.75rem;
-		}
-
-		.topic-follow-suggestion-kicker,
-		.topic-connection-kicker,
-		.topic-connection-meta,
-		.topic-related-kicker,
-		.topic-related-cta {
-			font-size: 0.56rem;
-			letter-spacing: 0.05em;
-		}
-
-		.topic-follow-suggestion-card h4,
-		.topic-connection-card h4,
-		.topic-source-row p,
-		.topic-related-link strong {
-			font-size: 0.92rem;
-			line-height: 1.12;
-		}
-
-		.topic-layout {
-			gap: 1.25rem;
-		}
-
-		.section-heading-row {
-			gap: 0.25rem;
-			margin-bottom: 0.8rem;
-		}
-
-		.section-title {
-			font-size: 1.2rem;
-			line-height: 1.02;
-		}
-
-		.section-note {
-			font-size: 0.64rem;
-			letter-spacing: 0.03em;
-		}
-
-		.topic-supporting,
-		.topic-feed,
-		.topic-angles {
-			margin-top: 1.15rem;
-		}
-
-		.topic-supporting-grid,
-		.topic-feed-grid,
-		.topic-angle-grid,
-		.topic-source-list,
-		.topic-related-list,
-		.topic-connection-list,
-		.topic-follow-suggestion-list {
-			gap: 0.65rem;
-		}
-
-		.topic-angle-card {
-			padding: 0.85rem;
-		}
-
-		.topic-angle-card h3 {
-			margin-bottom: 0.35rem;
-			font-size: 0.64rem;
-			letter-spacing: 0.06em;
-		}
-
-		.topic-rail {
-			gap: 0.65rem;
-		}
-
-		.topic-chip-list {
-			gap: 0.45rem;
-		}
-
-		.topic-chip {
-			padding: 0.34rem 0.45rem;
-			font-size: 0.56rem;
-			letter-spacing: 0.04em;
-		}
-
-		.topic-chip strong {
-			font-size: 0.54rem;
-		}
-
-		.topic-source-row {
-			grid-template-columns: 1.65rem 1fr;
-			gap: 0.55rem;
-		}
-
-		.topic-source-rank {
-			font-size: 1.15rem;
-		}
-
-		.topic-source-row span {
-			font-size: 0.6rem;
-		}
-
-		.topic-related-link,
-		.topic-connection-card {
-			padding-top: 0.65rem;
-		}
-	}
-</style>

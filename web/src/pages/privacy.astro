@@ -2,75 +2,77 @@
 import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
-import Breadcrumbs from '../components/Breadcrumbs.astro';
-import { Shield, Lock, EyeOff, Globe } from 'lucide-react';
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
+
+const hostHeader = Astro.request?.headers.get('host');
+const lang = getLangFromUrl(Astro.url, hostHeader);
+const t = useTranslations(lang);
 ---
 
-<Layout
-    title="Политика приватности — Пресек"
-    description="Транспарентност у обради података: Како Пресек штити ваше информације."
->
+<Layout title={t('legal.privacy.title')} description={t('legal.privacy.description')}>
     <NYTHeader />
-    <main class="site-layout broadsheet-layout py-[var(--page-py)]">
+    <main class="site-layout broadsheet-layout page-content-top pb-[var(--page-py)]">
         <header class="editorial-masthead mb-12">
             <div class="masthead-top">
-                <span class="masthead-kicker">ПРАВНО И ПРИВАТНОСТ</span>
+                <span class="masthead-kicker ui-label">{t('legal.privacy.kicker')}</span>
             </div>
             <div class="masthead-main">
-                <h1 class="masthead-title">Политика <span>Приватности</span></h1>
+                <h1 class="masthead-title">{t('legal.privacy.heading_prefix')} <span>{t('legal.privacy.heading_span')}</span></h1>
             </div>
-            <p class="masthead-intro">
-                Ваша приватност је у основи наше архитектуре. Ова страница објашњава како третирамо техничке сигнале и везе ка спољним изворима.
-            </p>
+            <p class="masthead-intro">{t('legal.privacy.intro')}</p>
         </header>
 
-        <div class="broadsheet-grid">
-            <div class="broadsheet-main">
+        <div class="editorial-broadsheet-grid">
+            <div class="editorial-broadsheet-main">
                 <article class="prose-editorial">
-                    <p class="first-paragraph">
-                        Пресек је сервис за агрегирање и контекстуализацију вести који ради на принципима максималне анонимности за све кориснике. За разлику од друштвених мрежа, ми не градимо личне профиле и не пратимо вашу активност ван оквира платформе.
-                    </p>
+                    <p class="first-paragraph">{t('legal.privacy.lead')}</p>
 
-                    <h2 class="section-title-italic">1. Прикупљање информација</h2>
-                    <p>
-                        Пресек не захтева регистрацију, име, презиме или имејл за основну употребу сервиса. Већина података који омогућавају персонализацију (као што су избор омиљених тема или тамна тема) чувају се локално на вашем уређају (LocalStorage) и никада не напуштају ваше окружење.
-                    </p>
+                    <h2 class="section-title-italic">{t('legal.privacy.section1_title')}</h2>
+                    <p>{t('legal.privacy.section1_body')}</p>
 
-                    <h2 class="section-title-italic">2. Оглашавање и колачићи (Google AdSense)</h2>
-                    <p>
-                        За финансијску одрживост пројекта, Пресек може користити спољне рекламне партнере, укључујући Google. Спољни добављачи, укључујући Google, користе колачиће за приказивање огласа на основу претходних посета корисника Пресеку или другим веб-сајтовима.
-                    </p>
-                    <p>
-                        Google-ово коришћење колачића за оглашавање омогућава њему и његовим партнерима да приказују огласе корисницима на основу њихових посета Пресеку и/или другим сајтовима на Интернету.
-                    </p>
+                    <h2 class="section-title-italic">{t('legal.privacy.section2_title')}</h2>
+                    <p>{t('legal.privacy.section2_body1')}</p>
+                    <p>{t('legal.privacy.section2_body2')}</p>
                     <ul class="editorial-list">
-                        <li><strong>Контрола и искључивање:</strong> Корисници могу онемогућити персонализовано оглашавање посетом странице <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer" class="underline hover:text-nyt-accent">Подешавање Google огласа (Ads Settings)</a>.</li>
-                        <li><strong>Други добављачи:</strong> Можете онемогућити употребу колачића трећих страна за персонализовано оглашавање посетом странице <a href="https://www.aboutads.info" target="_blank" rel="noopener noreferrer" class="underline hover:text-nyt-accent">www.aboutads.info</a>.</li>
+                        <li>
+                            <strong>{t('legal.privacy.section2_list1_strong')}</strong>
+                            {t('legal.privacy.section2_list1_text')}
+                            <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer" class="underline hover:text-nyt-accent">{t('legal.privacy.section2_list1_link')}</a>.
+                        </li>
+                        <li>
+                            <strong>{t('legal.privacy.section2_list2_strong')}</strong>
+                            {t('legal.privacy.section2_list2_text')}
+                            <a href="https://www.aboutads.info" target="_blank" rel="noopener noreferrer" class="underline hover:text-nyt-accent">{t('legal.privacy.section2_list2_link')}</a>.
+                        </li>
                     </ul>
 
-                    <h2 class="section-title-italic">3. Спољни извори</h2>
-                    <p>
-                        Пресек садржи везе до спољних медија. Када кликнете на „Оригинална објава“, ви напуштате нашу платформу и улазите у домен одговарајућег медија, чија Политика приватности је ван наше контроле.
-                    </p>
+                    <h2 class="section-title-italic">{t('legal.privacy.section3_title')}</h2>
+                    <p>{t('legal.privacy.section3_body')}</p>
 
-                    <h2 class="section-title-italic">4. Аналитика</h2>
-                    <p>
-                        Користимо анонимне, агрегиране податке како бисмо идентификовали најпосећеније категорије и оптимизовали перформансе сервера. Ови подаци се користе искључиво у техничке сврхе.
-                    </p>
+                    <h2 class="section-title-italic">{t('legal.privacy.section4_title')}</h2>
+                    <p>{t('legal.privacy.section4_body')}</p>
                 </article>
             </div>
 
-            <aside class="broadsheet-rail">
-                <section class="rail-block rail-block-alt">
-                    <p class="rail-kicker">Безбедност</p>
-                    <h3 class="rail-title">НАША ЗАЛОЖБА</h3>
-                    <p class="rail-text">Нема профила. Нема праћења по мрежи. Само чисте информације организоване за јасан преглед.</p>
-                </section>
+            <aside class="editorial-broadsheet-rail">
+                <details class="editorial-rail-context">
+                    <summary class="editorial-rail-context-summary">
+                        <span class="ui-label">{t('legal.privacy.rail_context')}</span>
+                        <span class="editorial-rail-context-hint ui-label-min text-muted-foreground">{t('editorial.rail_open')}</span>
+                    </summary>
+                    <div class="editorial-rail-context-body">
+                        <section class="editorial-rail-block editorial-rail-block-alt">
+                            <p class="editorial-rail-kicker">{t('legal.privacy.rail_security_kicker')}</p>
+                            <h3 class="editorial-rail-title">{t('legal.privacy.rail_security_title')}</h3>
+                            <p class="editorial-rail-text">{t('legal.privacy.rail_security_text')}</p>
+                        </section>
 
-                <div class="rail-meta-box">
-                    <p class="text-[10px] font-black uppercase tracking-widest mb-4 opacity-50">АЖУРИРАНО</p>
-                    <p class="text-xs">Последња измена: 25. април 2026.</p>
-                </div>
+                        <div class="editorial-rail-meta">
+                            <p class="ui-label-min text-muted-foreground mb-4 opacity-70">{t('legal.privacy.rail_updated_label')}</p>
+                            <p class="text-xs">{t('legal.privacy.rail_updated_date')}</p>
+                        </div>
+                    </div>
+                </details>
             </aside>
         </div>
     </main>
@@ -78,31 +80,7 @@ import { Shield, Lock, EyeOff, Globe } from 'lucide-react';
 </Layout>
 
 <style>
-    .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 2rem; margin-bottom: 3rem; }
-    .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
-    .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; margin: 1.5rem 0; letter-spacing: -0.02em; }
-    .masthead-title span { font-weight: 400; font-style: italic; }
-    .masthead-intro { font-family: var(--font-nyt-body); font-size: 1.15rem; line-height: 1.6; color: var(--secondary-foreground); max-width: 42rem; }
-
-    .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
-    @media (min-width: 1024px) {
-        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 320px; }
-        .broadsheet-main { border-right: 1px solid var(--border); padding-right: 3rem; }
-        .broadsheet-rail { align-self: start; }
-    }
-
-    .prose-editorial { font-family: var(--font-nyt-body); font-size: 1.1rem; line-height: 1.75; color: var(--secondary-foreground); }
-    .first-paragraph::first-letter { float: left; font-family: var(--font-serif); font-size: 5rem; font-weight: 900; line-height: 0.8; padding-top: 0.5rem; padding-right: 0.75rem; color: var(--foreground); }
-    .section-title-italic { font-family: var(--font-serif); font-size: 1.8rem; font-weight: 900; font-style: italic; margin-top: 3rem; margin-bottom: 1.5rem; color: var(--foreground); }
-
     .editorial-list { list-style: none; padding: 0; margin-top: 1.5rem; }
     .editorial-list li { margin-bottom: 1rem; padding-left: 1.5rem; position: relative; }
     .editorial-list li::before { content: "—"; position: absolute; left: 0; color: var(--nyt-accent); font-weight: 900; }
-
-    .rail-block { margin-bottom: 2.5rem; }
-    .rail-block-alt { padding: 1.25rem; background: var(--secondary); border-radius: 0px; }
-    .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
-    .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
-    .rail-text { font-family: var(--font-nyt-body); font-size: 0.9rem; line-height: 1.5; color: var(--secondary-foreground); }
-    .rail-meta-box { padding: 1.5rem; border: 1px solid var(--border); }
 </style>

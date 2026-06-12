@@ -201,8 +201,12 @@
 
     /* ... rest of variables unchanged ... */
 
+    /* Minimum readable UI chrome (11px / 12px at 16px root) */
+    --text-ui-min: 0.6875rem;
+    --text-ui-kicker: 0.75rem;
+
     /* Fluid Typography Scale - Editorial & Premium (Broadsheet Proportions) */
-    --text-xs: clamp(0.68rem, 0.64rem + 0.1vw, 0.72rem);
+    --text-xs: clamp(0.6875rem, 0.66rem + 0.1vw, 0.75rem);
     --text-sm: clamp(0.78rem, 0.74rem + 0.2vw, 0.84rem);
     --text-base: clamp(
       0.9rem,
@@ -655,6 +659,27 @@ button:focus-visible,
   /* Don't underline the huge hero headline, just shift it */
   background-size: 0% 0%;
   transform: translateX(4px);
+}
+
+/* Shared UI chrome labels (11px / 12px minimum) */
+.ui-label {
+  font-family: var(--font-ui);
+  font-size: var(--text-ui-kicker);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ui-label-min {
+  font-family: var(--font-ui);
+  font-size: var(--text-ui-min);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.page-content-top {
+  padding-top: clamp(0.75rem, 2vw, 1.5rem);
 }
 
 

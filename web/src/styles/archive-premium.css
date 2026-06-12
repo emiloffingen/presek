@@ -54,7 +54,7 @@
 /* 2. Floating Sticky Navigation Bar */
 .archive-sticky-navbar {
     position: sticky;
-    top: 72px;
+    top: calc(var(--header-height) + 0.25rem);
     z-index: 30;
     background: color-mix(in srgb, var(--background) 80%, transparent);
     backdrop-filter: var(--glass-blur);
@@ -80,7 +80,7 @@
     padding: 0.5rem 2.2rem 0.5rem 1rem;
     border-radius: var(--radius-lg, 0px);
     font-family: var(--font-sans);
-    font-size: 0.7rem;
+    font-size: var(--text-ui-kicker);
     font-weight: 900;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -101,7 +101,7 @@
     border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
     border-radius: var(--radius-lg, 0px);
     font-family: var(--font-sans);
-    font-size: 0.65rem;
+    font-size: var(--text-ui-min);
     font-weight: 900;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -203,7 +203,7 @@
 
 .archive-sidebar-count {
     font-family: var(--font-sans);
-    font-size: 0.55rem;
+    font-size: var(--text-ui-min);
     font-weight: 900;
     color: var(--muted-foreground);
     background: color-mix(in srgb, var(--border) 50%, transparent);
@@ -273,5 +273,55 @@
 
 .archive-cluster-row:last-child {
     border-bottom: none !important;
+}
+
+.archive-rail-context {
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--secondary) 15%, var(--background));
+    margin-bottom: 1rem;
+}
+
+.archive-rail-context-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 0.9rem;
+    cursor: pointer;
+    list-style: none;
+}
+
+.archive-rail-context-summary::-webkit-details-marker {
+    display: none;
+}
+
+.archive-rail-context-hint::after {
+    content: ' +';
+    color: var(--nyt-accent);
+}
+
+.archive-rail-context[open] .archive-rail-context-hint::after {
+    content: ' −';
+}
+
+.archive-rail-context-body {
+    padding: 0.85rem 0.9rem 1rem;
+    border-top: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+}
+
+@media (min-width: 1024px) {
+    .archive-rail-context {
+        border: none;
+        background: transparent;
+        margin-bottom: 0;
+    }
+
+    .archive-rail-context-summary {
+        display: none;
+    }
+
+    .archive-rail-context-body {
+        padding: 0;
+        border-top: none;
+    }
 }
 

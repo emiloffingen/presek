@@ -69,7 +69,7 @@ const displayDate = briefingData?.date
 <Layout title={`${isMK ? 'Уреднички брифинг' : 'Urednički brifing'} — Presek`}>
     <NYTHeader stats={stats} />
 
-    <main class="site-layout broadsheet-layout pt-24 pb-[var(--page-py)] overflow-x-hidden" data-briefing-mode={quickMode ? 'quick' : 'full'}>
+    <main class="site-layout broadsheet-layout page-content-top pb-[var(--page-py)] overflow-x-hidden" data-briefing-mode={quickMode ? 'quick' : 'full'}>
         <div class="briefing-page-container">
             {error ? (
                 <div class="py-20 text-center animate-rise">
@@ -134,7 +134,7 @@ const displayDate = briefingData?.date
                             <div class="mt-40 pt-16 border-t-4 border-foreground">
                                 <div class="flex items-center justify-between mb-12">
                                     <h2 class="font-serif text-4xl font-black italic">{isMK ? 'Продолжете со читање' : 'Nastavite sa čitanjem'}</h2>
-                                    <a href={homePath(lang, hostHeader)} class="flex items-center gap-[var(--grid-gap)] font-black text-[10px] uppercase tracking-widest text-nyt-accent hover:underline">
+                                    <a href={homePath(lang, hostHeader)} class="ui-label-min flex items-center gap-[var(--grid-gap)] text-nyt-accent hover:underline">
                                         {isMK ? 'НАСЛОВНА' : 'NASLOVNA'} <ChevronRight size={14} />
                                     </a>
                                 </div>
@@ -144,7 +144,7 @@ const displayDate = briefingData?.date
                     </div>
 
                     <div class="briefing-sidebar-col">
-                        <div class="sidebar-inner sticky top-32">
+                        <div class="sidebar-inner sticky briefing-sidebar-sticky">
                             <section class="sidebar-module p-5 bg-secondary/10 border border-border rounded-xl mb-6">
                                 <BriefingDeliveryIsland
                                     content={briefingData.content}
@@ -231,6 +231,10 @@ const displayDate = briefingData?.date
 
     .sidebar-inner {
         z-index: 10;
+    }
+
+    .briefing-sidebar-sticky {
+        top: calc(var(--header-height) + 1rem);
     }
 
     @media (max-width: 1099.98px) {

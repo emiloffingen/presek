@@ -37,7 +37,7 @@
 }
 
 .briefing-status-label {
-    font-size: 0.55rem;
+    font-size: var(--text-ui-min);
     font-weight: 900;
     letter-spacing: 0.1em;
     color: var(--muted-foreground);
@@ -45,7 +45,7 @@
 }
 
 .briefing-status-value {
-    font-size: 0.6rem;
+    font-size: var(--text-ui-min);
     font-weight: 850;
     letter-spacing: 0.05em;
     color: var(--foreground);
@@ -197,7 +197,7 @@
     gap: 0.45rem;
     margin: 0 0 0.35rem;
     font-family: var(--font-sans);
-    font-size: 0.58rem;
+    font-size: var(--text-ui-min);
     font-weight: 900;
     letter-spacing: 0.16em;
     text-transform: uppercase;
@@ -221,7 +221,7 @@
     background: color-mix(in srgb, var(--nyt-accent) 10%, transparent);
     color: var(--nyt-accent);
     font-family: var(--font-sans);
-    font-size: 0.62rem;
+    font-size: var(--text-ui-kicker);
     font-weight: 900;
     white-space: nowrap;
 }
@@ -280,7 +280,7 @@
     border: 1px solid var(--border);
     border-radius: 999px;
     font-family: var(--font-sans);
-    font-size: 0.52rem;
+    font-size: var(--text-ui-min);
     font-weight: 900;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -320,7 +320,7 @@
     background: transparent;
     color: var(--muted-foreground);
     font-family: var(--font-sans);
-    font-size: 0.62rem;
+    font-size: var(--text-ui-kicker);
     font-weight: 900;
     letter-spacing: 0.12em;
     text-transform: uppercase;

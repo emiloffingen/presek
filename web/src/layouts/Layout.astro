@@ -120,12 +120,9 @@ const organizationSchema = {
 		<script is:inline>
 			(function() {
 				try {
-					var mode = localStorage.getItem('homepage-mode');
-					if (mode !== 'vesti' && mode !== 'analiza') {
-						var visits = Number(localStorage.getItem('cluster-visit-count') || '0');
-						mode = visits >= 3 ? 'analiza' : 'vesti';
-					}
-					document.documentElement.dataset.homepageMode = mode;
+					var path = window.location.pathname || '';
+					var isPregled = path === '/pregled' || path === '/mk/pregled';
+					document.documentElement.dataset.homepageMode = isPregled ? 'analiza' : 'vesti';
 				} catch (e) {}
 			})();
 		</script>
@@ -300,6 +297,21 @@ const organizationSchema = {
 				};
 				document.addEventListener('astro:page-load', schedulePrefetch);
 			}
+
+			const bindSearchFab = () => {
+				document.querySelectorAll('[data-presek-search-fab]').forEach((fab) => {
+					if (fab instanceof HTMLButtonElement && fab.dataset.bound === '1') return;
+					if (fab instanceof HTMLButtonElement) {
+						fab.dataset.bound = '1';
+						fab.addEventListener('click', () => {
+							const trigger = document.querySelector('[data-testid="search-trigger"]');
+							if (trigger instanceof HTMLElement) trigger.click();
+						});
+					}
+				});
+			};
+			bindSearchFab();
+			document.addEventListener('astro:page-load', bindSearchFab);
 
 			document.addEventListener('astro:page-load', () => {
 				if (!('IntersectionObserver' in window)) return;

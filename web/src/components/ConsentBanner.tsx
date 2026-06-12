@@ -65,10 +65,19 @@ export const ConsentBanner: React.FC = () => {
       }
     }
 
-    // Show after the first read moment so it does not cover the lead story.
-    const timer = setTimeout(() => setVisible(true), 2500);
+    const delay = window.matchMedia('(max-width: 768px)').matches ? 5000 : 3500;
+    const timer = setTimeout(() => setVisible(true), delay);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (!visible) {
+      document.body.classList.remove('has-consent-banner');
+      return;
+    }
+    document.body.classList.add('has-consent-banner');
+    return () => document.body.classList.remove('has-consent-banner');
+  }, [visible]);
 
   const accept = () => {
     writeConsentState('accepted');
@@ -103,7 +112,7 @@ export const ConsentBanner: React.FC = () => {
               <span className="hidden md:inline text-[11px] text-muted-foreground">•</span>
               <span className="hidden md:inline text-xs text-muted-foreground">{t('cookies.kicker')}</span>
             </div>
-            <p className="text-[10px] text-secondary-foreground leading-snug md:hidden">
+            <p className="text-[11px] text-secondary-foreground leading-snug md:hidden">
               {t('cookies.brief')}
               {' '}
               <button

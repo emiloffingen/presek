@@ -16,7 +16,6 @@ import {
     buildCsrfHeadersAsync
 } from './personalization.js';
 import { apiBaseUrl } from './apiBase.ts';
-import { loadHomepageMode, saveHomepageMode, type HomepageMode } from './homepageMode.ts';
 
 // Atoms
 export const $profile = atom(loadReaderProfile());
@@ -136,18 +135,3 @@ export function updateTheme(newTheme: 'light' | 'dark') {
     }
 }
 
-export const $homepageMode = atom<HomepageMode>('vesti');
-
-onMount($homepageMode, () => {
-    if (typeof window === 'undefined') return;
-    $homepageMode.set(loadHomepageMode());
-    document.documentElement.dataset.homepageMode = loadHomepageMode();
-});
-
-export function updateHomepageMode(mode: HomepageMode) {
-    const saved = saveHomepageMode(mode);
-    $homepageMode.set(saved);
-    if (typeof document !== 'undefined') {
-        document.documentElement.dataset.homepageMode = saved;
-    }
-}

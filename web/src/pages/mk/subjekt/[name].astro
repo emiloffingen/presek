@@ -53,10 +53,10 @@ const nameIsCyrillic = isMostlyCyrillic(decodedName);
 >
 	<NYTHeader />
 
-	<main class="site-layout broadsheet-layout py-[var(--page-py)]">
+	<main class="site-layout broadsheet-layout page-content-top pb-[var(--page-py)]">
         <header class="editorial-masthead mb-12">
             <div class="masthead-top">
-                <span class="masthead-kicker">{lang === 'sr' ? 'INTELEKTUALNI PROFIL' : 'ИНТЕЛЕКТУАЛЕН ПРОФИЛ'}</span>
+                <span class="masthead-kicker ui-label">{lang === 'sr' ? 'INTELEKTUALNI PROFIL' : 'ИНТЕЛЕКТУАЛЕН ПРОФИЛ'}</span>
             </div>
             <div class="masthead-main">
                 <h1 class:list={["masthead-title", { "headline-cyrillic": nameIsCyrillic }]}>{decodedName}</h1>
@@ -106,19 +106,26 @@ const nameIsCyrillic = isMostlyCyrillic(decodedName);
                     </section>
                 </div>
 
-                <aside class="broadsheet-rail">
+                <aside class="editorial-broadsheet-rail">
                     <TinyAdzRailAd />
 
-                    <section class="rail-block rail-block-alt">
-                        <p class="rail-kicker">{lang === 'sr' ? 'Za profil' : 'За профилот'}</p>
-                        <h3 class="rail-title">{lang === 'sr' ? 'POVEZANOST' : 'ПОВРЗАНОСТ'}</h3>
-                        <p class="rail-text">
-                            {lang === 'sr'
-                                ? `Ovaj profil je automatski generisan kroz analizu medijskog intenziteta. Prikazujemo samo događaje gde je ${decodedName} ključni akter ili značajan deo konteksta.`
-                                : `Овој профил е автоматски генериран преку анализа на медиумскиот интензитет. Ги прикажуваме само настаните каде ${decodedName} е клучен актер или значаен дел од контекстот.`}
-                        </p>
-                    </section>
-
+                    <details class="editorial-rail-context">
+                        <summary class="editorial-rail-context-summary">
+                            <span class="ui-label">{lang === 'sr' ? 'Kontekst profila' : 'Контекст на профилот'}</span>
+                            <span class="editorial-rail-context-hint ui-label-min text-muted-foreground">{lang === 'sr' ? 'OTVORI' : 'ОТВОРИ'}</span>
+                        </summary>
+                        <div class="editorial-rail-context-body">
+                            <section class="editorial-rail-block editorial-rail-block-alt">
+                                <p class="editorial-rail-kicker">{lang === 'sr' ? 'Za profil' : 'За профилот'}</p>
+                                <h3 class="editorial-rail-title">{lang === 'sr' ? 'POVEZANOST' : 'ПОВРЗАНОСТ'}</h3>
+                                <p class="editorial-rail-text">
+                                    {lang === 'sr'
+                                        ? `Ovaj profil je automatski generisan kroz analizu medijskog intenziteta. Prikazujemo samo događaje gde je ${decodedName} ključni akter ili značajan deo konteksta.`
+                                        : `Овој профил е автоматски генериран преку анализа на медиумскиот интензитет. Ги прикажуваме само настаните каде ${decodedName} е клучен актер или значаен дел од контекстот.`}
+                                </p>
+                            </section>
+                        </div>
+                    </details>
                 </aside>
             </div>
         )}
@@ -128,18 +135,10 @@ const nameIsCyrillic = isMostlyCyrillic(decodedName);
 </Layout>
 
 <style>
-    /* ── Masthead ────────────────────────────────────── */
     .editorial-masthead { border-bottom: 4px double var(--foreground); padding-bottom: 2.25rem; margin-bottom: 3.5rem; }
-    .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
     .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; margin: 1.5rem 0; letter-spacing: -0.02em; }
 
-    /* ── Broadsheet Layout ───────────────────────────── */
     .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
-    @media (min-width: 1024px) {
-        .broadsheet-grid { grid-template-columns: 1fr; }
-        .broadsheet-main { border-right: none; padding-right: 0; }
-        .broadsheet-rail {   align-self: start; }
-    }
 
     .section-title-italic { font-family: var(--font-serif); font-size: 1.8rem; font-weight: 900; italic: true; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; }
 
@@ -149,17 +148,9 @@ const nameIsCyrillic = isMostlyCyrillic(decodedName);
     .feed-item-wrap { border-bottom: 1px solid var(--border); padding-bottom: 1.5rem; }
     .feed-item-wrap:last-child { border-bottom: none; }
 
-    /* ── Rail ────────────────────────────────────────── */
-    .rail-block { margin-bottom: 2.5rem; }
-    .rail-block-alt { padding: 1.25rem; background: var(--secondary); border-radius: 0px; }
-    .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
-    .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
-    .rail-text { font-family: var(--font-nyt-body); font-size: 0.9rem; line-height: 1.5; color: var(--secondary-foreground); }
-
-    /* ── States ──────────────────────────────────────── */
     .empty-state { text-align: center; padding: 4rem 1rem; border: 1px dashed var(--border); }
-    .empty-kicker { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 950; color: var(--nyt-accent); margin-bottom: 1rem; }
-    .clear-filter { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 900; text-decoration: underline; color: var(--foreground); }
+    .empty-kicker { font-family: var(--font-ui); font-size: var(--text-ui-min); font-weight: 950; color: var(--nyt-accent); margin-bottom: 1rem; }
+    .clear-filter { font-family: var(--font-ui); font-size: var(--text-ui-min); font-weight: 900; text-decoration: underline; color: var(--foreground); }
 
     @media (max-width: 639.98px) {
         .editorial-masthead {
