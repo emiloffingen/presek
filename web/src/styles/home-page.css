@@ -366,10 +366,228 @@
     color: var(--muted-foreground);
 }
 
+.analysis-band-summary-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+    flex: 1;
+}
+
+.analysis-band-kicker {
+    font-family: var(--font-ui);
+    font-size: 0.58rem;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--nyt-accent);
+}
+
+.analysis-band-title {
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1.2;
+    color: var(--foreground);
+}
+
+.analysis-band-teaser {
+    font-family: var(--font-serif);
+    font-size: 0.78rem;
+    line-height: 1.35;
+    color: var(--muted-foreground);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.analysis-band-summary-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-shrink: 0;
+}
+
 .analysis-band-summary-count {
     padding: 0.1rem 0.38rem;
     border: 1px solid var(--border);
-    margin-right: 0.35rem;
+}
+
+.analysis-band-expand {
+    font-family: var(--font-ui);
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+}
+
+/* ── Analiza section navigator ───────────────────── */
+.analiza-section-nav {
+    margin: 0.35rem 0 1rem;
+    padding: 0.75rem 0 0.85rem;
+    border-top: 1px solid color-mix(in srgb, var(--nyt-accent) 18%, var(--border));
+    border-bottom: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
+}
+
+.analiza-section-nav-label {
+    margin: 0 0 0.55rem;
+    font-family: var(--font-ui);
+    font-size: 0.6rem;
+    font-weight: 900;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--nyt-accent);
+}
+
+.analiza-section-nav-chips {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.15rem;
+}
+
+.analiza-nav-chip {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+    min-width: 8.5rem;
+    max-width: 11rem;
+    padding: 0.55rem 0.65rem;
+    border: 1px solid color-mix(in srgb, var(--foreground) 12%, var(--border));
+    background: color-mix(in srgb, var(--card) 92%, var(--secondary) 8%);
+    text-align: left;
+    transition: border-color var(--transition-base), background var(--transition-base), transform var(--transition-base);
+}
+
+.analiza-nav-chip:hover {
+    border-color: color-mix(in srgb, var(--nyt-accent) 40%, var(--border));
+    background: color-mix(in srgb, var(--nyt-accent) 5%, var(--card));
+    transform: translateY(-1px);
+}
+
+.analiza-nav-kicker {
+    font-family: var(--font-ui);
+    font-size: 0.54rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+}
+
+.analiza-nav-label {
+    font-family: var(--font-serif);
+    font-size: 0.82rem;
+    font-weight: 750;
+    line-height: 1.2;
+    color: var(--foreground);
+}
+
+.analiza-nav-count {
+    font-family: var(--font-ui);
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: var(--nyt-accent);
+}
+
+/* ── Empty + error states ────────────────────────── */
+.home-empty-state {
+    text-align: center;
+    padding: clamp(2rem, 5vw, 3.5rem) clamp(1rem, 3vw, 2rem);
+    margin: clamp(1rem, 2vw, 2rem) 0;
+    border: 1px solid color-mix(in srgb, var(--foreground) 12%, var(--border));
+    background:
+        radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--nyt-accent) 6%, transparent), transparent 55%),
+        color-mix(in srgb, var(--secondary) 35%, var(--background));
+}
+
+.home-empty-kicker {
+    font-family: var(--font-ui);
+    font-size: 0.62rem;
+    font-weight: 900;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--nyt-accent);
+    margin: 0 0 0.85rem;
+}
+
+.home-empty-title {
+    font-family: var(--font-serif-display);
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 900;
+    line-height: 1.15;
+    margin: 0 0 0.75rem;
+    color: var(--foreground);
+}
+
+.home-empty-copy {
+    font-family: var(--font-serif);
+    font-size: var(--text-base);
+    line-height: 1.55;
+    color: var(--muted-foreground);
+    max-width: 36ch;
+    margin: 0 auto 1.25rem;
+}
+
+.home-empty-trends {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.55rem 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.home-empty-trend-link {
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    font-weight: 700;
+    font-style: italic;
+    color: var(--foreground);
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+}
+
+.home-empty-trend-link:hover {
+    color: var(--link-hover);
+}
+
+.home-empty-reset {
+    display: inline-block;
+    font-family: var(--font-ui);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--link);
+}
+
+.home-error-panel {
+    padding: 1rem 1.1rem;
+    margin: 1rem 0;
+    border: 1px solid color-mix(in srgb, var(--nyt-red) 35%, var(--border));
+    border-left: 4px solid var(--nyt-red);
+    background: color-mix(in srgb, var(--nyt-red) 5%, var(--background));
+}
+
+.home-error-kicker {
+    margin: 0 0 0.35rem;
+    font-family: var(--font-ui);
+    font-size: 0.62rem;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--nyt-red);
+}
+
+.home-error-copy {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: var(--text-base);
+    line-height: 1.45;
+    color: var(--foreground);
 }
 
 /* ── Supporting Band & Developments Grids ────────── */

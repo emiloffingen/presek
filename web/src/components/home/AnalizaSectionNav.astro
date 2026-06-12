@@ -1,0 +1,67 @@
+---
+import { useTranslations } from '../../i18n/utils';
+
+interface NavItem {
+    target: string;
+    kicker: string;
+    label: string;
+    count: number;
+}
+
+interface Props {
+    items: NavItem[];
+    lang: 'sr' | 'mk';
+}
+
+const { items, lang } = Astro.props;
+if (!items.length) return;
+
+const t = useTranslations(lang);
+const navLabel = t('home.analiza_nav_label');
+const jumpLabel = lang === 'sr' ? 'Idi na odeljak' : 'Оди на оддел';
+---
+
+<nav class="analiza-section-nav homepage-analiza-only" aria-label={navLabel}>
+    <p class="analiza-section-nav-label">{navLabel}</p>
+    <div class="analiza-section-nav-chips hide-scrollbar" role="list">
+        {items.map((item) => (
+            <button
+                type="button"
+                class="analiza-nav-chip"
+                role="listitem"
+                data-analiza-target={item.target}
+                aria-label={`${jumpLabel}: ${item.label}`}
+            >
+                <span class="analiza-nav-kicker">{item.kicker}</span>
+                <span class="analiza-nav-label">{item.label}</span>
+                <span class="analiza-nav-count">{item.count}</span>
+            </button>
+        ))}
+    </div>
+</nav>
+
+<script is:inline>
+    (() => {
+        const scrollToBand = (selector) => {
+            const target = document.querySelector(selector);
+            if (!target) return;
+            if (target.tagName === 'DETAILS') {
+                target.open = true;
+            }
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+
+        const bind = () => {
+            document.querySelectorAll('[data-analiza-target]').forEach((button) => {
+                if (button.dataset.bound) return;
+                button.dataset.bound = '1';
+                button.addEventListener('click', () => {
+                    scrollToBand(button.getAttribute('data-analiza-target'));
+                });
+            });
+        };
+
+        bind();
+        document.addEventListener('astro:page-load', bind);
+    })();
+</script>

@@ -44,18 +44,23 @@ function getPluralismLabel(value: number) {
     if (value >= 60) return 'стабилен плурализам';
     return 'умерен плурализам';
 }
+
+const synthesisTeaser = synthesisPicks[0]?.synthetic_headline || synthesisPicks[0]?.articles?.[0]?.title || '';
 ---
 
 {synthesisPicks && synthesisPicks.length > 0 && (
-    <details class="synthesis-picks-details">
+    <details class="synthesis-picks-details" data-synthesis-band>
         <summary class="synthesis-picks-summary" aria-label={t('home.synthesis_picks_title')}>
             <span class="synthesis-picks-summary-label">
                 <span class="badge-text">{lang === 'sr' ? 'Sistemska sinteza' : 'Системска синтеза'}</span>
                 <strong>{t('home.synthesis_picks_title')}</strong>
+                {synthesisTeaser && (
+                    <span class="synthesis-picks-teaser">{lang === 'sr' ? 'Prvo:' : 'Прво:'} {synthesisTeaser}</span>
+                )}
             </span>
             <span class="synthesis-picks-summary-meta">
                 <span class="synthesis-picks-count">{synthesisPicks.length}</span>
-                <span>{lang === 'sr' ? 'Otvori' : 'Отвори'}</span>
+                <span>{lang === 'sr' ? 'Prikaži' : 'Прикажи'}</span>
             </span>
         </summary>
     <section class="synthesis-picks-section">
@@ -160,6 +165,17 @@ function getPluralismLabel(value: number) {
         font-size: clamp(1.35rem, 1.1rem + 0.8vw, 1.85rem);
         line-height: 1.05;
         font-weight: 800;
+    }
+
+    .synthesis-picks-teaser {
+        font-family: var(--font-serif);
+        font-size: 0.82rem;
+        line-height: 1.4;
+        color: var(--muted-foreground);
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 
     .synthesis-picks-summary-meta {

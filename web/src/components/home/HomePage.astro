@@ -4,6 +4,7 @@ import '../../styles/home-page.css';
 import Layout from '../../layouts/Layout.astro';
 import NYTHeader from '../NYTHeader.astro';
 import AnalysisBandsLazy from './AnalysisBandsLazy.astro';
+import AnalizaSectionNav from './AnalizaSectionNav.astro';
 import Footer from '../Footer.astro';
 
 import ForYouIsland from '../ForYouIsland.tsx';
@@ -450,6 +451,60 @@ const analysisBandLabels = {
     factCheckSource: factCheckSourceLabel,
     portalFallback: portalFallbackLabel,
 };
+
+const perspectiveTeaser = perspectiveBandItems[0]?.title || '';
+const radarTeaser = radarBandItems[0]?.title || '';
+const consensusTeaser = consensusBandItems[0]?.title || '';
+
+const analizaNavItems: { target: string; kicker: string; label: string; count: number }[] = [];
+if (displayedSynthesisPicks.length > 0) {
+    analizaNavItems.push({
+        target: '[data-synthesis-band]',
+        kicker: lang === 'sr' ? 'Sinteza' : 'Синтеза',
+        label: t('home.synthesis_picks_title'),
+        count: displayedSynthesisPicks.length,
+    });
+}
+if (displayedTrendingClusters.length > 0) {
+    analizaNavItems.push({
+        target: '[data-trending-strip]',
+        kicker: t('home.trending'),
+        label: lang === 'sr' ? 'Brzi pregled' : 'Брз преглед',
+        count: displayedTrendingClusters.length,
+    });
+}
+if (analysisBands.perspectives && perspectivesClusters.length > 0) {
+    analizaNavItems.push({
+        target: '[data-perspectives-band]',
+        kicker: t('home.perspectives_title'),
+        label: t('home.perspectives_subtitle'),
+        count: perspectivesClusters.length,
+    });
+}
+if (analysisBands.radar && radarClusters.length > 0) {
+    analizaNavItems.push({
+        target: '[data-radar-band]',
+        kicker: t('home.radar_title'),
+        label: t('home.radar_subtitle'),
+        count: radarClusters.length,
+    });
+}
+if (analysisBands.consensus && consensusClusters.length > 0) {
+    analizaNavItems.push({
+        target: '[data-consensus-band]',
+        kicker: t('home.consensus_title'),
+        label: t('home.consensus_subtitle'),
+        count: consensusClusters.length,
+    });
+}
+if (forYouClusters.length > 0) {
+    analizaNavItems.push({
+        target: '[data-for-you-band]',
+        kicker: lang === 'sr' ? 'Za vas' : 'За вас',
+        label: lang === 'sr' ? 'Personalizovano' : 'Персонализирано',
+        count: forYouClusters.length,
+    });
+}
 ---
 
 <Layout
@@ -478,8 +533,9 @@ const analysisBandLabels = {
                 )}
 
                 {error && (
-                    <div class="error-panel">
-                        <p>{error}</p>
+                    <div class="home-error-panel" role="alert">
+                        <p class="home-error-kicker">{lang === 'sr' ? 'Greška' : 'Грешка'}</p>
+                        <p class="home-error-copy">{error}</p>
                     </div>
                 )}
 
@@ -523,6 +579,10 @@ const analysisBandLabels = {
                     <div class="homepage-analiza-only">
                         <HomeStatsTeaser stats={stats} lang={lang} />
                     </div>
+                )}
+
+                {!error && isHomepage && analizaNavItems.length > 0 && (
+                    <AnalizaSectionNav items={analizaNavItems} lang={lang} />
                 )}
 
 				{!error && isHomepage && briefing && (
@@ -617,8 +677,17 @@ const analysisBandLabels = {
 				{isHomepage && analysisBands.perspectives && perspectivesClusters && perspectivesClusters.length > 0 && (
 					<details class="section-wrapper analysis-band perspectives-section analysis-band-collapsible" data-perspectives-band>
 						<summary class="analysis-band-summary">
-							<span class="analysis-band-summary-count">{perspectivesClusters.length}</span>
-							{t('home.perspectives_subtitle')} · {t('home.analysis_expand')}
+							<span class="analysis-band-summary-main">
+								<span class="analysis-band-kicker">{t('home.perspectives_title')}</span>
+								<span class="analysis-band-title">{t('home.perspectives_subtitle')}</span>
+								{perspectiveTeaser && (
+									<span class="analysis-band-teaser">{t('home.analysis_teaser_lead')} {perspectiveTeaser}</span>
+								)}
+							</span>
+							<span class="analysis-band-summary-meta">
+								<span class="analysis-band-summary-count">{perspectivesClusters.length}</span>
+								<span class="analysis-band-expand">{t('home.analysis_expand')}</span>
+							</span>
 						</summary>
 						<div class="analysis-band-body">
 						<div class="section-heading-row">
@@ -635,8 +704,17 @@ const analysisBandLabels = {
 				{isHomepage && analysisBands.radar && radarClusters && radarClusters.length > 0 && (
 					<details class="section-wrapper analysis-band radar-section analysis-band-collapsible" data-radar-band>
 						<summary class="analysis-band-summary">
-							<span class="analysis-band-summary-count">{radarClusters.length}</span>
-							{t('home.radar_subtitle')} · {t('home.analysis_expand')}
+							<span class="analysis-band-summary-main">
+								<span class="analysis-band-kicker">{t('home.radar_title')}</span>
+								<span class="analysis-band-title">{t('home.radar_subtitle')}</span>
+								{radarTeaser && (
+									<span class="analysis-band-teaser">{t('home.analysis_teaser_lead')} {radarTeaser}</span>
+								)}
+							</span>
+							<span class="analysis-band-summary-meta">
+								<span class="analysis-band-summary-count">{radarClusters.length}</span>
+								<span class="analysis-band-expand">{t('home.analysis_expand')}</span>
+							</span>
 						</summary>
 						<div class="analysis-band-body">
 						<div class="section-heading-row">
@@ -653,8 +731,17 @@ const analysisBandLabels = {
                 {isHomepage && analysisBands.consensus && consensusClusters.length > 0 && (
                     <details class="section-wrapper consensus-section analysis-band-collapsible bg-secondary/10 p-8 border-y border-border/40" data-consensus-band>
                             <summary class="analysis-band-summary">
-                                <span class="analysis-band-summary-count">{consensusClusters.length}</span>
-                                {t('home.consensus_subtitle')} · {t('home.analysis_expand')}
+                                <span class="analysis-band-summary-main">
+                                    <span class="analysis-band-kicker">{t('home.consensus_title')}</span>
+                                    <span class="analysis-band-title">{t('home.consensus_subtitle')}</span>
+                                    {consensusTeaser && (
+                                        <span class="analysis-band-teaser">{t('home.analysis_teaser_lead')} {consensusTeaser}</span>
+                                    )}
+                                </span>
+                                <span class="analysis-band-summary-meta">
+                                    <span class="analysis-band-summary-count">{consensusClusters.length}</span>
+                                    <span class="analysis-band-expand">{t('home.analysis_expand')}</span>
+                                </span>
                             </summary>
                             <div class="analysis-band-body">
                             <div class="section-heading-row mb-8">
@@ -690,7 +777,7 @@ const analysisBandLabels = {
 
                 <div class="home-mobile-order-feed">
                 {forYouClusters.length > 0 && (
-					<div class="section-wrapper for-you-wrapper homepage-analiza-only">
+					<div class="section-wrapper for-you-wrapper homepage-analiza-only" data-for-you-band>
 					    <ForYouIsland client:idle clusters={forYouClusters} excludeClusterIds={excludedClusterIds} lang={lang} />
                     </div>
 				)}
@@ -760,31 +847,73 @@ const analysisBandLabels = {
 )}
 
 <script is:inline>
-	(function syncHomeStatsDetails() {
-		const apply = () => {
-			const details = document.querySelector('.home-mobile-stats-details');
-			if (!details) return;
-			if (window.matchMedia('(min-width: 769px)').matches) {
-				details.setAttribute('open', '');
-			} else if (!details.dataset.userToggled) {
-				details.removeAttribute('open');
-			}
-		};
+	(function homeDetailsDefaults() {
+		const DETAIL_SELECTORS = [
+			'.home-mobile-stats-details',
+			'[data-synthesis-band]',
+			'[data-consensus-band]',
+			'[data-perspectives-band]',
+			'[data-radar-band]',
+			'[data-trending-strip]',
+			'[data-live-strip]',
+		];
 
-		const bind = () => {
-			const details = document.querySelector('.home-mobile-stats-details');
-			if (details && !details.dataset.bound) {
+		const bindToggleMemory = () => {
+			for (const selector of DETAIL_SELECTORS) {
+				const details = document.querySelector(selector);
+				if (!details || details.dataset.bound) continue;
 				details.dataset.bound = '1';
 				details.addEventListener('toggle', () => {
 					details.dataset.userToggled = '1';
 				});
 			}
+		};
+
+		const applyStatsDefaults = () => {
+			const details = document.querySelector('.home-mobile-stats-details');
+			if (!details || details.dataset.userToggled) return;
+			if (window.matchMedia('(min-width: 769px)').matches) {
+				details.setAttribute('open', '');
+			} else {
+				details.removeAttribute('open');
+			}
+		};
+
+		const applyAnalizaDefaults = () => {
+			if (document.documentElement.dataset.homepageMode !== 'analiza') return;
+			const isDesktop = window.matchMedia('(min-width: 769px)').matches;
+
+			const openUnlessToggled = (selector, forceOpen) => {
+				const details = document.querySelector(selector);
+				if (!details || details.dataset.userToggled) return;
+				if (forceOpen || isDesktop) details.setAttribute('open', '');
+			};
+
+			openUnlessToggled('[data-synthesis-band]', true);
+			if (isDesktop) {
+				openUnlessToggled('[data-consensus-band]');
+			}
+		};
+
+		const apply = () => {
+			applyStatsDefaults();
+			applyAnalizaDefaults();
+		};
+
+		const bind = () => {
+			bindToggleMemory();
 			apply();
 		};
 
 		bind();
 		window.addEventListener('resize', apply, { passive: true });
 		document.addEventListener('astro:page-load', bind);
+
+		const modeObserver = new MutationObserver(apply);
+		modeObserver.observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ['data-homepage-mode'],
+		});
 	})();
 </script>
 

@@ -13,21 +13,20 @@ const t = useTranslations(lang);
 const l = (path: string) => localePath(path, lang, hostHeader);
 ---
 
-<div class="empty-state">
-	<p class="empty-kicker">{t('home.empty_kicker')}</p>
-	<h2 class="section-heading">{t('home.empty_title')}</h2>
-	<p class="empty-copy">{t('home.empty_desc')}</p>
-	<div class="trend-links">
-		{trending.slice(0, 8).map((t: any) => (
-			<a href={l(`/?q=${encodeURIComponent(t.word)}`)}>{t.word}</a>
-		))}
-	</div>
+<div class="home-empty-state">
+	<p class="home-empty-kicker">{t('home.empty_kicker')}</p>
+	<h2 class="home-empty-title">{t('home.empty_title')}</h2>
+	<p class="home-empty-copy">{t('home.empty_desc')}</p>
+	{trending.length > 0 && (
+		<div class="home-empty-trends">
+			{trending.slice(0, 8).map((trend: any) => (
+				<a href={l(`/?q=${encodeURIComponent(trend.word)}`)} class="home-empty-trend-link">
+					{trend.word}
+				</a>
+			))}
+		</div>
+	)}
+	<a href={homePath(lang, hostHeader)} class="home-empty-reset">
+		{lang === 'sr' ? 'Vrati se na naslovnu' : 'Врати се на насловна'}
+	</a>
 </div>
-
-<style>
-    .empty-state { text-align: center; padding: var(--grid-gap); border: 1px dashed var(--border); margin: var(--grid-gap) 0; }
-    .empty-kicker { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 900; color: var(--nyt-accent); margin-bottom: 1rem; }
-    .empty-state .section-heading { font-family: var(--font-serif); font-size: 1.75rem; margin-bottom: 1rem; }
-    .trend-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; margin-top: 1.5rem; }
-    .trend-links a { font-family: var(--font-serif); font-weight: 700; font-style: italic; font-size: 1.1rem; text-decoration: underline; color: var(--foreground); }
-</style>
