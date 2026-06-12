@@ -422,6 +422,16 @@ const organizationSchema = {
 			};
 
 			const handleImageError = (img: HTMLImageElement) => {
+				const markArticleImageFailed = () => {
+					const imageWrap = img.closest('.image-wrap');
+					const article = img.closest('.nyt-article');
+					if (imageWrap) {
+						imageWrap.setAttribute('data-image-state', 'failed');
+					}
+					if (article) {
+						article.classList.add('image-failed');
+					}
+				};
 				if (img.classList.contains('article-image') && !img.classList.contains('article-image-fallback')) {
 					img.removeAttribute('srcset');
 					const fallbackUrl = img.getAttribute('data-fallback-url') || emergencyFallbackUrl();
@@ -432,6 +442,11 @@ const organizationSchema = {
 						imageWrap.classList.add('image-wrap-fallback');
 						imageWrap.setAttribute('data-image-state', 'fallback');
 					}
+					return;
+				}
+				if (img.classList.contains('article-image') && img.classList.contains('article-image-fallback')) {
+					markArticleImageFailed();
+					return;
 				}
 				if (img.classList.contains('lead-media-image') && !img.classList.contains('lead-media-fallback-image')) {
 					img.removeAttribute('srcset');
@@ -442,6 +457,14 @@ const organizationSchema = {
 					if (parent) {
 						parent.classList.add('media-ready', 'lead-media-frame-fallback');
 					}
+					return;
+				}
+				if (img.classList.contains('lead-media-image') && img.classList.contains('lead-media-fallback-image')) {
+					const parent = img.parentElement;
+					if (parent) {
+						parent.classList.add('media-ready', 'media-failed');
+					}
+					return;
 				}
 				if (img.classList.contains('hero-main-image') && !img.classList.contains('article-image-fallback')) {
 					img.removeAttribute('srcset');

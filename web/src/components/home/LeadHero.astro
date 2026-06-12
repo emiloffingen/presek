@@ -144,7 +144,10 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl && !leadV
                     <div class="lead-media-placeholder lead-media-placeholder-error design-card absolute inset-0" style="display: none; --placeholder-bg: #27272a;">
                         <div class="design-card-pattern opacity-5"></div>
                         <div class="design-card-main p-8 flex items-center justify-center h-full">
-                            <Newspaper size={48} className="text-white/10" />
+                            <Newspaper size={42} className="text-current opacity-25" />
+                            <p class="lead-media-kicker">{mediaLabel}</p>
+                            <h2 class:list={["lead-media-fallback-title", { "headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(finalLeadTitle)}></h2>
+                            <p class="lead-media-source-row">{primaryArticle.source}</p>
                         </div>
                     </div>
                 </Fragment>
@@ -274,7 +277,10 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl && !leadV
                     <div class="lead-media-placeholder lead-media-placeholder-error design-card absolute inset-0" style="display: none; --placeholder-bg: #27272a;">
                         <div class="design-card-pattern opacity-5"></div>
                         <div class="design-card-main p-8 flex items-center justify-center h-full">
-                            <Newspaper size={48} className="text-white/10" />
+                            <Newspaper size={42} className="text-current opacity-25" />
+                            <p class="lead-media-kicker">{mediaLabel}</p>
+                            <h2 class:list={["lead-media-fallback-title", { "headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(finalLeadTitle)}></h2>
+                            <p class="lead-media-source-row">{primaryArticle.source}</p>
                         </div>
                     </div>
                 </Fragment>
@@ -282,4 +288,3 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl && !leadV
     </a>
     )}
 </section>
-

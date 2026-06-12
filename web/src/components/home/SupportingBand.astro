@@ -57,6 +57,8 @@ function getBentoSpan(cluster: NewsCluster, index: number): '1x1' | '2x1' | '2x2
 <style>
     .supporting-band {
         margin-top: 0.75rem;
+        background:
+            linear-gradient(180deg, color-mix(in srgb, var(--foreground) 2%, transparent), transparent 10rem);
     }
 
     .feed-section-container {
@@ -71,6 +73,10 @@ function getBentoSpan(cluster: NewsCluster, index: number): '1x1' | '2x1' | '2x2
     @media (max-width: 640px) {
         .bento-box-grid > .bento-item:nth-child(n+6) {
             display: none;
+        }
+
+        .bento-box-grid {
+            gap: 0;
         }
     }
 

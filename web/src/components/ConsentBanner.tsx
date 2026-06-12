@@ -65,8 +65,8 @@ export const ConsentBanner: React.FC = () => {
       }
     }
 
-    // Show after a short delay to not block initial render.
-    const timer = setTimeout(() => setVisible(true), 1000);
+    // Show after the first read moment so it does not cover the lead story.
+    const timer = setTimeout(() => setVisible(true), 2500);
     return () => clearTimeout(timer);
   }, []);
 
@@ -92,11 +92,11 @@ export const ConsentBanner: React.FC = () => {
 
   return (
     <div
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] isolate px-2 pb-2 md:p-4 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3 motion-safe:duration-300"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] isolate px-2 pb-2 md:inset-x-auto md:right-4 md:bottom-4 md:w-[min(28rem,calc(100vw-2rem))] md:p-0 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3 motion-safe:duration-300"
       style={{ contain: 'layout paint style' }}
     >
-      <div className="pointer-events-auto mx-auto max-w-5xl rounded-lg border border-border bg-popover/95 px-3 py-2 text-popover-foreground shadow-[0_-10px_28px_rgba(17,24,39,0.10)] backdrop-blur-xl md:px-5 md:py-3">
-        <div className="flex items-center gap-3 md:items-center md:justify-between">
+      <div className="pointer-events-auto mx-auto max-w-5xl rounded-md border border-border bg-popover/96 px-3 py-2 text-popover-foreground shadow-[0_14px_36px_rgba(17,24,39,0.14)] backdrop-blur-xl md:px-4 md:py-3">
+        <div className="flex items-center gap-3 md:items-start md:justify-between">
           <div className="min-w-0 flex-1">
             <div className="mb-0.5 flex items-center gap-2">
               <h3 className="font-sans text-[11px] font-black uppercase tracking-[0.12em] text-foreground">{t('cookies.title')}</h3>
@@ -121,13 +121,13 @@ export const ConsentBanner: React.FC = () => {
                 <a href={l('/privacy')} className="underline underline-offset-2 hover:text-nyt-accent">{t('nav.privacy')}</a>.
               </p>
             )}
-            <p className="hidden text-[13px] text-secondary-foreground leading-relaxed md:block">
+            <p className="hidden text-[12px] text-secondary-foreground leading-relaxed md:block">
               {t('cookies.details')}
               {' '}
               <a href={l('/privacy')} className="underline underline-offset-2 hover:text-nyt-accent">{t('nav.privacy')}</a>.
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-1.5 self-auto">
+          <div className="flex shrink-0 items-center gap-1.5 self-auto md:pt-0.5">
             <button
               onClick={dismiss}
               aria-label={t('cookies.dismiss')}
@@ -137,7 +137,7 @@ export const ConsentBanner: React.FC = () => {
             </button>
             <button
               onClick={accept}
-              className="rounded-md bg-foreground px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.12em] text-background transition-colors hover:bg-nyt-accent hover:text-white md:px-4 md:py-2 md:text-[11px]"
+              className="rounded-md bg-foreground px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.12em] text-background transition-colors hover:bg-nyt-accent hover:text-white md:px-3.5 md:py-2 md:text-[10px]"
             >
               {t('cookies.accept')}
             </button>

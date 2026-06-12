@@ -74,7 +74,7 @@ const synthesisTeaser = synthesisPicks[0]?.synthetic_headline || synthesisPicks[
                     const artCount = cluster.articles?.length || 0;
                     const pluralismVal = cluster.pluralism_score || 50;
                     const imageObj = chooseClusterImage(cluster, 'card', lang as 'sr' | 'mk');
-                    const visualImage = imageObj.proxiedUrl || imageObj.fallbackUrl || imageObj.staticFallbackUrl;
+                    const visualImage = imageObj.isWeak ? '' : imageObj.proxiedUrl;
                     const sourceNames = Array.from(new Set((cluster.articles || []).map(a => a.source).filter(Boolean))).slice(0, 2);
                     const primaryMeta = [
                         getSourceBadgeLabel(artCount),
@@ -82,7 +82,7 @@ const synthesisTeaser = synthesisPicks[0]?.synthetic_headline || synthesisPicks[
                     ].filter(Boolean).join(' / ');
 
                     return (
-                        <article class="synthesis-card">
+                        <article class:list={["synthesis-card", { "synthesis-card-text-first": !visualImage }]}>
                             <a href={getClusterUrl(cluster)} class="synthesis-card-link">
                                 {visualImage && (
                                     <div class="card-image-wrapper">
@@ -331,6 +331,17 @@ const synthesisTeaser = synthesisPicks[0]?.synthetic_headline || synthesisPicks[
         transform: translateY(-3px);
         border-color: color-mix(in srgb, var(--nyt-red) 38%, var(--border));
         box-shadow: var(--shadow-md);
+    }
+
+    .synthesis-card-text-first {
+        border-left: 3px solid color-mix(in srgb, var(--nyt-red) 58%, var(--border));
+        background:
+            linear-gradient(90deg, color-mix(in srgb, var(--nyt-red) 4%, transparent), transparent 42%),
+            var(--card);
+    }
+
+    .synthesis-card-text-first .card-content {
+        padding-top: 1.45rem;
     }
 
     :global(.dark) .synthesis-card:hover {
