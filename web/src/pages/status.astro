@@ -46,11 +46,11 @@ const statusLabel = isHealthy
         ? t('status.status_busy')
         : t('status.degraded');
 const statusClass = isHealthy ? 'ok' : isBusy ? 'busy' : 'degraded';
-const celeryQueue = healthData.celery_queue || {};
+const celeryQueue = (healthData.celery_queue || {}) as any;
 const intelHeavyDepth = Number(celeryQueue?.queues?.['intel-heavy']?.depth ?? celeryQueue?.celery_depth ?? 0);
 const pipelineBusy = Boolean(celeryQueue?.degraded) || intelHeavyDepth >= Number(celeryQueue?.warn_depth || 150);
 const freshness = healthData.freshness || {};
-const synthesisQuality = healthData.synthesis_quality || {};
+const synthesisQuality = (healthData.synthesis_quality || {}) as any;
 const synthesisStatus = String(synthesisQuality?.status || 'unknown');
 
 const formattedUptime = (seconds: number) => {

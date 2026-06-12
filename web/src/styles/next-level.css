@@ -455,6 +455,30 @@ html[data-homepage-mode="vesti"] .homepage-analiza-only {
   margin-top: 0.85rem;
 }
 
+.ui-concept-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid color-mix(in srgb, var(--foreground) 8%, var(--border));
+}
+
+.ui-concept-link {
+  font-family: var(--font-ui);
+  font-size: 0.66rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--nyt-accent);
+  text-decoration: none;
+}
+
+.ui-concept-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
 .ui-concept-primary,
 .ui-concept-secondary,
 .ui-concept-close {
@@ -485,7 +509,8 @@ html[data-homepage-mode="vesti"] .homepage-analiza-only {
 
 @media (max-width: 768px) {
   .ui-concept-onboarding {
-    bottom: 5rem;
+    bottom: 4.25rem;
+    padding: 0.85rem 0.9rem;
   }
 
   .analysis-band-collapsible {

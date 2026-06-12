@@ -15,13 +15,17 @@ def test_api_contract_has_no_forbidden_top_level_imports():
 def test_queue_status_does_not_import_worker_tasks():
     import sys
 
+    before = set(sys.modules)
+
     for name in list(sys.modules):
         if name == "core.queue_status" or name.startswith("core.queue_status."):
             del sys.modules[name]
 
     import core.queue_status  # noqa: F401
 
-    assert "tasks.ingestion_task" not in sys.modules
+    newly_loaded = set(sys.modules) - before
+    task_imports = sorted(name for name in newly_loaded if name.startswith("tasks."))
+    assert not task_imports, f"queue_status import pulled in worker tasks: {task_imports}"
 
 
 def test_api_contract_file_declares_split_venv_groups():

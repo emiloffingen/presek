@@ -472,8 +472,15 @@ def extract_image_url(entry):
                 "thumbnail",
                 "sprite",
                 "logo",
+                "emblem",
                 "icon",
                 "avatar",
+                "watermark",
+                "placeholder",
+                "default",
+                "fallback",
+                "no-image",
+                "img-missing",
                 "favicon",
                 "pixel",
                 "small",
@@ -484,7 +491,7 @@ def extract_image_url(entry):
                 "tiktok",  # General TikTok related image
             )
         ):
-            score -= 6.0
+            score -= 8.0
         if any(pattern in combined for pattern in ("hero", "lead", "main", "large", "full", "original")):
             score += 1.5
 
@@ -570,7 +577,7 @@ def extract_image_url(entry):
             best_score = score
             best_url = candidate["url"]
 
-    return best_url
+    return best_url if best_score >= -1.0 else None
 
 
 async def fetch_og_image(client: httpx.AsyncClient, url: str) -> str | None:

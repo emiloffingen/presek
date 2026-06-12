@@ -32,7 +32,7 @@ const freshness = formatStoryFreshness(
     newArticleCount,
     pipelineBusy,
   },
-  t,
+  t as (key: string, params?: Record<string, string | number>) => string,
 );
 ---
 

@@ -598,6 +598,32 @@
     color: var(--muted-foreground);
 }
 
+.home-degraded-panel {
+    margin: 0.75rem 0 1rem;
+    padding: 0.72rem 0.85rem;
+    border: 1px solid color-mix(in srgb, var(--editorial-watch) 26%, var(--border));
+    border-left: 3px solid var(--editorial-watch);
+    background: color-mix(in srgb, var(--editorial-watch) 4%, var(--background));
+}
+
+.home-degraded-kicker {
+    margin: 0 0 0.25rem;
+    font-family: var(--font-ui);
+    font-size: 0.58rem;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--editorial-watch);
+}
+
+.home-degraded-copy {
+    margin: 0;
+    font-family: var(--font-ui);
+    font-size: 0.72rem;
+    line-height: 1.4;
+    color: color-mix(in srgb, var(--foreground) 70%, var(--muted-foreground));
+}
+
 .home-empty-error-note {
     margin: 0 0 0.75rem;
     padding: 0.65rem 0.75rem;

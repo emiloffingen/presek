@@ -1,27 +1,35 @@
 from pathlib import Path
 
+# MK-only Astro routes (full page files under pages/mk/)
 MK_PAGES_WITH_RAIL_AD = [
-    "web/src/pages/mk/archive.astro",
     "web/src/pages/mk/subjekt/[name].astro",
-    "web/src/pages/mk/analize.astro",
-    "web/src/pages/mk/editorial.astro",
     "web/src/pages/mk/tema/[topic].astro",
-    "web/src/pages/mk/cluster/[slug].astro",
 ]
 
 MK_PAGES_WITH_INLINE_AD = [
-    "web/src/pages/mk/for-you.astro",
-    "web/src/pages/mk/graf.astro",
     "web/src/pages/mk/tema/[topic].astro",
 ]
 
-MK_MIRROR_PAGES = {
-    "web/src/pages/mk/about.astro": ("web/src/pages/about.astro", "TinyAdzRailAd"),
-    "web/src/pages/mk/methodology.astro": ("web/src/pages/methodology.astro", "TinyAdzRailAd"),
-    "web/src/pages/mk/support.astro": ("web/src/pages/support.astro", "TinyAdzRailAd"),
-    "web/src/pages/mk/pulse.astro": ("web/src/pages/pulse.astro", "TinyAdzInlinedAd"),
-    "web/src/pages/mk/izvori.astro": ("web/src/pages/izvori.astro", "TinyAdzInlinedAd"),
-}
+# Shared root pages serve presek.mk via host-based lang (see localePaths MK_SHARED_ROOT_PATHS)
+SHARED_MK_HOST_PAGES_WITH_RAIL_AD = [
+    "web/src/pages/archive.astro",
+    "web/src/pages/subjekt/[name].astro",
+    "web/src/pages/analize.astro",
+    "web/src/pages/about.astro",
+    "web/src/pages/methodology.astro",
+    "web/src/pages/editorial.astro",
+    "web/src/pages/support.astro",
+    "web/src/pages/tema/[topic].astro",
+    "web/src/pages/cluster/[slug].astro",
+]
+
+SHARED_MK_HOST_PAGES_WITH_INLINE_AD = [
+    "web/src/pages/for-you.astro",
+    "web/src/pages/izvori.astro",
+    "web/src/pages/graf.astro",
+    "web/src/pages/pulse.astro",
+    "web/src/pages/tema/[topic].astro",
+]
 
 LIVE_PAGES_WITH_RAIL_AD = [
     "web/src/pages/archive.astro",
@@ -38,6 +46,7 @@ LIVE_PAGES_WITH_RAIL_AD = [
 LIVE_PAGES_WITH_INLINE_AD = [
     "web/src/pages/for-you.astro",
     "web/src/pages/izvori.astro",
+    "web/src/pages/graf.astro",
     "web/src/pages/grafik.astro",
     "web/src/pages/pulse.astro",
     "web/src/pages/tema/[topic].astro",
@@ -86,20 +95,22 @@ def test_tinyadz_rail_wrapper_exists():
     assert "page-rail-ad" in rail
 
 
-def test_mk_mirror_pages_rewrite_to_live_templates_with_ads():
-    for mk_path, (live_path, ad_component) in MK_MIRROR_PAGES.items():
-        mk_source = Path(mk_path).read_text(encoding="utf-8")
-        live_source = Path(live_path).read_text(encoding="utf-8")
-        assert "Astro.rewrite" in mk_source, mk_path
-        assert ad_component in live_source, live_path
-
-
-def test_mk_content_pages_include_tinyadz_slots():
+def test_mk_only_content_pages_include_tinyadz_slots():
     for path in MK_PAGES_WITH_RAIL_AD:
         source = Path(path).read_text(encoding="utf-8")
         assert "TinyAdzRailAd" in source, path
 
     for path in MK_PAGES_WITH_INLINE_AD:
+        source = Path(path).read_text(encoding="utf-8")
+        assert "TinyAdzInlinedAd" in source, path
+
+
+def test_shared_mk_host_pages_include_tinyadz_slots():
+    for path in SHARED_MK_HOST_PAGES_WITH_RAIL_AD:
+        source = Path(path).read_text(encoding="utf-8")
+        assert "TinyAdzRailAd" in source, path
+
+    for path in SHARED_MK_HOST_PAGES_WITH_INLINE_AD:
         source = Path(path).read_text(encoding="utf-8")
         assert "TinyAdzInlinedAd" in source, path
 

@@ -1,3 +1,5 @@
+import { proxyUrl } from '../lib/apiBase.ts';
+
 type ArticleLike = {
   image_url?: string | null;
   title?: string;
@@ -195,7 +197,7 @@ export function buildProxyFallbackUrl(
   if (context.category) params.set('cat', context.category);
   params.set('lang', lang);
   params.set('w', String(VARIANT_WIDTH[variant]));
-  return `/proxy?${params.toString()}`;
+  return proxyUrl(`/proxy?${params.toString()}`);
 }
 
 export function buildEmergencyFallbackUrl(lang: SiteLang = 'sr') {
@@ -204,7 +206,7 @@ export function buildEmergencyFallbackUrl(lang: SiteLang = 'sr') {
     lang,
     w: '720',
   });
-  return `/proxy?${params.toString()}`;
+  return proxyUrl(`/proxy?${params.toString()}`);
 }
 
 export function getFallbackImage(cluster: ClusterLike, lang: SiteLang = 'sr', variant: ImageVariant = 'card') {
@@ -261,7 +263,7 @@ export function chooseClusterImage(
     if (context.cid) params.set('cid', context.cid);
     if (context.title) params.set('t', context.title);
     if (context.category) params.set('cat', context.category);
-    proxiedUrl = `/proxy?${params.toString()}`;
+    proxiedUrl = proxyUrl(`/proxy?${params.toString()}`);
   }
 
   return {

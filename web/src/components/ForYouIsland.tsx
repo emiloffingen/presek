@@ -3,6 +3,7 @@ import { ArrowUpRight, Clock3, Compass, Sparkles, BrainCircuit } from 'lucide-re
 import { useStore } from '@nanostores/react';
 import { $profile, $syncToken } from '../lib/store.ts';
 import PersonalizationWhyChip from './PersonalizationWhyChip.tsx';
+import PreferenceToggle from './PreferenceToggle.tsx';
 import {
   buildCsrfHeadersAsync,
   buildSurfaceFollowSuggestions,

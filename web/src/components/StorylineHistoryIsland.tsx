@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { History, ArrowRight, Calendar } from 'lucide-react';
 import { localePathForLang } from '../lib/localePaths';
+import { proxyUrl } from '../lib/apiBase';
 
 interface StorylineItem {
     cluster_id: string;
@@ -62,7 +63,7 @@ const StorylineHistoryIsland: React.FC<{ clusterId: string; apiUrl: string; lang
                                 {item.image_url && (
                                     <div className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0">
                                         <img
-                                            src={`/proxy?url=${encodeURIComponent(item.image_url)}&w=160`}
+                                            src={proxyUrl(`/proxy?url=${encodeURIComponent(item.image_url)}&w=160`)}
                                             alt={item.title}
                                             className="w-full h-full object-cover rounded border border-border group-hover:border-nyt-accent transition-colors"
                                         />

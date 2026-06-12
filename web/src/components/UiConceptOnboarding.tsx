@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { useTranslations } from '../i18n/utils';
+import { updateHomepageMode } from '../lib/store';
 
 const STORAGE_KEY = 'ui-concepts-onboarding-dismissed';
 
@@ -14,12 +15,13 @@ export default function UiConceptOnboarding({ lang = 'sr' }: { lang?: string }) 
   const t = useTranslations(lang as 'sr' | 'mk');
   const [visible, setVisible] = useState(false);
   const [step, setStep] = useState(0);
+  const [leadHref, setLeadHref] = useState<string>('');
   const dialogRef = useRef<HTMLDivElement>(null);
-  const primaryBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (typeof localStorage === 'undefined') return;
     if (localStorage.getItem(STORAGE_KEY) === '1') return;
+    setLeadHref(document.querySelector<HTMLAnchorElement>('.lead-copy a[data-testid="cluster-link"]')?.href || '');
 
     let shown = false;
     const show = () => {
@@ -32,7 +34,7 @@ export default function UiConceptOnboarding({ lang = 'sr' }: { lang?: string }) 
       if (window.scrollY > 180) show();
     };
 
-    const timer = window.setTimeout(show, window.matchMedia('(max-width: 768px)').matches ? 8000 : 4000);
+    const timer = window.setTimeout(show, window.matchMedia('(max-width: 768px)').matches ? 10000 : 5500);
     window.addEventListener('scroll', onScroll, { passive: true });
     if (window.scrollY > 180) show();
 
@@ -44,30 +46,10 @@ export default function UiConceptOnboarding({ lang = 'sr' }: { lang?: string }) 
 
   useEffect(() => {
     if (!visible) return;
-    primaryBtnRef.current?.focus();
-
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-
-    const focusable = dialog.querySelectorAll<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
         dismiss();
-        return;
-      }
-      if (event.key !== 'Tab' || focusable.length === 0) return;
-      if (event.shiftKey && event.target === first) {
-        event.preventDefault();
-        last?.focus();
-      } else if (!event.shiftKey && event.target === last) {
-        event.preventDefault();
-        first?.focus();
       }
     };
 
@@ -80,6 +62,17 @@ export default function UiConceptOnboarding({ lang = 'sr' }: { lang?: string }) 
     setVisible(false);
   };
 
+  const openAnalysis = () => {
+    updateHomepageMode('analiza');
+    document.documentElement.dataset.homepageMode = 'analiza';
+    localStorage.setItem(STORAGE_KEY, '1');
+    setVisible(false);
+    document.querySelector('[data-synthesis-band], [data-trending-strip], [data-perspectives-band]')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  };
+
   if (!visible) return null;
 
   const current = STEPS[step];
@@ -89,8 +82,7 @@ export default function UiConceptOnboarding({ lang = 'sr' }: { lang?: string }) 
     <div
       ref={dialogRef}
       className="ui-concept-onboarding"
-      role="dialog"
-      aria-modal="true"
+      role="note"
       aria-labelledby="ui-concept-title"
       aria-describedby="ui-concept-body"
     >
@@ -107,12 +99,21 @@ export default function UiConceptOnboarding({ lang = 'sr' }: { lang?: string }) 
           </button>
         )}
         <button
-          ref={primaryBtnRef}
           type="button"
           className="ui-concept-primary"
           onClick={() => (isLast ? dismiss() : setStep((s) => s + 1))}
         >
           {isLast ? t('onboarding_ui.done') : t('onboarding_ui.next')}
+        </button>
+      </div>
+      <div className="ui-concept-shortcuts">
+        {leadHref && (
+          <a href={leadHref} className="ui-concept-link" onClick={dismiss}>
+            {lang === 'mk' ? 'Отвори главна приказна' : 'Otvori glavnu priču'}
+          </a>
+        )}
+        <button type="button" className="ui-concept-link" onClick={openAnalysis}>
+          {lang === 'mk' ? 'Види како се разликуваат извори' : 'Vidi kako se razlikuju izvori'}
         </button>
       </div>
     </div>

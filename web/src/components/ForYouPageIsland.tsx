@@ -19,6 +19,7 @@ import { $profile } from '../lib/store.ts';
 import PersonalizationWhyChip from './PersonalizationWhyChip.tsx';
 import { NewsCard } from './NewsCard.tsx';
 import OnboardingIsland from './OnboardingIsland.tsx';
+import PreferenceToggle from './PreferenceToggle.tsx';
 import {
   buildCsrfHeadersAsync,
   buildPersonalizedClusters,

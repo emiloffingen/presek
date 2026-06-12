@@ -43,6 +43,7 @@ const thumbSrc = selectedImage.proxiedUrl;
 const isFallbackArt = selectedImage.isWeak;
 const fallbackImageUrl = selectedImage.fallbackUrl;
 const showMedia = Boolean(thumbSrc) && !(isFallbackArt && (variant === 'compact' || variant === 'wire'));
+const mediaSrc = thumbSrc || '';
 const tintColor = cluster.dominant_color || '#1e40af';
 const rawLeadTitle = cluster.synthetic_headline || getDisplayTitle(main);
 
@@ -224,15 +225,15 @@ function getTimeStr(dateStr: string) {
                         <p class="article-image-placeholder-label">{cardLabel || main.category || t('news.ongoing')}</p>
                         <span class="article-image-placeholder-chip">{cardSub || `${uniqueSources} ${uniqueSources === 1 ? t('news.source') : t('news.sources')}`}</span>
                     </div>
-                    <IconComponent size={28} strokeWidth={1.8} class="article-image-placeholder-icon" aria-hidden="true" />
+                    <IconComponent size={28} strokeWidth={1.8} className="article-image-placeholder-icon" aria-hidden="true" />
                     <h3 set:html={sanitizeHtml(displayTitle)}></h3>
                     <p class="article-image-placeholder-source">{main.source}</p>
                 </div>
             ) : (
                 <div class="runtime-image-container relative w-full h-full">
                     <img
-                        src={thumbSrc}
-                        srcset={`${thumbSrc.replace('w=720', 'w=360')} 360w, ${thumbSrc} 720w, ${thumbSrc.replace('w=720', 'w=1200')} 1200w`}
+                        src={mediaSrc}
+                        srcset={`${mediaSrc.replace('w=720', 'w=360')} 360w, ${mediaSrc} 720w, ${mediaSrc.replace('w=720', 'w=1200')} 1200w`}
                         sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
                         alt={displayTitle}
                         width="700"

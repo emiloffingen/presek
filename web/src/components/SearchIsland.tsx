@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { fetchJsonCached } from '../lib/apiCache';
 import { getDisplaySummary, getDisplayTitle } from '../utils/textUtils';
+import { proxyUrl } from '../lib/apiBase';
 
 // Transliteration character mapping for Cyrillic/Latin script-agnostic matching
 const SCRIPT_MAP: Record<string, string[]> = {
@@ -75,6 +76,10 @@ const SCRIPT_MAP: Record<string, string[]> = {
   'š': ['š', 'ш', 'Ш', 'Š'],
   'ш': ['š', 'ш', 'Ш', 'Š']
 };
+
+function proxiedImage(url: string, width: number) {
+  return proxyUrl(`/proxy?url=${encodeURIComponent(url)}&w=${width}`);
+}
 
 function getScriptAgnosticPattern(query: string) {
   let escaped = query.toLowerCase().replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
@@ -753,7 +758,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                         >
                           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-secondary flex items-center justify-center shrink-0 border-2 border-nyt-accent/20">
                             {entityResult.image_url ? (
-                              <img src={`/proxy?url=${encodeURIComponent(entityResult.image_url)}&w=128`} className="w-full h-full object-cover" />
+                              <img src={proxiedImage(entityResult.image_url, 128)} className="w-full h-full object-cover" />
                             ) : (
                               <User size={24} className="text-nyt-accent" />
                             )}
@@ -784,7 +789,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                                 } ${activeIndex === globalIdx ? 'bg-nyt-accent/5 border-nyt-accent/30 ring-1 ring-nyt-accent/20' : ''}`}
                               >
                                 <div className="w-14 sm:w-16 aspect-[4/3] rounded-none overflow-hidden bg-secondary shrink-0 border border-border/50">
-                                  {item.image_url && <img src={`/proxy?url=${encodeURIComponent(item.image_url)}&w=200`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />}
+                                  {item.image_url && <img src={proxiedImage(item.image_url, 200)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />}
                                 </div>
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-center gap-1.5 mb-1">
@@ -856,7 +861,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                 {selectedItem.type === 'CLUSTER' && (
                   <div className="space-y-6">
                     <div className="aspect-[16/9] rounded-none overflow-hidden bg-secondary border border-border shadow-sm">
-                      {selectedItem.data.image_url && <img src={`/proxy?url=${encodeURIComponent(selectedItem.data.image_url)}&w=600`} className="w-full h-full object-cover" />}
+                      {selectedItem.data.image_url && <img src={proxiedImage(selectedItem.data.image_url, 600)} className="w-full h-full object-cover" />}
                     </div>
 
                     <div>
@@ -899,7 +904,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                     <div className="flex flex-col items-center text-center">
                       <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-nyt-accent/10 mb-6 bg-secondary flex items-center justify-center">
                         {selectedItem.data.image_url ? (
-                          <img src={`/proxy?url=${encodeURIComponent(selectedItem.data.image_url)}&w=256`} className="w-full h-full object-cover" />
+                          <img src={proxiedImage(selectedItem.data.image_url, 256)} className="w-full h-full object-cover" />
                         ) : (
                           <User size={64} className="text-nyt-accent/40" />
                         )}

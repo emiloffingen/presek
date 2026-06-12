@@ -11,6 +11,7 @@ import { ClientRouter } from 'astro:transitions';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import { buildCanonicalUrl, hreflangAlternates, siteOrigin } from '../lib/localePaths';
 import { shouldLoadTinyAdzScript, tinyAdzSiteId } from '../lib/tinyadz';
+import { proxyBaseUrl } from '../lib/apiBase';
 
 interface Props {
 	title: string;
@@ -61,6 +62,7 @@ const normalizedHost = hostHeader.split(':')[0].toLowerCase();
 const shouldLoadAdsense = lang === 'sr' && (normalizedHost === 'presek.live' || normalizedHost === 'www.presek.live');
 const loadTinyAdz = shouldLoadTinyAdzScript(lang, hostHeader);
 const tinyAdzSite = loadTinyAdz ? tinyAdzSiteId(lang, hostHeader) : '';
+const proxyBase = proxyBaseUrl();
 
 const organizationSchema = {
 	"@context": "https://schema.org",
@@ -237,6 +239,7 @@ const organizationSchema = {
 		<slot />
 		<UiConceptOnboarding client:idle lang={lang} />
 		<ConsentBanner client:idle />
+		<script is:inline set:html={`window.__PRESEK_PROXY_BASE = ${JSON.stringify(proxyBase)};`} />
 		<script is:inline>
 			// Handle Astro transitions loading state
 			document.addEventListener('astro:before-preparation', () => {
@@ -280,7 +283,7 @@ const organizationSchema = {
 							.filter(href => href && (href.startsWith('/cluster/') || href.startsWith('/mk/cluster/')))
 							.map(href => new URL(href, window.location.origin).pathname);
 						
-						const uniqueUrls = [...new Set(clusterUrls)].slice(0, 8);
+						const uniqueUrls = [...new Set(clusterUrls)].slice(0, 4);
 						if (uniqueUrls.length > 0) {
 							navigator.serviceWorker.controller.postMessage({
 								type: 'PREFETCH_URLS',
@@ -310,8 +313,10 @@ const organizationSchema = {
 						fetch(href, { priority: 'low' }).catch(() => {});
 						observer.unobserve(entry.target);
 					});
-				}, { rootMargin: '200px 0px' });
-				document.querySelectorAll('a[data-testid="cluster-link"]').forEach((link) => observer.observe(link));
+				}, { rootMargin: '80px 0px' });
+				document.querySelectorAll('a[data-testid="cluster-link"]').forEach((link, index) => {
+					if (index < 4) observer.observe(link);
+				});
 			});
 
 			// Parallax Effect for Hero Images
@@ -418,7 +423,8 @@ const organizationSchema = {
 			const emergencyFallbackUrl = () => {
 				const pageLang = document.documentElement.lang === 'mk' ? 'mk' : 'sr';
 				const cat = pageLang === 'mk' ? 'вести' : 'vesti';
-				return `/proxy?cat=${encodeURIComponent(cat)}&lang=${pageLang}&w=720`;
+				const proxyBase = (window as any).__PRESEK_PROXY_BASE || '';
+				return `${proxyBase}/proxy?cat=${encodeURIComponent(cat)}&lang=${pageLang}&w=720`;
 			};
 
 			const handleImageError = (img: HTMLImageElement) => {

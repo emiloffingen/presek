@@ -224,7 +224,7 @@ const hasCitationSources = resolveHasCitationSources(cluster?.citation_sources);
 const citationSources = cluster?.citation_sources || [];
 
 const synthesisUpdatedAt = cluster?.synthesis_updated_at;
-const synthesisFreshness = cluster?.synthesis_freshness || { is_stale: false };
+const synthesisFreshness = (cluster?.synthesis_freshness || { is_stale: false }) as any;
 const pipelineBusy = Boolean(pipeline?.busy);
 
 const perspectives = cluster?.perspectives || [];

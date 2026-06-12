@@ -17,7 +17,7 @@ async def test_build_weekly_ops_report_shape():
         "core.ops_report.build_ops_snapshot",
         new=AsyncMock(return_value={"status": "warn", "alerts": []}),
     ), patch(
-        "core.database.db_manager.async_execute",
+        "core.ops_report.db.async_execute",
         new=AsyncMock(side_effect=_fake_execute),
     ):
         report = await build_weekly_ops_report()

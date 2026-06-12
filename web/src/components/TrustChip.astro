@@ -21,19 +21,45 @@ const trust = buildTrustChip(
   { sourcesCount, pluralismScore, isStale, hasVerification },
   lang,
 );
+
+const explainerTitle = lang === 'mk' ? 'Зошто овој сигнал?' : 'Zašto ovaj signal?';
+const sourceLine = lang === 'mk'
+  ? `${trust.sourcesCount} извори се поврзани во истиот кластер.`
+  : `${trust.sourcesCount} izvora je povezano u isti klaster.`;
+const pluralismLine = trust.pluralismScore == null
+  ? (lang === 'mk' ? 'Плурализмот сè уште не е пресметан.' : 'Pluralizam još nije izračunat.')
+  : trust.pluralismScore >= 55
+    ? (lang === 'mk' ? `Различни агли: ${trust.pluralismScore}%.` : `Različiti uglovi: ${trust.pluralismScore}%.`)
+    : trust.pluralismScore <= 15
+      ? (lang === 'mk' ? `Висок консензус: ${trust.pluralismScore}%.` : `Visok konsenzus: ${trust.pluralismScore}%.`)
+      : (lang === 'mk' ? `Умерена разлика: ${trust.pluralismScore}%.` : `Umerena razlika: ${trust.pluralismScore}%.`);
+const freshnessLine = isStale
+  ? (lang === 'mk' ? 'Синтезата се освежува.' : 'Sinteza se osvežava.')
+  : (lang === 'mk' ? 'Синтезата е усогласена со најновите извори.' : 'Sinteza je usklađena sa najnovijim izvorima.');
+const verificationLine = hasVerification
+  ? (lang === 'mk' ? 'Има сигнал за проверка на факти.' : 'Ima signal provere činjenica.')
+  : (lang === 'mk' ? 'Нема посебен fact-check сигнал.' : 'Nema poseban fact-check signal.');
 ---
 
-<span class={`trust-chip trust-chip--${trust.tier}`} title={trust.detail}>
+<span class={`trust-chip trust-chip--${trust.tier}`} title={trust.detail} tabindex="0">
   <span class="trust-chip-score">{trust.score}</span>
   <span class="trust-chip-label">{trust.label}</span>
   <span class="trust-chip-meta">
     {trust.sourcesCount} {lang === 'mk' ? 'изв.' : 'izv.'}
     {trust.pluralismScore != null ? ` · ${trust.pluralismScore}%` : ''}
   </span>
+  <span class="trust-chip-popover" role="tooltip">
+    <strong>{explainerTitle}</strong>
+    <span>{sourceLine}</span>
+    <span>{pluralismLine}</span>
+    <span>{freshnessLine}</span>
+    <span>{verificationLine}</span>
+  </span>
 </span>
 
 <style>
   .trust-chip {
+    position: relative;
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
@@ -44,6 +70,10 @@ const trust = buildTrustChip(
     font-family: var(--font-sans);
     line-height: 1;
     max-width: 100%;
+  }
+  .trust-chip:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--nyt-accent) 70%, transparent);
+    outline-offset: 2px;
   }
   .trust-chip-score {
     font-size: 0.58rem;
@@ -68,4 +98,36 @@ const trust = buildTrustChip(
   .trust-chip--consensus { border-color: color-mix(in srgb, #10b981 35%, transparent); }
   .trust-chip--plural { border-color: color-mix(in srgb, #f59e0b 35%, transparent); }
   .trust-chip--verified { border-color: color-mix(in srgb, var(--nyt-accent) 35%, transparent); }
+  .trust-chip-popover {
+    position: absolute;
+    left: 0;
+    bottom: calc(100% + 0.45rem);
+    z-index: 40;
+    display: grid;
+    gap: 0.25rem;
+    width: min(18rem, 84vw);
+    padding: 0.7rem 0.75rem;
+    border: 1px solid color-mix(in srgb, var(--foreground) 12%, var(--border));
+    background: color-mix(in srgb, var(--popover, var(--background)) 96%, transparent);
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 0.68rem;
+    line-height: 1.35;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(0.25rem);
+    transition: opacity 0.16s ease, transform 0.16s ease;
+  }
+  .trust-chip-popover strong {
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .trust-chip:hover .trust-chip-popover,
+  .trust-chip:focus-visible .trust-chip-popover,
+  .trust-chip:focus-within .trust-chip-popover {
+    opacity: 1;
+    transform: translateY(0);
+  }
 </style>

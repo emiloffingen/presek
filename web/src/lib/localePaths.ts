@@ -101,7 +101,7 @@ const SKIP_MK_REWRITE_PREFIXES = [
   '/sr',
 ];
 
-/** Shared root pages (host-based lang). Rewriting these to /mk/* hits thin Astro.rewrite stubs and loops. */
+/** Shared root pages (host-based lang). Served directly on presek.mk without /mk rewrite. */
 const MK_SHARED_ROOT_PATHS = new Set([
   '/about',
   '/analize',

@@ -63,6 +63,39 @@ log = logging.getLogger("presek")
 router = APIRouter()
 _STARTED_AT = time.time()
 
+_WEAK_IMAGE_PATTERNS = (
+    ".svg",
+    "placeholder",
+    "default",
+    "logo",
+    "emblem",
+    "avatar",
+    "icon",
+    "watermark",
+    "sprite",
+    "facebook-share",
+    "twitter-share",
+    "social-default",
+    "fallback",
+    "no-image",
+    "img-missing",
+    "breaking-news-generic",
+)
+
+
+def _image_quality(url: str | None) -> tuple[str, str]:
+    value = str(url or "").strip().lower()
+    if not value:
+        return "missing", "no representative image"
+    if len(value) < 15:
+        return "weak", "url too short"
+    for pattern in _WEAK_IMAGE_PATTERNS:
+        if pattern in value:
+            return "weak", f"matches {pattern}"
+    if not re.match(r"^https?://|^/static/", value):
+        return "weak", "unsupported scheme"
+    return "ok", "usable candidate"
+
 _FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"
 
 _APP_ROOT = Path(__file__).resolve().parent.parent
@@ -129,6 +162,63 @@ async def health(request: Request, authorized: bool = Depends(optional_admin_aut
         "database": db_s,
         "redis": rd_s,
     }
+
+
+@router.get("/system/media-quality")
+async def media_quality_report(limit: int = Query(30, ge=1, le=200), lang: Optional[str] = "sr"):
+    """Report recent clusters with missing or weak representative imagery."""
+    cache_key = f"system:media-quality:v1:{lang}:{limit}"
+    cached = cached_response(cache_key, ttl=300)
+    if cached:
+        return cached
+
+    rows = await db.async_execute(
+        """
+        SELECT
+            cm.cluster_id,
+            cm.representative_image,
+            cm.dominant_color,
+            s.synthetic_headline,
+            COUNT(a.id) AS article_count,
+            MAX(a.ingested_at) AS latest_at
+        FROM cluster_metadata cm
+        JOIN articles a ON a.cluster_id = cm.cluster_id
+        LEFT JOIN cluster_summaries s ON s.cluster_id = cm.cluster_id
+        WHERE COALESCE(a.lang, %s) = %s
+        GROUP BY cm.cluster_id, cm.representative_image, cm.dominant_color, s.synthetic_headline
+        ORDER BY latest_at DESC NULLS LAST
+        LIMIT %s
+        """,
+        (lang, lang, limit),
+    )
+
+    items = []
+    counts = {"ok": 0, "weak": 0, "missing": 0}
+    for row in rows or []:
+        quality, reason = _image_quality(row.get("representative_image"))
+        counts[quality] = counts.get(quality, 0) + 1
+        if quality != "ok":
+            items.append(
+                {
+                    "cluster_id": row.get("cluster_id"),
+                    "headline": row.get("synthetic_headline"),
+                    "representative_image": row.get("representative_image"),
+                    "quality": quality,
+                    "reason": reason,
+                    "article_count": int(row.get("article_count") or 0),
+                    "latest_at": row.get("latest_at").isoformat() if row.get("latest_at") else None,
+                }
+            )
+
+    payload = {
+        "status": "ok" if counts.get("missing", 0) + counts.get("weak", 0) == 0 else "degraded",
+        "lang": lang,
+        "sample_size": len(rows or []),
+        "counts": counts,
+        "weak_or_missing": items,
+    }
+    set_cache(cache_key, payload, ttl=300)
+    return payload
 
 
 
@@ -697,9 +787,10 @@ async def proxy_image(
                 svg,
                 media_type="image/svg+xml",
                 headers={
-                    "Cache-Control": "public, max-age=3600",
+                    "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
                     "X-Proxy-Fallback": reason,
                     "X-Debug-Reason": reason,
+                    "X-Content-Type-Options": "nosniff",
                 },
             )
         except Exception as fe:
@@ -747,7 +838,7 @@ async def proxy_image(
         try:
             safe_ips = _resolve_public_ips(url)
         except Exception:
-            return serve_fallback("fetch_failed")
+            return serve_fallback("http_404")
         if not safe_ips:
             return serve_fallback("security_ssrf_block")
 
@@ -758,7 +849,11 @@ async def proxy_image(
                 return Response(
                     cached_bin,
                     media_type="image/webp",
-                    headers={"Cache-Control": "public, max-age=86400", "X-Cache": "HIT"},
+                    headers={
+                        "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+                        "X-Cache": "HIT",
+                        "X-Content-Type-Options": "nosniff",
+                    },
                 )
         except Exception as e:
             log.debug(f"Binary Redis cache lookup failed: {e}")
@@ -780,7 +875,7 @@ async def proxy_image(
                     log.info(f"[proxy] Using local master for {url}")
         except Exception as e:
             log.warning(f"[proxy] DB lookup failed: {e}")
-            return serve_fallback("db_lookup_failed")
+            img_data = None
 
         # Fetch from remote
         if not img_data:
@@ -813,7 +908,7 @@ async def proxy_image(
                                 return serve_fallback("too_large")
             except Exception as e:
                 log.error(f"[proxy] Fetch failed for {url}: {e}")
-                return serve_fallback("fetch_failed")
+                return serve_fallback("http_404")
 
         if not img_data:
             return serve_fallback("no_data")
@@ -843,7 +938,11 @@ async def proxy_image(
             return Response(
                 optimized,
                 media_type="image/webp",
-                headers={"Cache-Control": "public, max-age=86400", "X-Cache": "MISS"},
+                headers={
+                    "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+                    "X-Cache": "MISS",
+                    "X-Content-Type-Options": "nosniff",
+                },
             )
         except Exception as e:
             log.error(f"[proxy] Image processing failed for {url}: {e}")
