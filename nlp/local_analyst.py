@@ -6,8 +6,17 @@ import threading
 import time
 from typing import Any, Dict, List, Optional
 
-from llama_cpp import Llama, LlamaGrammar
 from pydantic import BaseModel, Field
+
+
+def _import_llama_cpp():
+    """Lazy import so API processes without llama-cpp can still use zero-token helpers."""
+    try:
+        from llama_cpp import Llama, LlamaGrammar
+
+        return Llama, LlamaGrammar
+    except ImportError:
+        return None, None
 
 try:
     from core.config import SOURCE_CATEGORIES
@@ -76,10 +85,14 @@ class LocalAnalyst:
                 cls._instance = super(LocalAnalyst, cls).__new__(cls)
                 cls._instance.model = None
                 cls._instance.load_lock = threading.Lock()
-                try:
-                    cls._instance.grammar = LlamaGrammar.from_string(JSON_GBNF)
-                except Exception as e:
-                    log.error(f"[analyst] Failed to compile grammar: {e}")
+                _, LlamaGrammar = _import_llama_cpp()
+                if LlamaGrammar is not None:
+                    try:
+                        cls._instance.grammar = LlamaGrammar.from_string(JSON_GBNF)
+                    except Exception as e:
+                        log.error(f"[analyst] Failed to compile grammar: {e}")
+                        cls._instance.grammar = None
+                else:
                     cls._instance.grammar = None
         return cls._instance
 
@@ -94,6 +107,11 @@ class LocalAnalyst:
 
             if not os.path.exists(MODEL_PATH):
                 log.warning(f"Local model not found at {MODEL_PATH}. Deep Local tasks will be skipped.")
+                return False
+
+            Llama, _ = _import_llama_cpp()
+            if Llama is None:
+                log.warning("[analyst] llama_cpp is not installed; local model inference is unavailable.")
                 return False
 
             try:
@@ -206,6 +224,9 @@ class LocalAnalyst:
             local_grammar = None
             if response_schema:
                 try:
+                    _, LlamaGrammar = _import_llama_cpp()
+                    if LlamaGrammar is None:
+                        raise ImportError("llama_cpp is not installed")
                     schema_json = json.dumps(response_schema.model_json_schema())
                     local_grammar = LlamaGrammar.from_json_schema(schema_json)
                 except Exception as e:

@@ -7,6 +7,35 @@ from tasks.intelligence import refine_knowledge_graph_sentiment_task
 
 @pytest.mark.anyio
 @patch("routes.news.db")
+async def test_cluster_detail_works_without_llama_cpp(mock_db):
+    from routes.news import get_cluster_detail
+
+    mock_db.async_execute = AsyncMock(return_value=[
+        {
+            "id": "art_1",
+            "title": "СДСМ предлага нови награди",
+            "description": "Прва реченица за настанот. Втора реченица.",
+            "source": "Фронтлајн.мк",
+            "created_at": datetime.datetime(2026, 6, 12, 12, 0),
+            "category": "Makedonija",
+            "country": "MK",
+            "source_signal": {"trust_level": 0.9},
+        }
+    ])
+    mock_db.async_execute_one = AsyncMock(return_value=None)
+    mock_db.async_get_synthesis_ids = AsyncMock(return_value=[])
+
+    with patch("nlp.local_analyst._import_llama_cpp", return_value=(None, None)), \
+         patch("routes.news._is_publicly_displayable_article", return_value=True), \
+         patch("routes.news.annotate_cluster_articles", side_effect=lambda x, **k: x), \
+         patch("routes.news.cached_response", return_value=None):
+        response = await get_cluster_detail("abcdef0123456789abcdef0123456789", lang="mk")
+        assert response["status"] == "success"
+        assert response["data"]["timeline"][0]["title"]
+
+
+@pytest.mark.anyio
+@patch("routes.news.db")
 async def test_timeline_consolidation_merges_duplicates(mock_db):
     # Test that get_jaccard_similarity and de-duplication correctly merge similar articles in timeline
     from routes.news import get_cluster_detail
