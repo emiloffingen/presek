@@ -1,8 +1,10 @@
 ---
+import '../../styles/trending-preview.css';
 import { TrendingUp } from 'lucide-react';
-import NewsCard from '../NewsCard.astro';
 import type { NewsCluster } from '../../types';
 import { useTranslations } from '../../i18n/utils';
+import { localePath } from '../../lib/localePaths';
+import { getDisplayTitle } from '../../utils/textUtils';
 import type { ui } from '../../i18n/ui';
 
 interface Props {
@@ -11,210 +13,92 @@ interface Props {
 }
 
 const { clusters, lang } = Astro.props;
+const hostHeader = Astro.request?.headers.get('host');
 const t = useTranslations(lang);
+const l = (path: string) => localePath(path, lang, hostHeader);
+const expandLabel = lang === 'sr' ? 'Otvori' : 'Отвори';
+const trendLabel = t('home.trending') || 'Trending';
+
+const trendItems = clusters.map((cluster: NewsCluster) => {
+    const article = cluster.articles?.[0];
+    return {
+        href: l(`/cluster/${cluster.cluster_id}`),
+        title: getDisplayTitle(article, cluster.synthetic_headline || '', lang),
+        source: article?.source || '',
+        chip: trendLabel,
+    };
+});
 ---
 
 {clusters.length > 0 && (
-    <div class="trending-strip">
-        <div class="trending-strip-header">
-            <span class="trending-label">
+    <details class="trending-details" data-trending-strip>
+        <summary class="trending-summary" aria-label={trendLabel}>
+            <span class="trending-summary-label">
                 <TrendingUp size={14} />
-                {t('home.trending') || 'Trending'}
+                {trendLabel}
             </span>
-            <span class="trending-hint">
-                {t('home.trending_hint')}
+            <span class="trending-summary-meta">
+                <span class="trending-count">{clusters.length}</span>
+                <span>{expandLabel}</span>
             </span>
+        </summary>
+        <div class="trending-strip">
+            <div class="trending-row hide-scrollbar" data-trending-mount aria-label={trendLabel}></div>
         </div>
-        <div class="trending-row hide-scrollbar" aria-label={t('home.trending')}>
-            {clusters.map((cluster: NewsCluster) => (
-                <div class="trending-card">
-                    <span class="trend-chip">{t('home.trending') || 'Trending'}</span>
-                    <NewsCard cluster={cluster} variant="compact" lang={lang} />
-                </div>
-            ))}
-        </div>
-    </div>
+    </details>
 )}
 
-<style>
-    .trending-strip {
-        border-bottom: 2px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
-        margin-bottom: 1rem;
-        padding: 0 0 0.55rem;
-        max-width: 100%;
-    }
+<script is:inline define:vars={{ trendItems }}>
+    (() => {
+        const root = document.querySelector('[data-trending-strip]');
+        if (!root || !Array.isArray(trendItems) || trendItems.length === 0) return;
 
-    .trending-strip-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        padding: 0.4rem 0 0.15rem;
-    }
+        const mount = root.querySelector('[data-trending-mount]');
+        if (!mount) return;
 
-    .trending-row {
-        display: flex;
-        align-items: stretch;
-        gap: 0.85rem;
-        max-width: 100%;
-        overflow-x: auto;
-        overflow-y: visible;
-        padding: 0.55rem 0 0.95rem;
-        scroll-snap-type: x proximity;
-        -webkit-overflow-scrolling: touch;
-    }
+        const paint = () => {
+            if (mount.dataset.ready === '1') return;
+            mount.dataset.ready = '1';
+            const frag = document.createDocumentFragment();
 
-    .trending-label {
-        display: inline-flex;
-        align-items: center;
-        flex: 0 0 auto;
-        gap: 0.5rem;
-        color: var(--nyt-red);
-        font-family: var(--font-sans);
-        font-size: 0.6rem;
-        font-weight: 950;
-        letter-spacing: 0.22em;
-        text-transform: uppercase;
-    }
+            for (const item of trendItems) {
+                const link = document.createElement('a');
+                link.href = item.href;
+                link.className = 'trending-card';
 
-    .trending-hint {
-        color: color-mix(in srgb, var(--foreground) 62%, var(--muted-foreground));
-        font-family: var(--font-sans);
-        font-size: 0.64rem;
-        font-weight: 850;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-    }
+                const chip = document.createElement('span');
+                chip.className = 'trend-chip';
+                chip.textContent = item.chip || '';
 
-    .trending-card {
-        position: relative;
-        flex: 0 0 auto;
-        width: min(78vw, 18.5rem);
-        scroll-snap-align: start;
-        background:
-            linear-gradient(180deg, color-mix(in srgb, var(--nyt-red) 10%, transparent), transparent 4.25rem),
-            color-mix(in srgb, var(--card) 96%, var(--background));
-        border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
-        border-radius: var(--radius-lg, 0px);
-        padding: 0.85rem 0.85rem 0.8rem;
-        box-shadow:
-            inset 0 2px 0 color-mix(in srgb, var(--nyt-red) 65%, var(--foreground)),
-            0 1px 0 color-mix(in srgb, var(--foreground) 5%, transparent);
-        cursor: pointer;
-        transition: transform 0.28s var(--ease-editorial), border-color 0.28s var(--ease-editorial), box-shadow 0.28s var(--ease-editorial), background-color 0.28s var(--ease-editorial);
-    }
+                const title = document.createElement('h3');
+                title.className = 'trending-card-title';
+                title.textContent = item.title || '';
 
-    :global(.dark) .trending-card {
-        background:
-            linear-gradient(180deg, color-mix(in srgb, var(--nyt-red) 14%, transparent), transparent 4.25rem),
-            color-mix(in srgb, var(--card) 92%, var(--background));
-        box-shadow:
-            inset 0 2px 0 color-mix(in srgb, var(--nyt-red) 70%, var(--foreground)),
-            0 1px 0 color-mix(in srgb, var(--foreground) 5%, transparent);
-    }
+                const source = document.createElement('p');
+                source.className = 'trending-card-source';
+                source.textContent = item.source || '';
 
-    .trend-chip {
-        display: inline-flex;
-        width: fit-content;
-        align-items: center;
-        margin-bottom: 0.55rem;
-        color: var(--nyt-red);
-        font-family: var(--font-sans);
-        font-size: 0.58rem;
-        font-weight: 950;
-        letter-spacing: 0.18em;
-        line-height: 1;
-        text-transform: uppercase;
-        pointer-events: none;
-    }
+                link.append(chip, title, source);
+                frag.appendChild(link);
+            }
 
-    .trending-card:hover {
-        border-color: color-mix(in srgb, var(--nyt-red) 45%, var(--border));
-        box-shadow:
-            inset 0 2px 0 color-mix(in srgb, var(--nyt-red) 75%, var(--foreground)),
-            var(--shadow-md);
-        transform: translateY(-3px);
-    }
+            mount.appendChild(frag);
+        };
 
-    .trending-card :global(.nyt-article) {
-        position: static;
-        height: 100%;
-        padding: 0;
-        padding-bottom: 0;
-        background: transparent;
-        border: 0;
-        border-radius: 0;
-        box-shadow: none;
-    }
+        const maybePaint = () => {
+            if (root.open) paint();
+        };
 
-    .trending-card :global(.nyt-article:hover) {
-        transform: none;
-        box-shadow: none;
-    }
+        root.addEventListener('toggle', maybePaint);
 
-    .trending-card :global(.image-wrap) {
-        display: none;
-    }
-
-    .trending-card :global(.article-body) {
-        justify-content: flex-start;
-    }
-
-    .trending-card :global(.headline-link) {
-        min-height: 3.8rem;
-    }
-
-    .trending-card :global(.headline-link::after) {
-        content: "";
-        position: absolute;
-        inset: 0;
-        z-index: 2;
-    }
-
-    .trending-card :global(.headline-link:focus-visible::after) {
-        outline: 2px solid var(--nyt-red);
-        outline-offset: 3px;
-    }
-
-    .trending-card :global(.headline-compact) {
-        font-size: 1.16rem;
-        line-height: 1.15;
-    }
-
-    .trending-card :global(.summary) {
-        min-height: 0;
-        -webkit-line-clamp: 2;
-    }
-
-    @media (max-width: 639px) {
-        .trending-strip {
-            margin-bottom: 0.9rem;
-            padding-bottom: 0.45rem;
+        if ('IntersectionObserver' in window) {
+            const observer = new IntersectionObserver((entries) => {
+                if (entries.some((entry) => entry.isIntersecting)) {
+                    maybePaint();
+                    observer.disconnect();
+                }
+            }, { rootMargin: '200px' });
+            observer.observe(root);
         }
-
-        .trending-strip-header {
-            gap: 0.35rem;
-            padding: 0.45rem 0 0.25rem;
-            align-items: flex-start;
-            flex-direction: column;
-        }
-
-        .trending-row {
-            gap: 0.85rem;
-            padding: 0.45rem 0 0.65rem;
-        }
-
-        .trending-card {
-            width: min(78vw, 15.75rem);
-            padding-top: 1.55rem;
-        }
-    }
-
-    @media (max-width: 640px) {
-        .trending-strip-header {
-            align-items: flex-start;
-            flex-direction: column;
-            gap: 0.35rem;
-        }
-    }
-</style>
+    })();
+</script>

@@ -17,7 +17,9 @@
     "test:component": "cypress run --component",
     "test:component:ui": "cypress open --component",
     "eval:recommendations": "node src/lib/recommendationEval.mjs",
-    "lint": "astro check --minimumSeverity warning"
+    "lint": "astro check --minimumSeverity warning",
+    "perf:lighthouse": "node scripts/lighthouse-homepage.mjs --preview",
+    "perf:lighthouse:live": "node scripts/lighthouse-homepage.mjs https://presek.live/"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.9",

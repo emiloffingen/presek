@@ -1,0 +1,41 @@
+/* Mobile Layout extracted from global.css */
+
+/* Mobile Layout Polish */
+@media (max-width: 768px) {
+  :root {
+    --section-py: 1.25rem;
+    --page-py: 1.5rem;
+    --grid-gap: 1.25rem;
+  }
+
+  /* Optimized container padding for mobile */
+  .container {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Typography adjustments for mobile density */
+  .headline-lead {
+    font-size: 2.25rem !important;
+    line-height: 1.2 !important;
+  }
+
+  /* Prevent overflow from wide components */
+  .analyst-facts-grid,
+  .story-timeline-container,
+  .media-pulse-radar-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.5rem;
+  }
+
+  /* Compact UI elements */
+  .sidebar-module {
+    padding: 1.25rem !important;
+  }
+
+  .source-reputation-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

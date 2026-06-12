@@ -47,17 +47,22 @@ function getPluralismLabel(value: number) {
 ---
 
 {synthesisPicks && synthesisPicks.length > 0 && (
+    <details class="synthesis-picks-details">
+        <summary class="synthesis-picks-summary" aria-label={t('home.synthesis_picks_title')}>
+            <span class="synthesis-picks-summary-label">
+                <span class="badge-text">{lang === 'sr' ? 'Sistemska sinteza' : 'Системска синтеза'}</span>
+                <strong>{t('home.synthesis_picks_title')}</strong>
+            </span>
+            <span class="synthesis-picks-summary-meta">
+                <span class="synthesis-picks-count">{synthesisPicks.length}</span>
+                <span>{lang === 'sr' ? 'Otvori' : 'Отвори'}</span>
+            </span>
+        </summary>
     <section class="synthesis-picks-section">
         <div class="feed-section-container">
-            <div class="section-heading-row masthead-double-rule">
-                <div class="heading-badge">
-                    <span class="badge-text">{lang === 'sr' ? 'Sistemska sinteza' : 'Системска синтеза'}</span>
-                </div>
-                <h2 class="section-heading font-serif">{t('home.synthesis_picks_title')}</h2>
-                <p class="section-note">
-                    {t('home.synthesis_picks_desc')}
-                </p>
-            </div>
+            <p class="section-note synthesis-picks-note">
+                {t('home.synthesis_picks_desc')}
+            </p>
 
             <div class="synthesis-grid">
                 {synthesisPicks.map((cluster) => {
@@ -118,12 +123,73 @@ function getPluralismLabel(value: number) {
             </div>
         </div>
     </section>
+    </details>
 )}
 
 <style>
+    .synthesis-picks-details {
+        margin-top: 2.5rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .synthesis-picks-summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.85rem 0;
+        border-top: 2px solid color-mix(in srgb, var(--foreground) 14%, var(--border));
+        border-bottom: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
+        cursor: pointer;
+        list-style: none;
+    }
+
+    .synthesis-picks-summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .synthesis-picks-summary-label {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        text-align: left;
+    }
+
+    .synthesis-picks-summary-label strong {
+        font-family: var(--font-serif);
+        font-size: clamp(1.35rem, 1.1rem + 0.8vw, 1.85rem);
+        line-height: 1.05;
+        font-weight: 800;
+    }
+
+    .synthesis-picks-summary-meta {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        font-family: var(--font-sans);
+        font-size: 0.64rem;
+        font-weight: 850;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted-foreground);
+    }
+
+    .synthesis-picks-count {
+        padding: 0.12rem 0.4rem;
+        border: 1px solid var(--border);
+    }
+
+    .synthesis-picks-details:not([open]) .synthesis-picks-section {
+        display: none;
+    }
+
+    .synthesis-picks-note {
+        margin: 0 0 1.5rem;
+    }
+
     .synthesis-picks-section {
-        margin-top: 4.25rem;
-        margin-bottom: 4.5rem;
+        margin-top: 0;
+        margin-bottom: 2rem;
         position: relative;
     }
 
