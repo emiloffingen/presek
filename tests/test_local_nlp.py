@@ -63,6 +63,9 @@ class TestTagFiltering:
     def test_rejects_generic_fragment_entities(self):
         assert not is_valid_focus_entity("Podgotvuva Napadi", None)
         assert not is_valid_focus_entity("Napadi Iranski", None)
+        assert not is_valid_focus_entity("Otkazao", None)
+        assert not is_valid_focus_entity("Pogledaj", None)
+        assert not is_valid_focus_entity("Otvaranj", None)
         assert is_valid_focus_entity("Izrael", "country")
 
 

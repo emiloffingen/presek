@@ -677,7 +677,7 @@ async def get_entity_profile(name: str, lang: Optional[str] = "sr"):
 async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] = "sr"):
     """Public high-level intelligence stats for the Pulse page."""
     cat_id = f"cat-{category}-{lang}" if category else f"all-{lang}"
-    cache_key = f"api:intelligence:global-pulse:{cat_id}:v5"
+    cache_key = f"api:intelligence:global-pulse:{cat_id}:v6"
     cached = cached_response(cache_key)
     if cached:
         return cached
@@ -833,16 +833,19 @@ async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] =
         processed = []
         seen = set()
         for r in rows:
-            name = normalize_tag_name(r["name"])
-            if not _is_valid_focus_entity(name, None):
+            name = normalize_person_surface_name(
+                normalize_tag_name(normalize_entity_name(r["name"]))
+            )
+            if not name or not _is_valid_focus_entity(name, r.get("type")):
                 continue
-            
+
             if lang == "mk":
                 name = transliterate_lat_to_cyr(name)
-                
-            if name.casefold() in seen:
+
+            key = name.casefold()
+            if key in seen:
                 continue
-            seen.add(name.casefold())
+            seen.add(key)
             processed.append(
                 {
                     "name": name,

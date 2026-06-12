@@ -155,6 +155,17 @@ def is_valid_focus_entity(name, entity_type=None):
         return False
     if len(words) > 1 and any(len(word) < 3 for word in words):
         return False
+    # Single-token headline verbs / truncated verbal nouns scraped from titles.
+    if len(words) == 1:
+        token = words[0]
+        if re.search(r"(?:nj|нj)$", token, re.IGNORECASE):
+            return False
+        if len(token) >= 6 and re.search(
+            r"(?:ao|ala|alo|ali|ала|ало|али|ао)$", token, re.IGNORECASE
+        ):
+            return False
+        if len(token) >= 6 and re.search(r"(?:aj|ajte|ај|ајте)$", token, re.IGNORECASE):
+            return False
     return True
 
 
