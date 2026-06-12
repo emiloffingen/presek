@@ -20,7 +20,8 @@ const THRESHOLDS = {
 
 const args = process.argv.slice(2);
 const usePreview = args.includes('--preview');
-const filteredArgs = args.filter((a) => a !== '--preview');
+const enforce = args.includes('--enforce');
+const filteredArgs = args.filter((a) => a !== '--preview' && a !== '--enforce');
 
 function run(command, commandArgs, options = {}) {
   return new Promise((resolve, reject) => {
@@ -121,8 +122,13 @@ function summarize(reportPath) {
   if (cls != null && cls > THRESHOLDS.cls) warnings.push(`CLS above ${THRESHOLDS.cls}`);
 
   if (warnings.length) {
-    console.warn('Perf budget warnings:\n - ' + warnings.join('\n - '));
-    return 2;
+    const message = 'Perf budget warnings:\n - ' + warnings.join('\n - ');
+    if (enforce) {
+      console.error(message);
+      return 1;
+    }
+    console.warn(message);
+    return 0;
   }
 
   return 0;
@@ -140,7 +146,7 @@ async function main() {
       reportPath = join(tmp, 'homepage.json');
       const result = await runLighthouse('http://127.0.0.1:4321/', reportPath);
       if (result === 'skipped') {
-        process.exitCode = 0;
+        process.exitCode = enforce ? 1 : 0;
         return;
       }
     } else if (!reportPath || reportPath.startsWith('http')) {
@@ -150,7 +156,7 @@ async function main() {
       console.log(`Running Lighthouse against ${url}`);
       const result = await runLighthouse(url, reportPath);
       if (result === 'skipped') {
-        process.exitCode = 0;
+        process.exitCode = enforce ? 1 : 0;
         return;
       }
       writeFileSync(join(process.cwd(), 'lighthouse-homepage.json'), readFileSync(reportPath));

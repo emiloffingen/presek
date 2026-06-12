@@ -2,8 +2,8 @@
 /* Cache-bust marker for homepage stylesheet hashing. */
 import '../../styles/home-page.css';
 import Layout from '../../layouts/Layout.astro';
-import NewsCard from '../NewsCard.astro';
 import NYTHeader from '../NYTHeader.astro';
+import AnalysisBandsLazy from './AnalysisBandsLazy.astro';
 import Footer from '../Footer.astro';
 
 import ForYouIsland from '../ForYouIsland.tsx';
@@ -416,6 +416,40 @@ const reportingLabel = lang === 'sr' ? 'Izveštavaju:' : 'Известуваат
 const factsConfirmedLabel = lang === 'sr' ? 'Činjenice potvrđene' : 'Фактите потврдени';
 const factCheckSourceLabel = lang === 'sr' ? 'Fact-check izvor:' : 'Факт-чек извор:';
 const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
+
+const perspectiveBandItems = perspectivesClusters.map((cluster: NewsCluster) => ({
+    href: l(`/cluster/${cluster.cluster_id}`),
+    title: cluster.synthetic_headline || cluster.articles?.[0]?.title || '',
+    preview: getStoryPreviewText(cluster, cluster.articles?.[0], lang),
+    category: cluster.articles?.[0]?.category || 'Tema',
+    pluralism: cluster.pluralism_score || 50,
+    sources: (cluster.articles || []).slice(0, 3).map((art) => art.source).filter(Boolean),
+    extraSources: Math.max(0, (cluster.articles?.length || 0) - 3),
+}));
+
+const radarBandItems = radarClusters.map((cluster: NewsCluster) => {
+    const factCheckedArticle = cluster.articles?.find((a) => a.is_fact_check) || cluster.articles?.[0];
+    return {
+        href: l(`/cluster/${cluster.cluster_id}`),
+        title: cluster.synthetic_headline || factCheckedArticle?.title || '',
+        preview: getStoryPreviewText(cluster, factCheckedArticle, lang),
+        source: factCheckedArticle?.source || portalFallbackLabel,
+    };
+});
+
+const consensusBandItems = consensusClusters.map((cluster: NewsCluster) => ({
+    href: l(`/cluster/${cluster.cluster_id}`),
+    title: cluster.synthetic_headline || cluster.articles?.[0]?.title || '',
+    preview: getStoryPreviewText(cluster, cluster.articles?.[0], lang),
+    category: cluster.articles?.[0]?.source || '',
+}));
+
+const analysisBandLabels = {
+    reporting: reportingLabel,
+    factsConfirmed: factsConfirmedLabel,
+    factCheckSource: factCheckSourceLabel,
+    portalFallback: portalFallbackLabel,
+};
 ---
 
 <Layout
@@ -581,162 +615,68 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 				<div class="home-mobile-order-analysis homepage-analiza-only">
 				{/* ── UGAO GLEDANJA (PERSPECTIVE SPECTRUM) ── */}
 				{isHomepage && analysisBands.perspectives && perspectivesClusters && perspectivesClusters.length > 0 && (
-					<details class="section-wrapper analysis-band perspectives-section analysis-band-collapsible">
-						<summary class="analysis-band-summary">{t('home.perspectives_subtitle')} · {t('home.analysis_expand')}</summary>
+					<details class="section-wrapper analysis-band perspectives-section analysis-band-collapsible" data-perspectives-band>
+						<summary class="analysis-band-summary">
+							<span class="analysis-band-summary-count">{perspectivesClusters.length}</span>
+							{t('home.perspectives_subtitle')} · {t('home.analysis_expand')}
+						</summary>
 						<div class="analysis-band-body">
 						<div class="section-heading-row">
 							<span class="type-kicker">{t('home.perspectives_title')}</span>
 							<h2 class="type-section-title">{t('home.perspectives_subtitle')}</h2>
 							<p class="type-section-deck">{t('home.perspectives_desc')}</p>
 						</div>
-						
-						<div class="analysis-grid">
-							{perspectivesClusters.map((cluster: NewsCluster) => {
-								const pluralismVal = cluster.pluralism_score || 50;
-								// Determine color for the plurality gauge
-								let gaugeColor = "from-sky-500 to-indigo-600 dark:from-sky-400 dark:to-indigo-500";
-								if (pluralismVal >= 75) gaugeColor = "from-purple-500 to-pink-600 dark:from-purple-400 dark:to-pink-500";
-								else if (pluralismVal >= 60) gaugeColor = "from-teal-500 to-emerald-600 dark:from-teal-400 dark:to-emerald-500";
-								
-								return (
-									<div class="analysis-card perspective-card">
-										<div>
-											<div class="flex items-center justify-between gap-4 mb-4">
-												<span class="analysis-eyebrow">
-													{cluster.articles?.[0]?.category || 'Tema'}
-												</span>
-												<div class="flex items-center gap-1.5">
-													<div class="analysis-meter">
-														<div class={`h-full bg-gradient-to-r ${gaugeColor}`} style={`width: ${pluralismVal}%`}></div>
-													</div>
-													<span class="type-meta text-foreground/80">{pluralismVal}%</span>
-												</div>
-											</div>
-											
-											<a href={l(`/cluster/${cluster.cluster_id}`)} class="block group/title">
-												<h3 class="type-card-title group-hover/title:text-nyt-accent transition-colors duration-200 line-clamp-3 mb-3">
-													{cluster.synthetic_headline || cluster.articles?.[0]?.title}
-												</h3>
-											</a>
-											
-											<p class="text-xs text-muted-foreground line-clamp-3 mb-6 font-serif italic leading-relaxed">
-												{getStoryPreviewText(cluster, cluster.articles?.[0], lang)}
-											</p>
-										</div>
-										
-										<div class="border-t border-border/30 pt-4 mt-auto">
-											<div class="flex flex-col gap-2">
-												<span class="analysis-foot-label">{reportingLabel}</span>
-												<div class="flex flex-wrap gap-1.5">
-													{cluster.articles?.slice(0, 3).map((art) => (
-														<span class="analysis-source-chip">
-															{art.source}
-														</span>
-													))}
-													{(cluster.articles?.length || 0) > 3 && (
-														<span class="text-[9px] font-bold text-muted-foreground px-1.5 py-0.5">
-															+{cluster.articles.length - 3}
-														</span>
-													)}
-												</div>
-											</div>
-										</div>
-									</div>
-								);
-							})}
-						</div>
+						<div class="analysis-grid" data-perspectives-mount></div>
 						</div>
 					</details>
 				)}
 
 				{/* ── MEDIJSKI RADAR (FACT-CHECK RADAR) ── */}
 				{isHomepage && analysisBands.radar && radarClusters && radarClusters.length > 0 && (
-					<details class="section-wrapper analysis-band radar-section analysis-band-collapsible">
-						<summary class="analysis-band-summary">{t('home.radar_subtitle')} · {t('home.analysis_expand')}</summary>
+					<details class="section-wrapper analysis-band radar-section analysis-band-collapsible" data-radar-band>
+						<summary class="analysis-band-summary">
+							<span class="analysis-band-summary-count">{radarClusters.length}</span>
+							{t('home.radar_subtitle')} · {t('home.analysis_expand')}
+						</summary>
 						<div class="analysis-band-body">
 						<div class="section-heading-row">
 							<span class="type-kicker text-red-500 dark:text-red-400">{t('home.radar_title')}</span>
 							<h2 class="type-section-title">{t('home.radar_subtitle')}</h2>
 							<p class="type-section-deck">{t('home.radar_desc')}</p>
 						</div>
-						
-						<div class="analysis-grid">
-							{radarClusters.map((cluster: NewsCluster) => {
-								const factCheckedArticle = cluster.articles?.find(a => a.is_fact_check) || cluster.articles?.[0];
-								return (
-									<div class="analysis-card radar-card">
-										<div>
-											<div class="flex items-center justify-between gap-4 mb-4">
-												<div class="flex items-center gap-1.5">
-													<span class="relative flex h-2 w-2">
-														<span class="fact-status-ping animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"></span>
-														<span class="fact-status-dot relative inline-flex rounded-full h-2 w-2"></span>
-													</span>
-													<span class="type-meta fact-status-label">
-														{factsConfirmedLabel}
-													</span>
-												</div>
-												<span class="analysis-eyebrow">
-													{factCheckedArticle?.source || portalFallbackLabel}
-												</span>
-											</div>
-											
-											<a href={l(`/cluster/${cluster.cluster_id}`)} class="block group/title">
-												<h3 class="type-card-title group-hover/title:text-red-500 transition-colors duration-200 line-clamp-3 mb-3">
-													{cluster.synthetic_headline || factCheckedArticle?.title}
-												</h3>
-											</a>
-											
-											<p class="text-xs text-muted-foreground line-clamp-3 mb-6 font-serif leading-relaxed">
-												{getStoryPreviewText(cluster, factCheckedArticle, lang)}
-											</p>
-										</div>
-										
-										<div class="border-t border-border/20 pt-4 mt-auto">
-											<div class="flex items-center justify-between text-[10px] text-muted-foreground">
-												<span class="analysis-foot-label">{factCheckSourceLabel}</span>
-												<span class="font-bold text-foreground/80">{factCheckedArticle?.source || portalFallbackLabel}</span>
-											</div>
-										</div>
-									</div>
-								);
-							})}
-						</div>
+						<div class="analysis-grid" data-radar-mount></div>
 						</div>
 					</details>
 				)}
 
                 {/* THE BIG PICTURE (HIGH CONSENSUS) */}
                 {isHomepage && analysisBands.consensus && consensusClusters.length > 0 && (
-                    <details class="section-wrapper consensus-section analysis-band-collapsible bg-secondary/10 p-8 border-y border-border/40">
-                            <summary class="analysis-band-summary">{t('home.consensus_subtitle')} · {t('home.analysis_expand')}</summary>
+                    <details class="section-wrapper consensus-section analysis-band-collapsible bg-secondary/10 p-8 border-y border-border/40" data-consensus-band>
+                            <summary class="analysis-band-summary">
+                                <span class="analysis-band-summary-count">{consensusClusters.length}</span>
+                                {t('home.consensus_subtitle')} · {t('home.analysis_expand')}
+                            </summary>
                             <div class="analysis-band-body">
                             <div class="section-heading-row mb-8">
                                 <span class="type-kicker">{t('home.consensus_title')}</span>
                                 <h2 class="type-section-title">{t('home.consensus_subtitle')}</h2>
                                 <p class="type-section-deck">{t('home.consensus_desc')}</p>
                             </div>
-                            <div class="consensus-carousel-wrap">
-                                <button 
-                                    class="carousel-nav-btn prev-btn" 
+                            <div class="consensus-carousel-wrap" data-consensus-wrap>
+                                <button
+                                    class="carousel-nav-btn prev-btn"
+                                    type="button"
+                                    data-consensus-prev
                                     aria-label={t('carousel.prev')}
-                                    onclick="this.parentElement.querySelector('.consensus-grid').scrollBy({ left: -this.parentElement.querySelector('.consensus-grid').offsetWidth * 0.75, behavior: 'smooth' });"
                                 >
                                     <ChevronLeft size={18} strokeWidth={2.5} />
                                 </button>
-                                
-                                <div class="consensus-grid hide-scrollbar">
-                                    {consensusClusters.map((cluster: NewsCluster) => (
-                                        <div class="consensus-item">
-                                            <NewsCard cluster={cluster} variant="compact" lang={lang} />
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <button 
-                                    class="carousel-nav-btn next-btn" 
+                                <div class="consensus-grid hide-scrollbar" data-consensus-mount></div>
+                                <button
+                                    class="carousel-nav-btn next-btn"
+                                    type="button"
+                                    data-consensus-next
                                     aria-label={t('carousel.next')}
-                                    onclick="this.parentElement.querySelector('.consensus-grid').scrollBy({ left: this.parentElement.querySelector('.consensus-grid').offsetWidth * 0.75, behavior: 'smooth' });"
                                 >
                                     <ChevronRight size={18} strokeWidth={2.5} />
                                 </button>
@@ -809,6 +749,15 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 
 	<Footer />
 </Layout>
+
+{isHomepage && (perspectiveBandItems.length > 0 || radarBandItems.length > 0 || consensusBandItems.length > 0) && (
+	<AnalysisBandsLazy
+		perspectiveItems={perspectiveBandItems}
+		radarItems={radarBandItems}
+		consensusItems={consensusBandItems}
+		labels={analysisBandLabels}
+	/>
+)}
 
 <script is:inline>
 	(function syncHomeStatsDetails() {

@@ -207,11 +207,10 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y chromium
 
       - name: Lighthouse homepage audit
-        continue-on-error: true
         working-directory: web
         env:
           CHROME_PATH: /usr/bin/chromium
-        run: npm run perf:lighthouse
+        run: npm run perf:lighthouse:ci
 
   # ============================================================================
   # Build

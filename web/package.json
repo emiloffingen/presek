@@ -19,7 +19,8 @@
     "eval:recommendations": "node src/lib/recommendationEval.mjs",
     "lint": "astro check --minimumSeverity warning",
     "perf:lighthouse": "node scripts/lighthouse-homepage.mjs --preview",
-    "perf:lighthouse:live": "node scripts/lighthouse-homepage.mjs https://presek.live/"
+    "perf:lighthouse:ci": "node scripts/lighthouse-homepage.mjs --preview --enforce",
+    "perf:lighthouse:live": "node scripts/lighthouse-homepage.mjs https://presek.live/ --enforce"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.9",

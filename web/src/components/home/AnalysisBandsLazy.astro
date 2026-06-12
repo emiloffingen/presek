@@ -1,0 +1,235 @@
+---
+interface BandItem {
+    href: string;
+    title: string;
+    preview: string;
+    category?: string;
+    pluralism?: number;
+    sources?: string[];
+    extraSources?: number;
+    source?: string;
+    kind?: 'perspective' | 'radar' | 'consensus';
+}
+
+interface Props {
+    perspectiveItems?: BandItem[];
+    radarItems?: BandItem[];
+    consensusItems?: BandItem[];
+    labels: {
+        reporting: string;
+        factsConfirmed: string;
+        factCheckSource: string;
+        portalFallback: string;
+    };
+}
+
+const {
+    perspectiveItems = [],
+    radarItems = [],
+    consensusItems = [],
+    labels,
+} = Astro.props;
+---
+
+<script is:inline define:vars={{ perspectiveItems, radarItems, consensusItems, labels }}>
+    (() => {
+        const tierFill = (value) => {
+            if (value >= 75) return 'linear-gradient(90deg, #a855f7, #db2777)';
+            if (value >= 60) return 'linear-gradient(90deg, #14b8a6, #059669)';
+            return 'linear-gradient(90deg, #0ea5e9, #4f46e5)';
+        };
+
+        const paintPerspectiveCard = (item) => {
+            const card = document.createElement('div');
+            card.className = 'analysis-card perspective-card';
+
+            const top = document.createElement('div');
+            const header = document.createElement('div');
+            header.className = 'analysis-card-header';
+
+            const eyebrow = document.createElement('span');
+            eyebrow.className = 'analysis-eyebrow';
+            eyebrow.textContent = item.category || 'Tema';
+
+            const meterWrap = document.createElement('div');
+            meterWrap.className = 'analysis-meter-wrap';
+
+            const meter = document.createElement('div');
+            meter.className = 'analysis-meter';
+            const fill = document.createElement('div');
+            fill.className = 'analysis-meter-fill';
+            fill.style.width = `${item.pluralism || 50}%`;
+            fill.style.background = tierFill(item.pluralism || 50);
+            meter.appendChild(fill);
+
+            const meterVal = document.createElement('span');
+            meterVal.className = 'type-meta analysis-meter-value';
+            meterVal.textContent = `${item.pluralism || 50}%`;
+
+            meterWrap.append(meter, meterVal);
+            header.append(eyebrow, meterWrap);
+            top.appendChild(header);
+
+            const link = document.createElement('a');
+            link.href = item.href;
+            link.className = 'analysis-card-title-link';
+            const title = document.createElement('h3');
+            title.className = 'type-card-title';
+            title.textContent = item.title || '';
+            link.appendChild(title);
+            top.appendChild(link);
+
+            const preview = document.createElement('p');
+            preview.className = 'analysis-card-preview';
+            preview.textContent = item.preview || '';
+            top.appendChild(preview);
+
+            const foot = document.createElement('div');
+            foot.className = 'analysis-card-foot';
+            const footLabel = document.createElement('span');
+            footLabel.className = 'analysis-foot-label';
+            footLabel.textContent = labels.reporting;
+            foot.appendChild(footLabel);
+
+            const chips = document.createElement('div');
+            chips.className = 'analysis-source-list';
+            for (const source of item.sources || []) {
+                const chip = document.createElement('span');
+                chip.className = 'analysis-source-chip';
+                chip.textContent = source;
+                chips.appendChild(chip);
+            }
+            if ((item.extraSources || 0) > 0) {
+                const extra = document.createElement('span');
+                extra.className = 'analysis-source-extra';
+                extra.textContent = `+${item.extraSources}`;
+                chips.appendChild(extra);
+            }
+            foot.appendChild(chips);
+
+            card.append(top, foot);
+            return card;
+        };
+
+        const paintRadarCard = (item) => {
+            const card = document.createElement('div');
+            card.className = 'analysis-card radar-card';
+
+            const top = document.createElement('div');
+            const header = document.createElement('div');
+            header.className = 'analysis-card-header';
+
+            const status = document.createElement('span');
+            status.className = 'analysis-radar-status';
+            status.textContent = labels.factsConfirmed;
+
+            const eyebrow = document.createElement('span');
+            eyebrow.className = 'analysis-eyebrow';
+            eyebrow.textContent = item.source || labels.portalFallback;
+
+            header.append(status, eyebrow);
+            top.appendChild(header);
+
+            const link = document.createElement('a');
+            link.href = item.href;
+            link.className = 'analysis-card-title-link is-radar';
+            const title = document.createElement('h3');
+            title.className = 'type-card-title';
+            title.textContent = item.title || '';
+            link.appendChild(title);
+            top.appendChild(link);
+
+            const preview = document.createElement('p');
+            preview.className = 'analysis-card-preview is-radar';
+            preview.textContent = item.preview || '';
+            top.appendChild(preview);
+
+            const foot = document.createElement('div');
+            foot.className = 'analysis-card-foot is-radar';
+            const footLabel = document.createElement('span');
+            footLabel.className = 'analysis-foot-label';
+            footLabel.textContent = labels.factCheckSource;
+            const source = document.createElement('span');
+            source.className = 'analysis-radar-source';
+            source.textContent = item.source || labels.portalFallback;
+            foot.append(footLabel, source);
+
+            card.append(top, foot);
+            return card;
+        };
+
+        const paintConsensusCard = (item) => {
+            const wrap = document.createElement('div');
+            wrap.className = 'consensus-item';
+
+            const link = document.createElement('a');
+            link.href = item.href;
+            link.className = 'consensus-lazy-card';
+            const title = document.createElement('h3');
+            title.className = 'consensus-lazy-title';
+            title.textContent = item.title || '';
+            const preview = document.createElement('p');
+            preview.className = 'consensus-lazy-preview';
+            preview.textContent = item.preview || '';
+            const meta = document.createElement('span');
+            meta.className = 'consensus-lazy-meta';
+            meta.textContent = item.category || '';
+            link.append(title, preview, meta);
+            wrap.appendChild(link);
+            return wrap;
+        };
+
+        const paintMount = (mount, items, painter) => {
+            if (!mount || mount.dataset.ready === '1' || !items?.length) return;
+            mount.dataset.ready = '1';
+            const frag = document.createDocumentFragment();
+            for (const item of items) frag.appendChild(painter(item));
+            mount.appendChild(frag);
+        };
+
+        const bindBand = (detailsSelector, mountSelector, items, painter, afterPaint) => {
+            const details = document.querySelector(detailsSelector);
+            if (!details) return;
+            const mount = details.querySelector(mountSelector);
+            if (!mount) return;
+
+            const maybePaint = () => {
+                if (!details.open) return;
+                paintMount(mount, items, painter);
+                afterPaint?.(details);
+            };
+
+            details.addEventListener('toggle', maybePaint);
+
+            if ('IntersectionObserver' in window) {
+                const observer = new IntersectionObserver((entries) => {
+                    if (entries.some((entry) => entry.isIntersecting)) {
+                        maybePaint();
+                        observer.disconnect();
+                    }
+                }, { rootMargin: '240px' });
+                observer.observe(details);
+            }
+        };
+
+        const init = () => {
+            bindBand('[data-perspectives-band]', '[data-perspectives-mount]', perspectiveItems, paintPerspectiveCard);
+            bindBand('[data-radar-band]', '[data-radar-mount]', radarItems, paintRadarCard);
+            bindBand('[data-consensus-band]', '[data-consensus-mount]', consensusItems, paintConsensusCard, (details) => {
+                const grid = details.querySelector('[data-consensus-mount]');
+                const wrap = details.querySelector('[data-consensus-wrap]');
+                if (!grid || !wrap || wrap.dataset.navBound === '1') return;
+                wrap.dataset.navBound = '1';
+                wrap.querySelector('[data-consensus-prev]')?.addEventListener('click', () => {
+                    grid.scrollBy({ left: -(grid.offsetWidth * 0.75), behavior: 'smooth' });
+                });
+                wrap.querySelector('[data-consensus-next]')?.addEventListener('click', () => {
+                    grid.scrollBy({ left: grid.offsetWidth * 0.75, behavior: 'smooth' });
+                });
+            });
+        };
+
+        init();
+        document.addEventListener('astro:page-load', init);
+    })();
+</script>
