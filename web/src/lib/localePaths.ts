@@ -101,6 +101,35 @@ const SKIP_MK_REWRITE_PREFIXES = [
   '/sr',
 ];
 
+/** Shared root pages (host-based lang). Rewriting these to /mk/* hits thin Astro.rewrite stubs and loops. */
+const MK_SHARED_ROOT_PATHS = new Set([
+  '/about',
+  '/analize',
+  '/archive',
+  '/briefing',
+  '/contact',
+  '/cookies',
+  '/editorial',
+  '/for-you',
+  '/graf',
+  '/izvori',
+  '/methodology',
+  '/offline',
+  '/privacy',
+  '/pulse',
+  '/settings',
+  '/stats',
+  '/status',
+  '/support',
+  '/terms',
+]);
+
+function isMkSharedRootPath(pathname: string): boolean {
+  const normalized = pathname.replace(/\/+$/, '') || '/';
+  if (MK_SHARED_ROOT_PATHS.has(normalized)) return true;
+  return normalized.startsWith('/cluster/');
+}
+
 export function shouldRewriteMkDomainToInternal(pathname: string): boolean {
   if (pathname === '/mk' || pathname.startsWith('/mk/')) return false;
   for (const prefix of SKIP_MK_REWRITE_PREFIXES) {
@@ -109,6 +138,7 @@ export function shouldRewriteMkDomainToInternal(pathname: string): boolean {
     }
   }
   if (/\.[a-z0-9]+$/i.test(pathname) && !pathname.endsWith('.html')) return false;
+  if (isMkSharedRootPath(pathname)) return false;
   return true;
 }
 

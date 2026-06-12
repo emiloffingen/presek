@@ -45,7 +45,10 @@ test('hreflang and canonical URLs use root paths on presek.mk', () => {
 });
 
 test('shouldRewriteMkDomainToInternal skips assets and APIs', () => {
-  assert.equal(shouldRewriteMkDomainToInternal('/briefing'), true);
+  assert.equal(shouldRewriteMkDomainToInternal('/briefing'), false);
+  assert.equal(shouldRewriteMkDomainToInternal('/for-you'), false);
+  assert.equal(shouldRewriteMkDomainToInternal('/cluster/foo'), false);
+  assert.equal(shouldRewriteMkDomainToInternal('/tema/politika'), true);
   assert.equal(shouldRewriteMkDomainToInternal('/api/health'), false);
   assert.equal(shouldRewriteMkDomainToInternal('/_astro/foo.js'), false);
   assert.equal(shouldRewriteMkDomainToInternal('/mk/briefing'), false);
