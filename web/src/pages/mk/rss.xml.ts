@@ -70,7 +70,6 @@ export const GET: APIRoute = async () => {
         })
         .join('\n');
 
-    const siteUrl = SITE_URL.replace('presek.live', 'presek.mk');
     const title = 'Пресек - Македонија';
     const description = 'Пресек: Најнови вести од Македонија и регионот. Независно, балансирано, длабоко.';
     const language = 'mk-MK';
