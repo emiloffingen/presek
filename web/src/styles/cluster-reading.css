@@ -1,0 +1,150 @@
+/* Cluster reading modes: zen focus + source compare */
+
+/* ── Zen (focus) mode ─────────────────────────────── */
+body.zen-mode .site-header,
+body.zen-mode .site-footer,
+body.zen-mode .hero-full,
+body.zen-mode .executive-summary,
+body.zen-mode .citation-sources-box,
+body.zen-mode .cluster-articles-grid,
+body.zen-mode .editorial-sidebar-col,
+body.zen-mode .advanced-tools,
+body.zen-mode .editorial-section:not(.narrative-section):not(.related-section) {
+  display: none !important;
+}
+
+body.zen-mode .editorial-lede .lede-meta,
+body.zen-mode .editorial-lede .lede-toolbar,
+body.zen-mode .editorial-header-v2 .edition-kicker,
+body.zen-mode .editorial-header-v2 .header-meta,
+body.zen-mode .editorial-header-v2 .header-actions,
+body.zen-mode .editorial-header-v2 .cluster-evidence-strip,
+body.zen-mode .editorial-header-v2 .reader-command-bar {
+  display: none !important;
+}
+
+body.zen-mode .editorial-header-v2 {
+  margin-bottom: 1.25rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
+body.zen-mode .editorial-header-v2 h1 {
+  font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2.25rem) !important;
+  margin-bottom: 0.75rem !important;
+}
+
+body.zen-mode .editorial-lede {
+  margin-bottom: 1.5rem;
+}
+
+body.zen-mode .editorial-lede .editorial-headline {
+  font-size: clamp(1.65rem, 1.4rem + 1vw, 2.25rem);
+  margin-bottom: 0.75rem;
+}
+
+body.zen-mode .editorial-lede .editorial-standfirst {
+  font-size: clamp(1rem, 0.95rem + 0.35vw, 1.25rem);
+  margin-bottom: 1.5rem;
+  padding-left: 1rem;
+  border-left-width: 3px;
+}
+
+body.zen-mode .site-layout {
+  padding-top: 4rem;
+}
+
+body.zen-mode .editorial-main-col {
+  max-width: 680px;
+  margin: 0 auto;
+  width: 100%;
+  border-right: none;
+  padding-right: 0;
+}
+
+body.zen-mode .narrative-p {
+  font-size: 1.35rem;
+  line-height: 2;
+  color: var(--foreground);
+}
+
+body.zen-mode .editorial-grid {
+  display: block;
+}
+
+body.zen-mode .section-eyebrow {
+  display: none;
+}
+
+/* ── Compare mode ─────────────────────────────────── */
+.compare-mode-banner {
+  display: none;
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--nyt-accent) 28%, var(--border));
+  background: color-mix(in srgb, var(--nyt-accent) 6%, var(--card));
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}
+
+body.compare-mode .compare-mode-banner {
+  display: block;
+}
+
+body.compare-mode .editorial-sidebar-col {
+  position: sticky;
+  top: 4.5rem;
+  align-self: start;
+}
+
+body.compare-mode .editorial-grid {
+  gap: clamp(1.25rem, 2vw, 2.5rem);
+}
+
+@media (min-width: 1024px) {
+  body.compare-mode .editorial-grid {
+    grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.9fr) !important;
+  }
+}
+
+.compare-source-diff-panel {
+  display: none;
+}
+
+body.compare-mode .compare-source-diff-panel {
+  display: block !important;
+  border-left: 3px solid var(--nyt-accent);
+  background: color-mix(in srgb, var(--nyt-accent) 4%, var(--card));
+}
+
+body.compare-mode .sidebar-deferred:not(.compare-source-diff-panel) {
+  display: none !important;
+}
+
+body.compare-mode .source-spectrum-panel,
+body.compare-mode .source-comparison-panel {
+  display: block !important;
+}
+
+body.compare-mode .cluster-articles-grid {
+  display: block !important;
+}
+
+body.compare-mode .editorial-sidebar-col.is-expanded .sidebar-deferred,
+body.compare-mode .editorial-sidebar-col .sidebar-deferred.compare-source-diff-panel {
+  display: block !important;
+}
+
+@media (max-width: 1023px) {
+  body.compare-mode .editorial-sidebar-col {
+    position: static;
+    top: auto;
+  }
+
+  body.compare-mode .compare-mode-banner {
+    position: sticky;
+    top: 0.35rem;
+    z-index: 12;
+  }
+}

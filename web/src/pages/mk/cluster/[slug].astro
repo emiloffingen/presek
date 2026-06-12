@@ -731,6 +731,8 @@ const articleSchema = cluster ? {
 								</div>
 							)}
 
+						<p class="compare-mode-banner" role="status">{t('reading.compare_hint')}</p>
+
 						<div class="editorial-grid">
 						{/* 3. MAIN COLUMN */}
 						<div class="editorial-main-col">
@@ -902,6 +904,14 @@ const articleSchema = cluster ? {
 					<aside class="editorial-sidebar-col">
 						<ClusterSidebarToggle lang={lang} client:idle />
 						<div class="sticky-sidebar space-y-12">
+							{allSourcesNames.length >= 2 && (
+								<div class="sidebar-module compare-source-diff-panel sidebar-deferred source-comparison-panel">
+									<h4 class="sidebar-label">{t('cluster.compare_sources')}</h4>
+									<div class="mt-4">
+										<SourceComparisonIsland allSources={allSourcesNames} lang={lang} client:visible />
+									</div>
+								</div>
+							)}
 							<div class="sidebar-deferred"><TinyAdzRailAd /></div>
 
                             {/* NEW: Data Anchors in Sidebar */}
@@ -1773,13 +1783,16 @@ const articleSchema = cluster ? {
 					(!stored && legacy === 'true') ||
 					params.get('reader') === '1';
 				const compare = stored === 'compare';
+				const sidebar = document.querySelector('.editorial-sidebar-col');
 				document.body.classList.remove('zen-mode', 'compare-mode', 'reader-mode-active');
 				article.classList.remove('reader-focused');
+				sidebar?.classList.remove('is-expanded');
 				if (focus) {
 					document.body.classList.add('zen-mode', 'reader-mode-active');
 					article.classList.add('reader-focused');
 				} else if (compare) {
 					document.body.classList.add('compare-mode');
+					sidebar?.classList.add('is-expanded');
 				}
 			} catch (e) {}
 		};

@@ -677,7 +677,7 @@ async def get_entity_profile(name: str, lang: Optional[str] = "sr"):
 async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] = "sr"):
     """Public high-level intelligence stats for the Pulse page."""
     cat_id = f"cat-{category}-{lang}" if category else f"all-{lang}"
-    cache_key = f"api:intelligence:global-pulse:{cat_id}:v7"
+    cache_key = f"api:intelligence:global-pulse:{cat_id}:v8"
     cached = cached_response(cache_key)
     if cached:
         return cached

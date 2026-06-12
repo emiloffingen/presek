@@ -363,16 +363,6 @@ html[data-homepage-mode="vesti"] .homepage-analiza-only {
   border-color: color-mix(in srgb, var(--nyt-accent) 35%, var(--border));
 }
 
-body.compare-mode .editorial-sidebar-col {
-  position: sticky;
-  top: 5.5rem;
-}
-
-body.compare-mode .source-spectrum-panel,
-body.compare-mode .source-comparison-panel {
-  display: block !important;
-}
-
 .reader-actions .reading-mode-toggle {
   flex-wrap: wrap;
 }

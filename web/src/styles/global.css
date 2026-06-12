@@ -2,24 +2,15 @@
 @import "@fontsource/noto-serif-display/700.css";
 @import "@fontsource/noto-serif-display/900.css";
 @import "@fontsource/noto-serif-display/900-italic.css";
-@import "@fontsource/noto-serif/700.css";
 @import "@fontsource/noto-serif/900.css";
 @import "@fontsource/noto-serif/900-italic.css";
 @import "@fontsource/source-serif-4/400.css";
-@import "@fontsource/source-serif-4/500.css";
-@import "@fontsource/source-serif-4/600.css";
 @import "@fontsource/source-serif-4/700.css";
-@import "@fontsource/source-serif-4/800.css";
-@import "@fontsource/source-serif-4/900.css";
 @import "@fontsource/source-serif-4/400-italic.css";
 @import "@fontsource/ibm-plex-sans/500.css";
 @import "@fontsource/ibm-plex-sans/600.css";
 @import "@fontsource/ibm-plex-sans/700.css";
-@import "@fontsource/ibm-plex-sans-condensed/500.css";
-@import "@fontsource/ibm-plex-sans-condensed/600.css";
-@import "@fontsource/ibm-plex-sans-condensed/700.css";
 @import "@fontsource/noto-sans/400.css";
-@import "@fontsource/noto-sans/600.css";
 @import "@fontsource/noto-sans/700.css";
 @import "@fontsource/manrope/600.css";
 @import "@fontsource/manrope/700.css";
@@ -27,8 +18,10 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "./next-level.css";
 @import "./layout.css";
+@import "./lead-hero.css";
+@import "./cluster-reading.css";
+@import "./next-level.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -4986,81 +4979,6 @@ button:active,
 .bento-2x2 .summary {
   font-size: 1.05rem;
   line-height: 1.6;
-}
-
-/* Premium Reading Experience (Zen Mode) */
-body.zen-mode .site-header,
-body.zen-mode .site-footer,
-body.zen-mode .hero-full,
-body.zen-mode .executive-summary,
-body.zen-mode .citation-sources-box,
-body.zen-mode .cluster-articles-grid,
-body.zen-mode .editorial-sidebar-col,
-body.zen-mode .advanced-tools,
-body.zen-mode .editorial-section:not(.narrative-section):not(.related-section) {
-  display: none !important;
-}
-
-body.zen-mode .editorial-lede .lede-meta,
-body.zen-mode .editorial-lede .lede-toolbar,
-body.zen-mode .editorial-header-v2 .edition-kicker,
-body.zen-mode .editorial-header-v2 .header-meta,
-body.zen-mode .editorial-header-v2 .header-actions,
-body.zen-mode .editorial-header-v2 .cluster-evidence-strip,
-body.zen-mode .editorial-header-v2 .reader-command-bar {
-  display: none !important;
-}
-
-body.zen-mode .editorial-header-v2 {
-  margin-bottom: 1.25rem !important;
-  padding-bottom: 0.5rem !important;
-}
-
-body.zen-mode .editorial-header-v2 h1 {
-  font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2.25rem) !important;
-  margin-bottom: 0.75rem !important;
-}
-
-body.zen-mode .editorial-lede {
-  margin-bottom: 1.5rem;
-}
-
-body.zen-mode .editorial-lede .editorial-headline {
-  font-size: clamp(1.65rem, 1.4rem + 1vw, 2.25rem);
-  margin-bottom: 0.75rem;
-}
-
-body.zen-mode .editorial-lede .editorial-standfirst {
-  font-size: clamp(1rem, 0.95rem + 0.35vw, 1.25rem);
-  margin-bottom: 1.5rem;
-  padding-left: 1rem;
-  border-left-width: 3px;
-}
-
-body.zen-mode .site-layout {
-  padding-top: 4rem;
-}
-
-body.zen-mode .editorial-main-col {
-  max-width: 680px;
-  margin: 0 auto;
-  width: 100%;
-  border-right: none;
-  padding-right: 0;
-}
-
-body.zen-mode .narrative-p {
-  font-size: 1.35rem;
-  line-height: 2;
-  color: var(--foreground);
-}
-
-body.zen-mode .editorial-grid {
-  display: block;
-}
-
-body.zen-mode .section-eyebrow {
-  display: none;
 }
 
 /* ── Custom Global Scrollbar ────────────────────────── */
