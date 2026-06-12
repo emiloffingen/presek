@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from utils import cached_response, set_cache
 
 from core.audio_service import AudioService
+from nlp import normalize_focus_entity_surface
 from .common import cleanAndDecode
 from .intelligence import get_top_entities
 from .news import fetch_news_data
@@ -137,47 +138,6 @@ _FEATURE_PATTERNS = [
     re.compile(r"galerija", re.IGNORECASE),
 ]
 
-_FOCUS_ENTITY_NORMALIZATIONS = {
-    "srbije": "Srbija",
-    "srbiji": "Srbija",
-    "srbijom": "Srbija",
-    "srbiju": "Srbija",
-    "србије": "Србија",
-    "србији": "Србија",
-    "србијом": "Србија",
-    "србију": "Србија",
-    "beogradu": "Beograd",
-    "beograda": "Beograd",
-    "београду": "Београд",
-    "београда": "Београд",
-    "kine": "Kina",
-    "kini": "Kina",
-    "kinom": "Kina",
-    "кине": "Кина",
-    "кини": "Кина",
-    "кином": "Кина",
-    "rusije": "Rusija",
-    "rusiji": "Rusija",
-    "rusijom": "Rusija",
-    "русије": "Русија",
-    "русији": "Русија",
-    "русијом": "Русија",
-    "ukrajine": "Ukrajina",
-    "ukrajini": "Ukrajina",
-    "ukrajinom": "Ukrajina",
-    "ukrajinu": "Ukrajina",
-    "украјине": "Украјина",
-    "украјини": "Украјина",
-    "украјином": "Украјина",
-    "украјину": "Украјина",
-    "partizana": "Partizan",
-    "partizanu": "Partizan",
-    "партизана": "Партизан",
-    "партизану": "Партизан",
-    "zvezde": "Crvena zvezda",
-    "zvezdi": "Crvena zvezda",
-    "zvezda": "Crvena zvezda",
-}
 _FOCUS_ENTITY_STOPWORDS = {
     "predsednik",
     "predsednica",
@@ -452,12 +412,7 @@ def _compact_home_clusters(clusters, max_articles=4):
 
 
 def _normalize_focus_entity_name(name):
-    clean = str(name or "").strip()
-    if not clean:
-        return ""
-    clean = re.sub(r"\s+", " ", clean)
-    normalized = _FOCUS_ENTITY_NORMALIZATIONS.get(clean.casefold(), clean)
-    return f"{normalized[0].upper()}{normalized[1:]}"
+    return normalize_focus_entity_surface(name)
 
 
 def _is_usable_focus_entity(name):

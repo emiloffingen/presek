@@ -14,7 +14,7 @@ from core.embeddings import generate_query_embedding
 from core.entities import normalize_entity_name, normalize_person_surface_name
 from core.language import transliterate_lat_to_cyr
 from core.limiter import custom_rate_limit
-from nlp import normalize_tag_name
+from nlp import normalize_focus_entity_surface, normalize_tag_name
 from utils import cached_response, score_cluster, set_cache
 
 from .common import _is_valid_focus_entity, cleanAndDecode
@@ -677,7 +677,7 @@ async def get_entity_profile(name: str, lang: Optional[str] = "sr"):
 async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] = "sr"):
     """Public high-level intelligence stats for the Pulse page."""
     cat_id = f"cat-{category}-{lang}" if category else f"all-{lang}"
-    cache_key = f"api:intelligence:global-pulse:{cat_id}:v6"
+    cache_key = f"api:intelligence:global-pulse:{cat_id}:v7"
     cached = cached_response(cache_key)
     if cached:
         return cached
@@ -830,11 +830,12 @@ async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] =
 
         from .common import _is_valid_focus_entity
 
-        processed = []
-        seen = set()
+        aggregated: dict[str, dict] = {}
         for r in rows:
-            name = normalize_person_surface_name(
-                normalize_tag_name(normalize_entity_name(r["name"]))
+            name = normalize_focus_entity_surface(
+                normalize_person_surface_name(
+                    normalize_tag_name(normalize_entity_name(r["name"]))
+                )
             )
             if not name or not _is_valid_focus_entity(name, r.get("type")):
                 continue
@@ -843,20 +844,23 @@ async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] =
                 name = transliterate_lat_to_cyr(name)
 
             key = name.casefold()
-            if key in seen:
+            mentions = int(r.get("total_mentions") or 0)
+            if key in aggregated:
+                aggregated[key]["total_mentions"] += mentions
                 continue
-            seen.add(key)
-            processed.append(
-                {
-                    "name": name,
-                    "total_mentions": r["total_mentions"],
-                    "sentiment_score": r["sentiment_score"] or 0,
-                    "type": r["type"] or "ENTITY",
-                }
-            )
-            if len(processed) >= 8:
-                break
-        return processed
+            aggregated[key] = {
+                "name": name,
+                "total_mentions": mentions,
+                "sentiment_score": r.get("sentiment_score") or 0,
+                "type": r.get("type") or "ENTITY",
+            }
+
+        processed = sorted(
+            aggregated.values(),
+            key=lambda entry: int(entry.get("total_mentions") or 0),
+            reverse=True,
+        )
+        return processed[:8]
 
     top_entities = await fetch_top_entities("'24 hours'")
     if not top_entities or len(top_entities) < 3:
@@ -1206,13 +1210,17 @@ async def get_top_entities(limit: int = 10, lang: Optional[str] = "sr"):
     )
     aggregated = {}
     for row in rows:
-        norm = normalize_person_surface_name(normalize_tag_name(normalize_entity_name(row["name"])))
-        if not _is_valid_focus_entity(norm, None):
+        norm = normalize_focus_entity_surface(
+            normalize_person_surface_name(
+                normalize_tag_name(normalize_entity_name(row["name"]))
+            )
+        )
+        if not norm or not _is_valid_focus_entity(norm, None):
             continue
-        
+
         if lang == "mk":
             norm = transliterate_lat_to_cyr(norm)
-            
+
         key = norm.casefold()
         aggregated[key] = {
             "name": norm,

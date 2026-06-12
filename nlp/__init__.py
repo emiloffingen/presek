@@ -11,6 +11,7 @@ from nlp.keywords import (
     extract_keyphrases_locally,
     filter_cluster_tags,
     is_valid_focus_entity,
+    normalize_focus_entity_surface,
     normalize_tag_name,
 )
 from nlp.local_nlp import classify_news_quality_locally
@@ -28,6 +29,7 @@ __all__ = [
     "extract_cluster_tags_locally",
     "filter_cluster_tags",
     "normalize_tag_name",
+    "normalize_focus_entity_surface",
     "is_valid_focus_entity",
     "lemmatize_sr",
     "rewrite_to_serbian_locally",

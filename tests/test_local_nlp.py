@@ -66,7 +66,17 @@ class TestTagFiltering:
         assert not is_valid_focus_entity("Otkazao", None)
         assert not is_valid_focus_entity("Pogledaj", None)
         assert not is_valid_focus_entity("Otvaranj", None)
+        assert not is_valid_focus_entity("Student", None)
+        assert not is_valid_focus_entity("Miljenik", None)
+        assert not is_valid_focus_entity("Srba", None)
         assert is_valid_focus_entity("Izrael", "country")
+
+    def test_normalizes_locative_entity_surfaces(self):
+        from nlp.keywords import normalize_focus_entity_surface
+
+        assert normalize_focus_entity_surface("Beogradu") == "Beograd"
+        assert normalize_focus_entity_surface("Evropi") == "Evropa"
+        assert normalize_focus_entity_surface("Kosovu") == "Kosovo"
 
 
 class TestClusterTagExtraction:

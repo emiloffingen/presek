@@ -122,6 +122,74 @@ def normalize_tag_name(name):
     return clean.strip()
 
 
+# Locative/genitive surface forms scraped from headlines → canonical entity labels.
+FOCUS_ENTITY_SURFACE_NORMALIZATIONS = {
+    "srbije": "Srbija",
+    "srbiji": "Srbija",
+    "srbijom": "Srbija",
+    "srbiju": "Srbija",
+    "србије": "Србија",
+    "србији": "Србија",
+    "србијом": "Србија",
+    "србију": "Србија",
+    "beogradu": "Beograd",
+    "beograda": "Beograd",
+    "београду": "Београд",
+    "београда": "Београд",
+    "evrope": "Evropa",
+    "evropi": "Evropa",
+    "evropu": "Evropa",
+    "европе": "Европа",
+    "европи": "Европа",
+    "европу": "Европа",
+    "kosova": "Kosovo",
+    "kosovu": "Kosovo",
+    "kosovom": "Kosovo",
+    "косова": "Косово",
+    "косову": "Косово",
+    "косовом": "Косово",
+    "kine": "Kina",
+    "kini": "Kina",
+    "kinom": "Kina",
+    "кине": "Кина",
+    "кини": "Кина",
+    "кином": "Кина",
+    "rusije": "Rusija",
+    "rusiji": "Rusija",
+    "rusijom": "Rusija",
+    "русије": "Русија",
+    "русији": "Русија",
+    "русијом": "Русија",
+    "ukrajine": "Ukrajina",
+    "ukrajini": "Ukrajina",
+    "ukrajinom": "Ukrajina",
+    "ukrajinu": "Ukrajina",
+    "украјине": "Украјина",
+    "украјини": "Украјина",
+    "украјином": "Украјина",
+    "украјину": "Украјина",
+    "partizana": "Partizan",
+    "partizanu": "Partizan",
+    "партизана": "Партизан",
+    "партизану": "Партизан",
+    "zvezde": "Crvena zvezda",
+    "zvezdi": "Crvena zvezda",
+    "zvezda": "Crvena zvezda",
+}
+
+
+def normalize_focus_entity_surface(name: str) -> str:
+    clean = re.sub(r"\s+", " ", str(name or "").strip())
+    if not clean:
+        return ""
+    normalized = FOCUS_ENTITY_SURFACE_NORMALIZATIONS.get(clean.casefold(), clean)
+    if re.fullmatch(r"[A-Za-zÀ-ž\s-]+", normalized) and normalized.islower():
+        return normalized.capitalize()
+    if normalized and normalized[0].islower():
+        return f"{normalized[0].upper()}{normalized[1:]}"
+    return normalized
+
+
 def is_valid_focus_entity(name, entity_type=None):
     clean = normalize_tag_name(name)
     lowered = clean.lower()
