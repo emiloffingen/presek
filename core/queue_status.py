@@ -7,7 +7,19 @@ from core.limits import (
     INTEL_QUEUE_SECONDARY_DEFER_LIMIT,
     INTEL_QUEUE_SOFT_DEFER_LIMIT,
 )
-from tasks.utils import get_celery_queue_depth
+from utils import redis_client
+
+
+def get_celery_queue_depth(queue_name: str = "celery") -> int:
+    """Read Celery queue depth from Redis without importing worker task modules."""
+    try:
+        if queue_name != "celery":
+            return int(redis_client.llen(queue_name) or 0)
+
+        depths = [int(redis_client.llen(name) or 0) for name in MONITORED_CELERY_QUEUES]
+        return max(depths) if depths else 0
+    except Exception:
+        return 0
 
 
 def get_all_queue_depths() -> dict[str, int]:

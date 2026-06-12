@@ -12,6 +12,18 @@ def test_api_contract_has_no_forbidden_top_level_imports():
     assert not violations, "Forbidden top-level imports in API surface:\n" + "\n".join(violations)
 
 
+def test_queue_status_does_not_import_worker_tasks():
+    import sys
+
+    for name in list(sys.modules):
+        if name == "core.queue_status" or name.startswith("core.queue_status."):
+            del sys.modules[name]
+
+    import core.queue_status  # noqa: F401
+
+    assert "tasks.ingestion_task" not in sys.modules
+
+
 def test_api_contract_file_declares_split_venv_groups():
     data = json.loads(CONTRACT_PATH.read_text(encoding="utf-8"))
     assert data["api_dependency_groups"] == ["api"]
