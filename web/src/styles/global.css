@@ -606,6 +606,12 @@ button:focus-visible,
   overflow: hidden;
 }
 
+/* Cyrillic descenders need a taller clamp box than Latin on mobile cards */
+.headline-standard.headline-cyrillic {
+  line-height: 1.26;
+  padding-bottom: 0.14em;
+}
+
 .section-heading {
   font-family: var(--font-serif);
   font-size: 1.15rem;

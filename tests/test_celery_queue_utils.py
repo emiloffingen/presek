@@ -17,13 +17,13 @@ class TestCeleryQueueDepth:
                 }
                 return depths.get(name, 0)
 
-        with patch("tasks.utils.redis_client", FakeRedis()):
+        with patch("core.queue_status.redis_client", FakeRedis()):
             assert get_celery_queue_depth() == 3594
 
     def test_named_queue_returns_specific_depth(self):
         fake_redis = MagicMock()
         fake_redis.llen.return_value = 42
 
-        with patch("tasks.utils.redis_client", fake_redis):
+        with patch("core.queue_status.redis_client", fake_redis):
             assert get_celery_queue_depth("ingestion") == 42
             fake_redis.llen.assert_called_once_with("ingestion")

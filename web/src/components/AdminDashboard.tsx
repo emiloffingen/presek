@@ -110,9 +110,94 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
 
   const systemOk = Boolean(data?.db?.ok && data?.redis?.ok);
   const aiCascade = Array.isArray(data.ai.fallback_order) ? data.ai.fallback_order.join(' -> ') : data.ai.current_provider;
+  const ops = data.ops || {};
+  const opsAlerts = Array.isArray(ops.alerts) ? ops.alerts : [];
+  const opsStatus = ops.status || 'ok';
+  const opsStatusClass =
+    opsStatus === 'critical' ? 'bg-red-500/10 text-red-400 border-red-500/20'
+    : opsStatus === 'warn' ? 'bg-amber-500/10 text-amber-300 border-amber-500/20'
+    : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
+      {ops.checked_at && (
+        <section className="bg-zinc-950 border border-zinc-800 rounded-2xl p-6 space-y-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h2 className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">
+                {lang === 'sr' ? 'EDITORIAL OPS KOKPIT' : 'EDITORIAL OPS КОКПИТ'}
+              </h2>
+              <p className="text-[11px] text-zinc-500 mt-2 max-w-2xl">
+                {lang === 'sr'
+                  ? 'Jedan pogled: ingestija, backlog sinteze, redovi i zastareli klasteri.'
+                  : 'Еден поглед: инgestија, backlog на синтеза, редови и застарени кластери.'}
+              </p>
+            </div>
+            <span className={`text-[10px] font-black uppercase px-3 py-1 rounded border ${opsStatusClass}`}>
+              {opsStatus}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-[var(--grid-gap)]">
+            <OpsMetric
+              label={lang === 'sr' ? 'Ingestija' : 'Инgestија'}
+              value={ops.ingestion?.label || ops.ingestion?.freshness_status || '—'}
+              sub={ops.ingestion?.age_minutes != null ? `${ops.ingestion.age_minutes} min` : '—'}
+            />
+            <OpsMetric
+              label={lang === 'sr' ? 'Nesintetizovano 24h' : 'Несинтетизирано 24ч'}
+              value={ops.synthesis?.unsummarized_24h ?? '—'}
+              sub={`${ops.synthesis?.unsummarized_total ?? 0} ${lang === 'sr' ? 'ukupno' : 'вкупно'}`}
+            />
+            <OpsMetric
+              label={lang === 'sr' ? 'Najopterećeniji red' : 'Најоптоварен ред'}
+              value={ops.queues?.busiest_queue_depth ?? '—'}
+              sub={ops.queues?.busiest_queue || '—'}
+            />
+            <OpsMetric
+              label={lang === 'sr' ? 'Zastareli klasteri' : 'Застарени кластери'}
+              value={ops.stale_clusters?.count ?? 0}
+              sub={`${Math.round((ops.synthesis?.fallback_ratio_24h || 0) * 100)}% ${lang === 'sr' ? 'fallback 24h' : 'fallback 24ч'}`}
+            />
+          </div>
+
+          {opsAlerts.length > 0 ? (
+            <div className="space-y-2">
+              {opsAlerts.map((alert: any) => (
+                <div
+                  key={`${alert.code}-${alert.metric || ''}`}
+                  className={`flex items-start gap-3 rounded-lg border px-3 py-2 ${
+                    alert.severity === 'critical'
+                      ? 'border-red-500/20 bg-red-500/5 text-red-300'
+                      : 'border-amber-500/20 bg-amber-500/5 text-amber-200'
+                  }`}
+                >
+                  <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-wide">{alert.code}</p>
+                    <p className="text-[11px] text-zinc-300">{alert.message}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-500">
+              {lang === 'sr' ? 'Nema aktivnih ops upozorenja' : 'Нема активни ops предупредувања'}
+            </p>
+          )}
+
+          {Array.isArray(ops.stale_clusters?.sample_cluster_ids) && ops.stale_clusters.sample_cluster_ids.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {ops.stale_clusters.sample_cluster_ids.map((clusterId: string) => (
+                <code key={clusterId} className="text-[10px] font-mono bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-zinc-400">
+                  {clusterId}
+                </code>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
       {/* Top Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-[var(--grid-gap)]">
         <StatCard
@@ -310,6 +395,16 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
             </div>
           </div>
       </div>
+    </div>
+  );
+}
+
+function OpsMetric({ label, value, sub }: { label: string; value: string | number; sub: string }) {
+  return (
+    <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4">
+      <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-2">{label}</p>
+      <p className="text-2xl font-black text-zinc-100">{typeof value === 'number' ? value.toLocaleString() : value}</p>
+      <p className="text-[9px] text-zinc-600 mt-2 font-bold uppercase">{sub}</p>
     </div>
   );
 }
