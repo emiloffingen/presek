@@ -17,10 +17,17 @@ const hostHeader = Astro.request?.headers.get('host');
 const t = useTranslations(lang);
 const l = (path: string) => localePath(path, lang, hostHeader);
 const expandLabel = lang === 'sr' ? 'Otvori' : 'Отвори';
+
+const wireItems = articles.map((article: any) => ({
+    href: l(`/cluster/${article.cluster_id}`),
+    time: getTimeStr(article.ingested_at || article.created_at),
+    source: article.source || '',
+    title: getDisplayTitle(article),
+}));
 ---
 
 {articles.length > 0 && (
-    <details class="home-live-details">
+    <details class="home-live-details" data-live-strip>
         <summary class="home-live-summary" aria-label={t('home.wire_title')}>
             <span class="home-live-summary-label">
                 <Activity size={13} />
@@ -41,17 +48,64 @@ const expandLabel = lang === 'sr' ? 'Otvori' : 'Отвори';
                     {t('rail.all_news')} <ChevronRight size={11} />
                 </a>
             </div>
-            <div class="home-live-items hide-scrollbar">
-                {articles.map((article: any) => (
-                    <a href={l(`/cluster/${article.cluster_id}`)} class="home-live-item">
-                        <div class="home-live-meta">
-                            <span>{getTimeStr(article.ingested_at || article.created_at)}</span>
-                            <strong>{article.source}</strong>
-                        </div>
-                        <p>{getDisplayTitle(article)}</p>
-                    </a>
-                ))}
-            </div>
+            <div class="home-live-items hide-scrollbar" data-live-mount></div>
         </section>
     </details>
 )}
+
+<script is:inline define:vars={{ wireItems }}>
+    (() => {
+        const root = document.querySelector('[data-live-strip]');
+        if (!root || !Array.isArray(wireItems) || wireItems.length === 0) return;
+
+        const mount = root.querySelector('[data-live-mount]');
+        if (!mount) return;
+
+        const paint = () => {
+            if (mount.dataset.ready === '1') return;
+            mount.dataset.ready = '1';
+            const frag = document.createDocumentFragment();
+
+            for (const item of wireItems) {
+                const link = document.createElement('a');
+                link.href = item.href;
+                link.className = 'home-live-item';
+
+                const meta = document.createElement('div');
+                meta.className = 'home-live-meta';
+
+                const time = document.createElement('span');
+                time.textContent = item.time || '';
+
+                const source = document.createElement('strong');
+                source.textContent = item.source || '';
+
+                meta.append(time, source);
+
+                const title = document.createElement('p');
+                title.textContent = item.title || '';
+
+                link.append(meta, title);
+                frag.appendChild(link);
+            }
+
+            mount.appendChild(frag);
+        };
+
+        const maybePaint = () => {
+            if (root.open) paint();
+        };
+
+        root.addEventListener('toggle', maybePaint);
+
+        if ('IntersectionObserver' in window) {
+            const observer = new IntersectionObserver((entries) => {
+                if (entries.some((entry) => entry.isIntersecting)) {
+                    maybePaint();
+                    observer.disconnect();
+                }
+            }, { rootMargin: '160px' });
+            observer.observe(root);
+        }
+    })();
+</script>
