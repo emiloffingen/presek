@@ -6,9 +6,10 @@ import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 
 interface Props {
 	article: any;
+	rowId?: string;
 }
 
-const { article: a } = Astro.props;
+const { article: a, rowId } = Astro.props;
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
 const isMk = lang === 'mk';
@@ -32,7 +33,7 @@ const objectiveTitle = isMk ? 'Висок степен на фактичко и�
 const readOriginalLabel = isMk ? 'ПРОЧИТАЈ НА' : 'PROČITAJ NA';
 ---
 
-<div class={`article-editorial-row tone-${a.relationship.tone} timeline-item min-w-0`} data-article-link={encodeURIComponent(a.link || '')} role="article" aria-labelledby={`article-title-${a.id || a.link.hashCode()}`}>
+<div id={rowId} class={`article-editorial-row tone-${a.relationship.tone} timeline-item min-w-0`} data-article-link={encodeURIComponent(a.link || '')} role="article" aria-labelledby={`article-title-${a.id || rowId || 'article'}`}>
 	<div class="timeline-dot" role="presentation"></div>
     <div class="row-header">
 		<div class="row-source-info">

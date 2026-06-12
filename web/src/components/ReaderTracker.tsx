@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { recordClusterView } from '../lib/personalization.js';
+import { recordClusterVisit } from '../lib/homepageMode';
 
 export default function ReaderTracker({
   clusterId,
@@ -19,6 +20,7 @@ export default function ReaderTracker({
   tags?: string[];
 }) {
   useEffect(() => {
+    recordClusterVisit();
     recordClusterView({
       cluster_id: clusterId,
       title,

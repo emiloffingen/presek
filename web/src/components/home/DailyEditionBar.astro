@@ -1,0 +1,25 @@
+---
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+
+interface Props {
+    lang?: string;
+}
+
+const hostHeader = Astro.request?.headers.get('host');
+const urlLang = getLangFromUrl(Astro.url, hostHeader);
+const lang = (Astro.props.lang || urlLang) as 'sr' | 'mk';
+const t = useTranslations(lang);
+
+const editionDate = new Intl.DateTimeFormat(lang === 'sr' ? 'sr-RS' : 'mk-MK', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'Europe/Belgrade',
+}).format(new Date());
+---
+
+<div class="daily-edition-bar" role="note">
+    <span class="daily-edition-kicker">{t('home.edition_kicker')}</span>
+    <span class="daily-edition-date">{editionDate}</span>
+</div>

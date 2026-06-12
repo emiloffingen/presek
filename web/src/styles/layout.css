@@ -1,0 +1,32 @@
+/* Layout primitives extracted from global.css for maintainability. */
+
+.site-layout {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 clamp(0.75rem, 2vw, 2.5rem);
+  width: 96%;
+  box-sizing: border-box;
+}
+
+@media (min-width: 1600px) {
+  .site-layout {
+    width: 98%;
+    max-width: 1600px;
+  }
+}
+
+@media (max-width: 768px) {
+  .site-layout {
+    width: 100%;
+    padding: 0 0.5rem;
+  }
+}
+
+.broadsheet-layout {
+  padding-top: var(--page-py);
+  padding-bottom: var(--page-py);
+}
+
+.broadsheet-main {
+  contain: content;
+}

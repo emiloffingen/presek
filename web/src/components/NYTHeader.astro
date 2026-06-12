@@ -2,6 +2,7 @@
 import SearchIsland from './SearchIsland';
 import ThemeIsland from './ThemeIsland';
 import TextScaleIsland from './TextScaleIsland';
+import HeaderScrollIsland from './HeaderScrollIsland';
 import ScriptSwitcher from './ScriptSwitcher.astro';
 import { ArrowLeftRight, Sparkles, BarChart3, Radio, ShieldCheck, Compass } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
@@ -94,6 +95,9 @@ const hasBreaking = navigationData.breaking.length > 0;
 const breakingItems = hasBreaking ? navigationData.breaking.slice(0, 5) : latestTickerItems;
 const hasTicker = breakingItems.length > 0;
 const visibleSections = (navigationData.sections || []).filter((section: any) => Array.isArray(section?.items) && section.items.length > 0);
+const primaryNavSections = visibleSections.slice(0, 2);
+const overflowNavSections = visibleSections.slice(2);
+const overflowNavItems = overflowNavSections.flatMap((section: any) => section.items || []);
 
 // Idea A: Verification Counter Logic
 const intel = stats?.intelligence;
@@ -128,6 +132,7 @@ function getRelativeTimeStr(dateStr?: string) {
 }
 ---
 
+<HeaderScrollIsland client:load />
 <div class="header-sticky-wrapper" id="main-header">
     {hasTicker && (
     <div class="unified-dispatch-bar">
@@ -182,7 +187,7 @@ function getRelativeTimeStr(dateStr?: string) {
     <header class="editorial-topbar site-layout">
         <div class="topbar-main">
             <div class="topbar-left-stack">
-                <div class="search-entry-wrap">
+                <div class="search-entry-wrap search-entry-wrap--desktop">
                     <SearchIsland initialQuery={q} client:idle lang={lang} />
                 </div>
             </div>
@@ -195,21 +200,21 @@ function getRelativeTimeStr(dateStr?: string) {
 
             <div class="topbar-actions">
                 <div class="topbar-util">
-                    <a href={l('/for-you')} class="user-action-link utility-desktop-only">{t('nav.for_you') || 'FOR YOU'}</a>
+                    <a href={l('/for-you')} class="user-action-link utility-desktop-only">{t('nav.for_you')}</a>
                     <div class="utility-inline">
                         <ScriptSwitcher />
                         <ThemeIsland client:idle lang={lang} />
-                        <TextScaleIsland client:idle />
+                        <TextScaleIsland client:idle lang={lang} />
                     </div>
                     <details class="utility-menu">
                         <summary class="utility-menu-trigger" aria-label={lang === 'sr' ? 'Podešavanja' : 'Поставки'}>
                             <span aria-hidden="true">⋯</span>
                         </summary>
                         <div class="utility-menu-panel">
-                            <a href={l('/for-you')} class="utility-menu-link">{t('nav.for_you') || 'FOR YOU'}</a>
+                            <a href={l('/for-you')} class="utility-menu-link">{t('nav.for_you')}</a>
                             <ScriptSwitcher />
                             <ThemeIsland client:idle lang={lang} />
-                            <TextScaleIsland client:idle />
+                            <TextScaleIsland client:idle lang={lang} />
                         </div>
                     </details>
                 </div>
@@ -221,7 +226,7 @@ function getRelativeTimeStr(dateStr?: string) {
         <div class="nav-rail-wrapper">
             <div class="nav-rail-scroll hide-scrollbar">
                 <div class="nav-rail-content">
-                    {visibleSections.map((section: any, idx) => {
+                    {primaryNavSections.map((section: any, idx) => {
                         const isCore = section.type === 'core' || idx === 0;
                         const isMagazine = section.type === 'magazine';
                         return (
@@ -248,6 +253,20 @@ function getRelativeTimeStr(dateStr?: string) {
                             </div>
                         );
                     })}
+                    {overflowNavItems.length > 0 && (
+                        <div class="nav-rail-group nav-rail-group--overflow">
+                            <details class="nav-overflow-menu">
+                                <summary>{t('home.nav_more')}</summary>
+                                <div class="nav-overflow-panel">
+                                    {overflowNavItems.map((item: any) => (
+                                        <a href={l(item.href)} class="nav-rail-link">
+                                            <span class="link-label">{item.label.replace('#', '')}</span>
+                                        </a>
+                                    ))}
+                                </div>
+                            </details>
+                        </div>
+                    )}
                 </div>
             </div>
             <div class="nav-scroll-cue" aria-hidden="true">
@@ -258,6 +277,10 @@ function getRelativeTimeStr(dateStr?: string) {
             <div class="nav-fade right"></div>
         </div>
     </nav>
+</div>
+
+<div class="search-fab-mobile">
+    <SearchIsland initialQuery={q} client:idle lang={lang} />
 </div>
 
 <style>

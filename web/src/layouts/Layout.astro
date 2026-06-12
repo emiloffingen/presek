@@ -5,6 +5,7 @@
 import '../styles/global.css';
 import '../lib/transliterationInit.js';
 import ConsentBanner from '../components/ConsentBanner';
+import UiConceptOnboarding from '../components/UiConceptOnboarding';
 import TinyAdzScript from '../components/TinyAdzScript.astro';
 import { ClientRouter } from 'astro:transitions';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
@@ -111,6 +112,18 @@ const organizationSchema = {
 				try {
 					var savedScale = localStorage.getItem('text-scale') || '1';
 					document.documentElement.style.setProperty('--text-scale', savedScale);
+				} catch (e) {}
+			})();
+		</script>
+		<script is:inline>
+			(function() {
+				try {
+					var mode = localStorage.getItem('homepage-mode');
+					if (mode !== 'vesti' && mode !== 'analiza') {
+						var visits = Number(localStorage.getItem('cluster-visit-count') || '0');
+						mode = visits >= 3 ? 'analiza' : 'vesti';
+					}
+					document.documentElement.dataset.homepageMode = mode;
 				} catch (e) {}
 			})();
 		</script>
@@ -222,6 +235,7 @@ const organizationSchema = {
 		<div class="noise-overlay" aria-hidden="true"></div>
 		<div id="loading-bar" class="fixed top-0 left-0 z-[9999] transition-all duration-300 opacity-0 w-0"></div>
 		<slot />
+		<UiConceptOnboarding client:idle lang={lang} />
 		<ConsentBanner client:idle />
 		<script is:inline>
 			// Handle Astro transitions loading state
@@ -283,6 +297,22 @@ const organizationSchema = {
 				};
 				document.addEventListener('astro:page-load', schedulePrefetch);
 			}
+
+			document.addEventListener('astro:page-load', () => {
+				if (!('IntersectionObserver' in window)) return;
+				const prefetched = new Set();
+				const observer = new IntersectionObserver((entries) => {
+					entries.forEach((entry) => {
+						if (!entry.isIntersecting) return;
+						const href = entry.target.getAttribute('href');
+						if (!href || prefetched.has(href)) return;
+						prefetched.add(href);
+						fetch(href, { priority: 'low' }).catch(() => {});
+						observer.unobserve(entry.target);
+					});
+				}, { rootMargin: '200px 0px' });
+				document.querySelectorAll('a[data-testid="cluster-link"]').forEach((link) => observer.observe(link));
+			});
 
 			// Parallax Effect for Hero Images
 			function initParallax() {

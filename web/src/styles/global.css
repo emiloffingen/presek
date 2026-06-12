@@ -27,6 +27,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "./next-level.css";
+@import "./layout.css";
 
 @custom-variant dark (&:is(.dark *));
 

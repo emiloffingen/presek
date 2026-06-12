@@ -1,0 +1,513 @@
+/* ── Homepage mode toggle ─────────────────────────── */
+.homepage-mode-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  background: var(--card);
+}
+
+.homepage-mode-btn {
+  font-family: var(--font-ui);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.55rem 0.85rem;
+  color: var(--muted-foreground);
+  transition: color var(--transition-base), background var(--transition-base);
+}
+
+.homepage-mode-btn.is-active {
+  color: var(--foreground);
+  background: var(--secondary);
+}
+
+.homepage-mode-btn:hover {
+  color: var(--foreground);
+}
+
+/* ── Daily edition bar ──────────────────────────────── */
+.daily-edition-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.65rem 1rem;
+  padding: 0.75rem 0 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--foreground) 8%, var(--border));
+  margin-bottom: 0.5rem;
+}
+
+.daily-edition-kicker {
+  font-family: var(--font-ui);
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--nyt-accent);
+}
+
+.daily-edition-date {
+  font-family: var(--font-serif);
+  font-size: clamp(1rem, 1.2vw, 1.2rem);
+  font-style: italic;
+  color: var(--muted-foreground);
+}
+
+/* ── Stats teaser ───────────────────────────────────── */
+.home-stats-teaser {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  color: var(--muted-foreground);
+  margin: 0.35rem 0 1rem;
+}
+
+.home-stats-dot {
+  opacity: 0.45;
+}
+
+.home-stats-link {
+  color: var(--link);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.home-stats-link:hover {
+  color: var(--link-hover);
+}
+
+/* ── Lead evidence chips ────────────────────────────── */
+.lead-evidence-chips {
+  margin-top: 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
+  background: color-mix(in srgb, var(--secondary) 35%, var(--background));
+}
+
+.lead-evidence-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.85rem;
+  padding: 0.7rem 0.9rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.lead-evidence-summary::-webkit-details-marker {
+  display: none;
+}
+
+.lead-evidence-status-label {
+  font-family: var(--font-ui);
+  font-size: 0.6rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--nyt-accent);
+}
+
+.lead-evidence-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.lead-evidence-chip {
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--border);
+  background: var(--card);
+}
+
+.lead-evidence-chip em {
+  font-style: normal;
+  font-weight: 800;
+  color: var(--muted-foreground);
+  margin-right: 0.25rem;
+}
+
+.lead-evidence-expand {
+  margin-left: auto;
+  font-family: var(--font-ui);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.lead-evidence-panel {
+  padding: 0 0.9rem 0.9rem;
+  border-top: 1px solid var(--border);
+}
+
+.lead-evidence-panel p {
+  font-family: var(--font-serif);
+  font-size: 0.92rem;
+  color: var(--muted-foreground);
+  margin: 0.75rem 0;
+}
+
+.lead-evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.65rem;
+}
+
+.lead-evidence-item span {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.lead-evidence-item strong {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+}
+
+.lead-evidence-item p {
+  font-size: 0.78rem;
+  margin: 0.2rem 0 0;
+}
+
+/* ── Mode-gated homepage sections ───────────────────── */
+html[data-homepage-mode="vesti"] .homepage-analiza-only {
+  display: none !important;
+}
+
+/* ── Header scroll states ───────────────────────────── */
+.header-sticky-wrapper {
+  position: sticky;
+  top: 0;
+  z-index: 180;
+  transition: box-shadow var(--transition-base);
+}
+
+.header-sticky-wrapper.header--compact .editorial-topbar {
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+}
+
+.header-sticky-wrapper.header--compact .brand-link :global(svg),
+.header-sticky-wrapper.header--compact .brand-link :global(img) {
+  transform: scale(0.92);
+  transform-origin: left center;
+}
+
+.header-sticky-wrapper.header--hide-ticker .unified-dispatch-bar {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  border-bottom-width: 0;
+  pointer-events: none;
+}
+
+.header-sticky-wrapper.header--compact:not(.header--show-nav) .discovery-nav-v2 {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.header-sticky-wrapper.header--compact {
+  box-shadow: var(--shadow-md);
+}
+
+/* ── Search promotion ─────────────────────────────── */
+.search-entry-wrap--desktop {
+  min-width: min(18rem, 42vw);
+}
+
+.search-fab-mobile {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .search-entry-wrap--desktop {
+    display: none;
+  }
+
+  .search-fab-mobile {
+    display: flex;
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 190;
+    width: 3rem;
+    height: 3rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    background: var(--card);
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+/* ── Nav overflow ───────────────────────────────────── */
+.nav-rail-group--overflow {
+  margin-left: 0.35rem;
+  padding-left: 0.55rem;
+  border-left: 1px solid var(--border);
+  position: relative;
+}
+
+.nav-overflow-menu summary {
+  list-style: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  padding: 0.35rem 0.55rem;
+}
+
+.nav-overflow-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.nav-overflow-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.35rem);
+  min-width: 12rem;
+  border: 1px solid var(--border);
+  background: var(--popover);
+  box-shadow: var(--shadow-lg);
+  padding: 0.35rem;
+  z-index: 200;
+}
+
+/* ── Reading modes ──────────────────────────────────── */
+.reading-mode-toggle {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.reading-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-ui);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  padding: 0.35rem 0.55rem;
+  border: 1px solid transparent;
+  transition: color var(--transition-base), border-color var(--transition-base);
+}
+
+.reading-mode-btn.is-active {
+  color: var(--nyt-accent);
+  border-color: color-mix(in srgb, var(--nyt-accent) 35%, var(--border));
+}
+
+body.compare-mode .editorial-sidebar-col {
+  position: sticky;
+  top: 5.5rem;
+}
+
+body.compare-mode .source-spectrum-panel,
+body.compare-mode .source-comparison-panel {
+  display: block !important;
+}
+
+/* ── UI concept onboarding ──────────────────────────── */
+.ui-concept-onboarding {
+  position: fixed;
+  left: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 195;
+  max-width: 28rem;
+  margin: 0 auto;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--card) 92%, var(--background));
+  box-shadow: var(--shadow-xl);
+}
+
+.ui-concept-kicker {
+  font-family: var(--font-ui);
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--nyt-accent);
+  margin-bottom: 0.45rem;
+}
+
+.ui-concept-title {
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  margin-bottom: 0.45rem;
+}
+
+.ui-concept-body {
+  font-family: var(--font-serif);
+  font-size: 0.92rem;
+  color: var(--muted-foreground);
+  line-height: 1.55;
+}
+
+.ui-concept-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+.ui-concept-primary,
+.ui-concept-secondary,
+.ui-concept-close {
+  font-family: var(--font-ui);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ui-concept-primary {
+  padding: 0.45rem 0.75rem;
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.ui-concept-secondary {
+  padding: 0.45rem 0.75rem;
+  color: var(--muted-foreground);
+}
+
+.ui-concept-close {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+  color: var(--muted-foreground);
+}
+
+/* ── Skeletons ──────────────────────────────────────── */
+.home-skeleton-lead,
+.home-skeleton-card {
+  background: linear-gradient(
+    90deg,
+    var(--secondary) 0%,
+    color-mix(in srgb, var(--secondary) 70%, var(--background)) 50%,
+    var(--secondary) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.home-skeleton-lead {
+  height: clamp(12rem, 32vw, 18rem);
+  margin-bottom: 1rem;
+}
+
+.home-skeleton-card {
+  height: 5.5rem;
+  margin-bottom: 0.75rem;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+/* ── Source timeline jumps ──────────────────────────── */
+.source-timeline-jumps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.source-timeline-jump {
+  font-family: var(--font-ui);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+/* ── Ticker pause on hover ──────────────────────────── */
+.unified-ticker-track-wrap:hover .unified-ticker-track,
+.unified-ticker-track-wrap:focus-within .unified-ticker-track {
+  animation-play-state: paused;
+}
+
+/* ── Dark contrast bump ─────────────────────────────── */
+.dark .text-muted-foreground\/50 {
+  color: color-mix(in srgb, var(--muted-foreground) 72%, var(--foreground)) !important;
+}
+
+.dark .text-muted-foreground\/60 {
+  color: color-mix(in srgb, var(--muted-foreground) 82%, var(--foreground)) !important;
+}
+
+/* ── Sidebar discipline ─────────────────────────────── */
+@media (max-width: 1023px) {
+  .editorial-sidebar-col {
+    order: 2;
+  }
+
+  .editorial-sidebar-col .sidebar-deferred {
+    display: none;
+  }
+
+  .editorial-sidebar-col.is-expanded .sidebar-deferred {
+    display: block;
+  }
+}
+
+.cluster-sidebar-toggle {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .cluster-sidebar-toggle {
+    display: inline-flex;
+    font-family: var(--font-ui);
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--link);
+    margin-bottom: 0.75rem;
+  }
+}
+
+/* ── Conflict headline preview ──────────────────────── */
+.conflict-headline-preview {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+  padding-top: 0.55rem;
+  border-top: 1px dashed color-mix(in srgb, var(--foreground) 12%, var(--border));
+}
+
+.conflict-headline-variant {
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: var(--muted-foreground);
+}
+
+.conflict-headline-variant strong {
+  color: var(--foreground);
+  font-weight: 800;
+}

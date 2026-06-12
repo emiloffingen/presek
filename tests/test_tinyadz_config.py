@@ -11,11 +11,17 @@ MK_PAGES_WITH_RAIL_AD = [
 
 MK_PAGES_WITH_INLINE_AD = [
     "web/src/pages/mk/for-you.astro",
-    "web/src/pages/mk/izvori.astro",
     "web/src/pages/mk/graf.astro",
-    "web/src/pages/mk/pulse.astro",
     "web/src/pages/mk/tema/[topic].astro",
 ]
+
+MK_MIRROR_PAGES = {
+    "web/src/pages/mk/about.astro": ("web/src/pages/about.astro", "TinyAdzRailAd"),
+    "web/src/pages/mk/methodology.astro": ("web/src/pages/methodology.astro", "TinyAdzRailAd"),
+    "web/src/pages/mk/support.astro": ("web/src/pages/support.astro", "TinyAdzRailAd"),
+    "web/src/pages/mk/pulse.astro": ("web/src/pages/pulse.astro", "TinyAdzInlinedAd"),
+    "web/src/pages/mk/izvori.astro": ("web/src/pages/izvori.astro", "TinyAdzInlinedAd"),
+}
 
 LIVE_PAGES_WITH_RAIL_AD = [
     "web/src/pages/archive.astro",
@@ -81,17 +87,11 @@ def test_tinyadz_rail_wrapper_exists():
 
 
 def test_mk_mirror_pages_rewrite_to_live_templates_with_ads():
-    rewrite_targets = {
-        "web/src/pages/mk/about.astro": "web/src/pages/about.astro",
-        "web/src/pages/mk/methodology.astro": "web/src/pages/methodology.astro",
-        "web/src/pages/mk/support.astro": "web/src/pages/support.astro",
-        "web/src/pages/mk/pulse.astro": "web/src/pages/pulse.astro",
-    }
-    for mk_path, live_path in rewrite_targets.items():
+    for mk_path, (live_path, ad_component) in MK_MIRROR_PAGES.items():
         mk_source = Path(mk_path).read_text(encoding="utf-8")
         live_source = Path(live_path).read_text(encoding="utf-8")
         assert "Astro.rewrite" in mk_source, mk_path
-        assert "TinyAdzRailAd" in live_source, live_path
+        assert ad_component in live_source, live_path
 
 
 def test_mk_content_pages_include_tinyadz_slots():

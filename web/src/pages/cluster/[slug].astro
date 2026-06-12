@@ -21,6 +21,7 @@ import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import { buildCanonicalUrl, localePath, homePath } from '../../lib/localePaths';
 import TinyAdzInlinedAd from '../../components/TinyAdzInlinedAd.astro';
 import TinyAdzRailAd from '../../components/TinyAdzRailAd.astro';
+import ClusterSidebarToggle from '../../components/Cluster/ClusterSidebarToggle.tsx';
 import {
 	getConsensusNote,
 	resolveHasCitationSources,
@@ -834,10 +835,17 @@ const articleSchema = cluster ? {
 								</div>
 							)}
 
+							{articleRows.length > 1 && (
+								<div class="source-timeline-jumps">
+									<a href="#source-row-0" class="source-timeline-jump">{t('cluster.first_source')}</a>
+									<a href={`#source-row-${articleRows.length - 1}`} class="source-timeline-jump">{t('cluster.last_source')}</a>
+								</div>
+							)}
+
 							<div class="editorial-article-list editorial-timeline">
 								<div class="timeline-v-line"></div>
-								{articleRows.map((a: any) => (
-									<ArticleItem article={a} />
+								{articleRows.map((a: any, index: number) => (
+									<ArticleItem article={a} rowId={`source-row-${index}`} />
 								))}
 							</div>
 						</section>
@@ -917,12 +925,13 @@ const articleSchema = cluster ? {
 
 					{/* 4. SIDEBAR COLUMN */}
 					<aside class="editorial-sidebar-col">
+						<ClusterSidebarToggle lang={lang} client:idle />
 						<div class="sticky-sidebar space-y-12">
-							<TinyAdzRailAd />
+							<div class="sidebar-deferred"><TinyAdzRailAd /></div>
 
                             {/* NEW: Data Anchors in Sidebar */}
                             {sentimentData && isFiniteMetric(sentimentData.tone_analysis?.objectivity) && isFiniteMetric(sentimentData.tone_analysis?.sensationalism) && isFiniteMetric(sentimentData.tone_analysis?.emotional_charge) && (
-                                <div class="sidebar-module">
+                                <div class="sidebar-module sidebar-deferred source-spectrum-panel">
                                     <h4 class="sidebar-label">{t('cluster.media_pulse')}</h4>
                                     <div class="mt-4">
                                         <MediaPulseRadar data={sentimentData} lang={lang} client:visible />
@@ -930,14 +939,16 @@ const articleSchema = cluster ? {
                                 </div>
                             )}
 
-                            <div class="sidebar-module">
+                            <div class="sidebar-module source-spectrum-panel source-comparison-panel">
                                 <h4 class="sidebar-label">{t('cluster.source_spectrum')}</h4>
                                 <div class="mt-6">
                                     <SourceSpectrum articles={cluster.articles.map((a: Article) => ({ source: a.source })) as any} lang={lang} client:visible />
                                 </div>
                             </div>
 
-							<NewsletterIsland lang={lang} client:visible />
+							<div class="sidebar-deferred">
+							    <NewsletterIsland lang={lang} client:visible />
+                            </div>
 
 							<ClusterFollowSuggestionsIsland
 								topic={cluster.topics?.[0] || ''}

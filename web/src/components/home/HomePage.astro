@@ -16,6 +16,10 @@ import EmptyState from './EmptyState.astro';
 import HomeLiveStrip from './HomeLiveStrip.astro';
 import HomeBriefingTeaser from './HomeBriefingTeaser.astro';
 import TrendingPreviewRail from './TrendingPreviewRail.astro';
+import DailyEditionBar from './DailyEditionBar.astro';
+import HomeStatsTeaser from './HomeStatsTeaser.astro';
+import LeadEvidenceChips from './LeadEvidenceChips.astro';
+import HomepageModeToggle from './HomepageModeToggle.tsx';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { chooseClusterImage } from '../../utils/imageSelection';
 import { cleanAndDecode, extractCleanSummaryText, getStoryPreviewText, highlightScores, isMostlyCyrillic, isSyntheticStandfirstBoilerplate } from '../../utils/textUtils';
@@ -431,6 +435,13 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 
 		<div class="broadsheet-grid px-3 sm:px-4 md:px-8 xl:px-10">
 			<div class="broadsheet-main home-mobile-feed">
+                {!error && isHomepage && (
+                    <div class="home-mobile-order-edition">
+                        <DailyEditionBar lang={lang} />
+                        <HomepageModeToggle client:idle lang={lang} />
+                    </div>
+                )}
+
                 {error && (
                     <div class="error-panel">
                         <p>{error}</p>
@@ -462,32 +473,30 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
                             showHeroVisual={showLeadHeroVisual}
 						/>
                         {leadStatus && leadEvidenceItems.length > 0 && (
-                            <div class:list={["home-evidence-strip", `tone-${leadStatus.tone}`]}>
-                                <div class="home-evidence-status">
-                                    <span>{leadStatus.label}</span>
-                                    <p>{leadStatus.note}</p>
-                                </div>
-                                <div class="home-evidence-grid">
-                                    {leadEvidenceItems.map((item) => (
-                                        <div class="home-evidence-item">
-                                            <span>{item.label}</span>
-                                            <strong>{item.value}</strong>
-                                            {item.detail && <p>{item.detail}</p>}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
+                            <LeadEvidenceChips
+                                statusLabel={leadStatus.label}
+                                statusNote={leadStatus.note}
+                                tone={leadStatus.tone}
+                                items={leadEvidenceItems}
+                                lang={lang}
+                            />
                         )}
 					</div>
 				)}
 
+                {!error && isHomepage && stats && (
+                    <HomeStatsTeaser stats={stats} lang={lang} />
+                )}
+
 				{!error && isHomepage && briefing && (
-					<HomeBriefingTeaser briefing={briefing} getBriefingSnippet={getBriefingSnippet} />
+                    <div class="home-mobile-order-briefing">
+					    <HomeBriefingTeaser briefing={briefing} getBriefingSnippet={getBriefingSnippet} />
+                    </div>
 				)}
 
                 {/* ── SISTEMSKI SIGNAL (SYSTEM PULSE STATS) ── */}
                 {!error && isHomepage && stats && (
-                    <details class="home-mobile-stats-details home-mobile-order-stats">
+                    <details class="home-mobile-stats-details home-mobile-order-stats homepage-analiza-only">
                         <summary class="home-mobile-stats-summary">
                             {lang === 'sr' ? 'Sistemski pregled' : 'Системски преглед'}
                         </summary>
@@ -536,7 +545,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
                 )}
 
                 {!error && isHomepage && (
-                    <div class="home-mobile-order-live">
+                    <div class="home-mobile-order-live homepage-analiza-only">
                         <HomeLiveStrip articles={topWireArticles} getTimeStr={getTimeStr} lang={lang} />
                     </div>
                 )}
@@ -558,7 +567,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
                 )}
 
 				{isHomepage && displayedSynthesisPicks.length > 0 && (
-					<div class="section-wrapper home-mobile-order-synthesis">
+					<div class="section-wrapper home-mobile-order-synthesis homepage-analiza-only">
 						<SynthesisPicksSection
 							synthesisPicks={displayedSynthesisPicks}
 							lang={lang}
@@ -566,7 +575,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 					</div>
 				)}
 
-				<div class="home-mobile-order-analysis">
+				<div class="home-mobile-order-analysis homepage-analiza-only">
 				{/* ── UGAO GLEDANJA (PERSPECTIVE SPECTRUM) ── */}
 				{isHomepage && analysisBands.perspectives && perspectivesClusters && perspectivesClusters.length > 0 && (
 					<div class="section-wrapper analysis-band perspectives-section">
@@ -773,7 +782,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
                 </div>
 			</div>
 			{/* HomeRail rendered horizontally at the bottom of the main feed */}
-			<div class="w-full mt-16 pt-12">
+			<div class="w-full mt-16 pt-12 homepage-analiza-only">
 				<div class="masthead-double-rule mb-12"></div>
 				<HomeRail
 					briefing={briefing}
@@ -1477,6 +1486,7 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
             flex-direction: column;
         }
 
+        .home-mobile-order-edition { order: 0; }
         .home-mobile-order-lead { order: 1; }
         .home-mobile-order-briefing { order: 2; }
         .home-mobile-order-supporting { order: 3; }

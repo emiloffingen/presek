@@ -1,0 +1,44 @@
+---
+interface EvidenceItem {
+    label: string;
+    value: string;
+    detail?: string;
+}
+
+interface Props {
+    statusLabel: string;
+    statusNote: string;
+    tone: string;
+    items: EvidenceItem[];
+    lang?: string;
+}
+
+const { statusLabel, statusNote, tone, items, lang = 'sr' } = Astro.props;
+const expandLabel = lang === 'sr' ? 'Detalji signala' : 'Детали за сигналот';
+---
+
+<details class:list={["lead-evidence-chips", `tone-${tone}`]}>
+    <summary class="lead-evidence-summary">
+        <span class="lead-evidence-status-label">{statusLabel}</span>
+        <span class="lead-evidence-chips-row">
+            {items.slice(0, 3).map((item) => (
+                <span class="lead-evidence-chip">
+                    <em>{item.label}</em> {item.value}
+                </span>
+            ))}
+        </span>
+        <span class="lead-evidence-expand">{expandLabel}</span>
+    </summary>
+    <div class="lead-evidence-panel">
+        <p>{statusNote}</p>
+        <div class="lead-evidence-grid">
+            {items.map((item) => (
+                <div class="lead-evidence-item">
+                    <span>{item.label}</span>
+                    <strong>{item.value}</strong>
+                    {item.detail && <p>{item.detail}</p>}
+                </div>
+            ))}
+        </div>
+    </div>
+</details>

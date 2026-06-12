@@ -3,6 +3,7 @@ import { Clock } from 'lucide-react';
 import { getEditionStr } from '../../utils/textUtils';
 import ShareIsland from '../ShareIsland.tsx';
 import PreferenceToggle from '../PreferenceToggle.tsx';
+import ReadingModeToggle from './ReadingModeToggle.tsx';
 
 interface Props {
 	momentumKicker: { label: string; color: string };
@@ -68,29 +69,11 @@ const {
 			lang={lang}
 			client:idle
 		/>
-        <button id="zen-mode-toggle" class="zen-mode-toggle flex items-center gap-[var(--grid-gap)] text-muted-foreground hover:text-foreground transition-colors ml-auto">
-            Zen Mod
-        </button>
+        <div class="ml-auto">
+            <ReadingModeToggle lang={lang} client:idle />
+        </div>
 	</div>
 </header>
-
-<script>
-    document.addEventListener('astro:page-load', () => {
-        const toggle = document.getElementById('zen-mode-toggle');
-        if (toggle) {
-            toggle.addEventListener('click', () => {
-                document.body.classList.toggle('zen-mode');
-                if (document.body.classList.contains('zen-mode')) {
-                    toggle.innerText = 'Zatvori Zen';
-                    toggle.classList.add('text-nyt-accent');
-                } else {
-                    toggle.innerText = 'Zen Mod';
-                    toggle.classList.remove('text-nyt-accent');
-                }
-            });
-        }
-    });
-</script>
 
 <style>
 	.editorial-headline {
@@ -138,8 +121,7 @@ const {
 	}
 
     .lede-kicker,
-    .lede-meta-label,
-    .zen-mode-toggle {
+    .lede-meta-label {
         font-family: var(--font-sans);
         font-size: 0.62rem;
         font-weight: 950;

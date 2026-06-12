@@ -85,7 +85,12 @@ function getPluralismLabel(value: number) {
                                         <span class="category-tag">
                                             {cluster.articles?.[0]?.category || 'Tema'}
                                         </span>
-                                        <span class="synthesis-badge">{lang === 'sr' ? 'SINTEZA' : 'СИНТЕЗА'}</span>
+                                        <div class="synthesis-badges">
+                                            <span class="synthesis-badge">{lang === 'sr' ? 'SINTEZA' : 'СИНТЕЗА'}</span>
+                                            {cluster.has_audio && (
+                                                <span class="synthesis-audio-badge">{lang === 'sr' ? '▶ Audio' : '▶ Аудио'}</span>
+                                            )}
+                                        </div>
                                     </div>
 
                                     <h3 class="card-title font-serif">
@@ -146,6 +151,23 @@ function getPluralismLabel(value: number) {
         display: inline-flex;
         align-items: center;
         margin-bottom: 0.65rem;
+    }
+
+    .synthesis-badges {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .synthesis-audio-badge {
+        font-family: var(--font-sans);
+        font-size: 0.62rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--nyt-accent);
+        border: 1px solid color-mix(in srgb, var(--nyt-accent) 35%, var(--border));
+        padding: 0.15rem 0.45rem;
     }
 
     .badge-text {
