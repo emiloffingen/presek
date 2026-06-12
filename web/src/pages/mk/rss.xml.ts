@@ -36,17 +36,26 @@ export const GET: APIRoute = async () => {
         console.error("RSS fetch error:", e);
     }
 
-    // Build RSS feed items
+    const siteUrl = SITE_URL.replace('presek.live', 'presek.mk');
+
+    // One RSS item per cluster (not per source article).
     const items = clusters
         .filter(c => c.articles && c.articles.length > 0)
-        .flatMap(cluster => cluster.articles)
-        .filter(a => a)
-        .map(article => {
-            const cluster = clusters.find(c => c.cluster_id === article.cluster_id) || {};
+        .map(cluster => {
+            const article = cluster.articles[0];
             const title = cluster.synthetic_headline || cluster.title || article.title || 'Untitled';
             const description = cluster.synthetic_standfirst || article.description || cluster.summary || '';
-            const link = `${SITE_URL}/cluster/${article.cluster_id}`;
-            const pubDate = formatDate(article.created_at || article.ingested_at);
+            const link = `${siteUrl}/cluster/${cluster.cluster_id}`;
+            const pubDate = formatDate(
+                cluster.articles.reduce((latest: string | undefined, a: any) => {
+                    const ts = a.created_at || a.ingested_at;
+                    if (!ts) return latest;
+                    if (!latest || new Date(ts) > new Date(latest)) return ts;
+                    return latest;
+                }, undefined as string | undefined)
+                || article.created_at
+                || article.ingested_at,
+            );
             const source = article.source || 'Presek';
 
             return `

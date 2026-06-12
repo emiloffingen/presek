@@ -26,8 +26,10 @@ export const GET: APIRoute = async ({ request }) => {
     const clusters: any[] = [];
     const now = new Date().toUTCString();
 
+    const lang = isMk ? 'mk' : 'sr';
+
     try {
-        const res = await fetch(`${API_URL}/news?page_size=50&page=0`);
+        const res = await fetch(`${API_URL}/news?page_size=50&page=0&lang=${lang}`);
         if (res.ok) {
             const data = await res.json();
             if (data && Array.isArray(data.clusters)) {
@@ -41,14 +43,22 @@ export const GET: APIRoute = async ({ request }) => {
     const countryFilter = isMk ? 'MK' : 'RS';
     const items = clusters
         .filter(c => c.articles && c.articles.length > 0)
-        .flatMap(cluster => cluster.articles.filter((a: any) => a.country === countryFilter))
-        .filter(a => a)
-        .map(article => {
-            const cluster = clusters.find(c => c.cluster_id === article.cluster_id) || {};
+        .map(cluster => {
+            const articles = cluster.articles.filter((a: any) => a.country === countryFilter);
+            const article = articles[0] || cluster.articles[0];
             const title = cluster.synthetic_headline || cluster.title || article.title || 'Untitled';
             const description = cluster.synthetic_standfirst || article.description || cluster.summary || '';
-            const link = `${SITE_URL}/cluster/${article.cluster_id}`;
-            const pubDate = formatDate(article.created_at || article.ingested_at);
+            const link = `${SITE_URL}/cluster/${cluster.cluster_id}`;
+            const pubDate = formatDate(
+                articles.reduce((latest: string | undefined, a: any) => {
+                    const ts = a.created_at || a.ingested_at;
+                    if (!ts) return latest;
+                    if (!latest || new Date(ts) > new Date(latest)) return ts;
+                    return latest;
+                }, undefined as string | undefined)
+                || article.created_at
+                || article.ingested_at,
+            );
             const source = article.source || 'Presek';
 
             return `
