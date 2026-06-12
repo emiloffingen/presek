@@ -72,6 +72,11 @@ function walk(dir) {
         continue;
       }
 
+      // Client-hydration scripts may embed source paths in strings; not runtime imports.
+      if (/\.tsx?$/i.test(specifier)) {
+        continue;
+      }
+
       const target = path.resolve(path.dirname(fullPath), specifier);
       if (!fs.existsSync(target)) {
         console.error(`Missing Astro server import: ${path.relative(root, fullPath)} -> ${specifier}`);
