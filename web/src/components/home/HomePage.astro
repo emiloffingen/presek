@@ -580,7 +580,9 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 				<div class="home-mobile-order-analysis homepage-analiza-only">
 				{/* ── UGAO GLEDANJA (PERSPECTIVE SPECTRUM) ── */}
 				{isHomepage && analysisBands.perspectives && perspectivesClusters && perspectivesClusters.length > 0 && (
-					<div class="section-wrapper analysis-band perspectives-section">
+					<details class="section-wrapper analysis-band perspectives-section analysis-band-collapsible">
+						<summary class="analysis-band-summary">{t('home.perspectives_subtitle')} · {t('home.analysis_expand')}</summary>
+						<div class="analysis-band-body">
 						<div class="section-heading-row">
 							<span class="type-kicker">{t('home.perspectives_title')}</span>
 							<h2 class="type-section-title">{t('home.perspectives_subtitle')}</h2>
@@ -642,12 +644,15 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 								);
 							})}
 						</div>
-					</div>
+						</div>
+					</details>
 				)}
 
 				{/* ── MEDIJSKI RADAR (FACT-CHECK RADAR) ── */}
 				{isHomepage && analysisBands.radar && radarClusters && radarClusters.length > 0 && (
-					<div class="section-wrapper analysis-band radar-section">
+					<details class="section-wrapper analysis-band radar-section analysis-band-collapsible">
+						<summary class="analysis-band-summary">{t('home.radar_subtitle')} · {t('home.analysis_expand')}</summary>
+						<div class="analysis-band-body">
 						<div class="section-heading-row">
 							<span class="type-kicker text-red-500 dark:text-red-400">{t('home.radar_title')}</span>
 							<h2 class="type-section-title">{t('home.radar_subtitle')}</h2>
@@ -696,12 +701,15 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
 								);
 							})}
 						</div>
-					</div>
+						</div>
+					</details>
 				)}
 
                 {/* THE BIG PICTURE (HIGH CONSENSUS) */}
                 {isHomepage && analysisBands.consensus && consensusClusters.length > 0 && (
-                    <div class="section-wrapper consensus-section bg-secondary/10 p-8 border-y border-border/40">
+                    <details class="section-wrapper consensus-section analysis-band-collapsible bg-secondary/10 p-8 border-y border-border/40">
+                            <summary class="analysis-band-summary">{t('home.consensus_subtitle')} · {t('home.analysis_expand')}</summary>
+                            <div class="analysis-band-body">
                             <div class="section-heading-row mb-8">
                                 <span class="type-kicker">{t('home.consensus_title')}</span>
                                 <h2 class="type-section-title">{t('home.consensus_subtitle')}</h2>
@@ -733,7 +741,8 @@ const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
                                 </button>
                                 <div class="carousel-fade-hint right sm:hidden"></div>
                             </div>
-	                        </div>
+                            </div>
+                    </details>
                 )}
 
 				</div>

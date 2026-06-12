@@ -51,6 +51,20 @@
   flex-shrink: 0;
 }
 
+.homepage-mode-cta {
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  padding: 0.15rem 0;
+}
+
+.homepage-mode-cta:hover {
+  color: var(--link-hover);
+}
+
 .homepage-mode-btn.is-active {
   color: var(--foreground);
   background: var(--secondary);
@@ -359,6 +373,10 @@ body.compare-mode .source-comparison-panel {
   display: block !important;
 }
 
+.reader-actions .reading-mode-toggle {
+  flex-wrap: wrap;
+}
+
 /* ── UI concept onboarding ──────────────────────────── */
 .ui-concept-onboarding {
   position: fixed;
@@ -436,6 +454,89 @@ body.compare-mode .source-comparison-panel {
   .ui-concept-onboarding {
     bottom: 5rem;
   }
+
+  .analysis-band-collapsible {
+    border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
+    background: color-mix(in srgb, var(--secondary) 35%, var(--background));
+    margin-bottom: 1rem;
+  }
+
+  .analysis-band-collapsible .analysis-band-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.85rem 1rem;
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .analysis-band-collapsible .analysis-band-summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .analysis-band-collapsible .section-heading-row {
+    display: none;
+  }
+
+  .analysis-band-collapsible .analysis-band-body {
+    padding: 0 1rem 1rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .analysis-band-collapsible .analysis-band-summary {
+    display: none;
+  }
+}
+
+/* ── Zen reading context (cluster focus mode) ─────── */
+.zen-reading-context {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 185;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--card) 94%, var(--background));
+  box-shadow: var(--shadow-sm);
+}
+
+.zen-reading-context-title {
+  flex: 1;
+  font-family: var(--font-serif);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1.35;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zen-reading-context-exit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-ui);
+  font-size: 0.69rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+}
+
+.zen-reading-context-exit:hover {
+  color: var(--foreground);
 }
 
 /* ── Skeletons ──────────────────────────────────────── */

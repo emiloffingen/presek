@@ -5002,8 +5002,23 @@ body.zen-mode .editorial-section:not(.narrative-section):not(.related-section) {
 }
 
 body.zen-mode .editorial-lede .lede-meta,
-body.zen-mode .editorial-lede .lede-toolbar {
+body.zen-mode .editorial-lede .lede-toolbar,
+body.zen-mode .editorial-header-v2 .edition-kicker,
+body.zen-mode .editorial-header-v2 .header-meta,
+body.zen-mode .editorial-header-v2 .header-actions,
+body.zen-mode .editorial-header-v2 .cluster-evidence-strip,
+body.zen-mode .editorial-header-v2 .reader-command-bar {
   display: none !important;
+}
+
+body.zen-mode .editorial-header-v2 {
+  margin-bottom: 1.25rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
+body.zen-mode .editorial-header-v2 h1 {
+  font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2.25rem) !important;
+  margin-bottom: 0.75rem !important;
 }
 
 body.zen-mode .editorial-lede {

@@ -8,6 +8,7 @@ import { getDisplayTitle } from '../../utils/textUtils';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import { localePath, homePath } from '../../lib/localePaths';
 import TinyAdzRailAd from '../TinyAdzRailAd.astro';
+import { normalizeFocusEntitySurface } from '../../lib/focusEntityNormalize';
 
 
 interface Props {
@@ -33,43 +34,16 @@ const STOP_WORDS = new Set([
     'automobil', 'automobili', 'automobila', 'automobilu'
 ]);
 
-const NORMALIZATIONS: Record<string, string> = {
-    'srbije': 'srbija',
-    'srbiji': 'srbija',
-    'evrovizije': 'evrovizija',
-    'evroviziji': 'evrovizija',
-    'srbijom': 'srbija',
-    'beogradu': 'beograd',
-    'beograda': 'beograd',
-    'policije': 'policija',
-    'policiji': 'policija',
-    'partizana': 'partizan',
-    'partizanu': 'partizan',
-    'zvezde': 'crvena zvezda',
-    'zvezdi': 'crvena zvezda',
-    'zvezda': 'crvena zvezda',
-    'ukrajine': 'ukrajina',
-    'ukrajini': 'ukrajina',
-    'ukrajinom': 'ukrajina',
-    'ukrajinu': 'ukrajina'
-};
-
 // Deduplicate and normalize entities to declutter the tag cloud
 const uniqueEntitiesMap = new Map();
 
 for (const ent of focusEntities) {
-    let name = (ent.display_name || ent.name).trim();
+    let name = normalizeFocusEntitySurface((ent.display_name || ent.name).trim());
     let lowerName = name.toLowerCase();
 
     // Skip short words or stop words
     if (lowerName.length <= 3 || STOP_WORDS.has(lowerName)) {
         continue;
-    }
-
-    // Apply manual normalizations
-    if (NORMALIZATIONS[lowerName]) {
-        lowerName = NORMALIZATIONS[lowerName];
-        name = lowerName.charAt(0).toUpperCase() + lowerName.slice(1);
     }
 
     if (!uniqueEntitiesMap.has(lowerName)) {

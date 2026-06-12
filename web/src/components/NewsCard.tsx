@@ -4,6 +4,8 @@ import { chooseClusterImage } from '../utils/imageSelection';
 import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, getDesignCardContext, slugify } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
 import { localePathForLang } from '../lib/localePaths';
+import { getVisibleCardSignals, formatSignalBadge } from '../lib/signalBadges';
+import { ui } from '../i18n/ui';
 import type { NewsCluster, Article } from '../types';
 
 interface NewsCardProps {
@@ -75,12 +77,29 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   const clusterUrl = `${l('/cluster/')}${cluster.cluster_id}-${clusterSlug}`;
 
   const uniqueSources = Number((cluster as any).sources_count || (cluster as any).source_count || new Set(cluster.articles.map(a => a.source)).size);
-  
-  const cardSignals = [
-    cluster.pluralism_score != null ? `${t('cluster.media_pluralism')} ${cluster.pluralism_score}%` : '',
-    cluster.pulse_score != null ? `PULSE ${cluster.pulse_score}%` : '',
-    cluster.topics?.[0] || main.topic || main.category || '',
-  ].filter(Boolean).slice(0, 2);
+
+  const signalT = (key: string) =>
+    ui[lang as 'sr' | 'mk'][key as keyof typeof ui.sr] || key;
+
+  const signalBadges = getVisibleCardSignals({
+    pluralismScore: cluster.pluralism_score,
+    pulseScore: cluster.pulse_score,
+    isBreaking: cluster.is_breaking,
+    topic: cluster.topics?.[0] || main.topic || main.category || '',
+  });
+  const cardSignals = signalBadges.map((badge) =>
+    formatSignalBadge(badge, lang as 'sr' | 'mk', {
+      pluralism: cluster.pluralism_score,
+      pulse: cluster.pulse_score,
+      topic: cluster.topics?.[0] || main.topic || main.category || '',
+    }, signalT),
+  );
+
+  const hasPluralismConflict = (cluster.pluralism_score ?? 0) >= 55;
+  const conflictHeadlines = hasPluralismConflict
+    ? Array.from(new Set(cluster.articles.slice(0, 3).map((article) => getDisplayTitle(article)).filter(Boolean)))
+    : [];
+  const showConflictPreview = conflictHeadlines.length >= 2;
 
   const cardContext = getDesignCardContext(cluster);
   const cardLabel = cardContext.labelKey ? t(cardContext.labelKey) : '';
@@ -129,7 +148,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
   return (
     <article 
-      className={`nyt-article variant-${variant} ${isLead ? 'lead-story' : ''} ${thumbSrc ? 'has-image' : ''}`}
+      className={`nyt-article variant-${variant} ${isLead ? 'lead-story' : ''} ${thumbSrc ? 'has-image' : ''} ${hasPluralismConflict ? 'card-pluralism-conflict' : ''}`}
       data-cluster={JSON.stringify(slimCluster)}
       data-testid="article-card"
     >
@@ -165,6 +184,17 @@ export const NewsCard: React.FC<NewsCardProps> = ({
           <div className="cluster-signal-row" aria-label={lang === 'sr' ? 'Signali klastera' : 'Сигнали на кластерот'}>
             {cardSignals.map((signal, index) => (
               <span key={index}>{signal}</span>
+            ))}
+          </div>
+        )}
+
+        {showConflictPreview && (
+          <div className="conflict-headline-preview" aria-label={signalT('pulse.conflict_angles')}>
+            <p className="conflict-headline-kicker">{signalT('pulse.conflict_angles')}</p>
+            {conflictHeadlines.slice(0, 2).map((headline, index) => (
+              <p key={index} className="conflict-headline-variant">
+                <strong>{signalT('pulse.conflict_headline')}:</strong> {headline}
+              </p>
             ))}
           </div>
         )}

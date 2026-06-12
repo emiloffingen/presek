@@ -69,6 +69,11 @@ export default function HomepageModeToggle({ lang = 'sr' }: { lang?: string }) {
           </button>
         </div>
       )}
+      {mode === 'vesti' && (
+        <button type="button" className="homepage-mode-cta" onClick={() => setMode('analiza')}>
+          {t('home.mode_open_analiza')}
+        </button>
+      )}
     </div>
   );
 }

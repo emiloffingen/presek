@@ -129,7 +129,8 @@ const highlightFactText = (text: string) => {
 import { sanitizeHtml } from '../../../lib/sanitize';
 import { Newspaper, Clock, Link2, Zap, Sparkles, ShieldCheck, TriangleAlert, BarChart3, Radio, Search, ExternalLink, BookOpen, ListChecks } from 'lucide-react';
 import EntityContextCard from '../../../components/EntityContextCard.tsx';
-import ClusterHeader from '../../../components/Cluster/ClusterHeader.astro';
+import ReadingModeToggle from '../../../components/Cluster/ReadingModeToggle.tsx';
+import ZenReadingContext from '../../../components/Cluster/ZenReadingContext.tsx';
 import HeroVisual from '../../../components/Cluster/HeroVisual.astro';
 
 import CitationSources from '../../../components/Cluster/CitationSources.astro';
@@ -594,6 +595,8 @@ const articleSchema = cluster ? {
         client:idle
     />
 
+	<ZenReadingContext headline={displayHeadline} lang={lang} client:idle />
+
 	<main class="site-layout py-0">
 		<div class="scroll-progress-container">
 			<div class="scroll-progress-bar" id="reading-progress"></div>
@@ -663,10 +666,7 @@ const articleSchema = cluster ? {
 					<div class="reader-actions">
 						<a href="#cluster-synthesis"><BookOpen size={14} /> {primaryNarrativeLabel}</a>
 						<a href="#cluster-sources"><ListChecks size={14} /> {lang === 'sr' ? 'Izvori' : 'Извори'}</a>
-						<button type="button" data-reader-toggle aria-pressed="false">
-							<BookOpen size={14} />
-							<span data-reader-label>{lang === 'sr' ? 'Fokus' : 'Фокус'}</span>
-						</button>
+						<ReadingModeToggle lang={lang} client:idle />
 					</div>
 				</div>
 			</header>
@@ -1760,119 +1760,38 @@ const articleSchema = cluster ? {
 
 <script is:inline>
 	(() => {
-		// Helper function for screen reader announcements
-		function createAnnouncement() {
-			const el = document.createElement('div');
-			el.id = 'aria-announcement';
-			el.setAttribute('aria-live', 'polite');
-			el.setAttribute('aria-atomic', 'true');
-			el.style.position = 'absolute';
-			el.style.width = '1px';
-			el.style.height = '1px';
-			el.style.margin = '-1px';
-			el.style.padding = '0';
-			el.style.overflow = 'hidden';
-			el.style.clip = 'rect(0, 0, 0, 0)';
-			el.style.border = '0';
-			document.body.appendChild(el);
-			return el;
-		}
-
-		const initReaderMode = () => {
-			// Wait for DOM to be fully ready
-			if (!customElements || !customElements.whenDefined) return;
-
-			const article = document.querySelector('.cluster-article-container');
-			const button = document.querySelector('[data-reader-toggle]');
-			const label = document.querySelector('[data-reader-label]');
-			const progress = document.getElementById('reading-progress');
-			if (!article || !button) return;
-			if (button.dataset.readerBound === 'true') return;
-			button.dataset.readerBound = 'true';
-
-			const focusText = document.documentElement.lang === 'mk' ? 'Фокус читање' : 'Fokus čitanje';
-			const fullText = document.documentElement.lang === 'mk' ? 'Целосен приказ' : 'Ceo prikaz';
-
-			// Check localStorage for user preference
+		const syncReadingModeEarly = () => {
 			try {
-				const savedPreference = localStorage.getItem('readerMode');
-				if (savedPreference === 'true') {
+				const article = document.querySelector('.cluster-article-container');
+				if (!article) return;
+				const params = new URLSearchParams(window.location.search);
+				const stored = localStorage.getItem('reading-mode');
+				const legacy = localStorage.getItem('readerMode');
+				const focus =
+					stored === 'focus' ||
+					stored === 'zen' ||
+					(!stored && legacy === 'true') ||
+					params.get('reader') === '1';
+				const compare = stored === 'compare';
+				document.body.classList.remove('zen-mode', 'compare-mode', 'reader-mode-active');
+				article.classList.remove('reader-focused');
+				if (focus) {
+					document.body.classList.add('zen-mode', 'reader-mode-active');
 					article.classList.add('reader-focused');
+				} else if (compare) {
+					document.body.classList.add('compare-mode');
 				}
-			} catch (e) {
-				console.error('Could not read localStorage:', e);
-			}
+			} catch (e) {}
+		};
 
-			const syncLabel = () => {
-				const active = article.classList.contains('reader-focused');
-				if (active) {
-					document.body.classList.add('reader-mode-active');
-				} else {
-					document.body.classList.remove('reader-mode-active');
-				}
-				button.setAttribute('aria-pressed', active ? 'true' : 'false');
-				if (label) label.textContent = active ? fullText : focusText;
-
-				// Announce change for screen readers
-				try {
-					const announcement = document.getElementById('aria-announcement') || createAnnouncement();
-					announcement.textContent = active ? fullText : focusText;
-				} catch (e) {
-					console.error('Could not create announcement:', e);
-				}
-			};
-
-			// Debounced click handler
-			let lastClick = 0;
-			const handleClick = () => {
-				const now = Date.now();
-				if (now - lastClick < 500) return; // Prevent rapid clicks
-				lastClick = now;
-
-				article.classList.toggle('reader-focused');
-
-				// Save preference to localStorage
-				try {
-					const isFocused = article.classList.contains('reader-focused');
-					localStorage.setItem('readerMode', isFocused ? 'true' : 'false');
-
-					// Send telemetry event to Google Analytics if available
-					if (typeof window !== 'undefined' && window.gtag) {
-						window.gtag('event', 'reader_mode_toggle', {
-							'event_category': 'Engagement',
-							'event_label': isFocused ? 'enabled' : 'disabled',
-							'value': isFocused ? 1 : 0
-						});
-					}
-
-					// Fire custom DOM event for other components
-					window.dispatchEvent(new CustomEvent('presek:reader-mode-toggled', { detail: { active: isFocused } }));
-				} catch (e) {
-					console.error('Could not write to localStorage:', e);
-				}
-
-				syncLabel();
-			};
-
-			button.addEventListener('click', handleClick);
-
-			// Keyboard support
-			button.addEventListener('keydown', (e) => {
-				if (e.key === 'Enter' || e.key === ' ') {
-					e.preventDefault();
-					handleClick();
-				}
-			});
-
-			// Handle URL parameter
-			if (new URLSearchParams(window.location.search).get('reader') === '1') {
-				article.classList.add('reader-focused');
-			}
-
-			syncLabel();
+		const initReadingProgress = () => {
+			syncReadingModeEarly();
+			const progress = document.getElementById('reading-progress');
+			if (!progress) return;
+			if (progress.dataset.bound === 'true') return;
+			progress.dataset.bound = 'true';
 
 			const updateProgress = () => {
-				if (!progress) return;
 				const max = document.documentElement.scrollHeight - window.innerHeight;
 				const pct = max > 0 ? Math.min(100, Math.max(0, (window.scrollY / max) * 100)) : 0;
 				progress.style.width = `${pct}%`;
@@ -1881,10 +1800,8 @@ const articleSchema = cluster ? {
 			updateProgress();
 		};
 
-		initReaderMode();
-		document.addEventListener('astro:page-load', initReaderMode);
-		
-		// Fallback in case astro:page-load doesn't fire
-		setTimeout(initReaderMode, 1000);
+		initReadingProgress();
+		document.addEventListener('astro:page-load', initReadingProgress);
+		setTimeout(initReadingProgress, 500);
 	})();
 </script>
