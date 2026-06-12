@@ -287,7 +287,10 @@ async def get_personalized_news_by_profile(profile: dict, limit: int = 6, lang: 
     Core personalization search using pgvector. Computes dynamic interest vectors
     from recently read articles or followed topics, and returns semantically matching clusters.
     """
-    recent = profile.get("recentClusters") or []
+    from core.personalization_reasons import build_personalization_reasons
+
+    normalized_profile = _normalize_synced_profile(profile)
+    recent = normalized_profile.get("recentClusters") or []
 
     # 1. Fetch embeddings for recent clusters
     recent_ids = [r["cluster_id"] for r in recent[:10]]  # Limit to last 10 for speed
@@ -300,8 +303,8 @@ async def get_personalized_news_by_profile(profile: dict, limit: int = 6, lang: 
         )
 
     # 1b. Fallback: If no recent clusters, use followed topics to find recent popular clusters as seeds
-    if not vec_rows and profile.get("followedTopics"):
-        topics = profile.get("followedTopics")
+    if not vec_rows and normalized_profile.get("followedTopics"):
+        topics = normalized_profile.get("followedTopics")
         seed_rows = await db.async_execute(
             """
             SELECT embedding FROM articles
@@ -391,6 +394,14 @@ async def get_personalized_news_by_profile(profile: dict, limit: int = 6, lang: 
         annotated = annotate_cluster_articles(arts)
         meta = meta_map.get(cid) or {}
         score = score_cluster(arts)
+        similarity = round(float(clusters[cid][0]["similarity"]), 4)
+        reason_payload = build_personalization_reasons(
+            profile=normalized_profile,
+            articles=annotated,
+            metadata=meta,
+            lang=lang,
+            similarity=similarity,
+        )
 
         results.append(
             {
@@ -403,8 +414,8 @@ async def get_personalized_news_by_profile(profile: dict, limit: int = 6, lang: 
                 "has_balanced": is_balanced(arts),
                 "score": round(score, 3),
                 "homepage_score": round(score_cluster_for_homepage(arts), 3),
-                "similarity": round(float(clusters[cid][0]["similarity"]), 4),
-                "reason": "Povrzano so vasite interesi" if lang == "mk" else "Povezano sa vašim interesovanjima",
+                "similarity": similarity,
+                **reason_payload,
             }
         )
 

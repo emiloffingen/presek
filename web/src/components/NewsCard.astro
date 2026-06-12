@@ -9,6 +9,7 @@ import type { NewsCluster, Article } from '../types';
 import type { ui } from '../i18n/ui';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import { localePath, homePath } from '../lib/localePaths';
+import TrustChip from './TrustChip.astro';
 
 interface Props {
 	cluster: NewsCluster;
@@ -173,6 +174,18 @@ function getTimeStr(dateStr: string) {
                     </li>
                 ))}
             </ul>
+        )}
+
+        {variant !== 'wire' && (
+            <div class="cluster-trust-row">
+                <TrustChip
+                    sourcesCount={uniqueSources}
+                    pluralismScore={cluster.pluralism_score}
+                    isStale={Boolean(cluster.synthesis_freshness?.is_stale)}
+                    hasVerification={Boolean(cluster.has_fact_check)}
+                    lang={lang}
+                />
+            </div>
         )}
 
         {cardSignals.length > 0 && variant !== 'wire' && (
@@ -381,6 +394,10 @@ function getTimeStr(dateStr: string) {
     }
 
     .meta-dot { opacity: 0.4; }
+
+    .cluster-trust-row {
+        margin-top: 0.45rem;
+    }
 
     .cluster-signal-row {
         display: flex;

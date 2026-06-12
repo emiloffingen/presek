@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 from core.config import API_MAX_PAGE, API_MAX_Q_LEN, BREAKING_SCORE_THRESHOLD
 from core.database import db_manager as db
+from core.trust_signals import build_trust_summary
 from core.language import is_cyrillic_south_slavic, transliterate_cyr_to_lat, transliterate_lat_to_cyr
 from core.queue_status import reader_pipeline_status
 from nlp import filter_cluster_tags
@@ -741,6 +742,12 @@ async def fetch_news_data(
                 "pulse_score": summary.get("pulse_score"),
                 "pluralism_score": summary.get("pluralism_score"),
                 "narrative_diversity": _parse_maybe_json(summary.get("narrative_diversity")),
+                "trust_summary": build_trust_summary(
+                    sources_count=len({a.get("source") for a in arts if a.get("source")}),
+                    pluralism_score=summary.get("pluralism_score"),
+                    is_stale=bool(synthesis_freshness.get("is_stale")),
+                    lang=lang,
+                ),
                 "synthesis_updated_at": synthesis_freshness.get("synthesis_updated_at"),
                 "synthesis_freshness": synthesis_freshness,
                 "reading_time": main.get("reading_time", 1),
@@ -1310,6 +1317,28 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
         else:
             editorial_divergence = 0.0
 
+        from core.cross_lingual import get_cross_lingual_counterparts
+
+        pluralism_score = s_row.get("pluralism_score") if s_row else None
+        pulse_score = s_row.get("pulse_score") if s_row else None
+        narrative_diversity = _parse_maybe_json(s_row.get("narrative_diversity")) if s_row else None
+        unique_sources = len({a.get("source") for a in articles if a.get("source")})
+        has_verification = bool(
+            verification_report
+            and (
+                verification_report.get("agreements")
+                or verification_report.get("conflicts")
+            )
+        )
+        trust_summary = build_trust_summary(
+            sources_count=unique_sources,
+            pluralism_score=pluralism_score,
+            is_stale=bool(freshness.get("is_stale")),
+            has_verification=has_verification,
+            lang=lang,
+        )
+        cross_lingual_counterparts = await get_cross_lingual_counterparts(cluster_id, lang)
+
         response = {
             "status": "success",
             "pipeline": reader_pipeline_status(),
@@ -1329,6 +1358,11 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                 "sentiment": sentiment,
                 "tone_analysis": tone_analysis,
                 "citation_sources": citation_sources,
+                "pluralism_score": pluralism_score,
+                "pulse_score": pulse_score,
+                "narrative_diversity": narrative_diversity,
+                "trust_summary": trust_summary,
+                "cross_lingual_counterparts": cross_lingual_counterparts,
                 "synthesis_updated_at": freshness["synthesis_updated_at"],
                 "synthesis_freshness": freshness,
                 "tags": tags,

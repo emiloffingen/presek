@@ -633,6 +633,16 @@
     color: color-mix(in srgb, var(--nyt-accent) 75%, var(--foreground));
 }
 
+.editorial-lead-boundary-label {
+    margin: 0 0 0.75rem;
+    font-family: var(--font-ui);
+    font-size: 0.62rem;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--foreground);
+}
+
 .pipeline-status-notice {
     display: flex;
     flex-wrap: wrap;

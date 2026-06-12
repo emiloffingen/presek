@@ -24,6 +24,8 @@ _LOCALIZED_DELIVERY = {
         "open": "Otvoreno",
         "read_briefing": "Otvori brifing",
         "ntfy_title": "Presek · Jutarnji brifing",
+        "briefing_ready_title": "Presek · Brifing spreman",
+        "briefing_ready_message": "Današnji urednički brifing je spreman — 5 min čitanja.",
     },
     "mk": {
         "title": "Пресек персонализиран брифинг",
@@ -36,8 +38,18 @@ _LOCALIZED_DELIVERY = {
         "open": "Отворено",
         "read_briefing": "Отвори го целосниот брифинг",
         "ntfy_title": "Пресек · Утрински брифинг",
+        "briefing_ready_title": "Пресек · Брифингот е подготовен",
+        "briefing_ready_message": "Денешниот уреднички брифинг е подготовен — 5 мин читање.",
     },
 }
+
+
+def _site_url_for_locale(lang: str) -> str:
+    import os
+
+    if lang == "mk":
+        return str(os.environ.get("PUBLIC_MK_SITE_URL") or "https://presek.mk").rstrip("/")
+    return _PUBLIC_SITE_URL
 
 
 def _parse_row_datetime(value):

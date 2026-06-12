@@ -777,11 +777,16 @@ export function scoreClusterForReader(cluster, profile, lang = 'sr') {
     score -= 1.2;
   }
 
+  reasons.sort((left, right) => right.weight - left.weight);
+
   return {
     cluster,
     score,
     seen: seenClusterIds.has(cluster.cluster_id),
     reason: topReason(reasons),
+    matchReasons: reasons.slice(0, 3).map((item) => item.label),
+    matchedTopics: clusterTopics.filter((topic) => followedTopics.has(topic)),
+    matchedSources: sources.filter((source) => followedSources.has(source)),
   };
 }
 

@@ -168,3 +168,176 @@
         margin-top: 0.25rem;
     }
 }
+
+/* Tier 3 #12 — 5-minute read mode */
+.briefing-quick-panel {
+    display: none;
+    border: 1px solid color-mix(in srgb, var(--nyt-accent) 25%, var(--border));
+    background: color-mix(in srgb, var(--nyt-accent) 4%, var(--card));
+    border-radius: 1rem;
+    padding: 1.25rem 1.35rem;
+    margin: 0 0 1.5rem;
+}
+
+.briefing-quick-panel.is-visible {
+    display: block;
+}
+
+.briefing-quick-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.briefing-quick-kicker {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0 0 0.35rem;
+    font-family: var(--font-sans);
+    font-size: 0.58rem;
+    font-weight: 900;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--nyt-accent);
+}
+
+.briefing-quick-title {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: clamp(1.35rem, 3vw, 1.85rem);
+    line-height: 1.2;
+    font-weight: 900;
+}
+
+.briefing-quick-time {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.55rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--nyt-accent) 10%, transparent);
+    color: var(--nyt-accent);
+    font-family: var(--font-sans);
+    font-size: 0.62rem;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+.briefing-quick-narratives {
+    display: grid;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.briefing-quick-narratives blockquote {
+    margin: 0;
+    padding-left: 0.85rem;
+    border-left: 3px solid var(--nyt-accent);
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    line-height: 1.45;
+    font-style: italic;
+    color: color-mix(in srgb, var(--foreground) 88%, var(--nyt-accent));
+}
+
+.briefing-quick-bullets {
+    margin: 0 0 1rem;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.65rem;
+}
+
+.briefing-quick-bullets li {
+    position: relative;
+    padding-left: 1rem;
+    font-size: 0.95rem;
+    line-height: 1.55;
+}
+
+.briefing-quick-bullets li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.62rem;
+    width: 0.35rem;
+    height: 0.35rem;
+    border-radius: 50%;
+    background: var(--nyt-accent);
+}
+
+.briefing-quick-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.briefing-quick-stats span {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-family: var(--font-sans);
+    font-size: 0.52rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+}
+
+.briefing-mode-bar {
+    position: sticky;
+    bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px));
+    z-index: 40;
+    display: inline-flex;
+    gap: 0.35rem;
+    padding: 0.35rem;
+    margin: 0 auto 1rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--background) 88%, transparent);
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-md);
+}
+
+@media (min-width: 900px) {
+    .briefing-mode-bar {
+        position: static;
+        margin: 0 0 1.25rem;
+        box-shadow: none;
+    }
+}
+
+.briefing-mode-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.55rem 0.85rem;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--muted-foreground);
+    font-family: var(--font-sans);
+    font-size: 0.62rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.briefing-mode-btn.is-active {
+    background: var(--foreground);
+    color: var(--background);
+}
+
+html[data-briefing-mode='quick'] .briefing-full-section,
+main[data-briefing-mode='quick'] .briefing-full-section {
+    display: none !important;
+}
+
+html[data-briefing-mode='full'] .briefing-quick-panel,
+main[data-briefing-mode='full'] .briefing-quick-panel {
+    display: none !important;
+}

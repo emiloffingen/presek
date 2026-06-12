@@ -1,8 +1,8 @@
-// Presek — Service Worker v28
+// Presek — Service Worker v29
 // Astro-only frontend caching: Stale-While-Revalidate for API and Cache-First for static assets
 
-const CACHE_NAME = 'presek-v28';
-const API_CACHE_NAME = 'presek-api-v28';
+const CACHE_NAME = 'presek-v29';
+const API_CACHE_NAME = 'presek-api-v29';
 const API_CACHE_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes max staleness for API
 
 // Core static assets that are shared across the Astro frontend
@@ -148,6 +148,47 @@ self.addEventListener('fetch', e => {
   // Default: Network only or Cache-First for other assets
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
+  );
+});
+
+self.addEventListener('push', event => {
+  let payload = { title: 'Presek', message: '', click_url: '/briefing' };
+  try {
+    if (event.data) {
+      payload = { ...payload, ...event.data.json() };
+    }
+  } catch (_) {
+    // Ignore malformed push payloads
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title || 'Presek', {
+      body: payload.message || '',
+      icon: '/img/icons/presek-icon-192.png',
+      badge: '/img/icons/presek-maskable-192.png',
+      data: { url: payload.click_url || '/briefing' },
+      tag: 'presek-briefing',
+      renotify: true,
+    })
+  );
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || '/briefing';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
+      for (const client of windowClients) {
+        if ('focus' in client) {
+          if ('navigate' in client) {
+            return client.navigate(targetUrl).then(() => client.focus());
+          }
+          return client.focus();
+        }
+      }
+      return clients.openWindow(targetUrl);
+    })
   );
 });
 

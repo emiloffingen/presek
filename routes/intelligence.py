@@ -1428,8 +1428,11 @@ async def get_latest_briefing(date: Optional[str] = None, lang: str = "sr"):
     subjects = await fetch_briefing_entities("PERSON", 6)
     locations = await fetch_briefing_entities("GPE", 8)
 
-    # 2. Historical dates for navigation
-    historical = await db.async_execute("SELECT date::text as day FROM daily_briefings ORDER BY date DESC LIMIT 14")
+    # 2. Historical dates for navigation (locale-specific archive parity)
+    historical = await db.async_execute(
+        "SELECT date::text as day FROM daily_briefings WHERE lang = %s ORDER BY date DESC LIMIT 14",
+        (lang,),
+    )
 
     # 3. Lead cluster for the day (filtered by country)
     lead_cluster = await db.async_execute_one(
@@ -1459,11 +1462,21 @@ async def get_latest_briefing(date: Optional[str] = None, lang: str = "sr"):
         (target_country, target_date, target_date),
     )
 
+    from core.briefing_quick_read import build_quick_read_payload
+
+    metadata = row.get("metadata") or {}
+    if isinstance(metadata, str):
+        try:
+            metadata = json.loads(metadata)
+        except Exception:
+            metadata = {}
+
     return {
         "status": "success",
         "date": target_date,
         "content": row["content"],
-        "metadata": row.get("metadata") or {},
+        "metadata": metadata,
+        "quick_read": build_quick_read_payload(row["content"], metadata, lang=lang),
         "subjects": subjects,
         "locations": locations,
         "historical_dates": historical,

@@ -1,0 +1,84 @@
+export type TrustTier = 'early' | 'consensus' | 'plural' | 'verified';
+
+export type TrustChipData = {
+  score: number;
+  tier: TrustTier;
+  label: string;
+  detail: string;
+  sourcesCount: number;
+  pluralismScore?: number | null;
+  isStale?: boolean;
+};
+
+type TrustInput = {
+  sourcesCount: number;
+  pluralismScore?: number | null;
+  isStale?: boolean;
+  hasVerification?: boolean;
+};
+
+export function buildTrustChip(input: TrustInput, lang: 'sr' | 'mk'): TrustChipData {
+  const sources = Math.max(0, input.sourcesCount || 0);
+  const pluralism = input.pluralismScore ?? null;
+  const pluralismVal = pluralism == null ? 0 : Number(pluralism);
+  const isStale = Boolean(input.isStale);
+  const hasVerification = Boolean(input.hasVerification);
+
+  let tier: TrustTier = 'verified';
+  let label = lang === 'mk' ? 'Проверено' : 'Provereno';
+  let detail =
+    lang === 'mk'
+      ? `${sources} независни извори се следат.`
+      : `${sources} nezavisna izvora se prate.`;
+
+  if (sources < 2) {
+    tier = 'early';
+    label = lang === 'mk' ? 'Ран сигнал' : 'Rani signal';
+    detail =
+      lang === 'mk'
+        ? 'Сè уште една редакција — третирајте го како почетен извештај.'
+        : 'Još jedna redakcija — tretirajte kao početni izveštaj.';
+  } else if (pluralismVal >= 55) {
+    tier = 'plural';
+    label = lang === 'mk' ? 'Плурализам' : 'Pluralizam';
+    detail =
+      lang === 'mk'
+        ? `${sources} извори, различни нагласи (${pluralismVal}%).`
+        : `${sources} izvora, različiti naglasci (${pluralismVal}%).`;
+  } else if (pluralismVal <= 15) {
+    tier = 'consensus';
+    label = lang === 'mk' ? 'Консензус' : 'Konsenzus';
+    detail =
+      lang === 'mk'
+        ? `${sources} извори покриваат иста приказна.`
+        : `${sources} izvora pokrivaju istu priču.`;
+  }
+
+  if (isStale) {
+    detail =
+      lang === 'mk'
+        ? `${detail} Синтезата се ажурира.`
+        : `${detail} Sinteza se ažurira.`;
+  }
+
+  const score = Math.min(
+    100,
+    Math.max(
+      0,
+      Math.min(sources, 8) * 10 +
+        (pluralismVal <= 15 ? 25 : pluralismVal >= 55 ? 12 : 18) +
+        (isStale ? 0 : 20) +
+        (hasVerification ? 10 : 0),
+    ),
+  );
+
+  return {
+    score,
+    tier,
+    label,
+    detail,
+    sourcesCount: sources,
+    pluralismScore: pluralism,
+    isStale,
+  };
+}

@@ -11,6 +11,11 @@ const l = (path: string) => localePath(path, isMK ? 'mk' : 'sr', hostHeader);
 
 {homeData && homeData.developing && (
     <section class="mt-8">
+        <p class="briefing-trust-framing">
+            {isMK
+                ? 'Дневниот преглед прво ја покажува каде медиумите се согласуваат, па каде се разликуваат.'
+                : 'Dnevni pregled prvo pokazuje gde se mediji slažu, pa gde se razlikuju.'}
+        </p>
         <h3 class="font-sans font-black uppercase tracking-widest text-xs mb-6 text-nyt-accent">{isMK ? 'АКТУЕЛНИ ТЕМИ ВО ФОКУС' : 'AKTUELNE FOKUSNE TEME'}</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-[var(--grid-gap)]">
             {homeData.developing.slice(0, 6).map((c: any) => (
@@ -29,6 +34,15 @@ const l = (path: string) => localePath(path, isMK ? 'mk' : 'sr', hostHeader);
 )}
 
 <style>
+    .briefing-trust-framing {
+        margin: 0 0 1rem;
+        font-family: var(--font-serif);
+        font-size: 0.98rem;
+        line-height: 1.55;
+        color: var(--muted-foreground);
+        font-style: italic;
+    }
+
     @media (max-width: 639.98px) {
         section.mt-8 {
             margin-top: 1.5rem;

@@ -93,6 +93,23 @@ export interface ClusterDetail extends NewsCluster {
   sentiment?: any;
   tone_analysis?: any;
   verification_report?: any;
+  trust_summary?: {
+    score: number;
+    tier: string;
+    label: string;
+    detail: string;
+    sources_count: number;
+    pluralism_score?: number | null;
+    is_stale?: boolean;
+    has_verification?: boolean;
+  };
+  cross_lingual_counterparts?: Array<{
+    cluster_id: string;
+    lang: string;
+    headline: string;
+    storyline_title?: string;
+    relevance_score?: number;
+  }>;
   ai_summary_bullets?: string[];
   citation_sources?: CitationSource[];
   synthesis_updated_at?: string;

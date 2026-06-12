@@ -1,0 +1,29 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import IntelligenceGraph from '../components/IntelligenceGraph';
+import Footer from '../components/Footer.astro';
+import TinyAdzInlinedAd from '../components/TinyAdzInlinedAd.astro';
+import { getLangFromUrl } from '../i18n/utils';
+
+const hostHeader = Astro.request?.headers.get('host');
+const lang = getLangFromUrl(Astro.url, hostHeader);
+const isMK = lang === 'mk';
+---
+
+<Layout
+    title={isMK ? 'Медиумска Мрежа | Интерактивен Граф' : 'Medijska Mreža | Interaktivni Graf'}
+    description={isMK
+        ? 'Истражете ја интерактивната мрежа на врски, сентимент и споменувања на политички актери и институции во македонските медиуми.'
+        : 'Istražite interaktivnu mrežu veza, sentimenta i pominjanja političkih aktera i institucija u srpskim medijima.'}
+>
+    <NYTHeader />
+
+	<main class="site-layout broadsheet-layout py-[var(--page-py)] animate-rise">
+		<Breadcrumbs items={[{ label: isMK ? 'граф' : 'graf' }]} />
+		<TinyAdzInlinedAd class="page-inline-ad mb-10" />
+		<IntelligenceGraph lang={lang} client:load />
+	</main>
+	<Footer />
+</Layout>

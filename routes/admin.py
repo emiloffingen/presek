@@ -190,6 +190,64 @@ async def retry_failed_tasks(
     }
 
 
+@router.get("/admin/ops/weekly-report")
+async def get_weekly_ops_report(authorized: bool = Depends(verify_admin)):
+    """Weekly synthesis quality and ops summary for the editorial cockpit."""
+    from core.ops_report import build_weekly_ops_report
+
+    return {"status": "success", "report": await build_weekly_ops_report()}
+
+
+@router.post("/admin/tasks/drain-stale-clusters")
+async def drain_stale_clusters(
+    authorized: bool = Depends(verify_admin),
+    csrf_valid: bool = Depends(verify_csrf_token),
+):
+    """Enqueue synthesis refresh for stale active clusters (bounded batch)."""
+    from core.celery_app import celery_app
+    from core.ops_snapshot import build_ops_snapshot
+
+    ops = await build_ops_snapshot()
+    sample_ids = (ops.get("stale_clusters") or {}).get("sample_cluster_ids") or []
+    if not sample_ids:
+        return {"status": "success", "message": "Nema zastarelih klastera za osvežavanje.", "enqueued": 0}
+
+    celery_app.send_task(
+        "tasks.intelligence.auto_summarize_task",
+        args=[sample_ids[:40]],
+        countdown=5,
+    )
+    return {
+        "status": "success",
+        "message": f"Pokrenuto osvežavanje za {min(len(sample_ids), 40)} klastera.",
+        "enqueued": min(len(sample_ids), 40),
+        "stale_total": (ops.get("stale_clusters") or {}).get("count", 0),
+    }
+
+
+@router.post("/admin/tasks/clear-failed-ingestion")
+async def clear_failed_ingestion(
+    authorized: bool = Depends(verify_admin),
+    csrf_valid: bool = Depends(verify_csrf_token),
+):
+    """Clear ingestion failure noise and restart ingestion."""
+    from core.celery_app import celery_app
+
+    deleted = await db.async_execute(
+        """
+        DELETE FROM failed_tasks
+        WHERE task_name ILIKE '%ingestion%'
+        RETURNING id
+        """,
+    ) or []
+    celery_app.send_task("tasks.ingestion_task.run_ingestion", countdown=3)
+    return {
+        "status": "success",
+        "message": f"Obrisano {len(deleted)} ingestion grešaka i pokrenut refresh.",
+        "cleared": len(deleted),
+    }
+
+
 @router.get("/admin/localization/rules")
 async def get_localization_rules(authorized: bool = Depends(verify_admin)):
     """Fetches the active dynamic localization and tag normalization rules."""

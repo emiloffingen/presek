@@ -27,6 +27,7 @@ from .core import (
     _record_delivery_tracking_event,
     _send_ntfy_message,
     _send_web_push_message,
+    _site_url_for_locale,
     _tracked_delivery_url,
 )
 from .subscribers import _cluster_delivery_match, _load_active_delivery_rows, _normalize_synced_profile_for_delivery
@@ -941,6 +942,7 @@ def generate_daily_brief_task(retry_attempt=0, lang="sr"):
             )
             delete_cache(f"daily_brief:latest:{lang}")
             record_task_event("daily_brief", "ok" if brief else "fallback", f"lang:{lang}")
+            notify_daily_briefing_ready_task.apply_async(kwargs={"lang": lang}, countdown=20)
 
             # Automatically pre-generate the briefing audio in the background
             try:
@@ -964,6 +966,7 @@ def generate_daily_brief_task(retry_attempt=0, lang="sr"):
                 (fallback, lang, json.dumps({"is_fallback": True})),
                 fetch=False,
             )
+            notify_daily_briefing_ready_task.apply_async(kwargs={"lang": lang}, countdown=20)
 
             # Automatically pre-generate the briefing audio (fallback) in the background
             try:
@@ -988,6 +991,46 @@ def generate_daily_brief_task(retry_attempt=0, lang="sr"):
 def generate_all_daily_briefs_task():
     generate_daily_brief_task.apply_async(args=(0, "sr"))
     generate_daily_brief_task.apply_async(args=(0, "mk"))
+
+
+@celery_app.task
+def notify_daily_briefing_ready_task(lang="sr"):
+    """Broadcast that today's editorial briefing is ready."""
+    conf = _LOCALIZED_DELIVERY.get(lang, _LOCALIZED_DELIVERY["sr"])
+    notify_key = f"presek:briefing_ready_notify:{lang}:{datetime.date.today().isoformat()}"
+    try:
+        if not redis_client.set(notify_key, "1", nx=True, ex=86400):
+            return
+    except Exception as exc:
+        log.warning(f"[tasks] briefing ready notify dedupe failed: {exc}")
+
+    click_url = f"{_site_url_for_locale(lang)}/briefing?mode=quick"
+    title = conf["briefing_ready_title"]
+    message = conf["briefing_ready_message"]
+    sent = 0
+
+    try:
+        for row in _load_active_delivery_rows():
+            if not row.get("morning_briefing"):
+                continue
+            row_locale = str(row.get("locale") or "sr").strip().lower()
+            if row_locale != lang:
+                continue
+            target = str(row.get("target") or "").strip()
+            if not target:
+                continue
+            channel = str(row.get("channel") or "ntfy").strip().lower()
+            if channel == "webpush":
+                ok = _send_web_push_message(target, title, message, click_url=click_url)
+            else:
+                ok = _send_ntfy_message(target, title, message, tags="newspaper,sunrise", click_url=click_url)
+            if ok:
+                sent += 1
+    except Exception as exc:
+        log.warning(f"[tasks] Daily briefing ready notify failed ({lang}): {exc}")
+    else:
+        if sent:
+            log.info(f"[tasks] Sent {sent} daily briefing ready notifications ({lang}).")
 
 
 @celery_app.task

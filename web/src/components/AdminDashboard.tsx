@@ -64,6 +64,48 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
     }
   };
 
+  const drainStaleClusters = async () => {
+    try {
+      const res = await fetch(`${apiBaseUrl()}/admin/tasks/drain-stale-clusters?lang=${lang}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, ...(await buildCsrfHeadersAsync()) }
+      });
+      const payload = await res.json();
+      alert(payload.message || (lang === 'sr' ? 'Backlog osvežavanje pokrenuto.' : 'Backlog освежување е стартувано.'));
+      fetchDashboard();
+    } catch {
+      alert(lang === 'sr' ? 'Greška pri osvežavanju zastarelih klastera.' : 'Грешка при освежување на застарени кластери.');
+    }
+  };
+
+  const clearFailedIngestion = async () => {
+    try {
+      const res = await fetch(`${apiBaseUrl()}/admin/tasks/clear-failed-ingestion?lang=${lang}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, ...(await buildCsrfHeadersAsync()) }
+      });
+      const payload = await res.json();
+      alert(payload.message || (lang === 'sr' ? 'Ingestija restartovana.' : 'Ingestijata е рестартирана.'));
+      fetchDashboard();
+    } catch {
+      alert(lang === 'sr' ? 'Greška pri čišćenju ingestion grešaka.' : 'Грешка при чистење ingestion грешки.');
+    }
+  };
+
+  const openWeeklyReport = async () => {
+    try {
+      const res = await fetch(`${apiBaseUrl()}/admin/ops/weekly-report?lang=${lang}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const payload = await res.json();
+      const blob = new Blob([JSON.stringify(payload.report || payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch {
+      alert(lang === 'sr' ? 'Greška pri učitavanju nedeljnog izveštaja.' : 'Грешка при вчитување на неделен извештај.');
+    }
+  };
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const stored = sessionStorage.getItem('presek_admin_token') || '';
@@ -195,6 +237,27 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
               ))}
             </div>
           )}
+
+          <div className="flex flex-wrap gap-2 pt-1">
+            <button
+              onClick={drainStaleClusters}
+              className="text-[10px] font-black uppercase px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white"
+            >
+              {lang === 'sr' ? 'Osveži zastarele' : 'Освежи застарени'}
+            </button>
+            <button
+              onClick={clearFailedIngestion}
+              className="text-[10px] font-black uppercase px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white"
+            >
+              {lang === 'sr' ? 'Očisti ingestion' : 'Исчисти ingestion'}
+            </button>
+            <button
+              onClick={openWeeklyReport}
+              className="text-[10px] font-black uppercase px-3 py-2 rounded-lg border border-zinc-700 text-zinc-300 hover:text-white"
+            >
+              {lang === 'sr' ? 'Nedeljni izveštaj' : 'Неделен извештај'}
+            </button>
+          </div>
         </section>
       )}
 
@@ -390,7 +453,7 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
                   onClick={() => fetchDashboard()}
                   className="w-full flex items-center justify-center gap-[var(--grid-gap)] bg-zinc-800 hover:bg-zinc-700 text-white text-[10px] font-bold py-3 rounded-lg transition-all"
                 >
-                  <RefreshCw size={14} /> {lang === 'sr' ? 'RESTARTOVANJE ZADATAKA' : 'РЕСТАРТИРАЈ ЗАДАЧИ'}
+                  <RefreshCw size={14} /> {lang === 'sr' ? 'OSVEŽI KOKPIT' : 'ОСВЕЖИ КОКПИТ'}
                 </button>
             </div>
           </div>

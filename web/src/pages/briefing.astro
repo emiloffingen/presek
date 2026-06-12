@@ -6,6 +6,9 @@ import BriefingHeader from '../components/briefing/BriefingHeader.astro';
 import BriefingContent from '../components/briefing/BriefingContent.astro';
 import BriefingSidebar from '../components/briefing/BriefingSidebar.astro';
 import BriefingDigest from '../components/briefing/BriefingDigest.astro';
+import BriefingDateNav from '../components/briefing/BriefingDateNav.astro';
+import BriefingQuickRead from '../components/briefing/BriefingQuickRead';
+import BriefingDeliveryIsland from '../components/BriefingDeliveryIsland.tsx';
 import NarrativeList from '../components/briefing/NarrativeList';
 import AudioPlayer from '../components/audio/AudioPlayer.astro';
 import '../styles/briefing-premium.css';
@@ -23,6 +26,7 @@ const isMK = lang === 'mk';
 
 const url = new URL(Astro.request.url);
 const dateParam = url.searchParams.get('date');
+const quickMode = url.searchParams.get('mode') === 'quick';
 
 let briefingData: any = null;
 let homeData: any = null;
@@ -65,7 +69,7 @@ const displayDate = briefingData?.date
 <Layout title={`${isMK ? 'Уреднички брифинг' : 'Urednički brifing'} — Presek`}>
     <NYTHeader stats={stats} />
 
-    <main class="site-layout broadsheet-layout pt-24 pb-[var(--page-py)] overflow-x-hidden">
+    <main class="site-layout broadsheet-layout pt-24 pb-[var(--page-py)] overflow-x-hidden" data-briefing-mode={quickMode ? 'quick' : 'full'}>
         <div class="briefing-page-container">
             {error ? (
                 <div class="py-20 text-center animate-rise">
@@ -77,6 +81,11 @@ const displayDate = briefingData?.date
             ) : briefingData ? (
                 <div class="briefing-layout-grid relative">
                     <div class="briefing-main-col">
+                        <BriefingDateNav
+                            historicalDates={briefingData.historical_dates}
+                            currentDate={briefingData.date}
+                        />
+
                         <div class="mb-8 flex flex-col gap-6">
                             <BriefingHeader
                                 currentDate={displayDate}
@@ -98,6 +107,17 @@ const displayDate = briefingData?.date
                             />
                         </div>
 
+                        {briefingData.quick_read && (
+                            <BriefingQuickRead
+                                lang={lang as 'sr' | 'mk'}
+                                quickRead={briefingData.quick_read}
+                                narratives={briefingData.metadata?.key_narratives || []}
+                                initialMode={quickMode ? 'quick' : 'full'}
+                                client:load
+                            />
+                        )}
+
+                        <div class="briefing-full-section">
                         {briefingData.metadata?.key_narratives && (
                             <NarrativeList narratives={briefingData.metadata.key_narratives} lang={lang} client:load />
                         )}
@@ -105,7 +125,8 @@ const displayDate = briefingData?.date
                         <div class="briefing-divider"></div>
 
                         <div class="briefing-editorial-wrapper max-w-[800px] mx-auto">
-                            <BriefingContent formattedBriefing={formattedBriefing} />
+                            <BriefingContent formattedBriefing={formattedBriefing} lang={lang} />
+                        </div>
                         </div>
 
 
@@ -124,6 +145,15 @@ const displayDate = briefingData?.date
 
                     <div class="briefing-sidebar-col">
                         <div class="sidebar-inner sticky top-32">
+                            <section class="sidebar-module p-5 bg-secondary/10 border border-border rounded-xl mb-6">
+                                <BriefingDeliveryIsland
+                                    content={briefingData.content}
+                                    dateLabel={displayDate}
+                                    variant="summary"
+                                    lang={lang}
+                                    client:visible
+                                />
+                            </section>
                             <BriefingSidebar
                                 stats={stats}
                                 health={{}}

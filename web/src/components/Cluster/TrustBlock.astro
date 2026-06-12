@@ -1,0 +1,142 @@
+---
+import { ShieldCheck } from 'lucide-react';
+
+interface EvidenceItem {
+  label: string;
+  value: string;
+  detail?: string;
+}
+
+interface Props {
+  lang: 'sr' | 'mk';
+  trustLabel: string;
+  trustDetail: string;
+  trustScore: number;
+  evidenceItems: EvidenceItem[];
+  conflictsCount?: number;
+  agreementsCount?: number;
+}
+
+const {
+  lang,
+  trustLabel,
+  trustDetail,
+  trustScore,
+  evidenceItems,
+  conflictsCount = 0,
+  agreementsCount = 0,
+} = Astro.props;
+
+const title = lang === 'mk' ? 'Зошто веруваме' : 'Zašto verujemo';
+const framing =
+  conflictsCount > 0
+    ? (lang === 'mk'
+      ? 'Изворите се согласуваат околу темата, но се разликуваат во детали.'
+      : 'Izvori se slažu oko teme, ali se razlikuju u detaljima.')
+    : agreementsCount > 0
+      ? (lang === 'mk'
+        ? 'Повеќе извори ја потврдуваат истата јадрена тврдење.'
+        : 'Više izvora potvrđuje istu jezgru tvrdnje.')
+      : (lang === 'mk'
+        ? 'Прегледот ја групира истата приказна од повеќе редакции.'
+        : 'Pregled grupiše istu priču iz više redakcija.');
+---
+
+<details class="cluster-trust-block" open>
+  <summary class="cluster-trust-summary">
+    <ShieldCheck size={16} />
+    <span>{title}</span>
+    <span class="cluster-trust-pill">{trustLabel}</span>
+    <span class="cluster-trust-score">{trustScore}</span>
+  </summary>
+  <p class="cluster-trust-detail">{trustDetail}</p>
+  <p class="cluster-trust-framing">{framing}</p>
+  <dl class="cluster-trust-evidence">
+    {evidenceItems.slice(0, 5).map((item) => (
+      <div class="cluster-trust-evidence-row">
+        <dt>{item.label}</dt>
+        <dd>
+          <strong>{item.value}</strong>
+          {item.detail ? <span>{item.detail}</span> : null}
+        </dd>
+      </div>
+    ))}
+  </dl>
+</details>
+
+<style>
+  .cluster-trust-block {
+    border: 1px solid color-mix(in srgb, var(--nyt-accent) 25%, var(--border));
+    background: color-mix(in srgb, var(--nyt-accent) 4%, var(--card));
+    border-radius: 1rem;
+    padding: 1rem 1.1rem;
+    margin: 1.25rem 0 1.75rem;
+  }
+  .cluster-trust-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    cursor: pointer;
+    list-style: none;
+    font-family: var(--font-sans);
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--foreground);
+  }
+  .cluster-trust-summary::-webkit-details-marker { display: none; }
+  .cluster-trust-pill {
+    margin-left: auto;
+    padding: 0.15rem 0.45rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--nyt-accent) 12%, transparent);
+    color: var(--nyt-accent);
+    font-size: 0.56rem;
+  }
+  .cluster-trust-score {
+    font-variant-numeric: tabular-nums;
+    color: var(--muted-foreground);
+    font-size: 0.58rem;
+  }
+  .cluster-trust-detail,
+  .cluster-trust-framing {
+    margin: 0.75rem 0 0;
+    font-size: 0.92rem;
+    line-height: 1.55;
+    color: var(--muted-foreground);
+  }
+  .cluster-trust-framing {
+    font-style: italic;
+    margin-top: 0.45rem;
+  }
+  .cluster-trust-evidence {
+    display: grid;
+    gap: 0.65rem;
+    margin: 1rem 0 0;
+  }
+  .cluster-trust-evidence-row {
+    display: grid;
+    grid-template-columns: minmax(6rem, 8rem) 1fr;
+    gap: 0.75rem;
+    align-items: start;
+  }
+  .cluster-trust-evidence-row dt {
+    font-size: 0.58rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+  .cluster-trust-evidence-row dd {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    font-size: 0.84rem;
+  }
+  .cluster-trust-evidence-row dd span {
+    color: var(--muted-foreground);
+    font-size: 0.76rem;
+  }
+</style>

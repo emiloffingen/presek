@@ -481,3 +481,24 @@
     box-shadow: none !important;
 }
 
+.personalization-why-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0 0 0.75rem;
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--nyt-accent) 25%, var(--border));
+    background: color-mix(in srgb, var(--nyt-accent) 8%, transparent);
+    font-family: var(--font-sans);
+    font-size: 0.58rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--nyt-accent);
+}
+
+.personalization-why-chip--detail {
+    display: flex;
+}
+

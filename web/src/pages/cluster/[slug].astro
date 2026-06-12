@@ -140,7 +140,10 @@ import ArticleItem from '../../components/Cluster/ArticleItem.astro';
 import ClusterSynthesisSection from '../../components/Cluster/ClusterSynthesisSection.astro';
 import ClusterStandfirst from '../../components/Cluster/ClusterStandfirst.astro';
 import ClusterKeyFactsBand from '../../components/Cluster/ClusterKeyFactsBand.astro';
+import TrustBlock from '../../components/Cluster/TrustBlock.astro';
+import CrossLingualStrip from '../../components/Cluster/CrossLingualStrip.astro';
 import ClusterReadingNav from '../../components/Cluster/ClusterReadingNav.astro';
+import { buildTrustChip } from '../../lib/trustSignals';
 import ClusterAnalysisSection from '../../components/Cluster/ClusterAnalysisSection.astro';
 import type { Article, ClusterDetail } from '../../types';
 
@@ -360,6 +363,14 @@ const hasStrongLeadNarrative = hasGeneratedNarrative && (cluster?.articles?.leng
 const primaryNarrativeLabel = lang === 'sr' ? 'PREGLED PRIČE' : 'ПРЕСЕК НА ПРИКАЗНАТА';
 const primaryNarrativeEyebrow = lang === 'sr' ? 'Šta je potvrđeno, šta nedostaje' : 'Што е потврдено, што недостига';
 const conflictsCount = verificationReport?.conflicts?.length || 0;
+const agreementsCount = verificationReport?.agreements?.length || 0;
+const trustSummary = cluster?.trust_summary || buildTrustChip({
+    sourcesCount: uniqueSourcesCount,
+    pluralismScore: cluster?.pluralism_score ?? null,
+    isStale: Boolean(synthesisFreshness?.is_stale),
+    hasVerification: hasFactcheck,
+}, lang as 'sr' | 'mk');
+const crossLingualCounterparts = cluster?.cross_lingual_counterparts || [];
 
 const isFiniteMetric = (value: unknown) => Number.isFinite(typeof value === 'number' ? value : Number(value));
 const rawToneAnalysis = cluster?.tone_analysis || cluster?.sentiment?.tone_analysis || null;
@@ -790,6 +801,16 @@ const articleSchema = cluster ? {
 								<ClusterKeyFactsBand facts={cluster.key_facts} lang={lang as 'sr' | 'mk'} />
 							)}
 
+							<TrustBlock
+								lang={lang as 'sr' | 'mk'}
+								trustLabel={trustSummary.label}
+								trustDetail={trustSummary.detail}
+								trustScore={trustSummary.score}
+								evidenceItems={evidenceItems}
+								conflictsCount={conflictsCount}
+								agreementsCount={agreementsCount}
+							/>
+
 							<ClusterSynthesisSection
 								lang={lang}
 								clusterId={id || ''}
@@ -882,6 +903,14 @@ const articleSchema = cluster ? {
 						)}
 
 						{/* RELATED SECTION */}
+						{crossLingualCounterparts.length > 0 && (
+							<CrossLingualStrip
+								counterparts={crossLingualCounterparts}
+								lang={lang as 'sr' | 'mk'}
+								hostHeader={hostHeader}
+							/>
+						)}
+
 						{filteredRelated.length > 0 && (
 							<section class="editorial-section related-section mb-24 border-t border-border/40 pt-16">
 								<div class="section-eyebrow mb-16">

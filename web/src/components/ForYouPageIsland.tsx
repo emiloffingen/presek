@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '@nanostores/react';
 import { $profile } from '../lib/store.ts';
-import PreferenceToggle from './PreferenceToggle.tsx';
+import PersonalizationWhyChip from './PersonalizationWhyChip.tsx';
 import { NewsCard } from './NewsCard.tsx';
 import OnboardingIsland from './OnboardingIsland.tsx';
 import {
@@ -34,7 +34,13 @@ interface ForYouPageIslandProps {
   lang?: string;
 }
 
-type PersonalizedCluster = NewsCluster & { reason?: string };
+type PersonalizedCluster = NewsCluster & {
+  reason?: string;
+  match_reasons?: string[];
+  matched_topics?: string[];
+  matched_sources?: string[];
+  why_summary?: string;
+};
 
 function clusterTitle(cluster: PersonalizedCluster) {
   return cluster.synthetic_headline || cluster.articles?.[0]?.title || '';
@@ -130,6 +136,9 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
       ...local.filter((item) => item && item.cluster && !seen.has(item.cluster.cluster_id)).map((item) => ({
         ...item!.cluster,
         reason: item!.reason,
+        match_reasons: item!.matchReasons,
+        matched_topics: item!.matchedTopics,
+        matched_sources: item!.matchedSources,
         has_synthesis: item!.cluster.has_synthesis,
         has_balanced: item!.cluster.has_balanced,
       })),
@@ -270,10 +279,15 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
             <div className="priority-lane">
               {priorityClusters.map((cluster, index) => (
                 <article key={cluster.cluster_id} className={`priority-story ${index === 0 ? 'is-primary' : ''}`}>
-                  <div className="story-reason">
-                    <BrainCircuit size={12} />
-                    <span>{cluster.reason || (isMK ? 'Совпаѓање со профилот' : 'Poklapanje sa profilom')}</span>
-                  </div>
+                  <PersonalizationWhyChip
+                    lang={isMK ? 'mk' : 'sr'}
+                    reason={cluster.reason}
+                    matchReasons={cluster.match_reasons}
+                    matchedTopics={cluster.matched_topics}
+                    matchedSources={cluster.matched_sources}
+                    whySummary={cluster.why_summary}
+                    variant="detail"
+                  />
                   <NewsCard
                     cluster={cluster}
                     variant={index === 0 ? 'featured' : 'standard'}
@@ -300,10 +314,14 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
               <div className="recommendation-grid">
                 {feedClusters.map((cluster) => (
                   <article key={cluster.cluster_id} className="recommendation-tile">
-                    <div className="story-reason">
-                      <TrendingUp size={12} />
-                      <span>{cluster.reason || (isMK ? 'Блиску до вашите интереси' : 'Blizu vaših interesovanja')}</span>
-                    </div>
+                    <PersonalizationWhyChip
+                      lang={isMK ? 'mk' : 'sr'}
+                      reason={cluster.reason}
+                      matchReasons={cluster.match_reasons}
+                      matchedTopics={cluster.matched_topics}
+                      matchedSources={cluster.matched_sources}
+                      whySummary={cluster.why_summary}
+                    />
                     <NewsCard cluster={cluster} variant="compact" lang={lang} />
                   </article>
                 ))}

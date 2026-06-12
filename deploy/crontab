@@ -48,3 +48,9 @@
 
 # Synthesis + queue alert pass every 15 minutes (ntfy when configured)
 */15 * * * * cd /home/emiloffingen/presek-runtime/current && set -a && source /home/emiloffingen/presek-runtime/shared/.env && set +a && /home/emiloffingen/presek-runtime/venv/bin/python3 scripts/monitor_synthesis_quality.py --notify >> /home/emiloffingen/presek-runtime/shared/logs/synthesis_quality.log 2>&1
+
+# Editorial ops cockpit alerts (ntfy when configured)
+*/15 * * * * cd /home/emiloffingen/presek-runtime/current && set -a && source /home/emiloffingen/presek-runtime/shared/.env && set +a && /home/emiloffingen/presek-runtime/venv/bin/python3 scripts/monitor_ops_snapshot.py --write-redis --notify >> /home/emiloffingen/presek-runtime/shared/logs/ops_snapshot.log 2>&1
+
+# Weekly ops quality report (Mondays 06:15 UTC)
+15 6 * * 1 cd /home/emiloffingen/presek-runtime/current && set -a && source /home/emiloffingen/presek-runtime/shared/.env && set +a && APP_ROOT=/home/emiloffingen/presek-runtime /home/emiloffingen/presek-runtime/venv/bin/python3 scripts/weekly_ops_report.py >> /home/emiloffingen/presek-runtime/shared/logs/ops_snapshot.log 2>&1
