@@ -1,0 +1,285 @@
+/* Editorial Layout styles extracted from global.css */
+
+.editorial-shell {
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.editorial-header {
+  padding-bottom: 2rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.editorial-headline {
+  margin: 0 0 0.9rem;
+  font-size: clamp(2.35rem, 1.8rem + 1.8vw, 4.5rem);
+  line-height: 1.05;
+}
+
+.editorial-intro {
+  margin: 0;
+  max-width: 80ch;
+  font-family: var(--font-nyt-body);
+  font-size: 1.04rem;
+  line-height: 1.68;
+  color: var(--secondary-foreground);
+  text-wrap: pretty;
+}
+
+.editorial-page-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .editorial-page-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 1440px) {
+  .editorial-page-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* If the main content is the only child, or explicitly told to span full width */
+.editorial-page-grid > .editorial-main:only-child,
+.editorial-page-grid > .editorial-main.col-span-full {
+  grid-column: 1 / -1;
+  max-width: 100%;
+}
+
+.editorial-main,
+.editorial-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.editorial-panel {
+  padding: 1.35rem;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--card) 86%, var(--surface-soft) 14%);
+}
+
+.dark .editorial-panel {
+  background: color-mix(in srgb, var(--card) 60%, var(--surface-strong) 40%);
+  border-color: var(--nyt-gray-300);
+}
+
+.editorial-panel-strong {
+  padding: 1.35rem;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--card) 76%, var(--surface-strong) 24%);
+}
+
+.dark .editorial-panel-strong {
+  background: color-mix(in srgb, var(--card) 40%, var(--surface-strong) 60%);
+  border-color: var(--nyt-gray-500);
+}
+
+.editorial-panel-title {
+  margin: 0 0 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-sans);
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.editorial-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.82rem 1rem;
+  border: 1px solid var(--nyt-accent);
+  background: var(--nyt-accent);
+  color: var(--background);
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.dark .editorial-action {
+  color: #07111f;
+}
+
+.editorial-action:hover {
+  background: transparent;
+  color: var(--nyt-accent);
+}
+
+.prose-nyt {
+  max-width: 68ch;
+  font-family: var(--font-nyt-body);
+  font-size: 1.04rem;
+  line-height: 1.72;
+  color: var(--secondary-foreground);
+  text-wrap: pretty;
+}
+
+
+/* Editorial Enhancements */
+.briefing-paragraph.drop-cap::first-letter {
+  font-family: var(--font-serif);
+  float: left;
+  font-size: clamp(3.5rem, 8vw, 4.8rem);
+  line-height: 0.72;
+  padding-top: 0.45rem;
+  padding-right: 0.75rem;
+  padding-left: 0.1rem;
+  font-weight: 900;
+  color: var(--foreground);
+  text-transform: uppercase;
+}
+
+.masthead-double-rule {
+  border-top: 1px solid color-mix(in srgb, var(--foreground) 80%, transparent);
+  border-bottom: 3px solid
+    color-mix(in srgb, var(--foreground) 80%, transparent);
+  height: 6px;
+  padding: 0;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.section-heading-row.masthead-double-rule {
+  display: flex;
+  flex-direction: column;
+  padding-top: 1.25rem;
+  border-top: none !important;
+  border-bottom: none !important;
+  height: auto;
+}
+
+.section-heading-row .section-heading {
+  border-top: none !important;
+  border-bottom: none !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-top: 0 !important;
+}
+
+.section-heading-row.masthead-double-rule::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--foreground);
+}
+
+.section-heading-row.masthead-double-rule::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--foreground);
+}
+
+.shadow-editorial {
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.02),
+    0 10px 20px rgba(0, 0, 0, 0.04),
+    0 20px 40px rgba(0, 0, 0, 0.04);
+}
+
+.dark .shadow-editorial {
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    0 12px 32px rgba(0, 0, 0, 0.2);
+}
+
+.editorial-byline {
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--foreground);
+  margin-bottom: 0.75rem;
+  display: block;
+}
+
+/* Broadsheet Columnar Flow */
+@media (min-width: 1024px) {
+  .prose-nyt-columns {
+    column-count: 2;
+    column-gap: 3.5rem;
+    column-rule: 1px solid var(--border);
+    text-align: justify;
+    hyphens: auto;
+    position: relative;
+  }
+
+  .editorial-margin-note {
+    position: absolute;
+    left: -14rem;
+    width: 12rem;
+    text-align: right;
+    padding-top: 0.5rem;
+    opacity: 0;
+    transform: translateX(10px);
+    transition: all 0.6s var(--ease-editorial);
+  }
+
+  .prose-nyt-columns:hover .editorial-margin-note {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .editorial-margin-label {
+    font-family: var(--font-sans);
+    font-size: 0.55rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--nyt-accent);
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+
+  .editorial-margin-content {
+    font-family: var(--font-serif);
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--muted-foreground);
+  }
+}
+
+/* Typographic Authority: Old-Style Figures */
+.font-serif {
+  font-variant-numeric: oldstyle-nums;
+}
+
+@media (min-width: 960px) {
+  .editorial-page-grid {
+    grid-template-columns: minmax(0, 1.45fr) minmax(18rem, 0.92fr);
+    gap: 2rem;
+  }
+}
+
+/* Legacy Presek Mappings */
+:root {
+  --bg-primary: var(--background);
+  --bg-secondary: var(--secondary);
+  --text-primary: var(--foreground);
+  --text-secondary: var(--secondary-foreground);
+  --text-muted: var(--muted-foreground);
+  --border-color: var(--border);
+  --accent-color: var(--nyt-red);
+  --nyt-font-serif: "Noto Serif", serif;
+  --nyt-font-sans: "Manrope", sans-serif;
+}
