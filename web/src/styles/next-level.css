@@ -1,4 +1,11 @@
 /* ── Homepage mode toggle ─────────────────────────── */
+.homepage-mode-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
 .homepage-mode-toggle {
   display: inline-flex;
   border: 1px solid var(--border);
@@ -7,13 +14,41 @@
 
 .homepage-mode-btn {
   font-family: var(--font-ui);
-  font-size: 0.62rem;
+  font-size: 0.69rem;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   padding: 0.55rem 0.85rem;
   color: var(--muted-foreground);
   transition: color var(--transition-base), background var(--transition-base);
+}
+
+.homepage-mode-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--nyt-accent) 25%, var(--border));
+  background: color-mix(in srgb, var(--nyt-accent) 6%, var(--card));
+}
+
+.homepage-mode-hint p {
+  flex: 1;
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  color: var(--muted-foreground);
+  margin: 0;
+}
+
+.homepage-mode-hint-dismiss {
+  font-family: var(--font-ui);
+  font-size: 0.69rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--link);
+  flex-shrink: 0;
 }
 
 .homepage-mode-btn.is-active {
@@ -299,9 +334,9 @@ html[data-homepage-mode="vesti"] .homepage-analiza-only {
   align-items: center;
   gap: 0.35rem;
   font-family: var(--font-ui);
-  font-size: 0.58rem;
+  font-size: 0.69rem;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted-foreground);
   padding: 0.35rem 0.55rem;
@@ -356,8 +391,8 @@ body.compare-mode .source-comparison-panel {
 }
 
 .ui-concept-body {
-  font-family: var(--font-serif);
-  font-size: 0.92rem;
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
   color: var(--muted-foreground);
   line-height: 1.55;
 }
@@ -373,9 +408,9 @@ body.compare-mode .source-comparison-panel {
 .ui-concept-secondary,
 .ui-concept-close {
   font-family: var(--font-ui);
-  font-size: 0.62rem;
+  font-size: 0.69rem;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -395,6 +430,12 @@ body.compare-mode .source-comparison-panel {
   top: 0.55rem;
   right: 0.55rem;
   color: var(--muted-foreground);
+}
+
+@media (max-width: 768px) {
+  .ui-concept-onboarding {
+    bottom: 5rem;
+  }
 }
 
 /* ── Skeletons ──────────────────────────────────────── */
@@ -482,13 +523,25 @@ body.compare-mode .source-comparison-panel {
   .cluster-sidebar-toggle {
     display: inline-flex;
     font-family: var(--font-ui);
-    font-size: 0.62rem;
+    font-size: 0.69rem;
     font-weight: 800;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--link);
     margin-bottom: 0.75rem;
   }
+}
+
+/* ── Pluralism conflict cards ─────────────────────── */
+.nyt-article.card-pluralism-conflict {
+  border-left: 3px solid color-mix(in srgb, var(--nyt-accent) 55%, var(--border));
+  background: color-mix(in srgb, var(--nyt-accent) 4%, var(--card));
+  padding-left: 0.65rem;
+}
+
+.nyt-article.card-pluralism-conflict .cluster-signal-row span:first-child {
+  color: var(--nyt-accent);
+  font-weight: 900;
 }
 
 /* ── Conflict headline preview ──────────────────────── */
@@ -496,8 +549,19 @@ body.compare-mode .source-comparison-panel {
   display: grid;
   gap: 0.35rem;
   margin-top: 0.55rem;
-  padding-top: 0.55rem;
-  border-top: 1px dashed color-mix(in srgb, var(--foreground) 12%, var(--border));
+  padding: 0.55rem 0.65rem;
+  border: 1px solid color-mix(in srgb, var(--nyt-accent) 22%, var(--border));
+  background: color-mix(in srgb, var(--nyt-accent) 5%, var(--card));
+}
+
+.conflict-headline-kicker {
+  font-family: var(--font-ui);
+  font-size: 0.69rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--nyt-accent);
+  margin: 0;
 }
 
 .conflict-headline-variant {

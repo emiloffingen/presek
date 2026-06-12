@@ -6,6 +6,7 @@ import PulseHeatmapIsland from './pulse/PulseHeatmapIsland';
 import DivergenceGaugeIsland from './pulse/DivergenceGaugeIsland';
 import SentimentRadarIsland from './pulse/SentimentRadarIsland';
 import { apiBaseUrl } from '../lib/apiBase';
+import { useTranslations } from '../i18n/utils';
 
 interface PulseRow {
     source: string;
@@ -29,6 +30,7 @@ interface PulseClientContainerProps {
 
 export default function PulseClientContainer({ initialGlobalPulse, initialPulseData, categories, ssrFailed, lang = 'sr' }: PulseClientContainerProps) {
     const isMK = lang === 'mk';
+    const t = useTranslations(lang as 'sr' | 'mk');
 
     // URL-aware category state
     const [category, setCategory] = useState<string | null>(() => {
@@ -116,6 +118,28 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
             'ENTITY': isMK ? 'Субјект' : 'Subjekt'
         };
         return map[type] || (isMK ? 'Субјект' : 'Subjekt');
+    }
+
+    function getSentimentMeta(score: number) {
+        if (score > 0.1) {
+            return {
+                label: t('pulse.sentiment_positive'),
+                tone: 'positive' as const,
+                barPct: Math.min(100, Math.round(score * 100)),
+            };
+        }
+        if (score < -0.1) {
+            return {
+                label: t('pulse.sentiment_critical'),
+                tone: 'critical' as const,
+                barPct: Math.min(100, Math.round(Math.abs(score) * 100)),
+            };
+        }
+        return {
+            label: t('pulse.sentiment_neutral'),
+            tone: 'neutral' as const,
+            barPct: 12,
+        };
     }
 
     return (
@@ -285,30 +309,44 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                             </div>
                         ) : topEntities.length > 0 ? (
                             <div className="actor-grid-box">
-                                {topEntities.map((ent: any) => (
-                                    <a
-                                        key={ent.name}
-                                        href={`/subjekt/${encodeURIComponent(ent.name)}`}
-                                        className="actor-card group"
-                                    >
-                                        <div className="flex justify-between items-start mb-3 md:mb-4">
-                                            <span className="text-[8px] md:text-[9px] font-black uppercase text-nyt-accent tracking-[0.14em] md:tracking-widest bg-nyt-accent/5 px-2 py-0.5 rounded">
-                                                {getTypeLabel(ent.type)}
-                                            </span>
-                                            <span className="text-lg md:text-xl group-hover:scale-125 transition-transform">{ent.sentiment_score > 0.1 ? '😊' : ent.sentiment_score < -0.1 ? '😤' : '😐'}</span>
-                                        </div>
-                                        <h3 className="font-serif font-black text-lg md:text-xl leading-tight group-hover:text-nyt-accent mb-4 md:mb-6">{ent.name}</h3>
-                                        <div className="mt-auto pt-3 md:pt-4 border-t border-border/40 flex items-center justify-between">
-                                            <div className="flex flex-col">
-                                                <span className="text-[9px] md:text-[10px] font-bold text-muted-foreground uppercase">{isMK ? 'Споменувања' : 'Pominjanja'}</span>
-                                                <span className="text-lg md:text-xl font-black tabular-nums">{ent.total_mentions > 0 ? ent.total_mentions : '–'}</span>
+                                {topEntities.map((ent: any, index: number) => {
+                                    const score = Number(ent.sentiment_score) || 0;
+                                    const sentiment = getSentimentMeta(score);
+                                    return (
+                                        <a
+                                            key={ent.name}
+                                            href={`/subjekt/${encodeURIComponent(ent.name)}`}
+                                            className={`actor-card group ${index === 0 ? 'actor-card--featured' : ''}`}
+                                        >
+                                            <div className="actor-card-top">
+                                                <span className="actor-type-chip">{getTypeLabel(ent.type)}</span>
+                                                {index === 0 && (
+                                                    <span className="actor-rank-badge">#1</span>
+                                                )}
                                             </div>
-                                            <div className={`text-[9px] md:text-[10px] font-black uppercase tracking-tight ${ent.sentiment_score > 0.1 ? 'text-green-600' : ent.sentiment_score < -0.1 ? 'text-red-600' : 'text-muted-foreground'}`}>
-                                                {ent.sentiment_score > 0.1 ? (isMK ? 'Позитивен' : 'Pozitivan') : ent.sentiment_score < -0.1 ? (isMK ? 'Критичен' : 'Kritičan') : (isMK ? 'Неутрален' : 'Neutralan')}
+                                            <h3 className="actor-card-name">{ent.name}</h3>
+                                            <div className="actor-sentiment-row">
+                                                <span className={`actor-sentiment-label tone-${sentiment.tone}`}>
+                                                    {sentiment.label}
+                                                </span>
+                                                <div className="actor-sentiment-track" aria-hidden="true">
+                                                    <div
+                                                        className={`actor-sentiment-fill tone-${sentiment.tone}`}
+                                                        style={{ width: `${sentiment.barPct}%` }}
+                                                    />
+                                                </div>
                                             </div>
-                                        </div>
-                                    </a>
-                                ))}
+                                            <div className="actor-card-footer">
+                                                <div className="actor-mentions">
+                                                    <span className="actor-mentions-label">{t('pulse.mentions')}</span>
+                                                    <span className="actor-mentions-value tabular-nums">
+                                                        {ent.total_mentions > 0 ? ent.total_mentions : '–'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    );
+                                })}
                             </div>
                         ) : (
                             <div className="py-20 text-center border border-dashed border-border rounded-2xl bg-secondary/5">

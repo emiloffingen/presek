@@ -79,6 +79,7 @@ const conflictHeadlines = (cluster.pluralism_score ?? 0) >= 55
     ? Array.from(new Set(cluster.articles.slice(0, 3).map((article) => getDisplayTitle(article)).filter(Boolean)))
     : [];
 const showConflictPreview = conflictHeadlines.length >= 2;
+const hasPluralismConflict = (cluster.pluralism_score ?? 0) >= 55;
 
 const cardContext = getDesignCardContext(cluster);
 const cardLabel = cardContext.labelKey ? t(cardContext.labelKey as any) : '';
@@ -141,7 +142,7 @@ function getTimeStr(dateStr: string) {
 }
 ---
 
-<article class:list={["nyt-article", "premium-spotlight", `variant-${variant}`, { "lead-story": isLead, "has-image": !!thumbSrc }, bentoSpan ? `bento-${bentoSpan}` : ""]} data-cluster={JSON.stringify(slimCluster)} data-testid="article-card">
+<article class:list={["nyt-article", "premium-spotlight", `variant-${variant}`, { "lead-story": isLead, "has-image": !!thumbSrc, "card-pluralism-conflict": hasPluralismConflict }, bentoSpan ? `bento-${bentoSpan}` : ""]} data-cluster={JSON.stringify(slimCluster)} data-testid="article-card">
 	<div class="article-body">
         <div class="article-meta-v2">
             <div class="kicker-group">
@@ -183,10 +184,11 @@ function getTimeStr(dateStr: string) {
         )}
 
         {showConflictPreview && (
-            <div class="conflict-headline-preview" aria-label={lang === 'sr' ? 'Različiti naslovi' : 'Различни наслови'}>
+            <div class="conflict-headline-preview" aria-label={t('pulse.conflict_angles')}>
+                <p class="conflict-headline-kicker">{t('pulse.conflict_angles')}</p>
                 {conflictHeadlines.slice(0, 2).map((headline) => (
                     <p class="conflict-headline-variant">
-                        <strong>{lang === 'sr' ? 'Naslov:' : 'Наслов:'}</strong> {headline}
+                        <strong>{t('pulse.conflict_headline')}:</strong> {headline}
                     </p>
                 ))}
             </div>

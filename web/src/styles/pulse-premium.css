@@ -215,16 +215,18 @@
 .actor-card {
     display: flex;
     flex-direction: column;
-    padding: 1.5rem;
+    padding: 1.25rem 1.35rem;
     background: color-mix(in srgb, var(--card) 50%, transparent);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
     border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
     border-radius: var(--radius-lg, 0px);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     position: relative;
     overflow: hidden;
     box-shadow: var(--shadow-sm);
+    text-decoration: none;
+    color: inherit;
 }
 
 .actor-card::before {
@@ -238,14 +240,134 @@
     transition: background 0.3s ease;
 }
 
+.actor-card--featured {
+    grid-column: 1 / -1;
+    padding: 1.5rem 1.65rem;
+    border-color: color-mix(in srgb, var(--nyt-accent) 35%, var(--border));
+    background: color-mix(in srgb, var(--nyt-accent) 5%, var(--card));
+}
+
+.actor-card--featured .actor-card-name {
+    font-size: clamp(1.35rem, 1.1rem + 0.8vw, 1.85rem);
+}
+
 .actor-card:hover {
-    transform: translateY(-2px);
     border-color: var(--nyt-accent);
     box-shadow: var(--shadow-md);
 }
 
 .actor-card:hover::before {
     background: var(--nyt-accent);
+}
+
+.actor-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.actor-type-chip {
+    font-family: var(--font-ui);
+    font-size: 0.69rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--nyt-accent);
+    background: color-mix(in srgb, var(--nyt-accent) 8%, transparent);
+    padding: 0.2rem 0.45rem;
+}
+
+.actor-rank-badge {
+    font-family: var(--font-ui);
+    font-size: 0.69rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    color: var(--muted-foreground);
+}
+
+.actor-card-name {
+    font-family: var(--font-serif);
+    font-weight: 900;
+    font-size: 1.15rem;
+    line-height: 1.2;
+    margin: 0 0 0.85rem;
+    transition: color var(--transition-base);
+}
+
+.actor-card:hover .actor-card-name {
+    color: var(--nyt-accent);
+}
+
+.actor-sentiment-row {
+    display: grid;
+    gap: 0.35rem;
+    margin-bottom: 0.85rem;
+}
+
+.actor-sentiment-label {
+    font-family: var(--font-ui);
+    font-size: 0.69rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.actor-sentiment-label.tone-positive {
+    color: var(--editorial-positive, #047857);
+}
+
+.actor-sentiment-label.tone-critical {
+    color: var(--nyt-red);
+}
+
+.actor-sentiment-label.tone-neutral {
+    color: var(--muted-foreground);
+}
+
+.actor-sentiment-track {
+    height: 4px;
+    background: color-mix(in srgb, var(--foreground) 8%, var(--border));
+    overflow: hidden;
+}
+
+.actor-sentiment-fill {
+    height: 100%;
+    transition: width 0.4s var(--ease-editorial);
+}
+
+.actor-sentiment-fill.tone-positive {
+    background: var(--editorial-positive, #047857);
+}
+
+.actor-sentiment-fill.tone-critical {
+    background: var(--nyt-red);
+}
+
+.actor-sentiment-fill.tone-neutral {
+    background: color-mix(in srgb, var(--muted-foreground) 70%, var(--border));
+}
+
+.actor-card-footer {
+    padding-top: 0.75rem;
+    border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.actor-mentions-label {
+    font-family: var(--font-ui);
+    font-size: 0.69rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+}
+
+.actor-mentions-value {
+    font-family: var(--font-ui);
+    font-size: 1.25rem;
+    font-weight: 900;
+    line-height: 1.1;
 }
 
 /* Sleek Leaderboard & Index Tables */

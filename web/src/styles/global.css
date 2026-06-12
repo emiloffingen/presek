@@ -4991,7 +4991,6 @@ button:active,
 /* Premium Reading Experience (Zen Mode) */
 body.zen-mode .site-header,
 body.zen-mode .site-footer,
-body.zen-mode .editorial-lede,
 body.zen-mode .hero-full,
 body.zen-mode .executive-summary,
 body.zen-mode .citation-sources-box,
@@ -5000,6 +4999,27 @@ body.zen-mode .editorial-sidebar-col,
 body.zen-mode .advanced-tools,
 body.zen-mode .editorial-section:not(.narrative-section):not(.related-section) {
   display: none !important;
+}
+
+body.zen-mode .editorial-lede .lede-meta,
+body.zen-mode .editorial-lede .lede-toolbar {
+  display: none !important;
+}
+
+body.zen-mode .editorial-lede {
+  margin-bottom: 1.5rem;
+}
+
+body.zen-mode .editorial-lede .editorial-headline {
+  font-size: clamp(1.65rem, 1.4rem + 1vw, 2.25rem);
+  margin-bottom: 0.75rem;
+}
+
+body.zen-mode .editorial-lede .editorial-standfirst {
+  font-size: clamp(1rem, 0.95rem + 0.35vw, 1.25rem);
+  margin-bottom: 1.5rem;
+  padding-left: 1rem;
+  border-left-width: 3px;
 }
 
 body.zen-mode .site-layout {
