@@ -1,0 +1,53 @@
+---
+import { ArrowRight, Sparkles } from 'lucide-react';
+import type { NewsCluster } from '../../types';
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+import { localePath } from '../../lib/localePaths';
+import { getDisplayTitle, highlightScores, isMostlyCyrillic, transliterate } from '../../utils/textUtils';
+import { sanitizeHtml } from '../../lib/sanitize';
+
+interface Props {
+    cluster: NewsCluster;
+    lang?: string;
+    moreCount?: number;
+}
+
+const { cluster, lang: propLang, moreCount = 0 } = Astro.props;
+const hostHeader = Astro.request?.headers.get('host');
+const lang = propLang || getLangFromUrl(Astro.url, hostHeader);
+const t = useTranslations(lang);
+const l = (path: string) => localePath(path, lang, hostHeader);
+
+const rawTitle = cluster.synthetic_headline || getDisplayTitle(cluster.articles?.[0] || {});
+let displayTitle = highlightScores(rawTitle);
+if (lang === 'sr' && isMostlyCyrillic(displayTitle)) {
+    displayTitle = highlightScores(transliterate(rawTitle));
+}
+const summary = cluster.synthetic_standfirst || cluster.articles?.[0]?.summary || '';
+const clusterUrl = l(`/cluster/${cluster.cluster_id}`);
+const sourceCount = Number((cluster as any).sources_count || (cluster as any).source_count || cluster.articles?.length || 0);
+---
+
+<a href={clusterUrl} class="home-synthesis-teaser" data-testid="home-synthesis-teaser">
+    <div class="home-synthesis-teaser-icon" aria-hidden="true">
+        <Sparkles size={18} strokeWidth={2.25} />
+    </div>
+    <div class="home-synthesis-teaser-copy">
+        <p class="home-synthesis-teaser-kicker">
+            <span class="home-synthesis-teaser-badge">{t('home.feed_synthesis_badge')}</span>
+            {t('home.synthesis_teaser_kicker')}
+        </p>
+        <h2 class="home-synthesis-teaser-title" set:html={sanitizeHtml(displayTitle)}></h2>
+        {summary && <p class="home-synthesis-teaser-deck">{summary}</p>}
+        <p class="home-synthesis-teaser-meta">
+            {sourceCount} {sourceCount === 1 ? t('news.source') : t('news.sources')}
+            {moreCount > 0 && (
+                <span> · {t('home.synthesis_teaser_more').replace('{count}', String(moreCount))}</span>
+            )}
+        </p>
+    </div>
+    <span class="home-synthesis-teaser-action">
+        {t('home.synthesis_teaser_action')}
+        <ArrowRight size={14} strokeWidth={2.5} aria-hidden="true" />
+    </span>
+</a>

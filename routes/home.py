@@ -21,6 +21,37 @@ from .system import get_trending_route
 log = logging.getLogger("presek")
 router = APIRouter()
 _background_tasks: set[asyncio.Task] = set()
+_LEAD_TIEBREAK_WINDOW = 0.10
+
+
+def _homepage_cluster_score(cluster: Dict[str, Any]) -> float:
+    return float(cluster.get("homepage_score") or 0.0)
+
+
+def _apply_synthesis_lead_tiebreak(
+    clusters: List[Dict[str, Any]],
+    window: float = _LEAD_TIEBREAK_WINDOW,
+) -> List[Dict[str, Any]]:
+    """Prefer a synthesis-backed lead when top homepage candidates score within `window`."""
+    if len(clusters) < 2:
+        return clusters
+
+    lead_score = _homepage_cluster_score(clusters[0])
+    threshold = lead_score * (1.0 - window) if lead_score > 0 else 0.0
+
+    candidates = [clusters[0]]
+    for cluster in clusters[1:4]:
+        score = _homepage_cluster_score(cluster)
+        if lead_score > 0 and score >= threshold:
+            candidates.append(cluster)
+
+    synth_pick = next((cluster for cluster in candidates if cluster.get("has_synthesis")), None)
+    if not synth_pick or synth_pick.get("cluster_id") == clusters[0].get("cluster_id"):
+        return clusters
+
+    return [synth_pick] + [
+        cluster for cluster in clusters if cluster.get("cluster_id") != synth_pick.get("cluster_id")
+    ]
 
 
 def _schedule_background_task(coro) -> asyncio.Task:
@@ -592,6 +623,7 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
 
         synthesis_pick_ids = {c["cluster_id"] for c in synthesis_picks}
         clusters = [c for c in clusters if c["cluster_id"] not in synthesis_pick_ids]
+        clusters = _apply_synthesis_lead_tiebreak(clusters)
 
         lead = clusters[0] if clusters else None
         supporting = clusters[1:4]

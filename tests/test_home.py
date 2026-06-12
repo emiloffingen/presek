@@ -190,3 +190,31 @@ def test_decorate_cluster_display_adds_display_fields_to_articles():
 
     assert decorated["articles"][0]["display_title"] == "Vladata & merki"
     assert decorated["articles"][0]["display_summary"] == "Opis"
+
+
+def test_apply_synthesis_lead_tiebreak_prefers_synthesis_within_window():
+    home = _load_home_module()
+
+    clusters = [
+        {"cluster_id": "a", "homepage_score": 100, "has_synthesis": False},
+        {"cluster_id": "b", "homepage_score": 95, "has_synthesis": True},
+        {"cluster_id": "c", "homepage_score": 50, "has_synthesis": True},
+    ]
+
+    reordered = home._apply_synthesis_lead_tiebreak(clusters)
+
+    assert reordered[0]["cluster_id"] == "b"
+    assert [cluster["cluster_id"] for cluster in reordered] == ["b", "a", "c"]
+
+
+def test_apply_synthesis_lead_tiebreak_keeps_leader_when_gap_is_large():
+    home = _load_home_module()
+
+    clusters = [
+        {"cluster_id": "a", "homepage_score": 100, "has_synthesis": False},
+        {"cluster_id": "b", "homepage_score": 80, "has_synthesis": True},
+    ]
+
+    reordered = home._apply_synthesis_lead_tiebreak(clusters)
+
+    assert reordered[0]["cluster_id"] == "a"

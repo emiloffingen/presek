@@ -45,10 +45,14 @@ function getBentoSpan(cluster: UnifiedFeedItem['cluster']) {
                             'home-feed-item',
                             `home-feed-item--${item.variant}`,
                             item.variant === 'featured' ? `bento-${span}` : '',
+                            { 'home-feed-item--synthesis': Boolean(item.cluster.has_synthesis) },
                         ]}
                         data-feed-bucket={item.bucket}
                         style={`animation-delay: ${idx * 0.05}s`}
                     >
+                        {item.cluster.has_synthesis && (
+                            <span class="home-feed-synthesis-badge ui-status">{t('home.feed_synthesis_badge')}</span>
+                        )}
                         {item.variant === 'wire' ? (
                             <NewsCard cluster={item.cluster} variant="wire" lang={lang} />
                         ) : item.variant === 'featured' ? (

@@ -163,6 +163,9 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl && !leadV
         </div>
         <div class="lead-kicker-v2 mb-4">
             <span class="source-badge" aria-label={t('lead.title_prefix')}>{leadCluster.articles?.[0].source}</span>
+            {leadCluster.has_synthesis && (
+                <span class="lead-synthesis-badge ui-status">{t('home.feed_synthesis_badge')}</span>
+            )}
             <div class="lead-kicker-meta flex items-center gap-[var(--grid-gap)]">
                 {leadCluster.is_breaking && <span class="significance-badge is-breaking" aria-label={`${t('header.breaking')}: ${t('news.breaking')}`}>{t('news.breaking').toUpperCase()}</span>}
                 {leadSignal && (

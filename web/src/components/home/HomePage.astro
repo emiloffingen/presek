@@ -14,6 +14,7 @@ import SynthesisPicksSection from './SynthesisPicksSection.astro';
 import DevelopmentsSection from './DevelopmentsSection.astro';
 import HomeUnifiedFeed from './HomeUnifiedFeed.astro';
 import HomePregledTeaser from './HomePregledTeaser.astro';
+import HomeSynthesisTeaser from './HomeSynthesisTeaser.astro';
 import { buildUnifiedFeedItems } from '../../lib/unifiedFeed';
 import FilterHeader from './FilterHeader.astro';
 import HomeRail from './HomeRail.astro';
@@ -341,6 +342,8 @@ const showLeadHeroVisual = Boolean(leadVisual && !leadVisual.isWeak);
 const displayedSynthesisPicks = isHomepage
     ? filterSynthesisPicks(synthesisPicks, buildHomepageSynthesisExcludeIds(leadCluster, supportingClusters))
     : synthesisPicks;
+const feedSynthesisTeaser = displayedSynthesisPicks[0] || null;
+const feedSynthesisMoreCount = Math.max(0, displayedSynthesisPicks.length - 1);
 const analysisBands = isHomepage
     ? selectVisibleAnalysisBands({
         radarCount: radarClusters.length,
@@ -746,6 +749,16 @@ if (forYouClusters.length > 0) {
 						/>
 					</div>
 				)}
+
+                {!error && isHomepage && !isPregled && feedSynthesisTeaser && (
+                    <div class="section-wrapper home-mobile-order-synthesis-teaser home-feed-only">
+                        <HomeSynthesisTeaser
+                            cluster={feedSynthesisTeaser}
+                            lang={lang}
+                            moreCount={feedSynthesisMoreCount}
+                        />
+                    </div>
+                )}
 
                 {!error && isHomepage && (
                     <div class="home-mobile-order-trending homepage-analiza-only">
