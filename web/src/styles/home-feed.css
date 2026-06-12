@@ -313,3 +313,9 @@
   align-items: center;
   gap: 0.45rem;
 }
+
+@media (min-width: 720px) {
+  .for-you-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

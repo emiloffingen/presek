@@ -1,8 +1,9 @@
 ---
+import '../../styles/home-live-strip.css';
 import { Activity, ChevronRight } from 'lucide-react';
 import { getDisplayTitle } from '../../utils/textUtils';
 import { useTranslations } from '../../i18n/utils';
-import { localePath, homePath } from '../../lib/localePaths';
+import { localePath } from '../../lib/localePaths';
 import type { ui } from '../../i18n/ui';
 
 interface Props {
@@ -15,228 +16,42 @@ const { articles, getTimeStr, lang } = Astro.props;
 const hostHeader = Astro.request?.headers.get('host');
 const t = useTranslations(lang);
 const l = (path: string) => localePath(path, lang, hostHeader);
+const expandLabel = lang === 'sr' ? 'Otvori' : 'Отвори';
 ---
 
 {articles.length > 0 && (
-    <section class="home-live-strip" aria-label={t('home.wire_title')}>
-        <div class="home-live-head">
-            <span>
+    <details class="home-live-details">
+        <summary class="home-live-summary" aria-label={t('home.wire_title')}>
+            <span class="home-live-summary-label">
                 <Activity size={13} />
                 {t('home.wire_title')}
             </span>
-            <a href={l('/archive')}>
-                {t('rail.all_news')} <ChevronRight size={11} />
-            </a>
-        </div>
-        <div class="home-live-items hide-scrollbar">
-            {articles.map((article: any) => (
-                <a href={l(`/cluster/${article.cluster_id}`)} class="home-live-item">
-                    <div class="home-live-meta">
-                        <span>{getTimeStr(article.ingested_at || article.created_at)}</span>
-                        <strong>{article.source}</strong>
-                    </div>
-                    <p>{getDisplayTitle(article)}</p>
+            <span class="home-live-summary-meta">
+                <span class="home-live-count">{articles.length}</span>
+                <span class="home-live-expand">{expandLabel}</span>
+            </span>
+        </summary>
+        <section class="home-live-strip" aria-label={t('home.wire_title')}>
+            <div class="home-live-head">
+                <span>
+                    <Activity size={13} />
+                    {t('home.wire_title')}
+                </span>
+                <a href={l('/archive')}>
+                    {t('rail.all_news')} <ChevronRight size={11} />
                 </a>
-            ))}
-        </div>
-    </section>
+            </div>
+            <div class="home-live-items hide-scrollbar">
+                {articles.map((article: any) => (
+                    <a href={l(`/cluster/${article.cluster_id}`)} class="home-live-item">
+                        <div class="home-live-meta">
+                            <span>{getTimeStr(article.ingested_at || article.created_at)}</span>
+                            <strong>{article.source}</strong>
+                        </div>
+                        <p>{getDisplayTitle(article)}</p>
+                    </a>
+                ))}
+            </div>
+        </section>
+    </details>
 )}
-
-<style>
-    .home-live-strip {
-        display: grid;
-        grid-template-columns: minmax(7.5rem, 0.65fr) minmax(0, 3.35fr);
-        gap: 1px;
-        margin: 0 0 0.95rem;
-        background: color-mix(in srgb, var(--foreground) 10%, var(--border));
-        border: 1px solid color-mix(in srgb, var(--foreground) 14%, var(--border));
-        border-top: 3px solid var(--nyt-red);
-        border-radius: var(--radius-lg, 0px);
-        overflow: hidden;
-        backdrop-filter: var(--glass-blur);
-        -webkit-backdrop-filter: var(--glass-blur);
-        box-shadow: 0 4px 20px -2px color-mix(in srgb, var(--background) 30%, rgba(0, 0, 0, 0.08)), 
-                    inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 6%, transparent);
-        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    
-    .home-live-strip:hover {
-        border-color: color-mix(in srgb, var(--border) 100%, transparent);
-        border-top-color: var(--nyt-red);
-        box-shadow: 0 10px 30px -4px color-mix(in srgb, var(--background) 40%, rgba(0, 0, 0, 0.15)), 
-                    inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 10%, transparent);
-    }
-
-    :global(.dark) .home-live-strip {
-        background-image: radial-gradient(circle at 15% 0%, color-mix(in srgb, var(--nyt-red) 4%, transparent), transparent 75%);
-        box-shadow: 0 4px 20px -3px rgba(0, 0, 0, 0.4), 
-                    inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 4%, transparent);
-     }
-
-    .home-live-head {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 0.65rem;
-        padding: 0.78rem 0.9rem;
-        background: linear-gradient(135deg, color-mix(in srgb, var(--card) 98%, transparent), color-mix(in srgb, var(--secondary) 94%, transparent));
-        position: relative;
-    }
-    
-    .home-live-head::after {
-        content: '';
-        position: absolute;
-        right: 0;
-        top: 15%;
-        bottom: 15%;
-        width: 1px;
-        background: color-mix(in srgb, var(--border) 40%, transparent);
-    }
-
-    .home-live-head span,
-    .home-live-head a {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        font-family: var(--font-sans);
-        font-size: 0.6rem;
-        font-weight: 950;
-        letter-spacing: 0.16em;
-        text-transform: uppercase;
-        line-height: 1.1;
-        transition: all 0.3s var(--ease-editorial);
-    }
-
-    .home-live-head span {
-        color: var(--nyt-red);
-        font-weight: 950;
-    }
-    
-    .home-live-head span :global(svg) {
-        animation: pulse-waves 1.5s ease-in-out infinite;
-    }
-    
-    @keyframes pulse-waves {
-        0%, 100% {
-            opacity: 0.6;
-            transform: scale(0.95);
-        }
-        50% {
-            opacity: 1;
-            transform: scale(1.15);
-        }
-    }
-
-    .home-live-head a {
-        color: var(--muted-foreground);
-        text-decoration: none;
-    }
-
-    .home-live-head a:hover {
-        color: var(--foreground);
-        transform: translateX(2px);
-    }
-
-    .home-live-items {
-        display: grid;
-        grid-auto-flow: column;
-        grid-auto-columns: minmax(16rem, 1fr);
-        gap: 1px;
-        overflow-x: auto;
-        background: color-mix(in srgb, var(--foreground) 10%, var(--border));
-        scroll-snap-type: x proximity;
-    }
-
-    .home-live-item {
-        display: block;
-        min-width: 0;
-        padding: 0.78rem 0.9rem;
-        background: linear-gradient(135deg, color-mix(in srgb, var(--card) 92%, transparent), color-mix(in srgb, var(--secondary) 76%, transparent));
-        color: var(--foreground);
-        text-decoration: none;
-        scroll-snap-align: start;
-        transition: all 0.3s var(--ease-editorial);
-        position: relative;
-    }
-
-    .home-live-item:hover {
-        background: color-mix(in srgb, var(--foreground) 3%, transparent);
-    }
-
-    .home-live-meta {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        margin-bottom: 0.35rem;
-    }
-
-    .home-live-meta span,
-    .home-live-meta strong {
-        font-family: var(--font-sans);
-        font-size: 0.56rem;
-        font-weight: 950;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-    }
-
-    .home-live-meta span {
-        color: var(--nyt-red);
-    }
-
-    .home-live-meta strong {
-        color: color-mix(in srgb, var(--foreground) 62%, var(--muted-foreground));
-    }
-
-    .home-live-item p {
-        margin: 0;
-        font-family: var(--font-serif);
-        font-size: 0.98rem;
-        font-weight: 850;
-        line-height: 1.25;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        transition: color 0.3s var(--ease-editorial);
-    }
-
-    .home-live-item:hover p {
-        color: var(--nyt-accent);
-    }
-
-    @media (max-width: 639px) {
-        .home-live-strip {
-            grid-template-columns: 1fr;
-            margin-bottom: 0.85rem;
-        }
-
-        .home-live-head {
-            gap: 0.45rem;
-            padding: 0.65rem 0.75rem;
-            flex-direction: row;
-        }
-        
-        .home-live-head::after {
-            display: none;
-        }
-
-        .home-live-head span,
-        .home-live-head a {
-            font-size: 0.56rem;
-            letter-spacing: 0.12em;
-        }
-
-        .home-live-items {
-            grid-auto-columns: minmax(78vw, 1fr);
-        }
-
-        .home-live-item {
-            padding: 0.68rem 0.75rem;
-        }
-
-        .home-live-item p {
-            font-size: 0.92rem;
-        }
-    }
-</style>
