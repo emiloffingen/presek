@@ -33,12 +33,15 @@ const SURFACE_NORMALIZATIONS: Record<string, string> = {
   policiji: 'Policija',
 };
 
+function capitalizeLeadingWord(value: string): string {
+  const first = value.charAt(0);
+  if (!first || first === first.toUpperCase()) return value;
+  return `${first.toUpperCase()}${value.slice(1)}`;
+}
+
 export function normalizeFocusEntitySurface(name: string): string {
   const clean = String(name || '').trim().replace(/\s+/g, ' ');
   if (!clean) return '';
   const normalized = SURFACE_NORMALIZATIONS[clean.toLowerCase()] ?? clean;
-  if (normalized && normalized[0].isLowerCase()) {
-    return `${normalized[0].toUpperCase()}${normalized.slice(1)}`;
-  }
-  return normalized;
+  return capitalizeLeadingWord(normalized);
 }

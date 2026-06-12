@@ -38,7 +38,9 @@ const STOP_WORDS = new Set([
 const uniqueEntitiesMap = new Map();
 
 for (const ent of focusEntities) {
-    let name = normalizeFocusEntitySurface((ent.display_name || ent.name).trim());
+    const rawName = String(ent?.display_name || ent?.name || '').trim();
+    if (!rawName) continue;
+    let name = normalizeFocusEntitySurface(rawName);
     let lowerName = name.toLowerCase();
 
     // Skip short words or stop words
