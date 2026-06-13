@@ -60,8 +60,7 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 const { sr: srHref, mk: mkHref } = hreflangAlternates(requestUrl.pathname);
 const normalizedHost = hostHeader.split(':')[0].toLowerCase();
 const isLiveHost = normalizedHost === 'presek.live' || normalizedHost === 'www.presek.live';
-const isHomepage = requestUrl.pathname === '/' || requestUrl.pathname === '';
-const showHilltopAdsVerification = isLiveHost && isHomepage;
+const showHilltopAdsVerification = isLiveHost;
 const shouldLoadAdsense = lang === 'sr' && isLiveHost;
 const loadTinyAdz = shouldLoadTinyAdzScript(lang, hostHeader);
 const tinyAdzSite = loadTinyAdz ? tinyAdzSiteId(lang, hostHeader) : '';
@@ -90,6 +89,9 @@ const organizationSchema = {
 <!doctype html>
 <html lang={lang === 'sr' ? "sr-Latn" : "mk"}>
 	<head>
+		{showHilltopAdsVerification && (
+			<meta name="a3a999fcaa2f5ffa9e13b1e2489c2488ac0bfba3" content="a3a999fcaa2f5ffa9e13b1e2489c2488ac0bfba3" />
+		)}
 		{/* Load Google Analytics immediately after <head> to satisfy verification bots. */}
 		{lang === 'mk' ? (
 			<Fragment set:html={`<!-- Google tag (gtag.js) -->
@@ -135,9 +137,6 @@ const organizationSchema = {
 		)}
 		{shouldLoadAdsense && (
 			<meta name="google-adsense-account" content="ca-pub-1724921768403014" />
-		)}
-		{showHilltopAdsVerification && (
-			<meta name="a3a999fcaa2f5ffa9e13b1e2489c2488ac0bfba3" content="a3a999fcaa2f5ffa9e13b1e2489c2488ac0bfba3" />
 		)}
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
