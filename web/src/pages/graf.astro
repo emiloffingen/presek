@@ -7,10 +7,12 @@ import Footer from '../components/Footer.astro';
 import TinyAdzInlinedAd from '../components/TinyAdzInlinedAd.astro';
 import TinyAdzRailAd from '../components/TinyAdzRailAd.astro';
 import { getLangFromUrl } from '../i18n/utils';
+import { shouldShowTinyAdzInlinedAds } from '../lib/tinyadz';
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
 const isMK = lang === 'mk';
+const showRailAd = shouldShowTinyAdzInlinedAds(lang, hostHeader || Astro.url.hostname);
 ---
 
 <Layout
@@ -28,9 +30,11 @@ const isMK = lang === 'mk';
 				<TinyAdzInlinedAd class="page-inline-ad mb-10" />
 				<IntelligenceGraph lang={lang} client:load />
 			</div>
-			<aside class="broadsheet-rail pl-4">
-				<TinyAdzRailAd />
-			</aside>
+			{showRailAd && (
+				<aside class="broadsheet-rail ad-only-rail pl-4">
+					<TinyAdzRailAd />
+				</aside>
+			)}
 		</div>
 	</main>
 	<Footer />

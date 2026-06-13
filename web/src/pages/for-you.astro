@@ -10,11 +10,13 @@ import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import '../styles/for-you-premium.css';
 import TinyAdzInlinedAd from '../components/TinyAdzInlinedAd.astro';
 import TinyAdzRailAd from '../components/TinyAdzRailAd.astro';
+import { shouldShowTinyAdzInlinedAds } from '../lib/tinyadz';
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
 const API_URL = apiBaseUrl();
+const showRailAd = shouldShowTinyAdzInlinedAds(lang, hostHeader || Astro.url.hostname);
 
 // Fetch latest clusters to provide as potential local matches
 let initialClusters = [];
@@ -48,9 +50,11 @@ try {
                     <ForYouPageIsland client:idle initialClusters={initialClusters} initialError={initialError} lang={lang} />
                 </ErrorBoundary>
             </div>
-            <aside class="broadsheet-rail pl-4">
-                <TinyAdzRailAd />
-            </aside>
+            {showRailAd && (
+                <aside class="broadsheet-rail ad-only-rail pl-4">
+                    <TinyAdzRailAd />
+                </aside>
+            )}
         </div>
     </main>
     <Footer />

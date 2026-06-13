@@ -353,7 +353,7 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
   };
 
   return (
-    <div className="flex flex-col gap-6 md:gap-8 max-w-7xl mx-auto px-4 md:px-6">
+    <div className="flex w-full max-w-full min-w-0 flex-col gap-6 md:gap-8 overflow-hidden px-0">
       {/* Title Header */}
       <div className="border-b border-nyt-border pb-4 md:pb-6">
         <span className="nyt-section-label tracking-wide uppercase text-xs text-nyt-accent font-black block mb-2">
@@ -367,9 +367,9 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-[minmax(13rem,0.85fr)_minmax(0,3.15fr)] lg:gap-6">
         {/* Sidebar Controls and Lookup Inspector */}
-        <div className="lg:col-span-1 flex flex-col gap-5">
+        <div className="flex min-w-0 flex-col gap-5">
           {/* Controls box */}
           <div className="p-5 bg-card border border-nyt-border rounded-none shadow-sm flex flex-col gap-4">
             <h3 className="font-serif font-black text-lg text-nyt-text flex items-center gap-2 pb-2 border-b border-nyt-border">
@@ -629,7 +629,7 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
         </div>
 
         {/* Visual Graph Viewbox Area */}
-        <div className="lg:col-span-3 bg-card border border-nyt-border shadow-sm relative min-h-[500px] flex items-center justify-center select-none overflow-hidden">
+        <div className="relative flex min-h-[500px] min-w-0 select-none items-center justify-center overflow-hidden border border-nyt-border bg-card shadow-sm">
           {loading && (
             <div className="absolute inset-0 bg-background/70 backdrop-blur-xs flex flex-col items-center justify-center z-20 animate-fade-in">
               <Loader2 className="animate-spin text-nyt-accent mb-3" size={36} />
@@ -646,7 +646,7 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
             <svg
               ref={svgRef}
               viewBox="0 0 700 500"
-              className="w-full h-full cursor-grab active:cursor-grabbing z-10"
+              className="z-10 h-full w-full min-w-0 cursor-grab active:cursor-grabbing"
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUpOrLeave}
               onMouseLeave={handleMouseUpOrLeave}

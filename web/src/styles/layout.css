@@ -60,6 +60,19 @@
     position: sticky;
     top: calc(var(--header-height, 4.5rem) + 1.25rem);
   }
+
+  .broadsheet-grid:has(> .ad-only-rail:not(:has(.tinyadz-inlined))) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .broadsheet-grid:has(> .ad-only-rail:not(:has(.tinyadz-inlined))) > .broadsheet-main {
+    border-right: 0;
+    padding-right: 0;
+  }
+
+  .ad-only-rail:not(:has(.tinyadz-inlined)) {
+    display: none !important;
+  }
 }
 
 @media (max-width: 1179px) {
