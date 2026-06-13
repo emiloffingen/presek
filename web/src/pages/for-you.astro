@@ -43,7 +43,21 @@ try {
     <NYTHeader />
     <main class="site-layout broadsheet-layout page-content-top pb-[var(--page-py)]">
         <Breadcrumbs items={[{ label: t('nav.for_you') }]} />
-        <div class="broadsheet-grid">
+
+        <header class="for-you-page-header motion-rise">
+            <div class="flex items-center gap-[var(--grid-gap)] mb-4">
+                <div class="w-10 h-[1px] bg-nyt-accent"></div>
+                <span class="page-kicker ui-label !mb-0">{t('nav.for_you')}</span>
+            </div>
+            <h1 class="for-you-page-title editorial-headline italic">{lang === 'mk' ? 'Ваш' : 'Vaš'} <span>{lang === 'mk' ? 'личен пресек' : 'lični presek'}</span></h1>
+            <p class="for-you-page-lede editorial-intro max-w-3xl mt-6 text-[var(--text-lg)] text-muted-foreground">
+                {lang === 'mk'
+                    ? 'Вести подредени според темите, изворите и неодамнешното читање — без профил или лозинка.'
+                    : 'Vesti poređane prema temama, izvorima i nedavnom čitanju — bez profila ili lozinke.'}
+            </p>
+        </header>
+
+        <div class="broadsheet-grid mt-8 md:mt-10">
             <div class="broadsheet-main">
                 <TinyAdzInlinedAd class="page-inline-ad mb-10" />
                 <ErrorBoundary client:idle lang={lang}>
@@ -61,6 +75,28 @@ try {
 </Layout>
 
 <style>
+    .for-you-page-header {
+        max-width: 900px;
+    }
+
+    .for-you-page-title {
+        font-size: clamp(2rem, 4vw, 3.5rem);
+        line-height: 0.95;
+    }
+
+    .for-you-page-title span {
+        font-weight: 400;
+    }
+
+    .motion-rise {
+        animation: rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes rise {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
     .broadsheet-rail {
         align-self: start;
         position: sticky;

@@ -12,13 +12,15 @@ import {
   Radio,
   SlidersHorizontal,
   Sparkles,
-  TrendingUp,
+  Newspaper,
 } from 'lucide-react';
 import { useStore } from '@nanostores/react';
 import { $profile } from '../lib/store.ts';
 import PersonalizationWhyChip from './PersonalizationWhyChip.tsx';
 import { NewsCard } from './NewsCard.tsx';
 import OnboardingIsland from './OnboardingIsland.tsx';
+import MorningEmailSignup from './MorningEmailSignup.tsx';
+import ForYouBriefingCard from './ForYouBriefingCard.tsx';
 import PreferenceToggle from './PreferenceToggle.tsx';
 import {
   buildCsrfHeadersAsync,
@@ -207,9 +209,18 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
                 ? 'Изберете неколку теми или извори. Страницата потоа ќе ги подреди вестите според вашите сигнали, без регистрација.'
                 : 'Izaberite nekoliko tema ili izvora. Stranica zatim slaže vesti prema vašim signalima, bez registracije.'}
             </p>
+            <ol className="for-you-steps">
+              <li>{isMK ? 'Следете 2–3 теми или извори' : 'Pratite 2–3 teme ili izvora'}</li>
+              <li>{isMK ? 'Отворете За Вас за личен пресек' : 'Otvorite Za Vas za lični presek'}</li>
+              <li>{isMK ? 'Закажете утринско издание во поставки' : 'Zakažite jutarnje izdanje u podešavanjima'}</li>
+            </ol>
           </div>
-          <div className="cold-start-panel">
-            <OnboardingIsland lang={lang} />
+          <div className="cold-start-stack">
+            <ForYouBriefingCard lang={lang} />
+            <div className="cold-start-panel">
+              <OnboardingIsland lang={lang} />
+            </div>
+            <MorningEmailSignup lang={isMK ? 'mk' : 'sr'} variant="compact" />
           </div>
         </section>
       </div>
@@ -256,6 +267,20 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
           </div>
         </div>
       </section>
+
+      <div className="for-you-action-bar">
+        <a href={localePathForLang('/briefing', isMK ? 'mk' : 'sr')} className="for-you-action-link">
+          <Newspaper size={15} /> {isMK ? 'Брифинг' : 'Brifing'}
+        </a>
+        <a href={localePathForLang('/settings', isMK ? 'mk' : 'sr')} className="for-you-action-link">
+          <SlidersHorizontal size={15} /> {isMK ? 'Поставки' : 'Podešavanja'}
+        </a>
+        <a href={`${localePathForLang('/settings', isMK ? 'mk' : 'sr')}#dostava`} className="for-you-action-link">
+          <BellRing size={15} /> {isMK ? 'Jutarnje izdanje' : 'Jutarnje izdanje'}
+        </a>
+      </div>
+
+      <ForYouBriefingCard lang={lang} />
 
       {pageError && (
         <div className="for-you-alert">
@@ -332,6 +357,8 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
         </main>
 
         <aside className="for-you-rail">
+          <MorningEmailSignup lang={isMK ? 'mk' : 'sr'} variant="settings" />
+
           <section className="rail-panel">
             <h3><ListChecks size={16} /> {isMK ? 'Ваш профил' : 'Vaš profil'}</h3>
             <div className="profile-stat-grid">

@@ -188,6 +188,213 @@
     color: var(--foreground);
 }
 
+.settings-overview {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.settings-overview-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(240px, 320px);
+    gap: 1.25rem;
+    align-items: end;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+}
+
+.settings-overview-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.55rem;
+    font-family: var(--font-ui);
+    font-size: var(--text-ui-kicker);
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--nyt-accent);
+}
+
+.settings-overview-hero h2 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    line-height: 1.05;
+}
+
+.settings-overview-hero p {
+    margin: 0.75rem 0 0;
+    max-width: 58ch;
+    color: var(--muted-foreground);
+    line-height: 1.5;
+}
+
+.settings-overview-meter {
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg, 0px);
+    background: color-mix(in srgb, var(--card) 70%, transparent);
+}
+
+.settings-overview-meter-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-family: var(--font-ui);
+    font-size: var(--text-ui-min);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.settings-overview-meter-head strong {
+    font-size: 1.15rem;
+    letter-spacing: 0;
+}
+
+.settings-overview-meter-bar {
+    height: 8px;
+    margin-top: 0.85rem;
+    border-radius: 999px;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--muted) 70%, transparent);
+}
+
+.settings-overview-meter-bar span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--nyt-accent), color-mix(in srgb, var(--nyt-accent) 45%, #10b981));
+}
+
+.settings-overview-meter p {
+    margin: 0.75rem 0 0;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: var(--muted-foreground);
+}
+
+.settings-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.85rem;
+}
+
+.settings-overview-card {
+    display: grid;
+    gap: 0.25rem;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg, 0px);
+    background: color-mix(in srgb, var(--card) 72%, transparent);
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.25s var(--ease-editorial);
+}
+
+.settings-overview-card:hover {
+    border-color: var(--nyt-accent);
+    transform: translateY(-2px);
+}
+
+.settings-overview-card-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid var(--border);
+    color: var(--nyt-accent);
+}
+
+.settings-overview-card-label {
+    margin-top: 0.35rem;
+    font-family: var(--font-ui);
+    font-size: var(--text-ui-min);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+}
+
+.settings-overview-card strong {
+    font-family: var(--font-serif);
+    font-size: 1.45rem;
+    line-height: 1;
+}
+
+.settings-overview-card-note,
+.settings-overview-card-hint {
+    font-size: 0.78rem;
+    color: var(--muted-foreground);
+}
+
+.settings-overview-links {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.settings-overview-link {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.95rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg, 0px);
+    background: color-mix(in srgb, var(--background) 88%, var(--secondary) 12%);
+    text-align: left;
+    color: inherit;
+    transition: all 0.25s var(--ease-editorial);
+}
+
+.settings-overview-link:hover {
+    border-color: var(--nyt-accent);
+}
+
+.settings-overview-link strong {
+    display: block;
+    font-family: var(--font-sans);
+    font-size: 0.88rem;
+}
+
+.settings-overview-link small {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.76rem;
+    color: var(--muted-foreground);
+}
+
+.settings-overview-email-head {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.settings-overview-email-head h3 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: 1.25rem;
+}
+
+.settings-overview-email-head p {
+    margin: 0.35rem 0 0;
+    font-size: 0.88rem;
+    line-height: 1.45;
+    color: var(--muted-foreground);
+}
+
+@media (max-width: 900px) {
+    .settings-overview-hero,
+    .settings-overview-grid,
+    .settings-overview-links {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* Holographic Digital Passport Card */
 .passport-glow-card {
     background: linear-gradient(135deg, color-mix(in srgb, var(--card) 80%, transparent), color-mix(in srgb, var(--background) 90%, var(--nyt-accent) 10%));
