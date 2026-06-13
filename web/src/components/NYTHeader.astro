@@ -109,8 +109,17 @@ const overflowNavSections = [...nonTrendingSections.slice(2), ...trendingSection
 const overflowNavItems = overflowNavSections.flatMap((section: any) => section.items || []);
 
 const pregledHref = l('/pregled');
+const homeHref = l('/');
 const normalizedPath = Astro.url.pathname.replace(/\/$/, '');
 const isPregledActive = normalizedPath === pregledHref.replace(/\/$/, '');
+const isBrowseEditionActive =
+    (normalizedPath === homeHref.replace(/\/$/, '') || normalizedPath === '') &&
+    !isPregledActive &&
+    !category &&
+    !topic &&
+    !entity &&
+    !subcategory &&
+    !q;
 
 // Idea A: Verification Counter Logic
 const intel = stats?.intelligence;
@@ -251,10 +260,13 @@ function getRelativeTimeStr(dateStr?: string) {
         <div class="nav-rail-wrapper">
             <div class="nav-rail-scroll hide-scrollbar">
                 <div class="nav-rail-content">
-                    <div class="nav-rail-group group-core">
-                        <div class="group-links">
-                            <a href={pregledHref} class={`nav-rail-link ${isPregledActive ? 'is-active' : ''}`}>
-                                <span class="link-label">{t('nav.pregled')}</span>
+                    <div class="nav-rail-group group-entry">
+                        <div class="group-links nav-entry-links">
+                            <a href={homeHref} class:list={['nav-rail-link', 'nav-rail-link--browse', { 'is-active': isBrowseEditionActive }]}>
+                                <span class="link-label">{t('nav.browse_edition')}</span>
+                            </a>
+                            <a href={pregledHref} class:list={['nav-rail-link', 'nav-rail-link--analysis', { 'is-active': isPregledActive }]}>
+                                <span class="link-label">{t('nav.deep_analysis')}</span>
                             </a>
                         </div>
                     </div>

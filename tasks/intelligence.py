@@ -18,6 +18,8 @@ from nlp import (
 )
 from nlp.categories import detect_category, detect_topic
 from nlp.local_analyst import analyst
+from nlp.utils import extract_clean_summary_text
+from tasks.synthesis_sanitize import sanitize_synthesis_outputs as _sanitize_synthesis_outputs
 from tasks.utils import (
     acquire_task_lock,
     get_celery_queue_depth,
@@ -223,7 +225,7 @@ def summarize_article_task(article_id, final_title=None, local_only=False):
             final_text = re.sub(r"\s*```$", "", final_text)
 
     if final_text:
-        final_text = validate_person_names(final_text)
+        final_text = validate_person_names(extract_clean_summary_text(final_text))
         db.execute(
             "UPDATE articles SET summary = %s WHERE id = %s",
             (final_text, article_id),
@@ -234,9 +236,10 @@ def summarize_article_task(article_id, final_title=None, local_only=False):
     else:
         fallback = summarize_article_fallback(title, context_text, topic=topic, lang=lang)
         if fallback:
+            clean_fallback = extract_clean_summary_text(fallback)
             db.execute(
                 "UPDATE articles SET summary = %s WHERE id = %s",
-                (fallback, article_id),
+                (clean_fallback, article_id),
                 fetch=False,
             )
             invalidate_public_data_caches()
@@ -454,77 +457,8 @@ def _normalize_cluster_synthesis(summary, perspectives, article_rows, lang="mk")
     return clean_summary, clean_perspectives
 
 
-def _looks_like_leaked_json_fragment(text: str) -> bool:
-    clean = str(text or "").strip()
-    if not clean:
-        return False
-    lowered = clean.lower()
-    json_markers = (
-        '"synthetic_headline"',
-        '"synthetic_standfirst"',
-        '"summary"',
-        '"generated_article"',
-        '"key_facts"',
-        '"perspectives"',
-        "verification_report",
-    )
-    marker_count = sum(1 for marker in json_markers if marker in lowered)
-    bullet_json_lines = sum(1 for line in clean.splitlines() if line.strip().startswith(("• {", "• \"", "{", "\"")))
-    return marker_count >= 2 or bullet_json_lines >= 2
-
-
 def _paragraph_fingerprint(text: str) -> str:
     return re.sub(r"\W+", " ", str(text or "").casefold()).strip()
-
-
-def _dedupe_generated_article(text: str) -> str:
-    parts = [part.strip() for part in re.split(r"\n{2,}", str(text or "")) if part.strip()]
-    kept = []
-    seen = set()
-    for part in parts:
-        key = _paragraph_fingerprint(part)
-        if not key or key in seen:
-            continue
-        if any(key and (key in prev or prev in key) and min(len(key), len(prev)) > 120 for prev in seen):
-            continue
-        seen.add(key)
-        kept.append(part)
-    return "\n\n".join(kept).strip()
-
-
-def _polish_generated_article(text: str, lang: str = "mk") -> str:
-    clean = str(text or "").strip()
-    if not clean:
-        return ""
-
-    heading_patterns = (
-        r"^\s*(синтеза|уреднички преглед|уредничка синтеза|анализа|article)\s*:?\s*$",
-        r"^\s*(sinteza|urednički pregled|urednicki pregled|urednička sinteza|urednicka sinteza|analiza|article)\s*:?\s*$",
-    )
-    meta_leads = (
-        (r"^\s*Овој кластер(?:\s+вести)?\s+", ""),
-        (r"^\s*Оваа синтеза\s+", ""),
-        (r"^\s*Според медиумските извештаи,\s*", ""),
-        (r"^\s*Во вестите се наведува дека\s+", ""),
-        (r"^\s*Ovaj klaster(?:\s+vesti)?\s+", ""),
-        (r"^\s*Ova sinteza\s+", ""),
-        (r"^\s*Prema medijskim izveštajima,\s*", ""),
-        (r"^\s*U vestima se navodi da\s+", ""),
-    )
-
-    polished_parts = []
-    for part in re.split(r"\n{2,}", clean):
-        paragraph = re.sub(r"\s+", " ", part).strip()
-        if not paragraph:
-            continue
-        if any(re.match(pattern, paragraph, flags=re.IGNORECASE) for pattern in heading_patterns):
-            continue
-        for pattern, replacement in meta_leads:
-            paragraph = re.sub(pattern, replacement, paragraph, flags=re.IGNORECASE).strip()
-        if paragraph:
-            polished_parts.append(paragraph)
-
-    return "\n\n".join(polished_parts).strip()
 
 
 def _clean_macedonian_spelling_and_script(text: str) -> str:
@@ -846,50 +780,6 @@ def _score_editorial_summary(summary, article: str = "", lang: str = "sr") -> fl
     score -= min(0.2, duplicate_bullets * 0.1)
 
     return max(0.0, min(1.0, score))
-
-
-def _sanitize_synthesis_outputs(summary, generated_article, perspectives, article_rows, lang="mk"):
-    fallback = None
-    clean_summary = normalize_summary_text(summary)
-    clean_article = _polish_generated_article(
-        _dedupe_generated_article(validate_person_names(generated_article or "")),
-        lang=lang,
-    )
-
-    if _looks_like_leaked_json_fragment(clean_summary):
-        fallback = fallback or synthesize_cluster_fallback(article_rows, lang=lang)
-        clean_summary = normalize_summary_text(fallback.get("summary", ""))
-
-    if _looks_like_leaked_json_fragment(clean_article) or len(clean_article) < 80:
-        fallback = fallback or synthesize_cluster_fallback(article_rows, lang=lang)
-        clean_article = _polish_generated_article(
-            _dedupe_generated_article(fallback.get("generated_article", "")),
-            lang=lang,
-        )
-
-    clean_perspectives = normalize_perspectives(perspectives, lang=lang)
-    if not clean_perspectives:
-        fallback = fallback or synthesize_cluster_fallback(article_rows, lang=lang)
-        clean_perspectives = normalize_perspectives(fallback.get("perspectives", []), lang=lang)
-
-    # Strictly verify Cyrillic script and clean spelling leaks for Macedonian
-    if lang == "mk":
-        if isinstance(clean_summary, str):
-            clean_summary = _clean_macedonian_spelling_and_script(clean_summary)
-        elif isinstance(clean_summary, list):
-            clean_summary = [_clean_macedonian_spelling_and_script(s) for s in clean_summary]
-        
-        clean_article = _clean_macedonian_spelling_and_script(clean_article)
-        
-        if isinstance(clean_perspectives, list):
-            for p in clean_perspectives:
-                if isinstance(p, dict):
-                    if "angle" in p:
-                        p["angle"] = _clean_macedonian_spelling_and_script(p["angle"])
-                    if "content" in p:
-                        p["content"] = _clean_macedonian_spelling_and_script(p["content"])
-
-    return clean_summary, clean_article, clean_perspectives
 
 
 def _ensure_dict(value):

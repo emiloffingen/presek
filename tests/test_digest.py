@@ -141,13 +141,17 @@ class TestNewsletterDelivery:
         monkeypatch.setattr(database, "db_manager", FakeDb())
         monkeypatch.setattr(
             digest,
-            "fetch_top_stories",
-            lambda **_kwargs: {"Politics": [{"title": "Story", "link": "#", "source": "A", "source_count": 1}]},
+            "fetch_daily_briefing",
+            lambda **_kwargs: {
+                "date": "2026-06-13",
+                "content": "# Test brifing\n\n## Velika Slika\n\nGlavna vest dana.\n\n- Prvi signal\n",
+                "metadata": {"stats": {"total_articles": 12, "pluralism_score": 4}},
+            },
         )
         monkeypatch.setattr(
             digest,
-            "render_html",
-            lambda _stories, _start, _now, locale: f"<a href='{{{{UNSUBSCRIBE_URL}}}}'>{locale}</a>",
+            "fetch_top_stories",
+            lambda **_kwargs: {"Politics": [{"title": "Story", "link": "#", "source": "A", "source_count": 1}]},
         )
         monkeypatch.setattr(
             digest,
@@ -162,3 +166,32 @@ class TestNewsletterDelivery:
         assert "email=reader%2Bsr%40example.com" in by_email["reader+sr@example.com"]
         assert "lang=mk" in by_email["reader+mk@example.com"]
         assert "email=reader%2Bmk%40example.com" in by_email["reader+mk@example.com"]
+        assert "Test brifing" in by_email["reader+sr@example.com"]
+        assert "Glavna vest dana." in by_email["reader+sr@example.com"]
+
+
+class TestMorningBriefingEmail:
+    def test_parse_briefing_for_email_extracts_headline_and_big_picture(self):
+        content = "# Geopoliticka napetost\n\n## Velika Slika\n\nGrcki ministar izjavio je da je ulazak u EU neminovnost.\n\n- Prvi signal za pracenje\n"
+        parsed = digest.parse_briefing_for_email(content)
+        assert parsed["title"] == "Geopoliticka napetost"
+        assert "Grcki ministar" in parsed["big_picture"]
+        assert parsed["bullets"] == ["Prvi signal za pracenje"]
+
+    def test_render_morning_briefing_email_includes_briefing_links(self):
+        html = digest.render_morning_briefing_email(
+            {
+                "date": "2026-06-13",
+                "content": "# Test\n\n## Velika Slika\n\nTekst dana.\n",
+                "metadata": {"stats": {"total_articles": 8, "pluralism_score": 3}},
+            },
+            datetime(2026, 6, 12),
+            datetime(2026, 6, 13),
+            locale="sr",
+            stories_by_cat={"Srbija": [{"title": "Story", "link": "https://example.com", "source": "MIA"}]},
+        )
+        assert "Test" in html
+        assert "Tekst dana." in html
+        assert "https://presek.live/briefing?date=2026-06-13" in html
+        assert "#audio" in html
+        assert "Story" in html

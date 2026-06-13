@@ -5,8 +5,11 @@ Can send via Gmail SMTP or save to file.
 """
 
 import argparse
+import html
+import json
 import logging
 import os
+import re
 import smtplib
 import ssl
 from collections import defaultdict
@@ -56,6 +59,11 @@ LOCALES = {
         "country_code": "RS",
         "read_more": "Procitaj me vesta →",
         "format_source": lambda c: "1 izvor" if c == 1 else f"{c} izvori",
+        "briefing_edition": "Urednicki brifing",
+        "big_picture": "Velika slika",
+        "open_briefing": "Procitaj pun brifing",
+        "listen_audio": "Slusaj audio verziju",
+        "also_today": "Jos iz dana",
     },
     "mk": {
         "months": [
@@ -91,8 +99,16 @@ LOCALES = {
         "country_code": "MK",
         "read_more": "Прочитај ја веста →",
         "format_source": lambda c: "1 извор" if c == 1 else f"{c} извори",
+        "briefing_edition": "Уреднички брифинг",
+        "big_picture": "Големата слика",
+        "open_briefing": "Прочитај го целиот брифинг",
+        "listen_audio": "Слушај ја аудио верзијата",
+        "also_today": "Уште од денот",
     },
 }
+
+_BULLET_RE = re.compile(r"^[-*•]\s+(.+)$")
+_BIG_PICTURE_MARKERS = ("velika slika", "golemata slika")
 
 # Backward compatibility aliases for tests
 SR_MONTHS = LOCALES["sr"]["months"]
@@ -118,6 +134,248 @@ def format_sources(count: int, locale: str = "sr") -> str:
 
 
 # ── Logic ───────────────────────────────────────────────────────────────────
+
+
+def _escape(text: str) -> str:
+    return html.escape(str(text or ""), quote=True)
+
+
+def fetch_daily_briefing(locale: str = "sr", days: int = 1) -> dict | None:
+    """Load the latest daily editorial briefing for a locale."""
+    try:
+        with database.get_db() as conn:
+            row = conn.execute(
+                """
+                SELECT date, content, metadata
+                FROM daily_briefings
+                WHERE lang = %s
+                  AND date >= CURRENT_DATE - make_interval(days => %s)
+                ORDER BY date DESC
+                LIMIT 1
+                """,
+                (locale, max(days - 1, 0)),
+            ).fetchone()
+    except Exception as exc:
+        log.error(f"DB error in fetch_daily_briefing ({locale}): {exc}")
+        return None
+
+    if not row or not row.get("content"):
+        return None
+
+    metadata = row.get("metadata") or {}
+    if isinstance(metadata, str):
+        try:
+            metadata = json.loads(metadata)
+        except json.JSONDecodeError:
+            metadata = {}
+
+    briefing_date = row.get("date")
+    if hasattr(briefing_date, "isoformat"):
+        briefing_date = briefing_date.isoformat()
+
+    return {
+        "date": briefing_date,
+        "content": row["content"],
+        "metadata": metadata,
+    }
+
+
+def parse_briefing_for_email(content: str, metadata: dict | None = None) -> dict:
+    """Extract headline, big-picture excerpt, and bullet highlights from briefing markdown."""
+    metadata = metadata or {}
+    title = ""
+    big_picture = ""
+    bullets: list[str] = []
+    in_big_picture = False
+
+    for raw_line in str(content or "").splitlines():
+        stripped = raw_line.strip()
+        if not stripped:
+            continue
+
+        if stripped.startswith("# ") and not title:
+            title = stripped[2:].strip().strip("*")
+            continue
+
+        if stripped.startswith("##"):
+            section_label = stripped.lstrip("#").strip().casefold()
+            normalized = (
+                section_label.replace("š", "s")
+                .replace("č", "c")
+                .replace("ć", "c")
+                .replace("ž", "z")
+            )
+            in_big_picture = any(marker in normalized for marker in _BIG_PICTURE_MARKERS)
+            continue
+
+        bullet_match = _BULLET_RE.match(stripped)
+        if bullet_match:
+            bullet_text = bullet_match.group(1).strip().replace("**", "")
+            if len(bullet_text) >= 12 and bullet_text not in bullets:
+                bullets.append(bullet_text)
+            continue
+
+        if in_big_picture and not big_picture:
+            big_picture = stripped.replace("**", "")
+            if len(big_picture) > 520:
+                big_picture = big_picture[:517].rstrip() + "..."
+
+    narratives = metadata.get("key_narratives") or []
+    if not bullets:
+        for item in narratives[:4]:
+            text = str((item or {}).get("text") or "").strip()
+            if len(text) >= 12:
+                bullets.append(text)
+
+    return {
+        "title": title,
+        "big_picture": big_picture,
+        "bullets": bullets[:4],
+        "narratives": narratives[:3],
+    }
+
+
+def _render_story_items(stories_by_cat: dict[str, list[dict]], locale: str, limit: int = 3) -> str:
+    conf = LOCALES.get(locale, LOCALES["sr"])
+    items = []
+    for articles in stories_by_cat.values():
+        for article in articles:
+            items.append(article)
+            if len(items) >= limit:
+                break
+        if len(items) >= limit:
+            break
+
+    if not items:
+        return ""
+
+    rows = ""
+    for article in items:
+        headline = article.get("synthetic_headline") or article.get("title") or ""
+        rows += f"""
+            <tr>
+              <td class="border-light" style="padding:16px 0;border-bottom:1px solid #e5e7eb">
+                <p class="sans" style="margin:0 0 6px;font-family:'Manrope',sans-serif;font-size:10px;font-weight:bold;color:#b91c1c;text-transform:uppercase;letter-spacing:0.1em">{_escape(article.get('source') or 'izvor')}</p>
+                <a href="{_escape(article.get('link') or conf['url'])}" class="text-title" style="font-family:'Noto Serif',Georgia,serif;font-size:17px;font-weight:900;color:#111827;text-decoration:none;line-height:1.25;display:block">
+                  {_escape(headline)}
+                </a>
+              </td>
+            </tr>"""
+
+    return f"""
+        <tr>
+          <td style="padding:36px 0 12px">
+            <p class="text-title sans" style="margin:0;font-family:'Manrope',sans-serif;font-size:12px;font-weight:900;letter-spacing:0.2em;text-transform:uppercase;color:#111827">{_escape(conf['also_today'])}</p>
+          </td>
+        </tr>
+        {rows}"""
+
+
+def render_morning_briefing_email(
+    briefing: dict,
+    period_start: datetime,
+    period_end: datetime,
+    locale: str = "sr",
+    stories_by_cat: dict[str, list[dict]] | None = None,
+) -> str:
+    """Render the daily editorial briefing as the primary morning email body."""
+    conf = LOCALES.get(locale, LOCALES["sr"])
+    parsed = parse_briefing_for_email(briefing.get("content") or "", briefing.get("metadata") or {})
+    stats = (briefing.get("metadata") or {}).get("stats") or {}
+    total_articles = stats.get("total_articles") or 0
+    pluralism_score = stats.get("pluralism_score") or 0
+
+    title = parsed["title"] or conf["briefing_edition"]
+    big_picture = parsed["big_picture"] or title
+    bullets = parsed["bullets"]
+
+    bullet_html = ""
+    for bullet in bullets:
+        bullet_html += f"""
+            <tr>
+              <td style="padding:0 0 12px">
+                <p class="text-body" style="margin:0;color:#4a4a4a;font-family:'Source Serif 4',Georgia,serif;font-size:15px;line-height:1.6">• {_escape(bullet)}</p>
+              </td>
+            </tr>"""
+
+    briefing_date = briefing.get("date") or period_end.date().isoformat()
+    briefing_url = f"{conf['url']}/briefing"
+    if briefing_date:
+        briefing_url = f"{briefing_url}?date={briefing_date}"
+    audio_url = f"{conf['url']}/briefing?date={briefing_date or ''}#audio"
+
+    pulse_bits = [conf["briefing_edition"]]
+    if total_articles:
+        pulse_bits.append(f"{total_articles} {conf['temi']}")
+    if pluralism_score:
+        pulse_bits.append(f"{pluralism_score}% {conf['pulse'].lower()}")
+
+    period_str = format_date(period_end, locale)
+    story_block = _render_story_items(stories_by_cat or {}, locale, limit=3)
+
+    html_body = f"""<!DOCTYPE html>
+<html lang="{conf['lang_code']}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{_escape(conf['masthead'])} — {_escape(conf['subject'])}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@800;900&family=Noto+Serif:ital,wght@0,900;1,900&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background-color:#f9fafb;-webkit-font-smoothing:antialiased">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f9fafb;padding:40px 20px">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#ffffff;border:1px solid #e5e7eb;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1)">
+        <tr>
+          <td style="padding:40px 40px 24px;text-align:center;border-bottom:4px double #111827">
+            <h1 style="margin:0;font-family:'Noto Serif',Georgia,serif;font-size:38px;font-weight:900;color:#111827;letter-spacing:-1.5px;text-transform:uppercase">{_escape(conf['masthead'])}</h1>
+            <p style="margin:10px 0 0;font-family:'Manrope',sans-serif;font-size:11px;font-weight:bold;letter-spacing:0.3em;text-transform:uppercase;color:#6b7280">{_escape(conf['tagline'])}</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background-color:#111827;padding:12px 40px;text-align:center">
+            <p style="margin:0;font-family:'Manrope',sans-serif;font-size:10px;font-weight:bold;color:#9ca3af;letter-spacing:0.1em;text-transform:uppercase">
+              <span style="color:#ffffff">{_escape(conf['pulse'])}:</span> &nbsp; {_escape(' · '.join(pulse_bits))}
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:24px 40px 0;text-align:center">
+            <p style="margin:0;font-family:'Manrope',sans-serif;font-size:12px;color:#6b7280;letter-spacing:0.05em">{_escape(period_str)}</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:28px 40px 0">
+            <p style="margin:0 0 10px;font-family:'Manrope',sans-serif;font-size:10px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:#b91c1c">{_escape(conf['briefing_edition'])}</p>
+            <h2 style="margin:0 0 18px;font-family:'Noto Serif',Georgia,serif;font-size:28px;line-height:1.2;font-weight:900;color:#111827">{_escape(title)}</h2>
+            <p style="margin:0 0 8px;font-family:'Manrope',sans-serif;font-size:10px;font-weight:900;letter-spacing:0.16em;text-transform:uppercase;color:#111827">{_escape(conf['big_picture'])}</p>
+            <p style="margin:0;color:#4a4a4a;font-family:'Source Serif 4',Georgia,serif;font-size:16px;line-height:1.65">{_escape(big_picture)}</p>
+          </td>
+        </tr>
+        {f'<tr><td style="padding:18px 40px 0"><table width="100%" cellpadding="0" cellspacing="0">{bullet_html}</table></td></tr>' if bullet_html else ''}
+        <tr>
+          <td style="padding:28px 40px 12px;text-align:center">
+            <a href="{_escape(briefing_url)}" style="display:inline-block;padding:14px 24px;background-color:#111827;color:#ffffff;font-family:'Manrope',sans-serif;font-size:12px;font-weight:bold;text-decoration:none;text-transform:uppercase;letter-spacing:0.15em;border-radius:2px;margin:0 8px 8px 0">{_escape(conf['open_briefing'])}</a>
+            <a href="{_escape(audio_url)}" style="display:inline-block;padding:14px 24px;background-color:#ffffff;color:#111827;border:1px solid #111827;font-family:'Manrope',sans-serif;font-size:12px;font-weight:bold;text-decoration:none;text-transform:uppercase;letter-spacing:0.15em;border-radius:2px;margin:0 8px 8px 0">{_escape(conf['listen_audio'])}</a>
+          </td>
+        </tr>
+        {f'<tr><td style="padding:0 40px 24px"><table width="100%" cellpadding="0" cellspacing="0">{story_block}</table></td></tr>' if story_block else ''}
+        <tr>
+          <td style="padding:30px 40px;text-align:center;background-color:#f3f4f6;border-top:1px solid #e5e7eb">
+            <p style="margin:0;font-family:'Manrope',sans-serif;font-size:10px;font-weight:bold;color:#9ca3af;letter-spacing:0.1em;text-transform:uppercase">{_escape(conf['footer_tagline'])}</p>
+            <p style="margin:8px 0 0;font-family:'Manrope',sans-serif;font-size:10px;color:#9ca3af;line-height:1.5">
+              {_escape(conf['footer_disclaimer'])}<br>
+              {_escape(conf['unsubscribe'])} <a href="{{{{UNSUBSCRIBE_URL}}}}" style="color:#6b7280;text-decoration:underline">{_escape(conf['here'])}</a>.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""
+    return html_body
 
 
 def fetch_top_stories(days: int = 7, per_category: int = 3, locale: str = "sr") -> dict[str, list[dict]]:
@@ -417,8 +675,20 @@ def send_newsletter_to_all_subscribers(days: int = 1) -> int:
     start = now - timedelta(days=days)
 
     for loc in LOCALES:
+        briefing = fetch_daily_briefing(locale=loc, days=days)
         stories = fetch_top_stories(days=days, locale=loc)
-        if stories:
+        if briefing:
+            digests[loc] = {
+                "html": render_morning_briefing_email(
+                    briefing,
+                    start,
+                    now,
+                    locale=loc,
+                    stories_by_cat=stories,
+                ),
+                "subject": f"{LOCALES[loc]['subject']} ({format_date(now, loc)})",
+            }
+        elif stories:
             digests[loc] = {
                 "html": render_html(stories, start, now, locale=loc),
                 "subject": f"{LOCALES[loc]['subject']} ({format_date(now, loc)})",

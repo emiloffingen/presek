@@ -672,8 +672,9 @@ class TestLocalBriefingFallback:
 
         result = generate_daily_brief_fallback(clusters)
 
-        assert "Zemjotres od 4,8 stepeni e pocuvstvuvan vo povece gradovi niz Srbija" in result.splitlines()[4]
-        assert "SDSM: Vo ocajna potraga po dobra vest" not in result.splitlines()[4]
+        intro_line = next(line for line in result.splitlines() if "Bugarija" in line or "Zemjotres" in line)
+        assert "Bugarija danas izleguva na parlamentarni izbori" in intro_line
+        assert "SDSM: Vo ocajna potraga po dobra vest" not in intro_line
 
     def test_generate_daily_brief_fallback_keeps_required_sections_without_editorial_points(
         self,
@@ -820,6 +821,74 @@ class TestLocalBriefingFallback:
 
         assert "Големата Слика" in result
         assert "Bugarija" in result or "izbori" in result
+
+    def test_generate_daily_brief_fallback_sr_intro_uses_titles_not_broken_sentences(self):
+        clusters = [
+            {
+                "title": "DS zahteva reakciju nadležnih: Nadgrobni spomenik Zoranu Đinđiću oštećen",
+                "source": "Blic",
+                "topic": "Politika",
+                "description": "Demokratska stranka zatražila je danas od organa da identifikuju vandale.",
+                "source_count": 2,
+            },
+            {
+                "title": "Masovna pucnjava u Teksasu, jedna osoba poginula",
+                "source": "Reuters",
+                "topic": "Svet",
+                "description": "Oko deset ljudi ranjeno je u pucnjavi u zapadnom Teksasu.",
+                "source_count": 3,
+            },
+        ]
+
+        result = generate_daily_brief_fallback(clusters, lang="sr")
+
+        assert "Dan je obeležio Demokratska stranka" not in result
+        assert "Današnji pregled vodi priča o" in result
+        assert "Urednički pregled baziran na 5 izvora." in result
+
+    def test_generate_daily_brief_fallback_sr_avoids_incomplete_key_aspect(self):
+        clusters = [
+            {
+                "title": "Dvoje srpskih državljana poginulo u saobraćajnim nesrećama u Crnoj Gori",
+                "source": "Beta",
+                "topic": "Region",
+                "description": "Motociklista iz Srbije M.J. poginuo je danas u saobraćajnoj nesreći na putu između Žabljaka i Šavnika.",
+                "source_count": 2,
+            }
+        ]
+
+        result = generate_daily_brief_fallback(clusters, lang="sr")
+        key_aspect_lines = [line for line in result.splitlines() if line.startswith("- Ključni aspekt:")]
+
+        assert key_aspect_lines
+        assert all("poginuo je danas" in line for line in key_aspect_lines)
+        assert "Događaj je u fazi razvoja" not in result
+
+    def test_generate_daily_brief_fallback_sr_watch_signals_are_not_all_identical(self):
+        clusters = [
+            {
+                "title": "Nemačka propustila rok EU – preti joj kazna",
+                "source": "DW",
+                "topic": "Evropa",
+                "description": "Nemačka nije uspela da unese direktivu o transparentnosti plata u rok.",
+                "source_count": 4,
+            },
+            {
+                "title": "Masovna pucnjava u Teksasu",
+                "source": "AP",
+                "topic": "Svet",
+                "description": "Policija istražuje okolnosti pucnjave.",
+                "source_count": 2,
+            },
+        ]
+
+        result = generate_daily_brief_fallback(clusters, lang="sr")
+        watch_section = result.split("## Šta pratiti", 1)[1].split("**Beleška**", 1)[0]
+        watch_lines = [line.strip() for line in watch_section.splitlines() if line.strip().startswith("- ")]
+
+        assert len(watch_lines) == 2
+        assert watch_lines[0] != watch_lines[1]
+        assert "Sledeći signal biće da li će zvanični akteri" not in watch_lines[0]
 
 
 # =============================================================================

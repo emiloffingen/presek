@@ -581,6 +581,20 @@
   gap: 0.95rem;
 }
 
+.morning-email-signup--settings {
+  padding-bottom: 1.25rem;
+  margin-bottom: 0.25rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.morning-email-signup--compact {
+  padding: 0;
+}
+
+.morning-email-signup__success {
+  text-align: center;
+}
+
 .delivery-panel-summary {
   gap: 0.8rem;
 }

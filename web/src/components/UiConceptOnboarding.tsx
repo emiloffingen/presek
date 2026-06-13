@@ -1,9 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { useTranslations } from '../i18n/utils';
 import { localePathForLang } from '../lib/localePaths';
 
 const STORAGE_KEY = 'ui-concepts-onboarding-dismissed';
+const FIRST_SESSION_KEY = 'homepage-visit-count';
 
 const STEPS = [
   { titleKey: 'onboarding_ui.step1_title', bodyKey: 'onboarding_ui.step1_body' },
@@ -17,10 +18,12 @@ export default function UiConceptOnboarding({ lang = 'sr' }: { lang?: string }) 
   const [step, setStep] = useState(0);
   const [leadHref, setLeadHref] = useState<string>('');
   const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (typeof localStorage === 'undefined') return;
     if (localStorage.getItem(STORAGE_KEY) === '1') return;
+    if (Number(localStorage.getItem(FIRST_SESSION_KEY) || '0') > 1) return;
     setLeadHref(document.querySelector<HTMLAnchorElement>('.lead-copy a[data-testid="cluster-link"]')?.href || '');
 
     const isMobile = window.matchMedia('(max-width: 768px)').matches;
@@ -32,12 +35,12 @@ export default function UiConceptOnboarding({ lang = 'sr' }: { lang?: string }) 
       setVisible(true);
     };
 
-    const scrollThreshold = isMobile ? 320 : 220;
+    const scrollThreshold = isMobile ? 180 : 120;
     const onScroll = () => {
       if (window.scrollY > scrollThreshold) show();
     };
 
-    const timer = window.setTimeout(show, isMobile ? 18000 : 8000);
+    const timer = window.setTimeout(show, isMobile ? 6000 : 4000);
     window.addEventListener('scroll', onScroll, { passive: true });
     if (window.scrollY > scrollThreshold) show();
 
@@ -56,23 +59,10 @@ export default function UiConceptOnboarding({ lang = 'sr' }: { lang?: string }) 
     return () => document.body.classList.remove('has-ui-onboarding');
   }, [visible]);
 
-  useEffect(() => {
-    if (!visible) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        dismiss();
-      }
-    };
-
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [visible, step]);
-
-  const dismiss = () => {
+  const dismiss = useCallback(() => {
     localStorage.setItem(STORAGE_KEY, '1');
     setVisible(false);
-  };
+  }, []);
 
   const openAnalysis = () => {
     localStorage.setItem(STORAGE_KEY, '1');
@@ -80,49 +70,109 @@ export default function UiConceptOnboarding({ lang = 'sr' }: { lang?: string }) 
     window.location.assign(localePathForLang('/pregled', lang as 'sr' | 'mk'));
   };
 
+  useEffect(() => {
+    if (!visible) return;
+
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    closeButtonRef.current?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        dismiss();
+        return;
+      }
+
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+
+      const focusables = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((node) => !node.hasAttribute('disabled') && node.offsetParent !== null);
+
+      if (focusables.length === 0) return;
+
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement;
+
+      if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      previouslyFocused?.focus?.();
+    };
+  }, [visible, step, dismiss]);
+
   if (!visible) return null;
 
   const current = STEPS[step];
   const isLast = step === STEPS.length - 1;
 
   return (
-    <div
-      ref={dialogRef}
-      className="ui-concept-onboarding"
-      role="note"
-      aria-labelledby="ui-concept-title"
-      aria-describedby="ui-concept-body"
-    >
-      <button type="button" className="ui-concept-close" onClick={dismiss} aria-label={t('nav.close')}>
-        <X size={16} />
-      </button>
-      <p className="ui-concept-kicker">{t('onboarding_ui.kicker')} · {step + 1}/{STEPS.length}</p>
-      <h2 id="ui-concept-title" className="ui-concept-title">{t(current.titleKey)}</h2>
-      <p id="ui-concept-body" className="ui-concept-body">{t(current.bodyKey)}</p>
-      <div className="ui-concept-actions">
-        {step > 0 && (
-          <button type="button" className="ui-concept-secondary" onClick={() => setStep((s) => s - 1)}>
-            {t('onboarding_ui.back')}
-          </button>
-        )}
+    <>
+      <button
+        type="button"
+        className="ui-concept-backdrop"
+        aria-label={t('nav.close')}
+        onClick={dismiss}
+      />
+      <div
+        ref={dialogRef}
+        className="ui-concept-onboarding"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ui-concept-title"
+        aria-describedby="ui-concept-body"
+      >
         <button
+          ref={closeButtonRef}
           type="button"
-          className="ui-concept-primary"
-          onClick={() => (isLast ? dismiss() : setStep((s) => s + 1))}
+          className="ui-concept-close"
+          onClick={dismiss}
+          aria-label={t('nav.close')}
         >
-          {isLast ? t('onboarding_ui.done') : t('onboarding_ui.next')}
+          <X size={16} />
         </button>
+        <p className="ui-concept-kicker" aria-live="polite">
+          {t('onboarding_ui.kicker')} · {step + 1}/{STEPS.length}
+        </p>
+        <h2 id="ui-concept-title" className="ui-concept-title">{t(current.titleKey)}</h2>
+        <p id="ui-concept-body" className="ui-concept-body">{t(current.bodyKey)}</p>
+        <div className="ui-concept-actions">
+          {step > 0 && (
+            <button type="button" className="ui-concept-secondary" onClick={() => setStep((s) => s - 1)}>
+              {t('onboarding_ui.back')}
+            </button>
+          )}
+          <button
+            type="button"
+            className="ui-concept-primary"
+            onClick={() => (isLast ? dismiss() : setStep((s) => s + 1))}
+          >
+            {isLast ? t('onboarding_ui.done') : t('onboarding_ui.next')}
+          </button>
+        </div>
+        <div className="ui-concept-shortcuts">
+          {leadHref && (
+            <a href={leadHref} className="ui-concept-link" onClick={dismiss}>
+              {lang === 'mk' ? 'Отвори главна приказна' : 'Otvori glavnu priču'}
+            </a>
+          )}
+          <button type="button" className="ui-concept-link" onClick={openAnalysis}>
+            {lang === 'mk' ? 'Види како се разликуваат извори' : 'Vidi kako se razlikuju izvori'}
+          </button>
+        </div>
       </div>
-      <div className="ui-concept-shortcuts">
-        {leadHref && (
-          <a href={leadHref} className="ui-concept-link" onClick={dismiss}>
-            {lang === 'mk' ? 'Отвори главна приказна' : 'Otvori glavnu priču'}
-          </a>
-        )}
-        <button type="button" className="ui-concept-link" onClick={openAnalysis}>
-          {lang === 'mk' ? 'Види како се разликуваат извори' : 'Vidi kako se razlikuju izvori'}
-        </button>
-      </div>
-    </div>
+    </>
   );
 }

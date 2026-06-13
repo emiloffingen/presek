@@ -1,0 +1,57 @@
+---
+import { Sparkles } from 'lucide-react';
+import { parseBriefItem, highlightFactText } from '../../lib/clusterBriefUtils';
+
+interface Props {
+  lang: 'sr' | 'mk';
+  displayHeaderBriefItems: string[];
+  keyFacts?: string[];
+  t: (key: string) => string;
+}
+
+const { lang, displayHeaderBriefItems, keyFacts = [], t } = Astro.props;
+---
+
+<div class="executive-summary mb-12 p-6 bg-secondary/5 border border-border/60 hover:border-nyt-accent/30 transition-all shadow-sm">
+  <div class="flex items-center gap-[var(--grid-gap)] mb-6 border-b border-border/20 pb-3">
+    <Sparkles size={16} className="text-nyt-accent" />
+    <span class="cluster-summary-kicker text-nyt-accent">{t('cluster.brief_overview')}</span>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    {displayHeaderBriefItems.length > 0 && (
+      <div>
+        <h4 class="cluster-summary-label text-muted-foreground mb-4">{t('cluster.key_points')}</h4>
+        <ul class="space-y-3">
+          {displayHeaderBriefItems.map((item) => {
+            const { hasBadge, badgeText, badgeClass, content } = parseBriefItem(item, lang);
+            return (
+              <li class="flex items-start gap-3 font-sans text-[13px] md:text-[14px] leading-relaxed text-foreground/85 not-italic">
+                {hasBadge ? (
+                  <span class={`cluster-brief-badge flex-shrink-0 px-2 py-0.5 rounded-sm mt-0.5 ${badgeClass}`}>
+                    {badgeText}
+                  </span>
+                ) : (
+                  <span class="flex-shrink-0 mt-2 w-1.5 h-1.5 rounded-full bg-nyt-accent/60"></span>
+                )}
+                <span class="flex-1">{content}</span>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    )}
+    {keyFacts.length > 0 && (
+      <div class="border-t md:border-t-0 md:border-l border-border/40 pt-6 md:pt-0 md:pl-8">
+        <h4 class="cluster-summary-label text-muted-foreground mb-4">{t('cluster.system_data')}</h4>
+        <ul class="space-y-3">
+          {keyFacts.map((fact: string) => (
+            <li class="font-sans text-[13px] md:text-[14px] font-medium leading-relaxed text-foreground/75 flex items-start gap-2">
+              <span class="text-nyt-accent text-lg mt-[-2px] flex-shrink-0">›</span>
+              <span class="flex-1" set:html={highlightFactText(fact)}></span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+  </div>
+</div>

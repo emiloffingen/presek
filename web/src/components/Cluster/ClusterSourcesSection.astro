@@ -1,0 +1,76 @@
+---
+import { Newspaper, ExternalLink } from 'lucide-react';
+import ArticleItem from './ArticleItem.astro';
+import type { Article } from '../../types';
+
+interface Props {
+  lang: 'sr' | 'mk';
+  sourceDocArticle: Article | null | undefined;
+  sourceDocText: string;
+  articleRows: any[];
+  t: (key: string) => string;
+}
+
+const { lang, sourceDocArticle, sourceDocText, articleRows, t } = Astro.props;
+---
+
+<section class="editorial-section sources-section mb-24 border-t border-border/40 pt-12" id="cluster-sources">
+  <div class="section-eyebrow mb-16">
+    <Newspaper size={18} className="text-muted-foreground" />
+    <h2 class="section-label">{t('cluster.source_docs')}</h2>
+    <span class="section-sub-label">
+      {lang === 'sr' ? 'Hronološki pregled medijskih izveštaja' : 'Хронолошки преглед на медиумските извештаи'}
+    </span>
+    <div class="section-divider"></div>
+  </div>
+
+  {sourceDocArticle && sourceDocText && (
+    <div class="mb-10 source-doc-wrapper" id="cluster-source-document">
+      <details class="group source-details">
+        <summary class="flex items-center justify-between p-6 md:p-8 cursor-pointer hover:bg-secondary/10 transition-colors list-none">
+          <div class="flex items-center gap-[var(--grid-gap)]">
+            <div class="w-2 h-8 bg-nyt-accent"></div>
+            <h4 class="ui-kicker text-foreground">
+              {lang === 'sr' ? 'Pun izvorni zapis' : 'Целосен изворен запис'} ({sourceDocArticle.source})
+            </h4>
+          </div>
+          <div class="text-muted-foreground group-open:rotate-180 transition-transform duration-300">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </summary>
+        <div class="px-6 md:px-8 pb-8">
+          <div class="prose-editorial max-w-none pt-6 border-t border-border/20 max-h-[400px] overflow-y-auto custom-editorial-scrollbar">
+            <div class="font-nyt-body text-lg md:text-xl text-foreground/80 leading-[1.8] whitespace-pre-wrap">
+              {sourceDocText}
+            </div>
+          </div>
+          <div class="mt-8 flex justify-end">
+            <a
+              href={sourceDocArticle.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="ui-kicker ui-kicker--accent hover:underline flex items-center gap-[var(--grid-gap)] bg-background px-6 py-3 rounded-full border border-nyt-accent/20 shadow-sm transition-all hover:shadow-md"
+            >
+              {lang === 'sr' ? 'Pročitaj ceo zapis na' : 'Прочитај го целиот запис на'} {sourceDocArticle.source}
+              <ExternalLink size={14} />
+            </a>
+          </div>
+        </div>
+      </details>
+    </div>
+  )}
+
+  {articleRows.length > 1 && (
+    <div class="source-timeline-jumps">
+      <a href="#source-row-0" class="source-timeline-jump">{t('cluster.first_source')}</a>
+      <a href={`#source-row-${articleRows.length - 1}`} class="source-timeline-jump">{t('cluster.last_source')}</a>
+    </div>
+  )}
+
+  <div class="editorial-article-list editorial-timeline">
+    <div class="timeline-v-line"></div>
+    {articleRows.map((a: any, index: number) => (
+      <ArticleItem article={a} rowId={`source-row-${index}`} />
+    ))}
+  </div>
+</section>

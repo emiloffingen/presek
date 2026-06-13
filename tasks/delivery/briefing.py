@@ -363,6 +363,20 @@ def _is_grounded_daily_brief(brief: str, context: str) -> bool:
     }
 
     role_prefixes = {"od", "vo", "na", "so", "za", "niz", "u", "iz", "premierot", "ministarot", "pretsedatelot"}
+    section_prefixes = {
+        "velika slika",
+        "globalne i lokalne ose",
+        "medijski radar",
+        "sta pratiti",
+        "dnevni brifing",
+        "golemata slika",
+        "globalni i lokalni oski",
+        "mediumski radar",
+        "sto da se sledi",
+        "dneven briefing",
+        "kljucni aspekt",
+        "zasto je vazno",
+    }
 
     for phrase in _extract_capitalized_phrases(brief):
         clean = str(phrase or "").strip().replace("\n", " ")
@@ -380,6 +394,8 @@ def _is_grounded_daily_brief(brief: str, context: str) -> bool:
             continue
 
         folded = transliterate(clean).casefold()
+        if any(folded == prefix or folded.startswith(f"{prefix} ") for prefix in section_prefixes):
+            continue
         if folded in context_entities or folded in source_latin:
             continue
 
@@ -835,7 +851,12 @@ def _select_breaking_cluster_for_profile(
 
 
 @celery_app.task
-def generate_daily_brief_task(retry_attempt=0, lang="sr", briefing_date=None):
+def generate_daily_brief_task(
+    retry_attempt=0,
+    lang="sr",
+    briefing_date=None,
+    provider_override=None,
+):
     target_date = _resolve_briefing_date(briefing_date)
     now = datetime.datetime.now()
     lock_key = f"lock:daily_brief:{lang}:{target_date.isoformat()}"
@@ -911,7 +932,22 @@ def generate_daily_brief_task(retry_attempt=0, lang="sr", briefing_date=None):
 
         full_context = f"<briefing_context>\n{content_context}\n{system_insight}\n{history_context}\n</briefing_context>"
         prompt = DAILY_BRIEF_SYSTEM_PROMPT if lang == "sr" else DAILY_BRIEF_SYSTEM_PROMPT_MK
-        brief, _ = _call_ai(full_context, prompt, task_type="daily_brief", max_tokens=4000)
+        provider_exclusions = None
+        if provider_override:
+            provider_exclusions = [
+                candidate
+                for candidate in ("mistral_small", "mistral_large", "nvidia", "local")
+                if candidate != provider_override
+            ]
+        brief, brief_provider = _call_ai(
+            full_context,
+            prompt,
+            task_type="daily_brief",
+            max_tokens=4000,
+            lang=lang,
+            provider_override=provider_override,
+            exclude_providers=provider_exclusions,
+        )
         if brief and (
             not _has_valid_daily_brief_structure(brief, lang=lang)
             or not _is_grounded_daily_brief(brief, full_context)
@@ -919,6 +955,7 @@ def generate_daily_brief_task(retry_attempt=0, lang="sr", briefing_date=None):
         ):
             log.warning(f"[tasks] Daily brief ({lang}) rejected; using local fallback.")
             brief = ""
+            brief_provider = None
         final_brief = brief or generate_daily_brief_fallback(clusters, lang=lang)
         if final_brief:
             if brief and not final_brief.startswith("#"):
@@ -926,7 +963,7 @@ def generate_daily_brief_task(retry_attempt=0, lang="sr", briefing_date=None):
 
             # Phase 1: Extract structured metadata for Intelligence Report 2.0
             metadata = {
-                "model": "Mistral / NVIDIA / Gemma 4 E2B",
+                "model": brief_provider or "local_fallback",
                 "stats": {"total_articles": total_24h, "intl_share": intl_pct, "pluralism_score": diverse_pct},
                 "key_narratives": [],
             }
@@ -950,7 +987,13 @@ def generate_daily_brief_task(retry_attempt=0, lang="sr", briefing_date=None):
                 )
 
                 nar_raw, _ = _call_ai(
-                    f"<briefing>\n{final_brief}\n</briefing>", narrative_prompt, task_type="extraction", max_tokens=1000
+                    f"<briefing>\n{final_brief}\n</briefing>",
+                    narrative_prompt,
+                    task_type="extraction",
+                    max_tokens=1000,
+                    lang=lang,
+                    provider_override=provider_override,
+                    exclude_providers=provider_exclusions,
                 )
 
                 if nar_raw:

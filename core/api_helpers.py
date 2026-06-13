@@ -194,10 +194,13 @@ def normalize_summary_text(raw_summary) -> str:
     if not raw_summary:
         return ""
 
-    if isinstance(raw_summary, list):
-        return "\n".join(f"• {_clean_text_block(line)}" for line in raw_summary if _clean_text_block(line))
+    from nlp.utils import extract_clean_summary_text
 
-    text = str(raw_summary).replace("\r", "\n")
+    if isinstance(raw_summary, list):
+        cleaned_lines = [extract_clean_summary_text(line) for line in raw_summary]
+        return "\n".join(f"• {_clean_text_block(line)}" for line in cleaned_lines if _clean_text_block(line))
+
+    text = extract_clean_summary_text(str(raw_summary).replace("\r", "\n"))
     lines = []
     seen = set()
 

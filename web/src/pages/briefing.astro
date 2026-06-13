@@ -9,6 +9,7 @@ import BriefingDigest from '../components/briefing/BriefingDigest.astro';
 import BriefingDateNav from '../components/briefing/BriefingDateNav.astro';
 import BriefingQuickRead from '../components/briefing/BriefingQuickRead';
 import BriefingDeliveryIsland from '../components/BriefingDeliveryIsland.tsx';
+import MorningEmailSignup from '../components/MorningEmailSignup.tsx';
 import NarrativeList from '../components/briefing/NarrativeList';
 import AudioPlayer from '../components/audio/AudioPlayer.astro';
 import '../styles/briefing-premium.css';
@@ -130,6 +131,10 @@ const displayDate = briefingData?.date
                         <div class="briefing-editorial-wrapper max-w-[800px] mx-auto">
                             <BriefingContent formattedBriefing={formattedBriefing} lang={lang} />
                         </div>
+
+                        <section class="briefing-email-cta mt-16 pt-10 border-t border-border/60 max-w-[800px] mx-auto">
+                            <MorningEmailSignup lang={lang} variant="compact" client:visible />
+                        </section>
                         </div>
 
 

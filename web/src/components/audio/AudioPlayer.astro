@@ -41,6 +41,7 @@ const labels = {
 
 <div
     class:list={['presek-audio-player', { 'is-compact': compact }]}
+    id={type === 'briefing' ? 'audio' : undefined}
     data-type={type}
     data-cluster-id={clusterId}
     data-briefing-date={briefingDate}

@@ -217,6 +217,21 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl && !leadV
             </div>
         )}
 
+        {compact && (
+            <div class="lead-entry-actions">
+                <a
+                    href={l(`/cluster/${leadCluster.cluster_id}`)}
+                    class="lead-entry-primary"
+                    data-testid="cluster-link"
+                >
+                    {t('lead.read_synthesis')}
+                </a>
+                <button type="button" class="lead-entry-secondary" data-scroll-home-feed>
+                    {t('lead.browse_feed')}
+                </button>
+            </div>
+        )}
+
         {!compact && leadCluster.key_facts && leadCluster.key_facts.length > 0 && (
             <div class="editorial-insight-panel" aria-label={t('lead.system_insight')}>
                 <div class="insight-header">
@@ -308,3 +323,22 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl && !leadV
     </a>
     )}
 </section>
+
+{compact && (
+    <script is:inline>
+        (function bindLeadFeedScroll() {
+            const bind = () => {
+                document.querySelectorAll('[data-scroll-home-feed]').forEach((button) => {
+                    if (button.dataset.bound) return;
+                    button.dataset.bound = '1';
+                    button.addEventListener('click', () => {
+                        const feed = document.getElementById('home-unified-feed') || document.querySelector('[data-testid="news-feed"] .home-mobile-order-feed');
+                        feed?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    });
+                });
+            };
+            bind();
+            document.addEventListener('astro:page-load', bind);
+        })();
+    </script>
+)}

@@ -21,7 +21,6 @@ import { buildUnifiedFeedItems } from '../../lib/unifiedFeed';
 import FilterHeader from './FilterHeader.astro';
 import HomeRail from './HomeRail.astro';
 import EmptyState from './EmptyState.astro';
-import PipelineStatusNotice from '../PipelineStatusNotice.astro';
 import HomeLiveStrip from './HomeLiveStrip.astro';
 import HomeBriefingTeaser from './HomeBriefingTeaser.astro';
 import TrendingPreviewRail from './TrendingPreviewRail.astro';
@@ -41,6 +40,8 @@ import {
 	filterSynthesisPicks,
 	selectVisibleAnalysisBands,
 } from '../../lib/homepageLayout';
+import { buildLeadSignals, buildLeadStatus, getFirstArticle } from '../../lib/homepageLeadSignals';
+import { getClockTimeStr } from '../../lib/newsTimeFormat';
 
 interface Props {
     variant?: 'feed' | 'pregled';
@@ -358,23 +359,15 @@ const analysisBands = isHomepage
     };
 
 function getTimeStr(dateStr: string) {
-    try {
-        const date = new Date(dateStr);
-        const now = new Date();
-        const diffMs = now.getTime() - date.getTime();
-        const diffMins = Math.floor(diffMs / (1000 * 60));
-
-        if (diffMins < 1) return t('news.just_now');
-        if (diffMins < 60) return `${t('news.ago')} ${diffMins} ${t('news.min_short')}`;
-
-        return date.toLocaleTimeString(lang === 'sr' ? 'sr-RS' : 'mk-MK', {
-            hour: '2-digit',
-            minute: '2-digit',
-            timeZone: 'Europe/Belgrade'
-        });
-    } catch {
-        return '';
-    }
+    return getClockTimeStr(dateStr, lang as 'sr' | 'mk', {
+        just_now: t('news.just_now'),
+        ago: t('news.ago'),
+        min_short: t('news.min_short'),
+        hour: t('news.hour'),
+        hours: t('news.hours'),
+        day: t('news.day'),
+        days: t('news.days'),
+    });
 }
 
 function getBriefingSnippet(content: string) {
@@ -387,55 +380,13 @@ function getBriefingSnippet(content: string) {
     return '';
 }
 
-function getFirstArticle(cluster: NewsCluster | null) {
-    if (!cluster?.articles?.length) return null;
-    return [...cluster.articles].sort((left, right) => {
-        const leftTime = new Date(left.ingested_at || left.created_at).getTime();
-        const rightTime = new Date(right.ingested_at || right.created_at).getTime();
-        return leftTime - rightTime;
-    })[0];
-}
-
-const leadUniqueSources = leadCluster ? Number((leadCluster as any).sources_count || (leadCluster as any).source_count || new Set(leadCluster.articles.map((article) => article.source).filter(Boolean)).size) : 0;
 const leadFirstArticle = getFirstArticle(leadCluster);
 const leadLatestArticle = leadCluster?.articles?.[0] || null;
-const leadSignals = Array.from(new Set([
-    ...(leadCluster?.analyst_entities || []),
-    ...(leadCluster?.tags || []),
-    ...(leadCluster?.topics || []),
-    leadLatestArticle?.topic,
-    leadLatestArticle?.category,
-].filter(Boolean))).slice(0, 3);
-
-const leadStatus = (() => {
-    if (!leadCluster) return null;
-    if (leadCluster.is_breaking) {
-        return {
-            label: lang === 'sr' ? 'UŽIVO SE RAZVIJA' : 'СЕ РАЗВИВА ВО ЖИВО',
-            note: lang === 'sr' ? 'Priča ima najjači trenutni signal u redakcijskom poretku.' : 'Приказната има најсилен тековен сигнал во уредничкиот редослед.',
-            tone: 'live',
-        };
-    }
-    if (leadUniqueSources <= 1) {
-        return {
-            label: lang === 'sr' ? 'RANI SIGNAL' : 'РАН СИГНАЛ',
-            note: lang === 'sr' ? 'Trenutno dolazi iz jedne redakcije; pratimo da li se širi.' : 'Моментално доаѓа од една редакција; следиме дали ќе се прошири.',
-            tone: 'early',
-        };
-    }
-    if (leadUniqueSources >= 5) {
-        return {
-            label: lang === 'sr' ? 'ŠIROK KONSENZUS' : 'ШИРОК КОНСЕНЗУС',
-            note: lang === 'sr' ? 'Više redakcija prati istu priču, što je čini glavnim signalom dana.' : 'Повеќе редакции ја следат истата приказна, што ја прави главен сигнал на денот.',
-            tone: 'consensus',
-        };
-    }
-    return {
-        label: lang === 'sr' ? 'POTVRĐENO IZ VIŠE IZVORA' : 'ПОТВРДЕНО ОД ПОВЕЌЕ ИЗВОРИ',
-        note: lang === 'sr' ? 'Klaster je povezan zajedničkom temom, akterima i vremenom objave.' : 'Кластерот е поврзан со заедничка тема, актери и време на објава.',
-        tone: 'confirmed',
-    };
-})();
+const leadSignals = buildLeadSignals(leadCluster);
+const leadStatus = buildLeadStatus(leadCluster, lang as 'sr' | 'mk');
+const leadUniqueSources = leadCluster
+    ? Number((leadCluster as any).sources_count || (leadCluster as any).source_count || new Set(leadCluster.articles.map((article) => article.source).filter(Boolean)).size)
+    : 0;
 
 const leadEvidenceItems = leadCluster ? [
     {
@@ -578,6 +529,7 @@ if (forYouClusters.length > 0) {
 			isPregled ? 'home-page-variant-pregled' : 'home-page-variant-feed',
 		]}
 		data-testid="news-feed"
+		data-home-session-root
 	>
 
 		{/* Filtering Status */}
@@ -620,7 +572,18 @@ if (forYouClusters.length > 0) {
                 )}
 
                 {isHomepage && (
-                    <PipelineStatusNotice lang={lang as 'sr' | 'mk'} pipeline={pipeline} />
+                    <script is:inline>
+                        (function initHomepageSession() {
+                            const root = document.querySelector('[data-home-session-root]');
+                            if (!root) return;
+                            const visitKey = 'homepage-visit-count';
+                            const expandedKey = 'homepage-analysis-expanded';
+                            const visits = Number(localStorage.getItem(visitKey) || '0');
+                            if (visits < 1) root.classList.add('home-first-session');
+                            if (localStorage.getItem(expandedKey) === '1') root.classList.add('home-analysis-expanded');
+                            localStorage.setItem(visitKey, String(visits + 1));
+                        })();
+                    </script>
                 )}
 
                 {showEmptyState && (
@@ -659,13 +622,15 @@ if (forYouClusters.length > 0) {
 				)}
 
                 {!error && isHomepage && !isPregled && (
-                    <div class="section-wrapper home-mobile-order-pregled-teaser home-feed-only">
+                    <div class="section-wrapper home-mobile-order-pregled-teaser home-feed-only home-edition-collapsed">
                         <HomePregledTeaser lang={lang} pluralismPct={pluralismPct} stats={stats} />
                     </div>
                 )}
 
                 {!error && isHomepage && analizaNavItems.length > 0 && (
-                    <AnalizaSectionNav items={analizaNavItems} lang={lang} />
+                    <div class="homepage-analiza-only">
+                        <AnalizaSectionNav items={analizaNavItems} lang={lang} />
+                    </div>
                 )}
 
 				{!error && isHomepage && briefing && (
@@ -681,7 +646,7 @@ if (forYouClusters.length > 0) {
                 )}
 
 				{leadCluster && supportingClusters.length > 0 && !isPregled && (
-					<div class="section-wrapper home-mobile-order-supporting home-feed-only">
+					<div class="section-wrapper home-mobile-order-supporting home-feed-only home-edition-collapsed">
 						<SupportingBand
 							supportingFeatured={supportingFeatured}
 							supportingCompact={supportingCompact}
@@ -691,19 +656,19 @@ if (forYouClusters.length > 0) {
 				)}
 
                 {!error && isHomepage && !isPregled && leadCluster && (
-                    <div class="section-wrapper home-inline-ad-slot home-inline-ad-slot--above-fold home-feed-only">
+                    <div class="section-wrapper home-inline-ad-slot home-inline-ad-slot--above-fold home-feed-only home-edition-collapsed">
                         <TinyAdzInlinedAd class="home-inline-ad home-inline-ad--above-fold" />
                     </div>
                 )}
 
                 {!error && isHomepage && !isPregled && (
-                    <div class="section-wrapper home-inline-ad-slot home-inline-ad-slot--rail-feed home-feed-only">
+                    <div class="section-wrapper home-inline-ad-slot home-inline-ad-slot--rail-feed home-feed-only home-edition-collapsed">
                         <TinyAdzRailAd class="home-feed-rail-ad" />
                     </div>
                 )}
 
                 {!error && isHomepage && !isPregled && feedSynthesisTeaser && (
-                    <div class="section-wrapper home-mobile-order-synthesis-teaser home-feed-only">
+                    <div class="section-wrapper home-mobile-order-synthesis-teaser home-feed-only home-edition-collapsed">
                         <HomeSynthesisTeaser
                             cluster={feedSynthesisTeaser}
                             lang={lang}
@@ -830,7 +795,7 @@ if (forYouClusters.length > 0) {
 
 				</div>
 
-                <div class="home-mobile-order-feed home-feed-only">
+                <div id="home-unified-feed" class="home-mobile-order-feed home-feed-only">
                 {forYouClusters.length > 0 && (
 					<div class="section-wrapper for-you-wrapper homepage-analiza-only" data-for-you-band>
                         <p class="for-you-boundary-label">{t('home.for_you_boundary')}</p>
@@ -882,6 +847,17 @@ if (forYouClusters.length > 0) {
                 )}
 
                 </div>
+
+                {!error && isHomepage && !isPregled && (
+                    <div class="section-wrapper home-expand-analysis home-edition-expand-panel">
+                        <button type="button" class="home-expand-analysis-btn" data-expand-home-analysis>
+                            {t('home.mode_open_analiza')}
+                        </button>
+                        <p class="home-expand-analysis-copy">
+                            {t('home.mode_analiza_hint')}
+                        </p>
+                    </div>
+                )}
 			</div>
 			{/* HomeRail rendered horizontally at the bottom of the main feed */}
 			<div class="w-full mt-16 pt-12 homepage-analiza-only">
@@ -973,5 +949,24 @@ if (forYouClusters.length > 0) {
 		window.addEventListener('resize', apply, { passive: true });
 		document.addEventListener('astro:page-load', bind);
 
+	})();
+
+	(function homeExpandAnalysis() {
+		const bind = () => {
+			const root = document.querySelector('[data-home-session-root]');
+			const button = document.querySelector('[data-expand-home-analysis]');
+			if (!root || !button || button.dataset.bound) return;
+			button.dataset.bound = '1';
+			button.addEventListener('click', () => {
+				root.classList.add('home-analysis-expanded');
+				root.classList.remove('home-first-session');
+				localStorage.setItem('homepage-analysis-expanded', '1');
+				const expandPanel = button.closest('.home-expand-analysis');
+				if (expandPanel) expandPanel.remove();
+				document.querySelector('.homepage-analiza-only')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			});
+		};
+		bind();
+		document.addEventListener('astro:page-load', bind);
 	})();
 </script>

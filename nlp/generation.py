@@ -121,6 +121,94 @@ from nlp.keywords import (
 from nlp.text_processing import _is_noisy_summary_sentence, _normalize_summary_sentence, _jaccard_similarity
 
 
+def _split_briefing_sentences(text):
+    protected = re.sub(
+        r"\b([A-Z\u0400-\u04FF]\.(?:[A-Z\u0400-\u04FF]\.)+)",
+        lambda match: match.group(1).replace(".", "<<DOT>>"),
+        str(text or ""),
+    )
+    sentences = re.split(r"(?<=[.!?])\s+", protected)
+    return [sentence.replace("<<DOT>>", ".").strip() for sentence in sentences if sentence.strip()]
+
+
+def _is_incomplete_briefing_fragment(text):
+    clean = str(text or "").strip().rstrip(".")
+    if not clean or len(clean) < 20:
+        return True
+    if clean.endswith("…"):
+        return True
+    if re.search(r"\b[A-Za-z\u0400-\u04FF]\.[A-Za-z\u0400-\u04FF]\.?$", clean):
+        return True
+    if re.search(r"\b[A-Za-z\u0400-\u04FF]{1,2}\.$", clean):
+        return True
+    if re.search(r"(,| i | a | da | koji | koja | koe | koi | и | а | што )$", clean, re.IGNORECASE):
+        return True
+    return False
+
+
+def _briefing_story_label(cluster, lang="mk"):
+    title = _clean_briefing_snippet(cluster.get("title"))
+    if title:
+        return title
+    return _condense_briefing_update(_extract_briefing_update(cluster, lang=lang), max_chars=120)
+
+
+def _build_briefing_intro_line(clusters, lang="mk"):
+    t = _T.get(lang, _T["mk"])
+    if not clusters:
+        return ""
+
+    if len(clusters) >= 2:
+        lead_label = _briefing_story_label(clusters[0], lang=lang)
+        second_label = _briefing_story_label(clusters[1], lang=lang)
+        if lead_label and second_label:
+            if lang == "sr":
+                return (
+                    f"Današnji pregled vodi priča o {lead_label}, "
+                    f"uz paralelno praćenje teme {second_label}."
+                )
+            return (
+                f"Денешниот преглед ја води приказната за {lead_label}, "
+                f"со паралелно следење на {second_label}."
+            )
+
+    lead_update = _condense_briefing_update(_extract_briefing_update(clusters[0], lang=lang), max_chars=220)
+    if _is_incomplete_briefing_fragment(lead_update):
+        lead_update = _briefing_story_label(clusters[0], lang=lang)
+    if lead_update:
+        return t["denesniot_pregled"].format(text=lead_update)
+    return ""
+
+
+def _briefing_coverage_source_count(clusters):
+    return sum(int(cluster.get("source_count") or 1) for cluster in clusters)
+
+
+def _extract_briefing_watch_signal(cluster, lang="mk"):
+    t = _T.get(lang, _T["mk"])
+    open_point = _normalize_briefing_line(cluster.get("open_point"))
+    if open_point:
+        return open_point
+
+    diff = _normalize_briefing_line(cluster.get("difference_point"))
+    if diff:
+        return diff
+
+    source_count = int(cluster.get("source_count") or 1)
+    if source_count >= 2:
+        if lang == "sr":
+            return (
+                f"Pratiti da li će se narativa dodatno potvrditi kroz nove izvore "
+                f"(trenutno {source_count} redakcije)."
+            )
+        return (
+            f"Следете дали наративот ќе се дополнително потврди преку нови извори "
+            f"(моментално {source_count} редакции)."
+        )
+
+    return t["naredno_pratenje"]
+
+
 def _clean_briefing_snippet(text):
     clean = str(text or "").strip()
     if not clean:
@@ -186,7 +274,9 @@ def _extract_briefing_update(cluster, lang="mk"):
         return clean_title  # Fallback if no description
 
     title_terms = set(_extract_terms(clean_title))
-    description_sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", clean_description) if len(s.strip()) > 20]
+    description_sentences = [
+        s.strip() for s in _split_briefing_sentences(clean_description) if len(s.strip()) > 20
+    ]
 
     for sentence in description_sentences:
         sent_terms = set(_extract_terms(sentence))
@@ -206,7 +296,14 @@ def _extract_briefing_update(cluster, lang="mk"):
     if summary.casefold() == clean_title.casefold() and clean_description:
         return clean_description[:140]
 
-    return summary or clean_description or clean_title
+    result = summary or clean_description or clean_title
+    if _is_incomplete_briefing_fragment(result):
+        for sentence in description_sentences:
+            if len(sentence) >= 35 and not _is_incomplete_briefing_fragment(sentence):
+                return sentence
+        if clean_description and len(clean_description) >= 35:
+            return clean_description[:180].rstrip(" ,;:")
+    return result
 
 
 def _extract_briefing_importance(cluster, lang="mk"):
@@ -260,8 +357,14 @@ def _extract_briefing_importance(cluster, lang="mk"):
 
     # 2. Coverage-based fallback
     source_count = cluster.get("source_count") or 1
-    if source_count >= 3:
+    if source_count >= 2:
         return t["potvrden_razvoj"].format(count=source_count)
+
+    for line in description_lines:
+        if len(line) >= 35 and not _is_incomplete_briefing_fragment(line):
+            line_terms = set(_extract_terms(line))
+            if line_terms and len(title_terms & line_terms) / len(line_terms) < 0.75:
+                return _condense_briefing_update(line, max_chars=160)
 
     return t["faza_razvoj"]
 
@@ -270,17 +373,36 @@ def _condense_briefing_update(text, *, max_chars=180):
     clean = _normalize_briefing_line(text)
     if not clean:
         return ""
-    # Split by sentence but keep punctuation
-    sentences = re.split(r"(?<=[.!?])\s+", clean)
+    sentences = _split_briefing_sentences(clean)
     candidate = sentences[0].strip()
+
+    if _is_incomplete_briefing_fragment(candidate) and len(sentences) > 1:
+        candidate = f"{candidate} {sentences[1].strip()}"
 
     if len(candidate) < 30 and len(sentences) > 1:
         candidate = f"{candidate} {sentences[1].strip()}"
 
     candidate = candidate.rstrip(" .,;:")
-    if len(candidate) <= max_chars:
+    if len(candidate) <= max_chars and not _is_incomplete_briefing_fragment(candidate):
         return candidate
-    return candidate[: max_chars - 1].rstrip(" ,;:") + "…"
+
+    if len(candidate) > max_chars:
+        truncated = candidate[: max_chars - 1].rstrip(" ,;:")
+        if " " in truncated:
+            truncated = truncated.rsplit(" ", 1)[0]
+        if len(truncated) >= 40 and not _is_incomplete_briefing_fragment(truncated):
+            return truncated + "…"
+        first_sentence = sentences[0].strip().rstrip(" .,;:")
+        if first_sentence and len(first_sentence) <= max_chars + 40:
+            return first_sentence
+
+    if _is_incomplete_briefing_fragment(candidate):
+        for sentence in sentences[1:]:
+            sentence = sentence.strip().rstrip(" .,;:")
+            if len(sentence) >= 35 and not _is_incomplete_briefing_fragment(sentence):
+                return sentence[:max_chars].rstrip(" ,;:")
+
+    return candidate
 
 
 def _extract_briefing_focus_point(cluster, lang="mk"):
@@ -1234,20 +1356,12 @@ def generate_daily_brief_fallback(clusters, lang="mk"):
     display_clusters = _dedupe_briefing_clusters(display_clusters, limit=4, lang=lang)
     lines = [f"# {t['dneven_brifing']}", "", f"## {t['golemata_slika']}", ""]
 
-    if len(display_clusters) >= 1:
-        lead_update = _condense_briefing_update(_extract_briefing_update(display_clusters[0], lang=lang), max_chars=150)
-        intro_line = t["denesniot_pregled"].format(text=lead_update)
-
-        if len(display_clusters) >= 2:
-            sec_update = _condense_briefing_update(
-                _extract_briefing_update(display_clusters[1], lang=lang), max_chars=150
-            )
-            intro_line = t["denot_obeleza"].format(text1=lead_update, text2=sec_update)
-
+    intro_line = _build_briefing_intro_line(display_clusters, lang=lang)
+    if intro_line:
         lines.append(intro_line)
-        lead_sources = int(display_clusters[0].get("source_count") or 1)
-        if lead_sources >= 2:
-            lines.append(t["urednicki_pregled"].format(count=lead_sources))
+        coverage_sources = _briefing_coverage_source_count(display_clusters)
+        if coverage_sources >= 2:
+            lines.append(t["urednicki_pregled"].format(count=coverage_sources))
         lines.append("")
 
     lines.append(f"## {t['globalni_lokalni_oski']}")
@@ -1265,10 +1379,10 @@ def generate_daily_brief_fallback(clusters, lang="mk"):
             title_line = f"{title_line} [[{cluster_id}]]"
         lines.append(f"### {index}. {title_line}")
 
-        if summary and summary.casefold() != (clean_title or title).casefold():
-            lines.append(f"- {t['klucen_aspekt']}: {summary}.")
+        if summary and summary.casefold() != (clean_title or title).casefold() and not _is_incomplete_briefing_fragment(summary):
+            lines.append(f"- {t['klucen_aspekt']}: {summary.rstrip('.')}.")
 
-        lines.append(f"- {t['zosto_vazno']}: {importance}.")
+        lines.append(f"- {t['zosto_vazno']}: {importance.rstrip('.')}.")
         lines.append("")
 
     lines.append(f"## {t['mediumski_radar']}")
@@ -1289,8 +1403,7 @@ def generate_daily_brief_fallback(clusters, lang="mk"):
     lines.append(f"## {t['sto_da_se_sledi']}")
     lines.append("")
     for cluster in display_clusters[:4]:
-        open_point = _normalize_briefing_line(cluster.get("open_point"))
-        signal = open_point or t["naredno_pratenje"]
+        signal = _extract_briefing_watch_signal(cluster, lang=lang)
         short_t = _condense_briefing_update(cluster.get("title"), max_chars=82)
         lines.append(f"- {short_t}: {signal}")
     lines.append("")

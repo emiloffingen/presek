@@ -1,0 +1,150 @@
+---
+import ShareIsland from '../ShareIsland.tsx';
+import ClusterStandfirst from './ClusterStandfirst.astro';
+import ClusterReadingNav from './ClusterReadingNav.astro';
+import ReadingModeToggle from './ReadingModeToggle.tsx';
+import StoryFreshnessBadge from '../StoryFreshnessBadge.astro';
+import { getEditionStr } from '../../utils/textUtils';
+
+interface EvidenceItem {
+  label: string;
+  value: string;
+  detail?: string;
+}
+
+interface ClusterStatus {
+  label: string;
+  description: string;
+  tone: string;
+}
+
+interface Props {
+  lang: 'sr' | 'mk';
+  cluster: any;
+  displayHeadline: string;
+  headlineIsCyrillic: boolean;
+  clusterStatus: ClusterStatus;
+  uniqueSourcesCount: number;
+  newsroomCountLabel: (count: number) => string;
+  newsroomOverviewLabel: (count: number) => string;
+  evidenceItems: EvidenceItem[];
+  synthesisUpdatedAt?: string | null;
+  synthesisFreshness: any;
+  latestArticle: any;
+  isSynthesisRefreshStale: boolean;
+  isMissingSynthesis: boolean;
+  pipelineBusy: boolean;
+  primaryNarrativeLabel: string;
+  showKeyFactsBand: boolean;
+  showCredibilitySection: boolean;
+  cleanTopicLabel: (value?: string) => string;
+  canonicalUrl: string;
+  t: (key: string) => string;
+}
+
+const {
+  lang,
+  cluster,
+  displayHeadline,
+  headlineIsCyrillic,
+  clusterStatus,
+  uniqueSourcesCount,
+  newsroomCountLabel,
+  newsroomOverviewLabel,
+  evidenceItems,
+  synthesisUpdatedAt,
+  synthesisFreshness,
+  latestArticle,
+  isSynthesisRefreshStale,
+  isMissingSynthesis,
+  pipelineBusy,
+  primaryNarrativeLabel,
+  showKeyFactsBand,
+  showCredibilitySection,
+  cleanTopicLabel,
+  canonicalUrl,
+  t,
+} = Astro.props;
+---
+
+<header class="editorial-header-v2 py-6 md:py-8 mb-8 md:mb-12">
+  <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-[var(--grid-gap)]">
+    <div class="header-main-info flex-grow min-w-0">
+      <div class="edition-kicker flex items-center gap-[var(--grid-gap)] mb-6">
+        <span class="edition-badge cluster-meta-pill bg-foreground text-background px-3 py-1">
+          {t(getEditionStr(cluster.articles?.[0].created_at) as any)}
+        </span>
+        <span class="header-date cluster-meta-label text-muted-foreground border-l border-border pl-4">
+          {new Date(cluster.articles?.[0].created_at || '').toLocaleDateString(lang === 'sr' ? 'sr-RS' : 'mk-MK', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })}
+        </span>
+      </div>
+      <h1 class:list={['headline is-visible font-serif text-4xl md:text-6xl font-black leading-[1.2] tracking-tight text-foreground mb-5', { 'headline-cyrillic': headlineIsCyrillic }]}>
+        {displayHeadline}
+      </h1>
+      <ClusterStandfirst standfirst={cluster.synthetic_standfirst} lang={lang} />
+      <div class="cluster-meta-compact">
+        <span class="cluster-meta-chip">
+          {cleanTopicLabel(cluster.articles?.[0]?.category) || (lang === 'sr' ? 'Vesti' : 'Вести')}
+        </span>
+        <span class:list={['cluster-meta-chip', `tone-${clusterStatus.tone}`]}>
+          {uniqueSourcesCount} {newsroomCountLabel(uniqueSourcesCount)} · {clusterStatus.label}
+        </span>
+        <StoryFreshnessBadge
+          class="cluster-header-freshness"
+          lang={lang}
+          synthesisUpdatedAt={synthesisUpdatedAt}
+          latestArticleAt={synthesisFreshness.latest_article_at || latestArticle?.ingested_at || latestArticle?.created_at}
+          isStale={isSynthesisRefreshStale}
+          newArticleCount={Number(synthesisFreshness.new_article_count || 0)}
+          pipelineBusy={pipelineBusy}
+          missingSynthesis={isMissingSynthesis}
+        />
+      </div>
+      <div class="cluster-header-toolbar">
+        <ClusterReadingNav
+          lang={lang}
+          primaryNarrativeLabel={primaryNarrativeLabel}
+          showKeyFacts={showKeyFactsBand}
+          showAnalysis={showCredibilitySection}
+        />
+        <div class="header-actions cluster-header-actions">
+          <ReadingModeToggle lang={lang} client:idle />
+          <ShareIsland client:idle title={displayHeadline} url={canonicalUrl} />
+        </div>
+      </div>
+      <p class="cluster-reading-hint">{t('reading.mode_hint')}</p>
+    </div>
+  </div>
+  <details class="cluster-source-details">
+    <summary class="cluster-source-details-summary">
+      <span class="cluster-source-details-title">
+        {lang === 'sr' ? 'Detalji izvora' : 'Детали за извори'}
+      </span>
+      <span class:list={['cluster-source-details-meta', `tone-${clusterStatus.tone}`]}>
+        {uniqueSourcesCount} {newsroomOverviewLabel(uniqueSourcesCount)} · {clusterStatus.label}
+      </span>
+    </summary>
+    <div class="cluster-source-details-body">
+      <div class:list={['cluster-evidence-strip', `tone-${clusterStatus.tone}`]}>
+        <div class="cluster-evidence-status">
+          <span>{clusterStatus.label}</span>
+          <p>{clusterStatus.description}</p>
+        </div>
+        <div class="cluster-evidence-grid">
+          {evidenceItems.map((item) => (
+            <div class="cluster-evidence-item">
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              {item.detail && <p>{item.detail}</p>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </details>
+</header>

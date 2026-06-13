@@ -243,7 +243,8 @@ class OpenAICompatibleProvider(AIProvider):
             "Authorization": f"Bearer {self.api_key}",
         }
         try:
-            with httpx.Client(timeout=120.0) as client:
+            timeout = 300.0 if task_type == "daily_brief" else 120.0
+            with httpx.Client(timeout=timeout) as client:
                 resp = client.post(self.api_url, json=payload, headers=headers)
                 resp.raise_for_status()
                 data = resp.json()

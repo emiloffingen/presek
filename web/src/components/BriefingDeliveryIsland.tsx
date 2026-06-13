@@ -4,6 +4,7 @@ import { Bell, BellRing, Copy, Mail, Radio, Save } from 'lucide-react';
 import { useStore } from '@nanostores/react';
 import { $profile, $deliveryPrefs, $syncToken, updateDeliveryPrefs } from '../lib/store.ts';
 import AccountSyncIsland from './AccountSyncIsland.tsx';
+import MorningEmailSignup from './MorningEmailSignup.tsx';
 import {
   buildSyncTokenHeaders,
   buildCsrfHeadersAsync,
@@ -261,6 +262,8 @@ export default function BriefingDeliveryIsland({
 
   return (
     <div className="delivery-panel space-y-8">
+      <MorningEmailSignup lang={lang as 'sr' | 'mk'} variant="settings" />
+
       <div className="delivery-status">
         <p className="delivery-status-kicker">
           {prefs.browserPermission === 'granted' ? <BellRing size={14} /> : <Bell size={14} />}
