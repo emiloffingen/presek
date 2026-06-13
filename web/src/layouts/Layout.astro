@@ -11,6 +11,8 @@ import { ClientRouter } from 'astro:transitions';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import { buildCanonicalUrl, hreflangAlternates, siteOrigin } from '../lib/localePaths';
 import { shouldLoadTinyAdzScript, tinyAdzSiteId } from '../lib/tinyadz';
+import { shouldLoadHilltopAds, hilltopAdsVerificationToken, listActiveHilltopZones } from '../lib/hilltopads';
+import HilltopAdsZone from '../components/HilltopAdsZone.astro';
 import { proxyBaseUrl } from '../lib/apiBase';
 
 interface Props {
@@ -60,7 +62,9 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 const { sr: srHref, mk: mkHref } = hreflangAlternates(requestUrl.pathname);
 const normalizedHost = hostHeader.split(':')[0].toLowerCase();
 const isLiveHost = normalizedHost === 'presek.live' || normalizedHost === 'www.presek.live';
-const showHilltopAdsVerification = isLiveHost;
+const hilltopVerificationToken = hilltopAdsVerificationToken(hostHeader);
+const loadHilltopAds = shouldLoadHilltopAds(lang, hostHeader);
+const hilltopZones = loadHilltopAds ? listActiveHilltopZones() : [];
 const shouldLoadAdsense = lang === 'sr' && isLiveHost;
 const loadTinyAdz = shouldLoadTinyAdzScript(lang, hostHeader);
 const tinyAdzSite = loadTinyAdz ? tinyAdzSiteId(lang, hostHeader) : '';
@@ -89,8 +93,11 @@ const organizationSchema = {
 <!doctype html>
 <html lang={lang === 'sr' ? "sr-Latn" : "mk"}>
 	<head>
-		{showHilltopAdsVerification && (
-			<meta name="a3a999fcaa2f5ffa9e13b1e2489c2488ac0bfba3" content="a3a999fcaa2f5ffa9e13b1e2489c2488ac0bfba3" />
+		{hilltopVerificationToken && (
+			<meta name={hilltopVerificationToken} content={hilltopVerificationToken} />
+		)}
+		{loadHilltopAds && (
+			<meta name="referrer" content="no-referrer-when-downgrade" />
 		)}
 		{/* Load Google Analytics immediately after <head> to satisfy verification bots. */}
 		{lang === 'mk' ? (
@@ -533,6 +540,9 @@ const organizationSchema = {
 			document.addEventListener('astro:page-load', checkAllImages);
 		</script>
 		{loadTinyAdz && <TinyAdzScript siteId={tinyAdzSite} />}
+		{hilltopZones.map((zone) => (
+			<HilltopAdsZone zone={zone} />
+		))}
 	</body>
 </html>
 

@@ -85,6 +85,15 @@ PUBLIC_TINYADZ_SITE_ID=6a2995c32b7233c34b097a9c
 PUBLIC_TINYADZ_LIVE_SITE_ID=6a29a71de09ffcc4c9bbd83e
 PUBLIC_TINYADZ_TEST_MODE=false
 
+# HilltopAds publisher settings (presek.live)
+PUBLIC_HILLTOPADS_ENABLED=true
+PUBLIC_HILLTOPADS_MULTITAG_INPAGE_ENABLED=true
+# Optional override if HilltopAds regenerates the zone invoker URL:
+# PUBLIC_HILLTOPADS_MULTITAG_INPAGE_SRC=//conventionalresponse.com/...
+PUBLIC_HILLTOPADS_INPAGE_ENABLED=false
+PUBLIC_HILLTOPADS_POPUNDER_ENABLED=false
+PUBLIC_HILLTOPADS_MULTITAG_ENABLED=false
+
 # ============================================================================
 # Notifications
 # ============================================================================
