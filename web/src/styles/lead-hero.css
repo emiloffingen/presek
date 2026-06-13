@@ -505,37 +505,46 @@
 
     .lead-media-frame.media-failed .lead-media-image,
     .lead-media-frame.media-failed .lead-media-loading-shell,
-    .lead-media-frame.media-failed .lead-media-overlay {
+    .lead-media-frame.media-failed .lead-media-overlay,
+    .lead-media-frame-fallback .lead-media-image,
+    .lead-media-frame-fallback .lead-media-loading-shell,
+    .lead-media-frame-fallback .lead-media-overlay {
         display: none;
     }
 
+    .lead-media-frame-fallback .lead-media-placeholder-error,
     .lead-media-frame.media-failed .lead-media-placeholder-error {
         display: grid !important;
         background:
-            radial-gradient(circle at 18% 16%, color-mix(in srgb, var(--dominant-color) 14%, transparent), transparent 34%),
-            linear-gradient(135deg, color-mix(in srgb, var(--background) 96%, var(--dominant-color) 4%), color-mix(in srgb, var(--secondary) 82%, var(--background)));
-        border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
+            linear-gradient(90deg, color-mix(in srgb, var(--dominant-color) 10%, transparent) 0 1px, transparent 1px 100%),
+            radial-gradient(circle at 18% 16%, color-mix(in srgb, var(--dominant-color) 10%, transparent), transparent 34%),
+            linear-gradient(135deg, color-mix(in srgb, var(--background) 98%, var(--dominant-color) 2%), color-mix(in srgb, var(--secondary) 78%, var(--background)));
+        background-size: 2.5rem 100%, auto, auto;
+        border: 1px solid color-mix(in srgb, var(--foreground) 9%, var(--border));
     }
 
+    .lead-media-frame-fallback .lead-media-placeholder-error :global(svg),
     .lead-media-frame.media-failed .lead-media-placeholder-error :global(svg) {
-        color: color-mix(in srgb, var(--foreground) 30%, transparent);
+        color: color-mix(in srgb, var(--foreground) 24%, transparent);
     }
 
     .lead-media-fallback-title {
-        max-width: 16ch;
+        max-width: 17ch;
         margin: 0;
-        color: color-mix(in srgb, var(--foreground) 88%, var(--muted-foreground));
+        color: color-mix(in srgb, var(--foreground) 84%, var(--muted-foreground));
         font-family: var(--font-serif);
-        font-size: clamp(1.35rem, 2.6vw, 2rem);
+        font-size: clamp(1.25rem, 2.4vw, 1.85rem);
         font-weight: 900;
-        line-height: 1.05;
+        line-height: 1.08;
         text-wrap: balance;
     }
 
+    .lead-media-frame-fallback .lead-media-kicker,
+    .lead-media-frame-fallback .lead-media-source-row,
     .lead-media-frame.media-failed .lead-media-kicker,
     .lead-media-frame.media-failed .lead-media-source-row {
         justify-content: center;
-        color: color-mix(in srgb, var(--foreground) 58%, var(--muted-foreground));
+        color: color-mix(in srgb, var(--foreground) 54%, var(--muted-foreground));
     }
 
     .overlay-headline {
@@ -800,6 +809,12 @@
 				padding-bottom: 1.6rem;
 			}
 
+            .lead-hero-no-visual {
+                grid-template-columns: minmax(0, 1fr);
+                max-width: 48rem;
+                padding-bottom: 1.1rem;
+            }
+
 			.lead-media-mobile { display: none; }
 			.lead-media-desktop { display: block; }
 
@@ -808,6 +823,11 @@
 				min-height: clamp(310px, 34vw, 420px);
 				padding-right: clamp(0rem, 1vw, 1rem);
 			}
+
+            .lead-hero-no-visual .lead-copy {
+                min-height: auto;
+                padding-right: 0;
+            }
 
 			.lead-copy .headline-lead {
 				font-size: clamp(2.45rem, 4.6vw, 4.6rem);

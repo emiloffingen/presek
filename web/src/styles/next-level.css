@@ -339,28 +339,29 @@ body.has-consent-banner .ui-concept-onboarding {
 @media (max-width: 768px) {
   .search-entry-wrap--desktop {
     display: block;
-    width: min(9.5rem, 28vw);
-    min-width: 6.5rem;
+    width: 2.25rem;
+    min-width: 2.25rem;
   }
 
   .search-fab-mobile {
     display: flex;
     position: fixed;
-    right: 1rem;
-    bottom: 1rem;
+    right: 0.85rem;
+    bottom: 0.85rem;
     z-index: 190;
     transition: bottom 0.3s var(--ease-editorial);
   }
 
   .search-fab-trigger {
-    width: 3rem;
-    height: 3rem;
+    width: 2.72rem;
+    height: 2.72rem;
     display: flex;
     align-items: center;
     justify-content: center;
     border: 1px solid var(--border);
     background: var(--card);
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 10px 24px -16px rgba(0, 0, 0, 0.6);
+    opacity: 0.92;
     color: var(--foreground);
     cursor: pointer;
     transition: border-color 0.2s ease, background 0.2s ease;

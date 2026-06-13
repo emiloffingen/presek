@@ -5,19 +5,14 @@
   align-items: center;
   gap: 0.65rem;
   width: 100%;
-  min-height: 2.5rem;
-  padding: 0.45rem 0.7rem;
+  min-height: 2.25rem;
+  padding: 0.38rem 0.62rem;
   text-align: left;
   border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--background) 92%, var(--secondary)) 0%,
-      color-mix(in srgb, var(--secondary) 55%, var(--background)) 100%
-    );
+  background: color-mix(in srgb, var(--background) 84%, var(--secondary));
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, var(--background) 65%, transparent),
-    0 1px 2px color-mix(in srgb, var(--foreground) 4%, transparent);
+    0 1px 1px color-mix(in srgb, var(--foreground) 3%, transparent);
   transition:
     border-color 0.2s ease,
     background 0.2s ease,
@@ -28,15 +23,10 @@
 
 .presek-search-trigger:hover {
   border-color: color-mix(in srgb, var(--nyt-accent) 32%, var(--border));
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--background) 88%, var(--nyt-accent)) 0%,
-      color-mix(in srgb, var(--secondary) 70%, var(--background)) 100%
-    );
+  background: color-mix(in srgb, var(--background) 88%, var(--nyt-accent));
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, var(--background) 55%, transparent),
-    0 2px 8px color-mix(in srgb, var(--nyt-accent) 8%, transparent);
+    0 1px 6px color-mix(in srgb, var(--nyt-accent) 6%, transparent);
 }
 
 .presek-search-trigger:focus-visible {
@@ -49,8 +39,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.65rem;
-  height: 1.65rem;
+  width: 1.5rem;
+  height: 1.5rem;
   flex-shrink: 0;
   color: color-mix(in srgb, var(--muted-foreground) 82%, var(--foreground));
   background: color-mix(in srgb, var(--background) 70%, var(--secondary));
@@ -75,7 +65,7 @@
 .search-trigger-label {
   display: block;
   font-family: var(--font-ui);
-  font-size: 0.8125rem;
+  font-size: 0.77rem;
   font-weight: 650;
   letter-spacing: 0.01em;
   color: color-mix(in srgb, var(--foreground) 78%, var(--muted-foreground));
@@ -216,11 +206,17 @@
 
 @media (max-width: 768px) {
   .presek-search-trigger {
-    min-height: 2.15rem;
-    padding: 0.35rem 0.5rem;
-    gap: 0.45rem;
+    justify-content: center;
+    width: 2.25rem;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    padding: 0;
+    gap: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
+  .search-trigger-copy,
   .search-trigger-hint,
   .search-trigger-shortcuts {
     display: none;
@@ -232,8 +228,9 @@
   }
 
   .search-trigger-icon {
-    width: 1.45rem;
-    height: 1.45rem;
+    width: 1.9rem;
+    height: 1.9rem;
+    background: color-mix(in srgb, var(--secondary) 62%, transparent);
   }
 }
 

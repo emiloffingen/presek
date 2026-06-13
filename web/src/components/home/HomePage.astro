@@ -338,7 +338,7 @@ const unifiedFeedItems = isHomepage
     : [];
 const pluralismPct = stats?.intelligence?.pluralism?.pluralism_pct ?? null;
 
-const showLeadHeroVisual = Boolean(leadVisual && !leadVisual.isWeak);
+const showLeadHeroVisual = Boolean(leadVisual && !leadVisual.isWeak && !missingSystemModules);
 const displayedSynthesisPicks = isHomepage
     ? filterSynthesisPicks(synthesisPicks, buildHomepageSynthesisExcludeIds(leadCluster, supportingClusters))
     : synthesisPicks;
@@ -990,4 +990,3 @@ if (forYouClusters.length > 0) {
 
 	})();
 </script>
-

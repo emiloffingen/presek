@@ -261,7 +261,7 @@ export function chooseClusterImage(
       lang,
     });
     if (context.cid) params.set('cid', context.cid);
-    if (context.title) params.set('t', context.title);
+    if (context.title && variant !== 'hero') params.set('t', context.title);
     if (context.category) params.set('cat', context.category);
     proxiedUrl = proxyUrl(`/proxy?${params.toString()}`);
   }

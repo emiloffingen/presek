@@ -225,12 +225,10 @@ function getRelativeTimeStr(dateStr?: string) {
             <div class="topbar-actions">
                 <div class="topbar-util">
                     <a href={l('/for-you')} class="user-action-link utility-desktop-only">{t('nav.for_you')}</a>
-                    <div class="utility-inline">
+                    <div class="utility-inline utility-inline--desktop">
                         <ScriptSwitcher />
-                        <ThemeIsland client:idle client:media="(min-width: 769px)" lang={lang} />
-                        <TextScaleIsland client:idle client:media="(min-width: 769px)" lang={lang} />
                     </div>
-                    <details class="utility-menu">
+                    <details class="utility-menu utility-menu--all">
                         <summary class="utility-menu-trigger" aria-label={lang === 'sr' ? 'Podešavanja' : 'Поставки'}>
                             <span aria-hidden="true">⋯</span>
                         </summary>
@@ -316,4 +314,3 @@ function getRelativeTimeStr(dateStr?: string) {
         <Search size={18} strokeWidth={2.25} aria-hidden="true" />
     </button>
 </div>
-
