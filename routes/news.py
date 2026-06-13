@@ -149,7 +149,9 @@ def _public_article_payload(article, lang="sr", include_full_content: bool = Fal
                 val = transliterate_lat_to_cyr(val)
             res[key] = val
         elif key == "description" and value:
-            val = str(value)
+            from nlp.utils import extract_clean_summary_text
+
+            val = extract_clean_summary_text(str(value))
             if lang == "sr":
                 val = transliterate_cyr_to_lat(val)
             elif lang == "mk":
@@ -159,7 +161,9 @@ def _public_article_payload(article, lang="sr", include_full_content: bool = Fal
             else:
                 res[key] = val
         elif key == "summary" and value:
-            val = str(value)
+            from nlp.utils import extract_clean_summary_text
+
+            val = extract_clean_summary_text(str(value))
             if lang == "sr":
                 val = transliterate_cyr_to_lat(val)
             elif lang == "mk":
@@ -850,22 +854,9 @@ async def semantic_search(
         return _error_json("Internal server error", 500)
 
 def _looks_like_leaked_json_fragment(text: str) -> bool:
-    clean = str(text or "").strip()
-    if not clean:
-        return False
-    lowered = clean.lower()
-    json_markers = (
-        '"synthetic_headline"',
-        '"synthetic_standfirst"',
-        '"summary"',
-        '"generated_article"',
-        '"key_facts"',
-        '"perspectives"',
-        "verification_report",
-    )
-    marker_count = sum(1 for marker in json_markers if marker in lowered)
-    bullet_json_lines = sum(1 for line in clean.splitlines() if line.strip().startswith(("• {", "• \"", "{", "\"")))
-    return marker_count >= 2 or bullet_json_lines >= 2
+    from nlp.utils import looks_like_leaked_json_fragment
+
+    return looks_like_leaked_json_fragment(text)
 
 
 def _clean_leaked_json_string(text: str) -> dict:
@@ -910,6 +901,20 @@ def _clean_leaked_json_string(text: str) -> dict:
                 data["generated_article"] = article_match.group(1).encode('utf-8').decode('unicode-escape', errors='ignore')
             except Exception:
                 data["generated_article"] = article_match.group(1)
+
+        summary_match = re.search(r'"summary"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"', clean_lines)
+        if summary_match:
+            try:
+                data["summary"] = summary_match.group(1).encode('utf-8').decode('unicode-escape', errors='ignore')
+            except Exception:
+                data["summary"] = summary_match.group(1)
+        else:
+            truncated_summary = re.search(r'"summary"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)', clean_lines)
+            if truncated_summary:
+                try:
+                    data["summary"] = truncated_summary.group(1).encode('utf-8').decode('unicode-escape', errors='ignore')
+                except Exception:
+                    data["summary"] = truncated_summary.group(1)
             
         summary_array_match = re.search(r'"summary"\s*:\s*\[(.*?)\]', clean_lines, re.DOTALL)
         if summary_array_match:

@@ -228,9 +228,11 @@ export function extractCleanSummaryText(input: any): string {
 
     // Fallback: If it still looks like JSON after failing to parse, try to extract just the summary value
     if (text.includes('"summary":') || text.includes('&quot;summary&quot;')) {
-        const match = text.match(/"summary"\s*:\s*"([^"]+)"/);
-        if (match && match[1]) {
-            text = match[1];
+        const scalarMatch = text.match(/"summary"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+        const truncatedMatch = scalarMatch ? null : text.match(/"summary"\s*:\s*"((?:[^"\\]|\\.)*)/);
+        const raw = scalarMatch?.[1] || truncatedMatch?.[1];
+        if (raw) {
+            text = raw.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\'/g, "'");
         }
     }
 
@@ -282,7 +284,8 @@ export function getDisplayTitle(article: any, fallback = '', lang?: string): str
 }
 
 export function getDisplaySummary(article: any, lang?: string): string {
-    let summary = article?.display_summary || extractCleanSummaryText(article?.summary || article?.description || '');
+    const raw = article?.display_summary || article?.summary || article?.description || '';
+    let summary = extractCleanSummaryText(raw);
     if (lang === 'sr' && isMostlyCyrillic(summary)) {
         summary = transliterate(summary);
     }

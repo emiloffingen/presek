@@ -148,6 +148,17 @@ def test_extract_preview_summary_parses_jsonish_summary_blob():
     assert home._extract_preview_summary(article) == "Cisto rezime"
 
 
+def test_extract_preview_summary_unwraps_truncated_json_blob():
+    home = _load_home_module()
+
+    article = {
+        "summary": '{"summary":"Izvestaj austrijskog dnevnika *Standard* ukazuje na duboke veze',
+        "description": "",
+    }
+
+    assert home._extract_preview_summary(article) == "Izvestaj austrijskog dnevnika Standard ukazuje na duboke veze"
+
+
 def test_build_lead_display_returns_cleaned_preview_fields():
     home = _load_home_module()
 

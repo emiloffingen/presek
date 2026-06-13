@@ -228,19 +228,10 @@ def _title_looks_like_feature(title):
 
 
 def _extract_preview_summary(article):
-    text = str((article or {}).get("summary") or (article or {}).get("description") or "")
-    trimmed = text.strip()
-    if trimmed.startswith("{") or trimmed.startswith("&lt;%") or "&quot;summary&quot;" in trimmed:
-        try:
-            decoded = cleanAndDecode(trimmed) if "&quot;" in trimmed else trimmed
-            if decoded.startswith("{"):
-                import json
+    from nlp.utils import extract_clean_summary_text
 
-                parsed = json.loads(decoded)
-                text = str(parsed.get("summary") or parsed.get("text") or text)
-        except Exception:
-            pass
-    return cleanAndDecode(text)
+    text = str((article or {}).get("summary") or (article or {}).get("description") or "")
+    return extract_clean_summary_text(text)
 
 
 def _parse_time(value):
