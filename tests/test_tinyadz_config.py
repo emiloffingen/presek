@@ -84,9 +84,10 @@ def test_layout_wires_tinyadz_for_mk_and_live():
     assert "shouldLoadTinyAdzScript" in layout
     assert "tinyAdzSiteId" in layout
     assert "siteId={tinyAdzSite}" in layout
-    assert 'site-id={siteId}' in script
-    assert 'data-site-id={siteId}' in script
-    assert "transition:persist" in script
+    assert "TINYADZ_SCRIPT_URL" in script
+    assert "setAttribute('site-id', siteId)" in script
+    assert "setAttribute('data-site-id', siteId)" in script
+    assert "data-tinyadz-loader" in script
     assert "requestNextAd" in script
     assert "presek.live" in helper
     assert "presek.mk" in helper
