@@ -623,17 +623,6 @@ if (forYouClusters.length > 0) {
                     <PipelineStatusNotice lang={lang as 'sr' | 'mk'} pipeline={pipeline} />
                 )}
 
-                {missingSystemModules && (
-                    <aside class="home-degraded-panel" role="status">
-                        <p class="home-degraded-kicker">{lang === 'sr' ? 'Delimičan prikaz' : 'Делумен приказ'}</p>
-                        <p class="home-degraded-copy">
-                            {lang === 'sr'
-                                ? 'Vesti su dostupne, ali deo sistemske analitike ili brifinga trenutno nije učitan.'
-                                : 'Вестите се достапни, но дел од системската аналитика или брифингот моментално не е вчитан.'}
-                        </p>
-                    </aside>
-                )}
-
                 {showEmptyState && (
                     <EmptyState trending={trending} errorMessage={error} />
                 )}
