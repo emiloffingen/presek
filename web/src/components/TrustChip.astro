@@ -10,6 +10,7 @@ interface Props {
   /** Feed cards: badge only. Cluster/detail views can opt into the popover. */
   showExplainer?: boolean;
   quietFreshness?: boolean;
+  isPendingSynthesis?: boolean;
 }
 
 const {
@@ -20,10 +21,11 @@ const {
   lang = 'sr',
   showExplainer = false,
   quietFreshness = false,
+  isPendingSynthesis = false,
 } = Astro.props;
 
 const trust = buildTrustChip(
-  { sourcesCount, pluralismScore, isStale, hasVerification, quietFreshness },
+  { sourcesCount, pluralismScore, isStale, hasVerification, quietFreshness, isPendingSynthesis },
   lang,
 );
 
@@ -40,7 +42,7 @@ const pluralismLine = trust.pluralismScore == null
       : (lang === 'mk' ? `Умерена разлика: ${trust.pluralismScore}%.` : `Umerena razlika: ${trust.pluralismScore}%.`);
 const freshnessLine = !isStale || quietFreshness
   ? null
-  : (lang === 'mk' ? 'Синтезата се ажурира.' : 'Sinteza se ažurira.');
+  : (lang === 'mk' ? 'Синтезата се освежува.' : 'Sinteza se osvežava.');
 const verificationLine = hasVerification
   ? (lang === 'mk' ? 'Има сигнал за проверка на факти.' : 'Ima signal provere činjenica.')
   : null;
@@ -81,20 +83,20 @@ const explainerLines = [sourceLine, pluralismLine, freshnessLine, verificationLi
     outline-offset: 2px;
   }
   .trust-chip-score {
-    font-size: 0.58rem;
+    font-size: 0.64rem;
     font-weight: 900;
     color: var(--nyt-accent);
     font-variant-numeric: tabular-nums;
   }
   .trust-chip-label {
-    font-size: 0.54rem;
+    font-size: 0.62rem;
     font-weight: 900;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--foreground);
   }
   .trust-chip-meta {
-    font-size: 0.5rem;
+    font-size: 0.56rem;
     font-weight: 700;
     color: var(--muted-foreground);
     white-space: nowrap;

@@ -9,6 +9,7 @@ interface Props {
   isStale?: boolean;
   newArticleCount?: number;
   pipelineBusy?: boolean;
+  missingSynthesis?: boolean;
   class?: string;
 }
 
@@ -19,6 +20,7 @@ const {
   isStale = false,
   newArticleCount = 0,
   pipelineBusy = false,
+  missingSynthesis = false,
   class: className = '',
 } = Astro.props;
 
@@ -31,6 +33,7 @@ const freshness = formatStoryFreshness(
     isStale,
     newArticleCount,
     pipelineBusy,
+    missingSynthesis,
   },
   t as (key: string, params?: Record<string, string | number>) => string,
 );
@@ -41,6 +44,7 @@ const freshness = formatStoryFreshness(
     class:list={[
       'story-freshness-badge inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest',
       freshness.tone === 'fresh' && 'border-nyt-accent/30 bg-nyt-accent/10 text-nyt-accent',
+      freshness.tone === 'pending' && 'border-nyt-accent/30 bg-nyt-accent/10 text-nyt-accent',
       freshness.tone === 'aging' && 'border-border bg-muted/40 text-muted-foreground',
       freshness.tone === 'stale' && 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300',
       className,

@@ -221,6 +221,8 @@ const citationSources = cluster?.citation_sources || [];
 
 const synthesisUpdatedAt = cluster?.synthesis_updated_at;
 const synthesisFreshness = (cluster?.synthesis_freshness || { is_stale: false }) as any;
+const isMissingSynthesis = (synthesisFreshness.reasons || []).includes('missing_synthesis');
+const isSynthesisRefreshStale = Boolean(synthesisFreshness.is_stale) && !isMissingSynthesis;
 const pipelineBusy = Boolean(pipeline?.busy);
 
 const perspectives = cluster?.perspectives || [];
@@ -363,9 +365,10 @@ const agreementsCount = verificationReport?.agreements?.length || 0;
 const trustSummary = cluster?.trust_summary || buildTrustChip({
     sourcesCount: uniqueSourcesCount,
     pluralismScore: cluster?.pluralism_score ?? null,
-    isStale: Boolean(synthesisFreshness?.is_stale) && !(synthesisFreshness?.reasons || []).includes('missing_synthesis'),
+    isStale: isSynthesisRefreshStale,
     hasVerification: hasFactcheck,
-    quietFreshness: (synthesisFreshness?.reasons || []).includes('missing_synthesis'),
+    quietFreshness: isMissingSynthesis,
+    isPendingSynthesis: isMissingSynthesis,
 }, lang as 'sr' | 'mk');
 const crossLingualCounterparts = cluster?.cross_lingual_counterparts || [];
 
@@ -478,7 +481,16 @@ const consensusNote = shouldShowConsensusNote(clusterLayoutInput)
 	? getConsensusNote(lang as 'sr' | 'mk')
 	: null;
 const clusterStatus = (() => {
-    if (synthesisFreshness.is_stale) {
+    if (isMissingSynthesis) {
+        return {
+            label: lang === 'sr' ? 'SINTEZA U PRIPREMI' : 'СИНТЕЗАТА СЕ ПОДГОТВУВА',
+            description: lang === 'sr'
+                ? 'Izvori su povezani; urednički pregled se trenutno generiše.'
+                : 'Изворите се поврзани; уредничкиот преглед моментално се генерира.',
+            tone: 'pending',
+        };
+    }
+    if (isSynthesisRefreshStale) {
         return {
             label: lang === 'sr' ? 'SINTEZA ZASTARELA' : 'СИНТЕЗАТА Е ЗАСТАРЕНА',
             description: lang === 'sr'
@@ -571,7 +583,7 @@ if (isBreakingFlag && totalSourcesCount >= 4) {
     momentumKicker = { label: lang === 'sr' ? 'KONTRADIKTOREN RAZVOJ' : 'КОНТРАДИКТОРЕН РАЗВОЈ', color: 'cluster-tone-watch' };
 } else if (totalSourcesCount >= 6) {
     momentumKicker = { label: lang === 'sr' ? 'ŠIROK INTERES' : 'ШИРОК ИНТЕРЕС', color: 'cluster-tone-positive' };
-} else if (totalSourcesCount >= 2 && !synthesisFreshness.is_stale) {
+} else if (totalSourcesCount >= 2 && !isSynthesisRefreshStale && !isMissingSynthesis) {
     momentumKicker = { label: lang === 'sr' ? 'KONSOLIDOVAN PREGLED' : 'КОНСОЛИДИРАН ПРЕГЛЕД', color: 'text-nyt-accent' };
 }
 
@@ -695,6 +707,16 @@ const articleSchema = cluster ? {
 							<span class:list={["cluster-meta-chip", `tone-${clusterStatus.tone}`]}>
 								{uniqueSourcesCount} {newsroomCountLabel(uniqueSourcesCount)} · {clusterStatus.label}
 							</span>
+							<StoryFreshnessBadge
+								class="cluster-header-freshness"
+								lang={lang}
+								synthesisUpdatedAt={synthesisUpdatedAt}
+								latestArticleAt={synthesisFreshness.latest_article_at || latestArticle?.ingested_at || latestArticle?.created_at}
+								isStale={isSynthesisRefreshStale}
+								newArticleCount={Number(synthesisFreshness.new_article_count || 0)}
+								pipelineBusy={pipelineBusy}
+								missingSynthesis={isMissingSynthesis}
+							/>
 						</div>
 						<div class="cluster-header-toolbar">
 							<ClusterReadingNav
@@ -735,15 +757,6 @@ const articleSchema = cluster ? {
 									</div>
 								))}
 							</div>
-							<StoryFreshnessBadge
-								class="cluster-source-freshness"
-								lang={lang}
-								synthesisUpdatedAt={synthesisUpdatedAt}
-								latestArticleAt={synthesisFreshness.latest_article_at || latestArticle?.ingested_at || latestArticle?.created_at}
-								isStale={Boolean(synthesisFreshness.is_stale)}
-								newArticleCount={Number(synthesisFreshness.new_article_count || 0)}
-								pipelineBusy={pipelineBusy}
-							/>
 						</div>
 					</div>
 				</details>
@@ -1205,6 +1218,7 @@ const articleSchema = cluster ? {
     .cluster-evidence-strip.tone-mixed .cluster-evidence-status { border-left-color: var(--editorial-watch); }
     .cluster-evidence-strip.tone-early .cluster-evidence-status,
     .cluster-evidence-strip.tone-stale .cluster-evidence-status { border-left-color: var(--nyt-red); }
+    .cluster-evidence-strip.tone-pending .cluster-evidence-status { border-left-color: var(--nyt-accent); }
 
     .cluster-evidence-status span,
     .cluster-evidence-item span {

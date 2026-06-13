@@ -13,6 +13,7 @@ const t = (key, params = {}) => {
     'news.days': 'days',
     'freshness.updated': 'Updated {time}',
     'freshness.stale_updating': 'Synthesis updating',
+    'freshness.pending_synthesis': 'Synthesis pending',
     'freshness.stale_new_reports': '+{count} new reports',
   };
   let value = catalog[key] || key;
@@ -52,4 +53,14 @@ test('formatStoryFreshness shows updating label when pipeline is busy', () => {
   assert.ok(view);
   assert.equal(view.label, 'Synthesis updating');
   assert.equal(view.tone, 'stale');
+});
+
+test('formatStoryFreshness shows pending label when synthesis is missing', () => {
+  const view = formatStoryFreshness(
+    { lang: 'mk', isStale: true, missingSynthesis: true },
+    t,
+  );
+  assert.ok(view);
+  assert.equal(view.label, 'Synthesis pending');
+  assert.equal(view.tone, 'pending');
 });

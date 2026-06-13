@@ -36,5 +36,15 @@ export const onRequest = defineMiddleware((context, next) => {
     }
   }
 
+  const isProductionHost =
+    hostname === 'presek.live'
+    || hostname === 'www.presek.live'
+    || hostname === 'presek.mk'
+    || hostname === 'www.presek.mk';
+
+  if (isProductionHost && pathname.startsWith('/dev')) {
+    return new Response('Not found', { status: 404 });
+  }
+
   return next();
 });

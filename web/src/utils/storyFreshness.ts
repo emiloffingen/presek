@@ -7,12 +7,13 @@ export type StoryFreshnessInput = {
   isStale?: boolean;
   newArticleCount?: number;
   pipelineBusy?: boolean;
+  missingSynthesis?: boolean;
 };
 
 export type StoryFreshnessView = {
   label: string;
   ariaLabel: string;
-  tone: 'fresh' | 'aging' | 'stale';
+  tone: 'fresh' | 'aging' | 'stale' | 'pending';
 };
 
 type Translator = (
@@ -46,6 +47,15 @@ export function formatStoryFreshness(
   input: StoryFreshnessInput,
   t: Translator,
 ): StoryFreshnessView | null {
+  const missingSynthesis = Boolean(input.missingSynthesis);
+  if (missingSynthesis) {
+    return {
+      label: t('freshness.pending_synthesis'),
+      ariaLabel: t('freshness.pending_synthesis'),
+      tone: 'pending',
+    };
+  }
+
   const latestArticleAt = parseDate(input.latestArticleAt);
   const synthesisUpdatedAt = parseDate(input.synthesisUpdatedAt);
   const anchor = synthesisUpdatedAt || latestArticleAt;

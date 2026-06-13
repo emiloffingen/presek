@@ -8,6 +8,7 @@ import { localePath, homePath } from '../../lib/localePaths';
 import MeshGradient from './MeshGradient.astro';
 import { buildEmergencyFallbackUrl } from '../../utils/imageSelection';
 import StoryFreshnessBadge from '../StoryFreshnessBadge.astro';
+import { formatStoryFreshness } from '../../utils/storyFreshness';
 
 interface Props {
     leadCluster: NewsCluster;
@@ -53,6 +54,19 @@ const t = useTranslations(lang);
 const tintColor = dominantColor || '#1e40af';
 const primaryArticle = leadCluster.articles?.[0] || {};
 const leadFreshness = leadCluster.synthesis_freshness || {};
+const leadMissingSynthesis = (leadFreshness.reasons || []).includes('missing_synthesis');
+const leadFreshnessView = formatStoryFreshness(
+    {
+        lang: lang as 'sr' | 'mk',
+        synthesisUpdatedAt: leadCluster.synthesis_updated_at || leadFreshness.synthesis_updated_at,
+        latestArticleAt: leadFreshness.latest_article_at || leadCluster.articles?.[0]?.ingested_at || leadCluster.articles?.[0]?.created_at,
+        isStale: Boolean(leadFreshness.is_stale) && !leadMissingSynthesis,
+        newArticleCount: Number(leadFreshness.new_article_count || 0),
+        pipelineBusy,
+        missingSynthesis: leadMissingSynthesis,
+    },
+    t as (key: string, params?: Record<string, string | number>) => string,
+);
 const primaryDisplayTitle = getDisplayTitle(primaryArticle, t('lead.title_prefix'));
 const relatedArticles = leadCluster.articles.slice(1, 4);
 const mediaLabel = filterLabel || primaryArticle.topic || primaryArticle.category || t('lead.theme_fallback');
@@ -177,14 +191,17 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl && !leadV
                         <span>{leadSignal.toUpperCase()}</span>
                     </span>
                 )}
-                <span class="time-stamp-v2" aria-label={t('header.latest')}>{getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)}</span>
+                {!leadFreshnessView && (
+                    <span class="time-stamp-v2" aria-label={t('header.latest')}>{getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)}</span>
+                )}
                 <StoryFreshnessBadge
                     lang={lang as 'sr' | 'mk'}
                     synthesisUpdatedAt={leadCluster.synthesis_updated_at || leadFreshness.synthesis_updated_at}
                     latestArticleAt={leadFreshness.latest_article_at || leadCluster.articles?.[0]?.ingested_at || leadCluster.articles?.[0]?.created_at}
-                    isStale={Boolean(leadFreshness.is_stale)}
+                    isStale={Boolean(leadFreshness.is_stale) && !leadMissingSynthesis}
                     newArticleCount={Number(leadFreshness.new_article_count || 0)}
                     pipelineBusy={pipelineBusy}
+                    missingSynthesis={leadMissingSynthesis}
                 />
             </div>
         </div>

@@ -50,6 +50,10 @@
   color: var(--nyt-red);
 }
 
+.cluster-source-details-meta.tone-pending {
+  color: var(--nyt-accent);
+}
+
 .cluster-source-details-body {
   border-top: 1px solid var(--border);
 }
@@ -318,8 +322,13 @@ body.zen-mode .section-eyebrow {
 .cluster-meta-compact {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.45rem;
   margin: 0.85rem 0 1rem;
+}
+
+.cluster-header-freshness {
+  margin-left: auto;
 }
 
 .cluster-meta-chip {
@@ -349,6 +358,10 @@ body.zen-mode .section-eyebrow {
   color: var(--nyt-red);
 }
 
+.cluster-meta-chip.tone-pending {
+  color: var(--nyt-accent);
+}
+
 .cluster-header-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -374,10 +387,15 @@ body.zen-mode .section-eyebrow {
   color: var(--muted-foreground);
 }
 
-.cluster-source-freshness {
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+.cluster-source-freshness,
+.cluster-header-freshness {
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .cluster-header-freshness {
+    margin-left: 0;
+  }
 }
 
 /* ── Sidebar tabs ───────────────────────────────────── */

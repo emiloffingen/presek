@@ -17,6 +17,8 @@ type TrustInput = {
   hasVerification?: boolean;
   /** When true, omit "synthesis updating" notes (feed cards, pending synthesis). */
   quietFreshness?: boolean;
+  /** First-time synthesis not written yet. */
+  isPendingSynthesis?: boolean;
 };
 
 export function buildTrustChip(input: TrustInput, lang: 'sr' | 'mk'): TrustChipData {
@@ -25,6 +27,7 @@ export function buildTrustChip(input: TrustInput, lang: 'sr' | 'mk'): TrustChipD
   const pluralismVal = pluralism == null ? 0 : Number(pluralism);
   const isStale = Boolean(input.isStale);
   const hasVerification = Boolean(input.hasVerification);
+  const isPendingSynthesis = Boolean(input.isPendingSynthesis);
 
   let tier: TrustTier = 'verified';
   let label = lang === 'mk' ? 'Проверено' : 'Provereno';
@@ -33,7 +36,14 @@ export function buildTrustChip(input: TrustInput, lang: 'sr' | 'mk'): TrustChipD
       ? `${sources} независни извори се следат.`
       : `${sources} nezavisna izvora se prate.`;
 
-  if (sources < 2) {
+  if (isPendingSynthesis && sources >= 2) {
+    tier = 'early';
+    label = lang === 'mk' ? 'Се подготвува' : 'U pripremi';
+    detail =
+      lang === 'mk'
+        ? `${sources} извори се поврзани; уредничкиот преглед се генерира.`
+        : `${sources} izvora je povezano; urednički pregled se generiše.`;
+  } else if (sources < 2) {
     tier = 'early';
     label = lang === 'mk' ? 'Ран сигнал' : 'Rani signal';
     detail =
@@ -59,8 +69,8 @@ export function buildTrustChip(input: TrustInput, lang: 'sr' | 'mk'): TrustChipD
   if (isStale && !input.quietFreshness) {
     detail =
       lang === 'mk'
-        ? `${detail} Синтезата се ажурира.`
-        : `${detail} Sinteza se ažurira.`;
+        ? `${detail} Синтезата се освежува.`
+        : `${detail} Sinteza se osvežava.`;
   }
 
   const score = Math.min(
