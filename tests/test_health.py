@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 from core.health import (
@@ -10,6 +11,7 @@ from core.health import (
     _probe_database,
     _probe_redis,
     _source_quality_payload,
+    load_last_refresh_time,
     record_refresh,
     record_source_fetch,
     record_task_event,
@@ -129,8 +131,6 @@ class TestFreshnessPayload:
     def test_freshness_payload_recent(self):
         recent = "2026-04-04T22:00:00+00:00"
         with patch("health.datetime") as mock_datetime:
-            from datetime import datetime, timezone
-
             mock_datetime.now.return_value = datetime(2026, 4, 4, 22, 10, tzinfo=timezone.utc)
             mock_datetime.fromisoformat.side_effect = datetime.fromisoformat
             result = _freshness_payload(recent)
@@ -139,12 +139,33 @@ class TestFreshnessPayload:
     def test_freshness_payload_stale(self):
         stale = "2026-04-04T20:00:00+00:00"
         with patch("health.datetime") as mock_datetime:
-            from datetime import datetime, timezone
-
             mock_datetime.now.return_value = datetime(2026, 4, 4, 22, 0, tzinfo=timezone.utc)
             mock_datetime.fromisoformat.side_effect = datetime.fromisoformat
             result = _freshness_payload(stale)
         assert result["status"] == "stale"
+
+
+class TestLoadLastRefreshTime:
+    def test_load_last_refresh_time_prefers_redis(self):
+        r, store = TestRecordRefresh()._make_redis()
+        store[_REDIS_KEY] = json.dumps({"time": "2026-06-13T12:00:00+00:00"})
+        with (
+            patch("core.health._get_redis", return_value=r),
+            patch("core.health.database.db_manager.execute_one") as db_one,
+        ):
+            assert load_last_refresh_time() == "2026-06-13T12:00:00+00:00"
+            db_one.assert_not_called()
+
+    def test_load_last_refresh_time_falls_back_to_database(self):
+        r, _store = TestRecordRefresh()._make_redis()
+        with (
+            patch("core.health._get_redis", return_value=r),
+            patch(
+                "core.health.database.db_manager.execute_one",
+                return_value={"latest_at": datetime(2026, 6, 13, 11, 30, tzinfo=timezone.utc)},
+            ),
+        ):
+            assert load_last_refresh_time() == "2026-06-13T11:30:00+00:00"
 
 
 class TestHealthProbes:

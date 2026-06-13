@@ -189,7 +189,7 @@ def record_refresh(article_count: int, errors: list[str] | None = None):
         "errors": errors or [],
     }
     try:
-        _get_redis().set(_REDIS_KEY, json.dumps(payload), ex=3600)
+        _get_redis().set(_REDIS_KEY, json.dumps(payload), ex=86400)
     except Exception as e:
         # Non-critical; health endpoint falls back gracefully
         log.debug(f"Failed to record refresh in Redis: {e}")
@@ -235,6 +235,35 @@ def get_source_statuses():
     except Exception as e:
         log.debug(f"Failed to get source statuses: {e}")
         return {}
+
+
+def load_last_refresh_time() -> str | None:
+    """Return the latest ingestion refresh timestamp from Redis, with DB fallback."""
+    try:
+        raw = _get_redis().get(_REDIS_KEY)
+        if raw:
+            payload = json.loads(raw.decode() if isinstance(raw, bytes) else raw)
+            refresh_time = payload.get("time")
+            if refresh_time:
+                return refresh_time
+    except Exception as e:
+        log.debug(f"Failed to load refresh time from Redis: {e}")
+
+    try:
+        row = database.db_manager.execute_one(
+            "SELECT MAX(COALESCE(ingested_at, created_at)) AS latest_at FROM articles"
+        )
+        latest_at = (row or {}).get("latest_at")
+        if not latest_at:
+            return None
+        if isinstance(latest_at, datetime):
+            if latest_at.tzinfo is None:
+                latest_at = latest_at.replace(tzinfo=timezone.utc)
+            return latest_at.isoformat()
+        return str(latest_at)
+    except Exception as e:
+        log.debug(f"Failed to load refresh time from database: {e}")
+        return None
 
 
 def _freshness_payload(last_refresh_time: str | None):

@@ -841,12 +841,6 @@ if (forYouClusters.length > 0) {
 
 				</div>
 
-                {!error && isHomepage && (
-                    <div class="section-wrapper home-inline-ad-slot">
-                        <TinyAdzInlinedAd class="home-inline-ad" />
-                    </div>
-                )}
-
                 <div class="home-mobile-order-feed home-feed-only">
                 {forYouClusters.length > 0 && (
 					<div class="section-wrapper for-you-wrapper homepage-analiza-only" data-for-you-band>
@@ -898,11 +892,6 @@ if (forYouClusters.length > 0) {
                     </>
                 )}
 
-                {!error && isHomepage && !isPregled && (
-                    <div class="section-wrapper home-inline-ad-slot home-inline-ad-slot--feed-end home-feed-only">
-                        <TinyAdzInlinedAd class="home-inline-ad" />
-                    </div>
-                )}
                 </div>
 			</div>
 			{/* HomeRail rendered horizontally at the bottom of the main feed */}

@@ -12,6 +12,7 @@ from core.health import (
     _get_redis,
     _probe_celery_queue,
     get_synthesis_quality_snapshot,
+    load_last_refresh_time,
 )
 from core.limits import CELERY_QUEUE_CRITICAL_DEPTH, CELERY_QUEUE_WARN_DEPTH
 from core.queue_status import queue_status_payload, reader_pipeline_status
@@ -53,14 +54,7 @@ SELECT
 
 
 def _load_last_refresh_time() -> str | None:
-    try:
-        raw = _get_redis().get(_REDIS_KEY)
-        if not raw:
-            return None
-        payload = json.loads(raw.decode() if isinstance(raw, bytes) else raw)
-        return payload.get("time")
-    except Exception:
-        return None
+    return load_last_refresh_time()
 
 
 def _alert(severity: str, code: str, message: str, metric: str | None = None) -> dict:

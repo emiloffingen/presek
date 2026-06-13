@@ -371,15 +371,6 @@ async def health_check():
     redis_public.pop("error", None)
     redis_public.pop("config", None)
 
-    # Get last refresh from Redis
-    last_refresh = {}
-    try:
-        raw = health._get_redis().get(health._REDIS_KEY)
-        if raw:
-            last_refresh = json.loads(raw)
-    except Exception as e:
-        log.error(f"Health check error (redis/freshness): {e}")
-
     synthesis_quality = health.get_synthesis_quality_snapshot()
     celery_queue = health._probe_celery_queue()
     celery_public = {
@@ -403,7 +394,7 @@ async def health_check():
         "uptime_seconds": int(time.time() - _start_time),
         "database": db_public,
         "redis": redis_public,
-        "freshness": _freshness_payload(last_refresh.get("time")),
+        "freshness": _freshness_payload(health.load_last_refresh_time()),
         "celery_queue": celery_public,
         "synthesis_quality": synthesis_quality,
         "time": datetime.datetime.now().isoformat(),
