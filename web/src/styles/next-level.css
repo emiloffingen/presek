@@ -383,6 +383,7 @@ body.has-consent-banner .ui-concept-onboarding {
   margin-left: 0.35rem;
   padding: 0 0.55rem 0 0.65rem;
   border-left: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  z-index: 20;
 }
 
 .nav-overflow-trigger,

@@ -9,88 +9,112 @@ const lang = getLangFromUrl(effectiveUrl);
 const t = useTranslations(lang);
 ---
 
-<button id="script-toggle" class="script-toggle-btn">
+<button type="button" class="script-toggle-btn" data-script-toggle>
     {t('script.toggle')}
 </button>
 
 <script>
     import { cyrToLat, latToCyr } from '../utils/textUtils';
 
-    document.addEventListener('astro:page-load', () => {
-        const toggle = document.getElementById('script-toggle');
-        if (!toggle) return;
+    const GLOBAL_KEY = '__presekScriptSwitcher';
 
-        // Initialize state based on page language and localStorage
-        const initialLang = document.documentElement.lang || 'sr';
-        const defaultIsCyrillic = initialLang.startsWith('mk');
-        const savedPreference = localStorage.getItem('scriptPreference');
-        
-        let isCyrillic = savedPreference 
-            ? savedPreference === 'cyrillic' 
-            : defaultIsCyrillic;
+    type ScriptState = {
+        isCyrillic: boolean;
+        isServerCyrillic: boolean;
+    };
 
-        // Apply initial body classes and button labels
-        if (isCyrillic) {
+    function shouldSkipSubtree(node: Node): boolean {
+        if (node.nodeType !== Node.ELEMENT_NODE) return false;
+        const el = node as Element;
+        if (['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(el.tagName)) return true;
+        if (el.tagName === 'ASTRO-ISLAND') return true;
+        if (el.closest('astro-island')) return true;
+        if (el.closest('[data-no-script-convert]')) return true;
+        if (el.closest('.header-sticky-wrapper')) return true;
+        return false;
+    }
+
+    function convertText(node: Node, targetCyrillic: boolean, isServerCyrillic: boolean) {
+        if (node.nodeType === Node.ELEMENT_NODE && shouldSkipSubtree(node)) {
+            return;
+        }
+
+        if (node.nodeType === Node.TEXT_NODE) {
+            if (node.textContent?.trim().length) {
+                if (targetCyrillic && !isServerCyrillic) {
+                    node.textContent = latToCyr(node.textContent);
+                } else if (!targetCyrillic && isServerCyrillic) {
+                    node.textContent = cyrToLat(node.textContent);
+                }
+            }
+            return;
+        }
+
+        if (node.nodeType === Node.ELEMENT_NODE) {
+            node.childNodes.forEach((child) => convertText(child, targetCyrillic, isServerCyrillic));
+        }
+    }
+
+    function traverseBody(state: ScriptState) {
+        const main = document.querySelector('main');
+        if (main) {
+            convertText(main, state.isCyrillic, state.isServerCyrillic);
+            return;
+        }
+        convertText(document.body, state.isCyrillic, state.isServerCyrillic);
+    }
+
+    function syncToggleLabels(state: ScriptState) {
+        document.querySelectorAll<HTMLButtonElement>('[data-script-toggle]').forEach((toggle) => {
+            toggle.textContent = state.isCyrillic ? 'ЛАТ/КИР' : 'КИР/ЛАТ';
+        });
+    }
+
+    function applyScriptState(state: ScriptState, convertDom: boolean) {
+        if (state.isCyrillic) {
             document.body.classList.add('script-cyrillic');
-            toggle.textContent = 'ЛАТ/КИР'; // Show Latin option when Cyrillic is active
         } else {
             document.body.classList.remove('script-cyrillic');
-            toggle.textContent = 'КИР/ЛАТ'; // Show Cyrillic option when Latin is active
         }
+        localStorage.setItem('scriptPreference', state.isCyrillic ? 'cyrillic' : 'latin');
+        syncToggleLabels(state);
+        if (convertDom) {
+            traverseBody(state);
+        }
+    }
 
-        // Keep track of the original server-rendered text script (Latin for sr, Cyrillic for mk)
+    function readState(): ScriptState {
+        const initialLang = document.documentElement.lang || 'sr';
         const isServerCyrillic = initialLang.startsWith('mk');
+        const savedPreference = localStorage.getItem('scriptPreference');
+        const isCyrillic = savedPreference ? savedPreference === 'cyrillic' : isServerCyrillic;
+        return { isCyrillic, isServerCyrillic };
+    }
 
-        function convertText(node: Node, targetCyrillic: boolean) {
-            if (node.nodeType === Node.TEXT_NODE) {
-                if (node.textContent?.trim().length) {
-                    // Only convert if the target script differs from the server-rendered script
-                    if (targetCyrillic && !isServerCyrillic) {
-                        node.textContent = latToCyr(node.textContent);
-                    } else if (!targetCyrillic && isServerCyrillic) {
-                        node.textContent = cyrToLat(node.textContent);
-                    }
-                }
-            } else if (node.nodeType === Node.ELEMENT_NODE && (node as Element).tagName !== 'SCRIPT' && (node as Element).tagName !== 'STYLE') {
-                node.childNodes.forEach(child => convertText(child, targetCyrillic));
-            }
-        }
-
-        // Apply initial script conversion on load (only if it differs from server-rendered default)
-        if (isCyrillic !== isServerCyrillic) {
-            convertText(document.body, isCyrillic);
-        }
-
-        function traverse(node: Node) {
-            if (node.nodeType === Node.TEXT_NODE) {
-                if (node.textContent?.trim().length) {
-                    node.textContent = isCyrillic
-                        ? latToCyr(node.textContent)
-                        : cyrToLat(node.textContent);
-                }
-            } else if (node.nodeType === Node.ELEMENT_NODE && (node as Element).tagName !== 'SCRIPT' && (node as Element).tagName !== 'STYLE') {
-                node.childNodes.forEach(traverse);
-            }
-        }
-
-        toggle.addEventListener('click', () => {
-            isCyrillic = !isCyrillic;
-            
-            // Update localStorage
-            localStorage.setItem('scriptPreference', isCyrillic ? 'cyrillic' : 'latin');
-            
-            // Update button text
-            toggle.textContent = isCyrillic ? 'ЛАТ/КИР' : 'КИР/ЛАТ';
-            
-            // Update body class
-            if (isCyrillic) {
-                document.body.classList.add('script-cyrillic');
-            } else {
-                document.body.classList.remove('script-cyrillic');
-            }
-            
-            // Convert text
-            traverse(document.body);
+    function bindToggles(state: ScriptState) {
+        document.querySelectorAll<HTMLButtonElement>('[data-script-toggle]').forEach((toggle) => {
+            if (toggle.dataset.bound === '1') return;
+            toggle.dataset.bound = '1';
+            toggle.addEventListener('click', () => {
+                state.isCyrillic = !state.isCyrillic;
+                applyScriptState(state, true);
+            });
         });
-    });
+    }
+
+    function initScriptSwitcher() {
+        const root = window as typeof window & { [GLOBAL_KEY]?: { state: ScriptState } };
+        if (!root[GLOBAL_KEY]) {
+            root[GLOBAL_KEY] = { state: readState() };
+        } else {
+            root[GLOBAL_KEY].state = readState();
+        }
+
+        const { state } = root[GLOBAL_KEY];
+        applyScriptState(state, state.isCyrillic !== state.isServerCyrillic);
+        bindToggles(state);
+    }
+
+    initScriptSwitcher();
+    document.addEventListener('astro:page-load', initScriptSwitcher);
 </script>

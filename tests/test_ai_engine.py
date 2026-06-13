@@ -156,6 +156,28 @@ def test_local_provider_uses_macedonian_compact_synthesis_prompt(monkeypatch):
     assert kwargs["force_local"] is True
 
 
+def test_local_provider_analyst_task_uses_force_local(monkeypatch):
+    analyst = Mock()
+    analyst.analyze.return_value = "local analyst reply"
+    module = types.ModuleType("nlp.local_analyst")
+    module.analyst = analyst
+    monkeypatch.setitem(sys.modules, "nlp.local_analyst", module)
+
+    provider = LocalProvider()
+    result = provider.call(
+        "prompt",
+        "system",
+        max_tokens=128,
+        json_mode=False,
+        task_type="analyst",
+        lang="sr",
+    )
+
+    assert result == "local analyst reply"
+    _, kwargs = analyst.analyze.call_args
+    assert kwargs["force_local"] is True
+
+
 def test_local_provider_returns_none_when_synthesis_fails(monkeypatch):
     analyst = Mock()
     analyst.analyze.return_value = None

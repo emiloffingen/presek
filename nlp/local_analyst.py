@@ -642,7 +642,13 @@ class LocalAnalyst:
         return self.get_zero_token_echo(article_text, cluster_context)
 
 
-    def research_query(self, query: str, context: str, lang: str = "mk") -> Dict[str, Any]:
+    def research_query(
+        self,
+        query: str,
+        context: str,
+        lang: str = "mk",
+        force_local: bool = False,
+    ) -> Dict[str, Any]:
         """Acts as a local researcher providing cited answers and follow-up suggestions."""
         if lang == "sr":
             system = (
@@ -665,7 +671,15 @@ class LocalAnalyst:
                 'Izlez: {"answer": "Vladata najavi pomos vo iznos od 10 milioni evra [MTV].", "suggestions": ["Koga ce se isplati pomosta?", "Koj im ispolnuva kriteriumite?", "Kakov e efektot vrz budzetot?"]}'
             )
         prompt = f"PITANJE: {query}\nKONTEKST: {context}" if lang == "sr" else f"PRASANjE: {query}\nKONTEKST: {context}"
-        raw = self.analyze(prompt, system, max_tokens=800, response_schema=ResearchQueryResponse, lang=lang, lock_timeout=15)
+        raw = self.analyze(
+            prompt,
+            system,
+            max_tokens=800,
+            response_schema=ResearchQueryResponse,
+            lang=lang,
+            lock_timeout=15,
+            force_local=force_local,
+        )
 
         fallback = {
             "answer": raw if raw else ("Nema dovoljno informacija." if lang == "sr" else "Nema dovolno informacii."),

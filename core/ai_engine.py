@@ -358,16 +358,29 @@ class LocalProvider(AIProvider):
             return None
 
         if "summarize" in lowered_system or task_type == "summarize":
-            res = analyst.analyze(prompt, system, max_tokens=max_tokens, lang=lang)
+            res = analyst.analyze(
+                prompt,
+                system,
+                max_tokens=max_tokens,
+                lang=lang,
+                force_local=True,
+            )
             if res:
                 return res
 
         if task_type == "research":
-            res = analyst.research_query(prompt, system, lang=lang)
+            res = analyst.research_query(prompt, system, lang=lang, force_local=True)
             if res:
                 return json.dumps(res) if isinstance(res, dict) else res
 
-        res = analyst.analyze(prompt, system, max_tokens=max_tokens, lang=lang, response_schema=response_schema)
+        res = analyst.analyze(
+            prompt,
+            system,
+            max_tokens=max_tokens,
+            lang=lang,
+            response_schema=response_schema,
+            force_local=True,
+        )
         if res:
             if json_mode or response_schema:
                 try:

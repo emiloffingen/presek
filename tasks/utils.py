@@ -46,6 +46,10 @@ def send_email(
 
 
 _PUBLIC_SITE_URL = str(os.environ.get("PUBLIC_SITE_URL") or "https://presek.live").rstrip("/")
+_PUBLIC_CACHE_INVALIDATION_DEBOUNCE_KEY = "debounce:public_cache_invalidation"
+_PUBLIC_CACHE_INVALIDATION_DEBOUNCE_SECONDS = int(
+    os.environ.get("PUBLIC_CACHE_INVALIDATION_DEBOUNCE_SECONDS", "45")
+)
 
 
 def invalidate_public_data_caches():
@@ -56,6 +60,28 @@ def invalidate_public_data_caches():
     delete_cache_prefix("api:stats:summary:")
     delete_cache_prefix("stats:intel_summary:")
     delete_cache_prefix("api:trending:")
+
+
+def invalidate_public_data_caches_debounced(force: bool = False) -> bool:
+    """Invalidate public caches at most once per debounce window during bulk crawls."""
+    if force:
+        invalidate_public_data_caches()
+        return True
+    try:
+        acquired = redis_client.set(
+            _PUBLIC_CACHE_INVALIDATION_DEBOUNCE_KEY,
+            "1",
+            nx=True,
+            ex=_PUBLIC_CACHE_INVALIDATION_DEBOUNCE_SECONDS,
+        )
+    except Exception as e:
+        log.warning(f"Cache invalidation debounce check failed, invalidating anyway: {e}")
+        invalidate_public_data_caches()
+        return True
+    if not acquired:
+        return False
+    invalidate_public_data_caches()
+    return True
 
 
 def safe_async_run(coro):

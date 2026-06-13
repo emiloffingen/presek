@@ -116,8 +116,14 @@
     }
 
     .topbar-util { display: flex; align-items: center; gap: 0.55rem; position: relative; }
+    .utility-inline {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+    .utility-desktop-only { display: inline-flex; align-items: center; gap: 0.35rem; }
+    .utility-mobile-only { display: none; }
     .utility-menu { display: none; }
-    .utility-menu--all { display: block; }
     .utility-menu-trigger {
         list-style: none;
         display: inline-flex;
@@ -137,7 +143,7 @@
         position: absolute;
         top: calc(100% + 0.35rem);
         right: 0;
-        z-index: 120;
+        z-index: 260;
         display: flex;
         flex-direction: column;
         gap: 0.55rem;
@@ -452,6 +458,8 @@
             min-width: 2.35rem;
         }
         .topbar-util { gap: 0; }
+        .utility-desktop-only { display: none !important; }
+        .utility-mobile-only { display: block; }
         .utility-inline { display: none; }
         .utility-menu { display: block; }
         .user-action-link { display: none; }

@@ -17,7 +17,13 @@ from core.health import record_refresh, record_task_event
 from core.image_service import image_service
 from core.services.notifier import SystemNotifier as Notifier
 from core.version import APP_VERSION_LABEL
-from tasks.utils import invalidate_public_data_caches, log, redis_client, safe_async_run
+from tasks.utils import (
+    invalidate_public_data_caches,
+    invalidate_public_data_caches_debounced,
+    log,
+    redis_client,
+    safe_async_run,
+)
 
 # Whitelist of allowed columns for dynamic UPDATE to prevent SQL injection
 _ALLOWED_ARTICLE_COLUMNS = {"full_content", "image_url"}
@@ -104,8 +110,8 @@ def process_article_image_task(article_id, image_url):
 @celery_app.task
 def post_crawl_invalidation_task(article_id):
     """Handles cache invalidation after a successful crawl."""
-    invalidate_public_data_caches()
-    log.debug(f"Invalidated caches for article {article_id}")
+    if invalidate_public_data_caches_debounced():
+        log.debug(f"Invalidated caches for article {article_id}")
 
 
 @celery_app.task(acks_late=True, reject_on_worker_lost=True)

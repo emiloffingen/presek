@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
 
-from tasks.utils import invalidate_cluster_caches
+from tasks.utils import invalidate_cluster_caches, invalidate_public_data_caches_debounced
 
 
 class TestCacheInvalidation:
@@ -14,6 +14,24 @@ class TestCacheInvalidation:
 
         mock_delete.assert_called_once_with("cluster:detail:cluster-123")
         mock_delete_prefix.assert_called_once_with("api:cluster:detail:v3:cluster-123")
+        mock_public.assert_called_once()
+
+    @patch("tasks.utils.invalidate_public_data_caches")
+    @patch("tasks.utils.redis_client")
+    def test_debounced_public_cache_invalidation_skips_repeat(self, mock_redis, mock_public):
+        mock_redis.set.side_effect = [True, False]
+
+        assert invalidate_public_data_caches_debounced() is True
+        assert invalidate_public_data_caches_debounced() is False
+
+        mock_public.assert_called_once()
+
+    @patch("tasks.utils.invalidate_public_data_caches")
+    @patch("tasks.utils.redis_client")
+    def test_debounced_public_cache_invalidation_force(self, mock_redis, mock_public):
+        assert invalidate_public_data_caches_debounced(force=True) is True
+
+        mock_redis.set.assert_not_called()
         mock_public.assert_called_once()
 
 
