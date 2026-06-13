@@ -945,18 +945,19 @@ def _maybe_enqueue_missing_synthesis(cluster_id: str, freshness: dict, unique_so
         return
 
     try:
-        from tasks.intelligence import auto_summarize_task
-        from tasks.utils import schedule_task_once
+        from core.celery_app import celery_app
+        from tasks.utils import acquire_task_lock
 
-        scheduled = schedule_task_once(
-            f"lock:jit_synthesis:{cluster_id}",
-            900,
-            auto_summarize_task,
-            args=([cluster_id],),
+        lock_key = f"lock:jit_synthesis:{cluster_id}"
+        if not acquire_task_lock(lock_key, 900):
+            return
+
+        celery_app.send_task(
+            "tasks.intelligence.auto_summarize_task",
+            args=[[cluster_id]],
             countdown=5,
         )
-        if scheduled:
-            log.info("[cluster] JIT synthesis enqueued for %s (%s sources)", cluster_id, unique_sources)
+        log.info("[cluster] JIT synthesis enqueued for %s (%s sources)", cluster_id, unique_sources)
     except Exception as e:
         log.warning("[cluster] JIT synthesis enqueue failed for %s: %s", cluster_id, e)
 
