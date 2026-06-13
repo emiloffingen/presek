@@ -1,5 +1,6 @@
 import '../styles/search-command.css';
 import { localePath, localePathForLang, type Locale } from '../lib/localePaths';
+import { useTranslations } from '../i18n/utils';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { navigate } from 'astro:transitions/client';
@@ -196,7 +197,14 @@ type SearchAction = {
 
 const FOCUSABLE_SELECTOR = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable;
+}
+
 export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initialQuery?: string | null, lang?: Locale }) {
+  const t = useTranslations(lang);
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState(initialQuery || '');
   const [timespan, setTimespan] = useState('all');
@@ -209,9 +217,8 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
   const [activeIndex, setActiveIndex] = useState(-1);
   const [isListening, setIsListening] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [activeSection, setActiveSection] = useState<'NEWS' | 'ENTITIES' | 'ACTIONS' | 'RECENT'>('NEWS');
-
   const recognitionRef = useRef<any>(null);
+  const openSearch = useCallback(() => setIsOpen(true), []);
 
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const placeholders = lang === 'sr' ? [
@@ -283,14 +290,26 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        setIsOpen(true);
+        openSearch();
+        return;
+      }
+      if (e.key === '/' && !isOpen && !isEditableTarget(e.target)) {
+        e.preventDefault();
+        openSearch();
+        return;
       }
       if (e.key === 'Escape') setIsOpen(false);
     };
 
+    const handleOpenEvent = () => openSearch();
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+    window.addEventListener('presek:open-search', handleOpenEvent);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('presek:open-search', handleOpenEvent);
+    };
+  }, [isOpen, openSearch]);
 
   const startVoiceSearch = useCallback(() => {
     if (typeof window === 'undefined' || !('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
@@ -551,7 +570,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
               data-testid="search-input"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={lang === 'sr' ? "Pretražite vesti, teme ili subjekte..." : "Пребарај вести, теми или субјекти..."}
+              placeholder={placeholders[placeholderIdx]}
               className="w-full bg-transparent py-2.5 sm:py-4 text-xl sm:text-2xl md:text-3xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground/40 border-b-2 border-transparent focus:border-nyt-accent transition-colors search-cmd-input"
               autoComplete="off"
               spellCheck="false"
@@ -980,6 +999,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
            <div className="hidden sm:flex items-center gap-[var(--grid-gap)]">
               <span className="flex items-center gap-[var(--grid-gap)]"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded-none">Enter</kbd> {lang === 'sr' ? 'Izaberi' : 'Избери'}</span>
               <span className="flex items-center gap-[var(--grid-gap)]"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded-none">↑</kbd><kbd className="px-1.5 py-0.5 bg-background border border-border rounded-none">↓</kbd> {lang === 'sr' ? 'Navigacija' : 'Навигација'}</span>
+              <span className="hidden md:flex items-center gap-[var(--grid-gap)]"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded-none">/</kbd> {lang === 'sr' ? 'Otvori' : 'Отвори'}</span>
               <span className="flex items-center gap-[var(--grid-gap)]"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded-none">Esc</kbd> {lang === 'sr' ? 'Zatvori' : 'Затвори'}</span>
            </div>
            <div className="flex items-center gap-2 sm:gap-[var(--grid-gap)]">
@@ -996,57 +1016,31 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
     <>
       <button
         ref={triggerRef}
-        onClick={() => setIsOpen(true)}
+        type="button"
+        onClick={openSearch}
         data-testid="search-trigger"
-        className="presek-search-trigger flex items-center gap-2 px-3 py-1.5 bg-secondary/30 hover:bg-secondary/60 border border-border/60 hover:border-nyt-accent/30 rounded-none transition-all group w-full text-left backdrop-blur-sm"
+        className="presek-search-trigger group"
         aria-label={lang === 'sr' ? 'Otvori pretragu' : 'Отвори пребарување'}
+        aria-keyshortcuts="Meta+K /"
       >
-        <Search size={14} className="shrink-0 text-muted-foreground group-hover:text-nyt-accent transition-colors" />
-        <span className="search-trigger-copy hidden min-w-0 flex-1 overflow-hidden h-4 sm:block">
-            <span className="search-trigger-label text-[11px] font-medium text-muted-foreground/55 group-hover:text-muted-foreground transition-colors block truncate">
-                {placeholders[placeholderIdx]}
-            </span>
+        <span className="search-trigger-icon" aria-hidden="true">
+          <Search size={16} strokeWidth={2.25} />
         </span>
-        <kbd className="search-trigger-kbd hidden lg:flex items-center gap-1 px-1.5 py-0.5 bg-background/50 border border-border rounded-none text-[10px] font-medium text-muted-foreground/45 group-hover:text-muted-foreground/65 transition-colors">
-            <span>⌘</span>K
-        </kbd>
+        <span className="search-trigger-copy">
+          <span className="search-trigger-label">{t('header.search_placeholder')}</span>
+          <span className="search-trigger-hint">
+            {lang === 'sr' ? 'Vesti, teme, subjekti' : 'Вести, теми, субјекти'}
+          </span>
+        </span>
+        <span className="search-trigger-shortcuts" aria-hidden="true">
+          <kbd className="search-trigger-kbd search-trigger-kbd--slash">/</kbd>
+          <kbd className="search-trigger-kbd search-trigger-kbd--meta">
+            <span className="search-trigger-kbd-meta">⌘</span>K
+          </kbd>
+        </span>
       </button>
 
       {typeof document !== 'undefined' ? createPortal(overlayContent, document.body) : null}
-
-      <style dangerouslySetInnerHTML={{ __html: `
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(var(--border), 0.2);
-          border-radius: 0px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(var(--nyt-accent), 0.4);
-        }
-        @media (max-width: 640px) {
-          .presek-search-trigger {
-            width: 2.35rem;
-            height: 2.15rem;
-            justify-content: center;
-            padding: 0;
-            border-radius: 0px;
-            background: color-mix(in srgb, var(--background) 82%, var(--secondary));
-          }
-          .presek-search-trigger .search-trigger-copy,
-          .presek-search-trigger kbd {
-            display: none !important;
-          }
-          .presek-search-trigger svg {
-            width: 1rem;
-            height: 1rem;
-          }
-        }
-      `}} />
     </>
   );
 }

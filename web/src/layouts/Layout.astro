@@ -304,8 +304,7 @@ const organizationSchema = {
 					if (fab instanceof HTMLButtonElement) {
 						fab.dataset.bound = '1';
 						fab.addEventListener('click', () => {
-							const trigger = document.querySelector('[data-testid="search-trigger"]');
-							if (trigger instanceof HTMLElement) trigger.click();
+							window.dispatchEvent(new CustomEvent('presek:open-search'));
 						});
 					}
 				});
