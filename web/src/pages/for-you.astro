@@ -5,34 +5,12 @@ import Footer from '../components/Footer.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import ForYouPageIsland from '../components/ForYouPageIsland.tsx';
 import { ErrorBoundary } from '../components/ui/ErrorBoundary.tsx';
-import { apiBaseUrl } from '../lib/apiBase';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import '../styles/for-you-premium.css';
-import TinyAdzInlinedAd from '../components/TinyAdzInlinedAd.astro';
-import TinyAdzRailAd from '../components/TinyAdzRailAd.astro';
-import { shouldShowTinyAdzInlinedAds } from '../lib/tinyadz';
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
-const API_URL = apiBaseUrl();
-const showRailAd = shouldShowTinyAdzInlinedAds(lang, hostHeader || Astro.url.hostname);
-
-// Fetch latest clusters to provide as potential local matches
-let initialClusters = [];
-let initialError: string | null = null;
-try {
-    const res = await fetch(`${API_URL}/news?page_size=32&lang=${lang}`);
-    if (res.ok) {
-        const data = await res.json();
-        initialClusters = data.clusters || [];
-    } else {
-        initialError = lang === 'sr' ? "Ne možemo da učitamo početne preporuke u ovom trenutku." : "Не можеме да ги вчитаме почетните препораки во овој момент.";
-    }
-} catch (e) {
-    console.error("ForYou page fetch error:", e);
-    initialError = lang === 'sr' ? "Ne možemo da učitamo početne preporuke u ovom trenutku." : "Не можеме да ги вчитаме почетните препораки во овој момент.";
-}
 ---
 
 <Layout
@@ -57,16 +35,10 @@ try {
 
         <div class="broadsheet-grid mt-8 md:mt-10">
             <div class="broadsheet-main">
-                <TinyAdzInlinedAd class="page-inline-ad mb-10" />
                 <ErrorBoundary client:idle lang={lang}>
-                    <ForYouPageIsland client:idle initialClusters={initialClusters} initialError={initialError} lang={lang} />
+                    <ForYouPageIsland client:idle lang={lang} />
                 </ErrorBoundary>
             </div>
-            {showRailAd && (
-                <aside class="broadsheet-rail ad-only-rail pl-4">
-                    <TinyAdzRailAd />
-                </aside>
-            )}
         </div>
     </main>
     <Footer />
@@ -93,11 +65,5 @@ try {
     @keyframes rise {
         from { opacity: 0; transform: translateY(20px); }
         to { opacity: 1; transform: translateY(0); }
-    }
-
-    .broadsheet-rail {
-        align-self: start;
-        position: sticky;
-        top: calc(var(--header-height) + 1.5rem);
     }
 </style>

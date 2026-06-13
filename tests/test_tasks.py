@@ -5,9 +5,11 @@ from unittest.mock import patch
 import tasks
 from tasks.intelligence import (
     _langs_for_cluster_articles,
-    _polish_generated_article,
-    _sanitize_synthesis_outputs,
     _split_cluster_merge_score,
+)
+from tasks.synthesis_sanitize import (
+    polish_generated_article,
+    sanitize_synthesis_outputs,
 )
 
 
@@ -226,7 +228,7 @@ class TestRepairSplitClustersTask:
         bad_summary = '• {"synthetic_headline": "X", "synthetic_standfirst": "Y", "summary": ['
         repeated = "Истиот пасус за настанот и реакциите.\n\nИстиот пасус за настанот и реакциите."
 
-        summary, generated_article, perspectives = _sanitize_synthesis_outputs(
+        summary, generated_article, perspectives = sanitize_synthesis_outputs(
             bad_summary,
             repeated,
             [],
@@ -240,7 +242,7 @@ class TestRepairSplitClustersTask:
     def test_polish_generated_article_removes_meta_headings(self):
         text = "СИНТЕЗА\n\nОвој кластер вести покажува нов развој во институциите.\n\nУРЕДНИЧКИ ПРЕГЛЕД"
 
-        polished = _polish_generated_article(text, lang="mk")
+        polished = polish_generated_article(text, lang="mk")
 
         assert "СИНТЕЗА" not in polished
         assert "УРЕДНИЧКИ ПРЕГЛЕД" not in polished

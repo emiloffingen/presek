@@ -12,6 +12,93 @@
     color: var(--nyt-accent);
 }
 
+.for-you-skeleton {
+    gap: 1.5rem;
+}
+
+.for-you-skeleton-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+    gap: 1.5rem;
+    padding: 1.5rem 0 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.for-you-skeleton-copy {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.for-you-skeleton-line,
+.for-you-skeleton-panel,
+.for-you-skeleton-card {
+    border-radius: var(--radius-sm, 0);
+    background: linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--secondary) 55%, transparent) 0%,
+        color-mix(in srgb, var(--secondary) 30%, transparent) 45%,
+        color-mix(in srgb, var(--secondary) 55%, transparent) 100%
+    );
+    background-size: 220% 100%;
+    animation: for-you-skeleton-shimmer 1.35s ease-in-out infinite;
+}
+
+.for-you-skeleton-kicker {
+    width: 7rem;
+    height: 0.85rem;
+}
+
+.for-you-skeleton-title {
+    width: min(18rem, 72%);
+    height: 2.8rem;
+}
+
+.for-you-skeleton-body {
+    width: min(28rem, 92%);
+    height: 1rem;
+}
+
+.for-you-skeleton-panel {
+    min-height: 8.5rem;
+}
+
+.for-you-skeleton-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.for-you-skeleton-card {
+    min-height: 9.5rem;
+}
+
+.for-you-skeleton-card.is-primary {
+    min-height: 14rem;
+}
+
+.for-you-skeleton-status {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-style: italic;
+    color: var(--muted-foreground);
+    text-align: center;
+}
+
+@keyframes for-you-skeleton-shimmer {
+    0% { background-position: 100% 0; }
+    100% { background-position: -100% 0; }
+}
+
+@media (min-width: 768px) {
+    .for-you-skeleton-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .for-you-skeleton-card.is-primary {
+        grid-column: span 2;
+        min-height: 12rem;
+    }
+}
+
 .for-you-loading p {
     font-family: var(--font-serif);
     font-style: italic;

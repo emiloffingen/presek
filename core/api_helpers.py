@@ -204,7 +204,7 @@ def normalize_summary_text(raw_summary) -> str:
     lines = []
     seen = set()
 
-    for raw_line in text.split("\n"):
+    for raw_line in re.split(r"\n|\s•\s", text):
         clean = _clean_text_block(raw_line)
         if not clean:
             continue

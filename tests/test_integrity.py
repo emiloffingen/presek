@@ -186,17 +186,16 @@ class TestAstroFrontendIntegrity:
         for_you_island = _read("web/src/components/ForYouPageIsland.tsx")
         profile_route = _read("routes/profile.py")
 
-        assert "let initialError: string | null = null;" in for_you_page
-        assert '"Ne možemo da učitamo početne preporuke u ovom trenutku."' in for_you_page
-        assert "TinyAdzRailAd" in for_you_page
+        assert "TinyAdzRailAd" not in for_you_page
+        assert "TinyAdzInlinedAd" not in for_you_page
         assert "ErrorBoundary client:idle lang={lang}" in for_you_page
-        assert (
-            "<ForYouPageIsland client:idle initialClusters={initialClusters} initialError={initialError} lang={lang} />"
-            in for_you_page
-        )
+        assert "<ForYouPageIsland client:idle lang={lang} />" in for_you_page
+        assert "const [clusterLoading, setClusterLoading]" in for_you_island
+        assert "ForYouSkeleton" in for_you_island
+        assert "fetch(`${apiBaseUrl()}/news?page_size=32&lang=${lang}`)" in for_you_island
         assert "const [semanticError, setSemanticError] = useState<string | null>(null);" in for_you_island
-        assert "}, [profile]);" in for_you_island
-        assert "const pageError = semanticError || initialError;" in for_you_island
+        assert "}, [profile, lang, isMK]);" in for_you_island
+        assert "const pageError = semanticError || clusterError;" in for_you_island
         assert "COALESCE(ingested_at, created_at)" in profile_route
         assert (
             'f"SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY {_FRESHNESS_EXPR} DESC, created_at DESC"'

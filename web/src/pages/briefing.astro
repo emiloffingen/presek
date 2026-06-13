@@ -13,7 +13,6 @@ import MorningEmailSignup from '../components/MorningEmailSignup.tsx';
 import NarrativeList from '../components/briefing/NarrativeList';
 import AudioPlayer from '../components/audio/AudioPlayer.astro';
 import '../styles/briefing-premium.css';
-import TinyAdzInlinedAd from '../components/TinyAdzInlinedAd.astro';
 
 import { apiBaseUrl } from '../lib/apiBase';
 import { formatBriefing } from '../utils/briefingFormatter';
@@ -118,8 +117,6 @@ const displayDate = briefingData?.date
                                 client:idle
                             />
                         )}
-
-                        <TinyAdzInlinedAd class="page-inline-ad briefing-inline-ad mb-10" />
 
                         <div class="briefing-full-section">
                         {briefingData.metadata?.key_narratives && (

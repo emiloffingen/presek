@@ -11,7 +11,7 @@ export default function TinyAdzRailSlot({ lang = 'sr', className = '' }: Props) 
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    setVisible(shouldShowTinyAdzInlinedAds(lang, window.location.hostname));
+    setVisible(shouldShowTinyAdzInlinedAds(lang, window.location.hostname, window.location.pathname));
   }, [lang]);
 
   if (!visible) return null;

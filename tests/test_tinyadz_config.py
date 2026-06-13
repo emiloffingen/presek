@@ -22,18 +22,15 @@ SHARED_MK_HOST_PAGES_WITH_RAIL_AD = [
     "web/src/pages/support.astro",
     "web/src/pages/tema/[topic].astro",
     "web/src/pages/cluster/[slug].astro",
-    "web/src/pages/for-you.astro",
     "web/src/pages/graf.astro",
     "web/src/pages/grafik.astro",
 ]
 
 SHARED_MK_HOST_PAGES_WITH_INLINE_AD = [
-    "web/src/pages/for-you.astro",
     "web/src/pages/izvori.astro",
     "web/src/pages/graf.astro",
     "web/src/pages/pulse.astro",
     "web/src/pages/tema/[topic].astro",
-    "web/src/pages/briefing.astro",
     "web/src/pages/archive.astro",
     "web/src/pages/subjekt/[name].astro",
 ]
@@ -48,28 +45,30 @@ LIVE_PAGES_WITH_RAIL_AD = [
     "web/src/pages/support.astro",
     "web/src/pages/tema/[topic].astro",
     "web/src/pages/cluster/[slug].astro",
-    "web/src/pages/for-you.astro",
     "web/src/pages/graf.astro",
     "web/src/pages/grafik.astro",
 ]
 
 LIVE_PAGES_WITH_INLINE_AD = [
-    "web/src/pages/for-you.astro",
     "web/src/pages/izvori.astro",
     "web/src/pages/graf.astro",
     "web/src/pages/grafik.astro",
     "web/src/pages/pulse.astro",
     "web/src/pages/tema/[topic].astro",
-    "web/src/pages/briefing.astro",
     "web/src/pages/archive.astro",
     "web/src/pages/subjekt/[name].astro",
+]
+
+PREMIUM_AD_FREE_PAGES = [
+    "web/src/pages/for-you.astro",
+    "web/src/pages/settings.astro",
+    "web/src/pages/briefing.astro",
 ]
 
 SHARED_COMPONENTS_WITH_AD = [
     "web/src/components/home/HomeRail.astro",
     "web/src/components/home/HomePage.astro",
     "web/src/components/home/HomeUnifiedFeed.astro",
-    "web/src/components/briefing/BriefingSidebar.astro",
 ]
 
 
@@ -80,6 +79,8 @@ def test_tinyadz_helper_module_exists():
     assert "scripts/v2.0/main.js" in source
     assert "6a2995c32b7233c34b097a9c" in source
     assert "6a29a71de09ffcc4c9bbd83e" in source
+    assert "isPremiumAdFreePage" in source
+    assert "PREMIUM_AD_FREE_PATHS" in source
 
 
 def test_layout_wires_tinyadz_for_mk_and_live():
@@ -147,14 +148,29 @@ def test_shared_components_include_tinyadz_slots():
         assert "TinyAdz" in source, path
 
     home = Path("web/src/components/home/HomePage.astro").read_text(encoding="utf-8")
-    assert "home-inline-ad-slot--above-fold" in home
     assert "home-inline-ad-slot--rail-feed" in home
+    assert "home-inline-ad-slot--above-fold" not in home
 
     cluster = Path("web/src/pages/cluster/[slug].astro").read_text(encoding="utf-8")
     synthesis_idx = cluster.index("<ClusterSynthesisSection")
     ad_idx = cluster.index('<TinyAdzInlinedAd class="cluster-inlined-ad')
     citations_idx = cluster.index("<CitationSources citationSources")
     assert synthesis_idx < ad_idx < citations_idx
+
+
+def test_premium_reader_pages_stay_ad_free():
+    helper = Path("web/src/lib/tinyadz.ts").read_text(encoding="utf-8")
+    assert "/for-you" in helper
+    assert "/briefing" in helper
+    assert "/settings" in helper
+
+    for path in PREMIUM_AD_FREE_PAGES:
+        source = Path(path).read_text(encoding="utf-8")
+        assert "TinyAdzInlinedAd" not in source, path
+        assert "TinyAdzRailAd" not in source, path
+
+    briefing_sidebar = Path("web/src/components/briefing/BriefingSidebar.astro").read_text(encoding="utf-8")
+    assert "TinyAdzRailAd" not in briefing_sidebar
 
 
 def test_pulse_and_izvori_include_tinyadz_rail_slots():

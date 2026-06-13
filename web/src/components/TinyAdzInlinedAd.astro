@@ -11,9 +11,10 @@ const { class: className } = Astro.props;
 const requestUrl = Astro.request ? new URL(Astro.request.url) : Astro.url;
 const hostHeader = Astro.request?.headers.get('host') || requestUrl.hostname;
 const lang = getLangFromUrl(requestUrl, hostHeader);
+const pathname = requestUrl.pathname;
 ---
 
-{shouldShowTinyAdzInlinedAds(lang, hostHeader) && (
+{shouldShowTinyAdzInlinedAds(lang, hostHeader, pathname) && (
   <div
     ta-ad-container=""
     class:list={['tinyadz-inlined', className]}
@@ -76,6 +77,27 @@ const lang = getLangFromUrl(requestUrl, hostHeader);
 
   :global(.page-inline-ad) {
     margin-bottom: 2.5rem;
+  }
+
+  :global(.tinyadz-inlined.cluster-inlined-ad),
+  :global(.tinyadz-inlined.archive-inline-ad),
+  :global(.tinyadz-inlined.topic-inline-ad),
+  :global(.tinyadz-inlined.entity-inline-ad),
+  :global(.tinyadz-inlined.page-inline-ad) {
+    min-height: 88px;
+    border-top-color: color-mix(in srgb, var(--foreground) 8%, var(--border));
+    border-bottom-color: color-mix(in srgb, var(--foreground) 8%, var(--border));
+    background:
+      linear-gradient(90deg, color-mix(in srgb, var(--foreground) 2%, transparent) 0 1px, transparent 1px 100%),
+      color-mix(in srgb, var(--secondary) 18%, transparent);
+  }
+
+  :global(.tinyadz-inlined.page-rail-ad) {
+    min-height: 240px;
+    border-top-width: 1px;
+    background:
+      radial-gradient(circle at 24% 12%, color-mix(in srgb, var(--nyt-accent) 4%, transparent), transparent 34%),
+      color-mix(in srgb, var(--secondary) 22%, var(--background));
   }
 
   @media (max-width: 767px) {

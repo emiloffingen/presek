@@ -8,7 +8,6 @@ import {
   Gauge,
   Layers,
   ListChecks,
-  Loader2,
   Radio,
   SlidersHorizontal,
   Sparkles,
@@ -33,9 +32,32 @@ import { ui } from '../i18n/ui';
 import type { NewsCluster } from '../types';
 
 interface ForYouPageIslandProps {
-  initialClusters: NewsCluster[];
+  initialClusters?: NewsCluster[];
   initialError?: string | null;
   lang?: string;
+}
+
+function ForYouSkeleton({ isMK }: { isMK: boolean }) {
+  return (
+    <div className="for-you-dashboard for-you-skeleton" aria-busy="true" aria-label={isMK ? 'Се вчитува' : 'Učitavanje'}>
+      <section className="for-you-hero for-you-skeleton-hero">
+        <div className="for-you-skeleton-copy">
+          <div className="for-you-skeleton-line for-you-skeleton-kicker" />
+          <div className="for-you-skeleton-line for-you-skeleton-title" />
+          <div className="for-you-skeleton-line for-you-skeleton-body" />
+        </div>
+        <div className="for-you-skeleton-panel" />
+      </section>
+      <div className="for-you-skeleton-grid">
+        <div className="for-you-skeleton-card is-primary" />
+        <div className="for-you-skeleton-card" />
+        <div className="for-you-skeleton-card" />
+      </div>
+      <p className="for-you-skeleton-status">
+        {isMK ? 'Го подготвуваме вашиот пресек...' : 'Pripremamo vaš Presek...'}
+      </p>
+    </div>
+  );
 }
 
 type PersonalizedCluster = NewsCluster & {
@@ -67,14 +89,74 @@ function formatTime(value: string, lang: string) {
   }
 }
 
-export default function ForYouPageIsland({ initialClusters, initialError = null, lang = 'sr' }: ForYouPageIslandProps) {
+export default function ForYouPageIsland({
+  initialClusters = [],
+  initialError = null,
+  lang = 'sr',
+}: ForYouPageIslandProps) {
   const profile = useStore($profile);
+  const [seedClusters, setSeedClusters] = useState<NewsCluster[]>(initialClusters);
   const [semanticResults, setSemanticResults] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [clusterLoading, setClusterLoading] = useState(initialClusters.length === 0);
+  const [semanticLoading, setSemanticLoading] = useState(false);
+  const [clusterError, setClusterError] = useState<string | null>(initialError);
   const [semanticError, setSemanticError] = useState<string | null>(null);
   const isMK = lang === 'mk';
   const copy = ui[isMK ? 'mk' : 'sr'];
   const hasSignals = hasPersonalizationSignal(profile);
+  const clusterFetchError = isMK
+    ? 'Не можеме да ги вчитаме почетните препораки во овој момент.'
+    : 'Ne možemo da učitamo početne preporuke u ovom trenutku.';
+
+  useEffect(() => {
+    if (initialClusters.length > 0) {
+      setClusterLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const fetchSeedClusters = async () => {
+      if (!hasPersonalizationSignal(profile)) {
+        if (!cancelled) {
+          setClusterLoading(false);
+          setClusterError(null);
+        }
+        return;
+      }
+
+      if (!cancelled) {
+        setClusterLoading(true);
+        setClusterError(null);
+      }
+
+      try {
+        const res = await fetch(`${apiBaseUrl()}/news?page_size=32&lang=${lang}`);
+        if (!res.ok) {
+          throw new Error(`Seed request failed: ${res.status}`);
+        }
+        const data = await res.json();
+        if (!cancelled) {
+          setSeedClusters(data.clusters || []);
+        }
+      } catch (e) {
+        console.error('For-you seed fetch failed', e);
+        if (!cancelled) {
+          setSeedClusters([]);
+          setClusterError(clusterFetchError);
+        }
+      } finally {
+        if (!cancelled) {
+          setClusterLoading(false);
+        }
+      }
+    };
+
+    fetchSeedClusters();
+    return () => {
+      cancelled = true;
+    };
+  }, [profile, lang, initialClusters.length, clusterFetchError]);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,13 +166,13 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
         if (!cancelled) {
           setSemanticResults([]);
           setSemanticError(null);
-          setLoading(false);
+          setSemanticLoading(false);
         }
         return;
       }
 
       if (!cancelled) {
-        setLoading(true);
+        setSemanticLoading(true);
         setSemanticError(null);
       }
 
@@ -121,7 +203,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
         }
       } finally {
         if (!cancelled) {
-          setLoading(false);
+          setSemanticLoading(false);
         }
       }
     };
@@ -130,10 +212,10 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
     return () => {
       cancelled = true;
     };
-  }, [profile]);
+  }, [profile, lang, isMK]);
 
   const mergedClusters = useMemo<PersonalizedCluster[]>(() => {
-    const local = buildPersonalizedClusters(initialClusters, profile, 48, [], lang);
+    const local = buildPersonalizedClusters(seedClusters, profile, 48, [], lang);
     const seen = new Set(semanticResults.map((r) => r.cluster_id));
 
     const combined = [
@@ -150,14 +232,14 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
     ] as PersonalizedCluster[];
 
     if (combined.length === 0 && hasPersonalizationSignal(profile)) {
-      return initialClusters.slice(0, 10).map((cluster) => ({
+      return seedClusters.slice(0, 10).map((cluster) => ({
         ...cluster,
         reason: isMK ? 'Актуелно денес' : 'Aktuelno danas',
       }));
     }
 
     return combined;
-  }, [initialClusters, semanticResults, profile, isMK, lang]);
+  }, [seedClusters, semanticResults, profile, isMK, lang]);
 
   const followSuggestions = useMemo(() => {
     const suggestions = buildSurfaceFollowSuggestions(profile, 'for_you', { topicLimit: 5, sourceLimit: 3, lang });
@@ -176,7 +258,8 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
   const queueClusters = mergedClusters.slice(15, 21);
   const sourceCount = new Set(mergedClusters.flatMap((cluster) => cluster.articles?.map((article) => article.source) || [])).size;
   const synthesisCount = mergedClusters.filter((cluster) => cluster.has_synthesis).length;
-  const pageError = semanticError || initialError;
+  const pageError = semanticError || clusterError;
+  const pageBooting = hasSignals && (clusterLoading || semanticLoading);
 
   const categoryLeaders = useMemo(() => {
     const counts = new Map<string, number>();
@@ -190,13 +273,8 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
       .slice(0, 4);
   }, [mergedClusters]);
 
-  if (loading) {
-    return (
-      <div className="for-you-loading">
-        <Loader2 className="animate-spin" size={30} />
-        <p>{isMK ? 'Го подготвуваме вашиот пресек...' : 'Pripremamo vaš Presek...'}</p>
-      </div>
-    );
+  if (pageBooting) {
+    return <ForYouSkeleton isMK={isMK} />;
   }
 
   if (!hasSignals) {
