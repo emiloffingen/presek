@@ -80,3 +80,54 @@
     display: none !important;
   }
 }
+
+.graph-page .broadsheet-main {
+  border-right-color: color-mix(in srgb, var(--foreground) 8%, var(--border));
+}
+
+.intelligence-graph-shell {
+  max-width: 100%;
+}
+
+.intelligence-graph-shell > .border-b {
+  padding-bottom: clamp(1.25rem, 2vw, 1.65rem);
+  border-bottom: 1px solid color-mix(in srgb, var(--foreground) 16%, var(--border));
+}
+
+.intelligence-graph-shell h1 {
+  max-width: 13ch;
+}
+
+.intelligence-panel,
+.intelligence-graph-canvas {
+  border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
+  background: color-mix(in srgb, var(--card) 86%, var(--background));
+  box-shadow: none;
+}
+
+.intelligence-panel h3 {
+  line-height: 1.05;
+}
+
+.intelligence-graph-canvas {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--foreground) 3%, transparent) 0 1px, transparent 1px 100%),
+    color-mix(in srgb, var(--background) 92%, var(--secondary));
+  background-size: 2.75rem 100%, auto;
+}
+
+@media (min-width: 1024px) {
+  .intelligence-graph-grid {
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 767px) {
+  .intelligence-graph-shell h1 {
+    max-width: 11ch;
+  }
+
+  .intelligence-graph-canvas {
+    min-height: 22rem;
+  }
+}

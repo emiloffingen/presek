@@ -109,6 +109,7 @@
 }
 
 .pulse-category-pill {
+    flex: 0 0 auto;
     padding: 0.45rem 1rem;
     border-radius: 9999px;
     font-family: var(--font-sans);
@@ -143,19 +144,16 @@
 
 /* Glassmorphic Command & Chart Cards */
 .pulse-premium-card {
-    background: color-mix(in srgb, var(--card) 60%, transparent);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
-    border-radius: 20px;
-    padding: 1.5rem;
-    box-shadow: var(--shadow-md);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    background: color-mix(in srgb, var(--card) 84%, var(--background));
+    border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
+    border-radius: 0;
+    padding: clamp(1rem, 2vw, 1.35rem);
+    box-shadow: none;
+    transition: border-color 0.25s var(--ease-editorial), background 0.25s var(--ease-editorial);
 }
 
 .pulse-premium-card:hover {
-    box-shadow: var(--shadow-lg);
-    border-color: var(--border);
+    border-color: color-mix(in srgb, var(--foreground) 18%, var(--border));
 }
 
 /* Glowing Metrics Widgets */
@@ -163,16 +161,14 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    padding: 1.5rem;
-    border-radius: 20px;
-    background: color-mix(in srgb, var(--card) 45%, transparent);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
-    transition: all 0.3s var(--ease-editorial);
+    padding: clamp(1rem, 2vw, 1.25rem);
+    border-radius: 0;
+    background: color-mix(in srgb, var(--card) 82%, var(--background));
+    border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
+    transition: border-color 0.25s var(--ease-editorial), background 0.25s var(--ease-editorial);
     position: relative;
     overflow: hidden;
-    box-shadow: var(--shadow-sm);
+    box-shadow: none;
 }
 
 .pulse-glow-card::before {
@@ -188,13 +184,11 @@
 }
 
 .pulse-glow-card:hover {
-    transform: translateY(-2px);
-    border-color: color-mix(in srgb, var(--border) 50%, var(--nyt-accent) 50%);
-    box-shadow: var(--shadow-md);
+    border-color: color-mix(in srgb, var(--nyt-accent) 28%, var(--border));
 }
 
 .pulse-glow-card.accent-border {
-    border-top: 4px solid var(--nyt-accent);
+    border-top: 3px solid var(--nyt-accent);
 }
 
 /* Lazy chart placeholders */
@@ -239,15 +233,13 @@
     display: flex;
     flex-direction: column;
     padding: 1.25rem 1.35rem;
-    background: color-mix(in srgb, var(--card) 50%, transparent);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    background: color-mix(in srgb, var(--card) 86%, var(--background));
+    border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
     border-radius: var(--radius-lg, 0px);
     transition: border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     position: relative;
     overflow: hidden;
-    box-shadow: var(--shadow-sm);
+    box-shadow: none;
     text-decoration: none;
     color: inherit;
 }
@@ -276,7 +268,6 @@
 
 .actor-card:hover {
     border-color: var(--nyt-accent);
-    box-shadow: var(--shadow-md);
 }
 
 .actor-card:hover::before {
@@ -397,8 +388,8 @@
 .pulse-table-wrapper {
     overflow-x: auto;
     border-top: 2px solid var(--foreground);
-    border-radius: 8px 8px 0 0;
-    box-shadow: var(--shadow-sm);
+    border-radius: 0;
+    box-shadow: none;
 }
 
 .pulse-table {
