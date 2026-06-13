@@ -16,6 +16,7 @@ import { $deliveryPrefs, $profile, $syncToken } from '../lib/store.ts';
 import { hasPersonalizationSignal } from '../lib/personalization.js';
 import { localePathForLang } from '../lib/localePaths';
 import MorningEmailSignup from './MorningEmailSignup.tsx';
+import { ui } from '../i18n/ui';
 
 type TabId = 'pregled' | 'profil' | 'dostava' | 'sinhronizacija' | 'vodic';
 
@@ -29,6 +30,7 @@ export default function SettingsOverviewIsland({ lang = 'sr' }: { lang?: string 
   const syncToken = useStore($syncToken);
   const deliveryPrefs = useStore($deliveryPrefs);
   const isMK = lang === 'mk';
+  const copy = ui[isMK ? 'mk' : 'sr'];
 
   const followedTopics = profile?.followedTopics || [];
   const followedSources = profile?.followedSources || [];
@@ -52,10 +54,10 @@ export default function SettingsOverviewIsland({ lang = 'sr' }: { lang?: string 
       {
         id: 'dostava' as TabId,
         icon: Mail,
-        label: isMK ? 'Jutarnje izdanje' : 'Jutarnje izdanje',
-        value: deliveryPrefs.morningBriefing ? (isMK ? 'Push' : 'Push') : (isMK ? 'Искл.' : 'Iskl.'),
-        note: isMK ? 'локална достава' : 'lokalna dostava',
-        hint: isMK ? 'E-pošta + push + ntfy' : 'E-pošta + push + ntfy',
+        label: copy['settings.overview_morning_label'],
+        value: deliveryPrefs.morningBriefing ? 'Push' : (isMK ? 'Искл.' : 'Iskl.'),
+        note: copy['settings.overview_delivery_note'],
+        hint: copy['settings.overview_delivery_hint'],
       },
       {
         id: 'sinhronizacija' as TabId,
@@ -68,7 +70,7 @@ export default function SettingsOverviewIsland({ lang = 'sr' }: { lang?: string 
           : (isMK ? 'Поврзете уреди' : 'Povežite uređaje'),
       },
     ],
-    [deliveryPrefs.morningBriefing, followedSources.length, followedTopics.length, isMK, syncToken],
+    [copy, deliveryPrefs.morningBriefing, followedSources.length, followedTopics.length, isMK, syncToken],
   );
 
   return (
@@ -148,7 +150,7 @@ export default function SettingsOverviewIsland({ lang = 'sr' }: { lang?: string 
           <BellRing size={16} />
           <span>
             <strong>{isMK ? 'Подеси достава' : 'Podesi dostavu'}</strong>
-            <small>{isMK ? 'E-pošta, push и ntfy на едно место' : 'E-pošta, push i ntfy na jednom mestu'}</small>
+            <small>{copy['settings.overview_delivery_link_note']}</small>
           </span>
           <ArrowUpRight size={14} />
         </button>
@@ -166,11 +168,9 @@ export default function SettingsOverviewIsland({ lang = 'sr' }: { lang?: string 
         <div className="settings-overview-email-head">
           <Radio size={16} />
           <div>
-            <h3>{isMK ? 'Утринско издание на e-pošta' : 'Jutarnje izdanje na e-poštu'}</h3>
+            <h3>{copy['settings.overview_morning_email_title']}</h3>
             <p>
-              {isMK
-                ? 'Истиот уреднички брифинг што го читате на страницата — секое утро во 08:00.'
-                : 'Isti urednički brifing koji čitate na stranici — svako jutro u 08:00.'}
+              {copy['settings.overview_morning_email_desc']}
             </p>
           </div>
         </div>

@@ -29,6 +29,7 @@ import {
   buildSurfaceFollowSuggestions,
 } from '../lib/personalization.js';
 import { apiBaseUrl } from '../lib/apiBase';
+import { ui } from '../i18n/ui';
 import type { NewsCluster } from '../types';
 
 interface ForYouPageIslandProps {
@@ -72,6 +73,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
   const [loading, setLoading] = useState(true);
   const [semanticError, setSemanticError] = useState<string | null>(null);
   const isMK = lang === 'mk';
+  const copy = ui[isMK ? 'mk' : 'sr'];
   const hasSignals = hasPersonalizationSignal(profile);
 
   useEffect(() => {
@@ -270,13 +272,13 @@ export default function ForYouPageIsland({ initialClusters, initialError = null,
 
       <div className="for-you-action-bar">
         <a href={localePathForLang('/briefing', isMK ? 'mk' : 'sr')} className="for-you-action-link">
-          <Newspaper size={15} /> {isMK ? 'Брифинг' : 'Brifing'}
+          <Newspaper size={15} /> {copy['for_you.action_briefing']}
         </a>
         <a href={localePathForLang('/settings', isMK ? 'mk' : 'sr')} className="for-you-action-link">
-          <SlidersHorizontal size={15} /> {isMK ? 'Поставки' : 'Podešavanja'}
+          <SlidersHorizontal size={15} /> {copy['for_you.action_settings']}
         </a>
         <a href={`${localePathForLang('/settings', isMK ? 'mk' : 'sr')}#dostava`} className="for-you-action-link">
-          <BellRing size={15} /> {isMK ? 'Jutarnje izdanje' : 'Jutarnje izdanje'}
+          <BellRing size={15} /> {copy['for_you.action_morning']}
         </a>
       </div>
 

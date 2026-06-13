@@ -49,11 +49,9 @@ try {
                 <div class="w-10 h-[1px] bg-nyt-accent"></div>
                 <span class="page-kicker ui-label !mb-0">{t('nav.for_you')}</span>
             </div>
-            <h1 class="for-you-page-title editorial-headline italic">{lang === 'mk' ? 'Ваш' : 'Vaš'} <span>{lang === 'mk' ? 'личен пресек' : 'lični presek'}</span></h1>
+            <h1 class="for-you-page-title editorial-headline italic">{t('for_you.page_title')} <span>{t('for_you.page_title_span')}</span></h1>
             <p class="for-you-page-lede editorial-intro max-w-3xl mt-6 text-[var(--text-lg)] text-muted-foreground">
-                {lang === 'mk'
-                    ? 'Вести подредени според темите, изворите и неодамнешното читање — без профил или лозинка.'
-                    : 'Vesti poređane prema temama, izvorima i nedavnom čitanju — bez profila ili lozinke.'}
+                {t('for_you.page_lede')}
             </p>
         </header>
 
