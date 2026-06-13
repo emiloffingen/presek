@@ -101,7 +101,7 @@ export const ConsentBanner: React.FC = () => {
 
   return (
     <div
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] isolate px-2 pb-2 md:inset-x-auto md:right-4 md:bottom-4 md:w-[min(28rem,calc(100vw-2rem))] md:p-0 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3 motion-safe:duration-300"
+      className="consent-banner pointer-events-none fixed inset-x-0 bottom-0 z-[100] isolate px-2 pb-2 md:inset-x-auto md:right-4 md:bottom-4 md:w-[min(28rem,calc(100vw-2rem))] md:p-0 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3 motion-safe:duration-300"
       style={{ contain: 'layout paint style' }}
     >
       <div className="pointer-events-auto mx-auto max-w-5xl rounded-md border border-border bg-popover/96 px-3 py-2 text-popover-foreground shadow-[0_14px_36px_rgba(17,24,39,0.14)] backdrop-blur-xl md:px-4 md:py-3">

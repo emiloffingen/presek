@@ -3,21 +3,30 @@
 /* Mobile Layout Polish */
 @media (max-width: 768px) {
   :root {
-    --section-py: 1.25rem;
-    --page-py: 1.5rem;
-    --grid-gap: 1.25rem;
+    --section-py: 1rem;
+    --page-py: 1.15rem;
+    --grid-gap: 0.95rem;
+  }
+
+  body.has-consent-banner {
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  body.has-consent-banner .consent-banner {
+    bottom: env(safe-area-inset-bottom, 0px);
   }
 
   /* Optimized container padding for mobile */
   .container {
-    padding-left: 1rem !important;
-    padding-right: 1rem !important;
+    padding-left: 0.9rem !important;
+    padding-right: 0.9rem !important;
   }
 
   /* Typography adjustments for mobile density */
   .headline-lead {
-    font-size: 2.25rem !important;
-    line-height: 1.2 !important;
+    font-size: clamp(1.78rem, 8.4vw, 2.2rem) !important;
+    line-height: 1.12 !important;
+    letter-spacing: -0.02em !important;
   }
 
   /* Prevent overflow from wide components */
@@ -37,5 +46,11 @@
 
   .source-reputation-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  body.has-consent-banner {
+    padding-bottom: calc(6.2rem + env(safe-area-inset-bottom, 0px));
   }
 }

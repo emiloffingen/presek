@@ -8,12 +8,11 @@
     overflow: hidden;
     background:
         linear-gradient(135deg,
-            color-mix(in srgb, var(--placeholder-bg, #070c16) 100%, black) 0%,
-            color-mix(in srgb, var(--placeholder-bg, #132a4f) 60%, black) 100%
+            color-mix(in srgb, var(--background) 92%, var(--placeholder-bg, #070c16) 8%) 0%,
+            color-mix(in srgb, var(--secondary) 78%, var(--placeholder-bg, #132a4f) 22%) 100%
         );
     box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.1),
-        0 22px 48px rgba(8, 14, 28, 0.2);
+        inset 0 1px 0 rgba(255,255,255,0.08);
 }
 
 .design-card-pattern {
@@ -38,8 +37,9 @@
     z-index: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    filter: saturate(0.95) contrast(1.02);
+    object-fit: contain;
+    filter: saturate(0.55) contrast(0.96) opacity(0.52);
+    padding: 1rem;
 }
 
 .topic-fallback-card--proxy-only .design-card-ribbon,
@@ -48,7 +48,7 @@
 }
 
 .topic-fallback-card--proxy-only .article-image-fallback {
-    filter: none;
+    filter: saturate(0.55) contrast(0.96) opacity(0.52);
 }
 
 .topic-fallback-scrim {
@@ -56,24 +56,23 @@
     inset: 0;
     z-index: 1;
     background:
-        linear-gradient(180deg, rgba(4, 8, 16, 0.08) 0%, rgba(4, 8, 16, 0.58) 100%),
-        linear-gradient(90deg, rgba(4, 8, 16, 0.42), rgba(4, 8, 16, 0.08));
+        linear-gradient(180deg, transparent 0%, rgba(4, 8, 16, 0.12) 100%);
 }
 
 .design-card-ribbon {
     position: absolute;
     top: 0;
     left: 0;
-    background: var(--nyt-accent);
-    color: white;
-    padding: 0.45rem 1.25rem;
+    background: color-mix(in srgb, var(--background) 78%, var(--nyt-accent) 22%);
+    color: var(--nyt-accent);
+    padding: 0.34rem 0.8rem;
     font-family: var(--font-sans);
     font-size: 0.65rem;
     font-weight: 950;
     letter-spacing: 0.15em;
     text-transform: uppercase;
     z-index: 3;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    box-shadow: none;
 }
 
 .design-card-main {
@@ -104,7 +103,7 @@
     font-weight: 900;
     text-transform: uppercase;
     letter-spacing: 0.25em;
-    color: rgba(255,255,255,0.5);
+    color: color-mix(in srgb, var(--muted-foreground) 82%, var(--foreground));
     margin: 0;
 }
 
@@ -157,7 +156,7 @@ a:hover .design-card-cta {
 }
 
 .image-wrap[data-image-state="fallback"] .runtime-image-container {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--placeholder-bg, #070c16) 100%, black) 0%, color-mix(in srgb, var(--placeholder-bg, #132a4f) 60%, black) 100%) !important;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--background) 94%, var(--placeholder-bg, #070c16) 6%) 0%, color-mix(in srgb, var(--secondary) 78%, var(--placeholder-bg, #132a4f) 22%) 100%) !important;
     position: relative;
     width: 100%;
     height: 100%;
@@ -169,14 +168,14 @@ a:hover .design-card-cta {
     position: absolute;
     inset: 0;
     z-index: 0;
-    filter: none;
-    object-fit: cover;
-    padding: 0;
+    filter: saturate(0.55) contrast(0.96) opacity(0.52);
+    object-fit: contain;
+    padding: 1.2rem;
 }
 
 .nyt-article:hover .article-image-placeholder,
 .nyt-article:hover .image-wrap[data-image-state="fallback"] .runtime-image-container {
-    transform: scale(1.04);
+    transform: scale(1.015);
 }
 
 /* ──────────────────────────────────────────────────
@@ -228,4 +227,3 @@ a:hover .design-card-cta {
     0% { transform: translateX(-100%); }
     55%, 100% { transform: translateX(100%); }
 }
-

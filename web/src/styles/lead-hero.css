@@ -509,10 +509,10 @@
 			text-wrap: balance;
 		}
 
-		.lead-media-frame-fallback {
-			padding: 0.4rem;
+		.lead-media-frame-fallback,
+		.lead-media-frame.media-failed {
 			border-color: color-mix(in srgb, var(--border) 78%, var(--foreground) 22%);
-	}
+		}
 
 	.lead-media-image {
 		display: block;
@@ -531,23 +531,32 @@
         filter: brightness(1.05);
     }
 
-	.lead-media-image.is-loaded {
-		opacity: 1;
-	}
+		.lead-media-image.is-loaded {
+			opacity: 1;
+		}
 
-    .lead-media-overlay {
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.28) 36%, transparent 66%);
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
-        padding: 1.5rem;
-        opacity: 0;
-        transition: opacity 0.4s ease;
-        pointer-events: none;
-        z-index: 2;
-    }
+	    .lead-media-frame-proxy-fallback .lead-media-image {
+	        object-fit: contain;
+	        padding: clamp(0.7rem, 2vw, 1.25rem);
+	        background:
+	            radial-gradient(circle at 78% 18%, color-mix(in srgb, var(--dominant-color) 8%, transparent), transparent 38%),
+	            linear-gradient(135deg, color-mix(in srgb, var(--background) 94%, var(--dominant-color) 6%), color-mix(in srgb, var(--secondary) 82%, var(--background) 18%));
+	        filter: saturate(0.6) contrast(0.96);
+	    }
+
+	    .lead-media-overlay {
+	        position: absolute;
+	        inset: 0;
+	        background: linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.28) 36%, transparent 66%);
+	        display: flex;
+	        flex-direction: column;
+	        justify-content: flex-end;
+	        padding: 1.5rem;
+	        opacity: 0;
+	        transition: opacity 0.4s ease;
+	        pointer-events: none;
+	        z-index: 2;
+	    }
 
 	    .lead-media-mobile .lead-media-frame.media-ready .lead-media-overlay,
 	    .lead-media-desktop .lead-media-frame.media-ready .lead-media-overlay { opacity: 1; }
@@ -628,9 +637,9 @@
         transition: transform 0.8s var(--ease-editorial);
 	}
 
-    .lead-media-frame:hover .lead-media-placeholder {
-        transform: scale(1.04);
-    }
+	    .lead-media-frame:hover .lead-media-placeholder {
+	        transform: scale(1.015);
+	    }
 
     .design-card-pattern {
         position: absolute;
@@ -912,24 +921,24 @@
 	}
 
 		@media (max-width: 639px) {
-			.lead-hero { gap: 0.8rem; padding-bottom: 1rem; margin-bottom: 1rem; }
+			.lead-hero { gap: 0.62rem; padding-bottom: 0.85rem; margin-bottom: 0.85rem; }
 			.lead-copy { order: 1; }
 			.lead-media-mobile { order: 2; }
-			.lead-copy { gap: 0.3rem; }
+			.lead-copy { gap: 0.22rem; }
 
 			.headline-lead {
-				font-size: 1.95rem !important;
-				line-height: 1.2 !important;
-				letter-spacing: -0.025em !important;
-				margin-bottom: 0.7rem;
+				font-size: clamp(1.72rem, 8vw, 2.06rem) !important;
+				line-height: 1.12 !important;
+				letter-spacing: -0.018em !important;
+				margin-bottom: 0.48rem;
 				padding-bottom: 0.08em;
 			}
 
 			.lead-media-frame {
-				aspect-ratio: 16 / 8.5;
+				aspect-ratio: 16 / 7;
 				height: auto;
-	            max-height: 28vh;
-				min-height: 9.2rem;
+	            max-height: 22vh;
+				min-height: 7.1rem;
 			}
 
 			.lead-media-image {
@@ -969,13 +978,13 @@
 					line-height: 1.05;
 				}
 
-			.lead-hero-filtered .headline-lead {
-				font-size: 2.1rem !important;
-				line-height: 1.18 !important;
-			}
+				.lead-hero-filtered .headline-lead {
+					font-size: clamp(1.82rem, 8.4vw, 2.12rem) !important;
+					line-height: 1.13 !important;
+				}
 
-		.lead-media-placeholder { padding: 0.75rem; }
-		.lead-media-placeholder h2 { font-size: 1.08rem; }
+			.lead-media-placeholder { padding: 0.75rem; }
+			.lead-media-placeholder h2 { font-size: 0.98rem; }
         .lead-media-editorial-card {
             padding: 0.85rem;
             gap: 0.55rem;
@@ -1001,11 +1010,11 @@
         }
 
 			.lead-summary {
-				font-size: 0.9rem;
-				line-height: 1.42;
-	            margin-bottom: 0.35rem;
+				font-size: 0.86rem;
+				line-height: 1.38;
+		            margin-bottom: 0.35rem;
 				display: -webkit-box;
-				-webkit-line-clamp: 3;
+				-webkit-line-clamp: 2;
 				-webkit-box-orient: vertical;
 				overflow: hidden;
 			}
