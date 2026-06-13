@@ -338,6 +338,12 @@
         .nav-rail-content { padding: 0.25rem 0; }
         .nav-rail-group { padding: 0 0.75rem; }
         .nav-rail-link { font-size: var(--text-ui-kicker); padding: 0.35rem 0.55rem; }
+        html[lang="sr-Latn"] .discovery-nav-v2 .nav-rail-group.group-dynamic,
+        html[lang="sr-Latn"] .discovery-nav-v2 .nav-rail-link--analysis,
+        html[lang="mk"] .discovery-nav-v2 .nav-rail-group.group-dynamic,
+        html[lang="mk"] .discovery-nav-v2 .nav-rail-link--analysis {
+            display: none;
+        }
     }
 
     @media (min-width: 769px) {

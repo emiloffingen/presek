@@ -106,7 +106,52 @@ const nonTrendingSections = visibleSections.filter((section: any) => section.typ
 const trendingSections = visibleSections.filter((section: any) => section.type === 'trending');
 const primaryNavSections = nonTrendingSections.slice(0, 2);
 const overflowNavSections = [...nonTrendingSections.slice(2), ...trendingSections];
-const overflowNavItems = overflowNavSections.flatMap((section: any) => section.items || []);
+
+function dedupeNavItems(items: NavItem[]) {
+    const seen = new Set<string>();
+    return items.filter((item) => {
+        const key = `${item.href}|${item.label}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+}
+
+const baseOverflowNavItems = overflowNavSections.flatMap((section: any) =>
+    (section.items || []).map((item: any) => ({
+        label: String(item.label || ''),
+        href: String(item.href || ''),
+    })),
+);
+
+const srMobileOverflowExtras: NavItem[] =
+    lang === 'sr'
+        ? [
+              { label: t('nav.deep_analysis'), href: '/pregled' },
+              ...((nonTrendingSections[1]?.items || []) as any[]).map((item: any) => ({
+                  label: String(item.label || ''),
+                  href: String(item.href || ''),
+              })),
+          ]
+        : [];
+
+const mkMobileOverflowExtras: NavItem[] =
+    lang === 'mk'
+        ? [
+              { label: t('nav.deep_analysis'), href: '/pregled' },
+              ...((nonTrendingSections[1]?.items || []) as any[]).map((item: any) => ({
+                  label: String(item.label || ''),
+                  href: String(item.href || ''),
+              })),
+          ]
+        : [];
+
+const overflowNavItems =
+    lang === 'sr'
+        ? dedupeNavItems([...srMobileOverflowExtras, ...baseOverflowNavItems])
+        : lang === 'mk'
+          ? dedupeNavItems([...mkMobileOverflowExtras, ...baseOverflowNavItems])
+          : baseOverflowNavItems;
 
 const pregledHref = l('/pregled');
 const homeHref = l('/');
