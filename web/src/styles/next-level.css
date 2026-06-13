@@ -510,13 +510,7 @@ body.has-consent-banner .ui-concept-onboarding {
 
 /* ── UI concept onboarding ──────────────────────────── */
 .ui-concept-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 194;
-  border: 0;
-  padding: 0;
-  background: color-mix(in srgb, var(--foreground) 28%, transparent);
-  cursor: pointer;
+  display: none;
 }
 
 .ui-concept-onboarding {
