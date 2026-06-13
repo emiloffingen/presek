@@ -77,6 +77,25 @@ class TestDBWrapper:
 class TestDatabaseManagerExecute:
     """Tests for DatabaseManager.execute method."""
 
+    def test_reset_pool_rebuilds_primary_and_read_pools(self):
+        from core.database import DatabaseManager
+
+        manager = _fresh_database_manager()
+        primary = MagicMock()
+        read = MagicMock()
+        manager._pool = primary
+        manager._read_pool = read
+
+        with patch.object(manager, "_init_pool") as mock_init_primary, patch.object(
+            manager, "_init_read_pool"
+        ) as mock_init_read:
+            manager._reset_pool()
+
+        primary.close.assert_called_once()
+        read.close.assert_called_once()
+        mock_init_primary.assert_called_once()
+        mock_init_read.assert_called_once()
+
     def test_execute_fetch_returns_dicts(self):
         from core.database import DatabaseManager
 

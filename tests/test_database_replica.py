@@ -132,12 +132,11 @@ def test_database_manager_initialization_with_replica():
                         conninfo="postgresql://user:pass@replica:5432/db",
                         min_size=core.database.DB_POOL_MINCONN,
                         max_size=core.database.DB_POOL_MAXCONN,
+                        timeout=core.database.DB_POOL_TIMEOUT,
+                        max_lifetime=core.database.DB_POOL_MAX_LIFETIME,
+                        check=core.database.psycopg_pool.ConnectionPool.check_connection,
                         open=True,
-                        kwargs={
-                            "row_factory": core.database.dict_row,
-                            "connect_timeout": 5,
-                            "options": core.database.DB_SESSION_OPTIONS,
-                        },
+                        kwargs=core.database._pool_common_kwargs(),
                     )
 
     # Crucial: Reload core.database once again in a clean environment (no patches)

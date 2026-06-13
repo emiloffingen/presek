@@ -52,7 +52,10 @@ async def lifespan(app: FastAPI):
 
     # Warm up async database pools on startup
     try:
-        from core.database import async_db
+        from core.database import async_db, db_manager
+
+        # Uvicorn prefork workers inherit parent pool state — rebuild both sync pools.
+        db_manager._reset_pool()
         await async_db._ensure_pool()
     except Exception as e:
         log.error(f"Failed to initialize async database pools on startup: {e}")

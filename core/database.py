@@ -191,6 +191,54 @@ def _int_env(name: str, default: int) -> int:
 DB_POOL_MINCONN = max(1, _int_env("DB_POOL_MINCONN", 1))
 DB_POOL_MAXCONN = max(DB_POOL_MINCONN, _int_env("DB_POOL_MAXCONN", 5))
 DB_POOL_TIMEOUT = max(5, _int_env("DB_POOL_TIMEOUT", 60))
+DB_POOL_MAX_LIFETIME = max(60, _int_env("DB_POOL_MAX_LIFETIME", 1800))
+
+
+def _pool_common_kwargs() -> dict:
+    return {
+        "row_factory": dict_row,
+        "connect_timeout": 5,
+        "options": DB_SESSION_OPTIONS,
+    }
+
+
+def _connection_is_usable(conn) -> bool:
+    try:
+        return conn is not None and not conn.closed
+    except Exception:
+        return False
+
+
+def _return_connection(pool, conn, fallback_put=None) -> None:
+    """Return a connection to its pool, discarding broken ones."""
+    if conn is None:
+        return
+    if pool is None:
+        if fallback_put:
+            fallback_put(conn)
+        else:
+            try:
+                conn.close()
+            except Exception:
+                pass
+        return
+    try:
+        if _connection_is_usable(conn):
+            pool.putconn(conn)
+        else:
+            pool.putconn(conn, close=True)
+    except TypeError:
+        # Older psycopg_pool without close= kwarg — close explicitly instead.
+        try:
+            conn.close()
+        except Exception:
+            pass
+    except Exception as e:
+        log.warning("Failed to return connection to pool: %s", e)
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 
 class AsyncDatabaseManager:
@@ -207,17 +255,19 @@ class AsyncDatabaseManager:
         return cls._instance
 
     def _reset_pool(self):
-        """Force re-initialization of the async pool. Crucial after process forking."""
+        """Force re-initialization of async pools. Crucial after process forking."""
         if self._pool:
             try:
-                self._pool = None
+                self._pool.close()
             except Exception as e:
-                log.debug(f"Failed to close async pool: {e}")
-        if hasattr(self, "_read_pool") and self._read_pool:
+                log.debug("Failed to close async pool: %s", e)
+        self._pool = None
+        if getattr(self, "_read_pool", None):
             try:
-                self._read_pool = None
+                self._read_pool.close()
             except Exception as e:
-                log.debug(f"Failed to close async read replica pool: {e}")
+                log.debug("Failed to close async read replica pool: %s", e)
+        self._read_pool = None
 
     async def _ensure_pool(self):
         async with self._lock:
@@ -227,12 +277,10 @@ class AsyncDatabaseManager:
                     min_size=DB_POOL_MINCONN,
                     max_size=DB_POOL_MAXCONN,
                     timeout=DB_POOL_TIMEOUT,
+                    max_lifetime=DB_POOL_MAX_LIFETIME,
+                    check=psycopg_pool.AsyncConnectionPool.check_connection,
                     open=False,
-                    kwargs={
-                        "row_factory": dict_row,
-                        "connect_timeout": 5,
-                        "options": DB_SESSION_OPTIONS,
-                    },
+                    kwargs=_pool_common_kwargs(),
                 )
                 await self._pool.open()
                 log.info(
@@ -248,12 +296,10 @@ class AsyncDatabaseManager:
                         min_size=DB_POOL_MINCONN,
                         max_size=DB_POOL_MAXCONN,
                         timeout=DB_POOL_TIMEOUT,
+                        max_lifetime=DB_POOL_MAX_LIFETIME,
+                        check=psycopg_pool.AsyncConnectionPool.check_connection,
                         open=False,
-                        kwargs={
-                            "row_factory": dict_row,
-                            "connect_timeout": 5,
-                            "options": DB_SESSION_OPTIONS,
-                        },
+                        kwargs=_pool_common_kwargs(),
                     )
                     await self._read_pool.open()
                     log.info(
@@ -322,12 +368,10 @@ class DatabaseManager:
                     min_size=DB_POOL_MINCONN,
                     max_size=DB_POOL_MAXCONN,
                     timeout=DB_POOL_TIMEOUT,
+                    max_lifetime=DB_POOL_MAX_LIFETIME,
+                    check=psycopg_pool.ConnectionPool.check_connection,
                     open=True,
-                    kwargs={
-                        "row_factory": dict_row,
-                        "connect_timeout": 5,
-                        "options": DB_SESSION_OPTIONS,
-                    },
+                    kwargs=_pool_common_kwargs(),
                 )
                 log.info(
                     f"Presek {APP_VERSION_LABEL}: Database connection pool initialized "
@@ -360,12 +404,10 @@ class DatabaseManager:
                     min_size=DB_POOL_MINCONN,
                     max_size=DB_POOL_MAXCONN,
                     timeout=DB_POOL_TIMEOUT,
+                    max_lifetime=DB_POOL_MAX_LIFETIME,
+                    check=psycopg_pool.ConnectionPool.check_connection,
                     open=True,
-                    kwargs={
-                        "row_factory": dict_row,
-                        "connect_timeout": 5,
-                        "options": DB_SESSION_OPTIONS,
-                    },
+                    kwargs=_pool_common_kwargs(),
                 )
                 log.info(
                     f"Presek {APP_VERSION_LABEL}: Database read replica pool initialized "
@@ -384,28 +426,30 @@ class DatabaseManager:
                     self._read_pool = None
 
     def _reset_pool(self):
-        """Force re-initialization of the pool. Crucial after process forking."""
+        """Force re-initialization of sync pools. Crucial after process forking."""
         if self._pool:
             try:
                 self._pool.close()
             except Exception as e:
-                log.warning(f"Failed to close connection pool: {e}")
+                log.warning("Failed to close primary connection pool: %s", e)
         self._pool = None
+        read_pool = getattr(self, "_read_pool", None)
+        if read_pool:
+            try:
+                read_pool.close()
+            except Exception as e:
+                log.warning("Failed to close read-replica connection pool: %s", e)
+        self._read_pool = None
         self._init_pool()
+        self._init_read_pool()
 
     def get_conn(self):
         if not self._pool:
-            return psycopg.connect(DATABASE_URL, row_factory=dict_row)
+            return psycopg.connect(DATABASE_URL, row_factory=dict_row, options=DB_SESSION_OPTIONS)
         return self._pool.getconn()
 
     def put_conn(self, conn):
-        if self._pool:
-            try:
-                self._pool.putconn(conn)
-            except Exception as e:
-                log.warning(f"Failed to return connection to pool: {e}")
-        else:
-            conn.close()
+        _return_connection(self._pool, conn, fallback_put=lambda c: c.close())
 
     def execute(self, sql, params=None, fetch=True, read_only=None):
         """Standardized query execution with automatic connection release.
@@ -417,6 +461,7 @@ class DatabaseManager:
             read_only: Hint that this is a read-only query for routing to replica
         """
         conn = None
+        pool = None
         try:
             if read_only is None:
                 cleaned_sql = sql.strip().upper()
@@ -443,10 +488,8 @@ class DatabaseManager:
             log.error(f"Presek {APP_VERSION_LABEL} DB Error: {e}")
             raise
         finally:
-            if conn and pool:
-                pool.putconn(conn)
-            elif conn:
-                self.put_conn(conn)
+            if conn:
+                _return_connection(pool, conn)
 
     def execute_one(self, sql, params=None, read_only=None):
         results = self.execute(sql, params, read_only=read_only)

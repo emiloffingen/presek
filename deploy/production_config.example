@@ -44,6 +44,7 @@ USE_READ_REPLICA=true
 DB_POOL_MINCONN=2
 DB_POOL_MAXCONN=5
 DB_POOL_TIMEOUT=60
+DB_POOL_MAX_LIFETIME=1800
 
 # ============================================================================
 # Redis
