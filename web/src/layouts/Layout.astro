@@ -11,6 +11,7 @@ import { ClientRouter } from 'astro:transitions';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import { buildCanonicalUrl, hreflangAlternates, siteOrigin } from '../lib/localePaths';
 import { shouldLoadTinyAdzScript, tinyAdzSiteId } from '../lib/tinyadz';
+import { shouldLoadAdsense } from '../lib/adsense';
 import { proxyBaseUrl } from '../lib/apiBase';
 
 interface Props {
@@ -60,7 +61,7 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 const { sr: srHref, mk: mkHref } = hreflangAlternates(requestUrl.pathname);
 const normalizedHost = hostHeader.split(':')[0].toLowerCase();
 const isLiveHost = normalizedHost === 'presek.live' || normalizedHost === 'www.presek.live';
-const shouldLoadAdsense = lang === 'sr' && isLiveHost;
+const shouldLoadAdsenseScript = shouldLoadAdsense(lang, hostHeader);
 const loadTinyAdz = shouldLoadTinyAdzScript(lang, hostHeader);
 const tinyAdzSite = loadTinyAdz ? tinyAdzSiteId(lang, hostHeader) : '';
 const proxyBase = proxyBaseUrl();
@@ -128,10 +129,10 @@ const organizationSchema = {
 			})();
 		</script>
 
-		{shouldLoadAdsense && (
+		{shouldLoadAdsenseScript && (
 			<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1724921768403014" crossorigin="anonymous"></script>
 		)}
-		{shouldLoadAdsense && (
+		{shouldLoadAdsenseScript && (
 			<meta name="google-adsense-account" content="ca-pub-1724921768403014" />
 		)}
 		<meta charset="UTF-8" />

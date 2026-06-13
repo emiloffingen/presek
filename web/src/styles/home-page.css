@@ -9,6 +9,10 @@
     background-position: center top;
 }
 .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: var(--grid-gap); }
+.broadsheet-grid .broadsheet-main {
+    border-right: 0;
+    padding-right: 0;
+}
 
 @media (min-width: 768px) {
     .broadsheet-grid { grid-template-columns: 1fr; gap: calc(var(--grid-gap) * 1.25); }

@@ -3,6 +3,8 @@
 import os
 import sys
 
+import pytest
+
 sys.path.insert(0, "/home/emiloffingen/presek")
 
 # Set up environment
@@ -14,17 +16,26 @@ from core.database import db_manager as db
 _TEST_BRIEFING_DATE = "2099-01-01"
 
 
-def _require_safe_test_database():
+def _is_safe_test_database() -> bool:
     """Never write briefing test rows to production."""
     db_url = os.environ.get("DATABASE_URL", "")
     if "presek_test" in db_url:
-        return
-    if os.environ.get("ALLOW_PROD_BRIEFING_TEST") == "1":
-        return
-    raise RuntimeError(
-        "Refusing to run briefing workflow test against production. "
-        "Set DATABASE_URL to presek_test or export ALLOW_PROD_BRIEFING_TEST=1 to override."
-    )
+        return True
+    return os.environ.get("ALLOW_PROD_BRIEFING_TEST") == "1"
+
+
+pytestmark = pytest.mark.skipif(
+    not _is_safe_test_database(),
+    reason="Requires DATABASE_URL containing presek_test or ALLOW_PROD_BRIEFING_TEST=1",
+)
+
+
+def _require_safe_test_database():
+    if not _is_safe_test_database():
+        raise RuntimeError(
+            "Refusing to run briefing workflow test against production. "
+            "Set DATABASE_URL to presek_test or export ALLOW_PROD_BRIEFING_TEST=1 to override."
+        )
 
 
 def test_briefing_storage():

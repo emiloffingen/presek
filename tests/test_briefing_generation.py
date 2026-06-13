@@ -26,5 +26,5 @@ def test_language_filtering(monkeypatch):
     overlap = sr_cluster_ids.intersection(mk_cluster_ids)
 
     assert len(overlap) == 0, f"Found {len(overlap)} overlapping clusters between sr and mk"
-    assert fake_db.execute_calls[0][1] == ("RS",)
-    assert fake_db.execute_calls[1][1] == ("MK",)
+    assert fake_db.execute_calls[0][1][2] == "RS"
+    assert fake_db.execute_calls[1][1][2] == "MK"

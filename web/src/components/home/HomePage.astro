@@ -16,6 +16,7 @@ import HomeUnifiedFeed from './HomeUnifiedFeed.astro';
 import HomePregledTeaser from './HomePregledTeaser.astro';
 import HomeSynthesisTeaser from './HomeSynthesisTeaser.astro';
 import TinyAdzInlinedAd from '../TinyAdzInlinedAd.astro';
+import TinyAdzRailAd from '../TinyAdzRailAd.astro';
 import { buildUnifiedFeedItems } from '../../lib/unifiedFeed';
 import FilterHeader from './FilterHeader.astro';
 import HomeRail from './HomeRail.astro';
@@ -703,6 +704,12 @@ if (forYouClusters.length > 0) {
                 {!error && isHomepage && !isPregled && leadCluster && (
                     <div class="section-wrapper home-inline-ad-slot home-inline-ad-slot--above-fold home-feed-only">
                         <TinyAdzInlinedAd class="home-inline-ad home-inline-ad--above-fold" />
+                    </div>
+                )}
+
+                {!error && isHomepage && !isPregled && (
+                    <div class="section-wrapper home-inline-ad-slot home-inline-ad-slot--rail-feed home-feed-only">
+                        <TinyAdzRailAd class="home-feed-rail-ad" />
                     </div>
                 )}
 

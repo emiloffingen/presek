@@ -27,6 +27,43 @@
   padding-bottom: var(--page-py);
 }
 
+.broadsheet-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(1.5rem, 3vw, 3rem);
+  align-items: start;
+}
+
 .broadsheet-main {
   contain: content;
+  min-width: 0;
+}
+
+.broadsheet-rail {
+  display: none;
+  min-width: 0;
+}
+
+@media (min-width: 1180px) {
+  .broadsheet-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
+  }
+
+  .broadsheet-main {
+    border-right: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
+    padding-right: clamp(1.5rem, 2.5vw, 3rem);
+  }
+
+  .broadsheet-rail {
+    display: block;
+    align-self: start;
+    position: sticky;
+    top: calc(var(--header-height, 4.5rem) + 1.25rem);
+  }
+}
+
+@media (max-width: 1179px) {
+  .broadsheet-rail {
+    display: none !important;
+  }
 }

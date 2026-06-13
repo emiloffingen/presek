@@ -5,6 +5,7 @@ import Breadcrumbs from '../components/Breadcrumbs.astro';
 import IntelligenceGraph from '../components/IntelligenceGraph';
 import Footer from '../components/Footer.astro';
 import TinyAdzInlinedAd from '../components/TinyAdzInlinedAd.astro';
+import TinyAdzRailAd from '../components/TinyAdzRailAd.astro';
 import { getLangFromUrl } from '../i18n/utils';
 
 const hostHeader = Astro.request?.headers.get('host');
@@ -22,8 +23,15 @@ const isMK = lang === 'mk';
 
 	<main class="site-layout broadsheet-layout py-[var(--page-py)] animate-rise">
 		<Breadcrumbs items={[{ label: isMK ? 'граф' : 'graf' }]} />
-		<TinyAdzInlinedAd class="page-inline-ad mb-10" />
-		<IntelligenceGraph lang={lang} client:load />
+		<div class="broadsheet-grid">
+			<div class="broadsheet-main">
+				<TinyAdzInlinedAd class="page-inline-ad mb-10" />
+				<IntelligenceGraph lang={lang} client:load />
+			</div>
+			<aside class="broadsheet-rail pl-4">
+				<TinyAdzRailAd />
+			</aside>
+		</div>
 	</main>
 	<Footer />
 </Layout>

@@ -23,14 +23,66 @@ const lang = getLangFromUrl(requestUrl, hostHeader);
 
 <style>
   .tinyadz-inlined {
+    position: relative;
+    display: block;
     width: 100%;
     min-width: 250px;
-    min-height: 100px;
+    min-height: 112px;
     max-width: 900px;
     margin-inline: auto;
+    border-top: 1px solid color-mix(in srgb, var(--foreground) 12%, var(--border));
+    border-bottom: 1px solid color-mix(in srgb, var(--foreground) 12%, var(--border));
+    background:
+      linear-gradient(90deg, color-mix(in srgb, var(--foreground) 4%, transparent) 0 1px, transparent 1px 100%),
+      color-mix(in srgb, var(--secondary) 28%, transparent);
+    background-size: 2.75rem 100%, auto;
+  }
+
+  .tinyadz-inlined::before {
+    content: attr(aria-label);
+    position: absolute;
+    top: -0.62rem;
+    left: 0.7rem;
+    padding: 0 0.35rem;
+    background: var(--background);
+    color: color-mix(in srgb, var(--muted-foreground) 72%, transparent);
+    font-family: var(--font-ui);
+    font-size: var(--text-ui-min);
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  :global(.page-rail-ad) {
+    max-width: 320px;
+    min-height: 280px;
+    border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
+    border-top: 2px solid color-mix(in srgb, var(--foreground) 72%, var(--border));
+    background:
+      radial-gradient(circle at 24% 12%, color-mix(in srgb, var(--nyt-accent) 7%, transparent), transparent 34%),
+      color-mix(in srgb, var(--secondary) 34%, var(--background));
+  }
+
+  :global(.page-rail-ad)::before {
+    top: 0.75rem;
+    left: 0.8rem;
+    background: transparent;
+  }
+
+  :global(.rail-inlined-ad) {
+    margin-bottom: 1.5rem;
   }
 
   :global(.page-inline-ad) {
     margin-bottom: 2.5rem;
+  }
+
+  @media (max-width: 767px) {
+    .tinyadz-inlined {
+      min-height: 92px;
+      min-width: 0;
+      background-size: 2.25rem 100%, auto;
+    }
   }
 </style>

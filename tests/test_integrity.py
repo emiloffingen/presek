@@ -32,10 +32,13 @@ class TestAstroFrontendIntegrity:
 
     def test_adsense_only_loads_on_supported_serbian_domain(self):
         layout = _read("web/src/layouts/Layout.astro")
+        adsense = _read("web/src/lib/adsense.ts")
         middleware = _read("web/src/middleware.ts")
 
-        assert "const shouldLoadAdsense = lang === 'sr'" in layout
-        assert "{shouldLoadAdsense && (" in layout
+        assert "shouldLoadAdsense" in adsense
+        assert "PUBLIC_ADSENSE_ENABLED" in adsense
+        assert "shouldLoadAdsenseScript = shouldLoadAdsense(lang, hostHeader)" in layout
+        assert "{shouldLoadAdsenseScript && (" in layout
         assert "pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" in layout
 
         assert "pathname.startsWith('/mk')" in middleware
@@ -185,8 +188,10 @@ class TestAstroFrontendIntegrity:
 
         assert "let initialError: string | null = null;" in for_you_page
         assert '"Ne možemo da učitamo početne preporuke u ovom trenutku."' in for_you_page
+        assert "TinyAdzRailAd" in for_you_page
+        assert "ErrorBoundary client:idle lang={lang}" in for_you_page
         assert (
-            "<ForYouPageIsland client:load initialClusters={initialClusters} initialError={initialError} lang={lang} />"
+            "<ForYouPageIsland client:idle initialClusters={initialClusters} initialError={initialError} lang={lang} />"
             in for_you_page
         )
         assert "const [semanticError, setSemanticError] = useState<string | null>(null);" in for_you_island

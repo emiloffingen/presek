@@ -658,6 +658,23 @@
   margin-bottom: 1.5rem;
 }
 
+.home-inline-ad-slot--rail-feed {
+  margin-top: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.home-feed-rail-ad {
+  max-width: 900px;
+  min-height: 112px;
+  margin-inline: auto;
+}
+
+.home-feed-rail-ad.page-rail-ad {
+  max-width: 900px;
+  min-height: 112px;
+  border-top-width: 1px;
+}
+
 .home-inline-ad-slot--feed-end {
   margin-top: 1.5rem;
 }

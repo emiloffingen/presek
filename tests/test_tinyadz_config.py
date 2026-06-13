@@ -22,6 +22,9 @@ SHARED_MK_HOST_PAGES_WITH_RAIL_AD = [
     "web/src/pages/support.astro",
     "web/src/pages/tema/[topic].astro",
     "web/src/pages/cluster/[slug].astro",
+    "web/src/pages/for-you.astro",
+    "web/src/pages/graf.astro",
+    "web/src/pages/grafik.astro",
 ]
 
 SHARED_MK_HOST_PAGES_WITH_INLINE_AD = [
@@ -45,6 +48,9 @@ LIVE_PAGES_WITH_RAIL_AD = [
     "web/src/pages/support.astro",
     "web/src/pages/tema/[topic].astro",
     "web/src/pages/cluster/[slug].astro",
+    "web/src/pages/for-you.astro",
+    "web/src/pages/graf.astro",
+    "web/src/pages/grafik.astro",
 ]
 
 LIVE_PAGES_WITH_INLINE_AD = [
@@ -142,6 +148,7 @@ def test_shared_components_include_tinyadz_slots():
 
     home = Path("web/src/components/home/HomePage.astro").read_text(encoding="utf-8")
     assert "home-inline-ad-slot--above-fold" in home
+    assert "home-inline-ad-slot--rail-feed" in home
 
     cluster = Path("web/src/pages/cluster/[slug].astro").read_text(encoding="utf-8")
     synthesis_idx = cluster.index("<ClusterSynthesisSection")
@@ -150,8 +157,26 @@ def test_shared_components_include_tinyadz_slots():
     assert synthesis_idx < ad_idx < citations_idx
 
 
+def test_pulse_and_izvori_include_tinyadz_rail_slots():
+    pulse = Path("web/src/components/PulseClientContainer.tsx").read_text(encoding="utf-8")
+    izvori = Path("web/src/components/IzvoriPage.tsx").read_text(encoding="utf-8")
+    assert "TinyAdzRailSlot" in pulse
+    assert "TinyAdzRailSlot" in izvori
+
+
+def test_adsense_helper_module():
+    helper = Path("web/src/lib/adsense.ts").read_text(encoding="utf-8")
+    layout = Path("web/src/layouts/Layout.astro").read_text(encoding="utf-8")
+    assert "shouldLoadAdsense" in helper
+    assert "PUBLIC_ADSENSE_ENABLED" in helper
+    assert "shouldLoadAdsense" in layout
+
+
 def test_production_config_documents_tinyadz_site_ids():
     example = Path("deploy/production_config.example").read_text(encoding="utf-8")
     assert "PUBLIC_TINYADZ_SITE_ID=6a2995c32b7233c34b097a9c" in example
     assert "PUBLIC_TINYADZ_LIVE_SITE_ID=6a29a71de09ffcc4c9bbd83e" in example
     assert "PUBLIC_TINYADZ_TEST_MODE=false" in example
+    assert "PUBLIC_ADSENSE_ENABLED=true" in example
+    assert "ENABLE_PUBLIC_CHECK=1" in example
+    assert "ENABLE_MK_PUBLIC_CHECK=1" in example

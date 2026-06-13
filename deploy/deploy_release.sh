@@ -414,7 +414,7 @@ run_post_deploy_smoke_checks() {
     [ -f "$smoke_script" ] || fail "Missing smoke check script: $smoke_script"
 
     info "Running post-deploy smoke checks..."
-    if APP_ROOT="$APP_ROOT" ENABLE_PUBLIC_CHECK="${ENABLE_PUBLIC_CHECK:-0}" bash "$smoke_script"; then
+    if APP_ROOT="$APP_ROOT" ENABLE_PUBLIC_CHECK="${ENABLE_PUBLIC_CHECK:-1}" ENABLE_MK_PUBLIC_CHECK="${ENABLE_MK_PUBLIC_CHECK:-1}" bash "$smoke_script"; then
         ok "Post-deploy smoke checks passed"
         return 0
     fi

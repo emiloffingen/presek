@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { apiBaseUrl } from '../lib/apiBase';
 import { Search, ShieldCheck, Zap, Activity, ChevronRight, Globe, Compass, HelpCircle } from 'lucide-react';
 import { useTranslations } from '../i18n/utils';
+import TinyAdzRailSlot from './TinyAdzRailSlot';
 import type { ui } from '../i18n/ui';
 
 interface SourceRow {
@@ -636,6 +637,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
         </div>
 
         <aside className="broadsheet-rail pl-0 md:pl-4">
+          <TinyAdzRailSlot lang={lang} />
           <section className="rail-module mb-8 md:mb-12 p-4 md:p-8 bg-nyt-accent/5 border border-nyt-accent/10 rounded-none">
             <span className="block ui-kicker ui-kicker--accent mb-3 md:mb-4">{t('briefing.system_balance')}</span>
             <h3 className="section-heading mb-4 leading-tight tracking-tight">{t('sources.qi_title')}</h3>

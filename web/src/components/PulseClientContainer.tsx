@@ -1,6 +1,7 @@
 import React, { Suspense, lazy, useState, useEffect, useMemo } from 'react';
 import { Activity, Zap, ShieldCheck, Globe, Timer, Loader2, BarChart3, TrendingUp, Users, Info, ChevronRight, Target } from 'lucide-react';
 import SourceComparisonIsland from './SourceComparisonIsland';
+import TinyAdzRailSlot from './TinyAdzRailSlot';
 import { apiBaseUrl } from '../lib/apiBase';
 import { useTranslations } from '../i18n/utils';
 
@@ -376,6 +377,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                 </div>
 
                 <aside className="broadsheet-rail">
+                    <TinyAdzRailSlot lang={lang} />
                     <section className="pulse-premium-card mb-6">
                         <p className="rail-kicker ui-kicker ui-kicker--accent">{isMK ? 'Методологија' : 'Metodologija'}</p>
                         <h3 className="rail-title italic font-serif text-lg font-black mt-1 mb-2">{isMK ? 'Уреднички Алгоритам' : 'Urednički Algoritam'}</h3>
