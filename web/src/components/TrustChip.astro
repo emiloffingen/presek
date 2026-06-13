@@ -7,6 +7,9 @@ interface Props {
   isStale?: boolean;
   hasVerification?: boolean;
   lang?: 'sr' | 'mk';
+  /** Feed cards: badge only. Cluster/detail views can opt into the popover. */
+  showExplainer?: boolean;
+  quietFreshness?: boolean;
 }
 
 const {
@@ -15,10 +18,12 @@ const {
   isStale = false,
   hasVerification = false,
   lang = 'sr',
+  showExplainer = false,
+  quietFreshness = false,
 } = Astro.props;
 
 const trust = buildTrustChip(
-  { sourcesCount, pluralismScore, isStale, hasVerification },
+  { sourcesCount, pluralismScore, isStale, hasVerification, quietFreshness },
   lang,
 );
 
@@ -27,34 +32,34 @@ const sourceLine = lang === 'mk'
   ? `${trust.sourcesCount} извори се поврзани во истиот кластер.`
   : `${trust.sourcesCount} izvora je povezano u isti klaster.`;
 const pluralismLine = trust.pluralismScore == null
-  ? (lang === 'mk' ? 'Плурализмот сè уште не е пресметан.' : 'Pluralizam još nije izračunat.')
+  ? null
   : trust.pluralismScore >= 55
     ? (lang === 'mk' ? `Различни агли: ${trust.pluralismScore}%.` : `Različiti uglovi: ${trust.pluralismScore}%.`)
     : trust.pluralismScore <= 15
       ? (lang === 'mk' ? `Висок консензус: ${trust.pluralismScore}%.` : `Visok konsenzus: ${trust.pluralismScore}%.`)
       : (lang === 'mk' ? `Умерена разлика: ${trust.pluralismScore}%.` : `Umerena razlika: ${trust.pluralismScore}%.`);
-const freshnessLine = isStale
-  ? (lang === 'mk' ? 'Синтезата се освежува.' : 'Sinteza se osvežava.')
-  : (lang === 'mk' ? 'Синтезата е усогласена со најновите извори.' : 'Sinteza je usklađena sa najnovijim izvorima.');
+const freshnessLine = !isStale || quietFreshness
+  ? null
+  : (lang === 'mk' ? 'Синтезата се ажурира.' : 'Sinteza se ažurira.');
 const verificationLine = hasVerification
   ? (lang === 'mk' ? 'Има сигнал за проверка на факти.' : 'Ima signal provere činjenica.')
-  : (lang === 'mk' ? 'Нема посебен fact-check сигнал.' : 'Nema poseban fact-check signal.');
+  : null;
+const explainerLines = [sourceLine, pluralismLine, freshnessLine, verificationLine].filter(Boolean);
 ---
 
-<span class={`trust-chip trust-chip--${trust.tier}`} title={trust.detail} tabindex="0">
+<span class={`trust-chip trust-chip--${trust.tier}`} title={showExplainer ? undefined : trust.detail} tabindex={showExplainer ? 0 : undefined}>
   <span class="trust-chip-score">{trust.score}</span>
   <span class="trust-chip-label">{trust.label}</span>
   <span class="trust-chip-meta">
     {trust.sourcesCount} {lang === 'mk' ? 'изв.' : 'izv.'}
     {trust.pluralismScore != null ? ` · ${trust.pluralismScore}%` : ''}
   </span>
-  <span class="trust-chip-popover" role="tooltip">
-    <strong>{explainerTitle}</strong>
-    <span>{sourceLine}</span>
-    <span>{pluralismLine}</span>
-    <span>{freshnessLine}</span>
-    <span>{verificationLine}</span>
-  </span>
+  {showExplainer && explainerLines.length > 0 && (
+    <span class="trust-chip-popover" role="tooltip">
+      <strong>{explainerTitle}</strong>
+      {explainerLines.map((line) => <span>{line}</span>)}
+    </span>
+  )}
 </span>
 
 <style>

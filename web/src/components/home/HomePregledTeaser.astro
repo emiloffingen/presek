@@ -6,6 +6,10 @@ import { localePath } from '../../lib/localePaths';
 interface Props {
     lang?: string;
     pluralismPct?: number | null;
+    stats?: {
+        total_feeds?: number;
+        last_24h?: number;
+    } | null;
 }
 
 const hostHeader = Astro.request?.headers.get('host');
@@ -13,6 +17,9 @@ const lang = Astro.props.lang || getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
 const pregledHref = localePath('/pregled', lang, hostHeader);
 const pluralismPct = Astro.props.pluralismPct;
+const stats = Astro.props.stats;
+const feeds = stats?.total_feeds || 0;
+const last24h = stats?.last_24h || 0;
 ---
 
 <a href={pregledHref} class="home-pregled-teaser">
@@ -23,9 +30,17 @@ const pluralismPct = Astro.props.pluralismPct;
         <p class="home-pregled-teaser-kicker">{t('home.pregled_cta_kicker')}</p>
         <h2 class="home-pregled-teaser-title">{t('home.pregled_cta_title')}</h2>
         <p class="home-pregled-teaser-deck">{t('home.pregled_cta_deck')}</p>
-        {typeof pluralismPct === 'number' && pluralismPct > 0 && (
+        {(feeds > 0 || last24h > 0 || (typeof pluralismPct === 'number' && pluralismPct > 0)) && (
             <p class="home-pregled-teaser-stat">
-                {t('home.pregled_cta_stat').replace('{pct}', String(pluralismPct))}
+                {feeds > 0 && <span>{feeds} {t('home.stats_media')}</span>}
+                {feeds > 0 && last24h > 0 && <span class="home-pregled-teaser-dot">·</span>}
+                {last24h > 0 && <span>{last24h} {t('home.stats_posts_24h')}</span>}
+                {typeof pluralismPct === 'number' && pluralismPct > 0 && (
+                    <>
+                        {(feeds > 0 || last24h > 0) && <span class="home-pregled-teaser-dot">·</span>}
+                        <span>{t('home.pregled_cta_stat').replace('{pct}', String(pluralismPct))}</span>
+                    </>
+                )}
             </p>
         )}
     </div>
@@ -34,3 +49,16 @@ const pluralismPct = Astro.props.pluralismPct;
         <ArrowRight size={14} strokeWidth={2.5} aria-hidden="true" />
     </span>
 </a>
+
+<style>
+    .home-pregled-teaser-stat {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .home-pregled-teaser-dot {
+        opacity: 0.45;
+    }
+</style>

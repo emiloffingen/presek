@@ -25,7 +25,6 @@ import HomeLiveStrip from './HomeLiveStrip.astro';
 import HomeBriefingTeaser from './HomeBriefingTeaser.astro';
 import TrendingPreviewRail from './TrendingPreviewRail.astro';
 import DailyEditionBar from './DailyEditionBar.astro';
-import HomeStatsTeaser from './HomeStatsTeaser.astro';
 import LeadEvidenceChips from './LeadEvidenceChips.astro';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { chooseClusterImage } from '../../utils/imageSelection';
@@ -671,13 +670,7 @@ if (forYouClusters.length > 0) {
 
                 {!error && isHomepage && !isPregled && (
                     <div class="section-wrapper home-mobile-order-pregled-teaser home-feed-only">
-                        <HomePregledTeaser lang={lang} pluralismPct={pluralismPct} />
-                    </div>
-                )}
-
-                {!error && isHomepage && stats && (
-                    <div class="homepage-analiza-only">
-                        <HomeStatsTeaser stats={stats} lang={lang} />
+                        <HomePregledTeaser lang={lang} pluralismPct={pluralismPct} stats={stats} />
                     </div>
                 )}
 
@@ -690,56 +683,6 @@ if (forYouClusters.length > 0) {
 					    <HomeBriefingTeaser briefing={briefing} getBriefingSnippet={getBriefingSnippet} />
                     </div>
 				)}
-
-                {/* ── SISTEMSKI SIGNAL (SYSTEM PULSE STATS) ── */}
-                {!error && isHomepage && stats && (
-                    <details class="home-mobile-stats-details home-mobile-order-stats homepage-analiza-only">
-                        <summary class="home-mobile-stats-summary">
-                            {lang === 'sr' ? 'Sistemski pregled' : 'Системски преглед'}
-                        </summary>
-                    <div class="home-system-stats-panel">
-                        <div class="stats-panel-header">
-                            <span class="pulse-indicator">
-                                <span class="pulse-ping"></span>
-                                <span class="pulse-ping pulse-ping-delayed"></span>
-                                <span class="pulse-dot"></span>
-                            </span>
-                            <span class="stats-panel-title">
-                                {lang === 'sr' ? 'SISTEMSKI SIGNAL / MEDIJSKA ANALITIKA' : 'СИСТЕМСКИ СИГНАЛ / МЕДИУМСКА АНАЛИТИКА'}
-                            </span>
-                        </div>
-                        <div class="stats-panel-grid">
-                            <div class="stats-grid-item">
-                                <span class="stats-item-label">{lang === 'sr' ? 'Aktivni izvori' : 'Активни извори'}</span>
-                                <span class="stats-item-value">{stats.total_feeds || 0} <span class="stats-item-unit">{lang === 'sr' ? 'medija' : 'медиуми'}</span></span>
-                            </div>
-                            <div class="stats-grid-divider"></div>
-                            <div class="stats-grid-item">
-                                <span class="stats-item-label">{lang === 'sr' ? 'Ingestija (24h)' : 'Ингестија (24ч)'}</span>
-                                <span class="stats-item-value">{stats.last_24h || 0} <span class="stats-item-unit">{lang === 'sr' ? 'objava' : 'објави'}</span></span>
-                            </div>
-                            {stats.intelligence?.pluralism?.pluralism_pct && (
-                                <>
-                                    <div class="stats-grid-divider"></div>
-                                    <div class="stats-grid-item">
-                                        <span class="stats-item-label">{lang === 'sr' ? 'Indeks Pluralizma' : 'Индекс на Плурализам'}</span>
-                                        <span class="stats-item-value stats-value-positive">{stats.intelligence.pluralism.pluralism_pct}%</span>
-                                    </div>
-                                </>
-                            )}
-                            {stats.intelligence?.pluralism?.high_consensus_pct && (
-                                <>
-                                    <div class="stats-grid-divider"></div>
-                                    <div class="stats-grid-item">
-                                        <span class="stats-item-label">{lang === 'sr' ? 'Konsenzus narativa' : 'Консензус на наративи'}</span>
-                                        <span class="stats-item-value text-nyt-accent">{stats.intelligence.pluralism.high_consensus_pct}%</span>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                    </details>
-                )}
 
                 {!error && isHomepage && (
                     <div class="home-mobile-order-live homepage-analiza-only">

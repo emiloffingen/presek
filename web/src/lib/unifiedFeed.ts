@@ -8,6 +8,25 @@ export type UnifiedFeedItem = {
     variant: 'featured' | 'compact' | 'wire';
 };
 
+/** Single-source clusters with very little text read as wire stubs, not full cards. */
+export function isStubFeedCluster(cluster: NewsCluster): boolean {
+    const main = cluster.articles?.[0];
+    if (!main) return true;
+
+    const sources = Number(
+        (cluster as any).sources_count || (cluster as any).source_count || cluster.articles?.length || 0,
+    );
+    if (sources >= 2) return false;
+
+    const title = String(cluster.synthetic_headline || main.title || '').trim();
+    const summary = String(main.summary || main.description || '').trim();
+
+    if (title.length >= 48) return false;
+    if (summary.length >= 90) return false;
+
+    return title.length < 32 || summary.length < 48;
+}
+
 function clusterTrendScore(cluster: NewsCluster) {
     const sourceCount = Number((cluster as any).sources_count || (cluster as any).source_count || cluster.articles?.length || 0);
     return Number(cluster.homepage_score || 0)
@@ -26,6 +45,7 @@ export function buildUnifiedFeedItems(input: {
 
     const push = (cluster: NewsCluster, bucket: FeedBucket, variant: UnifiedFeedItem['variant']) => {
         if (!cluster?.cluster_id || seen.has(cluster.cluster_id)) return;
+        if (variant === 'wire' && isStubFeedCluster(cluster)) return;
         seen.add(cluster.cluster_id);
         items.push({ cluster, bucket, variant });
     };

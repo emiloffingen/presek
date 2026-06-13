@@ -15,6 +15,8 @@ type TrustInput = {
   pluralismScore?: number | null;
   isStale?: boolean;
   hasVerification?: boolean;
+  /** When true, omit "synthesis updating" notes (feed cards, pending synthesis). */
+  quietFreshness?: boolean;
 };
 
 export function buildTrustChip(input: TrustInput, lang: 'sr' | 'mk'): TrustChipData {
@@ -54,7 +56,7 @@ export function buildTrustChip(input: TrustInput, lang: 'sr' | 'mk'): TrustChipD
         : `${sources} izvora pokrivaju istu priču.`;
   }
 
-  if (isStale) {
+  if (isStale && !input.quietFreshness) {
     detail =
       lang === 'mk'
         ? `${detail} Синтезата се ажурира.`

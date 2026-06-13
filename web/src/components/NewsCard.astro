@@ -1,7 +1,7 @@
 ---
 /* Cache-bust marker for NewsCard stylesheet hashing. */
 import { chooseClusterImage } from '../utils/imageSelection';
-import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, slugify, getDesignCardContext, transliterate, cleanAndDecode } from '../utils/textUtils';
+import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, slugify, getDesignCardContext, transliterate, cleanAndDecode, normalizeEntityOrTag } from '../utils/textUtils';
 import { getVisibleCardSignals } from '../lib/signalBadges';
 import { sanitizeHtml } from '../lib/sanitize';
 import { Clock, Layers, ShieldCheck, Globe, Zap, AlertCircle, Palette, Building2, TrendingUp, Award, Cpu, Newspaper, ArrowRight } from 'lucide-react';
@@ -10,6 +10,7 @@ import type { ui } from '../i18n/ui';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import { localePath, homePath } from '../lib/localePaths';
 import TrustChip from './TrustChip.astro';
+import { isStubFeedCluster } from '../lib/unifiedFeed';
 
 interface Props {
 	cluster: NewsCluster;
@@ -63,6 +64,10 @@ const signalBadges = getVisibleCardSignals({
     isBreaking: cluster.is_breaking,
     topic: cluster.topics?.[0] || main.topic || main.category || '',
 });
+const localizedTopic = normalizeEntityOrTag(
+    cluster.topics?.[0] || main.topic || main.category || '',
+    lang,
+);
 const cardSignals = signalBadges.map((badge) => {
     if (badge.key === 'pluralism-conflict' && cluster.pluralism_score != null) {
         return `${t('signal.different_angles')} ${cluster.pluralism_score}%`;
@@ -76,8 +81,15 @@ const cardSignals = signalBadges.map((badge) => {
     if (badge.key === 'breaking') {
         return t('signal.breaking');
     }
-    return cluster.topics?.[0] || main.topic || main.category || '';
-});
+    if (badge.key === 'topic') {
+        return localizedTopic;
+    }
+    return '';
+}).filter(Boolean);
+const synthesisFreshness = cluster.synthesis_freshness || {};
+const isPendingSynthesis = (synthesisFreshness.reasons || []).includes('missing_synthesis');
+const trustIsStale = Boolean(synthesisFreshness.is_stale) && !isPendingSynthesis;
+const isStubCard = isStubFeedCluster(cluster) && variant !== 'featured' && !isLead;
 const conflictHeadlines = (cluster.pluralism_score ?? 0) >= 55
     ? Array.from(new Set(cluster.articles.slice(0, 3).map((article) => getDisplayTitle(article)).filter(Boolean)))
     : [];
@@ -145,7 +157,7 @@ function getTimeStr(dateStr: string) {
 }
 ---
 
-<article class:list={["nyt-article", "premium-spotlight", `variant-${variant}`, { "lead-story": isLead, "has-image": showMedia, "has-useful-image": showMedia && !isFallbackArt, "has-editorial-fallback": showMedia && isFallbackArt, "card-pluralism-conflict": hasPluralismConflict }, bentoSpan ? `bento-${bentoSpan}` : ""]} data-cluster={JSON.stringify(slimCluster)} data-testid="article-card">
+<article class:list={["nyt-article", "premium-spotlight", `variant-${variant}`, { "lead-story": isLead, "has-image": showMedia, "has-useful-image": showMedia && !isFallbackArt, "has-editorial-fallback": showMedia && isFallbackArt, "card-pluralism-conflict": hasPluralismConflict, "feed-card-stub": isStubCard }, bentoSpan ? `bento-${bentoSpan}` : ""]} data-cluster={JSON.stringify(slimCluster)} data-testid="article-card">
 	<div class="article-body">
         <div class="article-meta-v2">
             <div class="kicker-group">
@@ -183,8 +195,9 @@ function getTimeStr(dateStr: string) {
                 <TrustChip
                     sourcesCount={uniqueSources}
                     pluralismScore={cluster.pluralism_score}
-                    isStale={Boolean(cluster.synthesis_freshness?.is_stale)}
+                    isStale={trustIsStale}
                     hasVerification={Boolean(cluster.has_fact_check)}
+                    quietFreshness={isPendingSynthesis}
                     lang={lang}
                 />
             </div>
@@ -659,7 +672,23 @@ function getTimeStr(dateStr: string) {
 	}
 
 	@media (max-width: 640px) {
-        .nyt-article {
+        .nyt-article.feed-card-stub {
+        opacity: 0.72;
+    }
+
+    .nyt-article.feed-card-stub .summary {
+        -webkit-line-clamp: 2;
+        min-height: 0;
+        color: color-mix(in srgb, var(--foreground) 58%, var(--muted-foreground));
+    }
+
+    .nyt-article.feed-card-stub .headline-standard,
+    .nyt-article.feed-card-stub .headline-compact {
+        font-size: 0.98rem;
+        line-height: 1.2;
+    }
+
+    .nyt-article {
             padding: 0.62rem 0;
             border-radius: 0;
         }

@@ -12,7 +12,7 @@ import ReadingModeToggle from '../../components/Cluster/ReadingModeToggle.tsx';
 import StorylineHistoryIsland from '../../components/StorylineHistoryIsland.tsx';
 import ClusterHistoryIsland from '../../components/ClusterHistoryIsland.tsx';
 import { apiBaseUrl } from '../../lib/apiBase';
-import { cleanAndDecode, isMostlyCyrillic, getEditionStr, stripCitationMarkers, deShout, slugify, normalizeAndDeduplicateTags } from '../../utils/textUtils';
+import { cleanAndDecode, isMostlyCyrillic, getEditionStr, stripCitationMarkers, deShout, slugify, normalizeAndDeduplicateTags, transliterate } from '../../utils/textUtils';
 import { chooseClusterImage } from '../../utils/imageSelection';
 
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
@@ -363,8 +363,9 @@ const agreementsCount = verificationReport?.agreements?.length || 0;
 const trustSummary = cluster?.trust_summary || buildTrustChip({
     sourcesCount: uniqueSourcesCount,
     pluralismScore: cluster?.pluralism_score ?? null,
-    isStale: Boolean(synthesisFreshness?.is_stale),
+    isStale: Boolean(synthesisFreshness?.is_stale) && !(synthesisFreshness?.reasons || []).includes('missing_synthesis'),
     hasVerification: hasFactcheck,
+    quietFreshness: (synthesisFreshness?.reasons || []).includes('missing_synthesis'),
 }, lang as 'sr' | 'mk');
 const crossLingualCounterparts = cluster?.cross_lingual_counterparts || [];
 
@@ -526,7 +527,11 @@ const evidenceItems = [
     ...(cluster?.pluralism_score != null ? [{
         label: lang === 'sr' ? 'Indeks Pluralizma' : 'Индекс на Плурализам',
         value: `${cluster.pluralism_score}%`,
-        detail: cluster.narrative_diversity?.verdict ? `“${cluster.narrative_diversity.verdict.slice(0, 60)}...”` : (lang === 'sr' ? 'Raznolikost perspektiva' : 'Разновидност на перспективи'),
+        detail: cluster.narrative_diversity?.verdict
+            ? `“${(lang === 'mk' && !isMostlyCyrillic(cluster.narrative_diversity.verdict)
+                ? transliterate(cluster.narrative_diversity.verdict)
+                : cluster.narrative_diversity.verdict).slice(0, 60)}...”`
+            : (lang === 'sr' ? 'Raznolikost perspektiva' : 'Разновидност на перспективи'),
     }] : []),
     {
         label: lang === 'sr' ? 'Prva objava' : 'Прва објава',
