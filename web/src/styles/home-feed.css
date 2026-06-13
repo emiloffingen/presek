@@ -692,6 +692,20 @@
   padding: 0.15rem 0 0.35rem;
 }
 
+@media (max-width: 767px) {
+  .home-inline-ad-slot--pregled-top,
+  .home-inline-ad-slot--above-fold,
+  .home-inline-ad-slot--rail-feed,
+  .home-inline-ad-slot--feed-end,
+  .home-mobile-feed > .home-inline-ad-slot:not(.home-feed-mobile-ad) {
+    display: none;
+  }
+
+  .home-feed-ad-break {
+    padding: 0.35rem 0 0.55rem;
+  }
+}
+
 :global(.briefing-inline-ad),
 :global(.archive-inline-ad) {
   max-width: 100%;

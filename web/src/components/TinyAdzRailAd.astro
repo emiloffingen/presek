@@ -11,7 +11,13 @@ const { class: className } = Astro.props;
 <TinyAdzInlinedAd class:list={['page-rail-ad', className]} />
 
 <style>
-  .page-rail-ad {
+  :global(.page-rail-ad) {
     margin-bottom: 1.5rem;
+  }
+
+  @media (max-width: 1179px) {
+    :global(.page-rail-ad) {
+      display: none;
+    }
   }
 </style>
