@@ -2975,7 +2975,7 @@ wheels = [
 
 [[package]]
 name = "presek"
-version = "6.2.0"
+version = "8.0.0"
 source = { virtual = "." }
 dependencies = [
     { name = "aiohttp" },

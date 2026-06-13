@@ -5,6 +5,7 @@ import Footer from '../components/Footer.astro';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import { apiBaseUrl } from '../lib/apiBase';
 import { isHealthyStatus } from '../lib/localePaths';
+import { APP_VERSION } from '../lib/version';
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
@@ -16,7 +17,7 @@ let healthData = {
     uptime_seconds: 0,
     database: { ok: false, article_count: 0, size_mb: 0 },
     redis: { ok: false },
-    version: "6.2.0",
+    version: APP_VERSION,
     freshness: { status: "stale", age_minutes: null, label: "" },
     celery_queue: {
         celery_depth: 0,
@@ -118,7 +119,7 @@ const formattedUptime = (seconds: number) => {
                     </div>
                     <div class="metric-card" id="metric-version">
                         <div class="metric-label">{t('status.version')}</div>
-                        <div class="metric-value">v{healthData.version || "6.2.0"}</div>
+                        <div class="metric-value">v{healthData.version || APP_VERSION}</div>
                         <div class="metric-sub">{t('status.version_sub')}</div>
                     </div>
                 </div>

@@ -1,5 +1,18 @@
 # Presek Changelog
 
+## v8.0.0 (2026-06-13)
+
+### New Features & UX
+- Premium pages (`/for-you`, `/briefing`, `/settings`) are ad-free
+- Za Vas loads recommendations client-side with skeleton UI for faster first paint
+- Homepage start-here guide collapses on mobile; lead story appears first
+- SR briefing dates render in Latin script (`sr-Latn-RS`)
+
+### Fixes & Polish
+- Removed duplicate Za Vas page header
+- Fixed `test_tasks.py` imports after synthesis sanitize extraction
+- Quieter ad styling on cluster/archive surfaces
+
 ## v5.7.0 (2025-04-26)
 
 ### New Features

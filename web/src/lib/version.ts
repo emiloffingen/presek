@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-let cachedVersion = '6.2.0';
+let cachedVersion = '8.0.0';
 
 try {
   // Only execute this in Node.js server environment
