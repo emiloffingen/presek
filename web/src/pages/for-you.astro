@@ -22,7 +22,7 @@ const showRailAd = shouldShowTinyAdzInlinedAds(lang, hostHeader || Astro.url.hos
 let initialClusters = [];
 let initialError: string | null = null;
 try {
-    const res = await fetch(`${API_URL}/news?page_size=100&lang=${lang}`);
+    const res = await fetch(`${API_URL}/news?page_size=32&lang=${lang}`);
     if (res.ok) {
         const data = await res.json();
         initialClusters = data.clusters || [];

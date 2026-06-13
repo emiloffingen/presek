@@ -1,0 +1,102 @@
+---
+import { ArrowUpRight, Compass, Newspaper, Sparkles, X } from 'lucide-react';
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+import { localePath } from '../../lib/localePaths';
+
+interface Props {
+    lang?: string;
+}
+
+const hostHeader = Astro.request?.headers.get('host');
+const urlLang = getLangFromUrl(Astro.url, hostHeader);
+const lang = (Astro.props.lang || urlLang) as 'sr' | 'mk';
+const t = useTranslations(lang);
+const l = (path: string) => localePath(path, lang, hostHeader);
+
+const steps = [
+    {
+        href: l('/briefing'),
+        label: t('home.start_here_step1'),
+        icon: Newspaper,
+    },
+    {
+        href: `${l('/settings')}#profil`,
+        label: t('home.start_here_step2'),
+        icon: Sparkles,
+    },
+    {
+        href: l('/for-you'),
+        label: t('home.start_here_step3'),
+        icon: Compass,
+    },
+];
+---
+
+<section class="home-start-here" data-home-start-here aria-label={t('home.start_here_label')}>
+    <div class="home-start-here-head">
+        <div>
+            <p class="home-start-here-kicker">{t('home.start_here_kicker')}</p>
+            <h2 class="home-start-here-title">{t('home.start_here_title')}</h2>
+        </div>
+        <button type="button" class="home-start-here-dismiss" data-home-start-dismiss aria-label={t('home.start_here_dismiss')}>
+            <X size={14} />
+        </button>
+    </div>
+    <ol class="home-start-here-steps">
+        {steps.map((step, index) => {
+            const Icon = step.icon;
+            return (
+                <li>
+                    <a href={step.href} class="home-start-here-step">
+                        <span class="home-start-here-step-index">{index + 1}</span>
+                        <Icon size={15} aria-hidden="true" />
+                        <span>{step.label}</span>
+                        <ArrowUpRight size={13} class="home-start-here-step-arrow" aria-hidden="true" />
+                    </a>
+                </li>
+            );
+        })}
+    </ol>
+</section>
+
+<script>
+    const DISMISS_KEY = 'presek-start-here-dismissed';
+    const PROFILE_KEY = 'presek_reader_profile_v1';
+
+    function hasPersonalizationSignal() {
+        try {
+            const raw = localStorage.getItem(PROFILE_KEY);
+            if (!raw) return false;
+            const profile = JSON.parse(raw);
+            return Boolean(
+                (profile?.recentClusters || []).length ||
+                    (profile?.followedTopics || []).length ||
+                    (profile?.followedSources || []).length,
+            );
+        } catch {
+            return false;
+        }
+    }
+
+    function initHomeStartHere() {
+        const strip = document.querySelector<HTMLElement>('[data-home-start-here]');
+        if (!strip) return;
+
+        if (localStorage.getItem(DISMISS_KEY) === '1' || hasPersonalizationSignal()) {
+            strip.remove();
+            return;
+        }
+
+        const dismiss = strip.querySelector<HTMLButtonElement>('[data-home-start-dismiss]');
+        if (!dismiss || dismiss.dataset.bound === '1') return;
+        dismiss.dataset.bound = '1';
+        dismiss.addEventListener('click', () => {
+            localStorage.setItem(DISMISS_KEY, '1');
+            strip.remove();
+        });
+    }
+
+    initHomeStartHere();
+    document.addEventListener('astro:page-load', initHomeStartHere);
+    window.addEventListener('presek:reader-profile-updated', initHomeStartHere);
+</script>
