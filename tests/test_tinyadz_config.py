@@ -140,6 +140,15 @@ def test_shared_components_include_tinyadz_slots():
         source = Path(path).read_text(encoding="utf-8")
         assert "TinyAdz" in source, path
 
+    home = Path("web/src/components/home/HomePage.astro").read_text(encoding="utf-8")
+    assert "home-inline-ad-slot--above-fold" in home
+
+    cluster = Path("web/src/pages/cluster/[slug].astro").read_text(encoding="utf-8")
+    synthesis_idx = cluster.index("<ClusterSynthesisSection")
+    ad_idx = cluster.index('<TinyAdzInlinedAd class="cluster-inlined-ad')
+    citations_idx = cluster.index("<CitationSources citationSources")
+    assert synthesis_idx < ad_idx < citations_idx
+
 
 def test_production_config_documents_tinyadz_site_ids():
     example = Path("deploy/production_config.example").read_text(encoding="utf-8")

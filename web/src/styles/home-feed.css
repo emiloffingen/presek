@@ -653,6 +653,11 @@
   margin-bottom: 1.5rem;
 }
 
+.home-inline-ad-slot--above-fold {
+  margin-top: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
 .home-inline-ad-slot--feed-end {
   margin-top: 1.5rem;
 }

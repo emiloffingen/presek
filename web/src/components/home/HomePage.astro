@@ -700,6 +700,12 @@ if (forYouClusters.length > 0) {
 					</div>
 				)}
 
+                {!error && isHomepage && !isPregled && leadCluster && (
+                    <div class="section-wrapper home-inline-ad-slot home-inline-ad-slot--above-fold home-feed-only">
+                        <TinyAdzInlinedAd class="home-inline-ad home-inline-ad--above-fold" />
+                    </div>
+                )}
+
                 {!error && isHomepage && !isPregled && feedSynthesisTeaser && (
                     <div class="section-wrapper home-mobile-order-synthesis-teaser home-feed-only">
                         <HomeSynthesisTeaser
