@@ -42,7 +42,8 @@ USE_READ_REPLICA=true
 
 # Connection pool settings
 DB_POOL_MINCONN=2
-DB_POOL_MAXCONN=10
+DB_POOL_MAXCONN=5
+DB_POOL_TIMEOUT=60
 
 # ============================================================================
 # Redis

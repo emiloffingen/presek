@@ -172,13 +172,37 @@ def _briefing_title_penalty(title: str, source_count: int = 1, has_editorial_dep
     return penalty
 
 
-def _load_daily_brief_clusters(limit=5, lang="sr"):
+_BRIEFING_SCHEDULE_HOUR_UTC = 6
+
+
+def _resolve_briefing_date(briefing_date=None):
+    if briefing_date:
+        if isinstance(briefing_date, datetime.date):
+            return briefing_date
+        return datetime.date.fromisoformat(str(briefing_date))
+    return datetime.date.today()
+
+
+def _briefing_window_for_date(target_date):
+    """Match the 06:00 UTC daily run: articles from the prior 24 hours."""
+    window_end = datetime.datetime.combine(
+        target_date,
+        datetime.time(_BRIEFING_SCHEDULE_HOUR_UTC, 0),
+        tzinfo=datetime.timezone.utc,
+    )
+    window_start = window_end - datetime.timedelta(hours=24)
+    return window_start, window_end
+
+
+def _load_daily_brief_clusters(limit=5, lang="sr", briefing_date=None):
+    target_date = _resolve_briefing_date(briefing_date)
+    window_start, window_end = _briefing_window_for_date(target_date)
     # Fetch articles in one query
     country_filter = "RS" if lang == "sr" else "MK"
     rows = db.execute(
         """SELECT cluster_id, title, description, summary, source, category, topic, created_at FROM articles
-        WHERE created_at >= NOW() - INTERVAL '24 hours' AND country = %s ORDER BY created_at DESC LIMIT 180""",
-        (country_filter,),
+        WHERE created_at >= %s AND created_at < %s AND country = %s ORDER BY created_at DESC LIMIT 180""",
+        (window_start, window_end, country_filter),
     )
     clusters = {}
     for row in rows:
@@ -811,12 +835,13 @@ def _select_breaking_cluster_for_profile(
 
 
 @celery_app.task
-def generate_daily_brief_task(retry_attempt=0, lang="sr"):
+def generate_daily_brief_task(retry_attempt=0, lang="sr", briefing_date=None):
+    target_date = _resolve_briefing_date(briefing_date)
     now = datetime.datetime.now()
-    lock_key = f"lock:daily_brief:{lang}:{now.date()}"
+    lock_key = f"lock:daily_brief:{lang}:{target_date.isoformat()}"
     try:
         if not redis_client.set(lock_key, "1", nx=True, ex=7200):
-            log.info(f"Daily brief ({lang}) generation already in progress or completed for today.")
+            log.info(f"Daily brief ({lang}) generation already in progress or completed for {target_date}.")
             return
     except Exception as e:
         log.warning(f"Redis lock check failed for daily brief: {e}")
@@ -824,29 +849,30 @@ def generate_daily_brief_task(retry_attempt=0, lang="sr"):
         from tasks.utils import record_task_event
 
         country_filter = "RS" if lang == "sr" else "MK"
+        window_start, window_end = _briefing_window_for_date(target_date)
         total_24h = (
             db.execute_one(
-                "SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' AND country = %s",
-                (country_filter,),
+                "SELECT COUNT(*) FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s",
+                (window_start, window_end, country_filter),
             )["count"]
             or 1
         )
         intl_24h = (
             db.execute_one(
-                "SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' AND is_global = TRUE AND country = %s",
-                (country_filter,),
+                "SELECT COUNT(*) FROM articles WHERE created_at >= %s AND created_at < %s AND is_global = TRUE AND country = %s",
+                (window_start, window_end, country_filter),
             )["count"]
             or 0
         )
         intl_pct = round((intl_24h / total_24h) * 100) if total_24h > 0 else 0
         balance_stats = db.execute_one(
-            """WITH cluster_tiers AS (SELECT cluster_id, COUNT(DISTINCT CASE WHEN s.category IN ('Agencijski', 'Javni servis', 'glavni') THEN 'M' WHEN s.category IN ('Nezavisni', 'Istraživački') THEN 'I' ELSE 'R' END) as group_count FROM articles a JOIN sources s ON a.source = s.name WHERE a.created_at >= NOW() - INTERVAL '24 hours' AND a.country = %s GROUP BY cluster_id) SELECT COUNT(*) FILTER (WHERE group_count >= 2) as diverse FROM cluster_tiers""",
-            (country_filter,),
+            """WITH cluster_tiers AS (SELECT cluster_id, COUNT(DISTINCT CASE WHEN s.category IN ('Agencijski', 'Javni servis', 'glavni') THEN 'M' WHEN s.category IN ('Nezavisni', 'Istraživački') THEN 'I' ELSE 'R' END) as group_count FROM articles a JOIN sources s ON a.source = s.name WHERE a.created_at >= %s AND a.created_at < %s AND a.country = %s GROUP BY cluster_id) SELECT COUNT(*) FILTER (WHERE group_count >= 2) as diverse FROM cluster_tiers""",
+            (window_start, window_end, country_filter),
         )
         diverse_pct = round((balance_stats["diverse"] / total_24h) * 100) if total_24h > 0 else 0
         subjects_rows = db.execute(
-            "SELECT topic, COUNT(*) as c FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' AND country = %s AND topic IS NOT NULL GROUP BY topic ORDER BY c DESC LIMIT 3",
-            (country_filter,),
+            "SELECT topic, COUNT(*) as c FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s AND topic IS NOT NULL GROUP BY topic ORDER BY c DESC LIMIT 3",
+            (window_start, window_end, country_filter),
         )
         top_subjects = ", ".join([r["topic"] for r in subjects_rows])
         top_locations = "Balkan"
@@ -854,7 +880,7 @@ def generate_daily_brief_task(retry_attempt=0, lang="sr"):
         # Consistent daily naming
         dispatch_name = "Dnevni brifing" if lang == "sr" else "Дневен брифинг"
 
-        clusters = _load_daily_brief_clusters(limit=10, lang=lang)
+        clusters = _load_daily_brief_clusters(limit=10, lang=lang, briefing_date=target_date)
         content_context = _build_daily_brief_context(clusters)
         system_insight = f"\n\n[SISTEMSKA ANALIZA ZA POSLEDNJIH 24 SATA]\n- Obradjeni clanci: {total_24h}\n- Udeo svetskih vest: {intl_pct}%\n- Indeks pluralizma (raznovrsni izvori): {diverse_pct}%\n- Najzastupljeni akteri: {top_subjects or 'Nema'}\n- U focusu lokacije: {top_locations or 'Nema'}\n- Naziv izvestaja: {dispatch_name}"
         
@@ -862,8 +888,8 @@ def generate_daily_brief_task(retry_attempt=0, lang="sr"):
         history_context = ""
         try:
             prev_brief = db.execute_one(
-                "SELECT content FROM daily_briefings WHERE lang = %s AND date >= CURRENT_DATE - INTERVAL '48 hours' AND date < CURRENT_DATE ORDER BY date DESC LIMIT 1",
-                (lang,),
+                "SELECT content FROM daily_briefings WHERE lang = %s AND date >= %s::date - INTERVAL '2 days' AND date < %s::date ORDER BY date DESC LIMIT 1",
+                (lang, target_date.isoformat(), target_date.isoformat()),
             )
             if prev_brief and prev_brief.get("content"):
                 if lang == "sr":
@@ -935,50 +961,54 @@ def generate_daily_brief_task(retry_attempt=0, lang="sr"):
                 log.warning(f"[tasks] Narrative extraction failed: {e}")
 
             db.execute(
-                "INSERT INTO daily_briefings (date, content, lang, metadata) VALUES (CURRENT_DATE, %s, %s, %s) "
+                "INSERT INTO daily_briefings (date, content, lang, metadata) VALUES (%s::date, %s, %s, %s) "
                 "ON CONFLICT (date, lang) DO UPDATE SET content = EXCLUDED.content, metadata = EXCLUDED.metadata",
-                (final_brief, lang, json.dumps(metadata)),
+                (target_date.isoformat(), final_brief, lang, json.dumps(metadata)),
                 fetch=False,
             )
             delete_cache(f"daily_brief:latest:{lang}")
-            record_task_event("daily_brief", "ok" if brief else "fallback", f"lang:{lang}")
-            notify_daily_briefing_ready_task.apply_async(kwargs={"lang": lang}, countdown=20)
+            record_task_event("daily_brief", "ok" if brief else "fallback", f"lang:{lang},date:{target_date.isoformat()}")
+            if target_date == datetime.date.today():
+                notify_daily_briefing_ready_task.apply_async(kwargs={"lang": lang}, countdown=20)
 
             # Automatically pre-generate the briefing audio in the background
             try:
                 from core.audio_service import AudioService
-                target_date = datetime.date.today().isoformat()
-                log.info(f"[tasks] Auto-generating OmniVoice briefing audio in background for {target_date} ({lang})...")
-                AudioService.generate_briefing_audio(target_date, final_brief, lang)
+                target_date_str = target_date.isoformat()
+                log.info(f"[tasks] Auto-generating OmniVoice briefing audio in background for {target_date_str} ({lang})...")
+                AudioService.generate_briefing_audio(target_date_str, final_brief, lang)
             except Exception as audio_err:
-                log.error(f"[tasks] Failed to auto-generate briefing audio for {target_date} ({lang}): {audio_err}")
-            if not brief and retry_attempt < 2:
+                log.error(f"[tasks] Failed to auto-generate briefing audio for {target_date.isoformat()} ({lang}): {audio_err}")
+            if not brief and retry_attempt < 2 and target_date == datetime.date.today():
                 generate_daily_brief_task.apply_async(
-                    kwargs={"retry_attempt": retry_attempt + 1, "lang": lang}, countdown=1800
+                    kwargs={"retry_attempt": retry_attempt + 1, "lang": lang, "briefing_date": target_date.isoformat()},
+                    countdown=1800,
                 )
     except Exception as e:
-        clusters = _load_daily_brief_clusters(limit=6, lang=lang)
+        clusters = _load_daily_brief_clusters(limit=6, lang=lang, briefing_date=target_date)
         fallback = generate_daily_brief_fallback(clusters, lang=lang)
         if fallback:
             db.execute(
-                "INSERT INTO daily_briefings (date, content, lang, metadata) VALUES (CURRENT_DATE, %s, %s, %s) "
+                "INSERT INTO daily_briefings (date, content, lang, metadata) VALUES (%s::date, %s, %s, %s) "
                 "ON CONFLICT (date, lang) DO UPDATE SET content = EXCLUDED.content, metadata = EXCLUDED.metadata",
-                (fallback, lang, json.dumps({"is_fallback": True})),
+                (target_date.isoformat(), fallback, lang, json.dumps({"is_fallback": True})),
                 fetch=False,
             )
-            notify_daily_briefing_ready_task.apply_async(kwargs={"lang": lang}, countdown=20)
+            if target_date == datetime.date.today():
+                notify_daily_briefing_ready_task.apply_async(kwargs={"lang": lang}, countdown=20)
 
             # Automatically pre-generate the briefing audio (fallback) in the background
             try:
                 from core.audio_service import AudioService
-                target_date = datetime.date.today().isoformat()
-                log.info(f"[tasks] Auto-generating OmniVoice briefing audio in background (fallback) for {target_date} ({lang})...")
-                AudioService.generate_briefing_audio(target_date, fallback, lang)
+                target_date_str = target_date.isoformat()
+                log.info(f"[tasks] Auto-generating OmniVoice briefing audio in background (fallback) for {target_date_str} ({lang})...")
+                AudioService.generate_briefing_audio(target_date_str, fallback, lang)
             except Exception as audio_err:
-                log.error(f"[tasks] Failed to auto-generate briefing audio for {target_date} ({lang}): {audio_err}")
-            if retry_attempt < 2:
+                log.error(f"[tasks] Failed to auto-generate briefing audio for {target_date.isoformat()} ({lang}): {audio_err}")
+            if retry_attempt < 2 and target_date == datetime.date.today():
                 generate_daily_brief_task.apply_async(
-                    kwargs={"retry_attempt": retry_attempt + 1, "lang": lang}, countdown=1800
+                    kwargs={"retry_attempt": retry_attempt + 1, "lang": lang, "briefing_date": target_date.isoformat()},
+                    countdown=1800,
                 )
         else:
             from tasks.utils import record_task_event

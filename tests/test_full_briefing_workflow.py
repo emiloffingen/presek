@@ -7,12 +7,29 @@ sys.path.insert(0, "/home/emiloffingen/presek")
 
 # Set up environment
 os.environ["VIBE_HOME"] = "/home/emiloffingen/presek"
+os.environ.setdefault("PRESEK_SKIP_DB_POOL_INIT", "1")
 
 from core.database import db_manager as db
+
+_TEST_BRIEFING_DATE = "2099-01-01"
+
+
+def _require_safe_test_database():
+    """Never write briefing test rows to production."""
+    db_url = os.environ.get("DATABASE_URL", "")
+    if "presek_test" in db_url:
+        return
+    if os.environ.get("ALLOW_PROD_BRIEFING_TEST") == "1":
+        return
+    raise RuntimeError(
+        "Refusing to run briefing workflow test against production. "
+        "Set DATABASE_URL to presek_test or export ALLOW_PROD_BRIEFING_TEST=1 to override."
+    )
 
 
 def test_briefing_storage():
     """Test that briefings are stored correctly with language separation."""
+    _require_safe_test_database()
     print("Testing full briefing generation workflow...")
 
     # Test Serbian briefing generation (dry run - just check database operations)
@@ -21,9 +38,9 @@ def test_briefing_storage():
     # Check if we can insert Serbian briefing
     try:
         db.execute(
-            "INSERT INTO daily_briefings (date, content, lang) VALUES (CURRENT_DATE, %s, %s) "
+            "INSERT INTO daily_briefings (date, content, lang) VALUES (%s::date, %s, %s) "
             "ON CONFLICT (date, lang) DO UPDATE SET content = EXCLUDED.content",
-            ("Test Serbian briefing content", "sr"),
+            (_TEST_BRIEFING_DATE, "Test Serbian briefing content", "sr"),
             fetch=False,
         )
         print("   ✅ Serbian briefing insert/update successful")
@@ -35,9 +52,9 @@ def test_briefing_storage():
     print("\n2. Testing Macedonian briefing database operations...")
     try:
         db.execute(
-            "INSERT INTO daily_briefings (date, content, lang) VALUES (CURRENT_DATE, %s, %s) "
+            "INSERT INTO daily_briefings (date, content, lang) VALUES (%s::date, %s, %s) "
             "ON CONFLICT (date, lang) DO UPDATE SET content = EXCLUDED.content",
-            ("Test Macedonian briefing content", "mk"),
+            (_TEST_BRIEFING_DATE, "Test Macedonian briefing content", "mk"),
             fetch=False,
         )
         print("   ✅ Macedonian briefing insert/update successful")
@@ -47,8 +64,14 @@ def test_briefing_storage():
 
     # Verify both briefings exist
     print("\n3. Verifying both briefings exist in database...")
-    sr_briefing = db.execute_one("SELECT content, lang FROM daily_briefings WHERE date = CURRENT_DATE AND lang = 'sr'")
-    mk_briefing = db.execute_one("SELECT content, lang FROM daily_briefings WHERE date = CURRENT_DATE AND lang = 'mk'")
+    sr_briefing = db.execute_one(
+        "SELECT content, lang FROM daily_briefings WHERE date = %s::date AND lang = 'sr'",
+        (_TEST_BRIEFING_DATE,),
+    )
+    mk_briefing = db.execute_one(
+        "SELECT content, lang FROM daily_briefings WHERE date = %s::date AND lang = 'mk'",
+        (_TEST_BRIEFING_DATE,),
+    )
 
     if sr_briefing and mk_briefing:
         print("   ✅ Both briefings found in database")
@@ -68,7 +91,8 @@ def test_briefing_storage():
     print("\n4. Testing briefing retrieval by language...")
     all_briefings = db.execute(
         "SELECT date, lang, SUBSTRING(content FROM 1 FOR 50) as content_preview "
-        "FROM daily_briefings WHERE date = CURRENT_DATE ORDER BY lang"
+        "FROM daily_briefings WHERE date = %s::date ORDER BY lang",
+        (_TEST_BRIEFING_DATE,),
     )
 
     print(f"   Found {len(all_briefings)} briefings for today:")
@@ -78,6 +102,7 @@ def test_briefing_storage():
 
 def test_language_specific_queries():
     """Test that language-specific article queries work correctly."""
+    _require_safe_test_database()
     print("\n5. Testing language-specific article queries...")
 
     # Test Serbian articles
@@ -105,10 +130,19 @@ def test_language_specific_queries():
     print(f"   Macedonian title sample: {mk_titles[0][:50] + '...' if mk_titles else 'None'}")
 
 
+def _cleanup_test_briefings():
+    db.execute(
+        "DELETE FROM daily_briefings WHERE date = %s::date AND lang IN ('sr', 'mk')",
+        (_TEST_BRIEFING_DATE,),
+        fetch=False,
+    )
+
+
 if __name__ == "__main__":
     try:
         test_briefing_storage()
         test_language_specific_queries()
+        _cleanup_test_briefings()
         print("\n🎉 All workflow tests passed! Language separation is fully functional.")
     except Exception as e:
         print(f"\n💥 Workflow test failed with error: {e}")

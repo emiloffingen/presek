@@ -190,6 +190,7 @@ def _int_env(name: str, default: int) -> int:
 
 DB_POOL_MINCONN = max(1, _int_env("DB_POOL_MINCONN", 1))
 DB_POOL_MAXCONN = max(DB_POOL_MINCONN, _int_env("DB_POOL_MAXCONN", 5))
+DB_POOL_TIMEOUT = max(5, _int_env("DB_POOL_TIMEOUT", 60))
 
 
 class AsyncDatabaseManager:
@@ -225,6 +226,7 @@ class AsyncDatabaseManager:
                     conninfo=DATABASE_URL,
                     min_size=DB_POOL_MINCONN,
                     max_size=DB_POOL_MAXCONN,
+                    timeout=DB_POOL_TIMEOUT,
                     open=False,
                     kwargs={
                         "row_factory": dict_row,
@@ -245,6 +247,7 @@ class AsyncDatabaseManager:
                         conninfo=DATABASE_READ_REPLICA_URL,
                         min_size=DB_POOL_MINCONN,
                         max_size=DB_POOL_MAXCONN,
+                        timeout=DB_POOL_TIMEOUT,
                         open=False,
                         kwargs={
                             "row_factory": dict_row,
@@ -318,6 +321,7 @@ class DatabaseManager:
                     conninfo=DATABASE_URL,
                     min_size=DB_POOL_MINCONN,
                     max_size=DB_POOL_MAXCONN,
+                    timeout=DB_POOL_TIMEOUT,
                     open=True,
                     kwargs={
                         "row_factory": dict_row,
@@ -327,7 +331,7 @@ class DatabaseManager:
                 )
                 log.info(
                     f"Presek {APP_VERSION_LABEL}: Database connection pool initialized "
-                    f"(min={DB_POOL_MINCONN}, max={DB_POOL_MAXCONN}, connect_timeout=5s)."
+                    f"(min={DB_POOL_MINCONN}, max={DB_POOL_MAXCONN}, timeout={DB_POOL_TIMEOUT}s, connect_timeout=5s)."
                 )
                 return
             except Exception as e:
@@ -355,6 +359,7 @@ class DatabaseManager:
                     conninfo=DATABASE_READ_REPLICA_URL,
                     min_size=DB_POOL_MINCONN,
                     max_size=DB_POOL_MAXCONN,
+                    timeout=DB_POOL_TIMEOUT,
                     open=True,
                     kwargs={
                         "row_factory": dict_row,
@@ -364,7 +369,7 @@ class DatabaseManager:
                 )
                 log.info(
                     f"Presek {APP_VERSION_LABEL}: Database read replica pool initialized "
-                    f"(min={DB_POOL_MINCONN}, max={DB_POOL_MAXCONN}, connect_timeout=5s)."
+                    f"(min={DB_POOL_MINCONN}, max={DB_POOL_MAXCONN}, timeout={DB_POOL_TIMEOUT}s, connect_timeout=5s)."
                 )
                 return
             except Exception as e:
