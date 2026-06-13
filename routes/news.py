@@ -933,6 +933,48 @@ def _clean_leaked_json_string(text: str) -> dict:
     return data
 
 
+def _maybe_enqueue_missing_synthesis(cluster_id: str, freshness: dict, unique_sources: int) -> None:
+    """Queue synthesis once per cluster when readers hit a page with no summary yet."""
+    reasons = freshness.get("reasons") or []
+    if "missing_synthesis" not in reasons:
+        return
+
+    from core.config import AUTO_SUMMARIZE_MIN_SRC
+
+    if unique_sources < AUTO_SUMMARIZE_MIN_SRC:
+        return
+
+    try:
+        from tasks.intelligence import auto_summarize_task
+        from tasks.utils import schedule_task_once
+
+        scheduled = schedule_task_once(
+            f"lock:jit_synthesis:{cluster_id}",
+            900,
+            auto_summarize_task,
+            args=([cluster_id],),
+            countdown=5,
+        )
+        if scheduled:
+            log.info("[cluster] JIT synthesis enqueued for %s (%s sources)", cluster_id, unique_sources)
+    except Exception as e:
+        log.warning("[cluster] JIT synthesis enqueue failed for %s: %s", cluster_id, e)
+
+
+def _maybe_enqueue_missing_synthesis_from_cache(cluster_id: str, cached: dict) -> None:
+    try:
+        data = cached.get("data") or {}
+        freshness = data.get("synthesis_freshness") or {}
+        sources = {
+            article.get("source")
+            for article in (data.get("articles") or [])
+            if article.get("source")
+        }
+        _maybe_enqueue_missing_synthesis(cluster_id, freshness, len(sources))
+    except Exception as e:
+        log.debug("[cluster] JIT synthesis cache hook failed for %s: %s", cluster_id, e)
+
+
 @router.get("/cluster/{cluster_id}")
 async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
     # Validate cluster_id
@@ -940,6 +982,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
     cache_key = f"api:cluster:detail:v3:{cluster_id}:{lang}"
     cached = cached_response(cache_key, ttl=3600)
     if cached:
+        _maybe_enqueue_missing_synthesis_from_cache(cluster_id, cached)
         return cached
 
     try:
@@ -1034,6 +1077,8 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
         citation_sources = _parse_maybe_json(s_row.get("citation_sources")) if s_row else []
 
         freshness = assess_cluster_synthesis_freshness(articles, (s_row or {}).get("created_at"))
+        unique_sources_for_jit = len({a.get("source") for a in articles if a.get("source")})
+        _maybe_enqueue_missing_synthesis(cluster_id, freshness, unique_sources_for_jit)
 
         cluster_meta = await db.async_execute_one(
             "SELECT tags, topics, representative_image, dominant_color, centroid FROM cluster_metadata WHERE cluster_id = %s",
@@ -1376,7 +1421,8 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
             },
         }
 
-        set_cache(cache_key, response, ttl=3600)
+        cache_ttl = 120 if "missing_synthesis" in (freshness.get("reasons") or []) else 3600
+        set_cache(cache_key, response, ttl=cache_ttl)
         return response
 
     except HTTPException:
