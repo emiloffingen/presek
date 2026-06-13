@@ -1,7 +1,7 @@
 ---
 import { Calendar } from 'lucide-react';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
-import { localePath } from '../../lib/localePaths';
+import { dateLocaleForLang, localePath } from '../../lib/localePaths';
 
 interface DateItem {
   day: string;
@@ -31,7 +31,7 @@ const l = (path: string) => localePath(path, isMK ? 'mk' : 'sr', hostHeader);
     {historicalDates.map((item) => {
       const day = item.day;
       const active = currentDate === day;
-      const label = new Date(day).toLocaleDateString(isMK ? 'mk-MK' : 'sr-RS', {
+      const label = new Date(day).toLocaleDateString(dateLocaleForLang(lang), {
         weekday: 'short',
         day: 'numeric',
         month: 'short',

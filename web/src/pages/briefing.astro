@@ -18,7 +18,7 @@ import { apiBaseUrl } from '../lib/apiBase';
 import { formatBriefing } from '../utils/briefingFormatter';
 import { Newspaper, Timer, ChevronRight } from 'lucide-react';
 import { getLangFromUrl } from '../i18n/utils';
-import { localePath, homePath } from '../lib/localePaths';
+import { dateLocaleForLang, localePath, homePath } from '../lib/localePaths';
 
 const API_URL = apiBaseUrl();
 const hostHeader = Astro.request?.headers.get('host');
@@ -58,7 +58,7 @@ try {
 const formattedBriefing = briefingData?.content ? formatBriefing(briefingData.content, lang, hostHeader) : "";
 
 const displayDate = briefingData?.date
-    ? new Date(briefingData.date).toLocaleDateString(isMK ? 'mk-MK' : 'sr-RS', {
+    ? new Date(briefingData.date).toLocaleDateString(dateLocaleForLang(lang), {
         weekday: 'long',
         day: 'numeric',
         month: 'long',

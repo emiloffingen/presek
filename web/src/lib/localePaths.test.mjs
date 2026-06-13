@@ -6,6 +6,7 @@ import {
   hreflangAlternates,
   homePath,
   isHealthyStatus,
+  dateLocaleForLang,
   isMkHost,
   localePath,
   shouldRewriteMkDomainToInternal,
@@ -58,6 +59,11 @@ test('isHealthyStatus accepts healthy and ok', () => {
   assert.equal(isHealthyStatus('healthy'), true);
   assert.equal(isHealthyStatus('ok'), true);
   assert.equal(isHealthyStatus('degraded'), false);
+});
+
+test('dateLocaleForLang uses Latin Serbian on SR site', () => {
+  assert.equal(dateLocaleForLang('sr'), 'sr-Latn-RS');
+  assert.equal(dateLocaleForLang('mk'), 'mk-MK');
 });
 
 test('isMkHost detects Macedonian domains', () => {

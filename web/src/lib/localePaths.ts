@@ -1,5 +1,10 @@
 export type Locale = 'sr' | 'mk';
 
+/** BCP-47 locale for date/time formatting. SR site uses Latin script. */
+export function dateLocaleForLang(lang: Locale): string {
+  return lang === 'mk' ? 'mk-MK' : 'sr-Latn-RS';
+}
+
 function normalizePath(path: string): string {
   if (!path) return '/';
   return path.startsWith('/') ? path : `/${path}`;
