@@ -22,18 +22,7 @@ const t = useTranslations(lang);
     <main class="site-layout broadsheet-layout page-content-top pb-[var(--page-py)]">
         <Breadcrumbs items={[{ label: t('nav.for_you') }]} />
 
-        <header class="for-you-page-header motion-rise">
-            <div class="flex items-center gap-[var(--grid-gap)] mb-4">
-                <div class="w-10 h-[1px] bg-nyt-accent"></div>
-                <span class="page-kicker ui-label !mb-0">{t('nav.for_you')}</span>
-            </div>
-            <h1 class="for-you-page-title editorial-headline italic">{t('for_you.page_title')} <span>{t('for_you.page_title_span')}</span></h1>
-            <p class="for-you-page-lede editorial-intro max-w-3xl mt-6 text-[var(--text-lg)] text-muted-foreground">
-                {t('for_you.page_lede')}
-            </p>
-        </header>
-
-        <div class="broadsheet-grid mt-8 md:mt-10">
+        <div class="broadsheet-grid mt-6 md:mt-8">
             <div class="broadsheet-main">
                 <ErrorBoundary client:idle lang={lang}>
                     <ForYouPageIsland client:idle lang={lang} />
@@ -43,27 +32,3 @@ const t = useTranslations(lang);
     </main>
     <Footer />
 </Layout>
-
-<style>
-    .for-you-page-header {
-        max-width: 900px;
-    }
-
-    .for-you-page-title {
-        font-size: clamp(2rem, 4vw, 3.5rem);
-        line-height: 0.95;
-    }
-
-    .for-you-page-title span {
-        font-weight: 400;
-    }
-
-    .motion-rise {
-        animation: rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    }
-
-    @keyframes rise {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-</style>
