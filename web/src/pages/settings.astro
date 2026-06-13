@@ -36,7 +36,16 @@ const t = useTranslations(lang);
         </p>
       </header>
 
-      <div class="settings-shell mt-8 motion-rise" data-settings-lang={lang}>
+      <div
+        class="settings-shell mt-8 motion-rise"
+        data-settings-lang={lang}
+        data-status-local={t('settings.status_local')}
+        data-status-synced={t('settings.status_synced')}
+        data-status-local-desc={t('settings.status_local_desc')}
+        data-status-synced-desc={t('settings.status_synced_desc')}
+        data-badge-local={t('settings.badge_local')}
+        data-badge-active={t('settings.badge_active')}
+      >
         <aside class="settings-nav-sidebar">
           <button class="settings-tab-btn active" data-tab="pregled">
             <LayoutDashboard size={16} />
@@ -149,45 +158,43 @@ const t = useTranslations(lang);
   <Footer />
 </Layout>
 
-<script define:vars={{ statusLocal: t('settings.status_local'), statusSynced: t('settings.status_synced'), statusLocalDesc: t('settings.status_local_desc'), statusSyncedDesc: t('settings.status_synced_desc'), badgeLocal: t('settings.badge_local'), badgeActive: t('settings.badge_active') }}>
+<script>
   import { $syncToken, $profile, $onboarding, getStoredOnboardingProgress } from '../lib/store.ts';
 
-  const tabButtons = document.querySelectorAll('.settings-tab-btn');
-  const tabContents = document.querySelectorAll('.settings-tab-content');
-  const validTabs = new Set(['pregled', 'profil', 'dostava', 'sinhronizacija', 'vodic']);
+  const VALID_TABS = new Set(['pregled', 'profil', 'dostava', 'sinhronizacija', 'vodic']);
+  const GLOBAL_KEY = '__presekSettingsTabs';
 
-  function activateTab(targetTab) {
-    if (!validTabs.has(targetTab)) return;
-    tabButtons.forEach((btn) => {
+  type SettingsCopy = {
+    statusLocal: string;
+    statusSynced: string;
+    statusLocalDesc: string;
+    statusSyncedDesc: string;
+    badgeLocal: string;
+    badgeActive: string;
+  };
+
+  function readSettingsCopy(shell: HTMLElement): SettingsCopy {
+    return {
+      statusLocal: shell.dataset.statusLocal || '',
+      statusSynced: shell.dataset.statusSynced || '',
+      statusLocalDesc: shell.dataset.statusLocalDesc || '',
+      statusSyncedDesc: shell.dataset.statusSyncedDesc || '',
+      badgeLocal: shell.dataset.badgeLocal || '',
+      badgeActive: shell.dataset.badgeActive || '',
+    };
+  }
+
+  function activateTab(targetTab: string) {
+    if (!VALID_TABS.has(targetTab)) return;
+    document.querySelectorAll('.settings-tab-btn').forEach((btn) => {
       btn.classList.toggle('active', btn.getAttribute('data-tab') === targetTab);
     });
-    tabContents.forEach((content) => {
+    document.querySelectorAll('.settings-tab-content').forEach((content) => {
       content.classList.toggle('active', content.id === `tab-${targetTab}`);
     });
   }
 
-  tabButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const targetTab = btn.getAttribute('data-tab');
-      if (!targetTab) return;
-      activateTab(targetTab);
-      window.history.replaceState(null, '', `#${targetTab}`);
-    });
-  });
-
-  const initialTab = window.location.hash.replace('#', '');
-  if (validTabs.has(initialTab)) {
-    activateTab(initialTab);
-  }
-
-  window.addEventListener('hashchange', () => {
-    const nextTab = window.location.hash.replace('#', '');
-    if (validTabs.has(nextTab)) {
-      activateTab(nextTab);
-    }
-  });
-
-  $syncToken.subscribe(token => {
+  function updateSyncStatusUI(token: string | null, copy: SettingsCopy) {
     const dot = document.getElementById('sync-status-dot');
     const text = document.getElementById('sync-status-text');
     const desc = document.getElementById('sync-status-desc');
@@ -195,31 +202,76 @@ const t = useTranslations(lang);
 
     if (token) {
       if (dot) dot.className = 'status-dot active';
-      if (text) text.innerText = statusSynced;
-      if (desc) desc.innerText = statusSyncedDesc;
+      if (text) text.innerText = copy.statusSynced;
+      if (desc) desc.innerText = copy.statusSyncedDesc;
       if (badge) {
-        badge.innerText = badgeActive;
+        badge.innerText = copy.badgeActive;
         badge.className = 'ml-auto ui-label-min px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20';
       }
     } else {
       if (dot) dot.className = 'status-dot inactive';
-      if (text) text.innerText = statusLocal;
-      if (desc) desc.innerText = statusLocalDesc;
+      if (text) text.innerText = copy.statusLocal;
+      if (desc) desc.innerText = copy.statusLocalDesc;
       if (badge) {
-        badge.innerText = badgeLocal;
+        badge.innerText = copy.badgeLocal;
         badge.className = 'ml-auto ui-label-min px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20';
       }
     }
-  });
+  }
 
   function updateGuideBadge() {
+    const shell = document.querySelector('.settings-shell');
+    if (!shell) return;
     const badge = document.getElementById('guide-tab-badge');
     if (!badge) return;
     const progress = getStoredOnboardingProgress();
     badge.innerText = `${progress.doneCount}/${progress.total}`;
   }
-  $profile.subscribe(updateGuideBadge);
-  $onboarding.subscribe(updateGuideBadge);
+
+  function initSettingsTabs() {
+    const shell = document.querySelector('.settings-shell');
+    if (!shell) return;
+
+    document.querySelectorAll<HTMLButtonElement>('.settings-tab-btn').forEach((btn) => {
+      if (btn.dataset.bound === '1') return;
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', () => {
+        const targetTab = btn.getAttribute('data-tab');
+        if (!targetTab) return;
+        activateTab(targetTab);
+        window.history.replaceState(null, '', `#${targetTab}`);
+      });
+    });
+
+    const initialTab = window.location.hash.replace('#', '');
+    activateTab(VALID_TABS.has(initialTab) ? initialTab : 'pregled');
+    updateSyncStatusUI($syncToken.get(), readSettingsCopy(shell));
+    updateGuideBadge();
+  }
+
+  const root = window as typeof window & { [GLOBAL_KEY]?: boolean };
+  if (!root[GLOBAL_KEY]) {
+    root[GLOBAL_KEY] = true;
+
+    window.addEventListener('hashchange', () => {
+      const nextTab = window.location.hash.replace('#', '');
+      if (VALID_TABS.has(nextTab)) {
+        activateTab(nextTab);
+      }
+    });
+
+    $syncToken.subscribe((token) => {
+      const shell = document.querySelector('.settings-shell');
+      if (!shell) return;
+      updateSyncStatusUI(token, readSettingsCopy(shell));
+    });
+
+    $profile.subscribe(updateGuideBadge);
+    $onboarding.subscribe(updateGuideBadge);
+  }
+
+  initSettingsTabs();
+  document.addEventListener('astro:page-load', initSettingsTabs);
 </script>
 
 <style>

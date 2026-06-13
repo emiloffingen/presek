@@ -20,10 +20,8 @@ import MorningEmailSignup from './MorningEmailSignup.tsx';
 type TabId = 'pregled' | 'profil' | 'dostava' | 'sinhronizacija' | 'vodic';
 
 function activateSettingsTab(tab: TabId) {
-  if (typeof document === 'undefined') return;
-  const button = document.querySelector(`.settings-tab-btn[data-tab="${tab}"]`);
-  button?.dispatchEvent(new Event('click', { bubbles: true }));
-  window.history.replaceState(null, '', `#${tab}`);
+  if (typeof window === 'undefined') return;
+  window.location.hash = tab;
 }
 
 export default function SettingsOverviewIsland({ lang = 'sr' }: { lang?: string }) {
