@@ -186,3 +186,26 @@ def test_get_personalized_news_sync_with_history():
     assert response["results"][0]["has_balanced"] is True
     assert response["results"][0]["score"] == 5.0
     assert len(response["results"][0]["articles"]) == 2
+
+
+def test_get_personalized_news_sync_mk_uses_country_filter():
+    from routes.profile import get_personalized_news_sync
+
+    recent = [{"cluster_id": "c1"}]
+    mock_db_manager.async_execute.reset_mock()
+    mock_db_manager.async_execute.side_effect = [
+        [{"embedding": [0.1] * 1536}],
+        [],
+    ]
+
+    request = MagicMock()
+    request.json = AsyncMock(return_value={"profile": {"recentClusters": recent}, "limit": 5, "locale": "mk"})
+
+    with patch("routes.profile.db", mock_db_manager):
+        response = asyncio.run(get_personalized_news_sync(request))
+
+    assert response["status"] == "success"
+    assert response["results"] == []
+    semantic_query, semantic_params = mock_db_manager.async_execute.call_args_list[1].args
+    assert "country = %s" in semantic_query
+    assert semantic_params[1] == "MK"

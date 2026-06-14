@@ -26,16 +26,31 @@ export default function UiConceptOnboarding({ lang = 'sr' }: { lang?: string }) 
     if (!document.querySelector('[data-home-session-root]')) return;
 
     const visits = Number(localStorage.getItem(FIRST_SESSION_KEY) || '0');
-    if (visits > 2) return;
+    if (visits > 4) return;
 
     setLeadHref(document.querySelector<HTMLAnchorElement>('.lead-copy a[data-testid="cluster-link"]')?.href || '');
 
     let shown = false;
-    const show = () => {
-      if (shown) return;
-      if (document.body.classList.contains('has-consent-banner')) return;
+    let consentObserver: MutationObserver | null = null;
+
+    const tryShow = () => {
+      if (shown) return true;
+      if (document.body.classList.contains('has-consent-banner')) return false;
       shown = true;
+      consentObserver?.disconnect();
+      consentObserver = null;
       setVisible(true);
+      return true;
+    };
+
+    const show = () => {
+      if (tryShow()) return;
+      if (!consentObserver) {
+        consentObserver = new MutationObserver(() => {
+          tryShow();
+        });
+        consentObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      }
     };
 
     const isFirstVisit = visits <= 1;
@@ -62,6 +77,7 @@ export default function UiConceptOnboarding({ lang = 'sr' }: { lang?: string }) 
       return () => {
         observer.disconnect();
         window.removeEventListener('scroll', onScroll);
+        consentObserver?.disconnect();
       };
     }
 
@@ -78,6 +94,7 @@ export default function UiConceptOnboarding({ lang = 'sr' }: { lang?: string }) 
     return () => {
       window.clearTimeout(timer);
       window.removeEventListener('scroll', onScroll);
+      consentObserver?.disconnect();
     };
   }, []);
 

@@ -386,6 +386,8 @@ class TestSynthesizeClusterTaskQuality:
             patch("tasks.intelligence.get_celery_queue_depth", return_value=0),
             patch("core.config.AUTO_SUMMARIZE_MIN_SRC", 1),
             patch("core.database.db_manager") as mock_db,
+            patch("tasks.intelligence._fetch_synthesis_history_context", return_value=""),
+            patch("tasks.intelligence._build_source_comparison_prompt_block", return_value=""),
             patch(
                 "tasks.intelligence._generate_synthesis_via_cascade",
                 return_value={
@@ -474,6 +476,7 @@ class TestSynthesizeClusterTaskQuality:
             ),
             patch("tasks.intelligence.generate_cover_art", return_value=None),
             patch("tasks.intelligence._is_grounded_synthesis", return_value=True),
+            patch("tasks.intelligence._is_fact_grounded_synthesis", return_value=True),
             patch("tasks.intelligence.invalidate_cluster_caches"),
             patch("tasks.utils.record_task_event"),
             patch("tasks.intelligence.analyst") as mock_analyst,

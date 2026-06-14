@@ -51,7 +51,8 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
       const params = new URLSearchParams({ mode, lang });
       if (mode === 'custom') {
         const custom = query?.trim() || '';
-        params.set('q', headline ? `${custom}\n\nTema: ${headline}` : custom);
+        const topicLabel = t('cluster.research_topic_label');
+        params.set('q', headline ? `${custom}\n\n${topicLabel}: ${headline}` : custom);
       }
       const url = `/api/intelligence/cluster/${clusterId}/research?${params.toString()}`;
 

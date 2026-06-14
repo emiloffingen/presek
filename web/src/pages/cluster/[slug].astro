@@ -741,7 +741,7 @@ const articleSchema = cluster ? {
 								t={translate}
 							/>
 						)}
-                        <ClusterDeepTools clusterId={id || ''} apiUrl={API_URL} lang={lang} t={translate} />
+                        <ClusterDeepTools clusterId={id || ''} apiUrl={API_URL} lang={lang} t={translate} initialHeadline={displayHeadline} sources={allSourcesNames} />
 
 					</div>
 

@@ -1,9 +1,9 @@
 import React from 'react';
 import { ShieldCheck, Globe, CheckCircle2, Activity, Clock, Layers, Palette, ArrowRight } from 'lucide-react';
 import { chooseClusterImage } from '../utils/imageSelection';
-import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, getDesignCardContext, slugify } from '../utils/textUtils';
+import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, getDesignCardContext, slugify, transliterate } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
-import { localePathForLang } from '../lib/localePaths';
+import { dateLocaleForLang, localePathForLang } from '../lib/localePaths';
 import { getVisibleCardSignals, formatSignalBadge } from '../lib/signalBadges';
 import { ui } from '../i18n/ui';
 import type { NewsCluster, Article } from '../types';
@@ -70,7 +70,10 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   const tintColor = cluster.dominant_color || '#1e40af';
 
   const rawLeadTitle = cluster.synthetic_headline || getDisplayTitle(main);
-  const displayTitle = highlightScores(rawLeadTitle);
+  let displayTitle = highlightScores(rawLeadTitle);
+  if (lang === 'sr' && isMostlyCyrillic(displayTitle)) {
+    displayTitle = highlightScores(transliterate(cluster.synthetic_headline || getDisplayTitle(main)));
+  }
   const titleIsCyrillic = isMostlyCyrillic(displayTitle);
 
   const clusterSlug = slugify(cluster.synthetic_headline || getDisplayTitle(main));
@@ -112,7 +115,10 @@ export const NewsCard: React.FC<NewsCardProps> = ({
     return highlightScores(truncated);
   }
 
-  const displaySummary = getCardSummary(main, isLead);
+  let displaySummary = getCardSummary(main, isLead);
+  if (lang === 'sr' && isMostlyCyrillic(displaySummary)) {
+    displaySummary = highlightScores(transliterate(displaySummary));
+  }
   const summaryIsCyrillic = isMostlyCyrillic(displaySummary);
 
   const getTimeStr = (dateStr: string) => {
@@ -124,7 +130,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
       if (diffMins < 1) return t('news.just_now');
       if (diffMins < 60) return `${t('news.ago')} ${diffMins} ${t('news.min_short')}`;
-      return date.toLocaleTimeString(lang === 'sr' ? 'sr-RS' : 'mk-MK', {
+      return date.toLocaleTimeString(dateLocaleForLang(lang as 'sr' | 'mk'), {
           hour: '2-digit',
           minute: '2-digit'
       });

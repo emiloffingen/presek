@@ -335,7 +335,7 @@ async def get_personalized_news_by_profile(profile: dict, limit: int = 6, lang: 
 
     # 2. Semantic Search for similar news in last 72 hours (expanded window)
     # Filter by country/language to avoid cross-language leakage
-    country_filter = "mk" if lang == "mk" else "sr"
+    country_filter = "MK" if lang == "mk" else "RS"
     rows = await db.async_execute(
         f"""
         WITH pool AS (

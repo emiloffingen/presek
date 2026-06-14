@@ -1,5 +1,15 @@
 # Presek Changelog
 
+## v8.2.2 (2026-06-14)
+
+### Fixes
+- Personalized news semantic search now filters by `MK`/`RS` country codes (was lowercase, breaking MK sync)
+- MK briefing lead extraction recognizes Cyrillic `големата слика` heading
+- `NewsCard` transliterates Cyrillic titles/summaries on SR and uses `sr-Latn-RS` date locale
+- Cluster research UI wired into deep-tools; locale-aware topic label and MK Cyrillic API errors
+- Concept onboarding waits for consent dismissal and allows more homepage sessions before suppressing
+- Synthesis test mocks updated for fact-grounding gate and history-context isolation
+
 ## v8.2.1 (2026-06-14)
 
 ### Frontend & UX

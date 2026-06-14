@@ -17,7 +17,7 @@ function extractBriefingLead(content: string) {
     const line = rawLine.trim();
     if (!line) continue;
     if (line.startsWith('##')) {
-      inBigPicture = /velika slika|golemata slika/i.test(line);
+      inBigPicture = /velika slika|golemata slika|големата слика/i.test(line);
       continue;
     }
     if (inBigPicture && !line.startsWith('#')) {

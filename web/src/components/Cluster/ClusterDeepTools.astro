@@ -1,15 +1,18 @@
 ---
 import StorylineHistoryIsland from '../StorylineHistoryIsland.tsx';
 import ClusterHistoryIsland from '../ClusterHistoryIsland.tsx';
+import ResearchIsland from '../ResearchIsland.tsx';
 
 interface Props {
   clusterId: string;
   apiUrl: string;
   lang: string;
   t: (key: string) => string;
+  initialHeadline?: string;
+  sources?: string[];
 }
 
-const { clusterId, apiUrl, lang, t } = Astro.props;
+const { clusterId, apiUrl, lang, t, initialHeadline = '', sources = [] } = Astro.props;
 ---
 
 <section class="editorial-section cluster-deep-tools mb-16">
@@ -21,6 +24,13 @@ const { clusterId, apiUrl, lang, t } = Astro.props;
       </span>
     </summary>
     <div class="cluster-deep-tools-body">
+      <ResearchIsland
+        client:visible
+        clusterId={clusterId}
+        initialHeadline={initialHeadline}
+        sources={sources}
+        lang={lang as 'sr' | 'mk'}
+      />
       <StorylineHistoryIsland client:visible clusterId={clusterId} apiUrl={apiUrl} lang={lang} />
       <ClusterHistoryIsland client:visible clusterId={clusterId} lang={lang} />
     </div>

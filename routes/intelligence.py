@@ -371,7 +371,7 @@ async def get_deep_research(request: Request, cluster_id: str, mode: str = "fact
         return {
             "status": "error",
             "message": (
-                "Nevaliden tip na istrazuvanje."
+                "Невалиден тип на истражување."
                 if lang == "mk"
                 else "Nevalidan tip istraživanja."
             ),
@@ -381,7 +381,7 @@ async def get_deep_research(request: Request, cluster_id: str, mode: str = "fact
         return {
             "status": "error",
             "message": (
-                "Vnesete konkretno prasanje za istrazuvanje."
+                "Внесете конкретно прашање за истражување."
                 if lang == "mk"
                 else "Unesite konkretno pitanje za istraživanje."
             ),
@@ -404,7 +404,7 @@ async def get_deep_research(request: Request, cluster_id: str, mode: str = "fact
         return {
             "status": "error",
             "message": (
-                "Sistemot e preoptereten, obidete se povtorno za nekolku minuti."
+                "Системот е преоптеретен, обидете се повторно за неколку минути."
                 if lang == "mk"
                 else "Sistem je trenutno preopterećen, pokušajte ponovo za nekoliko minuta."
             ),
