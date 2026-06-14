@@ -14,7 +14,7 @@ interface Props {
 
 const { items, lang: propLang, adInsertAfter = 0 } = Astro.props;
 const hostHeader = Astro.request?.headers.get('host');
-const lang = propLang || getLangFromUrl(Astro.url, hostHeader);
+const lang = (propLang === 'mk' || propLang === 'sr' ? propLang : getLangFromUrl(Astro.url, hostHeader)) as 'sr' | 'mk';
 const t = useTranslations(lang);
 const counts = countFeedBuckets(items);
 

@@ -220,7 +220,7 @@ const t = useTranslations(lang);
   }
 
   function updateGuideBadge() {
-    const shell = document.querySelector('.settings-shell');
+    const shell = document.querySelector<HTMLElement>('.settings-shell');
     if (!shell) return;
     const badge = document.getElementById('guide-tab-badge');
     if (!badge) return;
@@ -229,7 +229,7 @@ const t = useTranslations(lang);
   }
 
   function initSettingsTabs() {
-    const shell = document.querySelector('.settings-shell');
+    const shell = document.querySelector<HTMLElement>('.settings-shell');
     if (!shell) return;
 
     document.querySelectorAll<HTMLButtonElement>('.settings-tab-btn').forEach((btn) => {
@@ -261,7 +261,7 @@ const t = useTranslations(lang);
     });
 
     $syncToken.subscribe((token) => {
-      const shell = document.querySelector('.settings-shell');
+      const shell = document.querySelector<HTMLElement>('.settings-shell');
       if (!shell) return;
       updateSyncStatusUI(token, readSettingsCopy(shell));
     });

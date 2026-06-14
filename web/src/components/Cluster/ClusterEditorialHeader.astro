@@ -136,7 +136,7 @@ const {
           <p>{clusterStatus.description}</p>
         </div>
         <div class="cluster-evidence-grid">
-          {evidenceItems.map((item) => (
+          {evidenceItems.map((item: { label: string; value: string | number; detail?: string }) => (
             <div class="cluster-evidence-item">
               <span>{item.label}</span>
               <strong>{item.value}</strong>

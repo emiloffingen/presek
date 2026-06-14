@@ -30,6 +30,7 @@ import { getClockTimeStr as formatClockTime, getRelativeTimeStr as formatRelativ
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
+const translate = (key: string) => t(key as any);
 
 const timeLabels = {
     just_now: t('news.just_now'),
@@ -213,7 +214,7 @@ const articleRows = (cluster?.articles || []).map((a: Article, idx: number, arr:
 const relatedClusters = cluster?.related || [];
 const filteredRelated = relatedClusters.filter((c: { cluster_id: string }) => c.cluster_id !== id).slice(0, 5);
 
-const adjacentTopic = cluster?.topics?.find((t: string) => t !== 'Srbija') || cluster?.topics?.[0];
+const adjacentTopic = cluster?.topics?.find((t: string) => t !== 'Srbija') || cluster?.topics?.[0] || '';
 
 const canonicalUrl = `https://presek.live/cluster/${canonicalPathSlug}`;
 const shareDescription = synthesisItems[0]?.content || mainArticle?.description || '';
@@ -630,7 +631,7 @@ const articleSchema = cluster ? {
 					showCredibilitySection={showCredibilitySection}
 					cleanTopicLabel={cleanTopicLabel}
 					canonicalUrl={canonicalUrl}
-					t={t}
+					t={translate}
 				/>
 
 					{showHeroVisual && (
@@ -653,7 +654,7 @@ const articleSchema = cluster ? {
 								lang={lang as 'sr' | 'mk'}
 								displayHeaderBriefItems={displayHeaderBriefItems}
 								keyFacts={cluster.key_facts}
-								t={t}
+								t={translate}
 							/>
 						)}
 
@@ -678,7 +679,7 @@ const articleSchema = cluster ? {
 							/>
 
 							<ClusterSynthesisSection
-								lang={lang}
+								lang={lang as 'sr' | 'mk'}
 								clusterId={id || ''}
 								primaryNarrativeLabel={primaryNarrativeLabel}
 								primaryNarrativeEyebrow={primaryNarrativeEyebrow}
@@ -704,7 +705,7 @@ const articleSchema = cluster ? {
 							sourceDocArticle={sourceDocArticle}
 							sourceDocText={sourceDocText}
 							articleRows={articleRows}
-							t={t}
+							t={translate}
 						/>
 
 						{showCredibilitySection && (
@@ -737,10 +738,10 @@ const articleSchema = cluster ? {
 								filteredRelated={filteredRelated}
 								getRelativeTimeStr={getRelativeTimeStr}
 								describeRelatedEvidence={describeRelatedEvidence}
-								t={t}
+								t={translate}
 							/>
 						)}
-                        <ClusterDeepTools clusterId={id || ''} apiUrl={API_URL} lang={lang} t={t} />
+                        <ClusterDeepTools clusterId={id || ''} apiUrl={API_URL} lang={lang} t={translate} />
 
 					</div>
 

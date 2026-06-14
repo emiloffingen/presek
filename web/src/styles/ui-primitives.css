@@ -16,8 +16,8 @@
 .article-image,
 .cluster-visual-image {
   opacity: 0;
-  transform: scale(1.02);
-  filter: blur(4px);
+  transform: scale(1.01);
+  filter: blur(2px);
   transition:
     opacity 0.8s var(--ease-editorial),
     transform 0.8s var(--ease-editorial),
@@ -27,7 +27,7 @@
 
 .nyt-article:hover .article-image,
 .nyt-article:hover .cluster-visual-image {
-  transform: scale(1.08) translateY(2%);
+  transform: scale(1.025);
 }
 
 .article-image.is-loaded,
@@ -39,7 +39,7 @@
 
 .nyt-article:hover .article-image.is-loaded,
 .nyt-article:hover .cluster-visual-image.is-loaded {
-  transform: scale(1.05);
+  transform: scale(1.025);
 }
 
 .shadow-editorial {

@@ -52,7 +52,25 @@ const t = useTranslations(lang);
         min-width: 0;
     }
 
-    .emblem-container { display: none; } /* NYT International doesn't use the block emblem in the main masthead */
+    .emblem-container { display: none; }
+
+    .presek-branding.full:not(.footer-logo-premium) {
+        flex-direction: row;
+        gap: 0.7rem;
+    }
+
+    .presek-branding.full:not(.footer-logo-premium) .emblem-container {
+        display: block;
+        position: relative;
+        flex: 0 0 auto;
+    }
+
+    .presek-branding.full:not(.footer-logo-premium) .presek-emblem-svg {
+        width: 2rem;
+        height: 2rem;
+        display: block;
+        color: var(--nyt-accent);
+    }
 
     .logo-text-group {
         display: flex;
@@ -63,15 +81,15 @@ const t = useTranslations(lang);
     }
 
     .presek-logo-svg {
-        width: clamp(240px, 26vw, 380px);
-        height: 52px;
+        width: clamp(210px, 22vw, 330px);
+        height: 46px;
     }
 
     .logo-sublabel {
         font-family: var(--font-ui);
-        font-size: 0.56rem;
+        font-size: 0.52rem;
         font-weight: 700;
-        letter-spacing: 0.22em;
+        letter-spacing: 0.18em;
         color: var(--muted-foreground);
         text-transform: uppercase;
         line-height: 1;
@@ -108,21 +126,27 @@ const t = useTranslations(lang);
 
     @media (max-width: 960px) {
         .presek-branding { gap: 0.35rem; }
+        .presek-branding.full:not(.footer-logo-premium) {
+            gap: 0;
+        }
+        .presek-branding.full:not(.footer-logo-premium) .emblem-container {
+            display: none;
+        }
         .presek-emblem-svg { width: 32px; height: 32px; }
         .logo-sublabel { display: none; }
-        .presek-logo-svg { width: 150px; height: 34px; }
+        .presek-logo-svg { width: 142px; height: 32px; }
     }
 
     @media (max-width: 768px) {
         .presek-branding { gap: 0.3rem; }
         .presek-emblem-svg { width: 28px; height: 28px; }
-        .presek-logo-svg { width: 132px; height: 32px; }
+        .presek-logo-svg { width: 124px; height: 30px; }
     }
 
     @media (max-width: 480px) {
         .presek-branding { gap: 0.25rem; }
         .presek-emblem-svg { width: 24px; height: 24px; }
-        .presek-logo-svg { width: 112px; height: 30px; }
+        .presek-logo-svg { width: 108px; height: 29px; }
         .presek-branding.footer-logo-premium .presek-emblem-svg { width: 40px; height: 36px; }
         .presek-branding.footer-logo-premium .presek-logo-svg { width: 160px; }
     }

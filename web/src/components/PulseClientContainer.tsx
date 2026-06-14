@@ -40,8 +40,9 @@ interface PulseClientContainerProps {
 }
 
 export default function PulseClientContainer({ initialGlobalPulse, initialPulseData, categories, ssrFailed, lang = 'sr' }: PulseClientContainerProps) {
-    const isMK = lang === 'mk';
-    const t = useTranslations(lang as 'sr' | 'mk');
+    const locale = lang === 'mk' ? 'mk' : 'sr';
+    const isMK = locale === 'mk';
+    const t = useTranslations(locale);
 
     // URL-aware category state
     const [category, setCategory] = useState<string | null>(() => {
@@ -179,7 +180,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-[var(--grid-gap)] mb-10 md:mb-16">
                 <div className="lg:col-span-2">
                     <Suspense fallback={<PulseChartFallback tall />}>
-                        <PulseHeatmapIsland lang={lang} />
+                        <PulseHeatmapIsland lang={locale} />
                     </Suspense>
                 </div>
                 <div className="grid grid-cols-1 gap-[var(--grid-gap)]">
@@ -187,11 +188,11 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                         <DivergenceGaugeIsland
                             pluralism_pct={intelligence.pluralism?.pluralism_pct}
                             high_consensus_pct={intelligence.pluralism?.high_consensus_pct}
-                            lang={lang}
+                            lang={locale}
                         />
                     </Suspense>
                     <Suspense fallback={<PulseChartFallback />}>
-                        <SentimentRadarIsland data={topicPulse} lang={lang} />
+                        <SentimentRadarIsland data={topicPulse} lang={locale} />
                     </Suspense>
                 </div>
             </div>
@@ -304,7 +305,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                             </div>
                         </div>
                         <Suspense fallback={<PulseChartFallback tall />}>
-                            <PulseLandscapeIsland data={pulseData} loading={loading} lang={lang} onSourceClick={(s) => {
+                            <PulseLandscapeIsland data={pulseData} loading={loading} lang={locale} onSourceClick={(s) => {
                                 const el = document.getElementById('leaderboard');
                                 if (el) el.scrollIntoView({ behavior: 'smooth' });
                             }} />
@@ -377,7 +378,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                 </div>
 
                 <aside className="broadsheet-rail">
-                    <TinyAdzRailSlot lang={lang} />
+                    <TinyAdzRailSlot lang={locale} />
                     <section className="pulse-premium-card mb-6">
                         <p className="rail-kicker ui-kicker ui-kicker--accent">{isMK ? 'Методологија' : 'Metodologija'}</p>
                         <h3 className="rail-title italic font-serif text-lg font-black mt-1 mb-2">{isMK ? 'Уреднички Алгоритам' : 'Urednički Algoritam'}</h3>
@@ -391,7 +392,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                     <div className="pulse-premium-card">
                         <h4 className="sidebar-label !border-nyt-accent text-nyt-accent">{isMK ? 'СПОРЕДБА НА ИЗВОРИ' : 'POREĐENJE IZVORA'}</h4>
                         <div className="mt-4">
-                            <SourceComparisonIsland allSources={pulseData.map((r: PulseRow) => r.source)} lang={lang} />
+                            <SourceComparisonIsland allSources={pulseData.map((r: PulseRow) => r.source)} lang={locale} />
                         </div>
                     </div>
                 </aside>

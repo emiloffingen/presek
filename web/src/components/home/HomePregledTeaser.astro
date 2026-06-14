@@ -13,7 +13,8 @@ interface Props {
 }
 
 const hostHeader = Astro.request?.headers.get('host');
-const lang = Astro.props.lang || getLangFromUrl(Astro.url, hostHeader);
+const propLang = Astro.props.lang;
+const lang = (propLang === 'mk' || propLang === 'sr' ? propLang : getLangFromUrl(Astro.url, hostHeader)) as 'sr' | 'mk';
 const t = useTranslations(lang);
 const pregledHref = localePath('/pregled', lang, hostHeader);
 const pluralismPct = Astro.props.pluralismPct;

@@ -86,7 +86,13 @@ const cardSignals = signalBadges.map((badge) => {
     }
     return '';
 }).filter(Boolean);
-const synthesisFreshness = cluster.synthesis_freshness || {};
+const synthesisFreshness = (cluster.synthesis_freshness || {}) as {
+    is_stale?: boolean;
+    latest_article_at?: string | null;
+    new_article_count?: number;
+    reasons?: string[];
+    synthesis_updated_at?: string | null;
+};
 const isPendingSynthesis = (synthesisFreshness.reasons || []).includes('missing_synthesis');
 const trustIsStale = Boolean(synthesisFreshness.is_stale) && !isPendingSynthesis;
 const isStubCard = isStubFeedCluster(cluster) && variant !== 'featured' && !isLead;
@@ -273,7 +279,7 @@ function getTimeStr(dateStr: string) {
 	.nyt-article {
 		min-width: 0;
 		max-width: 100%;
-        padding: clamp(0.72rem, 1.25vw, 0.95rem) 0;
+        padding: clamp(0.78rem, 1.15vw, 1rem) 0;
         display: flex;
         flex-direction: column;
         height: 100%;
@@ -284,6 +290,13 @@ function getTimeStr(dateStr: string) {
         box-shadow: none;
         transition: transform 0.28s var(--ease-editorial), border-color 0.28s var(--ease-editorial), box-shadow 0.28s var(--ease-editorial), background-color 0.28s var(--ease-editorial);
 	}
+
+    .nyt-article.variant-featured {
+        padding: clamp(0.9rem, 1.35vw, 1.15rem);
+        border: 1px solid color-mix(in srgb, var(--foreground) 12%, var(--border));
+        background:
+            linear-gradient(180deg, color-mix(in srgb, var(--background) 96%, var(--nyt-accent) 4%), var(--background));
+    }
 
     .nyt-article:hover {
         transform: translateY(-1px);
@@ -301,7 +314,7 @@ function getTimeStr(dateStr: string) {
             transform: translateY(-2px);
             border-color: color-mix(in srgb, var(--nyt-accent) 45%, var(--border));
             box-shadow: none;
-            background: color-mix(in srgb, var(--background) 96%, var(--nyt-accent) 4%);
+            background: color-mix(in srgb, var(--background) 97%, var(--nyt-accent) 3%);
             z-index: 10;
         }
     }
@@ -323,7 +336,7 @@ function getTimeStr(dateStr: string) {
 	    min-width: 0;
 	    max-width: 100%;
 	    text-decoration: none;
-        min-height: 3.75rem;
+        min-height: 3.35rem;
 	}
 
     .headline-link h2 {
@@ -351,8 +364,8 @@ function getTimeStr(dateStr: string) {
         display: flex;
         align-items: flex-start;
         gap: 0.5rem;
-        margin-bottom: 0.34rem;
-        min-height: 1.35rem;
+        margin-bottom: 0.28rem;
+        min-height: 1.15rem;
     }
 
     .kicker-group {
@@ -365,11 +378,11 @@ function getTimeStr(dateStr: string) {
 
     .kicker {
         font-family: var(--font-ui-condensed);
-        font-size: 0.66rem;
+        font-size: 0.6rem;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: var(--foreground);
+        letter-spacing: 0.075em;
+        color: color-mix(in srgb, var(--foreground) 74%, var(--muted-foreground));
         max-width: 14rem;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -399,25 +412,25 @@ function getTimeStr(dateStr: string) {
         flex-wrap: wrap;
         gap: 0.4rem;
         font-family: var(--font-ui);
-        font-size: 0.66rem;
+        font-size: 0.6rem;
         font-weight: 600;
-        color: color-mix(in srgb, var(--foreground) 68%, var(--muted-foreground));
+        color: color-mix(in srgb, var(--foreground) 58%, var(--muted-foreground));
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-top: 0.5rem;
+        letter-spacing: 0.035em;
+        margin-top: 0.46rem;
     }
 
     .meta-dot { opacity: 0.4; }
 
     .cluster-trust-row {
-        margin-top: 0.45rem;
+        margin-top: 0.38rem;
     }
 
     .cluster-signal-row {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.35rem;
-        margin-top: 0.5rem;
+        gap: 0.28rem;
+        margin-top: 0.42rem;
     }
 
     .cluster-signal-row span {
@@ -427,11 +440,11 @@ function getTimeStr(dateStr: string) {
         white-space: nowrap;
         border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
         border-radius: var(--radius-sm, 0px);
-        padding: 0.2rem 0.5rem;
+        padding: 0.18rem 0.42rem;
         font-family: var(--font-ui);
-        font-size: 0.64rem;
+        font-size: 0.58rem;
         font-weight: 700;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.035em;
         text-transform: uppercase;
         color: color-mix(in srgb, var(--foreground) 64%, var(--muted-foreground));
         background: color-mix(in srgb, var(--secondary) 45%, var(--background));
@@ -446,15 +459,15 @@ function getTimeStr(dateStr: string) {
 
     .summary {
         font-family: var(--font-nyt-body);
-        font-size: 0.91rem;
-        line-height: 1.48;
+        font-size: 0.88rem;
+        line-height: 1.44;
         color: color-mix(in srgb, var(--foreground) 78%, var(--secondary-foreground));
-        margin-top: 0.3rem;
+        margin-top: 0.24rem;
         display: -webkit-box;
         -webkit-line-clamp: 3;
         -webkit-box-orient: vertical;
         overflow: hidden;
-        min-height: 3.45rem;
+        min-height: 3.2rem;
     }
 
     .sub-headlines {
@@ -515,6 +528,7 @@ function getTimeStr(dateStr: string) {
             var(--secondary);
         box-shadow: none;
         transition: border-color 0.4s var(--ease-editorial);
+        margin-bottom: 0.72rem;
     }
 
     .image-wrap::before {
@@ -561,7 +575,7 @@ function getTimeStr(dateStr: string) {
     }
 
     .nyt-article:hover .article-image.is-loaded {
-        transform: scale(1.04);
+        transform: scale(1.025);
         filter: brightness(0.95);
     }
 
@@ -670,6 +684,16 @@ function getTimeStr(dateStr: string) {
             flex-direction: row;
             gap: 2rem;
         }
+
+        .nyt-article.variant-featured:not(.lead-story) .headline-standard {
+            font-size: clamp(1.34rem, 1.1rem + 0.5vw, 1.72rem);
+            line-height: 1.08;
+            letter-spacing: -0.018em;
+        }
+
+        .nyt-article.variant-featured:not(.lead-story) .summary {
+            max-width: 42rem;
+        }
 	}
 
 	@media (max-width: 640px) {
@@ -690,7 +714,7 @@ function getTimeStr(dateStr: string) {
     }
 
         .nyt-article {
-            padding: 0.7rem 0;
+            padding: 0.66rem 0;
             border-radius: 0;
         }
 
@@ -704,8 +728,8 @@ function getTimeStr(dateStr: string) {
         }
 
         .nyt-article:not(.lead-story).has-useful-image {
-            grid-template-columns: minmax(0, 1fr) clamp(5.6rem, 28vw, 7.25rem);
-            column-gap: 0.72rem;
+            grid-template-columns: minmax(0, 1fr) clamp(5.35rem, 27vw, 6.85rem);
+            column-gap: 0.66rem;
         }
 
         .nyt-article:not(.lead-story).has-useful-image .article-body {
@@ -720,6 +744,7 @@ function getTimeStr(dateStr: string) {
             aspect-ratio: 1 / 0.78;
             align-self: start;
             margin-top: 0.08rem;
+            margin-bottom: 0;
         }
 
         .nyt-article:not(.lead-story) .article-image {
@@ -731,8 +756,19 @@ function getTimeStr(dateStr: string) {
             min-height: 0;
         }
 
+        .nyt-article:not(.lead-story) .headline-link {
+            min-height: 0;
+        }
+
+        .nyt-article:not(.lead-story) .headline-standard {
+            font-size: 1rem;
+            line-height: 1.17;
+            letter-spacing: -0.01em;
+            -webkit-line-clamp: 3;
+        }
+
         .nyt-article.variant-featured:not(.lead-story) .headline-standard {
-            font-size: 1.12rem;
+            font-size: 1.08rem;
             line-height: 1.12;
             letter-spacing: -0.012em;
         }
@@ -740,6 +776,28 @@ function getTimeStr(dateStr: string) {
         .nyt-article.variant-featured:not(.lead-story) .summary {
             min-height: 0;
             -webkit-line-clamp: 2;
+        }
+
+        .nyt-article:not(.lead-story) .summary {
+            min-height: 0;
+            font-size: 0.82rem;
+            line-height: 1.34;
+            margin-top: 0.22rem;
+            -webkit-line-clamp: 2;
+        }
+
+        .nyt-article:not(.lead-story) .cluster-signal-row {
+            display: none;
+        }
+
+        .nyt-article:not(.lead-story) .cluster-trust-row {
+            margin-top: 0.32rem;
+        }
+
+        .nyt-article:not(.lead-story) .article-footer-meta {
+            margin-top: 0.38rem;
+            font-size: 0.58rem;
+            gap: 0.32rem;
         }
 
 		.article-meta-v2 {
@@ -765,7 +823,7 @@ function getTimeStr(dateStr: string) {
 
 		.nyt-article.variant-compact .headline-compact,
 		.nyt-article.variant-wire .headline-compact {
-			font-size: 1rem;
+			font-size: 0.98rem;
 			line-height: 1.16;
 			letter-spacing: -0.015em;
 			padding-bottom: 0.08em;
@@ -808,8 +866,8 @@ function getTimeStr(dateStr: string) {
 
 		.nyt-article.variant-compact .kicker,
 		.nyt-article.variant-wire .kicker {
-			font-size: 0.56rem;
-			letter-spacing: 0.08em;
+			font-size: 0.54rem;
+			letter-spacing: 0.06em;
 		}
 
 		.nyt-article.variant-wire .image-wrap {

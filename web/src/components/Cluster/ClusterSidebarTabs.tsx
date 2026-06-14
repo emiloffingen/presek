@@ -34,7 +34,8 @@ export default function ClusterSidebarTabs({
   adjacentTopic,
   keyEntities,
 }: Props) {
-  const t = useTranslations(lang as 'sr' | 'mk');
+  const locale = lang === 'mk' ? 'mk' : 'sr';
+  const t = useTranslations(locale);
   const tabs = useMemo(() => {
     const items: { id: TabId; label: string; disabled?: boolean }[] = [
       { id: 'spectrum', label: t('cluster.tab_spectrum') },
@@ -107,7 +108,7 @@ export default function ClusterSidebarTabs({
             hidden={activeTab !== 'spectrum'}
             className="cluster-sidebar-panel source-spectrum-panel"
           >
-            <SourceSpectrum articles={articles as any} lang={lang} />
+            <SourceSpectrum articles={articles as any} lang={locale} />
           </section>
         )}
 
@@ -119,7 +120,7 @@ export default function ClusterSidebarTabs({
             hidden={activeTab !== 'compare'}
             className="cluster-sidebar-panel compare-source-diff-panel source-comparison-panel"
           >
-            <SourceComparisonIsland allSources={allSourcesNames} lang={lang} />
+            <SourceComparisonIsland allSources={allSourcesNames} lang={locale} />
           </section>
         )}
 
@@ -131,7 +132,7 @@ export default function ClusterSidebarTabs({
             hidden={activeTab !== 'pulse'}
             className="cluster-sidebar-panel"
           >
-            <MediaPulseRadar data={sentimentData} lang={lang} />
+            <MediaPulseRadar data={sentimentData} lang={locale} />
           </section>
         )}
 
@@ -143,19 +144,19 @@ export default function ClusterSidebarTabs({
             hidden={activeTab !== 'more'}
             className="cluster-sidebar-panel cluster-sidebar-more"
           >
-            <NewsletterIsland lang={lang} />
+            <NewsletterIsland lang={locale} />
             <ClusterFollowSuggestionsIsland
               topic={topic}
               source={source}
               adjacentTopic={adjacentTopic}
-              lang={lang}
+              lang={locale}
             />
             {keyEntities.length > 0 && (
               <div className="cluster-sidebar-entities">
                 <h4 className="sidebar-label">{t('cluster.key_entities')}</h4>
                 <div className="cluster-sidebar-entities-list">
                   {keyEntities.map((name) => (
-                    <EntityContextCard key={name} name={name} lang={lang} />
+                    <EntityContextCard key={name} name={name} lang={locale} />
                   ))}
                 </div>
               </div>
