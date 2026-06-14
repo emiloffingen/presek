@@ -180,12 +180,11 @@ def test_pulse_and_izvori_include_tinyadz_rail_slots():
     assert "TinyAdzRailSlot" in izvori
 
 
-def test_adsense_helper_module():
-    helper = Path("web/src/lib/adsense.ts").read_text(encoding="utf-8")
-    layout = Path("web/src/layouts/Layout.astro").read_text(encoding="utf-8")
-    assert "shouldLoadAdsense" in helper
-    assert "PUBLIC_ADSENSE_ENABLED" in helper
-    assert "shouldLoadAdsense" in layout
+def test_ads_txt_lists_tinyadz_publishers():
+    ads_txt = Path("web/public/ads.txt").read_text(encoding="utf-8")
+    assert "tinyadz.com, 6a29a71de09ffcc4c9bbd83e, DIRECT" in ads_txt
+    assert "tinyadz.com, 6a2995c32b7233c34b097a9c, DIRECT" in ads_txt
+    assert "pub-1724921768403014" not in ads_txt
 
 
 def test_production_config_documents_tinyadz_site_ids():
@@ -193,6 +192,5 @@ def test_production_config_documents_tinyadz_site_ids():
     assert "PUBLIC_TINYADZ_SITE_ID=6a2995c32b7233c34b097a9c" in example
     assert "PUBLIC_TINYADZ_LIVE_SITE_ID=6a29a71de09ffcc4c9bbd83e" in example
     assert "PUBLIC_TINYADZ_TEST_MODE=false" in example
-    assert "PUBLIC_ADSENSE_ENABLED=true" in example
     assert "ENABLE_PUBLIC_CHECK=1" in example
     assert "ENABLE_MK_PUBLIC_CHECK=1" in example

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildTrustChip } from './trustSignals.ts';
+import { buildTrustChip, buildCompactPluralismMeta } from './trustSignals.ts';
 
 test('buildTrustChip shows pending label when synthesis is missing', () => {
   const chip = buildTrustChip(
@@ -17,4 +17,16 @@ test('buildTrustChip keeps stale note for refresh stale synthesis', () => {
     'sr',
   );
   assert.match(chip.detail, /osvežava/);
+});
+
+test('buildCompactPluralismMeta highlights plural coverage on compact cards', () => {
+  const meta = buildCompactPluralismMeta({ sourcesCount: 4, pluralismScore: 62 }, 'sr');
+  assert.match(meta, /Različiti uglovi/);
+  assert.match(meta, /62%/);
+});
+
+test('buildCompactPluralismMeta shows consensus label', () => {
+  const meta = buildCompactPluralismMeta({ sourcesCount: 5, pluralismScore: 10 }, 'sr');
+  assert.match(meta, /Konsenzus/);
+  assert.match(meta, /5 izv\./);
 });

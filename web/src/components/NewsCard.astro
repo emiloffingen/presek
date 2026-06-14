@@ -10,6 +10,7 @@ import type { ui } from '../i18n/ui';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import { localePath, homePath } from '../lib/localePaths';
 import TrustChip from './TrustChip.astro';
+import { buildCompactPluralismMeta } from '../lib/trustSignals';
 import { isStubFeedCluster } from '../lib/unifiedFeed';
 
 interface Props {
@@ -101,6 +102,16 @@ const conflictHeadlines = (cluster.pluralism_score ?? 0) >= 55
     : [];
 const showConflictPreview = conflictHeadlines.length >= 2;
 const hasPluralismConflict = (cluster.pluralism_score ?? 0) >= 55;
+const compactPluralismMeta = (variant === 'compact' || variant === 'wire')
+    ? buildCompactPluralismMeta({
+        sourcesCount: uniqueSources,
+        pluralismScore: cluster.pluralism_score,
+        isStale: trustIsStale,
+        hasVerification: Boolean(cluster.has_fact_check),
+        quietFreshness: isPendingSynthesis,
+        isPendingSynthesis,
+    }, lang as 'sr' | 'mk')
+    : null;
 
 const cardContext = getDesignCardContext(cluster);
 const cardLabel = cardContext.labelKey ? t(cardContext.labelKey as any) : '';
@@ -205,6 +216,7 @@ function getTimeStr(dateStr: string) {
                     hasVerification={Boolean(cluster.has_fact_check)}
                     quietFreshness={isPendingSynthesis}
                     isPendingSynthesis={isPendingSynthesis}
+                    showExplainer={isLead}
                     lang={lang}
                 />
             </div>
@@ -229,8 +241,19 @@ function getTimeStr(dateStr: string) {
 
         <div class="article-footer-meta mt-auto">
             <span class="time-stamp">{getTimeStr(main.ingested_at || main.created_at)}</span>
-            <span class="meta-dot">·</span>
-            <span class="source-count">{uniqueSources} {uniqueSources === 1 ? t('news.source') : t('news.sources')}</span>
+            {compactPluralismMeta ? (
+                <>
+                    <span class="meta-dot">·</span>
+                    <span class:list={["pluralism-meta", { "pluralism-meta--conflict": hasPluralismConflict }]}>
+                        {compactPluralismMeta}
+                    </span>
+                </>
+            ) : (
+                <>
+                    <span class="meta-dot">·</span>
+                    <span class="source-count">{uniqueSources} {uniqueSources === 1 ? t('news.source') : t('news.sources')}</span>
+                </>
+            )}
         </div>
     </div>
 
@@ -238,15 +261,29 @@ function getTimeStr(dateStr: string) {
     <div class:list={["image-wrap", { "image-wrap-fallback": isFallbackArt }]} data-image-state={isFallbackArt ? 'fallback' : 'loading'} style={!isFallbackArt ? `--placeholder-bg: ${tintColor}` : undefined}>
         <a href={clusterUrl} class="block h-full" data-testid="cluster-link">
             {isFallbackArt ? (
-                <div class:list={["article-image-placeholder topic-fallback-card", { "article-image-placeholder-title-cyrillic": titleIsCyrillic }]} style={`--placeholder-bg: ${tintColor}`}>
-                    <div class="article-image-placeholder-topline">
-                        <p class="article-image-placeholder-label">{cardLabel || main.category || t('news.ongoing')}</p>
-                        <span class="article-image-placeholder-chip">{cardSub || `${uniqueSources} ${uniqueSources === 1 ? t('news.source') : t('news.sources')}`}</span>
+                isLead ? (
+                    <div class:list={["article-image-placeholder topic-fallback-card", { "article-image-placeholder-title-cyrillic": titleIsCyrillic }]} style={`--placeholder-bg: ${tintColor}`}>
+                        <div class="article-image-placeholder-topline">
+                            <p class="article-image-placeholder-label">{cardLabel || main.category || t('news.ongoing')}</p>
+                            <span class="article-image-placeholder-chip">{cardSub || `${uniqueSources} ${uniqueSources === 1 ? t('news.source') : t('news.sources')}`}</span>
+                        </div>
+                        <IconComponent size={28} strokeWidth={1.8} className="article-image-placeholder-icon" aria-hidden="true" />
+                        <h3 set:html={sanitizeHtml(displayTitle)}></h3>
+                        <p class="article-image-placeholder-source">{main.source}</p>
                     </div>
-                    <IconComponent size={28} strokeWidth={1.8} className="article-image-placeholder-icon" aria-hidden="true" />
-                    <h3 set:html={sanitizeHtml(displayTitle)}></h3>
-                    <p class="article-image-placeholder-source">{main.source}</p>
-                </div>
+                ) : (
+                    <div class="article-image-placeholder topic-fallback-card topic-fallback-card--proxy-only" style={`--placeholder-bg: ${tintColor}`}>
+                        <img
+                            src={fallbackImageUrl}
+                            alt=""
+                            width="720"
+                            height="500"
+                            class="article-image article-image-fallback is-loaded"
+                            loading="lazy"
+                            decoding="async"
+                        />
+                    </div>
+                )
             ) : (
                 <div class="runtime-image-container relative w-full h-full">
                     <img
@@ -725,17 +762,20 @@ function getTimeStr(dateStr: string) {
             align-items: start;
         }
 
-        .nyt-article:not(.lead-story).has-useful-image {
+        .nyt-article:not(.lead-story).has-useful-image,
+        .nyt-article:not(.lead-story).has-editorial-fallback:not(.variant-featured) {
             grid-template-columns: minmax(0, 1fr) clamp(5.35rem, 27vw, 6.85rem);
             column-gap: 0.66rem;
         }
 
-        .nyt-article:not(.lead-story).has-useful-image .article-body {
+        .nyt-article:not(.lead-story).has-useful-image .article-body,
+        .nyt-article:not(.lead-story).has-editorial-fallback:not(.variant-featured) .article-body {
             grid-column: 1;
             grid-row: 1;
         }
 
-        .nyt-article:not(.lead-story).has-useful-image .image-wrap {
+        .nyt-article:not(.lead-story).has-useful-image .image-wrap,
+        .nyt-article:not(.lead-story).has-editorial-fallback:not(.variant-featured) .image-wrap {
             grid-column: 2;
             grid-row: 1;
             display: block;
@@ -743,6 +783,29 @@ function getTimeStr(dateStr: string) {
             align-self: start;
             margin-top: 0.08rem;
             margin-bottom: 0;
+        }
+
+        .nyt-article:not(.lead-story).has-editorial-fallback .topic-fallback-card--proxy-only {
+            padding: 0;
+            min-height: 100%;
+        }
+
+        .nyt-article:not(.lead-story).has-editorial-fallback .topic-fallback-card--proxy-only .article-image-fallback {
+            position: static;
+            inset: auto;
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            object-fit: cover;
+            filter: saturate(0.72) contrast(0.96);
+            opacity: 1;
+        }
+
+        .nyt-article:not(.lead-story).has-useful-image .image-wrap[data-image-state="fallback"] .article-image-fallback {
+            padding: 0;
+            object-fit: cover;
+            filter: saturate(0.72) contrast(0.96);
+            opacity: 1;
         }
 
         .nyt-article:not(.lead-story) .article-image {
@@ -860,6 +923,19 @@ function getTimeStr(dateStr: string) {
         .nyt-article.variant-compact .article-footer-meta .source-count,
         .nyt-article.variant-wire .article-footer-meta .source-count {
             display: none;
+        }
+
+        .nyt-article.variant-compact .article-footer-meta .pluralism-meta,
+        .nyt-article.variant-wire .article-footer-meta .pluralism-meta {
+            display: inline;
+            color: color-mix(in srgb, var(--foreground) 72%, var(--muted-foreground));
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+
+        .nyt-article.variant-compact .article-footer-meta .pluralism-meta--conflict,
+        .nyt-article.variant-wire .article-footer-meta .pluralism-meta--conflict {
+            color: var(--nyt-accent);
         }
 
 		.nyt-article.variant-compact .kicker,

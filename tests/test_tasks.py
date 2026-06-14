@@ -22,9 +22,9 @@ class TestBackfillCoverArtTask:
         ]
 
         with (
-            patch("tasks.intelligence.db") as mock_db,
-            patch("tasks.intelligence.redis_client") as mock_redis,
-            patch("tasks.intelligence.get_celery_queue_depth", return_value=0),
+            patch("tasks.intelligence.backfill.db") as mock_db,
+            patch("tasks.intelligence.backfill.redis_client") as mock_redis,
+            patch("tasks.intelligence.backfill.get_celery_queue_depth", return_value=0),
             patch.object(tasks.backfill_cover_art_single_task, "apply_async") as mock_apply,
         ):
             mock_db.execute.return_value = rows
@@ -41,8 +41,8 @@ class TestBackfillCoverArtTask:
     def test_backfill_skips_when_queue_backlog_is_high(self):
 
         with (
-            patch("tasks.intelligence.get_celery_queue_depth", return_value=150),
-            patch("tasks.intelligence.db") as mock_db,
+            patch("tasks.intelligence.backfill.get_celery_queue_depth", return_value=150),
+            patch("tasks.intelligence.backfill.db") as mock_db,
             patch.object(tasks.backfill_cover_art_single_task, "apply_async") as mock_apply,
         ):
             tasks.backfill_cover_art_task()
@@ -136,9 +136,9 @@ class TestRepairSplitClustersTask:
         ]
 
         with (
-            patch("tasks.intelligence.get_celery_queue_depth", return_value=0),
-            patch("tasks.intelligence.db") as mock_db,
-            patch("tasks.intelligence.invalidate_public_data_caches") as mock_invalidate,
+            patch("tasks.intelligence.cluster_ops.get_celery_queue_depth", return_value=0),
+            patch("tasks.intelligence.cluster_ops.db") as mock_db,
+            patch("tasks.intelligence.cluster_ops.invalidate_public_data_caches") as mock_invalidate,
             patch("tasks.utils.record_task_event"),
             patch.object(tasks.extract_entities_task, "apply_async") as mock_extract_delay,
             patch.object(tasks.generate_cluster_metadata_task, "apply_async") as mock_meta_delay,
@@ -198,9 +198,9 @@ class TestRepairSplitClustersTask:
         ]
 
         with (
-            patch("tasks.intelligence.get_celery_queue_depth", return_value=0),
-            patch("tasks.intelligence.db") as mock_db,
-            patch("tasks.intelligence.invalidate_public_data_caches"),
+            patch("tasks.intelligence.cluster_ops.get_celery_queue_depth", return_value=0),
+            patch("tasks.intelligence.cluster_ops.db") as mock_db,
+            patch("tasks.intelligence.cluster_ops.invalidate_public_data_caches"),
             patch("tasks.utils.record_task_event"),
             patch.object(tasks.extract_entities_task, "apply_async"),
             patch.object(tasks.generate_cluster_metadata_task, "apply_async"),
@@ -251,8 +251,8 @@ class TestRepairSplitClustersTask:
     def test_backfill_single_skips_when_queue_backlog_is_high(self):
 
         with (
-            patch("tasks.intelligence.get_celery_queue_depth", return_value=150),
-            patch("tasks.intelligence.generate_cover_art") as mock_cover_art,
+            patch("tasks.intelligence.cluster_ops.get_celery_queue_depth", return_value=150),
+            patch("tasks.intelligence.cluster_ops.generate_cover_art") as mock_cover_art,
         ):
             tasks.backfill_cover_art_single_task("cluster-1", "Prompt")
 
@@ -283,9 +283,9 @@ class TestSynthesizeClusterTaskQuality:
                     (good_payload, "mistral_small"),
                 ],
             ),
-            patch("tasks.intelligence._is_grounded_synthesis", return_value=True),
-            patch("tasks.intelligence._score_synthesis_quality", return_value=0.9),
-            patch("tasks.intelligence._score_editorial_summary", return_value=0.9),
+            patch("tasks.intelligence.synthesis._is_grounded_synthesis", return_value=True),
+            patch("tasks.intelligence.synthesis._score_synthesis_quality", return_value=0.9),
+            patch("tasks.intelligence.synthesis._score_editorial_summary", return_value=0.9),
         ):
             result = _generate_synthesis_via_cascade(
                 article_rows,
@@ -309,7 +309,7 @@ class TestSynthesizeClusterTaskQuality:
     def test_schedule_fast_synthesis_upgrade_uses_task_once_lock(self):
         from tasks.intelligence import _schedule_fast_synthesis_upgrade, upgrade_fast_synthesis_task
 
-        with patch("tasks.intelligence.schedule_task_once", return_value=True) as mock_schedule:
+        with patch("tasks.intelligence.synthesis.schedule_task_once", return_value=True) as mock_schedule:
             assert _schedule_fast_synthesis_upgrade("cluster-9", "legacy") is True
 
         mock_schedule.assert_called_once()
@@ -322,9 +322,9 @@ class TestSynthesizeClusterTaskQuality:
         from tasks.intelligence import upgrade_fast_synthesis_task
 
         with (
-            patch("tasks.intelligence.intelligence_soft_deferred", return_value=True),
-            patch("tasks.intelligence.upgrade_fast_synthesis_task.apply_async") as mock_retry,
-            patch("tasks.intelligence.synthesize_cluster_task") as mock_full,
+            patch("tasks.intelligence._queue.intelligence_soft_deferred", return_value=True),
+            patch("tasks.intelligence.synthesis.upgrade_fast_synthesis_task.apply_async") as mock_retry,
+            patch("tasks.intelligence.synthesis.synthesize_cluster_task") as mock_full,
         ):
             result = upgrade_fast_synthesis_task("cluster-9", content="legacy", defer_attempt=0)
 
@@ -336,8 +336,8 @@ class TestSynthesizeClusterTaskQuality:
         from tasks.intelligence import upgrade_fast_synthesis_task
 
         with (
-            patch("tasks.intelligence.intelligence_soft_deferred", return_value=False),
-            patch("tasks.intelligence.synthesize_cluster_task") as mock_full,
+            patch("tasks.intelligence._queue.intelligence_soft_deferred", return_value=False),
+            patch("tasks.intelligence.synthesis.synthesize_cluster_task") as mock_full,
         ):
             result = upgrade_fast_synthesis_task("cluster-9", content="legacy", defer_attempt=0)
 
@@ -348,7 +348,7 @@ class TestSynthesizeClusterTaskQuality:
         from tasks.intelligence import backfill_cluster_summaries_task
 
         with (
-            patch("tasks.intelligence.get_celery_queue_depth", return_value=0),
+            patch("tasks.intelligence._queue.get_celery_queue_depth", return_value=0),
             patch("core.database.db_manager") as mock_db,
         ):
             mock_db.execute.return_value = []
@@ -383,13 +383,13 @@ class TestSynthesizeClusterTaskQuality:
         }
 
         with (
-            patch("tasks.intelligence.get_celery_queue_depth", return_value=0),
+            patch("tasks.intelligence._queue.get_celery_queue_depth", return_value=0),
             patch("core.config.AUTO_SUMMARIZE_MIN_SRC", 1),
             patch("core.database.db_manager") as mock_db,
-            patch("tasks.intelligence._fetch_synthesis_history_context", return_value=""),
-            patch("tasks.intelligence._build_source_comparison_prompt_block", return_value=""),
+            patch("tasks.intelligence.synthesis._fetch_synthesis_history_context", return_value=""),
+            patch("tasks.intelligence.synthesis._build_source_comparison_prompt_block", return_value=""),
             patch(
-                "tasks.intelligence._generate_synthesis_via_cascade",
+                "tasks.intelligence.synthesis._generate_synthesis_via_cascade",
                 return_value={
                     "status": "exhausted",
                     "provider": None,
@@ -400,8 +400,8 @@ class TestSynthesizeClusterTaskQuality:
                     "raw": None,
                 },
             ),
-            patch("tasks.intelligence.synthesize_cluster_fallback", return_value=fallback_result),
-            patch("tasks.intelligence.record_runtime_event") as mock_event,
+            patch("tasks.intelligence.synthesis.synthesize_cluster_fallback", return_value=fallback_result),
+            patch("tasks.intelligence.synthesis.record_runtime_event") as mock_event,
         ):
             mock_db.execute.side_effect = [
                 [{"cluster_id": "cluster-1"}],
@@ -468,18 +468,18 @@ class TestSynthesizeClusterTaskQuality:
         }
 
         with (
-            patch("tasks.intelligence.db") as mock_db,
-            patch("tasks.intelligence._call_ai", return_value=(ai_payload, "nvidia")),
+            patch("tasks.intelligence.synthesis.db") as mock_db,
+            patch("tasks.intelligence.synthesis._call_ai", return_value=(ai_payload, "nvidia")),
             patch(
                 "tasks.intelligence.clean_json_response",
                 side_effect=lambda value: value,
             ),
-            patch("tasks.intelligence.generate_cover_art", return_value=None),
-            patch("tasks.intelligence._is_grounded_synthesis", return_value=True),
-            patch("tasks.intelligence._is_fact_grounded_synthesis", return_value=True),
-            patch("tasks.intelligence.invalidate_cluster_caches"),
+            patch("tasks.intelligence.synthesis.generate_cover_art", return_value=None),
+            patch("tasks.intelligence.synthesis._is_grounded_synthesis", return_value=True),
+            patch("tasks.intelligence.synthesis._is_fact_grounded_synthesis", return_value=True),
+            patch("tasks.intelligence.synthesis.invalidate_cluster_caches"),
             patch("tasks.utils.record_task_event"),
-            patch("tasks.intelligence.analyst") as mock_analyst,
+            patch("tasks.intelligence.synthesis.analyst") as mock_analyst,
             patch("core.embeddings.get_cluster_embedding", return_value=None),
         ):
 
@@ -541,10 +541,11 @@ class TestReclusterRecentArticlesTask:
         ]
 
         with (
-            patch("tasks.intelligence.get_celery_queue_depth", return_value=0),
-            patch("tasks.intelligence.db") as mock_db,
+            patch("tasks.intelligence.cluster_ops._skip_when_intel_backlog", return_value=False),
+            patch("tasks.intelligence.cluster_ops.get_celery_queue_depth", return_value=0),
+            patch("tasks.intelligence.cluster_ops.db") as mock_db,
             patch("core.clustering.find_or_create_cluster", return_value="old-a"),
-            patch("tasks.intelligence.invalidate_public_data_caches") as mock_invalidate,
+            patch("tasks.intelligence.cluster_ops.invalidate_public_data_caches") as mock_invalidate,
             patch("tasks.utils.record_task_event"),
             patch.object(tasks.extract_entities_task, "apply_async") as mock_extract_delay,
             patch.object(tasks.generate_cluster_metadata_task, "apply_async") as mock_meta_delay,
@@ -582,16 +583,16 @@ class TestSummarizeArticleTaskQuality:
     def test_uses_title_and_description_in_ai_prompt(self):
 
         with (
-            patch("tasks.intelligence.db") as mock_db,
+            patch("tasks.intelligence.summarization.db") as mock_db,
             patch(
-                "tasks.intelligence._call_ai",
+                "tasks.intelligence.summarization._call_ai",
                 return_value=({"summary": "Cisto rezime."}, "nvidia"),
             ) as mock_call_ai,
             patch(
-                "tasks.intelligence.clean_json_response",
+                "tasks.intelligence.summarization.clean_json_response",
                 side_effect=lambda value: value,
             ),
-            patch("tasks.intelligence.invalidate_public_data_caches"),
+            patch("tasks.intelligence.summarization.invalidate_public_data_caches"),
             patch("tasks.utils.record_task_event"),
         ):
             # Use a description > 200 chars to trigger AI path

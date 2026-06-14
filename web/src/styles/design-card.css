@@ -178,6 +178,36 @@ a:hover .design-card-cta {
     transform: scale(1.015);
 }
 
+@media (max-width: 767px) {
+    .nyt-article:not(.lead-story) .topic-fallback-card--proxy-only {
+        padding: 0;
+        min-height: 100%;
+    }
+
+    .nyt-article:not(.lead-story) .topic-fallback-card--proxy-only .article-image-fallback {
+        position: static;
+        inset: auto;
+        width: 100%;
+        height: 100%;
+        padding: 0;
+        object-fit: cover;
+        filter: saturate(0.72) contrast(0.96);
+        opacity: 1;
+    }
+
+    .nyt-article:not(.lead-story) .image-wrap-fallback {
+        aspect-ratio: 1 / 0.78;
+        padding: 0;
+    }
+
+    .nyt-article:not(.lead-story) .image-wrap[data-image-state="fallback"] .runtime-image-container .article-image-fallback {
+        padding: 0;
+        object-fit: cover;
+        filter: saturate(0.72) contrast(0.96);
+        opacity: 1;
+    }
+}
+
 /* ──────────────────────────────────────────────────
    Ribbon and Image Padding Adjustments for Small Cards
    ────────────────────────────────────────────────── */

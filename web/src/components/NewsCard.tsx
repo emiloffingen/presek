@@ -5,6 +5,7 @@ import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, 
 import { sanitizeHtml } from '../lib/sanitize';
 import { dateLocaleForLang, localePathForLang } from '../lib/localePaths';
 import { getVisibleCardSignals, formatSignalBadge } from '../lib/signalBadges';
+import { buildCompactPluralismMeta } from '../lib/trustSignals';
 import { ui } from '../i18n/ui';
 import type { NewsCluster, Article } from '../types';
 
@@ -67,6 +68,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   const thumbSrc = selectedImage.proxiedUrl;
   const isFallbackArt = selectedImage.isWeak;
   const fallbackImageUrl = selectedImage.fallbackUrl;
+  const showMedia = Boolean(thumbSrc) && !(isFallbackArt && (variant === 'compact' || variant === 'wire'));
   const tintColor = cluster.dominant_color || '#1e40af';
 
   const rawLeadTitle = cluster.synthetic_headline || getDisplayTitle(main);
@@ -99,6 +101,12 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   );
 
   const hasPluralismConflict = (cluster.pluralism_score ?? 0) >= 55;
+  const compactPluralismMeta = (variant === 'compact' || variant === 'wire')
+    ? buildCompactPluralismMeta({
+        sourcesCount: uniqueSources,
+        pluralismScore: cluster.pluralism_score,
+      }, lang as 'sr' | 'mk')
+    : null;
   const conflictHeadlines = hasPluralismConflict
     ? Array.from(new Set(cluster.articles.slice(0, 3).map((article) => getDisplayTitle(article)).filter(Boolean)))
     : [];
@@ -154,7 +162,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
   return (
     <article 
-      className={`nyt-article variant-${variant} ${isLead ? 'lead-story' : ''} ${thumbSrc ? 'has-image' : ''} ${hasPluralismConflict ? 'card-pluralism-conflict' : ''}`}
+      className={`nyt-article variant-${variant} ${isLead ? 'lead-story' : ''} ${showMedia ? 'has-image' : ''} ${showMedia && !isFallbackArt ? 'has-useful-image' : ''} ${showMedia && isFallbackArt ? 'has-editorial-fallback' : ''} ${hasPluralismConflict ? 'card-pluralism-conflict' : ''}`}
       data-cluster={JSON.stringify(slimCluster)}
       data-testid="article-card"
     >
@@ -205,12 +213,23 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
         <div className="article-footer-meta mt-auto">
           <span className="time-stamp">{getTimeStr(main.ingested_at || main.created_at)}</span>
-          <span className="meta-dot">·</span>
-          <span className="source-count">{uniqueSources} {uniqueSources === 1 ? t('news.source') : t('news.sources')}</span>
+          {compactPluralismMeta ? (
+            <>
+              <span className="meta-dot">·</span>
+              <span className={`pluralism-meta${hasPluralismConflict ? ' pluralism-meta--conflict' : ''}`}>
+                {compactPluralismMeta}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="meta-dot">·</span>
+              <span className="source-count">{uniqueSources} {uniqueSources === 1 ? t('news.source') : t('news.sources')}</span>
+            </>
+          )}
         </div>
       </div>
 
-      {thumbSrc && (
+      {showMedia && (
         <div 
           className={`image-wrap ${isFallbackArt ? 'image-wrap-fallback' : ''}`} 
           data-image-state={isFallbackArt ? 'fallback' : 'loading'}
@@ -218,12 +237,12 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         >
           <a href={clusterUrl} className="block h-full" data-testid="cluster-link">
             {isFallbackArt ? (
-              <div className="article-image-placeholder topic-fallback-card topic-fallback-card--proxy-only">
+              <div className="article-image-placeholder topic-fallback-card topic-fallback-card--proxy-only" style={{ '--placeholder-bg': tintColor } as React.CSSProperties}>
                 <img
                   src={fallbackImageUrl}
                   alt=""
-                  width="1200"
-                  height="760"
+                  width={720}
+                  height={500}
                   className="article-image article-image-fallback is-loaded"
                   loading="lazy"
                   decoding="async"

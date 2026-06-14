@@ -65,14 +65,15 @@ jobs:
           source .venv/bin/activate
           uv pip install bandit
           bandit -r core/ routes/ -f json -o bandit_results.json || true
+          bandit -r core/ routes/ -lll
           echo "Bandit scan completed"
 
-      - name: Run Safety for Python dependency vulnerabilities
+      - name: Run pip-audit for dependency vulnerabilities
         run: |
           source .venv/bin/activate
-          uv pip install safety
-          safety check --full-report || true
-          echo "Safety scan completed"
+          uv pip install pip-audit
+          pip-audit --desc --fail-on-severity high
+          echo "pip-audit scan completed"
 
       - name: Run Semgrep for code patterns
         uses: returntocorp/semgrep-action@v1
@@ -158,15 +159,13 @@ jobs:
       - name: Run security linting
         run: |
           source .venv/bin/activate
-          pip install bandit safety
+          uv pip install bandit pip-audit
           bandit -r core/ routes/ -lll
-          safety check || true
 
       - name: Security - Check for vulnerabilities
         run: |
           source .venv/bin/activate
-          pip install pip-audit
-          pip-audit --desc --format json || true
+          pip-audit --desc --fail-on-severity high
 
       - name: Run backend tests
         env:

@@ -993,6 +993,10 @@
 				min-height: 7.1rem;
 			}
 
+			.lead-media-mobile:has(.lead-media-frame-proxy-fallback) {
+				display: none;
+			}
+
 			.lead-media-image {
 				object-fit: cover;
 				object-position: center;

@@ -11,17 +11,17 @@ from tasks.intelligence import (
 
 class TestHistoricalSummaryBackfill:
     def test_skips_when_backlog_high(self):
-        with patch("tasks.intelligence.intelligence_secondary_deferred", return_value=True):
+        with patch("tasks.intelligence._queue.intelligence_secondary_deferred", return_value=True):
             result = backfill_historical_article_summaries_task()
         assert result == {"skipped": True, "reason": "backlog_high"}
 
     def test_selects_oldest_unsummarized_without_cursor_skip(self):
-        mock_redis = patch("tasks.intelligence.redis_client")
+        mock_redis = patch("tasks.intelligence.backfill.redis_client")
         with (
-            patch("tasks.intelligence.intelligence_secondary_deferred", return_value=False),
+            patch("tasks.intelligence._queue.intelligence_secondary_deferred", return_value=False),
             patch("core.llm_router._local_model_available", return_value=True),
-            patch("tasks.intelligence.db") as mock_db,
-            patch("tasks.intelligence._dispatch_batched") as mock_dispatch,
+            patch("tasks.intelligence.backfill.db") as mock_db,
+            patch("tasks.intelligence.backfill._dispatch_batched") as mock_dispatch,
             mock_redis as redis_mock,
         ):
             mock_db.execute.return_value = [{"id": 124}, {"id": 125}]
@@ -36,10 +36,10 @@ class TestHistoricalSummaryBackfill:
 
     def test_runs_when_queue_below_secondary_defer_limit(self):
         with (
-            patch("tasks.intelligence.intelligence_secondary_deferred", return_value=False),
+            patch("tasks.intelligence._queue.intelligence_secondary_deferred", return_value=False),
             patch("core.llm_router._local_model_available", return_value=True),
-            patch("tasks.intelligence.db") as mock_db,
-            patch("tasks.intelligence._dispatch_batched") as mock_dispatch,
+            patch("tasks.intelligence.backfill.db") as mock_db,
+            patch("tasks.intelligence.backfill._dispatch_batched") as mock_dispatch,
         ):
             mock_db.execute.return_value = [{"id": 1}]
             result = backfill_historical_article_summaries_task(limit=1)
@@ -49,12 +49,12 @@ class TestHistoricalSummaryBackfill:
 
     def test_scales_dispatch_limit_with_queue_headroom(self):
         with (
-            patch("tasks.intelligence.intelligence_secondary_deferred", return_value=False),
-            patch("tasks.intelligence.get_celery_queue_depth", return_value=92),
+            patch("tasks.intelligence._queue.intelligence_secondary_deferred", return_value=False),
+            patch("tasks.intelligence.backfill.get_celery_queue_depth", return_value=92),
             patch("core.llm_router._local_model_available", return_value=True),
-            patch("tasks.intelligence.db") as mock_db,
-            patch("tasks.intelligence._dispatch_batched") as mock_dispatch,
-            patch("tasks.intelligence.redis_client") as redis_mock,
+            patch("tasks.intelligence.backfill.db") as mock_db,
+            patch("tasks.intelligence.backfill._dispatch_batched") as mock_dispatch,
+            patch("tasks.intelligence.backfill.redis_client") as redis_mock,
         ):
             mock_db.execute.return_value = [{"id": i} for i in range(81, 321)]
             result = backfill_historical_article_summaries_task()
@@ -68,12 +68,12 @@ class TestHistoricalSummaryBackfill:
 
     def test_scheduler_runs_inline_with_lock(self):
         with (
-            patch("tasks.intelligence.intelligence_secondary_deferred", return_value=False),
+            patch("tasks.intelligence._queue.intelligence_secondary_deferred", return_value=False),
             patch("core.llm_router._local_model_available", return_value=True),
-            patch("tasks.intelligence.acquire_task_lock", return_value=True) as mock_lock,
-            patch("tasks.intelligence.release_task_lock") as mock_release,
+            patch("tasks.intelligence.backfill.acquire_task_lock", return_value=True) as mock_lock,
+            patch("tasks.intelligence.backfill.release_task_lock") as mock_release,
             patch(
-                "tasks.intelligence.backfill_historical_article_summaries_task",
+                "tasks.intelligence.backfill.backfill_historical_article_summaries_task",
                 return_value={"enqueued": 10, "high_water": 42, "complete": False},
             ) as mock_backfill,
         ):
@@ -88,11 +88,11 @@ class TestHistoricalSummaryBackfill:
 class TestLocalOnlySummarize:
     def test_uses_local_provider_override(self):
         with (
-            patch("tasks.intelligence.db") as mock_db,
-            patch("tasks.intelligence._call_ai", return_value=({"summary": "Rezime."}, "local")) as mock_call,
-            patch("tasks.intelligence.clean_json_response", side_effect=lambda value: value),
-            patch("tasks.intelligence.validate_person_names", side_effect=lambda value: value),
-            patch("tasks.intelligence.invalidate_public_data_caches"),
+            patch("tasks.intelligence.summarization.db") as mock_db,
+            patch("tasks.intelligence.summarization._call_ai", return_value=({"summary": "Rezime."}, "local")) as mock_call,
+            patch("tasks.intelligence.summarization.clean_json_response", side_effect=lambda value: value),
+            patch("tasks.intelligence.summarization.validate_person_names", side_effect=lambda value: value),
+            patch("tasks.intelligence.summarization.invalidate_public_data_caches"),
         ):
             mock_db.execute_one.return_value = {
                 "title": "Naslov",
@@ -111,8 +111,8 @@ class TestLocalOnlySummarize:
 
     def test_skips_when_summary_already_exists(self):
         with (
-            patch("tasks.intelligence.db") as mock_db,
-            patch("tasks.intelligence._call_ai") as mock_call,
+            patch("tasks.intelligence.summarization.db") as mock_db,
+            patch("tasks.intelligence.summarization._call_ai") as mock_call,
         ):
             mock_db.execute_one.return_value = {
                 "title": "Naslov",

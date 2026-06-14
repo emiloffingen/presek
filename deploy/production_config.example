@@ -85,9 +85,6 @@ PUBLIC_TINYADZ_SITE_ID=6a2995c32b7233c34b097a9c
 PUBLIC_TINYADZ_LIVE_SITE_ID=6a29a71de09ffcc4c9bbd83e
 PUBLIC_TINYADZ_TEST_MODE=false
 
-# Google AdSense (presek.live only). Set false to run a TinyAdz-only revenue test.
-PUBLIC_ADSENSE_ENABLED=true
-
 # Post-deploy smoke checks against public URLs (recommended in production).
 ENABLE_PUBLIC_CHECK=1
 ENABLE_MK_PUBLIC_CHECK=1

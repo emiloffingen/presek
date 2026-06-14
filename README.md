@@ -3,8 +3,52 @@
 Presek is a news aggregation and analysis app with:
 
 - a FastAPI backend at the repo root
-- an Astro frontend in [web](/home/emiloffingen/presek/web)
-- deployment/runtime helpers in [deploy](/home/emiloffingen/presek/deploy)
+- an Astro frontend in [web](web)
+- deployment/runtime helpers in [deploy](deploy)
+
+## Architecture
+
+```mermaid
+flowchart TB
+    subgraph ingest [Ingestion]
+        RSS[RSS feeds] --> Crawl[crawl_article_task]
+        Crawl --> Articles[(articles)]
+    end
+
+    subgraph workers [Celery workers]
+        Articles --> IngestionQ[ingestion queue]
+        IngestionQ --> IntelQ[intel-heavy queue]
+        IntelQ --> Synth[Synthesis and clustering]
+        Synth --> Summaries[(cluster_summaries)]
+        FastQ[fast-track queue] --> FastSynth[Fast synthesis upgrade]
+        DeliveryQ[delivery queue] --> Briefing[Email push audio]
+    end
+
+    subgraph serve [Serving]
+        API[FastAPI unified] --> Astro[Astro SSR]
+        Summaries --> API
+        Astro --> User["presek.live / presek.mk"]
+    end
+
+    Redis[(Redis)] -.-> workers
+    PG[(PostgreSQL pgvector)] --> API
+    PG --> workers
+```
+
+### Production systemd services
+
+Presek runs as a **systemd target** (`presek.target`). See [deploy/MINIMUM_PROD.md](deploy/MINIMUM_PROD.md) for incident runbooks.
+
+| Service | Must run? | If stopped |
+|---------|-----------|------------|
+| `presek-fastapi-unified` | Yes | API and `/api/*` broken |
+| `presek-astro` | Yes | Frontend SSR/static broken |
+| `presek-worker-ingestion` | Yes | No new articles ingested |
+| `presek-worker` (intel-heavy) | Yes | Synthesis backlog grows |
+| `presek-beat` | Yes | Scheduled tasks stop |
+| `presek-worker-fasttrack` | Mostly | Breaking news summaries slow |
+| `presek-worker-delivery` | Yes | Newsletter/push delivery stops |
+| `presek-worker-maintenance` | Yes | DB maintenance and backfill stall |
 
 ## Current Structure
 

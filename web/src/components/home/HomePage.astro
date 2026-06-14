@@ -29,7 +29,7 @@ import HomeStartHere from './HomeStartHere.astro';
 import LeadEvidenceChips from './LeadEvidenceChips.astro';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { chooseClusterImage } from '../../utils/imageSelection';
-import { cleanAndDecode, extractCleanSummaryText, getStoryPreviewText, highlightScores, isMostlyCyrillic, isSyntheticStandfirstBoilerplate } from '../../utils/textUtils';
+import { getStoryPreviewText } from '../../utils/textUtils';
 import { apiBaseUrl } from '../../lib/apiBase';
 import type { NewsCluster } from '../../types';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
@@ -43,6 +43,14 @@ import {
 } from '../../lib/homepageLayout';
 import { buildLeadSignals, buildLeadStatus, getFirstArticle } from '../../lib/homepageLeadSignals';
 import { getClockTimeStr } from '../../lib/newsTimeFormat';
+import {
+    buildFocusEntities,
+    buildHomepageFlags,
+    buildLeadViewModel,
+    getBriefingSnippet,
+    loadHomepageData,
+    parseHomepageFilters,
+} from '../../lib/homepageData';
 
 interface Props {
     variant?: 'feed' | 'pregled';
@@ -61,80 +69,6 @@ const l = (path: string) => localePath(path, lang, hostHeader);
 
 const API_URL = apiBaseUrl();
 
-// Get search params for SSR filtering
-const { searchParams } = Astro.url;
-function cleanFilterParam(value: string | null) {
-    if (!value) return null;
-    const cleaned = value
-        .trim()
-        .replace(/^[#\s]+/, '')
-        .replace(/(?:\.{2,}|…)+$/u, '')
-        .trim();
-    return cleaned || null;
-}
-
-const category = cleanFilterParam(searchParams.get('category'));
-const topic = cleanFilterParam(searchParams.get('topic'));
-const entity = cleanFilterParam(searchParams.get('entity'));
-const subcategory = cleanFilterParam(searchParams.get('subcategory'));
-const q = searchParams.get('q')?.trim() || null;
-const timespan = searchParams.get('timespan')?.trim() || null;
-
-let clusters: NewsCluster[] = [];
-let globalClusters: NewsCluster[] = [];
-let trending = [];
-let topEntities = [];
-let stats = null;
-let briefing = null;
-let error = null;
-let supportingClusters: NewsCluster[] = [];
-let forYouClusters = [];
-let feedClusters: NewsCluster[] = [];
-let wireClusters: NewsCluster[] = [];
-let wireArticles = [];
-let excludedClusterIds: string[] = [];
-let synthesisPicks: NewsCluster[] = [];
-let homepageLeadDisplay: { title?: string; summary?: string; signal?: string } | null = null;
-let pipeline: { busy?: boolean; intel_heavy_depth?: number } | null = null;
-
-async function loadHomepageFallback() {
-    const fallbackNewsUrl = new URL(`${API_URL}/news`);
-    fallbackNewsUrl.searchParams.set('page_size', '24');
-    fallbackNewsUrl.searchParams.set('lang', lang);
-    fallbackNewsUrl.searchParams.set('sort', 'score');
-
-    const [newsResult, trendResult, entityResult, statsResult, briefingResult, wireResult] = await Promise.allSettled([
-        fetchJson(fallbackNewsUrl.toString()),
-        fetchJsonCached(`${API_URL}/trending?lang=${lang}`),
-        fetchJsonCached(`${API_URL}/intelligence/top-entities?limit=12&lang=${lang}`),
-        fetchJsonCached(`${API_URL}/stats/summary?lang=${lang}`),
-        fetchJsonCached(`${API_URL}/briefing?lang=${lang}`),
-        fetchJsonCached(`${API_URL}/home/latest-wire?limit=15&lang=${lang}`),
-    ]);
-
-    if (newsResult.status === 'fulfilled') {
-        clusters = Array.isArray(newsResult.value?.clusters) ? newsResult.value.clusters : [];
-        globalClusters = Array.isArray(newsResult.value?.global_clusters) ? newsResult.value.global_clusters : [];
-        supportingClusters = clusters.slice(1, 5);
-        feedClusters = clusters.slice(5);
-    }
-
-    if (wireResult.status === 'fulfilled') {
-        wireArticles = Array.isArray(wireResult.value?.articles) ? wireResult.value.articles : [];
-    }
-
-    trending = trendResult.status === 'fulfilled' && Array.isArray(trendResult.value)
-        ? trendResult.value
-        : [];
-    topEntities = entityResult.status === 'fulfilled' && Array.isArray(entityResult.value)
-        ? entityResult.value
-        : [];
-    stats = statsResult.status === 'fulfilled' ? statsResult.value : null;
-    briefing = briefingResult.status === 'fulfilled' ? briefingResult.value : null;
-
-    return clusters.length > 0 || wireArticles.length > 0 || trending.length > 0;
-}
-
 async function fetchJson(url: string) {
     const response = await fetch(url);
     if (!response.ok) {
@@ -145,159 +79,71 @@ async function fetchJson(url: string) {
     return response.json();
 }
 
-const isHomepage = !(category || topic || entity || subcategory || q);
+const filters = parseHomepageFilters(Astro.url.searchParams);
+const { category, topic, entity, subcategory, q, timespan, isHomepage } = filters;
 
-if (isHomepage) {
-    const homeResult = await Promise.allSettled([
-        fetchJson(`${API_URL}/home?lang=${lang}`),
-    ]);
-    const homePayload = homeResult[0];
+const homepageState = await loadHomepageData({
+    apiUrl: API_URL,
+    lang,
+    searchParams: Astro.url.searchParams,
+    fetchJson,
+    fetchJsonCached,
+    errorMessage: t('home.error'),
+});
 
-    if (homePayload.status === 'fulfilled' && homePayload.value?.status === 'success') {
-        const home = homePayload.value;
-        const lead = home?.lead ? [home.lead] : [];
-        supportingClusters = Array.isArray(home?.supporting) ? home.supporting : [];
-        forYouClusters = Array.isArray(home?.for_you_pool) ? home.for_you_pool.map((c: any) => {
-            const a = c.articles?.[0] || {};
-            return {
-                cluster_id: c.cluster_id,
-                is_breaking: c.is_breaking,
-                topics: c.topics,
-                tags: c.tags,
-                homepage_score: c.homepage_score,
-                articles: [{
-                    title: a.title,
-                    source: a.source,
-                    summary: a.summary,
-                    description: a.description,
-                    category: a.category,
-                }],
-                sources_count: c.articles?.length || 0,
-            };
-        }) : [];
-        const developingClusters = Array.isArray(home?.developing) ? home.developing : [];
-        wireClusters = Array.isArray(home?.wire) ? home.wire : [];
-        wireArticles = Array.isArray(home?.latest_wire) ? home.latest_wire : [];
-        globalClusters = Array.isArray(home?.global) ? home.global : [];
-        trending = Array.isArray(home?.trending) ? home.trending : [];
-        topEntities = Array.isArray(home?.focus_entities) ? home.focus_entities : [];
-        stats = home?.stats || null;
-        briefing = home?.briefing || null;
-        homepageLeadDisplay = home?.lead_display && typeof home.lead_display === 'object' ? home.lead_display : null;
-        pipeline = home?.pipeline && typeof home.pipeline === 'object' ? home.pipeline : null;
-        excludedClusterIds = Array.isArray(home?.excluded_cluster_ids) ? home.excluded_cluster_ids : [];
-        synthesisPicks = Array.isArray(home?.synthesis_picks) ? home.synthesis_picks : [];
-        feedClusters = [...developingClusters, ...wireClusters];
-        clusters = [...lead, ...supportingClusters, ...synthesisPicks, ...(Array.isArray(home?.for_you_pool) ? home.for_you_pool : []), ...feedClusters];
-    } else {
-        console.error('Home fetch error:', homePayload.status === 'rejected' ? homePayload.reason : homePayload.value);
-        const recovered = await loadHomepageFallback();
-        if (!recovered) {
-            error = t('home.error');
-        }
-    }
-} else {
-    const newsUrl = new URL(`${API_URL}/news`);
-    newsUrl.searchParams.set('page_size', '48');
-    newsUrl.searchParams.set('lang', lang);
-    if (category) newsUrl.searchParams.set('category', category);
-    if (topic) newsUrl.searchParams.set('topic', topic);
-    if (entity) newsUrl.searchParams.set('entity', entity);
-    if (subcategory) newsUrl.searchParams.set('subcategory', subcategory);
-    if (q) newsUrl.searchParams.set('q', q);
-    if (timespan) newsUrl.searchParams.set('timespan', timespan);
+const {
+    clusters,
+    globalClusters,
+    trending,
+    topEntities,
+    stats,
+    briefing,
+    error,
+    supportingClusters: initialSupporting,
+    forYouClusters: initialForYou,
+    feedClusters: initialFeed,
+    wireClusters: initialWire,
+    wireArticles,
+    excludedClusterIds: initialExcluded,
+    synthesisPicks,
+    homepageLeadDisplay,
+    pipeline,
+} = homepageState;
 
-    const [newsResult, trendResult, entityResult, statsResult, briefingResult] = await Promise.allSettled([
-        fetchJson(newsUrl.toString()),
-        fetchJsonCached(`${API_URL}/trending?lang=${lang}`),
-        fetchJsonCached(`${API_URL}/intelligence/top-entities?limit=12&lang=${lang}`),
-        fetchJsonCached(`${API_URL}/stats/summary?lang=${lang}`),
-        fetchJsonCached(`${API_URL}/briefing?lang=${lang}`),
-    ]);
+let supportingClusters = initialSupporting;
+let forYouClusters = initialForYou;
+let feedClusters = initialFeed;
+let wireClusters = initialWire;
+let excludedClusterIds = initialExcluded;
 
-    if (newsResult.status === 'fulfilled') {
-        clusters = newsResult.value?.clusters || [];
-        globalClusters = newsResult.value?.global_clusters || [];
-    } else {
-        console.error('News fetch error:', newsResult.reason);
-        error = t('home.error');
-    }
-
-    trending = trendResult.status === 'fulfilled' && Array.isArray(trendResult.value)
-        ? trendResult.value
-        : [];
-    topEntities = entityResult.status === 'fulfilled' && Array.isArray(entityResult.value)
-        ? entityResult.value
-        : [];
-    stats = statsResult.status === 'fulfilled' ? statsResult.value : null;
-    briefing = briefingResult.status === 'fulfilled' ? briefingResult.value : null;
-}
-
-if (error && !clusters.length && !wireArticles.length && !trending.length && !globalClusters.length) {
+const homepageFlags = buildHomepageFlags(homepageState, isHomepage);
+if (homepageFlags.shouldSetErrorStatus) {
     Astro.response.status = 500;
 }
 
-const focusEntities = topEntities
-    .map((ent: { name: string; display_name?: string; total_mentions: number }) => ({
-        ...ent,
-        name: String(ent?.name || '').trim(),
-        display_name: String(ent?.display_name || ent?.name || '').trim(),
-    }))
-    .filter((ent: { name: string }) => ent.name && ent.name.length >= 3)
-    .slice(0, 10);
-
-const leadCluster = clusters[0] ?? null;
+const focusEntities = buildFocusEntities(topEntities);
+const leadCluster = homepageFlags.leadCluster;
 const leadVisual = leadCluster ? chooseClusterImage(leadCluster, 'hero', lang as 'sr' | 'mk') : null;
 
-function getLeadSignal(cluster: NewsCluster) {
-	const count = cluster?.articles?.length || 0;
-	if (cluster?.is_breaking) return t('home.lead_breaking');
-	if (count >= 6) return t('home.lead_agenda');
-	if (count >= 4) return t('home.lead_spreading');
-	return t('home.lead_follow');
-}
+const {
+    leadSummary,
+    leadTitle,
+    finalLeadSignal,
+    leadTitleIsCyrillic,
+    leadSummaryIsCyrillic,
+} = buildLeadViewModel({
+    leadCluster,
+    homepageLeadDisplay,
+    isHomepage,
+    lang: lang as 'sr' | 'mk',
+    t,
+});
 
-function getLeadSummary(cluster: NewsCluster) {
-	const article = cluster?.articles?.[0];
-	return getStoryPreviewText(cluster, article, lang);
-}
-
-function toLeadWhySentence(text: string, maxLen = 220): string {
-	const trimmed = String(text || '').trim();
-	if (!trimmed) return '';
-	const sentenceMatch = trimmed.match(/^[^.!?…]+[.!?…]?/u);
-	const sentence = (sentenceMatch?.[0] || trimmed).trim();
-	return sentence.length > maxLen ? `${sentence.slice(0, maxLen - 1).trim()}…` : sentence;
-}
-
-const leadSignal = leadCluster ? getLeadSignal(leadCluster) : '';
-const homepageLeadSummary = extractCleanSummaryText(homepageLeadDisplay?.summary || '');
-const leadSummary = isHomepage && homepageLeadSummary && !isSyntheticStandfirstBoilerplate(homepageLeadSummary)
-    ? toLeadWhySentence(homepageLeadSummary)
-    : (leadCluster ? toLeadWhySentence(getLeadSummary(leadCluster)) : '');
-const leadTitle = highlightScores(isHomepage
-    ? String(homepageLeadDisplay?.title || '')
-    : (leadCluster?.articles?.[0] ? cleanAndDecode(leadCluster.articles[0].title) : ''));
-const effectiveLeadSignal = isHomepage
-    ? String(homepageLeadDisplay?.signal || leadSignal)
-    : leadSignal;
-
-// Remove the verbose development signal if it matches the default
-const finalLeadSignal = (effectiveLeadSignal === 'razvoj sto vredi da se sledi' || effectiveLeadSignal === 'развој што вреди да се следи' || effectiveLeadSignal === t('home.lead_follow')) ? '' : effectiveLeadSignal;
-const leadTitleIsCyrillic = isMostlyCyrillic(leadTitle);
-const leadSummaryIsCyrillic = isMostlyCyrillic(leadSummary);
 const activeFilterLabel = subcategory || entity || category || topic || q || null;
-const pipelineBusy = Boolean(pipeline?.busy);
-const hasPartialFeedContent = Boolean(
-    leadCluster ||
-    supportingClusters.length > 0 ||
-    wireArticles.length > 0 ||
-    trending.length > 0 ||
-    forYouClusters.length > 0 ||
-    globalClusters.length > 0
-);
-const showEmptyState = !hasPartialFeedContent;
-const missingSystemModules = isHomepage && !error && hasPartialFeedContent && (!stats || !briefing);
+const pipelineBusy = homepageFlags.pipelineBusy;
+const hasPartialFeedContent = homepageFlags.hasPartialFeedContent;
+const showEmptyState = homepageFlags.showEmptyState;
+const missingSystemModules = homepageFlags.missingSystemModules;
 
 const homepageSections = buildHomepageSections({
     clusters,
@@ -369,16 +215,6 @@ function getTimeStr(dateStr: string) {
         day: t('news.day'),
         days: t('news.days'),
     });
-}
-
-function getBriefingSnippet(content: string) {
-    if (!content) return '';
-    const match = content.match(/## Šta pokreće dan\n+([^#]+)/) || content.match(/^([^#]+)/);
-    if (match && match[1]) {
-        const text = match[1].trim().split('\n')[0];
-        return text.length > 150 ? text.substring(0, 147) + '...' : text;
-    }
-    return '';
 }
 
 const leadFirstArticle = getFirstArticle(leadCluster);

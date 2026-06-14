@@ -30,16 +30,8 @@ class TestAstroFrontendIntegrity:
         # Check for theme logic usage
         assert "typeof localStorage !== 'undefined'" in layout
 
-    def test_adsense_only_loads_on_supported_serbian_domain(self):
-        layout = _read("web/src/layouts/Layout.astro")
-        adsense = _read("web/src/lib/adsense.ts")
+    def test_mk_middleware_redirects_to_presek_mk(self):
         middleware = _read("web/src/middleware.ts")
-
-        assert "shouldLoadAdsense" in adsense
-        assert "PUBLIC_ADSENSE_ENABLED" in adsense
-        assert "shouldLoadAdsenseScript = shouldLoadAdsense(lang, hostHeader)" in layout
-        assert "{shouldLoadAdsenseScript && (" in layout
-        assert "pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" in layout
 
         assert "pathname.startsWith('/mk')" in middleware
         assert "https://presek.mk" in middleware
@@ -224,9 +216,9 @@ class TestAstroFrontendIntegrity:
         assert "FROM articles" in system
 
     def test_homepage_maps_category_filter_to_api_category_param(self):
-        homepage = _read("web/src/components/home/HomePage.astro")
-        assert "newsUrl.searchParams.set('category', category);" in homepage
-        assert "newsUrl.searchParams.set('topic', category);" not in homepage
+        homepage_data = _read("web/src/lib/homepageData.ts")
+        assert "newsUrl.searchParams.set('category', category);" in homepage_data
+        assert "newsUrl.searchParams.set('topic', category);" not in homepage_data
 
     def test_sync_token_is_not_sent_in_query_strings(self):
         account_sync = _read("web/src/components/AccountSyncIsland.tsx")

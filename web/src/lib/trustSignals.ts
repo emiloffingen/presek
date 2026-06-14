@@ -94,3 +94,29 @@ export function buildTrustChip(input: TrustInput, lang: 'sr' | 'mk'): TrustChipD
     isStale,
   };
 }
+
+/** Short footer label for compact/wire cards where TrustChip row is hidden. */
+export function buildCompactPluralismMeta(input: TrustInput, lang: 'sr' | 'mk'): string | null {
+  if ((input.sourcesCount || 0) < 2 || input.pluralismScore == null) {
+    return null;
+  }
+
+  const trust = buildTrustChip(input, lang);
+  const sourcesLabel = lang === 'mk'
+    ? `${trust.sourcesCount} изв.`
+    : `${trust.sourcesCount} izv.`;
+
+  if (trust.tier === 'plural') {
+    return lang === 'mk'
+      ? `Различни агли · ${sourcesLabel} · ${input.pluralismScore}%`
+      : `Različiti uglovi · ${sourcesLabel} · ${input.pluralismScore}%`;
+  }
+
+  if (trust.tier === 'consensus') {
+    return lang === 'mk'
+      ? `Консензус · ${sourcesLabel}`
+      : `Konsenzus · ${sourcesLabel}`;
+  }
+
+  return `${trust.label} · ${sourcesLabel}`;
+}

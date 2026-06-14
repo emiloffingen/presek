@@ -17,7 +17,7 @@ class TestIntelligenceBatching:
 
     def test_backfill_skips_when_queue_backlogged(self):
         with (
-            patch("tasks.intelligence._queue_backlog_high", return_value=True),
+            patch("tasks.intelligence.backfill._queue_backlog_high", return_value=True),
             patch.object(backfill_cluster_summaries_task, "apply_async") as mock_apply,
         ):
             backfill_cluster_summaries_task(days=7, lang="mk", offset=12)
@@ -26,12 +26,12 @@ class TestIntelligenceBatching:
 
     def test_metadata_batches_target_clusters(self):
         with (
-            patch("tasks.intelligence._queue_backlog_high", return_value=False),
-            patch("tasks.intelligence.db") as mock_db,
-            patch("tasks.intelligence.extract_cluster_tags_locally", return_value=["tag"]),
-            patch("tasks.intelligence.filter_cluster_tags", return_value=["tag"]),
-            patch("tasks.intelligence._compute_centroid_from_values", return_value=None),
-            patch("tasks.intelligence.invalidate_public_data_caches"),
+            patch("tasks.intelligence.backfill._queue_backlog_high", return_value=False),
+            patch("tasks.intelligence.metadata.db") as mock_db,
+            patch("tasks.intelligence.metadata.extract_cluster_tags_locally", return_value=["tag"]),
+            patch("tasks.intelligence.metadata.filter_cluster_tags", return_value=["tag"]),
+            patch("tasks.intelligence.synthesis._compute_centroid_from_values", return_value=None),
+            patch("tasks.intelligence.metadata.invalidate_public_data_caches"),
             patch.object(generate_cluster_metadata_task, "apply_async") as mock_apply,
         ):
             mock_db.execute.return_value = [
