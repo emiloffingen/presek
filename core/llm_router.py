@@ -122,6 +122,90 @@ class SmartModelRouter:
         SmartModelRouter._persist_metrics_to_redis()
 
     @staticmethod
+    def _get_recent_quality_average(
+        provider: str,
+        *,
+        min_samples: int | None = None,
+        window_hours: int | None = None,
+    ) -> float | None:
+        """Rolling average quality score for a provider, or None if insufficient data."""
+        min_samples = int(min_samples or os.environ.get("ROUTER_QUALITY_MIN_SAMPLES", "5"))
+        window_hours = int(window_hours or os.environ.get("ROUTER_QUALITY_WINDOW_HOURS", "168"))
+        samples = SmartModelRouter._provider_quality.get(provider, [])
+        if not samples:
+            return None
+
+        cutoff = datetime.datetime.now() - datetime.timedelta(hours=window_hours)
+        recent_scores = [
+            float(sample["score"])
+            for sample in samples
+            if sample.get("timestamp", datetime.datetime.min) >= cutoff
+        ]
+        if len(recent_scores) < min_samples:
+            return None
+        return sum(recent_scores) / len(recent_scores)
+
+    @staticmethod
+    def _apply_quality_adjustment(
+        candidate: str,
+        *,
+        article_count: int,
+        has_high_weight: bool,
+        is_high_complexity: bool,
+        routing_decision: dict,
+    ) -> str:
+        """Promote/demote provider candidates using recorded synthesis quality."""
+        local_min = float(os.environ.get("ROUTER_LOCAL_MIN_QUALITY", "0.80"))
+        small_upgrade = float(os.environ.get("ROUTER_SMALL_UPGRADE_QUALITY", "0.85"))
+
+        if candidate == "local":
+            if article_count >= 3:
+                routing_decision["quality_adjustment"] = "multi_source_avoids_local"
+                if has_high_weight or is_high_complexity:
+                    return "mistral_large"
+                return "mistral_small"
+
+            local_avg = SmartModelRouter._get_recent_quality_average("local")
+            if local_avg is not None and local_avg < local_min:
+                routing_decision["quality_adjustment"] = "local_quality_below_threshold"
+                routing_decision["local_quality_avg"] = round(local_avg, 3)
+                return "mistral_small"
+
+        if candidate == "mistral_small" and (has_high_weight or is_high_complexity):
+            small_avg = SmartModelRouter._get_recent_quality_average("mistral_small")
+            if small_avg is not None and small_avg < small_upgrade:
+                routing_decision["quality_adjustment"] = "small_quality_upgrade_large"
+                routing_decision["small_quality_avg"] = round(small_avg, 3)
+                return "mistral_large"
+
+        return candidate
+
+    @staticmethod
+    def _finalize_route(
+        candidate: str,
+        reason: str,
+        routing_decision: dict,
+        *,
+        article_count: int,
+        has_high_weight: bool,
+        is_high_complexity: bool,
+    ) -> str:
+        routing_decision["initial_candidate"] = candidate
+        routing_decision["reason"] = reason
+        chosen = SmartModelRouter._apply_quality_adjustment(
+            candidate,
+            article_count=article_count,
+            has_high_weight=has_high_weight,
+            is_high_complexity=is_high_complexity,
+            routing_decision=routing_decision,
+        )
+        if chosen != candidate:
+            routing_decision["reason"] = f"{reason}_quality_adjusted"
+        routing_decision["chosen_provider"] = chosen
+        log.info(f"[router] Decision: {json.dumps(routing_decision, ensure_ascii=False)}")
+        return chosen
+
+    @staticmethod
     def get_dynamic_fallback_order(task_type="synthesis"):
         """Generate fallback order based on recent provider performance"""
         SmartModelRouter._load_metrics_from_redis()
@@ -242,57 +326,90 @@ class SmartModelRouter:
         if ab_test_triggered:
             override_target = random.choice(["local", "mistral_small", "mistral_large"])
             log.info(f"[router/ab] Overriding to {override_target} for experimentation")
-            routing_decision['chosen_provider'] = override_target
             routing_decision['ab_test'] = True
-            log.info(f"[router] Decision: {json.dumps(routing_decision, ensure_ascii=False)}")
-            return override_target
+            return SmartModelRouter._finalize_route(
+                override_target,
+                "ab_test",
+                routing_decision,
+                article_count=article_count,
+                has_high_weight=has_high_weight,
+                is_high_complexity=is_high_complexity,
+            )
         
         # Free API optimization: use Mistral for better quality when APIs are free
         free_apis_enabled = os.environ.get("FREE_API_KEYS_ENABLED", "false").lower() == "true"
         
         if free_apis_enabled and not is_high_complexity:
             # Even for low complexity, use Mistral Small for better quality when free
-            routing_decision['chosen_provider'] = "mistral_small"
-            routing_decision['reason'] = "free_api_quality_optimization"
-            log.info(f"[router] Decision: {json.dumps(routing_decision, ensure_ascii=False)}")
-            return "mistral_small"
+            return SmartModelRouter._finalize_route(
+                "mistral_small",
+                "free_api_quality_optimization",
+                routing_decision,
+                article_count=article_count,
+                has_high_weight=has_high_weight,
+                is_high_complexity=is_high_complexity,
+            )
         
         # Original cost-aware routing for when APIs aren't free
         if (routing_decision['is_peak_hour'] or is_system_busy) and local_available and not is_high_complexity:
-            routing_decision['chosen_provider'] = "local"
-            routing_decision['reason'] = "peak_hour_cost_optimization"
-            log.info(f"[router] Decision: {json.dumps(routing_decision, ensure_ascii=False)}")
-            return "local"
+            return SmartModelRouter._finalize_route(
+                "local",
+                "peak_hour_cost_optimization",
+                routing_decision,
+                article_count=article_count,
+                has_high_weight=has_high_weight,
+                is_high_complexity=is_high_complexity,
+            )
         
         # If local is available, preferred, and it's NOT a high complexity story that we want to force remote for
         if local_available and prefer_local_synthesis and not (is_high_complexity and force_remote_high_complexity):
-            routing_decision['chosen_provider'] = "local"
-            routing_decision['reason'] = "local_preferred"
-            log.info(f"[router] Decision: {json.dumps(routing_decision, ensure_ascii=False)}")
-            return "local"
+            return SmartModelRouter._finalize_route(
+                "local",
+                "local_preferred",
+                routing_decision,
+                article_count=article_count,
+                has_high_weight=has_high_weight,
+                is_high_complexity=is_high_complexity,
+            )
         
         # High Complexity: Serious disputes, large clusters, high political/economic weight, or sports conflicts
         if is_high_complexity:
-            routing_decision['chosen_provider'] = "mistral_large"
-            routing_decision['reason'] = "high_complexity"
-            log.info(f"[router] Decision: {json.dumps(routing_decision, ensure_ascii=False)}")
-            return "mistral_large"
+            return SmartModelRouter._finalize_route(
+                "mistral_large",
+                "high_complexity",
+                routing_decision,
+                article_count=article_count,
+                has_high_weight=has_high_weight,
+                is_high_complexity=is_high_complexity,
+            )
 
         # Medium Complexity: Standard news, moderate cluster size
         if article_count >= 3 or has_high_weight:
-            routing_decision['chosen_provider'] = "mistral_small"
-            routing_decision['reason'] = "medium_complexity"
-            log.info(f"[router] Decision: {json.dumps(routing_decision, ensure_ascii=False)}")
-            return "mistral_small"
+            return SmartModelRouter._finalize_route(
+                "mistral_small",
+                "medium_complexity",
+                routing_decision,
+                article_count=article_count,
+                has_high_weight=has_high_weight,
+                is_high_complexity=is_high_complexity,
+            )
 
         # Low Complexity: 1-2 articles, straightforward routine news
         if local_available:
-            routing_decision['chosen_provider'] = "local"
-            routing_decision['reason'] = "low_complexity"
-            log.info(f"[router] Decision: {json.dumps(routing_decision, ensure_ascii=False)}")
-            return "local"
+            return SmartModelRouter._finalize_route(
+                "local",
+                "low_complexity",
+                routing_decision,
+                article_count=article_count,
+                has_high_weight=has_high_weight,
+                is_high_complexity=is_high_complexity,
+            )
 
-        routing_decision['chosen_provider'] = "mistral_small"
-        routing_decision['reason'] = "low_complexity_local_unavailable"
-        log.info(f"[router] Decision: {json.dumps(routing_decision, ensure_ascii=False)}")
-        return "mistral_small"
+        return SmartModelRouter._finalize_route(
+            "mistral_small",
+            "low_complexity_local_unavailable",
+            routing_decision,
+            article_count=article_count,
+            has_high_weight=has_high_weight,
+            is_high_complexity=is_high_complexity,
+        )

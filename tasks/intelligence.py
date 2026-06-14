@@ -83,6 +83,9 @@ _HISTORICAL_SUMMARY_LOCK_KEY = "lock:backfill:historical_summaries"
 _HISTORICAL_SUMMARY_DISPATCH_LIMIT = int(os.environ.get("HISTORICAL_SUMMARY_DISPATCH_LIMIT", "80"))
 _HISTORICAL_SUMMARY_DISPATCH_MAX = int(os.environ.get("HISTORICAL_SUMMARY_DISPATCH_MAX", "240"))
 _HISTORICAL_SUMMARY_QUEUE_BUFFER = int(os.environ.get("HISTORICAL_SUMMARY_QUEUE_BUFFER", "20"))
+_FAST_SYNTHESIS_UPGRADE_DELAY_SECONDS = int(os.environ.get("FAST_SYNTHESIS_UPGRADE_DELAY_SECONDS", "1200"))
+_FAST_SYNTHESIS_UPGRADE_LOCK_TTL_SECONDS = int(os.environ.get("FAST_SYNTHESIS_UPGRADE_LOCK_TTL_SECONDS", "7200"))
+_FAST_SYNTHESIS_UPGRADE_MAX_DEFERS = int(os.environ.get("FAST_SYNTHESIS_UPGRADE_MAX_DEFERS", "6"))
 
 
 def _queue_backlog_high(limit=_BACKFILL_QUEUE_DEPTH_LIMIT) -> bool:
@@ -1094,6 +1097,57 @@ def detect_global_story_task(article_id):
         log.warning(f"[originality] Detection failed for {article_id}: {e}")
 
 
+def _compute_lightweight_quality_score(synthetic_headline, summary, generated_article, key_facts, lang="sr"):
+    article_score = _score_synthesis_quality(synthetic_headline, generated_article, key_facts, lang)
+    summary_score = _score_editorial_summary(summary, generated_article, lang)
+    return round((article_score * 0.65) + (summary_score * 0.35), 3)
+
+
+def _schedule_fast_synthesis_upgrade(cluster_id: str, content=None) -> bool:
+    """Queue a deferred full-quality synthesis after an initial fast-mode publish."""
+    if os.environ.get("FAST_SYNTHESIS_UPGRADE_ENABLED", "true").lower() != "true":
+        return False
+
+    lock_key = f"lock:fast_synthesis_upgrade:{cluster_id}"
+    scheduled = schedule_task_once(
+        lock_key,
+        _FAST_SYNTHESIS_UPGRADE_LOCK_TTL_SECONDS,
+        upgrade_fast_synthesis_task,
+        args=(cluster_id,),
+        kwargs={"content": content, "defer_attempt": 0},
+        countdown=_FAST_SYNTHESIS_UPGRADE_DELAY_SECONDS,
+    )
+    if scheduled:
+        log.info(
+            "[tasks/synthesis] Scheduled full upgrade for %s in %ss",
+            cluster_id,
+            _FAST_SYNTHESIS_UPGRADE_DELAY_SECONDS,
+        )
+    return scheduled
+
+
+@celery_app.task
+def upgrade_fast_synthesis_task(cluster_id, content=None, defer_attempt=0):
+    """Run full-quality synthesis after fast-mode publish, deferring when intel-heavy is congested."""
+    if intelligence_soft_deferred() and defer_attempt < _FAST_SYNTHESIS_UPGRADE_MAX_DEFERS:
+        retry_delay = min(900, 120 * (defer_attempt + 1))
+        log.info(
+            "[tasks/synthesis] Deferring full upgrade for %s (attempt %s, retry in %ss)",
+            cluster_id,
+            defer_attempt + 1,
+            retry_delay,
+        )
+        upgrade_fast_synthesis_task.apply_async(
+            args=(cluster_id,),
+            kwargs={"content": content, "defer_attempt": defer_attempt + 1},
+            countdown=retry_delay,
+        )
+        return {"status": "deferred", "cluster_id": cluster_id, "defer_attempt": defer_attempt + 1}
+
+    synthesize_cluster_task(cluster_id, content, fast_mode=False)
+    return {"status": "upgraded", "cluster_id": cluster_id}
+
+
 @celery_app.task(
     queue="fast-track",
     rate_limit="60/m",
@@ -1172,6 +1226,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
         "analyst_entities": [],
     }
     shared_computed = False
+    fast_synthesis_succeeded = False
 
     for lang in target_langs:
         try:
@@ -1263,10 +1318,19 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                     article_rows,
                     lang=lang,
                 )
+                if fast_mode:
+                    if quality_score is None:
+                        quality_score = _compute_lightweight_quality_score(
+                            synthetic_headline,
+                            summary,
+                            generated_article,
+                            res_data.get("key_facts", []),
+                            lang=lang,
+                        )
                 record_runtime_event("synthesis_path", mode=provider or "unknown", fast_mode=fast_mode, lang=lang)
                 
                 # Record quality feedback for router
-                if provider and not fast_mode and quality_score is not None:
+                if provider and quality_score is not None:
                     from core.llm_router import SmartModelRouter
 
                     SmartModelRouter._record_quality_feedback(provider, cluster_id, quality_score)
@@ -1398,6 +1462,8 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             )
 
             if summary or perspectives:
+                if fast_mode:
+                    fast_synthesis_succeeded = True
                 # Use shared metrics for DB save
                 pulse_score = shared_metrics["pulse_score"]
                 pluralism_score = shared_metrics["pluralism_score"]
@@ -1561,6 +1627,9 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
         except Exception as e:
             log.error(f"Synthesis failed for cluster {cluster_id} in {lang}: {e}", exc_info=True)
             continue
+
+    if fast_mode and fast_synthesis_succeeded:
+        _schedule_fast_synthesis_upgrade(cluster_id, legacy_summary or None)
 
     # --- [Final Steps] Cluster-wide updates and events ---
     if shared_computed:

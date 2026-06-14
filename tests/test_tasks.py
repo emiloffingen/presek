@@ -306,6 +306,44 @@ class TestSynthesizeClusterTaskQuality:
         assert _langs_for_cluster_articles([{"country": "RS"}]) == ["sr"]
         assert _langs_for_cluster_articles([{"country": "RS"}, {"country": "MK"}]) == ["sr", "mk"]
 
+    def test_schedule_fast_synthesis_upgrade_uses_task_once_lock(self):
+        from tasks.intelligence import _schedule_fast_synthesis_upgrade, upgrade_fast_synthesis_task
+
+        with patch("tasks.intelligence.schedule_task_once", return_value=True) as mock_schedule:
+            assert _schedule_fast_synthesis_upgrade("cluster-9", "legacy") is True
+
+        mock_schedule.assert_called_once()
+        lock_key, ttl, task = mock_schedule.call_args.args[:3]
+        assert lock_key == "lock:fast_synthesis_upgrade:cluster-9"
+        assert task is upgrade_fast_synthesis_task
+        assert mock_schedule.call_args.kwargs["kwargs"] == {"content": "legacy", "defer_attempt": 0}
+
+    def test_upgrade_fast_synthesis_task_defers_when_intel_queue_is_busy(self):
+        from tasks.intelligence import upgrade_fast_synthesis_task
+
+        with (
+            patch("tasks.intelligence.intelligence_soft_deferred", return_value=True),
+            patch("tasks.intelligence.upgrade_fast_synthesis_task.apply_async") as mock_retry,
+            patch("tasks.intelligence.synthesize_cluster_task") as mock_full,
+        ):
+            result = upgrade_fast_synthesis_task("cluster-9", content="legacy", defer_attempt=0)
+
+        assert result["status"] == "deferred"
+        mock_retry.assert_called_once()
+        mock_full.assert_not_called()
+
+    def test_upgrade_fast_synthesis_task_runs_full_synthesis_when_queue_is_clear(self):
+        from tasks.intelligence import upgrade_fast_synthesis_task
+
+        with (
+            patch("tasks.intelligence.intelligence_soft_deferred", return_value=False),
+            patch("tasks.intelligence.synthesize_cluster_task") as mock_full,
+        ):
+            result = upgrade_fast_synthesis_task("cluster-9", content="legacy", defer_attempt=0)
+
+        assert result["status"] == "upgraded"
+        mock_full.assert_called_once_with("cluster-9", "legacy", fast_mode=False)
+
     def test_backfill_filters_clusters_and_articles_by_language_country(self):
         from tasks.intelligence import backfill_cluster_summaries_task
 
