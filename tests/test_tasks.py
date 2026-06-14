@@ -932,6 +932,23 @@ class TestDailyBriefTaskQuality:
             topic="vesti",
             extra_context="Reporter.mk СпортМедиа",
         )
+        assert tasks.delivery.briefing._is_routine_sports_cluster(
+            "Њuјorк Никс ja osvoiја NBA titulata",
+            "Branson bese najkorisен igrach.",
+            "San Antonio Spurs gi savladaa vo finalnata serija.",
+            category="Amerika",
+            topic="vesti",
+        )
+
+    def test_public_interest_signal_does_not_match_vlada_inside_savladav(self):
+        assert not tasks.delivery.briefing._has_public_interest_signal(
+            "Timot ja savlada protivnickata ekipa",
+            "Pobedata dojde vo poslednata cetvrtina.",
+        )
+        assert tasks.delivery.briefing._has_public_interest_signal(
+            "Vlada donese nov paket merki",
+            "Ministerot go predstavi zakonot.",
+        )
 
     def test_load_daily_brief_clusters_pushes_routine_sports_behind_public_interest_cluster(self):
         rows = [

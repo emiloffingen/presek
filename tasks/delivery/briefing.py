@@ -222,10 +222,20 @@ def _is_party_press_release_title(title: str) -> bool:
     return bool(clean) and clean.startswith(_BRIEFING_PARTY_PREFIXES)
 
 
+_BRIEFING_PUBLIC_INTEREST_BOUNDARY_MARKERS = {
+    "on",
+    "vlada",
+    "liban",
+    "polic",
+    "napad",
+    "bezbed",
+}
+
+
 def _has_public_interest_signal(title: str, description: str = "", cluster_summary: str = "") -> bool:
     haystack = " ".join([str(title or ""), str(description or ""), str(cluster_summary or "")]).casefold()
     for marker in _BRIEFING_PUBLIC_INTEREST_MARKERS:
-        if len(marker) < 4:
+        if marker in _BRIEFING_PUBLIC_INTEREST_BOUNDARY_MARKERS or len(marker) < 4:
             if re.search(rf"(?<![a-z\u0400-\u04ff]){re.escape(marker)}(?![a-z\u0400-\u04ff])", haystack):
                 return True
             continue
@@ -280,7 +290,7 @@ def _is_routine_sports_cluster(
             str(extra_context or ""),
         ]
     ).casefold()
-    if _has_public_interest_signal(title, description, cluster_summary):
+    if _has_public_interest_signal(title, description):
         return False
     if any(marker in haystack for marker in _BRIEFING_MAJOR_SPORTS_MARKERS):
         return False
