@@ -3,8 +3,8 @@
  * Used by multiple cluster components to avoid code duplication.
  */
 
-import { cleanAndDecode, stripCitationMarkers } from './textUtils';
-import { sanitizeHtml } from '../lib/sanitize';
+import { cleanAndDecode, parseFootnotes, stripCitationMarkers } from './textUtils.ts';
+import { sanitizeHtml } from '../lib/sanitize.ts';
 
 /**
  * Render synthesis text with markdown formatting and citation handling.
@@ -14,13 +14,14 @@ import { sanitizeHtml } from '../lib/sanitize';
  * - Converts **text** to <strong>text</strong>
  * - Converts *text* to <em>text</em>
  * - Converts (izvor: Name) or (Name) to <span class="citation-badge">Name</span>
- * - Removes [1], [2], [1,2,3,4] etc. numeric citation markers
+ * - When citation sources exist: [1], [2] become superscript links to the source list
+ * - Otherwise strips numeric citation markers from prose
  *
  * @param text - The raw synthesis text
- * @param _hasCitationSources - Reserved; citation list visibility is handled by the page layout
+ * @param hasCitationSources - When true, inline [N] markers link to the citation footer
  * @returns Sanitized HTML string
  */
-export function renderSynthesisHtml(text: string, _hasCitationSources: boolean = false): string {
+export function renderSynthesisHtml(text: string, hasCitationSources: boolean = false): string {
 	if (!text) return '';
 	let clean = cleanAndDecode(text);
 	if (!clean) return '';
@@ -36,9 +37,10 @@ export function renderSynthesisHtml(text: string, _hasCitationSources: boolean =
 
 	// 4. Handle Parenthetical Citations: (izvor: Ime) or (Ime) -> <span class="citation-badge">Ime</span>
 	// We target common news source patterns (capitalised, 1-3 words)
-	clean = clean.replace(/\((?:izvor:\s*)?([A-ZA-S][a-za-s0-9\s\.]{2,20})\)/g, (match: string, name: string) => {
+	clean = clean.replace(/\((?:izvor:\s*)?([A-ZA-S][a-za-s0-9\s\.]{2,20})\)/g, (_match: string, name: string) => {
 		return `<span class="citation-badge">${name.trim()}</span>`;
 	});
 
-	return sanitizeHtml(stripCitationMarkers(clean));
+	const withCitations = hasCitationSources ? parseFootnotes(clean) : stripCitationMarkers(clean);
+	return sanitizeHtml(withCitations);
 }

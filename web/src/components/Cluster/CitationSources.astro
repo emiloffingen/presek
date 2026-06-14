@@ -13,8 +13,9 @@ const heading = lang === 'mk' ? 'Поврзани извори' : 'Povezani izvo
 <footer class="narrative-citations mt-12 p-8 bg-secondary/10 border border-border/40 rounded-lg">
 	<h4 class="citation-heading">{heading}</h4>
 	<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-[var(--grid-gap)]">
-		{citationSources.map((art: any) => (
-			<div class="citation-card group">
+		{citationSources.map((art: any, index: number) => (
+			<div id={`citation-${index + 1}`} class="citation-card group scroll-mt-28">
+				<span class="citation-index" aria-hidden="true">{index + 1}</span>
 				<p class="citation-source">{art.source}</p>
 				<a href={art.link} target="_blank" rel="noopener noreferrer" class="citation-link">
 					{cleanAndDecode(art.title)}
@@ -30,6 +31,21 @@ const heading = lang === 'mk' ? 'Поврзани извори' : 'Povezani izvo
 		flex-direction: column;
 		gap: 0.35rem;
 		min-width: 0;
+		position: relative;
+		padding-top: 0.15rem;
+		scroll-margin-top: 7rem;
+	}
+
+	.citation-index {
+		position: absolute;
+		top: 0;
+		left: 0;
+		font-family: var(--font-sans);
+		font-size: 0.58rem;
+		font-weight: 950;
+		line-height: 1;
+		color: var(--nyt-accent);
+		opacity: 0.55;
 	}
 	.citation-source {
 		font-family: var(--font-sans);
