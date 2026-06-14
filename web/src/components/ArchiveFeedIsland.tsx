@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { NewsCard } from './NewsCard';
+import { useTranslations } from '../i18n/utils';
 
 interface ArchiveFeedIslandProps {
   initialClusters: any[];
@@ -79,7 +80,8 @@ const ArchiveFeedIsland: React.FC<ArchiveFeedIslandProps> = ({
     </div>
   );
 
-  const isMK = lang === 'mk';
+  const activeLang = lang === 'mk' ? 'mk' : 'sr';
+  const t = useTranslations(activeLang);
 
   return (
     <div className="archive-feed-container">
@@ -89,9 +91,9 @@ const ArchiveFeedIsland: React.FC<ArchiveFeedIslandProps> = ({
             <div className="flex flex-col md:flex-row gap-3 md:gap-[var(--grid-gap)]">
               <div className="archive-cluster-index-col w-full md:w-20 pt-1 md:pt-2 flex-shrink-0">
                 <div className="sticky top-24 flex md:block items-baseline gap-2 md:gap-[var(--grid-gap)]">
-                  <span className="font-sans text-[10px] font-black uppercase tracking-widest text-nyt-accent block mb-1 hidden md:block">{isMK ? 'Издание' : 'Izdanje'}</span>
+                  <span className="font-sans text-[10px] font-black uppercase tracking-widest text-nyt-accent block mb-1 hidden md:block">{t('archive.edition')}</span>
                   <strong className="font-serif text-base md:text-3xl font-black block leading-none opacity-20 md:opacity-40">{String(index + 1).padStart(2, '0')}</strong>
-                  <span className="font-sans text-[9px] md:text-[10px] font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground md:hidden opacity-40">{isMK ? 'Поз' : 'Poz'}</span>
+                  <span className="font-sans text-[9px] md:text-[10px] font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground md:hidden opacity-40">{t('archive.pos')}</span>
                 </div>
               </div>
               <div className="flex-1 min-w-0">
@@ -121,14 +123,14 @@ const ArchiveFeedIsland: React.FC<ArchiveFeedIslandProps> = ({
             onClick={loadMore}
             className="archive-page-link editorial-action px-8 md:px-12 py-3 md:py-4 border border-foreground font-sans text-[11px] md:text-xs font-black uppercase tracking-[0.14em] md:tracking-widest hover:bg-foreground hover:text-background transition-colors"
           >
-            {isMK ? 'Вчитај уште теми' : 'Učitaj još tema'}
+            {t('archive.load_more')}
           </button>
         </div>
       )}
 
       {!hasMore && clusters.length > 0 && (
         <p className="archive-end-note mt-8 md:mt-12 text-center font-sans text-[9px] md:text-[10px] font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground opacity-60">
-          {isMK ? 'Крај на архивата за овој ден' : 'Kraj arhive za ovaj dan'}
+          {t('archive.end')}
         </p>
       )}
     </div>

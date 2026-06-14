@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Loader2, CalendarRange } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
 import { localePathForLang } from '../lib/localePaths';
+import { useTranslations } from '../i18n/utils';
 
 interface HeatmapDay {
   day: string;
@@ -17,7 +18,9 @@ interface Props {
 export default function ArchiveHeatmapIsland({ selectedDate, lang = 'sr' }: Props) {
   const [data, setData] = useState<HeatmapDay[]>([]);
   const [loading, setLoading] = useState(true);
-  const isMK = lang === 'mk';
+  const activeLang = lang === 'mk' ? 'mk' : 'sr';
+  const isMK = activeLang === 'mk';
+  const t = useTranslations(activeLang);
 
   useEffect(() => {
     console.log('[ArchiveHeatmap] Fetching data...');
@@ -40,7 +43,7 @@ export default function ArchiveHeatmapIsland({ selectedDate, lang = 'sr' }: Prop
       <div className="flex justify-center items-center h-24 border border-dashed border-border rounded-lg">
         <Loader2 className="animate-spin text-nyt-accent mr-2" size={16} />
         <span className="text-xs text-muted-foreground uppercase font-black tracking-widest">
-            {isMK ? 'Вчитување на машина на времето...' : 'Učitavanje mašine vremena...'}
+            {t('archive.heatmap_loading')}
         </span>
       </div>
     );
@@ -71,7 +74,7 @@ export default function ArchiveHeatmapIsland({ selectedDate, lang = 'sr' }: Prop
     return (
       <div className="flex justify-center items-center h-24 border border-dashed border-border rounded-lg bg-secondary/5">
         <span className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em]">
-            {isMK ? 'Нема податоци за овој период' : 'Nema podataka za ovaj period'}
+            {t('archive.heatmap_empty')}
         </span>
       </div>
     );
@@ -101,15 +104,15 @@ export default function ArchiveHeatmapIsland({ selectedDate, lang = 'sr' }: Prop
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-[var(--grid-gap)] mb-6">
         <div>
           <h2 className="section-heading">
-            <CalendarRange size={18} className="text-nyt-accent" /> {isMK ? 'Машина на Времето' : 'Mašina Vremena'}
+            <CalendarRange size={18} className="text-nyt-accent" /> {t('archive.heatmap_title')}
           </h2>
           <p className="text-[11px] text-muted-foreground uppercase font-black tracking-widest mt-1">
-              {isMK ? 'Интензитет на вести: Последни 180 дена' : 'Intenzitet vesti: Poslednjih 180 dana'}
+              {t('archive.heatmap_subtitle')}
           </p>
         </div>
         <div className="flex gap-[var(--grid-gap)] text-xs font-bold font-sans">
-          <div className="flex items-center gap-[var(--grid-gap)]"><span className="w-3 h-3 bg-nyt-accent/60 rounded-sm"></span> {isMK ? 'Волумен' : 'Volumen'}</div>
-          <div className="flex items-center gap-[var(--grid-gap)]"><span className="w-3 h-3 bg-nyt-red/60 rounded-sm"></span> {isMK ? 'Итни развои' : 'Hitni razvoji'}</div>
+          <div className="flex items-center gap-[var(--grid-gap)]"><span className="w-3 h-3 bg-nyt-accent/60 rounded-sm"></span> {t('archive.heatmap_volume')}</div>
+          <div className="flex items-center gap-[var(--grid-gap)]"><span className="w-3 h-3 bg-nyt-red/60 rounded-sm"></span> {t('archive.heatmap_urgent')}</div>
         </div>
       </div>
 
@@ -132,9 +135,9 @@ export default function ArchiveHeatmapIsland({ selectedDate, lang = 'sr' }: Prop
             return (
               <a
                 key={dayData.day}
-                href={`${localePathForLang('/archive', isMK ? 'mk' : 'sr')}?date=${dayData.day}`}
+                href={`${localePathForLang('/archive', activeLang)}?date=${dayData.day}`}
                 className={`group flex flex-col items-center justify-end h-full gap-1 ${isActive ? 'scale-110 z-20' : ''}`}
-                title={`${getLabel(dayData.day)}: ${dayData.total_clusters} ${isMK ? 'вести' : 'vesti'}, ${dayData.breaking_clusters} ${isMK ? 'итни' : 'hitni'}`}
+                title={`${getLabel(dayData.day)}: ${dayData.total_clusters} ${t('news.section_default').toLowerCase()}, ${dayData.breaking_clusters} ${t('archive.heatmap_urgent').toLowerCase()}`}
               >
                 <div
                   className={`w-3 sm:w-4 rounded-sm transition-all hover:opacity-80 relative ${intensity} ${isActive ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background' : ''}`}
@@ -142,7 +145,7 @@ export default function ArchiveHeatmapIsland({ selectedDate, lang = 'sr' }: Prop
                 >
                   {/* Tooltip on hover */}
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-foreground text-background text-[10px] font-bold py-1 px-2 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity z-10">
-                    {getLabel(dayData.day)} • {dayData.total_clusters} {isMK ? 'објави' : 'objave'}
+                    {getLabel(dayData.day)} • {dayData.total_clusters} {t('archive.objava').toLowerCase()}
                   </div>
                 </div>
                 {/* Date marker below the bar */}

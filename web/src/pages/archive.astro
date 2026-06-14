@@ -98,7 +98,7 @@ function formatBriefingItem(item: string) {
 
         <div class="masthead-main flex flex-col md:flex-row justify-between items-start md:items-end gap-12 mb-12 animate-rise">
             <div class="max-w-3xl">
-                <h1 class="masthead-title font-serif text-4xl md:text-6xl font-black leading-[0.95] tracking-tighter mb-4">{t('nav.archive')} <span class="text-nyt-accent italic font-light">{isMK ? 'Изданија' : 'Izdanja'}</span></h1>
+                <h1 class="masthead-title font-serif text-4xl md:text-6xl font-black leading-[0.95] tracking-tighter mb-4">{t('nav.archive')} <span class="text-nyt-accent italic font-light">{t('archive.edition')}</span></h1>
                 <p class="font-serif text-xl italic text-muted-foreground leading-snug max-w-2xl">
                     {t('archive.masthead_desc')}
                 </p>
@@ -159,14 +159,14 @@ function formatBriefingItem(item: string) {
                             href={`${localePath('/archive', isMK ? 'mk' : 'sr', hostHeader)}?date=${new Date(new Date(date).getTime() - 86400000).toISOString().split('T')[0]}`}
                             class="archive-nav-btn"
                         >
-                            ← {isMK ? 'Претходен' : 'Prethodni'}
+                            ← {t('archive.previous')}
                         </a>
                         {new Date(date) < new Date(new Date().toISOString().split('T')[0]) && (
                             <a
                                   href={`${localePath('/archive', isMK ? 'mk' : 'sr', hostHeader)}?date=${new Date(new Date(date).getTime() + 86400000).toISOString().split('T')[0]}`}
                                   class="archive-nav-btn"
                             >
-                                {isMK ? 'Следен' : 'Sledeći'} →
+                                {t('archive.next')} →
                             </a>
                         )}
                     </div>
@@ -179,7 +179,7 @@ function formatBriefingItem(item: string) {
                             type="text"
                             name="q"
                             value={q}
-                            placeholder={isMK ? "Пребарај го овој ден..." : "Pretraži ovaj dan..."}
+                            placeholder={t('archive.search_placeholder')}
                             class="archive-search-input"
                         />
                         <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none opacity-40">
@@ -199,12 +199,12 @@ function formatBriefingItem(item: string) {
                 </div>
                 <div>
                     <span class="block ui-kicker">{t('cluster.media_pulse')}</span>
-                    <span class="text-xs text-muted-foreground">{isMK ? 'Интензитет на известување и тематски циклуси' : 'Intenzitet izveštavanja i tematski ciklusi'}</span>
+                    <span class="text-xs text-muted-foreground">{t('archive.heatmap_desc')}</span>
                 </div>
             </div>
             <div class="flex items-center gap-[var(--grid-gap)] ui-label-min text-nyt-accent">
-                <span class="group-open:hidden">{isMK ? 'Отвори преглед' : 'Otvori pregled'} ↓</span>
-                <span class="hidden group-open:inline">{isMK ? 'Затвори преглед' : 'Zatvori pregled'} ↑</span>
+                <span class="group-open:hidden">{t('archive.open_overview')} ↓</span>
+                <span class="hidden group-open:inline">{t('archive.close_overview')} ↑</span>
             </div>
         </summary>
         <div class="p-8 border-t border-border bg-card/80">
@@ -238,7 +238,7 @@ function formatBriefingItem(item: string) {
                 ) : (
                     <div class="py-32 text-center border-2 border-dashed border-border rounded-2xl">
                         <h2 class="font-serif text-3xl font-black italic mb-4">{t('archive.empty')}</h2>
-                        <p class="font-nyt-body text-muted-foreground">{isMK ? 'Пробајте со друг датум или прилагодете ги филтрите за пребарување.' : 'Probajte sa drugim datumom ili prilagodite filtere pretrage.'}</p>
+                        <p class="font-nyt-body text-muted-foreground">{t('archive.try_other_filters')}</p>
                         <a href={localePath('/archive', isMK ? 'mk' : 'sr', hostHeader)} class="mt-8 inline-block px-8 py-3 bg-foreground text-background ui-label-min hover:bg-nyt-accent transition-all">{t('archive.back_today')}</a>
                     </div>
                 )}
@@ -257,8 +257,8 @@ function formatBriefingItem(item: string) {
 
             <details class="archive-rail-context">
                 <summary class="archive-rail-context-summary">
-                    <span class="ui-kicker">{isMK ? 'Контекст и филтри' : 'Kontekst i filteri'}</span>
-                    <span class="archive-rail-context-hint ui-kicker text-muted-foreground">{isMK ? 'Отвори' : 'Otvori'}</span>
+                    <span class="ui-kicker">{t('archive.context_filters')}</span>
+                    <span class="archive-rail-context-hint ui-kicker text-muted-foreground">{t('archive.open')}</span>
                 </summary>
                 <div class="archive-rail-context-body">
                     {onThisDay && onThisDay.cluster_id && (
