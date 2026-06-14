@@ -719,6 +719,19 @@ class TestDailyBriefTaskQuality:
 
         assert tasks.delivery.briefing._is_grounded_daily_brief(brief, context) is True
 
+    def test_accepts_mk_cyrillic_entity_with_latin_spelling_variant(self):
+        context = (
+            "### klaster 1\n"
+            "Naslov: Napad vo Persijski zaliv\n"
+            "Kratok kontekst: SAD i Iran vo Persijski zaliv.\n"
+        )
+        brief = (
+            "## Golemata Slika\n\n"
+            "Napetostite vo Persiskiot Zaliv ja odreduvaat temata na denot.\n"
+        )
+
+        assert tasks.delivery.briefing._is_grounded_daily_brief(brief, context) is True
+
     def test_daily_brief_structure_validator_rejects_malformed_body(self):
 
         malformed = "# Utrinski Dispac\n\n| nesto | nesto drugo |"

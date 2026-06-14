@@ -347,6 +347,68 @@ def _build_daily_brief_context(clusters):
     return "\n\n".join(blocks)
 
 
+_GROUNDING_DEFINITE_SUFFIXES = (
+    "iot",
+    "iota",
+    "ata",
+    "eto",
+    "nite",
+    "neto",
+    "nata",
+    "ski",
+    "ska",
+    "sko",
+    "cki",
+    "cka",
+    "cko",
+)
+
+_GROUNDING_TOKEN_RE = re.compile(r"[A-Za-z\u0400-\u04FF]{3,}", re.UNICODE)
+
+
+def _normalize_grounding_token(word: str) -> str:
+    from nlp.utils import transliterate
+
+    token = transliterate(str(word or "").strip()).casefold()
+    if not token:
+        return ""
+    for suffix in sorted(_GROUNDING_DEFINITE_SUFFIXES, key=len, reverse=True):
+        if len(token) > len(suffix) + 3 and token.endswith(suffix):
+            token = token[:-len(suffix)]
+            break
+    token = token.replace("ij", "i").replace("iy", "i")
+    return token
+
+
+def _grounding_tokens_from_text(text: str) -> set[str]:
+    from nlp.utils import transliterate
+
+    source = transliterate(text).casefold()
+    tokens: set[str] = set()
+    for raw in _GROUNDING_TOKEN_RE.findall(source):
+        norm = _normalize_grounding_token(raw)
+        if len(norm) < 3:
+            continue
+        tokens.add(norm)
+        if len(norm) >= 5:
+            tokens.add(norm[:5])
+    return tokens
+
+
+def _grounding_word_in_context(word: str, source_latin: str, context_tokens: set[str]) -> bool:
+    norm = _normalize_grounding_token(word)
+    if len(norm) < 4:
+        return True
+    if norm in source_latin or norm in context_tokens:
+        return True
+    if len(norm) >= 5 and norm[:5] in context_tokens:
+        return True
+    for ctx in context_tokens:
+        if len(ctx) >= 5 and len(norm) >= 5 and (ctx.startswith(norm[:5]) or norm.startswith(ctx[:5])):
+            return True
+    return False
+
+
 def _is_grounded_daily_brief(brief: str, context: str) -> bool:
     """Stricter than cluster synthesis: named entities in the brief must appear in context."""
     if not brief or not context:
@@ -356,6 +418,7 @@ def _is_grounded_daily_brief(brief: str, context: str) -> bool:
     from nlp.utils import transliterate
 
     source_latin = transliterate(context).casefold()
+    context_tokens = _grounding_tokens_from_text(context)
     context_entities = {
         transliterate(phrase).casefold()
         for phrase in _extract_capitalized_phrases(context)
@@ -398,13 +461,17 @@ def _is_grounded_daily_brief(brief: str, context: str) -> bool:
             continue
         if folded in context_entities or folded in source_latin:
             continue
+        if _normalize_grounding_token(clean) in context_tokens:
+            continue
 
         significant_words = [
-            transliterate(word).casefold()
+            word
             for word in words
             if len(word) >= 4 and transliterate(word).casefold() not in role_prefixes
         ]
-        if significant_words and all(word in source_latin for word in significant_words):
+        if significant_words and all(
+            _grounding_word_in_context(word, source_latin, context_tokens) for word in significant_words
+        ):
             continue
 
         log.warning(f"[briefing] Ungrounded entity in daily brief: {clean}")
@@ -953,7 +1020,16 @@ def generate_daily_brief_task(
             or not _is_grounded_daily_brief(brief, full_context)
             or not _is_high_quality_briefing(brief)
         ):
-            log.warning(f"[tasks] Daily brief ({lang}) rejected; using local fallback.")
+            rejection_reasons = []
+            if not _has_valid_daily_brief_structure(brief, lang=lang):
+                rejection_reasons.append("structure")
+            if not _is_grounded_daily_brief(brief, full_context):
+                rejection_reasons.append("grounding")
+            if not _is_high_quality_briefing(brief):
+                rejection_reasons.append("quality")
+            log.warning(
+                f"[tasks] Daily brief ({lang}) rejected ({', '.join(rejection_reasons)}); using local fallback."
+            )
             brief = ""
             brief_provider = None
         final_brief = brief or generate_daily_brief_fallback(clusters, lang=lang)
