@@ -607,6 +607,18 @@ class TestSummarizeArticleTaskQuality:
 
 
 class TestDailyBriefTaskQuality:
+    @staticmethod
+    def _mock_briefing_db_execute(article_rows):
+        def side_effect(query, *args, **kwargs):
+            sql = str(query)
+            if "cluster_summaries" in sql:
+                return []
+            if "FROM articles" in sql:
+                return article_rows
+            return []
+
+        return side_effect
+
     def test_builds_cluster_level_context_for_daily_brief(self):
 
         cluster_articles = [
@@ -634,7 +646,7 @@ class TestDailyBriefTaskQuality:
 
         with (
             patch("tasks.delivery.briefing.db") as mock_db,
-            patch("utils.ranking.score_cluster_for_homepage", return_value=4.2),
+            patch("tasks.delivery.briefing.score_cluster_for_homepage", return_value=4.2),
         ):
             mock_db.execute.return_value = cluster_articles
             mock_db.execute_one.return_value = {
@@ -804,9 +816,9 @@ class TestDailyBriefTaskQuality:
 
         with (
             patch("tasks.delivery.briefing.db") as mock_db,
-            patch("utils.ranking.score_cluster_for_homepage", side_effect=fake_score),
+            patch("tasks.delivery.briefing.score_cluster_for_homepage", side_effect=fake_score),
         ):
-            mock_db.execute.return_value = rows
+            mock_db.execute.side_effect = self._mock_briefing_db_execute(rows)
             mock_db.execute_one.side_effect = [
                 {"summary": "", "perspectives": []},
                 {"summary": "Glaven razvoj so povece kontekst.", "perspectives": []},
@@ -866,9 +878,9 @@ class TestDailyBriefTaskQuality:
 
         with (
             patch("tasks.delivery.briefing.db") as mock_db,
-            patch("utils.ranking.score_cluster_for_homepage", return_value=4.0),
+            patch("tasks.delivery.briefing.score_cluster_for_homepage", return_value=4.0),
         ):
-            mock_db.execute.return_value = rows
+            mock_db.execute.side_effect = self._mock_briefing_db_execute(rows)
             mock_db.execute_one.side_effect = [
                 {"summary": "", "perspectives": []},
                 {"summary": "Glaven razvoj so povece kontekst.", "perspectives": []},
@@ -882,6 +894,91 @@ class TestDailyBriefTaskQuality:
 
         assert clusters[0]["cluster_id"] == "election"
         assert clusters[1]["cluster_id"] == "missiles"
+
+    def test_is_routine_sports_cluster_detects_match_results_but_not_national_team_scandal(self):
+        assert tasks.delivery.briefing._is_routine_sports_cluster(
+            "NY Knicks ja prekinaa 53-godishnata susha vo NBA",
+            "Bransonskiot uchink vo finalnata serija ja odredi titlata.",
+            category="Sport",
+        )
+        assert tasks.delivery.briefing._is_routine_sports_cluster(
+            "Brazil izbegna poraz protiv Maroko so gol vo 94. minuta",
+            "Svetskoto prvenstvo 2026 donese iznenaduvanje.",
+        )
+        assert not tasks.delivery.briefing._is_routine_sports_cluster(
+            "Federacija otvori istraga za korupcija vo fudbalskata reprezentacija",
+            "Obvinitelstvo bara dokumenti od savezot.",
+        )
+        assert not tasks.delivery.briefing._is_routine_sports_cluster(
+            "Vlada donese odluka za finansiranje na infrastruktura",
+            "Ministarot go predstavi zakonot vo Sobranie.",
+        )
+        assert not tasks.delivery.briefing._is_routine_sports_cluster(
+            "Vo Bugarija se otvoraat izbirackite mesta",
+            "Sleduvaat rezultati i reakcije.",
+            category="Politika",
+            topic="Politika",
+        )
+        assert tasks.delivery.briefing._is_routine_sports_cluster(
+            "Derbi rezultati od prvata liga",
+            "Utakmicite zavrsiha so tri pobedi doma.",
+            category="Sport",
+            topic="Sport",
+        )
+
+    def test_load_daily_brief_clusters_pushes_routine_sports_behind_public_interest_cluster(self):
+        rows = [
+            {
+                "cluster_id": "nba",
+                "title": "NY Knicks ja prekinaa 53-godishnata susha vo NBA finalnata serija",
+                "description": "Bransonskiot uchink ja odredi titlata.",
+                "summary": "",
+                "source": "Ekipa.mk",
+                "category": "Sport",
+                "topic": "Sport",
+                "created_at": "2026-04-19T09:00:00",
+            },
+            {
+                "cluster_id": "eu",
+                "title": "EU ne mozhe da vodi pristapni pregovori po princip na molchanie",
+                "description": "Siljanovska Davkova ja istakna temata za integracija.",
+                "summary": "",
+                "source": "MIA",
+                "category": "Politika",
+                "topic": "Politika",
+                "created_at": "2026-04-19T09:05:00",
+            },
+            {
+                "cluster_id": "eu",
+                "title": "Pretsedatelkata bara promena vo metodologijata na pregovorite",
+                "description": "Sleduvaat reakcii od Brisel.",
+                "summary": "",
+                "source": "360",
+                "category": "Politika",
+                "topic": "Politika",
+                "created_at": "2026-04-19T09:06:00",
+            },
+        ]
+
+        def fake_score(ranked):
+            if ranked[0]["cluster_id"] == "nba":
+                return 6.5
+            return 4.0
+
+        with (
+            patch("tasks.delivery.briefing.db") as mock_db,
+            patch("tasks.delivery.briefing.score_cluster_for_homepage", side_effect=fake_score),
+        ):
+            mock_db.execute.side_effect = self._mock_briefing_db_execute(rows)
+            mock_db.execute_one.side_effect = [
+                {"summary": "", "perspectives": []},
+                {"summary": "Glaven razvoj so povece kontekst.", "perspectives": []},
+            ]
+
+            clusters = tasks.delivery.briefing._load_daily_brief_clusters(limit=2, lang="mk")
+
+        assert clusters[0]["cluster_id"] == "eu"
+        assert all(cluster["cluster_id"] != "nba" or idx > 0 for idx, cluster in enumerate(clusters))
 
     def test_party_cluster_with_synthesis_but_no_public_interest_does_not_lead(self):
 
@@ -925,9 +1022,9 @@ class TestDailyBriefTaskQuality:
 
         with (
             patch("tasks.delivery.briefing.db") as mock_db,
-            patch("utils.ranking.score_cluster_for_homepage", side_effect=fake_score),
+            patch("tasks.delivery.briefing.score_cluster_for_homepage", side_effect=fake_score),
         ):
-            mock_db.execute.return_value = rows
+            mock_db.execute.side_effect = self._mock_briefing_db_execute(rows)
             mock_db.execute_one.side_effect = [
                 {
                     "summary": "Vnatrepartiska reakcija bez jasen siri efekt.",

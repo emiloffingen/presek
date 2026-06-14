@@ -74,6 +74,9 @@ _BRIEFING_LOW_SIGNAL_TITLE_MARKERS = (
 _BRIEFING_PUBLIC_INTEREST_MARKERS = (
     "izbor",
     "izbori",
+    "izbirack",
+    "glasanj",
+    "parlamentarn",
     "sud",
     "pravosud",
     "zemjotres",
@@ -117,6 +120,81 @@ _BRIEFING_SEVERE_WEATHER_MARKERS = (
     "zolt alarm",
 )
 
+_BRIEFING_SPORTS_MARKERS = (
+    "nba",
+    "nfl",
+    "mlb",
+    "nhl",
+    "mvp",
+    "kosarka",
+    "košarka",
+    "кошarka",
+    "fudbal",
+    "фудбал",
+    "football",
+    " gol",
+    " golot",
+    " gol ",
+    " gol/",
+    "utakmica",
+    "utakmici",
+    "natprevar",
+    "натпревар",
+    "finale",
+    "finalna serija",
+    "finalnata serija",
+    "playoff",
+    "play-off",
+    "premier league",
+    "liga na sampioni",
+    "liga na shampioni",
+    "svetsko prvenstvo",
+    "svetskoto prvenstvo",
+    "mundial",
+    "mundijal",
+    "euro 202",
+    "world cup",
+    "sportmediа",
+    "sport media",
+    "sportklub",
+    "transfer",
+    "pobeda so",
+    "poraz od",
+    "rezultat",
+    "rezultati",
+    "pogodok",
+    "asistencija",
+    "titula",
+    "sampion",
+    "shampion",
+    "шampion",
+)
+
+_BRIEFING_AMBIGUOUS_SPORTS_MARKERS = (
+    "rezultat",
+    "rezultati",
+)
+
+_BRIEFING_UNAMBIGUOUS_SPORTS_MARKERS = tuple(
+    marker for marker in _BRIEFING_SPORTS_MARKERS if marker not in _BRIEFING_AMBIGUOUS_SPORTS_MARKERS
+)
+
+_BRIEFING_MAJOR_SPORTS_MARKERS = (
+    "reprezentacija",
+    "reprezentativ",
+    "reprezentativci",
+    "skandal",
+    "istraga",
+    "huligan",
+    "nasil",
+    "diskvalifik",
+    "doping",
+    "federacija",
+    "obvinitel",
+    "korupc",
+    "korupci",
+)
+
 
 def _is_party_press_release_title(title: str) -> bool:
     clean = str(title or "").strip().casefold()
@@ -125,7 +203,14 @@ def _is_party_press_release_title(title: str) -> bool:
 
 def _has_public_interest_signal(title: str, description: str = "", cluster_summary: str = "") -> bool:
     haystack = " ".join([str(title or ""), str(description or ""), str(cluster_summary or "")]).casefold()
-    return any(marker in haystack for marker in _BRIEFING_PUBLIC_INTEREST_MARKERS)
+    for marker in _BRIEFING_PUBLIC_INTEREST_MARKERS:
+        if len(marker) < 4:
+            if re.search(rf"(?<![a-z\u0400-\u04ff]){re.escape(marker)}(?![a-z\u0400-\u04ff])", haystack):
+                return True
+            continue
+        if marker in haystack:
+            return True
+    return False
 
 
 def _is_low_signal_briefing_cluster(title: str, description: str = "", cluster_summary: str = "") -> bool:
@@ -138,6 +223,49 @@ def _is_routine_weather_cluster(title: str, description: str = "", cluster_summa
     if not any(marker in haystack for marker in _BRIEFING_WEATHER_MARKERS):
         return False
     return not any(marker in haystack for marker in _BRIEFING_SEVERE_WEATHER_MARKERS)
+
+
+def _has_routine_sports_marker(haystack: str, category: str = "", topic: str = "") -> bool:
+    unambiguous_hits = any(marker in haystack for marker in _BRIEFING_UNAMBIGUOUS_SPORTS_MARKERS)
+    if unambiguous_hits:
+        return True
+    ambiguous_hits = any(marker in haystack for marker in _BRIEFING_AMBIGUOUS_SPORTS_MARKERS)
+    if not ambiguous_hits:
+        return False
+    normalized_category = str(category or "").casefold()
+    normalized_topic = str(topic or "").casefold()
+    return normalized_category in {"sport", "sports", "sportovi"} or normalized_topic in {
+        "sport",
+        "sports",
+        "sportovi",
+    }
+
+
+def _is_routine_sports_cluster(
+    title: str,
+    description: str = "",
+    cluster_summary: str = "",
+    category: str = "",
+    topic: str = "",
+) -> bool:
+    haystack = " ".join(
+        [
+            str(title or ""),
+            str(description or ""),
+            str(cluster_summary or ""),
+            str(category or ""),
+            str(topic or ""),
+        ]
+    ).casefold()
+    if _has_public_interest_signal(title, description, cluster_summary):
+        return False
+    if any(marker in haystack for marker in _BRIEFING_MAJOR_SPORTS_MARKERS):
+        return False
+    if str(category or "").casefold() in {"sport", "sports", "sportovi"}:
+        return True
+    if str(topic or "").casefold() in {"sport", "sports", "sportovi"}:
+        return True
+    return _has_routine_sports_marker(haystack, category=category, topic=topic)
 
 
 def _allow_partisan_briefing_cluster(
@@ -262,7 +390,15 @@ def _load_daily_brief_clusters(limit=5, lang="sr", briefing_date=None):
 
         is_low_signal = _is_low_signal_briefing_cluster(lead.get("title"), description, cluster_summary)
         is_routine_weather = _is_routine_weather_cluster(lead.get("title"), description, cluster_summary)
+        is_routine_sports = _is_routine_sports_cluster(
+            lead.get("title"),
+            description,
+            cluster_summary,
+            lead.get("category"),
+            lead.get("topic"),
+        )
         has_public_interest = _has_public_interest_signal(lead.get("title"), description, cluster_summary)
+        has_editorial_depth = bool(difference_point or open_point or cluster_summary)
 
         # Briefing-Specific Score: Higher weight on source diversity (Breadth)
         # and penalty for single-source items
@@ -274,6 +410,17 @@ def _load_daily_brief_clusters(limit=5, lang="sr", briefing_date=None):
             briefing_score += 1.2
         if has_public_interest:
             briefing_score += 1.5
+        briefing_score -= _briefing_title_penalty(
+            lead.get("title"),
+            source_count=source_count,
+            has_editorial_depth=has_editorial_depth,
+        )
+        if is_low_signal:
+            briefing_score -= 2.5
+        if is_routine_weather:
+            briefing_score -= 3.0
+        if is_routine_sports:
+            briefing_score -= 4.5
 
         ranked_clusters.append(
             {
@@ -292,6 +439,7 @@ def _load_daily_brief_clusters(limit=5, lang="sr", briefing_date=None):
                 "entities": entities,
                 "score": max(0.0, briefing_score),
                 "is_routine_weather": is_routine_weather,
+                "is_routine_sports": is_routine_sports,
                 "is_low_signal": is_low_signal,
                 "has_public_interest": has_public_interest,
             }
@@ -302,12 +450,26 @@ def _load_daily_brief_clusters(limit=5, lang="sr", briefing_date=None):
     # Selection with Entity-Based Diversity Enforcement
     selected = []
     seen_entities = set()
+    sports_selected = 0
+    substantive_candidates = [
+        cluster
+        for cluster in ranked_clusters
+        if not cluster["is_routine_weather"] and not cluster["is_routine_sports"] and not cluster["is_low_signal"]
+    ]
+    max_routine_sports = 1 if limit >= 4 else 0
 
     for cluster in ranked_clusters:
         if len(selected) >= limit:
             break
-        if cluster["is_routine_weather"] and len(selected) > 0:
-            continue  # No weather in top unless empty
+        if cluster["is_routine_weather"] and substantive_candidates:
+            continue
+        if cluster["is_routine_sports"] and substantive_candidates:
+            if len(selected) == 0:
+                continue
+            if sports_selected >= max_routine_sports:
+                continue
+        if cluster["is_low_signal"] and substantive_candidates and len(selected) == 0:
+            continue
 
         # Stronger Diversity Gate: If cluster shares too many entities with already selected top stories, skip it
         if len(selected) < 3:
@@ -316,6 +478,8 @@ def _load_daily_brief_clusters(limit=5, lang="sr", briefing_date=None):
                 continue
 
         selected.append(cluster)
+        if cluster["is_routine_sports"]:
+            sports_selected += 1
         seen_entities.update(cluster["entities"])
 
     return selected

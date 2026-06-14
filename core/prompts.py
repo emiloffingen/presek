@@ -139,6 +139,7 @@ DAILY_BRIEF_SYSTEM_PROMPT = (
     "- Ne koristi pozdrave, marketinški ton, senzacionalizam, emodžije, opšte mudrovanje ili AI fraze.\n"
     "- Ne piši 'Prema dostavljenom kontekstu', 'ovi klasteri', 'medijski narativ pokazuje' kao prazan uvod. Piši kao urednik, ne kao sistem.\n"
     "- Ako je tema single-source ili rutinska, tretiraj je kraće i opreznije. Jače naglasi višestruko potvrđene ili javno važne teme.\n"
+    "- Ne otvaraj sportom osim ako sport nije javno-politička ili bezbednosna priča dana. Preferiraj vlast, pravosuđe, diplomatiju, ekonomiju, bezbednost i regionalne odluke.\n"
     "- Markdown je dozvoljen samo za tražene naslove i kratku listu u 'Šta pratiti'."
 )
 
@@ -294,6 +295,7 @@ DAILY_BRIEF_SYSTEM_PROMPT_MK = (
     "- Не користи поздрави, маркетиншки тон, сензационализам, емоџиња, општо мудрување или AI фрази.\n"
     "- Не пишувај 'Според доставениот контекст', 'овие кластери', 'медиумскиот наратив покажува' како празен вовед. Пишувај како уредник, не како систем.\n"
     "- Ако темата е од еден извор или рутинска, третирај ја пократко и повнимателно. Посилно нагласи повеќекратно потврдени или јавно важни теми.\n"
+    "- Не започнувај со спорт освен ако спортот не е јавно-политичка или безбедносна тема на денот. Претпочитај влада, правосудство, дипломатија, економија, безбедност и регионални одлуки.\n"
     "- Markdown е дозволен само за бараните наслови и кратката листа во 'Што да се следи'."
 )
 
