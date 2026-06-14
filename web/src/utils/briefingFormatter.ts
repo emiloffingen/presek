@@ -8,6 +8,32 @@ function stripDecorativePrefix(text: string): string {
         .trim();
 }
 
+export type BriefingSection = {
+    id: string;
+    title: string;
+    index: number;
+};
+
+export function extractBriefingSections(markdown: string): BriefingSection[] {
+    if (!markdown) return [];
+
+    const sections: BriefingSection[] = [];
+    let sectionIndex = 0;
+
+    markdown.replace(/^##\s+(.+)$/gm, (_match, rawTitle) => {
+        sectionIndex += 1;
+        const title = stripDecorativePrefix(rawTitle);
+        sections.push({
+            id: `section-${String(sectionIndex).padStart(2, '0')}`,
+            title,
+            index: sectionIndex,
+        });
+        return '';
+    });
+
+    return sections;
+}
+
 /**
  * A specialized formatter for the Daily Briefing markdown content.
  * Converts markdown-like structures into styled HTML for the Briefing layout.
@@ -25,8 +51,9 @@ export function formatBriefing(markdown: string, lang = 'sr', hostname?: string 
     html = html.replace(/^##\s+(.+)$/gm, (_match, rawTitle) => {
         sectionIndex += 1;
         const title = stripDecorativePrefix(rawTitle);
+        const sectionId = `section-${String(sectionIndex).padStart(2, '0')}`;
         const sectionLabel = isMK ? 'Секција' : 'Sekcija';
-        return `<h2 class="briefing-section-title"><span class="briefing-section-index">${String(sectionIndex).padStart(2, '0')}</span><span>${title}</span><small>${sectionLabel}</small></h2>`;
+        return `<h2 id="${sectionId}" class="briefing-section-title"><span class="briefing-section-index">${String(sectionIndex).padStart(2, '0')}</span><span>${title}</span><small>${sectionLabel}</small></h2>`;
     });
     html = html.replace(/^###\s+(\d+\.\s+)?(.+?)(\s+\[\[(.+?)\]\])?$/gm, (match, num, title, idGroup, id) => {
         const idBadge = id ? `<a href="${l('/cluster/')}${id}" class="briefing-inline-badge">${isMK ? 'Кластер' : 'Klaster'}</a>` : '';

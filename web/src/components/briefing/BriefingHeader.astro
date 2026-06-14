@@ -1,18 +1,14 @@
 ---
-import { Timer, Activity } from 'lucide-react';
 import { useTranslations } from '../../i18n/utils';
 
 interface Props {
 	currentDate: string;
 	dispatchIcon: any;
-	stats: any;
-	readingTime?: number;
     lang?: string;
-    metadata?: any;
     date?: string;
 }
 
-const { currentDate, dispatchIcon: DispatchIcon, stats, readingTime = 5, lang = 'sr', metadata, date } = Astro.props;
+const { currentDate, lang = 'sr' } = Astro.props;
 const t = useTranslations(lang as any);
 const isMK = lang === 'mk';
 ---
@@ -37,37 +33,6 @@ const isMK = lang === 'mk';
 		</div>
 
 	</div>
-
-	<div class="briefing-premium-deck">
-		<div class="briefing-deck-item">
-            <span class="briefing-deck-label text-muted-foreground mb-3">{isMK ? 'Редакции' : 'Redakcije'}</span>
-            <div class="flex items-baseline gap-[var(--grid-gap)]">
-                <span class="text-3xl font-black tabular-nums">{stats?.total_feeds || 0}</span>
-                <span class="w-1.5 h-1.5 rounded-full bg-nyt-accent"></span>
-            </div>
-        </div>
-		<div class="briefing-deck-item">
-            <span class="briefing-deck-label text-muted-foreground mb-3">{isMK ? 'Извештаи' : 'Izveštaji'}</span>
-            <div class="flex items-baseline gap-[var(--grid-gap)]">
-                <span class="text-3xl font-black tabular-nums">{stats?.last_24h || 0}</span>
-                <span class="text-[10px] font-bold text-muted-foreground">/ 24h</span>
-            </div>
-        </div>
-		<div class="briefing-deck-item accent-pluralism">
-            <span class="briefing-deck-label text-emerald-600 mb-3">{isMK ? 'Плурализам' : 'Pluralizam'}</span>
-            <div class="flex items-baseline gap-[var(--grid-gap)]">
-                <span class="text-3xl font-black tabular-nums text-emerald-600">{metadata?.stats?.pluralism_score || stats?.intelligence?.pluralism?.pluralism_pct || 0}%</span>
-                <Activity size={14} className="text-emerald-500" />
-            </div>
-        </div>
-        <div class="briefing-deck-item accent-intl">
-            <span class="briefing-deck-label text-nyt-accent mb-3">{isMK ? 'Интерн. удел' : 'Intern. udeo'}</span>
-            <div class="flex items-baseline gap-[var(--grid-gap)]">
-                <span class="text-3xl font-black tabular-nums text-nyt-accent">{metadata?.stats?.intl_share || stats?.intelligence?.international_share_pct || 0}%</span>
-                <Timer size={14} className="text-nyt-accent" />
-            </div>
-        </div>
-	</div>
 </header>
 
 <style>
@@ -88,10 +53,8 @@ const isMK = lang === 'mk';
     }
 
     @media (max-width: 639.98px) {
-        .briefing-masthead { margin-bottom: 1.75rem; }
-        .masthead-main {
-            margin-bottom: 1.75rem;
-        }
+        .briefing-masthead { margin-bottom: 1.5rem; }
+    .masthead-main { margin-bottom: 0.75rem; }
         .masthead-branding {
             margin-bottom: 1.25rem;
         }

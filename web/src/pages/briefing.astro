@@ -15,8 +15,11 @@ import AudioPlayer from '../components/audio/AudioPlayer.astro';
 import '../styles/briefing-premium.css';
 
 import { apiBaseUrl } from '../lib/apiBase';
-import { formatBriefing } from '../utils/briefingFormatter';
-import { Newspaper, Timer, ChevronRight } from 'lucide-react';
+import BriefingStatsStrip from '../components/briefing/BriefingStatsStrip.astro';
+import BriefingSectionsToc from '../components/briefing/BriefingSectionsToc.astro';
+import BriefingSectionsRail from '../components/briefing/BriefingSectionsRail';
+import { formatBriefing, extractBriefingSections } from '../utils/briefingFormatter';
+import { Newspaper, ChevronRight } from 'lucide-react';
 import { getLangFromUrl } from '../i18n/utils';
 import { dateLocaleForLang, localePath, homePath } from '../lib/localePaths';
 
@@ -56,6 +59,7 @@ try {
 }
 
 const formattedBriefing = briefingData?.content ? formatBriefing(briefingData.content, lang, hostHeader) : "";
+const briefingSections = briefingData?.content ? extractBriefingSections(briefingData.content) : [];
 
 const displayDate = briefingData?.date
     ? new Date(briefingData.date).toLocaleDateString(dateLocaleForLang(lang), {
@@ -87,24 +91,19 @@ const displayDate = briefingData?.date
                             currentDate={briefingData.date}
                         />
 
-                        <div class="mb-8 flex flex-col gap-6">
+                        <div class="briefing-hero-stack mb-8 flex flex-col gap-6">
                             <BriefingHeader
                                 currentDate={displayDate}
                                 dispatchIcon={Newspaper}
                                 lang={lang}
                                 date={briefingData.date}
-                                stats={{
-                                    total_feeds: briefingData.day_stats?.total_sources || stats?.total_feeds || 0,
-                                    last_24h: briefingData.day_stats?.total_articles || stats?.last_24h || 0,
-                                    intelligence: stats?.intelligence
-                                }}
-                                metadata={briefingData.metadata}
                             />
                             <AudioPlayer 
                                 type="briefing"
                                 briefingDate={briefingData.date}
                                 lang={lang}
                                 title={isMK ? 'Аудио брифинг' : 'Audio brifing'}
+                                compact
                             />
                         </div>
 
@@ -118,20 +117,43 @@ const displayDate = briefingData?.date
                             />
                         )}
 
+                        <BriefingStatsStrip
+                            stats={{
+                                total_feeds: briefingData.day_stats?.total_sources || stats?.total_feeds || 0,
+                                last_24h: briefingData.day_stats?.total_articles || stats?.last_24h || 0,
+                                intelligence: stats?.intelligence
+                            }}
+                            metadata={briefingData.metadata}
+                            lang={lang}
+                        />
+
+                        {briefingSections.length > 0 && (
+                            <BriefingSectionsToc sections={briefingSections} lang={lang} />
+                        )}
+
                         <div class="briefing-full-section">
                         {briefingData.metadata?.key_narratives && (
                             <NarrativeList narratives={briefingData.metadata.key_narratives} lang={lang} client:load />
                         )}
 
-                        <div class="briefing-divider"></div>
+                        <div class="briefing-editorial-layout">
+                            {briefingSections.length > 0 && (
+                                <BriefingSectionsRail sections={briefingSections} lang={lang} client:visible />
+                            )}
 
-                        <div class="briefing-editorial-wrapper max-w-[800px] mx-auto">
-                            <BriefingContent formattedBriefing={formattedBriefing} lang={lang} />
+                            <div class="briefing-editorial-main">
+                                <div id="briefing-article-start" class="briefing-article-sentinel" aria-hidden="true"></div>
+                                <div class="briefing-divider"></div>
+
+                                <div class="briefing-editorial-wrapper max-w-[800px] mx-auto">
+                                    <BriefingContent formattedBriefing={formattedBriefing} lang={lang} />
+                                </div>
+
+                                <section class="briefing-email-cta mt-16 pt-10 border-t border-border/60 max-w-[800px] mx-auto">
+                                    <MorningEmailSignup lang={lang} variant="editorial" client:visible />
+                                </section>
+                            </div>
                         </div>
-
-                        <section class="briefing-email-cta mt-16 pt-10 border-t border-border/60 max-w-[800px] mx-auto">
-                            <MorningEmailSignup lang={lang} variant="compact" client:visible />
-                        </section>
                         </div>
 
 

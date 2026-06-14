@@ -4,7 +4,7 @@ import { useTranslations } from '../i18n/utils';
 import type { ui } from '../i18n/ui';
 import { Mail, CheckCircle2, Loader2 } from 'lucide-react';
 
-type Variant = 'default' | 'compact' | 'settings';
+type Variant = 'default' | 'compact' | 'settings' | 'editorial';
 
 function getCookie(name: string): string | undefined {
   if (typeof document === 'undefined') return undefined;
@@ -58,8 +58,13 @@ export default function MorningEmailSignup({
   };
 
   if (status === 'success') {
+    const successClass =
+      variant === 'editorial'
+        ? 'morning-email-signup morning-email-signup--editorial is-success'
+        : `morning-email-signup morning-email-signup--${variant} is-success`;
+
     return (
-      <section className={`morning-email-signup morning-email-signup--${variant} is-success`}>
+      <section className={successClass}>
         <div className="morning-email-signup__success">
           <CheckCircle2 className="text-nyt-accent mb-3" size={24} />
           <h3 className="font-serif font-black text-lg mb-2 tracking-tight">{t('newsletter.success')}</h3>
@@ -67,6 +72,40 @@ export default function MorningEmailSignup({
             {t('newsletter.success_description')}
           </p>
         </div>
+      </section>
+    );
+  }
+
+  if (variant === 'editorial') {
+    return (
+      <section className="morning-email-signup morning-email-signup--editorial">
+        <header className="morning-email-signup__editorial-head">
+          <p className="morning-email-signup__editorial-kicker">{t('newsletter.title')}</p>
+          <h3 className="morning-email-signup__editorial-title">{t('newsletter.description')}</h3>
+          <p className="morning-email-signup__editorial-lede">{t('newsletter.subdescription')}</p>
+        </header>
+
+        <form onSubmit={handleSubmit} className="morning-email-signup__editorial-form">
+          <label className="morning-email-signup__editorial-field">
+            <span className="sr-only">{t('newsletter.placeholder')}</span>
+            <input
+              type="email"
+              required
+              placeholder={t('newsletter.placeholder')}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </label>
+          <button type="submit" disabled={status === 'loading'} className="morning-email-signup__editorial-submit">
+            {status === 'loading' ? <Loader2 size={14} className="animate-spin" /> : t('newsletter.button')}
+          </button>
+        </form>
+
+        {status === 'error' && (
+          <p className="morning-email-signup__editorial-error">{message}</p>
+        )}
+
+        <p className="morning-email-signup__editorial-note">{t('newsletter.disclaimer')}</p>
       </section>
     );
   }

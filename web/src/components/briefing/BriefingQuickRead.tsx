@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Clock3, BookOpen, Sparkles } from 'lucide-react';
+import { Clock3, Sparkles } from 'lucide-react';
 
 type Narrative = {
   text: string;
@@ -115,22 +115,27 @@ export default function BriefingQuickRead({
         </div>
       </section>
 
-      <div className="briefing-mode-bar">
+      <div className="briefing-edition-switch" role="tablist" aria-label={isMK ? 'Режим на читање' : 'Režim čitanja'}>
         <button
           type="button"
-          className={`briefing-mode-btn ${mode === 'quick' ? 'is-active' : ''}`}
+          role="tab"
+          aria-selected={mode === 'quick'}
+          className={`briefing-edition-link ${mode === 'quick' ? 'is-active' : ''}`}
           onClick={() => setMode('quick')}
         >
-          <Clock3 size={14} />
-          <span>{quickLabel}</span>
+          <span className="briefing-edition-link__label">{quickLabel}</span>
+          <span className="briefing-edition-link__hint">{isMK ? 'Брз преглед' : 'Brzi pregled'}</span>
         </button>
+        <span className="briefing-edition-sep" aria-hidden="true">·</span>
         <button
           type="button"
-          className={`briefing-mode-btn ${mode === 'full' ? 'is-active' : ''}`}
+          role="tab"
+          aria-selected={mode === 'full'}
+          className={`briefing-edition-link ${mode === 'full' ? 'is-active' : ''}`}
           onClick={() => setMode('full')}
         >
-          <BookOpen size={14} />
-          <span>{fullLabel}</span>
+          <span className="briefing-edition-link__label">{fullLabel}</span>
+          <span className="briefing-edition-link__hint">{isMK ? 'Целосно издание' : 'Celosno izdanje'}</span>
         </button>
       </div>
     </>

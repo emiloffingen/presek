@@ -31,7 +31,7 @@ export default function NarrativeList({ narratives, lang = 'sr' }: Props) {
     };
 
     return (
-        <section className="narrative-highlights mb-20 animate-rise">
+        <section className="narrative-highlights animate-rise">
             <div className="flex items-center gap-[var(--grid-gap)] mb-8">
                 <Target size={20} className="text-nyt-accent" />
                 <h2 className="font-bold text-lg uppercase tracking-tighter">
@@ -42,7 +42,7 @@ export default function NarrativeList({ narratives, lang = 'sr' }: Props) {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-[var(--grid-gap)]">
                 {narratives.map((nar, i) => (
-                    <div key={i} className="p-6 border border-border bg-card rounded-xl shadow-sm hover:shadow-md transition-all flex flex-col group h-full">
+                    <div key={i} className="p-5 border-t border-b border-border bg-transparent flex flex-col group h-full">
                         <div className="flex items-center justify-between mb-4">
                             <span className={`text-[8px] font-black px-2 py-0.5 rounded border ${getSentimentColor(nar.sentiment)}`}>
                                 {getSentimentLabel(nar.sentiment)}
@@ -52,7 +52,7 @@ export default function NarrativeList({ narratives, lang = 'sr' }: Props) {
                         <p className="font-serif italic text-lg leading-snug flex-1">
                             "{nar.text}"
                         </p>
-                        <div className="mt-6 pt-4 border-t border-border/40 flex items-center gap-[var(--grid-gap)] text-[9px] font-black uppercase text-muted-foreground opacity-40">
+                        <div className="mt-4 pt-3 border-t border-border/40 flex items-center gap-[var(--grid-gap)] text-[9px] font-black uppercase text-muted-foreground opacity-40 narrative-card-footer">
                             <ShieldCheck size={10} />
                             {isMK ? 'СИСТЕМСКА ВЕРИФИКАЦИЈА' : 'SISTEMSKA VERIFIKACIJA'}
                         </div>
