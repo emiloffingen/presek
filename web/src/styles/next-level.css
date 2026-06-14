@@ -638,6 +638,30 @@ body.has-consent-banner .ui-concept-onboarding {
   z-index: 260;
 }
 
+@media (max-width: 768px) {
+  /* SSR-only nav-rail instance uses desktop media query and never hydrates on mobile. */
+  .discovery-nav-v2 .nav-rail-overflow {
+    display: none;
+  }
+
+  .topbar-mobile-overflow {
+    position: relative;
+    overflow: visible;
+  }
+
+  .topbar-mobile-overflow .nav-rail-overflow {
+    margin-left: 0;
+    padding: 0;
+    border-left: none;
+  }
+
+  .topbar-mobile-overflow .nav-overflow-panel {
+    left: 0;
+    right: auto;
+    max-width: min(16rem, calc(100vw - 1.5rem));
+  }
+}
+
 .nav-overflow-link {
   display: block;
   width: 100%;
