@@ -117,6 +117,34 @@
     line-height: 1.1;
 }
 
+.home-start-here-signal {
+    flex: 0 0 auto;
+    align-self: flex-start;
+    padding: 0.24rem 0.45rem;
+    border: 1px solid color-mix(in srgb, var(--editorial-positive) 30%, var(--border));
+    background: color-mix(in srgb, var(--editorial-positive) 7%, var(--background));
+    font-family: var(--font-ui);
+    font-size: var(--text-ui-min);
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    line-height: 1;
+    text-transform: uppercase;
+    color: var(--editorial-positive);
+    white-space: nowrap;
+}
+
+.home-start-here-signal[data-strength="growing"] {
+    color: color-mix(in srgb, var(--editorial-watch) 82%, var(--foreground));
+    border-color: color-mix(in srgb, var(--editorial-watch) 32%, var(--border));
+    background: color-mix(in srgb, var(--editorial-watch) 7%, var(--background));
+}
+
+.home-start-here-signal[data-strength="strong"] {
+    color: var(--editorial-positive);
+    border-color: color-mix(in srgb, var(--editorial-positive) 42%, var(--border));
+    background: color-mix(in srgb, var(--editorial-positive) 10%, var(--background));
+}
+
 .home-start-here-deck {
     margin: 0.34rem 0 0;
     max-width: 50rem;
@@ -161,6 +189,90 @@
     font-size: 0.74rem;
     font-weight: 750;
     color: var(--foreground);
+}
+
+.home-start-here.is-personalized {
+    border-color: color-mix(in srgb, var(--editorial-positive) 24%, var(--border));
+    border-left-color: var(--editorial-positive);
+    background: color-mix(in srgb, var(--editorial-positive) 4%, var(--background));
+}
+
+.home-start-here.is-personalized .home-start-here-kicker,
+.home-start-here.is-personalized .home-start-here-value span {
+    color: var(--editorial-positive);
+}
+
+.home-start-here.is-personalized .home-start-here-value-grid {
+    border-color: color-mix(in srgb, var(--editorial-positive) 20%, var(--border));
+    background: color-mix(in srgb, var(--editorial-positive) 14%, var(--border));
+}
+
+.home-start-here.is-personalized .home-start-here-value {
+    background: color-mix(in srgb, var(--background) 94%, var(--editorial-positive) 6%);
+}
+
+.home-start-here.is-personalized .home-start-here-value strong {
+    font-family: var(--font-serif-display);
+    font-size: clamp(1.15rem, 1rem + 0.5vw, 1.55rem);
+    font-weight: 900;
+}
+
+.home-start-here-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin: 0 0 0.55rem;
+}
+
+.home-start-here-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-height: 2rem;
+    padding: 0.42rem 0.64rem;
+    border: 1px solid color-mix(in srgb, var(--foreground) 12%, var(--border));
+    font-family: var(--font-ui);
+    font-size: var(--text-ui-kicker);
+    font-weight: 850;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.home-start-here-action:hover {
+    transform: translateY(-1px);
+}
+
+.home-start-here-action-primary {
+    color: var(--primary-foreground);
+    border-color: var(--nyt-accent);
+    background: var(--nyt-accent);
+}
+
+.home-start-here-action-secondary {
+    color: var(--foreground);
+    background: color-mix(in srgb, var(--background) 94%, var(--foreground) 6%);
+}
+
+.home-start-here.is-personalized .home-start-here-action-primary {
+    border-color: var(--editorial-positive);
+    background: var(--editorial-positive);
+}
+
+.home-start-here.is-personalized .home-start-here-action-secondary:hover {
+    color: var(--editorial-positive);
+    border-color: color-mix(in srgb, var(--editorial-positive) 35%, var(--border));
+}
+
+.home-start-here.is-personalized .home-start-here-steps {
+    display: none;
+}
+
+.home-start-here.is-personalized .home-start-here-actions {
+    margin-bottom: 0;
 }
 
 .home-start-here-dismiss {
@@ -236,6 +348,10 @@
 @media (max-width: 639px) {
     .home-start-here-value-grid {
         grid-template-columns: 1fr;
+    }
+
+    .home-start-here-head {
+        flex-direction: column;
     }
 }
 
