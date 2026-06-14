@@ -248,7 +248,7 @@ function getTimeStr(dateStr: string) {
                     <img
                         src={mediaSrc}
                         srcset={`${mediaSrc.replace('w=720', 'w=360')} 360w, ${mediaSrc} 720w, ${mediaSrc.replace('w=720', 'w=1200')} 1200w`}
-                        sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                        sizes="(max-width: 640px) 7.25rem, (max-width: 1280px) 50vw, 33vw"
                         alt={displayTitle}
                         width="700"
                         height="500"
@@ -273,14 +273,14 @@ function getTimeStr(dateStr: string) {
 	.nyt-article {
 		min-width: 0;
 		max-width: 100%;
-        padding: clamp(0.85rem, 1.5vw, 1.05rem) 0;
+        padding: clamp(0.72rem, 1.25vw, 0.95rem) 0;
         display: flex;
         flex-direction: column;
         height: 100%;
         border-radius: 0;
         background: transparent;
         border: 0;
-        border-top: 1px solid color-mix(in srgb, var(--foreground) 18%, var(--border));
+        border-top: 1px solid color-mix(in srgb, var(--foreground) 12%, var(--border));
         box-shadow: none;
         transition: transform 0.28s var(--ease-editorial), border-color 0.28s var(--ease-editorial), box-shadow 0.28s var(--ease-editorial), background-color 0.28s var(--ease-editorial);
 	}
@@ -351,7 +351,7 @@ function getTimeStr(dateStr: string) {
         display: flex;
         align-items: flex-start;
         gap: 0.5rem;
-        margin-bottom: 0.42rem;
+        margin-bottom: 0.34rem;
         min-height: 1.35rem;
     }
 
@@ -446,15 +446,15 @@ function getTimeStr(dateStr: string) {
 
     .summary {
         font-family: var(--font-nyt-body);
-        font-size: 0.94rem;
-        line-height: 1.52;
-        color: color-mix(in srgb, var(--foreground) 72%, var(--secondary-foreground));
+        font-size: 0.91rem;
+        line-height: 1.48;
+        color: color-mix(in srgb, var(--foreground) 78%, var(--secondary-foreground));
         margin-top: 0.3rem;
         display: -webkit-box;
         -webkit-line-clamp: 3;
         -webkit-box-orient: vertical;
         overflow: hidden;
-        min-height: 3.72rem;
+        min-height: 3.45rem;
     }
 
     .sub-headlines {
@@ -509,7 +509,7 @@ function getTimeStr(dateStr: string) {
         aspect-ratio: 3 / 2;
         border-radius: 0 !important;
         overflow: hidden;
-        border: 1px solid color-mix(in srgb, var(--foreground) 12%, var(--border));
+        border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
         background:
             linear-gradient(135deg, color-mix(in srgb, var(--surface-soft) 86%, var(--background)), color-mix(in srgb, var(--secondary) 72%, var(--background))),
             var(--secondary);
@@ -674,8 +674,8 @@ function getTimeStr(dateStr: string) {
 
 	@media (max-width: 640px) {
         .nyt-article.feed-card-stub {
-        opacity: 0.72;
-    }
+            opacity: 0.78;
+        }
 
     .nyt-article.feed-card-stub .summary {
         -webkit-line-clamp: 2;
@@ -689,19 +689,37 @@ function getTimeStr(dateStr: string) {
         line-height: 1.2;
     }
 
-    .nyt-article {
-            padding: 0.62rem 0;
+        .nyt-article {
+            padding: 0.7rem 0;
             border-radius: 0;
         }
 
         .nyt-article:not(.lead-story),
         .nyt-article:not(.lead-story).has-image,
         .nyt-article:not(.lead-story):not(.has-image) {
-            display: block;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 0.45rem;
+            align-items: start;
         }
 
-        .nyt-article:not(.lead-story) .image-wrap {
-            display: none;
+        .nyt-article:not(.lead-story).has-useful-image {
+            grid-template-columns: minmax(0, 1fr) clamp(5.6rem, 28vw, 7.25rem);
+            column-gap: 0.72rem;
+        }
+
+        .nyt-article:not(.lead-story).has-useful-image .article-body {
+            grid-column: 1;
+            grid-row: 1;
+        }
+
+        .nyt-article:not(.lead-story).has-useful-image .image-wrap {
+            grid-column: 2;
+            grid-row: 1;
+            display: block;
+            aspect-ratio: 1 / 0.78;
+            align-self: start;
+            margin-top: 0.08rem;
         }
 
         .nyt-article:not(.lead-story) .article-image {
@@ -726,6 +744,7 @@ function getTimeStr(dateStr: string) {
 
 		.article-meta-v2 {
 			min-height: 0;
+            margin-bottom: 0.24rem;
 		}
 
 		.nyt-article.variant-compact,
@@ -746,8 +765,8 @@ function getTimeStr(dateStr: string) {
 
 		.nyt-article.variant-compact .headline-compact,
 		.nyt-article.variant-wire .headline-compact {
-			font-size: 1.04rem;
-			line-height: 1.18;
+			font-size: 1rem;
+			line-height: 1.16;
 			letter-spacing: -0.015em;
 			padding-bottom: 0.08em;
 		}
@@ -854,8 +873,8 @@ function getTimeStr(dateStr: string) {
 		}
 
 		.article-image {
-			aspect-ratio: 16 / 10;
-			max-height: 14rem;
+			aspect-ratio: 1 / 0.78;
+			max-height: none;
 			object-fit: cover;
 		}
 

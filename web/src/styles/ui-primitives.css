@@ -824,9 +824,9 @@
 /* Luxury Whitespace & Grid Spacing */
 
 .section-divider {
-  border-top: 1px solid var(--border);
-  margin: var(--grid-gap) 0;
-  opacity: 0.5;
+  border-top: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
+  margin: calc(var(--grid-gap) * 0.72) 0;
+  opacity: 0.72;
 }
 
 /* Organic Pulse Animation (Multi-ring) */
