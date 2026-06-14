@@ -497,6 +497,39 @@
     gap: 1rem;
 }
 
+.cold-start-unified-panel {
+    display: grid;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg, 0px);
+    background: color-mix(in srgb, var(--card) 72%, transparent);
+    overflow: hidden;
+}
+
+.cold-start-unified-panel .for-you-briefing-card.is-embedded {
+    border: 0;
+    border-radius: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--foreground) 8%, var(--border));
+    background: color-mix(in srgb, var(--card) 82%, var(--nyt-accent) 4%);
+}
+
+.cold-start-onboarding {
+    padding: 0.85rem 1rem 0.35rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--foreground) 8%, var(--border));
+}
+
+.cold-start-email-row {
+    padding: 0.75rem 1rem 0.9rem;
+    background: color-mix(in srgb, var(--secondary) 18%, var(--background));
+}
+
+.cold-start-unified-panel .onboarding-card {
+    border: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
 .for-you-steps {
     margin: 1.25rem 0 0;
     padding-left: 1.1rem;

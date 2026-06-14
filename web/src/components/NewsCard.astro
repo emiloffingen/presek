@@ -210,11 +210,9 @@ function getTimeStr(dateStr: string) {
             </div>
         )}
 
-        {cardSignals.length > 0 && variant !== 'wire' && (
+        {cardSignals.length > 0 && variant !== 'wire' && variant !== 'compact' && (
             <div class="cluster-signal-row" aria-label={lang === 'sr' ? 'Signali klastera' : 'Сигнали на кластерот'}>
-                {cardSignals.map((signal) => (
-                    <span>{signal}</span>
-                ))}
+                <span>{cardSignals[0]}</span>
             </div>
         )}
 

@@ -604,6 +604,12 @@
       margin-bottom: 0.6rem;
     }
 
+    .nyt-article:not(.lead-story) .cluster-trust-row,
+    .nyt-article:not(.lead-story) .cluster-signal-row,
+    .nyt-article:not(.lead-story) .conflict-headline-preview {
+      display: none;
+    }
+
     .nyt-article:not(.lead-story) .footer-meta {
       font-size: 0.64rem;
       letter-spacing: 0.04em;

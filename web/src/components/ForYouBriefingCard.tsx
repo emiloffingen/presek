@@ -27,7 +27,13 @@ function extractBriefingLead(content: string) {
   return '';
 }
 
-export default function ForYouBriefingCard({ lang = 'sr' }: { lang?: string }) {
+export default function ForYouBriefingCard({
+  lang = 'sr',
+  embedded = false,
+}: {
+  lang?: string;
+  embedded?: boolean;
+}) {
   const isMK = lang === 'mk';
   const [title, setTitle] = useState('');
   const [lead, setLead] = useState('');
@@ -60,7 +66,7 @@ export default function ForYouBriefingCard({ lang = 'sr' }: { lang?: string }) {
   const audioHref = `${briefingHref}#audio`;
 
   return (
-    <section className="for-you-briefing-card">
+    <section className={`for-you-briefing-card${embedded ? ' is-embedded' : ''}`}>
       <div className="for-you-briefing-copy">
         <span className="for-you-briefing-kicker">
           <Newspaper size={14} /> {isMK ? 'Уредничко издание' : 'Uredničko izdanje'}

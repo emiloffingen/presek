@@ -1092,6 +1092,13 @@
 				gap: 0.35rem 0.55rem;
 			}
 
+			.lead-synthesis-badge,
+			.lead-status-badge,
+			.lead-kicker-meta :global(.story-freshness-badge),
+			.lead-kicker-meta .time-stamp-v2 {
+				display: none;
+			}
+
 			.lead-edition-bar {
 				margin-bottom: 0.45rem;
 				padding-bottom: 0.4rem;

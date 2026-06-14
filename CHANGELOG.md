@@ -1,5 +1,13 @@
 # Presek Changelog
 
+## v8.2.0 (2026-06-14)
+
+### Frontend & UX
+- Feed cards show at most one signal badge; mobile hides trust chips, signal rows, and conflict previews on non-lead cards
+- Za Vas cold-start merges briefing teaser, onboarding, and email signup into one unified panel
+- Homepage first visit on mobile: lead and feed surface first; media-analysis CTA and start-here guide move below the fold
+- Lead story kicker quieted on mobile (synthesis/status/freshness badges hidden; time stays in footer)
+
 ## v8.1.0 (2026-06-14)
 
 ### Synthesis intelligence

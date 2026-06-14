@@ -180,11 +180,9 @@ export const NewsCard: React.FC<NewsCardProps> = ({
           </div>
         )}
 
-        {cardSignals.length > 0 && variant !== 'wire' && (
+        {cardSignals.length > 0 && variant !== 'wire' && variant !== 'compact' && (
           <div className="cluster-signal-row" aria-label={lang === 'sr' ? 'Signali klastera' : 'Сигнали на кластерот'}>
-            {cardSignals.map((signal, index) => (
-              <span key={index}>{signal}</span>
-            ))}
+            <span>{cardSignals[0]}</span>
           </div>
         )}
 

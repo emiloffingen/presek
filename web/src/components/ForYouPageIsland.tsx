@@ -286,21 +286,18 @@ export default function ForYouPageIsland({
             <h1>{isMK ? 'Направете свој Пресек' : 'Napravite svoj Presek'}</h1>
             <p>
               {isMK
-                ? 'Изберете неколку теми или извори. Страницата потоа ќе ги подреди вестите според вашите сигнали, без регистрација.'
-                : 'Izaberite nekoliko tema ili izvora. Stranica zatim slaže vesti prema vašim signalima, bez registracije.'}
+                ? 'Изберете теми или извори — вестите се подредуваат според вашите сигнали, без регистрација.'
+                : 'Izaberite teme ili izvore — vesti se slažu prema vašim signalima, bez registracije.'}
             </p>
-            <ol className="for-you-steps">
-              <li>{isMK ? 'Следете 2–3 теми или извори' : 'Pratite 2–3 teme ili izvora'}</li>
-              <li>{isMK ? 'Отворете За Вас за личен пресек' : 'Otvorite Za Vas za lični presek'}</li>
-              <li>{isMK ? 'Закажете утринско издание во поставки' : 'Zakažite jutarnje izdanje u podešavanjima'}</li>
-            </ol>
           </div>
-          <div className="cold-start-stack">
-            <ForYouBriefingCard lang={lang} />
-            <div className="cold-start-panel">
+          <div className="cold-start-unified-panel">
+            <ForYouBriefingCard lang={lang} embedded />
+            <div className="cold-start-onboarding">
               <OnboardingIsland lang={lang} />
             </div>
-            <MorningEmailSignup lang={isMK ? 'mk' : 'sr'} variant="compact" />
+            <div className="cold-start-email-row">
+              <MorningEmailSignup lang={isMK ? 'mk' : 'sr'} variant="compact" />
+            </div>
           </div>
         </section>
       </div>

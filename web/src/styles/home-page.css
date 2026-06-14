@@ -1330,6 +1330,20 @@
         display: none;
     }
 
+    .home-page-variant-feed.home-first-session .home-mobile-order-lead { order: 1; }
+    .home-page-variant-feed.home-first-session .home-mobile-order-edition { order: 2; }
+    .home-page-variant-feed.home-first-session .home-mobile-order-feed { order: 3; }
+    .home-page-variant-feed.home-first-session .home-mobile-order-briefing { order: 6; }
+    .home-page-variant-feed.home-first-session .home-mobile-order-start-here { order: 7; }
+    .home-page-variant-feed.home-first-session .home-mobile-order-expand { order: 10; }
+    .home-page-variant-feed.home-first-session .home-mobile-order-supporting { order: 8; }
+
+    .home-page-variant-feed.home-first-session .lead-synthesis-badge,
+    .home-page-variant-feed.home-first-session .lead-status-badge,
+    .home-page-variant-feed.home-first-session .editorial-insight-panel {
+        display: none;
+    }
+
     .home-start-here {
         padding: 0.85rem 0.95rem;
     }

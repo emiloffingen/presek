@@ -17,7 +17,7 @@ const PLURALISM_CONFLICT = 55;
 const PLURALISM_CONSENSUS = 15;
 const PULSE_HOT = 80;
 
-export function getVisibleCardSignals(input: ClusterSignalInput): SignalBadge[] {
+export function getVisibleCardSignals(input: ClusterSignalInput, maxBadges = 1): SignalBadge[] {
   const badges: SignalBadge[] = [];
 
   if (input.isBreaking) {
@@ -40,7 +40,7 @@ export function getVisibleCardSignals(input: ClusterSignalInput): SignalBadge[] 
     badges.push({ key: 'topic', labelKey: 'signal.topic', tone: 'topic' });
   }
 
-  return badges.slice(0, 2);
+  return badges.slice(0, maxBadges);
 }
 
 export function formatSignalBadge(
