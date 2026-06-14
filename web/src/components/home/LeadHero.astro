@@ -4,7 +4,7 @@ import { getDisplayTitle, highlightScores, getDesignCardContext, transliterate }
 import type { NewsCluster } from '../../types';
 import { Zap, Palette, Building2, TrendingUp, Award, Cpu, Newspaper, ArrowRight } from 'lucide-react';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
-import { localePath, homePath } from '../../lib/localePaths';
+import { localePath } from '../../lib/localePaths';
 import MeshGradient from './MeshGradient.astro';
 import { buildEmergencyFallbackUrl } from '../../utils/imageSelection';
 import StoryFreshnessBadge from '../StoryFreshnessBadge.astro';
@@ -107,6 +107,23 @@ const consensusSuffix = (() => {
         return t('lead.consensus_suffix_2_4');
     }
 })();
+
+const valueStripItems = [
+    {
+        label: t('lead.value_grouped'),
+        detail: t('lead.value_grouped_detail'),
+    },
+    {
+        label: t('lead.value_sources'),
+        detail: t('lead.value_sources_detail', {
+            count: Number((leadCluster as any).sources_count || (leadCluster as any).source_count || leadCluster.articles.length),
+        }),
+    },
+    {
+        label: t('lead.value_personal'),
+        detail: t('lead.value_personal_detail'),
+    },
+];
 
 const getProxiedUrl = (width: number) => {
     if (!leadVisual?.proxiedUrl) return '';
@@ -261,6 +278,19 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl && !leadV
                 <span>{leadCluster.articles.length} {leadCluster.articles.length === 1 ? t('news.source') : t('news.sources')}</span>
             </div>
             <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="lead-meta-link ui-kicker ui-kicker--accent" data-testid="cluster-link">{t('lead.full_synthesis')}</a>
+        </div>
+
+        <div class="lead-value-strip" aria-label={t('lead.value_label')}>
+            {valueStripItems.map((item) => (
+                <div class="lead-value-item">
+                    <span class="lead-value-label">{item.label}</span>
+                    <span class="lead-value-detail">{item.detail}</span>
+                </div>
+            ))}
+            <a class="lead-value-action" href={l('/for-you')}>
+                <span>{t('lead.value_action')}</span>
+                <ArrowRight size={13} aria-hidden="true" />
+            </a>
         </div>
 
         {!compact && relatedArticles.length > 0 && (

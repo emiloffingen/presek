@@ -53,6 +53,8 @@ test('parseFootnotes converts inline markers into anchor links', () => {
   assert.match(html, /href="#citation-2"/);
   assert.match(html, /href="#citation-3"/);
   assert.match(html, /<sup class="citation-ref-wrap">/);
+  assert.match(html, /aria-label="izvor 1"/);
+  assert.doesNotMatch(html, />1<\/a>/);
 });
 
 test('extractCleanSummaryText unwraps truncated json summary blobs', () => {

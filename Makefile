@@ -1,6 +1,6 @@
 # Makefile for Presek project maintenance
 
-.PHONY: clean clean-db clean-cache clean-all seed fresh-start
+.PHONY: clean clean-db clean-cache clean-all hygiene seed fresh-start
 
 # Default clean target
 clean: clean-cache clean-logs
@@ -24,6 +24,10 @@ clean-cache:
 clean-logs:
 	@echo "Cleaning application logs..."
 	rm -rf logs/*
+
+# Check that generated artifacts, local databases, logs, and keys are not tracked
+hygiene:
+	python3 scripts/check_repo_hygiene.py
 
 # Reset database (Requires psql access)
 clean-db:

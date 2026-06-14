@@ -155,7 +155,9 @@ def test_shared_components_include_tinyadz_slots():
     synthesis_idx = cluster.index("<ClusterSynthesisSection")
     ad_idx = cluster.index('<TinyAdzInlinedAd class="cluster-inlined-ad')
     citations_idx = cluster.index("<CitationSources citationSources")
-    assert synthesis_idx < ad_idx < citations_idx
+    sources_idx = cluster.index("<ClusterSourcesSection")
+    related_idx = cluster.index("<ClusterRelatedSection")
+    assert synthesis_idx < citations_idx < sources_idx < ad_idx < related_idx
 
 
 def test_premium_reader_pages_stay_ad_free():

@@ -694,8 +694,6 @@ const articleSchema = cluster ? {
 								isPageLead={!showHeroVisual}
 							/>
 
-							<TinyAdzInlinedAd class="cluster-inlined-ad mb-12" />
-
 							{hasCitationSources && (
 								<CitationSources citationSources={citationSources} lang={lang} />
 							)}
@@ -722,6 +720,8 @@ const articleSchema = cluster ? {
 								/>
 							</ClusterAnalysisSection>
 						)}
+
+						<TinyAdzInlinedAd class="cluster-inlined-ad mb-12" />
 
 						{/* RELATED SECTION */}
 						{crossLingualCounterparts.length > 0 && (

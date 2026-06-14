@@ -446,7 +446,8 @@ export function stripCitationMarkers(text: string): string {
 }
 
 /**
- * Converts [1], [2], [1, 2] or even raw trailing numbers like "fact 46" into superscript links.
+ * Converts [1], [2], [1, 2] or raw trailing numbers into quiet source links.
+ * Visible numbers stay out of prose; exact reference numbers remain in labels and hrefs.
  */
 export function parseFootnotes(text: string): string {
     if (!text) return '';
@@ -461,9 +462,9 @@ export function parseFootnotes(text: string): string {
     // 2. Handle [1, 2, 3] style (comma separated inside brackets)
     processed = normalizeCitationMarkers(processed);
 
-    // 3. Convert all [N] into superscript links
+    // 3. Convert all [N] into quiet source links without visible numbers.
     return processed.replace(/\[(\d+)\]/g, (_match, num) => {
-        return `<sup class="citation-ref-wrap"><a href="#citation-${num}" class="citation-ref" title="izvor ${num}">${num}</a></sup>`;
+        return `<sup class="citation-ref-wrap"><a href="#citation-${num}" class="citation-ref" title="izvor ${num}" aria-label="izvor ${num}"></a></sup>`;
     });
 }
 

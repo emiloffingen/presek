@@ -887,24 +887,25 @@
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	min-width: 1.05rem;
-	height: 1.05rem;
-	padding: 0 0.2rem;
+	width: 0.42rem;
+	height: 0.42rem;
+	padding: 0;
 	font-family: var(--font-sans);
 	font-size: 0.58rem;
 	font-weight: 950;
 	line-height: 1;
 	color: var(--nyt-accent);
 	text-decoration: none;
-	border: 1px solid color-mix(in srgb, var(--nyt-accent) 25%, transparent);
+	border: 1px solid color-mix(in srgb, var(--nyt-accent) 42%, transparent);
 	border-radius: 999px;
-	background: color-mix(in srgb, var(--nyt-accent) 8%, var(--background));
+	background: color-mix(in srgb, var(--nyt-accent) 18%, var(--background));
 	vertical-align: super;
-	transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+	opacity: 0.72;
+	transition: background 0.15s ease, opacity 0.15s ease, transform 0.15s ease;
 }
 
 .citation-ref:hover {
-	color: var(--background);
 	background: var(--nyt-accent);
-	border-color: var(--nyt-accent);
+	opacity: 1;
+	transform: scale(1.3);
 }

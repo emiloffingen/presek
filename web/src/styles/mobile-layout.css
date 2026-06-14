@@ -9,7 +9,7 @@
   }
 
   body.has-consent-banner {
-    padding-bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   body.has-consent-banner .consent-banner {
@@ -84,6 +84,6 @@
 
 @media (max-width: 480px) {
   body.has-consent-banner {
-    padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }

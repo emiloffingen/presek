@@ -398,6 +398,71 @@
 		transform: translateY(-1px);
 	}
 
+	.lead-value-strip {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+		align-items: stretch;
+		gap: 0;
+		margin-top: 0.75rem;
+		border-top: 1px solid color-mix(in srgb, var(--foreground) 16%, var(--border));
+		border-bottom: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
+		background: color-mix(in srgb, var(--background) 88%, var(--muted) 12%);
+	}
+
+	.lead-value-item,
+	.lead-value-action {
+		min-width: 0;
+		padding: 0.68rem 0.72rem;
+		border-right: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+		font-family: var(--font-ui);
+		text-decoration: none;
+	}
+
+	.lead-value-item {
+		display: flex;
+		flex-direction: column;
+		gap: 0.18rem;
+	}
+
+	.lead-value-label {
+		font-size: 0.58rem;
+		font-weight: 900;
+		letter-spacing: 0.1em;
+		line-height: 1;
+		text-transform: uppercase;
+		color: var(--foreground);
+	}
+
+	.lead-value-detail {
+		font-size: 0.68rem;
+		font-weight: 650;
+		line-height: 1.25;
+		color: color-mix(in srgb, var(--muted-foreground) 88%, var(--foreground));
+	}
+
+	.lead-value-action {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.35rem;
+		border-right: 0;
+		background: color-mix(in srgb, var(--nyt-accent) 6%, transparent);
+		color: var(--nyt-accent);
+		font-size: 0.58rem;
+		font-weight: 900;
+		letter-spacing: 0.1em;
+		line-height: 1.15;
+		text-transform: uppercase;
+		transition:
+			background-color 0.22s var(--ease-editorial),
+			color 0.22s var(--ease-editorial);
+	}
+
+	.lead-value-action:hover {
+		background: var(--nyt-accent);
+		color: white;
+	}
+
 	.lead-related {
 		list-style: none;
 		padding: 0;
@@ -1140,6 +1205,39 @@
 				min-height: 2.05rem;
 				font-size: 0.58rem;
 				letter-spacing: 0.12em;
+			}
+
+			.lead-value-strip {
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+				margin-top: 0.55rem;
+			}
+
+			.lead-value-item,
+			.lead-value-action {
+				padding: 0.55rem 0.58rem;
+			}
+
+			.lead-value-item:nth-child(2) {
+				border-right: 0;
+			}
+
+			.lead-value-item:nth-child(3) {
+				border-top: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+			}
+
+			.lead-value-label,
+			.lead-value-action {
+				font-size: 0.5rem;
+				letter-spacing: 0.08em;
+			}
+
+			.lead-value-detail {
+				font-size: 0.6rem;
+			}
+
+			.lead-value-action {
+				border-top: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+				justify-content: space-between;
 			}
 			.lead-follow-strip {
 				display: block;
