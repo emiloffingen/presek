@@ -610,6 +610,10 @@
       display: none;
     }
 
+    .lead-kicker-meta .story-freshness-badge {
+      display: none !important;
+    }
+
     .nyt-article:not(.lead-story) .footer-meta {
       font-size: 0.64rem;
       letter-spacing: 0.04em;

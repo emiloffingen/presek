@@ -1,5 +1,12 @@
 # Presek Changelog
 
+## v8.2.1 (2026-06-14)
+
+### Frontend & UX
+- Lead freshness badge hidden on mobile when footer already shows time
+- Concept tour deferred until feed scroll on first visit; second-visit fallback retained
+- Lead verification strip collapsed on mobile (chip details expand on tap)
+
 ## v8.2.0 (2026-06-14)
 
 ### Frontend & UX

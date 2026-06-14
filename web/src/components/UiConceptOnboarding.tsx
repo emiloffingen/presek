@@ -23,10 +23,13 @@ export default function UiConceptOnboarding({ lang = 'sr' }: { lang?: string }) 
   useEffect(() => {
     if (typeof localStorage === 'undefined') return;
     if (localStorage.getItem(STORAGE_KEY) === '1') return;
-    if (Number(localStorage.getItem(FIRST_SESSION_KEY) || '0') > 1) return;
+    if (!document.querySelector('[data-home-session-root]')) return;
+
+    const visits = Number(localStorage.getItem(FIRST_SESSION_KEY) || '0');
+    if (visits > 2) return;
+
     setLeadHref(document.querySelector<HTMLAnchorElement>('.lead-copy a[data-testid="cluster-link"]')?.href || '');
 
-    const isMobile = window.matchMedia('(max-width: 768px)').matches;
     let shown = false;
     const show = () => {
       if (shown) return;
@@ -35,12 +38,40 @@ export default function UiConceptOnboarding({ lang = 'sr' }: { lang?: string }) 
       setVisible(true);
     };
 
-    const scrollThreshold = isMobile ? 180 : 120;
+    const isFirstVisit = visits <= 1;
+    const feed = document.getElementById('home-unified-feed');
+
+    if (isFirstVisit) {
+      if (!feed) return;
+
+      const observer = new IntersectionObserver((entries) => {
+        const entry = entries[0];
+        if (entry?.isIntersecting && entry.intersectionRatio >= 0.12) {
+          show();
+          observer.disconnect();
+        }
+      }, { threshold: [0, 0.12, 0.25], rootMargin: '0px 0px -18% 0px' });
+
+      observer.observe(feed);
+
+      const onScroll = () => {
+        if (window.scrollY > 520) show();
+      };
+      window.addEventListener('scroll', onScroll, { passive: true });
+
+      return () => {
+        observer.disconnect();
+        window.removeEventListener('scroll', onScroll);
+      };
+    }
+
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+    const scrollThreshold = isMobile ? 220 : 160;
     const onScroll = () => {
       if (window.scrollY > scrollThreshold) show();
     };
 
-    const timer = window.setTimeout(show, isMobile ? 6000 : 4000);
+    const timer = window.setTimeout(show, isMobile ? 4500 : 3500);
     window.addEventListener('scroll', onScroll, { passive: true });
     if (window.scrollY > scrollThreshold) show();
 

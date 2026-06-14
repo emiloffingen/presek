@@ -1094,9 +1094,10 @@
 
 			.lead-synthesis-badge,
 			.lead-status-badge,
+			.lead-kicker-meta .story-freshness-badge,
 			.lead-kicker-meta :global(.story-freshness-badge),
 			.lead-kicker-meta .time-stamp-v2 {
-				display: none;
+				display: none !important;
 			}
 
 			.lead-edition-bar {

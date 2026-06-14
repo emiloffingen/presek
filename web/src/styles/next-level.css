@@ -193,6 +193,31 @@
   margin: 0.2rem 0 0;
 }
 
+@media (max-width: 768px) {
+  .lead-evidence-chips {
+    margin-top: 0.55rem;
+  }
+
+  .lead-evidence-summary {
+    padding: 0.55rem 0.75rem;
+    gap: 0.4rem 0.55rem;
+  }
+
+  .lead-evidence-chips:not([open]) .lead-evidence-chips-row {
+    display: none;
+  }
+
+  .lead-evidence-expand {
+    margin-left: 0;
+  }
+
+  .home-page-variant-feed.home-first-session .lead-evidence-chips {
+    margin-top: 0.4rem;
+    border-color: color-mix(in srgb, var(--foreground) 8%, var(--border));
+    background: color-mix(in srgb, var(--secondary) 22%, var(--background));
+  }
+}
+
 /* ── Mode-gated homepage sections ───────────────────── */
 .home-page-variant-feed:not(.home-analysis-expanded) .homepage-analiza-only {
   display: none !important;
