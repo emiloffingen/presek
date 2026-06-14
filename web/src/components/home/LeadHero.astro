@@ -183,7 +183,7 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl && !leadV
             <div class="lead-kicker-meta flex items-center gap-[var(--grid-gap)]">
                 {leadCluster.is_breaking && <span class="significance-badge is-breaking" aria-label={`${t('header.breaking')}: ${t('news.breaking')}`}>{t('news.breaking').toUpperCase()}</span>}
                 {leadSignal && (
-                    <span class="lead-status-badge" aria-label={`Signal: ${leadSignal}`}>
+                    <span class="lead-status-badge" aria-label={lang === 'sr' ? `Signal: ${leadSignal}` : `Сигнал: ${leadSignal}`}>
                         <div class="status-dot-wrap">
                             <span class="status-dot"></span>
                             <span class="status-dot-pulse"></span>

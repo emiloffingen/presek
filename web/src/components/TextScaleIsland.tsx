@@ -50,7 +50,7 @@ export default function TextScaleIsland({ lang = 'sr' }: { lang?: string }) {
         aria-expanded={isOpen}
       >
         <Type size={18} className="transition-colors" />
-        <span className="sr-only">Typography</span>
+        <span className="sr-only">{t('typography.label')}</span>
       </button>
 
       {isOpen && (

@@ -17,7 +17,7 @@ const hostHeader = Astro.request?.headers.get('host');
 const t = useTranslations(lang);
 const l = (path: string) => localePath(path, lang, hostHeader);
 const expandLabel = lang === 'sr' ? 'Prikaži' : 'Прикажи';
-const trendLabel = t('home.trending') || 'Trending';
+const trendLabel = t('home.trending');
 const trendTeaser = clusters[0]?.synthetic_headline || clusters[0]?.articles?.[0]?.title || '';
 
 const trendItems = clusters.map((cluster: NewsCluster) => {
