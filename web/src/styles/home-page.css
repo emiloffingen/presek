@@ -117,6 +117,52 @@
     line-height: 1.1;
 }
 
+.home-start-here-deck {
+    margin: 0.34rem 0 0;
+    max-width: 50rem;
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: color-mix(in srgb, var(--foreground) 68%, var(--muted-foreground));
+}
+
+.home-start-here-value-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1px;
+    margin: 0 0 0.55rem;
+    border: 1px solid color-mix(in srgb, var(--nyt-accent) 18%, var(--border));
+    background: color-mix(in srgb, var(--nyt-accent) 16%, var(--border));
+}
+
+.home-start-here-value {
+    min-width: 0;
+    padding: 0.48rem 0.56rem;
+    background: color-mix(in srgb, var(--background) 94%, var(--nyt-accent) 6%);
+}
+
+.home-start-here-value span,
+.home-start-here-value strong {
+    display: block;
+    font-family: var(--font-ui);
+    line-height: 1.15;
+}
+
+.home-start-here-value span {
+    margin-bottom: 0.16rem;
+    font-size: var(--text-ui-min);
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--nyt-accent);
+}
+
+.home-start-here-value strong {
+    font-size: 0.74rem;
+    font-weight: 750;
+    color: var(--foreground);
+}
+
 .home-start-here-dismiss {
     display: inline-flex;
     align-items: center;
@@ -184,6 +230,12 @@
 @media (min-width: 768px) {
     .home-start-here-steps {
         grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 639px) {
+    .home-start-here-value-grid {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -270,6 +322,28 @@
 .radar-section {
     background: color-mix(in srgb, var(--nyt-red) 4%, var(--background));
     border-color: color-mix(in srgb, var(--nyt-red) 18%, var(--border));
+}
+
+.perspectives-section {
+    background: color-mix(in srgb, var(--nyt-accent) 4%, var(--background));
+    border-color: color-mix(in srgb, var(--nyt-accent) 18%, var(--border));
+}
+
+.consensus-section {
+    background: color-mix(in srgb, var(--editorial-positive) 4%, var(--background));
+    border-color: color-mix(in srgb, var(--editorial-positive) 18%, var(--border));
+}
+
+.perspectives-section .analysis-band-kicker {
+    color: var(--nyt-accent);
+}
+
+.radar-section .analysis-band-kicker {
+    color: var(--nyt-red);
+}
+
+.consensus-section .analysis-band-kicker {
+    color: var(--editorial-positive);
 }
 
 .section-heading-row {

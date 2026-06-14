@@ -650,6 +650,27 @@
   color: var(--muted-foreground);
 }
 
+.home-pregled-teaser-proof {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.48rem;
+}
+
+.home-pregled-teaser-proof span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.35rem;
+  padding: 0.2rem 0.42rem;
+  border: 1px solid color-mix(in srgb, var(--nyt-accent) 22%, var(--border));
+  background: color-mix(in srgb, var(--nyt-accent) 5%, var(--background));
+  font-family: var(--font-ui);
+  font-size: var(--text-ui-min);
+  font-weight: 800;
+  line-height: 1;
+  color: color-mix(in srgb, var(--nyt-accent) 82%, var(--foreground));
+}
+
 .home-pregled-teaser-stat {
   margin: 0.35rem 0 0;
   font-family: var(--font-ui);

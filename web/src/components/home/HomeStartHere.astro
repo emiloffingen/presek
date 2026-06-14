@@ -44,10 +44,25 @@ const steps = [
                 <div>
                     <p class="home-start-here-kicker">{t('home.start_here_kicker')}</p>
                     <h2 class="home-start-here-title">{t('home.start_here_title')}</h2>
+                    <p class="home-start-here-deck">{t('home.start_here_deck')}</p>
                 </div>
             </div>
             <p class="home-start-here-mobile-hint">{t('home.start_here_expand')}</p>
         </summary>
+        <div class="home-start-here-value-grid" aria-label={t('home.start_here_value_label')}>
+            <div class="home-start-here-value">
+                <span>{t('home.start_here_value_news')}</span>
+                <strong>{t('home.start_here_value_news_desc')}</strong>
+            </div>
+            <div class="home-start-here-value">
+                <span>{t('home.start_here_value_analysis')}</span>
+                <strong>{t('home.start_here_value_analysis_desc')}</strong>
+            </div>
+            <div class="home-start-here-value">
+                <span>{t('home.start_here_value_personal')}</span>
+                <strong>{t('home.start_here_value_personal_desc')}</strong>
+            </div>
+        </div>
         <ol class="home-start-here-steps">
             {steps.map((step, index) => {
                 const Icon = step.icon;
