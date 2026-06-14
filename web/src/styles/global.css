@@ -672,6 +672,27 @@ select:focus-visible,
 }
 
 /* Elegant Underline Hover for Headlines */
+/* Skip link */
+.skip-to-content {
+  position: absolute;
+  left: -9999px;
+  top: 0.75rem;
+  z-index: 10000;
+  padding: 0.65rem 1rem;
+  background: var(--background);
+  color: var(--foreground);
+  border: 2px solid var(--nyt-accent);
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.skip-to-content:focus {
+  left: 0.75rem;
+  outline: none;
+}
+
 .headline-link {
   position: relative;
   text-decoration: none;
@@ -679,7 +700,10 @@ select:focus-visible,
 }
 
 .headline-link h2 {
-  display: inline; /* Allows multi-line background animation */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-width: 100%;
   background-image: linear-gradient(var(--nyt-accent), var(--nyt-accent));
   background-position: 0% 100%;
   background-repeat: no-repeat;

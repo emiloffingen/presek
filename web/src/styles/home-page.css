@@ -53,11 +53,19 @@
 
 /* ── Start Here guide ───────────────────────────── */
 .home-start-here {
+    position: relative;
     margin: 0 0 clamp(0.75rem, 1.5vw, 1rem);
     padding: 0.75rem 0.85rem;
     border: 1px solid color-mix(in srgb, var(--nyt-accent) 22%, var(--border));
     border-left: 3px solid var(--nyt-accent);
     background: color-mix(in srgb, var(--nyt-accent) 4%, var(--background));
+}
+
+.home-start-here-headbar {
+    position: absolute;
+    top: 0.55rem;
+    right: 0.55rem;
+    z-index: 2;
 }
 
 .home-start-here-details {

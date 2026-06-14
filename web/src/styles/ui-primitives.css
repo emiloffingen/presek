@@ -555,7 +555,8 @@
   }
 
   @media (max-width: 767px) {
-    .nyt-article:not(.lead-story) {
+    .nyt-article:not(.lead-story).has-useful-image,
+    .nyt-article:not(.lead-story).has-editorial-fallback:not(.variant-featured) {
       display: grid;
       grid-template-columns: minmax(0, 1fr) clamp(6.4rem, 28vw, 7.6rem);
       align-items: start;
@@ -563,51 +564,51 @@
       padding-bottom: 1.1rem;
     }
 
-    .nyt-article:not(.lead-story) .article-body {
+    .nyt-article:not(.lead-story).has-useful-image .article-body,
+    .nyt-article:not(.lead-story).has-editorial-fallback:not(.variant-featured) .article-body {
       grid-column: 1;
       grid-row: 1;
     }
 
-    .nyt-article:not(.lead-story) .image-wrap {
+    .nyt-article:not(.lead-story).has-useful-image .image-wrap,
+    .nyt-article:not(.lead-story).has-editorial-fallback:not(.variant-featured) .image-wrap {
       grid-column: 2;
       grid-row: 1;
     }
 
-    .nyt-article:not(.lead-story) .article-image,
-    .nyt-article:not(.lead-story) .article-image-fallback {
+    .nyt-article:not(.lead-story).has-useful-image .article-image,
+    .nyt-article:not(.lead-story).has-useful-image .article-image-fallback,
+    .nyt-article:not(.lead-story).has-editorial-fallback .article-image,
+    .nyt-article:not(.lead-story).has-editorial-fallback .article-image-fallback {
       aspect-ratio: 1 / 1;
       height: auto;
       max-height: 7.75rem;
     }
 
-    .nyt-article:not(.lead-story) .headline-standard {
+    .nyt-article:not(.lead-story).has-useful-image .headline-standard,
+    .nyt-article:not(.lead-story).has-editorial-fallback .headline-standard {
       font-size: 1.1rem;
       line-height: 1.25;
       margin-bottom: 0.45rem;
-    }
-
-    .nyt-article:not(.lead-story) .article-meta {
-      margin-bottom: 0.9rem;
-      gap: 0.45rem 0.65rem;
-      position: relative;
-      z-index: 10;
     }
 
     .nyt-article:not(.lead-story) .why-it-matters {
       display: none;
     }
 
-    .nyt-article:not(.lead-story) .summary {
-      font-size: 0.92rem;
-      line-height: 1.52;
-      -webkit-line-clamp: 3;
-      margin-bottom: 0.6rem;
-    }
-
-    .nyt-article:not(.lead-story) .cluster-trust-row,
     .nyt-article:not(.lead-story) .cluster-signal-row,
     .nyt-article:not(.lead-story) .conflict-headline-preview {
       display: none;
+    }
+
+    .nyt-article:not(.lead-story) .cluster-trust-row {
+      display: block;
+      margin-top: 0.28rem;
+    }
+
+    .nyt-article:not(.lead-story) .cluster-trust-row .trust-chip {
+      transform: scale(0.92);
+      transform-origin: left center;
     }
 
     .lead-kicker-meta .story-freshness-badge {

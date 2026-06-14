@@ -349,10 +349,14 @@
             justify-content: center;
             align-items: center;
         }
-        html[lang="sr-Latn"] .discovery-nav-v2 .nav-rail-group.group-dynamic,
-        html[lang="sr-Latn"] .discovery-nav-v2 .nav-rail-link--analysis,
-        html[lang="mk"] .discovery-nav-v2 .nav-rail-group.group-dynamic,
+        html[lang="sr-Latn"] .discovery-nav-v2 .nav-rail-link--analysis {
+            display: none;
+        }
         html[lang="mk"] .discovery-nav-v2 .nav-rail-link--analysis {
+            display: none;
+        }
+        html[lang="sr-Latn"] .discovery-nav-v2 .nav-rail-group.group-dynamic .nav-rail-link:nth-child(n+5),
+        html[lang="mk"] .discovery-nav-v2 .nav-rail-group.group-dynamic .nav-rail-link:nth-child(n+5) {
             display: none;
         }
     }

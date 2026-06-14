@@ -14,6 +14,7 @@ import {
 } from '../lib/personalization.js';
 import { sanitizeHtml } from '../lib/sanitize';
 import { localePathForLang, type Locale } from '../lib/localePaths';
+import { useTranslations } from '../i18n/utils';
 import { getDisplayTitle, getStoryPreviewText, highlightScores, getPersonalizedText } from '../utils/textUtils';
 
 function getSummary(cluster: any, lang: string) {
@@ -35,6 +36,8 @@ interface ForYouIslandProps {
 }
 
 export default function ForYouIsland({ clusters = [], excludeClusterIds = [], lang = 'sr' }: ForYouIslandProps) {
+  const locale = lang === 'mk' ? 'mk' : 'sr';
+  const t = useTranslations(locale);
   const profile = useStore($profile);
   const syncToken = useStore($syncToken);
 
@@ -200,7 +203,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
             const whySummary = item.why_summary || item.whySummary || null;
 
             return (
-              <a key={cluster.cluster_id} href={localePathForLang(`/cluster/${cluster.cluster_id}`, lang)} className={`for-you-card ${isSemantic ? 'premium-spotlight' : ''}`} aria-label={`Otvori: ${title}`}>
+              <a key={cluster.cluster_id} href={localePathForLang(`/cluster/${cluster.cluster_id}`, lang)} className={`for-you-card ${isSemantic ? 'premium-spotlight' : ''}`} aria-label={t('for_you.open_story', { title })}>
                 <PersonalizationWhyChip
                   lang={lang}
                   reason={item.reason}
@@ -255,7 +258,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
             const summary = getSummary(cluster, lang);
             const title = getTitle(cluster, lang);
             return (
-              <a key={cluster.cluster_id} href={localePathForLang(`/cluster/${cluster.cluster_id}`, lang)} className="for-you-card" aria-label={`Otvori: ${title}`}>
+              <a key={cluster.cluster_id} href={localePathForLang(`/cluster/${cluster.cluster_id}`, lang)} className="for-you-card" aria-label={t('for_you.open_story', { title })}>
                 <p className="for-you-card-kicker flex items-center gap-[var(--grid-gap)] px-3 py-1 bg-secondary/10 rounded-full w-fit mb-4 min-w-max">
                   <Clock3 size={12} />
                   <span className="leading-none">{lang === 'sr' ? 'Aktuelno u trenutku' : 'Актуелно во моментот'}</span>

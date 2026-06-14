@@ -221,35 +221,29 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
   const openSearch = useCallback(() => setIsOpen(true), []);
 
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
-  const placeholders = lang === 'sr' ? [
-    "Istraži medijsku arhivu...",
-    "Analiziraj protivurečne stavove...",
-    "Dekonstruiši činjenice i brojke...",
-    "Mapiraj reakcije i posledice...",
-    "Šta se dešava u Srbiji?"
-  ] : [
-    "Истражи ја медиумската архива...",
-    "Анализирај противречни ставови...",
-    "Деконструирај ги фактите и бројките...",
-    "Мапирај реакции и последици...",
-    "Што се случува во Македонија?"
+  const placeholders = [
+    t('search.placeholder_1'),
+    t('search.placeholder_2'),
+    t('search.placeholder_3'),
+    t('search.placeholder_4'),
+    t('search.placeholder_5'),
   ];
 
   const SEARCH_ACTIONS: SearchAction[] = [
-    { id: 'act-briefing', label: lang === 'sr' ? 'Dnevni Brifing' : 'Дневен Брифинг', icon: Zap, href: localePathForLang('/briefing', lang), category: 'NAVIGATION', desc: lang === 'sr' ? 'Pregled najvažnijih vesti u formi brifinga.' : 'Преглед на најважните вести во форма на брифинг.' },
-    { id: 'act-foryou', label: lang === 'sr' ? 'Za Vas' : 'За Вас', icon: Compass, href: localePathForLang('/for-you', lang), category: 'NAVIGATION', desc: lang === 'sr' ? 'Personalizovan pregled vesti prema vašim interesovanjima.' : 'Персонализиран преглед на вести според вашите интереси.' },
-    { id: 'act-pulse', label: lang === 'sr' ? 'Informativni Ritam' : 'Информативен Ритам', icon: Activity, href: localePathForLang('/pulse', lang), category: 'NAVIGATION', desc: lang === 'sr' ? 'Pratite trendove i medijski pluralizam.' : 'Следете ги трендовите и медиумскиот плурализам.' },
-    { id: 'act-archive', label: lang === 'sr' ? 'Arhiva vesti' : 'Архива на вести', icon: Archive, href: localePathForLang('/archive', lang), category: 'NAVIGATION', desc: lang === 'sr' ? 'Pretražite sve dosadašnje objave.' : 'Пребарајте ги сите досегашни објави.' },
+    { id: 'act-briefing', label: t('search.action_briefing_label'), icon: Zap, href: localePathForLang('/briefing', lang), category: 'NAVIGATION', desc: t('search.action_briefing_desc') },
+    { id: 'act-foryou', label: t('search.action_foryou_label'), icon: Compass, href: localePathForLang('/for-you', lang), category: 'NAVIGATION', desc: t('search.action_foryou_desc') },
+    { id: 'act-pulse', label: t('search.action_pulse_label'), icon: Activity, href: localePathForLang('/pulse', lang), category: 'NAVIGATION', desc: t('search.action_pulse_desc') },
+    { id: 'act-archive', label: t('search.action_archive_label'), icon: Archive, href: localePathForLang('/archive', lang), category: 'NAVIGATION', desc: t('search.action_archive_desc') },
   ];
 
   const CATEGORIES = [
-    { id: 'all', label: lang === 'sr' ? 'Sve teme' : 'Сите теми', color: 'bg-nyt-accent' },
-    { id: lang === 'sr' ? 'Srbija' : 'Makedonija', label: lang === 'sr' ? 'Srbija' : 'Македонија', color: 'bg-nyt-red' },
-    { id: 'Politika', label: lang === 'sr' ? 'Politika' : 'Политика', color: 'bg-blue-600' },
-    { id: 'Ekonomija', label: lang === 'sr' ? 'Ekonomija' : 'Економија', color: 'bg-emerald-600' },
-    { id: 'Sport', label: lang === 'sr' ? 'Sport' : 'Спорт', color: 'bg-orange-500' },
-    { id: 'Kultura', label: lang === 'sr' ? 'Kultura' : 'Култура', color: 'bg-purple-600' },
-    { id: 'Tehnologija', label: lang === 'sr' ? 'Tehnologija' : 'Технологија', color: 'bg-cyan-600' },
+    { id: 'all', label: t('search.category_all'), color: 'bg-nyt-accent' },
+    { id: lang === 'sr' ? 'Srbija' : 'Makedonija', label: t('search.category_country'), color: 'bg-nyt-red' },
+    { id: 'Politika', label: t('search.category_politika'), color: 'bg-blue-600' },
+    { id: 'Ekonomija', label: t('search.category_ekonomija'), color: 'bg-emerald-600' },
+    { id: 'Sport', label: t('search.category_sport'), color: 'bg-orange-500' },
+    { id: 'Kultura', label: t('search.category_kultura'), color: 'bg-purple-600' },
+    { id: 'Tehnologija', label: t('search.category_tehnologija'), color: 'bg-cyan-600' },
   ];
 
   useEffect(() => {
@@ -445,7 +439,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
               const article = cluster.articles?.[0] || {};
               return {
                 cluster_id: cluster.cluster_id,
-                title: getDisplayTitle(article, lang === 'sr' ? 'Naslov' : 'Наслов'),
+                title: getDisplayTitle(article, t('search.title_fallback')),
                 image_url: cluster.representative_image || article.image_url || null,
                 source: article.source || '',
                 category: article.category || '',
@@ -453,7 +447,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                 sourceCount: cluster.articles?.length || 0,
                 pulse_score: cluster.pulse_score,
                 has_synthesis: cluster.has_synthesis,
-                matchLabel: cluster.is_breaking ? (lang === 'sr' ? 'HITNO' : 'ИТНО') : 'vest',
+                matchLabel: cluster.is_breaking ? t('search.match_urgent') : t('search.match_story'),
               };
             })
           : [];
@@ -467,7 +461,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
         if (!cancelled) {
           setSuggestions([]);
           setEntityResult(null);
-          setError(err instanceof Error ? err.message : (lang === 'sr' ? 'Greška' : 'Грешка'));
+          setError(err instanceof Error ? err.message : t('search.error'));
         }
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -585,7 +579,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`search-cmd-toolbar-btn p-2 hover:bg-secondary transition-colors ${showFilters ? 'text-nyt-accent' : 'text-muted-foreground'}`}
-              title={lang === 'sr' ? 'Filteri pretrage' : 'Филтри за пребарување'}
+              title={t('search.filters_title')}
             >
               <SlidersHorizontal size={18} />
             </button>
@@ -620,14 +614,14 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
             </div>
             
             <p className="font-serif font-black text-xl text-center">
-              {lang === 'sr' ? 'Slušam vas...' : 'Ве слушам...'}
+              {t('search.listening')}
             </p>
             
             <button
               onClick={stopVoiceSearch}
               className="search-cmd-cta px-6 py-2.5 bg-secondary hover:bg-secondary-foreground/10 border border-border rounded-none transition-all"
             >
-              {lang === 'sr' ? 'Otkaži' : 'Откажи'}
+              {t('search.cancel')}
             </button>
           </div>
         )}
@@ -638,7 +632,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
             {/* Category Filter */}
             <div className="flex-1">
               <span className="ui-kicker text-muted-foreground block mb-2">
-                {lang === 'sr' ? 'Tema' : 'Тема'}
+                {t('search.topic_label')}
               </span>
               <div className="flex flex-wrap gap-1.5">
                 {CATEGORIES.map((cat) => (
@@ -660,25 +654,25 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
             {/* Timespan Filter */}
             <div className="shrink-0">
               <span className="ui-kicker text-muted-foreground block mb-2">
-                {lang === 'sr' ? 'Vremenski okvir' : 'Временска рамка'}
+                {t('search.timespan_label')}
               </span>
               <div className="flex gap-1.5">
                 {[
-                  { id: 'all', label: lang === 'sr' ? 'Sve vreme' : 'Сите времиња' },
-                  { id: '24h', label: lang === 'sr' ? 'Danas' : 'Денес' },
-                  { id: '7d', label: lang === 'sr' ? 'Zadnjih 7 dana' : 'Задните 7 дена' },
-                  { id: '30d', label: lang === 'sr' ? 'Zadnjih 30 dana' : 'Задните 30 дена' },
-                ].map((t) => (
+                  { id: 'all', label: t('search.timespan_all') },
+                  { id: '24h', label: t('search.timespan_24h') },
+                  { id: '7d', label: t('search.timespan_7d') },
+                  { id: '30d', label: t('search.timespan_30d') },
+                ].map((option) => (
                   <button
-                    key={t.id}
-                    onClick={() => setTimespan(t.id)}
+                    key={option.id}
+                    onClick={() => setTimespan(option.id)}
                     className={`search-cmd-chip px-3 py-1 rounded-none transition-all border ${
-                      timespan === t.id
+                      timespan === option.id
                         ? 'bg-nyt-accent text-white border-nyt-accent shadow-sm'
                         : 'bg-background hover:bg-secondary border-border text-foreground'
                     }`}
                   >
-                    {t.label}
+                    {option.label}
                   </button>
                 ))}
               </div>
@@ -697,7 +691,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                 {recentSearches.length > 0 && (
                   <section>
                     <h3 className="ui-kicker mb-3 sm:mb-4 flex items-center gap-[var(--grid-gap)]">
-                       <History size={12} /> {lang === 'sr' ? 'Poslednje pretrage' : 'Последни пребарувања'}
+                       <History size={12} /> {t('search.recent_searches')}
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {recentSearches.map((s, i) => (
@@ -717,7 +711,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                               }
                             }}
                             className="p-0.5 rounded-full hover:bg-muted-foreground/20 text-muted-foreground/40 hover:text-muted-foreground/80 transition-colors"
-                            title={lang === 'sr' ? 'Ukloni pretragu' : 'Отстрани го пребарувањето'}
+                            title={t('search.remove_search')}
                           >
                             <X size={10} />
                           </button>
@@ -729,7 +723,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
 
                 <section>
                   <h3 className="ui-kicker mb-3 sm:mb-4 flex items-center gap-[var(--grid-gap)]">
-                     <TrendingUp size={12} /> {lang === 'sr' ? 'Trend teme' : 'Тренд теми'}
+                     <TrendingUp size={12} /> {t('search.trending_topics')}
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-[var(--grid-gap)]">
                     {trendingItems.length > 0 ? trendingItems.map((item, i) => (
@@ -743,7 +737,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
 
                 <section>
                   <h3 className="ui-kicker mb-3 sm:mb-4 flex items-center gap-[var(--grid-gap)]">
-                     <Zap size={12} /> {lang === 'sr' ? 'Brze akcije' : 'Брзи акции'}
+                     <Zap size={12} /> {t('search.quick_actions')}
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-[var(--grid-gap)]">
                     {SEARCH_ACTIONS.map(action => (
@@ -771,7 +765,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                   <>
                     {entityResult && (
                       <section>
-                        <h3 className="ui-kicker mb-3 sm:mb-4">{lang === 'sr' ? 'Subjekti' : 'Субјекти'}</h3>
+                        <h3 className="ui-kicker mb-3 sm:mb-4">{t('search.subjects')}</h3>
                         <button
                           onClick={() => navigateToQuery(entityResult.name)}
                           className={`w-full flex items-center gap-3 sm:gap-[var(--grid-gap)] p-3 sm:p-4 rounded-none border transition-all text-left ${activeIndex === 0 ? 'bg-nyt-accent/5 border-nyt-accent/30 ring-1 ring-nyt-accent/20' : 'bg-transparent border-transparent hover:bg-secondary/30'}`}
@@ -785,7 +779,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                           </div>
                           <div>
                             <p className="font-serif font-black text-lg sm:text-xl">{highlightMatch(entityResult.name, query)}</p>
-                            <p className="ui-label-min text-muted-foreground">{entityResult.type} · {entityResult.total_mentions} {lang === 'sr' ? 'pominjanja' : 'споменувања'}</p>
+                            <p className="ui-label-min text-muted-foreground">{entityResult.type} · {entityResult.total_mentions} {t('search.mentions')}</p>
                           </div>
                           <ArrowUpRight size={16} className="ml-auto text-muted-foreground" />
                         </button>
@@ -794,7 +788,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
 
                     {suggestions.length > 0 && (
                       <section>
-                        <h3 className="ui-kicker mb-3 sm:mb-4">{lang === 'sr' ? 'Vesti i priče' : 'Вести и приказни'}</h3>
+                        <h3 className="ui-kicker mb-3 sm:mb-4">{t('search.stories')}</h3>
                         <div className="space-y-2">
                           {suggestions.map((item, idx) => {
                             const globalIdx = entityResult ? idx + 1 : idx;
@@ -817,14 +811,14 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                                     {item.has_synthesis && (
                                       <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-none bg-amber-500/10 text-amber-600 dark:text-amber-400 ui-label-min">
                                         <Sparkles size={8} fill="currentColor" />
-                                        {lang === 'sr' ? 'Sinteza' : 'Синтеза'}
+                                        {t('search.synthesis')}
                                       </span>
                                     )}
                                   </div>
                                   <p className="font-serif font-black text-base sm:text-lg leading-tight line-clamp-2 group-hover:text-nyt-accent transition-colors">{highlightMatch(item.title, query)}</p>
                                   <div className="flex items-center gap-2 sm:gap-[var(--grid-gap)] mt-1.5 sm:mt-2 ui-label-min text-muted-foreground/60">
                                     <span>{item.source}</span>
-                                    <span>{item.sourceCount} {item.sourceCount === 1 ? (lang === 'sr' ? 'izvor' : 'извор') : (lang === 'sr' ? 'izvora' : 'извори')}</span>
+                                    <span>{item.sourceCount} {item.sourceCount === 1 ? t('news.source') : t('news.sources')}</span>
                                   </div>
                                 </div>
                               </button>
@@ -839,7 +833,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
 
                 {filteredActions.length > 0 && (
                   <section>
-                    <h3 className="ui-kicker mb-3 sm:mb-4">{lang === 'sr' ? 'Akcije' : 'Акции'}</h3>
+                    <h3 className="ui-kicker mb-3 sm:mb-4">{t('search.actions')}</h3>
                     <div className="grid grid-cols-1 gap-[var(--grid-gap)]">
                       {filteredActions.map((action, idx) => {
                         const globalIdx = (entityResult ? 1 : 0) + suggestions.length + idx;
@@ -866,8 +860,8 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                     <div className="w-14 h-14 sm:w-16 sm:h-16 bg-secondary/50 rounded-none flex items-center justify-center mb-5 sm:mb-6">
                        <Search size={32} className="text-muted-foreground/30" />
                     </div>
-                    <h4 className="font-serif font-black text-xl sm:text-2xl mb-2">{lang === 'sr' ? `Nema rezultata za "${query}"` : `Нема резултати за "${query}"`}</h4>
-                    <p className="text-muted-foreground text-[13px] sm:text-sm max-w-xs">{lang === 'sr' ? 'Pokušajte sa konkretnijim ključnim rečima ili prelistajte aktuelne trendove.' : 'Обидете се со поконкретни клучни зборови или прелистајте ги актуелните трендови.'}</p>
+                    <h4 className="font-serif font-black text-xl sm:text-2xl mb-2">{t('search.no_results_title', { query })}</h4>
+                    <p className="text-muted-foreground text-[13px] sm:text-sm max-w-xs">{t('search.no_results_desc')}</p>
                   </div>
                 )}
               </div>
@@ -890,10 +884,10 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                          {selectedItem.data.has_synthesis && (
                            <span className="px-2 py-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white search-cmd-preview-badge rounded flex items-center gap-1 shadow-sm shadow-amber-500/20">
                              <Sparkles size={10} fill="currentColor" />
-                             {lang === 'sr' ? 'Sinteza' : 'Синтеза'}
+                             {t('search.synthesis')}
                            </span>
                          )}
-                         <span className="ui-kicker text-muted-foreground flex items-center gap-1"><Clock size={12} /> {lang === 'sr' ? 'Pre 2 časa' : 'Пред 2 часа'}</span>
+                         <span className="ui-kicker text-muted-foreground flex items-center gap-1"><Clock size={12} /> {t('search.preview_hours_ago')}</span>
                       </div>
                       <h2 className="font-serif font-black text-2xl leading-tight mb-4">{selectedItem.data.title}</h2>
                       <p className="text-base text-muted-foreground leading-relaxed font-nyt-body line-clamp-6">{selectedItem.data.description}</p>
@@ -901,11 +895,11 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
 
                     <div className="grid grid-cols-2 gap-[var(--grid-gap)] py-6 border-y border-border/40">
                       <div>
-                        <p className="ui-kicker text-muted-foreground mb-1">{lang === 'sr' ? 'Izvori' : 'Извори'}</p>
+                        <p className="ui-kicker text-muted-foreground mb-1">{t('search.sources_label')}</p>
                         <p className="text-xl font-black">{selectedItem.data.sourceCount}</p>
                       </div>
                       <div>
-                        <p className="ui-kicker text-muted-foreground mb-1">{lang === 'sr' ? 'Skor' : 'Скор'}</p>
+                        <p className="ui-kicker text-muted-foreground mb-1">{t('search.score_label')}</p>
                         <p className="text-xl font-black text-nyt-accent">{selectedItem.data.pulse_score || '8.2'}</p>
                       </div>
                     </div>
@@ -914,7 +908,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                       onClick={() => navigateToCluster(selectedItem.data.cluster_id)}
                       className="search-cmd-cta w-full py-4 bg-nyt-accent text-white rounded-none shadow-lg shadow-nyt-accent/20 hover:scale-[1.02] transition-all flex items-center justify-center gap-[var(--grid-gap)]"
                     >
-                      {lang === 'sr' ? 'Otvori priču' : 'Отвори приказна'} <ChevronRight size={16} />
+                      {t('search.open_story')} <ChevronRight size={16} />
                     </button>
                   </div>
                 )}
@@ -935,7 +929,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
 
                     <div className="space-y-4">
                        <div className="p-4 bg-background border border-border rounded-none">
-                          <p className="ui-kicker text-muted-foreground mb-4">{lang === 'sr' ? 'Medijsko prisustvo' : 'Медиумско присуство'}</p>
+                          <p className="ui-kicker text-muted-foreground mb-4">{t('search.media_presence')}</p>
                           <div className="flex items-end gap-1 h-12 mb-2">
                             {[30, 50, 40, 80, 60, 90, 75, 85].map((h, i) => (
                               <div key={i} className="flex-1 bg-nyt-accent/20 rounded-t-sm group relative" style={{ height: `${h}%` }}>
@@ -943,13 +937,13 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                               </div>
                             ))}
                           </div>
-                          <p className="text-xs font-bold">{selectedItem.data.total_mentions} {lang === 'sr' ? 'pominjanja u arhivi' : 'споменувања во архивата'}</p>
+                          <p className="text-xs font-bold">{selectedItem.data.total_mentions} {t('search.mentions_in_archive')}</p>
                        </div>
 
                        <div className="p-4 bg-background border border-border rounded-none flex items-center justify-between">
                           <div>
-                            <p className="ui-kicker text-muted-foreground mb-1">{lang === 'sr' ? 'Sentiment' : 'Сентимент'}</p>
-                            <p className="font-serif font-black text-lg text-emerald-600">{lang === 'sr' ? 'Pozitivan' : 'Позитивен'}</p>
+                            <p className="ui-kicker text-muted-foreground mb-1">{t('search.sentiment_label')}</p>
+                            <p className="font-serif font-black text-lg text-emerald-600">{t('search.sentiment_positive')}</p>
                           </div>
                           <Activity size={24} className="text-emerald-500" />
                        </div>
@@ -959,7 +953,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                       onClick={() => navigateToQuery(selectedItem.data.name)}
                       className="search-cmd-cta w-full py-4 bg-foreground text-background rounded-none hover:bg-nyt-accent hover:text-white transition-all flex items-center justify-center gap-[var(--grid-gap)]"
                     >
-                      {lang === 'sr' ? 'Vidi sve vesti' : 'Види сите вести'} <ExternalLink size={16} />
+                      {t('search.view_all_stories')} <ExternalLink size={16} />
                     </button>
                   </div>
                 )}
@@ -977,7 +971,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                       onClick={() => { closeSearch(); navigate(selectedItem.data.href); }}
                       className="search-cmd-cta px-10 py-4 bg-foreground text-background rounded-none hover:bg-nyt-accent transition-all"
                     >
-                      {lang === 'sr' ? 'Otvori' : 'Отвори'}
+                      {t('search.open')}
                     </button>
                   </div>
                 )}
@@ -987,8 +981,8 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
                 <div className="w-20 h-20 border-2 border-dashed border-muted-foreground rounded-full flex items-center justify-center mb-6">
                    <Layout size={32} />
                 </div>
-                <p className="font-serif font-black text-xl mb-1">{lang === 'sr' ? 'Pregled' : 'Преглед'}</p>
-                <p className="ui-label-min">{lang === 'sr' ? 'Izaberite stavku za detalje' : 'Изберете ставка за детали'}</p>
+                <p className="font-serif font-black text-xl mb-1">{t('search.preview_title')}</p>
+                <p className="ui-label-min">{t('search.preview_hint')}</p>
               </div>
             )}
           </div>
@@ -997,15 +991,15 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
         {/* Command Footer */}
         <div className="px-4 sm:px-6 py-2.5 sm:py-3 border-t border-border/40 bg-secondary/5 flex items-center justify-between search-cmd-footer-hint">
            <div className="hidden sm:flex items-center gap-[var(--grid-gap)]">
-              <span className="flex items-center gap-[var(--grid-gap)]"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded-none">Enter</kbd> {lang === 'sr' ? 'Izaberi' : 'Избери'}</span>
-              <span className="flex items-center gap-[var(--grid-gap)]"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded-none">↑</kbd><kbd className="px-1.5 py-0.5 bg-background border border-border rounded-none">↓</kbd> {lang === 'sr' ? 'Navigacija' : 'Навигација'}</span>
-              <span className="hidden md:flex items-center gap-[var(--grid-gap)]"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded-none">/</kbd> {lang === 'sr' ? 'Otvori' : 'Отвори'}</span>
-              <span className="flex items-center gap-[var(--grid-gap)]"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded-none">Esc</kbd> {lang === 'sr' ? 'Zatvori' : 'Затвори'}</span>
+              <span className="flex items-center gap-[var(--grid-gap)]"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded-none">Enter</kbd> {t('search.shortcut_select')}</span>
+              <span className="flex items-center gap-[var(--grid-gap)]"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded-none">↑</kbd><kbd className="px-1.5 py-0.5 bg-background border border-border rounded-none">↓</kbd> {t('search.shortcut_nav')}</span>
+              <span className="hidden md:flex items-center gap-[var(--grid-gap)]"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded-none">/</kbd> {t('search.shortcut_open')}</span>
+              <span className="flex items-center gap-[var(--grid-gap)]"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded-none">Esc</kbd> {t('search.shortcut_close')}</span>
            </div>
            <div className="flex items-center gap-2 sm:gap-[var(--grid-gap)]">
-              <span className="flex items-center gap-1.5"><Globe size={12} /> {lang === 'sr' ? 'Globalna pretraga' : 'Глобално пребарување'}</span>
+              <span className="flex items-center gap-1.5"><Globe size={12} /> {t('search.global_search')}</span>
               <span className="hidden sm:inline w-1 h-1 rounded-full bg-border" />
-              <span className="hidden sm:flex items-center gap-1.5"><Sparkles size={12} /> {lang === 'sr' ? 'Pametna asistencija' : 'Паметна асистенција'}</span>
+              <span className="hidden sm:flex items-center gap-1.5"><Sparkles size={12} /> {t('search.smart_assist')}</span>
            </div>
         </div>
       </div>
@@ -1020,7 +1014,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
         onClick={openSearch}
         data-testid="search-trigger"
         className="presek-search-trigger group"
-        aria-label={lang === 'sr' ? 'Otvori pretragu' : 'Отвори пребарување'}
+        aria-label={t('search.open_search')}
         aria-keyshortcuts="Meta+K /"
       >
         <span className="search-trigger-icon" aria-hidden="true">
@@ -1029,7 +1023,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
         <span className="search-trigger-copy">
           <span className="search-trigger-label">{t('header.search_placeholder')}</span>
           <span className="search-trigger-hint">
-            {lang === 'sr' ? 'Vesti, teme, subjekti' : 'Вести, теми, субјекти'}
+            {t('search.hint_topics')}
           </span>
         </span>
         <span className="search-trigger-shortcuts" aria-hidden="true">

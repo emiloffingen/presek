@@ -10,7 +10,7 @@ const urlLang = getLangFromUrl(Astro.url, hostHeader);
 const lang = (Astro.props.lang || urlLang) as 'sr' | 'mk';
 const t = useTranslations(lang);
 
-const editionDate = new Intl.DateTimeFormat(lang === 'sr' ? 'sr-RS' : 'mk-MK', {
+const editionDate = new Intl.DateTimeFormat(lang === 'sr' ? 'sr-Latn-RS' : 'mk-MK', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',

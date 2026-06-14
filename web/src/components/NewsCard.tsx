@@ -1,12 +1,11 @@
 import React from 'react';
-import { ShieldCheck, Globe, CheckCircle2, Activity, Clock, Layers, Palette, ArrowRight } from 'lucide-react';
 import { chooseClusterImage } from '../utils/imageSelection';
 import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, getDesignCardContext, slugify, transliterate } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
 import { dateLocaleForLang, localePathForLang } from '../lib/localePaths';
 import { getVisibleCardSignals, formatSignalBadge } from '../lib/signalBadges';
 import { buildCompactPluralismMeta } from '../lib/trustSignals';
-import { ui } from '../i18n/ui';
+import { useTranslations } from '../i18n/utils';
 import type { NewsCluster, Article } from '../types';
 
 interface NewsCardProps {
@@ -16,40 +15,13 @@ interface NewsCardProps {
   lang?: string;
 }
 
-const _T: Record<string, Record<string, string>> = {
-    'news.breaking': { sr: 'Udarna', mk: 'Ударна' },
-    'news.tracked': { sr: 'Praćena', mk: 'Следена' },
-    'news.urgent': { sr: 'Hitan razvoj', mk: 'Итен развој' },
-    'news.ongoing': { sr: 'U toku', mk: 'Во тек' },
-    'news.source': { sr: 'izvor', mk: 'извор' },
-    'news.sources': { sr: 'izvora', mk: 'извори' },
-    'news.synthesis': { sr: 'Sistemska sinteza Preseka', mk: 'Системска синтеза на Пресек' },
-    'news.now': { sr: 'SADA', mk: 'СЕГА' },
-    'news.just_now': { sr: 'UPRAVO SADA', mk: 'ТУКУШТО' },
-    'news.ago': { sr: 'PRE', mk: 'ПРЕД' },
-    'news.min_short': { sr: 'MIN', mk: 'МИН' },
-    'news.go_to_article': { sr: 'ODI DO ČLANAK', mk: 'ОДИ ДО АРТИКЛОТ' },
-    'news.global': { sr: 'SVETSKA vest', mk: 'СВЕТСКА вест' },
-    'news.live': { sr: 'UŽIVO', mk: 'ВО ЖИВО' },
-    'news.fact_check': { sr: 'FAKT-ČEK', mk: 'ФАКТ-ЧЕК' },
-    'news.preview': { sr: 'PRESEK PREGLED', mk: 'ПРЕСЕК ПРЕГЛЕД' },
-    'cluster.synthesis_badge': { sr: 'SINTEZA', mk: 'СИНТЕЗА' },
-    'cluster.media_pluralism': { sr: 'MEDIJSKI PLURALIZAM', mk: 'МЕДИУМСКИ ПЛУРАЛИЗАМ' },
-    'card.culture': { sr: 'KULTURNA PREPORUKA', mk: 'КУЛТУРНА ПРЕПОРАКА' },
-    'card.politics': { sr: 'POLITIČKI FOKUS', mk: 'ПОЛИТИЧКИ ФОКУС' },
-    'card.economy': { sr: 'EKONOMSKI BRIFING', mk: 'ЕКОНОМСКИ БРИФИНГ' },
-    'card.sport': { sr: 'SPORTSKI PULS', mk: 'СПОРТСКИ ПУЛС' },
-    'card.tech': { sr: 'TEHNOLOŠKI PRESEK', mk: 'ТЕХНОЛОШКИ ПРЕСЕК' },
-    'card.general': { sr: 'SISTEMSKI PREGLED', mk: 'СИСТЕМСКИ ПРЕГЛЕД' },
-};
-
 export const NewsCard: React.FC<NewsCardProps> = ({
   cluster,
   isLead = false,
   variant = 'standard',
   lang = 'sr'
 }) => {
-  const t = (key: string) => _T[key]?.[lang] || key;
+  const t = useTranslations(lang as 'sr' | 'mk');
   const l = (path: string) => localePathForLang(path, lang as 'sr' | 'mk');
 
   const main = cluster.articles?.[0];
@@ -83,9 +55,6 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
   const uniqueSources = Number((cluster as any).sources_count || (cluster as any).source_count || new Set(cluster.articles.map(a => a.source)).size);
 
-  const signalT = (key: string) =>
-    ui[lang as 'sr' | 'mk'][key as keyof typeof ui.sr] || key;
-
   const signalBadges = getVisibleCardSignals({
     pluralismScore: cluster.pluralism_score,
     pulseScore: cluster.pulse_score,
@@ -97,7 +66,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
       pluralism: cluster.pluralism_score,
       pulse: cluster.pulse_score,
       topic: cluster.topics?.[0] || main.topic || main.category || '',
-    }, signalT),
+    }, t),
   );
 
   const hasPluralismConflict = (cluster.pluralism_score ?? 0) >= 55;
@@ -113,7 +82,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   const showConflictPreview = conflictHeadlines.length >= 2;
 
   const cardContext = getDesignCardContext(cluster);
-  const cardLabel = cardContext.labelKey ? t(cardContext.labelKey) : '';
+  const cardLabel = cardContext.labelKey ? t(cardContext.labelKey as any) : '';
 
   function getCardSummary(article: Article, lead = false) {
     const text = getDisplaySummary(article);
@@ -195,17 +164,17 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         )}
 
         {cardSignals.length > 0 && variant !== 'wire' && variant !== 'compact' && (
-          <div className="cluster-signal-row" aria-label={lang === 'sr' ? 'Signali klastera' : 'Сигнали на кластерот'}>
+          <div className="cluster-signal-row" aria-label={t('signal.cluster_row')}>
             <span>{cardSignals[0]}</span>
           </div>
         )}
 
         {showConflictPreview && (
-          <div className="conflict-headline-preview" aria-label={signalT('pulse.conflict_angles')}>
-            <p className="conflict-headline-kicker">{signalT('pulse.conflict_angles')}</p>
+          <div className="conflict-headline-preview" aria-label={t('pulse.conflict_angles')}>
+            <p className="conflict-headline-kicker">{t('pulse.conflict_angles')}</p>
             {conflictHeadlines.slice(0, 2).map((headline, index) => (
               <p key={index} className="conflict-headline-variant">
-                <strong>{signalT('pulse.conflict_headline')}:</strong> {headline}
+                <strong>{t('pulse.conflict_headline')}:</strong> {headline}
               </p>
             ))}
           </div>
@@ -235,7 +204,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
           data-image-state={isFallbackArt ? 'fallback' : 'loading'}
           style={!isFallbackArt ? { '--placeholder-bg': tintColor } as any : undefined}
         >
-          <a href={clusterUrl} className="block h-full" data-testid="cluster-link">
+          <a href={clusterUrl} className="block h-full" data-testid="cluster-link" tabIndex={-1} aria-hidden="true">
             {isFallbackArt ? (
               <div className="article-image-placeholder topic-fallback-card topic-fallback-card--proxy-only" style={{ '--placeholder-bg': tintColor } as React.CSSProperties}>
                 <img
@@ -252,7 +221,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
               <div className="runtime-image-container relative w-full h-full">
                 <img
                   src={thumbSrc}
-                  alt={displayTitle}
+                  alt=""
                   width="700"
                   height="500"
                   className="article-image is-loaded w-full h-full object-cover rounded-md"
@@ -279,7 +248,3 @@ export const NewsCard: React.FC<NewsCardProps> = ({
     </article>
   );
 };
-
-function anyFactCheck(articles: Article[]) {
-  return articles.some(a => a.is_fact_check);
-}

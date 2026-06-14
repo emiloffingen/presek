@@ -13,6 +13,7 @@ import { news } from './namespaces/news';
 import { settings } from './namespaces/settings';
 import { about } from './namespaces/about';
 import { common } from './namespaces/common';
+import { search } from './namespaces/search';
 
 export const ui = {
   sr: {
@@ -24,6 +25,7 @@ export const ui = {
     ...settings.sr,
     ...about.sr,
     ...common.sr,
+    ...search.sr,
   },
   mk: {
     ...nav.mk,
@@ -34,5 +36,6 @@ export const ui = {
     ...settings.mk,
     ...about.mk,
     ...common.mk,
+    ...search.mk,
   },
 } as const;

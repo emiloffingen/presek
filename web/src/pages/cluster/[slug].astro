@@ -550,7 +550,7 @@ const articleSchema = cluster ? {
 		"@type": "WebPage",
 		"@id": canonicalUrl
 	},
-	"articleSection": cluster.articles?.[0]?.category || "News",
+	"articleSection": cluster.articles?.[0]?.category || t('news.section_default'),
 	"articleBody": schemaArticleBody,
 	"speakable": {
 		"@type": "SpeakableSpecification",
@@ -599,8 +599,8 @@ const articleSchema = cluster ? {
 
 		<div class="editorial-container max-w-[1440px] mx-auto px-2 sm:px-4 md:px-10">
 		<Breadcrumbs items={[
-			{ label: cleanTopicLabel(cluster?.articles?.[0]?.category) || 'Vesti', href: cluster?.articles?.[0]?.category ? `/?category=${cluster.articles[0].category}` : '/' },
-			{ label: cleanTopicLabel(adjacentTopic) || 'Detalji' }
+			{ label: cleanTopicLabel(cluster?.articles?.[0]?.category) || t('home.feed_title'), href: cluster?.articles?.[0]?.category ? `/?category=${cluster.articles[0].category}` : '/' },
+			{ label: cleanTopicLabel(adjacentTopic) || t('cluster.details') }
 		]} />
 
 		{error ? (

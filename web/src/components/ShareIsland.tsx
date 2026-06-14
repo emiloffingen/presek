@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { MessageCircle } from "lucide-react";
+import { useTranslations } from "../i18n/utils";
 
 const FacebookIcon = ({ size = 16 }: { size?: number }) => (
   <svg
@@ -60,16 +61,15 @@ const RedditIcon = ({ size = 16 }: { size?: number }) => (
 interface ShareIslandProps {
   title: string;
   url: string;
+  lang?: 'sr' | 'mk';
 }
 
-export default function ShareIsland({ title, url }: ShareIslandProps) {
+export default function ShareIsland({ title, url, lang = 'sr' }: ShareIslandProps) {
+  const t = useTranslations(lang);
   const [currentUrl, setCurrentUrl] = useState(url);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      // In production/development, we want the current window URL
-      // If the url is local (e.g. localhost), we should keep it for local testing
-      // but in production it will resolve correctly to the actual browser URL.
       setCurrentUrl(window.location.href);
     }
   }, [url]);
@@ -92,7 +92,7 @@ export default function ShareIsland({ title, url }: ShareIslandProps) {
         "hover:text-green-600 hover:border-green-600 dark:hover:text-green-400 dark:hover:border-green-400",
     },
     {
-      name: "Twitter / X",
+      name: "X",
       icon: <TwitterIcon size={20} />,
       url: `https://x.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(currentUrl)}`,
       hoverClass:
@@ -118,7 +118,7 @@ export default function ShareIsland({ title, url }: ShareIslandProps) {
           className={`meta-action-btn flex items-center justify-center rounded-full border border-border/50 text-muted-foreground bg-background/50 hover:bg-muted/30 transition-all duration-200 ${option.hoverClass}`}
           style={{ width: "38px", height: "38px", minWidth: "38px", minHeight: "38px" }}
           title={option.name}
-          aria-label={`Share on ${option.name}`}
+          aria-label={t('cluster.share_on', { network: option.name })}
         >
           {option.icon}
         </a>

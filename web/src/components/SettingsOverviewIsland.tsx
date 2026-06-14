@@ -16,7 +16,7 @@ import { $deliveryPrefs, $profile, $syncToken } from '../lib/store.ts';
 import { hasPersonalizationSignal } from '../lib/personalization.js';
 import { localePathForLang } from '../lib/localePaths';
 import MorningEmailSignup from './MorningEmailSignup.tsx';
-import { ui } from '../i18n/ui';
+import { useTranslations } from '../i18n/utils';
 
 type TabId = 'pregled' | 'profil' | 'dostava' | 'sinhronizacija' | 'vodic';
 
@@ -29,8 +29,8 @@ export default function SettingsOverviewIsland({ lang = 'sr' }: { lang?: string 
   const profile = useStore($profile);
   const syncToken = useStore($syncToken);
   const deliveryPrefs = useStore($deliveryPrefs);
-  const isMK = lang === 'mk';
-  const copy = ui[isMK ? 'mk' : 'sr'];
+  const locale = lang === 'mk' ? 'mk' : 'sr';
+  const t = useTranslations(locale);
 
   const followedTopics = profile?.followedTopics || [];
   const followedSources = profile?.followedSources || [];
@@ -46,31 +46,35 @@ export default function SettingsOverviewIsland({ lang = 'sr' }: { lang?: string 
       {
         id: 'profil' as TabId,
         icon: UserCircle2,
-        label: isMK ? 'Профил & теми' : 'Profil & teme',
+        label: t('settings.overview_card_profile'),
         value: `${followedTopics.length + followedSources.length}`,
-        note: isMK ? 'активни сигнали' : 'aktivnih signala',
-        hint: isMK ? 'Уредете што следите' : 'Uredite šta pratite',
+        note: t('settings.overview_card_profile_note'),
+        hint: t('settings.overview_card_profile_hint'),
       },
       {
         id: 'dostava' as TabId,
         icon: Mail,
-        label: copy['settings.overview_morning_label'],
-        value: deliveryPrefs.morningBriefing ? 'Push' : (isMK ? 'Искл.' : 'Iskl.'),
-        note: copy['settings.overview_delivery_note'],
-        hint: copy['settings.overview_delivery_hint'],
+        label: t('settings.overview_morning_label'),
+        value: deliveryPrefs.morningBriefing
+          ? t('settings.overview_delivery_enabled')
+          : t('settings.overview_delivery_disabled'),
+        note: t('settings.overview_delivery_note'),
+        hint: t('settings.overview_delivery_hint'),
       },
       {
         id: 'sinhronizacija' as TabId,
         icon: KeyRound,
-        label: isMK ? 'Синхронизација' : 'Sinhronizacija',
-        value: syncToken ? (isMK ? 'Активна' : 'Aktivna') : (isMK ? 'Локално' : 'Lokalno'),
-        note: isMK ? 'дигитален пасош' : 'digitalni pasoš',
+        label: t('settings.overview_card_sync'),
+        value: syncToken
+          ? t('settings.overview_card_sync_note_active')
+          : t('settings.overview_card_sync_note_local'),
+        note: t('settings.overview_card_sync_value_local'),
         hint: syncToken
-          ? (isMK ? 'Профилот е поврзан' : 'Profil je povezan')
-          : (isMK ? 'Поврзете уреди' : 'Povežite uređaje'),
+          ? t('settings.overview_card_sync_hint_active')
+          : t('settings.overview_card_sync_hint_local'),
       },
     ],
-    [copy, deliveryPrefs.morningBriefing, followedSources.length, followedTopics.length, isMK, syncToken],
+    [deliveryPrefs.morningBriefing, followedSources.length, followedTopics.length, syncToken, t],
   );
 
   return (
@@ -78,18 +82,14 @@ export default function SettingsOverviewIsland({ lang = 'sr' }: { lang?: string 
       <section className="settings-overview-hero">
         <div>
           <span className="settings-overview-kicker">
-            <Gauge size={15} /> {isMK ? 'Преглед' : 'Pregled'}
+            <Gauge size={15} /> {t('settings.overview_kicker')}
           </span>
-          <h2>{isMK ? 'Едно место за профил, достава и синхронизација' : 'Jedno mesto za profil, dostavu i sinhronizaciju'}</h2>
-          <p>
-            {isMK
-              ? 'Проверете колку е силен вашиот сигнал, закажете утринско издание и отворете персонализиран пресек.'
-              : 'Proverite koliko je jak vaš signal, zakažite jutarnje izdanje i otvorite personalizovan presek.'}
-          </p>
+          <h2>{t('settings.overview_title')}</h2>
+          <p>{t('settings.overview_desc')}</p>
         </div>
-        <div className="settings-overview-meter" aria-label={isMK ? 'Сила на сигналот' : 'Jačina signala'}>
+        <div className="settings-overview-meter" aria-label={t('settings.overview_meter_label')}>
           <div className="settings-overview-meter-head">
-            <span>{isMK ? 'Сигнал на профилот' : 'Signal profila'}</span>
+            <span>{t('settings.overview_meter_head')}</span>
             <strong>{signalStrength}%</strong>
           </div>
           <div className="settings-overview-meter-bar">
@@ -97,12 +97,12 @@ export default function SettingsOverviewIsland({ lang = 'sr' }: { lang?: string 
           </div>
           <p>
             {hasSignals
-              ? isMK
-                ? `${followedTopics.length} теми · ${followedSources.length} извори · ${recentCount} неодамнешни`
-                : `${followedTopics.length} tema · ${followedSources.length} izvora · ${recentCount} nedavnih`
-              : isMK
-                ? 'Додајте теми или извори за посилен личен пресек.'
-                : 'Dodajte teme ili izvore za jači lični presek.'}
+              ? t('settings.overview_stats_active', {
+                  topics: followedTopics.length,
+                  sources: followedSources.length,
+                  recent: recentCount,
+                })
+              : t('settings.overview_stats_empty')}
           </p>
         </div>
       </section>
@@ -130,35 +130,35 @@ export default function SettingsOverviewIsland({ lang = 'sr' }: { lang?: string 
       </div>
 
       <div className="settings-overview-links">
-        <a href={localePathForLang('/for-you', isMK ? 'mk' : 'sr')} className="settings-overview-link">
+        <a href={localePathForLang('/for-you', locale)} className="settings-overview-link">
           <Compass size={16} />
           <span>
-            <strong>{isMK ? 'Отвори За Вас' : 'Otvori Za Vas'}</strong>
-            <small>{isMK ? 'Личен пресек според вашите сигнали' : 'Lični presek prema vašim signalima'}</small>
+            <strong>{t('settings.overview_link_foryou')}</strong>
+            <small>{t('settings.overview_link_foryou_desc')}</small>
           </span>
           <ArrowUpRight size={14} />
         </a>
-        <a href={localePathForLang('/briefing', isMK ? 'mk' : 'sr')} className="settings-overview-link">
+        <a href={localePathForLang('/briefing', locale)} className="settings-overview-link">
           <Newspaper size={16} />
           <span>
-            <strong>{isMK ? 'Дневен брифинг' : 'Dnevni brifing'}</strong>
-            <small>{isMK ? 'Уредничко издание за денот' : 'Uredničko izdanje za danas'}</small>
+            <strong>{t('settings.overview_link_briefing')}</strong>
+            <small>{t('settings.overview_link_briefing_desc')}</small>
           </span>
           <ArrowUpRight size={14} />
         </a>
         <button type="button" className="settings-overview-link" onClick={() => activateSettingsTab('dostava')}>
           <BellRing size={16} />
           <span>
-            <strong>{isMK ? 'Подеси достава' : 'Podesi dostavu'}</strong>
-            <small>{copy['settings.overview_delivery_link_note']}</small>
+            <strong>{t('settings.overview_link_delivery')}</strong>
+            <small>{t('settings.overview_delivery_link_note')}</small>
           </span>
           <ArrowUpRight size={14} />
         </button>
         <button type="button" className="settings-overview-link" onClick={() => activateSettingsTab('vodic')}>
           <Sparkles size={16} />
           <span>
-            <strong>{isMK ? 'Водич за почеток' : 'Vodič za početak'}</strong>
-            <small>{isMK ? '4 чекори до подобар личен пресек' : '4 koraka do boljeg ličnog preseka'}</small>
+            <strong>{t('settings.overview_link_guide')}</strong>
+            <small>{t('settings.overview_link_guide_desc')}</small>
           </span>
           <ArrowUpRight size={14} />
         </button>
@@ -168,13 +168,11 @@ export default function SettingsOverviewIsland({ lang = 'sr' }: { lang?: string 
         <div className="settings-overview-email-head">
           <Radio size={16} />
           <div>
-            <h3>{copy['settings.overview_morning_email_title']}</h3>
-            <p>
-              {copy['settings.overview_morning_email_desc']}
-            </p>
+            <h3>{t('settings.overview_morning_email_title')}</h3>
+            <p>{t('settings.overview_morning_email_desc')}</p>
           </div>
         </div>
-        <MorningEmailSignup lang={isMK ? 'mk' : 'sr'} variant="settings" />
+        <MorningEmailSignup lang={locale} variant="settings" />
       </section>
     </div>
   );

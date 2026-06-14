@@ -33,9 +33,7 @@ const t = useTranslations(lang);
 
 const {
 	title,
-	description = lang === 'sr'
-        ? "Presek je moderni srpski agregator vesti koji koristi naprednu jezičku obradu (NLP) za grupisanje i sumiranje najvažnijih događaja iz svih medija."
-        : "Пресек е модерен македонски агрегатор на вести кој користи напредна јазична обработка (NLP) за групирање и сумирање на најважните настани од сите медиуми.",
+	description = t('layout.default_description'),
 	image = "/img/presek_emblem.png",
 	canonical,
 	type = "website",
@@ -44,9 +42,7 @@ const {
 } = Astro.props;
 
 // Also update the default description for Macedonian site
-const defaultDescription = lang === 'sr'
-    ? "Presek je srpski informativni agregator koji sakuplja vesti iz svih medija, grupiše ih po temi i pokazuje kako različiti izvori izveštavaju o istom događaju."
-    : "Пресек е македонски информативен агрегатор кој собира вести од сите медиуми, ги групира по тема и покажува како различни извори известуваат за истиот настан.";
+const defaultDescription = t('layout.default_description');
 
 const siteUrl = siteOrigin(lang);
 const siteName = lang === 'sr' ? "PRESEK.rs" : "PRESEK.mk";
@@ -223,12 +219,23 @@ const organizationSchema = {
 </style>
 
 	<body id="top" class:list={["antialiased min-h-screen bg-background text-foreground transition-colors duration-300 overflow-x-hidden w-full", { "script-latin": lang === 'sr', "script-cyrillic": lang === 'mk' }]}>
+		<a href="#main-content" class="skip-to-content">{lang === 'mk' ? 'Прескокни до содржина' : 'Preskoči na sadržaj'}</a>
 		<div class="noise-overlay" aria-hidden="true"></div>
 		<div id="loading-bar" class="fixed top-0 left-0 z-[9999] transition-all duration-300 opacity-0 w-0"></div>
 		<slot />
 		<UiConceptOnboarding client:idle lang={lang} />
 		<ConsentBanner client:idle />
 		<script is:inline set:html={`window.__PRESEK_PROXY_BASE = ${JSON.stringify(proxyBase)};`} />
+		<script is:inline>
+			(function ensureMainContentTarget() {
+				const assign = () => {
+					const main = document.querySelector('main:not([id])');
+					if (main) main.id = 'main-content';
+				};
+				assign();
+				document.addEventListener('astro:page-load', assign);
+			})();
+		</script>
 		<script is:inline>
 			// Handle Astro transitions loading state
 			document.addEventListener('astro:before-preparation', () => {

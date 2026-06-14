@@ -1,6 +1,6 @@
 ---
 import { ChevronRight, Home } from 'lucide-react';
-import { getLangFromUrl } from '../i18n/utils';
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import { homePath, siteOrigin } from '../lib/localePaths';
 
 interface Crumb {
@@ -17,6 +17,7 @@ const { items } = Astro.props;
 // For SEO schema
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
+const t = useTranslations(lang);
 const siteUrl = siteOrigin(lang);
 const homeHref = homePath(lang, hostHeader);
 const homeLabel = lang === 'mk' ? 'Почетна' : 'Početna';
@@ -33,7 +34,7 @@ const breadcrumbSchema = {
 };
 ---
 
-<nav class="breadcrumb-container" aria-label="Breadcrumb">
+<nav class="breadcrumb-container" aria-label={t('nav.breadcrumb')}>
   <ol class="flex items-center flex-wrap gap-[var(--grid-gap)] text-[11px] font-sans font-bold uppercase tracking-widest text-muted-foreground">
     <li class="flex items-center">
       <a href={homeHref} class="hover:text-nyt-accent transition-colors flex items-center gap-1">

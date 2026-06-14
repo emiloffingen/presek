@@ -89,7 +89,7 @@ const {
       <ClusterStandfirst standfirst={cluster.synthetic_standfirst} lang={lang} />
       <div class="cluster-meta-compact">
         <span class="cluster-meta-chip">
-          {cleanTopicLabel(cluster.articles?.[0]?.category) || (lang === 'sr' ? 'Vesti' : 'Вести')}
+          {cleanTopicLabel(cluster.articles?.[0]?.category) || t('home.feed_title')}
         </span>
         <span class:list={['cluster-meta-chip', `tone-${clusterStatus.tone}`]}>
           {uniqueSourcesCount} {newsroomCountLabel(uniqueSourcesCount)} · {clusterStatus.label}
@@ -114,7 +114,7 @@ const {
         />
         <div class="header-actions cluster-header-actions">
           <ReadingModeToggle lang={lang} client:idle />
-          <ShareIsland client:idle title={displayHeadline} url={canonicalUrl} />
+          <ShareIsland client:idle title={displayHeadline} url={canonicalUrl} lang={lang} />
         </div>
       </div>
       <p class="cluster-reading-hint">{t('reading.mode_hint')}</p>
@@ -123,7 +123,7 @@ const {
   <details class="cluster-source-details">
     <summary class="cluster-source-details-summary">
       <span class="cluster-source-details-title">
-        {lang === 'sr' ? 'Detalji izvora' : 'Детали за извори'}
+        {t('cluster.source_details')}
       </span>
       <span class:list={['cluster-source-details-meta', `tone-${clusterStatus.tone}`]}>
         {uniqueSourcesCount} {newsroomOverviewLabel(uniqueSourcesCount)} · {clusterStatus.label}

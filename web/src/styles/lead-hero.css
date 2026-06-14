@@ -1097,11 +1097,14 @@
 			}
 
 			.lead-synthesis-badge,
-			.lead-status-badge,
 			.lead-kicker-meta .story-freshness-badge,
-			.lead-kicker-meta :global(.story-freshness-badge),
-			.lead-kicker-meta .time-stamp-v2 {
+			.lead-kicker-meta :global(.story-freshness-badge) {
 				display: none !important;
+			}
+
+			.lead-status-badge,
+			.lead-kicker-meta .time-stamp-v2 {
+				display: inline-flex !important;
 			}
 
 			.lead-edition-bar {
@@ -1138,7 +1141,18 @@
 				font-size: 0.58rem;
 				letter-spacing: 0.12em;
 			}
-			.lead-follow-strip { display: none; }
+			.lead-follow-strip {
+				display: block;
+				margin-top: 0.55rem;
+			}
+
+			.lead-follow-kicker {
+				font-size: 0.58rem;
+			}
+
+			.lead-related {
+				font-size: 0.82rem;
+			}
 
         .lead-analyst-box {
             margin-top: 0.85rem;

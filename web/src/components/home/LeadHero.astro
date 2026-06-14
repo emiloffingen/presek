@@ -176,7 +176,7 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl && !leadV
             </span>
         </div>
         <div class="lead-kicker-v2 mb-4">
-            <span class="source-badge" aria-label={t('lead.title_prefix')}>{leadCluster.articles?.[0].source}</span>
+            <span class="source-badge">{primaryArticle.source || filterLabel || primaryArticle.topic || primaryArticle.category || t('lead.theme_fallback')}</span>
             {leadCluster.has_synthesis && (
                 <span class="lead-synthesis-badge ui-status">{t('home.feed_synthesis_badge')}</span>
             )}
@@ -238,10 +238,10 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl && !leadV
                     <span class="insight-label">{t('lead.system_insight').toUpperCase()}</span>
                     <div class="insight-meta">
                         {leadCluster.pulse_score && (
-                            <span class="meta-tag">PULSE {leadCluster.pulse_score}%</span>
+                            <span class="meta-tag">{t('cluster.media_pulse')} {leadCluster.pulse_score}%</span>
                         )}
                         {leadCluster.pluralism_score !== undefined && (
-                            <span class="meta-tag">PLURALISM {leadCluster.pluralism_score}%</span>
+                            <span class="meta-tag">{t('lead.pluralism')} {leadCluster.pluralism_score}%</span>
                         )}
                     </div>
                 </div>

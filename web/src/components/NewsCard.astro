@@ -197,7 +197,7 @@ function getTimeStr(dateStr: string) {
         )}
 
         {isLead && cluster.articles.length > 1 && (
-            <ul class="sub-headlines" aria-label="Povezane vesti">
+            <ul class="sub-headlines" aria-label={t('news.related_stories')}>
                 {cluster.articles.slice(1).filter(a => !a.is_redundant).slice(0, 3).map((sub: Article) => (
                     <li>
                         <a href={clusterUrl} set:html={sanitizeHtml(getDisplayTitle(sub, '', lang))}>
@@ -259,7 +259,7 @@ function getTimeStr(dateStr: string) {
 
     {showMedia && (
     <div class:list={["image-wrap", { "image-wrap-fallback": isFallbackArt }]} data-image-state={isFallbackArt ? 'fallback' : 'loading'} style={!isFallbackArt ? `--placeholder-bg: ${tintColor}` : undefined}>
-        <a href={clusterUrl} class="block h-full" data-testid="cluster-link">
+        <a href={clusterUrl} class="block h-full" data-testid="cluster-link" tabindex="-1" aria-hidden="true">
             {isFallbackArt ? (
                 isLead ? (
                     <div class:list={["article-image-placeholder topic-fallback-card", { "article-image-placeholder-title-cyrillic": titleIsCyrillic }]} style={`--placeholder-bg: ${tintColor}`}>

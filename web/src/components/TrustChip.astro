@@ -1,5 +1,6 @@
 ---
 import { buildTrustChip } from '../lib/trustSignals';
+import { useTranslations } from '../i18n/utils';
 
 interface Props {
   sourcesCount: number;
@@ -24,48 +25,59 @@ const {
   isPendingSynthesis = false,
 } = Astro.props;
 
+const t = useTranslations(lang);
+
 const trust = buildTrustChip(
   { sourcesCount, pluralismScore, isStale, hasVerification, quietFreshness, isPendingSynthesis },
   lang,
 );
 
-const explainerTitle = lang === 'mk' ? 'Зошто овој сигнал?' : 'Zašto ovaj signal?';
-const sourceLine = lang === 'mk'
-  ? `${trust.sourcesCount} извори се поврзани во истиот кластер.`
-  : `${trust.sourcesCount} izvora je povezano u isti klaster.`;
 const pluralismLine = trust.pluralismScore == null
   ? null
   : trust.pluralismScore >= 55
-    ? (lang === 'mk' ? `Различни агли: ${trust.pluralismScore}%.` : `Različiti uglovi: ${trust.pluralismScore}%.`)
+    ? t('trust.plural_high', { score: trust.pluralismScore })
     : trust.pluralismScore <= 15
-      ? (lang === 'mk' ? `Висок консензус: ${trust.pluralismScore}%.` : `Visok konsenzus: ${trust.pluralismScore}%.`)
-      : (lang === 'mk' ? `Умерена разлика: ${trust.pluralismScore}%.` : `Umerena razlika: ${trust.pluralismScore}%.`);
-const freshnessLine = !isStale || quietFreshness
-  ? null
-  : (lang === 'mk' ? 'Синтезата се освежува.' : 'Sinteza se osvežava.');
-const verificationLine = hasVerification
-  ? (lang === 'mk' ? 'Има сигнал за проверка на факти.' : 'Ima signal provere činjenica.')
-  : null;
-const explainerLines = [sourceLine, pluralismLine, freshnessLine, verificationLine].filter(Boolean);
+      ? t('trust.plural_low', { score: trust.pluralismScore })
+      : t('trust.plural_mid', { score: trust.pluralismScore });
+const freshnessLine = !isStale || quietFreshness ? null : t('trust.stale');
+const verificationLine = hasVerification ? t('trust.verification') : null;
+const explainerLines = [
+  t('trust.sources_line', { count: trust.sourcesCount }),
+  pluralismLine,
+  freshnessLine,
+  verificationLine,
+].filter(Boolean);
 ---
 
-<span class={`trust-chip trust-chip--${trust.tier}`} title={showExplainer ? undefined : trust.detail} tabindex={showExplainer ? 0 : undefined}>
-  <span class="trust-chip-score">{trust.score}</span>
-  <span class="trust-chip-label">{trust.label}</span>
-  <span class="trust-chip-meta">
-    {trust.sourcesCount} {lang === 'mk' ? 'изв.' : 'izv.'}
-    {trust.pluralismScore != null ? ` · ${trust.pluralismScore}%` : ''}
-  </span>
-  {showExplainer && explainerLines.length > 0 && (
-    <span class="trust-chip-popover" role="tooltip">
-      <strong>{explainerTitle}</strong>
+{showExplainer && explainerLines.length > 0 ? (
+  <details class={`trust-chip trust-chip--${trust.tier} trust-chip--explainer`}>
+    <summary class="trust-chip-summary">
+      <span class="trust-chip-score">{trust.score}</span>
+      <span class="trust-chip-label">{trust.label}</span>
+      <span class="trust-chip-meta">
+        {trust.sourcesCount} {t('trust.sources_abbr')}
+        {trust.pluralismScore != null ? ` · ${trust.pluralismScore}%` : ''}
+      </span>
+    </summary>
+    <div class="trust-chip-popover" role="note">
+      <strong>{t('trust.explainer_title')}</strong>
       {explainerLines.map((line) => <span>{line}</span>)}
+    </div>
+  </details>
+) : (
+  <span class={`trust-chip trust-chip--${trust.tier}`} title={trust.detail}>
+    <span class="trust-chip-score">{trust.score}</span>
+    <span class="trust-chip-label">{trust.label}</span>
+    <span class="trust-chip-meta">
+      {trust.sourcesCount} {t('trust.sources_abbr')}
+      {trust.pluralismScore != null ? ` · ${trust.pluralismScore}%` : ''}
     </span>
-  )}
-</span>
+  </span>
+)}
 
 <style>
-  .trust-chip {
+  .trust-chip,
+  .trust-chip-summary {
     position: relative;
     display: inline-flex;
     align-items: center;
@@ -77,8 +89,17 @@ const explainerLines = [sourceLine, pluralismLine, freshnessLine, verificationLi
     font-family: var(--font-sans);
     line-height: 1;
     max-width: 100%;
+    list-style: none;
+    cursor: default;
   }
-  .trust-chip:focus-visible {
+  .trust-chip-summary::-webkit-details-marker {
+    display: none;
+  }
+  .trust-chip--explainer .trust-chip-summary {
+    cursor: pointer;
+  }
+  .trust-chip--explainer:focus-visible,
+  .trust-chip-summary:focus-visible {
     outline: 2px solid color-mix(in srgb, var(--nyt-accent) 70%, transparent);
     outline-offset: 2px;
   }
@@ -131,10 +152,19 @@ const explainerLines = [sourceLine, pluralismLine, freshnessLine, verificationLi
     letter-spacing: 0.12em;
     text-transform: uppercase;
   }
-  .trust-chip:hover .trust-chip-popover,
-  .trust-chip:focus-visible .trust-chip-popover,
-  .trust-chip:focus-within .trust-chip-popover {
-    opacity: 1;
-    transform: translateY(0);
+  @media (hover: hover) {
+    .trust-chip--explainer:hover .trust-chip-popover,
+    .trust-chip--explainer[open] .trust-chip-popover {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+  }
+  @media (hover: none) {
+    .trust-chip--explainer[open] .trust-chip-popover {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
   }
 </style>

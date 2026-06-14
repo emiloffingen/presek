@@ -44,6 +44,39 @@
     padding: 1.25rem !important;
   }
 
+  /* Minimum touch targets on coarse pointers */
+  @media (pointer: coarse) {
+    button,
+    summary,
+    .nav-rail-link,
+    .nav-overflow-trigger,
+    .utility-menu-trigger,
+    .home-feed-filter-btn,
+    .home-start-here-dismiss,
+    .header-utility-button {
+      min-height: 2.75rem;
+      min-width: 2.75rem;
+    }
+
+    .home-feed-filter-btn {
+      min-width: auto;
+      padding-top: 0.55rem;
+      padding-bottom: 0.55rem;
+    }
+
+    .nav-rail-link {
+      padding: 0.55rem 0.7rem;
+    }
+  }
+
+  /* Readable metadata floor on mobile */
+  .nyt-article .kicker,
+  .nyt-article .article-footer-meta,
+  .nyt-article .trust-chip-label,
+  .nyt-article .trust-chip-meta {
+    font-size: max(0.75rem, 1em);
+  }
+
   .source-reputation-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
