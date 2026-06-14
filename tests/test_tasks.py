@@ -925,6 +925,13 @@ class TestDailyBriefTaskQuality:
             category="Sport",
             topic="Sport",
         )
+        assert tasks.delivery.briefing._is_routine_sports_cluster(
+            "Њујорк Никс ја освоија НБА титулата по 53 години",
+            "Брансон беше најкорисен играч.",
+            category="Amerika",
+            topic="vesti",
+            extra_context="Reporter.mk СпортМедиа",
+        )
 
     def test_load_daily_brief_clusters_pushes_routine_sports_behind_public_interest_cluster(self):
         rows = [

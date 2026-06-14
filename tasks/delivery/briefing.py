@@ -126,9 +126,11 @@ _BRIEFING_SPORTS_MARKERS = (
     "mlb",
     "nhl",
     "mvp",
+    "нба",
     "kosarka",
     "košarka",
     "кошarka",
+    "кошарка",
     "fudbal",
     "фудбал",
     "football",
@@ -136,11 +138,18 @@ _BRIEFING_SPORTS_MARKERS = (
     " golot",
     " gol ",
     " gol/",
+    " гол",
+    " голот",
+    " гол ",
     "utakmica",
     "utakmici",
+    "утакмица",
     "natprevar",
     "натпревар",
     "finale",
+    "финалето",
+    "финалната",
+    "финална",
     "finalna serija",
     "finalnata serija",
     "playoff",
@@ -170,9 +179,21 @@ _BRIEFING_SPORTS_MARKERS = (
     "шampion",
 )
 
+_BRIEFING_SPORTS_SOURCE_MARKERS = (
+    "sportmedia",
+    "sport media",
+    "sportklub",
+    "sportmediа",
+    "спортmedia",
+    "спортmediа",
+    "ekipa.mk",
+)
+
 _BRIEFING_AMBIGUOUS_SPORTS_MARKERS = (
     "rezultat",
     "rezultati",
+    "titula",
+    "титула",
 )
 
 _BRIEFING_UNAMBIGUOUS_SPORTS_MARKERS = tuple(
@@ -247,6 +268,7 @@ def _is_routine_sports_cluster(
     cluster_summary: str = "",
     category: str = "",
     topic: str = "",
+    extra_context: str = "",
 ) -> bool:
     haystack = " ".join(
         [
@@ -255,6 +277,7 @@ def _is_routine_sports_cluster(
             str(cluster_summary or ""),
             str(category or ""),
             str(topic or ""),
+            str(extra_context or ""),
         ]
     ).casefold()
     if _has_public_interest_signal(title, description, cluster_summary):
@@ -264,6 +287,8 @@ def _is_routine_sports_cluster(
     if str(category or "").casefold() in {"sport", "sports", "sportovi"}:
         return True
     if str(topic or "").casefold() in {"sport", "sports", "sportovi"}:
+        return True
+    if any(marker in haystack for marker in _BRIEFING_SPORTS_SOURCE_MARKERS):
         return True
     return _has_routine_sports_marker(haystack, category=category, topic=topic)
 
@@ -390,12 +415,16 @@ def _load_daily_brief_clusters(limit=5, lang="sr", briefing_date=None):
 
         is_low_signal = _is_low_signal_briefing_cluster(lead.get("title"), description, cluster_summary)
         is_routine_weather = _is_routine_weather_cluster(lead.get("title"), description, cluster_summary)
+        sports_context = " ".join(
+            f"{article.get('title') or ''} {article.get('source') or ''}" for article in ranked[:6]
+        )
         is_routine_sports = _is_routine_sports_cluster(
             lead.get("title"),
             description,
             cluster_summary,
             lead.get("category"),
             lead.get("topic"),
+            extra_context=sports_context,
         )
         has_public_interest = _has_public_interest_signal(lead.get("title"), description, cluster_summary)
         has_editorial_depth = bool(difference_point or open_point or cluster_summary)
