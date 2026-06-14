@@ -1,6 +1,6 @@
 import type { NewsCluster } from '../types';
 
-type WireArticle = {
+export type WireArticle = {
     cluster_id?: string;
     ingested_at?: string;
     created_at?: string;

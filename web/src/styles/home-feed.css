@@ -393,6 +393,54 @@
   color: color-mix(in srgb, var(--foreground) 66%, var(--muted-foreground));
 }
 
+.home-unified-feed-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.38rem;
+  margin: 0.58rem 0 0;
+  padding: 0;
+}
+
+.home-unified-feed-summary-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  min-height: 1.6rem;
+  padding: 0.28rem 0.48rem;
+  border: 1px solid color-mix(in srgb, var(--foreground) 9%, var(--border));
+  background: color-mix(in srgb, var(--card) 84%, var(--background));
+}
+
+.home-unified-feed-summary-item dt,
+.home-unified-feed-summary-item dd {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--text-ui-min);
+  line-height: 1;
+}
+
+.home-unified-feed-summary-item dt {
+  font-weight: 700;
+  color: color-mix(in srgb, var(--foreground) 62%, var(--muted-foreground));
+}
+
+.home-unified-feed-summary-item dd {
+  font-weight: 850;
+  color: var(--foreground);
+}
+
+.home-unified-feed-summary-item.is-developing dd {
+  color: var(--editorial-watch);
+}
+
+.home-unified-feed-summary-item.is-global dd {
+  color: var(--editorial-positive);
+}
+
+.home-unified-feed-summary-item.is-wire dd {
+  color: var(--nyt-red);
+}
+
 .home-feed-filter {
   display: flex;
   flex-wrap: nowrap;
@@ -500,7 +548,7 @@
 
   .home-unified-feed-header {
     grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
+    align-items: start;
     gap: 0.9rem;
     margin-bottom: 0.85rem;
   }
@@ -781,7 +829,7 @@
 
 @media (min-width: 900px) {
   .home-unified-feed-header {
-    align-items: flex-end;
+    align-items: flex-start;
   }
 }
 

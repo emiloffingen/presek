@@ -1,4 +1,5 @@
 import type { NewsCluster } from '../types';
+import type { WireArticle } from './homepageSections';
 import {
     cleanAndDecode,
     extractCleanSummaryText,
@@ -29,19 +30,30 @@ export type HomepagePipeline = {
     intel_heavy_depth?: number;
 } | null;
 
+export type HomepageStats = {
+    total_feeds?: number;
+    last_24h?: number;
+    intelligence?: {
+        pluralism?: {
+            pluralism_pct?: number;
+        };
+    };
+    [key: string]: unknown;
+};
+
 export type HomepageDataState = {
     clusters: NewsCluster[];
     globalClusters: NewsCluster[];
     trending: unknown[];
     topEntities: unknown[];
-    stats: unknown | null;
+    stats: HomepageStats | null;
     briefing: unknown | null;
     error: string | null;
     supportingClusters: NewsCluster[];
     forYouClusters: NewsCluster[];
     feedClusters: NewsCluster[];
     wireClusters: NewsCluster[];
-    wireArticles: unknown[];
+    wireArticles: WireArticle[];
     excludedClusterIds: string[];
     synthesisPicks: NewsCluster[];
     homepageLeadDisplay: HomepageLeadDisplay;
@@ -72,7 +84,7 @@ export function parseHomepageFilters(searchParams: URLSearchParams): HomepageFil
 
 export function normalizeForYouCluster(cluster: any): NewsCluster {
     const article = cluster.articles?.[0] || {};
-    return {
+    return ({
         cluster_id: cluster.cluster_id,
         is_breaking: cluster.is_breaking,
         topics: cluster.topics,
@@ -86,7 +98,7 @@ export function normalizeForYouCluster(cluster: any): NewsCluster {
             category: article.category,
         }],
         sources_count: cluster.articles?.length || 0,
-    } as NewsCluster;
+    } as unknown) as NewsCluster;
 }
 
 export function normalizeHomeApiResponse(home: any): Omit<HomepageDataState, 'error'> {
@@ -97,7 +109,7 @@ export function normalizeHomeApiResponse(home: any): Omit<HomepageDataState, 'er
         : [];
     const developingClusters = Array.isArray(home?.developing) ? home.developing : [];
     const wireClusters = Array.isArray(home?.wire) ? home.wire : [];
-    const wireArticles = Array.isArray(home?.latest_wire) ? home.latest_wire : [];
+    const wireArticles = (Array.isArray(home?.latest_wire) ? home.latest_wire : []) as WireArticle[];
     const globalClusters = Array.isArray(home?.global) ? home.global : [];
     const synthesisPicks = Array.isArray(home?.synthesis_picks) ? home.synthesis_picks : [];
     const feedClusters = [...developingClusters, ...wireClusters];
@@ -113,7 +125,7 @@ export function normalizeHomeApiResponse(home: any): Omit<HomepageDataState, 'er
         globalClusters,
         trending: Array.isArray(home?.trending) ? home.trending : [],
         topEntities: Array.isArray(home?.focus_entities) ? home.focus_entities : [],
-        stats: home?.stats || null,
+        stats: (home?.stats || null) as HomepageStats | null,
         briefing: home?.briefing || null,
         supportingClusters,
         forYouClusters,

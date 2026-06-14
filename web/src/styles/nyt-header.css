@@ -286,15 +286,15 @@
     .nav-rail-link--analysis {
         font-weight: 800;
         color: var(--nyt-accent);
-        border: 1px solid color-mix(in srgb, var(--nyt-accent) 22%, var(--border));
-        background: color-mix(in srgb, var(--nyt-accent) 5%, var(--card));
+        border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
+        background: transparent;
     }
 
     .nav-rail-link--analysis:hover,
     .nav-rail-link--analysis.is-active {
-        color: var(--primary-foreground);
-        background: var(--nyt-accent);
-        border-color: var(--nyt-accent);
+        color: var(--nyt-accent);
+        background: color-mix(in srgb, var(--nyt-accent) 7%, transparent);
+        border-color: color-mix(in srgb, var(--nyt-accent) 28%, var(--border));
     }
 
     .nav-rail-link--browse.is-active {

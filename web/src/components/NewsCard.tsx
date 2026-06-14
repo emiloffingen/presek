@@ -21,8 +21,10 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   variant = 'standard',
   lang = 'sr'
 }) => {
-  const t = useTranslations(lang as 'sr' | 'mk');
-  const l = (path: string) => localePathForLang(path, lang as 'sr' | 'mk');
+  const locale = lang === 'mk' ? 'mk' : 'sr';
+  const t = useTranslations(locale);
+  const translate = (key: string, params?: Record<string, string | number>) => t(key as any, params);
+  const l = (path: string) => localePathForLang(path, locale);
 
   const main = cluster.articles?.[0];
   if (!main) return null;
@@ -36,7 +38,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
     cluster.is_breaking ? t('news.urgent') :
     t('news.ongoing');
 
-  const selectedImage = chooseClusterImage(cluster, isLead ? 'hero' : 'card', lang as 'sr' | 'mk');
+  const selectedImage = chooseClusterImage(cluster, isLead ? 'hero' : 'card', locale);
   const thumbSrc = selectedImage.proxiedUrl;
   const isFallbackArt = selectedImage.isWeak;
   const fallbackImageUrl = selectedImage.fallbackUrl;
@@ -45,7 +47,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
   const rawLeadTitle = cluster.synthetic_headline || getDisplayTitle(main);
   let displayTitle = highlightScores(rawLeadTitle);
-  if (lang === 'sr' && isMostlyCyrillic(displayTitle)) {
+  if (locale === 'sr' && isMostlyCyrillic(displayTitle)) {
     displayTitle = highlightScores(transliterate(cluster.synthetic_headline || getDisplayTitle(main)));
   }
   const titleIsCyrillic = isMostlyCyrillic(displayTitle);
@@ -62,11 +64,11 @@ export const NewsCard: React.FC<NewsCardProps> = ({
     topic: cluster.topics?.[0] || main.topic || main.category || '',
   });
   const cardSignals = signalBadges.map((badge) =>
-    formatSignalBadge(badge, lang as 'sr' | 'mk', {
+    formatSignalBadge(badge, locale, {
       pluralism: cluster.pluralism_score,
       pulse: cluster.pulse_score,
       topic: cluster.topics?.[0] || main.topic || main.category || '',
-    }, t),
+    }, translate),
   );
 
   const hasPluralismConflict = (cluster.pluralism_score ?? 0) >= 55;
@@ -74,7 +76,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
     ? buildCompactPluralismMeta({
         sourcesCount: uniqueSources,
         pluralismScore: cluster.pluralism_score,
-      }, lang as 'sr' | 'mk')
+      }, locale)
     : null;
   const conflictHeadlines = hasPluralismConflict
     ? Array.from(new Set(cluster.articles.slice(0, 3).map((article) => getDisplayTitle(article)).filter(Boolean)))
@@ -93,7 +95,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   }
 
   let displaySummary = getCardSummary(main, isLead);
-  if (lang === 'sr' && isMostlyCyrillic(displaySummary)) {
+  if (locale === 'sr' && isMostlyCyrillic(displaySummary)) {
     displaySummary = highlightScores(transliterate(displaySummary));
   }
   const summaryIsCyrillic = isMostlyCyrillic(displaySummary);
@@ -107,7 +109,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
       if (diffMins < 1) return t('news.just_now');
       if (diffMins < 60) return `${t('news.ago')} ${diffMins} ${t('news.min_short')}`;
-      return date.toLocaleTimeString(dateLocaleForLang(lang as 'sr' | 'mk'), {
+      return date.toLocaleTimeString(dateLocaleForLang(locale), {
           hour: '2-digit',
           minute: '2-digit'
       });
@@ -220,7 +222,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
             ) : (
               <div className="runtime-image-container relative w-full h-full">
                 <img
-                  src={thumbSrc}
+                  src={thumbSrc || undefined}
                   alt=""
                   width="700"
                   height="500"

@@ -65,6 +65,7 @@ const effectiveUrl = new URL(requestUrl);
 effectiveUrl.hostname = hostHeader;
 const lang = getLangFromUrl(effectiveUrl);
 const t = useTranslations(lang);
+const translate = (key: string) => t(key as any);
 const l = (path: string) => localePath(path, lang, hostHeader);
 
 const API_URL = apiBaseUrl();
@@ -136,7 +137,7 @@ const {
     homepageLeadDisplay,
     isHomepage,
     lang: lang as 'sr' | 'mk',
-    t,
+    t: translate,
 });
 
 const activeFilterLabel = subcategory || entity || category || topic || q || null;
@@ -340,6 +341,29 @@ if (forYouClusters.length > 0) {
         count: forYouClusters.length,
     });
 }
+
+const analysisOverviewItems = [
+    {
+        label: t('home.analysis_overview_modules'),
+        value: String(analizaNavItems.length),
+        note: t('home.analysis_overview_modules_note'),
+    },
+    {
+        label: t('home.analysis_overview_synthesis'),
+        value: String(displayedSynthesisPicks.length),
+        note: t('home.analysis_overview_synthesis_note'),
+    },
+    {
+        label: t('home.analysis_overview_pluralism'),
+        value: `${pluralismPct}%`,
+        note: t('home.analysis_overview_pluralism_note'),
+    },
+    {
+        label: t('home.analysis_overview_personal'),
+        value: String(forYouClusters.length),
+        note: t('home.analysis_overview_personal_note'),
+    },
+].filter((item) => item.value !== '0' || item.label === t('home.analysis_overview_pluralism'));
 ---
 
 <Layout
@@ -390,6 +414,17 @@ if (forYouClusters.length > 0) {
                     <header class="home-pregled-masthead home-mobile-order-lead">
                         <h1 class="home-pregled-title">{t('home.pregled_title')}</h1>
                         <p class="home-pregled-deck">{t('home.pregled_deck')}</p>
+                        {analysisOverviewItems.length > 0 && (
+                            <dl class="home-analysis-overview" aria-label={t('home.analysis_overview_label')}>
+                                {analysisOverviewItems.map((item) => (
+                                    <div class="home-analysis-overview-item">
+                                        <dt>{item.label}</dt>
+                                        <dd>{item.value}</dd>
+                                        <p>{item.note}</p>
+                                    </div>
+                                ))}
+                            </dl>
+                        )}
                     </header>
                 )}
 

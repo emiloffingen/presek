@@ -104,8 +104,8 @@ const visibleSections = (navigationData.sections || [])
     .filter((section: any) => Array.isArray(section?.items) && section.items.length > 0);
 const nonTrendingSections = visibleSections.filter((section: any) => section.type !== 'trending');
 const trendingSections = visibleSections.filter((section: any) => section.type === 'trending');
-const primaryNavSections = nonTrendingSections.slice(0, 2);
-const overflowNavSections = [...nonTrendingSections.slice(2), ...trendingSections];
+const primaryNavSections = nonTrendingSections.slice(0, 1);
+const overflowNavSections = [...nonTrendingSections.slice(primaryNavSections.length), ...trendingSections];
 
 function dedupeNavItems(items: NavItem[]) {
     const seen = new Set<string>();

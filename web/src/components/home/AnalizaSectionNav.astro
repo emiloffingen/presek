@@ -30,6 +30,7 @@ const jumpLabel = lang === 'sr' ? 'Idi na odeljak' : 'Оди на оддел';
                 class="analiza-nav-chip"
                 role="listitem"
                 data-analiza-target={item.target}
+                aria-current="false"
                 aria-label={`${jumpLabel}: ${item.label}`}
             >
                 <span class="analiza-nav-kicker">{item.kicker}</span>
@@ -42,12 +43,21 @@ const jumpLabel = lang === 'sr' ? 'Idi na odeljak' : 'Оди на оддел';
 
 <script is:inline>
     (() => {
+        const setActiveChip = (selector) => {
+            document.querySelectorAll('[data-analiza-target]').forEach((button) => {
+                const active = button.getAttribute('data-analiza-target') === selector;
+                button.classList.toggle('is-active', active);
+                button.setAttribute('aria-current', active ? 'true' : 'false');
+            });
+        };
+
         const scrollToBand = (selector) => {
             const target = document.querySelector(selector);
             if (!target) return;
             if (target.tagName === 'DETAILS') {
                 target.open = true;
             }
+            setActiveChip(selector);
             target.scrollIntoView({ behavior: 'smooth', block: 'start' });
         };
 
@@ -59,6 +69,32 @@ const jumpLabel = lang === 'sr' ? 'Idi na odeljak' : 'Оди на оддел';
                     scrollToBand(button.getAttribute('data-analiza-target'));
                 });
             });
+
+            const tracked = Array.from(document.querySelectorAll('[data-analiza-target]'))
+                .map((button) => {
+                    const selector = button.getAttribute('data-analiza-target');
+                    const target = selector ? document.querySelector(selector) : null;
+                    return target ? { selector, target } : null;
+                })
+                .filter(Boolean);
+
+            if (!tracked.length) return;
+            if (window.__presekAnalizaObserver) {
+                window.__presekAnalizaObserver.disconnect();
+            }
+            const observer = new IntersectionObserver((entries) => {
+                const visible = entries
+                    .filter((entry) => entry.isIntersecting)
+                    .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+                if (!visible) return;
+                const match = tracked.find((item) => item.target === visible.target);
+                if (match?.selector) setActiveChip(match.selector);
+            }, {
+                rootMargin: '-18% 0px -62% 0px',
+                threshold: [0.08, 0.22, 0.4],
+            });
+            tracked.forEach((item) => observer.observe(item.target));
+            window.__presekAnalizaObserver = observer;
         };
 
         bind();

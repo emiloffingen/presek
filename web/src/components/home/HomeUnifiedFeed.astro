@@ -17,6 +17,12 @@ const hostHeader = Astro.request?.headers.get('host');
 const lang = (propLang === 'mk' || propLang === 'sr' ? propLang : getLangFromUrl(Astro.url, hostHeader)) as 'sr' | 'mk';
 const t = useTranslations(lang);
 const counts = countFeedBuckets(items);
+const feedSummaryItems = [
+    { key: 'all', label: t('home.feed_summary_total'), value: counts.all },
+    { key: 'developing', label: t('home.feed_summary_developing'), value: counts.developing },
+    { key: 'global', label: t('home.feed_summary_global'), value: counts.global },
+    { key: 'wire', label: t('home.feed_summary_wire'), value: counts.wire },
+].filter((item) => item.key === 'all' || item.value > 0);
 
 function getBentoSpan(cluster: UnifiedFeedItem['cluster']) {
     const count = Number((cluster as any).sources_count || (cluster as any).source_count || cluster.articles?.length || 0);
@@ -34,6 +40,14 @@ function getBentoSpan(cluster: UnifiedFeedItem['cluster']) {
                 <p class="home-unified-feed-kicker">{t('home.feed_kicker')}</p>
                 <h2 class="home-unified-feed-title">{t('home.feed_title')}</h2>
                 <p class="home-unified-feed-note">{t('home.feed_note')}</p>
+                <dl class="home-unified-feed-summary" aria-label={t('home.feed_summary_label')}>
+                    {feedSummaryItems.map((item) => (
+                        <div class:list={['home-unified-feed-summary-item', `is-${item.key}`]}>
+                            <dt>{item.label}</dt>
+                            <dd>{item.value}</dd>
+                        </div>
+                    ))}
+                </dl>
             </div>
             <HomeFeedFilterIsland client:idle lang={lang} counts={counts} />
         </div>

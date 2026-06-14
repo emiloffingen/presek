@@ -30,6 +30,7 @@ const {
 	getRelativeTimeStr,
 	lang = 'sr'
 } = Astro.props;
+const locale = lang === 'mk' ? 'mk' : 'sr';
 ---
 
 <header class="editorial-lede mb-12">
@@ -60,18 +61,18 @@ const {
 		<ShareIsland
 			title={displayHeadline}
 			url={canonicalUrl}
-			lang={lang}
+			lang={locale}
 			client:idle
 		/>
 		<div class="h-6 w-px bg-border/60 mx-3"></div>
 		<PreferenceToggle
 			kind="topic"
 			value={topics?.[0] || category}
-			lang={lang}
+			lang={locale}
 			client:idle
 		/>
         <div class="ml-auto">
-            <ReadingModeToggle lang={lang} client:idle />
+            <ReadingModeToggle lang={locale} client:idle />
         </div>
 	</div>
 </header>
