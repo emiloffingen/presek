@@ -29,6 +29,13 @@ Successfully enhanced the Smart Model Router with intelligent, data-driven capab
 - ✅ Provider-specific quality history
 - ✅ Long-term performance comparison
 - ✅ 1000-sample rolling quality windows
+- ✅ Quality-aware routing in `route_cluster()` (local demotion, small→large upgrades)
+
+### 4b. **Fast Synthesis Upgrade Path**
+- ✅ Urgent fast-mode publish schedules deferred full synthesis
+- ✅ Queue-aware deferral when `intel-heavy` is congested
+- ✅ Fact grounding gate for numbers and sports scores
+- ✅ Pre-computed `compare_cluster_sources()` injected into prompts
 
 ### 5. **A/B Testing Framework**
 - ✅ Configurable experimentation (10% of requests)

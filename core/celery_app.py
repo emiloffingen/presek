@@ -170,6 +170,18 @@ celery_app.conf.update(
             "task": "tasks.maintenance.catch_up_recent_summaries_task",
             "schedule": 1800.0,  # Every 30 minutes
         },
+        "catch-up-cluster-syntheses": {
+            "task": "tasks.maintenance.catch_up_cluster_syntheses_task",
+            "schedule": 1800.0,
+        },
+        "refresh-low-score-syntheses": {
+            "task": "tasks.maintenance.refresh_low_score_syntheses_task",
+            "schedule": 3600.0,
+        },
+        "ensure-ingestion-freshness": {
+            "task": "tasks.maintenance.ensure_ingestion_freshness_task",
+            "schedule": 900.0,
+        },
         "backfill-historical-summaries": {
             "task": "tasks.intelligence.schedule_backfill_historical_summaries_task",
             "schedule": 1800.0,  # Every 30 minutes, Gemma-only

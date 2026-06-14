@@ -1,5 +1,7 @@
 from tasks.intelligence import (
+    _build_source_comparison_prompt_block,
     _clean_macedonian_spelling_and_script,
+    _is_fact_grounded_synthesis,
     _is_grounded_synthesis,
     _score_editorial_summary,
     _score_synthesis_quality,
@@ -121,3 +123,37 @@ def test_hallucination_gate_rejects_ungrounded_multiword_entities():
     )
 
     assert not _is_grounded_synthesis(synthesis, source)
+
+
+def test_fact_gate_rejects_ungrounded_numbers():
+    articles = [
+        {
+            "title": "Vlada usvojila predlog o platama",
+            "description": "Dogovor sa sindikatima pokriva 12.000 zaposlenih u javnom sektoru.",
+            "source": "Izvor A",
+        }
+    ]
+    grounded = "Vlada je usvojila predlog koji pokriva 12.000 zaposlenih u javnom sektoru."
+    hallucinated = "Vlada je usvojila predlog koji pokriva 45.000 zaposlenih i budžet od 2,3 milijarde evra."
+
+    assert _is_fact_grounded_synthesis(grounded, articles, lang="sr")
+    assert not _is_fact_grounded_synthesis(hallucinated, articles, lang="sr")
+
+
+def test_source_comparison_prompt_block_includes_local_analysis():
+    articles = [
+        {
+            "title": "Vlada usvojila predlog o platama",
+            "description": "Sindikati traže rokove isplate.",
+            "source": "Izvor A",
+        },
+        {
+            "title": "Sindikati traže garancije",
+            "description": "Nije jasno kada mere stupaju na snagu.",
+            "source": "Izvor B",
+        },
+    ]
+
+    block = _build_source_comparison_prompt_block(articles, lang="sr")
+    assert "<source_comparison>" in block
+    assert len(block) > 80

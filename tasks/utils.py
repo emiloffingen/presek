@@ -116,6 +116,9 @@ INTEL_PRIORITY_TASKS = frozenset(
         "tasks.intelligence.summarize_articles_batch_task",
         "tasks.intelligence.summarize_articles_local_batch_task",
         "tasks.intelligence.summarize_article_task",
+        "tasks.intelligence.synthesize_cluster_task",
+        "tasks.intelligence.synthesize_urgent_task",
+        "tasks.intelligence.upgrade_fast_synthesis_task",
     }
 )
 INTEL_DEFERRABLE_TASKS = frozenset(

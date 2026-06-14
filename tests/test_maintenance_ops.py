@@ -1,6 +1,12 @@
 from unittest.mock import patch
 
-from tasks.maintenance import catch_up_recent_summaries_task, refresh_synthesis_quality_task
+from tasks.maintenance import (
+    catch_up_cluster_syntheses_task,
+    catch_up_recent_summaries_task,
+    ensure_ingestion_freshness_task,
+    refresh_low_score_syntheses_task,
+    refresh_synthesis_quality_task,
+)
 
 
 class TestCatchUpRecentSummaries:
@@ -35,3 +41,30 @@ class TestRefreshSynthesisQuality:
 
         assert result == snapshot
         mock_write.assert_called_once_with(snapshot)
+
+
+class TestEnsureIngestionFreshness:
+    def test_triggers_ingestion_when_stale(self):
+        with (
+            patch("core.health.load_last_refresh_time", return_value="2026-06-13T00:00:00+00:00"),
+            patch("core.health._freshness_payload", return_value={"age_minutes": 300}),
+            patch("tasks.ingestion_task.run_ingestion") as mock_ingest,
+        ):
+            result = ensure_ingestion_freshness_task(max_age_minutes=120)
+
+        assert result["triggered"] is True
+        mock_ingest.delay.assert_called_once()
+
+
+class TestCatchUpClusterSyntheses:
+    def test_skips_when_backlog_high(self):
+        with patch("tasks.intelligence.intelligence_soft_deferred", return_value=True):
+            result = catch_up_cluster_syntheses_task()
+        assert result == {"skipped": True, "reason": "backlog_high"}
+
+
+class TestRefreshLowScoreSyntheses:
+    def test_skips_when_backlog_high(self):
+        with patch("tasks.intelligence.intelligence_soft_deferred", return_value=True):
+            result = refresh_low_score_syntheses_task()
+        assert result == {"skipped": True, "reason": "backlog_high"}

@@ -272,11 +272,161 @@ def _build_cluster_synthesis_content(article_rows):
     )
 
 
-def _build_cluster_synthesis_prompt(article_rows, lang="sr", history_context="", legacy_summary=""):
+def _build_source_comparison_prompt_block(article_rows, lang="sr"):
+    from nlp.generation import compare_cluster_sources
+
+    comparison = compare_cluster_sources(article_rows, lang=lang)
+    lines = []
+    if comparison.get("common_line"):
+        lines.append(comparison["common_line"])
+    for point in comparison.get("difference_points", [])[:2]:
+        lines.append(point)
+    for point in comparison.get("open_points", [])[:2]:
+        lines.append(point)
+    if not lines:
+        return ""
+
+    if lang == "mk":
+        header = (
+            "Локална анализа на изворите (користи ја при споредба на извори и непознати детали):\n"
+            "<source_comparison>"
+        )
+        footer = "</source_comparison>"
+    else:
+        header = (
+            "Lokalna analiza izvora (koristi pri poređenju izvora i nepotvrđenim detaljima):\n"
+            "<source_comparison>"
+        )
+        footer = "</source_comparison>"
+    return f"{header}\n" + "\n".join(f"- {line}" for line in lines) + f"\n{footer}"
+
+
+def _fetch_synthesis_history_context(cluster_id, lang="sr", article_rows=None):
+    try:
+        from core.embeddings import get_cluster_embedding
+        from core.config import HISTORY_SEMANTIC_THRESHOLD
+
+        current_vec = get_cluster_embedding(cluster_id)
+        if not current_vec:
+            return ""
+
+        current_vec_str = "[" + ",".join(map(str, current_vec)) + "]"
+        related = db.execute(
+            """
+            SELECT s.summary, s.generated_article, a.title
+            FROM cluster_summaries s
+            JOIN articles a ON s.cluster_id = a.cluster_id
+            JOIN cluster_metadata m ON s.cluster_id = m.cluster_id
+            WHERE s.cluster_id != %s
+              AND s.lang = %s
+              AND s.created_at >= NOW() - INTERVAL '7 days'
+              AND s.created_at < (SELECT MIN(created_at) FROM articles WHERE cluster_id = %s)
+              AND (m.centroid <=> %s::vector) < %s
+            ORDER BY m.centroid <=> %s::vector
+            LIMIT 1
+        """,
+            (cluster_id, lang, cluster_id, current_vec_str, HISTORY_SEMANTIC_THRESHOLD, current_vec_str),
+        )
+        if not related:
+            return ""
+
+        prev_text = related[0]["generated_article"] or related[0]["summary"]
+        if not prev_text:
+            return ""
+
+        if lang == "mk":
+            return (
+                "Претходен контекст (за поврзана тема од изминатите денови):\n"
+                f"<historical_context>\n{prev_text[:1000]}\n</historical_context>"
+            )
+        return (
+            "PRETHODEN kontekst (za ovoj nastan ili povrzana tema od izminatite denovi):\n"
+            f"<historical_context>\n{prev_text[:1000]}\n</historical_context>"
+        )
+    except Exception as e:
+        log.warning(f"[tasks/memory] Failed to fetch history for {cluster_id} ({lang}): {e}")
+        return ""
+
+
+def _synthesis_source_corpus(article_rows):
+    return " ".join(
+        part
+        for article in article_rows or []
+        for part in (
+            str(article.get("title") or ""),
+            str(article.get("description") or ""),
+            str(article.get("full_content") or ""),
+            str(article.get("summary") or ""),
+        )
+        if part
+    )
+
+
+def _number_token_grounded_in_source(token, source_numbers, source_text_folded):
+    clean = str(token or "").strip()
+    if not clean:
+        return True
+    if clean in source_numbers:
+        return True
+    if clean.casefold() in source_text_folded:
+        return True
+    normalized = clean.replace(",", ".")
+    for src in source_numbers:
+        src_norm = str(src).replace(",", ".")
+        if normalized == src_norm:
+            return True
+    return False
+
+
+def _is_fact_grounded_synthesis(synthesis_text: str, article_rows, lang: str = "sr", *, fast_mode: bool = False) -> bool:
+    if not synthesis_text or not article_rows:
+        return True
+
+    from nlp.generation import _extract_number_tokens, _extract_sports_scores
+    from nlp.utils import transliterate
+
+    source_text = transliterate(_synthesis_source_corpus(article_rows))
+    source_folded = source_text.casefold()
+    source_numbers = set(_extract_number_tokens(source_text))
+    source_scores = set(_extract_sports_scores(source_text))
+
+    synth_text = transliterate(str(synthesis_text or ""))
+    synth_numbers = _extract_number_tokens(synth_text)
+    synth_scores = _extract_sports_scores(synth_text)
+
+    ungrounded_numbers = [
+        token
+        for token in synth_numbers
+        if not _number_token_grounded_in_source(token, source_numbers, source_folded)
+    ]
+    max_ungrounded = 3 if fast_mode else 1
+    if len(ungrounded_numbers) > max_ungrounded:
+        log.warning(
+            "[ai/fact_gate] Ungrounded numbers in synthesis: %s",
+            ", ".join(ungrounded_numbers[:4]),
+        )
+        return False
+
+    if synth_scores:
+        ungrounded_scores = [
+            score
+            for score in synth_scores
+            if score not in source_scores and score.casefold() not in source_folded
+        ]
+        if ungrounded_scores:
+            log.warning("[ai/fact_gate] Ungrounded sports scores in synthesis: %s", ", ".join(ungrounded_scores))
+            return False
+
+    return True
+
+
+def _build_cluster_synthesis_prompt(article_rows, lang="sr", history_context="", legacy_summary="", source_comparison=""):
     rows = article_rows or []
     prompt_parts = []
     if history_context:
         prompt_parts.append(history_context)
+    if source_comparison:
+        prompt_parts.append(source_comparison)
     prompt_parts.append("novi clanci OD danas:\n<articles_context>")
 
     context_lines = []
@@ -402,6 +552,12 @@ def _generate_synthesis_via_cascade(
             continue
 
         comparison_text = f"{summary}\n{generated_article}"
+        if not _is_fact_grounded_synthesis(comparison_text, article_rows, lang, fast_mode=fast_mode):
+            log.warning(f"[tasks/synthesis] Fact grounding gate failed for provider {provider}")
+            last_fallback_reason = "fact_grounding_failed"
+            exclude_providers.append(provider)
+            continue
+
         if not fast_mode and not _is_grounded_synthesis(comparison_text, current_context or legacy_summary):
             log.warning(f"[tasks/synthesis] Hallucination gate failed for provider {provider}")
             last_fallback_reason = "hallucination_gate_failed"
@@ -1172,43 +1328,6 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
     # Non-fast synthesis needs room for a longer editorial article plus the surrounding JSON fields.
     max_tokens = 2200 if fast_mode else 5200
 
-    # 1. Fetch Historical Context (Cross-Story Memory)
-    # We'll fetch this once for the primary language (sr) to use as context for all syntheses
-    history_context = ""
-    try:
-        from core.embeddings import get_cluster_embedding
-        from core.config import HISTORY_SEMANTIC_THRESHOLD
-
-        current_vec = get_cluster_embedding(cluster_id)
-        if current_vec:
-            current_vec_str = "[" + ",".join(map(str, current_vec)) + "]"
-            # Find semantically similar clusters from the last 7 days (prefer Serbian for context)
-            related = db.execute(
-                """
-                SELECT s.summary, s.generated_article, a.title
-                FROM cluster_summaries s
-                JOIN articles a ON s.cluster_id = a.cluster_id
-                JOIN cluster_metadata m ON s.cluster_id = m.cluster_id
-                WHERE s.cluster_id != %s
-                  AND s.lang = 'sr'
-                  AND s.created_at >= NOW() - INTERVAL '7 days'
-                  AND s.created_at < (SELECT MIN(created_at) FROM articles WHERE cluster_id = %s)
-                  AND (m.centroid <=> %s::vector) < %s
-                ORDER BY m.centroid <=> %s::vector
-                LIMIT 1
-            """,
-                (cluster_id, cluster_id, current_vec_str, HISTORY_SEMANTIC_THRESHOLD, current_vec_str),
-            )
-
-            if related:
-                r = related[0]
-                prev_text = r["generated_article"] or r["summary"]
-                if prev_text:
-                    history_context = f"\nPRETHODEN kontekst (za ovoj nastan ili povrzana tema od izminatite denovi):\n<historical_context>\n{
-                        prev_text[:1000]}\n</historical_context>"
-    except Exception as e:
-        log.warning(f"[tasks/memory] Failed to fetch history for {cluster_id}: {e}")
-
     legacy_summary = str(content or "").strip()
 
     # Track shared metrics that only need to be computed once per cluster
@@ -1238,8 +1357,14 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                     "(350-500 words). Include the core event, context, source comparison, consequences, and one clear "
                     "open question. Do not reduce the article to a single paragraph."
                 )
-            elif history_context:
-                prompt_parts.append(history_context)
+            else:
+                history_context = _fetch_synthesis_history_context(cluster_id, lang=lang, article_rows=article_rows)
+                if history_context:
+                    prompt_parts.append(history_context)
+
+            source_comparison = _build_source_comparison_prompt_block(article_rows, lang=lang)
+            if source_comparison:
+                prompt_parts.append(source_comparison)
 
             prompt_parts.append("novi clanci OD danas:\n<articles_context>")
             current_context = source_context_mk if lang == "mk" else source_context_sr
@@ -2806,7 +2931,12 @@ def backfill_cluster_summaries_task(days=30, lang="sr", offset=0):
                     continue
 
                 system_prompt = SYNTHESIS_SYSTEM_PROMPT_MK if lang == "mk" else SYNTHESIS_SYSTEM_PROMPT_SR
-                full_prompt = _build_cluster_synthesis_prompt(article_rows, lang=lang)
+                full_prompt = _build_cluster_synthesis_prompt(
+                    article_rows,
+                    lang=lang,
+                    history_context=_fetch_synthesis_history_context(cluster_id, lang=lang, article_rows=article_rows),
+                    source_comparison=_build_source_comparison_prompt_block(article_rows, lang=lang),
+                )
                 cascade = _generate_synthesis_via_cascade(
                     article_rows,
                     full_prompt,

@@ -119,6 +119,104 @@ def catch_up_recent_summaries_task(hours=72, limit=200):
 
 
 @celery_app.task
+def ensure_ingestion_freshness_task(max_age_minutes=120):
+    """Trigger ingestion when the public freshness badge has gone stale."""
+    from core.health import load_last_refresh_time, _freshness_payload
+    from tasks.ingestion_task import run_ingestion
+
+    freshness = _freshness_payload(load_last_refresh_time())
+    age_minutes = freshness.get("age_minutes")
+    if age_minutes is not None and age_minutes <= int(max_age_minutes):
+        return {"skipped": True, "age_minutes": age_minutes}
+
+    run_ingestion.delay()
+    log.warning(
+        "[maintenance] Triggered ingestion recovery because freshness age is %s minutes",
+        age_minutes,
+    )
+    return {"triggered": True, "age_minutes": age_minutes}
+
+
+@celery_app.task
+def catch_up_cluster_syntheses_task(hours=48, limit=30):
+    """Enqueue full synthesis for recent multi-source clusters missing cluster summaries."""
+    from tasks.intelligence import intelligence_soft_deferred, synthesize_cluster_task
+
+    if intelligence_soft_deferred():
+        log.info("[maintenance] Skipping cluster synthesis catch-up while intel-heavy backlog is high.")
+        return {"skipped": True, "reason": "backlog_high"}
+
+    rows = db.execute(
+        """
+        SELECT a.cluster_id, COUNT(a.id) AS source_count
+        FROM articles a
+        LEFT JOIN cluster_summaries cs ON cs.cluster_id = a.cluster_id
+        WHERE a.created_at >= NOW() - make_interval(hours => %s)
+          AND cs.cluster_id IS NULL
+        GROUP BY a.cluster_id
+        HAVING COUNT(a.id) >= 2
+        ORDER BY MAX(a.created_at) DESC
+        LIMIT %s
+        """,
+        (max(1, int(hours)), max(1, int(limit))),
+        read_only=True,
+    ) or []
+
+    enqueued = 0
+    for idx, row in enumerate(rows):
+        synthesize_cluster_task.apply_async(
+            (row["cluster_id"], None),
+            {"fast_mode": False},
+            countdown=idx * 20,
+        )
+        enqueued += 1
+
+    if enqueued:
+        log.info("[maintenance] Enqueued cluster synthesis catch-up for %s clusters", enqueued)
+    return {"enqueued": enqueued}
+
+
+@celery_app.task
+def refresh_low_score_syntheses_task(min_score=0.75, limit=20):
+    """Re-run full synthesis for recent low-scoring cluster summaries."""
+    from tasks.intelligence import intelligence_soft_deferred, synthesize_cluster_task
+
+    if intelligence_soft_deferred():
+        log.info("[maintenance] Skipping low-score synthesis refresh while intel-heavy backlog is high.")
+        return {"skipped": True, "reason": "backlog_high"}
+
+    rows = db.execute(
+        """
+        SELECT cs.cluster_id, cs.lang, cs.quality_score, COUNT(a.id) AS source_count
+        FROM cluster_summaries cs
+        JOIN articles a ON a.cluster_id = cs.cluster_id
+        WHERE cs.quality_score IS NOT NULL
+          AND cs.quality_score < %s
+          AND cs.created_at >= NOW() - INTERVAL '7 days'
+          AND COALESCE(cs.generation_provider, '') NOT IN ('enhanced_fallback', '')
+        GROUP BY cs.cluster_id, cs.lang, cs.quality_score
+        ORDER BY cs.quality_score ASC, source_count DESC, MAX(a.created_at) DESC
+        LIMIT %s
+        """,
+        (float(min_score), max(1, int(limit))),
+        read_only=True,
+    ) or []
+
+    enqueued = 0
+    for idx, row in enumerate(rows):
+        synthesize_cluster_task.apply_async(
+            (row["cluster_id"], None),
+            {"fast_mode": False},
+            countdown=idx * 30,
+        )
+        enqueued += 1
+
+    if enqueued:
+        log.info("[maintenance] Enqueued low-score synthesis refresh for %s clusters", enqueued)
+    return {"enqueued": enqueued}
+
+
+@celery_app.task
 def validate_cluster_images_task():
     """
     Checks the representative_image for the 100 most recent active clusters.

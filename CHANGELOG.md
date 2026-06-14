@@ -1,5 +1,19 @@
 # Presek Changelog
 
+## Unreleased
+
+### Synthesis intelligence
+- Fast-mode syntheses now schedule a deferred full-quality upgrade (~20 min)
+- Quality-aware provider routing uses rolling synthesis scores
+- Fact grounding gate rejects ungrounded numbers and sports scores
+- Local source-comparison analysis is injected into LLM prompts
+- Per-language historical context for MK and SR syntheses
+- Maintenance jobs: low-score refresh, cluster synthesis catch-up, ingestion freshness recovery
+
+### Ops
+- `intel-heavy` worker concurrency defaults to 6 (configurable via `INTEL_HEAVY_CONCURRENCY`)
+- Synthesis tasks prioritized in intel-heavy queue grooming
+
 ## v8.0.0 (2026-06-13)
 
 ### New Features & UX
