@@ -329,19 +329,26 @@
         .topbar-main { grid-template-columns: auto 1fr auto; gap: 1rem; }
         .topbar-left-stack { order: 1; flex-direction: row; gap: 0.75rem; }
         .topbar-date-display { display: none; }
-        .topbar-branding { order: 2; justify-content: flex-start; min-width: 0; }
+        .topbar-branding { order: 2; min-width: 0; }
         .topbar-actions { order: 3; flex-direction: row; }
         .mode-link span { display: none; }
         .search-entry-wrap { width: min(14rem, 28vw); min-width: 8.5rem; }
     }
 
+    @media (min-width: 769px) and (max-width: 960px) {
+        .topbar-branding { justify-content: flex-start; }
+    }
+
     @media (max-width: 768px) {
         .topbar-main { gap: 0.75rem; }
-        .search-entry-wrap { width: 2.35rem; min-width: 2.35rem; }
         .nav-fade { width: 28px; }
         .nav-rail-content { padding: 0.25rem 0; }
         .nav-rail-group { padding: 0 0.75rem; }
         .nav-rail-link { font-size: var(--text-ui-kicker); padding: 0.35rem 0.55rem; }
+        .topbar-branding {
+            justify-content: center;
+            align-items: center;
+        }
         html[lang="sr-Latn"] .discovery-nav-v2 .nav-rail-group.group-dynamic,
         html[lang="sr-Latn"] .discovery-nav-v2 .nav-rail-link--analysis,
         html[lang="mk"] .discovery-nav-v2 .nav-rail-group.group-dynamic,
@@ -420,7 +427,7 @@
         }
         .editorial-topbar { padding: 0.22rem 0.45rem; }
         .topbar-main {
-            grid-template-columns: minmax(2.5rem, auto) minmax(0, 1fr) 2.5rem;
+            grid-template-columns: 2.25rem minmax(0, 1fr) 2.25rem;
             gap: 0.3rem;
         }
         .topbar-left-stack,
@@ -433,16 +440,9 @@
         .topbar-branding {
             min-width: 0;
             align-items: center;
+            justify-content: center;
         }
         .topbar-actions {
-            justify-content: flex-end;
-        }
-        .search-entry-wrap {
-            width: 2rem;
-            min-width: 2rem;
-        }
-        .topbar-util {
-            gap: 0.2rem;
             justify-content: flex-end;
         }
         .user-action-link {
@@ -489,12 +489,8 @@
     @media (max-width: 480px) {
         .editorial-topbar { padding: 0.2rem 0.4rem; }
         .topbar-main {
-            grid-template-columns: minmax(2.25rem, auto) minmax(0, 1fr) 2.25rem;
+            grid-template-columns: 2.25rem minmax(0, 1fr) 2.25rem;
             gap: 0.2rem;
-        }
-        .search-entry-wrap {
-            width: 2rem;
-            min-width: 2rem;
         }
         .topbar-util { gap: 0; }
         .utility-desktop-only { display: none !important; }

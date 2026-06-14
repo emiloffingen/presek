@@ -18,7 +18,7 @@ export default function HeaderScrollIsland() {
       if (isMobile) {
         header.classList.toggle('header--compact', y > 40);
         header.classList.toggle('header--show-ticker', y > 72 || (scrollingUp && y > 20));
-        header.classList.toggle('header--show-nav', scrollingUp && y > 96);
+        header.classList.add('header--show-nav');
         header.classList.remove('header--hide-ticker');
       } else {
         const compact = y > 96;

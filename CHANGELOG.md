@@ -1,5 +1,12 @@
 # Presek Changelog
 
+## v8.2.3 (2026-06-14)
+
+### Frontend & UX
+- Mobile header: centered logo, symmetric top bar grid, and responsive logo sizing
+- Hide duplicate in-header search on mobile (floating FAB only); collapse utilities into `⋯` menu from 768px down
+- Keep discovery nav pinned on mobile scroll; logo shrinks from center in compact mode
+
 ## v8.2.2 (2026-06-14)
 
 ### Fixes

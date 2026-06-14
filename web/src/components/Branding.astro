@@ -140,13 +140,21 @@ const t = useTranslations(lang);
     @media (max-width: 768px) {
         .presek-branding { gap: 0.3rem; }
         .presek-emblem-svg { width: 28px; height: 28px; }
-        .presek-logo-svg { width: 138px; height: 31px; }
+        .presek-logo-svg {
+            width: min(132px, 100%);
+            height: auto;
+            max-height: 31px;
+        }
     }
 
     @media (max-width: 480px) {
         .presek-branding { gap: 0.25rem; }
         .presek-emblem-svg { width: 24px; height: 24px; }
-        .presek-logo-svg { width: 128px; height: 30px; }
+        .presek-logo-svg {
+            width: min(118px, 100%);
+            height: auto;
+            max-height: 30px;
+        }
         .presek-branding.footer-logo-premium .presek-emblem-svg { width: 40px; height: 36px; }
         .presek-branding.footer-logo-premium .presek-logo-svg { width: 160px; }
     }
