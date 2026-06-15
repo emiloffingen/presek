@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Clock3, Sparkles } from 'lucide-react';
+import { normalizeBriefingPayload, normalizeBriefingText } from '../../utils/briefingCopy';
 
 type Narrative = {
   text: string;
@@ -43,8 +44,10 @@ export default function BriefingQuickRead({
 
   const mergedNarratives = useMemo(() => {
     const fromQuick = quickRead?.narratives || [];
-    return fromQuick.length ? fromQuick : narratives;
-  }, [quickRead, narratives]);
+    return normalizeBriefingPayload(fromQuick.length ? fromQuick : narratives, lang);
+  }, [quickRead, narratives, lang]);
+
+  const cleanQuickRead = useMemo(() => normalizeBriefingPayload(quickRead, lang), [quickRead, lang]);
 
   useEffect(() => {
     document.documentElement.dataset.briefingMode = mode;
@@ -66,23 +69,23 @@ export default function BriefingQuickRead({
   }, [mode]);
 
   const quickLabel = isMK ? '5 мин' : '5 min';
-  const fullLabel = isMK ? 'Целосно' : 'Celosno';
-  const stats = quickRead?.stats || {};
+  const fullLabel = isMK ? 'Цело' : 'Celo';
+  const stats = cleanQuickRead?.stats || {};
 
   return (
     <>
-      <section className={`briefing-quick-panel ${mode === 'quick' ? 'is-visible' : ''}`} aria-label={quickRead.headline}>
+      <section className={`briefing-quick-panel ${mode === 'quick' ? 'is-visible' : ''}`} aria-label={cleanQuickRead.headline}>
         <div className="briefing-quick-head">
           <div>
             <p className="briefing-quick-kicker">
               <Sparkles size={14} />
-              <span>{quickRead.headline}</span>
+              <span>{cleanQuickRead.headline}</span>
             </p>
-            <h2 className="briefing-quick-title">{quickRead.subline}</h2>
+            <h2 className="briefing-quick-title">{cleanQuickRead.subline}</h2>
           </div>
           <div className="briefing-quick-time">
             <Clock3 size={15} />
-            <span>{quickRead.read_minutes} min</span>
+            <span>{cleanQuickRead.read_minutes} min</span>
           </div>
         </div>
 
@@ -94,10 +97,10 @@ export default function BriefingQuickRead({
           </div>
         )}
 
-        {quickRead.bullets?.length > 0 && (
+        {cleanQuickRead.bullets?.length > 0 && (
           <ul className="briefing-quick-bullets">
-            {quickRead.bullets.map((bullet) => (
-              <li key={bullet.slice(0, 40)}>{bullet}</li>
+            {cleanQuickRead.bullets.map((bullet) => (
+              <li key={bullet.slice(0, 40)}>{normalizeBriefingText(bullet, lang)}</li>
             ))}
           </ul>
         )}
@@ -135,7 +138,7 @@ export default function BriefingQuickRead({
           onClick={() => setMode('full')}
         >
           <span className="briefing-edition-link__label">{fullLabel}</span>
-          <span className="briefing-edition-link__hint">{isMK ? 'Целосно издание' : 'Celosno izdanje'}</span>
+          <span className="briefing-edition-link__hint">{isMK ? 'Цело издание' : 'Celo izdanje'}</span>
         </button>
       </div>
     </>

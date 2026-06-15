@@ -1,5 +1,6 @@
 import React from 'react';
 import { Target, MessageSquare, ShieldCheck, AlertCircle } from 'lucide-react';
+import { normalizeBriefingText } from '../../utils/briefingCopy';
 
 interface Narrative {
     text: string;
@@ -35,7 +36,7 @@ export default function NarrativeList({ narratives, lang = 'sr' }: Props) {
             <div className="flex items-center gap-[var(--grid-gap)] mb-8">
                 <Target size={20} className="text-nyt-accent" />
                 <h2 className="font-bold text-lg uppercase tracking-tighter">
-                    {isMK ? 'Клучни Наративи' : 'Ključni Narativi'}
+                    {isMK ? 'Клучни наративи' : 'Ključni narativi'}
                 </h2>
                 <div className="h-px flex-1 bg-border/40 ml-2" />
             </div>
@@ -50,7 +51,7 @@ export default function NarrativeList({ narratives, lang = 'sr' }: Props) {
                             <MessageSquare size={14} className="text-muted-foreground opacity-20 group-hover:opacity-100 transition-opacity" />
                         </div>
                         <p className="font-serif italic text-lg leading-snug flex-1">
-                            "{nar.text}"
+                            "{normalizeBriefingText(nar.text, lang)}"
                         </p>
                         <div className="mt-4 pt-3 border-t border-border/40 flex items-center gap-[var(--grid-gap)] text-[9px] font-black uppercase text-muted-foreground opacity-40 narrative-card-footer">
                             <ShieldCheck size={10} />

@@ -195,6 +195,32 @@
     margin: 0 0 1.5rem;
 }
 
+.briefing-lead-visual {
+    width: min(100%, 58rem);
+    margin: -0.6rem auto 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 0.75rem 0;
+}
+
+.briefing-lead-visual img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 7;
+    object-fit: cover;
+    background: var(--secondary);
+}
+
+.briefing-lead-visual figcaption {
+    margin-top: 0.55rem;
+    font-family: var(--font-sans);
+    font-size: 0.54rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+}
+
 .briefing-quick-panel.is-visible {
     display: block;
 }
@@ -390,6 +416,20 @@ main[data-briefing-mode='quick'] .briefing-sections-toc {
     gap: 0.35rem 1.25rem;
 }
 
+.briefing-stats-strip__trust {
+    margin: 0.55rem 0 0;
+    max-width: 46rem;
+    font-family: var(--font-sans);
+    font-size: 0.66rem;
+    line-height: 1.55;
+    color: color-mix(in srgb, var(--foreground) 72%, var(--muted-foreground));
+}
+
+.briefing-stats-strip__trust strong {
+    color: var(--foreground);
+    font-weight: 850;
+}
+
 .briefing-stats-strip__item {
     display: inline-flex;
     align-items: baseline;
@@ -440,6 +480,11 @@ main[data-briefing-mode='quick'] .briefing-sections-toc {
     margin: 0 0 1.25rem;
     padding: 0.35rem 0 0.85rem;
     border-bottom: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+}
+
+.briefing-audio-row {
+    max-width: 42rem;
+    margin: 0 auto 1.4rem;
 }
 
 .briefing-edition-link {
@@ -825,6 +870,19 @@ main[data-briefing-mode='quick'] .briefing-sections-toc {
         margin-bottom: 1rem !important;
     }
 
+    .briefing-lead-visual {
+        margin-top: 0;
+        padding: 0.55rem 0;
+    }
+
+    .briefing-lead-visual img {
+        aspect-ratio: 4 / 3;
+    }
+
+    .briefing-lead-visual figcaption {
+        font-size: 0.5rem;
+    }
+
     .briefing-quick-panel {
         padding: 0.95rem 0;
         margin: 0 0 0.75rem;
@@ -849,6 +907,10 @@ main[data-briefing-mode='quick'] .briefing-sections-toc {
         padding-bottom: 0.55rem;
     }
 
+    .briefing-audio-row {
+        margin-bottom: 0.85rem;
+    }
+
     .briefing-stats-strip {
         margin-bottom: 1rem;
         padding: 0.45rem 0;
@@ -860,6 +922,11 @@ main[data-briefing-mode='quick'] .briefing-sections-toc {
 
     .briefing-stats-strip__grid {
         display: none;
+    }
+
+    .briefing-stats-strip__trust {
+        margin-top: 0.45rem;
+        font-size: 0.62rem;
     }
 
     .briefing-sections-toc {

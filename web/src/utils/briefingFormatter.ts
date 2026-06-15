@@ -1,5 +1,6 @@
 import { sanitizeHtml } from '../lib/sanitize';
 import { localePath } from '../lib/localePaths';
+import { normalizeBriefingMarkdown, normalizeBriefingText } from './briefingCopy';
 
 function stripDecorativePrefix(text: string): string {
     return text
@@ -22,7 +23,7 @@ export function extractBriefingSections(markdown: string): BriefingSection[] {
 
     markdown.replace(/^##\s+(.+)$/gm, (_match, rawTitle) => {
         sectionIndex += 1;
-        const title = stripDecorativePrefix(rawTitle);
+        const title = normalizeBriefingText(stripDecorativePrefix(rawTitle));
         sections.push({
             id: `section-${String(sectionIndex).padStart(2, '0')}`,
             title,
@@ -43,21 +44,21 @@ export function formatBriefing(markdown: string, lang = 'sr', hostname?: string 
     const isMK = lang === 'mk';
     const l = (path: string) => localePath(path, isMK ? 'mk' : 'sr', hostname);
 
-    let html = markdown.trim();
+    let html = normalizeBriefingMarkdown(markdown, lang).trim();
     let sectionIndex = 0;
 
     // 1. Handle Headings (e.g., # Header, ## Subheader, ### Title)
     html = html.replace(/^#\s+(.+)$/gm, ''); // Main title is handled by BriefingHeader
     html = html.replace(/^##\s+(.+)$/gm, (_match, rawTitle) => {
         sectionIndex += 1;
-        const title = stripDecorativePrefix(rawTitle);
+        const title = normalizeBriefingText(stripDecorativePrefix(rawTitle), lang);
         const sectionId = `section-${String(sectionIndex).padStart(2, '0')}`;
         const sectionLabel = isMK ? 'Секција' : 'Sekcija';
         return `<h2 id="${sectionId}" class="briefing-section-title"><span class="briefing-section-index">${String(sectionIndex).padStart(2, '0')}</span><span>${title}</span><small>${sectionLabel}</small></h2>`;
     });
     html = html.replace(/^###\s+(\d+\.\s+)?(.+?)(\s+\[\[(.+?)\]\])?$/gm, (match, num, title, idGroup, id) => {
         const idBadge = id ? `<a href="${l('/cluster/')}${id}" class="briefing-inline-badge">${isMK ? 'Кластер' : 'Klaster'}</a>` : '';
-        const cleanTitle = stripDecorativePrefix(`${num || ''}${title}`);
+        const cleanTitle = normalizeBriefingText(stripDecorativePrefix(`${num || ''}${title}`), lang);
         return `<h3 class="briefing-item-title">${cleanTitle}${idBadge}</h3>`;
     });
 

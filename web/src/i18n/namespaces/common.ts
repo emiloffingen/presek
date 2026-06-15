@@ -109,7 +109,7 @@ export const common = {
     'newsletter.disclaimer': '* Prijavljivanjem se slažete sa našim uslovima. Možete se odjaviti u bilo kom trenutku.',
     'newsletter.error': 'Greška pri povezivanju.',
     'newsletter.placeholder': 'Vaša e-pošta',
-    'newsletter.subdescription': 'Svako jutro dobijajte destilovan sublimat događaja koji oblikuju javnu debatu.',
+    'newsletter.subdescription': 'Svako jutro dobijajte jasan pregled događaja koji oblikuju javnu debatu.',
     'newsletter.success': 'Uspešno ste se prijavili!',
     'newsletter.success_description': 'Svako jutro u 08:00 časova ćete dobijati najvažniji presek vesti direktno u vaše sanduče.',
     'newsletter.title': 'DNEVNI PREGLED',

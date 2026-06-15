@@ -19,6 +19,8 @@ import BriefingStatsStrip from '../components/briefing/BriefingStatsStrip.astro'
 import BriefingSectionsToc from '../components/briefing/BriefingSectionsToc.astro';
 import BriefingSectionsRail from '../components/briefing/BriefingSectionsRail';
 import { formatBriefing, extractBriefingSections } from '../utils/briefingFormatter';
+import { normalizeBriefingPayload } from '../utils/briefingCopy';
+import { chooseClusterImage } from '../utils/imageSelection';
 import { Newspaper, ChevronRight } from 'lucide-react';
 import { getLangFromUrl } from '../i18n/utils';
 import { dateLocaleForLang, localePath, homePath } from '../lib/localePaths';
@@ -47,7 +49,7 @@ try {
         fetch(`${API_URL}/stats/summary?lang=${lang}`)
     ]);
 
-    if (briefRes.ok) briefingData = await briefRes.json();
+    if (briefRes.ok) briefingData = normalizeBriefingPayload(await briefRes.json(), lang);
     if (homeRes.ok) homeData = await homeRes.json();
     if (statsRes.ok) stats = await statsRes.json();
 
@@ -69,9 +71,16 @@ const displayDate = briefingData?.date
         year: 'numeric'
     })
     : (isMK ? 'Денешно издание' : 'Današnje izdanje');
+
+const pageTitle = isMK ? 'Уреднички брифинг' : 'Urednički brifing';
+const pageDescription = isMK
+    ? 'Дневен уреднички брифинг на Пресек: најважните теми, извори, ниво на консензус и сигнали што бараат дополнителна проверка.'
+    : 'Dnevni urednički brifing Preseka: najvažnije teme, izvori, nivo konsenzusa i signali koji traže dodatnu proveru.';
+const leadVisual = briefingData?.lead_cluster ? chooseClusterImage(briefingData.lead_cluster, 'hero', lang as 'sr' | 'mk') : null;
+const leadVisualTitle = briefingData?.lead_cluster?.synthetic_headline || briefingData?.lead_cluster?.articles?.[0]?.title || pageTitle;
 ---
 
-<Layout title={`${isMK ? 'Уреднички брифинг' : 'Urednički brifing'} — Presek`}>
+<Layout title={`${pageTitle} — Presek`} description={pageDescription}>
     <NYTHeader stats={stats} />
 
     <main class="site-layout broadsheet-layout page-content-top pb-[var(--page-py)] overflow-x-hidden" data-briefing-mode={quickMode ? 'quick' : 'full'}>
@@ -98,13 +107,19 @@ const displayDate = briefingData?.date
                                 lang={lang}
                                 date={briefingData.date}
                             />
-                            <AudioPlayer 
-                                type="briefing"
-                                briefingDate={briefingData.date}
-                                lang={lang}
-                                title={isMK ? 'Аудио брифинг' : 'Audio brifing'}
-                                compact
-                            />
+                            {leadVisual?.proxiedUrl && (
+                                <figure class="briefing-lead-visual">
+                                    <img
+                                        src={leadVisual.proxiedUrl}
+                                        alt={leadVisualTitle}
+                                        loading="eager"
+                                        decoding="async"
+                                    />
+                                    <figcaption>
+                                        {isMK ? 'Визуелен фокус на водечката тема' : 'Vizuelni fokus vodeće teme'}
+                                    </figcaption>
+                                </figure>
+                            )}
                         </div>
 
                         {briefingData.quick_read && (
@@ -116,6 +131,16 @@ const displayDate = briefingData?.date
                                 client:idle
                             />
                         )}
+
+                        <div class="briefing-audio-row">
+                            <AudioPlayer
+                                type="briefing"
+                                briefingDate={briefingData.date}
+                                lang={lang}
+                                title={isMK ? 'Аудио брифинг' : 'Audio brifing'}
+                                compact
+                            />
+                        </div>
 
                         <BriefingStatsStrip
                             stats={{
