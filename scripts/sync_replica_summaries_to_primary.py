@@ -23,6 +23,7 @@ def _load_env(path: str) -> dict[str, str]:
 
 def main() -> int:
     import psycopg
+    from psycopg.types.json import Json
 
     env_path = os.environ.get("ENV_FILE", "/home/emiloffingen/presek-runtime/shared/.env")
     env = _load_env(env_path)
@@ -61,6 +62,25 @@ def main() -> int:
         "quality_score",
         "fallback_reason",
     ]
+    json_columns = {
+        "perspectives",
+        "sentiment",
+        "tone_analysis",
+        "verification_report",
+        "citation_sources",
+        "key_facts",
+        "analyst_entities",
+        "narrative_diversity",
+    }
+
+    def _adapt_row(row: tuple) -> tuple:
+        adapted = []
+        for col, value in zip(columns, row, strict=True):
+            if col in json_columns and value is not None:
+                adapted.append(Json(value))
+            else:
+                adapted.append(value)
+        return tuple(adapted)
 
     with psycopg.connect(replica_url) as replica_conn, psycopg.connect(primary_url) as primary_conn:
         with replica_conn.cursor() as replica_cur, primary_conn.cursor() as primary_cur:
@@ -93,7 +113,7 @@ def main() -> int:
             """
             synced = 0
             for row in rows:
-                primary_cur.execute(sql, row)
+                primary_cur.execute(sql, _adapt_row(row))
                 synced += 1
             primary_conn.commit()
             print(f"Synced {synced} cluster_summaries rows from replica to primary.")
