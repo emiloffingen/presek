@@ -22,6 +22,18 @@ log = logging.getLogger("presek")
 router = APIRouter()
 _background_tasks: set[asyncio.Task] = set()
 _LEAD_TIEBREAK_WINDOW = 0.10
+_HOMEPAGE_FEED_START = 4
+_HOMEPAGE_DEVELOPING_LIMIT = 10
+_HOMEPAGE_WIRE_LIMIT = 8
+
+
+def _homepage_developing_sort_key(cluster: Dict[str, Any]) -> tuple:
+    source_count = int(cluster.get("source_count") or len(cluster.get("articles") or []))
+    return (
+        1 if cluster.get("has_synthesis") else 0,
+        source_count,
+        float(cluster.get("homepage_score") or 0.0),
+    )
 
 
 def _homepage_cluster_score(cluster: Dict[str, Any]) -> float:
@@ -573,7 +585,7 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
     try:
         # Fetch all dependencies in parallel
         results = await asyncio.gather(
-            fetch_news_data(sort="score", page_size=56, lang=lang),
+            fetch_news_data(sort="score", page_size=72, lang=lang),
             get_trending_route(lang=lang),
             get_top_entities(limit=12, lang=lang),
             get_stats_summary(lang=lang),
@@ -672,10 +684,10 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
                 for_you_pool = []
 
         if not for_you_pool:
-            for_you_pool = [c for c in clusters[5:11] if _is_live_now_candidate(c)]
+            for_you_pool = [c for c in clusters[_HOMEPAGE_FEED_START : _HOMEPAGE_FEED_START + 6] if _is_live_now_candidate(c)]
             for_you_pool = [await _ensure_cluster_audio(c, generate=False) for c in for_you_pool]
 
-        feed_clusters = list(clusters[5:])
+        feed_clusters = list(clusters[_HOMEPAGE_FEED_START:])
         developing = [
             cluster
             for cluster in feed_clusters
@@ -687,6 +699,8 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
                 or len(cluster.get("articles") or []) >= 2
             )
         ]
+        developing.sort(key=_homepage_developing_sort_key, reverse=True)
+        developing = developing[:_HOMEPAGE_DEVELOPING_LIMIT]
         developing_ids = {c.get("cluster_id") for c in developing if c.get("cluster_id")}
         if not sync_token:
             for_you_pool = [c for c in for_you_pool if c.get("cluster_id") not in developing_ids]
@@ -700,7 +714,7 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
                 or str(cluster.get("story_state") or "") == "singleton"
                 or len(cluster.get("articles") or []) < 2
             )
-        ][:12]
+        ][: _HOMEPAGE_WIRE_LIMIT]
 
         excluded_cluster_ids = [
             cluster_id
@@ -758,7 +772,7 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
             "live_now": _compact_home_clusters(_decorate_clusters_display(live_now), max_articles=4),
             "for_you_pool": _compact_home_clusters(_decorate_clusters_display(for_you_pool), max_articles=3),
             "developing": _compact_home_clusters(_decorate_clusters_display(developing), max_articles=4),
-            "wire": _compact_home_clusters(_decorate_clusters_display(wire), max_articles=3),
+            "wire": _compact_home_clusters(_decorate_clusters_display(wire), max_articles=2),
             "latest_wire": _decorate_articles_display(latest_wire),
             "global": _compact_home_clusters(_decorate_clusters_display(global_clusters), max_articles=4),
             "stats": stats,

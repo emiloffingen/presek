@@ -136,11 +136,11 @@ celery_app.conf.update(
         },
         "recluster-recent-articles": {
             "task": "tasks.intelligence.recluster_recent_articles_task",
-            "schedule": 1800.0,  # Increased from 5m to 30m
+            "schedule": 1200.0,
         },
         "repair-split-clusters": {
             "task": "tasks.intelligence.repair_split_clusters_task",
-            "schedule": 3600.0,  # Cluster-level duplicate merge after metadata catches up
+            "schedule": 1800.0,
         },
         "refine-knowledge-graph-sentiment": {
             "task": "tasks.intelligence.refine_knowledge_graph_sentiment_task",
@@ -179,6 +179,10 @@ celery_app.conf.update(
         "prioritize-homepage-syntheses": {
             "task": "tasks.maintenance.prioritize_homepage_syntheses_task",
             "schedule": 900.0,
+        },
+        "boost-homepage-cluster-supply": {
+            "task": "tasks.maintenance.boost_homepage_cluster_supply_task",
+            "schedule": 1800.0,
         },
         "refresh-low-score-syntheses": {
             "task": "tasks.maintenance.refresh_low_score_syntheses_task",

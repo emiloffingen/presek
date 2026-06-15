@@ -42,12 +42,12 @@ import re
 import sys
 import threading
 
-from tasks.intelligence._queue import _skip_when_intel_backlog
+from tasks.intelligence._queue import _skip_when_intel_backlog, _skip_when_intel_full
 
 @celery_app.task(name="tasks.intelligence.recluster_recent_articles_task")
 def recluster_recent_articles_task(hours=24, limit=800):
     """Re-assign cluster IDs for recent articles using the current clustering logic."""
-    if _skip_when_intel_backlog("recent recluster"):
+    if _skip_when_intel_full("recent recluster"):
         return
     try:
         import core.clustering as clustering
@@ -99,7 +99,7 @@ def recluster_recent_articles_task(hours=24, limit=800):
                     if candidate["category"] != category or candidate["topic"] != topic:
                         continue
                     dist = _cosine_dist(parsed_embedding, candidate["embedding"])
-                    if dist >= (clustering.VECTOR_THRESHOLD * 0.78):
+                    if dist >= (clustering.VECTOR_THRESHOLD * 0.92):
                         continue
                     if topic == "vesti" or not topic:
                         incoming_entities = clustering._extract_title_entities(title)
@@ -110,7 +110,7 @@ def recluster_recent_articles_task(hours=24, limit=800):
                             else set()
                         )
                         phrase_overlap = clustering._cluster_title_overlap(title, candidate["title"])
-                        if not shared_entities and phrase_overlap < 0.34:
+                        if not shared_entities and phrase_overlap < 0.28:
                             continue
                     new_cluster_id = candidate["cid"]
                     break
@@ -207,7 +207,7 @@ def recluster_recent_articles_task(hours=24, limit=800):
 @celery_app.task(name="tasks.intelligence.repair_split_clusters_task")
 def repair_split_clusters_task(hours=48, limit=1200, dry_run=False):
     """Merge recent near-duplicate clusters that ingestion split too conservatively."""
-    if _skip_when_intel_backlog("split cluster repair"):
+    if _skip_when_intel_full("split cluster repair"):
         return
     try:
         hours = max(1, int(hours or 48))

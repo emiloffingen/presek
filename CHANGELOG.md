@@ -1,5 +1,22 @@
 # Presek Changelog
 
+## v8.3.1 (2026-06-15)
+
+### Homepage editorial supply
+- Fix feed offset bug: homepage feed now starts at cluster index 4 (was 5), recovering a dropped story slot
+- Developing feed sorted by synthesis + source count; up to 10 multi-source clusters (was uncapped/unordered)
+- Wire section capped at 8 singleton clusters (was 12) with fewer wire cards in API payload
+- Homepage news pool increased to 72 scored clusters (was 56)
+
+### Clustering
+- Recluster/repair-split tasks now run unless intel queue is full (800+), not at soft defer (80+)
+- Relaxed recluster batch matching and split-cluster merge thresholds to combine near-duplicate singletons
+- Multi-source clusters get ranking boost on homepage; singletons penalized more strongly
+- Recluster every 20 min, repair-split every 30 min; new `boost_homepage_cluster_supply_task`
+
+### Frontend
+- Homepage developing section shows up to 6 featured + 4 compact items (was 4 + 2)
+
 ## v8.3.0 (2026-06-15)
 
 ### Synthesis quality

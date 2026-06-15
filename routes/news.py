@@ -650,8 +650,13 @@ async def fetch_news_data(
                     return 0.0
                 cid = arts[0]["cluster_id"]
                 score = score_cluster_for_homepage(arts)
+                source_count = len({a.get("source") for a in arts if a.get("source")})
                 if cid in candidate_synthesis_ids:
-                    score *= 1.25
+                    score *= 1.35
+                if source_count >= 3:
+                    score *= 1.15
+                elif source_count >= 2:
+                    score *= 1.08
                 return score
 
             ranked_clusters.sort(key=homepage_sort_key, reverse=True)

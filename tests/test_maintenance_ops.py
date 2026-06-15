@@ -112,3 +112,28 @@ class TestRefreshLowScoreSyntheses:
         with patch("tasks.intelligence.intelligence_batches_deferred", return_value=True):
             result = refresh_low_score_syntheses_task()
         assert result == {"skipped": True, "reason": "backlog_full"}
+
+
+class TestBoostHomepageClusterSupply:
+    def test_skips_when_backlog_full(self):
+        from tasks.maintenance import boost_homepage_cluster_supply_task
+
+        with patch("tasks.intelligence.intelligence_batches_deferred", return_value=True):
+            result = boost_homepage_cluster_supply_task()
+        assert result == {"skipped": True, "reason": "backlog_full"}
+
+    def test_runs_recluster_and_repair(self):
+        from tasks.maintenance import boost_homepage_cluster_supply_task
+
+        with (
+            patch("tasks.intelligence.intelligence_batches_deferred", return_value=False),
+            patch("tasks.intelligence.cluster_ops.recluster_recent_articles_task", return_value={"reclustered": 3}) as mock_recluster,
+            patch("tasks.intelligence.cluster_ops.repair_split_clusters_task", return_value={"merges": []}) as mock_repair,
+            patch("tasks.utils.get_celery_queue_depth", return_value=120),
+        ):
+            result = boost_homepage_cluster_supply_task()
+
+        assert result["recluster"] == {"reclustered": 3}
+        assert result["repair_split"] == {"merges": []}
+        mock_recluster.assert_called_once()
+        mock_repair.assert_called_once()

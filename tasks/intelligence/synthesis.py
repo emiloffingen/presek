@@ -975,13 +975,13 @@ def _split_cluster_merge_score(left, right, lang="mk"):
 
     generic_topic = left_topic.lower() in _GENERIC_CLUSTER_TOPICS
     if generic_topic:
-        if len(meaningful_shared_tags) >= 2 and lexical >= 0.34:
+        if len(meaningful_shared_tags) >= 2 and lexical >= 0.30:
             return round(lexical + phrase + len(meaningful_shared_tags) * 0.08 + centroid_similarity * 0.2, 4)
-        if len(meaningful_shared_tags) >= 1 and lexical >= 0.28 and centroid_similarity >= 0.82:
+        if len(meaningful_shared_tags) >= 1 and lexical >= 0.24 and centroid_similarity >= 0.78:
             return round(lexical + phrase + centroid_similarity * 0.35, 4)
         return 0.0
 
-    if lexical >= 0.42 or (phrase >= 0.25 and meaningful_shared_tags):
+    if lexical >= 0.36 or (phrase >= 0.22 and meaningful_shared_tags):
         return round(lexical + phrase + len(meaningful_shared_tags) * 0.06 + centroid_similarity * 0.15, 4)
     return 0.0
 

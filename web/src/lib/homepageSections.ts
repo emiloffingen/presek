@@ -113,8 +113,8 @@ export function buildHomepageSections(input: HomepageSectionsInput) {
     const continuingClusters = feedClusters.filter(
         (cluster) => (cluster?.articles?.length || 0) >= 2 && !usedIds.has(cluster.cluster_id)
     );
-    const developmentsFeaturedLimit = input.isHomepage ? 4 : 6;
-    const developmentsCompactLimit = input.isHomepage ? 2 : 12;
+    const developmentsFeaturedLimit = input.isHomepage ? 6 : 6;
+    const developmentsCompactLimit = input.isHomepage ? 4 : 12;
     const developmentsFeatured = continuingClusters.slice(0, developmentsFeaturedLimit);
     developmentsFeatured.forEach((cluster) => usedIds.add(cluster.cluster_id));
 

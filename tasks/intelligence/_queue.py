@@ -78,6 +78,14 @@ def _skip_when_intel_backlog(task_label: str) -> bool:
     return False
 
 
+def _skip_when_intel_full(task_label: str) -> bool:
+    """Skip non-critical intel work only when the queue is genuinely saturated."""
+    if intelligence_batches_deferred():
+        log.info("[tasks] Skipping %s while intel-heavy backlog is full.", task_label)
+        return True
+    return False
+
+
 def _dispatch_batched(task, ids, batch_size=_ARTICLE_BATCH_SIZE):
     if not ids:
         return

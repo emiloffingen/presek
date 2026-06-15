@@ -312,6 +312,27 @@ def prioritize_homepage_syntheses_task(limit=12):
 
 
 @celery_app.task
+def boost_homepage_cluster_supply_task(hours=36, recluster_limit=600, repair_limit=800):
+    """Recluster and merge split clusters when intel queue has headroom."""
+    from tasks.intelligence.cluster_ops import recluster_recent_articles_task, repair_split_clusters_task
+    from tasks.intelligence import intelligence_batches_deferred
+    from tasks.utils import get_celery_queue_depth
+
+    if intelligence_batches_deferred():
+        log.info("[maintenance] Skipping homepage cluster supply boost while intel-heavy backlog is full.")
+        return {"skipped": True, "reason": "backlog_full"}
+
+    depth = get_celery_queue_depth("intel-heavy")
+    recluster_result = recluster_recent_articles_task(hours=int(hours), limit=int(recluster_limit))
+    repair_result = repair_split_clusters_task(hours=int(hours), limit=int(repair_limit), dry_run=False)
+    return {
+        "intel_depth": depth,
+        "recluster": recluster_result,
+        "repair_split": repair_result,
+    }
+
+
+@celery_app.task
 def refresh_low_score_syntheses_task(min_score=0.75, limit=20):
     """Re-run full synthesis for recent low-scoring cluster summaries."""
     from tasks.intelligence import intelligence_batches_deferred, synthesize_cluster_task

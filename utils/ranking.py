@@ -474,7 +474,14 @@ def score_cluster_for_homepage(arts: List[Dict[str, Any]]) -> float:
     base = score_cluster(ranked)
     w = [get_source_effective_weight(a["source"]) for a in ranked[:3]]
     t_bonus = 1 + max(0.0, min(0.22, (sum(w) / len(w) - 1.0) * 0.16))
-    return base * t_bonus * (0.72 if len({a["source"] for a in ranked}) <= 1 else 1.0)
+    source_count = len({a["source"] for a in ranked})
+    if source_count <= 1:
+        source_bonus = 0.65
+    elif source_count == 2:
+        source_bonus = 1.12
+    else:
+        source_bonus = 1.22
+    return base * t_bonus * source_bonus
 
 
 def assess_cluster_synthesis_freshness(arts: List[Dict[str, Any]], synth_at) -> Dict[str, Any]:
