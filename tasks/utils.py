@@ -111,6 +111,15 @@ def get_celery_queue_depth(queue_name="celery"):
 
 
 INTEL_QUEUE_NAME = "intel-heavy"
+INGESTION_QUEUE_NAME = "ingestion"
+INGESTION_TASK_NAME = "tasks.ingestion_task.run_ingestion"
+INGESTION_CRAWL_TASKS = frozenset(
+    {
+        "tasks.ingestion_task.crawl_article_task",
+        "tasks.ingestion_task.process_article_image_task",
+        "tasks.ingestion_task.post_crawl_invalidation_task",
+    }
+)
 INTEL_PRIORITY_TASKS = frozenset(
     {
         "tasks.intelligence.summarize_articles_batch_task",
@@ -199,6 +208,59 @@ def reprioritize_intel_queue(*, defer_threshold: int = 150, groom_threshold: int
         pipe.rpush(INTEL_QUEUE_NAME, *rebuilt)
     pipe.execute()
     result["depth_after"] = get_celery_queue_depth(INTEL_QUEUE_NAME)
+    return result
+
+
+def prune_ingestion_queue(*, max_pending: int = 1, dry_run: bool = False) -> dict:
+    """Drop excess queued run_ingestion dispatches from the ingestion queue."""
+    depth_before = get_celery_queue_depth(INGESTION_QUEUE_NAME)
+    if depth_before <= max_pending:
+        return {
+            "skipped": True,
+            "reason": "below_threshold",
+            "depth_before": depth_before,
+            "max_pending": max_pending,
+        }
+
+    raw_items = redis_client.lrange(INGESTION_QUEUE_NAME, 0, -1) or []
+    kept = []
+    removed = 0
+    pending_ingestion = 0
+
+    for raw in raw_items:
+        if isinstance(raw, bytes):
+            raw = raw.decode("utf-8")
+        task_name = _parse_queue_task_name(raw)
+        if task_name == INGESTION_TASK_NAME:
+            if pending_ingestion < max_pending:
+                kept.append(raw)
+                pending_ingestion += 1
+            else:
+                removed += 1
+        elif task_name in INGESTION_CRAWL_TASKS:
+            removed += 1
+        else:
+            kept.append(raw)
+
+    result = {
+        "skipped": False,
+        "depth_before": depth_before,
+        "depth_after": len(kept),
+        "removed": removed,
+        "kept_ingestion": pending_ingestion,
+        "dry_run": dry_run,
+        "max_pending": max_pending,
+    }
+
+    if dry_run:
+        return result
+
+    pipe = redis_client.pipeline()
+    pipe.delete(INGESTION_QUEUE_NAME)
+    if kept:
+        pipe.rpush(INGESTION_QUEUE_NAME, *kept)
+    pipe.execute()
+    result["depth_after"] = get_celery_queue_depth(INGESTION_QUEUE_NAME)
     return result
 
 

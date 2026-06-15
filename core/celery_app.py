@@ -99,6 +99,7 @@ celery_app.conf.update(
     task_queues=(
         Queue("celery", routing_key="celery"),
         Queue("ingestion", routing_key="ingestion"),
+        Queue("ingestion-crawl", routing_key="ingestion-crawl"),
         Queue("fast-track", routing_key="fast-track"),
         Queue("intel-heavy", routing_key="intel-heavy"),
         Queue("delivery", routing_key="delivery"),
@@ -108,9 +109,9 @@ celery_app.conf.update(
         "tasks.ingestion_task.run_ingestion": {"queue": "ingestion"},
         "tasks.ingestion_task.auto_repair_sources_task": {"queue": "maintenance"},
         "tasks.ingestion_task.repair_single_source_task": {"queue": "maintenance"},
-        "tasks.ingestion_task.crawl_article_task": {"queue": "ingestion"},
-        "tasks.ingestion_task.process_article_image_task": {"queue": "ingestion"},
-        "tasks.ingestion_task.post_crawl_invalidation_task": {"queue": "ingestion"},
+        "tasks.ingestion_task.crawl_article_task": {"queue": "ingestion-crawl"},
+        "tasks.ingestion_task.process_article_image_task": {"queue": "ingestion-crawl"},
+        "tasks.ingestion_task.post_crawl_invalidation_task": {"queue": "ingestion-crawl"},
         "tasks.intelligence.synthesize_cluster_task": {"queue": "fast-track"},
         "tasks.intelligence.auto_summarize_task": {"queue": "fast-track"},
         "tasks.intelligence.refresh_cluster_centroid_task": {"queue": "maintenance"},
@@ -127,6 +128,7 @@ celery_app.conf.update(
         "ingest-regular-feeds": {
             "task": "tasks.ingestion_task.run_ingestion",
             "schedule": 600.0,  # Increased from 2m to 10m
+            "options": {"expires": 540},
         },
         "auto-summarize-clusters": {
             "task": "tasks.intelligence.auto_summarize_task",
@@ -177,6 +179,10 @@ celery_app.conf.update(
         "refresh-low-score-syntheses": {
             "task": "tasks.maintenance.refresh_low_score_syntheses_task",
             "schedule": 3600.0,
+        },
+        "prune-ingestion-queue": {
+            "task": "tasks.maintenance.prune_ingestion_queue_task",
+            "schedule": 900.0,
         },
         "ensure-ingestion-freshness": {
             "task": "tasks.maintenance.ensure_ingestion_freshness_task",
@@ -257,8 +263,8 @@ celery_app.conf.update(
             "time_limit": 900,
         },
         "tasks.intelligence.synthesize_cluster_task": {
-            "soft_time_limit": 600,
-            "time_limit": 900,
+            "soft_time_limit": 1500,
+            "time_limit": 1800,
         },
     },
     # Worker prefetch multiplier - reduce from default 4 to 1 to prevent memory over-commitment

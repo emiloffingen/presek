@@ -25,6 +25,7 @@ _CELERY_QUEUE_CRITICAL_DEPTH = int(os.environ.get("CELERY_QUEUE_CRITICAL_DEPTH",
 MONITORED_CELERY_QUEUES = (
     "celery",
     "ingestion",
+    "ingestion-crawl",
     "fast-track",
     "intel-heavy",
     "delivery",

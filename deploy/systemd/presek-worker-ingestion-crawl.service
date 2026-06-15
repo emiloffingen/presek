@@ -1,5 +1,5 @@
 [Unit]
-Description=Presek Celery worker (ingestion)
+Description=Presek Celery worker (ingestion crawl)
 After=network-online.target presek-fastapi-unified.service postgresql.service redis.service
 Wants=network-online.target
 PartOf=presek.target
@@ -14,14 +14,14 @@ Environment=HF_HOME=/home/emiloffingen/presek-runtime/shared/huggingface
 Environment=HF_HUB_CACHE=/home/emiloffingen/presek-runtime/shared/huggingface/hub
 Environment=SENTENCE_TRANSFORMERS_HOME=/home/emiloffingen/presek-runtime/shared/huggingface/sentence_transformers
 WorkingDirectory=/home/emiloffingen/presek-runtime/current
-ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && set -a && source /home/emiloffingen/presek-runtime/shared/.env && set +a && exec "${PRESEK_WORKER_VENV:-${PRESEK_VENV:-/home/emiloffingen/presek-runtime/venv}}/bin/celery" -A core.celery_app worker --loglevel=info -n ingestion@%h --concurrency=1 --queues=ingestion --max-memory-per-child=250000'
+ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && set -a && source /home/emiloffingen/presek-runtime/shared/.env && set +a && exec "${PRESEK_WORKER_VENV:-${PRESEK_VENV:-/home/emiloffingen/presek-runtime/venv}}/bin/celery" -A core.celery_app worker --loglevel=info -n ingestion-crawl@%h --concurrency=2 --queues=ingestion-crawl --max-memory-per-child=250000'
 Restart=always
 RestartSec=5
 TimeoutStartSec=180
 TimeoutStopSec=120
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=presek-worker-ingestion
+SyslogIdentifier=presek-worker-ingestion-crawl
 Nice=10
 CPUWeight=60
 MemoryHigh=1600M

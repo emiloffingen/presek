@@ -1002,7 +1002,8 @@ async def ingest_all_sources_async():
 
     from core.ingestion_lock import renew_ingestion_lock
 
-    renew_ingestion_lock()
+    if not renew_ingestion_lock():
+        log.warning("[ingestion] Failed to renew ingestion lock after feed fetch phase")
 
     successful_sources = [name for name, stats in source_stats.items() if stats["fetched"] > 0 and not stats["error"]]
     if successful_sources:
@@ -1026,7 +1027,8 @@ async def ingest_all_sources_async():
     # 3. Batch Processing (CPU/API intensive parts)
     log.info(f"[ingestion] Processing {len(candidates)} candidates...")
 
-    renew_ingestion_lock()
+    if not renew_ingestion_lock():
+        log.warning("[ingestion] Failed to renew ingestion lock before candidate processing")
 
     # Generate embeddings in one batch
     texts_to_embed = [f"{c['title']} {c['desc'][:200]}" for c in candidates]
@@ -1051,7 +1053,8 @@ async def ingest_all_sources_async():
 
         for i, c in enumerate(candidates):
             if i > 0 and i % 50 == 0:
-                renew_ingestion_lock()
+                if not renew_ingestion_lock():
+                    log.warning("[ingestion] Failed to renew ingestion lock during candidate batch")
             try:
                 emb = embeddings[i]
                 forced = HARDCODED_FEED_CATEGORIES.get(c["source"])

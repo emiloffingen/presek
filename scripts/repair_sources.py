@@ -30,8 +30,6 @@ REPLACEMENTS = {
 
 # Feeds that work but were accidentally deactivated in feed_sources
 REACTIVATE = [
-    "BIRN",
-    "Kosovo Online",
     "Danas - Ekonomija",
     "Inpress.mk",
 ]
@@ -114,6 +112,36 @@ async def _deactivate(name: str) -> None:
     )
 
 
+async def sync_active_flags(dry_run=True):
+    """Align sources.is_active with feed_sources for rows that diverged."""
+    rows = await db.async_execute(
+        """
+        SELECT fs.name, fs.is_active AS feed_active, s.is_active AS source_active
+        FROM feed_sources fs
+        JOIN sources s ON s.name = fs.name
+        WHERE fs.is_active IS DISTINCT FROM s.is_active
+        """
+    )
+    if not rows:
+        log.info("No is_active mismatches between feed_sources and sources.")
+        return 0
+
+    for row in rows:
+        log.info(
+            "Sync is_active: %s feed=%s source=%s",
+            row["name"],
+            row["feed_active"],
+            row["source_active"],
+        )
+        if not dry_run:
+            await db.async_execute(
+                "UPDATE sources SET is_active = %s WHERE name = %s",
+                (row["feed_active"], row["name"]),
+                fetch=False,
+            )
+    return len(rows)
+
+
 async def repair_sources(dry_run=True):
     if dry_run:
         log.info("DRY RUN: No changes will be committed to the database.")
@@ -135,6 +163,10 @@ async def repair_sources(dry_run=True):
         if not dry_run:
             await _deactivate(name)
             log.info("Deactivated %s", name)
+
+    synced = await sync_active_flags(dry_run=dry_run)
+    if synced:
+        log.info("Synced is_active for %s source(s).", synced)
 
     log.info("Repair process completed.")
 

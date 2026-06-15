@@ -49,12 +49,13 @@ class TestEnsureIngestionFreshness:
             patch("core.health.load_last_refresh_time", return_value="2026-06-13T00:00:00+00:00"),
             patch("core.health._freshness_payload", return_value={"age_minutes": 300}),
             patch("core.ingestion_lock.is_ingestion_in_flight", return_value=False),
+            patch("tasks.maintenance.prune_ingestion_queue"),
             patch("tasks.ingestion_task.run_ingestion") as mock_ingest,
         ):
             result = ensure_ingestion_freshness_task(max_age_minutes=120)
 
         assert result["triggered"] is True
-        mock_ingest.delay.assert_called_once()
+        mock_ingest.apply_async.assert_called_once_with(expires=540)
 
     def test_skips_when_cycle_already_in_flight(self):
         with (

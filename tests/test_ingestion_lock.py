@@ -11,17 +11,15 @@ from core.ingestion_lock import (
 
 
 class TestIngestionLock:
-    def test_acquire_uses_one_hour_ttl(self):
+    def test_acquire_uses_owner_token_and_one_hour_ttl(self):
         mock_redis = MagicMock()
         mock_redis.set.return_value = True
         with patch("core.ingestion_lock.redis_client", mock_redis):
             assert try_acquire_ingestion_lock() is True
-        mock_redis.set.assert_called_once_with(
-            INGESTION_LOCK_KEY,
-            "1",
-            nx=True,
-            ex=INGESTION_LOCK_TTL_SECONDS,
-        )
+        args, kwargs = mock_redis.set.call_args
+        assert args[0] == INGESTION_LOCK_KEY
+        assert len(args[1]) == 32
+        assert kwargs == {"nx": True, "ex": INGESTION_LOCK_TTL_SECONDS}
 
     def test_acquire_returns_none_on_redis_error(self):
         mock_redis = MagicMock()
@@ -29,18 +27,38 @@ class TestIngestionLock:
         with patch("core.ingestion_lock.redis_client", mock_redis):
             assert try_acquire_ingestion_lock() is None
 
-    def test_renew_extends_lock_ttl(self):
+    def test_renew_extends_lock_only_for_owner(self):
         mock_redis = MagicMock()
-        mock_redis.expire.return_value = 1
+        mock_redis.set.return_value = True
+        mock_redis.eval.return_value = 1
         with patch("core.ingestion_lock.redis_client", mock_redis):
+            assert try_acquire_ingestion_lock() is True
             assert renew_ingestion_lock() is True
-        mock_redis.expire.assert_called_once_with(INGESTION_LOCK_KEY, INGESTION_LOCK_TTL_SECONDS)
+            release_ingestion_lock()
+        mock_redis.eval.assert_any_call(
+            mock_redis.eval.call_args_list[0].args[0],
+            1,
+            INGESTION_LOCK_KEY,
+            mock_redis.set.call_args.args[1],
+            INGESTION_LOCK_TTL_SECONDS,
+        )
 
-    def test_release_deletes_lock(self):
+    def test_renew_without_owner_returns_false(self):
         mock_redis = MagicMock()
         with patch("core.ingestion_lock.redis_client", mock_redis):
             release_ingestion_lock()
-        mock_redis.delete.assert_called_once_with(INGESTION_LOCK_KEY)
+            assert renew_ingestion_lock() is False
+        mock_redis.eval.assert_not_called()
+
+    def test_release_deletes_lock_only_for_owner(self):
+        mock_redis = MagicMock()
+        mock_redis.set.return_value = True
+        mock_redis.eval.return_value = 1
+        with patch("core.ingestion_lock.redis_client", mock_redis):
+            assert try_acquire_ingestion_lock() is True
+            release_ingestion_lock()
+        assert mock_redis.eval.call_count == 1
+        assert mock_redis.eval.call_args.args[2] == INGESTION_LOCK_KEY
 
     def test_in_flight_checks_lock_exists(self):
         mock_redis = MagicMock()

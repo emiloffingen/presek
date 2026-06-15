@@ -11,7 +11,7 @@ from core.celery_app import celery_app
 from core.database import db_manager as db
 from core.database import prune_db
 from core.image_service import image_service
-from tasks.utils import invalidate_public_data_caches, log, reprioritize_intel_queue
+from tasks.utils import invalidate_public_data_caches, log, prune_ingestion_queue, reprioritize_intel_queue
 
 
 @celery_app.task
@@ -119,12 +119,32 @@ def catch_up_recent_summaries_task(hours=72, limit=200):
 
 
 @celery_app.task
+def prune_ingestion_queue_task(max_pending=1, dry_run=False):
+    """Drop duplicate queued run_ingestion dispatches."""
+    try:
+        result = prune_ingestion_queue(max_pending=int(max_pending), dry_run=bool(dry_run))
+        if result.get("removed"):
+            log.info(
+                "[maintenance] Pruned ingestion queue: removed=%s depth=%s->%s",
+                result["removed"],
+                result["depth_before"],
+                result["depth_after"],
+            )
+        return result
+    except Exception as e:
+        log.error(f"[maintenance] prune_ingestion_queue failed: {e}", exc_info=True)
+        raise
+
+
+@celery_app.task
 def ensure_ingestion_freshness_task(max_age_minutes=120):
     """Trigger ingestion when the public freshness badge has gone stale."""
     from core.health import load_last_refresh_time, _freshness_payload
     from tasks.ingestion_task import run_ingestion
 
     from core.ingestion_lock import is_ingestion_in_flight
+
+    prune_ingestion_queue(max_pending=1)
 
     freshness = _freshness_payload(load_last_refresh_time())
     age_minutes = freshness.get("age_minutes")
@@ -133,7 +153,7 @@ def ensure_ingestion_freshness_task(max_age_minutes=120):
     if is_ingestion_in_flight():
         return {"skipped": True, "reason": "in_flight", "age_minutes": age_minutes}
 
-    run_ingestion.delay()
+    run_ingestion.apply_async(expires=540)
     log.warning(
         "[maintenance] Triggered ingestion recovery because freshness age is %s minutes",
         age_minutes,
