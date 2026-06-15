@@ -6,10 +6,11 @@ import re
 
 
 SERBIAN_COPY_REPLACEMENTS: tuple[tuple[re.Pattern[str], str], ...] = (
-    (re.compile(r"\b[Ii]zvještaj\b"), "izveštaj"),
-    (re.compile(r"\b[Ii]zvješтај\b"), "izveštaj"),
+    (re.compile(r"\b[Ii]zvještaj([a-zčćžšđ]*)\b"), r"izveštaj\1"),
+    (re.compile(r"\bizvještaj([a-zčćžšđ]*)\b", re.IGNORECASE), r"izveštaj\1"),
+    (re.compile(r"\bizvještav([a-zčćžšđ]*)\b", re.IGNORECASE), r"izveštav\1"),
+    (re.compile(r"\b[Ii]zvješтај([a-zčćžšđ]*)\b"), r"izveštaj\1"),
     (re.compile(r"\bizgorjele\b", re.IGNORECASE), "izgorele"),
-    (re.compile(r"\bizvještaj\b", re.IGNORECASE), "izveštaj"),
     (re.compile(r"\bnarativa\b", re.IGNORECASE), "narativ"),
     (re.compile(r"\bsublimat\b", re.IGNORECASE), "pregled"),
     (re.compile(r"\bCelosno\b"), "Celo"),
@@ -55,6 +56,10 @@ def has_repetitive_media_framing(text: str) -> bool:
     repeated_markers = (
         "mediji se razlikuju",
         "izvori se razlikuju",
+        "javno važno",
+        "ostaje nejasno",
         "се разликуваат",
+        "јавно важно",
+        "останува нејасно",
     )
     return any(value.count(marker) > 2 for marker in repeated_markers)

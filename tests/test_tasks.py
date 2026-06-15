@@ -726,6 +726,22 @@ class TestDailyBriefTaskQuality:
 
         assert tasks.delivery.briefing._is_high_quality_briefing(brief) is False
 
+    def test_rejects_daily_brief_with_repeated_mini_template_labels(self):
+        brief = (
+            "## Velika Slika\n\n"
+            "Požar je potvrđen u više izvora.\n\n"
+            "## Ključne teme\n\n"
+            "**Javno važno** zbog bezbednosti. **Ostaje nejasno** šta je uzrok.\n"
+            "**Javno važno** zbog štete. **Ostaje nejasno** kolika je šteta.\n"
+            "**Javno važno** zbog istrage. **Ostaje nejasno** kada će izveštaj.\n\n"
+            "## Medijski Radar\n\n"
+            "Izvori navode različite detalje.\n\n"
+            "## Šta pratiti\n\n"
+            "- Zvaničan izveštaj."
+        )
+
+        assert tasks.delivery.briefing._is_high_quality_briefing(brief) is False
+
     def test_rejects_daily_brief_with_named_entity_missing_from_context(self):
 
         context = (

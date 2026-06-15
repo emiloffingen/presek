@@ -72,17 +72,19 @@ def test_sanitize_synthesis_outputs_normalizes_serbian_copy():
         ["Izvještaj navodi da su njive izgorjele."],
         (
             "Izvještaj o događaju navodi da su njive izgorjele posle požara.\n\n"
-            "Narativa nema dovoljno, ali osnovne činjenice su potvrđene u više izvora."
+            "Vlasnici izvještavaju o šteti, a narativa nema dovoljno u više izvora."
         ),
-        [{"angle": "Celosno", "content": "Izvještaj ostaje otvoren."}],
+        [{"angle": "Celosno", "content": "U izvještajima ostaje otvoren uzrok."}],
         [{"title": "Požar", "description": "Njive su izgorele."}],
         lang="sr",
     )
 
     assert summary == "• izveštaj navodi da su njive izgorele."
     assert "izveštaj" in article
+    assert "izveštavaju" in article
     assert "narativ" in article
     assert perspectives[0]["angle"] == "Celo"
+    assert "izveštajima" in perspectives[0]["content"]
 
 
 def test_score_editorial_summary_prefers_distinct_editorial_bullets():
