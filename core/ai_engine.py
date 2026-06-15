@@ -58,7 +58,6 @@ _PROMPT_INJECTION_PATTERNS = [
     r"\<\s*(?:system|assistant|user|developer)",
     r"\[\s*(?:system|assistant|user|developer)",
     # Jailbreak attempts
-    r"DAN\s*\:\s*",  # "DAN:" (Do Anything Now)
     r"developer\s+mode",
     r"jailbreak",
     r"bypass\s+(?:safety|content|filter)",
@@ -77,8 +76,25 @@ _PROMPT_INJECTION_PATTERNS = [
     r"email\s+(?:this|the|all)\s+(?:data|information|content|response)",
 ]
 
+# Classic "DAN:" jailbreak uses an uppercase role prefix at line start.
+# Do not use a bare `dan:` match — it false-positives on Serbian news copy
+# (e.g. "Prvi dan:", "Radni dan:").
+_JAILBREAK_DAN_PATTERNS = [
+    r"(?:^|\n)\s*DAN\s*:\s*",
+    r"(?:^|\n)\s*dan\s*:\s*(?:you|ignore|forget|pretend|do anything)",
+]
+
 # Maximum prompt length to prevent DoS via huge prompts
 MAX_PROMPT_LENGTH = 32000
+
+
+def _raise_prompt_injection(pattern: str, context: str) -> None:
+    log.warning(
+        f"[SECURITY] Potential prompt injection attempt detected "
+        f"from context '{context}'. "
+        f"Pattern matched: {pattern[:50]}..."
+    )
+    raise ValueError(f"Prompt contains disallowed content pattern from context: {context}")
 
 
 def sanitize_ai_prompt(prompt: str, context: str = "user") -> str:
@@ -114,17 +130,19 @@ def sanitize_ai_prompt(prompt: str, context: str = "user") -> str:
             f"(got {len(prompt)} characters) from context: {context}"
         )
 
-    # Check for injection patterns (case-insensitive)
     lower_prompt = prompt.lower()
+
+    for pattern in _JAILBREAK_DAN_PATTERNS[:1]:
+        if re.search(pattern, prompt):
+            _raise_prompt_injection(pattern, context)
+
+    for pattern in _JAILBREAK_DAN_PATTERNS[1:]:
+        if re.search(pattern, lower_prompt, re.IGNORECASE):
+            _raise_prompt_injection(pattern, context)
+
     for pattern in _PROMPT_INJECTION_PATTERNS:
         if re.search(pattern, lower_prompt, re.IGNORECASE):
-            # Log the attempt (without the actual prompt for security)
-            log.warning(
-                f"[SECURITY] Potential prompt injection attempt detected "
-                f"from context '{context}'. "
-                f"Pattern matched: {pattern[:50]}..."
-            )
-            raise ValueError(f"Prompt contains disallowed content pattern from context: {context}")
+            _raise_prompt_injection(pattern, context)
 
     # Remove or escape problematic characters
     # Replace null bytes and control characters

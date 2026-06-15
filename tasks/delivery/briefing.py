@@ -8,6 +8,11 @@ from core.api_helpers import normalize_perspectives
 from core.celery_app import celery_app
 from core.config import BREAKING_SCORE_THRESHOLD, NTFY_TOPIC
 from core.database import db_manager as db
+from core.editorial_quality import (
+    has_repetitive_media_framing,
+    normalize_serbian_editorial_text,
+    weak_editorial_abstraction_count,
+)
 from core.prompts import DAILY_BRIEF_SYSTEM_PROMPT, DAILY_BRIEF_SYSTEM_PROMPT_MK
 from nlp import generate_daily_brief_fallback
 from nlp.keywords import _extract_capitalized_phrases
@@ -524,26 +529,57 @@ def _load_daily_brief_clusters(limit=5, lang="sr", briefing_date=None):
     return selected
 
 
-def _build_daily_brief_context(clusters):
+def _build_daily_brief_context(clusters, lang="sr"):
     blocks = []
+    labels = (
+        {
+            "cluster": "klaster",
+            "id": "ID",
+            "title": "Naslov",
+            "category": "Kategorija",
+            "lead_source": "Vodeći izvor",
+            "source_count": "Broj izvora",
+            "editorial_weight": "Urednička težina",
+            "context": "Kratak kontekst",
+            "synthesis": "Sinteza",
+            "other_titles": "Kako drugi izvori naslovljavaju",
+            "difference": "Razlike u akcentu",
+            "open": "Šta ostaje otvoreno",
+        }
+        if lang == "sr"
+        else {
+            "cluster": "кластер",
+            "id": "ID",
+            "title": "Наслов",
+            "category": "Категорија",
+            "lead_source": "Водечки извор",
+            "source_count": "Број извори",
+            "editorial_weight": "Уредничка тежина",
+            "context": "Краток контекст",
+            "synthesis": "Синтеза",
+            "other_titles": "Како насловуваат други извори",
+            "difference": "Разлики во акцент",
+            "open": "Што останува отворено",
+        }
+    )
     for index, cluster in enumerate(clusters[:6], start=1):
         source_count = cluster.get("source_count") or 1
         editorial_weight = "high" if source_count >= 5 else "medium" if source_count >= 2 else "single-source"
         blocks.append(
             "\n".join(
                 [
-                    f"### klaster {index}",
-                    f"ID: {cluster.get('cluster_id') or ''}",
-                    f"Naslov: {cluster.get('title') or ''}",
-                    f"Kategorija: {cluster.get('category') or cluster.get('topic') or 'vesti'}",
-                    f"Vodeci izvor: {cluster.get('source') or 'izvor'}",
-                    f"Broj izvora: {source_count}",
-                    f"Urednicka tezina: {editorial_weight}",
-                    f"Kratok kontekst: {cluster.get('description') or ''}",
-                    f"Sinteza: {cluster.get('cluster_summary') or ''}",
-                    f"Kako drugi izvori naslovuvaju: {' | '.join(cluster.get('other_titles') or [])}",
-                    f"Razliki vo akcent: {cluster.get('difference_point') or ''}",
-                    f"Sto ostanuva otvoreno: {cluster.get('open_point') or ''}",
+                    f"### {labels['cluster']} {index}",
+                    f"{labels['id']}: {cluster.get('cluster_id') or ''}",
+                    f"{labels['title']}: {cluster.get('title') or ''}",
+                    f"{labels['category']}: {cluster.get('category') or cluster.get('topic') or 'vesti'}",
+                    f"{labels['lead_source']}: {cluster.get('source') or 'izvor'}",
+                    f"{labels['source_count']}: {source_count}",
+                    f"{labels['editorial_weight']}: {editorial_weight}",
+                    f"{labels['context']}: {cluster.get('description') or ''}",
+                    f"{labels['synthesis']}: {cluster.get('cluster_summary') or ''}",
+                    f"{labels['other_titles']}: {' | '.join(cluster.get('other_titles') or [])}",
+                    f"{labels['difference']}: {cluster.get('difference_point') or ''}",
+                    f"{labels['open']}: {cluster.get('open_point') or ''}",
                 ]
             )
         )
@@ -629,8 +665,24 @@ def _is_grounded_daily_brief(brief: str, context: str) -> bool:
     }
 
     role_prefixes = {"od", "vo", "na", "so", "za", "niz", "u", "iz", "premierot", "ministarot", "pretsedatelot"}
+    editorial_label_prefixes = {
+        "reakcija",
+        "analiza",
+        "pregled",
+        "fokus",
+        "nastavak",
+        "komentar",
+        "insajt",
+        "signal",
+        "odgovor",
+        "scenario",
+        "rizik",
+    }
+    phrase_prefixes = role_prefixes | editorial_label_prefixes
     section_prefixes = {
         "velika slika",
+        "ključne teme",
+        "kljucne teme",
         "globalne i lokalne ose",
         "medijski radar",
         "sta pratiti",
@@ -650,7 +702,7 @@ def _is_grounded_daily_brief(brief: str, context: str) -> bool:
             continue
 
         words = [part for part in clean.replace("-", " ").split() if part]
-        if words and words[0].casefold() in role_prefixes:
+        if words and words[0].casefold() in phrase_prefixes:
             words = words[1:]
             clean = " ".join(words)
             if len(clean) < 3:
@@ -670,12 +722,21 @@ def _is_grounded_daily_brief(brief: str, context: str) -> bool:
         significant_words = [
             word
             for word in words
-            if len(word) >= 4 and transliterate(word).casefold() not in role_prefixes
+            if len(word) >= 4 and transliterate(word).casefold() not in phrase_prefixes
         ]
         if significant_words and all(
             _grounding_word_in_context(word, source_latin, context_tokens) for word in significant_words
         ):
             continue
+
+        # Model-generated section labels (Reakcija, Optužbe, ...) may not appear verbatim
+        # in source copy while the named entities that follow still do.
+        if len(significant_words) >= 2:
+            tail_words = significant_words[1:]
+            if tail_words and all(
+                _grounding_word_in_context(word, source_latin, context_tokens) for word in tail_words
+            ) and not _grounding_word_in_context(significant_words[0], source_latin, context_tokens):
+                continue
 
         log.warning(f"[briefing] Ungrounded entity in daily brief: {clean}")
         return False
@@ -753,6 +814,12 @@ def _is_high_quality_briefing(brief: str) -> bool:
         "ključno je napomenuti",
         "važno je istaći",
         "od vitalnog značaja",
+        "globalne i lokalne ose napetosti",
+        "preplitanje unutrašnjih i spoljašnjih napetosti",
+        "legitimnost institucija",
+        "širi trend",
+        "šira neizvesnost",
+        "simbol šire",
     ]
     lines = [line.strip() for line in text.splitlines() if line.strip() and not line.startswith("#")]
     if not lines:
@@ -761,6 +828,13 @@ def _is_high_quality_briefing(brief: str) -> bool:
     vague_pct = (vague_count / len(lines)) * 100
     if vague_pct > 25:
         log.warning(f"[editorial] Briefing rejected: too vague ({vague_pct:.1f}% filler)")
+        return False
+    weak_count = weak_editorial_abstraction_count(text)
+    if weak_count > 0:
+        log.warning(f"[editorial] Briefing rejected: unsupported abstraction ({weak_count} weak pattern hits)")
+        return False
+    if has_repetitive_media_framing(text):
+        log.warning("[editorial] Briefing rejected: repetitive source-comparison phrasing")
         return False
     sentence_starts = [line[:15].lower() for line in lines if len(line) > 15]
     unique_starts = len(set(sentence_starts))
@@ -1172,7 +1246,7 @@ def generate_daily_brief_task(
         dispatch_name = "Dnevni brifing" if lang == "sr" else "Дневен брифинг"
 
         clusters = _load_daily_brief_clusters(limit=10, lang=lang, briefing_date=target_date)
-        content_context = _build_daily_brief_context(clusters)
+        content_context = _build_daily_brief_context(clusters, lang=lang)
         system_insight = f"\n\n[SISTEMSKA ANALIZA ZA POSLEDNJIH 24 SATA]\n- Obradjeni clanci: {total_24h}\n- Udeo svetskih vest: {intl_pct}%\n- Indeks pluralizma (raznovrsni izvori): {diverse_pct}%\n- Najzastupljeni akteri: {top_subjects or 'Nema'}\n- U focusu lokacije: {top_locations or 'Nema'}\n- Naziv izvestaja: {dispatch_name}"
         
         # Chronological RAG context loop
@@ -1236,6 +1310,8 @@ def generate_daily_brief_task(
             brief = ""
             brief_provider = None
         final_brief = brief or generate_daily_brief_fallback(clusters, lang=lang)
+        if lang == "sr":
+            final_brief = normalize_serbian_editorial_text(final_brief)
         if final_brief:
             if brief and not final_brief.startswith("#"):
                 final_brief = f"# {dispatch_name}\n\n" + final_brief

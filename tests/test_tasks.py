@@ -731,6 +731,32 @@ class TestDailyBriefTaskQuality:
 
         assert tasks.delivery.briefing._is_grounded_daily_brief(brief, context) is True
 
+    def test_accepts_daily_brief_with_editorial_label_before_grounded_entity(self):
+        context = (
+            "### klaster 1\n"
+            "Naslov: Izjava patrijarha Porfirija\n"
+            "Kratok kontekst: Patrijarh Porfirije osudio nasilje u drustvu.\n"
+        )
+        brief = (
+            "## Velika Slika\n\n"
+            "Reakcija Patrijarha Porfirija dominira javnom diskusijom.\n"
+        )
+
+        assert tasks.delivery.briefing._is_grounded_daily_brief(brief, context) is True
+
+    def test_accepts_daily_brief_when_editorial_lead_in_is_not_in_context(self):
+        context = (
+            "### klaster 1\n"
+            "Naslov: Sudski proces protiv Miladina Krstica\n"
+            "Kratok kontekst: Miladin Krstic se pojavljuje u sudskom predmetu.\n"
+        )
+        brief = (
+            "## Velika Slika\n\n"
+            "Optuzbe Miladina Krstica postaju centralna tema dana.\n"
+        )
+
+        assert tasks.delivery.briefing._is_grounded_daily_brief(brief, context) is True
+
     def test_accepts_mk_cyrillic_entity_with_latin_spelling_variant(self):
         context = (
             "### klaster 1\n"
