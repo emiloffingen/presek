@@ -11,7 +11,7 @@ from core.celery_app import celery_app
 from core.database import db_manager as db
 from core.database import prune_db
 from core.image_service import image_service
-from tasks.utils import invalidate_public_data_caches, log, prune_ingestion_queue, reprioritize_intel_queue
+from tasks.utils import invalidate_public_data_caches, log, prune_ingestion_queue, prune_crawl_queue, reprioritize_intel_queue
 
 
 @celery_app.task
@@ -80,18 +80,22 @@ def refresh_synthesis_quality_task():
 
 
 @celery_app.task
-def catch_up_recent_summaries_task(hours=72, limit=200):
+def catch_up_recent_summaries_task(hours=72, limit=400):
     """Enqueue summarize batches for recent articles missing summaries when the queue has headroom."""
     from tasks.intelligence import (
         _dispatch_batched,
         intelligence_batches_deferred,
-        intelligence_secondary_deferred,
         summarize_articles_local_batch_task,
     )
+    from tasks.utils import get_celery_queue_depth
 
-    if intelligence_batches_deferred() or intelligence_secondary_deferred():
-        log.info("[maintenance] Skipping recent summary catch-up while intel-heavy backlog is high.")
-        return {"skipped": True, "reason": "backlog_high"}
+    if intelligence_batches_deferred():
+        log.info("[maintenance] Skipping recent summary catch-up while intel-heavy backlog is full.")
+        return {"skipped": True, "reason": "backlog_full"}
+
+    depth = get_celery_queue_depth("intel-heavy")
+    headroom = max(0, int(os.environ.get("INTEL_QUEUE_FULL_DEFER_LIMIT", "800")) - depth - 40)
+    scaled_limit = min(max(1, int(limit)), max(1, headroom * 8))
 
     try:
         rows = db.execute(
@@ -103,7 +107,7 @@ def catch_up_recent_summaries_task(hours=72, limit=200):
             ORDER BY created_at DESC
             LIMIT %s
             """,
-            (max(1, int(hours)), max(1, int(limit))),
+            (max(1, int(hours)), scaled_limit),
             read_only=True,
         ) or []
         article_ids = [int(row["id"]) for row in rows]
@@ -116,6 +120,64 @@ def catch_up_recent_summaries_task(hours=72, limit=200):
     except Exception as e:
         log.error(f"[maintenance] catch_up_recent_summaries failed: {e}", exc_info=True)
         raise
+
+
+@celery_app.task
+def prune_crawl_queue_task(dry_run=False):
+    """Drop duplicate crawl_article_task dispatches from the ingestion-crawl queue."""
+    try:
+        result = prune_crawl_queue(dry_run=bool(dry_run))
+        if result.get("removed"):
+            log.info(
+                "[maintenance] Pruned ingestion-crawl queue: removed=%s depth=%s->%s",
+                result["removed"],
+                result.get("depth_before"),
+                result.get("depth_after"),
+            )
+        return result
+    except Exception as e:
+        log.error(f"[maintenance] prune_crawl_queue failed: {e}", exc_info=True)
+        raise
+
+
+@celery_app.task
+def catch_up_deferred_crawls_task(limit=None):
+    """Enqueue crawls for recent articles missing full_content when crawl queue has headroom."""
+    from core.limits import CRAWL_CATCH_UP_LIMIT, CRAWL_QUEUE_SOFT_LIMIT
+    from tasks.ingestion_task import crawl_article_task
+    from tasks.utils import crawl_dispatches_deferred, get_celery_queue_depth
+
+    if crawl_dispatches_deferred():
+        log.info("[maintenance] Skipping deferred crawl catch-up while ingestion-crawl backlog is high.")
+        return {"skipped": True, "reason": "crawl_backlog_high"}
+
+    depth = get_celery_queue_depth("ingestion-crawl")
+    headroom = max(0, CRAWL_QUEUE_SOFT_LIMIT - depth)
+    dispatch_limit = min(max(1, int(limit or CRAWL_CATCH_UP_LIMIT)), headroom)
+    if dispatch_limit <= 0:
+        return {"skipped": True, "reason": "no_headroom", "depth": depth}
+
+    rows = db.execute(
+        """
+        SELECT id, link
+        FROM articles
+        WHERE full_content IS NULL
+          AND created_at >= NOW() - make_interval(hours => 72)
+        ORDER BY created_at DESC
+        LIMIT %s
+        """,
+        (dispatch_limit,),
+        read_only=True,
+    ) or []
+
+    enqueued = 0
+    for row in rows:
+        crawl_article_task.delay(int(row["id"]), row["link"])
+        enqueued += 1
+
+    if enqueued:
+        log.info("[maintenance] Enqueued deferred crawl catch-up for %s articles", enqueued)
+    return {"enqueued": enqueued, "depth": depth}
 
 
 @celery_app.task
@@ -162,13 +224,13 @@ def ensure_ingestion_freshness_task(max_age_minutes=120):
 
 
 @celery_app.task
-def catch_up_cluster_syntheses_task(hours=48, limit=30):
+def catch_up_cluster_syntheses_task(hours=48, limit=50):
     """Enqueue full synthesis for recent multi-source clusters missing cluster summaries."""
-    from tasks.intelligence import intelligence_soft_deferred, synthesize_cluster_task
+    from tasks.intelligence import intelligence_batches_deferred, synthesize_cluster_task
 
-    if intelligence_soft_deferred():
-        log.info("[maintenance] Skipping cluster synthesis catch-up while intel-heavy backlog is high.")
-        return {"skipped": True, "reason": "backlog_high"}
+    if intelligence_batches_deferred():
+        log.info("[maintenance] Skipping cluster synthesis catch-up while intel-heavy backlog is full.")
+        return {"skipped": True, "reason": "backlog_full"}
 
     rows = db.execute(
         """
@@ -203,11 +265,11 @@ def catch_up_cluster_syntheses_task(hours=48, limit=30):
 @celery_app.task
 def refresh_low_score_syntheses_task(min_score=0.75, limit=20):
     """Re-run full synthesis for recent low-scoring cluster summaries."""
-    from tasks.intelligence import intelligence_soft_deferred, synthesize_cluster_task
+    from tasks.intelligence import intelligence_batches_deferred, synthesize_cluster_task
 
-    if intelligence_soft_deferred():
-        log.info("[maintenance] Skipping low-score synthesis refresh while intel-heavy backlog is high.")
-        return {"skipped": True, "reason": "backlog_high"}
+    if intelligence_batches_deferred():
+        log.info("[maintenance] Skipping low-score synthesis refresh while intel-heavy backlog is full.")
+        return {"skipped": True, "reason": "backlog_full"}
 
     rows = db.execute(
         """

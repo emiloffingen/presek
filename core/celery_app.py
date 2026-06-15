@@ -162,7 +162,7 @@ celery_app.conf.update(
         },
         "prune-intel-queue": {
             "task": "tasks.maintenance.prune_intel_queue_task",
-            "schedule": 900.0,  # Every 15 minutes
+            "schedule": 600.0,  # Every 10 minutes
         },
         "refresh-synthesis-quality": {
             "task": "tasks.maintenance.refresh_synthesis_quality_task",
@@ -183,6 +183,14 @@ celery_app.conf.update(
         "prune-ingestion-queue": {
             "task": "tasks.maintenance.prune_ingestion_queue_task",
             "schedule": 900.0,
+        },
+        "prune-crawl-queue": {
+            "task": "tasks.maintenance.prune_crawl_queue_task",
+            "schedule": 900.0,
+        },
+        "catch-up-deferred-crawls": {
+            "task": "tasks.maintenance.catch_up_deferred_crawls_task",
+            "schedule": 1800.0,
         },
         "ensure-ingestion-freshness": {
             "task": "tasks.maintenance.ensure_ingestion_freshness_task",

@@ -14,7 +14,7 @@ Environment=HF_HOME=/home/emiloffingen/presek-runtime/shared/huggingface
 Environment=HF_HUB_CACHE=/home/emiloffingen/presek-runtime/shared/huggingface/hub
 Environment=SENTENCE_TRANSFORMERS_HOME=/home/emiloffingen/presek-runtime/shared/huggingface/sentence_transformers
 WorkingDirectory=/home/emiloffingen/presek-runtime/current
-ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && set -a && source /home/emiloffingen/presek-runtime/shared/.env && set +a && exec "${PRESEK_WORKER_VENV:-${PRESEK_VENV:-/home/emiloffingen/presek-runtime/venv}}/bin/celery" -A core.celery_app worker --loglevel=info -n ingestion-crawl@%h --concurrency=2 --queues=ingestion-crawl --max-memory-per-child=250000'
+ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && set -a && source /home/emiloffingen/presek-runtime/shared/.env && set +a && exec "${PRESEK_WORKER_VENV:-${PRESEK_VENV:-/home/emiloffingen/presek-runtime/venv}}/bin/celery" -A core.celery_app worker --loglevel=info -n ingestion-crawl@%h --concurrency=4 --queues=ingestion-crawl --max-memory-per-child=250000'
 Restart=always
 RestartSec=5
 TimeoutStartSec=180
@@ -24,8 +24,8 @@ StandardError=journal
 SyslogIdentifier=presek-worker-ingestion-crawl
 Nice=10
 CPUWeight=60
-MemoryHigh=1600M
-MemoryMax=2048M
+MemoryHigh=2400M
+MemoryMax=3072M
 ProtectSystem=strict
 ProtectHome=read-only
 NoNewPrivileges=yes

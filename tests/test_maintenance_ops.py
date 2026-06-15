@@ -10,15 +10,15 @@ from tasks.maintenance import (
 
 
 class TestCatchUpRecentSummaries:
-    def test_skips_when_backlog_high(self):
-        with patch("tasks.intelligence.intelligence_secondary_deferred", return_value=True):
+    def test_skips_when_backlog_full(self):
+        with patch("tasks.intelligence.intelligence_batches_deferred", return_value=True):
             result = catch_up_recent_summaries_task()
-        assert result == {"skipped": True, "reason": "backlog_high"}
+        assert result == {"skipped": True, "reason": "backlog_full"}
 
     def test_enqueues_recent_unsummarized_articles(self):
         with (
-            patch("tasks.intelligence.intelligence_secondary_deferred", return_value=False),
             patch("tasks.intelligence.intelligence_batches_deferred", return_value=False),
+            patch("tasks.utils.get_celery_queue_depth", return_value=100),
             patch("tasks.maintenance.db") as mock_db,
             patch("tasks.intelligence._dispatch_batched") as mock_dispatch,
             patch("tasks.intelligence.summarize_articles_local_batch_task") as mock_task,
@@ -71,14 +71,14 @@ class TestEnsureIngestionFreshness:
 
 
 class TestCatchUpClusterSyntheses:
-    def test_skips_when_backlog_high(self):
-        with patch("tasks.intelligence.intelligence_soft_deferred", return_value=True):
+    def test_skips_when_backlog_full(self):
+        with patch("tasks.intelligence.intelligence_batches_deferred", return_value=True):
             result = catch_up_cluster_syntheses_task()
-        assert result == {"skipped": True, "reason": "backlog_high"}
+        assert result == {"skipped": True, "reason": "backlog_full"}
 
 
 class TestRefreshLowScoreSyntheses:
-    def test_skips_when_backlog_high(self):
-        with patch("tasks.intelligence.intelligence_soft_deferred", return_value=True):
+    def test_skips_when_backlog_full(self):
+        with patch("tasks.intelligence.intelligence_batches_deferred", return_value=True):
             result = refresh_low_score_syntheses_task()
-        assert result == {"skipped": True, "reason": "backlog_high"}
+        assert result == {"skipped": True, "reason": "backlog_full"}

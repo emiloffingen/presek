@@ -1232,10 +1232,25 @@ async def ingest_all_sources_async():
                     standardize_article_styles_batch_task,
                     summarize_articles_batch_task,
                 )
+                from tasks.utils import crawl_dispatch_cap, crawl_dispatches_deferred
 
-                # 1. Batch Crawl
-                for art in inserted_data:
-                    crawl_article_task.delay(art["id"], art["link"])
+                # 1. Batch Crawl (defer or cap when crawl queue is congested)
+                if crawl_dispatches_deferred():
+                    log.info(
+                        "[ingestion] Deferring crawl dispatches for %s new articles while ingestion-crawl backlog is high",
+                        len(inserted_data),
+                    )
+                else:
+                    crawl_cap = crawl_dispatch_cap()
+                    crawl_batch = inserted_data if crawl_cap is None else inserted_data[:crawl_cap]
+                    if crawl_cap is not None and len(crawl_batch) < len(inserted_data):
+                        log.info(
+                            "[ingestion] Throttling crawl dispatches to %s of %s new articles while ingestion-crawl backlog is elevated",
+                            len(crawl_batch),
+                            len(inserted_data),
+                        )
+                    for art in crawl_batch:
+                        crawl_article_task.delay(art["id"], art["link"])
 
                 if intelligence_batches_deferred():
                     log.info(

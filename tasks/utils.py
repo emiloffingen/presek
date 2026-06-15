@@ -112,6 +112,7 @@ def get_celery_queue_depth(queue_name="celery"):
 
 INTEL_QUEUE_NAME = "intel-heavy"
 INGESTION_QUEUE_NAME = "ingestion"
+INGESTION_CRAWL_QUEUE_NAME = "ingestion-crawl"
 INGESTION_TASK_NAME = "tasks.ingestion_task.run_ingestion"
 INGESTION_CRAWL_TASKS = frozenset(
     {
@@ -156,6 +157,37 @@ def _parse_queue_task_name(raw_message: str) -> str:
 
     body = json.loads(raw_message)
     return str((body.get("headers") or {}).get("task") or "")
+
+
+def _parse_crawl_article_id(raw_message: str) -> int | None:
+    import json
+    import re
+
+    body = json.loads(raw_message)
+    task_name = str((body.get("headers") or {}).get("task") or "")
+    if task_name != "tasks.ingestion_task.crawl_article_task":
+        return None
+    argsrepr = str((body.get("headers") or {}).get("argsrepr") or "")
+    match = re.match(r"\((\d+),", argsrepr)
+    return int(match.group(1)) if match else None
+
+
+def crawl_dispatches_deferred() -> bool:
+    from core.limits import CRAWL_QUEUE_DEFER_LIMIT
+
+    return get_celery_queue_depth(INGESTION_CRAWL_QUEUE_NAME) >= CRAWL_QUEUE_DEFER_LIMIT
+
+
+def crawl_dispatch_cap() -> int | None:
+    """Return a per-cycle crawl cap when the crawl queue is elevated, else None."""
+    from core.limits import CRAWL_DISPATCH_CAP, CRAWL_QUEUE_DEFER_LIMIT, CRAWL_QUEUE_SOFT_LIMIT
+
+    depth = get_celery_queue_depth(INGESTION_CRAWL_QUEUE_NAME)
+    if depth >= CRAWL_QUEUE_DEFER_LIMIT:
+        return 0
+    if depth >= CRAWL_QUEUE_SOFT_LIMIT:
+        return CRAWL_DISPATCH_CAP
+    return None
 
 
 def reprioritize_intel_queue(*, defer_threshold: int = 150, groom_threshold: int = 80, dry_run: bool = False) -> dict:
@@ -261,6 +293,54 @@ def prune_ingestion_queue(*, max_pending: int = 1, dry_run: bool = False) -> dic
         pipe.rpush(INGESTION_QUEUE_NAME, *kept)
     pipe.execute()
     result["depth_after"] = get_celery_queue_depth(INGESTION_QUEUE_NAME)
+    return result
+
+
+def prune_crawl_queue(*, dry_run: bool = False) -> dict:
+    """Drop duplicate crawl_article_task dispatches, keeping the oldest per article."""
+    depth_before = get_celery_queue_depth(INGESTION_CRAWL_QUEUE_NAME)
+    if depth_before <= 1:
+        return {
+            "skipped": True,
+            "reason": "below_threshold",
+            "depth_before": depth_before,
+        }
+
+    raw_items = redis_client.lrange(INGESTION_CRAWL_QUEUE_NAME, 0, -1) or []
+    kept = []
+    seen_article_ids: set[int] = set()
+    removed = 0
+
+    for raw in raw_items:
+        if isinstance(raw, bytes):
+            raw = raw.decode("utf-8")
+        task_name = _parse_queue_task_name(raw)
+        if task_name == "tasks.ingestion_task.crawl_article_task":
+            article_id = _parse_crawl_article_id(raw)
+            if article_id is not None:
+                if article_id in seen_article_ids:
+                    removed += 1
+                    continue
+                seen_article_ids.add(article_id)
+        kept.append(raw)
+
+    result = {
+        "skipped": False,
+        "depth_before": depth_before,
+        "depth_after": len(kept),
+        "removed": removed,
+        "dry_run": dry_run,
+    }
+
+    if dry_run:
+        return result
+
+    pipe = redis_client.pipeline()
+    pipe.delete(INGESTION_CRAWL_QUEUE_NAME)
+    if kept:
+        pipe.rpush(INGESTION_CRAWL_QUEUE_NAME, *kept)
+    pipe.execute()
+    result["depth_after"] = get_celery_queue_depth(INGESTION_CRAWL_QUEUE_NAME)
     return result
 
 
