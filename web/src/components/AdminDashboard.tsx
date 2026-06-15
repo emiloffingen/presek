@@ -78,6 +78,48 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
     }
   };
 
+  const upgradeStuckFastSyntheses = async () => {
+    try {
+      const res = await fetch(`${apiBaseUrl()}/admin/tasks/upgrade-stuck-fast-syntheses?lang=${lang}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, ...(await buildCsrfHeadersAsync()) }
+      });
+      const payload = await res.json();
+      alert(payload.message || (lang === 'sr' ? 'Nadogradnja pokrenuta.' : 'Надградбата е стартувана.'));
+      fetchDashboard();
+    } catch {
+      alert(lang === 'sr' ? 'Greška pri nadogradnji sinteze.' : 'Грешка при надградба на синтеза.');
+    }
+  };
+
+  const refreshFallbackSyntheses = async () => {
+    try {
+      const res = await fetch(`${apiBaseUrl()}/admin/tasks/refresh-fallback-syntheses?lang=${lang}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, ...(await buildCsrfHeadersAsync()) }
+      });
+      const payload = await res.json();
+      alert(payload.message || (lang === 'sr' ? 'Osvežavanje fallback sinteze pokrenuto.' : 'Освежување fallback синтеза е стартувано.'));
+      fetchDashboard();
+    } catch {
+      alert(lang === 'sr' ? 'Greška pri osvežavanju fallback sinteze.' : 'Грешка при освежување fallback синтеза.');
+    }
+  };
+
+  const refreshLowScoreSyntheses = async () => {
+    try {
+      const res = await fetch(`${apiBaseUrl()}/admin/tasks/refresh-low-score-syntheses?lang=${lang}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, ...(await buildCsrfHeadersAsync()) }
+      });
+      const payload = await res.json();
+      alert(payload.message || (lang === 'sr' ? 'Osvežavanje niskog kvaliteta pokrenuto.' : 'Освежување низок квалитет е стартувано.'));
+      fetchDashboard();
+    } catch {
+      alert(lang === 'sr' ? 'Greška pri osvežavanju niskog kvaliteta.' : 'Грешка при освежување низок квалитет.');
+    }
+  };
+
   const clearFailedIngestion = async () => {
     try {
       const res = await fetch(`${apiBaseUrl()}/admin/tasks/clear-failed-ingestion?lang=${lang}`, {
@@ -201,6 +243,16 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
               value={ops.stale_clusters?.count ?? 0}
               sub={`${Math.round((ops.synthesis?.fallback_ratio_24h || 0) * 100)}% ${lang === 'sr' ? 'fallback 24h' : 'fallback 24ч'}`}
             />
+            <OpsMetric
+              label={lang === 'sr' ? 'Provisional 24h' : 'Привремени 24ч'}
+              value={ops.synthesis?.provisional_count_24h ?? 0}
+              sub={`${ops.synthesis?.stuck_fast_count ?? 0} ${lang === 'sr' ? 'zaglavljenih' : 'заглавени'}`}
+            />
+            <OpsMetric
+              label={lang === 'sr' ? 'Nizak kvalitet 24h' : 'Низок квалитет 24ч'}
+              value={ops.synthesis?.low_score_count_24h ?? 0}
+              sub={`${ops.synthesis?.fallback_count_24h ?? 0} ${lang === 'sr' ? 'fallback' : 'fallback'}`}
+            />
           </div>
 
           {opsAlerts.length > 0 ? (
@@ -244,6 +296,24 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
               className="text-[10px] font-black uppercase px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white"
             >
               {lang === 'sr' ? 'Osveži zastarele' : 'Освежи застарени'}
+            </button>
+            <button
+              onClick={upgradeStuckFastSyntheses}
+              className="text-[10px] font-black uppercase px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white"
+            >
+              {lang === 'sr' ? 'Nadogradi zaglavljene' : 'Надгради заглавени'}
+            </button>
+            <button
+              onClick={refreshFallbackSyntheses}
+              className="text-[10px] font-black uppercase px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white"
+            >
+              {lang === 'sr' ? 'Osveži fallback' : 'Освежи fallback'}
+            </button>
+            <button
+              onClick={refreshLowScoreSyntheses}
+              className="text-[10px] font-black uppercase px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white"
+            >
+              {lang === 'sr' ? 'Osveži nizak kvalitet' : 'Освежи низок квалитет'}
             </button>
             <button
               onClick={clearFailedIngestion}

@@ -19,6 +19,15 @@ test('buildTrustChip keeps stale note for refresh stale synthesis', () => {
   assert.match(chip.detail, /osvežava/);
 });
 
+test('buildTrustChip shows provisional label when synthesis needs upgrade', () => {
+  const chip = buildTrustChip(
+    { sourcesCount: 4, isProvisional: true },
+    'sr',
+  );
+  assert.equal(chip.label, 'Privremeni pregled');
+  assert.equal(chip.isProvisional, true);
+});
+
 test('buildCompactPluralismMeta highlights plural coverage on compact cards', () => {
   const meta = buildCompactPluralismMeta({ sourcesCount: 4, pluralismScore: 62 }, 'sr');
   assert.match(meta, /Različiti uglovi/);

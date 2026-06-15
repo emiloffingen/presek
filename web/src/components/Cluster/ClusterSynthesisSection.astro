@@ -25,6 +25,7 @@ interface Props {
 		reasons?: string[];
 		new_article_count?: number;
 	};
+	isProvisional?: boolean;
 	isPageLead?: boolean;
 }
 
@@ -41,6 +42,7 @@ const {
 	entities,
 	uniqueSourcesCount,
 	synthesisFreshness = {},
+	isProvisional = false,
 	isPageLead = false,
 } = Astro.props;
 
@@ -71,6 +73,11 @@ const staleBanner =
 		? 'Stigli su noviji izvori — pregled ispod može biti delimično zastareo.'
 		: 'Пристигнаа понови извори — прегледот подолу може делумно да биде застарен.';
 
+const provisionalBanner =
+	lang === 'sr'
+		? 'Prikazan je privremeni pregled — puna urednička sinteza se nadograđuje u pozadini.'
+		: 'Прикажан е привремен преглед — целосната уредничка синтеза се надградува во позадина.';
+
 const sourcesCta = lang === 'sr' ? 'Pogledaj izvore' : 'Погледни извори';
 ---
 
@@ -100,6 +107,12 @@ const sourcesCta = lang === 'sr' ? 'Pogledaj izvore' : 'Погледни изв�
 
 	{synthesisReady ? (
 		<>
+			{isProvisional && (
+				<div class="synthesis-state-banner synthesis-state-banner-provisional" role="status">
+					<Clock3 size={15} />
+					<p>{provisionalBanner}</p>
+				</div>
+			)}
 			{isStale && !isMissing && (
 				<div class="synthesis-state-banner synthesis-state-banner-stale" role="status">
 					<RefreshCw size={15} />
@@ -153,6 +166,11 @@ const sourcesCta = lang === 'sr' ? 'Pogledaj izvore' : 'Погледни изв�
 
 	.synthesis-state-banner p {
 		margin: 0;
+	}
+
+	.synthesis-state-banner-provisional {
+		border-color: color-mix(in srgb, var(--nyt-accent) 35%, var(--border));
+		background: color-mix(in srgb, var(--nyt-accent) 8%, var(--background));
 	}
 
 	.synthesis-state-panel {

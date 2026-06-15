@@ -20,6 +20,7 @@ from nlp.categories import detect_category, detect_topic
 from nlp.local_analyst import analyst
 from nlp.utils import extract_clean_summary_text
 from tasks.synthesis_sanitize import sanitize_synthesis_outputs as _sanitize_synthesis_outputs
+from core.synthesis_quality import record_synthesis_runtime_event
 from tasks.utils import (
     acquire_task_lock,
     get_celery_queue_depth,
@@ -48,6 +49,12 @@ from tasks.intelligence._queue import (
     _queue_backlog_high,
     _skip_when_intel_backlog,
     intelligence_secondary_deferred,
+)
+from tasks.intelligence.synthesis import (
+    _build_cluster_synthesis_prompt,
+    _build_source_comparison_prompt_block,
+    _fetch_synthesis_history_context,
+    _generate_synthesis_via_cascade,
 )
 
 @celery_app.task(name="tasks.intelligence.auto_repair_sources_task")
@@ -385,7 +392,12 @@ def backfill_cluster_summaries_task(days=30, lang="sr", offset=0):
                             fallback_reason,
                         ),
                     )
-                    record_runtime_event("synthesis_path", mode=generation_provider, fast_mode=False, lang=lang)
+                    record_synthesis_runtime_event(
+                        provider=generation_provider or "unknown",
+                        lang=lang,
+                        fast_mode=False,
+                        fallback_reason=fallback_reason,
+                    )
                     log.info(f"[tasks] Generated summary for cluster {cluster_id} (lang={lang})")
                 else:
                     log.debug(f"[tasks] No summary generated for cluster {cluster_id}")

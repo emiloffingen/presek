@@ -11,7 +11,14 @@ from core.celery_app import celery_app
 from core.database import db_manager as db
 from core.database import prune_db
 from core.image_service import image_service
-from tasks.utils import invalidate_public_data_caches, log, prune_ingestion_queue, prune_crawl_queue, reprioritize_intel_queue
+from tasks.utils import (
+    invalidate_public_data_caches,
+    log,
+    prune_crawl_queue,
+    prune_ingestion_queue,
+    reprioritize_intel_queue,
+    schedule_task_once,
+)
 
 
 @celery_app.task
@@ -58,6 +65,86 @@ def prune_intel_queue_task(defer_threshold=None, dry_run=False):
     except Exception as e:
         log.error(f"[maintenance] prune_intel_queue failed: {e}", exc_info=True)
         raise
+
+
+@celery_app.task
+def upgrade_stuck_fast_syntheses_task(limit=None):
+    """Enqueue full-quality upgrades for fast-mode publishes that stayed provisional too long."""
+    from core.limits import FAST_SYNTHESIS_STUCK_HOURS, FAST_SYNTHESIS_UPGRADE_SWEEP_LIMIT
+    from core.synthesis_quality import list_stuck_fast_synthesis_cluster_ids
+    from tasks.intelligence.synthesis import upgrade_fast_synthesis_task
+
+    batch_limit = max(1, int(limit or FAST_SYNTHESIS_UPGRADE_SWEEP_LIMIT))
+    cluster_ids = list_stuck_fast_synthesis_cluster_ids(
+        max_age_hours=FAST_SYNTHESIS_STUCK_HOURS,
+        limit=batch_limit,
+    )
+    if not cluster_ids:
+        return {"enqueued": 0, "stuck_total": 0}
+
+    enqueued = 0
+    for cluster_id in cluster_ids:
+        lock_key = f"lock:fast_synthesis_upgrade:{cluster_id}"
+        if schedule_task_once(
+            lock_key,
+            int(os.environ.get("FAST_SYNTHESIS_UPGRADE_LOCK_TTL_SECONDS", "7200")),
+            upgrade_fast_synthesis_task,
+            args=(cluster_id,),
+            kwargs={"content": None, "defer_attempt": 0},
+            countdown=30,
+            queue=os.environ.get("FAST_SYNTHESIS_UPGRADE_QUEUE", "maintenance"),
+        ):
+            enqueued += 1
+
+    log.info(
+        "[maintenance] Enqueued %s stuck fast synthesis upgrades (found=%s, age>=%sh)",
+        enqueued,
+        len(cluster_ids),
+        FAST_SYNTHESIS_STUCK_HOURS,
+    )
+    return {"enqueued": enqueued, "stuck_total": len(cluster_ids)}
+
+
+@celery_app.task
+def refresh_fallback_syntheses_task(limit=None):
+    """Re-run full synthesis for provisional or deterministic fallback summaries."""
+    from core.limits import FALLBACK_SYNTHESIS_REFRESH_LIMIT
+    from tasks.intelligence import intelligence_batches_deferred, synthesize_cluster_task
+
+    if intelligence_batches_deferred():
+        log.info("[maintenance] Skipping fallback synthesis refresh while intel-heavy backlog is full.")
+        return {"skipped": True, "reason": "backlog_full"}
+
+    batch_limit = max(1, int(limit or FALLBACK_SYNTHESIS_REFRESH_LIMIT))
+    rows = db.execute(
+        """
+        SELECT cluster_id, MAX(created_at) AS latest_at
+        FROM cluster_summaries
+        WHERE created_at >= NOW() - INTERVAL '7 days'
+          AND (
+            fallback_reason = 'fast_mode_provisional'
+            OR generation_provider = 'enhanced_fallback'
+            OR COALESCE(fallback_reason, '') ILIKE '%%enhanced_fallback%%'
+          )
+        GROUP BY cluster_id
+        ORDER BY latest_at ASC
+        LIMIT %s
+        """,
+        (batch_limit,),
+        read_only=True,
+    ) or []
+
+    enqueued = 0
+    for idx, row in enumerate(rows):
+        synthesize_cluster_task.apply_async(
+            (row["cluster_id"], None),
+            {"fast_mode": False},
+            countdown=idx * 25,
+        )
+        enqueued += 1
+
+    log.info("[maintenance] Enqueued fallback/provisional synthesis refresh for %s clusters", enqueued)
+    return {"enqueued": enqueued, "candidates": len(rows)}
 
 
 @celery_app.task
@@ -291,7 +378,12 @@ def prioritize_homepage_syntheses_task(limit=12):
             if len(articles) < 2:
                 continue
             freshness = cluster.get("synthesis_freshness") or {}
-            needs_synthesis = not cluster.get("has_synthesis") or bool(freshness.get("is_stale"))
+            synthesis_meta = cluster.get("synthesis_meta") or {}
+            needs_synthesis = (
+                not cluster.get("has_synthesis")
+                or bool(freshness.get("is_stale"))
+                or bool(synthesis_meta.get("needs_upgrade"))
+            )
             if not needs_synthesis:
                 continue
             seen.add(cluster_id)
@@ -333,14 +425,17 @@ def boost_homepage_cluster_supply_task(hours=36, recluster_limit=600, repair_lim
 
 
 @celery_app.task
-def refresh_low_score_syntheses_task(min_score=0.75, limit=20):
+def refresh_low_score_syntheses_task(min_score=None, limit=None):
     """Re-run full synthesis for recent low-scoring cluster summaries."""
+    from core.limits import LOW_SCORE_SYNTHESIS_MIN, LOW_SCORE_SYNTHESIS_REFRESH_LIMIT
     from tasks.intelligence import intelligence_batches_deferred, synthesize_cluster_task
 
     if intelligence_batches_deferred():
         log.info("[maintenance] Skipping low-score synthesis refresh while intel-heavy backlog is full.")
         return {"skipped": True, "reason": "backlog_full"}
 
+    score_floor = float(min_score if min_score is not None else LOW_SCORE_SYNTHESIS_MIN)
+    batch_limit = max(1, int(limit or LOW_SCORE_SYNTHESIS_REFRESH_LIMIT))
     rows = db.execute(
         """
         SELECT cs.cluster_id, cs.lang, cs.quality_score, COUNT(a.id) AS source_count
@@ -354,7 +449,7 @@ def refresh_low_score_syntheses_task(min_score=0.75, limit=20):
         ORDER BY cs.quality_score ASC, source_count DESC, MAX(a.created_at) DESC
         LIMIT %s
         """,
-        (float(min_score), max(1, int(limit))),
+        (float(score_floor), batch_limit),
         read_only=True,
     ) or []
 

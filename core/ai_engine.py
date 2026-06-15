@@ -292,6 +292,27 @@ class LocalProvider(AIProvider):
 
     @staticmethod
     def _local_synthesis_system(lang: str) -> str:
+        from core.limits import LOCAL_SYNTHESIS_SIMPLIFIED_SCHEMA
+
+        if LOCAL_SYNTHESIS_SIMPLIFIED_SCHEMA:
+            if lang == "mk":
+                return (
+                    "Ти си уредник на Пресек со мал локален модел. Врати САМО валиден JSON со клучеви: "
+                    "synthetic_headline, synthetic_standfirst, summary, article, key_facts, perspectives, "
+                    "verification_report, sentiment, tone_analysis. "
+                    "article е еден string со 3 кратки пасуси разделени со \\n\\n. "
+                    "summary е листа од 3 конкретни ставки. key_facts е листа од 3-5 кратки факти. "
+                    "perspectives е листа од 1-2 објекти со angle и content. Не измислувај бројки или цитати."
+                )
+            return (
+                "Ti si urednik Preseka sa malim lokalnim modelom. Vrati SAMO validan JSON sa kljucevima: "
+                "synthetic_headline, synthetic_standfirst, summary, article, key_facts, perspectives, "
+                "verification_report, sentiment, tone_analysis. "
+                "article je jedan string sa 3 kratka pasusa razdvojena sa \\n\\n. "
+                "summary je lista od 3 konkretne stavke. key_facts je lista od 3-5 kratkih cinjenica. "
+                "perspectives je lista od 1-2 objekta sa angle i content. Ne izmisljaj brojke ili citate."
+            )
+
         if lang == "mk":
             return (
                 "Ти си главен уредник на Пресек и пишуваш со мал локален модел, затоа следи ја шемата прецизно. "

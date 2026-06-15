@@ -190,6 +190,54 @@ async def retry_failed_tasks(
     }
 
 
+@router.post("/admin/tasks/upgrade-stuck-fast-syntheses")
+async def upgrade_stuck_fast_syntheses(
+    authorized: bool = Depends(verify_admin),
+    csrf_valid: bool = Depends(verify_csrf_token),
+):
+    """Force full-quality upgrades for clusters stuck on fast-mode synthesis."""
+    from tasks.maintenance import upgrade_stuck_fast_syntheses_task
+
+    result = upgrade_stuck_fast_syntheses_task()
+    return {
+        "status": "success",
+        "message": f"Pokrenuto {result.get('enqueued', 0)} punih nadogradnji sinteze.",
+        **result,
+    }
+
+
+@router.post("/admin/tasks/refresh-fallback-syntheses")
+async def refresh_fallback_syntheses(
+    authorized: bool = Depends(verify_admin),
+    csrf_valid: bool = Depends(verify_csrf_token),
+):
+    """Re-run full synthesis for provisional and enhanced_fallback summaries."""
+    from tasks.maintenance import refresh_fallback_syntheses_task
+
+    result = refresh_fallback_syntheses_task()
+    return {
+        "status": "success",
+        "message": f"Pokrenuto {result.get('enqueued', 0)} osvežavanja fallback sinteze.",
+        **result,
+    }
+
+
+@router.post("/admin/tasks/refresh-low-score-syntheses")
+async def refresh_low_score_syntheses(
+    authorized: bool = Depends(verify_admin),
+    csrf_valid: bool = Depends(verify_csrf_token),
+):
+    """Re-run full synthesis for recent low-scoring cluster summaries."""
+    from tasks.maintenance import refresh_low_score_syntheses_task
+
+    result = refresh_low_score_syntheses_task()
+    return {
+        "status": "success",
+        "message": f"Pokrenuto {result.get('enqueued', 0)} osvežavanja niskog kvaliteta sinteze.",
+        **result,
+    }
+
+
 @router.get("/admin/ops/weekly-report")
 async def get_weekly_ops_report(authorized: bool = Depends(verify_admin)):
     """Weekly synthesis quality and ops summary for the editorial cockpit."""

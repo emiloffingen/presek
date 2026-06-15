@@ -5,8 +5,10 @@ from tasks.maintenance import (
     catch_up_recent_summaries_task,
     ensure_ingestion_freshness_task,
     prioritize_homepage_syntheses_task,
+    refresh_fallback_syntheses_task,
     refresh_low_score_syntheses_task,
     refresh_synthesis_quality_task,
+    upgrade_stuck_fast_syntheses_task,
 )
 
 
@@ -42,6 +44,44 @@ class TestRefreshSynthesisQuality:
 
         assert result == snapshot
         mock_write.assert_called_once_with(snapshot)
+
+
+class TestUpgradeStuckFastSyntheses:
+    def test_enqueues_stuck_cluster_upgrades(self):
+        with (
+            patch(
+                "core.synthesis_quality.list_stuck_fast_synthesis_cluster_ids",
+                return_value=["cluster-a", "cluster-b"],
+            ),
+            patch("tasks.maintenance.schedule_task_once", side_effect=[True, False]) as mock_schedule,
+        ):
+            result = upgrade_stuck_fast_syntheses_task(limit=5)
+
+        assert result == {"enqueued": 1, "stuck_total": 2}
+        assert mock_schedule.call_count == 2
+        assert mock_schedule.call_args.kwargs["queue"] == "maintenance"
+
+
+class TestRefreshFallbackSyntheses:
+    def test_skips_when_backlog_full(self):
+        with patch("tasks.intelligence.intelligence_batches_deferred", return_value=True):
+            result = refresh_fallback_syntheses_task()
+        assert result == {"skipped": True, "reason": "backlog_full"}
+
+    def test_enqueues_fallback_clusters(self):
+        with (
+            patch("tasks.intelligence.intelligence_batches_deferred", return_value=False),
+            patch("tasks.maintenance.db") as mock_db,
+            patch("tasks.intelligence.synthesize_cluster_task") as mock_task,
+        ):
+            mock_db.execute.return_value = [
+                {"cluster_id": "cluster-a"},
+                {"cluster_id": "cluster-b"},
+            ]
+            result = refresh_fallback_syntheses_task(limit=5)
+
+        assert result == {"enqueued": 2, "candidates": 2}
+        assert mock_task.apply_async.call_count == 2
 
 
 class TestEnsureIngestionFreshness:
@@ -106,12 +146,47 @@ class TestPrioritizeHomepageSyntheses:
         assert result["enqueued"] == 1
         mock_task.apply_async.assert_called_once()
 
+    def test_enqueues_provisional_homepage_clusters(self):
+        payload = {
+            "clusters": [
+                {
+                    "cluster_id": "home-2",
+                    "has_synthesis": True,
+                    "articles": [{"id": 1}, {"id": 2}],
+                    "synthesis_freshness": {"is_stale": False},
+                    "synthesis_meta": {"needs_upgrade": True},
+                }
+            ]
+        }
+        with (
+            patch("tasks.intelligence.intelligence_batches_deferred", return_value=False),
+            patch("tasks.utils.get_celery_queue_depth", return_value=100),
+            patch("tasks.utils.safe_async_run", return_value=payload),
+            patch("tasks.intelligence.synthesize_cluster_task") as mock_task,
+        ):
+            result = prioritize_homepage_syntheses_task(limit=5)
+
+        assert result["enqueued"] == 1
+        mock_task.apply_async.assert_called_once()
+
 
 class TestRefreshLowScoreSyntheses:
     def test_skips_when_backlog_full(self):
         with patch("tasks.intelligence.intelligence_batches_deferred", return_value=True):
             result = refresh_low_score_syntheses_task()
         assert result == {"skipped": True, "reason": "backlog_full"}
+
+    def test_enqueues_low_score_clusters(self):
+        with (
+            patch("tasks.intelligence.intelligence_batches_deferred", return_value=False),
+            patch("tasks.maintenance.db") as mock_db,
+            patch("tasks.intelligence.synthesize_cluster_task") as mock_task,
+        ):
+            mock_db.execute.return_value = [{"cluster_id": "cluster-a", "lang": "sr", "quality_score": 0.62}]
+            result = refresh_low_score_syntheses_task(min_score=0.75, limit=5)
+
+        assert result == {"enqueued": 1}
+        mock_task.apply_async.assert_called_once()
 
 
 class TestBoostHomepageClusterSupply:

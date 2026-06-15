@@ -67,12 +67,13 @@ def test_route_cluster_medium_complexity_by_weight():
         assert SmartModelRouter.route_cluster(articles) == "mistral_small"
 
 
-def test_route_cluster_medium_complexity_local_model():
+def test_route_cluster_medium_complexity_local_model(monkeypatch):
     articles = [
         {"title": "Vest 1", "description": "Nesto se dogodilo."},
         {"title": "Vest 2", "description": "Nesto se dogodilo."},
         {"title": "Vest 3", "description": "Nesto se dogodilo."},
     ]
+    monkeypatch.setattr(SmartModelRouter, "_synthesis_fallback_pressure", staticmethod(lambda: "ok"))
     with _router_env(
         local_available=True,
         LOCAL_MODEL_PATH="/path/to/model",
@@ -124,11 +125,19 @@ def test_route_cluster_high_complexity_sports_conflict():
 
 def test_route_cluster_free_api_mode():
     articles = [
-        {"title": "Obicna vest o vremenu", "description": "Danas ce sijati sunce."},
-        {"title": "Jos jedna vest o vremenu", "description": "Toplo leto."},
+        {"title": f"Vest {i}", "description": "Detalji dogadjaja."}
+        for i in range(3)
     ]
     with _router_env(local_available=True, FREE_API_KEYS_ENABLED="true"):
         assert SmartModelRouter.route_cluster(articles) == "mistral_small"
+
+
+def test_route_cluster_free_api_mode_low_complexity_uses_local():
+    articles = [
+        {"title": "Obicna vest o vremenu", "description": "Danas ce sijati sunce."},
+    ]
+    with _router_env(local_available=True, FREE_API_KEYS_ENABLED="true", LOCAL_SYNTHESIS_PREFER_LOCAL="true"):
+        assert SmartModelRouter.route_cluster(articles) == "local"
 
 
 def test_route_cluster_avoids_local_when_quality_is_low():
@@ -164,12 +173,13 @@ def test_route_cluster_upgrades_small_when_quality_is_low_on_weighted_story():
         assert SmartModelRouter.route_cluster(articles) == "mistral_large"
 
 
-def test_route_cluster_avoids_local_for_multi_source_clusters():
+def test_route_cluster_avoids_local_for_multi_source_clusters(monkeypatch):
     articles = [
         {"title": "Vest 1", "description": "Detalji."},
         {"title": "Vest 2", "description": "Detalji."},
         {"title": "Vest 3", "description": "Detalji."},
     ]
+    monkeypatch.setattr(SmartModelRouter, "_synthesis_fallback_pressure", staticmethod(lambda: "ok"))
     with _router_env(
         local_available=True,
         LOCAL_MODEL_PATH="/path/to/model",
@@ -177,3 +187,19 @@ def test_route_cluster_avoids_local_for_multi_source_clusters():
         LOCAL_SYNTHESIS_PREFER_LOCAL="true",
     ):
         assert SmartModelRouter.route_cluster(articles) == "mistral_small"
+
+
+def test_route_cluster_fallback_pressure_prefers_local(monkeypatch):
+    articles = [
+        {"title": "Vest 1", "description": "Detalji."},
+        {"title": "Vest 2", "description": "Detalji."},
+        {"title": "Vest 3", "description": "Detalji."},
+    ]
+    monkeypatch.setattr(SmartModelRouter, "_synthesis_fallback_pressure", staticmethod(lambda: "critical"))
+    with _router_env(
+        local_available=True,
+        LOCAL_MODEL_PATH="/path/to/model",
+        LOCAL_SYNTHESIS_PREFER_LOCAL="false",
+        SYNTHESIS_PROFILE="balanced",
+    ):
+        assert SmartModelRouter.route_cluster(articles) == "local"

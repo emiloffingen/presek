@@ -344,11 +344,23 @@ def prune_crawl_queue(*, dry_run: bool = False) -> dict:
     return result
 
 
-def schedule_task_once(lock_key: str, ttl_seconds: int, task, *, args=None, kwargs=None, countdown=0) -> bool:
+def schedule_task_once(
+    lock_key: str,
+    ttl_seconds: int,
+    task,
+    *,
+    args=None,
+    kwargs=None,
+    countdown=0,
+    queue: str | None = None,
+) -> bool:
     """Schedule a Celery task only if no matching lock is already held."""
     if not acquire_task_lock(lock_key, ttl_seconds):
         return False
-    task.apply_async(args=args or (), kwargs=kwargs or {}, countdown=max(0, int(countdown)))
+    options = {"countdown": max(0, int(countdown))}
+    if queue:
+        options["queue"] = queue
+    task.apply_async(args=args or (), kwargs=kwargs or {}, **options)
     return True
 
 

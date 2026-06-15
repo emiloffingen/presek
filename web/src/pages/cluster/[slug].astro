@@ -147,6 +147,11 @@ const citationSources = cluster?.citation_sources || [];
 
 const synthesisUpdatedAt = cluster?.synthesis_updated_at;
 const synthesisFreshness = (cluster?.synthesis_freshness || { is_stale: false }) as any;
+const synthesisMeta = (cluster?.synthesis_meta || {}) as {
+    is_provisional?: boolean;
+    needs_upgrade?: boolean;
+};
+const isProvisionalSynthesis = Boolean(synthesisMeta.is_provisional || synthesisMeta.needs_upgrade);
 const isMissingSynthesis = (synthesisFreshness.reasons || []).includes('missing_synthesis');
 const isSynthesisRefreshStale = Boolean(synthesisFreshness.is_stale) && !isMissingSynthesis;
 const pipelineBusy = Boolean(pipeline?.busy);
@@ -295,6 +300,8 @@ const trustSummary = cluster?.trust_summary || buildTrustChip({
     hasVerification: hasFactcheck,
     quietFreshness: isMissingSynthesis,
     isPendingSynthesis: isMissingSynthesis,
+    isProvisional: isProvisionalSynthesis,
+    needsUpgrade: isProvisionalSynthesis,
 }, lang as 'sr' | 'mk');
 const crossLingualCounterparts = cluster?.cross_lingual_counterparts || [];
 
@@ -691,6 +698,7 @@ const articleSchema = cluster ? {
 								entities={cluster.entities}
 								uniqueSourcesCount={uniqueSourcesCount}
 								synthesisFreshness={synthesisFreshness}
+								isProvisional={isProvisionalSynthesis}
 								isPageLead={!showHeroVisual}
 							/>
 

@@ -8,6 +8,7 @@ export type TrustChipData = {
   sourcesCount: number;
   pluralismScore?: number | null;
   isStale?: boolean;
+  isProvisional?: boolean;
 };
 
 type TrustInput = {
@@ -19,6 +20,9 @@ type TrustInput = {
   quietFreshness?: boolean;
   /** First-time synthesis not written yet. */
   isPendingSynthesis?: boolean;
+  /** Fast-mode or fallback synthesis awaiting full upgrade. */
+  isProvisional?: boolean;
+  needsUpgrade?: boolean;
 };
 
 export function buildTrustChip(input: TrustInput, lang: 'sr' | 'mk'): TrustChipData {
@@ -28,6 +32,7 @@ export function buildTrustChip(input: TrustInput, lang: 'sr' | 'mk'): TrustChipD
   const isStale = Boolean(input.isStale);
   const hasVerification = Boolean(input.hasVerification);
   const isPendingSynthesis = Boolean(input.isPendingSynthesis);
+  const isProvisional = Boolean(input.isProvisional || input.needsUpgrade);
 
   let tier: TrustTier = 'verified';
   let label = lang === 'mk' ? 'Проверено' : 'Provereno';
@@ -36,7 +41,14 @@ export function buildTrustChip(input: TrustInput, lang: 'sr' | 'mk'): TrustChipD
       ? `${sources} независни извори се следат.`
       : `${sources} nezavisna izvora se prate.`;
 
-  if (isPendingSynthesis && sources >= 2) {
+  if (isProvisional && sources >= 2) {
+    tier = 'early';
+    label = lang === 'mk' ? 'Привремен преглед' : 'Privremeni pregled';
+    detail =
+      lang === 'mk'
+        ? 'Првичен преглед — целосната синтеза се надградува.'
+        : 'Prvični pregled — puna sinteza se nadograđuje.';
+  } else if (isPendingSynthesis && sources >= 2) {
     tier = 'early';
     label = lang === 'mk' ? 'Се подготвува' : 'U pripremi';
     detail =
@@ -79,7 +91,7 @@ export function buildTrustChip(input: TrustInput, lang: 'sr' | 'mk'): TrustChipD
       0,
       Math.min(sources, 8) * 10 +
         (pluralismVal <= 15 ? 25 : pluralismVal >= 55 ? 12 : 18) +
-        (isStale ? 0 : 20) +
+        (isStale || isProvisional ? 0 : 20) +
         (hasVerification ? 10 : 0),
     ),
   );
@@ -92,6 +104,7 @@ export function buildTrustChip(input: TrustInput, lang: 'sr' | 'mk'): TrustChipD
     sourcesCount: sources,
     pluralismScore: pluralism,
     isStale,
+    isProvisional,
   };
 }
 

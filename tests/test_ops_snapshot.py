@@ -46,3 +46,32 @@ async def test_build_ops_snapshot_warns_on_stale_clusters():
 
     assert snapshot["status"] == "warn"
     assert any(alert["code"] == "stale_clusters" for alert in snapshot["alerts"])
+
+
+@pytest.mark.anyio
+async def test_build_ops_snapshot_alerts_on_stuck_fast_synthesis():
+    with patch("core.ops_snapshot._probe_celery_queue", return_value={"total_depth": 20, "celery_depth": 20, "degraded": False}), patch(
+        "core.ops_snapshot.queue_status_payload",
+        return_value={"intel_status": "ok", "intel_heavy_depth": 20, "depths": {"intel-heavy": 20}},
+    ), patch(
+        "core.ops_snapshot.reader_pipeline_status",
+        return_value={"busy": False, "intel_status": "ok", "intel_heavy_depth": 20},
+    ), patch(
+        "core.ops_snapshot.get_synthesis_quality_snapshot",
+        return_value={
+            "status": "critical",
+            "primary": {"fallback_ratio": 0.0},
+            "history": {"fallback_ratio": 0.03},
+            "stuck_fast_synthesis_count": 3,
+            "provisional_count_24h": 5,
+            "fallback_count_24h": 10,
+        },
+    ), patch("core.ops_snapshot._load_last_refresh_time", return_value=None), patch(
+        "core.ops_snapshot._freshness_payload",
+        return_value={"status": "fresh", "age_minutes": 5, "label": "Osvezeno skoro"},
+    ), patch("core.ops_snapshot.db.async_execute_one", new=AsyncMock(return_value={"stale_count": 0, "sample_ids": []})):
+        snapshot = await build_ops_snapshot()
+
+    assert snapshot["status"] == "critical"
+    assert any(alert["code"] == "stuck_fast_synthesis" for alert in snapshot["alerts"])
+    assert snapshot["synthesis"]["provisional_count_24h"] == 5

@@ -141,16 +141,48 @@ def _unsummarized_counts():
     }
 
 
+def _runtime_fallback_reason_counts():
+    """Today's synthesis_path Redis counters grouped by fallback reason."""
+    try:
+        from utils import redis_client
+
+        bucket = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        data = redis_client.hgetall(f"presek:runtime_events:{bucket}") or {}
+        reasons = {}
+        for key, value in data.items():
+            field = key.decode() if isinstance(key, bytes) else str(key)
+            if not field.startswith("synthesis_path|"):
+                continue
+            reason = "none"
+            for part in field.split("|"):
+                if part.startswith("reason="):
+                    reason = part.split("=", 1)[1]
+                    break
+            reasons[reason] = reasons.get(reason, 0) + int(value)
+        return dict(sorted(reasons.items(), key=lambda item: -item[1]))
+    except Exception as exc:
+        log.warning(f"[synthesis-monitor] Failed to read runtime fallback reasons: {exc}")
+        return {}
+
+
 def build_snapshot(primary_days: int = 1, history_days: int = 7):
+    from core.limits import FAST_SYNTHESIS_STUCK_HOURS, LOW_SCORE_SYNTHESIS_MIN
+    from core.synthesis_quality import count_low_score_syntheses, count_stuck_fast_syntheses, count_upgradeable_syntheses
+
     primary = build_report(primary_days)
     history = build_report(history_days)
     queue_depth = _celery_queue_depth()
     unsummarized = _unsummarized_counts()
+    stuck_fast = count_stuck_fast_syntheses(FAST_SYNTHESIS_STUCK_HOURS)
+    upgradeable = count_upgradeable_syntheses(days=primary_days)
+    low_score_count = count_low_score_syntheses(min_score=LOW_SCORE_SYNTHESIS_MIN, days=primary_days)
+    runtime_fallback_reasons = _runtime_fallback_reason_counts()
 
     status = "ok"
     if (
         primary["fallback_ratio"] >= _FALLBACK_RATIO_CRITICAL
         or queue_depth >= _QUEUE_CRITICAL_DEPTH
+        or stuck_fast > 0
     ):
         status = "critical"
     elif (
@@ -168,6 +200,12 @@ def build_snapshot(primary_days: int = 1, history_days: int = 7):
         "celery_queue_critical_depth": _QUEUE_CRITICAL_DEPTH,
         "unsummarized_total": unsummarized["unsummarized_total"],
         "unsummarized_24h": unsummarized["unsummarized_24h"],
+        "stuck_fast_synthesis_count": stuck_fast,
+        "stuck_fast_synthesis_hours": FAST_SYNTHESIS_STUCK_HOURS,
+        "provisional_count_24h": upgradeable["provisional_count"],
+        "fallback_count_24h": upgradeable["fallback_count"],
+        "low_score_count_24h": low_score_count,
+        "runtime_fallback_reasons_24h": runtime_fallback_reasons,
         "checked_at": datetime.now(timezone.utc).isoformat(),
     }
 

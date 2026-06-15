@@ -117,6 +117,7 @@ celery_app.conf.update(
         "tasks.intelligence.refresh_cluster_centroid_task": {"queue": "maintenance"},
         "tasks.intelligence.generate_embeddings_task": {"queue": "maintenance"},
         "tasks.intelligence.generate_cluster_metadata_task": {"queue": "maintenance"},
+        "tasks.intelligence.upgrade_fast_synthesis_task": {"queue": "maintenance"},
         "tasks.intelligence.*": {"queue": "intel-heavy"},
         "tasks.delivery.briefing.send_profile_breaking_alerts_task": {"queue": "fast-track"},
         "tasks.delivery.email.*": {"queue": "delivery"},
@@ -167,6 +168,14 @@ celery_app.conf.update(
         "refresh-synthesis-quality": {
             "task": "tasks.maintenance.refresh_synthesis_quality_task",
             "schedule": 900.0,  # Every 15 minutes
+        },
+        "upgrade-stuck-fast-syntheses": {
+            "task": "tasks.maintenance.upgrade_stuck_fast_syntheses_task",
+            "schedule": 1800.0,  # Every 30 minutes
+        },
+        "refresh-fallback-syntheses": {
+            "task": "tasks.maintenance.refresh_fallback_syntheses_task",
+            "schedule": 3600.0,  # Every hour
         },
         "catch-up-recent-summaries": {
             "task": "tasks.maintenance.catch_up_recent_summaries_task",

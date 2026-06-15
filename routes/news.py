@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 from core.config import API_MAX_PAGE, API_MAX_Q_LEN, BREAKING_SCORE_THRESHOLD
 from core.database import db_manager as db
+from core.synthesis_quality import build_synthesis_meta, synthesis_needs_upgrade
 from core.trust_signals import build_trust_summary
 from core.language import is_cyrillic_south_slavic, transliterate_cyr_to_lat, transliterate_lat_to_cyr
 from core.queue_status import reader_pipeline_status
@@ -716,7 +717,7 @@ async def fetch_news_data(
                 """
             SELECT cluster_id, synthetic_headline, synthetic_standfirst, key_facts,
                    analyst_entities, pulse_score, pluralism_score, narrative_diversity,
-                   created_at
+                   created_at, generation_provider, generation_model, quality_score, fallback_reason
             FROM cluster_summaries
             WHERE cluster_id = ANY(%s) AND lang = %s
             """,
@@ -739,6 +740,7 @@ async def fetch_news_data(
             meta = meta_map.get(cid, {})
             summary = summary_map.get(cid, {})
             synthesis_freshness = assess_cluster_synthesis_freshness(arts, summary.get("created_at"))
+            synthesis_meta = build_synthesis_meta(summary, lang=lang)
             return {
                 "cluster_id": cid,
                 "articles": [_public_article_payload(article, lang=lang) for article in arts],
@@ -755,10 +757,13 @@ async def fetch_news_data(
                     sources_count=len({a.get("source") for a in arts if a.get("source")}),
                     pluralism_score=summary.get("pluralism_score"),
                     is_stale=bool(synthesis_freshness.get("is_stale")),
+                    is_provisional=synthesis_meta.get("is_provisional"),
+                    needs_upgrade=synthesis_meta.get("needs_upgrade"),
                     lang=lang,
                 ),
                 "synthesis_updated_at": synthesis_freshness.get("synthesis_updated_at"),
                 "synthesis_freshness": synthesis_freshness,
+                "synthesis_meta": synthesis_meta,
                 "reading_time": main.get("reading_time", 1),
                 "score": round(s, 3),
                 "homepage_score": round(homepage_score, 3),
@@ -943,6 +948,34 @@ def _clean_leaked_json_string(text: str) -> dict:
     return data
 
 
+def _maybe_enqueue_synthesis_upgrade(cluster_id: str, s_row: dict | None) -> None:
+    """Queue a full-quality re-synthesis when readers hit provisional or fallback content."""
+    if not s_row or not synthesis_needs_upgrade(
+        s_row.get("fallback_reason"),
+        s_row.get("generation_provider"),
+    ):
+        return
+
+    try:
+        from core.celery_app import celery_app
+        from tasks.utils import acquire_task_lock
+
+        lock_key = f"lock:jit_synthesis_upgrade:{cluster_id}"
+        if not acquire_task_lock(lock_key, 1800):
+            return
+
+        celery_app.send_task(
+            "tasks.intelligence.synthesize_cluster_task",
+            args=[cluster_id, None],
+            kwargs={"fast_mode": False},
+            countdown=10,
+            queue="fast-track",
+        )
+        log.info("[cluster] JIT synthesis upgrade enqueued for %s", cluster_id)
+    except Exception as e:
+        log.warning("[cluster] JIT synthesis upgrade enqueue failed for %s: %s", cluster_id, e)
+
+
 def _maybe_enqueue_missing_synthesis(cluster_id: str, freshness: dict, unique_sources: int) -> None:
     """Queue synthesis once per cluster when readers hit a page with no summary yet."""
     reasons = freshness.get("reasons") or []
@@ -982,6 +1015,15 @@ def _maybe_enqueue_missing_synthesis_from_cache(cluster_id: str, cached: dict) -
             if article.get("source")
         }
         _maybe_enqueue_missing_synthesis(cluster_id, freshness, len(sources))
+        synthesis_meta = data.get("synthesis_meta") or {}
+        if synthesis_meta.get("needs_upgrade"):
+            _maybe_enqueue_synthesis_upgrade(
+                cluster_id,
+                {
+                    "fallback_reason": synthesis_meta.get("fallback_reason"),
+                    "generation_provider": synthesis_meta.get("generation_provider"),
+                },
+            )
     except Exception as e:
         log.debug("[cluster] JIT synthesis cache hook failed for %s: %s", cluster_id, e)
 
@@ -1022,7 +1064,8 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
             SELECT summary, generated_article, synthetic_headline, synthetic_standfirst,
                    perspectives, created_at, sentiment, tone_analysis, verification_report,
                    citation_sources, key_facts, analyst_entities, pulse_score,
-                   pluralism_score, narrative_diversity, storyline_narrative
+                   pluralism_score, narrative_diversity, storyline_narrative,
+                   generation_provider, generation_model, quality_score, fallback_reason
             FROM cluster_summaries
             WHERE cluster_id = %s AND lang = %s
             """,
@@ -1038,7 +1081,8 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                 SELECT summary, generated_article, synthetic_headline, synthetic_standfirst,
                        perspectives, created_at, sentiment, tone_analysis, verification_report,
                        citation_sources, key_facts, analyst_entities, pulse_score,
-                       pluralism_score, narrative_diversity, storyline_narrative
+                       pluralism_score, narrative_diversity, storyline_narrative,
+                       generation_provider, generation_model, quality_score, fallback_reason
                 FROM cluster_summaries
                 WHERE cluster_id = %s AND lang = 'sr'
                 """,
@@ -1077,6 +1121,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
         # Build synthesis response (string for backward compatibility with frontend split())
         synthesis = summary_text or ""
         has_synthesis = bool(s_row and s_row.get("summary"))
+        synthesis_meta = build_synthesis_meta(s_row, lang=lang)
 
         # Extra metadata from summary row
         key_facts = _as_list(s_row.get("key_facts")) if s_row else []
@@ -1090,6 +1135,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
         freshness = assess_cluster_synthesis_freshness(articles, (s_row or {}).get("created_at"))
         unique_sources_for_jit = len({a.get("source") for a in articles if a.get("source")})
         _maybe_enqueue_missing_synthesis(cluster_id, freshness, unique_sources_for_jit)
+        _maybe_enqueue_synthesis_upgrade(cluster_id, s_row)
 
         cluster_meta = await db.async_execute_one(
             "SELECT tags, topics, representative_image, dominant_color, centroid FROM cluster_metadata WHERE cluster_id = %s",
@@ -1391,6 +1437,8 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
             pluralism_score=pluralism_score,
             is_stale=bool(freshness.get("is_stale")),
             has_verification=has_verification,
+            is_provisional=synthesis_meta.get("is_provisional"),
+            needs_upgrade=synthesis_meta.get("needs_upgrade"),
             lang=lang,
         )
         cross_lingual_counterparts = await get_cross_lingual_counterparts(cluster_id, lang)
@@ -1421,6 +1469,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                 "cross_lingual_counterparts": cross_lingual_counterparts,
                 "synthesis_updated_at": freshness["synthesis_updated_at"],
                 "synthesis_freshness": freshness,
+                "synthesis_meta": synthesis_meta,
                 "tags": tags,
                 "topics": topics,
                 "representative_image": rep_image,
@@ -1432,7 +1481,10 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
             },
         }
 
-        cache_ttl = 120 if "missing_synthesis" in (freshness.get("reasons") or []) else 3600
+        cache_ttl = 120 if (
+            "missing_synthesis" in (freshness.get("reasons") or [])
+            or synthesis_meta.get("needs_upgrade")
+        ) else 3600
         set_cache(cache_key, response, ttl=cache_ttl)
         return response
 

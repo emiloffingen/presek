@@ -95,6 +95,8 @@ const synthesisFreshness = (cluster.synthesis_freshness || {}) as {
     synthesis_updated_at?: string | null;
 };
 const isPendingSynthesis = (synthesisFreshness.reasons || []).includes('missing_synthesis');
+const synthesisMeta = (cluster.synthesis_meta || {}) as { is_provisional?: boolean; needs_upgrade?: boolean };
+const isProvisionalSynthesis = Boolean(synthesisMeta.is_provisional || synthesisMeta.needs_upgrade);
 const trustIsStale = Boolean(synthesisFreshness.is_stale) && !isPendingSynthesis;
 const isStubCard = isStubFeedCluster(cluster) && variant !== 'featured' && !isLead;
 const conflictHeadlines = (cluster.pluralism_score ?? 0) >= 55
@@ -110,6 +112,8 @@ const compactPluralismMeta = (variant === 'compact' || variant === 'wire')
         hasVerification: Boolean(cluster.has_fact_check),
         quietFreshness: isPendingSynthesis,
         isPendingSynthesis,
+        isProvisional: isProvisionalSynthesis,
+        needsUpgrade: isProvisionalSynthesis,
     }, lang as 'sr' | 'mk')
     : null;
 
@@ -216,6 +220,8 @@ function getTimeStr(dateStr: string) {
                     hasVerification={Boolean(cluster.has_fact_check)}
                     quietFreshness={isPendingSynthesis}
                     isPendingSynthesis={isPendingSynthesis}
+                    isProvisional={isProvisionalSynthesis}
+                    needsUpgrade={isProvisionalSynthesis}
                     showExplainer={isLead}
                     lang={lang}
                 />

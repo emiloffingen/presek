@@ -5,6 +5,7 @@ from unittest.mock import patch
 import tasks
 from tasks.intelligence import (
     _langs_for_cluster_articles,
+    _order_synthesis_langs,
     _split_cluster_merge_score,
 )
 from tasks.synthesis_sanitize import (
@@ -277,12 +278,13 @@ class TestSynthesizeClusterTaskQuality:
         with (
             patch("core.llm_router.SmartModelRouter.route_cluster", return_value="local"),
             patch(
-                "tasks.intelligence._call_ai",
+                "tasks.intelligence.synthesis._call_ai",
                 side_effect=[
                     (bad_payload, "local"),
                     (good_payload, "mistral_small"),
                 ],
             ),
+            patch("tasks.intelligence.synthesis._attempt_gemma_rescue", return_value=None),
             patch("tasks.intelligence.synthesis._is_grounded_synthesis", return_value=True),
             patch("tasks.intelligence.synthesis._score_synthesis_quality", return_value=0.9),
             patch("tasks.intelligence.synthesis._score_editorial_summary", return_value=0.9),
@@ -290,7 +292,7 @@ class TestSynthesizeClusterTaskQuality:
             result = _generate_synthesis_via_cascade(
                 article_rows,
                 "full prompt",
-                "system prompt",
+                "Ti si glavni urednik i pises vesti na srpskom.",
                 lang="sr",
                 max_tokens=1200,
                 fast_mode=False,
@@ -304,7 +306,10 @@ class TestSynthesizeClusterTaskQuality:
     def test_cluster_synthesis_languages_follow_article_countries(self):
         assert _langs_for_cluster_articles([{"country": "MK"}, {"country": "MK"}]) == ["mk"]
         assert _langs_for_cluster_articles([{"country": "RS"}]) == ["sr"]
-        assert _langs_for_cluster_articles([{"country": "RS"}, {"country": "MK"}]) == ["sr", "mk"]
+        assert _order_synthesis_langs(_langs_for_cluster_articles([{"country": "RS"}, {"country": "MK"}])) == [
+            "sr",
+            "mk",
+        ]
 
     def test_schedule_fast_synthesis_upgrade_uses_task_once_lock(self):
         from tasks.intelligence import _schedule_fast_synthesis_upgrade, upgrade_fast_synthesis_task
@@ -317,12 +322,13 @@ class TestSynthesizeClusterTaskQuality:
         assert lock_key == "lock:fast_synthesis_upgrade:cluster-9"
         assert task is upgrade_fast_synthesis_task
         assert mock_schedule.call_args.kwargs["kwargs"] == {"content": "legacy", "defer_attempt": 0}
+        assert mock_schedule.call_args.kwargs["queue"] == "maintenance"
 
     def test_upgrade_fast_synthesis_task_defers_when_intel_queue_is_busy(self):
         from tasks.intelligence import upgrade_fast_synthesis_task
 
         with (
-            patch("tasks.intelligence._queue.intelligence_soft_deferred", return_value=True),
+            patch("tasks.intelligence.synthesis.intelligence_soft_deferred", return_value=True),
             patch("tasks.intelligence.synthesis.upgrade_fast_synthesis_task.apply_async") as mock_retry,
             patch("tasks.intelligence.synthesis.synthesize_cluster_task") as mock_full,
         ):
@@ -336,7 +342,7 @@ class TestSynthesizeClusterTaskQuality:
         from tasks.intelligence import upgrade_fast_synthesis_task
 
         with (
-            patch("tasks.intelligence._queue.intelligence_soft_deferred", return_value=False),
+            patch("tasks.intelligence.synthesis.intelligence_soft_deferred", return_value=False),
             patch("tasks.intelligence.synthesis.synthesize_cluster_task") as mock_full,
         ):
             result = upgrade_fast_synthesis_task("cluster-9", content="legacy", defer_attempt=0)
@@ -386,10 +392,11 @@ class TestSynthesizeClusterTaskQuality:
             patch("tasks.intelligence._queue.get_celery_queue_depth", return_value=0),
             patch("core.config.AUTO_SUMMARIZE_MIN_SRC", 1),
             patch("core.database.db_manager") as mock_db,
-            patch("tasks.intelligence.synthesis._fetch_synthesis_history_context", return_value=""),
-            patch("tasks.intelligence.synthesis._build_source_comparison_prompt_block", return_value=""),
+            patch("tasks.intelligence.backfill._fetch_synthesis_history_context", return_value=""),
+            patch("tasks.intelligence.backfill._build_source_comparison_prompt_block", return_value=""),
+            patch("tasks.intelligence.backfill._build_cluster_synthesis_prompt", return_value="prompt"),
             patch(
-                "tasks.intelligence.synthesis._generate_synthesis_via_cascade",
+                "tasks.intelligence.backfill._generate_synthesis_via_cascade",
                 return_value={
                     "status": "exhausted",
                     "provider": None,
@@ -400,8 +407,8 @@ class TestSynthesizeClusterTaskQuality:
                     "raw": None,
                 },
             ),
-            patch("tasks.intelligence.synthesis.synthesize_cluster_fallback", return_value=fallback_result),
-            patch("tasks.intelligence.synthesis.record_runtime_event") as mock_event,
+            patch("tasks.intelligence.backfill.synthesize_cluster_fallback", return_value=fallback_result),
+            patch("tasks.intelligence.backfill.record_synthesis_runtime_event") as mock_event,
         ):
             mock_db.execute.side_effect = [
                 [{"cluster_id": "cluster-1"}],
@@ -422,10 +429,10 @@ class TestSynthesizeClusterTaskQuality:
             "backfill_enhanced_fallback_after_cascade_exhausted",
         )
         mock_event.assert_called_once_with(
-            "synthesis_path",
-            mode="enhanced_fallback",
-            fast_mode=False,
+            provider="enhanced_fallback",
             lang="sr",
+            fast_mode=False,
+            fallback_reason="backfill_enhanced_fallback_after_cascade_exhausted",
         )
 
     def test_normalizes_ai_summary_and_perspectives_before_store(self):
@@ -469,18 +476,24 @@ class TestSynthesizeClusterTaskQuality:
 
         with (
             patch("tasks.intelligence.synthesis.db") as mock_db,
-            patch("tasks.intelligence.synthesis._call_ai", return_value=(ai_payload, "nvidia")),
             patch(
-                "tasks.intelligence.clean_json_response",
-                side_effect=lambda value: value,
+                "tasks.intelligence.synthesis._generate_synthesis_via_cascade",
+                return_value={
+                    "status": "success",
+                    "provider": "nvidia",
+                    "model": "nvidia/test",
+                    "fallback_reason": None,
+                    "res_data": ai_payload,
+                    "quality_score": 0.95,
+                    "raw": json.dumps(ai_payload),
+                    "cascade_depth": 1,
+                },
             ),
             patch("tasks.intelligence.synthesis.generate_cover_art", return_value=None),
-            patch("tasks.intelligence.synthesis._is_grounded_synthesis", return_value=True),
-            patch("tasks.intelligence.synthesis._is_fact_grounded_synthesis", return_value=True),
             patch("tasks.intelligence.synthesis.invalidate_cluster_caches"),
             patch("tasks.utils.record_task_event"),
             patch("tasks.intelligence.synthesis.analyst") as mock_analyst,
-            patch("core.embeddings.get_cluster_embedding", return_value=None),
+            patch("tasks.intelligence.metadata.generate_cluster_metadata_task") as mock_metadata,
         ):
 
             mock_analyst.extract_deep_metadata.return_value = {

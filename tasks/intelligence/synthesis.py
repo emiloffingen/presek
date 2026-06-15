@@ -62,6 +62,80 @@ def _langs_for_cluster_articles(article_rows):
     return langs or ["sr"]
 
 
+def _order_synthesis_langs(target_langs):
+    """Serbian first when bilingual so Macedonian can be translated from SR output."""
+    langs = list(dict.fromkeys(target_langs or ["sr"]))
+    if "sr" in langs and "mk" in langs:
+        return ["sr", "mk"]
+    return langs
+
+
+def _try_translate_synthesis_to_mk(sr_bundle, article_rows, fast_mode=False):
+    """Translate a successful Serbian synthesis bundle to Macedonian."""
+    from core.limits import SYNTHESIS_MK_TRANSLATE_FROM_SR
+
+    if not SYNTHESIS_MK_TRANSLATE_FROM_SR or not sr_bundle:
+        return None
+
+    payload = {
+        "synthetic_headline": sr_bundle.get("synthetic_headline", ""),
+        "synthetic_standfirst": sr_bundle.get("synthetic_standfirst", ""),
+        "summary": sr_bundle.get("summary", ""),
+        "article": sr_bundle.get("generated_article", ""),
+        "key_facts": sr_bundle.get("key_facts", []),
+        "perspectives": sr_bundle.get("perspectives", []),
+        "verification_report": sr_bundle.get("verification_report"),
+        "sentiment": sr_bundle.get("sentiment", {}),
+        "tone_analysis": sr_bundle.get("tone_analysis", {}),
+        "story_so_far": sr_bundle.get("story_so_far", ""),
+        "impact_analysis": sr_bundle.get("impact_analysis", {}),
+        "quote": sr_bundle.get("quote", ""),
+    }
+    translate_prompt = (
+        "Преведи ја следната уредничка синтеза од српски (латиница) на чист македонски литературен јазик (кирилица).\n"
+        "Задржи ја истата JSON структура и истите информациски слоеви; не додавај нови факти.\n"
+        "Врати САМО валиден JSON со истите клучеви како влезот.\n\n"
+        f"{json.dumps(payload, ensure_ascii=False)}"
+    )
+    try:
+        raw_trans, provider = _call_ai(
+            prompt=translate_prompt,
+            system="Ти си професионален преведувач за вести од српски на македонски јазик.",
+            task_type="translation",
+            max_tokens=4000 if not fast_mode else 2200,
+            json_mode=True,
+            lang="mk",
+        )
+        if not raw_trans:
+            return None
+        trans_data = clean_json_response(raw_trans)
+        if not isinstance(trans_data, dict):
+            return None
+        summary = trans_data.get("summary", "")
+        generated_article = trans_data.get("article", "") or trans_data.get("generated_article", "")
+        if isinstance(summary, list):
+            summary = "\n".join(str(s) for s in summary)
+        comparison_text = f"{summary}\n{generated_article}"
+        if not summary or not generated_article:
+            return None
+        if not _is_fact_grounded_synthesis(comparison_text, article_rows, "mk", fast_mode=fast_mode):
+            log.warning("[tasks/synthesis] MK translation failed fact grounding gate")
+            return None
+        return {
+            "status": "success",
+            "provider": provider or "translation",
+            "model": _resolve_generation_model(provider) if provider else "translation",
+            "fallback_reason": "translated_from_sr",
+            "res_data": trans_data,
+            "quality_score": sr_bundle.get("quality_score"),
+            "raw": raw_trans,
+            "cascade_depth": 1,
+        }
+    except Exception as exc:
+        log.warning(f"[tasks/synthesis] MK translation from SR failed: {exc}")
+        return None
+
+
 def _build_cluster_synthesis_content(article_rows):
     rows = article_rows or []
     return "\n".join(
@@ -316,6 +390,115 @@ def _resolve_generation_model(provider: str | None):
     return provider
 
 
+def _evaluate_synthesis_candidate(
+    res_data,
+    *,
+    provider,
+    article_rows,
+    lang,
+    fast_mode,
+    current_context,
+    legacy_summary,
+):
+    """Apply grounding and tiered quality gates to a parsed synthesis payload."""
+    from core.synthesis_quality import synthesis_quality_threshold
+
+    summary = res_data.get("summary", "")
+    generated_article = res_data.get("article", "") or res_data.get("generated_article", "")
+    synthetic_headline = res_data.get("synthetic_headline", "")
+    if isinstance(summary, list):
+        summary = "\n".join(str(s) for s in summary)
+
+    if not summary or not generated_article:
+        return None, "partial_response"
+
+    comparison_text = f"{summary}\n{generated_article}"
+    if not _is_fact_grounded_synthesis(comparison_text, article_rows, lang, fast_mode=fast_mode):
+        return None, "fact_grounding_failed"
+
+    if not fast_mode and not _is_grounded_synthesis(comparison_text, current_context or legacy_summary):
+        return None, "hallucination_gate_failed"
+
+    key_facts = res_data.get("key_facts", [])
+    article_score = _score_synthesis_quality(synthetic_headline, generated_article, key_facts, lang)
+    summary_score = _score_editorial_summary(summary, generated_article, lang)
+    quality_score = round((article_score * 0.65) + (summary_score * 0.35), 3)
+    threshold = synthesis_quality_threshold(provider, fast_mode=fast_mode)
+    if threshold is not None and quality_score < threshold:
+        return None, "failed_quality_score"
+
+    return {
+        "quality_score": quality_score,
+        "summary": summary,
+        "generated_article": generated_article,
+        "synthetic_headline": synthetic_headline,
+    }, None
+
+
+def _attempt_gemma_rescue(
+    article_rows,
+    full_prompt,
+    system_prompt,
+    lang,
+    max_tokens,
+    fast_mode,
+    current_context,
+    legacy_summary,
+    exclude_providers,
+):
+    """Explicit local/Gemma attempt before deterministic fallback."""
+    from core.limits import SYNTHESIS_GEMMA_BEFORE_DETERMINISTIC
+    from core.llm_router import _local_model_available
+
+    if not SYNTHESIS_GEMMA_BEFORE_DETERMINISTIC or not _local_model_available():
+        return None
+    if "local" in exclude_providers:
+        return None
+
+    remote = ["mistral_small", "mistral_large", "nvidia"]
+    raw, provider = _call_ai(
+        full_prompt,
+        system_prompt,
+        json_mode=True,
+        task_type="synthesis",
+        max_tokens=max_tokens,
+        lang=lang,
+        provider_override="local",
+        exclude_providers=[p for p in remote if p not in exclude_providers],
+    )
+    if not raw or provider != "local":
+        return None
+    try:
+        res_data = clean_json_response(raw)
+        if not isinstance(res_data, dict):
+            return None
+    except Exception:
+        return None
+
+    evaluated, fail_reason = _evaluate_synthesis_candidate(
+        res_data,
+        provider="local",
+        article_rows=article_rows,
+        lang=lang,
+        fast_mode=fast_mode,
+        current_context=current_context,
+        legacy_summary=legacy_summary,
+    )
+    if not evaluated:
+        log.warning(f"[tasks/synthesis] Gemma rescue failed: {fail_reason}")
+        return None
+
+    return {
+        "status": "success",
+        "provider": "local",
+        "model": _resolve_generation_model("local"),
+        "fallback_reason": "gemma_rescue",
+        "res_data": res_data,
+        "quality_score": evaluated["quality_score"],
+        "raw": raw,
+    }
+
+
 def _generate_synthesis_via_cascade(
     article_rows,
     full_prompt,
@@ -370,6 +553,8 @@ def _generate_synthesis_via_cascade(
         )
         if not raw or not provider:
             last_fallback_reason = last_fallback_reason or "provider_returned_no_content"
+            if provider:
+                exclude_providers.append(provider)
             break
 
         try:
@@ -382,39 +567,18 @@ def _generate_synthesis_via_cascade(
             exclude_providers.append(provider)
             continue
 
-        summary = res_data.get("summary", "")
-        generated_article = res_data.get("article", "") or res_data.get("generated_article", "")
-        synthetic_headline = res_data.get("synthetic_headline", "")
-        if isinstance(summary, list):
-            summary = "\n".join(str(s) for s in summary)
-
-        if not summary or not generated_article:
-            last_fallback_reason = "partial_response"
-            exclude_providers.append(provider)
-            continue
-
-        comparison_text = f"{summary}\n{generated_article}"
-        if not _is_fact_grounded_synthesis(comparison_text, article_rows, lang, fast_mode=fast_mode):
-            log.warning(f"[tasks/synthesis] Fact grounding gate failed for provider {provider}")
-            last_fallback_reason = "fact_grounding_failed"
-            exclude_providers.append(provider)
-            continue
-
-        if not fast_mode and not _is_grounded_synthesis(comparison_text, current_context or legacy_summary):
-            log.warning(f"[tasks/synthesis] Hallucination gate failed for provider {provider}")
-            last_fallback_reason = "hallucination_gate_failed"
-            exclude_providers.append(provider)
-            continue
-
-        key_facts = res_data.get("key_facts", [])
-        article_score = _score_synthesis_quality(synthetic_headline, generated_article, key_facts, lang)
-        summary_score = _score_editorial_summary(summary, generated_article, lang)
-        quality_score = round((article_score * 0.65) + (summary_score * 0.35), 3)
-        if not fast_mode and quality_score < 0.7:
-            log.warning(
-                f"[tasks/synthesis] Quality score {quality_score:.2f} below threshold for provider {provider}"
-            )
-            last_fallback_reason = "failed_quality_score"
+        evaluated, fail_reason = _evaluate_synthesis_candidate(
+            res_data,
+            provider=provider,
+            article_rows=article_rows,
+            lang=lang,
+            fast_mode=fast_mode,
+            current_context=current_context,
+            legacy_summary=legacy_summary,
+        )
+        if not evaluated:
+            log.warning(f"[tasks/synthesis] Gate failed for provider {provider}: {fail_reason}")
+            last_fallback_reason = fail_reason
             exclude_providers.append(provider)
             continue
 
@@ -424,9 +588,25 @@ def _generate_synthesis_via_cascade(
             "model": _resolve_generation_model(provider),
             "fallback_reason": None,
             "res_data": res_data,
-            "quality_score": quality_score,
+            "quality_score": evaluated["quality_score"],
             "raw": raw,
+            "cascade_depth": len(exclude_providers) + 1,
         }
+
+    rescue = _attempt_gemma_rescue(
+        article_rows,
+        full_prompt,
+        system_prompt,
+        lang,
+        max_tokens,
+        fast_mode,
+        current_context,
+        legacy_summary,
+        exclude_providers,
+    )
+    if rescue:
+        rescue["cascade_depth"] = len(exclude_providers) + 1
+        return rescue
 
     return {
         "status": "exhausted",
@@ -436,6 +616,7 @@ def _generate_synthesis_via_cascade(
         "res_data": None,
         "quality_score": None,
         "raw": None,
+        "cascade_depth": len(exclude_providers),
     }
 
 
@@ -999,6 +1180,8 @@ def _compute_lightweight_quality_score(synthetic_headline, summary, generated_ar
 
 def _schedule_fast_synthesis_upgrade(cluster_id: str, content=None) -> bool:
     """Queue a deferred full-quality synthesis after an initial fast-mode publish."""
+    from core.limits import FAST_SYNTHESIS_UPGRADE_QUEUE
+
     if os.environ.get("FAST_SYNTHESIS_UPGRADE_ENABLED", "true").lower() != "true":
         return False
 
@@ -1010,6 +1193,7 @@ def _schedule_fast_synthesis_upgrade(cluster_id: str, content=None) -> bool:
         args=(cluster_id,),
         kwargs={"content": content, "defer_attempt": 0},
         countdown=_FAST_SYNTHESIS_UPGRADE_DELAY_SECONDS,
+        queue=FAST_SYNTHESIS_UPGRADE_QUEUE,
     )
     if scheduled:
         log.info(
@@ -1020,10 +1204,16 @@ def _schedule_fast_synthesis_upgrade(cluster_id: str, content=None) -> bool:
     return scheduled
 
 
-@celery_app.task(name="tasks.intelligence.upgrade_fast_synthesis_task")
+@celery_app.task(name="tasks.intelligence.upgrade_fast_synthesis_task", queue="maintenance")
 def upgrade_fast_synthesis_task(cluster_id, content=None, defer_attempt=0):
     """Run full-quality synthesis after fast-mode publish, deferring when intel-heavy is congested."""
-    if intelligence_soft_deferred() and defer_attempt < _FAST_SYNTHESIS_UPGRADE_MAX_DEFERS:
+    from core.limits import FAST_SYNTHESIS_UPGRADE_FORCE_AFTER_DEFERS, FAST_SYNTHESIS_UPGRADE_QUEUE
+
+    force_run = (
+        FAST_SYNTHESIS_UPGRADE_FORCE_AFTER_DEFERS
+        and defer_attempt >= _FAST_SYNTHESIS_UPGRADE_MAX_DEFERS
+    )
+    if intelligence_soft_deferred() and defer_attempt < _FAST_SYNTHESIS_UPGRADE_MAX_DEFERS and not force_run:
         retry_delay = min(900, 120 * (defer_attempt + 1))
         log.info(
             "[tasks/synthesis] Deferring full upgrade for %s (attempt %s, retry in %ss)",
@@ -1035,8 +1225,16 @@ def upgrade_fast_synthesis_task(cluster_id, content=None, defer_attempt=0):
             args=(cluster_id,),
             kwargs={"content": content, "defer_attempt": defer_attempt + 1},
             countdown=retry_delay,
+            queue=FAST_SYNTHESIS_UPGRADE_QUEUE,
         )
         return {"status": "deferred", "cluster_id": cluster_id, "defer_attempt": defer_attempt + 1}
+
+    if force_run and intelligence_soft_deferred():
+        log.warning(
+            "[tasks/synthesis] Forcing full upgrade for %s after %s deferrals (queue still busy)",
+            cluster_id,
+            defer_attempt,
+        )
 
     synthesize_cluster_task(cluster_id, content, fast_mode=False)
     return {"status": "upgraded", "cluster_id": cluster_id}
@@ -1057,9 +1255,15 @@ def synthesize_urgent_task(cluster_id, content=None):
 @celery_app.task(name="tasks.intelligence.synthesize_cluster_task", rate_limit="60/m", autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
 def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=False):
     """Generates a multi-perspective synthesis for a cluster with historical continuity."""
+    from core.synthesis_quality import (
+        clear_fast_synthesis_pending,
+        mark_fast_synthesis_pending,
+        record_synthesis_runtime_event,
+    )
+
     article_rows = _load_cluster_articles_for_synthesis(cluster_id)
     citation_sources = _build_citation_sources(article_rows)
-    target_langs = _langs_for_cluster_articles(article_rows)
+    target_langs = _order_synthesis_langs(_langs_for_cluster_articles(article_rows))
     source_context_sr = _build_synthesis_source_context(article_rows, lang="sr")
     source_context_mk = _build_synthesis_source_context(article_rows, lang="mk")
 
@@ -1084,64 +1288,84 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
     }
     shared_computed = False
     fast_synthesis_succeeded = False
+    synthesis_persisted = False
+    sr_success_bundle = None
 
     for lang in target_langs:
         try:
             log.info(f"Generating synthesis for cluster {cluster_id} in {lang}")
-            prompt_parts = []
-            if fast_mode:
-                prompt_parts.append(
-                    "FAST MODE: return the full valid JSON schema, but keep the editorial article concise and complete "
-                    "(350-500 words). Include the core event, context, source comparison, consequences, and one clear "
-                    "open question. Do not reduce the article to a single paragraph."
+
+            if lang == "mk" and sr_success_bundle:
+                translated = _try_translate_synthesis_to_mk(sr_success_bundle, article_rows, fast_mode=fast_mode)
+                if translated and translated.get("status") == "success":
+                    cascade = translated
+                else:
+                    cascade = None
+            else:
+                cascade = None
+
+            if cascade is None:
+                prompt_parts = []
+                if fast_mode:
+                    prompt_parts.append(
+                        "FAST MODE: return the full valid JSON schema, but keep the editorial article concise and complete "
+                        "(350-500 words). Include the core event, context, source comparison, consequences, and one clear "
+                        "open question. Do not reduce the article to a single paragraph."
+                    )
+                else:
+                    history_context = _fetch_synthesis_history_context(cluster_id, lang=lang, article_rows=article_rows)
+                    if history_context:
+                        prompt_parts.append(history_context)
+
+                source_comparison = _build_source_comparison_prompt_block(article_rows, lang=lang)
+                if source_comparison:
+                    prompt_parts.append(source_comparison)
+
+                prompt_parts.append("novi clanci OD danas:\n<articles_context>")
+                current_context = source_context_mk if lang == "mk" else source_context_sr
+                if current_context:
+                    prompt_parts.append(current_context)
+                elif legacy_summary:
+                    prompt_parts.append(legacy_summary)
+                prompt_parts.append("</articles_context>")
+                if lang == "mk":
+                    prompt_parts.append(
+                        "УРЕДНИЧКИ ФОКУС: резимето не смее да биде список на наслови. "
+                        "Изведи 3-4 паметни точки: нов развој, зошто е важен, што навистина е потврдено "
+                        "и што останува непознато или следно за проверка."
+                    )
+                else:
+                    prompt_parts.append(
+                        "UREĐIVAČKI FOKUS: rezime ne sme biti lista naslova. "
+                        "Izvedi 3-4 pametne tačke: novi razvoj, zašto je važan, šta je zaista potvrđeno "
+                        "i šta ostaje nepoznato ili sledeće za proveru."
+                    )
+                full_prompt = "\n\n".join(part for part in prompt_parts if part)
+
+                system_prompt = SYNTHESIS_SYSTEM_PROMPT_MK if lang == "mk" else SYNTHESIS_SYSTEM_PROMPT_SR
+
+                cascade = _generate_synthesis_via_cascade(
+                    article_rows,
+                    full_prompt,
+                    system_prompt,
+                    lang=lang,
+                    max_tokens=max_tokens,
+                    fast_mode=fast_mode,
+                    current_context=current_context,
+                    legacy_summary=legacy_summary,
                 )
             else:
-                history_context = _fetch_synthesis_history_context(cluster_id, lang=lang, article_rows=article_rows)
-                if history_context:
-                    prompt_parts.append(history_context)
-
-            source_comparison = _build_source_comparison_prompt_block(article_rows, lang=lang)
-            if source_comparison:
-                prompt_parts.append(source_comparison)
-
-            prompt_parts.append("novi clanci OD danas:\n<articles_context>")
-            current_context = source_context_mk if lang == "mk" else source_context_sr
-            if current_context:
-                prompt_parts.append(current_context)
-            elif legacy_summary:
-                prompt_parts.append(legacy_summary)
-            prompt_parts.append("</articles_context>")
-            if lang == "mk":
-                prompt_parts.append(
-                    "УРЕДНИЧКИ ФОКУС: резимето не смее да биде список на наслови. "
-                    "Изведи 3-4 паметни точки: нов развој, зошто е важен, што навистина е потврдено "
-                    "и што останува непознато или следно за проверка."
-                )
-            else:
-                prompt_parts.append(
-                    "UREĐIVAČKI FOKUS: rezime ne sme biti lista naslova. "
-                    "Izvedi 3-4 pametne tačke: novi razvoj, zašto je važan, šta je zaista potvrđeno "
-                    "i šta ostaje nepoznato ili sledeće za proveru."
-                )
-            full_prompt = "\n\n".join(part for part in prompt_parts if part)
-
-            system_prompt = SYNTHESIS_SYSTEM_PROMPT_MK if lang == "mk" else SYNTHESIS_SYSTEM_PROMPT_SR
-
-            cascade = _generate_synthesis_via_cascade(
-                article_rows,
-                full_prompt,
-                system_prompt,
-                lang=lang,
-                max_tokens=max_tokens,
-                fast_mode=fast_mode,
-                current_context=current_context,
-                legacy_summary=legacy_summary,
-            )
+                current_context = source_context_mk if lang == "mk" else source_context_sr
 
             provider = cascade.get("provider")
             model = cascade.get("model")
             quality_score = cascade.get("quality_score")
             fallback_reason = cascade.get("fallback_reason")
+            if cascade.get("status") == "success":
+                if fast_mode:
+                    fallback_reason = fallback_reason or "fast_mode_provisional"
+                elif fallback_reason == "fast_mode_provisional":
+                    fallback_reason = None
             raw = cascade.get("raw")
             res_data = cascade.get("res_data") or {}
 
@@ -1190,7 +1414,30 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                             res_data.get("key_facts", []),
                             lang=lang,
                         )
-                record_runtime_event("synthesis_path", mode=provider or "unknown", fast_mode=fast_mode, lang=lang)
+                record_synthesis_runtime_event(
+                    provider=provider or "unknown",
+                    lang=lang,
+                    fast_mode=fast_mode,
+                    fallback_reason=fallback_reason,
+                    cascade_depth=cascade.get("cascade_depth"),
+                )
+                
+                if lang == "sr" and cascade["status"] == "success":
+                    sr_success_bundle = {
+                        "synthetic_headline": synthetic_headline,
+                        "synthetic_standfirst": synthetic_standfirst,
+                        "summary": summary,
+                        "generated_article": generated_article,
+                        "key_facts": res_data.get("key_facts", []),
+                        "perspectives": perspectives,
+                        "verification_report": verification_report,
+                        "sentiment": res_data.get("sentiment", {}),
+                        "tone_analysis": res_data.get("tone_analysis", {}),
+                        "story_so_far": current_story_so_far,
+                        "impact_analysis": impact_data,
+                        "quote": quote,
+                        "quality_score": quality_score,
+                    }
                 
                 # Record quality feedback for router
                 if provider and quality_score is not None:
@@ -1305,7 +1552,13 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 synthetic_headline = fallback.get("synthetic_headline", "")
                 synthetic_standfirst = fallback.get("synthetic_standfirst", "")
                 generated_article = fallback.get("generated_article", "")
-                record_runtime_event("synthesis_path", mode=provider, fast_mode=fast_mode, lang=lang)
+                record_synthesis_runtime_event(
+                    provider=provider,
+                    lang=lang,
+                    fast_mode=fast_mode,
+                    fallback_reason=fallback_reason,
+                    cascade_depth=cascade.get("cascade_depth"),
+                )
                 verification_report = None
                 quote = ""
                 current_sentiment_data = shared_metrics["sentiment_data"]
@@ -1476,6 +1729,11 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                         fetch=False,
                     )
                 log.info(f"Successfully synthesized cluster {cluster_id} for {lang}")
+                synthesis_persisted = True
+                if not fast_mode:
+                    clear_fast_synthesis_pending(cluster_id)
+                elif fast_mode:
+                    mark_fast_synthesis_pending(cluster_id)
 
                 # Automatically pre-generate the cluster audio in the background
                 try:
@@ -1495,7 +1753,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
         _schedule_fast_synthesis_upgrade(cluster_id, legacy_summary or None)
 
     # --- [Final Steps] Cluster-wide updates and events ---
-    if shared_computed:
+    if synthesis_persisted or shared_computed:
         # Update Metadata with Impact Score
         db.execute(
             """
@@ -1576,6 +1834,8 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
         try:
             invalidate_cluster_caches(cluster_id)
             if os.environ.get("REDIS_URL"):
+                from tasks.intelligence.metadata import generate_cluster_metadata_task
+
                 generate_cluster_metadata_task.apply_async(
                     kwargs={"target_clusters": [cluster_id]},
                     countdown=5,
@@ -1583,7 +1843,6 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
         except Exception as err:
             log.warning(f"[tasks] Finalization error for {cluster_id}: {err}")
     else:
-        # Fallback if all languages failed
         log.error(f"All synthesis attempts failed for cluster {cluster_id}")
 
 

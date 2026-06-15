@@ -82,6 +82,14 @@ export interface NewsCluster {
     latest_article_at?: string | null;
     synthesis_updated_at?: string | null;
   };
+  synthesis_meta?: {
+    generation_provider?: string | null;
+    generation_model?: string | null;
+    quality_score?: number | null;
+    fallback_reason?: string | null;
+    is_provisional?: boolean;
+    needs_upgrade?: boolean;
+  };
 }
 
 export interface ClusterDetail extends NewsCluster {
@@ -102,6 +110,8 @@ export interface ClusterDetail extends NewsCluster {
     pluralism_score?: number | null;
     is_stale?: boolean;
     has_verification?: boolean;
+    is_provisional?: boolean;
+    needs_upgrade?: boolean;
   };
   cross_lingual_counterparts?: Array<{
     cluster_id: string;
@@ -117,6 +127,14 @@ export interface ClusterDetail extends NewsCluster {
     is_stale: boolean;
     new_article_count: number;
     reasons: string[];
+  };
+  synthesis_meta?: {
+    generation_provider?: string | null;
+    generation_model?: string | null;
+    quality_score?: number | null;
+    fallback_reason?: string | null;
+    is_provisional?: boolean;
+    needs_upgrade?: boolean;
   };
   tags: string[];
   topics: string[];

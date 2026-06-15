@@ -86,6 +86,10 @@ async def build_ops_snapshot() -> dict:
     fallback_ratio_24h = float(primary.get("fallback_ratio") or 0.0)
     fallback_ratio_7d = float(history.get("fallback_ratio") or 0.0)
     synthesis_status = str(synthesis.get("status") or "unknown")
+    provisional_count = int(synthesis.get("provisional_count_24h") or 0)
+    fallback_count_24h = int(synthesis.get("fallback_count_24h") or 0)
+    low_score_count_24h = int(synthesis.get("low_score_count_24h") or 0)
+    stuck_fast_count = int(synthesis.get("stuck_fast_synthesis_count") or 0)
 
     stale_row = await db.async_execute_one(_STALE_CLUSTER_SQL) or {}
     stale_count = int(stale_row.get("stale_count") or 0)
@@ -165,6 +169,46 @@ async def build_ops_snapshot() -> dict:
             )
         )
 
+    if stuck_fast_count > 0:
+        alerts.append(
+            _alert(
+                "critical",
+                "stuck_fast_synthesis",
+                f"{stuck_fast_count} fast-mode syntheses stuck past upgrade window.",
+                str(stuck_fast_count),
+            )
+        )
+
+    if provisional_count >= 12:
+        alerts.append(
+            _alert(
+                "warn",
+                "provisional_synthesis",
+                f"{provisional_count} provisional syntheses awaiting full upgrade.",
+                str(provisional_count),
+            )
+        )
+
+    if fallback_count_24h >= 40:
+        alerts.append(
+            _alert(
+                "warn",
+                "fallback_synthesis",
+                f"{fallback_count_24h} enhanced_fallback syntheses in last 24h.",
+                str(fallback_count_24h),
+            )
+        )
+
+    if low_score_count_24h >= 15:
+        alerts.append(
+            _alert(
+                "warn",
+                "low_score_synthesis",
+                f"{low_score_count_24h} syntheses below quality floor in last 24h.",
+                str(low_score_count_24h),
+            )
+        )
+
     busiest_queue = max(
         (queues.get("depths") or {}).items(),
         key=lambda item: int(item[1] or 0),
@@ -186,6 +230,10 @@ async def build_ops_snapshot() -> dict:
             "fallback_ratio_7d": round(fallback_ratio_7d, 4),
             "unsummarized_total": unsummarized_total,
             "unsummarized_24h": unsummarized_24h,
+            "provisional_count_24h": provisional_count,
+            "fallback_count_24h": fallback_count_24h,
+            "low_score_count_24h": low_score_count_24h,
+            "stuck_fast_count": stuck_fast_count,
             "providers_24h": primary.get("providers") or {},
             "providers_7d": history.get("providers") or {},
         },

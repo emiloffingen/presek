@@ -159,7 +159,7 @@ class SmartModelRouter:
         small_upgrade = float(os.environ.get("ROUTER_SMALL_UPGRADE_QUALITY", "0.85"))
 
         if candidate == "local":
-            if article_count >= 3:
+            if article_count >= 3 and not routing_decision.get("allow_local_multi_source"):
                 routing_decision["quality_adjustment"] = "multi_source_avoids_local"
                 if has_high_weight or is_high_complexity:
                     return "mistral_large"
@@ -204,6 +204,21 @@ class SmartModelRouter:
         routing_decision["chosen_provider"] = chosen
         log.info(f"[router] Decision: {json.dumps(routing_decision, ensure_ascii=False)}")
         return chosen
+
+    @staticmethod
+    def _synthesis_fallback_pressure() -> str:
+        """Return synthesis quality pressure: ok, warn, or critical."""
+        if os.environ.get("ROUTER_FALLBACK_PRESSURE_LOCAL", "true").lower() != "true":
+            return "ok"
+        try:
+            from core.health import get_synthesis_quality_snapshot
+
+            status = str((get_synthesis_quality_snapshot() or {}).get("status") or "ok").lower()
+            if status in ("warn", "critical"):
+                return status
+        except Exception:
+            pass
+        return "ok"
 
     @staticmethod
     def get_dynamic_fallback_order(task_type="synthesis"):
@@ -280,6 +295,7 @@ class SmartModelRouter:
 
         local_available = _local_model_available()
         prefer_local_synthesis = os.environ.get("LOCAL_SYNTHESIS_PREFER_LOCAL", "true").lower() == "true"
+        synthesis_profile = (os.environ.get("SYNTHESIS_PROFILE") or "balanced").strip().lower()
         force_remote_high_complexity = (
             os.environ.get("LOCAL_SYNTHESIS_HIGH_COMPLEXITY_REMOTE", "true").lower() == "true"
         )
@@ -336,14 +352,42 @@ class SmartModelRouter:
                 is_high_complexity=is_high_complexity,
             )
         
-        # Free API optimization: use Mistral for better quality when APIs are free
+        # Free API / quality profile: remote APIs for medium+ complexity only.
         free_apis_enabled = os.environ.get("FREE_API_KEYS_ENABLED", "false").lower() == "true"
-        
-        if free_apis_enabled and not is_high_complexity:
-            # Even for low complexity, use Mistral Small for better quality when free
+        use_quality_profile = synthesis_profile == "quality" or free_apis_enabled
+
+        if synthesis_profile == "cost" and local_available and not is_high_complexity:
+            return SmartModelRouter._finalize_route(
+                "local",
+                "cost_profile_local_first",
+                routing_decision,
+                article_count=article_count,
+                has_high_weight=has_high_weight,
+                is_high_complexity=is_high_complexity,
+            )
+
+        if use_quality_profile and not is_high_complexity and article_count >= 3:
             return SmartModelRouter._finalize_route(
                 "mistral_small",
                 "free_api_quality_optimization",
+                routing_decision,
+                article_count=article_count,
+                has_high_weight=has_high_weight,
+                is_high_complexity=is_high_complexity,
+            )
+
+        fallback_pressure = SmartModelRouter._synthesis_fallback_pressure()
+        routing_decision["fallback_pressure"] = fallback_pressure
+        if (
+            fallback_pressure in ("warn", "critical")
+            and local_available
+            and not is_high_complexity
+            and article_count >= 3
+        ):
+            routing_decision["allow_local_multi_source"] = True
+            return SmartModelRouter._finalize_route(
+                "local",
+                "fallback_pressure_local_first",
                 routing_decision,
                 article_count=article_count,
                 has_high_weight=has_high_weight,

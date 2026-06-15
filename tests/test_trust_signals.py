@@ -18,3 +18,15 @@ def test_trust_summary_early_tier_mk():
     summary = build_trust_summary(sources_count=1, lang="mk")
     assert summary["tier"] == "early"
     assert "Ран сигнал" in summary["label"]
+
+
+def test_trust_summary_provisional_tier():
+    summary = build_trust_summary(
+        sources_count=4,
+        pluralism_score=20,
+        is_provisional=True,
+        lang="sr",
+    )
+    assert summary["tier"] == "early"
+    assert summary["is_provisional"] is True
+    assert "Privremeni pregled" in summary["label"]

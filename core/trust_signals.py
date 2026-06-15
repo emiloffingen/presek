@@ -9,21 +9,32 @@ def build_trust_summary(
     pluralism_score: int | float | None = None,
     is_stale: bool = False,
     has_verification: bool = False,
+    is_provisional: bool = False,
+    needs_upgrade: bool = False,
     lang: str = "sr",
 ) -> dict:
     pluralism = int(pluralism_score or 0)
+    provisional = bool(is_provisional or needs_upgrade)
     score = min(
         100,
         max(
             0,
             min(sources_count, 8) * 10
             + (25 if pluralism <= 15 else 12 if pluralism >= 55 else 18)
-            + (0 if is_stale else 20)
+            + (0 if is_stale or provisional else 20)
             + (10 if has_verification else 0),
         ),
     )
 
-    if sources_count < 2:
+    if provisional and sources_count >= 2:
+        tier = "early"
+        if lang == "mk":
+            label = "Привремен преглед"
+            detail = "Првичен преглед — целосната синтеза се надградува."
+        else:
+            label = "Privremeni pregled"
+            detail = "Prvični pregled — puna sinteza se nadograđuje."
+    elif sources_count < 2:
         tier = "early"
         if lang == "mk":
             label = "Ран сигнал"
@@ -71,4 +82,6 @@ def build_trust_summary(
         "pluralism_score": pluralism if pluralism_score is not None else None,
         "is_stale": is_stale,
         "has_verification": has_verification,
+        "is_provisional": provisional,
+        "needs_upgrade": provisional,
     }

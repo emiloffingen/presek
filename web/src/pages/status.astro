@@ -53,6 +53,14 @@ const pipelineBusy = Boolean(celeryQueue?.degraded) || intelHeavyDepth >= Number
 const freshness = healthData.freshness || {};
 const synthesisQuality = (healthData.synthesis_quality || {}) as any;
 const synthesisStatus = String(synthesisQuality?.status || 'unknown');
+const synthesisPrimary = (synthesisQuality?.primary || {}) as any;
+const stuckFastCount = Number(synthesisQuality?.stuck_fast_synthesis_count || 0);
+const fallbackRatio = Number(synthesisPrimary?.fallback_ratio || 0);
+const synthesisDetail = stuckFastCount > 0
+    ? `${t('status.pipeline_synthesis_sub')} · ${stuckFastCount} provisional`
+    : fallbackRatio > 0
+        ? `${t('status.pipeline_synthesis_sub')} · ${Math.round(fallbackRatio * 100)}% fallback`
+        : t('status.pipeline_synthesis_sub');
 
 const formattedUptime = (seconds: number) => {
     if (!seconds) return "0s";
@@ -153,7 +161,7 @@ const formattedUptime = (seconds: number) => {
                     <div class="metric-card">
                         <div class="metric-label">{t('status.pipeline_synthesis')}</div>
                         <div class="metric-value">{synthesisStatus.toUpperCase()}</div>
-                        <div class="metric-sub">{t('status.pipeline_synthesis_sub')}</div>
+                        <div class="metric-sub">{synthesisDetail}</div>
                     </div>
                     <div class="metric-card">
                         <div class="metric-label">{t('status.pipeline_total')}</div>

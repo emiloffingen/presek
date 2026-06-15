@@ -12,6 +12,8 @@ interface Props {
   showExplainer?: boolean;
   quietFreshness?: boolean;
   isPendingSynthesis?: boolean;
+  isProvisional?: boolean;
+  needsUpgrade?: boolean;
 }
 
 const {
@@ -23,12 +25,14 @@ const {
   showExplainer = false,
   quietFreshness = false,
   isPendingSynthesis = false,
+  isProvisional = false,
+  needsUpgrade = false,
 } = Astro.props;
 
 const t = useTranslations(lang);
 
 const trust = buildTrustChip(
-  { sourcesCount, pluralismScore, isStale, hasVerification, quietFreshness, isPendingSynthesis },
+  { sourcesCount, pluralismScore, isStale, hasVerification, quietFreshness, isPendingSynthesis, isProvisional, needsUpgrade },
   lang,
 );
 
