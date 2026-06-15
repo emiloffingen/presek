@@ -41,6 +41,25 @@ def test_build_synthesis_meta():
     assert meta["generation_model"] == "mistral-small-latest"
 
 
+def test_record_synthesis_db_persisted(monkeypatch):
+    from core.synthesis_quality import record_synthesis_db_persisted
+
+    events = []
+
+    def _record(event, **fields):
+        events.append((event, fields))
+
+    monkeypatch.setattr("utils.record_runtime_event", _record)
+    record_synthesis_db_persisted(
+        cluster_id="abc123",
+        lang="sr",
+        provider="mistral_small",
+        fast_mode=False,
+    )
+    assert events[0][0] == "synthesis_db_persisted"
+    assert events[0][1]["cluster_id"] == "abc123"
+
+
 def test_list_stuck_fast_synthesis_cluster_ids(monkeypatch):
     from core.synthesis_quality import list_stuck_fast_synthesis_cluster_ids
 
