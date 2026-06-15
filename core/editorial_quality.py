@@ -36,6 +36,16 @@ WEAK_EDITORIAL_ABSTRACTIONS: tuple[re.Pattern[str], ...] = (
 )
 
 
+UNPROFESSIONAL_EDITORIAL_ARTIFACTS: tuple[re.Pattern[str], ...] = (
+    re.compile(r"\buredničk(?:i|og|om)\s+centar\b", re.IGNORECASE),
+    re.compile(r"\bredakcijsk(?:i|og|om)\s+centar\b", re.IGNORECASE),
+    re.compile(r"\bуредничкиот\s+центар\b", re.IGNORECASE),
+    re.compile(r"\bуреднички\s+центар\b", re.IGNORECASE),
+    re.compile(r"\bредакцискиот\s+центар\b", re.IGNORECASE),
+    re.compile(r"\bредакциски\s+центар\b", re.IGNORECASE),
+)
+
+
 def normalize_serbian_editorial_text(text: str) -> str:
     """Normalize common Serbian/Bosnian/Croatian leaks in generated Serbian copy."""
     clean = str(text or "")
@@ -48,6 +58,12 @@ def weak_editorial_abstraction_count(text: str) -> int:
     """Count broad editorial claims that usually read as unsupported AI abstraction."""
     value = str(text or "")
     return sum(1 for pattern in WEAK_EDITORIAL_ABSTRACTIONS if pattern.search(value))
+
+
+def has_unprofessional_editorial_artifact(text: str) -> bool:
+    """Detect invented newsroom/meta entities that read like AI artifacts."""
+    value = str(text or "")
+    return any(pattern.search(value) for pattern in UNPROFESSIONAL_EDITORIAL_ARTIFACTS)
 
 
 def has_repetitive_media_framing(text: str) -> bool:

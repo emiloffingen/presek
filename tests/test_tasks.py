@@ -742,6 +742,21 @@ class TestDailyBriefTaskQuality:
 
         assert tasks.delivery.briefing._is_high_quality_briefing(brief) is False
 
+    def test_rejects_daily_brief_with_invented_editorial_center_artifact(self):
+        brief = (
+            "## Големата Слика\n\n"
+            "Уредничкиот центар за климатски и институционални развој потврдува дека Македонија "
+            "ќе се соочи со топлински бран во текот на работната седмица.\n\n"
+            "## Клучни теми\n\n"
+            "УХМР потврдува сончево и топло време со температури до 36 степени.\n\n"
+            "## Медиумски Радар\n\n"
+            "Изворите се согласуваат околу основната прогноза, но различно ги наведуваат температурите.\n\n"
+            "## Што да се следи\n\n"
+            "- Следното официјално соопштение на УХМР."
+        )
+
+        assert tasks.delivery.briefing._is_high_quality_briefing(brief) is False
+
     def test_rejects_daily_brief_with_named_entity_missing_from_context(self):
 
         context = (

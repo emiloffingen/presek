@@ -10,6 +10,7 @@ from core.config import BREAKING_SCORE_THRESHOLD, NTFY_TOPIC
 from core.database import db_manager as db
 from core.editorial_quality import (
     has_repetitive_media_framing,
+    has_unprofessional_editorial_artifact,
     normalize_serbian_editorial_text,
     weak_editorial_abstraction_count,
 )
@@ -835,6 +836,9 @@ def _is_high_quality_briefing(brief: str) -> bool:
         return False
     if has_repetitive_media_framing(text):
         log.warning("[editorial] Briefing rejected: repetitive source-comparison phrasing")
+        return False
+    if has_unprofessional_editorial_artifact(text):
+        log.warning("[editorial] Briefing rejected: unprofessional editorial artifact")
         return False
     sentence_starts = [line[:15].lower() for line in lines if len(line) > 15]
     unique_starts = len(set(sentence_starts))
