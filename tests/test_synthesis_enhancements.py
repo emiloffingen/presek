@@ -134,10 +134,27 @@ def test_fact_gate_rejects_ungrounded_numbers():
         }
     ]
     grounded = "Vlada je usvojila predlog koji pokriva 12.000 zaposlenih u javnom sektoru."
-    hallucinated = "Vlada je usvojila predlog koji pokriva 45.000 zaposlenih i budžet od 2,3 milijarde evra."
+    borderline = "Vlada je usvojila predlog koji pokriva 12.000 zaposlenih i planira dodatnih 500 mesta."
+    hallucinated = (
+        "Vlada je usvojila predlog koji pokriva 45.000 zaposlenih, budžet od 2,3 milijarde, "
+        "88% rasta i 500 novih radnih mesta van izvora."
+    )
 
     assert _is_fact_grounded_synthesis(grounded, articles, lang="sr")
+    assert _is_fact_grounded_synthesis(borderline, articles, lang="sr")
     assert not _is_fact_grounded_synthesis(hallucinated, articles, lang="sr")
+
+
+def test_fact_gate_treats_thousand_separator_variants_as_grounded():
+    articles = [
+        {
+            "title": "Plata",
+            "description": "Reforma pokriva 12.000 zaposlenih.",
+            "source": "Izvor A",
+        }
+    ]
+    synthesis = "Reforma pokriva 12000 zaposlenih prema izvorima."
+    assert _is_fact_grounded_synthesis(synthesis, articles, lang="sr")
 
 
 def test_source_comparison_prompt_block_includes_local_analysis():

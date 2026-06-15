@@ -263,6 +263,55 @@ def catch_up_cluster_syntheses_task(hours=48, limit=50):
 
 
 @celery_app.task
+def prioritize_homepage_syntheses_task(limit=12):
+    """Enqueue full synthesis for homepage-visible clusters missing or stale summaries."""
+    from routes.news import fetch_news_data
+    from tasks.intelligence import intelligence_batches_deferred, synthesize_cluster_task
+    from tasks.utils import get_celery_queue_depth, safe_async_run
+
+    if intelligence_batches_deferred():
+        log.info("[maintenance] Skipping homepage synthesis priority while intel-heavy backlog is full.")
+        return {"skipped": True, "reason": "backlog_full"}
+
+    depth = get_celery_queue_depth("intel-heavy")
+    headroom = max(0, int(os.environ.get("INTEL_QUEUE_FULL_DEFER_LIMIT", "800")) - depth - 20)
+    dispatch_limit = min(max(1, int(limit)), headroom)
+    if dispatch_limit <= 0:
+        return {"skipped": True, "reason": "no_headroom", "depth": depth}
+
+    targets: list[str] = []
+    seen: set[str] = set()
+    for lang in ("sr", "mk"):
+        payload = safe_async_run(fetch_news_data(sort="score", page_size=24, lang=lang)) or {}
+        for cluster in payload.get("clusters") or []:
+            cluster_id = str(cluster.get("cluster_id") or "").strip()
+            if not cluster_id or cluster_id in seen:
+                continue
+            articles = cluster.get("articles") or []
+            if len(articles) < 2:
+                continue
+            freshness = cluster.get("synthesis_freshness") or {}
+            needs_synthesis = not cluster.get("has_synthesis") or bool(freshness.get("is_stale"))
+            if not needs_synthesis:
+                continue
+            seen.add(cluster_id)
+            targets.append(cluster_id)
+
+    enqueued = 0
+    for idx, cluster_id in enumerate(targets[:dispatch_limit]):
+        synthesize_cluster_task.apply_async(
+            (cluster_id, None),
+            {"fast_mode": False},
+            countdown=idx * 15,
+        )
+        enqueued += 1
+
+    if enqueued:
+        log.info("[maintenance] Enqueued homepage-priority synthesis for %s clusters", enqueued)
+    return {"enqueued": enqueued, "candidates": len(targets), "depth": depth}
+
+
+@celery_app.task
 def refresh_low_score_syntheses_task(min_score=0.75, limit=20):
     """Re-run full synthesis for recent low-scoring cluster summaries."""
     from tasks.intelligence import intelligence_batches_deferred, synthesize_cluster_task

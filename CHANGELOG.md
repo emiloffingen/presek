@@ -1,5 +1,12 @@
 # Presek Changelog
 
+## v8.3.0 (2026-06-15)
+
+### Synthesis quality
+- Relaxed fact-grounding gate: allow up to 2 soft-ungrounded numbers in full mode (was 1), with thousands-separator normalization and year-token handling
+- Synthesis prompts now explicitly forbid inventing numbers, percentages, or scores not present in sources
+- New `prioritize_homepage_syntheses_task` enqueues full synthesis for homepage-visible clusters missing or stale summaries (every 15 min)
+
 ## v8.2.3 (2026-06-14)
 
 ### Frontend & UX

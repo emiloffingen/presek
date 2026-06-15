@@ -158,18 +158,58 @@ def _synthesis_source_corpus(article_rows):
     )
 
 
+def _normalize_number_token(token: str) -> str:
+    import re
+
+    clean = str(token or "").strip().rstrip("%")
+    if not clean:
+        return ""
+    if re.fullmatch(r"\d{1,3}(?:\.\d{3})+", clean):
+        return clean.replace(".", "")
+    if "," in clean and "." not in clean:
+        left, _, right = clean.partition(",")
+        if right.isdigit() and len(right) <= 2:
+            return f"{left}.{right}"
+    return clean.replace(",", ".")
+
+
+def _is_soft_number_token(token: str) -> bool:
+    import re
+
+    clean = str(token or "").strip().rstrip("%")
+    if re.fullmatch(r"20[12]\d", clean):
+        return True
+    if re.fullmatch(r"19\d{2}", clean):
+        return True
+    return False
+
+
 def _number_token_grounded_in_source(token, source_numbers, source_text_folded):
     clean = str(token or "").strip()
     if not clean:
         return True
+    if _is_soft_number_token(clean):
+        normalized_year = _normalize_number_token(clean)
+        if any(_normalize_number_token(src) == normalized_year for src in source_numbers):
+            return True
+        if clean.casefold() in source_text_folded:
+            return True
     if clean in source_numbers:
         return True
     if clean.casefold() in source_text_folded:
         return True
-    normalized = clean.replace(",", ".")
+    normalized = _normalize_number_token(clean)
+    if not normalized:
+        return True
+    if normalized.casefold() in source_text_folded:
+        return True
+    for src in source_numbers:
+        if _normalize_number_token(src) == normalized:
+            return True
+    normalized_legacy = clean.replace(",", ".")
     for src in source_numbers:
         src_norm = str(src).replace(",", ".")
-        if normalized == src_norm:
+        if normalized_legacy == src_norm:
             return True
     return False
 
@@ -178,6 +218,7 @@ def _is_fact_grounded_synthesis(synthesis_text: str, article_rows, lang: str = "
     if not synthesis_text or not article_rows:
         return True
 
+    from core.limits import FACT_GROUNDING_MAX_UNGROUNDED, FACT_GROUNDING_MAX_UNGROUNDED_FAST
     from nlp.generation import _extract_number_tokens, _extract_sports_scores
     from nlp.utils import transliterate
 
@@ -193,9 +234,10 @@ def _is_fact_grounded_synthesis(synthesis_text: str, article_rows, lang: str = "
     ungrounded_numbers = [
         token
         for token in synth_numbers
-        if not _number_token_grounded_in_source(token, source_numbers, source_folded)
+        if not _is_soft_number_token(token)
+        and not _number_token_grounded_in_source(token, source_numbers, source_folded)
     ]
-    max_ungrounded = 3 if fast_mode else 1
+    max_ungrounded = FACT_GROUNDING_MAX_UNGROUNDED_FAST if fast_mode else FACT_GROUNDING_MAX_UNGROUNDED
     if len(ungrounded_numbers) > max_ungrounded:
         log.warning(
             "[ai/fact_gate] Ungrounded numbers in synthesis: %s",
@@ -209,7 +251,8 @@ def _is_fact_grounded_synthesis(synthesis_text: str, article_rows, lang: str = "
             for score in synth_scores
             if score not in source_scores and score.casefold() not in source_folded
         ]
-        if ungrounded_scores:
+        max_ungrounded_scores = 1 if fast_mode else 0
+        if len(ungrounded_scores) > max_ungrounded_scores:
             log.warning("[ai/fact_gate] Ungrounded sports scores in synthesis: %s", ", ".join(ungrounded_scores))
             return False
 
@@ -248,13 +291,15 @@ def _build_cluster_synthesis_prompt(article_rows, lang="sr", history_context="",
         prompt_parts.append(
             "УРЕДНИЧКИ ФОКУС: резимето не смее да биде список на наслови. "
             "Изведи 3-4 паметни точки: нов развој, зошто е важен, што навистина е потврдено "
-            "и што останува непознато или следно за проверка."
+            "и што останува непознато или следно за проверка. "
+            "Не измислувај броеви, проценти или резултати — користи само бројки што се појавуваат во изворите."
         )
     else:
         prompt_parts.append(
             "UREĐIVAČKI FOKUS: rezime ne sme biti lista naslova. "
             "Izvedi 3-4 pametne tačke: novi razvoj, zašto je važan, šta je zaista potvrđeno "
-            "i šta ostaje nepoznato ili sledeće za proveru."
+            "i šta ostaje nepoznato ili sledeće za proveru. "
+            "Ne izmišljaj brojeve, procente ili rezultate — koristi samo brojke koje se pojavljuju u izvorima."
         )
     return "\n\n".join(part for part in prompt_parts if part)
 

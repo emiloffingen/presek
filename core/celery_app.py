@@ -176,6 +176,10 @@ celery_app.conf.update(
             "task": "tasks.maintenance.catch_up_cluster_syntheses_task",
             "schedule": 1800.0,
         },
+        "prioritize-homepage-syntheses": {
+            "task": "tasks.maintenance.prioritize_homepage_syntheses_task",
+            "schedule": 900.0,
+        },
         "refresh-low-score-syntheses": {
             "task": "tasks.maintenance.refresh_low_score_syntheses_task",
             "schedule": 3600.0,

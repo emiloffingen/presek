@@ -4,6 +4,7 @@ from tasks.maintenance import (
     catch_up_cluster_syntheses_task,
     catch_up_recent_summaries_task,
     ensure_ingestion_freshness_task,
+    prioritize_homepage_syntheses_task,
     refresh_low_score_syntheses_task,
     refresh_synthesis_quality_task,
 )
@@ -75,6 +76,35 @@ class TestCatchUpClusterSyntheses:
         with patch("tasks.intelligence.intelligence_batches_deferred", return_value=True):
             result = catch_up_cluster_syntheses_task()
         assert result == {"skipped": True, "reason": "backlog_full"}
+
+
+class TestPrioritizeHomepageSyntheses:
+    def test_skips_when_backlog_full(self):
+        with patch("tasks.intelligence.intelligence_batches_deferred", return_value=True):
+            result = prioritize_homepage_syntheses_task()
+        assert result == {"skipped": True, "reason": "backlog_full"}
+
+    def test_enqueues_stale_homepage_clusters(self):
+        payload = {
+            "clusters": [
+                {
+                    "cluster_id": "home-1",
+                    "has_synthesis": False,
+                    "articles": [{"id": 1}, {"id": 2}],
+                    "synthesis_freshness": {"is_stale": True},
+                }
+            ]
+        }
+        with (
+            patch("tasks.intelligence.intelligence_batches_deferred", return_value=False),
+            patch("tasks.utils.get_celery_queue_depth", return_value=100),
+            patch("tasks.utils.safe_async_run", return_value=payload),
+            patch("tasks.intelligence.synthesize_cluster_task") as mock_task,
+        ):
+            result = prioritize_homepage_syntheses_task(limit=5)
+
+        assert result["enqueued"] == 1
+        mock_task.apply_async.assert_called_once()
 
 
 class TestRefreshLowScoreSyntheses:
