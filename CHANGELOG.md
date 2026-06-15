@@ -1,5 +1,10 @@
 # Presek Changelog
 
+## v8.3.6 (2026-06-15)
+
+### Fix
+- Mobile feed filter bar pins under site header while scrolling (sticky fallback for overflow-x-hidden ancestors)
+
 ## v8.3.5 (2026-06-15)
 
 ### Homepage feed UX
