@@ -580,6 +580,30 @@ class TestLocalSerbianRewrite:
         assert any(p["angle"] == "Нијанси" for p in result["perspectives"])
         assert any(p["angle"] == "отворено" for p in result["perspectives"])
 
+    def test_synthesize_cluster_fallback_mk_avoids_truncated_template_prose(self):
+        articles = [
+            {
+                "source": "Канал 5",
+                "country": "MK",
+                "title": "Владиниот центар за одговор на сајбер инциденти MKD-GOV-CSIRT стана членка на FIRST",
+                "description": "Приемот на MKD-GOV-CSIRT како нов полноправен член е официјално прифатен од Бордот на директори додека. Владиниот центар за одговор на сајбер инциденти MKD-GOV-CSIRT е примен како членка на FIRST - Форум оф Инцидент Респонсе анд Сецуритy Теамс.",
+            },
+            {
+                "source": "Центар.мк",
+                "country": "MK",
+                "title": "MKD-GOV-CSIRT е примен како полноправна членка на FIRST",
+                "description": "Министерството за дигитална трансформација соопшти дека приемот овозможува соработка со меѓународни тимови за сајбер инциденти.",
+            },
+        ]
+
+        result = synthesize_cluster_fallback(articles, lang="mk")
+        combined = f"{result['summary']}\n{result['generated_article']}"
+
+        assert "додека." not in combined
+        assert "Отворено останува Отворено е" not in combined
+        assert "Значењето на развојот е во тоа што го поврзува" not in combined
+        assert "Сецуритy Теамс" not in combined
+
 
 class TestLocalBriefingFallback:
     def test_generate_daily_brief_fallback_uses_editorial_sections(self):

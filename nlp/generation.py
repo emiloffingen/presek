@@ -141,7 +141,11 @@ def _is_incomplete_briefing_fragment(text):
         return True
     if re.search(r"\b[A-Za-z\u0400-\u04FF]{1,2}\.$", clean):
         return True
-    if re.search(r"(,| i | a | da | koji | koja | koe | koi | и | а | што )$", clean, re.IGNORECASE):
+    if clean.endswith(",") or re.search(
+        r"\b(i|a|da|koji|koja|koje|dok|zbog|za|od|na|koe|koi|и|а|што|додека|кој|која|кое|за|од|на)$",
+        clean,
+        re.IGNORECASE,
+    ):
         return True
     return False
 
@@ -227,6 +231,12 @@ def _clean_briefing_snippet(text):
 
 def _normalize_briefing_line(text):
     clean = _clean_briefing_snippet(text)
+    clean = re.sub(
+        r"Инцидент\s+Респонсе\s+анд\s+Сецуритy\s+Теамс",
+        "тимови за одговор на безбедносни инциденти",
+        clean,
+        flags=re.IGNORECASE,
+    )
     clean = re.sub(r"^[\-•*#\d.\)\s]+", "", clean).strip()
     clean = re.sub(r"\[\d+\]", "", clean).strip()
     clean = re.sub(
@@ -561,9 +571,9 @@ def _topic_stakes_sentence(text, lang="mk", topic="", category=""):
             else "Спортското значење се мери преку последиците врз резултатот, поредокот и притисокот пред следните натпревари."
         )
     return (
-        "Značaj razvoja je u tome što povezuje neposredan događaj sa širim javnim interesom i narednim odlukama koje treba pratiti."
+        "Za sada je najvažnije pratiti zvanične dopune i nove potvrde izvora."
         if is_sr
-        else "Значењето на развојот е во тоа што го поврзува непосредниот настан со поширокиот јавен интерес и следните одлуки што треба да се следат."
+        else "Засега најважно е да се следат официјалните дополнувања и новите потврди од изворите."
     )
 
 
@@ -775,6 +785,22 @@ def _sentence(text):
     if not clean:
         return ""
     return clean if clean.endswith((".", "!", "?", "…")) else f"{clean}."
+
+
+def _fallback_sentence(text):
+    clean = _normalize_briefing_line(text)
+    if _is_incomplete_briefing_fragment(clean):
+        return ""
+    return _sentence(clean)
+
+
+def _fallback_open_sentence(text, lang="mk"):
+    clean = _fallback_sentence(text)
+    if not clean:
+        return ""
+    if lang == "sr":
+        return re.sub(r"^Otvoreno\s+(ostaje|je)\s+", "", clean, flags=re.IGNORECASE).strip()
+    return re.sub(r"^Отворено\s+(останува|е)\s+", "", clean, flags=re.IGNORECASE).strip()
 
 
 def _extract_comparison_entities(text):
@@ -1172,7 +1198,12 @@ def synthesize_cluster_fallback(articles, lang="mk"):
         
         for idx, s in enumerate(raw_sents):
             normalized = _normalize_briefing_line(s)
-            if not normalized or len(normalized) < 20 or _is_noisy_summary_sentence(normalized):
+            if (
+                not normalized
+                or len(normalized) < 20
+                or _is_noisy_summary_sentence(normalized)
+                or _is_incomplete_briefing_fragment(normalized)
+            ):
                 continue
             
             # Sentence scoring logic
@@ -1216,13 +1247,17 @@ def synthesize_cluster_fallback(articles, lang="mk"):
     # 3. Build direct editorial summary points. Avoid label-style bullets because
     # they read like a template once rendered on the cluster page.
     summary_lines = []
-    if update_point and update_point.casefold() != lead_title.casefold():
-        summary_lines.append(f"• {_sentence(update_point)}")
+    update_sentence = _fallback_sentence(update_point)
+    lead_sentence = _fallback_sentence(lead_title)
+    if update_sentence and update_point.casefold() != lead_title.casefold():
+        summary_lines.append(f"• {update_sentence}")
     else:
-        summary_lines.append(f"• {_sentence(lead_title)}")
+        summary_lines.append(f"• {lead_sentence or _sentence(lead_title)}")
 
     if selected_sentences and not (update_point and _jaccard_similarity(selected_sentences[0]["text"], update_point) > 0.28):
-        summary_lines.append(f"• {_sentence(selected_sentences[0]['text'])}")
+        detail_sentence = _fallback_sentence(selected_sentences[0]["text"])
+        if detail_sentence:
+            summary_lines.append(f"• {detail_sentence}")
 
     common = (
         comparison.get("common_line", "")
@@ -1252,24 +1287,28 @@ def synthesize_cluster_fallback(articles, lang="mk"):
         )
 
     if comparison.get("open_points"):
-        if lang == "sr":
-            summary_lines.append(f"• Otvoreno ostaje {comparison['open_points'][0].strip(' .;:')}.")
-        else:
-            summary_lines.append(f"• Отворено останува {comparison['open_points'][0].strip(' .;:')}.")
+        open_sentence = _fallback_open_sentence(comparison["open_points"][0], lang=lang)
+        if open_sentence:
+            open_sentence = open_sentence.rstrip(" .;:")
+            if lang == "sr":
+                summary_lines.append(f"• Otvoreno ostaje {open_sentence}.")
+            else:
+                summary_lines.append(f"• Отворено останува {open_sentence}.")
 
     summary = "\n".join(summary_lines)
 
     # 3. Build an editorial fallback narrative, not a mechanical digest.
     article_body = []
     if update_point and update_point.casefold() != lead_title.casefold():
-        intro_parts = [_sentence(lead_title)]
+        intro_parts = [lead_sentence or _sentence(lead_title)]
         if _jaccard_similarity(update_point, lead_title) <= 0.28:
-            intro_parts.append(_sentence(update_point))
+            if update_sentence:
+                intro_parts.append(update_sentence)
         article_body.append(" ".join(part for part in intro_parts if part))
     else:
         article_body.append(f"{_sentence(lead_title)} {_sentence(t['povece_mediumi'])}")
 
-    details = [_sentence(s["text"]) for s in selected_sentences if s.get("text")]
+    details = [sentence for sentence in (_fallback_sentence(s.get("text")) for s in selected_sentences) if sentence]
     if details:
         non_duplicate_details = [
             detail for detail in details
@@ -1298,14 +1337,15 @@ def synthesize_cluster_fallback(articles, lang="mk"):
     article_body.append(" ".join(source_paragraph_parts))
 
     if comparison.get("open_points"):
-        open_point = _sentence(comparison["open_points"][0])
+        open_point = _fallback_open_sentence(comparison["open_points"][0], lang=lang)
         if "Detalji oko ovog razvoja ostaju nepotvr" in open_point:
             open_point = _sentence(
                 "Nije izdvojena konkretna sporna činjenica; treba pratiti sledeće dopune izvora."
                 if lang == "sr"
                 else "Не е издвоен конкретен спорен факт; треба да се следат следните дополнувања од изворите."
             )
-        article_body.append(f"{t['sto_ostanuva']}: {open_point}")
+        if open_point:
+            article_body.append(f"{t['sto_ostanuva']}: {open_point}")
     elif len(articles) <= 1:
         article_body.append(_sentence(t["faza_razvoj"]))
     else:
