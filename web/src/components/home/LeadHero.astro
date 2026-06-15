@@ -364,6 +364,7 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl && !leadV
                     button.addEventListener('click', () => {
                         const feed = document.getElementById('home-unified-feed') || document.querySelector('[data-testid="news-feed"] .home-mobile-order-feed');
                         feed?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        window.dispatchEvent(new CustomEvent('presek:scroll-to-feed'));
                     });
                 });
             };

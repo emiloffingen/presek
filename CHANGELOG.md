@@ -1,5 +1,12 @@
 # Presek Changelog
 
+## v8.3.5 (2026-06-15)
+
+### Homepage feed UX
+- Sticky feed filter bar on mobile; larger touch targets and horizontal scroll padding
+- Short filter hint under title (no duplicate chip row)
+- Onboarding defers until feed is not in focus; skips after filter use or "browse feed"
+
 ## v8.3.4 (2026-06-15)
 
 ### Fix

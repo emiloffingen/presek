@@ -36,7 +36,10 @@ function getBentoSpan(cluster: UnifiedFeedItem['cluster']) {
     <section class="home-unified-feed motion-rise" data-home-unified-feed data-active-feed-filter="all">
         <div class="home-unified-feed-header">
             <div class="home-unified-feed-toolbar">
-                <h2 class="home-unified-feed-title">{t('home.feed_title')}</h2>
+                <div class="home-unified-feed-intro">
+                    <h2 class="home-unified-feed-title">{t('home.feed_title')}</h2>
+                    <p class="home-unified-feed-hint">{t('home.feed_filter_hint')}</p>
+                </div>
                 <div class="home-feed-filter" role="tablist" aria-label={t('home.feed_filter_label')} data-home-feed-filter>
                     {filterItems.map((item) => (
                         <button
@@ -119,6 +122,9 @@ function getBentoSpan(cluster: UnifiedFeedItem['cluster']) {
                 filterBar.querySelectorAll('[data-feed-filter]').forEach((button) => {
                     button.addEventListener('click', () => {
                         applyFilter(root, button.getAttribute('data-feed-filter'));
+                        window.dispatchEvent(new CustomEvent('presek:feed-filter-used', {
+                            detail: { filter: button.getAttribute('data-feed-filter') || 'all' },
+                        }));
                     });
                 });
             });

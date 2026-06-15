@@ -5,12 +5,32 @@ import { localePathForLang } from '../lib/localePaths';
 
 const STORAGE_KEY = 'ui-concepts-onboarding-dismissed';
 const FIRST_SESSION_KEY = 'homepage-visit-count';
+const FEED_ENGAGED_KEY = 'presek-feed-engaged';
 
 const STEPS = [
   { titleKey: 'onboarding_ui.step1_title', bodyKey: 'onboarding_ui.step1_body' },
   { titleKey: 'onboarding_ui.step2_title', bodyKey: 'onboarding_ui.step2_body' },
   { titleKey: 'onboarding_ui.step3_title', bodyKey: 'onboarding_ui.step3_body' },
 ] as const;
+
+function isFeedEngaged() {
+  if (typeof localStorage === 'undefined') return false;
+  return localStorage.getItem(FEED_ENGAGED_KEY) === '1';
+}
+
+function isFeedFilterActive() {
+  const root = document.querySelector('[data-home-unified-feed]');
+  if (!root) return false;
+  const active = root.getAttribute('data-active-feed-filter') || 'all';
+  return active !== 'all';
+}
+
+function isFeedInFocus() {
+  const filterBar = document.querySelector('[data-home-feed-filter]');
+  if (!filterBar) return false;
+  const rect = filterBar.getBoundingClientRect();
+  return rect.top < window.innerHeight * 0.62 && rect.bottom > 72;
+}
 
 export default function UiConceptOnboarding({ lang = 'sr' }: { lang?: string }) {
   const t = useTranslations(lang as 'sr' | 'mk');
@@ -20,10 +40,29 @@ export default function UiConceptOnboarding({ lang = 'sr' }: { lang?: string }) 
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
+  const dismiss = useCallback(() => {
+    localStorage.setItem(STORAGE_KEY, '1');
+    setVisible(false);
+  }, []);
+
+  useEffect(() => {
+    const onFeedEngage = () => {
+      localStorage.setItem(FEED_ENGAGED_KEY, '1');
+      setVisible(false);
+    };
+    window.addEventListener('presek:feed-filter-used', onFeedEngage);
+    window.addEventListener('presek:scroll-to-feed', onFeedEngage);
+    return () => {
+      window.removeEventListener('presek:feed-filter-used', onFeedEngage);
+      window.removeEventListener('presek:scroll-to-feed', onFeedEngage);
+    };
+  }, []);
+
   useEffect(() => {
     if (typeof localStorage === 'undefined') return;
     if (localStorage.getItem(STORAGE_KEY) === '1') return;
     if (!document.querySelector('[data-home-session-root]')) return;
+    if (isFeedEngaged() || isFeedFilterActive()) return;
 
     const visits = Number(localStorage.getItem(FIRST_SESSION_KEY) || '0');
     if (visits > 4) return;
@@ -32,67 +71,67 @@ export default function UiConceptOnboarding({ lang = 'sr' }: { lang?: string }) 
 
     let shown = false;
     let consentObserver: MutationObserver | null = null;
+    let timer: number | undefined;
+    let deferredTimer: number | undefined;
+
+    const canShowNow = () => {
+      if (shown) return false;
+      if (isFeedEngaged() || isFeedFilterActive()) return false;
+      if (document.body.classList.contains('has-consent-banner')) return false;
+      if (isFeedInFocus()) return false;
+      return true;
+    };
 
     const tryShow = () => {
-      if (shown) return true;
-      if (document.body.classList.contains('has-consent-banner')) return false;
+      if (!canShowNow()) return false;
       shown = true;
       consentObserver?.disconnect();
       consentObserver = null;
+      if (timer) window.clearTimeout(timer);
+      if (deferredTimer) window.clearTimeout(deferredTimer);
       setVisible(true);
       return true;
+    };
+
+    const scheduleShow = () => {
+      if (shown) return;
+      if (!canShowNow()) {
+        deferredTimer = window.setTimeout(scheduleShow, 1500);
+        return;
+      }
+      tryShow();
     };
 
     const show = () => {
       if (tryShow()) return;
       if (!consentObserver) {
         consentObserver = new MutationObserver(() => {
-          tryShow();
+          scheduleShow();
         });
         consentObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
       }
     };
 
-    const isFirstVisit = visits <= 1;
-    const feed = document.getElementById('home-unified-feed');
-
-    if (isFirstVisit) {
-      if (!feed) return;
-
-      const observer = new IntersectionObserver((entries) => {
-        const entry = entries[0];
-        if (entry?.isIntersecting && entry.intersectionRatio >= 0.12) {
-          show();
-          observer.disconnect();
-        }
-      }, { threshold: [0, 0.12, 0.25], rootMargin: '0px 0px -18% 0px' });
-
-      observer.observe(feed);
-
-      const onScroll = () => {
-        if (window.scrollY > 520) show();
-      };
-      window.addEventListener('scroll', onScroll, { passive: true });
-
-      return () => {
-        observer.disconnect();
-        window.removeEventListener('scroll', onScroll);
-        consentObserver?.disconnect();
-      };
-    }
-
     const isMobile = window.matchMedia('(max-width: 768px)').matches;
-    const scrollThreshold = isMobile ? 220 : 160;
+    const isFirstVisit = visits <= 1;
+    const delayMs = isFirstVisit ? (isMobile ? 14000 : 11000) : (isMobile ? 8000 : 6000);
+
+    timer = window.setTimeout(show, delayMs);
+
     const onScroll = () => {
-      if (window.scrollY > scrollThreshold) show();
+      if (shown || isFeedEngaged()) return;
+      if (isFeedInFocus()) return;
+      const threshold = isFirstVisit ? (isMobile ? 180 : 140) : (isMobile ? 260 : 200);
+      if (window.scrollY > threshold) {
+        show();
+      }
     };
 
-    const timer = window.setTimeout(show, isMobile ? 4500 : 3500);
     window.addEventListener('scroll', onScroll, { passive: true });
-    if (window.scrollY > scrollThreshold) show();
 
     return () => {
-      window.clearTimeout(timer);
+      if (timer) window.clearTimeout(timer);
+      if (deferredTimer) window.clearTimeout(deferredTimer);
       window.removeEventListener('scroll', onScroll);
       consentObserver?.disconnect();
     };
@@ -106,11 +145,6 @@ export default function UiConceptOnboarding({ lang = 'sr' }: { lang?: string }) 
     document.body.classList.add('has-ui-onboarding');
     return () => document.body.classList.remove('has-ui-onboarding');
   }, [visible]);
-
-  const dismiss = useCallback(() => {
-    localStorage.setItem(STORAGE_KEY, '1');
-    setVisible(false);
-  }, []);
 
   const openAnalysis = () => {
     localStorage.setItem(STORAGE_KEY, '1');
