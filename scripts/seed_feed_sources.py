@@ -11,7 +11,7 @@ SERBIAN_FEED_CATALOG = [
     ("Mondo", "https://mondo.rs/rss/1/Sve-vesti"),
     ("Srbija danas", "https://www.srbijadanas.com/rss/sve-vesti"),
     ("Republika", "https://www.republika.rs/rss/sve-vesti"),
-    ("Novosti", "https://www.novosti.rs/rss"),
+    ("Novosti", "https://www.novosti.rs/rss/danasnje-vesti"),
     ("Objektiv", "https://objektiv.rs/feed/"),
     ("Espreso", "https://www.espreso.co.rs/rss"),
     ("Kurir Sport", "https://www.kurir.rs/rss/Sport"),

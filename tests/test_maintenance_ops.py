@@ -48,12 +48,25 @@ class TestEnsureIngestionFreshness:
         with (
             patch("core.health.load_last_refresh_time", return_value="2026-06-13T00:00:00+00:00"),
             patch("core.health._freshness_payload", return_value={"age_minutes": 300}),
+            patch("core.ingestion_lock.is_ingestion_in_flight", return_value=False),
             patch("tasks.ingestion_task.run_ingestion") as mock_ingest,
         ):
             result = ensure_ingestion_freshness_task(max_age_minutes=120)
 
         assert result["triggered"] is True
         mock_ingest.delay.assert_called_once()
+
+    def test_skips_when_cycle_already_in_flight(self):
+        with (
+            patch("core.health.load_last_refresh_time", return_value="2026-06-13T00:00:00+00:00"),
+            patch("core.health._freshness_payload", return_value={"age_minutes": 300}),
+            patch("core.ingestion_lock.is_ingestion_in_flight", return_value=True),
+            patch("tasks.ingestion_task.run_ingestion") as mock_ingest,
+        ):
+            result = ensure_ingestion_freshness_task(max_age_minutes=120)
+
+        assert result == {"skipped": True, "reason": "in_flight", "age_minutes": 300}
+        mock_ingest.delay.assert_not_called()
 
 
 class TestCatchUpClusterSyntheses:

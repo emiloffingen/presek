@@ -14,6 +14,10 @@ from core.celery_app import celery_app
 from core.crawler import crawler
 from core.database import db_manager as db
 from core.health import record_refresh, record_task_event
+from core.ingestion_lock import (
+    release_ingestion_lock,
+    try_acquire_ingestion_lock,
+)
 from core.image_service import image_service
 from core.services.notifier import SystemNotifier as Notifier
 from core.version import APP_VERSION_LABEL
@@ -122,13 +126,11 @@ def run_ingestion():
     A short Redis mutex prevents two workers from racing the same cycle
     when beat double-dispatches across a restart.
     """
-    lock_key = "lock:run_ingestion"
-    try:
-        acquired = redis_client.set(lock_key, "1", nx=True, ex=900)
-    except Exception as e:
-        log.error(f"[ingestion] Redis lock check failed, skipping cycle for safety: {e}")
-        Notifier.send_alert("INGESTION_LOCK_FAILURE", f"Redis lock check failed: {e}")
-        return  # Fail-closed: better to skip a minute than crash the DB
+    acquired = try_acquire_ingestion_lock()
+    if acquired is None:
+        log.error("[ingestion] Redis lock check failed, skipping cycle for safety")
+        Notifier.send_alert("INGESTION_LOCK_FAILURE", "Redis lock check failed")
+        return
     if not acquired:
         log.info(f"Presek {APP_VERSION_LABEL}: ingestion cycle already in flight, skipping duplicate dispatch.")
         return
@@ -179,12 +181,7 @@ def run_ingestion():
 
         log.info(f"Ingestion cycle orchestrated. Added {new_count} articles.")
     finally:
-        # Release the mutex so the next beat can run immediately rather than
-        # waiting for the 15-minute TTL.
-        try:
-            redis_client.delete(lock_key)
-        except Exception as e:
-            log.debug(f"Failed to delete lock {lock_key}: {e}")
+        release_ingestion_lock()
 
 
 @celery_app.task

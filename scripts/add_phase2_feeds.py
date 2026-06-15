@@ -12,7 +12,7 @@ PHASE2_FEEDS = [
     # --- Business & Economy (RS) ---
     {
         "name": "Danas - Ekonomija",
-        "url": "https://www.danas.rs/vesti/ekonomija/feed/",
+        "url": "https://www.danas.rs/tag/ekonomija/feed/",
         "country": "RS",
         "category": "Ekonomija",
         "language": "sr",
@@ -104,7 +104,7 @@ PHASE2_FEEDS = [
     },
     {
         "name": "Danas - Kultura",
-        "url": "https://www.danas.rs/kultura/feed/",
+        "url": "https://www.danas.rs/tag/kultura/feed/",
         "country": "RS",
         "category": "Kultura",
         "language": "sr",

@@ -90,7 +90,7 @@ def test_research_query_structured(mock_analyze):
 
 
 @patch("core.config.ENABLE_EXPENSIVE_STYLE_TASKS", True)
-@patch("tasks.intelligence.synthesis.db")
+@patch("tasks.intelligence.style.db")
 @patch.object(LocalAnalyst, "normalize_headline")
 def test_standardize_article_style_task_language_mapping(mock_normalize, mock_db):
     """Verify that standardize_article_style_task queries country and maps it to lang correctly."""
@@ -102,9 +102,9 @@ def test_standardize_article_style_task_language_mapping(mock_normalize, mock_db
         "description": "Neki opis.",
         "topic": "Politika",
         "category": "Politika",
-        "country": "SR",
+        "country": "RS",
     }
-    mock_normalize.return_value = "Neki pročišćen naslov o politici"
+    mock_normalize.return_value = "Neki senzacionalan naslov o politici!!!"
     
     standardize_article_style_task(123)
     

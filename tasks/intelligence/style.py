@@ -61,7 +61,7 @@ def standardize_article_style_task(article_id):
     topic = row.get("topic") or ""
     category = row.get("category") or ""
     country = row.get("country") or "MK"
-    lang = "sr" if country == "SR" else "mk"
+    lang = COUNTRY_LANG.get(country, "mk")
 
     if not title or len(title) < 25:
         return  # Skip very short headlines
