@@ -127,12 +127,13 @@ def test_local_provider_uses_compact_editorial_json_prompt_for_synthesis(monkeyp
     assert result == '{"summary":["x"],"article":"p"}'
     args, kwargs = analyst.analyze.call_args
     assert "KONTEKST" in args[0]
-    assert "premium uredničku sintezu" in args[1]
-    assert "article mora biti jedan string sa tačno 5 kratkih pasusa" in args[1]
+    assert "Ti si urednik Preseka sa malim lokalnim modelom" in args[1]
+    assert "article je jedan string sa 3 kratka pasusa" in args[1]
     assert kwargs["use_grammar"] is True
     assert kwargs["temperature"] == 0.18
     assert kwargs["lang"] == "sr"
     assert kwargs["force_local"] is True
+    assert kwargs["task_type"] == "synthesis"
 
 
 def test_local_provider_uses_macedonian_compact_synthesis_prompt(monkeypatch):
@@ -153,12 +154,13 @@ def test_local_provider_uses_macedonian_compact_synthesis_prompt(monkeypatch):
     )
 
     args, kwargs = analyst.analyze.call_args
-    assert "премиум уредничка синтеза" in args[1]
-    assert "article мора да биде еден string" in args[1]
+    assert "Ти си уредник на Пресек со мал локален модел" in args[1]
+    assert "article е еден string" in args[1]
     assert kwargs["use_grammar"] is True
     assert kwargs["temperature"] == 0.18
     assert kwargs["lang"] == "mk"
     assert kwargs["force_local"] is True
+    assert kwargs["task_type"] == "synthesis"
 
 
 def test_local_provider_analyst_task_uses_force_local(monkeypatch):

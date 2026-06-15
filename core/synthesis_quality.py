@@ -106,6 +106,24 @@ def count_upgradeable_syntheses(*, days: int = 7) -> dict[str, int]:
     }
 
 
+def record_synthesis_db_persisted(
+    *,
+    cluster_id: str,
+    lang: str,
+    provider: str | None,
+    fast_mode: bool,
+) -> None:
+    from utils import record_runtime_event
+
+    record_runtime_event(
+        "synthesis_db_persisted",
+        cluster_id=cluster_id,
+        lang=lang,
+        mode=provider or "unknown",
+        fast_mode=fast_mode,
+    )
+
+
 def record_synthesis_runtime_event(
     *,
     provider: str,

@@ -594,6 +594,27 @@ ENABLE_GPU_ACCELERATION = os.environ.get("ENABLE_GPU_ACCELERATION", "false").low
 DATABASE_READ_REPLICA_URL = os.environ.get("DATABASE_READ_REPLICA_URL", "")
 USE_READ_REPLICA = bool(DATABASE_READ_REPLICA_URL)
 
+
+def resolve_primary_database_url() -> str:
+    """Return the primary write DATABASE_URL, rejecting accidental replica overrides."""
+    url = (os.environ.get("DATABASE_URL") or "postgresql://localhost/presek").strip()
+    replica_url = (DATABASE_READ_REPLICA_URL or os.environ.get("DATABASE_REPLICA_URL") or "").strip()
+    if replica_url and url == replica_url:
+        log = __import__("logging").getLogger("presek.config")
+        log.critical(
+            "DATABASE_URL points at the read replica (%s). "
+            "Use DATABASE_READ_REPLICA_URL for reads and keep DATABASE_URL on the primary.",
+            url,
+        )
+    lowered = url.lower()
+    if "presek_replica" in lowered and (not replica_url or replica_url != url):
+        log = __import__("logging").getLogger("presek.config")
+        log.critical(
+            "DATABASE_URL appears to target presek_replica (%s). Writes must use the primary database.",
+            url,
+        )
+    return url
+
 # ── AI Routing Configuration ────────────────────────────────────
 PROVIDER_FALLBACK_ORDER_RESEARCH = ["mistral_large", "mistral_small", "nvidia", "local"]
 PROVIDER_FALLBACK_ORDER_SUMMARY = ["mistral_small", "mistral_large", "nvidia", "local"]

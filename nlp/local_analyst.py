@@ -146,7 +146,8 @@ class LocalAnalyst:
         response_schema: Optional[Any] = None,
         temperature: Optional[float] = None,
         force_local: bool = False,
-        lock_timeout: int = 180,
+        lock_timeout: int | None = None,
+        task_type: str = "default",
     ) -> Optional[str]:
         # Try remote API first if enabled (default True)
         if not force_local and os.environ.get("USE_REMOTE_ANALYST", "true").lower() == "true":
@@ -171,13 +172,22 @@ class LocalAnalyst:
         # Acquire Redis lock with token verification to prevent concurrent CPU-heavy llama-cpp generation
         from utils import redis_client
         import uuid
-        lock_key = "lock:local_llm_inference"
+
+        lock_key = "lock:local_llm_synthesis" if task_type == "synthesis" else "lock:local_llm_inference"
+        if lock_timeout is None:
+            if task_type == "synthesis":
+                from core.limits import LOCAL_LLM_SYNTHESIS_LOCK_TIMEOUT_SECONDS
+
+                lock_timeout = LOCAL_LLM_SYNTHESIS_LOCK_TIMEOUT_SECONDS
+            else:
+                from core.limits import LOCAL_LLM_LOCK_TIMEOUT_SECONDS
+
+                lock_timeout = LOCAL_LLM_LOCK_TIMEOUT_SECONDS
         lock_token = str(uuid.uuid4())
         acquired = False
         start_time = time.time()
-        timeout = lock_timeout
 
-        while time.time() - start_time < timeout:
+        while time.time() - start_time < lock_timeout:
             try:
                 if redis_client.set(lock_key, lock_token, nx=True, ex=600):  # Lock expires in 600 seconds
                     acquired = True
@@ -187,7 +197,11 @@ class LocalAnalyst:
             time.sleep(1.0)
 
         if not acquired:
-            log.warning("[analyst] Could not acquire local LLM lock, skipping task to avoid CPU starvation.")
+            log.warning(
+                "[analyst] Could not acquire local LLM lock (%s) within %ss, skipping task.",
+                lock_key,
+                lock_timeout,
+            )
             return None
 
         try:

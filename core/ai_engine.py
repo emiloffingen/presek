@@ -383,15 +383,20 @@ class LocalProvider(AIProvider):
             if json_mode or response_schema is not None:
                 prompt = self._local_synthesis_prompt(prompt, lang)
                 system = self._local_synthesis_system(lang)
+            from core.limits import LOCAL_LLM_SYNTHESIS_LOCK_TIMEOUT_SECONDS
+
+            local_max_tokens = min(max_tokens, 2200)
             res = analyst.analyze(
                 prompt,
                 system,
-                max_tokens=max_tokens,
+                max_tokens=local_max_tokens,
                 use_grammar=json_mode,
                 lang=lang,
                 response_schema=response_schema,
                 temperature=0.18,
                 force_local=True,
+                lock_timeout=LOCAL_LLM_SYNTHESIS_LOCK_TIMEOUT_SECONDS,
+                task_type="synthesis",
             )
             if res:
                 return res

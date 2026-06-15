@@ -563,9 +563,41 @@ def _generate_synthesis_via_cascade(
                 raise ValueError("Parsed JSON is not a dictionary")
         except Exception as exc:
             log.error(f"[tasks/synthesis] JSON parse error from {provider}: {exc}")
-            last_fallback_reason = "malformed_json"
-            exclude_providers.append(provider)
-            continue
+            if last_fallback_reason != "malformed_json":
+                last_fallback_reason = "malformed_json"
+                compact_suffix = (
+                    "\n\nKRITICNO: Vrati SAMO validan JSON objekat bez markdown-a, bez uvoda i bez komentara."
+                    if lang == "sr"
+                    else "\n\nКРИТИЧНО: Врати САМО валиден JSON објект без markdown, без вовед и без коментари."
+                )
+                retry_raw, retry_provider = _call_ai(
+                    full_prompt + compact_suffix,
+                    system_prompt + " Output must be a single JSON object only.",
+                    json_mode=True,
+                    task_type="synthesis",
+                    max_tokens=max_tokens,
+                    lang=lang,
+                    provider_override=provider,
+                    exclude_providers=[p for p in exclude_providers if p != provider],
+                )
+                if retry_raw and retry_provider:
+                    try:
+                        res_data = clean_json_response(retry_raw)
+                        if isinstance(res_data, dict):
+                            raw = retry_raw
+                            provider = retry_provider
+                        else:
+                            raise ValueError("Retry JSON is not a dictionary")
+                    except Exception as retry_exc:
+                        log.warning(f"[tasks/synthesis] JSON retry failed for {provider}: {retry_exc}")
+                        exclude_providers.append(provider)
+                        continue
+                else:
+                    exclude_providers.append(provider)
+                    continue
+            else:
+                exclude_providers.append(provider)
+                continue
 
         evaluated, fail_reason = _evaluate_synthesis_candidate(
             res_data,
@@ -1178,6 +1210,106 @@ def _compute_lightweight_quality_score(synthetic_headline, summary, generated_ar
     return round((article_score * 0.65) + (summary_score * 0.35), 3)
 
 
+def _schedule_deep_analyst_work(
+    *,
+    cluster_id: str,
+    article_rows: list[dict],
+    lang: str,
+    synthetic_headline: str,
+    summary: str,
+    shared_metrics: dict,
+    impact_score: float,
+    impact_reasoning: str,
+    story_so_far: str,
+    sentiment_data: dict,
+) -> None:
+    """Run heavy local analyst enrichment without blocking synthesis persistence."""
+
+    def _run_analyst_logic():
+        try:
+            with _analyst_semaphore:
+                analyst_text = f"NASLOV: {synthetic_headline}\n{summary}"
+                deep_metadata = analyst.extract_deep_metadata(analyst_text, lang=lang)
+                titles_sources = [
+                    f"{a['source']}: {a['title']}"
+                    for a in article_rows[:10]
+                ]
+                pluralism_data = analyst.assess_pluralism(titles_sources, lang=lang)
+                deep_metadata = _ensure_dict(deep_metadata)
+                pluralism_data = _ensure_dict(pluralism_data)
+
+                entities = deep_metadata.get("entities", [])
+                for entity in entities:
+                    with db.connection() as conn:
+                        with conn.cursor() as cur:
+                            try:
+                                cur.execute(
+                                    """
+                                    INSERT INTO knowledge_entities (name, type, last_seen, total_mentions)
+                                    VALUES (%s, 'PERSON', NOW(), 1)
+                                    ON CONFLICT (name) DO UPDATE SET last_seen = NOW()
+                                    """,
+                                    (entity,),
+                                )
+                                cur.execute(
+                                    """
+                                    INSERT INTO entity_mentions_daily (entity_name, cluster_id, day)
+                                    VALUES (%s, %s, CURRENT_DATE)
+                                    ON CONFLICT (entity_name, cluster_id, day) DO NOTHING
+                                    """,
+                                    (entity, cluster_id),
+                                )
+                                conn.commit()
+                            except Exception as entity_err:
+                                log.debug(f"Failed to update entity mentions: {entity_err}")
+                                conn.rollback()
+
+                pulse_score = deep_metadata.get("pulse", shared_metrics.get("pulse_score", 50))
+                pluralism_score = pluralism_data.get("score", shared_metrics.get("pluralism_score", 50))
+                analyst_entities = deep_metadata.get("entities") or []
+                centroid = _compute_centroid_from_values(
+                    [a.get("embedding") for a in article_rows if a.get("embedding")]
+                )
+                centroid_str = (
+                    f"[{','.join(map(str, centroid))}]" if centroid and len(centroid) == 384 else None
+                )
+
+                db.execute(
+                    """
+                    UPDATE cluster_summaries
+                    SET pulse_score = %s,
+                        pluralism_score = %s,
+                        analyst_entities = %s,
+                        narrative_diversity = %s,
+                        centroid = COALESCE(%s, centroid)
+                    WHERE cluster_id = %s AND lang = %s
+                    """,
+                    (
+                        float(pulse_score),
+                        float(pluralism_score),
+                        json.dumps(analyst_entities),
+                        json.dumps(pluralism_data),
+                        centroid_str,
+                        cluster_id,
+                        lang,
+                    ),
+                    fetch=False,
+                )
+                db.execute(
+                    """
+                    UPDATE cluster_metadata
+                    SET impact_score = %s, impact_explanation = %s
+                    WHERE cluster_id = %s
+                    """,
+                    (impact_score, impact_reasoning, cluster_id),
+                    fetch=False,
+                )
+        except Exception as err:
+            log.error(f"[analyst] Background enrichment failed for {cluster_id}: {err}")
+
+    threading.Thread(target=_run_analyst_logic, name=f"analyst-{cluster_id}", daemon=True).start()
+
+
 def _schedule_fast_synthesis_upgrade(cluster_id: str, content=None) -> bool:
     """Queue a deferred full-quality synthesis after an initial fast-mode publish."""
     from core.limits import FAST_SYNTHESIS_UPGRADE_QUEUE
@@ -1258,6 +1390,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
     from core.synthesis_quality import (
         clear_fast_synthesis_pending,
         mark_fast_synthesis_pending,
+        record_synthesis_db_persisted,
         record_synthesis_runtime_event,
     )
 
@@ -1292,6 +1425,10 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
     sr_success_bundle = None
 
     for lang in target_langs:
+        current_impact_score = 0.0
+        current_impact_reasoning = ""
+        current_story_so_far = ""
+        current_sentiment_data = shared_metrics["sentiment_data"]
         try:
             log.info(f"Generating synthesis for cluster {cluster_id} in {lang}")
 
@@ -1422,6 +1559,11 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                     cascade_depth=cascade.get("cascade_depth"),
                 )
                 
+                if provider and quality_score is not None:
+                    from core.llm_router import SmartModelRouter
+
+                    SmartModelRouter._record_quality_feedback(provider, cluster_id, quality_score)
+
                 if lang == "sr" and cascade["status"] == "success":
                     sr_success_bundle = {
                         "synthetic_headline": synthetic_headline,
@@ -1438,102 +1580,6 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                         "quote": quote,
                         "quality_score": quality_score,
                     }
-                
-                # Record quality feedback for router
-                if provider and quality_score is not None:
-                    from core.llm_router import SmartModelRouter
-
-                    SmartModelRouter._record_quality_feedback(provider, cluster_id, quality_score)
-
-                # Phase 3: Deep Local Analyst (SKIP in fast_mode)
-                # Only run shared cluster-wide logic once (on first successful lang, usually sr)
-                if not fast_mode and not shared_computed:
-
-                    def _run_analyst_logic():
-                        try:
-                            # Use semaphore to limit concurrent heavy CPU tasks
-                            with _analyst_semaphore:
-                                # Run analyst on the current (first successful) summary
-                                analyst_text = f"NASLOV: {synthetic_headline}\n{summary}"
-                                shared_metrics["deep_metadata"] = analyst.extract_deep_metadata(analyst_text, lang=lang)
-
-                                # Phase 3.1: Pluralism Assessment
-                                titles_sources = [
-                                    f"{a['source']}: {
-                                    a['title']}"
-                                    for a in article_rows[:10]
-                                ]
-                                shared_metrics["pluralism_data"] = analyst.assess_pluralism(titles_sources, lang=lang)
-
-                                # Phase 3.2: Knowledge Graph Update
-                                entities = shared_metrics["deep_metadata"].get("entities", [])
-                                for entity in entities:
-                                    with db.connection() as conn:
-                                        with conn.cursor() as cur:
-                                            try:
-                                                cur.execute(
-                                                    """
-                                                    INSERT INTO knowledge_entities (name, type, last_seen, total_mentions)
-                                                    VALUES (%s, 'PERSON', NOW(), 1)
-                                                    ON CONFLICT (name) DO UPDATE SET
-                                                        last_seen = NOW()
-                                                """,
-                                                    (entity,),
-                                                )
-                                                cur.execute(
-                                                    """
-                                                    INSERT INTO entity_mentions_daily (entity_name, cluster_id, day)
-                                                    VALUES (%s, %s, CURRENT_DATE)
-                                                    ON CONFLICT (entity_name, cluster_id, day) DO NOTHING
-                                                """,
-                                                    (entity, cluster_id),
-                                                )
-                                                cur.execute(
-                                                    """
-                                                    UPDATE knowledge_entities
-                                                    SET total_mentions = (
-                                                        SELECT COUNT(*) FROM entity_mentions_daily WHERE entity_name = %s
-                                                    )
-                                                    WHERE name = %s
-                                                """,
-                                                    (entity, entity),
-                                                )
-                                                conn.commit()
-                                            except Exception as e:
-                                                log.debug(f"Failed to update entity mentions: {e}")
-                                                conn.rollback()
-                                                raise
-                        except Exception as e:
-                            log.error(f"[analyst] Internal logic error: {e}")
-
-                    analyst_thread = threading.Thread(target=_run_analyst_logic)
-                    analyst_thread.start()
-                    analyst_thread.join(timeout=600)  # 10 minute limit for low-core CPUs
-
-                    if analyst_thread.is_alive():
-                        log.warning(f"[analyst] Timeout reached for cluster {cluster_id}")
-
-                    shared_metrics["deep_metadata"] = _ensure_dict(shared_metrics["deep_metadata"])
-                    shared_metrics["pluralism_data"] = _ensure_dict(shared_metrics["pluralism_data"])
-
-                    shared_metrics["impact_score"] = current_impact_score
-                    shared_metrics["impact_reasoning"] = current_impact_reasoning
-                    shared_metrics["story_so_far"] = current_story_so_far
-                    shared_metrics["sentiment_data"] = current_sentiment_data
-
-                    shared_metrics["pulse_score"] = shared_metrics["deep_metadata"].get("pulse", 50)
-                    shared_metrics["pluralism_score"] = shared_metrics["pluralism_data"].get("score", 50)
-                    shared_metrics["analyst_entities"] = shared_metrics["deep_metadata"].get("entities") or []
-
-                    # Calculate Cluster Centroid (Semantic Center)
-                    centroid = _compute_centroid_from_values(
-                        [a.get("embedding") for a in article_rows if a.get("embedding")]
-                    )
-                    shared_metrics["centroid_str"] = (
-                        f"[{','.join(map(str, centroid))}]" if centroid and len(centroid) == 384 else None
-                    )
-
-                    shared_computed = True
 
             else:
                 if cascade["status"] == "deterministic":
@@ -1730,10 +1776,35 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                     )
                 log.info(f"Successfully synthesized cluster {cluster_id} for {lang}")
                 synthesis_persisted = True
+                record_synthesis_db_persisted(
+                    cluster_id=cluster_id,
+                    lang=lang,
+                    provider=provider,
+                    fast_mode=fast_mode,
+                )
                 if not fast_mode:
                     clear_fast_synthesis_pending(cluster_id)
                 elif fast_mode:
                     mark_fast_synthesis_pending(cluster_id)
+
+                if (
+                    cascade.get("status") == "success"
+                    and not fast_mode
+                    and not shared_computed
+                ):
+                    _schedule_deep_analyst_work(
+                        cluster_id=cluster_id,
+                        article_rows=article_rows,
+                        lang=lang,
+                        synthetic_headline=synthetic_headline,
+                        summary=summary,
+                        shared_metrics=shared_metrics,
+                        impact_score=current_impact_score if cascade.get("status") == "success" else 0.0,
+                        impact_reasoning=current_impact_reasoning if cascade.get("status") == "success" else "",
+                        story_so_far=current_story_so_far if cascade.get("status") == "success" else "",
+                        sentiment_data=current_sentiment_data if cascade.get("status") == "success" else shared_metrics["sentiment_data"],
+                    )
+                    shared_computed = True
 
                 # Automatically pre-generate the cluster audio in the background
                 try:

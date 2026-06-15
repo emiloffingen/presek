@@ -176,7 +176,16 @@ except ImportError:
 
 log = logging.getLogger("presek")
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://localhost/presek")
+def _load_database_url() -> str:
+    try:
+        from core.config import resolve_primary_database_url
+
+        return resolve_primary_database_url()
+    except Exception:
+        return os.environ.get("DATABASE_URL", "postgresql://localhost/presek")
+
+
+DATABASE_URL = _load_database_url()
 
 
 def _int_env(name: str, default: int) -> int:

@@ -21,6 +21,39 @@ from tasks.utils import (
 )
 
 
+def _synthesis_refresh_budget_remaining() -> int:
+    """Return remaining hourly budget for maintenance synthesis refresh tasks."""
+    from core.limits import SYNTHESIS_REFRESH_HOURLY_CAP
+
+    if SYNTHESIS_REFRESH_HOURLY_CAP <= 0:
+        return 10**9
+    try:
+        from utils import redis_client
+
+        key = "presek:synthesis_refresh_hourly"
+        used = int(redis_client.get(key) or 0)
+        return max(0, SYNTHESIS_REFRESH_HOURLY_CAP - used)
+    except Exception:
+        return SYNTHESIS_REFRESH_HOURLY_CAP
+
+
+def _consume_synthesis_refresh_budget(count: int = 1) -> bool:
+    from core.limits import SYNTHESIS_REFRESH_HOURLY_CAP
+
+    if SYNTHESIS_REFRESH_HOURLY_CAP <= 0:
+        return True
+    try:
+        from utils import redis_client
+
+        key = "presek:synthesis_refresh_hourly"
+        current = int(redis_client.incrby(key, max(0, int(count))))
+        if current == max(0, int(count)):
+            redis_client.expire(key, 3600)
+        return current <= SYNTHESIS_REFRESH_HOURLY_CAP
+    except Exception:
+        return True
+
+
 @celery_app.task
 def run_prune_db():
     """Standard maintenance."""
@@ -116,6 +149,10 @@ def refresh_fallback_syntheses_task(limit=None):
         return {"skipped": True, "reason": "backlog_full"}
 
     batch_limit = max(1, int(limit or FALLBACK_SYNTHESIS_REFRESH_LIMIT))
+    budget = _synthesis_refresh_budget_remaining()
+    if budget <= 0:
+        return {"skipped": True, "reason": "hourly_cap"}
+    batch_limit = min(batch_limit, budget)
     rows = db.execute(
         """
         SELECT cluster_id, MAX(created_at) AS latest_at
@@ -136,6 +173,8 @@ def refresh_fallback_syntheses_task(limit=None):
 
     enqueued = 0
     for idx, row in enumerate(rows):
+        if not _consume_synthesis_refresh_budget():
+            break
         synthesize_cluster_task.apply_async(
             (row["cluster_id"], None),
             {"fast_mode": False},
@@ -436,6 +475,10 @@ def refresh_low_score_syntheses_task(min_score=None, limit=None):
 
     score_floor = float(min_score if min_score is not None else LOW_SCORE_SYNTHESIS_MIN)
     batch_limit = max(1, int(limit or LOW_SCORE_SYNTHESIS_REFRESH_LIMIT))
+    budget = _synthesis_refresh_budget_remaining()
+    if budget <= 0:
+        return {"skipped": True, "reason": "hourly_cap"}
+    batch_limit = min(batch_limit, budget)
     rows = db.execute(
         """
         SELECT cs.cluster_id, cs.lang, cs.quality_score, COUNT(a.id) AS source_count
@@ -455,6 +498,8 @@ def refresh_low_score_syntheses_task(min_score=None, limit=None):
 
     enqueued = 0
     for idx, row in enumerate(rows):
+        if not _consume_synthesis_refresh_budget():
+            break
         synthesize_cluster_task.apply_async(
             (row["cluster_id"], None),
             {"fast_mode": False},
