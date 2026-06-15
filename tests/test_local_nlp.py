@@ -843,7 +843,7 @@ class TestLocalBriefingFallback:
         result = generate_daily_brief_fallback(clusters, lang="sr")
 
         assert "Dan je obeležio Demokratska stranka" not in result
-        assert "Današnji pregled vodi priča o" in result
+        assert "Danas se izdvajaju dve teme:" in result
         assert "Urednički pregled baziran na 5 izvora." in result
 
     def test_generate_daily_brief_fallback_sr_avoids_incomplete_key_aspect(self):
@@ -889,6 +889,57 @@ class TestLocalBriefingFallback:
         assert len(watch_lines) == 2
         assert watch_lines[0] != watch_lines[1]
         assert "Sledeći signal biće da li će zvanični akteri" not in watch_lines[0]
+
+    def test_generate_daily_brief_fallback_sr_avoids_mechanical_editorial_phrases(self):
+        clusters = [
+            {
+                "title": "Nemačka propustila rok EU - preti joj kazna",
+                "source": "DW",
+                "topic": "Evropa",
+                "description": "Nemačka nije uspela da unese direktivu o transparentnosti plata u rok.",
+                "source_count": 4,
+            },
+            {
+                "title": "Masovna pucnjava u Teksasu",
+                "source": "AP",
+                "topic": "Svet",
+                "description": "Policija istražuje okolnosti pucnjave.",
+                "source_count": 2,
+            },
+        ]
+
+        result = generate_daily_brief_fallback(clusters, lang="sr")
+
+        assert "Danas se izdvajaju dve teme:" in result
+        assert "Današnji pregled vodi priča" not in result
+        assert "Potvrđen razvoj sa visokim medijskim konsenzusom" not in result
+        assert "Pratiti da li će se narativ" not in result
+
+    def test_generate_daily_brief_fallback_mk_avoids_mechanical_editorial_phrases(self):
+        clusters = [
+            {
+                "title": "Германија го пропушти рокот на ЕУ - и се заканува казна",
+                "source": "DW",
+                "topic": "Европа",
+                "description": "Германија не успеа навреме да ја внесе директивата за транспарентност на платите.",
+                "source_count": 4,
+            },
+            {
+                "title": "Масовно пукање во Тексас",
+                "source": "AP",
+                "topic": "Свет",
+                "description": "Полицијата ги истражува околностите на пукањето.",
+                "source_count": 2,
+            },
+        ]
+
+        result = generate_daily_brief_fallback(clusters, lang="mk")
+
+        assert "Денес се издвојуваат две теми:" in result
+        assert "Следниот сигнал е официјална потврда или нова бројка" in result
+        assert "Денешниот преглед ја води приказната" not in result
+        assert "Потврден развој со висок медиумски консензус" not in result
+        assert "Следете дали наративот" not in result
 
 
 # =============================================================================

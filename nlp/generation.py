@@ -53,7 +53,7 @@ _T = {
         "denot_obeleza": "Денот го обележа {text1}, а внимание привлекува и {text2}.",
         "potencijalna_promena": "Потенцијална промена во политичката моќ и регионалните стратегии.",
         "direktno_vlijanie": "Директно влијание врз економската стабилност и стандардот на граѓаните.",
-        "potvrden_razvoj": "Потврден развој со висок медиумски консензус од {count} извори.",
+        "potvrden_razvoj": "Основната линија е потврдена во {count} редакции; следниот важен податок е официјална потврда на деталите.",
         "faza_razvoj": "Настанот е во фаза на развој и се очекуваат понатамошни официјални потврди.",
         "najdirektno": "Најдиректно од достапните извори: {text}",
         "sto_se_slucuva": "Што се случува",
@@ -97,7 +97,7 @@ _T = {
         "denot_obeleza": "Dan je obeležio {text1}, a pažnju privlači i {text2}.",
         "potencijalna_promena": "Potencijalna promena u političkoj moći i regionalnim strategijama.",
         "direktno_vlijanie": "Direktan uticaj na ekonomsku stabilnost i standard građana.",
-        "potvrden_razvoj": "Potvrđen razvoj sa visokim medijskim konsenzusom od {count} izvora.",
+        "potvrden_razvoj": "Osnovnu liniju potvrđuje {count} redakcija; sledeći važan podatak je zvanična potvrda detalja.",
         "faza_razvoj": "Događaj je u fazi razvoja i očekuju se dalja službena potvrđivanja.",
         "najdirektno": "Najdirektnije iz dostupnih izvora: {text}",
         "sto_se_slucuva": "Šta se dešava",
@@ -164,12 +164,10 @@ def _build_briefing_intro_line(clusters, lang="mk"):
         if lead_label and second_label:
             if lang == "sr":
                 return (
-                    f"Današnji pregled vodi priča o {lead_label}, "
-                    f"uz paralelno praćenje teme {second_label}."
+                    f"Danas se izdvajaju dve teme: {lead_label} i {second_label}."
                 )
             return (
-                f"Денешниот преглед ја води приказната за {lead_label}, "
-                f"со паралелно следење на {second_label}."
+                f"Денес се издвојуваат две теми: {lead_label} и {second_label}."
             )
 
     lead_update = _condense_briefing_update(_extract_briefing_update(clusters[0], lang=lang), max_chars=220)
@@ -198,12 +196,12 @@ def _extract_briefing_watch_signal(cluster, lang="mk"):
     if source_count >= 2:
         if lang == "sr":
             return (
-                f"Pratiti da li će se narativa dodatno potvrditi kroz nove izvore "
-                f"(trenutno {source_count} redakcije)."
+                f"Tražiti sledeću zvaničnu potvrdu ili novu brojku; temu trenutno potvrđuje "
+                f"{source_count} redakcija."
             )
         return (
-            f"Следете дали наративот ќе се дополнително потврди преку нови извори "
-            f"(моментално {source_count} редакции)."
+            f"Следниот сигнал е официјална потврда или нова бројка; темата моментално ја потврдуваат "
+            f"{source_count} редакции."
         )
 
     return t["naredno_pratenje"]
