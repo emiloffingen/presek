@@ -1,5 +1,10 @@
 # Presek Changelog
 
+## v8.3.2 (2026-06-15)
+
+### Fix
+- Recluster/repair-split tasks: import `cosine_dist`, downstream rebuild tasks, and `_split_cluster_merge_score` in `cluster_ops`
+
 ## v8.3.1 (2026-06-15)
 
 ### Homepage editorial supply

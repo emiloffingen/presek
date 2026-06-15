@@ -1,4 +1,5 @@
 from core.api_helpers import normalize_citation_sources, normalize_perspectives, normalize_summary_text
+from core.ingestion import cosine_dist
 from core.entities import extract_entities, validate_person_names
 from core.prompts import (
     SUMMARY_SYSTEM_PROMPT_MK,
@@ -43,6 +44,12 @@ import sys
 import threading
 
 from tasks.intelligence._queue import _skip_when_intel_backlog, _skip_when_intel_full
+from tasks.intelligence.metadata import (
+    auto_summarize_task,
+    extract_entities_task,
+    generate_cluster_metadata_task,
+)
+from tasks.intelligence.synthesis import _split_cluster_merge_score
 
 @celery_app.task(name="tasks.intelligence.recluster_recent_articles_task")
 def recluster_recent_articles_task(hours=24, limit=800):
@@ -98,7 +105,7 @@ def recluster_recent_articles_task(hours=24, limit=800):
                 for candidate in batch_clusters:
                     if candidate["category"] != category or candidate["topic"] != topic:
                         continue
-                    dist = _cosine_dist(parsed_embedding, candidate["embedding"])
+                    dist = cosine_dist(parsed_embedding, candidate["embedding"])
                     if dist >= (clustering.VECTOR_THRESHOLD * 0.92):
                         continue
                     if topic == "vesti" or not topic:

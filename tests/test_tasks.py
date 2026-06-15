@@ -541,7 +541,7 @@ class TestReclusterRecentArticlesTask:
         ]
 
         with (
-            patch("tasks.intelligence.cluster_ops._skip_when_intel_backlog", return_value=False),
+            patch("tasks.intelligence.cluster_ops._skip_when_intel_full", return_value=False),
             patch("tasks.intelligence.cluster_ops.get_celery_queue_depth", return_value=0),
             patch("tasks.intelligence.cluster_ops.db") as mock_db,
             patch("core.clustering.find_or_create_cluster", return_value="old-a"),
