@@ -664,12 +664,14 @@ class TestDailyBriefTaskQuality:
             }
 
             clusters = tasks.delivery.briefing._load_daily_brief_clusters(limit=3)
-            context = tasks.delivery.briefing._build_daily_brief_context(clusters)
+            context = tasks.delivery.briefing._build_daily_brief_context(clusters, lang="sr")
 
         assert clusters
         assert "### klaster 1" in context or "###" in context
-        assert "Urednicka tezina" in context
-        assert "Kako drugi izvori naslovuvaju" in context
+        assert "Urednička težina" in context
+        assert "Kako drugi izvori naslovljavaju" in context
+        assert "Razlike u akcentu" in context
+        assert "Šta ostaje otvoreno" in context
         assert "Reuters akcentira na rokot i reakciite" in context
 
     def test_daily_brief_fallback_uses_editorial_sections_and_language(self):
@@ -689,11 +691,40 @@ class TestDailyBriefTaskQuality:
         brief = generate_daily_brief_fallback(clusters, lang="mk")
 
         assert "## Големата Слика" in brief
-        assert "## Глобални и Локални Оски" in brief
+        assert "## Клучни теми" in brief
         assert "## Медиумски Радар" in brief
         assert "## Што да се следи" in brief
         assert "[[mk1]]" in brief
         assert "Dnevni brifing" not in brief
+
+    def test_rejects_daily_brief_with_unsupported_abstract_editorial_claims(self):
+        brief = (
+            "## Velika Slika\n\n"
+            "Požar u tržnom centru postaje simbol šire neizvesnosti i ukazuje na širi trend "
+            "gubitka institucionalnog uticaja.\n\n"
+            "## Ključne teme\n\n"
+            "Tema je potvrđena u više izvora.\n\n"
+            "## Medijski Radar\n\n"
+            "Izvori se razlikuju u akcentu.\n\n"
+            "## Šta pratiti\n\n"
+            "- Zvaničan izveštaj o uzroku požara."
+        )
+
+        assert tasks.delivery.briefing._is_high_quality_briefing(brief) is False
+
+    def test_rejects_daily_brief_with_repetitive_media_framing(self):
+        brief = (
+            "## Velika Slika\n\n"
+            "Vlada je najavila odluku posle sastanka sa sindikatima.\n\n"
+            "## Ključne teme\n\n"
+            "Dogovor utiče na budžet i rokove isplate.\n\n"
+            "## Medijski Radar\n\n"
+            "Mediji se razlikuju u tonu. Mediji se razlikuju u naslovima. Mediji se razlikuju u akcentu.\n\n"
+            "## Šta pratiti\n\n"
+            "- Saopštenje Ministarstva finansija."
+        )
+
+        assert tasks.delivery.briefing._is_high_quality_briefing(brief) is False
 
     def test_rejects_daily_brief_with_named_entity_missing_from_context(self):
 

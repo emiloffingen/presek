@@ -7,6 +7,7 @@ from tasks.intelligence import (
     _score_synthesis_quality,
 )
 from nlp.generation import synthesize_cluster_fallback
+from tasks.synthesis_sanitize import sanitize_synthesis_outputs
 
 def test_clean_macedonian_spelling_and_script():
     # Test lookalike/homoglyph swap
@@ -50,6 +51,38 @@ def test_score_synthesis_quality():
     article = "Prvi pasus.\n\nDrugi pasus."
     score = _score_synthesis_quality(headline, article, key_facts)
     assert score < 1.0
+
+
+def test_score_synthesis_quality_penalizes_unsupported_abstraction():
+    headline = "Požar zatvorio tržni centar"
+    article = (
+        "Požar je izbio u tržnom centru i vatrogasci su evakuisali posetioce.\n\n"
+        "Incident je otvorio pitanje bezbednosnih procedura u objektu.\n\n"
+        "Izvori potvrđuju lokaciju i intervenciju [1].\n\n"
+        "Nije potvrđeno šta je izazvalo požar [2].\n\n"
+        "Požar postaje simbol šire neizvesnosti i legitimnost institucija ostaje centralno pitanje?"
+    )
+    key_facts = ["Požar", "Tržni centar", "Evakuacija", "Istraga"]
+
+    assert _score_synthesis_quality(headline, article, key_facts) < 0.85
+
+
+def test_sanitize_synthesis_outputs_normalizes_serbian_copy():
+    summary, article, perspectives = sanitize_synthesis_outputs(
+        ["Izvještaj navodi da su njive izgorjele."],
+        (
+            "Izvještaj o događaju navodi da su njive izgorjele posle požara.\n\n"
+            "Narativa nema dovoljno, ali osnovne činjenice su potvrđene u više izvora."
+        ),
+        [{"angle": "Celosno", "content": "Izvještaj ostaje otvoren."}],
+        [{"title": "Požar", "description": "Njive su izgorele."}],
+        lang="sr",
+    )
+
+    assert summary == "• izveštaj navodi da su njive izgorele."
+    assert "izveštaj" in article
+    assert "narativ" in article
+    assert perspectives[0]["angle"] == "Celo"
 
 
 def test_score_editorial_summary_prefers_distinct_editorial_bullets():

@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 
 from core.api_helpers import normalize_perspectives, normalize_summary_text
+from core.editorial_quality import normalize_serbian_editorial_text
 from core.entities import validate_person_names
 from nlp.generation import synthesize_cluster_fallback
 from nlp.utils import extract_clean_summary_text, looks_like_leaked_json_fragment
@@ -76,7 +77,10 @@ def _clean_macedonian(text: str) -> str:
 
 def sanitize_synthesis_outputs(summary, generated_article, perspectives, article_rows, lang="mk"):
     fallback = None
-    clean_summary = normalize_summary_text(sanitize_text_field(str(summary or "")))
+    if isinstance(summary, list):
+        clean_summary = normalize_summary_text([sanitize_text_field(str(item or "")) for item in summary])
+    else:
+        clean_summary = normalize_summary_text(sanitize_text_field(str(summary or "")))
     clean_article = polish_generated_article(
         dedupe_generated_article(validate_person_names(generated_article or "")),
         lang=lang,
@@ -113,5 +117,20 @@ def sanitize_synthesis_outputs(summary, generated_article, perspectives, article
                         perspective["angle"] = _clean_macedonian(perspective["angle"])
                     if "content" in perspective:
                         perspective["content"] = _clean_macedonian(perspective["content"])
+    elif lang == "sr":
+        if isinstance(clean_summary, str):
+            clean_summary = normalize_serbian_editorial_text(clean_summary)
+        elif isinstance(clean_summary, list):
+            clean_summary = [normalize_serbian_editorial_text(item) for item in clean_summary]
+
+        clean_article = normalize_serbian_editorial_text(clean_article)
+
+        if isinstance(clean_perspectives, list):
+            for perspective in clean_perspectives:
+                if isinstance(perspective, dict):
+                    if "angle" in perspective:
+                        perspective["angle"] = normalize_serbian_editorial_text(perspective["angle"])
+                    if "content" in perspective:
+                        perspective["content"] = normalize_serbian_editorial_text(perspective["content"])
 
     return clean_summary, clean_article, clean_perspectives

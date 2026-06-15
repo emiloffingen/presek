@@ -35,10 +35,12 @@ def test_summary_prompt_requires_plain_json_summary():
 
 def test_daily_brief_prompt_requires_editorial_sections():
     assert "## Velika Slika" in DAILY_BRIEF_SYSTEM_PROMPT
-    assert "## Globalne i Lokalne Ose" in DAILY_BRIEF_SYSTEM_PROMPT
+    assert "## Ključne teme" in DAILY_BRIEF_SYSTEM_PROMPT
     assert "## Medijski Radar" in DAILY_BRIEF_SYSTEM_PROMPT
     assert "## Šta pratiti" in DAILY_BRIEF_SYSTEM_PROMPT
     assert "[[id]]" in DAILY_BRIEF_SYSTEM_PROMPT
     assert "3-5 konkretnih signala" in DAILY_BRIEF_SYSTEM_PROMPT
     assert "Svaka rečenica mora dodati" in DAILY_BRIEF_SYSTEM_PROMPT
     assert "Ne izmišljaj aktere" in DAILY_BRIEF_SYSTEM_PROMPT
+    assert "Prvo reci šta je potvrđeno" in DAILY_BRIEF_SYSTEM_PROMPT
+    assert "Zabranjene apstrakcije" in DAILY_BRIEF_SYSTEM_PROMPT

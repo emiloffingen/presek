@@ -1,4 +1,5 @@
 from core.api_helpers import normalize_citation_sources, normalize_perspectives, normalize_summary_text
+from core.editorial_quality import weak_editorial_abstraction_count
 from core.entities import extract_entities, validate_person_names
 from core.prompts import (
     SUMMARY_SYSTEM_PROMPT_MK,
@@ -684,6 +685,10 @@ def _score_synthesis_quality(headline: str, article: str, key_facts: list, lang:
     paragraphs = [p.strip() for p in re.split(r'\n{2,}', article) if p.strip()]
     if len(paragraphs) != 5:
         score -= 0.3
+
+    weak_count = weak_editorial_abstraction_count(article)
+    if weak_count:
+        score -= min(0.35, weak_count * 0.18)
 
     return max(0.0, min(1.0, score))
 
@@ -1831,4 +1836,3 @@ def __getattr__(name: str):
         from tasks.intelligence import _constants
         return getattr(_constants, name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-

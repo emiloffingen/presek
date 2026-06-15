@@ -753,19 +753,19 @@ def _has_valid_daily_brief_structure(brief: str, lang: str = "sr") -> bool:
     if lang == "sr":
         required_phrases = [
             "Velika Slika",
-            "Globalne i Lokalne Ose",
+            "Ključne teme",
             "Medijski Radar",
             "Šta pratiti",
         ]
     else:  # mk
         required_phrases = [
             "Големата Слика",
-            "Глобални и Локални Оски",
+            "Клучни теми",
             "Медиумски Радар",
             "Што да се следи",
             # Fallback to Latin just in case
             "Golemata Slika",
-            "Globalni i Lokalni Oski",
+            "Kljucni temi",
             "Mediumski Radar",
             "Sto da se sledi",
         ]
