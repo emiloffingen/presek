@@ -139,7 +139,7 @@ const getProxiedUrl = (width: number) => {
 const leadSrcset = leadVisual?.proxiedUrl ? [400, 600, 800, 1000, 1200].map(w => `${getProxiedUrl(w)} ${w}w`).join(', ') : '';
 const leadSizes = "(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 1200px";
 const fallbackImageUrl = leadVisual?.fallbackUrl || buildEmergencyFallbackUrl(lang as 'sr' | 'mk');
-const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl && !leadVisual?.isWeak);
+const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl);
 
 ---
 

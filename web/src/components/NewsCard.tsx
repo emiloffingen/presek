@@ -42,7 +42,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   const thumbSrc = selectedImage.proxiedUrl;
   const isFallbackArt = selectedImage.isWeak;
   const fallbackImageUrl = selectedImage.fallbackUrl;
-  const showMedia = Boolean(thumbSrc) && !(isFallbackArt && (variant === 'compact' || variant === 'wire'));
+  const showMedia = Boolean(thumbSrc);
   const tintColor = cluster.dominant_color || '#1e40af';
 
   const rawLeadTitle = cluster.synthetic_headline || getDisplayTitle(main);

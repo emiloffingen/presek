@@ -461,7 +461,17 @@ const organizationSchema = {
 					return;
 				}
 				if (img.classList.contains('article-image') && img.classList.contains('article-image-fallback')) {
-					markArticleImageFailed();
+					if (img.dataset.emergencyTried === '1') {
+						img.classList.add('is-loaded');
+						const imageWrap = img.closest('.image-wrap');
+						if (imageWrap) {
+							imageWrap.classList.add('image-wrap-fallback');
+							imageWrap.setAttribute('data-image-state', 'fallback');
+						}
+						return;
+					}
+					img.dataset.emergencyTried = '1';
+					img.src = emergencyFallbackUrl();
 					return;
 				}
 				if (img.classList.contains('lead-media-image') && !img.classList.contains('lead-media-fallback-image')) {

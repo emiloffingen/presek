@@ -44,7 +44,7 @@ const selectedImage = chooseClusterImage(cluster, isLead ? 'hero' : 'card', lang
 const thumbSrc = selectedImage.proxiedUrl;
 const isFallbackArt = selectedImage.isWeak;
 const fallbackImageUrl = selectedImage.fallbackUrl;
-const showMedia = Boolean(thumbSrc) && !(isFallbackArt && (variant === 'compact' || variant === 'wire'));
+const showMedia = Boolean(thumbSrc);
 const mediaSrc = thumbSrc || '';
 const tintColor = cluster.dominant_color || '#1e40af';
 const rawLeadTitle = cluster.synthetic_headline || getDisplayTitle(main);
@@ -698,10 +698,6 @@ function getTimeStr(dateStr: string) {
         min-height: 0;
     }
 
-    .nyt-article.variant-wire .image-wrap {
-        display: none;
-    }
-
     .nyt-article.variant-compact,
     .nyt-article.variant-wire {
         min-height: 0;
@@ -948,10 +944,6 @@ function getTimeStr(dateStr: string) {
 		.nyt-article.variant-wire .kicker {
 			font-size: 0.54rem;
 			letter-spacing: 0.06em;
-		}
-
-		.nyt-article.variant-wire .image-wrap {
-			display: none;
 		}
 
 		.nyt-article.variant-compact .article-image,

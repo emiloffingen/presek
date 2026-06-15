@@ -144,7 +144,6 @@ const activeFilterLabel = subcategory || entity || category || topic || q || nul
 const pipelineBusy = homepageFlags.pipelineBusy;
 const hasPartialFeedContent = homepageFlags.hasPartialFeedContent;
 const showEmptyState = homepageFlags.showEmptyState;
-const missingSystemModules = homepageFlags.missingSystemModules;
 
 const homepageSections = buildHomepageSections({
     clusters,
@@ -188,7 +187,7 @@ const unifiedFeedItems = isHomepage
     : [];
 const pluralismPct = stats?.intelligence?.pluralism?.pluralism_pct ?? null;
 
-const showLeadHeroVisual = Boolean(leadVisual && !leadVisual.isWeak && !missingSystemModules);
+const showLeadHeroVisual = Boolean(leadVisual?.proxiedUrl);
 const displayedSynthesisPicks = isHomepage
     ? filterSynthesisPicks(synthesisPicks, buildHomepageSynthesisExcludeIds(leadCluster, supportingClusters))
     : synthesisPicks;

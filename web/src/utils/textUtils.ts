@@ -79,12 +79,15 @@ export function decodeHtmlEntities(text: any): string {
     });
 }
 
+// South Slavic Cyrillic → Latin (aligned with core/language.py)
 export const CYR_TO_LAT: Record<string, string> = {
-    'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Ѓ': 'Ǵ', 'Е': 'E', 'Ж': 'Ž', 'З': 'Z', 'Ѕ': 'Dz', 'И': 'I', 'Ј': 'J', 'К': 'K', 'Л': 'L', 'Љ': 'Lj', 'М': 'M', 'Н': 'N', 'Њ': 'Nj', 'О': 'O', 'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'Ќ': 'Ḱ', 'У': 'U', 'Ф': 'F', 'Х': 'H', 'Ц': 'C', 'Ч': 'Č', 'Џ': 'Dž', 'Ш': 'Š',
-    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'ѓ': 'ǵ', 'е': 'e', 'ж': 'ž', 'з': 'z', 'ѕ': 'dz', 'и': 'i', 'ј': 'j', 'к': 'k', 'л': 'l', 'љ': 'lj', 'м': 'm', 'н': 'n', 'њ': 'nj', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'ќ': 'ḱ', 'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'c', 'ч': 'č', 'џ': 'dž', 'ш': 'š'
+    'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Ѓ': 'Đ', 'Е': 'E', 'Ж': 'Ž', 'З': 'Z', 'Ѕ': 'Dz', 'И': 'I', 'Ј': 'J', 'К': 'K', 'Л': 'L', 'Љ': 'Lj', 'М': 'M', 'Н': 'N', 'Њ': 'Nj', 'О': 'O', 'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'Ќ': 'Ć', 'У': 'U', 'Ф': 'F', 'Х': 'H', 'Ц': 'C', 'Ч': 'Č', 'Џ': 'Dž', 'Ш': 'Š',
+    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'ѓ': 'đ', 'е': 'e', 'ж': 'ž', 'з': 'z', 'ѕ': 'dz', 'и': 'i', 'ј': 'j', 'к': 'k', 'л': 'l', 'љ': 'lj', 'м': 'm', 'н': 'n', 'њ': 'nj', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'ќ': 'ć', 'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'c', 'ч': 'č', 'џ': 'dž', 'ш': 'š',
+    'ћ': 'ć', 'Ћ': 'Ć', 'ђ': 'đ', 'Ђ': 'Đ',
 };
 
 export function cyrToLat(text: string): string {
+    if (!text) return '';
     return text.split('').map(char => CYR_TO_LAT[char] || char).join('');
 }
 
@@ -92,30 +95,45 @@ export function cyrToLat(text: string): string {
 export const transliterate = cyrToLat;
 export const transliterateToLat = cyrToLat;
 
+const LAT_TO_CYR_DIGRAPHS: Record<string, string> = {
+    'sh': 'ш', 'Sh': 'Ш', 'SH': 'Ш',
+    'zh': 'ж', 'Zh': 'Ж', 'ZH': 'Ж',
+    'ch': 'ч', 'Ch': 'Ч', 'CH': 'Ч',
+    'dj': 'ѓ', 'Dj': 'Ѓ', 'DJ': 'Ѓ',
+    'dz': 'ѕ', 'Dz': 'Ѕ', 'DZ': 'Ѕ',
+    'lj': 'љ', 'Lj': 'Љ', 'LJ': 'Љ',
+    'nj': 'њ', 'Nj': 'Њ', 'NJ': 'Њ',
+};
+
+function normalizeLatinDiacritics(text: string): string {
+    return text
+        .replace(/ć/g, 'c').replace(/č/g, 'ch').replace(/š/g, 'sh').replace(/ž/g, 'zh').replace(/đ/g, 'dj')
+        .replace(/Ć/g, 'C').replace(/Č/g, 'Ch').replace(/Š/g, 'Sh').replace(/Ž/g, 'Zh').replace(/Đ/g, 'Dj');
+}
+
 export function latToCyr(text: string): string {
     if (!text) return '';
-    let result = text;
-    // Standardize vecer to večer (case-insensitive) to ensure correct transliteration to вечер instead of вецер
-    result = result.replace(/vecer/gi, (match) => {
+
+    const cyrChars = [...text].filter((char) => char >= '\u0400' && char <= '\u04ff').length;
+    if (cyrChars > 0) return text;
+
+    let result = text.replace(/vecer/gi, (match) => {
         if (match === 'VECER') return 'VEČER';
         if (match === 'Vecer') return 'Večer';
         if (match[0] === 'V') return 'Večer';
         return 'večer';
     });
-    
-    // Replace multi-char combinations first to avoid character-by-character split issues
-    const multiMap: Record<string, string> = {
-        'Dž': 'Џ', 'dž': 'џ', 'DŽ': 'Џ',
-        'Dz': 'Ѕ', 'dz': 'ѕ', 'DZ': 'Ѕ',
-        'Lj': 'Љ', 'lj': 'љ', 'LJ': 'Љ',
-        'Nj': 'Њ', 'nj': 'њ', 'NJ': 'Њ'
-    };
-    for (const [lat, cyr] of Object.entries(multiMap)) {
-        result = result.replace(new RegExp(lat, 'g'), cyr);
-    }
 
-    const latToCyrMap: Record<string, string> = Object.fromEntries(Object.entries(CYR_TO_LAT).map(([k, v]) => [v, k]));
-    return result.split('').map(char => latToCyrMap[char] || char).join('');
+    const latToCyrMap: Record<string, string> = Object.fromEntries(
+        Object.entries(CYR_TO_LAT).map(([cyr, lat]) => [lat, cyr])
+    );
+    Object.assign(latToCyrMap, LAT_TO_CYR_DIGRAPHS);
+
+    result = normalizeLatinDiacritics(result);
+    for (const key of Object.keys(latToCyrMap).sort((a, b) => b.length - a.length)) {
+        result = result.replaceAll(key, latToCyrMap[key]);
+    }
+    return result;
 }
 
 export const transliterateToCyr = latToCyr;
