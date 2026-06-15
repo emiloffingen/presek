@@ -35,10 +35,8 @@ function getBentoSpan(cluster: UnifiedFeedItem['cluster']) {
 {items.length > 0 && (
     <section class="home-unified-feed motion-rise" data-home-unified-feed data-active-feed-filter="all">
         <div class="home-unified-feed-header">
-            <div class="home-unified-feed-heading">
-                <p class="home-unified-feed-kicker">{t('home.feed_kicker')}</p>
+            <div class="home-unified-feed-toolbar">
                 <h2 class="home-unified-feed-title">{t('home.feed_title')}</h2>
-                <p class="home-unified-feed-note">{t('home.feed_note')}</p>
                 <div class="home-feed-filter" role="tablist" aria-label={t('home.feed_filter_label')} data-home-feed-filter>
                     {filterItems.map((item) => (
                         <button

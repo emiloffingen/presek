@@ -1,5 +1,10 @@
 # Presek Changelog
 
+## v8.3.4 (2026-06-15)
+
+### Fix
+- Homepage feed: remove duplicate summary row and extra kicker/note; single title + filter chip row
+
 ## v8.3.3 (2026-06-15)
 
 ### Fix
