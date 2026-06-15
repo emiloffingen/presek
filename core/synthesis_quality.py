@@ -124,6 +124,31 @@ def record_synthesis_db_persisted(
     )
 
 
+def count_synthesis_persist_gap() -> dict[str, int]:
+    """Compare today's synthesis_path vs synthesis_db_persisted Redis counters."""
+    from datetime import datetime, timezone
+
+    from utils import redis_client
+
+    bucket = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    data = redis_client.hgetall(f"presek:runtime_events:{bucket}") or {}
+    synthesis_events = 0
+    db_persisted_events = 0
+    for field, count in data.items():
+        key = field.decode() if isinstance(field, bytes) else str(field)
+        value = int(count)
+        if key.startswith("synthesis_path|"):
+            synthesis_events += value
+        elif key.startswith("synthesis_db_persisted|"):
+            db_persisted_events += value
+    gap = max(0, synthesis_events - db_persisted_events)
+    return {
+        "synthesis_events": synthesis_events,
+        "db_persisted_events": db_persisted_events,
+        "persist_gap": gap,
+    }
+
+
 def record_synthesis_runtime_event(
     *,
     provider: str,

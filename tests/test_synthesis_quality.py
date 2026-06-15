@@ -26,6 +26,19 @@ def test_synthesis_needs_upgrade():
     assert synthesis_needs_upgrade(None, "mistral_small") is False
 
 
+def test_fact_grounding_diagnostics_reports_ungrounded_numbers():
+    from tasks.intelligence.synthesis import _fact_grounding_diagnostics
+
+    articles = [{"title": "Vest", "description": "Cena je 100 dinara.", "full_content": ""}]
+    diagnostics = _fact_grounding_diagnostics(
+        "Investicija iznosi 987654 dinara, 876543 evra i rast od 77, 66 i 55 procenata.",
+        articles,
+        lang="sr",
+    )
+    assert diagnostics["ok"] is False
+    assert diagnostics["ungrounded_numbers"]
+
+
 def test_build_synthesis_meta():
     meta = build_synthesis_meta(
         {
@@ -39,6 +52,23 @@ def test_build_synthesis_meta():
     assert meta["is_provisional"] is True
     assert meta["needs_upgrade"] is True
     assert meta["generation_model"] == "mistral-small-latest"
+
+
+def test_count_synthesis_persist_gap(monkeypatch):
+    from core.synthesis_quality import count_synthesis_persist_gap
+
+    class _FakeRedis:
+        def hgetall(self, _key):
+            return {
+                "synthesis_path|lang=sr|mode=mistral_small": 3,
+                "synthesis_db_persisted|lang=sr|mode=mistral_small": 1,
+            }
+
+    monkeypatch.setattr("utils.redis_client", _FakeRedis())
+    metrics = count_synthesis_persist_gap()
+    assert metrics["synthesis_events"] == 3
+    assert metrics["db_persisted_events"] == 1
+    assert metrics["persist_gap"] == 2
 
 
 def test_record_synthesis_db_persisted(monkeypatch):

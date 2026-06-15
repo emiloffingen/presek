@@ -22,6 +22,8 @@ _QUEUE_WARN_DEPTH = int(os.environ.get("CELERY_QUEUE_WARN_DEPTH", "150"))
 _QUEUE_CRITICAL_DEPTH = int(os.environ.get("CELERY_QUEUE_CRITICAL_DEPTH", "500"))
 _FALLBACK_RATIO_WARN = 0.35
 _FALLBACK_RATIO_CRITICAL = 0.55
+_PERSIST_GAP_WARN = int(os.environ.get("SYNTHESIS_PERSIST_GAP_WARN", "5"))
+_PERSIST_GAP_CRITICAL = int(os.environ.get("SYNTHESIS_PERSIST_GAP_CRITICAL", "20"))
 
 
 def _parse_args():
@@ -165,6 +167,16 @@ def _runtime_fallback_reason_counts():
         return {}
 
 
+def _persist_gap_metrics() -> dict[str, int]:
+    try:
+        from core.synthesis_quality import count_synthesis_persist_gap
+
+        return count_synthesis_persist_gap()
+    except Exception as exc:
+        log.warning(f"[synthesis-monitor] Failed to read persist gap metrics: {exc}")
+        return {"synthesis_events": 0, "db_persisted_events": 0, "persist_gap": 0}
+
+
 def build_snapshot(primary_days: int = 1, history_days: int = 7):
     from core.limits import FAST_SYNTHESIS_STUCK_HOURS, LOW_SCORE_SYNTHESIS_MIN
     from core.synthesis_quality import count_low_score_syntheses, count_stuck_fast_syntheses, count_upgradeable_syntheses
@@ -177,17 +189,20 @@ def build_snapshot(primary_days: int = 1, history_days: int = 7):
     upgradeable = count_upgradeable_syntheses(days=primary_days)
     low_score_count = count_low_score_syntheses(min_score=LOW_SCORE_SYNTHESIS_MIN, days=primary_days)
     runtime_fallback_reasons = _runtime_fallback_reason_counts()
+    persist_metrics = _persist_gap_metrics()
 
     status = "ok"
     if (
         primary["fallback_ratio"] >= _FALLBACK_RATIO_CRITICAL
         or queue_depth >= _QUEUE_CRITICAL_DEPTH
         or stuck_fast > 0
+        or persist_metrics["persist_gap"] >= _PERSIST_GAP_CRITICAL
     ):
         status = "critical"
     elif (
         primary["fallback_ratio"] >= _FALLBACK_RATIO_WARN
         or queue_depth >= _QUEUE_WARN_DEPTH
+        or persist_metrics["persist_gap"] >= _PERSIST_GAP_WARN
     ):
         status = "warn"
 
@@ -196,6 +211,7 @@ def build_snapshot(primary_days: int = 1, history_days: int = 7):
         "primary": primary,
         "history": history,
         "celery_queue_depth": queue_depth,
+        "synthesis_queue_depth": _celery_queue_depth("synthesis"),
         "celery_queue_warn_depth": _QUEUE_WARN_DEPTH,
         "celery_queue_critical_depth": _QUEUE_CRITICAL_DEPTH,
         "unsummarized_total": unsummarized["unsummarized_total"],
@@ -206,6 +222,9 @@ def build_snapshot(primary_days: int = 1, history_days: int = 7):
         "fallback_count_24h": upgradeable["fallback_count"],
         "low_score_count_24h": low_score_count,
         "runtime_fallback_reasons_24h": runtime_fallback_reasons,
+        "persist_gap_24h": persist_metrics["persist_gap"],
+        "synthesis_events_24h": persist_metrics["synthesis_events"],
+        "db_persisted_events_24h": persist_metrics["db_persisted_events"],
         "checked_at": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -249,6 +268,8 @@ def _send_ops_alert(snapshot: dict, exit_code: int):
         f"status={snapshot['status']}",
         f"24h fallback={primary['fallback_ratio'] * 100:.1f}% ({primary['fallback_total']}/{primary['total_summaries']})",
         f"celery queue={snapshot['celery_queue_depth']}",
+        f"synthesis queue={snapshot.get('synthesis_queue_depth', 0)}",
+        f"persist gap={snapshot.get('persist_gap_24h', 0)}",
     ]
     if primary.get("top_fallback_reasons"):
         top_reason = next(iter(primary["top_fallback_reasons"]))

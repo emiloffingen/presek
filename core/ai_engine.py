@@ -1118,7 +1118,12 @@ def auto_summarize_top_clusters(target_cluster_ids: list[str] = None):
         for idx, (cid, arts, _src_count, _dt) in enumerate(top):
             content = "\n\n".join([(a.get("title") or "") + ": " + (a.get("summary") or "") for a in arts])
             countdown = int(idx * AUTO_SUMMARIZE_DELAY)
-            synthesize_cluster_task.apply_async((cid, content), {"fast_mode": False}, countdown=countdown)
+            synthesize_cluster_task.apply_async(
+                (cid, content),
+                {"fast_mode": False},
+                countdown=countdown,
+                queue="synthesis",
+            )
 
     except Exception as e:
         log.error(f"[ai/auto_summarize] Orchestration failed: {e}")

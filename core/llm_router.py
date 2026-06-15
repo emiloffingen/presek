@@ -160,6 +160,17 @@ class SmartModelRouter:
 
         if candidate == "local":
             if article_count >= 3 and not routing_decision.get("allow_local_multi_source"):
+                synthesis_profile = (os.environ.get("SYNTHESIS_PROFILE") or "balanced").strip().lower()
+                balanced_local_max = int(os.environ.get("ROUTER_BALANCED_LOCAL_MAX_ARTICLES", "5"))
+                if (
+                    synthesis_profile == "balanced"
+                    and article_count <= balanced_local_max
+                    and not is_high_complexity
+                    and not has_high_weight
+                ):
+                    routing_decision["quality_adjustment"] = "balanced_local_medium"
+                    return candidate
+
                 routing_decision["quality_adjustment"] = "multi_source_avoids_local"
                 if has_high_weight or is_high_complexity:
                     return "mistral_large"
@@ -378,11 +389,16 @@ class SmartModelRouter:
 
         fallback_pressure = SmartModelRouter._synthesis_fallback_pressure()
         routing_decision["fallback_pressure"] = fallback_pressure
+        balanced_local_max = int(os.environ.get("ROUTER_BALANCED_LOCAL_MAX_ARTICLES", "5"))
+        if synthesis_profile == "balanced" and local_available and not is_high_complexity:
+            if article_count <= balanced_local_max and not has_high_weight:
+                routing_decision["allow_local_multi_source"] = True
+
         if (
             fallback_pressure in ("warn", "critical")
             and local_available
             and not is_high_complexity
-            and article_count >= 3
+            and article_count >= 2
         ):
             routing_decision["allow_local_multi_source"] = True
             return SmartModelRouter._finalize_route(

@@ -1,5 +1,5 @@
 [Unit]
-Description=Presek Celery worker (fast-track synthesis)
+Description=Presek Celery worker (urgent fast-mode synthesis)
 After=network-online.target presek-fastapi-unified.service postgresql.service redis.service
 Wants=network-online.target
 PartOf=presek.target

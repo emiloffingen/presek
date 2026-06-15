@@ -8,7 +8,8 @@ These units are the supported production runtime for `presek.live`.
 
 - `presek-worker.service`: Celery worker for `celery` and `intel-heavy`
 - `presek-worker-ingestion.service`: dedicated Celery worker for `ingestion`
-- `presek-worker-fasttrack.service`: dedicated Celery worker for `fast-track`
+- `presek-worker-fasttrack.service`: dedicated Celery worker for `fast-track` (urgent fast-mode synthesis)
+- `presek-worker-synthesis.service`: dedicated Celery worker for `synthesis` (full-quality Gemma/API cluster synthesis)
 - `presek-worker-maintenance.service`: dedicated Celery worker for `maintenance`
 - `presek-worker-delivery.service`: dedicated Celery worker for `delivery`
 - `presek-beat.service`: Celery beat scheduler

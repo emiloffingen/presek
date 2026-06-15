@@ -21,26 +21,71 @@ from tasks.utils import (
 )
 
 
+def _synthesis_queue_depth() -> int:
+    from tasks.utils import get_celery_queue_depth
+
+    return int(get_celery_queue_depth("synthesis") or 0)
+
+
+def _synthesis_dispatch_deferred() -> bool:
+    from core.limits import SYNTHESIS_QUEUE_DEFER_LIMIT
+
+    return _synthesis_queue_depth() >= SYNTHESIS_QUEUE_DEFER_LIMIT
+
+
+def _effective_synthesis_refresh_hourly_cap() -> int:
+    from core.limits import (
+        SYNTHESIS_QUEUE_BURST_INTEL_MAX,
+        SYNTHESIS_REFRESH_HOURLY_CAP,
+        SYNTHESIS_REFRESH_HOURLY_CAP_BURST,
+    )
+    from tasks.utils import get_celery_queue_depth
+
+    if (
+        _synthesis_queue_depth() < 20
+        and int(get_celery_queue_depth("intel-heavy") or 0) < SYNTHESIS_QUEUE_BURST_INTEL_MAX
+    ):
+        return max(SYNTHESIS_REFRESH_HOURLY_CAP, SYNTHESIS_REFRESH_HOURLY_CAP_BURST)
+    return SYNTHESIS_REFRESH_HOURLY_CAP
+
+
+def _collect_homepage_cluster_ids(limit: int = 48) -> list[str]:
+    from routes.news import fetch_news_data
+    from tasks.utils import safe_async_run
+
+    targets: list[str] = []
+    seen: set[str] = set()
+    for lang in ("sr", "mk"):
+        payload = safe_async_run(fetch_news_data(sort="score", page_size=24, lang=lang)) or {}
+        for cluster in payload.get("clusters") or []:
+            cluster_id = str(cluster.get("cluster_id") or "").strip()
+            if not cluster_id or cluster_id in seen:
+                continue
+            seen.add(cluster_id)
+            targets.append(cluster_id)
+            if len(targets) >= limit:
+                return targets
+    return targets
+
+
 def _synthesis_refresh_budget_remaining() -> int:
     """Return remaining hourly budget for maintenance synthesis refresh tasks."""
-    from core.limits import SYNTHESIS_REFRESH_HOURLY_CAP
-
-    if SYNTHESIS_REFRESH_HOURLY_CAP <= 0:
+    cap = _effective_synthesis_refresh_hourly_cap()
+    if cap <= 0:
         return 10**9
     try:
         from utils import redis_client
 
         key = "presek:synthesis_refresh_hourly"
         used = int(redis_client.get(key) or 0)
-        return max(0, SYNTHESIS_REFRESH_HOURLY_CAP - used)
+        return max(0, cap - used)
     except Exception:
-        return SYNTHESIS_REFRESH_HOURLY_CAP
+        return cap
 
 
 def _consume_synthesis_refresh_budget(count: int = 1) -> bool:
-    from core.limits import SYNTHESIS_REFRESH_HOURLY_CAP
-
-    if SYNTHESIS_REFRESH_HOURLY_CAP <= 0:
+    cap = _effective_synthesis_refresh_hourly_cap()
+    if cap <= 0:
         return True
     try:
         from utils import redis_client
@@ -49,7 +94,7 @@ def _consume_synthesis_refresh_budget(count: int = 1) -> bool:
         current = int(redis_client.incrby(key, max(0, int(count))))
         if current == max(0, int(count)):
             redis_client.expire(key, 3600)
-        return current <= SYNTHESIS_REFRESH_HOURLY_CAP
+        return current <= cap
     except Exception:
         return True
 
@@ -142,11 +187,11 @@ def upgrade_stuck_fast_syntheses_task(limit=None):
 def refresh_fallback_syntheses_task(limit=None):
     """Re-run full synthesis for provisional or deterministic fallback summaries."""
     from core.limits import FALLBACK_SYNTHESIS_REFRESH_LIMIT
-    from tasks.intelligence import intelligence_batches_deferred, synthesize_cluster_task
+    from tasks.intelligence import synthesize_cluster_task
 
-    if intelligence_batches_deferred():
-        log.info("[maintenance] Skipping fallback synthesis refresh while intel-heavy backlog is full.")
-        return {"skipped": True, "reason": "backlog_full"}
+    if _synthesis_dispatch_deferred():
+        log.info("[maintenance] Skipping fallback synthesis refresh while synthesis queue backlog is high.")
+        return {"skipped": True, "reason": "synthesis_backlog"}
 
     batch_limit = max(1, int(limit or FALLBACK_SYNTHESIS_REFRESH_LIMIT))
     budget = _synthesis_refresh_budget_remaining()
@@ -167,23 +212,42 @@ def refresh_fallback_syntheses_task(limit=None):
         ORDER BY latest_at ASC
         LIMIT %s
         """,
-        (batch_limit,),
+        (max(batch_limit * 4, batch_limit),),
         read_only=True,
     ) or []
 
+    homepage_ids = set(_collect_homepage_cluster_ids())
+    ordered_rows = sorted(
+        rows,
+        key=lambda row: (str(row["cluster_id"]) not in homepage_ids, row["latest_at"]),
+    )
+
     enqueued = 0
-    for idx, row in enumerate(rows):
+    homepage_enqueued = 0
+    for idx, row in enumerate(ordered_rows[:batch_limit]):
         if not _consume_synthesis_refresh_budget():
             break
         synthesize_cluster_task.apply_async(
             (row["cluster_id"], None),
             {"fast_mode": False},
             countdown=idx * 25,
+            queue="synthesis",
         )
         enqueued += 1
+        if str(row["cluster_id"]) in homepage_ids:
+            homepage_enqueued += 1
 
-    log.info("[maintenance] Enqueued fallback/provisional synthesis refresh for %s clusters", enqueued)
-    return {"enqueued": enqueued, "candidates": len(rows)}
+    log.info(
+        "[maintenance] Enqueued fallback/provisional synthesis refresh for %s clusters (%s homepage-priority)",
+        enqueued,
+        homepage_enqueued,
+    )
+    return {
+        "enqueued": enqueued,
+        "homepage_enqueued": homepage_enqueued,
+        "candidates": len(rows),
+        "hourly_cap": _effective_synthesis_refresh_hourly_cap(),
+    }
 
 
 @celery_app.task
@@ -352,11 +416,11 @@ def ensure_ingestion_freshness_task(max_age_minutes=120):
 @celery_app.task
 def catch_up_cluster_syntheses_task(hours=48, limit=50):
     """Enqueue full synthesis for recent multi-source clusters missing cluster summaries."""
-    from tasks.intelligence import intelligence_batches_deferred, synthesize_cluster_task
+    from tasks.intelligence import synthesize_cluster_task
 
-    if intelligence_batches_deferred():
-        log.info("[maintenance] Skipping cluster synthesis catch-up while intel-heavy backlog is full.")
-        return {"skipped": True, "reason": "backlog_full"}
+    if _synthesis_dispatch_deferred():
+        log.info("[maintenance] Skipping cluster synthesis catch-up while synthesis queue backlog is high.")
+        return {"skipped": True, "reason": "synthesis_backlog"}
 
     rows = db.execute(
         """
@@ -380,6 +444,7 @@ def catch_up_cluster_syntheses_task(hours=48, limit=50):
             (row["cluster_id"], None),
             {"fast_mode": False},
             countdown=idx * 20,
+            queue="synthesis",
         )
         enqueued += 1
 
@@ -392,18 +457,17 @@ def catch_up_cluster_syntheses_task(hours=48, limit=50):
 def prioritize_homepage_syntheses_task(limit=12):
     """Enqueue full synthesis for homepage-visible clusters missing or stale summaries."""
     from routes.news import fetch_news_data
-    from tasks.intelligence import intelligence_batches_deferred, synthesize_cluster_task
-    from tasks.utils import get_celery_queue_depth, safe_async_run
+    from tasks.intelligence import synthesize_cluster_task
+    from tasks.utils import safe_async_run
 
-    if intelligence_batches_deferred():
-        log.info("[maintenance] Skipping homepage synthesis priority while intel-heavy backlog is full.")
-        return {"skipped": True, "reason": "backlog_full"}
+    if _synthesis_dispatch_deferred():
+        log.info("[maintenance] Skipping homepage synthesis priority while synthesis queue backlog is high.")
+        return {"skipped": True, "reason": "synthesis_backlog"}
 
-    depth = get_celery_queue_depth("intel-heavy")
-    headroom = max(0, int(os.environ.get("INTEL_QUEUE_FULL_DEFER_LIMIT", "800")) - depth - 20)
-    dispatch_limit = min(max(1, int(limit)), headroom)
+    synthesis_depth = _synthesis_queue_depth()
+    dispatch_limit = min(max(1, int(limit)), max(1, 40 - synthesis_depth))
     if dispatch_limit <= 0:
-        return {"skipped": True, "reason": "no_headroom", "depth": depth}
+        return {"skipped": True, "reason": "no_headroom", "synthesis_depth": synthesis_depth}
 
     targets: list[str] = []
     seen: set[str] = set()
@@ -434,12 +498,13 @@ def prioritize_homepage_syntheses_task(limit=12):
             (cluster_id, None),
             {"fast_mode": False},
             countdown=idx * 15,
+            queue="synthesis",
         )
         enqueued += 1
 
     if enqueued:
         log.info("[maintenance] Enqueued homepage-priority synthesis for %s clusters", enqueued)
-    return {"enqueued": enqueued, "candidates": len(targets), "depth": depth}
+    return {"enqueued": enqueued, "candidates": len(targets), "synthesis_depth": synthesis_depth}
 
 
 @celery_app.task
@@ -467,11 +532,11 @@ def boost_homepage_cluster_supply_task(hours=36, recluster_limit=600, repair_lim
 def refresh_low_score_syntheses_task(min_score=None, limit=None):
     """Re-run full synthesis for recent low-scoring cluster summaries."""
     from core.limits import LOW_SCORE_SYNTHESIS_MIN, LOW_SCORE_SYNTHESIS_REFRESH_LIMIT
-    from tasks.intelligence import intelligence_batches_deferred, synthesize_cluster_task
+    from tasks.intelligence import synthesize_cluster_task
 
-    if intelligence_batches_deferred():
-        log.info("[maintenance] Skipping low-score synthesis refresh while intel-heavy backlog is full.")
-        return {"skipped": True, "reason": "backlog_full"}
+    if _synthesis_dispatch_deferred():
+        log.info("[maintenance] Skipping low-score synthesis refresh while synthesis queue backlog is high.")
+        return {"skipped": True, "reason": "synthesis_backlog"}
 
     score_floor = float(min_score if min_score is not None else LOW_SCORE_SYNTHESIS_MIN)
     batch_limit = max(1, int(limit or LOW_SCORE_SYNTHESIS_REFRESH_LIMIT))
@@ -504,6 +569,7 @@ def refresh_low_score_syntheses_task(min_score=None, limit=None):
             (row["cluster_id"], None),
             {"fast_mode": False},
             countdown=idx * 30,
+            queue="synthesis",
         )
         enqueued += 1
 

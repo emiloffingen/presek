@@ -27,6 +27,7 @@ MONITORED_CELERY_QUEUES = (
     "ingestion",
     "ingestion-crawl",
     "fast-track",
+    "synthesis",
     "intel-heavy",
     "delivery",
     "maintenance",

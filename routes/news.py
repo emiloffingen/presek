@@ -969,7 +969,7 @@ def _maybe_enqueue_synthesis_upgrade(cluster_id: str, s_row: dict | None) -> Non
             args=[cluster_id, None],
             kwargs={"fast_mode": False},
             countdown=10,
-            queue="fast-track",
+            queue="synthesis",
         )
         log.info("[cluster] JIT synthesis upgrade enqueued for %s", cluster_id)
     except Exception as e:

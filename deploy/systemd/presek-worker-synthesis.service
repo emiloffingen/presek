@@ -1,0 +1,36 @@
+[Unit]
+Description=Presek Celery worker (dedicated cluster synthesis / Gemma)
+After=network-online.target presek-fastapi-unified.service postgresql.service redis.service
+Wants=network-online.target
+PartOf=presek.target
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=emiloffingen
+Environment=PYTHONPATH=/home/emiloffingen/presek-runtime/current
+Environment=HF_HOME=/home/emiloffingen/presek-runtime/shared/huggingface
+Environment=HF_HUB_CACHE=/home/emiloffingen/presek-runtime/shared/huggingface/hub
+Environment=SENTENCE_TRANSFORMERS_HOME=/home/emiloffingen/presek-runtime/shared/huggingface/sentence_transformers
+WorkingDirectory=/home/emiloffingen/presek-runtime/current
+ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && set -a && source /home/emiloffingen/presek-runtime/shared/.env && set +a && exec "${PRESEK_WORKER_VENV:-${PRESEK_VENV:-/home/emiloffingen/presek-runtime/venv}}/bin/celery" -A core.celery_app worker --loglevel=info -n synthesis@%h --concurrency=1 --queues=synthesis --max-memory-per-child=350000'
+Restart=always
+RestartSec=5
+TimeoutStartSec=240
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=presek-worker-synthesis
+Nice=0
+CPUWeight=90
+MemoryHigh=3200M
+MemoryMax=4000M
+ProtectSystem=strict
+ProtectHome=read-only
+NoNewPrivileges=yes
+PrivateTmp=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+ReadWritePaths=/home/emiloffingen/presek-runtime/shared/logs /home/emiloffingen/presek-runtime/shared/backups /home/emiloffingen/presek-runtime/shared/static/generated /home/emiloffingen/presek-runtime/shared/static/uploads /home/emiloffingen/presek-runtime/shared/huggingface /home/emiloffingen/presek-runtime/shared/models
+
+[Install]
+WantedBy=presek.target

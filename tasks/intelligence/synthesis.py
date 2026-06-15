@@ -289,9 +289,16 @@ def _number_token_grounded_in_source(token, source_numbers, source_text_folded):
     return False
 
 
-def _is_fact_grounded_synthesis(synthesis_text: str, article_rows, lang: str = "sr", *, fast_mode: bool = False) -> bool:
+def _fact_grounding_diagnostics(
+    synthesis_text: str,
+    article_rows,
+    lang: str = "sr",
+    *,
+    fast_mode: bool = False,
+) -> dict:
+    """Return fact-grounding diagnostics for synthesis quality gates."""
     if not synthesis_text or not article_rows:
-        return True
+        return {"ok": True, "ungrounded_numbers": [], "ungrounded_scores": []}
 
     from core.limits import FACT_GROUNDING_MAX_UNGROUNDED, FACT_GROUNDING_MAX_UNGROUNDED_FAST
     from nlp.generation import _extract_number_tokens, _extract_sports_scores
@@ -313,25 +320,46 @@ def _is_fact_grounded_synthesis(synthesis_text: str, article_rows, lang: str = "
         and not _number_token_grounded_in_source(token, source_numbers, source_folded)
     ]
     max_ungrounded = FACT_GROUNDING_MAX_UNGROUNDED_FAST if fast_mode else FACT_GROUNDING_MAX_UNGROUNDED
-    if len(ungrounded_numbers) > max_ungrounded:
-        log.warning(
-            "[ai/fact_gate] Ungrounded numbers in synthesis: %s",
-            ", ".join(ungrounded_numbers[:4]),
-        )
-        return False
 
+    ungrounded_scores: list[str] = []
     if synth_scores:
         ungrounded_scores = [
             score
             for score in synth_scores
             if score not in source_scores and score.casefold() not in source_folded
         ]
-        max_ungrounded_scores = 1 if fast_mode else 0
-        if len(ungrounded_scores) > max_ungrounded_scores:
-            log.warning("[ai/fact_gate] Ungrounded sports scores in synthesis: %s", ", ".join(ungrounded_scores))
-            return False
 
-    return True
+    numbers_ok = len(ungrounded_numbers) <= max_ungrounded
+    max_ungrounded_scores = 1 if fast_mode else 0
+    scores_ok = len(ungrounded_scores) <= max_ungrounded_scores
+    return {
+        "ok": numbers_ok and scores_ok,
+        "ungrounded_numbers": ungrounded_numbers[:8],
+        "ungrounded_scores": ungrounded_scores[:4],
+        "max_ungrounded_numbers": max_ungrounded,
+        "lang": lang,
+    }
+
+
+def _is_fact_grounded_synthesis(synthesis_text: str, article_rows, lang: str = "sr", *, fast_mode: bool = False) -> bool:
+    diagnostics = _fact_grounding_diagnostics(
+        synthesis_text,
+        article_rows,
+        lang,
+        fast_mode=fast_mode,
+    )
+    if not diagnostics["ok"]:
+        if diagnostics["ungrounded_numbers"]:
+            log.warning(
+                "[ai/fact_gate] Ungrounded numbers in synthesis: %s",
+                ", ".join(diagnostics["ungrounded_numbers"][:4]),
+            )
+        if diagnostics["ungrounded_scores"]:
+            log.warning(
+                "[ai/fact_gate] Ungrounded sports scores in synthesis: %s",
+                ", ".join(diagnostics["ungrounded_scores"]),
+            )
+    return diagnostics["ok"]
 
 
 def _build_cluster_synthesis_prompt(article_rows, lang="sr", history_context="", legacy_summary="", source_comparison=""):
@@ -410,14 +438,15 @@ def _evaluate_synthesis_candidate(
         summary = "\n".join(str(s) for s in summary)
 
     if not summary or not generated_article:
-        return None, "partial_response"
+        return None, "partial_response", None
 
     comparison_text = f"{summary}\n{generated_article}"
-    if not _is_fact_grounded_synthesis(comparison_text, article_rows, lang, fast_mode=fast_mode):
-        return None, "fact_grounding_failed"
+    grounding = _fact_grounding_diagnostics(comparison_text, article_rows, lang, fast_mode=fast_mode)
+    if not grounding["ok"]:
+        return None, "fact_grounding_failed", grounding
 
     if not fast_mode and not _is_grounded_synthesis(comparison_text, current_context or legacy_summary):
-        return None, "hallucination_gate_failed"
+        return None, "hallucination_gate_failed", None
 
     key_facts = res_data.get("key_facts", [])
     article_score = _score_synthesis_quality(synthetic_headline, generated_article, key_facts, lang)
@@ -425,14 +454,34 @@ def _evaluate_synthesis_candidate(
     quality_score = round((article_score * 0.65) + (summary_score * 0.35), 3)
     threshold = synthesis_quality_threshold(provider, fast_mode=fast_mode)
     if threshold is not None and quality_score < threshold:
-        return None, "failed_quality_score"
+        return None, "failed_quality_score", None
 
     return {
         "quality_score": quality_score,
         "summary": summary,
         "generated_article": generated_article,
         "synthetic_headline": synthetic_headline,
-    }, None
+    }, None, None
+
+
+def _grounding_retry_suffix(lang: str, diagnostics: dict | None) -> str:
+    nums = (diagnostics or {}).get("ungrounded_numbers") or []
+    scores = (diagnostics or {}).get("ungrounded_scores") or []
+    hints: list[str] = []
+    if nums:
+        hints.append(", ".join(nums[:3]))
+    if scores:
+        hints.append(", ".join(scores[:2]))
+    hint = f" {'; '.join(hints)}." if hints else "."
+    if lang == "mk":
+        return (
+            "\n\nКРИТИЧНО: Користи САМО броеви, резултати и датуми што се појавуваат во изворите."
+            f" Не додавај непотврдени бројки{hint}"
+        )
+    return (
+        "\n\nKRITICNO: Koristi SAMO brojeve, rezultate i datume koji se pojavljuju u izvorima."
+        f" Ne dodaj nepotvrdene brojke{hint}"
+    )
 
 
 def _attempt_gemma_rescue(
@@ -475,7 +524,7 @@ def _attempt_gemma_rescue(
     except Exception:
         return None
 
-    evaluated, fail_reason = _evaluate_synthesis_candidate(
+    evaluated, fail_reason, grounding_diag = _evaluate_synthesis_candidate(
         res_data,
         provider="local",
         article_rows=article_rows,
@@ -485,7 +534,11 @@ def _attempt_gemma_rescue(
         legacy_summary=legacy_summary,
     )
     if not evaluated:
-        log.warning(f"[tasks/synthesis] Gemma rescue failed: {fail_reason}")
+        log.warning(
+            "[tasks/synthesis] Gemma rescue failed: %s (%s)",
+            fail_reason,
+            grounding_diag or {},
+        )
         return None
 
     return {
@@ -538,6 +591,7 @@ def _generate_synthesis_via_cascade(
 
     exclude_providers: list[str] = []
     last_fallback_reason = None
+    grounding_retried: set[str] = set()
     max_attempts = len(build_provider_fallback_order("synthesis", primary_provider))
 
     while len(exclude_providers) < max_attempts:
@@ -599,7 +653,7 @@ def _generate_synthesis_via_cascade(
                 exclude_providers.append(provider)
                 continue
 
-        evaluated, fail_reason = _evaluate_synthesis_candidate(
+        evaluated, fail_reason, grounding_diag = _evaluate_synthesis_candidate(
             res_data,
             provider=provider,
             article_rows=article_rows,
@@ -609,6 +663,55 @@ def _generate_synthesis_via_cascade(
             legacy_summary=legacy_summary,
         )
         if not evaluated:
+            if fail_reason == "fact_grounding_failed" and provider not in grounding_retried:
+                grounding_retried.add(provider)
+                log.warning(
+                    "[tasks/synthesis] Grounding retry for %s: %s",
+                    provider,
+                    grounding_diag or {},
+                )
+                retry_raw, retry_provider = _call_ai(
+                    full_prompt + _grounding_retry_suffix(lang, grounding_diag),
+                    system_prompt + " Use only numbers and scores present in the source articles.",
+                    json_mode=True,
+                    task_type="synthesis",
+                    max_tokens=max_tokens,
+                    lang=lang,
+                    provider_override=provider,
+                    exclude_providers=[p for p in exclude_providers if p != provider],
+                )
+                if retry_raw and retry_provider:
+                    try:
+                        retry_data = clean_json_response(retry_raw)
+                        if isinstance(retry_data, dict):
+                            retry_evaluated, retry_fail, _retry_diag = _evaluate_synthesis_candidate(
+                                retry_data,
+                                provider=retry_provider,
+                                article_rows=article_rows,
+                                lang=lang,
+                                fast_mode=fast_mode,
+                                current_context=current_context,
+                                legacy_summary=legacy_summary,
+                            )
+                            if retry_evaluated:
+                                return {
+                                    "status": "success",
+                                    "provider": retry_provider,
+                                    "model": _resolve_generation_model(retry_provider),
+                                    "fallback_reason": "grounding_retry",
+                                    "res_data": retry_data,
+                                    "quality_score": retry_evaluated["quality_score"],
+                                    "raw": retry_raw,
+                                    "cascade_depth": len(exclude_providers) + 1,
+                                }
+                            last_fallback_reason = retry_fail
+                    except Exception as retry_exc:
+                        log.warning(
+                            "[tasks/synthesis] Grounding retry parse failed for %s: %s",
+                            provider,
+                            retry_exc,
+                        )
+
             log.warning(f"[tasks/synthesis] Gate failed for provider {provider}: {fail_reason}")
             last_fallback_reason = fail_reason
             exclude_providers.append(provider)

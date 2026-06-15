@@ -77,9 +77,10 @@ def test_route_cluster_medium_complexity_local_model(monkeypatch):
     with _router_env(
         local_available=True,
         LOCAL_MODEL_PATH="/path/to/model",
+        SYNTHESIS_PROFILE="balanced",
         LOCAL_SYNTHESIS_PREFER_LOCAL="true",
     ):
-        assert SmartModelRouter.route_cluster(articles) == "mistral_small"
+        assert SmartModelRouter.route_cluster(articles) == "local"
 
 
 def test_route_cluster_high_complexity_large_cluster():
@@ -173,7 +174,7 @@ def test_route_cluster_upgrades_small_when_quality_is_low_on_weighted_story():
         assert SmartModelRouter.route_cluster(articles) == "mistral_large"
 
 
-def test_route_cluster_avoids_local_for_multi_source_clusters(monkeypatch):
+def test_route_cluster_quality_profile_avoids_local_for_multi_source_clusters(monkeypatch):
     articles = [
         {"title": "Vest 1", "description": "Detalji."},
         {"title": "Vest 2", "description": "Detalji."},
@@ -185,6 +186,7 @@ def test_route_cluster_avoids_local_for_multi_source_clusters(monkeypatch):
         LOCAL_MODEL_PATH="/path/to/model",
         LOCAL_SYNTHESIS_HIGH_COMPLEXITY_REMOTE="false",
         LOCAL_SYNTHESIS_PREFER_LOCAL="true",
+        SYNTHESIS_PROFILE="quality",
     ):
         assert SmartModelRouter.route_cluster(articles) == "mistral_small"
 

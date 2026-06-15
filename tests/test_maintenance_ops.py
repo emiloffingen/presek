@@ -64,24 +64,30 @@ class TestUpgradeStuckFastSyntheses:
 
 class TestRefreshFallbackSyntheses:
     def test_skips_when_backlog_full(self):
-        with patch("tasks.intelligence.intelligence_batches_deferred", return_value=True):
+        with patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=True):
             result = refresh_fallback_syntheses_task()
-        assert result == {"skipped": True, "reason": "backlog_full"}
+        assert result == {"skipped": True, "reason": "synthesis_backlog"}
 
     def test_enqueues_fallback_clusters(self):
         with (
-            patch("tasks.intelligence.intelligence_batches_deferred", return_value=False),
+            patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=False),
+            patch("tasks.maintenance._collect_homepage_cluster_ids", return_value=["cluster-a"]),
             patch("tasks.maintenance.db") as mock_db,
             patch("tasks.intelligence.synthesize_cluster_task") as mock_task,
+            patch("tasks.maintenance._effective_synthesis_refresh_hourly_cap", return_value=120),
         ):
             mock_db.execute.return_value = [
-                {"cluster_id": "cluster-a"},
-                {"cluster_id": "cluster-b"},
+                {"cluster_id": "cluster-a", "latest_at": "2026-06-15"},
+                {"cluster_id": "cluster-b", "latest_at": "2026-06-14"},
             ]
             result = refresh_fallback_syntheses_task(limit=5)
 
-        assert result == {"enqueued": 2, "candidates": 2}
+        assert result["enqueued"] == 2
+        assert result["homepage_enqueued"] == 1
         assert mock_task.apply_async.call_count == 2
+        first_call = mock_task.apply_async.call_args_list[0]
+        assert first_call.args[0] == ("cluster-a", None)
+        assert first_call.kwargs["queue"] == "synthesis"
 
 
 class TestEnsureIngestionFreshness:
@@ -113,16 +119,16 @@ class TestEnsureIngestionFreshness:
 
 class TestCatchUpClusterSyntheses:
     def test_skips_when_backlog_full(self):
-        with patch("tasks.intelligence.intelligence_batches_deferred", return_value=True):
+        with patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=True):
             result = catch_up_cluster_syntheses_task()
-        assert result == {"skipped": True, "reason": "backlog_full"}
+        assert result == {"skipped": True, "reason": "synthesis_backlog"}
 
 
 class TestPrioritizeHomepageSyntheses:
     def test_skips_when_backlog_full(self):
-        with patch("tasks.intelligence.intelligence_batches_deferred", return_value=True):
+        with patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=True):
             result = prioritize_homepage_syntheses_task()
-        assert result == {"skipped": True, "reason": "backlog_full"}
+        assert result == {"skipped": True, "reason": "synthesis_backlog"}
 
     def test_enqueues_stale_homepage_clusters(self):
         payload = {
@@ -136,8 +142,8 @@ class TestPrioritizeHomepageSyntheses:
             ]
         }
         with (
-            patch("tasks.intelligence.intelligence_batches_deferred", return_value=False),
-            patch("tasks.utils.get_celery_queue_depth", return_value=100),
+            patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=False),
+            patch("tasks.maintenance._synthesis_queue_depth", return_value=5),
             patch("tasks.utils.safe_async_run", return_value=payload),
             patch("tasks.intelligence.synthesize_cluster_task") as mock_task,
         ):
@@ -145,6 +151,7 @@ class TestPrioritizeHomepageSyntheses:
 
         assert result["enqueued"] == 1
         mock_task.apply_async.assert_called_once()
+        assert mock_task.apply_async.call_args.kwargs["queue"] == "synthesis"
 
     def test_enqueues_provisional_homepage_clusters(self):
         payload = {
@@ -159,8 +166,8 @@ class TestPrioritizeHomepageSyntheses:
             ]
         }
         with (
-            patch("tasks.intelligence.intelligence_batches_deferred", return_value=False),
-            patch("tasks.utils.get_celery_queue_depth", return_value=100),
+            patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=False),
+            patch("tasks.maintenance._synthesis_queue_depth", return_value=5),
             patch("tasks.utils.safe_async_run", return_value=payload),
             patch("tasks.intelligence.synthesize_cluster_task") as mock_task,
         ):
@@ -172,13 +179,13 @@ class TestPrioritizeHomepageSyntheses:
 
 class TestRefreshLowScoreSyntheses:
     def test_skips_when_backlog_full(self):
-        with patch("tasks.intelligence.intelligence_batches_deferred", return_value=True):
+        with patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=True):
             result = refresh_low_score_syntheses_task()
-        assert result == {"skipped": True, "reason": "backlog_full"}
+        assert result == {"skipped": True, "reason": "synthesis_backlog"}
 
     def test_enqueues_low_score_clusters(self):
         with (
-            patch("tasks.intelligence.intelligence_batches_deferred", return_value=False),
+            patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=False),
             patch("tasks.maintenance.db") as mock_db,
             patch("tasks.intelligence.synthesize_cluster_task") as mock_task,
         ):
