@@ -1,6 +1,5 @@
 ---
 import NewsCard from '../NewsCard.astro';
-import HomeFeedFilterIsland from './HomeFeedFilterIsland.tsx';
 import TinyAdzInlinedAd from '../TinyAdzInlinedAd.astro';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import type { UnifiedFeedItem } from '../../lib/unifiedFeed';
@@ -17,7 +16,7 @@ const hostHeader = Astro.request?.headers.get('host');
 const lang = (propLang === 'mk' || propLang === 'sr' ? propLang : getLangFromUrl(Astro.url, hostHeader)) as 'sr' | 'mk';
 const t = useTranslations(lang);
 const counts = countFeedBuckets(items);
-const feedSummaryItems = [
+const filterItems = [
     { key: 'all', label: t('home.feed_summary_total'), value: counts.all },
     { key: 'developing', label: t('home.feed_summary_developing'), value: counts.developing },
     { key: 'global', label: t('home.feed_summary_global'), value: counts.global },
@@ -40,16 +39,21 @@ function getBentoSpan(cluster: UnifiedFeedItem['cluster']) {
                 <p class="home-unified-feed-kicker">{t('home.feed_kicker')}</p>
                 <h2 class="home-unified-feed-title">{t('home.feed_title')}</h2>
                 <p class="home-unified-feed-note">{t('home.feed_note')}</p>
-                <dl class="home-unified-feed-summary" aria-label={t('home.feed_summary_label')}>
-                    {feedSummaryItems.map((item) => (
-                        <div class:list={['home-unified-feed-summary-item', `is-${item.key}`]}>
-                            <dt>{item.label}</dt>
-                            <dd>{item.value}</dd>
-                        </div>
+                <div class="home-feed-filter" role="tablist" aria-label={t('home.feed_filter_label')} data-home-feed-filter>
+                    {filterItems.map((item) => (
+                        <button
+                            type="button"
+                            role="tab"
+                            class:list={['home-feed-filter-btn', `is-${item.key}`, { 'is-active': item.key === 'all' }]}
+                            data-feed-filter={item.key}
+                            aria-selected={item.key === 'all' ? 'true' : 'false'}
+                        >
+                            <span>{item.label}</span>
+                            <span class="home-feed-filter-count">{item.value}</span>
+                        </button>
                     ))}
-                </dl>
+                </div>
             </div>
-            <HomeFeedFilterIsland client:idle lang={lang} counts={counts} />
         </div>
 
         <div class="home-unified-feed-grid">
@@ -90,3 +94,39 @@ function getBentoSpan(cluster: UnifiedFeedItem['cluster']) {
         </div>
     </section>
 )}
+
+<script is:inline>
+    (function bindHomeFeedFilter() {
+        const applyFilter = (root, filter) => {
+            const active = filter || 'all';
+            root.setAttribute('data-active-feed-filter', active);
+            root.querySelectorAll('[data-feed-filter]').forEach((button) => {
+                const selected = button.getAttribute('data-feed-filter') === active;
+                button.classList.toggle('is-active', selected);
+                button.setAttribute('aria-selected', selected ? 'true' : 'false');
+            });
+            root.querySelectorAll('[data-feed-bucket]').forEach((item) => {
+                const bucket = item.getAttribute('data-feed-bucket');
+                const visible = active === 'all' || bucket === active;
+                item.classList.toggle('is-filtered-out', !visible);
+                item.setAttribute('aria-hidden', visible ? 'false' : 'true');
+            });
+        };
+
+        const bind = () => {
+            document.querySelectorAll('[data-home-unified-feed]').forEach((root) => {
+                const filterBar = root.querySelector('[data-home-feed-filter]');
+                if (!filterBar || filterBar.dataset.bound) return;
+                filterBar.dataset.bound = '1';
+                filterBar.querySelectorAll('[data-feed-filter]').forEach((button) => {
+                    button.addEventListener('click', () => {
+                        applyFilter(root, button.getAttribute('data-feed-filter'));
+                    });
+                });
+            });
+        };
+
+        bind();
+        document.addEventListener('astro:page-load', bind);
+    })();
+</script>

@@ -1,5 +1,10 @@
 # Presek Changelog
 
+## v8.3.3 (2026-06-15)
+
+### Fix
+- Homepage feed filter chips (Vkupno / Vo razvoj / …) are now real buttons with inline JS instead of a non-interactive summary + React island
+
 ## v8.3.2 (2026-06-15)
 
 ### Fix
