@@ -78,6 +78,7 @@ export type HomepageViewModel = {
     radarTeaser: string;
     consensusTeaser: string;
     analizaNavItems: Array<{ target: string; kicker: string; label: string; count: number }>;
+    getTimeStr: (dateStr: string) => string;
     analysisOverviewItems: Array<{ label: string; value: string; note: string }>;
     showAnalysisLayers: boolean;
 };
@@ -399,6 +400,7 @@ export function buildHomepageViewModel(options: {
         analizaNavItems,
         analysisOverviewItems,
         showAnalysisLayers,
+        getTimeStr,
     };
 }
 

@@ -53,4 +53,6 @@ test('buildHomepageViewModel maps fixture into analysis nav', () => {
   assert.ok(vm.analizaNavItems.length >= 2);
   assert.equal(vm.pluralismPct, 37);
   assert.equal(vm.showAnalysisLayers, true);
+  assert.equal(typeof vm.getTimeStr, 'function');
+  assert.ok(vm.getTimeStr('2026-06-16T12:00:00Z').length > 0);
 });
