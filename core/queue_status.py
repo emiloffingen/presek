@@ -3,9 +3,13 @@
 from core.health import MONITORED_CELERY_QUEUES
 from core.limits import (
     CELERY_QUEUE_WARN_DEPTH,
+    FAST_TRACK_QUEUE_DEFER_LIMIT,
+    FAST_TRACK_QUEUE_SOFT_LIMIT,
     INTEL_QUEUE_FULL_DEFER_LIMIT,
     INTEL_QUEUE_SECONDARY_DEFER_LIMIT,
     INTEL_QUEUE_SOFT_DEFER_LIMIT,
+    MAINTENANCE_QUEUE_DEFER_LIMIT,
+    PIPELINE_TOTAL_DEFER_DEPTH,
 )
 from utils import redis_client
 
@@ -37,18 +41,52 @@ def get_intel_backlog_status(intel_depth: int | None = None) -> str:
     return "ok"
 
 
+def get_total_queue_depth() -> int:
+    return int(sum(get_all_queue_depths().values()))
+
+
+def get_fast_track_backlog_status(fast_track_depth: int | None = None) -> str:
+    depth = int(get_celery_queue_depth("fast-track") if fast_track_depth is None else fast_track_depth)
+    if depth >= FAST_TRACK_QUEUE_DEFER_LIMIT:
+        return "backlogged"
+    if depth >= FAST_TRACK_QUEUE_SOFT_LIMIT:
+        return "busy"
+    return "ok"
+
+
+def get_pipeline_backlog_status(total_depth: int | None = None) -> str:
+    depth = int(get_total_queue_depth() if total_depth is None else total_depth)
+    if depth >= PIPELINE_TOTAL_DEFER_DEPTH:
+        return "critical"
+    if depth >= CELERY_QUEUE_WARN_DEPTH * 4:
+        return "backlogged"
+    if depth >= CELERY_QUEUE_WARN_DEPTH:
+        return "busy"
+    return "ok"
+
+
 def queue_status_payload() -> dict:
     depths = get_all_queue_depths()
     intel_depth = depths.get("intel-heavy", 0)
+    fast_track_depth = depths.get("fast-track", 0)
+    total_depth = int(sum(depths.values()))
     return {
         "depths": depths,
+        "total_depth": total_depth,
         "intel_heavy_depth": intel_depth,
+        "fast_track_depth": fast_track_depth,
         "intel_status": get_intel_backlog_status(intel_depth),
+        "fast_track_status": get_fast_track_backlog_status(fast_track_depth),
+        "pipeline_status": get_pipeline_backlog_status(total_depth),
         "thresholds": {
             "soft": INTEL_QUEUE_SOFT_DEFER_LIMIT,
             "secondary": INTEL_QUEUE_SECONDARY_DEFER_LIMIT,
             "full": INTEL_QUEUE_FULL_DEFER_LIMIT,
             "warn": CELERY_QUEUE_WARN_DEPTH,
+            "fast_track_soft": FAST_TRACK_QUEUE_SOFT_LIMIT,
+            "fast_track_defer": FAST_TRACK_QUEUE_DEFER_LIMIT,
+            "maintenance_defer": MAINTENANCE_QUEUE_DEFER_LIMIT,
+            "pipeline_total_defer": PIPELINE_TOTAL_DEFER_DEPTH,
         },
     }
 
@@ -57,10 +95,19 @@ def reader_pipeline_status() -> dict:
     """Public-safe pipeline snapshot for reader-facing stale badges and /status."""
     payload = queue_status_payload()
     intel_depth = int(payload.get("intel_heavy_depth") or 0)
+    fast_track_depth = int(payload.get("fast_track_depth") or 0)
+    total_depth = int(payload.get("total_depth") or 0)
+    pipeline_status = payload.get("pipeline_status") or "ok"
     return {
-        "busy": intel_depth >= CELERY_QUEUE_WARN_DEPTH,
+        "busy": pipeline_status in {"busy", "backlogged", "critical"}
+        or intel_depth >= CELERY_QUEUE_WARN_DEPTH
+        or fast_track_depth >= FAST_TRACK_QUEUE_SOFT_LIMIT,
         "intel_status": payload.get("intel_status") or "ok",
+        "fast_track_status": payload.get("fast_track_status") or "ok",
+        "pipeline_status": pipeline_status,
         "intel_heavy_depth": intel_depth,
+        "fast_track_depth": fast_track_depth,
+        "total_queue_depth": total_depth,
         "warn_threshold": CELERY_QUEUE_WARN_DEPTH,
         "thresholds": payload.get("thresholds") or {},
     }

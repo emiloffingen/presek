@@ -36,10 +36,14 @@ class TestCacheInvalidation:
 
 
 class TestAutoSummarizeOptimization:
+    @patch("tasks.utils.synthesis_dispatch_deferred", return_value=False)
+    @patch("tasks.utils.pipeline_backpressure_active", return_value=False)
     @patch("tasks.intelligence.synthesize_cluster_task.apply_async")
     @patch("tasks.utils.get_celery_queue_depth", return_value=0)
     @patch("core.database.db_manager")
-    def test_auto_summarize_skips_fresh_summaries_and_backfill(self, mock_db, _mock_depth, mock_apply_async):
+    def test_auto_summarize_skips_fresh_summaries_and_backfill(
+        self, mock_db, _mock_depth, mock_apply_async, _mock_backpressure, _mock_synthesis_deferred
+    ):
         from core.ai_engine import auto_summarize_top_clusters
 
         mock_db.execute.side_effect = [

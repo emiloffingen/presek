@@ -167,6 +167,14 @@ celery_app.conf.update(
             "task": "tasks.maintenance.prune_intel_queue_task",
             "schedule": 600.0,  # Every 10 minutes
         },
+        "prune-fast-track-queue": {
+            "task": "tasks.maintenance.prune_fast_track_queue_task",
+            "schedule": 600.0,
+        },
+        "prune-maintenance-queue": {
+            "task": "tasks.maintenance.prune_maintenance_queue_task",
+            "schedule": 900.0,
+        },
         "refresh-synthesis-quality": {
             "task": "tasks.maintenance.refresh_synthesis_quality_task",
             "schedule": 900.0,  # Every 15 minutes

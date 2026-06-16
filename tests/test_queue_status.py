@@ -42,6 +42,6 @@ class TestQueueStatus:
         assert payload["intel_heavy_depth"] == CELERY_QUEUE_WARN_DEPTH
 
     def test_reader_pipeline_status_ok_below_warn_threshold(self):
-        with patch("core.queue_status.redis_client.llen", return_value=CELERY_QUEUE_WARN_DEPTH - 1):
+        with patch("core.queue_status.redis_client.llen", return_value=10):
             payload = reader_pipeline_status()
         assert payload["busy"] is False

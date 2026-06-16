@@ -11,14 +11,14 @@ from tasks.intelligence import (
 
 class TestHistoricalSummaryBackfill:
     def test_skips_when_backlog_high(self):
-        with patch("tasks.intelligence._queue.intelligence_secondary_deferred", return_value=True):
+        with patch("tasks.intelligence.backfill.intelligence_secondary_deferred", return_value=True):
             result = backfill_historical_article_summaries_task()
         assert result == {"skipped": True, "reason": "backlog_high"}
 
     def test_selects_oldest_unsummarized_without_cursor_skip(self):
         mock_redis = patch("tasks.intelligence.backfill.redis_client")
         with (
-            patch("tasks.intelligence._queue.intelligence_secondary_deferred", return_value=False),
+            patch("tasks.intelligence.backfill.intelligence_secondary_deferred", return_value=False),
             patch("core.llm_router._local_model_available", return_value=True),
             patch("tasks.intelligence.backfill.db") as mock_db,
             patch("tasks.intelligence.backfill._dispatch_batched") as mock_dispatch,
@@ -36,7 +36,7 @@ class TestHistoricalSummaryBackfill:
 
     def test_runs_when_queue_below_secondary_defer_limit(self):
         with (
-            patch("tasks.intelligence._queue.intelligence_secondary_deferred", return_value=False),
+            patch("tasks.intelligence.backfill.intelligence_secondary_deferred", return_value=False),
             patch("core.llm_router._local_model_available", return_value=True),
             patch("tasks.intelligence.backfill.db") as mock_db,
             patch("tasks.intelligence.backfill._dispatch_batched") as mock_dispatch,
@@ -49,7 +49,7 @@ class TestHistoricalSummaryBackfill:
 
     def test_scales_dispatch_limit_with_queue_headroom(self):
         with (
-            patch("tasks.intelligence._queue.intelligence_secondary_deferred", return_value=False),
+            patch("tasks.intelligence.backfill.intelligence_secondary_deferred", return_value=False),
             patch("tasks.intelligence.backfill.get_celery_queue_depth", return_value=92),
             patch("core.llm_router._local_model_available", return_value=True),
             patch("tasks.intelligence.backfill.db") as mock_db,
@@ -68,7 +68,7 @@ class TestHistoricalSummaryBackfill:
 
     def test_scheduler_runs_inline_with_lock(self):
         with (
-            patch("tasks.intelligence._queue.intelligence_secondary_deferred", return_value=False),
+            patch("tasks.intelligence.backfill.intelligence_secondary_deferred", return_value=False),
             patch("core.llm_router._local_model_available", return_value=True),
             patch("tasks.intelligence.backfill.acquire_task_lock", return_value=True) as mock_lock,
             patch("tasks.intelligence.backfill.release_task_lock") as mock_release,

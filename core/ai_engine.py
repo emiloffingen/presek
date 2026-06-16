@@ -1058,9 +1058,13 @@ def auto_summarize_top_clusters(target_cluster_ids: list[str] = None):
             AUTO_SUMMARIZE_TOP_N,
         )
         from core.database import db_manager as db
-        from tasks.utils import get_celery_queue_depth
+        from tasks.utils import get_celery_queue_depth, pipeline_backpressure_active, synthesis_dispatch_deferred
 
-        if not target_cluster_ids and get_celery_queue_depth() >= 100:
+        if not target_cluster_ids and (
+            pipeline_backpressure_active()
+            or synthesis_dispatch_deferred()
+            or get_celery_queue_depth() >= 100
+        ):
             log.info("[ai/auto_summarize] Skipping cycle while celery queue backlog is high.")
             return
 

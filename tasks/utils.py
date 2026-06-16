@@ -111,6 +111,8 @@ def get_celery_queue_depth(queue_name="celery"):
 
 
 INTEL_QUEUE_NAME = "intel-heavy"
+FAST_TRACK_QUEUE_NAME = "fast-track"
+MAINTENANCE_QUEUE_NAME = "maintenance"
 INGESTION_QUEUE_NAME = "ingestion"
 INGESTION_CRAWL_QUEUE_NAME = "ingestion-crawl"
 INGESTION_TASK_NAME = "tasks.ingestion_task.run_ingestion"
@@ -129,6 +131,26 @@ INTEL_PRIORITY_TASKS = frozenset(
         "tasks.intelligence.synthesize_cluster_task",
         "tasks.intelligence.synthesize_urgent_task",
         "tasks.intelligence.upgrade_fast_synthesis_task",
+    }
+)
+FAST_TRACK_PRIORITY_TASKS = frozenset(
+    {
+        "tasks.intelligence.synthesize_urgent_task",
+        "tasks.delivery.briefing.send_profile_breaking_alerts_task",
+    }
+)
+FAST_TRACK_MISROUTED_TASKS = frozenset(
+    {
+        "tasks.intelligence.synthesize_cluster_task",
+        "tasks.intelligence.auto_summarize_task",
+    }
+)
+MAINTENANCE_HEAVY_TASKS = frozenset(
+    {
+        "tasks.maintenance.boost_homepage_cluster_supply_task",
+        "tasks.intelligence.refresh_cluster_centroid_task",
+        "tasks.intelligence.recluster_recent_articles_task",
+        "tasks.intelligence.repair_split_clusters_task",
     }
 )
 INTEL_DEFERRABLE_TASKS = frozenset(
@@ -170,6 +192,58 @@ def _parse_crawl_article_id(raw_message: str) -> int | None:
     argsrepr = str((body.get("headers") or {}).get("argsrepr") or "")
     match = re.match(r"\((\d+),", argsrepr)
     return int(match.group(1)) if match else None
+
+
+def get_total_queue_depth() -> int:
+    from core.queue_status import get_total_queue_depth as _get_total_depth
+
+    return int(_get_total_depth() or 0)
+
+
+def fast_track_dispatches_deferred() -> bool:
+    from core.limits import FAST_TRACK_QUEUE_DEFER_LIMIT
+
+    return get_celery_queue_depth(FAST_TRACK_QUEUE_NAME) >= FAST_TRACK_QUEUE_DEFER_LIMIT
+
+
+def maintenance_dispatches_deferred() -> bool:
+    from core.limits import MAINTENANCE_QUEUE_DEFER_LIMIT
+
+    return get_celery_queue_depth(MAINTENANCE_QUEUE_NAME) >= MAINTENANCE_QUEUE_DEFER_LIMIT
+
+
+def pipeline_backpressure_active() -> bool:
+    from core.limits import (
+        CELERY_QUEUE_CRITICAL_DEPTH,
+        FAST_TRACK_QUEUE_DEFER_LIMIT,
+        INTEL_QUEUE_SECONDARY_DEFER_LIMIT,
+        MAINTENANCE_QUEUE_DEFER_LIMIT,
+        PIPELINE_TOTAL_DEFER_DEPTH,
+    )
+
+    if get_total_queue_depth() >= PIPELINE_TOTAL_DEFER_DEPTH:
+        return True
+    if get_celery_queue_depth(FAST_TRACK_QUEUE_NAME) >= FAST_TRACK_QUEUE_DEFER_LIMIT:
+        return True
+    if get_celery_queue_depth(INTEL_QUEUE_NAME) >= INTEL_QUEUE_SECONDARY_DEFER_LIMIT:
+        return True
+    if get_celery_queue_depth(MAINTENANCE_QUEUE_NAME) >= MAINTENANCE_QUEUE_DEFER_LIMIT:
+        return True
+    if get_celery_queue_depth() >= CELERY_QUEUE_CRITICAL_DEPTH:
+        return True
+    return False
+
+
+def synthesis_dispatch_deferred() -> bool:
+    from core.limits import SYNTHESIS_QUEUE_DEFER_LIMIT
+
+    if get_celery_queue_depth("synthesis") >= SYNTHESIS_QUEUE_DEFER_LIMIT:
+        return True
+    if fast_track_dispatches_deferred():
+        return True
+    if pipeline_backpressure_active():
+        return True
+    return False
 
 
 def crawl_dispatches_deferred() -> bool:
@@ -341,6 +415,118 @@ def prune_crawl_queue(*, dry_run: bool = False) -> dict:
         pipe.rpush(INGESTION_CRAWL_QUEUE_NAME, *kept)
     pipe.execute()
     result["depth_after"] = get_celery_queue_depth(INGESTION_CRAWL_QUEUE_NAME)
+    return result
+
+
+def reprioritize_fast_track_queue(*, groom_threshold: int = 60, dry_run: bool = False) -> dict:
+    """Drop misrouted synthesis work from fast-track while keeping urgent tasks."""
+    from core.limits import FAST_TRACK_QUEUE_GROOM_DEPTH
+
+    groom_threshold = int(groom_threshold or FAST_TRACK_QUEUE_GROOM_DEPTH)
+    depth_before = get_celery_queue_depth(FAST_TRACK_QUEUE_NAME)
+    if depth_before < groom_threshold:
+        return {
+            "skipped": True,
+            "reason": "below_groom_threshold",
+            "depth_before": depth_before,
+            "groom_threshold": groom_threshold,
+        }
+
+    raw_items = redis_client.lrange(FAST_TRACK_QUEUE_NAME, 0, -1) or []
+    priority_items = []
+    kept_other = []
+    removed = 0
+    seen_auto_summarize = False
+
+    for raw in raw_items:
+        if isinstance(raw, bytes):
+            raw = raw.decode("utf-8")
+        task_name = _parse_queue_task_name(raw)
+        if task_name in FAST_TRACK_PRIORITY_TASKS:
+            priority_items.append(raw)
+            continue
+        if task_name == "tasks.intelligence.auto_summarize_task":
+            if seen_auto_summarize:
+                removed += 1
+                continue
+            seen_auto_summarize = True
+            kept_other.append(raw)
+            continue
+        if task_name in FAST_TRACK_MISROUTED_TASKS:
+            removed += 1
+            continue
+        kept_other.append(raw)
+
+    rebuilt = priority_items + kept_other
+    result = {
+        "skipped": False,
+        "depth_before": depth_before,
+        "depth_after": len(rebuilt),
+        "removed": removed,
+        "priority_count": len(priority_items),
+        "kept_other_count": len(kept_other),
+        "dry_run": dry_run,
+        "groom_threshold": groom_threshold,
+    }
+    if dry_run:
+        return result
+
+    pipe = redis_client.pipeline()
+    pipe.delete(FAST_TRACK_QUEUE_NAME)
+    if rebuilt:
+        pipe.rpush(FAST_TRACK_QUEUE_NAME, *rebuilt)
+    pipe.execute()
+    result["depth_after"] = get_celery_queue_depth(FAST_TRACK_QUEUE_NAME)
+    return result
+
+
+def reprioritize_maintenance_queue(*, groom_threshold: int = 80, dry_run: bool = False) -> dict:
+    """Drop duplicate heavy maintenance work when the maintenance queue is congested."""
+    from core.limits import MAINTENANCE_QUEUE_SOFT_LIMIT
+
+    groom_threshold = int(groom_threshold or MAINTENANCE_QUEUE_SOFT_LIMIT)
+    depth_before = get_celery_queue_depth(MAINTENANCE_QUEUE_NAME)
+    if depth_before < groom_threshold:
+        return {
+            "skipped": True,
+            "reason": "below_groom_threshold",
+            "depth_before": depth_before,
+            "groom_threshold": groom_threshold,
+        }
+
+    raw_items = redis_client.lrange(MAINTENANCE_QUEUE_NAME, 0, -1) or []
+    kept = []
+    removed = 0
+    seen_heavy: set[str] = set()
+
+    for raw in raw_items:
+        if isinstance(raw, bytes):
+            raw = raw.decode("utf-8")
+        task_name = _parse_queue_task_name(raw)
+        if task_name in MAINTENANCE_HEAVY_TASKS:
+            if task_name in seen_heavy:
+                removed += 1
+                continue
+            seen_heavy.add(task_name)
+        kept.append(raw)
+
+    result = {
+        "skipped": False,
+        "depth_before": depth_before,
+        "depth_after": len(kept),
+        "removed": removed,
+        "dry_run": dry_run,
+        "groom_threshold": groom_threshold,
+    }
+    if dry_run:
+        return result
+
+    pipe = redis_client.pipeline()
+    pipe.delete(MAINTENANCE_QUEUE_NAME)
+    if kept:
+        pipe.rpush(MAINTENANCE_QUEUE_NAME, *kept)
+    pipe.execute()
+    result["depth_after"] = get_celery_queue_depth(MAINTENANCE_QUEUE_NAME)
     return result
 
 

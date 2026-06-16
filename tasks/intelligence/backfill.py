@@ -221,6 +221,8 @@ def backfill_historical_article_summaries_task(limit=None):
         log.info("[tasks] Historical summary backfill complete.")
         return {"enqueued": 0, "complete": True}
 
+    from tasks.intelligence.summarization import summarize_articles_local_batch_task
+
     _dispatch_batched(summarize_articles_local_batch_task, article_ids)
     high_water = max(article_ids)
     try:

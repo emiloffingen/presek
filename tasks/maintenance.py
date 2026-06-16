@@ -28,9 +28,9 @@ def _synthesis_queue_depth() -> int:
 
 
 def _synthesis_dispatch_deferred() -> bool:
-    from core.limits import SYNTHESIS_QUEUE_DEFER_LIMIT
+    from tasks.utils import synthesis_dispatch_deferred
 
-    return _synthesis_queue_depth() >= SYNTHESIS_QUEUE_DEFER_LIMIT
+    return synthesis_dispatch_deferred()
 
 
 def _effective_synthesis_refresh_hourly_cap() -> int:
@@ -122,6 +122,46 @@ def run_prune_db():
         asyncio.run(image_service.cleanup_storage(active_art_ids))
     except Exception as e:
         log.error(f"[tasks] cleanup_storage failed: {e}", exc_info=True)
+
+
+@celery_app.task
+def prune_fast_track_queue_task(dry_run=False):
+    """Drop misrouted synthesis work from the fast-track queue."""
+    try:
+        from tasks.utils import reprioritize_fast_track_queue
+
+        result = reprioritize_fast_track_queue(dry_run=bool(dry_run))
+        if result.get("removed"):
+            log.info(
+                "[maintenance] Pruned fast-track queue: removed=%s depth=%s->%s",
+                result["removed"],
+                result.get("depth_before"),
+                result.get("depth_after"),
+            )
+        return result
+    except Exception as e:
+        log.error(f"[maintenance] prune_fast_track_queue failed: {e}", exc_info=True)
+        raise
+
+
+@celery_app.task
+def prune_maintenance_queue_task(dry_run=False):
+    """Drop duplicate heavy maintenance dispatches when the queue is congested."""
+    try:
+        from tasks.utils import reprioritize_maintenance_queue
+
+        result = reprioritize_maintenance_queue(dry_run=bool(dry_run))
+        if result.get("removed"):
+            log.info(
+                "[maintenance] Pruned maintenance queue: removed=%s depth=%s->%s",
+                result["removed"],
+                result.get("depth_before"),
+                result.get("depth_after"),
+            )
+        return result
+    except Exception as e:
+        log.error(f"[maintenance] prune_maintenance_queue failed: {e}", exc_info=True)
+        raise
 
 
 @celery_app.task
@@ -277,10 +317,10 @@ def catch_up_recent_summaries_task(hours=72, limit=400):
         intelligence_batches_deferred,
         summarize_articles_local_batch_task,
     )
-    from tasks.utils import get_celery_queue_depth
+    from tasks.utils import get_celery_queue_depth, pipeline_backpressure_active
 
-    if intelligence_batches_deferred():
-        log.info("[maintenance] Skipping recent summary catch-up while intel-heavy backlog is full.")
+    if pipeline_backpressure_active() or intelligence_batches_deferred():
+        log.info("[maintenance] Skipping recent summary catch-up while pipeline backlog is high.")
         return {"skipped": True, "reason": "backlog_full"}
 
     depth = get_celery_queue_depth("intel-heavy")
@@ -507,25 +547,43 @@ def prioritize_homepage_syntheses_task(limit=12):
     return {"enqueued": enqueued, "candidates": len(targets), "synthesis_depth": synthesis_depth}
 
 
-@celery_app.task
+@celery_app.task(soft_time_limit=120, time_limit=180)
 def boost_homepage_cluster_supply_task(hours=36, recluster_limit=600, repair_limit=800):
-    """Recluster and merge split clusters when intel queue has headroom."""
+    """Queue recluster/repair work for homepage supply without blocking maintenance workers."""
+    from core.limits import INTEL_QUEUE_SECONDARY_DEFER_LIMIT
     from tasks.intelligence.cluster_ops import recluster_recent_articles_task, repair_split_clusters_task
     from tasks.intelligence import intelligence_batches_deferred
-    from tasks.utils import get_celery_queue_depth
+    from tasks.utils import acquire_task_lock, get_celery_queue_depth, pipeline_backpressure_active
 
-    if intelligence_batches_deferred():
-        log.info("[maintenance] Skipping homepage cluster supply boost while intel-heavy backlog is full.")
+    if pipeline_backpressure_active() or intelligence_batches_deferred():
+        log.info("[maintenance] Skipping homepage cluster supply boost while pipeline backlog is high.")
         return {"skipped": True, "reason": "backlog_full"}
 
-    depth = get_celery_queue_depth("intel-heavy")
-    recluster_result = recluster_recent_articles_task(hours=int(hours), limit=int(recluster_limit))
-    repair_result = repair_split_clusters_task(hours=int(hours), limit=int(repair_limit), dry_run=False)
-    return {
-        "intel_depth": depth,
-        "recluster": recluster_result,
-        "repair_split": repair_result,
-    }
+    intel_depth = int(get_celery_queue_depth("intel-heavy") or 0)
+    if intel_depth >= INTEL_QUEUE_SECONDARY_DEFER_LIMIT:
+        log.info(
+            "[maintenance] Skipping homepage cluster supply boost while intel-heavy depth is %s",
+            intel_depth,
+        )
+        return {"skipped": True, "reason": "intel_busy", "intel_depth": intel_depth}
+
+    lock_key = "lock:boost_homepage_cluster_supply"
+    if not acquire_task_lock(lock_key, 3600):
+        return {"skipped": True, "reason": "already_running", "intel_depth": intel_depth}
+
+    recluster_recent_articles_task.apply_async(
+        kwargs={"hours": int(hours), "limit": int(recluster_limit)},
+        queue="intel-heavy",
+    )
+    repair_split_clusters_task.apply_async(
+        kwargs={"hours": int(hours), "limit": int(repair_limit), "dry_run": False},
+        queue="intel-heavy",
+    )
+    log.info(
+        "[maintenance] Dispatched homepage cluster supply boost (intel_depth=%s)",
+        intel_depth,
+    )
+    return {"dispatched": True, "intel_depth": intel_depth}
 
 
 @celery_app.task

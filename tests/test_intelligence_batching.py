@@ -26,13 +26,15 @@ class TestIntelligenceBatching:
 
     def test_metadata_batches_target_clusters(self):
         with (
-            patch("tasks.intelligence.backfill._queue_backlog_high", return_value=False),
+            patch("tasks.intelligence.metadata._queue_backlog_high", return_value=False),
             patch("tasks.intelligence.metadata.db") as mock_db,
             patch("tasks.intelligence.metadata.extract_cluster_tags_locally", return_value=["tag"]),
             patch("tasks.intelligence.metadata.filter_cluster_tags", return_value=["tag"]),
-            patch("tasks.intelligence.synthesis._compute_centroid_from_values", return_value=None),
+            patch("tasks.intelligence.metadata._compute_centroid_from_values", return_value=None),
+            patch("tasks.intelligence.metadata.generate_cover_art", return_value="https://example.com/c1.jpg"),
+            patch("tasks.intelligence.metadata.generate_local_placeholder", return_value="<svg/>"),
             patch("tasks.intelligence.metadata.invalidate_public_data_caches"),
-            patch.object(generate_cluster_metadata_task, "apply_async") as mock_apply,
+            patch("tasks.intelligence.metadata.schedule_task_once", return_value=True) as mock_schedule,
         ):
             mock_db.execute.return_value = [
                 {
@@ -50,5 +52,5 @@ class TestIntelligenceBatching:
                 target_clusters=[f"c{i}" for i in range(30)],
             )
 
-        pending = mock_apply.call_args.kwargs["kwargs"]["target_clusters"]
+        pending = mock_schedule.call_args.kwargs["kwargs"]["target_clusters"]
         assert pending == [f"c{i}" for i in range(25, 30)]

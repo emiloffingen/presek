@@ -44,14 +44,22 @@ import threading
 
 from tasks.intelligence._queue import _skip_when_intel_backlog
 
-@celery_app.task(name="tasks.intelligence.summarize_articles_batch_task")
+@celery_app.task(
+    name="tasks.intelligence.summarize_articles_batch_task",
+    soft_time_limit=2700,
+    time_limit=3000,
+)
 def summarize_articles_batch_task(article_ids):
     """Batch processes AI summarization for articles."""
     for article_id in article_ids:
         summarize_article_task(article_id)
 
 
-@celery_app.task(name="tasks.intelligence.summarize_articles_local_batch_task")
+@celery_app.task(
+    name="tasks.intelligence.summarize_articles_local_batch_task",
+    soft_time_limit=2700,
+    time_limit=3000,
+)
 def summarize_articles_local_batch_task(article_ids):
     """Batch summarize using local Gemma only (no paid/limited API providers)."""
     for article_id in article_ids:

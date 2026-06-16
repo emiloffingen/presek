@@ -49,6 +49,11 @@ from tasks.intelligence.synthesis import _compute_centroid_from_values
 def auto_summarize_task(cluster_ids: list[str] = None):
     """Dispatch summarization/synthesis tasks for top clusters or targeted clusters."""
     from core.ai_engine import auto_summarize_top_clusters
+    from tasks.utils import pipeline_backpressure_active, synthesis_dispatch_deferred
+
+    if not cluster_ids and (pipeline_backpressure_active() or synthesis_dispatch_deferred()):
+        log.info("[tasks] Skipping auto_summarize while pipeline backlog is high.")
+        return {"skipped": True, "reason": "pipeline_backlog"}
 
     auto_summarize_top_clusters(target_cluster_ids=cluster_ids)
 

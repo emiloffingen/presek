@@ -98,10 +98,10 @@ async def test_timeline_consolidation_merges_duplicates(mock_db):
         assert timeline[1]["source"] == "MIA"
 
 
-@patch("tasks.intelligence.backfill.get_celery_queue_depth", return_value=0)
+@patch("tasks.intelligence.backfill._skip_when_intel_backlog", return_value=False)
 @patch("tasks.intelligence.backfill.db")
 @patch("nlp.analyze_sentiment_locally", return_value=1.5)
-def test_refine_knowledge_graph_sentiment_task_updates_db(mock_analyze, mock_db, _mock_queue_depth):
+def test_refine_knowledge_graph_sentiment_task_updates_db(mock_analyze, mock_db, _mock_skip_backlog):
     # Test that refine_knowledge_graph_sentiment_task refines sentiment in the database
     mock_db.execute.return_value = [
         {
