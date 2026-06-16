@@ -65,7 +65,7 @@ export const ConsentBanner: React.FC = () => {
       }
     }
 
-    const delay = window.matchMedia('(max-width: 768px)').matches ? 7000 : 3500;
+    const delay = window.matchMedia('(max-width: 768px)').matches ? 10000 : 3500;
     const timer = setTimeout(() => setVisible(true), delay);
     return () => clearTimeout(timer);
   }, []);
@@ -101,18 +101,19 @@ export const ConsentBanner: React.FC = () => {
 
   return (
     <div
-      className="consent-banner pointer-events-none fixed inset-x-0 bottom-0 z-[100] isolate px-2 pb-2 md:inset-x-auto md:right-4 md:bottom-4 md:w-[min(28rem,calc(100vw-2rem))] md:p-0 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3 motion-safe:duration-300"
+      className="consent-banner pointer-events-none fixed inset-x-0 bottom-0 z-[100] isolate px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] md:inset-x-auto md:right-4 md:bottom-4 md:w-[min(28rem,calc(100vw-2rem))] md:p-0 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3 motion-safe:duration-300"
       style={{ contain: 'layout paint style' }}
     >
-      <div className="pointer-events-auto mx-auto max-w-5xl rounded-md border border-border/80 bg-popover/96 px-2.5 py-1.5 text-popover-foreground shadow-[0_10px_26px_rgba(17,24,39,0.12)] backdrop-blur-xl md:px-4 md:py-3">
-        <div className="flex items-center gap-2.5 md:items-start md:justify-between">
+      <div className="pointer-events-auto mx-auto max-w-5xl rounded-sm border border-border/70 bg-popover/95 px-2.5 py-1.5 text-popover-foreground shadow-[0_8px_22px_rgba(17,24,39,0.10)] backdrop-blur-xl md:rounded-md md:px-4 md:py-3">
+        <div className="flex items-center gap-2 md:items-start md:justify-between">
           <div className="min-w-0 flex-1">
-            <div className="mb-0.5 flex items-center gap-2">
+            <div className="flex items-center gap-2 md:mb-0.5">
               <h3 className="font-sans text-[10px] font-black uppercase tracking-[0.12em] text-foreground md:text-[11px]">{t('cookies.title')}</h3>
+              <a href={l('/privacy')} className="text-[10px] font-semibold text-muted-foreground underline underline-offset-2 hover:text-nyt-accent md:hidden">{t('nav.privacy')}</a>
               <span className="hidden md:inline text-[11px] text-muted-foreground">•</span>
               <span className="hidden md:inline text-xs text-muted-foreground">{t('cookies.kicker')}</span>
             </div>
-            <p className="text-[10px] text-secondary-foreground leading-snug md:hidden">
+            <p className="hidden text-[10px] text-secondary-foreground leading-snug md:hidden">
               {t('cookies.brief')}
               {' '}
               <button
@@ -140,13 +141,13 @@ export const ConsentBanner: React.FC = () => {
             <button
               onClick={dismiss}
               aria-label={t('cookies.dismiss')}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border/80 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground md:h-9 md:w-9"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-border/70 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground md:h-9 md:w-9 md:rounded-md"
             >
               <X size={12} />
             </button>
             <button
               onClick={accept}
-              className="rounded-md bg-foreground px-2.5 py-1.5 text-[8px] font-black uppercase tracking-[0.12em] text-background transition-colors hover:bg-nyt-accent hover:text-white md:px-3.5 md:py-2 md:text-[10px]"
+              className="rounded-sm bg-foreground px-2.5 py-1.5 text-[8px] font-black uppercase tracking-[0.12em] text-background transition-colors hover:bg-nyt-accent hover:text-white md:rounded-md md:px-3.5 md:py-2 md:text-[10px]"
             >
               {t('cookies.accept')}
             </button>

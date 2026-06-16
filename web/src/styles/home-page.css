@@ -29,11 +29,11 @@
 /* ── Section Dividers ────────────────────────────── */
 .section-wrapper {
     border-bottom: 1px solid color-mix(in srgb, var(--foreground) 9%, var(--border));
-    padding-bottom: clamp(1.15rem, 2.2vw, 1.85rem);
-    margin-bottom: clamp(1.1rem, 2.2vw, 1.85rem);
+    padding-bottom: clamp(0.9rem, 1.55vw, 1.35rem);
+    margin-bottom: clamp(0.9rem, 1.55vw, 1.35rem);
 }
 .section-wrapper:last-child { border-bottom: none; }
-.lead-wrapper { padding-bottom: 0.95rem; margin-bottom: 0.9rem; }
+.lead-wrapper { padding-bottom: 0.85rem; margin-bottom: 0.75rem; }
 
 @media (max-width: 768px) {
     .section-wrapper { padding-bottom: 1rem; margin-bottom: 1rem; }

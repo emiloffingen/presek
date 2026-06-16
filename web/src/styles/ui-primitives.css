@@ -330,7 +330,7 @@
     position: relative;
     overflow: hidden;
     background:
-      linear-gradient(145deg, color-mix(in srgb, var(--background) 90%, var(--placeholder-bg, #1e40af) 10%), color-mix(in srgb, var(--secondary) 82%, var(--placeholder-bg, #1e40af) 18%));
+      linear-gradient(145deg, color-mix(in srgb, var(--background) 94%, var(--placeholder-bg, #1e40af) 6%), color-mix(in srgb, var(--secondary) 90%, var(--placeholder-bg, #1e40af) 10%));
     border: 1px solid
       color-mix(in srgb, var(--border) 68%, rgba(255, 255, 255, 0.2) 32%);
     box-shadow:
@@ -342,16 +342,12 @@
     position: absolute;
     inset: 0;
     background:
-      radial-gradient(
-        circle at top left,
-        rgba(255, 255, 255, 0.08),
-        transparent 32%
-      ),
+      radial-gradient(circle at 18% 16%, color-mix(in srgb, var(--placeholder-bg, #1e40af) 12%, transparent), transparent 36%),
       linear-gradient(
         180deg,
         transparent 0%,
-        rgba(7, 12, 22, 0.06) 42%,
-        rgba(7, 12, 22, 0.14) 100%
+        color-mix(in srgb, var(--foreground) 3%, transparent) 46%,
+        color-mix(in srgb, var(--foreground) 7%, transparent) 100%
       );
     pointer-events: none;
   }
@@ -369,7 +365,7 @@
       transparent 1px,
       transparent 12px
     );
-    opacity: 0.18;
+    opacity: 0.1;
     mask-image: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.9));
     pointer-events: none;
   }
@@ -464,20 +460,20 @@
   }
 
   .image-wrap-fallback {
-    aspect-ratio: 1.4 / 1;
-    padding: 0.4rem;
+    aspect-ratio: 16 / 9;
+    padding: 0.28rem;
     border: 1px solid
-      color-mix(in srgb, var(--border) 78%, var(--foreground) 22%);
+      color-mix(in srgb, var(--border) 88%, var(--foreground) 12%);
     background:
       radial-gradient(
-        circle at top right,
-        color-mix(in srgb, var(--secondary) 30%, transparent 70%),
-        transparent 34%
+        circle at 82% 18%,
+        color-mix(in srgb, var(--placeholder-bg, var(--secondary)) 8%, transparent),
+        transparent 38%
       ),
       linear-gradient(
         160deg,
-        color-mix(in srgb, var(--background) 88%, #efe5d8 12%),
-        color-mix(in srgb, var(--background) 76%, var(--secondary) 24%)
+        color-mix(in srgb, var(--background) 94%, var(--secondary) 6%),
+        color-mix(in srgb, var(--background) 86%, var(--secondary) 14%)
       );
   }
 
