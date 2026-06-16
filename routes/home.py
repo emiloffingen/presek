@@ -22,9 +22,9 @@ log = logging.getLogger("presek")
 router = APIRouter()
 _background_tasks: set[asyncio.Task] = set()
 _LEAD_TIEBREAK_WINDOW = 0.10
-_HOMEPAGE_FEED_START = 4
+_HOMEPAGE_FEED_START = 5
 _HOMEPAGE_DEVELOPING_LIMIT = 10
-_HOMEPAGE_WIRE_LIMIT = 8
+_HOMEPAGE_WIRE_LIMIT = 11
 
 
 def _homepage_developing_sort_key(cluster: Dict[str, Any]) -> tuple:
