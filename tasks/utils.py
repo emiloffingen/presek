@@ -84,8 +84,9 @@ def invalidate_public_data_caches_debounced(force: bool = False) -> bool:
     return True
 
 
-def safe_async_run(coro):
-    """Helper to run a coroutine safely across different execution environments (Celery, scripts)."""
+def safe_async_run(coro_or_factory):
+    """Run an awaitable safely from sync code, even when an event loop is active."""
+    coro = coro_or_factory() if callable(coro_or_factory) else coro_or_factory
     try:
         asyncio.get_running_loop()
     except RuntimeError:
