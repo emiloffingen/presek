@@ -13,6 +13,43 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<any>(null);
+  const [synthesisTraces, setSynthesisTraces] = useState<any[]>([]);
+  const [traceLoading, setTraceLoading] = useState(false);
+
+  const fetchSynthesisTraces = async (overrideToken?: string) => {
+    const activeToken = overrideToken || token;
+    if (!activeToken) return;
+    setTraceLoading(true);
+    try {
+      const res = await fetch(`${apiBaseUrl()}/admin/synthesis-traces/recent?lang=${lang}&limit=8`, {
+        headers: { Authorization: `Bearer ${activeToken}` },
+      });
+      if (res.ok) {
+        const payload = await res.json();
+        setSynthesisTraces(Array.isArray(payload.traces) ? payload.traces : []);
+      }
+    } catch {
+      setSynthesisTraces([]);
+    } finally {
+      setTraceLoading(false);
+    }
+  };
+
+  const openSynthesisTrace = async (clusterId: string, overrideToken?: string) => {
+    const activeToken = overrideToken || token;
+    if (!activeToken || !clusterId) return;
+    try {
+      const res = await fetch(`${apiBaseUrl()}/admin/cluster/${clusterId}/synthesis-trace?lang=${lang}`, {
+        headers: { Authorization: `Bearer ${activeToken}` },
+      });
+      const payload = await res.json();
+      const blob = new Blob([JSON.stringify(payload.trace || payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch {
+      alert(lang === 'sr' ? 'Greška pri učitavanju synthesis trace.' : 'Грешка при вчитување synthesis trace.');
+    }
+  };
 
   const fetchDashboard = async (overrideToken?: string) => {
     const activeToken = overrideToken || token;
@@ -29,6 +66,7 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
         setData(payload);
         setIsAuthenticated(true);
         if (typeof window !== 'undefined') sessionStorage.setItem('presek_admin_token', activeToken);
+        fetchSynthesisTraces(activeToken);
       } else {
         setError(lang === 'sr' ? 'Pristup je odbijen. Nevalidan token.' : 'Пристапот е одбиен. Невалиден токен.');
       }
@@ -328,6 +366,56 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
               {lang === 'sr' ? 'Nedeljni izveštaj' : 'Неделен извештај'}
             </button>
           </div>
+        </section>
+      )}
+
+      {isAuthenticated && (
+        <section className="bg-zinc-950 border border-zinc-800 rounded-2xl p-6 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">
+                {lang === 'sr' ? 'SYNTHESIS TRACE' : 'SYNTHESIS TRACE'}
+              </h2>
+              <p className="text-[11px] text-zinc-500 mt-2">
+                {lang === 'sr'
+                  ? 'Provisional, fallback i zastareli klasteri sa preporučenim akcijama.'
+                  : 'Привремени, fallback и застарени кластери со препорачани акции.'}
+              </p>
+            </div>
+            <button
+              onClick={() => fetchSynthesisTraces()}
+              className="text-[10px] font-black uppercase px-3 py-2 rounded-lg border border-zinc-700 text-zinc-300 hover:text-white"
+            >
+              {traceLoading ? '...' : (lang === 'sr' ? 'Osveži trace' : 'Освежи trace')}
+            </button>
+          </div>
+          {synthesisTraces.length === 0 ? (
+            <p className="text-[10px] uppercase tracking-widest text-zinc-500">
+              {lang === 'sr' ? 'Nema problema za prikaz.' : 'Нема проблеми за приказ.'}
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {synthesisTraces.map((trace: any) => (
+                <div key={trace.cluster_id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2">
+                  <div className="min-w-0">
+                    <code className="text-[10px] font-mono text-zinc-400">{trace.cluster_id}</code>
+                    <p className="text-[11px] text-zinc-200 truncate max-w-xl">
+                      {trace.headline || trace.active_summary?.generation_provider || '—'}
+                    </p>
+                    <p className="text-[10px] text-zinc-500">
+                      {(trace.recommended_actions || []).join(' · ')}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => openSynthesisTrace(trace.cluster_id)}
+                    className="text-[10px] font-black uppercase px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white shrink-0"
+                  >
+                    JSON
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       )}
 

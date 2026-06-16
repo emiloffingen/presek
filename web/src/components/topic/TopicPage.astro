@@ -1,0 +1,157 @@
+---
+import '../../styles/topic-page.css';
+import Layout from '../../layouts/Layout.astro';
+import NYTHeader from '../NYTHeader.astro';
+import Footer from '../Footer.astro';
+import Breadcrumbs from '../Breadcrumbs.astro';
+import TopicPageContent from './TopicPageContent.astro';
+import {
+	buildTopicIntro,
+	buildTopicPageLabels,
+	buildTopicPageMeta,
+	loadTopicPageData,
+	parseTopicParam,
+} from '../../lib/topicPageData';
+import { apiBaseUrl } from '../../lib/apiBase';
+import { getDisplaySummary } from '../../utils/textUtils';
+import { getLangFromUrl } from '../../i18n/utils';
+import { homePath, localePath } from '../../lib/localePaths';
+
+interface Props {
+	locale?: 'sr' | 'mk';
+}
+
+const { locale } = Astro.props;
+const hostHeader = Astro.request?.headers.get('host');
+const detectedLang = getLangFromUrl(Astro.url, hostHeader);
+const lang = (locale || detectedLang) as 'sr' | 'mk';
+const l = (path: string) => localePath(path, lang, hostHeader);
+
+const rawTopicParam = Astro.params.topic || '';
+const topic = parseTopicParam(rawTopicParam);
+const API_URL = apiBaseUrl();
+
+async function fetchJson(url: string) {
+	const response = await fetch(url);
+	if (!response.ok) {
+		const err: any = new Error(`Request failed: ${response.status} ${url}`);
+		err.status = response.status;
+		throw err;
+	}
+	return response.json();
+}
+
+const topicPage = await loadTopicPageData({
+	apiUrl: API_URL,
+	lang,
+	topic,
+	fetchJson,
+});
+
+const {
+	clusters,
+	error,
+	leadCluster,
+	supportingClusters,
+	feedClusters,
+	featuredFeedClusters,
+	compactFeedClusters,
+	totalReports,
+	uniqueSources,
+	breakingCount,
+	sourceRows,
+	tagRows,
+	topicConnections,
+	keyAngles,
+	synthesisLines,
+	relatedClusters,
+} = topicPage;
+
+if (topicPage.status && topicPage.status !== 200) {
+	Astro.response.status = topicPage.status;
+}
+
+const topicLabels = buildTopicPageLabels(lang);
+const pageMeta = buildTopicPageMeta(lang, topic);
+const topicFollowSuggestions = topicConnections.slice(0, 2).map((item: any) => ({
+	topic: item.topic,
+	reason: item.relationshipNote,
+}));
+const sourceFollowSuggestions = sourceRows.slice(0, 2).map(([name, count]) => ({
+	source: name,
+	reason: topicLabels.sourceFollowReason(count),
+}));
+const topicIntroText = buildTopicIntro(topic, clusters, uniqueSources, totalReports, breakingCount, lang);
+const canonicalUrl = new URL(Astro.url.pathname, pageMeta.siteUrl).href.replace(/\/+$/, '');
+const leadSummary =
+	getDisplaySummary(leadCluster?.articles?.[0] || {}) || topicLabels.defaultLeadSummary;
+const homeHref = lang === 'mk' ? homePath('mk', hostHeader) : l('/');
+---
+
+<Layout title={pageMeta.title} description={pageMeta.description} canonical={canonicalUrl}>
+	<NYTHeader topic={topic} />
+
+	<main class="site-layout page-content-top pb-[var(--page-py)] topic-page">
+		{(error || !clusters.length) && (
+			<Breadcrumbs items={[{ label: pageMeta.breadcrumbTopics, href: homeHref }, { label: topic || topicLabels.kicker }]} />
+		)}
+
+		{error && (
+			<div class="topic-empty">
+				<div class="topic-empty-inner">
+					<span class="topic-kicker">{topicLabels.kicker}</span>
+					<h1 class="topic-empty-title">{topic || topicLabels.kicker}</h1>
+					<p>{error}</p>
+					<div class="topic-empty-actions">
+						<a href={l('/')} class="topic-empty-link">{topicLabels.emptyBack}</a>
+						<a href={l('/archive')} class="topic-empty-link topic-empty-link-secondary">{topicLabels.emptyArchive}</a>
+					</div>
+				</div>
+			</div>
+		)}
+
+		{!error && !clusters.length && (
+			<div class="topic-empty">
+				<div class="topic-empty-inner">
+					<span class="topic-kicker">{topicLabels.kicker}</span>
+					<h1 class="topic-empty-title">{topic}</h1>
+					<p>{topicLabels.emptyNoClusters}</p>
+					<div class="topic-empty-actions">
+						<a href={l('/')} class="topic-empty-link">{topicLabels.emptyHome}</a>
+						<a href={l('/archive')} class="topic-empty-link topic-empty-link-secondary">{topicLabels.emptySearchArchive}</a>
+					</div>
+				</div>
+			</div>
+		)}
+
+		{!error && clusters.length > 0 && (
+			<TopicPageContent
+				topic={topic}
+				lang={lang}
+				labels={topicLabels}
+				introText={topicIntroText}
+				leadSummary={leadSummary}
+				clusters={clusters}
+				leadCluster={leadCluster}
+				supportingClusters={supportingClusters}
+				feedClusters={feedClusters}
+				featuredFeedClusters={featuredFeedClusters}
+				compactFeedClusters={compactFeedClusters}
+				uniqueSources={uniqueSources}
+				totalReports={totalReports}
+				breakingCount={breakingCount}
+				synthesisLines={synthesisLines}
+				topicFollowSuggestions={topicFollowSuggestions}
+				sourceFollowSuggestions={sourceFollowSuggestions}
+				keyAngles={keyAngles}
+				tagRows={tagRows}
+				topicConnections={topicConnections}
+				sourceRows={sourceRows}
+				relatedClusters={relatedClusters}
+				localePath={l}
+			/>
+		)}
+	</main>
+
+	<Footer />
+</Layout>

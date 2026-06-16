@@ -1,0 +1,38 @@
+{
+  "data": {
+    "cluster_id": "cluster-42",
+    "synthetic_headline": "Vlada usvojila izmene zakona",
+    "pluralism_score": 18,
+    "has_fact_check": true,
+    "articles": [
+      { "title": "Vlada usvojila izmene", "source": "RTS", "category": "Politika" },
+      { "title": "Parlament doneo izmene", "source": "Blic", "category": "Politika" },
+      { "title": "Opozicija kritikuje", "source": "N1", "category": "Politika" }
+    ],
+    "synthesis_meta": {
+      "generation_provider": "mistral_small",
+      "generation_model": "mistral-small",
+      "quality_score": 0.84,
+      "is_provisional": false,
+      "needs_upgrade": false,
+      "copy_purity_ok": true,
+      "copy_purity_score": 0.91,
+      "copy_purity_reason": null
+    },
+    "trust_summary": {
+      "score": 72,
+      "tier": "verified",
+      "label": "Provereno",
+      "detail": "3 nezavisna izvora se prate.",
+      "sources_count": 3,
+      "pluralism_score": 18,
+      "is_stale": false,
+      "has_verification": true,
+      "is_provisional": false,
+      "needs_upgrade": false
+    },
+    "synthesis": "Parlament je doneo izmene.\n\nDetalji ostaju u fokusu.",
+    "generated_article": "Detalji promena ostaju predmet rasprave.",
+    "perspectives": [{ "angle": "Razlika", "content": "Izvori se razlikuju u akcentu." }]
+  }
+}

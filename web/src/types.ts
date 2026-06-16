@@ -89,6 +89,9 @@ export interface NewsCluster {
     fallback_reason?: string | null;
     is_provisional?: boolean;
     needs_upgrade?: boolean;
+    copy_purity_ok?: boolean | null;
+    copy_purity_score?: number | null;
+    copy_purity_reason?: string | null;
   };
 }
 
@@ -135,6 +138,9 @@ export interface ClusterDetail extends NewsCluster {
     fallback_reason?: string | null;
     is_provisional?: boolean;
     needs_upgrade?: boolean;
+    copy_purity_ok?: boolean | null;
+    copy_purity_score?: number | null;
+    copy_purity_reason?: string | null;
   };
   tags: string[];
   topics: string[];

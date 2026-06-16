@@ -1,0 +1,58 @@
+{
+  "status": "success",
+  "timestamp": "2026-06-16T12:00:00",
+  "ai": {
+    "current_provider": "mistral_small",
+    "status": "operational",
+    "fallback_order": ["mistral_small", "local"]
+  },
+  "scrapers": {
+    "total_sources": 42,
+    "degraded_count": 2,
+    "global_acceptance_rate": 0.71,
+    "healthy_feeds": 40,
+    "total_feeds": 42,
+    "recent_activity": [
+      {
+        "source": "Blic",
+        "is_active": true,
+        "last_fetched": "2026-06-16T11:58:00",
+        "recent_count": 18
+      }
+    ]
+  },
+  "tasks": {
+    "failed_recent": [],
+    "failed_tasks": 0,
+    "recent_failures": []
+  },
+  "db": {
+    "ok": true,
+    "latency_ms": 4
+  },
+  "redis": {
+    "ok": true,
+    "ping": "PONG",
+    "error": ""
+  },
+  "articles": {
+    "last_24h": 1284,
+    "last_1h": 96
+  },
+  "clusters": {
+    "total_summaries": 8420,
+    "total_clusters": 9102
+  },
+  "queues": {
+    "synthesis": { "depth": 3, "busy": false },
+    "fast-track": { "depth": 1, "busy": false }
+  },
+  "ops": {
+    "stale_clusters": 12,
+    "fast_synthesis_pending": 4
+  },
+  "system": {
+    "version": "2026.06.16",
+    "build": "main"
+  }
+}

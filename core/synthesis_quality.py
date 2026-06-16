@@ -45,12 +45,15 @@ def build_synthesis_meta(
     row: dict | None,
     *,
     lang: str = "sr",
+    headline: str | None = None,
+    summary: str | None = None,
+    article: str | None = None,
 ) -> dict:
     """Public metadata block for cluster synthesis generation."""
     row = row or {}
     fallback_reason = row.get("fallback_reason")
     generation_provider = row.get("generation_provider")
-    return {
+    meta = {
         "lang": lang,
         "generation_provider": generation_provider,
         "generation_model": row.get("generation_model"),
@@ -59,6 +62,25 @@ def build_synthesis_meta(
         "is_provisional": fallback_reason == "fast_mode_provisional",
         "needs_upgrade": synthesis_needs_upgrade(fallback_reason, generation_provider),
     }
+    copy_headline = headline if headline is not None else row.get("synthetic_headline")
+    copy_summary = summary if summary is not None else row.get("summary")
+    copy_article = article if article is not None else row.get("generated_article")
+    if copy_headline or copy_summary or copy_article:
+        try:
+            from core.copy_quality import copy_bundle_passes_publish_gate
+
+            ok, diagnostics = copy_bundle_passes_publish_gate(
+                lang=lang,
+                headline=str(copy_headline or ""),
+                summary=str(copy_summary or ""),
+                article=str(copy_article or ""),
+            )
+            meta["copy_purity_ok"] = ok
+            meta["copy_purity_score"] = diagnostics.get("score")
+            meta["copy_purity_reason"] = diagnostics.get("reason")
+        except Exception:
+            pass
+    return meta
 
 
 def count_low_score_syntheses(*, min_score: float = 0.75, days: int = 7) -> int:

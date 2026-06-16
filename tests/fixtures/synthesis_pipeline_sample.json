@@ -1,0 +1,50 @@
+{
+  "cluster_id": "pipeline-cluster-1",
+  "article_rows": [
+    {
+      "title": "Vlada usvojila izmene zakona",
+      "description": "Parlament je doneo izmene.",
+      "source": "RTS",
+      "category": "Politika",
+      "topic": "Politika",
+      "country": "RS"
+    },
+    {
+      "title": "Opozicija kritikuje paket",
+      "description": "Smatraju da izmene nisu dovoljne.",
+      "source": "Blic",
+      "category": "Politika",
+      "topic": "Politika",
+      "country": "RS"
+    }
+  ],
+  "cascade_success": {
+    "status": "success",
+    "provider": "mistral_small",
+    "model": "mistral-small",
+    "quality_score": 0.84,
+    "fallback_reason": null,
+    "cascade_depth": 1,
+    "raw": "{}",
+    "res_data": {
+      "synthetic_headline": "Vlada usvojila izmene zakona o pravosuđu",
+      "synthetic_standfirst": "",
+      "summary": "- Šta se desilo: Vlada je usvojila izmene.\n- Zašto je važno: Menja se okvir rada sudova.\n- Šta je potvrđeno: RTS i Blic navode iste izmene.\n- Šta ostaje otvoreno: Rok primene.",
+      "article": "Vlada Srbije je usvojila paket izmena zakona o pravosuđu nakon javne rasprave.\n\nIzmene obuhvataju procedure imenovanja sudija i rokove odlučivanja.\n\nAnalitičari ističu da je ključno kako će se primenjivati nova pravila.\n\nIzvori se razlikuju oko roka primene, ali potvrđuju osnovne izmene.\n\nOstaje otvoreno da li će opozicija podržati dalje korake u proceduri.",
+      "generated_article": "Vlada Srbije je usvojila paket izmena zakona o pravosuđu nakon javne rasprave.\n\nIzmene obuhvataju procedure imenovanja sudija i rokove odlučivanja.\n\nAnalitičari ističu da je ključno kako će se primenjivati nova pravila.\n\nIzvori se razlikuju oko roka primene, ali potvrđuju osnovne izmene.\n\nOstaje otvoreno da li će opozicija podržati dalje korake u proceduri.",
+      "key_facts": [
+        "RTS: Vlada usvojila izmene",
+        "Blic: Izmene zakona",
+        "Analiza: rok primene",
+        "Otvoreno: procedura"
+      ],
+      "perspectives": [
+        { "angle": "Razlika", "content": "Izvori se razlikuju oko roka primene." }
+      ],
+      "sentiment": { "score": 0, "tone": "neutralan" },
+      "tone_analysis": {},
+      "story_so_far": "",
+      "impact_analysis": { "score": 0.0, "reasoning": "" }
+    }
+  }
+}

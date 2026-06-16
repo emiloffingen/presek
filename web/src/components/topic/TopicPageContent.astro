@@ -1,0 +1,230 @@
+---
+import NewsCard from '../NewsCard.astro';
+import TinyAdzInlinedAd from '../TinyAdzInlinedAd.astro';
+import TinyAdzRailAd from '../TinyAdzRailAd.astro';
+import TopicPageHero from './TopicPageHero.astro';
+import { ArrowRight } from 'lucide-react';
+import type { TopicPageLabels } from '../../lib/topicPageData';
+
+interface Props {
+  topic: string;
+  lang: 'sr' | 'mk';
+  labels: TopicPageLabels;
+  introText: string;
+  leadSummary: string;
+  clusters: any[];
+  leadCluster: any | null;
+  supportingClusters: any[];
+  feedClusters: any[];
+  featuredFeedClusters: any[];
+  compactFeedClusters: any[];
+  uniqueSources: Set<string>;
+  totalReports: number;
+  breakingCount: number;
+  synthesisLines: string[];
+  topicFollowSuggestions: Array<{ topic: string; reason: string }>;
+  sourceFollowSuggestions: Array<{ source: string; reason: string }>;
+  keyAngles: Array<{ angle: string; content: string }>;
+  tagRows: Array<[string, number]>;
+  topicConnections: any[];
+  sourceRows: Array<[string, number]>;
+  relatedClusters: any[];
+  localePath: (path: string) => string;
+}
+
+const {
+  topic,
+  lang,
+  labels,
+  introText,
+  leadSummary,
+  clusters,
+  leadCluster,
+  supportingClusters,
+  featuredFeedClusters,
+  compactFeedClusters,
+  uniqueSources,
+  totalReports,
+  breakingCount,
+  synthesisLines,
+  topicFollowSuggestions,
+  sourceFollowSuggestions,
+  keyAngles,
+  tagRows,
+  topicConnections,
+  sourceRows,
+  relatedClusters,
+  localePath,
+} = Astro.props;
+const l = localePath;
+---
+
+<TopicPageHero
+  topic={topic}
+  lang={lang}
+  introText={introText}
+  leadSummary={leadSummary}
+  clusterCount={clusters.length}
+  uniqueSourceCount={uniqueSources.size}
+  totalReports={totalReports}
+  breakingCount={breakingCount}
+  synthesisLines={synthesisLines}
+  topicFollowSuggestions={topicFollowSuggestions}
+  sourceFollowSuggestions={sourceFollowSuggestions}
+  labels={{
+    kicker: labels.kicker,
+    contextTitle: labels.contextTitle,
+    contextOpen: labels.contextOpen,
+    noteLabel: labels.noteLabel,
+    statsClusters: labels.statsClusters,
+    statsSources: labels.statsSources,
+    statsReports: labels.statsReports,
+    statsBreaking: labels.statsBreaking,
+  }}
+/>
+
+<div class="topic-layout">
+  <div class="topic-main">
+    {leadCluster && (
+      <section class="topic-lead">
+        <div class="section-heading-row">
+          <h2 class="section-title">{labels.leadTitle}</h2>
+          <p class="section-note">{labels.leadNote}</p>
+        </div>
+        <NewsCard cluster={leadCluster} isLead={true} lang={lang} />
+      </section>
+    )}
+
+    <TinyAdzInlinedAd class="topic-inline-ad mb-10" />
+
+    {keyAngles.length > 0 && (
+      <section class="topic-angles">
+        <div class="section-heading-row">
+          <h2 class="section-title">{labels.anglesTitle}</h2>
+          <p class="section-note">{labels.anglesNote}</p>
+        </div>
+        <div class="topic-angle-grid">
+          {keyAngles.map((item) => (
+            <div class="topic-angle-card">
+              <h3>{item.angle}</h3>
+              <p>{item.content}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {supportingClusters.length > 0 && (
+      <section class="topic-supporting">
+        <div class="section-heading-row">
+          <h2 class="section-title">{labels.supportingTitle}</h2>
+          <p class="section-note">{labels.supportingNote}</p>
+        </div>
+        <div class="topic-supporting-grid">
+          {supportingClusters.map((cluster, index) => (
+            <NewsCard cluster={cluster} variant={index === 0 ? 'featured' : 'compact'} lang={lang} />
+          ))}
+        </div>
+      </section>
+    )}
+
+    {(featuredFeedClusters.length > 0 || compactFeedClusters.length > 0) && (
+      <section class="topic-feed">
+        <div class="section-heading-row">
+          <h2 class="section-title">{labels.feedTitle}</h2>
+          <p class="section-note">{labels.feedNote}</p>
+        </div>
+        {featuredFeedClusters.length > 0 && (
+          <div class="topic-feed-grid topic-feed-grid-featured">
+            {featuredFeedClusters.map((cluster) => (
+              <NewsCard cluster={cluster} variant="featured" lang={lang} />
+            ))}
+          </div>
+        )}
+        {compactFeedClusters.length > 0 && (
+          <div class="topic-feed-grid topic-feed-grid-compact">
+            {compactFeedClusters.map((cluster) => (
+              <NewsCard cluster={cluster} variant="compact" lang={lang} />
+            ))}
+          </div>
+        )}
+      </section>
+    )}
+  </div>
+
+  <aside class="topic-rail">
+    <TinyAdzRailAd />
+
+    <details class="topic-rail-context">
+      <summary class="topic-rail-context-summary">
+        <span class="ui-label">{labels.railContext}</span>
+        <span class="topic-rail-context-hint ui-label-min text-muted-foreground">{labels.railOpen}</span>
+      </summary>
+      <div class="topic-rail-context-body">
+        {tagRows.length > 0 && (
+          <section class="rail-card">
+            <h3 class="rail-card-title">{labels.tagsTitle}</h3>
+            <div class="topic-chip-list">
+              {tagRows.map(([name, count]) => (
+                <a href={l(`/?q=${encodeURIComponent(name)}`)} class="topic-chip">
+                  {name} <strong>{count}</strong>
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {topicConnections.length > 0 && (
+          <section class="rail-card">
+            <h3 class="rail-card-title">{labels.connectionsTitle}</h3>
+            <div class="topic-connection-list">
+              {topicConnections.map((item) => (
+                <a href={l(`/tema/${encodeURIComponent(item.topic)}`)} class="topic-connection-card">
+                  <p class="topic-connection-kicker">{item.relationshipLabel}</p>
+                  <h4>{item.topic}</h4>
+                  <p class="topic-connection-copy">{item.relationshipNote}</p>
+                  {item.sampleTags?.length > 0 && (
+                    <p class="topic-connection-meta">{item.sampleTags.join(' · ')}</p>
+                  )}
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {sourceRows.length > 0 && (
+          <section class="rail-card">
+            <h3 class="rail-card-title">{labels.sourcesTitle}</h3>
+            <div class="topic-source-list">
+              {sourceRows.map(([name, count], index) => (
+                <div class="topic-source-row">
+                  <span class="topic-source-rank">{String(index + 1).padStart(2, '0')}</span>
+                  <div>
+                    <p>{name}</p>
+                    <span>{count} {labels.sourcesCountSuffix}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {relatedClusters.length > 0 && (
+          <section class="rail-card">
+            <h3 class="rail-card-title">{labels.relatedTitle}</h3>
+            <div class="topic-related-list">
+              {relatedClusters.map((item) => (
+                <a href={l(`/cluster/${item.cluster_id}`)} class="topic-related-link">
+                  {item.relationship_label && <span class="topic-related-kicker">{item.relationship_label}</span>}
+                  <strong>{item.title}</strong>
+                  {item.relationship_note && <p>{item.relationship_note}</p>}
+                  <span class="topic-related-cta">{labels.relatedCta} <ArrowRight size={12} /></span>
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+    </details>
+  </aside>
+</div>

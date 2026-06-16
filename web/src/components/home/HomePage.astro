@@ -17,7 +17,8 @@ import HomePregledTeaser from './HomePregledTeaser.astro';
 import HomeSynthesisTeaser from './HomeSynthesisTeaser.astro';
 import TinyAdzInlinedAd from '../TinyAdzInlinedAd.astro';
 import TinyAdzRailAd from '../TinyAdzRailAd.astro';
-import { buildUnifiedFeedItems } from '../../lib/unifiedFeed';
+import { loadHomepageViewModel } from '../../lib/homepageViewModel';
+import { getBriefingSnippet } from '../../lib/homepageData';
 import FilterHeader from './FilterHeader.astro';
 import HomeRail from './HomeRail.astro';
 import EmptyState from './EmptyState.astro';
@@ -28,29 +29,11 @@ import DailyEditionBar from './DailyEditionBar.astro';
 import HomeStartHere from './HomeStartHere.astro';
 import LeadEvidenceChips from './LeadEvidenceChips.astro';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { chooseClusterImage } from '../../utils/imageSelection';
-import { getStoryPreviewText } from '../../utils/textUtils';
 import { apiBaseUrl } from '../../lib/apiBase';
 import type { NewsCluster } from '../../types';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import { localePath, homePath } from '../../lib/localePaths';
-import { buildHomepageSections } from '../../lib/homepageSections';
 import { fetchJsonCached } from '../../lib/apiCache';
-import {
-	buildHomepageSynthesisExcludeIds,
-	filterSynthesisPicks,
-	selectVisibleAnalysisBands,
-} from '../../lib/homepageLayout';
-import { buildLeadSignals, buildLeadStatus, getFirstArticle } from '../../lib/homepageLeadSignals';
-import { getClockTimeStr } from '../../lib/newsTimeFormat';
-import {
-    buildFocusEntities,
-    buildHomepageFlags,
-    buildLeadViewModel,
-    getBriefingSnippet,
-    loadHomepageData,
-    parseHomepageFilters,
-} from '../../lib/homepageData';
 
 interface Props {
     variant?: 'feed' | 'pregled';
@@ -80,92 +63,37 @@ async function fetchJson(url: string) {
     return response.json();
 }
 
-const filters = parseHomepageFilters(Astro.url.searchParams);
-const { category, topic, entity, subcategory, q, timespan, isHomepage } = filters;
-
-const homepageState = await loadHomepageData({
+const homepageVm = await loadHomepageViewModel({
     apiUrl: API_URL,
-    lang,
+    lang: lang as 'sr' | 'mk',
     searchParams: Astro.url.searchParams,
+    variant,
     fetchJson,
     fetchJsonCached,
     errorMessage: t('home.error'),
+    t: translate,
+    localePath: l,
 });
 
 const {
-    clusters,
-    globalClusters,
-    trending,
-    topEntities,
-    stats,
-    briefing,
-    error,
-    supportingClusters: initialSupporting,
-    forYouClusters: initialForYou,
-    feedClusters: initialFeed,
-    wireClusters: initialWire,
-    wireArticles,
-    excludedClusterIds: initialExcluded,
-    synthesisPicks,
-    homepageLeadDisplay,
-    pipeline,
-} = homepageState;
-
-let supportingClusters = initialSupporting;
-let forYouClusters = initialForYou;
-let feedClusters = initialFeed;
-let wireClusters = initialWire;
-let excludedClusterIds = initialExcluded;
-
-const homepageFlags = buildHomepageFlags(homepageState, isHomepage);
-if (homepageFlags.shouldSetErrorStatus) {
-    Astro.response.status = 500;
-}
-
-const focusEntities = buildFocusEntities(topEntities);
-const leadCluster = homepageFlags.leadCluster;
-const leadVisual = leadCluster ? chooseClusterImage(leadCluster, 'hero', lang as 'sr' | 'mk') : null;
-
-const {
+    homepageFlags,
+    focusEntities,
+    leadCluster,
+    leadVisual,
     leadSummary,
     leadTitle,
     finalLeadSignal,
     leadTitleIsCyrillic,
     leadSummaryIsCyrillic,
-} = buildLeadViewModel({
-    leadCluster,
-    homepageLeadDisplay,
-    isHomepage,
-    lang: lang as 'sr' | 'mk',
-    t: translate,
-});
-
-const activeFilterLabel = subcategory || entity || category || topic || q || null;
-const pipelineBusy = homepageFlags.pipelineBusy;
-const hasPartialFeedContent = homepageFlags.hasPartialFeedContent;
-const showEmptyState = homepageFlags.showEmptyState;
-
-const homepageSections = buildHomepageSections({
-    clusters,
-    leadCluster,
-    supportingClusters,
-    forYouClusters,
-    feedClusters,
-    wireClusters,
-    wireArticles,
-    excludedClusterIds,
-    isHomepage,
-});
-
-({
+    activeFilterLabel,
+    pipelineBusy,
+    hasPartialFeedContent,
+    showEmptyState,
     supportingClusters,
     forYouClusters,
     feedClusters,
     wireClusters,
     excludedClusterIds,
-} = homepageSections);
-
-const {
     displayedTrendingClusters,
     supportingFeatured,
     supportingCompact,
@@ -175,194 +103,48 @@ const {
     developmentsFeatured,
     developmentsCompact,
     topWireArticles,
-} = homepageSections;
+    unifiedFeedItems,
+    pluralismPct,
+    showLeadHeroVisual,
+    displayedSynthesisPicks,
+    feedSynthesisTeaser,
+    feedSynthesisMoreCount,
+    analysisBands,
+    leadEvidenceItems,
+    leadStatus,
+    perspectiveBandItems,
+    radarBandItems,
+    consensusBandItems,
+    analysisBandLabels,
+    perspectiveTeaser,
+    radarTeaser,
+    consensusTeaser,
+    analizaNavItems,
+    analysisOverviewItems,
+    showAnalysisLayers,
+    homepageState,
+    filters,
+    error,
+} = homepageVm;
 
-const unifiedFeedItems = isHomepage
-    ? buildUnifiedFeedItems({
-        developmentsFeatured,
-        developmentsCompact,
-        globalClusters,
-        wireClusters,
-    })
-    : [];
-const pluralismPct = stats?.intelligence?.pluralism?.pluralism_pct ?? null;
+const { category, topic, entity, subcategory, q, timespan, isHomepage } = filters;
+const isSimpleHomepage = isHomepage && variant !== 'pregled' && (
+  Astro.url.searchParams.get('simple') === '1'
+  || Astro.url.searchParams.get('view') === 'simple'
+);
+const {
+    clusters,
+    globalClusters,
+    trending,
+    stats,
+    briefing,
+    pipeline,
+} = homepageState;
 
-const showLeadHeroVisual = Boolean(leadVisual?.proxiedUrl);
-const displayedSynthesisPicks = isHomepage
-    ? filterSynthesisPicks(synthesisPicks, buildHomepageSynthesisExcludeIds(leadCluster, supportingClusters))
-    : synthesisPicks;
-const feedSynthesisTeaser = displayedSynthesisPicks[0] || null;
-const feedSynthesisMoreCount = Math.max(0, displayedSynthesisPicks.length - 1);
-const analysisBands = isHomepage
-    ? selectVisibleAnalysisBands({
-        radarCount: radarClusters.length,
-        perspectivesCount: perspectivesClusters.length,
-        consensusCount: consensusClusters.length,
-    })
-    : {
-        radar: radarClusters.length > 0,
-        perspectives: perspectivesClusters.length > 0,
-        consensus: consensusClusters.length > 0,
-    };
-
-function getTimeStr(dateStr: string) {
-    return getClockTimeStr(dateStr, lang as 'sr' | 'mk', {
-        just_now: t('news.just_now'),
-        ago: t('news.ago'),
-        min_short: t('news.min_short'),
-        hour: t('news.hour'),
-        hours: t('news.hours'),
-        day: t('news.day'),
-        days: t('news.days'),
-    });
+if (homepageFlags.shouldSetErrorStatus) {
+    Astro.response.status = 500;
 }
 
-const leadFirstArticle = getFirstArticle(leadCluster);
-const leadLatestArticle = leadCluster?.articles?.[0] || null;
-const leadSignals = buildLeadSignals(leadCluster);
-const leadStatus = buildLeadStatus(leadCluster, lang as 'sr' | 'mk');
-const leadUniqueSources = leadCluster
-    ? Number((leadCluster as any).sources_count || (leadCluster as any).source_count || new Set(leadCluster.articles.map((article) => article.source).filter(Boolean)).size)
-    : 0;
-
-const leadEvidenceItems = leadCluster ? [
-    {
-        label: lang === 'sr' ? 'Redakcije' : 'Редакции',
-        value: String(leadUniqueSources),
-        detail: leadCluster.articles.slice(0, 4).map((article) => article.source).filter(Boolean).join(' · '),
-    },
-    {
-        label: lang === 'sr' ? 'Prva objava' : 'Прва објава',
-        value: leadFirstArticle?.source || '',
-        detail: leadFirstArticle ? getTimeStr(leadFirstArticle.ingested_at || leadFirstArticle.created_at) : '',
-    },
-    {
-        label: lang === 'sr' ? 'Najnovije' : 'Најново',
-        value: leadLatestArticle?.source || '',
-        detail: leadLatestArticle ? getTimeStr(leadLatestArticle.ingested_at || leadLatestArticle.created_at) : '',
-    },
-    {
-        label: lang === 'sr' ? 'Signal' : 'Сигнал',
-        value: leadSignals[0] || leadLatestArticle?.category || '',
-        detail: leadSignals.slice(1).join(' · '),
-    },
-].filter((item) => item.value) : [];
-
-const reportingLabel = lang === 'sr' ? 'Izveštavaju:' : 'Известуваат:';
-const factsConfirmedLabel = lang === 'sr' ? 'Činjenice potvrđene' : 'Фактите потврдени';
-const factCheckSourceLabel = lang === 'sr' ? 'Fakt-ček izvor:' : 'Факт-чек извор:';
-const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
-
-const perspectiveBandItems = perspectivesClusters.map((cluster: NewsCluster) => ({
-    href: l(`/cluster/${cluster.cluster_id}`),
-    title: cluster.synthetic_headline || cluster.articles?.[0]?.title || '',
-    preview: getStoryPreviewText(cluster, cluster.articles?.[0], lang),
-    category: cluster.articles?.[0]?.category || 'Tema',
-    pluralism: cluster.pluralism_score || 50,
-    sources: (cluster.articles || []).slice(0, 3).map((art) => art.source).filter(Boolean),
-    extraSources: Math.max(0, (cluster.articles?.length || 0) - 3),
-}));
-
-const radarBandItems = radarClusters.map((cluster: NewsCluster) => {
-    const factCheckedArticle = cluster.articles?.find((a) => a.is_fact_check) || cluster.articles?.[0];
-    return {
-        href: l(`/cluster/${cluster.cluster_id}`),
-        title: cluster.synthetic_headline || factCheckedArticle?.title || '',
-        preview: getStoryPreviewText(cluster, factCheckedArticle, lang),
-        source: factCheckedArticle?.source || portalFallbackLabel,
-    };
-});
-
-const consensusBandItems = consensusClusters.map((cluster: NewsCluster) => ({
-    href: l(`/cluster/${cluster.cluster_id}`),
-    title: cluster.synthetic_headline || cluster.articles?.[0]?.title || '',
-    preview: getStoryPreviewText(cluster, cluster.articles?.[0], lang),
-    category: cluster.articles?.[0]?.source || '',
-}));
-
-const analysisBandLabels = {
-    reporting: reportingLabel,
-    factsConfirmed: factsConfirmedLabel,
-    factCheckSource: factCheckSourceLabel,
-    portalFallback: portalFallbackLabel,
-};
-
-const perspectiveTeaser = perspectiveBandItems[0]?.title || '';
-const radarTeaser = radarBandItems[0]?.title || '';
-const consensusTeaser = consensusBandItems[0]?.title || '';
-
-const analizaNavItems: { target: string; kicker: string; label: string; count: number }[] = [];
-if (displayedSynthesisPicks.length > 0) {
-    analizaNavItems.push({
-        target: '[data-synthesis-band]',
-        kicker: lang === 'sr' ? 'Sinteza' : 'Синтеза',
-        label: t('home.synthesis_picks_title'),
-        count: displayedSynthesisPicks.length,
-    });
-}
-if (displayedTrendingClusters.length > 0) {
-    analizaNavItems.push({
-        target: '[data-trending-strip]',
-        kicker: t('home.trending'),
-        label: lang === 'sr' ? 'Brzi pregled' : 'Брз преглед',
-        count: displayedTrendingClusters.length,
-    });
-}
-if (analysisBands.perspectives && perspectivesClusters.length > 0) {
-    analizaNavItems.push({
-        target: '[data-perspectives-band]',
-        kicker: t('home.perspectives_title'),
-        label: t('home.perspectives_subtitle'),
-        count: perspectivesClusters.length,
-    });
-}
-if (analysisBands.radar && radarClusters.length > 0) {
-    analizaNavItems.push({
-        target: '[data-radar-band]',
-        kicker: t('home.radar_title'),
-        label: t('home.radar_subtitle'),
-        count: radarClusters.length,
-    });
-}
-if (analysisBands.consensus && consensusClusters.length > 0) {
-    analizaNavItems.push({
-        target: '[data-consensus-band]',
-        kicker: t('home.consensus_title'),
-        label: t('home.consensus_subtitle'),
-        count: consensusClusters.length,
-    });
-}
-if (forYouClusters.length > 0) {
-    analizaNavItems.push({
-        target: '[data-for-you-band]',
-        kicker: lang === 'sr' ? 'Za vas' : 'За вас',
-        label: lang === 'sr' ? 'Personalizovano' : 'Персонализирано',
-        count: forYouClusters.length,
-    });
-}
-
-const analysisOverviewItems = [
-    {
-        label: t('home.analysis_overview_modules'),
-        value: String(analizaNavItems.length),
-        note: t('home.analysis_overview_modules_note'),
-    },
-    {
-        label: t('home.analysis_overview_synthesis'),
-        value: String(displayedSynthesisPicks.length),
-        note: t('home.analysis_overview_synthesis_note'),
-    },
-    {
-        label: t('home.analysis_overview_pluralism'),
-        value: `${pluralismPct}%`,
-        note: t('home.analysis_overview_pluralism_note'),
-    },
-    {
-        label: t('home.analysis_overview_personal'),
-        value: String(forYouClusters.length),
-        note: t('home.analysis_overview_personal_note'),
-    },
-].filter((item) => item.value !== '0' || item.label === t('home.analysis_overview_pluralism'));
 ---
 
 <Layout
@@ -468,6 +250,19 @@ const analysisOverviewItems = [
                     </div>
                 )}
 
+                {!error && isHomepage && !isPregled && (
+                    <div class={`homepage-simple-expand ${isSimpleHomepage ? '' : 'hidden'}`} data-simple-expand>
+                        <p class="homepage-simple-expand-copy">
+                            {lang === 'mk'
+                                ? 'Го гледате поедноставениот преглед. Отворете ја целосната медиска анализа.'
+                                : 'Gledate pojednostavljen pregled. Otvorite punu medijsku analizu.'}
+                        </p>
+                        <button type="button" class="homepage-simple-expand-btn" data-expand-analysis>
+                            {lang === 'mk' ? 'Медиска анализа' : 'Medijska analiza'}
+                        </button>
+                    </div>
+                )}
+
 				{leadCluster && !isPregled && (
 					<div class="section-wrapper lead-wrapper home-mobile-order-lead home-feed-only">
 						<LeadHero
@@ -499,25 +294,25 @@ const analysisOverviewItems = [
 					</div>
 				)}
 
-                {!error && isHomepage && !isPregled && (
+                {!error && isHomepage && !isPregled && !isSimpleHomepage && (
                     <div class="section-wrapper home-mobile-order-pregled-teaser home-feed-only home-edition-collapsed">
                         <HomePregledTeaser lang={lang} pluralismPct={pluralismPct} stats={stats} />
                     </div>
                 )}
 
-                {!error && isHomepage && analizaNavItems.length > 0 && (
+                {!error && isHomepage && analizaNavItems.length > 0 && showAnalysisLayers && (
                     <div class="homepage-analiza-only">
                         <AnalizaSectionNav items={analizaNavItems} lang={lang} />
                     </div>
                 )}
 
-				{!error && isHomepage && briefing && (
+				{!error && isHomepage && briefing && showAnalysisLayers && (
                     <div class="home-mobile-order-briefing homepage-analiza-only">
 					    <HomeBriefingTeaser briefing={briefing} getBriefingSnippet={getBriefingSnippet} />
                     </div>
 				)}
 
-                {!error && isHomepage && (
+                {!error && isHomepage && showAnalysisLayers && (
                     <div class="home-mobile-order-live homepage-analiza-only">
                         <HomeLiveStrip articles={topWireArticles} getTimeStr={getTimeStr} lang={lang} />
                     </div>
@@ -539,7 +334,7 @@ const analysisOverviewItems = [
                     </div>
                 )}
 
-                {!error && isHomepage && !isPregled && feedSynthesisTeaser && (
+                {!error && isHomepage && !isPregled && feedSynthesisTeaser && showAnalysisLayers && (
                     <div class="section-wrapper home-mobile-order-synthesis-teaser home-feed-only home-edition-collapsed">
                         <HomeSynthesisTeaser
                             cluster={feedSynthesisTeaser}
@@ -549,13 +344,13 @@ const analysisOverviewItems = [
                     </div>
                 )}
 
-                {!error && isHomepage && (
+                {!error && isHomepage && showAnalysisLayers && (
                     <div class="home-mobile-order-trending homepage-analiza-only">
                         <TrendingPreviewRail clusters={displayedTrendingClusters} lang={lang} />
                     </div>
                 )}
 
-				{isHomepage && displayedSynthesisPicks.length > 0 && (
+				{isHomepage && displayedSynthesisPicks.length > 0 && showAnalysisLayers && (
 					<div class="section-wrapper home-mobile-order-synthesis homepage-analiza-only">
 						<SynthesisPicksSection
 							synthesisPicks={displayedSynthesisPicks}
@@ -564,7 +359,7 @@ const analysisOverviewItems = [
 					</div>
 				)}
 
-				<div class="home-mobile-order-analysis homepage-analiza-only">
+				<div class={`home-mobile-order-analysis ${showAnalysisLayers ? 'homepage-analiza-only' : 'hidden'}`}>
 				{/* ── UGAO GLEDANJA (PERSPECTIVE SPECTRUM) ── */}
 				{isHomepage && analysisBands.perspectives && perspectivesClusters && perspectivesClusters.length > 0 && (
 					<details class="section-wrapper analysis-band perspectives-section analysis-band-collapsible" data-perspectives-band>
@@ -732,7 +527,7 @@ const analysisOverviewItems = [
                 )}
 			</div>
 			{/* HomeRail rendered horizontally at the bottom of the main feed */}
-			<div class="w-full mt-16 pt-12 homepage-analiza-only">
+			<div class={`w-full mt-16 pt-12 ${showAnalysisLayers ? 'homepage-analiza-only' : 'hidden'}`}>
 				<div class="masthead-double-rule mb-12"></div>
 				<HomeRail
 					briefing={briefing}
@@ -748,7 +543,7 @@ const analysisOverviewItems = [
 	<Footer />
 </Layout>
 
-{isHomepage && (perspectiveBandItems.length > 0 || radarBandItems.length > 0 || consensusBandItems.length > 0) && (
+{isHomepage && showAnalysisLayers && (perspectiveBandItems.length > 0 || radarBandItems.length > 0 || consensusBandItems.length > 0) && (
 	<AnalysisBandsLazy
 		perspectiveItems={perspectiveBandItems}
 		radarItems={radarBandItems}
@@ -758,6 +553,46 @@ const analysisOverviewItems = [
 )}
 
 <script is:inline>
+	(function autoSimpleHomepage() {
+		try {
+			const params = new URLSearchParams(window.location.search);
+			if (params.get('simple') === '1' || params.get('view') === 'simple') return;
+			const onboardRaw = localStorage.getItem('presek_onboarding_v1');
+			const onboard = onboardRaw ? JSON.parse(onboardRaw) : null;
+			const onboarded = Boolean(onboard && (onboard.dismissed || onboard.completedAt));
+			const profileRaw = localStorage.getItem('presek_reader_profile_v1');
+			const profile = profileRaw ? JSON.parse(profileRaw) : null;
+			const hasSignals = Boolean(
+				(profile?.followedTopics || []).length
+				|| (profile?.followedSources || []).length
+				|| (profile?.recentClusters || []).length
+			);
+			if (onboarded || hasSignals) return;
+			document.documentElement.dataset.presekSimpleHome = '1';
+			document.querySelectorAll('.homepage-analiza-only').forEach((node) => {
+				node.classList.add('hidden');
+			});
+			document.querySelector('[data-simple-expand]')?.classList.remove('hidden');
+		} catch (_) {}
+	})();
+
+	(function bindSimpleHomeExpand() {
+		const expandBtn = document.querySelector('[data-expand-analysis]');
+		if (!expandBtn) return;
+		expandBtn.addEventListener('click', () => {
+			document.documentElement.dataset.presekSimpleHome = '0';
+			document.documentElement.classList.add('home-analysis-expanded');
+			try {
+				localStorage.setItem('presek_home_analysis_expanded_v1', '1');
+			} catch (_) {}
+			document.querySelectorAll('.homepage-analiza-only').forEach((node) => {
+				node.classList.remove('hidden');
+			});
+			document.querySelector('[data-simple-expand]')?.classList.add('hidden');
+			document.querySelector('.homepage-analiza-only')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		});
+	})();
+
 	(function homeDetailsDefaults() {
 		const DETAIL_SELECTORS = [
 			'.home-mobile-stats-details',

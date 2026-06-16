@@ -1,0 +1,34 @@
+{
+  "results": [
+    {
+      "cluster_id": "fy-cluster-1",
+      "articles": [
+        {
+          "title": "Inflacija usporava u aprilu",
+          "source": "Blic",
+          "topic": "Ekonomija",
+          "category": "Ekonomija"
+        },
+        {
+          "title": "Rast cena hrane i dalje pritisce domacinstva",
+          "source": "N1 Info",
+          "topic": "Ekonomija",
+          "category": "Ekonomija"
+        }
+      ],
+      "representative_image": null,
+      "dominant_color": "#c8b59a",
+      "is_breaking": false,
+      "has_synthesis": true,
+      "has_balanced": true,
+      "score": 4.1,
+      "homepage_score": 3.8,
+      "similarity": 0.71,
+      "profile_score": 3.6,
+      "blend_score": 0.64,
+      "seen": false,
+      "reason": "Praćena tema: Ekonomija",
+      "match_reasons": ["Praćena tema: Ekonomija", "2 izvora u klasteru"]
+    }
+  ]
+}

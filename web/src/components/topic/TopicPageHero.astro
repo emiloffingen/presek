@@ -1,0 +1,106 @@
+---
+import PreferenceToggle from '../PreferenceToggle.tsx';
+import TopicFollowSuggestionsIsland from '../TopicFollowSuggestionsIsland.tsx';
+import Breadcrumbs from '../Breadcrumbs.astro';
+
+interface FollowSuggestion {
+  topic?: string;
+  source?: string;
+  reason?: string;
+}
+
+interface Props {
+  topic: string;
+  lang: 'sr' | 'mk';
+  introText: string;
+  leadSummary: string;
+  clusterCount: number;
+  uniqueSourceCount: number;
+  totalReports: number;
+  breakingCount: number;
+  synthesisLines: string[];
+  topicFollowSuggestions: FollowSuggestion[];
+  sourceFollowSuggestions: FollowSuggestion[];
+  labels: {
+    kicker: string;
+    contextTitle: string;
+    contextOpen: string;
+    noteLabel: string;
+    statsClusters: string;
+    statsSources: string;
+    statsReports: string;
+    statsBreaking: string;
+  };
+}
+
+const {
+  topic,
+  lang,
+  introText,
+  leadSummary,
+  clusterCount,
+  uniqueSourceCount,
+  totalReports,
+  breakingCount,
+  synthesisLines,
+  topicFollowSuggestions,
+  sourceFollowSuggestions,
+  labels,
+} = Astro.props;
+---
+
+<header class="topic-hero">
+  <div class="topic-hero-copy">
+    <Breadcrumbs items={[{ label: topic }]} />
+    <span class="topic-kicker">{labels.kicker}</span>
+    <h1 class="topic-headline">{topic}</h1>
+    <div class="topic-actions">
+      <PreferenceToggle client:visible kind="topic" value={topic} lang={lang} />
+    </div>
+    <p class="topic-intro">{introText}</p>
+    <p class="topic-summary">{leadSummary}</p>
+
+    <div class="topic-stats">
+      <div>
+        <span class="micro-label">{labels.statsClusters}</span>
+        <strong>{clusterCount}</strong>
+      </div>
+      <div>
+        <span class="micro-label">{labels.statsSources}</span>
+        <strong>{uniqueSourceCount}</strong>
+      </div>
+      <div>
+        <span class="micro-label">{labels.statsReports}</span>
+        <strong>{totalReports}</strong>
+      </div>
+      <div>
+        <span class="micro-label">{labels.statsBreaking}</span>
+        <strong>{breakingCount}</strong>
+      </div>
+    </div>
+  </div>
+
+  <details class="topic-hero-context">
+    <summary class="topic-hero-context-summary">
+      <span class="ui-label">{labels.contextTitle}</span>
+      <span class="topic-hero-context-hint ui-label-min text-muted-foreground">{labels.contextOpen}</span>
+    </summary>
+    <div class="topic-hero-side topic-hero-context-body">
+      <div class="topic-note-card">
+        <p class="topic-note-label">{labels.noteLabel}</p>
+        <ul class="topic-note-list">
+          {(synthesisLines.length > 0 ? synthesisLines : [leadSummary]).map((line: string) => (
+            <li>{line}</li>
+          ))}
+        </ul>
+      </div>
+      <TopicFollowSuggestionsIsland
+        client:visible
+        currentTopic={topic}
+        relatedTopics={topicFollowSuggestions}
+        strongSources={sourceFollowSuggestions}
+        lang={lang}
+      />
+    </div>
+  </details>
+</header>

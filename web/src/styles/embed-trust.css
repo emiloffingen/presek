@@ -1,0 +1,58 @@
+/* Embeddable trust card for off-site widgets */
+:root {
+  color-scheme: light;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+body {
+  margin: 0;
+  padding: 1rem;
+  background: #faf9f7;
+  color: #111;
+}
+
+.embed-card {
+  max-width: 420px;
+  border: 1px solid #ddd;
+  background: #fff;
+  padding: 1rem 1.1rem;
+}
+
+.embed-kicker {
+  font: 600 0.65rem/1.2 system-ui, sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #666;
+  margin: 0 0 0.5rem;
+}
+
+.embed-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0 0 0.75rem;
+  line-height: 1.35;
+}
+
+.embed-detail {
+  font: 400 0.85rem/1.45 system-ui, sans-serif;
+  color: #444;
+  margin: 0.5rem 0 0;
+}
+
+.embed-footer {
+  margin-top: 0.85rem;
+  font: 600 0.72rem/1.2 system-ui, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.embed-footer a {
+  color: #111;
+  text-decoration: none;
+  border-bottom: 1px solid #111;
+}
+
+.embed-error {
+  font: 400 0.85rem/1.4 system-ui, sans-serif;
+  color: #8b1e1e;
+}

@@ -97,7 +97,13 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
   // 4. Combined Personalized Set
   // Priority: Semantic Results (Brain) > Local Matches (Keywords)
   const displayItems = useMemo(() => {
-    if (semanticResults.length > 0) return semanticResults;
+    const sortByBlend = (items: any[]) =>
+      [...items].sort((left, right) => {
+        const blendDelta = (Number(right.blend_score) || 0) - (Number(left.blend_score) || 0);
+        if (blendDelta !== 0) return blendDelta;
+        return (Number(right.profile_score) || 0) - (Number(left.profile_score) || 0);
+      });
+    if (semanticResults.length > 0) return sortByBlend(semanticResults);
     if (localPersonalizedItems.length > 0) return localPersonalizedItems;
     return [];
   }, [semanticResults, localPersonalizedItems]);

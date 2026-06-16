@@ -14,8 +14,10 @@ const l = (path: string) => localePath(path, lang, hostHeader);
 ---
 
 <Layout
-    title={`${t('nav.methodology') || 'Metodologija'} — Presek`}
-    description="Detaljno objašnjenje naučne metodologije, NLP algoritama i matematičkih formula koje Presek koristi za izračunavanje medijskog pluralizma i sentimenta."
+    title={`${t('nav.methodology') || (lang === 'mk' ? 'Методологија' : 'Metodologija')} — Presek`}
+    description={lang === 'mk'
+        ? 'Детално објаснување на научната методологија, NLP алгоритмите и формулите што Presek ги користи за медиски плурализам и синтеза.'
+        : 'Detaljno objašnjenje naučne metodologije, NLP algoritama i matematičkih formula koje Presek koristi za izračunavanje medijskog pluralizma i sentimenta.'}
 >
     <NYTHeader />
     <main class="site-layout broadsheet-layout py-[var(--page-py)]">
@@ -24,7 +26,7 @@ const l = (path: string) => localePath(path, lang, hostHeader);
                 <span class="masthead-kicker">NAUČNI OKVIR I INDEKSIRANJE</span>
             </div>
             <div class="masthead-main">
-                <h1 class="masthead-title">Metodologija <span>i metrika</span></h1>
+                <h1 class="masthead-title">{lang === 'mk' ? 'Методологија' : 'Metodologija'} <span>{lang === 'mk' ? 'и метрика' : 'i metrika'}</span></h1>
             </div>
             <p class="masthead-intro">
                 Kako naši NLP algoritmi analiziraju, grupišu i ocenjuju medijski sadržaj na bazi empirijskih jezičkih modela.
@@ -73,6 +75,27 @@ const l = (path: string) => localePath(path, lang, hostHeader);
                     <h2 class="section-title-italic">4. Automatska Sinteza (Editorial Synthesis)</h2>
                     <p>
                         Kako bismo uštedeli vreme čitaocima i ponudili objektivan pregled, naši generativni NLP modeli analiziraju čitavu grupu članaka u klasteru, izdvajaju unakrsno potvrđene ključne činjenice (fakte) i stvaraju neutralnu sintezu. Ovaj proces sintetiše informacije bez preuzimanja subjektivnog mišljenja pojedinačnih autora, stvarajući jedinstveni doprinos medijskoj analizi.
+                    </p>
+
+                    <div class="editorial-divider"></div>
+
+                    <h2 class="section-title-italic">{lang === 'mk' ? '5. Сигнали на доверба за читателот' : '5. Signali poverenja za čitaoca'}</h2>
+                    <p>
+                        {lang === 'mk'
+                            ? 'Покрај техничките метрики, Presek на картичките и страниците на кластерот прикажува сигнали на доверба кои објаснуваат колку е зрела приказната за читање:'
+                            : 'Pored tehničkih metrika, Presek na karticama i stranicama klastera prikazuje signale poverenja koji objašnjavaju koliko je priča zrela za čitanje:'}
+                    </p>
+                    <ul class="editorial-list">
+                        <li><strong>{lang === 'mk' ? 'Ран сигнал' : 'Rani signal'}</strong> — {lang === 'mk' ? 'уште една редакција; третирајте го како почетен извештај.' : 'još jedna redakcija; tretirajte kao početni izveštaj.'}</li>
+                        <li><strong>{lang === 'mk' ? 'Привремен преглед' : 'Privremeni pregled'}</strong> — {lang === 'mk' ? 'брзата синтеза е објавена, целосната верзија се надградува.' : 'brza sinteza je objavljena, puna verzija se nadograđuje.'}</li>
+                        <li><strong>{lang === 'mk' ? 'Консензус' : 'Konsenzus'}</strong> — {lang === 'mk' ? 'повеќе извори ја покриваат истата приказна со сличен наглас.' : 'više izvora pokriva istu priču sa sličnim naglaskom.'}</li>
+                        <li><strong>{lang === 'mk' ? 'Плурализам' : 'Pluralizam'}</strong> — {lang === 'mk' ? 'изворите се разликуваат во тон или интерпретација.' : 'izvori se razlikuju u tonu ili interpretaciji.'}</li>
+                        <li><strong>{lang === 'mk' ? 'Проверено' : 'Provereno'}</strong> — {lang === 'mk' ? 'повеќе независни извори и свежа синтеза.' : 'više nezavisnih izvora i sveža sinteza.'}</li>
+                    </ul>
+                    <p>
+                        {lang === 'mk'
+                            ? 'Брзата синтеза (fast-track) се објавува со ознака за привремен преглед; системот потоа автоматски ја надградува кога капацитетот дозволува.'
+                            : 'Brza sinteza (fast-track) objavljuje se uz oznaku privremenog pregleda; sistem zatim automatski pokreće punu nadogradnju kada kapacitet dozvoli.'}
                     </p>
                 </article>
             </div>

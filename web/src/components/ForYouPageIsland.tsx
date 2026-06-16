@@ -231,6 +231,14 @@ export default function ForYouPageIsland({
       })),
     ] as PersonalizedCluster[];
 
+    combined.sort((left, right) => {
+      const blendDelta = (Number(right.blend_score) || 0) - (Number(left.blend_score) || 0);
+      if (blendDelta !== 0) return blendDelta;
+      const profileDelta = (Number(right.profile_score) || 0) - (Number(left.profile_score) || 0);
+      if (profileDelta !== 0) return profileDelta;
+      return (Number(right.similarity) || 0) - (Number(left.similarity) || 0);
+    });
+
     if (combined.length === 0 && hasPersonalizationSignal(profile)) {
       return seedClusters.slice(0, 10).map((cluster) => ({
         ...cluster,

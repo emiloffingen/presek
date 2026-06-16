@@ -1,0 +1,41 @@
+{
+  "cluster_id": "cluster-42",
+  "lang": "sr",
+  "article_count": 3,
+  "unique_sources": 3,
+  "countries": ["RS"],
+  "freshness": {
+    "is_stale": false,
+    "freshness_score": 1.2,
+    "reasons": ["new_sources"]
+  },
+  "pending_fast_upgrade": false,
+  "stuck_fast_upgrade": false,
+  "active_summary": {
+    "lang": "sr",
+    "generation_provider": "mistral_small",
+    "quality_score": 0.84,
+    "is_provisional": false,
+    "needs_upgrade": false,
+    "copy_purity_ok": true
+  },
+  "languages": [
+    {
+      "lang": "sr",
+      "generation_provider": "mistral_small",
+      "quality_score": 0.84,
+      "fallback_reason": null,
+      "has_headline": true,
+      "has_article": true
+    }
+  ],
+  "history": [
+    {
+      "lang": "sr",
+      "generation_provider": "local",
+      "quality_score": 0.72,
+      "fallback_reason": "fast_mode_provisional"
+    }
+  ],
+  "recommended_actions": ["schedule_full_upgrade"]
+}

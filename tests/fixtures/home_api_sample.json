@@ -1,0 +1,38 @@
+{
+  "status": "success",
+  "lead": {
+    "cluster_id": "lead-1",
+    "synthetic_headline": "Vlada usvojila izmene",
+    "articles": [{ "title": "Vlada", "source": "RTS", "category": "Politika" }],
+    "sources_count": 4,
+    "is_breaking": false
+  },
+  "supporting": [{ "cluster_id": "sup-1", "articles": [{ "title": "Podrska", "source": "Blic" }] }],
+  "developing": [{ "cluster_id": "dev-1", "articles": [{ "title": "Razvoj", "source": "N1" }] }],
+  "wire": [{ "cluster_id": "wire-1", "articles": [{ "title": "Wire", "source": "Tanjug" }] }],
+  "for_you_pool": [{
+    "cluster_id": "fy-1",
+    "articles": [{ "title": "Za vas", "source": "Danas", "category": "Ekonomija" }]
+  }],
+  "synthesis_picks": [{
+    "cluster_id": "syn-1",
+    "synthetic_headline": "Sinteza dana",
+    "articles": [{ "title": "Sinteza", "source": "RTS" }]
+  }],
+  "trending": [{ "cluster_id": "t-1" }],
+  "focus_entities": [{ "name": "Beograd", "display_name": "Beograd" }],
+  "stats": {
+    "intelligence": { "pluralism": { "pluralism_pct": 37 } }
+  },
+  "briefing": {
+    "date": "2026-06-16",
+    "content": "## Šta pokreće dan\n\nGlavna vest."
+  },
+  "lead_display": {
+    "title": "Vlada usvojila izmene",
+    "summary": "Parlament je doneo izmene zakona.",
+    "signal": "agenda"
+  },
+  "pipeline": { "busy": false, "intel_heavy_depth": 0 },
+  "excluded_cluster_ids": ["x-1"]
+}

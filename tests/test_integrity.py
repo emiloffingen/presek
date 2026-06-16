@@ -388,6 +388,21 @@ class TestDeploymentIntegrity:
         assert "Content-Security-Policy" in smoke
         assert "Strict-Transport-Security" in smoke
 
+    def test_preflight_runs_release_import_verification(self):
+        preflight = _read("deploy/preflight_check.sh")
+        assert "verify_release_imports.sh" in preflight
+
+    def test_split_worker_units_have_systemd_hardening(self):
+        for service_name in (
+            "presek-worker-synthesis.service",
+            "presek-worker-fasttrack.service",
+            "presek-worker-maintenance.service",
+        ):
+            content = _read(f"deploy/systemd/{service_name}")
+            assert "ProtectSystem=strict" in content
+            assert "MemoryMax=" in content
+            assert "--queues=" in content
+
     def test_deploy_restarts_explicit_services_in_order(self):
         deploy_script = _read("deploy/deploy_release.sh")
         assert "restart_services_in_order" in deploy_script

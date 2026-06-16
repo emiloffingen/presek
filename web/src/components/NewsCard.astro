@@ -11,6 +11,7 @@ import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import { localePath, homePath } from '../lib/localePaths';
 import TrustChip from './TrustChip.astro';
 import { buildCompactPluralismMeta } from '../lib/trustSignals';
+import { buildCopyPurityNote } from '../lib/synthesisMeta';
 import { isStubFeedCluster } from '../lib/unifiedFeed';
 
 interface Props {
@@ -95,8 +96,14 @@ const synthesisFreshness = (cluster.synthesis_freshness || {}) as {
     synthesis_updated_at?: string | null;
 };
 const isPendingSynthesis = (synthesisFreshness.reasons || []).includes('missing_synthesis');
-const synthesisMeta = (cluster.synthesis_meta || {}) as { is_provisional?: boolean; needs_upgrade?: boolean };
+const synthesisMeta = (cluster.synthesis_meta || {}) as {
+  is_provisional?: boolean;
+  needs_upgrade?: boolean;
+  copy_purity_ok?: boolean | null;
+  copy_purity_reason?: string | null;
+};
 const isProvisionalSynthesis = Boolean(synthesisMeta.is_provisional || synthesisMeta.needs_upgrade);
+const copyPurityNote = buildCopyPurityNote(synthesisMeta, lang as 'sr' | 'mk');
 const trustIsStale = Boolean(synthesisFreshness.is_stale) && !isPendingSynthesis;
 const isStubCard = isStubFeedCluster(cluster) && variant !== 'featured' && !isLead;
 const conflictHeadlines = (cluster.pluralism_score ?? 0) >= 55
@@ -225,6 +232,9 @@ function getTimeStr(dateStr: string) {
                     showExplainer={isLead}
                     lang={lang}
                 />
+                {copyPurityNote && (
+                    <p class="copy-purity-note ui-label-min text-muted-foreground">{copyPurityNote}</p>
+                )}
             </div>
         )}
 

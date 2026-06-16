@@ -1,0 +1,73 @@
+---
+import '../../../styles/embed-trust.css';
+import { apiBaseUrl } from '../../../lib/apiBase';
+import TrustChip from '../../../components/TrustChip.astro';
+import {
+  buildEmbedTrustViewModel,
+  loadEmbedTrustData,
+  resolveEmbedTrustLang,
+} from '../../../lib/embedTrustData';
+
+const clusterId = Astro.params.clusterId || '';
+const langParam = Astro.url.searchParams.get('lang');
+const hostHeader = Astro.request?.headers.get('host') || '';
+const lang = resolveEmbedTrustLang(langParam, hostHeader);
+const API_URL = apiBaseUrl();
+
+async function fetchJson(url: string) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    const err: any = new Error(`HTTP ${response.status}`);
+    err.status = response.status;
+    throw err;
+  }
+  return response.json();
+}
+
+const { cluster, error } = await loadEmbedTrustData({
+  apiUrl: API_URL,
+  clusterId,
+  lang,
+  fetchJson,
+});
+
+const viewModel = cluster ? buildEmbedTrustViewModel(cluster, lang, clusterId) : null;
+const labels = viewModel?.labels ?? (lang === 'mk'
+  ? { unavailable: 'Кластерот не е достапен.', kicker: 'Сигнал на доверба', footerHost: 'presek.mk' }
+  : { unavailable: 'Klaster nije dostupan.', kicker: 'Signal poverenja', footerHost: 'presek.live' });
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{viewModel?.headline ?? 'Presek'} — Presek trust</title>
+  </head>
+  <body>
+    <div class="embed-card">
+      {error || !viewModel ? (
+        <p class="embed-error">{labels.unavailable}</p>
+      ) : (
+        <>
+          <p class="embed-kicker">Presek · {labels.kicker}</p>
+          <h1 class="embed-title">{viewModel.headline}</h1>
+          <TrustChip
+            sourcesCount={viewModel.trustChip.sourcesCount}
+            pluralismScore={viewModel.trustChip.pluralismScore}
+            isStale={viewModel.trustChip.isStale}
+            hasVerification={viewModel.trustChip.hasVerification}
+            isProvisional={viewModel.trustChip.isProvisional}
+            needsUpgrade={viewModel.trustChip.needsUpgrade}
+            lang={lang}
+            showExplainer={true}
+          />
+          {viewModel.detail && <p class="embed-detail">{viewModel.detail}</p>}
+          <p class="embed-footer">
+            <a href={viewModel.clusterUrl} target="_blank" rel="noopener noreferrer">{labels.footerHost}</a>
+          </p>
+        </>
+      )}
+    </div>
+  </body>
+</html>

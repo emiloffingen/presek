@@ -296,6 +296,34 @@ async def clear_failed_ingestion(
     }
 
 
+@router.get("/admin/synthesis-traces/recent")
+async def list_recent_synthesis_traces(
+    lang: str = "sr",
+    limit: int = 8,
+    authorized: bool = Depends(verify_admin),
+):
+    """Batch synthesis traces for provisional, fallback, and stale clusters."""
+    from core.synthesis_trace import list_recent_synthesis_traces as _list_traces
+
+    traces = await _list_traces(lang=lang, limit=limit)
+    return {"status": "success", "traces": traces, "count": len(traces)}
+
+
+@router.get("/admin/cluster/{cluster_id}/synthesis-trace")
+async def get_cluster_synthesis_trace(
+    cluster_id: str,
+    lang: str = "sr",
+    authorized: bool = Depends(verify_admin),
+):
+    """Per-cluster synthesis debug trace for the admin cockpit."""
+    from core.synthesis_trace import build_cluster_synthesis_trace
+
+    trace = await build_cluster_synthesis_trace(cluster_id, lang=lang)
+    if not trace.get("article_count"):
+        raise HTTPException(status_code=404, detail="Klaster nije pronađen.")
+    return {"status": "success", "trace": trace}
+
+
 @router.get("/admin/localization/rules")
 async def get_localization_rules(authorized: bool = Depends(verify_admin)):
     """Fetches the active dynamic localization and tag normalization rules."""

@@ -288,6 +288,7 @@ async def get_personalized_news_by_profile(profile: dict, limit: int = 6, lang: 
     from recently read articles or followed topics, and returns semantically matching clusters.
     """
     from core.personalization_reasons import build_personalization_reasons
+    from core.personalization_score import blend_personalization_score, score_cluster_for_profile
 
     normalized_profile = _normalize_synced_profile(profile)
     recent = normalized_profile.get("recentClusters") or []
@@ -382,11 +383,9 @@ async def get_personalized_news_by_profile(profile: dict, limit: int = 6, lang: 
     for a in all_articles:
         cluster_articles[a["cluster_id"]].append(a)
 
-    results = []
-    # Rank by original similarity
-    sorted_cids = sorted(cids, key=lambda cid: clusters[cid][0]["similarity"], reverse=True)
+    ranked: list[dict] = []
 
-    for cid in sorted_cids[:limit]:
+    for cid in cids:
         arts = cluster_articles[cid]
         if not arts:
             continue
@@ -395,6 +394,21 @@ async def get_personalized_news_by_profile(profile: dict, limit: int = 6, lang: 
         meta = meta_map.get(cid) or {}
         score = score_cluster(arts)
         similarity = round(float(clusters[cid][0]["similarity"]), 4)
+        is_breaking = score >= BREAKING_SCORE_THRESHOLD
+        profile_match = score_cluster_for_profile(
+            profile=normalized_profile,
+            articles=annotated,
+            metadata=meta,
+            lang=lang,
+            is_breaking=is_breaking,
+            cluster_id=cid,
+        )
+        profile_score = float(profile_match.get("profile_score") or 0.0)
+
+        blend_score = blend_personalization_score(
+            similarity=similarity,
+            profile_score=profile_score,
+        )
         reason_payload = build_personalization_reasons(
             profile=normalized_profile,
             articles=annotated,
@@ -403,23 +417,34 @@ async def get_personalized_news_by_profile(profile: dict, limit: int = 6, lang: 
             similarity=similarity,
         )
 
-        results.append(
+        ranked.append(
             {
                 "cluster_id": cid,
                 "articles": [_public_article_payload(a, lang=lang) for a in annotated],
                 "representative_image": meta.get("representative_image"),
                 "dominant_color": meta.get("dominant_color"),
-                "is_breaking": score >= BREAKING_SCORE_THRESHOLD,
+                "is_breaking": is_breaking,
                 "has_synthesis": cid in synthesis_ids,
                 "has_balanced": is_balanced(arts),
                 "score": round(score, 3),
                 "homepage_score": round(score_cluster_for_homepage(arts), 3),
                 "similarity": similarity,
+                "profile_score": profile_score,
+                "blend_score": blend_score,
+                "seen": bool(profile_match.get("seen")),
                 **reason_payload,
             }
         )
 
-    return results
+    ranked.sort(
+        key=lambda item: (
+            item.get("blend_score") or 0.0,
+            item.get("profile_score") or 0.0,
+            item.get("similarity") or 0.0,
+        ),
+        reverse=True,
+    )
+    return ranked[:limit]
 
 
 @router.post("/profile/sync/personalized-news")

@@ -32,6 +32,18 @@ else
     fail "Missing runtime virtualenv at $APP_ROOT/venv (run bootstrap_runtime_root.sh)"
 fi
 
+# 1b. Verify release-critical Python imports
+if [ -f "$SCRIPT_DIR/verify_release_imports.sh" ]; then
+    info "Verifying release-critical Python imports..."
+    if APP_ROOT="$APP_ROOT" bash "$SCRIPT_DIR/verify_release_imports.sh"; then
+        ok "Release import verification passed."
+    else
+        fail "Release import verification failed."
+    fi
+else
+    warn "Release import verifier not found; skipping module import check"
+fi
+
 # 2. Check Required Services
 SYSTEMD_TARGET="${SYSTEMD_TARGET:-presek.target}"
 SERVICES=()
