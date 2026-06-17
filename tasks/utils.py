@@ -236,13 +236,14 @@ def pipeline_backpressure_active() -> bool:
 
 
 def synthesis_dispatch_deferred() -> bool:
-    from core.limits import SYNTHESIS_QUEUE_DEFER_LIMIT
+    from core.limits import INTEL_QUEUE_FULL_DEFER_LIMIT, SYNTHESIS_QUEUE_DEFER_LIMIT
 
     if get_celery_queue_depth("synthesis") >= SYNTHESIS_QUEUE_DEFER_LIMIT:
         return True
     if fast_track_dispatches_deferred():
         return True
-    if pipeline_backpressure_active():
+    # Maintenance backlog inflates total depth but should not starve synthesis output.
+    if get_celery_queue_depth(INTEL_QUEUE_NAME) >= INTEL_QUEUE_FULL_DEFER_LIMIT:
         return True
     return False
 

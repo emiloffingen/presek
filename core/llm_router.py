@@ -394,8 +394,18 @@ class SmartModelRouter:
             if article_count <= balanced_local_max and not has_high_weight:
                 routing_decision["allow_local_multi_source"] = True
 
+        if fallback_pressure == "critical" and not is_high_complexity and article_count >= 2:
+            return SmartModelRouter._finalize_route(
+                "mistral_large",
+                "fallback_pressure_quality_recovery",
+                routing_decision,
+                article_count=article_count,
+                has_high_weight=has_high_weight,
+                is_high_complexity=is_high_complexity,
+            )
+
         if (
-            fallback_pressure in ("warn", "critical")
+            fallback_pressure == "warn"
             and local_available
             and not is_high_complexity
             and article_count >= 2
