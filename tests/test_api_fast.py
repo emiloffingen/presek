@@ -594,6 +594,66 @@ def test_home_route_composes_named_slots(mock_all):
                 "is_breaking": False,
             },
             {
+                "cluster_id": "developing-2",
+                "articles": [
+                    {
+                        "title": "Developing 2",
+                        "source": "MIA",
+                        "topic": "Ekonomija",
+                        "category": "Srbija",
+                        "created_at": "2026-04-22T06:50:00Z",
+                    },
+                    {
+                        "title": "Developing 2 / corroboration",
+                        "source": "Alsat",
+                        "topic": "Ekonomija",
+                        "category": "Srbija",
+                        "created_at": "2026-04-22T06:45:00Z",
+                    },
+                ],
+                "is_breaking": False,
+            },
+            {
+                "cluster_id": "developing-3",
+                "articles": [
+                    {
+                        "title": "Developing 3",
+                        "source": "Telma",
+                        "topic": "Ekonomija",
+                        "category": "Srbija",
+                        "created_at": "2026-04-22T06:40:00Z",
+                    },
+                    {
+                        "title": "Developing 3 / corroboration",
+                        "source": "Kanal 5",
+                        "topic": "Ekonomija",
+                        "category": "Srbija",
+                        "created_at": "2026-04-22T06:35:00Z",
+                    },
+                ],
+                "is_breaking": False,
+            },
+            {
+                "cluster_id": "developing-4",
+                "articles": [
+                    {
+                        "title": "Developing 4",
+                        "source": "360",
+                        "topic": "Ekonomija",
+                        "category": "Srbija",
+                        "created_at": "2026-04-22T06:30:00Z",
+                    },
+                    {
+                        "title": "Developing 4 / corroboration",
+                        "source": "MRT",
+                        "topic": "Ekonomija",
+                        "category": "Srbija",
+                        "created_at": "2026-04-22T06:25:00Z",
+                    },
+                ],
+                "is_breaking": False,
+            },
+            {
                 "cluster_id": "wire-1",
                 "articles": [
                     {
@@ -730,7 +790,12 @@ def test_home_route_composes_named_slots(mock_all):
         "foryou-5",
         "foryou-6",
     ]
-    assert [item["cluster_id"] for item in data["developing"]] == ["developing-1"]
+    assert [item["cluster_id"] for item in data["developing"]] == [
+        "developing-1",
+        "developing-2",
+        "developing-3",
+        "developing-4",
+    ]
     assert [item["cluster_id"] for item in data["wire"]] == [
         "foryou-1",
         "foryou-2",

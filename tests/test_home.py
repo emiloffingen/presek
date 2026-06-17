@@ -52,11 +52,33 @@ def _load_home_module():
         "routes.news": sys.modules.get("routes.news"),
         "routes.stats": sys.modules.get("routes.stats"),
         "routes.system": sys.modules.get("routes.system"),
+        "core.api_errors": sys.modules.get("core.api_errors"),
+        "core.audio_service": sys.modules.get("core.audio_service"),
+        "core.queue_status": sys.modules.get("core.queue_status"),
+        "nlp": sys.modules.get("nlp"),
     }
 
     fake_utils = types.ModuleType("utils")
     fake_utils.cached_response = lambda *_args, **_kwargs: None
     fake_utils.set_cache = lambda *_args, **_kwargs: None
+    fake_utils.redis_client = None
+    fake_utils.record_runtime_event = lambda *_args, **_kwargs: None
+
+    fake_nlp = types.ModuleType("nlp")
+    fake_nlp.normalize_focus_entity_surface = lambda name: str(name or "").strip()
+
+    fake_api_errors = types.ModuleType("core.api_errors")
+    fake_api_errors.soft_error = lambda *_args, **_kwargs: None
+
+    fake_audio_service = types.ModuleType("core.audio_service")
+
+    class _FakeAudioService:
+        pass
+
+    fake_audio_service.AudioService = _FakeAudioService
+
+    fake_queue_status = types.ModuleType("core.queue_status")
+    fake_queue_status.reader_pipeline_status = lambda *_args, **_kwargs: {}
 
     fake_common = types.ModuleType("routes.common")
 
@@ -84,6 +106,10 @@ def _load_home_module():
     fake_system.get_trending_route = lambda *args, **kwargs: []
 
     sys.modules["utils"] = fake_utils
+    sys.modules["core.api_errors"] = fake_api_errors
+    sys.modules["core.audio_service"] = fake_audio_service
+    sys.modules["core.queue_status"] = fake_queue_status
+    sys.modules["nlp"] = fake_nlp
     sys.modules["routes.common"] = fake_common
     sys.modules["routes.intelligence"] = fake_intelligence
     sys.modules["routes.news"] = fake_news
@@ -229,3 +255,85 @@ def test_apply_synthesis_lead_tiebreak_keeps_leader_when_gap_is_large():
     reordered = home._apply_synthesis_lead_tiebreak(clusters)
 
     assert reordered[0]["cluster_id"] == "a"
+
+
+def test_fill_developing_clusters_backfills_when_primary_pool_empty():
+    home = _load_home_module()
+
+    feed = [
+        {
+            "cluster_id": "wire-only",
+            "homepage_score": 0.01,
+            "has_synthesis": False,
+            "articles": [{"title": "Singleton", "source": "A"}],
+        },
+        {
+            "cluster_id": "scored",
+            "homepage_score": 2.5,
+            "has_synthesis": True,
+            "source_count": 1,
+            "articles": [{"title": "Lead story", "source": "B"}],
+        },
+        {
+            "cluster_id": "corroborated",
+            "homepage_score": 1.8,
+            "has_synthesis": False,
+            "source_count": 3,
+            "articles": [{"title": "Multi", "source": "C"}],
+        },
+    ]
+
+    developing = home._fill_developing_clusters(feed, exclude_ids=set(), limit=10, backfill_min=2)
+
+    assert [cluster["cluster_id"] for cluster in developing] == ["scored", "corroborated"]
+
+
+def test_fill_for_you_pool_backfills_from_scored_clusters():
+    home = _load_home_module()
+
+    hero_clusters = [
+        {
+            "cluster_id": f"hero-{idx}",
+            "homepage_score": float(20 - idx),
+            "articles": [{"title": f"Hero {idx}", "topic": "Zabava", "category": "Srbija"}],
+        }
+        for idx in range(5)
+    ]
+    story_clusters = [
+        {
+            "cluster_id": f"story-{idx}",
+            "homepage_score": float(idx),
+            "articles": [{"title": f"Story {idx}", "topic": "Zabava", "category": "Srbija"}],
+        }
+        for idx in range(5, 9)
+    ]
+    clusters = hero_clusters + story_clusters
+
+    pool = home._fill_for_you_pool(
+        clusters,
+        start=5,
+        exclude_ids={cluster["cluster_id"] for cluster in hero_clusters},
+        limit=6,
+        backfill_min=3,
+    )
+
+    assert [cluster["cluster_id"] for cluster in pool] == ["story-8", "story-7", "story-6", "story-5"]
+
+
+def test_fill_live_now_clusters_backfills_recent_hard_news():
+    home = _load_home_module()
+
+    clusters = [
+        {
+            "cluster_id": "feature",
+            "articles": [{"title": "Izdanie na 360: intervju", "topic": "Politika", "category": "Srbija", "created_at": "2026-04-22T20:00:00Z"}],
+        },
+        {
+            "cluster_id": "budget",
+            "articles": [{"title": "Sobranieto o budzetot", "topic": "Ekonomija", "category": "Srbija", "created_at": "2026-04-22T19:00:00Z"}],
+        },
+    ]
+
+    live_now = home._fill_live_now_clusters(clusters, exclude_ids=set(), limit=4, backfill_min=1)
+
+    assert [cluster["cluster_id"] for cluster in live_now] == ["budget"]

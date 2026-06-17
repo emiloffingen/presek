@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from utils import cached_response, set_cache
 
+from core.api_errors import soft_error
 from core.audio_service import AudioService
 from core.queue_status import reader_pipeline_status
 from nlp import normalize_focus_entity_surface
@@ -25,6 +26,149 @@ _LEAD_TIEBREAK_WINDOW = 0.10
 _HOMEPAGE_FEED_START = 5
 _HOMEPAGE_DEVELOPING_LIMIT = 10
 _HOMEPAGE_WIRE_LIMIT = 11
+_HOMEPAGE_DEVELOPING_BACKFILL_MIN = 4
+_HOMEPAGE_FOR_YOU_BACKFILL_MIN = 4
+_HOMEPAGE_LIVE_NOW_BACKFILL_MIN = 2
+
+
+def _cluster_source_count(cluster: Dict[str, Any]) -> int:
+    declared = cluster.get("source_count")
+    if declared is not None:
+        try:
+            return max(0, int(declared))
+        except (TypeError, ValueError):
+            pass
+    articles = cluster.get("articles") or []
+    return len({a.get("source") for a in articles if a.get("source")})
+
+
+def _is_primary_developing_cluster(cluster: Dict[str, Any]) -> bool:
+    source_count = _cluster_source_count(cluster)
+    story_state = str(cluster.get("story_state") or "")
+    articles = cluster.get("articles") or []
+    return (
+        (story_state in {"breaking", "developing", "confirmed"} and source_count >= 2)
+        or len(articles) >= 2
+    )
+
+
+def _fill_developing_clusters(
+    feed_clusters: List[Dict[str, Any]],
+    *,
+    exclude_ids: set[str],
+    limit: int,
+    backfill_min: int = _HOMEPAGE_DEVELOPING_BACKFILL_MIN,
+) -> List[Dict[str, Any]]:
+    developing = [
+        cluster
+        for cluster in feed_clusters
+        if cluster.get("cluster_id") not in exclude_ids and _is_primary_developing_cluster(cluster)
+    ]
+    developing.sort(key=_homepage_developing_sort_key, reverse=True)
+
+    if len(developing) >= backfill_min:
+        return developing[:limit]
+
+    seen = {cluster.get("cluster_id") for cluster in developing if cluster.get("cluster_id")}
+    seen |= set(exclude_ids)
+
+    relaxed = [
+        cluster
+        for cluster in feed_clusters
+        if cluster.get("cluster_id")
+        and cluster.get("cluster_id") not in seen
+        and (_cluster_source_count(cluster) >= 2 or cluster.get("has_synthesis"))
+    ]
+    relaxed.sort(key=_homepage_developing_sort_key, reverse=True)
+    for cluster in relaxed:
+        if len(developing) >= backfill_min:
+            break
+        developing.append(cluster)
+        seen.add(cluster.get("cluster_id"))
+
+    if len(developing) < backfill_min:
+        fallback = [
+            cluster
+            for cluster in feed_clusters
+            if cluster.get("cluster_id") and cluster.get("cluster_id") not in seen
+        ]
+        fallback.sort(key=_homepage_developing_sort_key, reverse=True)
+        for cluster in fallback:
+            if len(developing) >= backfill_min:
+                break
+            developing.append(cluster)
+            seen.add(cluster.get("cluster_id"))
+
+    return developing[:limit]
+
+
+def _fill_for_you_pool(
+    clusters: List[Dict[str, Any]],
+    *,
+    start: int,
+    exclude_ids: set[str],
+    limit: int = 6,
+    backfill_min: int = _HOMEPAGE_FOR_YOU_BACKFILL_MIN,
+) -> List[Dict[str, Any]]:
+    pool = [
+        cluster
+        for cluster in clusters[start : start + limit]
+        if cluster.get("cluster_id") not in exclude_ids and _is_live_now_candidate(cluster)
+    ]
+    if len(pool) >= backfill_min:
+        return pool[:limit]
+
+    seen = {cluster.get("cluster_id") for cluster in pool if cluster.get("cluster_id")}
+    seen |= set(exclude_ids)
+    scored = [
+        cluster
+        for cluster in clusters[start:]
+        if cluster.get("cluster_id") and cluster.get("cluster_id") not in seen
+    ]
+    scored.sort(
+        key=lambda cluster: (
+            _homepage_cluster_score(cluster),
+            _parse_time(_article_freshness_time(_primary_article(cluster))),
+        ),
+        reverse=True,
+    )
+    for cluster in scored:
+        if len(pool) >= limit:
+            break
+        pool.append(cluster)
+        seen.add(cluster.get("cluster_id"))
+    return pool[:limit]
+
+
+def _fill_live_now_clusters(
+    items: List[Dict[str, Any]],
+    *,
+    exclude_ids: set[str],
+    limit: int = 4,
+    backfill_min: int = _HOMEPAGE_LIVE_NOW_BACKFILL_MIN,
+) -> List[Dict[str, Any]]:
+    selected = _rank_live_now_clusters(items, exclude_cluster_ids=exclude_ids, limit=limit)
+    if len(selected) >= backfill_min:
+        return selected
+
+    seen = set(exclude_ids) | {cluster.get("cluster_id") for cluster in selected if cluster.get("cluster_id")}
+    for cluster in _clusters_sorted_by_recency(items):
+        if len(selected) >= limit:
+            break
+        cluster_id = cluster.get("cluster_id")
+        if not cluster_id or cluster_id in seen:
+            continue
+        article = _primary_article(cluster)
+        topic = cleanAndDecode(article.get("topic") or "")
+        if (
+            cluster.get("is_breaking")
+            or topic in _HARD_NEWS_TOPICS
+            or _cluster_source_count(cluster) >= 2
+            or _is_live_now_candidate(cluster)
+        ):
+            selected.append(cluster)
+            seen.add(cluster_id)
+    return selected[:limit]
 
 
 def _homepage_developing_sort_key(cluster: Dict[str, Any]) -> tuple:
@@ -683,27 +827,40 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
                 log.error(f"Failed to fetch personalized news for homepage (token {sync_token}): {pe}")
                 for_you_pool = []
 
+        hero_cluster_ids = {
+            cluster_id
+            for cluster_id in [
+                lead.get("cluster_id") if lead else None,
+                *[c.get("cluster_id") for c in supporting],
+                *[c.get("cluster_id") for c in (synthesis_picks or [])],
+            ]
+            if cluster_id
+        }
+
         if not for_you_pool:
-            for_you_pool = [c for c in clusters[_HOMEPAGE_FEED_START : _HOMEPAGE_FEED_START + 6] if _is_live_now_candidate(c)]
+            for_you_pool = _fill_for_you_pool(
+                clusters,
+                start=_HOMEPAGE_FEED_START,
+                exclude_ids=hero_cluster_ids,
+            )
             for_you_pool = [await _ensure_cluster_audio(c, generate=False) for c in for_you_pool]
 
         feed_clusters = list(clusters[_HOMEPAGE_FEED_START:])
-        developing = [
-            cluster
-            for cluster in feed_clusters
-            if (
-                (
-                    str(cluster.get("story_state") or "") in {"breaking", "developing", "confirmed"}
-                    and int(cluster.get("source_count") or len(cluster.get("articles") or [])) >= 2
-                )
-                or len(cluster.get("articles") or []) >= 2
-            )
-        ]
-        developing.sort(key=_homepage_developing_sort_key, reverse=True)
-        developing = developing[:_HOMEPAGE_DEVELOPING_LIMIT]
+        developing = _fill_developing_clusters(
+            feed_clusters,
+            exclude_ids=hero_cluster_ids,
+            limit=_HOMEPAGE_DEVELOPING_LIMIT,
+        )
         developing_ids = {c.get("cluster_id") for c in developing if c.get("cluster_id")}
         if not sync_token:
             for_you_pool = [c for c in for_you_pool if c.get("cluster_id") not in developing_ids]
+            if len(for_you_pool) < _HOMEPAGE_FOR_YOU_BACKFILL_MIN:
+                for_you_pool = _fill_for_you_pool(
+                    clusters,
+                    start=_HOMEPAGE_FEED_START,
+                    exclude_ids=hero_cluster_ids | developing_ids,
+                )
+                for_you_pool = [await _ensure_cluster_audio(c, generate=False) for c in for_you_pool]
 
         wire = [
             cluster
@@ -716,17 +873,13 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
             )
         ][: _HOMEPAGE_WIRE_LIMIT]
 
-        excluded_cluster_ids = [
-            cluster_id
-            for cluster_id in [
-                lead.get("cluster_id") if lead else None,
-                *[c.get("cluster_id") for c in supporting],
-                *[c.get("cluster_id") for c in (synthesis_picks or [])],
-            ]
-            if cluster_id
-        ]
+        excluded_cluster_ids = list(hero_cluster_ids)
         recent_clusters = _clusters_sorted_by_recency(clusters)
-        live_now = _rank_live_now_clusters(recent_clusters, exclude_cluster_ids=excluded_cluster_ids, limit=4)
+        live_now = _fill_live_now_clusters(
+            recent_clusters,
+            exclude_ids=set(excluded_cluster_ids),
+            limit=4,
+        )
         for idx, cluster in enumerate(live_now):
             should_generate = (
                 cluster.get("cluster_id") not in priority_audio_ids
@@ -784,7 +937,7 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
         return response
     except Exception as exc:
         log.error(f"Home Route Error: {exc}", exc_info=True)
-        return {"status": "error", "message": "Failed to load homepage"}
+        return soft_error(message="Failed to load homepage")
 
 
 @router.get("/home/live-now")
@@ -807,7 +960,7 @@ async def get_home_live_now(exclude: str = "", lang: Optional[str] = "sr"):
         return response
     except Exception as exc:
         log.error(f"Home Live Route Error: {exc}", exc_info=True)
-        return {"status": "error", "clusters": []}
+        return soft_error(clusters=[])
 
 
 @router.get("/home/latest-wire")
@@ -838,4 +991,4 @@ async def get_home_latest_wire(limit: int = 15, lang: Optional[str] = "sr"):
         return response
     except Exception as exc:
         log.error(f"Home Latest Wire Route Error: {exc}", exc_info=True)
-        return {"status": "error", "articles": []}
+        return soft_error(articles=[])
