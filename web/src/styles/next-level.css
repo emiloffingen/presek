@@ -258,6 +258,16 @@
   display: none !important;
 }
 
+/* Category/topic/search filters should show the full story list, not collapsed edition mode */
+.home-page-variant-feed.home-filtered-view:not(.home-analysis-expanded) .home-edition-collapsed,
+.home-page-variant-feed.home-filtered-view .home-filtered-feed-extended {
+  display: block !important;
+}
+
+.home-page-variant-feed.home-filtered-view .homepage-analiza-only {
+  display: none !important;
+}
+
 .home-page-variant-feed:not(.home-analysis-expanded) .home-feed-core {
   display: block !important;
 }

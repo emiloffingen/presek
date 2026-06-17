@@ -139,6 +139,35 @@ test('buildHomepageSections uses API developing list when articles are compacted
   );
 });
 
+test('buildHomepageSections surfaces full filtered feed after lead and supporting band', () => {
+  const clusters = Array.from({ length: 14 }, (_, index) => cluster(`story-${index}`, index === 0 ? 3 : 1));
+
+  const sections = buildHomepageSections({
+    clusters,
+    leadCluster: clusters[0],
+    supportingClusters: [],
+    forYouClusters: [],
+    feedClusters: [],
+    wireClusters: [],
+    wireArticles: [],
+    excludedClusterIds: [],
+    isHomepage: false,
+  });
+
+  assert.deepEqual(
+    sections.supportingClusters.map((item) => item.cluster_id),
+    ['story-1', 'story-2', 'story-3'],
+  );
+  assert.equal(sections.forYouClusters.length, 0);
+  assert.deepEqual(
+    sections.developmentsFeatured.map((item) => item.cluster_id),
+    ['story-4', 'story-5', 'story-6', 'story-7', 'story-8', 'story-9'],
+  );
+  assert.deepEqual(
+    sections.developmentsCompact.map((item) => item.cluster_id),
+    ['story-10', 'story-11', 'story-12', 'story-13'],
+  );
+});
 test('buildHomepageSections requires higher pluralism for perspectives band', () => {
   const clusters = [
     cluster('lead', 3),

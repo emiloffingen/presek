@@ -93,7 +93,7 @@ export function buildHomepageSections(input: HomepageSectionsInput) {
     let excludedClusterIds = input.excludedClusterIds;
 
     if (!input.isHomepage) {
-        supportingClusters = input.clusters.slice(1, 5);
+        supportingClusters = input.clusters.slice(1, 4);
     }
 
     const filteredSupporting = supportingClusters
@@ -106,13 +106,9 @@ export function buildHomepageSections(input: HomepageSectionsInput) {
     supportingCompact.forEach((cluster) => usedIds.add(cluster.cluster_id));
 
     if (!input.isHomepage) {
-        const forYouStart = 5;
-        const forYouEnd = 11;
-        forYouClusters = input.clusters.slice(forYouStart, forYouEnd).map(toForYouCluster);
-        feedClusters = input.clusters.slice(forYouEnd);
-        wireClusters = feedClusters
-            .filter((cluster) => (cluster?.articles?.length || 0) < 2)
-            .slice(0, 12);
+        forYouClusters = [];
+        feedClusters = input.clusters.slice(4);
+        wireClusters = [];
         excludedClusterIds = [
             leadId,
             ...supportingClusters.map((cluster) => cluster.cluster_id),
@@ -121,9 +117,11 @@ export function buildHomepageSections(input: HomepageSectionsInput) {
 
     const continuingClusters = input.isHomepage && input.developingClusters?.length
         ? input.developingClusters.filter((cluster) => cluster?.cluster_id && !usedIds.has(cluster.cluster_id))
-        : feedClusters.filter(
-            (cluster) => qualifiesAsContinuingCluster(cluster) && !usedIds.has(cluster.cluster_id),
-        );
+        : input.isHomepage
+            ? feedClusters.filter(
+                (cluster) => qualifiesAsContinuingCluster(cluster) && !usedIds.has(cluster.cluster_id),
+            )
+            : feedClusters.filter((cluster) => cluster?.cluster_id && !usedIds.has(cluster.cluster_id));
     const developmentsFeaturedLimit = input.isHomepage ? 4 : 6;
     const developmentsCompactLimit = input.isHomepage ? 2 : 12;
     const developmentsFeatured = continuingClusters.slice(0, developmentsFeaturedLimit);

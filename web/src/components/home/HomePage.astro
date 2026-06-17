@@ -176,6 +176,7 @@ if (homepageFlags.shouldSetErrorStatus) {
 		class:list={[
 			'site-layout broadsheet-layout py-0 max-w-full',
 			isPregled ? 'home-page-variant-pregled' : 'home-page-variant-feed',
+			!isHomepage && !isPregled ? 'home-filtered-view' : '',
 		]}
 		data-testid="news-feed"
 		data-home-session-root
@@ -322,7 +323,7 @@ if (homepageFlags.shouldSetErrorStatus) {
                 )}
 
 				{leadCluster && supportingClusters.length > 0 && !isPregled && (
-					<div class="section-wrapper home-mobile-order-supporting home-feed-only home-edition-collapsed">
+					<div class:list={['section-wrapper home-mobile-order-supporting home-feed-only', isHomepage ? 'home-edition-collapsed' : '']}>
 						<SupportingBand
 							supportingFeatured={supportingFeatured}
 							supportingCompact={supportingCompact}
@@ -449,15 +450,15 @@ if (homepageFlags.shouldSetErrorStatus) {
 
 				</div>
 
-                <div id="home-core-feed" class="home-mobile-order-feed home-feed-core home-feed-only">
-                {!error && isHomepage && !isPregled && (developmentsFeatured.length > 0 || developmentsCompact.length > 0) && (
+                <div id="home-core-feed" class:list={['home-mobile-order-feed home-feed-core home-feed-only', !isHomepage ? 'home-filtered-feed-extended' : '']}>
+                {!error && !isPregled && (developmentsFeatured.length > 0 || developmentsCompact.length > 0) && (
                     <div class="section-wrapper presek-section-mark">
                         <DevelopmentsSection
-                            title={t('home.developing_title')}
-                            note={t('home.developing_desc')}
+                            title={isHomepage ? t('home.developing_title') : (activeFilterLabel || t('home.feed_title'))}
+                            note={isHomepage ? t('home.developing_desc') : t('layout.filtered_description')}
                             developmentsFeatured={developmentsFeatured}
                             developmentsCompact={developmentsCompact}
-                            tone="developing"
+                            tone={isHomepage ? 'developing' : 'default'}
                         />
                     </div>
                 )}
@@ -487,8 +488,8 @@ if (homepageFlags.shouldSetErrorStatus) {
                     </div>
                 )}
 
-                <div id="home-unified-feed" class="home-mobile-order-feed-extended homepage-analiza-only">
-                {forYouClusters.length > 0 && (
+                <div id="home-unified-feed" class:list={['home-mobile-order-feed-extended', isHomepage ? 'homepage-analiza-only' : '']}>
+                {isHomepage && forYouClusters.length > 0 && (
 					<div class="section-wrapper for-you-wrapper" data-for-you-band>
                         <p class="for-you-boundary-label">{t('home.for_you_boundary')}</p>
 					    <ForYouIsland client:idle clusters={forYouClusters} excludeClusterIds={excludedClusterIds} lang={lang} />
@@ -568,6 +569,7 @@ if (homepageFlags.shouldSetErrorStatus) {
 		try {
 			const params = new URLSearchParams(window.location.search);
 			if (params.get('simple') === '1' || params.get('view') === 'simple') return;
+			if (params.get('category') || params.get('topic') || params.get('entity') || params.get('subcategory') || params.get('q')) return;
 			const onboardRaw = localStorage.getItem('presek_onboarding_v1');
 			const onboard = onboardRaw ? JSON.parse(onboardRaw) : null;
 			const onboarded = Boolean(onboard && (onboard.dismissed || onboard.completedAt));
