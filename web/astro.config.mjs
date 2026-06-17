@@ -34,5 +34,27 @@ export default defineConfig({
 
   adapter: node({
     mode: 'standalone'
-  })
+  }),
+
+  // Hash-based CSP for Astro islands + inline page scripts (middleware only adds frame-ancestors).
+  security: {
+    csp: {
+      directives: [
+        "default-src 'self'",
+        "font-src 'self' data:",
+        "img-src 'self' data: https: blob: https://www.google-analytics.com https://www.googletagmanager.com",
+        "connect-src 'self' https: wss: https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com",
+        "frame-src 'self'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "object-src 'none'",
+        "media-src 'self' data: https:",
+        "worker-src 'self'",
+      ],
+      scriptDirective: {
+        resources: ["'self'", 'https://www.googletagmanager.com'],
+        strictDynamic: true,
+      },
+    },
+  },
 });

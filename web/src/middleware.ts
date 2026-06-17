@@ -4,7 +4,7 @@ import {
   stripMkPrefix,
   withMkPrefix,
 } from './lib/localePaths';
-import { buildContentSecurityPolicy, generateCspNonce } from './lib/csp';
+import { buildFrameAncestorsPolicy, generateCspNonce } from './lib/csp';
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const url = new URL(context.request.url);
@@ -33,10 +33,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const cspNonce = generateCspNonce();
   context.locals.cspNonce = cspNonce;
 
-  const attachCsp = async (response: Response) => {
+  const attachFrameAncestors = async (response: Response) => {
     const contentType = response.headers.get('content-type') || '';
     if (contentType.includes('text/html')) {
-      response.headers.set('Content-Security-Policy', buildContentSecurityPolicy(cspNonce));
+      // Astro security.csp owns script/style hashes; only add framing policy here.
+      response.headers.append('Content-Security-Policy', buildFrameAncestorsPolicy());
     }
     return response;
   };
@@ -44,7 +45,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   if ((hostname === 'presek.mk' || hostname === 'www.presek.mk') && shouldRewriteMkDomainToInternal(pathname)) {
     const internalPath = withMkPrefix(pathname);
     if (internalPath !== pathname) {
-      return attachCsp(await next(`${internalPath}${url.search}`));
+      return attachFrameAncestors(await next(`${internalPath}${url.search}`));
     }
   }
 
@@ -58,5 +59,5 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return new Response('Not found', { status: 404 });
   }
 
-  return attachCsp(await next());
+  return attachFrameAncestors(await next());
 });
