@@ -154,6 +154,26 @@ MAINTENANCE_HEAVY_TASKS = frozenset(
         "tasks.intelligence.repair_split_clusters_task",
     }
 )
+MAINTENANCE_SINGLETON_TASKS = frozenset(
+    {
+        "tasks.maintenance.prune_intel_queue_task",
+        "tasks.maintenance.prune_fast_track_queue_task",
+        "tasks.maintenance.prune_maintenance_queue_task",
+        "tasks.maintenance.prune_ingestion_queue_task",
+        "tasks.maintenance.prune_crawl_queue_task",
+        "tasks.maintenance.refresh_synthesis_quality_task",
+        "tasks.maintenance.prioritize_homepage_syntheses_task",
+        "tasks.maintenance.ensure_ingestion_freshness_task",
+        "tasks.maintenance.catch_up_cluster_syntheses_task",
+        "tasks.maintenance.catch_up_recent_summaries_task",
+        "tasks.maintenance.catch_up_deferred_crawls_task",
+        "tasks.maintenance.upgrade_stuck_fast_syntheses_task",
+        "tasks.maintenance.refresh_fallback_syntheses_task",
+        "tasks.maintenance.refresh_low_score_syntheses_task",
+        "tasks.maintenance.boost_homepage_cluster_supply_task",
+        "tasks.intelligence.generate_cluster_metadata_task",
+    }
+)
 INTEL_DEFERRABLE_TASKS = frozenset(
     {
         "tasks.intelligence.detect_global_stories_batch_task",
@@ -195,10 +215,41 @@ def _parse_crawl_article_id(raw_message: str) -> int | None:
     return int(match.group(1)) if match else None
 
 
+def _parse_upgrade_fast_synthesis_cluster_id(raw_message: str) -> str | None:
+    import json
+    import re
+
+    body = json.loads(raw_message)
+    argsrepr = str((body.get("headers") or {}).get("argsrepr") or "")
+    match = re.match(r"\('([^']+)'", argsrepr)
+    return match.group(1) if match else None
+
+
+def _parse_maintenance_dedupe_key(raw_message: str, task_name: str) -> str:
+    if task_name != "tasks.intelligence.generate_cluster_metadata_task":
+        return task_name
+
+    import json
+    import re
+
+    body = json.loads(raw_message)
+    kwargsrepr = str((body.get("headers") or {}).get("kwargsrepr") or "")
+    cluster_match = re.search(r"'target_clusters':\s*\['([^']+)'\]", kwargsrepr)
+    if cluster_match:
+        return f"{task_name}:{cluster_match.group(1)}"
+    return task_name
+
+
 def get_total_queue_depth() -> int:
     from core.queue_status import get_total_queue_depth as _get_total_depth
 
     return int(_get_total_depth() or 0)
+
+
+def get_reader_relevant_queue_depth() -> int:
+    from core.queue_status import get_reader_relevant_queue_depth as _reader_depth
+
+    return int(_reader_depth() or 0)
 
 
 def fast_track_dispatches_deferred() -> bool:
@@ -483,7 +534,7 @@ def reprioritize_fast_track_queue(*, groom_threshold: int = 60, dry_run: bool = 
 
 
 def reprioritize_maintenance_queue(*, groom_threshold: int = 80, dry_run: bool = False) -> dict:
-    """Drop duplicate heavy maintenance work when the maintenance queue is congested."""
+    """Drop duplicate maintenance housekeeping when the maintenance queue is congested."""
     from core.limits import MAINTENANCE_QUEUE_SOFT_LIMIT
 
     groom_threshold = int(groom_threshold or MAINTENANCE_QUEUE_SOFT_LIMIT)
@@ -499,17 +550,35 @@ def reprioritize_maintenance_queue(*, groom_threshold: int = 80, dry_run: bool =
     raw_items = redis_client.lrange(MAINTENANCE_QUEUE_NAME, 0, -1) or []
     kept = []
     removed = 0
+    seen_singletons: set[str] = set()
     seen_heavy: set[str] = set()
+    seen_metadata_clusters: set[str] = set()
+    seen_upgrade_clusters: set[str] = set()
 
     for raw in raw_items:
         if isinstance(raw, bytes):
             raw = raw.decode("utf-8")
         task_name = _parse_queue_task_name(raw)
+        dedupe_key = _parse_maintenance_dedupe_key(raw, task_name)
+
         if task_name in MAINTENANCE_HEAVY_TASKS:
             if task_name in seen_heavy:
                 removed += 1
                 continue
             seen_heavy.add(task_name)
+        elif task_name in MAINTENANCE_SINGLETON_TASKS:
+            if dedupe_key in seen_singletons:
+                removed += 1
+                continue
+            seen_singletons.add(dedupe_key)
+        elif task_name == "tasks.intelligence.upgrade_fast_synthesis_task":
+            cluster_id = _parse_upgrade_fast_synthesis_cluster_id(raw)
+            if cluster_id and cluster_id in seen_upgrade_clusters:
+                removed += 1
+                continue
+            if cluster_id:
+                seen_upgrade_clusters.add(cluster_id)
+
         kept.append(raw)
 
     result = {

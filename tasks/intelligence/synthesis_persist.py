@@ -342,10 +342,15 @@ def finalize_cluster_synthesis(
         invalidate_cluster_caches(cluster_id)
         if os.environ.get("REDIS_URL"):
             from tasks.intelligence.metadata import generate_cluster_metadata_task
+            from tasks.utils import schedule_task_once
 
-            generate_cluster_metadata_task.apply_async(
+            schedule_task_once(
+                f"lock:cluster_metadata:{cluster_id}",
+                int(os.environ.get("CLUSTER_METADATA_LOCK_TTL_SECONDS", "900")),
+                generate_cluster_metadata_task,
                 kwargs={"target_clusters": [cluster_id]},
                 countdown=5,
+                queue="maintenance",
             )
     except Exception as err:
         log.warning(f"[tasks] Finalization error for {cluster_id}: {err}")

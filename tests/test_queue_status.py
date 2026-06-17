@@ -41,7 +41,18 @@ class TestQueueStatus:
         assert payload["busy"] is True
         assert payload["intel_heavy_depth"] == CELERY_QUEUE_WARN_DEPTH
 
-    def test_reader_pipeline_status_ok_below_warn_threshold(self):
-        with patch("core.queue_status.redis_client.llen", return_value=10):
+    def test_reader_pipeline_status_ignores_maintenance_backlog(self):
+        def fake_llen(name):
+            depths = {
+                "maintenance": 400,
+                "synthesis": 20,
+                "intel-heavy": 30,
+            }
+            return depths.get(name, 0)
+
+        with patch("core.queue_status.redis_client.llen", side_effect=fake_llen):
             payload = reader_pipeline_status()
+
+        assert payload["total_queue_depth"] == 50
+        assert payload["pipeline_status"] == "ok"
         assert payload["busy"] is False

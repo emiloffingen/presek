@@ -1,5 +1,14 @@
 # Presek Changelog
 
+## v8.3.7 (2026-06-18)
+
+### Pipeline ops
+- Dedupe flooded maintenance queue tasks (beat prunes, metadata sweeps, homepage priority)
+- Coalesce per-cluster metadata generation after synthesis with Redis locks
+- Reader-facing pipeline status excludes maintenance housekeeping depth
+- Synthesis no longer starved when only maintenance queues are deep (`fbe36ab5`)
+- Critical fallback pressure routes to mistral_large instead of local→small loop
+
 ## v8.3.6 (2026-06-15)
 
 ### Fix
