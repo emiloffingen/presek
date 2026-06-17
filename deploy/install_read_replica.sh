@@ -123,6 +123,11 @@ ensure_subscription() {
     ok "Subscription ${SUBSCRIPTION_NAME} already exists"
     sudo -u postgres psql -d "$REPLICA_DB" -v ON_ERROR_STOP=1 -c \
       "ALTER SUBSCRIPTION ${SUBSCRIPTION_NAME} ENABLE;"
+    if ! sudo -u postgres psql -d "$REPLICA_DB" -tAc \
+        "SELECT pid FROM pg_stat_subscription WHERE subname='${SUBSCRIPTION_NAME}' AND pid IS NOT NULL" | grep -q '[0-9]'; then
+      warn "Subscription exists but apply worker is not running."
+      warn "If you recently pg_dump reseeded ${REPLICA_DB}, run: sudo APP_ROOT=${APP_ROOT} bash deploy/repair_read_replica.sh"
+    fi
     return 0
   fi
 

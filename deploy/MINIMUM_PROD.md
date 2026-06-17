@@ -69,6 +69,15 @@ curl -s http://127.0.0.1:5001/metrics | grep presek_db_queries_total
 
 During traffic, `pool="replica"` should climb for `/api/home`, `/api/news`, search, archive, and stats GETs.
 
+If the apply worker crash-loops after a manual reseed (`duplicate key` in postgres logs), reset the slot:
+
+```bash
+sudo APP_ROOT=/home/emiloffingen/presek-runtime \
+  bash /home/emiloffingen/presek-runtime/current/deploy/repair_read_replica.sh
+```
+
+Stale-replica reads also fall back to primary automatically when lag exceeds `REPLICA_MAX_LAG_SECONDS` (default 120s).
+
 ## Split API / worker venvs (optional)
 
 The unified venv (~6 GB with torch/spacy/playwright) can be split so FastAPI workers use less RAM:
@@ -86,5 +95,26 @@ PRESEK_WORKER_VENV=/home/emiloffingen/presek-runtime/venv-worker
 ```
 
 Then `sudo systemctl daemon-reload && sudo systemctl restart presek.target`.
+
+## API worker processes
+
+Production runs uvicorn with multiple prefork workers so one slow request does not block the entire API.
+
+Set in `$APP_ROOT/shared/.env`:
+
+```bash
+UVICORN_WORKERS=2
+```
+
+The systemd unit defaults to `2` when unset. Use the slim API venv (`PRESEK_API_VENV`) before raising workers above `2` on memory-constrained hosts.
+
+After changing workers or the unit file:
+
+```bash
+sudo cp deploy/systemd/presek-fastapi-unified.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl restart presek-fastapi-unified.service
+curl -s http://127.0.0.1:5001/api/health | jq .status
+```
 
 Fresh hosts can also use `SPLIT_VENVS=1 bash deploy/bootstrap_runtime_root.sh`.
