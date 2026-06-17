@@ -67,7 +67,7 @@
 
     /* ── Editorial Topbar ─────────────────────────────── */
     .header-sticky-wrapper {
-        position: sticky; top: 0; z-index: 102;
+        position: sticky; top: 0; z-index: 180;
         background: color-mix(in srgb, var(--background) 97%, transparent);
         backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
         border-bottom: 1px solid color-mix(in srgb, var(--foreground) 12%, var(--border));
@@ -439,7 +439,7 @@
         }
         .editorial-topbar { padding: 0.22rem 0.45rem; }
         .topbar-main {
-            grid-template-columns: 2.25rem minmax(0, 1fr) 2.25rem;
+            grid-template-columns: auto minmax(7.5rem, 1fr) auto;
             gap: 0.3rem;
         }
         .topbar-left-stack,
@@ -501,7 +501,7 @@
     @media (max-width: 480px) {
         .editorial-topbar { padding: 0.2rem 0.4rem; }
         .topbar-main {
-            grid-template-columns: 2.25rem minmax(0, 1fr) 2.25rem;
+            grid-template-columns: auto minmax(7.5rem, 1fr) auto;
             gap: 0.2rem;
         }
         .topbar-util { gap: 0; }

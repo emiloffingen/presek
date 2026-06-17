@@ -1,4 +1,5 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
+import { Menu } from 'lucide-react';
 import { localePathForLang, type Locale } from '../lib/localePaths';
 
 type NavItem = {
@@ -10,9 +11,10 @@ interface Props {
   items: NavItem[];
   label: string;
   lang: Locale;
+  compact?: boolean;
 }
 
-export default function NavOverflowMenu({ items, label, lang }: Props) {
+export default function NavOverflowMenu({ items, label, lang, compact = false }: Props) {
   const [open, setOpen] = useState(false);
   const [focusIndex, setFocusIndex] = useState(-1);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -89,13 +91,14 @@ export default function NavOverflowMenu({ items, label, lang }: Props) {
       <button
         ref={triggerRef}
         type="button"
-        className="nav-overflow-trigger"
+        className={`nav-overflow-trigger${compact ? ' is-compact' : ''}`}
         aria-expanded={open}
         aria-controls={panelId}
         aria-haspopup="menu"
+        aria-label={compact ? label : undefined}
         onClick={() => setOpen((value) => !value)}
       >
-        {label}
+        {compact ? <Menu size={16} strokeWidth={2.25} aria-hidden="true" /> : label}
       </button>
       {open && (
         <div className="nav-overflow-panel" id={panelId} role="menu" ref={panelRef}>

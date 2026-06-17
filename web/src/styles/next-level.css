@@ -449,7 +449,7 @@ html[data-page="home"] .search-fab-mobile {
 
   .topbar-main {
     min-height: 2.35rem;
-    grid-template-columns: 2.25rem minmax(0, 1fr) 2.25rem;
+    grid-template-columns: auto minmax(7.5rem, 1fr) auto;
     gap: 0.35rem;
   }
 
@@ -551,12 +551,26 @@ body.has-consent-banner .ui-concept-onboarding {
 
 @media (max-width: 768px) {
   .search-entry-wrap--desktop {
-    display: none;
+    display: block;
+    width: 2rem;
+    min-width: 2rem;
+  }
+
+  .search-entry-wrap {
+    width: 2rem !important;
+    min-width: 2rem !important;
+  }
+
+  .search-entry-wrap :where(button, [role="button"]) {
+    min-width: 2rem;
+    width: 2rem;
+    height: 2rem;
   }
 
   .topbar-left-stack {
     justify-content: flex-start;
     min-width: 0;
+    gap: 0.2rem;
   }
 
   .topbar-actions {
@@ -745,6 +759,20 @@ body.has-consent-banner .ui-concept-onboarding {
     left: 0;
     right: auto;
     max-width: min(16rem, calc(100vw - 1.5rem));
+  }
+
+  .topbar-mobile-overflow .nav-overflow-trigger.is-compact {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+    background: color-mix(in srgb, var(--secondary) 72%, transparent);
+    color: var(--foreground);
+    letter-spacing: 0;
+    text-transform: none;
   }
 }
 
