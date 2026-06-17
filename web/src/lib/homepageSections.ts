@@ -13,11 +13,20 @@ type HomepageSectionsInput = {
     supportingClusters: NewsCluster[];
     forYouClusters: any[];
     feedClusters: NewsCluster[];
+    developingClusters?: NewsCluster[];
     wireClusters: NewsCluster[];
     wireArticles: WireArticle[];
     excludedClusterIds: string[];
     isHomepage: boolean;
 };
+
+function clusterSourceCount(cluster: NewsCluster) {
+    return Number((cluster as any).source_count || (cluster as any).sources_count || cluster.articles?.length || 0);
+}
+
+function qualifiesAsContinuingCluster(cluster: NewsCluster) {
+    return clusterSourceCount(cluster) >= 2 || (cluster.articles?.length || 0) >= 2;
+}
 
 function toForYouCluster(cluster: NewsCluster) {
     const article = cluster.articles?.[0] || {};
@@ -40,7 +49,7 @@ function toForYouCluster(cluster: NewsCluster) {
 }
 
 function clusterTrendScore(cluster: NewsCluster) {
-    const sourceCount = Number((cluster as any).sources_count || (cluster as any).source_count || cluster.articles?.length || 0);
+    const sourceCount = clusterSourceCount(cluster);
     return Number(cluster.homepage_score || 0)
         + (cluster.is_breaking ? 100 : 0)
         + Math.min(sourceCount, 8) * 5;
@@ -110,9 +119,11 @@ export function buildHomepageSections(input: HomepageSectionsInput) {
         ].filter(Boolean) as string[];
     }
 
-    const continuingClusters = feedClusters.filter(
-        (cluster) => (cluster?.articles?.length || 0) >= 2 && !usedIds.has(cluster.cluster_id)
-    );
+    const continuingClusters = input.isHomepage && input.developingClusters?.length
+        ? input.developingClusters.filter((cluster) => cluster?.cluster_id && !usedIds.has(cluster.cluster_id))
+        : feedClusters.filter(
+            (cluster) => qualifiesAsContinuingCluster(cluster) && !usedIds.has(cluster.cluster_id),
+        );
     const developmentsFeaturedLimit = input.isHomepage ? 4 : 6;
     const developmentsCompactLimit = input.isHomepage ? 2 : 12;
     const developmentsFeatured = continuingClusters.slice(0, developmentsFeaturedLimit);

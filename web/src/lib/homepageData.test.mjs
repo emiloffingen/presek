@@ -4,6 +4,7 @@ import {
     buildHomepageFlags,
     cleanFilterParam,
     getBriefingSnippet,
+    normalizeBriefingPayload,
     normalizeForYouCluster,
     normalizeHomeApiResponse,
     parseHomepageFilters,
@@ -42,7 +43,7 @@ test('normalizeHomeApiResponse maps home API payload into feed state', () => {
         trending: [{ cluster_id: 't-1' }],
         focus_entities: [{ name: 'Vučić' }],
         stats: { intelligence: { pluralism: { pluralism_pct: 42 } } },
-        briefing: { date: '2026-06-14' },
+        briefing: { date: '2026-06-14', status: 'success', content: '## Šta pokreće dan\n\nTekst.' },
         lead_display: { title: 'Lead', summary: 'Summary.' },
         pipeline: { busy: true },
         excluded_cluster_ids: ['x-1'],
@@ -52,7 +53,9 @@ test('normalizeHomeApiResponse maps home API payload into feed state', () => {
     assert.equal(state.supportingClusters.length, 1);
     assert.equal(state.forYouClusters.length, 1);
     assert.equal(state.forYouClusters[0].sources_count, 1);
+    assert.equal(state.developingClusters.length, 1);
     assert.equal(state.pipeline?.busy, true);
+    assert.equal(state.briefing?.date, '2026-06-14');
     assert.deepEqual(state.excludedClusterIds, ['x-1']);
 });
 
@@ -83,6 +86,7 @@ test('buildHomepageFlags marks empty homepage as showEmptyState', () => {
         supportingClusters: [],
         forYouClusters: [],
         feedClusters: [],
+        developingClusters: [],
         wireClusters: [],
         wireArticles: [],
         excludedClusterIds: [],
@@ -107,6 +111,7 @@ test('buildHomepageFlags requests 500 when error and no partial content', () => 
         supportingClusters: [],
         forYouClusters: [],
         feedClusters: [],
+        developingClusters: [],
         wireClusters: [],
         wireArticles: [],
         excludedClusterIds: [],
@@ -123,9 +128,21 @@ test('toLeadWhySentence returns first sentence trimmed to max length', () => {
     assert.equal(toLeadWhySentence(long), 'Prva rečenica.');
 });
 
+test('normalizeBriefingPayload rejects missing content', () => {
+    assert.equal(normalizeBriefingPayload({ status: 'success' }), null);
+    assert.equal(normalizeBriefingPayload({ status: 'error', content: 'x' }), null);
+    assert.equal(normalizeBriefingPayload({ status: 'success', content: 'Brifing.' })?.content, 'Brifing.');
+});
+
 test('getBriefingSnippet extracts first paragraph from briefing markdown', () => {
-    const snippet = getBriefingSnippet('## Šta pokreće dan\n\nGlavna vest dana.\n\n## Drugo');
-    assert.equal(snippet, 'Glavna vest dana.');
+    const legacy = getBriefingSnippet('## Šta pokreće dan\n\nGlavna vest dana.\n\n## Drugo');
+    assert.equal(legacy, 'Glavna vest dana.');
+
+    const modern = getBriefingSnippet('# **Požar u Enjubu**\n\n## Velika Slika\nPrva rečenica brifinga.\n\n## Drugo');
+    assert.equal(modern, 'Prva rečenica brifinga.');
+
+    const macedonian = getBriefingSnippet('# **Наслов**\n\n## Големата Слика\nМакедонски текст.\n\n## Друго');
+    assert.equal(macedonian, 'Македонски текст.');
 });
 
 test('cleanFilterParam returns null for blank values', () => {

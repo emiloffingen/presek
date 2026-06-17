@@ -233,6 +233,8 @@ class HomeResponse(BaseModel):
     stats: Dict[str, Any] = Field(default_factory=dict)
     focus_entities: List[Any] = Field(default_factory=list)
     excluded_cluster_ids: List[str] = Field(default_factory=list)
+    pipeline: Optional[Dict[str, Any]] = None
+    briefing: Optional[Dict[str, Any]] = None
     message: Optional[str] = None
 
 
@@ -727,6 +729,8 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
         return cached
 
     try:
+        from routes.intelligence import get_latest_briefing
+
         # Fetch all dependencies in parallel
         results = await asyncio.gather(
             fetch_news_data(sort="score", page_size=72, lang=lang),
@@ -734,10 +738,11 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
             get_top_entities(limit=12, lang=lang),
             get_stats_summary(lang=lang),
             fetch_synthesis_picks(lang=lang),
+            get_latest_briefing(lang=lang),
             return_exceptions=True,
         )
 
-        news_result, trending, top_entities, stats, synthesis_picks = results
+        news_result, trending, top_entities, stats, synthesis_picks, briefing_result = results
 
         # Basic error check (ensure news_result is a dict)
         if isinstance(news_result, Exception):
@@ -756,6 +761,15 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
         if isinstance(synthesis_picks, Exception):
             log.error(f"Failed to fetch synthesis picks: {synthesis_picks}")
             synthesis_picks = []
+        if isinstance(briefing_result, Exception):
+            log.error(f"Failed to fetch briefing for home: {briefing_result}")
+            briefing_result = None
+
+        briefing = (
+            briefing_result
+            if isinstance(briefing_result, dict) and briefing_result.get("status") == "success"
+            else None
+        )
 
         if hasattr(stats, "body") and hasattr(stats, "status_code"):
             import json
@@ -918,6 +932,7 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
         response = {
             "status": "success",
             "pipeline": reader_pipeline_status(),
+            "briefing": briefing,
             "lead": _compact_home_cluster(_decorate_cluster_display(lead), max_articles=4),
             "lead_display": _build_lead_display(lead, lang=lang),
             "supporting": _compact_home_clusters(_decorate_clusters_display(supporting), max_articles=4),

@@ -108,6 +108,37 @@ test('buildHomepageSections keeps later analysis sections from being starved by 
   assert.equal(sections.developmentsCompact.length, 2);
 });
 
+test('buildHomepageSections uses API developing list when articles are compacted', () => {
+  const clusters = [
+    cluster('lead', 3),
+    cluster('support-1', 2),
+    cluster('support-2', 2),
+    cluster('support-3', 2),
+  ];
+  const developingClusters = [
+    { cluster_id: 'dev-1', source_count: 1, articles: [{ title: 'A', source: 'N1' }] },
+    { cluster_id: 'dev-2', source_count: 1, articles: [{ title: 'B', source: 'RTS' }] },
+  ];
+
+  const sections = buildHomepageSections({
+    clusters,
+    leadCluster: clusters[0],
+    supportingClusters: clusters.slice(1),
+    forYouClusters: [],
+    feedClusters: [...developingClusters],
+    developingClusters,
+    wireClusters: [],
+    wireArticles: [],
+    excludedClusterIds: [],
+    isHomepage: true,
+  });
+
+  assert.deepEqual(
+    sections.developmentsFeatured.map((item) => item.cluster_id),
+    ['dev-1', 'dev-2'],
+  );
+});
+
 test('buildHomepageSections requires higher pluralism for perspectives band', () => {
   const clusters = [
     cluster('lead', 3),

@@ -772,10 +772,22 @@ def test_home_route_composes_named_slots(mock_all):
                 }
             ),
         ),
+        patch(
+            "routes.intelligence.get_latest_briefing",
+            new=AsyncMock(
+                return_value={
+                    "status": "success",
+                    "date": "2026-06-17",
+                    "content": "## Šta pokreće dan\n\nGlavna vest.",
+                }
+            ),
+        ),
     ):
         data = asyncio.run(home.get_home())
 
     assert data["status"] == "success"
+    assert data["briefing"]["date"] == "2026-06-17"
+    assert data["pipeline"] is not None
     assert data["lead"]["cluster_id"] == "lead"
     assert [item["cluster_id"] for item in data["supporting"]] == [
         "support-1",

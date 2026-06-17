@@ -19,7 +19,7 @@ const HOME_FIXTURE = {
   trending: [{ cluster_id: 't-1' }],
   focus_entities: [],
   stats: { intelligence: { pluralism: { pluralism_pct: 37 } } },
-  briefing: { date: '2026-06-16', content: '## Šta pokreće dan\n\nGlavna vest.' },
+  briefing: { status: 'success', date: '2026-06-16', content: '## Šta pokreće dan\n\nGlavna vest.' },
   lead_display: { title: 'Vlada usvojila izmene', summary: 'Parlament je doneo izmene.' },
   pipeline: { busy: false },
   excluded_cluster_ids: [],

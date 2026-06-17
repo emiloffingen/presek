@@ -142,6 +142,7 @@ export function buildHomepageViewModel(options: {
         supportingClusters,
         forYouClusters,
         feedClusters,
+        developingClusters: homepageState.developingClusters,
         wireClusters,
         wireArticles: homepageState.wireArticles,
         excludedClusterIds,
