@@ -1,5 +1,5 @@
 ---
-import { TrendingUp } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import { localePath } from '../../lib/localePaths';
 
@@ -15,54 +15,25 @@ const t = useTranslations(lang);
 const l = (path: string) => localePath(path, lang, hostHeader);
 
 const snippet = briefing?.content ? getBriefingSnippet(briefing.content) : '';
+const dateLocale = lang === 'mk' ? 'mk-MK' : 'sr-Latn-RS';
+const displayDate = briefing?.date
+    ? new Intl.DateTimeFormat(dateLocale, {
+        day: 'numeric',
+        month: 'long',
+        timeZone: 'Europe/Belgrade',
+    }).format(new Date(briefing.date))
+    : '';
 ---
 
 {snippet && (
-	<section class="home-briefing-teaser home-mobile-order-briefing" aria-label={t('nav.briefing')}>
-		<p class="type-kicker">{t('nav.briefing')}</p>
-		<p class="home-briefing-text">{snippet}</p>
-		<a href={l('/briefing')} class="home-briefing-cta">
-			{t('rail.full_overview')} <TrendingUp size={10} />
+	<section class="presek-briefing-card home-briefing-teaser home-mobile-order-briefing" aria-label={t('nav.briefing')}>
+		<div class="presek-briefing-card__head">
+			<p class="type-kicker">{t('nav.briefing')}</p>
+			{displayDate && <span class="presek-briefing-card__date">{displayDate}</span>}
+		</div>
+		<p class="presek-briefing-card__text">{snippet}</p>
+		<a href={l('/briefing')} class="presek-briefing-card__cta">
+			{t('rail.full_overview')} <ArrowUpRight size={12} strokeWidth={2.5} />
 		</a>
 	</section>
 )}
-
-<style>
-	.home-briefing-teaser {
-		margin: 0 0 1rem;
-		padding: 0.85rem 0.95rem;
-		border: 1px solid color-mix(in srgb, var(--nyt-accent) 18%, var(--border));
-		border-left: 4px solid var(--nyt-accent);
-		background: color-mix(in srgb, var(--nyt-accent) 5%, var(--background));
-	}
-
-	.home-briefing-teaser .type-kicker {
-		margin-bottom: 0.45rem;
-	}
-
-	.home-briefing-text {
-		margin: 0;
-		font-family: var(--font-nyt-body);
-		font-size: 0.92rem;
-		line-height: 1.55;
-		color: color-mix(in srgb, var(--foreground) 84%, var(--secondary-foreground));
-	}
-
-	.home-briefing-cta {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.35rem;
-		margin-top: 0.75rem;
-		font-family: var(--font-ui);
-		font-size: 0.58rem;
-		font-weight: 800;
-		letter-spacing: 0.12em;
-		text-transform: uppercase;
-		color: var(--nyt-accent);
-		text-decoration: none;
-	}
-
-	.home-briefing-cta:hover {
-		text-decoration: underline;
-	}
-</style>

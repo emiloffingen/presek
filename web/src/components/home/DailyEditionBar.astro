@@ -20,6 +20,9 @@ const editionDate = new Intl.DateTimeFormat(lang === 'sr' ? 'sr-Latn-RS' : 'mk-M
 ---
 
 <div class="daily-edition-bar" role="note">
-    <span class="daily-edition-kicker">{t('home.edition_kicker')}</span>
-    <span class="daily-edition-date">{editionDate}</span>
+    <span class="daily-edition-mark" aria-hidden="true"></span>
+    <div class="daily-edition-copy">
+        <span class="daily-edition-kicker">{t('home.edition_kicker')}</span>
+        <span class="daily-edition-date">{editionDate}</span>
+    </div>
 </div>

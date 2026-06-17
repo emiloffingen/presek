@@ -139,10 +139,10 @@ function getBentoSpan(cluster: NewsCluster) {
     /* ── Kickers ────────────────────────────────────── */
     .section-kicker {
         margin: 0 0 0.15rem;
-        font-family: var(--font-sans);
-        font-size: 0.64rem;
-        font-weight: 950;
-        letter-spacing: 0.12em;
+        font-family: var(--font-ui);
+        font-size: var(--text-ui-kicker);
+        font-weight: 800;
+        letter-spacing: 0.1em;
         text-transform: uppercase;
         color: var(--nyt-accent);
     }
@@ -169,10 +169,10 @@ function getBentoSpan(cluster: NewsCluster) {
 
     .feed-tone-global .section-kicker { color: var(--editorial-positive); }
     .feed-tone-wire .section-kicker { color: var(--nyt-red); }
-    .feed-tone-developing .section-kicker { color: var(--editorial-watch); }
+    .feed-tone-developing .section-kicker { color: var(--presek-mark, var(--editorial-watch)); }
 
     .feed-tone-global .editorial-ornament { color: var(--editorial-positive); opacity: 0.6; }
-    .feed-tone-developing .editorial-ornament { color: var(--editorial-watch); opacity: 0.6; }
+    .feed-tone-developing .editorial-ornament { color: var(--presek-mark, var(--editorial-watch)); opacity: 0.55; }
     .feed-tone-wire .editorial-ornament { color: var(--nyt-red); opacity: 0.6; }
 
     /* ── Card Entrance Animations ───────────────────── */

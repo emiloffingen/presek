@@ -4,12 +4,16 @@
   --presek-mark: #c45c26;
   --presek-mark-soft: color-mix(in srgb, var(--presek-mark) 14%, var(--background));
   --presek-mark-line: color-mix(in srgb, var(--presek-mark) 55%, var(--border));
+  --presek-surface: color-mix(in srgb, var(--presek-mark) 6%, var(--card));
+  --presek-surface-border: color-mix(in srgb, var(--presek-mark) 20%, var(--border));
 }
 
 .dark {
   --presek-mark: #e07a3d;
   --presek-mark-soft: color-mix(in srgb, var(--presek-mark) 18%, var(--background));
   --presek-mark-line: color-mix(in srgb, var(--presek-mark) 45%, var(--border));
+  --presek-surface: color-mix(in srgb, var(--presek-mark) 10%, var(--card));
+  --presek-surface-border: color-mix(in srgb, var(--presek-mark) 28%, var(--border));
 }
 
 /* Section divider with brand cut */
@@ -33,7 +37,8 @@
 /* Kicker labels use the warm mark sitewide */
 .type-kicker,
 .analysis-band-kicker,
-.home-unified-feed-title::before {
+.home-unified-feed-title::before,
+.daily-edition-kicker {
   color: var(--presek-mark);
 }
 
@@ -53,17 +58,214 @@
   border-bottom-color: color-mix(in srgb, var(--presek-mark) 35%, var(--foreground));
 }
 
-.home-expand-analysis {
-  border-color: var(--presek-mark-line);
+/* ── Daily edition strip ───────────────────────────── */
+.daily-edition-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0 0.85rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--presek-mark) 18%, var(--border));
+  margin-bottom: 0.35rem;
+}
+
+.daily-edition-mark {
+  flex: 0 0 auto;
+  width: 0.45rem;
+  height: 2.1rem;
+  background: linear-gradient(
+    180deg,
+    var(--presek-mark) 0%,
+    color-mix(in srgb, var(--presek-mark) 55%, transparent) 100%
+  );
+}
+
+.daily-edition-copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.85rem;
+  min-width: 0;
+}
+
+.daily-edition-kicker {
+  font-family: var(--font-ui);
+  font-size: var(--text-ui-kicker);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.daily-edition-date {
+  font-family: var(--font-serif);
+  font-size: clamp(1.02rem, 1.1vw, 1.22rem);
+  font-style: italic;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--foreground) 72%, var(--muted-foreground));
+  line-height: 1.2;
+}
+
+/* ── Briefing teaser card ──────────────────────────── */
+.presek-briefing-card {
+  margin: 0 0 1rem;
+  padding: 1rem 1.05rem;
+  border: 1px solid var(--presek-surface-border);
+  border-left: 4px solid var(--presek-mark);
+  background:
+    linear-gradient(135deg, var(--presek-mark-soft) 0%, transparent 58%),
+    var(--presek-surface);
+  box-shadow: 0 14px 28px -24px color-mix(in srgb, var(--presek-mark) 45%, transparent);
+}
+
+.presek-briefing-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 0.75rem;
+  margin-bottom: 0.55rem;
+}
+
+.presek-briefing-card__date {
+  font-family: var(--font-ui);
+  font-size: var(--text-ui-min);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted-foreground);
+}
+
+.presek-briefing-card__text {
+  margin: 0;
+  font-family: var(--font-nyt-body);
+  font-size: clamp(0.94rem, 0.9rem + 0.2vw, 1.02rem);
+  line-height: 1.58;
+  color: color-mix(in srgb, var(--foreground) 88%, var(--secondary-foreground));
+  text-wrap: pretty;
+}
+
+.presek-briefing-card__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.85rem;
+  padding: 0.42rem 0.7rem;
+  border: 1px solid var(--presek-mark-line);
+  background: color-mix(in srgb, var(--background) 88%, transparent);
+  font-family: var(--font-ui);
+  font-size: var(--text-ui-kicker);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--presek-mark);
+  text-decoration: none;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.presek-briefing-card__cta:hover,
+.presek-briefing-card__cta:focus-visible {
+  border-color: var(--presek-mark);
   background: var(--presek-mark-soft);
+  color: color-mix(in srgb, var(--presek-mark) 85%, var(--foreground));
+}
+
+/* ── Analysis expand panel ─────────────────────────── */
+.home-expand-analysis {
+  margin: 1.35rem 0 0.65rem;
+  padding: 1.05rem 1.1rem 1.1rem;
+  border: 1px solid var(--presek-mark-line);
+  border-radius: 0;
+  background:
+    linear-gradient(160deg, var(--presek-mark-soft) 0%, transparent 70%),
+    color-mix(in srgb, var(--card) 92%, var(--background));
+  box-shadow: var(--shadow-sm);
+}
+
+.home-expand-analysis-kicker {
+  margin-bottom: 0.55rem;
 }
 
 .home-expand-analysis-btn {
-  border-color: color-mix(in srgb, var(--presek-mark) 40%, var(--border));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.82rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--presek-mark) 40%, var(--border));
+  border-radius: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.home-expand-analysis-btn::after {
+  content: "→";
+  font-size: 1rem;
+  line-height: 1;
+  transition: transform 0.2s var(--ease-editorial);
 }
 
 .home-expand-analysis-btn:hover,
 .home-expand-analysis-btn:focus-visible {
   border-color: var(--presek-mark);
+  background: var(--presek-mark-soft);
+  color: color-mix(in srgb, var(--presek-mark) 80%, var(--foreground));
+}
+
+.home-expand-analysis-btn:hover::after,
+.home-expand-analysis-btn:focus-visible::after {
+  transform: translateX(0.15rem);
+}
+
+.home-expand-analysis-copy {
+  margin: 0.7rem 0 0;
+  font-size: var(--text-sm);
+  color: var(--muted-foreground);
+  line-height: 1.5;
+  max-width: 38rem;
+}
+
+/* ── Header nav polish ─────────────────────────────── */
+.nav-rail-link::after {
+  background: var(--presek-mark);
+}
+
+.nav-rail-link.is-active:not(.nav-rail-link--analysis) {
+  color: var(--foreground);
+  background: var(--presek-mark-soft);
+  border-color: var(--presek-mark-line);
+}
+
+.feed-tone-developing .section-kicker {
   color: var(--presek-mark);
+}
+
+.feed-tone-developing .editorial-ornament {
+  color: var(--presek-mark);
+  opacity: 0.55;
+}
+
+@media (max-width: 768px) {
+  .home-mobile-order-edition .daily-edition-bar {
+    padding: 0.3rem 0 0.4rem;
+    margin-bottom: 0;
+    border-bottom: none;
+  }
+
+  .daily-edition-mark {
+    height: 1.65rem;
+  }
+
+  .daily-edition-date {
+    font-size: var(--text-sm);
+  }
+
+  .presek-briefing-card {
+    padding: 0.9rem 0.95rem;
+  }
 }

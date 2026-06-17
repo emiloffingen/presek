@@ -3,10 +3,11 @@
 /* ── Broadsheet Layout ───────────────────────────── */
 .broadsheet-layout {
     background:
+        radial-gradient(120% 70% at 50% -15%, color-mix(in srgb, var(--presek-mark) 5%, transparent), transparent 52%),
         linear-gradient(90deg, color-mix(in srgb, var(--foreground) 2%, transparent) 0 1px, transparent 1px 100%),
         var(--background);
-    background-size: min(100%, 76rem) 100%;
-    background-position: center top;
+    background-size: min(100%, 76rem) 100%, min(100%, 76rem) 100%, auto;
+    background-position: center top, center top, center top;
 }
 .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: var(--grid-gap); }
 .broadsheet-grid .broadsheet-main {
@@ -28,7 +29,7 @@
 
 /* ── Section Dividers ────────────────────────────── */
 .section-wrapper {
-    border-bottom: 1px solid color-mix(in srgb, var(--foreground) 9%, var(--border));
+    border-bottom: 1px solid color-mix(in srgb, var(--foreground) 7%, var(--border));
     padding-bottom: clamp(0.9rem, 1.55vw, 1.35rem);
     margin-bottom: clamp(0.9rem, 1.55vw, 1.35rem);
 }
@@ -55,10 +56,11 @@
 .home-start-here {
     position: relative;
     margin: 0 0 clamp(0.75rem, 1.5vw, 1rem);
-    padding: 0.75rem 0.85rem;
-    border: 1px solid color-mix(in srgb, var(--nyt-accent) 22%, var(--border));
-    border-left: 3px solid var(--presek-mark, var(--nyt-accent));
-    background: color-mix(in srgb, var(--nyt-accent) 4%, var(--background));
+    padding: 0.85rem 0.95rem;
+    border: 1px solid var(--presek-surface-border);
+    border-left: 3px solid var(--presek-mark);
+    background: var(--presek-surface);
+    box-shadow: 0 12px 24px -22px color-mix(in srgb, var(--presek-mark) 35%, transparent);
 }
 
 .home-start-here-headbar {

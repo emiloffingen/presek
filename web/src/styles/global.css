@@ -428,7 +428,7 @@ h6,
   letter-spacing: 0.08em;
   text-transform: uppercase;
   line-height: 1.25;
-  color: var(--nyt-accent);
+  color: var(--presek-mark, var(--nyt-accent));
   display: block;
   margin-bottom: 0.45rem;
 }

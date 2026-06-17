@@ -92,32 +92,7 @@
   }
 }
 
-/* ── Daily edition bar ──────────────────────────────── */
-.daily-edition-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.65rem 1rem;
-  padding: 0.75rem 0 1rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--foreground) 8%, var(--border));
-  margin-bottom: 0.5rem;
-}
-
-.daily-edition-kicker {
-  font-family: var(--font-ui);
-  font-size: var(--text-ui-kicker);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--nyt-accent);
-}
-
-.daily-edition-date {
-  font-family: var(--font-serif);
-  font-size: clamp(1rem, 1.2vw, 1.2rem);
-  font-style: italic;
-  color: var(--muted-foreground);
-}
+/* Daily edition + expand panel: see presek-identity.css */
 
 /* ── Stats teaser ───────────────────────────────────── */
 .home-stats-teaser {
@@ -301,39 +276,6 @@
 
 html[data-page="home"] .search-fab-mobile {
   display: none !important;
-}
-
-.home-expand-analysis {
-  margin: 1.25rem 0 0.5rem;
-  padding: 1rem 1.1rem;
-  border: 1px solid color-mix(in srgb, var(--nyt-accent) 24%, var(--border));
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--nyt-accent) 6%, var(--background));
-}
-
-.home-expand-analysis-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid color-mix(in srgb, var(--nyt-accent) 35%, var(--border));
-  border-radius: var(--radius-sm);
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-ui);
-  font-size: var(--text-sm);
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-
-.home-expand-analysis-copy {
-  margin: 0.65rem 0 0;
-  font-size: var(--text-sm);
-  color: var(--muted-foreground);
-  line-height: 1.45;
 }
 
 .home-edition-expand-panel {
@@ -927,13 +869,6 @@ body.has-consent-banner .ui-concept-onboarding {
   .home-mobile-order-edition .daily-edition-bar {
     flex: 1 1 auto;
     min-width: 0;
-    padding: 0.35rem 0 0.45rem;
-    margin-bottom: 0;
-    border-bottom: none;
-  }
-
-  .home-mobile-order-edition .daily-edition-date {
-    font-size: var(--text-sm);
   }
 
   .home-mobile-order-edition .home-pregled-nav-link {
