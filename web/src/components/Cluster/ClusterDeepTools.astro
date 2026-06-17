@@ -1,36 +1,53 @@
 ---
 import StorylineHistoryIsland from '../StorylineHistoryIsland.tsx';
 import ClusterHistoryIsland from '../ClusterHistoryIsland.tsx';
-import ResearchIsland from '../ResearchIsland.tsx';
+import ClusterResearchQA from './ClusterResearchQA.astro';
+
+interface Perspective {
+  angle?: string;
+  content?: string;
+}
 
 interface Props {
   clusterId: string;
   apiUrl: string;
   lang: string;
   t: (key: string) => string;
-  initialHeadline?: string;
-  sources?: string[];
+  keyFacts?: string[];
+  perspectives?: Perspective[];
+  synthesisBullets?: string[];
+  generatedArticle?: string | null;
 }
 
-const { clusterId, apiUrl, lang, t, initialHeadline = '', sources = [] } = Astro.props;
+const {
+  clusterId,
+  apiUrl,
+  lang,
+  t,
+  keyFacts = [],
+  perspectives = [],
+  synthesisBullets = [],
+  generatedArticle = '',
+} = Astro.props;
 ---
 
 <section class="editorial-section cluster-deep-tools mb-16">
-  <details class="cluster-deep-tools-details">
+  <ClusterResearchQA
+    lang={lang as 'sr' | 'mk'}
+    keyFacts={keyFacts}
+    perspectives={perspectives}
+    synthesisBullets={synthesisBullets}
+    generatedArticle={generatedArticle}
+  />
+
+  <details class="cluster-deep-tools-details mt-10">
     <summary class="cluster-deep-tools-summary">
       <span class="cluster-deep-tools-title">{t('cluster.deep_synthesis')}</span>
       <span class="cluster-deep-tools-hint">
-        {lang === 'sr' ? 'Vremenska linija i istorija klastera' : 'Временска линија и историја на кластерот'}
+        {t('cluster.deep_synthesis_hint')}
       </span>
     </summary>
     <div class="cluster-deep-tools-body">
-      <ResearchIsland
-        client:visible
-        clusterId={clusterId}
-        initialHeadline={initialHeadline}
-        sources={sources}
-        lang={lang as 'sr' | 'mk'}
-      />
       <StorylineHistoryIsland client:visible clusterId={clusterId} apiUrl={apiUrl} lang={lang} />
       <ClusterHistoryIsland client:visible clusterId={clusterId} lang={lang} />
     </div>

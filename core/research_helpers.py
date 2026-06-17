@@ -49,6 +49,22 @@ RESEARCH_MODE_LABELS = {
     "custom": "odgovor na istrazuvanjeto",
 }
 
+# Static focus plan per mode — avoids an extra LLM round-trip before report generation.
+RESEARCH_MODE_PLAN = {
+    "sr": {
+        "facts": "1. Ključne brojke i datumi\n2. Proverene činjenice\n3. Vremenski okvir",
+        "perspectives": "1. Ključni akteri i stavovi\n2. Različiti uglovi\n3. Konflikti između izvora",
+        "context": "1. Širi kontekst\n2. Prethodni događaji\n3. Moguće posledice",
+        "custom": "1. Direktan odgovor na pitanje\n2. Podržavajući kontekst\n3. Nepoznato ili neprovereno",
+    },
+    "mk": {
+        "facts": "1. Klucni brojki i datumi\n2. Provereni fakti\n3. Vremenska ramka",
+        "perspectives": "1. Klucni akteri i stavovi\n2. Razlicni agli\n3. Konflikti megju izvorite",
+        "context": "1. Posirok kontekst\n2. Prethodni nastani\n3. Mozni posledici",
+        "custom": "1. Direkten odgovor na prasanjeto\n2. Poddrzuvacki kontekst\n3. Nepoznato ili neprovereno",
+    },
+}
+
 
 async def build_gemma_research_context(
     cluster_id: str, mode: str = "custom", query: str = ""

@@ -9,7 +9,11 @@ from lxml import html
 from prometheus_client import Histogram
 from core.ai_engine import async_call_ai, clean_json_response
 from core.prompts import RESEARCH_SYSTEM_PROMPT, RESEARCH_SYSTEM_PROMPT_MK
-from core.research_helpers import RESEARCH_MODE_QUERIES, build_gemma_research_context
+from core.research_helpers import (
+    RESEARCH_MODE_PLAN,
+    RESEARCH_MODE_QUERIES,
+    build_gemma_research_context,
+)
 from core.entities import extract_entities
 from core.embeddings import get_query_embedding_async
 from nlp.local_analyst import ResearchQueryResponse
@@ -165,20 +169,10 @@ class ResearchService:
         if public_context:
             context = f"{context}\n\n{public_context}"
 
-        # Step 1: Chain-of-Thought (Extract plan/topics)
-        plan_system_prompt = (
-            "Ti si planer istraživanja. Vrati 3 kratke teze za fokus."
-            if lang == "sr"
-            else "Ти си планер на истражување. Врати 3 кратки тези за фокус."
-        )
-        plan_prompt = (
-            f"Identifikuj 3 ključne oblasti fokusa za ovaj upit: '{research_query}'. Kontekst: {context[:2000]}"
-            if lang == "sr"
-            else f"Идентификувај 3 клучни области на фокус за ова прашање: '{research_query}'. Контекст: {context[:2000]}"
-        )
-        plan_raw, _ = await async_call_ai(plan_prompt, plan_system_prompt, task_type="research", lang=lang)
-        
-        # Step 2: Final Report Generation
+        plan_lang = effective_lang if effective_lang in RESEARCH_MODE_PLAN else "sr"
+        plan_raw = RESEARCH_MODE_PLAN[plan_lang].get(clean_mode, RESEARCH_MODE_PLAN[plan_lang]["custom"])
+
+        # Final report generation (single LLM call)
         research_system_prompt = RESEARCH_SYSTEM_PROMPT_MK if lang == "mk" else RESEARCH_SYSTEM_PROMPT
         prompt = (
             f"Pitanje: {research_query}\nPlan: {plan_raw}\nContext: {context}"

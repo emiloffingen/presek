@@ -150,7 +150,7 @@ class TestAstroFrontendIntegrity:
 
     def test_editorial_interactive_widgets_avoid_placeholder_and_nan_output(self):
         source_comparison = _read("web/src/components/SourceComparisonIsland.tsx")
-        research = _read("web/src/components/ResearchIsland.tsx")
+        research_qa = _read("web/src/lib/buildResearchQA.ts")
 
         assert "\n...\n" not in source_comparison
         assert (
@@ -158,7 +158,7 @@ class TestAstroFrontendIntegrity:
             in source_comparison
         )
         assert "Math.max(0, Math.min(100" in source_comparison
-        assert "result.report || result.answer" in research
+        assert "buildResearchQA" in research_qa
 
     def test_briefing_page_shows_real_error_state_and_not_only_processing_state(self):
         briefing = _read("web/src/pages/briefing.astro")

@@ -1,0 +1,73 @@
+---
+import { useTranslations } from '../../i18n/utils';
+import { buildResearchQA } from '../../lib/buildResearchQA';
+
+interface Perspective {
+  angle?: string;
+  content?: string;
+}
+
+interface Props {
+  lang: 'sr' | 'mk';
+  keyFacts?: string[];
+  perspectives?: Perspective[];
+  synthesisBullets?: string[];
+  generatedArticle?: string | null;
+}
+
+const {
+  lang,
+  keyFacts = [],
+  perspectives = [],
+  synthesisBullets = [],
+  generatedArticle = '',
+} = Astro.props;
+
+const t = useTranslations(lang);
+
+const items = buildResearchQA({
+  lang,
+  questions: [t('cluster.research_q1'), t('cluster.research_q2'), t('cluster.research_q3')],
+  keyFacts,
+  perspectives,
+  synthesisBullets,
+  generatedArticle,
+  emptyAnswer: t('cluster.research_qa_empty'),
+});
+
+const visibleItems = items.filter((item) => item.answer && item.answer !== t('cluster.research_qa_empty'));
+---
+
+{visibleItems.length > 0 && (
+  <section class="research-qa-panel mt-8 mb-10 border border-border bg-secondary/5 p-4 md:p-6" aria-labelledby="research-qa-title">
+    <div class="mb-6 max-w-3xl">
+      <p class="mb-2 flex items-center gap-2 font-sans text-[9px] font-black uppercase tracking-[0.2em] text-nyt-accent">
+        <span class="w-4 h-[2px] bg-nyt-accent"></span>
+        {t('cluster.researcher')}
+      </p>
+      <h2 id="research-qa-title" class="font-serif text-xl md:text-2xl font-black text-foreground leading-tight tracking-tight">
+        {t('cluster.research_qa_desc')}
+      </h2>
+    </div>
+
+    <div class="research-qa-list">
+      {visibleItems.map((item, index) => (
+        <details class="research-qa-item" open={index === 0}>
+          <summary class="research-qa-question">
+            <span class="research-qa-index">{index + 1}</span>
+            <span>{item.question}</span>
+          </summary>
+          <div class="research-qa-answer">
+            {item.answer.split('\n').map((line) => (
+              <p>{line}</p>
+            ))}
+          </div>
+        </details>
+      ))}
+    </div>
+
+    <p class="mt-5 font-sans text-[9px] font-bold uppercase tracking-[0.16em] text-muted-foreground opacity-70">
+      {t('cluster.research_qa_footer')}
+    </p>
+  </section>
+)}

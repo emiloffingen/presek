@@ -128,7 +128,7 @@ def test_standardize_article_style_task_language_mapping(mock_normalize, mock_db
 
 
 @patch("core.services.research_service.async_call_ai")
-@patch("core.services.research_service._build_gemma_research_context")
+@patch("core.services.research_service.build_gemma_research_context")
 @patch("core.services.research_service.get_query_embedding_async")
 @patch("core.services.research_service.ResearchService._public_web_search")
 def test_research_service_structured_integration(mock_public_search, mock_embedding, mock_build_context, mock_async_call):
@@ -138,19 +138,18 @@ def test_research_service_structured_integration(mock_public_search, mock_embedd
     mock_build_context.return_value = ("context text", ["source_a"])
     mock_embedding.return_value = [0.1, 0.2, 0.3]
     mock_public_search.return_value = []
-    mock_async_call.side_effect = [
-        ("plan raw", "provider_x"),  # Plan call
-        (json.dumps({
+    mock_async_call.return_value = (
+        json.dumps({
             "answer": "Answer text [source_a]",
             "suggestions": ["S1?", "S2?", "S3?"]
-        }), "provider_x")  # Report call
-    ]
+        }),
+        "provider_x",
+    )
     
     res = asyncio.run(ResearchService.get_cluster_research("cluster_1", "facts", "", "sr"))
     
-    # Assert plan was called, then standard report call with response_schema
-    assert mock_async_call.call_count == 2
-    args, kwargs = mock_async_call.call_args_list[1]
+    assert mock_async_call.call_count == 1
+    args, kwargs = mock_async_call.call_args
     assert kwargs["response_schema"] == ResearchQueryResponse
     assert res["answer"] == "Answer text [source_a]"
 
