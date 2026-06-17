@@ -2,6 +2,7 @@
 import { ShieldCheck, TriangleAlert, Search } from 'lucide-react';
 import { renderSynthesisHtml as sharedRenderSynthesisHtml } from '../../utils/renderSynthesisHtml';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+import EditorialSectionLockup from '../editorial/EditorialSectionLockup.astro';
 
 interface Props {
 	hasFactcheck: boolean;
@@ -132,10 +133,8 @@ const signalSummary = pluralismLabel && objectivityLabel
 ---
 
 <section class="editorial-section analysis-section mb-10 border-t-2 border-foreground pt-6">
-	<div class="section-eyebrow mb-5">
-		<ShieldCheck size={16} className="text-foreground" />
-		<h2 class="section-label">{t('cluster.media_pluralism')}</h2>
-		<div class="section-divider"></div>
+	<div class="mb-5">
+		<EditorialSectionLockup title={t('cluster.section_pluralism')} />
 	</div>
 
 	{hasFactcheck && (

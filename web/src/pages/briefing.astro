@@ -10,7 +10,6 @@ import BriefingDateNav from '../components/briefing/BriefingDateNav.astro';
 import BriefingQuickRead from '../components/briefing/BriefingQuickRead';
 import BriefingDeliveryIsland from '../components/BriefingDeliveryIsland.tsx';
 import MorningEmailSignup from '../components/MorningEmailSignup.tsx';
-import NarrativeList from '../components/briefing/NarrativeList';
 import AudioPlayer from '../components/audio/AudioPlayer.astro';
 import '../styles/briefing-premium.css';
 
@@ -157,10 +156,6 @@ const leadVisualTitle = briefingData?.lead_cluster?.synthetic_headline || briefi
                         )}
 
                         <div class="briefing-full-section">
-                        {briefingData.metadata?.key_narratives && (
-                            <NarrativeList narratives={briefingData.metadata.key_narratives} lang={lang} client:load />
-                        )}
-
                         <div class="briefing-editorial-layout">
                             {briefingSections.length > 0 && (
                                 <BriefingSectionsRail sections={briefingSections} lang={lang} client:visible />

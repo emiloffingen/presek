@@ -230,6 +230,54 @@
   max-width: 38rem;
 }
 
+/* ── Shared editorial section lockups ───────────────── */
+.editorial-review-lockup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.55rem;
+  min-width: 0;
+}
+
+.editorial-review-title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: clamp(1.35rem, 2vw, 1.75rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: var(--foreground);
+}
+
+.editorial-review-kicker {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--muted-foreground);
+}
+
+.editorial-review-sep {
+  color: color-mix(in srgb, var(--muted-foreground) 70%, transparent);
+  font-weight: 500;
+}
+
+.briefing-review-lockup {
+  margin-bottom: 2.5rem;
+}
+
+@media (max-width: 639.98px) {
+  .briefing-review-lockup {
+    margin-bottom: 1.75rem;
+  }
+}
+
 /* ── Header nav polish ─────────────────────────────── */
 .nav-rail-link::after {
   background: var(--presek-mark);

@@ -1,6 +1,6 @@
 ---
-import { Newspaper, ExternalLink } from 'lucide-react';
 import ArticleItem from './ArticleItem.astro';
+import EditorialSectionLockup from '../editorial/EditorialSectionLockup.astro';
 import type { Article } from '../../types';
 
 interface Props {
@@ -15,13 +15,11 @@ const { lang, sourceDocArticle, sourceDocText, articleRows, t } = Astro.props;
 ---
 
 <section class="editorial-section sources-section mb-24 border-t border-border/40 pt-12" id="cluster-sources">
-  <div class="section-eyebrow mb-16">
-    <Newspaper size={18} className="text-muted-foreground" />
-    <h2 class="section-label">{t('cluster.source_docs')}</h2>
-    <span class="section-sub-label">
-      {lang === 'sr' ? 'Hronološki pregled medijskih izveštaja' : 'Хронолошки преглед на медиумските извештаи'}
-    </span>
-    <div class="section-divider"></div>
+  <div class="mb-16">
+    <EditorialSectionLockup
+      title={t('cluster.section_sources')}
+      kicker={t('cluster.section_sources_kicker')}
+    />
   </div>
 
   {sourceDocArticle && sourceDocText && (

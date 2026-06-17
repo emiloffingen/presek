@@ -1,6 +1,7 @@
 ---
-import { BookOpen, Clock3, RefreshCw } from 'lucide-react';
+import { Clock3, RefreshCw } from 'lucide-react';
 import EditorialNarrative from './EditorialNarrative.astro';
+import EditorialSectionLockup from '../editorial/EditorialSectionLockup.astro';
 import AudioPlayer from '../audio/AudioPlayer.astro';
 
 interface SynthesisItem {
@@ -83,13 +84,7 @@ const sourcesCta = lang === 'sr' ? 'Pogledaj izvore' : 'Погледни изв�
 
 	<section class:list={["editorial-section narrative-section mb-24", { "narrative-section--lead": isPageLead }]} id="cluster-synthesis">
 	<div class="section-eyebrow narrative-eyebrow mb-16">
-		<div class="editorial-review-lockup">
-			<h2 class="editorial-review-title">{primaryNarrativeLabel}</h2>
-			<p class="editorial-review-kicker">
-				<span class="editorial-review-sep" aria-hidden="true">·</span>
-				{primaryNarrativeEyebrow}
-			</p>
-		</div>
+		<EditorialSectionLockup title={primaryNarrativeLabel} kicker={primaryNarrativeEyebrow} />
 
 		{synthesisReady && (
 			<div class="narrative-audio-wrap">

@@ -1,6 +1,7 @@
 ---
 import { useTranslations } from '../../i18n/utils';
 import { highlightFactText } from '../../lib/clusterBriefUtils';
+import EditorialSectionLockup from '../editorial/EditorialSectionLockup.astro';
 
 interface Props {
   facts: string[];
@@ -14,9 +15,8 @@ const displayFacts = facts.slice(0, 5);
 
 {displayFacts.length > 0 && (
   <section id="cluster-key-facts" class="cluster-key-facts-band mb-12 border-t border-border/40 pt-10">
-    <div class="section-eyebrow mb-8">
-      <h2 class="section-label">{t('cluster.key_facts_band')}</h2>
-      <div class="section-divider"></div>
+    <div class="mb-8">
+      <EditorialSectionLockup title={t('cluster.section_key_facts')} />
     </div>
     <ul class="cluster-key-facts-list space-y-3">
       {displayFacts.map((fact) => (

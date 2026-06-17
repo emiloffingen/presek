@@ -1,0 +1,19 @@
+---
+interface Props {
+  title: string;
+  kicker?: string;
+  class?: string;
+}
+
+const { title, kicker, class: className } = Astro.props;
+---
+
+<header class:list={['editorial-review-lockup', className]}>
+  <h2 class="editorial-review-title">{title}</h2>
+  {kicker && (
+    <p class="editorial-review-kicker">
+      <span class="editorial-review-sep" aria-hidden="true">·</span>
+      {kicker}
+    </p>
+  )}
+</header>

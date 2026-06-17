@@ -1,6 +1,6 @@
 ---
-import { Zap } from 'lucide-react';
 import { cleanAndDecode, deShout, slugify } from '../../utils/textUtils';
+import EditorialSectionLockup from '../editorial/EditorialSectionLockup.astro';
 
 interface Props {
   lang: 'sr' | 'mk';
@@ -14,10 +14,8 @@ const { lang, filteredRelated, getRelativeTimeStr, describeRelatedEvidence, t } 
 ---
 
 <section class="editorial-section related-section mb-24 border-t border-border/40 pt-16">
-  <div class="section-eyebrow mb-16">
-    <Zap size={20} className="text-nyt-red" />
-    <h2 class="section-label">{t('cluster.related_content')}</h2>
-    <div class="section-divider"></div>
+  <div class="mb-16">
+    <EditorialSectionLockup title={t('cluster.section_related')} />
   </div>
   <div class="related-editorial-grid">
     {filteredRelated.map((rel: any) => {

@@ -9,25 +9,6 @@ type Props = {
 export default function BriefingSectionsRail({ sections, lang = 'sr' }: Props) {
   const isMK = lang === 'mk';
   const [activeId, setActiveId] = useState(sections[0]?.id ?? '');
-  const [revealed, setRevealed] = useState(false);
-
-  useEffect(() => {
-    const sentinel = document.getElementById('briefing-article-start');
-    if (!sentinel) {
-      setRevealed(true);
-      return;
-    }
-
-    const revealObserver = new IntersectionObserver(
-      ([entry]) => {
-        setRevealed(!entry.isIntersecting);
-      },
-      { rootMargin: '-12% 0px 0px 0px', threshold: 0 },
-    );
-
-    revealObserver.observe(sentinel);
-    return () => revealObserver.disconnect();
-  }, []);
 
   useEffect(() => {
     if (!sections.length) return;
@@ -58,9 +39,8 @@ export default function BriefingSectionsRail({ sections, lang = 'sr' }: Props) {
 
   return (
     <nav
-      className={`briefing-sections-rail ${revealed ? 'is-revealed' : ''}`}
+      className="briefing-sections-rail is-revealed"
       aria-label={isMK ? 'Секции' : 'Sekcije'}
-      aria-hidden={!revealed}
     >
       <p className="briefing-sections-rail__kicker">{isMK ? 'Секции' : 'Sekcije'}</p>
       <ol className="briefing-sections-rail__list">
