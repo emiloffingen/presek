@@ -53,7 +53,7 @@ export function parseBriefItem(item: string, lang: string) {
   return { hasBadge: false, badgeText: '', badgeClass: '', content: clean };
 }
 
-import { sanitizeHtml } from '../../lib/sanitize';
+import { sanitizeHtml } from './sanitize';
 
 export function highlightFactText(text: string) {
   let html = text;
