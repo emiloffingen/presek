@@ -542,6 +542,11 @@ body.has-consent-banner .ui-concept-onboarding {
     display: block;
   }
 
+  .utility-theme-mobile {
+    display: inline-flex;
+    align-items: center;
+  }
+
   .utility-menu {
     display: block;
   }

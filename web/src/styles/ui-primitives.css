@@ -959,6 +959,18 @@
   box-shadow: none;
 }
 
+.theme-toggle-button .theme-toggle-icon {
+  display: block;
+  color: inherit;
+  stroke: currentColor;
+  opacity: 1;
+}
+
+.utility-theme-mobile {
+  display: none;
+  align-items: center;
+}
+
 .header-utility-button:hover {
   border-color: color-mix(in srgb, var(--border) 80%, transparent);
   background: color-mix(in srgb, var(--secondary) 72%, transparent);

@@ -284,6 +284,9 @@ function getRelativeTimeStr(dateStr?: string) {
                         <ThemeIsland client:load lang={lang} />
                         <TextScaleIsland client:load lang={lang} />
                     </div>
+                    <div class="utility-theme-mobile utility-mobile-only" data-no-script-convert>
+                        <ThemeIsland client:load lang={lang} />
+                    </div>
                     <details class="utility-menu utility-mobile-only">
                         <summary class="utility-menu-trigger" aria-label={lang === 'sr' ? 'Podešavanja' : 'Поставки'}>
                             <span aria-hidden="true">⋯</span>
@@ -299,7 +302,6 @@ function getRelativeTimeStr(dateStr?: string) {
                             <a href={l('/for-you')} class="utility-menu-link">{t('nav.for_you')}</a>
                             <a href={pregledHref} class="utility-menu-link">{t('nav.pregled')}</a>
                             <ScriptSwitcher />
-                            <ThemeIsland client:load lang={lang} />
                             <TextScaleIsland client:load lang={lang} />
                         </div>
                     </details>
