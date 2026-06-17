@@ -4,7 +4,14 @@ Test proxy functionality.
 
 import asyncio
 from unittest.mock import patch
+
+from routes.common import _is_allowed_proxy_content_type, _normalize_proxy_content_type
 from routes.system import proxy_image
+
+
+def test_normalize_proxy_content_type_accepts_nonstandard_jpg_header():
+    assert _normalize_proxy_content_type("image/JPG") == "image/jpeg"
+    assert _is_allowed_proxy_content_type("image/JPG; charset=binary") is True
 
 
 def test_proxy_image_fallback():

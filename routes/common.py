@@ -23,6 +23,18 @@ _PROXY_ALLOWED_TYPES = {
     "image/avif",
 }
 _PROXY_MAX_BYTES = 10 * 1024 * 1024
+
+
+def _normalize_proxy_content_type(content_type: str) -> str:
+    """Normalize remote image Content-Type headers for proxy allowlist checks."""
+    ctype = str(content_type or "").split(";", 1)[0].strip().lower()
+    if ctype == "image/jpg":
+        return "image/jpeg"
+    return ctype
+
+
+def _is_allowed_proxy_content_type(content_type: str) -> bool:
+    return _normalize_proxy_content_type(content_type) in _PROXY_ALLOWED_TYPES
 SYNC_TOKEN_PATTERN = re.compile(r"^[A-Za-z0-9_-]{20,128}$")
 
 

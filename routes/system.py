@@ -56,7 +56,7 @@ from core.health import _probe_database, _probe_redis
 from core.version import version_payload
 from utils import _peer_ip, _resolve_public_ips
 
-from .common import _PROXY_ALLOWED_TYPES, _PROXY_MAX_BYTES, cleanAndDecode
+from .common import _PROXY_MAX_BYTES, _is_allowed_proxy_content_type, cleanAndDecode
 from .security import validate_cluster_id
 
 log = logging.getLogger("presek")
@@ -608,8 +608,8 @@ async def get_cluster_share_card(cluster_id: str):
                 async with httpx.AsyncClient(timeout=3.0, follow_redirects=True) as client:
                     async with client.stream("GET", bg_url) as resp:
                         p_ip = _peer_ip(resp)
-                        ctype = str(resp.headers.get("Content-Type", "")).split(";")[0].strip()
-                        if p_ip and p_ip in safe_ips and resp.status_code == 200 and ctype in _PROXY_ALLOWED_TYPES:
+                        ctype = str(resp.headers.get("Content-Type", ""))
+                        if p_ip and p_ip in safe_ips and resp.status_code == 200 and _is_allowed_proxy_content_type(ctype):
                             content = b""
                             async for chunk in resp.aiter_bytes(chunk_size=16384):
                                 content += chunk
@@ -864,8 +864,8 @@ async def proxy_image(
                         if resp.status_code != 200:
                             return serve_fallback(f"http_{resp.status_code}")
 
-                        ctype = str(resp.headers.get("Content-Type", "")).split(";")[0].strip()
-                        if ctype not in _PROXY_ALLOWED_TYPES:
+                        ctype = str(resp.headers.get("Content-Type", ""))
+                        if not _is_allowed_proxy_content_type(ctype):
                             return serve_fallback("invalid_content_type")
 
                         img_data = b""
