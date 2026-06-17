@@ -40,6 +40,9 @@ USE_READ_REPLICA=true
 # PRESEK_API_VENV=/home/emiloffingen/presek-runtime/venv-api
 # PRESEK_WORKER_VENV=/home/emiloffingen/presek-runtime/venv-worker
 
+# FastAPI process count (uvicorn prefork). Use 2+ with the slim API venv.
+UVICORN_WORKERS=2
+
 # Connection pool settings
 DB_POOL_MINCONN=2
 DB_POOL_MAXCONN=5
@@ -56,6 +59,9 @@ REDIS_URL=redis://:your_redis_password@localhost:6379/0
 # ============================================================================
 # Enable GPU acceleration for embeddings (requires CUDA)
 ENABLE_GPU_ACCELERATION=false
+
+# Offsite backup sync via rclone (optional — see deploy/sync_backups_offsite.sh)
+# BACKUP_OFFSITE_RCLONE_TARGET=r2:presek-backups/presek
 
 # Local translation settings
 LOCAL_TRANSLATION_ENABLED=true

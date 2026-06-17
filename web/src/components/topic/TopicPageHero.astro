@@ -3,10 +3,14 @@ import PreferenceToggle from '../PreferenceToggle.tsx';
 import TopicFollowSuggestionsIsland from '../TopicFollowSuggestionsIsland.tsx';
 import Breadcrumbs from '../Breadcrumbs.astro';
 
-interface FollowSuggestion {
-  topic?: string;
-  source?: string;
-  reason?: string;
+interface TopicFollowSuggestion {
+  topic: string;
+  reason: string;
+}
+
+interface SourceFollowSuggestion {
+  source: string;
+  reason: string;
 }
 
 interface Props {
@@ -19,8 +23,8 @@ interface Props {
   totalReports: number;
   breakingCount: number;
   synthesisLines: string[];
-  topicFollowSuggestions: FollowSuggestion[];
-  sourceFollowSuggestions: FollowSuggestion[];
+  topicFollowSuggestions: TopicFollowSuggestion[];
+  sourceFollowSuggestions: SourceFollowSuggestion[];
   labels: {
     kicker: string;
     contextTitle: string;

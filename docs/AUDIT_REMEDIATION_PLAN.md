@@ -30,11 +30,11 @@ Full application audit covering FastAPI backend, Astro frontend, deployment/ops,
 | 10 | Public `/api/health` leaks ops intel | **Fixed** | Detailed fields localhost-only |
 | 11 | CSRF cookie/header mismatch | **Fixed** | Double-submit validation |
 | 12 | Service imports router | **Fixed** | `core/research_helpers.py` |
-| 13 | No HTTP integration tests | **Partial** | `tests/test_security_integration.py` added |
+| 13 | No HTTP integration tests | **Fixed** | `tests/test_security_integration.py` (unsubscribe, health, tracking, CSRF, CORS) |
 | 14 | Input validation gaps | **Fixed** | `cluster_research`, `entity_graph_lookup` |
 | 15 | GA before consent | **Fixed** | Consent Mode v2 default denied |
 | 16 | Heavy header `client:load` | **Fixed** | `SearchIsland` → `client:idle` |
-| 17 | `astro check` errors | **Partial** | Layout + cluster fixes; remaining tracked |
+| 17 | `astro check` errors | **Fixed** | TopicPage defaults, hero types, ForYou scores, Layout cast |
 | 18 | Backups unencrypted by default | **Fixed** | `REQUIRE_BACKUP_ENCRYPTION=1` in prod crontab |
 | 19 | Nginx rate-limit zones on SSL install | **Fixed** | Zones in `presek.live.conf` + install script |
 | 20 | Bootstrap seeds prod from dev `.env` | **Fixed** | Refuses non-production source |
@@ -44,19 +44,20 @@ Full application audit covering FastAPI backend, Astro frontend, deployment/ops,
 
 | # | Issue | Status |
 |---|-------|--------|
-| 22 | Duplicate `/api/health` contracts | Open — consolidate router vs app |
-| 23 | Inconsistent error handling | Open |
+| 22 | Duplicate `/api/health` contracts | **Fixed** | Single app-level route (router duplicate removed) |
+| 23 | Inconsistent error handling | **Fixed** | `core/api_errors.py` + global exception handlers; `soft_error()` for graceful 200s |
 | 24 | `saved_insights` admin label as user_id | Open |
 | 25 | f-string SQL pattern | Open — audit-only |
 | 26 | Alembic without ORM models | Open — by design |
-| 27 | Global font payload | Open |
-| 28 | `Layout.astro` monolith | Open |
-| 29 | SW caches `/api/*` | Open |
-| 30 | a11y CI (axe/pa11y) | Open |
+| 27 | Global font payload | **Fixed** | Locale-split `fonts-sr.css` / `fonts-mk.css` |
+| 28 | `Layout.astro` monolith | **Fixed** | CSS → `layout-shell.css`; head/body → `LayoutHead` + `LayoutBodyChrome`; meta → `layoutMeta.ts` |
+| 29 | SW caches `/api/*` | **Fixed** | Allowlisted public reads in `sw-cache-policy.js` |
+| 29b | Astro CSP `unsafe-inline` scripts | **Fixed** | Per-request nonces in `middleware.ts`; shell JS in `public/js/presek-*.js` |
+| 30 | a11y CI (axe/pa11y) | **Fixed** | `scripts/a11y-homepage.mjs` + CI on SR/MK homepages |
 | 31 | Stale deploy docs (service names) | **Fixed** |
 | 32 | `shared/.env` permissions | **Fixed** | `chmod 600` in bootstrap |
-| 33 | Single uvicorn worker | Open — ops decision |
-| 34 | No offsite backup cron | Open |
+| 33 | Single uvicorn worker | **Fixed** | `UVICORN_WORKERS` (default 2) + raised MemoryMax |
+| 34 | No offsite backup cron | **Fixed** | `sync_backups_offsite.sh` + crontab + `verify_backup.sh` |
 | 35 | Rollback vs migrations | Open — documented |
 
 ## Low (P3)
@@ -71,12 +72,8 @@ Full application audit covering FastAPI backend, Astro frontend, deployment/ops,
 
 ## Recommended fix order (remaining)
 
-1. Add more `TestClient` integration tests (CSRF POST routes, CORS)
-2. Resolve remaining `astro check` errors in TopicPage components
-3. Increase uvicorn workers or dual API upstream
-4. Offsite backup cron + quarterly restore drill
-5. Font subsetting per locale
-6. CSP refactor for Astro inline scripts
+1. `saved_insights` admin label (P2 #24) — cosmetic
+2. Rollback vs migrations documentation (P2 #35)
 
 ---
 
@@ -84,7 +81,7 @@ Full application audit covering FastAPI backend, Astro frontend, deployment/ops,
 
 ```sh
 .venv/bin/python3 -m pytest -q tests/test_signed_tokens.py tests/test_security_integration.py
-cd web && npm test && npm run lint
+cd web && npm test && npm run lint && npm run a11y:ci && npm run a11y:ci:mk
 ```
 
 ## Deploy after merge

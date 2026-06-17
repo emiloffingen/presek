@@ -1,0 +1,25 @@
+---
+import ConsentBanner from '../ConsentBanner';
+import UiConceptOnboarding from '../UiConceptOnboarding';
+import TinyAdzScript from '../TinyAdzScript.astro';
+
+interface Props {
+  lang: 'sr' | 'mk';
+  loadTinyAdz: boolean;
+  tinyAdzSite: string;
+}
+
+const { lang, loadTinyAdz, tinyAdzSite } = Astro.props;
+const skipLabel = lang === 'mk' ? 'Прескокни до содржина' : 'Preskoči na sadržaj';
+---
+
+<a href="#main-content" class="skip-to-content">{skipLabel}</a>
+<div class="noise-overlay" aria-hidden="true"></div>
+<div id="loading-bar" class="fixed top-0 left-0 z-[9999] transition-all duration-300 opacity-0 w-0"></div>
+<slot />
+<UiConceptOnboarding client:idle lang={lang} />
+<ConsentBanner client:idle />
+<script is:inline src="/js/presek-shell.js" defer></script>
+<script is:inline src="/js/presek-motion.js" defer></script>
+<script is:inline src="/js/presek-images.js" defer></script>
+{loadTinyAdz && <TinyAdzScript siteId={tinyAdzSite} />}

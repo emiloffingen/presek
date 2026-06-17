@@ -6,14 +6,17 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-os.environ.setdefault("DATABASE_URL", "postgresql://test:test@localhost:5432/test")
-os.environ.setdefault("SECRET_KEY", "test-secret-key-integration")
-os.environ.setdefault("JWT_SECRET", "test-jwt-secret-integration")
-os.environ.setdefault("CSRF_TOKEN_SECRET", "test-csrf-secret-integration")
-os.environ.setdefault("ENV", "development")
+from routes.security import generate_csrf_token
+
+os.environ["DATABASE_URL"] = "postgresql://test:test@localhost:5432/test"
+os.environ["SECRET_KEY"] = "test-secret-key-integration"
+os.environ["JWT_SECRET"] = "test-jwt-secret-integration"
+os.environ["CSRF_TOKEN_SECRET"] = "test-csrf-secret-integration"
+os.environ["ENV"] = "development"
+os.environ["CORS_ORIGINS"] = "http://localhost:3000"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def client():
     from core.api_fast import app
 
@@ -61,3 +64,39 @@ class TestDeliveryTrackingSecurity:
             follow_redirects=False,
         )
         assert response.status_code == 400
+
+
+class TestCsrfProtection:
+    def test_post_without_token_is_rejected(self, client):
+        response = client.post("/api/profile/sync/init")
+        assert response.status_code == 403
+        assert response.json()["detail"] == "Nevaliden CSRF token"
+
+    def test_post_rejects_header_cookie_mismatch(self, client):
+        token = generate_csrf_token()
+        client.cookies.set("csrf_token", f"{token}-mismatch")
+        response = client.post(
+            "/api/profile/sync/init",
+            headers={"X-CSRF-Token": token},
+        )
+        assert response.status_code == 403
+        assert response.json()["detail"] == "Nevaliden CSRF token"
+
+    def test_csrf_token_endpoint_returns_valid_token(self, client):
+        response = client.get("/api/csrf-token")
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["status"] == "success"
+        assert payload["csrf_token"]
+
+
+class TestCorsPolicy:
+    def test_get_includes_allowed_origin(self, client):
+        response = client.get("/api/health", headers={"Origin": "http://localhost:3000"})
+        assert response.status_code == 200
+        assert response.headers.get("access-control-allow-origin") == "http://localhost:3000"
+
+    def test_get_omits_origin_for_unknown_site(self, client):
+        response = client.get("/api/health", headers={"Origin": "https://evil.example"})
+        assert response.status_code == 200
+        assert "access-control-allow-origin" not in response.headers

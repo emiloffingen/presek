@@ -3,6 +3,7 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
+from core.api_errors import soft_error
 from core.config import PROVIDER_FALLBACK_ORDER
 from core.database import db_manager as db
 from core.health import _probe_database, _probe_redis, get_source_statuses
@@ -347,7 +348,6 @@ async def update_localization_rules(
         success = localization_engine.update_rules(rules_payload)
         if success:
             return {"status": "success", "message": "Rules updated and hot-reloaded successfully."}
-        else:
-            return {"status": "error", "message": "Invalid rules payload structure or keys."}
+        return soft_error(message="Invalid rules payload structure or keys.")
     except Exception as e:
-        return {"status": "error", "message": f"Failed to update rules: {str(e)}"}
+        return soft_error(message=f"Failed to update rules: {str(e)}")

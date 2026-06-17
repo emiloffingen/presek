@@ -125,12 +125,21 @@ grep backup /var/log/syslog
 
 ## Offsite Backup (Optional)
 
-Add this to your crontab to sync backups to Cloudflare R2 or S3:
+Use `deploy/sync_backups_offsite.sh` after configuring rclone:
+
+```bash
+# In shared/.env
+BACKUP_OFFSITE_RCLONE_TARGET=r2:presek-backups/presek
+```
+
+Crontab entry (already in `deploy/crontab`):
 
 ```bash
 # Sync to R2/S3 30 minutes after local backup
-30 2 * * * rclone sync /path/to/backups/ r2:presek-backups/ >> /home/emiloffingen/presek/logs/backup_sync.log 2>&1
+30 2 * * * APP_ROOT=/home/emiloffingen/presek-runtime /bin/bash /home/emiloffingen/presek/deploy/sync_backups_offsite.sh >> /home/emiloffingen/presek-runtime/shared/logs/backup_sync.log 2>&1
 ```
+
+Quarterly integrity checks use `deploy/verify_backup.sh` (gzip/gpg test only, no DB restore).
 
 ## Disaster Recovery
 

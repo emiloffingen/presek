@@ -11,6 +11,7 @@ from .security import verify_csrf_token
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 
+from core.api_errors import soft_error
 from core.config import API_MAX_Q_LEN, BREAKING_SCORE_THRESHOLD, DEFAULT_CREDIBILITY, SOURCE_CREDIBILITY
 from core.database import db_manager as db
 from core.health import get_source_statuses, reset_source_policy
@@ -923,7 +924,7 @@ async def get_sentiment_trends(lang: Optional[str] = "sr"):
         return res
     except Exception as e:
         log.error(f"Sentiment Trends Error: {e}")
-        return {"status": "error", "message": "Neuspešno učitavanje sentimenta"}
+        return soft_error(message="Neuspešno učitavanje sentimenta")
 
 
 @router.get("/stats/mood")
@@ -976,4 +977,4 @@ async def get_current_mood(lang: Optional[str] = "sr"):
         return res
     except Exception as e:
         log.error(f"Mood Error: {e}")
-        return {"status": "error", "mood": "neutralen"}
+        return soft_error(mood="neutralen")

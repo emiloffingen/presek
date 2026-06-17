@@ -66,6 +66,9 @@ type PersonalizedCluster = NewsCluster & {
   matched_topics?: string[];
   matched_sources?: string[];
   why_summary?: string;
+  blend_score?: number;
+  profile_score?: number;
+  similarity?: number;
 };
 
 function clusterTitle(cluster: PersonalizedCluster) {

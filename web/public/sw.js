@@ -1,11 +1,12 @@
-// Presek — Service Worker v29
-// Astro-only frontend caching: Stale-While-Revalidate for API and Cache-First for static assets
+// Presek — Service Worker v30
+// Allowlisted stale-while-revalidate for public API reads only.
 
-const CACHE_NAME = 'presek-v29';
-const API_CACHE_NAME = 'presek-api-v29';
-const API_CACHE_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes max staleness for API
+import { shouldCacheApiPath, shouldStoreApiResponse } from './sw-cache-policy.js';
 
-// Core static assets that are shared across the Astro frontend
+const CACHE_NAME = 'presek-v30';
+const API_CACHE_NAME = 'presek-api-v30';
+const API_CACHE_MAX_AGE_MS = 5 * 60 * 1000;
+
 const STATIC_ASSETS = [
   '/logo.svg?v=3',
   '/img/presek_emblem.svg?v=3',
@@ -30,94 +31,98 @@ function offlinePageFor(url) {
   return '/offline';
 }
 
-self.addEventListener('install', e => {
+function networkOnly(request) {
+  return fetch(request);
+}
+
+function staleWhileRevalidate(request, cache) {
+  return cache.match(request).then((cachedResponse) => {
+    const fetchPromise = fetch(request).then((networkResponse) => {
+      if (shouldStoreApiResponse(networkResponse)) {
+        const headers = new Headers(networkResponse.headers);
+        headers.set('sw-cached-at', Date.now().toString());
+        const timedResponse = new Response(networkResponse.clone().body, {
+          status: networkResponse.status,
+          statusText: networkResponse.statusText,
+          headers
+        });
+        cache.put(request, timedResponse);
+      }
+      return networkResponse;
+    }).catch(() => null);
+
+    if (cachedResponse) {
+      const cachedAt = parseInt(cachedResponse.headers.get('sw-cached-at') || '0', 10);
+      if (cachedAt && (Date.now() - cachedAt) > API_CACHE_MAX_AGE_MS) {
+        return fetchPromise.then((net) => net || cachedResponse);
+      }
+      return cachedResponse;
+    }
+
+    return fetchPromise.then((net) => net || cachedResponse || offlineApiResponse());
+  });
+}
+
+self.addEventListener('install', (e) => {
   e.waitUntil(
-    caches.open(CACHE_NAME).then(c => c.addAll(STATIC_ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then((c) => c.addAll(STATIC_ASSETS)).then(() => self.skipWaiting())
   );
 });
 
-self.addEventListener('activate', e => {
+self.addEventListener('activate', (e) => {
   e.waitUntil(
-    caches.keys().then(keys => Promise.all(
-      keys.filter(k => k !== CACHE_NAME && k !== API_CACHE_NAME).map(k => caches.delete(k))
+    caches.keys().then((keys) => Promise.all(
+      keys.filter((k) => k !== CACHE_NAME && k !== API_CACHE_NAME).map((k) => caches.delete(k))
     )).then(() => self.clients.claim())
   );
 });
 
-self.addEventListener('fetch', e => {
+self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
 
   const url = new URL(e.request.url);
 
-  // Stale-While-Revalidate for API calls (with max-age enforcement)
   if (url.pathname.startsWith('/api/')) {
-    e.respondWith(
-      caches.open(API_CACHE_NAME).then(cache => {
-        return cache.match(e.request).then(cachedResponse => {
-          const fetchPromise = fetch(e.request).then(networkResponse => {
-            if (networkResponse && networkResponse.status === 200) {
-              // Store response with timestamp header for TTL enforcement
-              const headers = new Headers(networkResponse.headers);
-              headers.set('sw-cached-at', Date.now().toString());
-              const timedResponse = new Response(networkResponse.clone().body, {
-                status: networkResponse.status,
-                statusText: networkResponse.statusText,
-                headers
-              });
-              cache.put(e.request, timedResponse);
-            }
-            return networkResponse;
-          }).catch(() => null);
+    if (!shouldCacheApiPath(url.pathname)) {
+      e.respondWith(networkOnly(e.request));
+      return;
+    }
 
-          // Check if cached response is still fresh
-          if (cachedResponse) {
-            const cachedAt = parseInt(cachedResponse.headers.get('sw-cached-at') || '0', 10);
-            if (cachedAt && (Date.now() - cachedAt) > API_CACHE_MAX_AGE_MS) {
-              // Stale — prefer network, fall back to stale cache
-              return fetchPromise.then(net => net || cachedResponse);
-            }
-            return cachedResponse;
-          }
-          return fetchPromise.then(net => net || cachedResponse || offlineApiResponse());
-        });
-      })
+    e.respondWith(
+      caches.open(API_CACHE_NAME).then((cache) => staleWhileRevalidate(e.request, cache))
     );
     return;
   }
 
-  // Cache-First for typography and font resources (woff2, woff, ttf, etc.)
   if (
-    url.pathname.endsWith('.woff2') || 
-    url.pathname.endsWith('.woff') || 
-    url.pathname.endsWith('.ttf') || 
+    url.pathname.endsWith('.woff2') ||
+    url.pathname.endsWith('.woff') ||
+    url.pathname.endsWith('.ttf') ||
     url.hostname.includes('fonts.gstatic.com') ||
     url.hostname.includes('fonts.googleapis.com')
   ) {
     e.respondWith(
-      caches.open(CACHE_NAME).then(cache => {
-        return cache.match(e.request).then(cachedResponse => {
-          if (cachedResponse) return cachedResponse;
-          return fetch(e.request).then(networkResponse => {
-            if (networkResponse && networkResponse.status === 200) {
-              cache.put(e.request, networkResponse.clone());
-            }
-            return networkResponse;
-          });
+      caches.open(CACHE_NAME).then((cache) => cache.match(e.request).then((cachedResponse) => {
+        if (cachedResponse) return cachedResponse;
+        return fetch(e.request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            cache.put(e.request, networkResponse.clone());
+          }
+          return networkResponse;
         });
-      })
+      }))
     );
     return;
   }
 
-  // Cache-First for static assets
   if (url.pathname.startsWith('/img/')) {
     e.respondWith(
-      caches.match(e.request).then(cached => {
+      caches.match(e.request).then((cached) => {
         if (cached) return cached;
-        return fetch(e.request).then(resp => {
+        return fetch(e.request).then((resp) => {
           if (resp && resp.status === 200) {
             const clone = resp.clone();
-            caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+            caches.open(CACHE_NAME).then((c) => c.put(e.request, clone));
           }
           return resp;
         });
@@ -126,13 +131,12 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Network-First for HTML pages (navigation)
   if (e.request.headers.get('accept')?.includes('text/html')) {
     e.respondWith(
-      fetch(e.request).then(resp => {
+      fetch(e.request).then((resp) => {
         if (resp && resp.status === 200) {
           const clone = resp.clone();
-          caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+          caches.open(CACHE_NAME).then((c) => c.put(e.request, clone));
         }
         return resp;
       }).catch(async () => {
@@ -145,13 +149,12 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Default: Network only or Cache-First for other assets
   e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request))
+    caches.match(e.request).then((cached) => cached || fetch(e.request))
   );
 });
 
-self.addEventListener('push', event => {
+self.addEventListener('push', (event) => {
   let payload = { title: 'Presek', message: '', click_url: '/briefing' };
   try {
     if (event.data) {
@@ -173,12 +176,12 @@ self.addEventListener('push', event => {
   );
 });
 
-self.addEventListener('notificationclick', event => {
+self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const targetUrl = event.notification.data?.url || '/briefing';
 
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
       for (const client of windowClients) {
         if ('focus' in client) {
           if ('navigate' in client) {
@@ -192,15 +195,17 @@ self.addEventListener('notificationclick', event => {
   );
 });
 
-// Background Prefetching Handler
-self.addEventListener('message', event => {
+self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'PREFETCH_URLS') {
     const urls = event.data.urls || [];
-    caches.open(CACHE_NAME).then(cache => {
-      urls.forEach(url => {
-        cache.match(url).then(cachedResponse => {
+    caches.open(CACHE_NAME).then((cache) => {
+      urls.forEach((url) => {
+        if (typeof url !== 'string' || !url.startsWith('/') || url.startsWith('/api/')) {
+          return;
+        }
+        cache.match(url).then((cachedResponse) => {
           if (!cachedResponse) {
-            fetch(url).then(networkResponse => {
+            fetch(url).then((networkResponse) => {
               if (networkResponse && networkResponse.status === 200) {
                 cache.put(url, networkResponse);
               }

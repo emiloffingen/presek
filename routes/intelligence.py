@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, Request, Depends
 from pydantic import BaseModel
 
+from core.api_errors import soft_error
 from core.database import db_manager as db
 from core.embeddings import generate_query_embedding
 from core.entities import normalize_entity_name, normalize_person_surface_name
@@ -315,7 +316,7 @@ async def get_cluster_analyst_report(request: Request, cluster_id: str, mode: st
     response = await ResearchService.get_cluster_research(cluster_id, clean_mode, "", lang)
     
     if not response:
-        return {"status": "error", "message": "Greška pri generisanju izveštaja."}
+        return soft_error(message="Greška pri generisanju izveštaja.")
 
     if isinstance(response, str):
         response = {"answer": response, "suggestions": []}
@@ -885,7 +886,7 @@ async def synthesize_nodes(
     """
     entities = [e.strip() for e in payload.entities if e.strip()]
     if not entities:
-        return {"status": "error", "message": "Nije izabran nijedan entitet."}
+        return soft_error(message="Nije izabran nijedan entitet.")
 
     lang = payload.lang or "sr"
 
@@ -1248,7 +1249,7 @@ async def get_latest_briefing(date: Optional[str] = None, lang: str = "sr"):
         )
 
     if not row:
-        return {"status": "error", "message": "Брифингот не е пронајден" if lang == "mk" else "Brifing nije pronađen"}
+        return soft_error(message="Брифингот не е пронајден" if lang == "mk" else "Brifing nije pronađen")
 
     target_date = row["date"]
     target_country = "MK" if lang == "mk" else "RS"
@@ -1391,7 +1392,7 @@ async def get_briefing_audio(request: Request, date: Optional[str] = None, lang:
         )
 
     if not row or not row.get("content"):
-        return {"status": "error", "message": "Briefing content not found"}
+        return soft_error(message="Briefing content not found")
 
     target_date = str(row["date"])
     content = str(row["content"])
@@ -1403,6 +1404,6 @@ async def get_briefing_audio(request: Request, date: Optional[str] = None, lang:
     )
 
     if not audio_url:
-        return {"status": "error", "message": "Failed to synthesize audio briefing."}
+        return soft_error(message="Failed to synthesize audio briefing.")
 
     return {"status": "success", "audio_url": audio_url}

@@ -9,6 +9,7 @@ import time
 from typing import Callable
 
 from fastapi import HTTPException, Request
+from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
@@ -398,7 +399,7 @@ class EnhancedRateLimitMiddleware(BaseHTTPMiddleware):
         # Check if this path should be rate limited
         if _is_rate_limited_path(request.url.path):
             if not check_rate_limit(client_ip, request.url.path):
-                return Response(
+                return JSONResponse(
                     status_code=429,
                     content=_rate_limit_error_payload(),
                     headers={"Retry-After": "60"},

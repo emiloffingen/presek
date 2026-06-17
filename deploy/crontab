@@ -10,6 +10,12 @@
 # Daily backup at 2:00 AM
 0 2 * * * APP_ROOT=/home/emiloffingen/presek-runtime REQUIRE_BACKUP_ENCRYPTION=1 /bin/bash /home/emiloffingen/presek/deploy/backup_postgres.sh >> /home/emiloffingen/presek-runtime/shared/logs/backup.log 2>&1
 
+# Offsite backup sync 30 minutes after local backup (no-op until BACKUP_OFFSITE_RCLONE_TARGET is set)
+30 2 * * * APP_ROOT=/home/emiloffingen/presek-runtime /bin/bash /home/emiloffingen/presek/deploy/sync_backups_offsite.sh >> /home/emiloffingen/presek-runtime/shared/logs/backup_sync.log 2>&1
+
+# Quarterly backup integrity check (Jan/Apr/Jul/Oct, first Sunday, 3:30 AM)
+30 3 1-7 1,4,7,10 0 APP_ROOT=/home/emiloffingen/presek-runtime /bin/bash /home/emiloffingen/presek/deploy/verify_backup.sh >> /home/emiloffingen/presek-runtime/shared/logs/backup_verify.log 2>&1
+
 # ============================================================================
 # Log Rotation
 # ============================================================================

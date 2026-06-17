@@ -226,6 +226,18 @@ jobs:
           CHROME_PATH: /usr/bin/chromium
         run: npm run perf:lighthouse:ci:mk
 
+      - name: axe accessibility audit (SR homepage)
+        working-directory: web
+        env:
+          CHROME_PATH: /usr/bin/chromium
+        run: npm run a11y:ci
+
+      - name: axe accessibility audit (MK homepage)
+        working-directory: web
+        env:
+          CHROME_PATH: /usr/bin/chromium
+        run: npm run a11y:ci:mk
+
       - name: Upload Lighthouse reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -234,6 +246,8 @@ jobs:
           path: |
             web/lighthouse-homepage.json
             web/lighthouse-homepage-mk.json
+            web/axe-homepage.json
+            web/axe-homepage-mk.json
           if-no-files-found: ignore
 
   # ============================================================================

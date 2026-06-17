@@ -31,7 +31,7 @@ export function parseSynthesisLines(text?: string) {
     .filter(Boolean);
 }
 
-export function normalizePerspectives(items: any[]) {
+export function normalizePerspectives(items: any[]): Array<{ angle: string; content: string }> {
   if (!Array.isArray(items)) return [];
   return items
     .map((item) => {
@@ -41,7 +41,7 @@ export function normalizePerspectives(items: any[]) {
       if (!content) return null;
       return { angle: angle || 'perspektiva', content };
     })
-    .filter(Boolean);
+    .filter((item): item is { angle: string; content: string } => item !== null);
 }
 
 export function countTopicValues(values: string[]) {

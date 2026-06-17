@@ -311,6 +311,8 @@ class TestDeploymentIntegrity:
         assert "ExecStart=" in fastapi_service
         assert "ExecStart=" in astro_service
         assert "PORT=" in fastapi_service or "PORT=" in astro_service
+        assert "UVICORN_WORKERS" in fastapi_service
+        assert "--workers ${UVICORN_WORKERS:-2}" in fastapi_service
 
     def test_systemd_services_have_security_hardening(self):
         for svc in (

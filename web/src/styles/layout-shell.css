@@ -1,0 +1,194 @@
+/* Layout shell chrome extracted from Layout.astro */
+
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  opacity: 0.012;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+.dark .noise-overlay {
+  opacity: 0.02;
+}
+
+#loading-bar {
+  background: var(--nyt-accent);
+  height: 2px;
+}
+
+:root {
+  --layout-cache-bust-20260409: 1;
+}
+
+iframe.corner-popup {
+  z-index: 10050 !important;
+}
+
+[ta-ad-container] iframe.inlined-ta-ad,
+.tinyadz-inlined iframe.inlined-ta-ad {
+  width: 100%;
+  max-width: 900px;
+  margin-inline: auto;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  overflow-x: hidden;
+  width: 100%;
+  position: relative;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.dark .site-logo {
+  filter: invert(1) brightness(1.5);
+}
+
+.dark .site-emblem {
+  filter: invert(1) brightness(1.5);
+}
+
+.nyt-serif {
+  font-family: var(--font-serif);
+}
+
+.nyt-sans {
+  font-family: var(--font-sans);
+}
+
+h1,
+h2,
+h3,
+.headline,
+.editorial-headline {
+  text-wrap: balance;
+  letter-spacing: -0.015em;
+}
+
+p,
+.summary {
+  text-wrap: pretty;
+}
+
+.script-latin {
+  --font-serif: "Noto Serif", "Source Serif 4", Georgia, serif;
+  --font-serif-display: "Noto Serif Display", "Noto Serif", Georgia, serif;
+  --font-nyt-body: "Source Serif 4", "Noto Serif", Georgia, serif;
+  --font-sans: "Manrope", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
+  --font-ui: "Manrope", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
+  --font-ui-condensed: "Manrope", "IBM Plex Sans Condensed", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
+}
+
+.script-cyrillic {
+  --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-serif-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-nyt-body: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-sans: "IBM Plex Sans", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
+  --font-ui: "IBM Plex Sans", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
+  --font-ui-condensed: "IBM Plex Sans", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
+  line-height: 1.55;
+}
+
+.script-cyrillic h1,
+.script-cyrillic h2,
+.script-cyrillic h3,
+.script-cyrillic .headline {
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--muted);
+  border-radius: 0;
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+  animation: shimmer 2s infinite;
+}
+
+.dark .skeleton::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+::selection {
+  background-color: #326891;
+  color: white;
+}
+
+html,
+body {
+  overflow-x: hidden !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  -webkit-text-size-adjust: 100%;
+  position: relative;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+* {
+  box-sizing: border-box !important;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+span,
+a {
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 480px) {
+  .headline-lead {
+    font-size: 1.85rem !important;
+    line-height: 1.1 !important;
+  }
+
+  .editorial-headline {
+    font-size: 1.75rem !important;
+  }
+}
+
+img,
+video,
+canvas,
+svg,
+iframe {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}

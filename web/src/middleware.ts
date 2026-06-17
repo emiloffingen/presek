@@ -4,8 +4,9 @@ import {
   stripMkPrefix,
   withMkPrefix,
 } from './lib/localePaths';
+import { buildContentSecurityPolicy, generateCspNonce } from './lib/csp';
 
-export const onRequest = defineMiddleware((context, next) => {
+export const onRequest = defineMiddleware(async (context, next) => {
   const url = new URL(context.request.url);
   const host = context.request.headers.get('host') || url.hostname;
   const hostname = host.split(':')[0].toLowerCase();
@@ -29,10 +30,21 @@ export const onRequest = defineMiddleware((context, next) => {
     return Response.redirect(target, 301);
   }
 
+  const cspNonce = generateCspNonce();
+  context.locals.cspNonce = cspNonce;
+
+  const attachCsp = async (response: Response) => {
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('text/html')) {
+      response.headers.set('Content-Security-Policy', buildContentSecurityPolicy(cspNonce));
+    }
+    return response;
+  };
+
   if ((hostname === 'presek.mk' || hostname === 'www.presek.mk') && shouldRewriteMkDomainToInternal(pathname)) {
     const internalPath = withMkPrefix(pathname);
     if (internalPath !== pathname) {
-      return next(`${internalPath}${url.search}`);
+      return attachCsp(await next(`${internalPath}${url.search}`));
     }
   }
 
@@ -46,5 +58,5 @@ export const onRequest = defineMiddleware((context, next) => {
     return new Response('Not found', { status: 404 });
   }
 
-  return next();
+  return attachCsp(await next());
 });

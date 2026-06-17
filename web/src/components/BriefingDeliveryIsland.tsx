@@ -125,7 +125,7 @@ export default function BriefingDeliveryIsland({
                 const vapidData = await vapidRes.json();
                 const pubKey = vapidData.key;
 
-                const reg = await navigator.serviceWorker.register('/sw.js');
+                const reg = await navigator.serviceWorker.register('/sw.js', { type: 'module' });
                 await navigator.serviceWorker.ready;
 
                 const existingSub = await reg.pushManager.getSubscription();

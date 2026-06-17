@@ -9,6 +9,7 @@ from typing import Optional
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 
+from core.api_errors import api_error_response, rate_limit_payload, soft_error
 from core.database import db_manager as db
 from nlp.utils import cleanAndDecode
 
@@ -157,10 +158,7 @@ def _source_admin_authorized(request: Request) -> bool:
 
 
 def _error_json(message: str, status_code: int, details=None):
-    payload = {"status": "error", "message": message}
-    if details is not None:
-        payload["details"] = details
-    return JSONResponse(status_code=status_code, content=payload)
+    return api_error_response(message, status_code, detail=details)
 
 
 def _is_valid_focus_entity(name: str, entity_type: Optional[str]) -> bool:
@@ -265,7 +263,9 @@ def _is_rate_limited_path(path: str) -> bool:
 
 
 def _rate_limit_error_payload() -> dict:
-    return {"error": "Sintezata se podgotvuva... Ve molime obidete se povtorno za nekoja minuta."}
+    return rate_limit_payload(
+        "Sintezata se podgotvuva... Ve molime obidete se povtorno za nekoja minuta.",
+    )
 
 
 async def build_intelligence_summary_payload(

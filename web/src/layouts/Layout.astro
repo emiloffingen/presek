@@ -4,14 +4,18 @@
 
 import '../styles/global.css';
 import '../lib/transliterationInit.js';
-import ConsentBanner from '../components/ConsentBanner';
-import UiConceptOnboarding from '../components/UiConceptOnboarding';
-import TinyAdzScript from '../components/TinyAdzScript.astro';
-import { ClientRouter } from 'astro:transitions';
+import LayoutBodyChrome from '../components/layout/LayoutBodyChrome.astro';
+import LayoutHead from '../components/layout/LayoutHead.astro';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
-import { buildCanonicalUrl, hreflangAlternates, siteOrigin } from '../lib/localePaths';
-import { shouldLoadTinyAdzScript, tinyAdzSiteId } from '../lib/tinyadz';
+import {
+  buildOrganizationSchema,
+  buildPageTitle,
+  gtagIdForLang,
+  resolveLayoutUrls,
+  siteDisplayName,
+} from '../lib/layoutMeta';
 import { proxyBaseUrl } from '../lib/apiBase';
+import { shouldLoadTinyAdzScript, tinyAdzSiteId } from '../lib/tinyadz';
 
 interface Props {
 	title: string;
@@ -23,736 +27,76 @@ interface Props {
 	robots?: string;
 }
 
-// Use Host header to determine the correct domain for multi-site support
 const requestUrl = Astro.request ? new URL(Astro.request.url) : Astro.url;
 const hostHeader = Astro.request?.headers.get('host') || requestUrl.hostname;
 const effectiveUrl = new URL(requestUrl);
 effectiveUrl.hostname = hostHeader;
 const lang = getLangFromUrl(effectiveUrl);
+if (lang === 'mk') {
+	await import('../styles/fonts-mk.css');
+} else {
+	await import('../styles/fonts-sr.css');
+}
 const t = useTranslations(lang);
 
 const {
 	title,
 	description = t('layout.default_description'),
-	image = "/img/presek_emblem.png",
+	image = '/img/presek_emblem.png',
 	canonical,
-	type = "website",
+	type = 'website',
 	schema,
 	robots,
 } = Astro.props;
 
-// Also update the default description for Macedonian site
 const defaultDescription = t('layout.default_description');
-
-const siteUrl = siteOrigin(lang);
-const siteName = lang === 'sr' ? "PRESEK.rs" : "PRESEK.mk";
-const pageTitle = title.includes("Presek") || title.includes("Пресек")
-    ? title.replace(/Presek|Пресек/, siteName)
-    : `${title} | ${siteName}`;
-
-const canonicalUrl = canonical || buildCanonicalUrl(requestUrl.pathname, lang);
-const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.startsWith("/") ? image : `/${image}`}`;
-
-const { sr: srHref, mk: mkHref } = hreflangAlternates(requestUrl.pathname);
+const siteName = siteDisplayName(lang);
+const pageTitle = buildPageTitle(title, lang);
+const { canonicalUrl, imageUrl, srHref, mkHref } = resolveLayoutUrls(
+	requestUrl.pathname,
+	lang,
+	image,
+	canonical,
+);
 const loadTinyAdz = shouldLoadTinyAdzScript(lang, hostHeader);
 const tinyAdzSite = loadTinyAdz ? tinyAdzSiteId(lang, hostHeader) : '';
 const proxyBase = proxyBaseUrl();
-
-const organizationSchema = {
-	"@context": "https://schema.org",
-	"@type": "Organization",
-	"@id": `${siteUrl}/#organization`,
-	"name": siteName,
-	"url": siteUrl,
-	"logo": {
-		"@type": "ImageObject",
-		"url": `${siteUrl}/img/presek_emblem.png`,
-		"width": 512,
-		"height": 512
-	},
-	"sameAs": [
-		"https://twitter.com/presek_rs",
-		"https://facebook.com/presek.rs",
-		"https://instagram.com/presek.rs"
-	]
-};
+const cspNonce = Astro.locals.cspNonce;
+const gtagId = gtagIdForLang(lang);
+const organizationSchema = buildOrganizationSchema(lang);
+const metaDescription = description || defaultDescription;
 ---
 
 <!doctype html>
-<html lang={lang === 'sr' ? "sr-Latn" : "mk"}>
+<html lang={lang === 'sr' ? 'sr-Latn' : 'mk'} data-proxy-base={proxyBase}>
 	<head>
-		{/* Load Google Analytics immediately after <head> to satisfy verification bots. */}
-		{lang === 'mk' ? (
-			<Fragment set:html={`<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-YJZH9KK8X9"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('consent', 'default', {
-    'ad_storage': 'denied',
-    'ad_user_data': 'denied',
-    'ad_personalization': 'denied',
-    'analytics_storage': 'denied',
-    'wait_for_update': 500
-  });
-  gtag('js', new Date());
-  gtag('config', 'G-YJZH9KK8X9', { 'anonymize_ip': true });
-</script>`} />
-		) : (
-			<Fragment set:html={`<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-SV2R3LZJ5C"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('consent', 'default', {
-    'ad_storage': 'denied',
-    'ad_user_data': 'denied',
-    'ad_personalization': 'denied',
-    'analytics_storage': 'denied',
-    'wait_for_update': 500
-  });
-  gtag('js', new Date());
-  gtag('config', 'G-SV2R3LZJ5C', { 'anonymize_ip': true });
-</script>`} />
-		)}
-		<script is:inline>
-			(function() {
-				try {
-					var savedScale = localStorage.getItem('text-scale') || '1';
-					document.documentElement.style.setProperty('--text-scale', savedScale);
-				} catch (e) {}
-			})();
-		</script>
-		<script is:inline>
-			(function() {
-				try {
-					var path = window.location.pathname || '';
-					var isPregled = path === '/pregled' || path === '/mk/pregled';
-					document.documentElement.dataset.homepageMode = isPregled ? 'analiza' : 'vesti';
-				} catch (e) {}
-			})();
-		</script>
-
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<link rel="icon" type="image/svg+xml" href="/img/presek_emblem.svg?v=4" />
-		<link rel="apple-touch-icon" href="/img/icons/presek-apple-touch.png?v=1" />
-		<link rel="manifest" href="/manifest.json" />
-		<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
-		<meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
-		<meta name="mobile-web-app-capable" content="yes" />
-		<meta name="apple-mobile-web-app-capable" content="yes" />
-		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-		<meta name="apple-mobile-web-app-title" content={siteName} />
-		<meta name="generator" content={Astro.generator} />
-		<meta name="description" content={description || defaultDescription} />
-		{robots && <meta name="robots" content={robots} />}
-		
-		<link rel="canonical" href={canonicalUrl} />
-		<link rel="alternate" hreflang="sr-Latn-RS" href={srHref} />
-		<link rel="alternate" hreflang="mk-MK" href={mkHref} />
-		<link rel="alternate" hreflang="x-default" href={srHref} />
-
-		{image && !image.includes('presek_emblem') && (
-			<link rel="preload" as="image" href={imageUrl} fetchpriority="high" />
-		)}
-
-		<meta property="og:site_name" content={siteName} />
-		<meta property="og:locale" content={lang === 'sr' ? "sr_RS" : "mk_MK"} />
-		<meta property="og:type" content={type} />
-		<meta property="og:title" content={pageTitle} />
-		<meta property="og:description" content={description || defaultDescription} />
-		<meta property="og:url" content={canonicalUrl} />
-		<meta property="og:image" content={imageUrl} />
-		<meta property="og:image:width" content="1200" />
-		<meta property="og:image:height" content="630" />
-		<meta name="twitter:card" content="summary_large_image" />
-		<meta name="twitter:title" content={pageTitle} />
-		<meta name="twitter:description" content={description || defaultDescription} />
-		<meta name="twitter:image" content={imageUrl} />
-
-		<title>{pageTitle}</title>
-
-		<ClientRouter />
-
-		{schema && (
-			<script type="application/ld+json" is:inline set:html={JSON.stringify(schema)} />
-		)}
-		{/* News Organization Schema for Google News */}
-		<script type="application/ld+json" is:inline set:html={JSON.stringify(organizationSchema)} />
-
-		<script is:inline>
-			/**
-			 * Immediate theme sync to prevent flicker.
-			 */
-			function applyTheme() {
-				const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('theme') : null;
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-				const isDark = stored ? stored === 'dark' : (stored === null ? prefersDark : false);
-
-				if (isDark) {
-					document.documentElement.classList.add('dark');
-                    document.documentElement.style.colorScheme = 'dark';
-				} else {
-					document.documentElement.classList.remove('dark');
-                    document.documentElement.style.colorScheme = 'light';
-				}
-
-				// Update theme-color meta tags
-				const lightMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: light)"]');
-				const darkMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: dark)"]');
-				var themeColor = isDark ? '#0b0d13' : '#fdfdfa';
-				if (lightMeta) lightMeta.setAttribute('content', themeColor);
-				if (darkMeta) darkMeta.setAttribute('content', themeColor);
-			}
-
-			applyTheme();
-			document.addEventListener('astro:after-swap', applyTheme);
-		</script>
+		<LayoutHead
+			lang={lang}
+			siteName={siteName}
+			pageTitle={pageTitle}
+			description={metaDescription}
+			canonicalUrl={canonicalUrl}
+			imageUrl={imageUrl}
+			srHref={srHref}
+			mkHref={mkHref}
+			type={type}
+			robots={robots}
+			image={image}
+			schema={schema}
+			organizationSchema={organizationSchema}
+			cspNonce={cspNonce}
+			gtagId={gtagId}
+		/>
 	</head>
-<style is:global>
-    .noise-overlay {
-        position: fixed;
-        inset: 0;
-        z-index: 9998;
-        pointer-events: none;
-        opacity: 0.012;
-        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-    }
-
-    .dark .noise-overlay {
-        opacity: 0.02;
-    }
-
-    #loading-bar {
-        background: var(--nyt-accent);
-        height: 2px;
-    }
-</style>
-
-	<body id="top" class:list={["antialiased min-h-screen bg-background text-foreground transition-colors duration-300 overflow-x-hidden w-full", { "script-latin": lang === 'sr', "script-cyrillic": lang === 'mk' }]}>
-		<a href="#main-content" class="skip-to-content">{lang === 'mk' ? 'Прескокни до содржина' : 'Preskoči na sadržaj'}</a>
-		<div class="noise-overlay" aria-hidden="true"></div>
-		<div id="loading-bar" class="fixed top-0 left-0 z-[9999] transition-all duration-300 opacity-0 w-0"></div>
-		<slot />
-		<UiConceptOnboarding client:idle lang={lang} />
-		<ConsentBanner client:idle />
-		<script is:inline set:html={`window.__PRESEK_PROXY_BASE = ${JSON.stringify(proxyBase)};`} />
-		<script is:inline>
-			(function ensureMainContentTarget() {
-				const assign = () => {
-					const main = document.querySelector('main:not([id])');
-					if (main) main.id = 'main-content';
-				};
-				assign();
-				document.addEventListener('astro:page-load', assign);
-			})();
-		</script>
-		<script is:inline>
-			// Handle Astro transitions loading state
-			document.addEventListener('astro:before-preparation', () => {
-				const bar = document.getElementById('loading-bar');
-				if (bar) {
-					bar.style.width = '30%';
-					bar.style.opacity = '1';
-				}
-			});
-
-			document.addEventListener('astro:after-preparation', () => {
-				const bar = document.getElementById('loading-bar');
-				if (bar) {
-					bar.style.width = '100%';
-					setTimeout(() => {
-						bar.style.opacity = '0';
-						setTimeout(() => { bar.style.width = '0'; }, 300);
-					}, 200);
-				}
-			});
-		</script>
-		<script is:inline>
-			if ('serviceWorker' in navigator) {
-				window.addEventListener('load', () => {
-					navigator.serviceWorker.register('/sw.js').catch(err => {
-						console.warn('Service Worker registration failed:', err);
-					});
-				});
-
-				// Network-aware dynamic background prefetching for instant PWA loading
-				const dispatchPrefetch = () => {
-					if (navigator.serviceWorker.controller) {
-						const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-						if (conn) {
-							if (conn.saveData || (conn.effectiveType && conn.effectiveType !== '4g')) {
-								return; // Skip prefetch on slow connection or data-saver
-							}
-						}
-						const clusterUrls = Array.from(document.querySelectorAll('a'))
-							.map(a => a.getAttribute('href'))
-							.filter(href => href && (href.startsWith('/cluster/') || href.startsWith('/mk/cluster/')))
-							.map(href => new URL(href, window.location.origin).pathname);
-						
-						const uniqueUrls = [...new Set(clusterUrls)].slice(0, 4);
-						if (uniqueUrls.length > 0) {
-							navigator.serviceWorker.controller.postMessage({
-								type: 'PREFETCH_URLS',
-								urls: uniqueUrls
-							});
-						}
-					}
-				};
-
-				// Trigger on initial page load and all subsequent Astro client-side page transitions
-				const schedulePrefetch = () => {
-					const idle = window.requestIdleCallback || ((cb) => window.setTimeout(cb, 1500));
-					idle(dispatchPrefetch, { timeout: 4000 });
-				};
-				document.addEventListener('astro:page-load', schedulePrefetch);
-			}
-
-			const bindSearchFab = () => {
-				document.querySelectorAll('[data-presek-search-fab]').forEach((fab) => {
-					if (fab instanceof HTMLButtonElement && fab.dataset.bound === '1') return;
-					if (fab instanceof HTMLButtonElement) {
-						fab.dataset.bound = '1';
-						fab.addEventListener('click', () => {
-							window.dispatchEvent(new CustomEvent('presek:open-search'));
-						});
-					}
-				});
-			};
-			bindSearchFab();
-			document.addEventListener('astro:page-load', bindSearchFab);
-
-			document.addEventListener('astro:page-load', () => {
-				if (!('IntersectionObserver' in window)) return;
-				const prefetched = new Set();
-				const observer = new IntersectionObserver((entries) => {
-					entries.forEach((entry) => {
-						if (!entry.isIntersecting) return;
-						const href = entry.target.getAttribute('href');
-						if (!href || prefetched.has(href)) return;
-						prefetched.add(href);
-						fetch(href, { priority: 'low' }).catch(() => {});
-						observer.unobserve(entry.target);
-					});
-				}, { rootMargin: '80px 0px' });
-				document.querySelectorAll('a[data-testid="cluster-link"]').forEach((link, index) => {
-					if (index < 4) observer.observe(link);
-				});
-			});
-
-			// Parallax Effect for Hero Images
-			function initParallax() {
-				if (window.innerWidth < 1024) return;
-				const parallaxEls = Array.from(document.querySelectorAll('.lead-media-image, .cluster-visual-image'));
-				if (parallaxEls.length === 0) return;
-				let ticking = false;
-				const handleScroll = () => {
-					if (ticking) return;
-					ticking = true;
-					window.requestAnimationFrame(() => {
-						const scrolled = window.scrollY;
-						for (const el of parallaxEls) {
-							el.style.setProperty('--parallax-y', `${scrolled * 0.15}px`);
-						}
-						ticking = false;
-					});
-				};
-				const parallaxWindow = /** @type {Window & { _presekParallaxHandler?: (event: Event) => void }} */ (window);
-				if (parallaxWindow._presekParallaxHandler) {
-					window.removeEventListener('scroll', parallaxWindow._presekParallaxHandler);
-				}
-				parallaxWindow._presekParallaxHandler = handleScroll;
-				window.addEventListener('scroll', handleScroll, { passive: true });
-			}
-			initParallax();
-			document.addEventListener('astro:page-load', initParallax);
-		</script>
-
-		<script is:inline>
-			// Global Headline Reveal Animation
-			const initHeadlineReveal = () => {
-				const headlineWindow = /** @type {Window & { _presekHeadlineObserver?: IntersectionObserver }} */ (window);
-				if (headlineWindow._presekHeadlineObserver) {
-					headlineWindow._presekHeadlineObserver.disconnect();
-				}
-				const observer = new IntersectionObserver((entries) => {
-					entries.forEach(entry => {
-						if (entry.isIntersecting) {
-							entry.target.classList.add('is-visible');
-						}
-					});
-				}, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
-
-				document.querySelectorAll('.headline, .editorial-headline, .lead-media-frame').forEach(el => {
-					observer.observe(el);
-				});
-				headlineWindow._presekHeadlineObserver = observer;
-			};
-
-			document.addEventListener('astro:page-load', initHeadlineReveal);
-			initHeadlineReveal();
-
-			// Interactive Spotlight Hover Effect
-			const initSpotlight = () => {
-					const targets = Array.from(document.querySelectorAll('.premium-spotlight'));
-					if (targets.length === 0 || window.matchMedia('(pointer: coarse)').matches) return;
-					/** @type {MouseEvent | null} */
-					let pendingEvent = null;
-					let ticking = false;
-					/** @param {MouseEvent} e */
-					const handleMouseMove = (e) => {
-						pendingEvent = e;
-						if (ticking) return;
-						ticking = true;
-						window.requestAnimationFrame(() => {
-							if (!pendingEvent) return;
-							for (const target of targets) {
-								if (!(target instanceof HTMLElement)) continue;
-								const rect = target.getBoundingClientRect();
-								const x = pendingEvent.clientX - rect.left;
-								const y = pendingEvent.clientY - rect.top;
-								target.style.setProperty('--mouse-x', `${x}px`);
-								target.style.setProperty('--mouse-y', `${y}px`);
-							}
-							ticking = false;
-						});
-					};
-					const spotlightWindow = /** @type {Window & { _spotlightHandler?: (event: MouseEvent) => void }} */ (window);
-					if (spotlightWindow._spotlightHandler) {
-						window.removeEventListener('mousemove', spotlightWindow._spotlightHandler);
-					}
-					spotlightWindow._spotlightHandler = handleMouseMove;
-					window.addEventListener('mousemove', handleMouseMove);
-				};
-			document.addEventListener('astro:page-load', initSpotlight);
-			initSpotlight();
-		</script>
-		<script>
-			// Global Image Loading and Fallback System (CSP-compliant, replacing inline onload/onerror)
-			const handleImageLoad = (img: HTMLImageElement) => {
-				img.classList.add('is-loaded');
-				const imageWrap = img.closest('.image-wrap');
-				if (imageWrap) {
-					imageWrap.setAttribute('data-image-state', 'ready');
-				}
-				const leadFrame = img.closest('.lead-media-frame');
-				if (leadFrame) {
-					leadFrame.classList.add('media-ready');
-				}
-			};
-
-			const emergencyFallbackUrl = () => {
-				const pageLang = document.documentElement.lang === 'mk' ? 'mk' : 'sr';
-				const cat = pageLang === 'mk' ? 'вести' : 'vesti';
-				const proxyBase = (window as any).__PRESEK_PROXY_BASE || '';
-				return `${proxyBase}/proxy?cat=${encodeURIComponent(cat)}&lang=${pageLang}&w=720`;
-			};
-
-			const getSourceInitials = (source: string) => {
-				const cleaned = source.trim();
-				if (!cleaned) return 'P';
-				const words = cleaned.split(/[\s|·\-–—/]+/).filter(Boolean);
-				if (words.length >= 2) {
-					return words.slice(0, 2).map((word) => word[0] || '').join('').toUpperCase();
-				}
-				return cleaned.slice(0, 2).toUpperCase();
-			};
-
-			const renderEditorialImageFallback = (imageWrap: HTMLElement) => {
-				if (imageWrap.querySelector('.topic-fallback-card--editorial')) return;
-				const source = imageWrap.getAttribute('data-fallback-source') || '';
-				const category = imageWrap.getAttribute('data-fallback-category') || '';
-				const label = imageWrap.getAttribute('data-fallback-label') || category || 'Presek';
-				const tint = imageWrap.getAttribute('data-fallback-tint') || '#1e40af';
-				const initials = getSourceInitials(source);
-				imageWrap.classList.add('image-wrap-fallback');
-				imageWrap.setAttribute('data-image-state', 'fallback');
-				imageWrap.style.setProperty('--placeholder-bg', tint);
-				const link = imageWrap.querySelector('a');
-				if (!link) return;
-				link.innerHTML = `
-					<div class="article-image-placeholder topic-fallback-card topic-fallback-card--editorial topic-fallback-card--compact">
-						<span class="article-image-placeholder-mark" aria-hidden="true">${initials}</span>
-						<p class="article-image-placeholder-label">${label}</p>
-						<p class="article-image-placeholder-source">${source}</p>
-					</div>
-				`;
-			};
-
-			const handleImageError = (img: HTMLImageElement) => {
-				const markArticleImageFailed = () => {
-					const imageWrap = img.closest('.image-wrap');
-					if (imageWrap && imageWrap.hasAttribute('data-fallback-source')) {
-						renderEditorialImageFallback(imageWrap);
-						return;
-					}
-					if (imageWrap) {
-						imageWrap.setAttribute('data-image-state', 'failed');
-					}
-					const article = img.closest('.nyt-article');
-					if (article) {
-						article.classList.add('image-failed');
-					}
-				};
-				if (img.classList.contains('article-image') && !img.classList.contains('article-image-fallback')) {
-					img.removeAttribute('srcset');
-					const fallbackUrl = img.getAttribute('data-fallback-url') || emergencyFallbackUrl();
-					img.src = fallbackUrl;
-					img.classList.add('is-loaded', 'article-image-fallback');
-					const imageWrap = img.closest('.image-wrap');
-					if (imageWrap) {
-						imageWrap.classList.add('image-wrap-fallback');
-						imageWrap.setAttribute('data-image-state', 'fallback');
-					}
-					return;
-				}
-				if (img.classList.contains('article-image') && img.classList.contains('article-image-fallback')) {
-					if (img.dataset.emergencyTried === '1') {
-						const imageWrap = img.closest('.image-wrap');
-						if (imageWrap) {
-							renderEditorialImageFallback(imageWrap);
-						} else {
-							markArticleImageFailed();
-						}
-						return;
-					}
-					img.dataset.emergencyTried = '1';
-					img.src = emergencyFallbackUrl();
-					return;
-				}
-				if (img.classList.contains('lead-media-image') && !img.classList.contains('lead-media-fallback-image')) {
-					img.removeAttribute('srcset');
-					const fallbackUrl = img.getAttribute('data-fallback-url') || emergencyFallbackUrl();
-					img.src = fallbackUrl;
-					img.classList.add('is-loaded', 'lead-media-fallback-image');
-					const parent = img.parentElement;
-					if (parent) {
-						parent.classList.add('media-ready', 'lead-media-frame-proxy-fallback');
-					}
-					return;
-				}
-				if (img.classList.contains('lead-media-image') && img.classList.contains('lead-media-fallback-image')) {
-					const parent = img.parentElement;
-					if (parent) {
-						parent.classList.add('media-ready', 'media-failed');
-					}
-					return;
-				}
-				if (img.classList.contains('hero-main-image') && !img.classList.contains('article-image-fallback')) {
-					img.removeAttribute('srcset');
-					const fallbackUrl = img.getAttribute('data-fallback-url') || emergencyFallbackUrl();
-					img.src = fallbackUrl;
-					img.classList.add('is-loaded', 'article-image-fallback');
-					const card = img.closest('.hero-visual-card');
-					if (card) {
-						card.classList.add('is-weak', 'is-proxy-fallback');
-					}
-				}
-			};
-
-			// Listen to events at document level using capturing phase (since load/error do not bubble)
-			document.addEventListener('load', (event) => {
-				const target = event.target as HTMLElement;
-				if (target && target.tagName === 'IMG') {
-					handleImageLoad(target as HTMLImageElement);
-				}
-			}, true);
-
-			document.addEventListener('error', (event) => {
-				const target = event.target as HTMLElement;
-				if (target && target.tagName === 'IMG') {
-					handleImageError(target as HTMLImageElement);
-				}
-			}, true);
-
-			// Immediately check images that have already loaded or failed (handling cache/SSR fast loading)
-			const checkAllImages = () => {
-				document.querySelectorAll('img').forEach((img) => {
-					if (img.complete) {
-						if (img.naturalWidth === 0) {
-							handleImageError(img);
-						} else {
-							handleImageLoad(img);
-						}
-					}
-				});
-			};
-
-			// Run on initial script execution and on client-side page transitions
-			checkAllImages();
-			document.addEventListener('astro:page-load', checkAllImages);
-		</script>
-		{loadTinyAdz && <TinyAdzScript siteId={tinyAdzSite} />}
+	<body
+		id="top"
+		class:list={[
+			'antialiased min-h-screen bg-background text-foreground transition-colors duration-300 overflow-x-hidden w-full',
+			{ 'script-latin': lang === 'sr', 'script-cyrillic': lang === 'mk' },
+		]}
+	>
+		<LayoutBodyChrome lang={lang} loadTinyAdz={loadTinyAdz} tinyAdzSite={tinyAdzSite}>
+			<slot />
+		</LayoutBodyChrome>
 	</body>
 </html>
-
-<style is:global>
-	:root {
-		--layout-cache-bust-20260409: 1;
-	}
-
-    /* TinyAdz corner mini popup sits above site chrome (consent banner, loading bar). */
-    iframe.corner-popup {
-        z-index: 10050 !important;
-    }
-
-    [ta-ad-container] iframe.inlined-ta-ad,
-    .tinyadz-inlined iframe.inlined-ta-ad {
-        width: 100%;
-        max-width: 900px;
-        margin-inline: auto;
-    }
-
-    *, *::before, *::after {
-        box-sizing: border-box;
-    }
-
-    html, body {
-        overflow-x: hidden;
-        width: 100%;
-        position: relative;
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
-
-	/* Broadstreet Aesthetic Adjustments */
-	.dark .site-logo {		filter: invert(1) brightness(1.5);
-	}
-	.dark .site-emblem {
-		filter: invert(1) brightness(1.5);
-	}
-
-    /* Ensure serif fonts are applied to all broadsheet text */
-    .nyt-serif {
-    font-family: var(--font-serif);
-    }
-
-    .nyt-sans {
-    font-family: var(--font-sans);
-    }
-
-    h1, h2, h3, .headline, .editorial-headline {
-    text-wrap: balance;
-    letter-spacing: -0.015em;
-    }
-
-    p, .summary {
-    text-wrap: pretty;
-    }
-
-    /* Local script readability polish */
-    .script-latin {
-    --font-serif: "Noto Serif", "Source Serif 4", Georgia, serif;
-    --font-serif-display: "Noto Serif Display", "Noto Serif", Georgia, serif;
-    --font-nyt-body: "Source Serif 4", "Noto Serif", Georgia, serif;
-    --font-sans: "Manrope", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
-    --font-ui: "Manrope", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
-    --font-ui-condensed: "Manrope", "IBM Plex Sans Condensed", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
-    }
-
-    .script-cyrillic {
-    --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
-    --font-serif-display: "Source Serif 4", Georgia, "Times New Roman", serif;
-    --font-nyt-body: "Source Serif 4", Georgia, "Times New Roman", serif;
-    --font-sans: "IBM Plex Sans", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
-    --font-ui: "IBM Plex Sans", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
-    --font-ui-condensed: "IBM Plex Sans", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
-    line-height: 1.55;
-    }
-
-    .script-cyrillic h1, 
-    .script-cyrillic h2, 
-    .script-cyrillic h3, 
-    .script-cyrillic .headline {
-    letter-spacing: -0.01em; /* Cyrillic needs slightly more air than Latin */
-    line-height: 1.15;
-    }
-
-    /* Skeleton Loading */    .skeleton {
-        position: relative;
-        overflow: hidden;
-        background-color: var(--muted);
-        border-radius: 0px;
-    }
-
-    .skeleton::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        transform: translateX(-100%);
-        background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(255, 255, 255, 0.08),
-            transparent
-        );
-        animation: shimmer 2s infinite;
-    }
-
-    .dark .skeleton::after {
-        background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(255, 255, 255, 0.05),
-            transparent
-        );
-    }
-
-    @keyframes shimmer {
-        100% {
-            transform: translateX(100%);
-        }
-    }
-
-    /* Selection Color */
-    ::selection {
-        background-color: #326891;
-        color: white;
-    }
-
-    /* --- CRITICAL MOBILE UI FIXES --- */
-    html, body {
-        overflow-x: hidden !important;
-        width: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        box-sizing: border-box !important;
-        -webkit-text-size-adjust: 100%;
-        position: relative;
-        overflow-wrap: break-word;
-        word-wrap: break-word;
-    }
-
-    * {
-        box-sizing: border-box !important;
-    }
-
-    h1, h2, h3, h4, h5, h6, p, span, a {
-        overflow-wrap: break-word;
-    }
-
-    @media (max-width: 480px) {
-        .headline-lead {
-            font-size: 1.85rem !important;
-            line-height: 1.1 !important;
-        }
-        .editorial-headline {
-            font-size: 1.75rem !important;
-        }
-    }
-
-    img, video, canvas, svg, iframe {
-        max-width: 100% !important;
-        height: auto !important;
-    }
-
-    /* Prevent wide tables from breaking layout */
-    table {
-        display: block;
-        max-width: 100%;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    </style>

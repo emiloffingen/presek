@@ -5,7 +5,8 @@ import re
 import time
 
 import fastapi
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import Response
 
 if not hasattr(fastapi, "responses"):
@@ -17,6 +18,7 @@ from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Stre
 from fastapi.staticfiles import StaticFiles
 from prometheus_client import CONTENT_TYPE_LATEST, Gauge, generate_latest
 
+from core.api_errors import normalize_http_exception_content, rate_limit_payload
 from core.limiter import RateLimitExceeded, _rate_limiter_enabled, exempt_from_rate_limit, limiter
 from routes.security import generate_csrf_token, verify_csrf_token
 
@@ -167,6 +169,24 @@ from routes.security import create_security_middleware
 create_security_middleware(app)
 
 
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    headers = dict(getattr(exc, "headers", None) or {})
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=normalize_http_exception_content(exc.detail),
+        headers=headers,
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=422,
+        content=normalize_http_exception_content(exc.errors()),
+    )
+
+
 @app.get("/api/csrf-token")
 @app.get("/api/v1/csrf-token")
 def get_csrf_token():
@@ -181,13 +201,10 @@ if _rate_limiter_enabled:
     @app.exception_handler(RateLimitExceeded)
     async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
         """Return JSON response for rate limit exceeded errors."""
+        detail = f"Nadminato e ogranicuvanjeto za baranja: {exc.detail}"
         return JSONResponse(
             status_code=429,
-            content={
-                "error": "Premnogu baranja",
-                "detail": f"Nadminato e ogranicuvanjeto za baranja: {exc.detail}",
-                "status": "rate_limit_exceeded",
-            },
+            content=rate_limit_payload("Premnogu baranja", detail=detail),
             headers={"Retry-After": str(getattr(exc, "retry_after", 60))},
         )
 
