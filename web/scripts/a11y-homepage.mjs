@@ -6,12 +6,12 @@
  *   node scripts/a11y-homepage.mjs --preview --enforce --path /mk/ --label mk
  */
 
-import { spawn } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import puppeteer from 'puppeteer-core';
 import { AxePuppeteer } from '@axe-core/puppeteer';
+import { startDetachedPreview, stopDetachedPreview } from './preview-server.mjs';
 
 const FAIL_IMPACTS = new Set(['critical', 'serious']);
 
@@ -22,45 +22,6 @@ const pathFlagIndex = args.indexOf('--path');
 const labelFlagIndex = args.indexOf('--label');
 const pagePath = pathFlagIndex >= 0 ? args[pathFlagIndex + 1] || '/' : '/';
 const reportLabel = labelFlagIndex >= 0 ? args[labelFlagIndex + 1] || '' : '';
-
-function run(command, commandArgs, options = {}) {
-  return new Promise((resolve, reject) => {
-    const child = spawn(command, commandArgs, { stdio: 'inherit', shell: false, ...options });
-    child.on('error', reject);
-    child.on('close', (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`${command} exited with code ${code}`));
-    });
-  });
-}
-
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function waitForUrl(url, attempts = 30) {
-  for (let i = 0; i < attempts; i += 1) {
-    try {
-      const res = await fetch(url, { redirect: 'follow' });
-      if (res.ok || res.status < 500) return;
-    } catch {
-      // retry
-    }
-    await sleep(500);
-  }
-  throw new Error(`Timed out waiting for ${url}`);
-}
-
-async function startPreview() {
-  const child = spawn('npm', ['run', 'preview', '--', '--host', '127.0.0.1', '--port', '4321'], {
-    cwd: process.cwd(),
-    stdio: 'ignore',
-    detached: true,
-  });
-  child.unref();
-  await waitForUrl('http://127.0.0.1:4321/');
-  return child;
-}
 
 function resolveChromePath() {
   if (process.env.CHROME_PATH && existsSync(process.env.CHROME_PATH)) {
@@ -139,7 +100,7 @@ async function main() {
     }
 
     console.log('Starting astro preview...');
-    previewProc = await startPreview();
+    previewProc = await startDetachedPreview();
     const tmp = mkdtempSync(join(tmpdir(), 'presek-axe-'));
     const reportPath = join(tmp, 'homepage.json');
     const previewUrl = new URL(pagePath, 'http://127.0.0.1:4321').toString();
@@ -169,13 +130,7 @@ async function main() {
     console.error(error instanceof Error ? error.message : error);
     exitCode = 1;
   } finally {
-    if (previewProc?.pid) {
-      try {
-        process.kill(-previewProc.pid);
-      } catch {
-        // ignore
-      }
-    }
+    stopDetachedPreview(previewProc);
   }
 
   process.exitCode = exitCode;

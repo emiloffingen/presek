@@ -11,6 +11,7 @@ import { spawn } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { startDetachedPreview, stopDetachedPreview } from './preview-server.mjs';
 
 const THRESHOLDS = {
   performance: 0.72,
@@ -46,32 +47,8 @@ function run(command, commandArgs, options = {}) {
   });
 }
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function waitForUrl(url, attempts = 30) {
-  for (let i = 0; i < attempts; i += 1) {
-    try {
-      const res = await fetch(url, { redirect: 'follow' });
-      if (res.ok || res.status < 500) return;
-    } catch {
-      // retry
-    }
-    await sleep(500);
-  }
-  throw new Error(`Timed out waiting for ${url}`);
-}
-
 async function startPreview() {
-  const child = spawn('npm', ['run', 'preview', '--', '--host', '127.0.0.1', '--port', '4321'], {
-    cwd: process.cwd(),
-    stdio: 'ignore',
-    detached: true,
-  });
-  child.unref();
-  await waitForUrl('http://127.0.0.1:4321/');
-  return child;
+  return startDetachedPreview();
 }
 
 function resolveChromePath() {
@@ -195,13 +172,7 @@ async function main() {
     console.error(error instanceof Error ? error.message : error);
     process.exitCode = 1;
   } finally {
-    if (previewProc?.pid) {
-      try {
-        process.kill(-previewProc.pid);
-      } catch {
-        // ignore
-      }
-    }
+    stopDetachedPreview(previewProc);
   }
 }
 

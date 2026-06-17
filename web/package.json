@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview",
+    "preview": "node scripts/preview-server.mjs && astro preview",
     "astro": "astro",
     "test": "node --test src/lib/**/*.test.mjs",
     "test:e2e": "cypress run --e2e",
