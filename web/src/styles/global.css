@@ -17,6 +17,7 @@
 @import "./surface-widgets.css";
 @import "./mobile-layout.css";
 @import "./next-level.css";
+@import "./presek-identity.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -189,12 +190,12 @@
 
     /* ... rest of variables unchanged ... */
 
-    /* Minimum readable UI chrome (11px / 12px at 16px root) */
-    --text-ui-min: 0.6875rem;
-    --text-ui-kicker: 0.75rem;
+    /* Minimum readable UI chrome — 13px on mobile, smaller kickers on desktop only */
+    --text-ui-min: 0.8125rem;
+    --text-ui-kicker: 0.8125rem;
 
     /* Fluid Typography Scale - Editorial & Premium (Broadsheet Proportions) */
-    --text-xs: clamp(0.6875rem, 0.66rem + 0.1vw, 0.75rem);
+    --text-xs: clamp(0.8125rem, 0.78rem + 0.15vw, 0.875rem);
     --text-sm: clamp(0.78rem, 0.74rem + 0.2vw, 0.84rem);
     --text-base: clamp(
       0.9rem,
@@ -478,6 +479,13 @@ h6,
   .type-ui-label,
   .kicker {
     letter-spacing: 0.06em;
+  }
+}
+
+@media (min-width: 769px) {
+  :root {
+    --text-ui-kicker: 0.6875rem;
+    --text-xs: clamp(0.6875rem, 0.66rem + 0.1vw, 0.75rem);
   }
 }
 

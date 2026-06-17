@@ -189,7 +189,7 @@ if (homepageFlags.shouldSetErrorStatus) {
 		<div class="broadsheet-grid px-3 sm:px-4 md:px-8 xl:px-10">
 			<div class="broadsheet-main home-mobile-feed">
                 {!error && isHomepage && (
-                    <div class="home-mobile-order-edition">
+                    <div class="home-mobile-order-edition home-edition-collapsed">
                         <DailyEditionBar lang={lang} />
                         {isPregled && (
                             <a href={l('/')} class="home-pregled-nav-link">{t('home.back_to_feed')}</a>
@@ -240,7 +240,10 @@ if (homepageFlags.shouldSetErrorStatus) {
                             const expandedKey = 'homepage-analysis-expanded';
                             const visits = Number(localStorage.getItem(visitKey) || '0');
                             if (visits < 1) root.classList.add('home-first-session');
-                            if (localStorage.getItem(expandedKey) === '1') root.classList.add('home-analysis-expanded');
+                            if (localStorage.getItem(expandedKey) === '1') {
+                                root.classList.add('home-analysis-expanded');
+                                root.querySelector('.home-edition-expand-panel')?.remove();
+                            }
                             localStorage.setItem(visitKey, String(visits + 1));
                         })();
                     </script>
@@ -264,7 +267,7 @@ if (homepageFlags.shouldSetErrorStatus) {
                 )}
 
 				{leadCluster && !isPregled && (
-					<div class="section-wrapper lead-wrapper home-mobile-order-lead home-feed-only">
+					<div class="section-wrapper lead-wrapper presek-hero-mark home-mobile-order-lead home-feed-only">
 						<LeadHero
 							leadCluster={leadCluster}
 							leadTitle={leadTitle}
@@ -295,13 +298,13 @@ if (homepageFlags.shouldSetErrorStatus) {
 				)}
 
                 {!error && isHomepage && briefing && !isPregled && (
-                    <div class="section-wrapper home-mobile-order-briefing home-feed-secondary-spotlight home-feed-only">
+                    <div class="section-wrapper home-mobile-order-briefing home-feed-only home-edition-collapsed">
                         <HomeBriefingTeaser briefing={briefing} getBriefingSnippet={getBriefingSnippet} />
                     </div>
                 )}
 
                 {!error && isHomepage && !isPregled && !q && !category && !topic && !entity && !subcategory && (
-                    <div class="home-mobile-order-start-here home-feed-only">
+                    <div class="home-mobile-order-start-here home-feed-only home-edition-collapsed">
                         <HomeStartHere lang={lang} />
                     </div>
                 )}
@@ -446,55 +449,67 @@ if (homepageFlags.shouldSetErrorStatus) {
 
 				</div>
 
-                <div id="home-unified-feed" class="home-mobile-order-feed home-feed-only">
+                <div id="home-core-feed" class="home-mobile-order-feed home-feed-core home-feed-only">
+                {!error && isHomepage && !isPregled && (developmentsFeatured.length > 0 || developmentsCompact.length > 0) && (
+                    <div class="section-wrapper presek-section-mark">
+                        <DevelopmentsSection
+                            title={t('home.developing_title')}
+                            note={t('home.developing_desc')}
+                            developmentsFeatured={developmentsFeatured}
+                            developmentsCompact={developmentsCompact}
+                            tone="developing"
+                        />
+                    </div>
+                )}
+                {!error && isHomepage && !isPregled && wireClusters.length > 0 && (
+                    <div class="section-wrapper presek-section-mark">
+                        <DevelopmentsSection
+                            title={t('home.wire_title')}
+                            note={t('home.wire_desc')}
+                            developmentsFeatured={wireClusters}
+                            developmentsCompact={[]}
+                            variant="wire"
+                            tone="wire"
+                        />
+                    </div>
+                )}
+                </div>
+
+                {!error && isHomepage && !isPregled && (
+                    <div class="section-wrapper home-expand-analysis home-edition-expand-panel home-mobile-order-expand home-feed-only">
+                        <button type="button" class="home-expand-analysis-btn" data-expand-home-analysis>
+                            {t('home.mode_open_analiza')}
+                        </button>
+                        <p class="home-expand-analysis-copy">
+                            {t('home.mode_analiza_hint')}
+                        </p>
+                    </div>
+                )}
+
+                <div id="home-unified-feed" class="home-mobile-order-feed-extended homepage-analiza-only">
                 {forYouClusters.length > 0 && (
-					<div class="section-wrapper for-you-wrapper homepage-analiza-only" data-for-you-band>
+					<div class="section-wrapper for-you-wrapper" data-for-you-band>
                         <p class="for-you-boundary-label">{t('home.for_you_boundary')}</p>
 					    <ForYouIsland client:idle clusters={forYouClusters} excludeClusterIds={excludedClusterIds} lang={lang} />
                     </div>
 				)}
 
                 {isHomepage && unifiedFeedItems.length > 0 ? (
-                    <div class="section-wrapper">
+                    <div class="section-wrapper presek-section-mark">
                         <HomeUnifiedFeed items={unifiedFeedItems} lang={lang} adInsertAfter={5} />
                     </div>
                 ) : (
-                    <>
-                        {(developmentsFeatured.length > 0 || developmentsCompact.length > 0) && (
-                            <div class="section-wrapper">
-                                <DevelopmentsSection
-                                    title={t('home.developing_title')}
-                                    note={t('home.developing_desc')}
-                                    developmentsFeatured={developmentsFeatured}
-                                    developmentsCompact={developmentsCompact}
-                                    tone="developing"
-                                />
-                            </div>
-                        )}
-                        {globalClusters.length > 0 && (
-                            <div class="section-wrapper">
-                                <DevelopmentsSection
-                                    title={t('home.global_title')}
-                                    note={t('home.global_desc')}
-                                    developmentsFeatured={globalClusters.slice(0, 2)}
-                                    developmentsCompact={globalClusters.slice(2)}
-                                    tone="global"
-                                />
-                            </div>
-                        )}
-                        {wireClusters.length > 0 && (
-                            <div class="section-wrapper">
-                                <DevelopmentsSection
-                                    title={t('home.wire_title')}
-                                    note={t('home.wire_desc')}
-                                    developmentsFeatured={wireClusters}
-                                    developmentsCompact={[]}
-                                    variant="wire"
-                                    tone="wire"
-                                />
-                            </div>
-                        )}
-                    </>
+                    globalClusters.length > 0 && (
+                        <div class="section-wrapper presek-section-mark">
+                            <DevelopmentsSection
+                                title={t('home.global_title')}
+                                note={t('home.global_desc')}
+                                developmentsFeatured={globalClusters.slice(0, 2)}
+                                developmentsCompact={globalClusters.slice(2)}
+                                tone="global"
+                            />
+                        </div>
+                    )
                 )}
 
                 </div>
@@ -518,17 +533,6 @@ if (homepageFlags.shouldSetErrorStatus) {
                 {!error && isHomepage && showAnalysisLayers && (
                     <div class="home-mobile-order-live home-analiza-deferred">
                         <HomeLiveStrip articles={topWireArticles} getTimeStr={getTimeStr} lang={lang} />
-                    </div>
-                )}
-
-                {!error && isHomepage && !isPregled && (
-                    <div class="section-wrapper home-expand-analysis home-edition-expand-panel home-mobile-order-expand">
-                        <button type="button" class="home-expand-analysis-btn" data-expand-home-analysis>
-                            {t('home.mode_open_analiza')}
-                        </button>
-                        <p class="home-expand-analysis-copy">
-                            {t('home.mode_analiza_hint')}
-                        </p>
                     </div>
                 )}
 			</div>

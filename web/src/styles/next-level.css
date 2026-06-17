@@ -283,15 +283,15 @@
   display: none !important;
 }
 
-.home-page-variant-feed:not(.home-analysis-expanded) .home-feed-secondary-spotlight {
+.home-page-variant-feed:not(.home-analysis-expanded) .home-feed-core {
   display: block !important;
 }
 
-.home-page-variant-feed:not(.home-analysis-expanded) .home-analiza-deferred {
+.home-page-variant-feed.home-analysis-expanded .home-feed-core {
   display: none !important;
 }
 
-.home-page-variant-feed.home-analysis-expanded .home-feed-secondary-spotlight {
+.home-page-variant-feed:not(.home-analysis-expanded) .home-analiza-deferred {
   display: none !important;
 }
 

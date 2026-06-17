@@ -1,0 +1,69 @@
+/* Presek brand mark — warm “cut” accent distinct from trust blue */
+
+:root {
+  --presek-mark: #c45c26;
+  --presek-mark-soft: color-mix(in srgb, var(--presek-mark) 14%, var(--background));
+  --presek-mark-line: color-mix(in srgb, var(--presek-mark) 55%, var(--border));
+}
+
+.dark {
+  --presek-mark: #e07a3d;
+  --presek-mark-soft: color-mix(in srgb, var(--presek-mark) 18%, var(--background));
+  --presek-mark-line: color-mix(in srgb, var(--presek-mark) 45%, var(--border));
+}
+
+/* Section divider with brand cut */
+.presek-section-mark {
+  border-left: 3px solid var(--presek-mark);
+  padding-left: clamp(0.75rem, 1.5vw, 1rem);
+  margin-left: 0;
+}
+
+.presek-section-mark > .section-heading-row,
+.presek-section-mark > .home-unified-feed-header {
+  padding-top: 0.15rem;
+}
+
+/* Homepage lead gets a subtle brand rail */
+.home-page-variant-feed .lead-wrapper.presek-hero-mark {
+  border-left: 4px solid var(--presek-mark);
+  padding-left: clamp(0.65rem, 1.2vw, 0.9rem);
+}
+
+/* Kicker labels use the warm mark sitewide */
+.type-kicker,
+.analysis-band-kicker,
+.home-unified-feed-title::before {
+  color: var(--presek-mark);
+}
+
+.home-unified-feed-title::before {
+  content: "";
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-right: 0.45rem;
+  background: var(--presek-mark);
+  vertical-align: 0.05em;
+}
+
+/* Masthead rules pick up brand weight */
+.masthead-double-rule,
+.section-heading-row.masthead-double-rule::after {
+  border-bottom-color: color-mix(in srgb, var(--presek-mark) 35%, var(--foreground));
+}
+
+.home-expand-analysis {
+  border-color: var(--presek-mark-line);
+  background: var(--presek-mark-soft);
+}
+
+.home-expand-analysis-btn {
+  border-color: color-mix(in srgb, var(--presek-mark) 40%, var(--border));
+}
+
+.home-expand-analysis-btn:hover,
+.home-expand-analysis-btn:focus-visible {
+  border-color: var(--presek-mark);
+  color: var(--presek-mark);
+}

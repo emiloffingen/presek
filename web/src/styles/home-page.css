@@ -57,7 +57,7 @@
     margin: 0 0 clamp(0.75rem, 1.5vw, 1rem);
     padding: 0.75rem 0.85rem;
     border: 1px solid color-mix(in srgb, var(--nyt-accent) 22%, var(--border));
-    border-left: 3px solid var(--nyt-accent);
+    border-left: 3px solid var(--presek-mark, var(--nyt-accent));
     background: color-mix(in srgb, var(--nyt-accent) 4%, var(--background));
 }
 
@@ -1547,10 +1547,11 @@
 
     .home-mobile-order-edition { order: 2; }
     .home-mobile-order-lead { order: 1; }
-    .home-mobile-order-briefing { order: 4; }
-    .home-mobile-order-start-here { order: 6; }
-    .home-mobile-order-expand { order: 7; }
-    .home-mobile-order-feed { order: 5; }
+    .home-mobile-order-briefing { order: 8; }
+    .home-mobile-order-start-here { order: 9; }
+    .home-mobile-order-expand { order: 4; }
+    .home-mobile-order-feed { order: 3; }
+    .home-mobile-order-feed-extended { order: 5; }
     .home-mobile-order-supporting { order: 6; }
     .home-mobile-order-pregled-teaser { order: 7; }
     .home-mobile-order-synthesis-teaser { order: 8; }
@@ -1565,11 +1566,9 @@
     }
 
     .home-page-variant-feed.home-first-session .home-mobile-order-lead { order: 1; }
-    .home-page-variant-feed.home-first-session .home-mobile-order-edition { order: 2; }
-    .home-page-variant-feed.home-first-session .home-mobile-order-briefing { order: 3; }
-    .home-page-variant-feed.home-first-session .home-mobile-order-feed { order: 4; }
-    .home-page-variant-feed.home-first-session .home-mobile-order-start-here { order: 8; }
-    .home-page-variant-feed.home-first-session .home-mobile-order-expand { order: 9; }
+    .home-page-variant-feed.home-first-session .home-mobile-order-feed { order: 3; }
+    .home-page-variant-feed.home-first-session .home-mobile-order-expand { order: 4; }
+    .home-page-variant-feed.home-first-session .home-mobile-order-start-here { order: 9; }
     .home-page-variant-feed.home-first-session .home-mobile-order-supporting { order: 8; }
 
     .home-page-variant-feed.home-first-session .lead-synthesis-badge,
