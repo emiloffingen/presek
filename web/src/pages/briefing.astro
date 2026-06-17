@@ -247,7 +247,8 @@ const leadVisualTitle = briefingData?.lead_cluster?.synthetic_headline || briefi
 
     @media (min-width: 1100px) {
         .briefing-layout-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+            gap: 4rem;
         }
     }
 

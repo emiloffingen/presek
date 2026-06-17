@@ -30,11 +30,15 @@ export function sanitizeHtml(dirty: string): string {
     ALLOWED_TAGS: [
       "b", "i", "em", "strong", "a", "p", "br", "ul", "ol", "li",
       "h1", "h2", "h3", "h4", "h5", "h6", "blockquote",
-      "pre", "code", "sub", "sup", "small", "span"
+      "pre", "code", "sub", "sup", "small", "span",
+      "svg", "path", "polyline", "line"
     ],
     // Only allow safe attributes
     ALLOWED_ATTR: [
-      "href", "target", "rel", "class", "title", "id"
+      "href", "target", "rel", "class", "title", "id",
+      "xmlns", "viewBox", "width", "height", "fill", "stroke",
+      "stroke-width", "stroke-linecap", "stroke-linejoin", "d",
+      "x1", "y1", "x2", "y2", "points"
     ],
     // Explicitly block dangerous attributes
     FORBID_ATTR: [
@@ -47,7 +51,7 @@ export function sanitizeHtml(dirty: string): string {
     // Transform target="_blank" to include rel="noopener noreferrer"
     ADD_URI_SAFE_ATTR: ["target"],
     // Only allow http:, https:, and mailto: URLs in href
-    ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|#)/i,
+    ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|#|\/)/i,
     // Return DOM clobbering-safe string (no document.write, etc.)
     RETURN_DOM: false,
     // Return the sanitized content as a string (not a DOM fragment)

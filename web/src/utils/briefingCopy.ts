@@ -30,7 +30,8 @@ export function normalizeBriefingText(text: MaybeText, lang = 'sr'): string {
 
     return normalized
         .replace(/\s+([,.;:!?])/g, '$1')
-        .replace(/\s{2,}/g, ' ')
+        .replace(/[^\S\n]{2,}/g, ' ')
+        .replace(/\n{3,}/g, '\n\n')
         .trim();
 }
 
@@ -54,7 +55,11 @@ export function normalizeBriefingPayload<T>(value: T, lang = 'sr'): T {
     if (value && typeof value === 'object') {
         const output: Record<string, unknown> = {};
         for (const [key, item] of Object.entries(value)) {
-            output[key] = normalizeBriefingPayload(item, lang);
+            if (key === 'content' && typeof item === 'string') {
+                output[key] = normalizeBriefingMarkdown(item, lang);
+            } else {
+                output[key] = normalizeBriefingPayload(item, lang);
+            }
         }
         return output as T;
     }
