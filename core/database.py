@@ -29,6 +29,61 @@ def _get_db_query_counter() -> Counter:
 
 _DB_QUERY_TOTAL = _get_db_query_counter()
 
+_REPLICA_FRESHNESS_CACHE = {"ok": True, "checked_at": 0.0}
+_REPLICA_FRESHNESS_TTL_SECONDS = int(os.environ.get("REPLICA_FRESHNESS_TTL_SECONDS", "30"))
+_REPLICA_MAX_LAG_SECONDS = int(os.environ.get("REPLICA_MAX_LAG_SECONDS", "120"))
+
+
+def _read_replica_is_fresh() -> bool:
+    """Return False when the read replica is missing or materially behind primary."""
+    from core.config import DATABASE_READ_REPLICA_URL, USE_READ_REPLICA, resolve_primary_database_url
+
+    if not USE_READ_REPLICA or not DATABASE_READ_REPLICA_URL:
+        return False
+
+    now = time.time()
+    if now - _REPLICA_FRESHNESS_CACHE["checked_at"] < _REPLICA_FRESHNESS_TTL_SECONDS:
+        return _REPLICA_FRESHNESS_CACHE["ok"]
+
+    ok = False
+    try:
+        primary_url = resolve_primary_database_url()
+        with (
+            psycopg.connect(primary_url, connect_timeout=3) as primary_conn,
+            psycopg.connect(DATABASE_READ_REPLICA_URL, connect_timeout=3) as replica_conn,
+        ):
+            with primary_conn.cursor() as primary_cur, replica_conn.cursor() as replica_cur:
+                primary_cur.execute("SELECT MAX(COALESCE(ingested_at, created_at)) FROM articles")
+                replica_cur.execute("SELECT MAX(COALESCE(ingested_at, created_at)) FROM articles")
+                primary_ts = primary_cur.fetchone()[0]
+                replica_ts = replica_cur.fetchone()[0]
+        if primary_ts is None:
+            ok = True
+        elif replica_ts is None:
+            ok = False
+        else:
+            lag_seconds = (primary_ts - replica_ts).total_seconds()
+            ok = lag_seconds <= _REPLICA_MAX_LAG_SECONDS
+        if not ok:
+            logging.getLogger("presek").warning(
+                "Read replica is stale (primary=%s replica=%s); routing reads to primary",
+                primary_ts,
+                replica_ts,
+            )
+    except Exception as exc:
+        logging.getLogger("presek").warning("Read replica freshness check failed: %s", exc)
+        ok = False
+
+    _REPLICA_FRESHNESS_CACHE["ok"] = ok
+    _REPLICA_FRESHNESS_CACHE["checked_at"] = now
+    return ok
+
+
+def _select_read_pool(read_only: bool, read_pool):
+    if read_only and read_pool is not None and _read_replica_is_fresh():
+        return read_pool
+    return None
+
 
 def _record_db_query(*, read_only: bool, used_replica: bool) -> None:
     pool = "replica" if read_only and used_replica else "primary"
@@ -325,8 +380,10 @@ class AsyncDatabaseManager:
                 cleaned_sql = sql.strip().upper()
                 read_only = any(cleaned_sql.startswith(prefix) for prefix in ("SELECT", "WITH", "SHOW", "EXPLAIN"))
 
-            pool = self._read_pool if read_only and getattr(self, "_read_pool", None) else self._pool
-            used_replica = pool is getattr(self, "_read_pool", None) and getattr(self, "_read_pool", None) is not None
+            read_pool = getattr(self, "_read_pool", None)
+            selected_read_pool = _select_read_pool(read_only, read_pool)
+            pool = selected_read_pool if selected_read_pool is not None else self._pool
+            used_replica = pool is read_pool and read_pool is not None
             _record_db_query(read_only=read_only, used_replica=used_replica)
             if used_replica:
                 log.debug(f"Routing async query to read replica pool: {sql[:100]}")
@@ -476,9 +533,10 @@ class DatabaseManager:
                 cleaned_sql = sql.strip().upper()
                 read_only = any(cleaned_sql.startswith(prefix) for prefix in ("SELECT", "WITH", "SHOW", "EXPLAIN"))
 
-            # Route read-only queries to replica if available
+            # Route read-only queries to replica when it is fresh enough.
             read_pool = getattr(self, "_read_pool", None)
-            pool = read_pool if read_only and read_pool else self._pool
+            selected_read_pool = _select_read_pool(read_only, read_pool)
+            pool = selected_read_pool if selected_read_pool is not None else self._pool
             used_replica = pool is read_pool and read_pool is not None
             _record_db_query(read_only=read_only, used_replica=used_replica)
             conn = pool.getconn() if pool else self.get_conn()

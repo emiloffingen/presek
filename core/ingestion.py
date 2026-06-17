@@ -1195,6 +1195,32 @@ async def ingest_all_sources_async():
 
             # Post-ingestion tasks: batch trigger translations/summaries
             if inserted_ids:
+                from tasks.utils import invalidate_public_data_caches
+
+                invalidate_public_data_caches()
+                touched_cluster_ids = list(
+                    {
+                        str(row["cluster_id"])
+                        for row in db.execute(
+                            "SELECT DISTINCT cluster_id FROM articles WHERE id = ANY(%s) AND cluster_id IS NOT NULL",
+                            (inserted_ids,),
+                        )
+                        if row.get("cluster_id")
+                    }
+                )
+                if touched_cluster_ids:
+                    db.execute(
+                        """
+                        INSERT INTO cluster_metadata (cluster_id, updated_at)
+                        SELECT DISTINCT cluster_id, NOW()
+                        FROM articles
+                        WHERE cluster_id = ANY(%s)
+                        ON CONFLICT (cluster_id) DO UPDATE
+                        SET updated_at = GREATEST(cluster_metadata.updated_at, EXCLUDED.updated_at)
+                        """,
+                        (touched_cluster_ids,),
+                        fetch=False,
+                    )
                 from utils import publish_event
 
                 publish_event(
@@ -1252,30 +1278,30 @@ async def ingest_all_sources_async():
                     for art in crawl_batch:
                         crawl_article_task.delay(art["id"], art["link"])
 
+                # Always prioritize article summarization — readers need fresh copy even when
+                # the intel-heavy queue is saturated with deferrable backfill work.
+                _dispatch_batched(summarize_articles_batch_task, inserted_ids)
+
                 if intelligence_batches_deferred():
                     log.info(
-                        "[ingestion] Deferring all intelligence batches for %s new articles while intel-heavy backlog is high",
+                        "[ingestion] Deferring secondary intelligence batches for %s new articles while intel-heavy backlog is high",
+                        len(inserted_ids),
+                    )
+                elif intelligence_soft_deferred():
+                    log.info(
+                        "[ingestion] Deferring non-critical intelligence batches for %s new articles while intel-heavy backlog is high",
                         len(inserted_ids),
                     )
                 else:
-                    # Always prioritize summarization for new articles.
-                    _dispatch_batched(summarize_articles_batch_task, inserted_ids)
+                    # Batch global story detection
+                    _dispatch_batched(detect_global_stories_batch_task, inserted_ids)
 
-                    if intelligence_soft_deferred():
-                        log.info(
-                            "[ingestion] Deferring secondary intelligence batches for %s new articles while intel-heavy backlog is high",
-                            len(inserted_ids),
-                        )
-                    else:
-                        # Batch global story detection
-                        _dispatch_batched(detect_global_stories_batch_task, inserted_ids)
-
-                        # Batch style normalization (low-credibility sources only)
-                        credibility_ids = [
-                            art["id"] for art in inserted_data if art.get("credibility", 1.5) < 1.2
-                        ]
-                        if credibility_ids:
-                            _dispatch_batched(standardize_article_styles_batch_task, credibility_ids)
+                    # Batch style normalization (low-credibility sources only)
+                    credibility_ids = [
+                        art["id"] for art in inserted_data if art.get("credibility", 1.5) < 1.2
+                    ]
+                    if credibility_ids:
+                        _dispatch_batched(standardize_article_styles_batch_task, credibility_ids)
 
     current_statuses = get_source_statuses()
     for source_name, stats in source_stats.items():

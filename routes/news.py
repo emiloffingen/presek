@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from core.api_errors import soft_error
 from core.config import API_MAX_PAGE, API_MAX_Q_LEN, BREAKING_SCORE_THRESHOLD
 from core.database import db_manager as db
 from core.synthesis_quality import build_synthesis_meta, synthesis_needs_upgrade
@@ -545,17 +546,17 @@ async def fetch_news_data(
             )
         elif category:
             query = """
-                SELECT m.cluster_id, m.updated_at as last_article
-                FROM cluster_metadata m
-                JOIN articles a ON a.cluster_id = m.cluster_id
-                WHERE m.category = %s
+                SELECT a.cluster_id, MAX(COALESCE(a.ingested_at, a.created_at)) AS last_article
+                FROM articles a
+                WHERE a.category = %s
+                  AND COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '7 days'
             """
             params = [category]
             if country:
                 query += " AND a.country = %s"
                 params.append(country)
 
-            query += " GROUP BY m.cluster_id, m.updated_at ORDER BY m.updated_at DESC LIMIT %s"
+            query += " GROUP BY a.cluster_id ORDER BY last_article DESC LIMIT %s"
             params.append(page_size * (page + 1))
 
             rows = await db.async_execute(query, tuple(params), read_only=True)
@@ -570,19 +571,19 @@ async def fetch_news_data(
                 else []
             )
         else:
-            # Fallback
+            # Fallback: rank by latest article activity, not cluster_metadata.updated_at
+            # (metadata lags when intel-heavy work is deferred during ingestion).
             query = """
-                SELECT m.cluster_id, m.updated_at as last_article
-                FROM cluster_metadata m
-                JOIN articles a ON a.cluster_id = m.cluster_id
-                WHERE 1=1
+                SELECT a.cluster_id, MAX(COALESCE(a.ingested_at, a.created_at)) AS last_article
+                FROM articles a
+                WHERE COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '7 days'
             """
             params = []
             if country:
                 query += " AND a.country = %s"
                 params.append(country)
 
-            query += " GROUP BY m.cluster_id, m.updated_at ORDER BY m.updated_at DESC LIMIT %s"
+            query += " GROUP BY a.cluster_id ORDER BY last_article DESC LIMIT %s"
             params.append(page_size * (page + 1))
 
             rows = await db.async_execute(query, tuple(params), read_only=True)
@@ -1662,6 +1663,6 @@ async def get_cluster_audio(cluster_id: str, lang: Optional[str] = "sr"):
     )
     
     if not audio_url:
-        return {"status": "error", "message": "Failed to synthesize cluster audio."}
+        return soft_error(message="Failed to synthesize cluster audio.")
         
     return {"status": "success", "audio_url": audio_url}

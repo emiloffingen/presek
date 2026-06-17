@@ -74,7 +74,7 @@ class TestRefreshFallbackSyntheses:
             patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=False),
             patch("tasks.maintenance._collect_homepage_cluster_ids", return_value=["cluster-a"]),
             patch("tasks.maintenance.db") as mock_db,
-            patch("tasks.intelligence.synthesize_cluster_task") as mock_task,
+            patch("tasks.intelligence.synthesis.synthesize_cluster_task") as mock_task,
             patch("tasks.maintenance._effective_synthesis_refresh_hourly_cap", return_value=120),
         ):
             mock_db.execute.return_value = [
@@ -126,10 +126,30 @@ class TestCatchUpClusterSyntheses:
 
 
 class TestPrioritizeHomepageSyntheses:
-    def test_skips_when_backlog_full(self):
-        with patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=True):
-            result = prioritize_homepage_syntheses_task()
-        assert result == {"skipped": True, "reason": "synthesis_backlog"}
+    def test_uses_fast_track_when_synthesis_backlogged(self):
+        payload = {
+            "clusters": [
+                {
+                    "cluster_id": "home-urgent",
+                    "has_synthesis": False,
+                    "articles": [{"id": 1}],
+                    "synthesis_freshness": {"is_stale": True, "reasons": ["missing_synthesis"]},
+                }
+            ]
+        }
+        with (
+            patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=True),
+            patch("tasks.maintenance._synthesis_queue_depth", return_value=55),
+            patch("tasks.utils.fast_track_dispatches_deferred", return_value=False),
+            patch("tasks.utils.safe_async_run", return_value=payload),
+            patch("tasks.intelligence.synthesis.synthesize_urgent_task") as mock_urgent,
+        ):
+            result = prioritize_homepage_syntheses_task(limit=5)
+
+        assert result["enqueued"] == 1
+        assert result["fast_track"] is True
+        mock_urgent.apply_async.assert_called_once()
+        assert mock_urgent.apply_async.call_args.kwargs["queue"] == "fast-track"
 
     def test_enqueues_stale_homepage_clusters(self):
         payload = {
@@ -146,7 +166,7 @@ class TestPrioritizeHomepageSyntheses:
             patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=False),
             patch("tasks.maintenance._synthesis_queue_depth", return_value=5),
             patch("tasks.utils.safe_async_run", return_value=payload),
-            patch("tasks.intelligence.synthesize_cluster_task") as mock_task,
+            patch("tasks.intelligence.synthesis.synthesize_cluster_task") as mock_task,
         ):
             result = prioritize_homepage_syntheses_task(limit=5)
 
@@ -170,7 +190,7 @@ class TestPrioritizeHomepageSyntheses:
             patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=False),
             patch("tasks.maintenance._synthesis_queue_depth", return_value=5),
             patch("tasks.utils.safe_async_run", return_value=payload),
-            patch("tasks.intelligence.synthesize_cluster_task") as mock_task,
+            patch("tasks.intelligence.synthesis.synthesize_cluster_task") as mock_task,
         ):
             result = prioritize_homepage_syntheses_task(limit=5)
 
@@ -188,7 +208,7 @@ class TestRefreshLowScoreSyntheses:
         with (
             patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=False),
             patch("tasks.maintenance.db") as mock_db,
-            patch("tasks.intelligence.synthesize_cluster_task") as mock_task,
+            patch("tasks.intelligence.synthesis.synthesize_cluster_task") as mock_task,
         ):
             mock_db.execute.return_value = [{"cluster_id": "cluster-a", "lang": "sr", "quality_score": 0.62}]
             result = refresh_low_score_syntheses_task(min_score=0.75, limit=5)

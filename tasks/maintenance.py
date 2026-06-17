@@ -495,19 +495,18 @@ def catch_up_cluster_syntheses_task(hours=48, limit=50):
 
 @celery_app.task
 def prioritize_homepage_syntheses_task(limit=12):
-    """Enqueue full synthesis for homepage-visible clusters missing or stale summaries."""
+    """Enqueue synthesis for homepage-visible clusters missing or stale summaries."""
     from routes.news import fetch_news_data
-    from tasks.intelligence import synthesize_cluster_task
-    from tasks.utils import safe_async_run
-
-    if _synthesis_dispatch_deferred():
-        log.info("[maintenance] Skipping homepage synthesis priority while synthesis queue backlog is high.")
-        return {"skipped": True, "reason": "synthesis_backlog"}
+    from tasks.intelligence.synthesis import synthesize_cluster_task, synthesize_urgent_task
+    from tasks.utils import fast_track_dispatches_deferred, safe_async_run
 
     synthesis_depth = _synthesis_queue_depth()
-    dispatch_limit = min(max(1, int(limit)), max(1, 40 - synthesis_depth))
-    if dispatch_limit <= 0:
-        return {"skipped": True, "reason": "no_headroom", "synthesis_depth": synthesis_depth}
+    use_fast_track = _synthesis_dispatch_deferred() or fast_track_dispatches_deferred()
+    dispatch_limit = max(1, int(limit))
+    if not use_fast_track:
+        dispatch_limit = min(dispatch_limit, max(1, 40 - synthesis_depth))
+        if dispatch_limit <= 0:
+            return {"skipped": True, "reason": "no_headroom", "synthesis_depth": synthesis_depth}
 
     targets: list[str] = []
     seen: set[str] = set()
@@ -518,33 +517,52 @@ def prioritize_homepage_syntheses_task(limit=12):
             if not cluster_id or cluster_id in seen:
                 continue
             articles = cluster.get("articles") or []
-            if len(articles) < 2:
-                continue
             freshness = cluster.get("synthesis_freshness") or {}
             synthesis_meta = cluster.get("synthesis_meta") or {}
+            reasons = freshness.get("reasons") or []
             needs_synthesis = (
                 not cluster.get("has_synthesis")
                 or bool(freshness.get("is_stale"))
                 or bool(synthesis_meta.get("needs_upgrade"))
+                or "missing_synthesis" in reasons
             )
             if not needs_synthesis:
+                continue
+            min_sources = 1 if ("missing_synthesis" in reasons or not cluster.get("has_synthesis")) else 2
+            if len(articles) < min_sources:
                 continue
             seen.add(cluster_id)
             targets.append(cluster_id)
 
     enqueued = 0
     for idx, cluster_id in enumerate(targets[:dispatch_limit]):
-        synthesize_cluster_task.apply_async(
-            (cluster_id, None),
-            {"fast_mode": False},
-            countdown=idx * 15,
-            queue="synthesis",
-        )
+        if use_fast_track:
+            synthesize_urgent_task.apply_async(
+                (cluster_id, None),
+                countdown=idx * 5,
+                queue="fast-track",
+            )
+        else:
+            synthesize_cluster_task.apply_async(
+                (cluster_id, None),
+                {"fast_mode": False},
+                countdown=idx * 15,
+                queue="synthesis",
+            )
         enqueued += 1
 
     if enqueued:
-        log.info("[maintenance] Enqueued homepage-priority synthesis for %s clusters", enqueued)
-    return {"enqueued": enqueued, "candidates": len(targets), "synthesis_depth": synthesis_depth}
+        log.info(
+            "[maintenance] Enqueued homepage-priority synthesis for %s clusters (fast_track=%s)",
+            enqueued,
+            use_fast_track,
+        )
+    return {
+        "enqueued": enqueued,
+        "candidates": len(targets),
+        "synthesis_depth": synthesis_depth,
+        "fast_track": use_fast_track,
+    }
 
 
 @celery_app.task(soft_time_limit=120, time_limit=180)

@@ -1028,7 +1028,7 @@ def test_news_category_response_filters_mixed_cluster_articles(mock_all):
     import routes.news as news
 
     async def execute_side_effect(query, params=None, fetch=True, **kwargs):
-        if "FROM cluster_metadata m" in query and "WHERE m.category = %s" in query:
+        if "FROM articles a" in query and "WHERE a.category = %s" in query:
             return [{"cluster_id": "mixed-geo", "last_article": "2026-04-22T20:00:00Z"}]
         if "SELECT * FROM articles WHERE cluster_id = ANY" in query:
             return [
@@ -1472,7 +1472,7 @@ def test_synthesis_homepage_boost(mock_all):
     import routes.news as news
 
     async def execute_side_effect(query, params=None, fetch=True, **kwargs):
-        if "FROM cluster_metadata m" in query:
+        if "FROM articles a" in query and "GROUP BY a.cluster_id ORDER BY last_article DESC" in query:
             return [
                 {"cluster_id": "c1", "last_article": "2026-04-22T18:10:00Z"},
                 {"cluster_id": "c2", "last_article": "2026-04-22T18:09:00Z"},
