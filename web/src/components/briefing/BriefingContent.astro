@@ -64,38 +64,30 @@ const t = useTranslations(lang as 'sr' | 'mk');
     .briefing-body { font-family: var(--font-nyt-body); font-size: clamp(1.12rem, 1.4vw, 1.36rem); line-height: 1.82; color: var(--foreground); letter-spacing: 0; }
     .briefing-section-title {
         clear: both;
-        display: grid;
-        grid-template-columns: 4.25rem 1fr;
-        column-gap: 1.5rem;
-        align-items: end;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0.85rem 1.25rem;
         font-family: var(--font-serif);
-        font-size: clamp(2.15rem, 4vw, 3.35rem);
-        font-weight: 950;
-        margin: 6.5rem 0 2rem;
-        padding: 0 0 1.1rem;
-        border-bottom: 4px solid var(--foreground);
-        letter-spacing: 0;
-        line-height: 1.02;
-    }
-    .briefing-section-title small {
-        grid-column: 2;
-        display: block;
-        margin-top: 0.7rem;
-        font-family: var(--font-sans);
-        font-size: 0.58rem;
-        font-weight: 950;
-        letter-spacing: 0.24em;
-        text-transform: uppercase;
-        color: var(--nyt-accent);
+        font-size: clamp(1.85rem, 3.2vw, 2.65rem);
+        font-weight: 900;
+        margin: 5rem 0 1.5rem;
+        padding: 0 0 0.85rem;
+        border-bottom: 3px solid var(--foreground);
+        letter-spacing: -0.02em;
+        line-height: 1.08;
     }
     .briefing-section-index {
-        align-self: start;
-        padding-top: 0.28rem;
+        flex: none;
         color: var(--nyt-accent);
         font-family: var(--font-mono);
-        font-size: 0.8rem;
-        font-weight: 900;
-        letter-spacing: 0.1em;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+    }
+    .briefing-section-heading {
+        min-width: 0;
+        flex: 1 1 12rem;
     }
     .briefing-paragraph { margin-bottom: 2rem; text-align: left; position: relative; overflow: hidden; }
     .briefing-lede {
@@ -135,7 +127,8 @@ const t = useTranslations(lang as 'sr' | 'mk');
     }
     .briefing-pull-quote::before { content: ""; display: none; }
     .briefing-kicker { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; text-transform: uppercase; color: var(--nyt-accent); letter-spacing: 0.2em; margin-right: 1rem; display: block; margin-bottom: 0.5rem; }
-    .briefing-item-title { clear: both; font-family: var(--font-serif); font-size: clamp(1.55rem, 2.8vw, 2.1rem); font-weight: 950; margin: 4rem 0 1.25rem; color: var(--foreground); line-height: 1.15; letter-spacing: 0; }
+    .briefing-item-title { clear: both; font-family: var(--font-serif); font-size: clamp(1.35rem, 2.2vw, 1.85rem); font-weight: 900; margin: 2.75rem 0 0.85rem; color: var(--foreground); line-height: 1.2; letter-spacing: -0.01em; }
+    .briefing-section-title + .briefing-item-title { margin-top: 1.35rem; }
     .briefing-ul { list-style: none; padding: 0; margin: 0 0 3.5rem; display: flex; flex-direction: column; gap: 1.15rem; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
     .briefing-li { position: relative; padding: 1.1rem 0 1.1rem 2rem; border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent); font-size: clamp(1.02rem, 1.5vw, 1.18rem); line-height: 1.62; }
     .briefing-li:last-child { border-bottom: 0; }
@@ -177,19 +170,12 @@ const t = useTranslations(lang as 'sr' | 'mk');
         }
 
         .briefing-section-title {
-            grid-template-columns: 2.5rem 1fr;
-            column-gap: 0.85rem;
-            font-size: 1.75rem;
-            margin: 3rem 0 1rem;
-            padding-bottom: 0.8rem;
-            border-bottom-width: 3px;
-            line-height: 0.98;
-        }
-
-        .briefing-section-title small {
-            font-size: 0.48rem;
-            margin-top: 0.45rem;
-            letter-spacing: 0.16em;
+            gap: 0.65rem 0.85rem;
+            font-size: 1.55rem;
+            margin: 2.75rem 0 1rem;
+            padding-bottom: 0.7rem;
+            border-bottom-width: 2px;
+            line-height: 1.05;
         }
 
         .briefing-section-index {
@@ -236,9 +222,9 @@ const t = useTranslations(lang as 'sr' | 'mk');
         }
 
         .briefing-item-title {
-            font-size: 1.45rem;
-            margin: 2.25rem 0 0.9rem;
-            line-height: 1.12;
+            font-size: 1.28rem;
+            margin: 2rem 0 0.75rem;
+            line-height: 1.16;
         }
 
         .briefing-ul {

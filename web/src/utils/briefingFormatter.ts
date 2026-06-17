@@ -1,6 +1,6 @@
-import { sanitizeHtml } from '../lib/sanitize';
-import { localePath } from '../lib/localePaths';
-import { normalizeBriefingMarkdown, normalizeBriefingText } from './briefingCopy';
+import { sanitizeHtml } from '../lib/sanitize.ts';
+import { localePath } from '../lib/localePaths.ts';
+import { normalizeBriefingMarkdown, normalizeBriefingText } from './briefingCopy.ts';
 
 function stripDecorativePrefix(text: string): string {
     return text
@@ -53,14 +53,28 @@ export function formatBriefing(markdown: string, lang = 'sr', hostname?: string 
         sectionIndex += 1;
         const title = normalizeBriefingText(stripDecorativePrefix(rawTitle), lang);
         const sectionId = `section-${String(sectionIndex).padStart(2, '0')}`;
-        const sectionLabel = isMK ? 'Секција' : 'Sekcija';
-        return `<h2 id="${sectionId}" class="briefing-section-title"><span class="briefing-section-index">${String(sectionIndex).padStart(2, '0')}</span><span>${title}</span><small>${sectionLabel}</small></h2>`;
+        return `<h2 id="${sectionId}" class="briefing-section-title"><span class="briefing-section-index">${String(sectionIndex).padStart(2, '0')}</span><span class="briefing-section-heading">${title}</span></h2>`;
     });
     html = html.replace(/^###\s+(\d+\.\s+)?(.+?)(\s+\[\[(.+?)\]\])?$/gm, (match, num, title, idGroup, id) => {
         const idBadge = id ? `<a href="${l('/cluster/')}${id}" class="briefing-inline-badge">${isMK ? 'Кластер' : 'Klaster'}</a>` : '';
         const cleanTitle = normalizeBriefingText(stripDecorativePrefix(`${num || ''}${title}`), lang);
         return `<h3 class="briefing-item-title">${cleanTitle}${idBadge}</h3>`;
     });
+    html = html.replace(/^\*\*(.+?)\*\*\s*$/gm, (_match, rawContent) => {
+        const clusterMatch = rawContent.match(/\s*\[\[([a-f0-9-]+)\]\]\s*$/i);
+        const clusterId = clusterMatch?.[1];
+        const titlePart = clusterId
+            ? rawContent.replace(/\s*\[\[[a-f0-9-]+\]\]\s*$/i, '').trim()
+            : rawContent.trim();
+        const title = normalizeBriefingText(stripDecorativePrefix(titlePart), lang);
+        const idBadge = clusterId
+            ? `<a href="${l('/cluster/')}${clusterId}" class="briefing-inline-badge">${isMK ? 'Кластер' : 'Klaster'}</a>`
+            : '';
+        return `<h3 class="briefing-item-title">${title}${idBadge}</h3>`;
+    });
+
+    // Ensure headings start their own paragraph blocks.
+    html = html.replace(/(<\/h[23]>)\n(?!\n)/g, '$1\n\n');
 
     // 2. Handle Pull-quotes (Markdown blockquotes)
     html = html.replace(/^>\s+(.+)$/gm, '<blockquote class="briefing-pull-quote">$1</blockquote>');
