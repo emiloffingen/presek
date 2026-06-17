@@ -189,7 +189,7 @@ if (homepageFlags.shouldSetErrorStatus) {
 		<div class="broadsheet-grid px-3 sm:px-4 md:px-8 xl:px-10">
 			<div class="broadsheet-main home-mobile-feed">
                 {!error && isHomepage && (
-                    <div class="home-mobile-order-edition home-edition-collapsed">
+                    <div class="home-mobile-order-edition">
                         <DailyEditionBar lang={lang} />
                         {isPregled && (
                             <a href={l('/')} class="home-pregled-nav-link">{t('home.back_to_feed')}</a>
@@ -298,7 +298,7 @@ if (homepageFlags.shouldSetErrorStatus) {
 				)}
 
                 {!error && isHomepage && briefing && !isPregled && (
-                    <div class="section-wrapper home-mobile-order-briefing home-feed-only home-edition-collapsed">
+                    <div class="section-wrapper home-mobile-order-briefing home-feed-only">
                         <HomeBriefingTeaser briefing={briefing} getBriefingSnippet={getBriefingSnippet} />
                     </div>
                 )}
