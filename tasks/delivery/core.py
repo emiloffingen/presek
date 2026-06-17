@@ -95,11 +95,14 @@ def _record_delivery_tracking_event(
 
 
 def _tracked_delivery_url(event_id, event_type, path):
+    from core.signed_tokens import build_delivery_track_token
+
     event_id = int(event_id or 0)
     clean_path = str(path or "").strip()
     if not clean_path.startswith("/"):
         clean_path = "/briefing"
-    query = urllib.parse.urlencode({"event_id": event_id, "redirect": clean_path})
+    token = build_delivery_track_token(event_id, event_type, clean_path)
+    query = urllib.parse.urlencode({"event_id": event_id, "redirect": clean_path, "token": token})
     return f"{_PUBLIC_SITE_URL}/api/delivery/track/{urllib.parse.quote(str(event_type or 'click'), safe='')}?{query}"
 
 

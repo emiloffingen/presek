@@ -53,6 +53,8 @@ export function parseBriefItem(item: string, lang: string) {
   return { hasBadge: false, badgeText: '', badgeClass: '', content: clean };
 }
 
+import { sanitizeHtml } from '../../lib/sanitize';
+
 export function highlightFactText(text: string) {
   let html = text;
   const moneyRegex =
@@ -63,5 +65,5 @@ export function highlightFactText(text: string) {
     /(ГП\s+Табановце|Табановце|Tabanovce|Германија|Germanija|Албанија|Albanija)/gi;
   html = html.replace(locationRegex, '<strong class="text-foreground font-semibold">$1</strong>');
 
-  return html;
+  return sanitizeHtml(html);
 }

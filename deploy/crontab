@@ -8,7 +8,7 @@
 # PostgreSQL Backups
 # ============================================================================
 # Daily backup at 2:00 AM
-0 2 * * * APP_ROOT=/home/emiloffingen/presek-runtime /bin/bash /home/emiloffingen/presek/deploy/backup_postgres.sh >> /home/emiloffingen/presek-runtime/shared/logs/backup.log 2>&1
+0 2 * * * APP_ROOT=/home/emiloffingen/presek-runtime REQUIRE_BACKUP_ENCRYPTION=1 /bin/bash /home/emiloffingen/presek/deploy/backup_postgres.sh >> /home/emiloffingen/presek-runtime/shared/logs/backup.log 2>&1
 
 # ============================================================================
 # Log Rotation

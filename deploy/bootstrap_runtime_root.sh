@@ -37,11 +37,22 @@ ensure_layout() {
 ensure_shared_env() {
   if [ -f "$SHARED_DIR/.env" ] && [ "$FORCE_BOOTSTRAP" != "1" ]; then
     ok "Shared env already exists"
+    chmod 600 "$SHARED_DIR/.env" 2>/dev/null || true
     return 0
   fi
 
   [ -f "$ENV_SOURCE_FILE" ] || fail "Missing env source file: $ENV_SOURCE_FILE"
+
+  if grep -q '^ENV=production' "$ENV_SOURCE_FILE" 2>/dev/null; then
+    :
+  elif grep -q '^ENV=' "$ENV_SOURCE_FILE" 2>/dev/null; then
+    fail "Refusing to seed production runtime from non-production env: $ENV_SOURCE_FILE"
+  else
+    warn "ENV not set in $ENV_SOURCE_FILE — ensure production values before deploy"
+  fi
+
   cp "$ENV_SOURCE_FILE" "$SHARED_DIR/.env"
+  chmod 600 "$SHARED_DIR/.env" 2>/dev/null || true
   ok "Seeded shared env from $ENV_SOURCE_FILE"
 }
 

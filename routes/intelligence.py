@@ -14,6 +14,11 @@ from core.embeddings import generate_query_embedding
 from core.entities import normalize_entity_name, normalize_person_surface_name
 from core.language import transliterate_lat_to_cyr
 from core.limiter import custom_rate_limit
+from core.research_helpers import (
+    RESEARCH_MODE_LABELS,
+    RESEARCH_MODE_QUERIES,
+    build_gemma_research_context,
+)
 from nlp import normalize_focus_entity_surface, normalize_tag_name
 from utils import cached_response, score_cluster, set_cache
 
@@ -51,43 +56,10 @@ _CASE_INSENSITIVE_TAG_EXISTS = (
     "EXISTS (SELECT 1 FROM unnest(COALESCE(m.tags, '{}')) AS tag WHERE LOWER(tag) = LOWER(%s))"
 )
 
-_RESEARCH_MODE_QUERIES = {
-    "sr": {
-        "facts": (
-            "Izvuci najvažnije brojke, datume, činjenice i vremenski okvir iz ove priče. "
-            "Ne dodaj brojke koje ne postoje u kontekstu."
-        ),
-        "perspectives": (
-            "Identifikuj ključne aktere, njihove stavove, izjave i različite uglove u priči. "
-            "Ne izmišljaj izjave koje nisu u kontekstu."
-        ),
-        "context": (
-            "Objasni širi kontekst, prethodna povezana dešavanja i moguće posledice ove priče. "
-            "Jasno odvoji ono što je u izvorima od analitičkog okvira."
-        ),
-    },
-    "mk": {
-        "facts": (
-            "Izvleci im najvaznite brojki, datumi, fakti i vremenska ramka od ova prica. "
-            "Ne dodavaj brojki sto ne postojat vo kontekstot."
-        ),
-        "perspectives": (
-            "Identifikuvaj im klucnite akteri, nivnite stavovi, izjavi i razlicnite agli vo prikaznata. "
-            "Ne izmisluvaj izjavi sto ne se vo kontekstot."
-        ),
-        "context": (
-            "Objasni ga posirokiot kontekst, prethodnite povrzani slucuvanja i moznite posledice od ova prica. "
-            "Jasno oddeli sto e vo izvorite od analitickata ramka."
-        ),
-    }
-}
-
-_RESEARCH_MODE_LABELS = {
-    "facts": "Fakti i podatoci",
-    "perspectives": "Perspektivi i izjavi",
-    "context": "Kontekstualna ramka",
-    "custom": "odgovor na istrazuvanjeto",
-}
+# Backward-compatible aliases for tests and patches
+_RESEARCH_MODE_QUERIES = RESEARCH_MODE_QUERIES
+_RESEARCH_MODE_LABELS = RESEARCH_MODE_LABELS
+_build_gemma_research_context = build_gemma_research_context
 
 _FOCUS_ENTITY_GENERIC_SINGLE_WORDS = {
     "dogovor",
@@ -97,117 +69,6 @@ _FOCUS_ENTITY_GENERIC_SINGLE_WORDS = {
     "merki",
     "izbori",
 }
-
-
-async def _build_gemma_research_context(
-    cluster_id: str, mode: str = "custom", query: str = ""
-) -> tuple[str, list[str]]:
-    if mode == "custom" and query:
-        # Generate embedding for the query if we have the cache mechanism or rely on basic full text / vector search if possible.
-        # However, to avoid slowing down with synchronous embedding calls here, we'll fetch more articles and let the LLM handle semantic relevance within a larger context.
-        articles = await db.async_execute(
-            """
-            SELECT title, full_content, source, embedding, created_at
-            FROM articles
-            WHERE cluster_id = %s
-            ORDER BY COALESCE(ingested_at, created_at) DESC
-            LIMIT 20
-        """,
-            (cluster_id,),
-        )
-    else:
-        articles = await db.async_execute(
-            """
-            SELECT title, full_content, source, embedding, created_at
-            FROM articles
-            WHERE cluster_id = %s
-            ORDER BY COALESCE(ingested_at, created_at) DESC
-            LIMIT 20
-        """,
-            (cluster_id,),
-        )
-
-    if not articles:
-        raise HTTPException(status_code=404, detail="klaster nije pronadjen")
-
-    summary_row = await db.async_execute_one(
-        """
-        SELECT summary, generated_article, verification_report, perspectives
-        FROM cluster_summaries
-        WHERE cluster_id = %s
-    """,
-        (cluster_id,),
-    )
-
-    parts = []
-    if summary_row:
-        if summary_row.get("summary"):
-            parts.append(f"UREDNICKO rezime:\n{summary_row['summary']}")
-        if summary_row.get("generated_article"):
-            parts.append(f"SINTEZA:\n{summary_row['generated_article']}")
-        if summary_row.get("verification_report"):
-            try:
-                vr = (
-                    json.loads(summary_row["verification_report"])
-                    if isinstance(summary_row["verification_report"], str)
-                    else summary_row["verification_report"]
-                )
-                parts.append(f"PROVERKA NA FAKTI (Sistemska analiza):\n{json.dumps(vr, ensure_ascii=False, indent=2)}")
-            except Exception as e:
-                log.debug(f"Failed to parse verification_report JSON: {e}")
-        if summary_row.get("perspectives"):
-            try:
-                pers = (
-                    json.loads(summary_row["perspectives"])
-                    if isinstance(summary_row["perspectives"], str)
-                    else summary_row["perspectives"]
-                )
-                parts.append(
-                    f"MEDIUMSKI PERSPEKTIVI (Sistemska analiza):\n{json.dumps(pers, ensure_ascii=False, indent=2)}"
-                )
-            except Exception as e:
-                log.debug(f"Failed to parse perspectives JSON: {e}")
-
-    sources = []
-    for article in articles:
-        source = str(article.get("source") or "Nepoznat izvor").strip()
-        if source and source not in sources:
-            sources.append(source)
-        text = article.get("full_content") or article.get("title") or ""
-        parts.append(f"--- izvor: {source} ({article['created_at'].strftime('%H:%M %d.%m.%Y')}) ---\n{text}")
-
-    if mode == "context":
-        try:
-            import numpy as np
-
-            vecs = [
-                (json.loads(a["embedding"]) if isinstance(a.get("embedding"), str) else list(a["embedding"]))
-                for a in articles
-                if a.get("embedding")
-            ]
-            if vecs:
-                avg_vec = np.mean(vecs, axis=0).tolist()
-                vec_str = "[" + ",".join(map(str, avg_vec)) + "]"
-                past_events = await db.async_execute(
-                    """
-                    SELECT title, created_at
-                    FROM articles
-                    WHERE embedding IS NOT NULL AND cluster_id != %s
-                      AND created_at < NOW() - INTERVAL '24 hours'
-                    ORDER BY (embedding <=> %s::vector) ASC
-                    LIMIT 10
-                """,
-                    (cluster_id, vec_str),
-                )
-                if past_events:
-                    history_list = "\n".join(
-                        [f"- {p['title']} ({p['created_at'].strftime('%d.%m.%Y')})" for p in past_events]
-                    )
-                    parts.append(f"POVRZANI PRETHODNI NASTANI OD BAZATA:\n{history_list}")
-        except Exception as e:
-            log.warning(f"Failed to fetch Gemma research history context: {e}")
-
-    return "\n\n".join(parts)[:45000], sources
 
 
 def _compact_focus_entities(items: list[dict], limit: int) -> list[dict]:
@@ -441,7 +302,8 @@ async def get_deep_research(request: Request, cluster_id: str, mode: str = "fact
 
 
 @router.get("/intelligence/cluster/{cluster_id}/analyst")
-async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts", lang: str = "sr"):
+@custom_rate_limit("5/minute")
+async def get_cluster_analyst_report(request: Request, cluster_id: str, mode: str = "facts", lang: str = "sr"):
     """
     Internal 'Deep Intel' Analyst.
     Refactored to use ResearchService for unified research logic.
@@ -1125,12 +987,13 @@ async def synthesize_nodes(
 @custom_rate_limit("30/minute")
 async def entity_graph_lookup(request: Request, entity_name: str):
     """Fetches persistent knowledge about an entity from the local graph."""
+    clean_name = validate_string_param(entity_name, "entity_name", max_length=200)
     row = await db.async_execute_one(
         """
         SELECT bio_summary, importance_score, last_seen, category
         FROM entity_knowledge WHERE entity_name = %s
     """,
-        (entity_name,),
+        (clean_name,),
     )
     if not row:
         row = await db.async_execute_one(
@@ -1143,7 +1006,7 @@ async def entity_graph_lookup(request: Request, entity_name: str):
             FROM knowledge_entities
             WHERE name = %s
         """,
-            (entity_name,),
+            (clean_name,),
         )
 
     if not row:
@@ -1158,6 +1021,9 @@ async def cluster_research(request: Request, cluster_id: str, q: str):
     """Researches a cluster based on a user query using Gemma 4 E2B."""
     from nlp.local_analyst import analyst
 
+    validate_cluster_id(cluster_id)
+    clean_query = validate_string_param(q, "q", max_length=1000, allow_empty=False).strip()
+
     # Get cluster context
     row = await db.async_execute_one(
         """
@@ -1171,7 +1037,7 @@ async def cluster_research(request: Request, cluster_id: str, q: str):
         raise HTTPException(status_code=404, detail="klaster nije pronadjen")
 
     context = f"{row['summary']}\n{row['generated_article']}"
-    res = analyst.research_query(q, context)
+    res = analyst.research_query(clean_query, context)
 
     return {
         "status": "success",
@@ -1510,7 +1376,8 @@ async def save_insight(
     return {"status": "success", "message": "Insight saved successfully."}
 
 @router.get("/intelligence/briefing/audio")
-async def get_briefing_audio(date: Optional[str] = None, lang: str = "sr"):
+@custom_rate_limit("3/minute")
+async def get_briefing_audio(request: Request, date: Optional[str] = None, lang: str = "sr"):
     """Generates or fetches the daily briefing TTS audio and returns its public URL."""
     if date:
         from .security import validate_date

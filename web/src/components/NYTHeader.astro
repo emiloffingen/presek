@@ -255,7 +255,7 @@ function getRelativeTimeStr(dateStr?: string) {
         <div class="topbar-main">
             <div class="topbar-left-stack">
                 <div class="search-entry-wrap search-entry-wrap--desktop">
-                    <SearchIsland initialQuery={q} client:load lang={lang} />
+                    <SearchIsland initialQuery={q} client:idle lang={lang} />
                 </div>
                 {overflowNavItems.length > 0 && (
                     <div class="topbar-mobile-overflow">
@@ -288,6 +288,13 @@ function getRelativeTimeStr(dateStr?: string) {
                             <span aria-hidden="true">⋯</span>
                         </summary>
                         <div class="utility-menu-panel" data-no-script-convert>
+                            <button
+                                type="button"
+                                class="utility-menu-link utility-menu-search"
+                                data-presek-search-fab
+                            >
+                                {lang === 'sr' ? 'Pretraga' : 'Пребарување'}
+                            </button>
                             <a href={l('/for-you')} class="utility-menu-link">{t('nav.for_you')}</a>
                             <a href={pregledHref} class="utility-menu-link">{t('nav.pregled')}</a>
                             <ScriptSwitcher />

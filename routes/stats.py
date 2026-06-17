@@ -583,9 +583,21 @@ async def subscribe_newsletter(request: Request, csrf_valid: bool = Depends(veri
 
 
 @router.get("/newsletter/unsubscribe")
-async def unsubscribe_newsletter(email: str, lang: str = "sr"):
-    """Deactivate a newsletter subscription."""
+async def unsubscribe_newsletter(token: str, lang: str = "sr"):
+    """Deactivate a newsletter subscription using a signed token."""
+    from core.signed_tokens import parse_newsletter_unsubscribe_token
+
+    parsed = parse_newsletter_unsubscribe_token(token)
     locale = "mk" if str(lang or "sr").strip().lower() == "mk" else "sr"
+    if not parsed:
+        content = "<h1>Nevalidan ili istekao link za odjavu.</h1>" if locale == "sr" else "<h1>Невалиден или истечен линк за одјава.</h1>"
+        return HTMLResponse(content=content, status_code=400)
+
+    email, token_locale = parsed
+    if token_locale != locale:
+        content = "<h1>Nevalidan ili istekao link za odjavu.</h1>" if locale == "sr" else "<h1>Невалиден или истечен линк за одјава.</h1>"
+        return HTMLResponse(content=content, status_code=400)
+
     try:
         await db.async_execute(
             "UPDATE subscribers SET is_active = FALSE WHERE email = %s AND locale = %s",
@@ -594,12 +606,12 @@ async def unsubscribe_newsletter(email: str, lang: str = "sr"):
         )
     except Exception as e:
         log.warning(f"[unsubscribe] DB error: {e}")
-        content = "<h1>Greška pri odjavljivanju.</h1>" if lang == "sr" else "<h1>Грешка при одјавување.</h1>"
+        content = "<h1>Greška pri odjavljivanju.</h1>" if locale == "sr" else "<h1>Грешка при одјавување.</h1>"
         return HTMLResponse(content=content, status_code=500)
 
     content = (
         "<h1>Uspešno ste se odjavili sa biltena Preseka.</h1>"
-        if lang == "sr"
+        if locale == "sr"
         else "<h1>Успешно се одјавивте од билтенот на Пресек.</h1>"
     )
     return HTMLResponse(content=content)

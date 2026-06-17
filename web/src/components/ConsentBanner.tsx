@@ -52,7 +52,6 @@ export const ConsentBanner: React.FC = () => {
       return;
     }
 
-    // Check for dismissed cooldown
     if (typeof window !== 'undefined') {
       const raw = localStorage.getItem(CONSENT_KEY);
       if (raw && raw !== 'accepted') {
@@ -101,19 +100,19 @@ export const ConsentBanner: React.FC = () => {
 
   return (
     <div
-      className="consent-banner pointer-events-none fixed inset-x-0 bottom-0 z-[100] isolate px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] md:inset-x-auto md:right-4 md:bottom-4 md:w-[min(28rem,calc(100vw-2rem))] md:p-0 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3 motion-safe:duration-300"
+      className="consent-banner pointer-events-none fixed inset-x-0 bottom-0 z-[100] isolate px-0 pb-[env(safe-area-inset-bottom)] md:inset-x-auto md:right-4 md:bottom-4 md:w-[min(28rem,calc(100vw-2rem))] md:px-0 md:pb-0 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3 motion-safe:duration-300"
       style={{ contain: 'layout paint style' }}
     >
-      <div className="pointer-events-auto mx-auto max-w-5xl rounded-sm border border-border/70 bg-popover/95 px-2.5 py-1.5 text-popover-foreground shadow-[0_8px_22px_rgba(17,24,39,0.10)] backdrop-blur-xl md:rounded-md md:px-4 md:py-3">
+      <div className="consent-banner-panel pointer-events-auto mx-auto max-w-5xl border-t border-border/80 bg-popover/96 px-3 py-2 text-popover-foreground shadow-[0_-6px_18px_rgba(17,24,39,0.08)] backdrop-blur-xl md:rounded-md md:border md:px-4 md:py-3 md:shadow-[0_8px_22px_rgba(17,24,39,0.10)]">
         <div className="flex items-center gap-2 md:items-start md:justify-between">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 md:mb-0.5">
-              <h3 className="font-sans text-[10px] font-black uppercase tracking-[0.12em] text-foreground md:text-[11px]">{t('cookies.title')}</h3>
-              <a href={l('/privacy')} className="text-[10px] font-semibold text-muted-foreground underline underline-offset-2 hover:text-nyt-accent md:hidden">{t('nav.privacy')}</a>
+              <h3 className="font-sans text-[9px] font-black uppercase tracking-[0.12em] text-foreground md:text-[11px]">{t('cookies.title')}</h3>
+              <a href={l('/privacy')} className="text-[9px] font-semibold text-muted-foreground underline underline-offset-2 hover:text-nyt-accent md:hidden">{t('nav.privacy')}</a>
               <span className="hidden md:inline text-[11px] text-muted-foreground">•</span>
               <span className="hidden md:inline text-xs text-muted-foreground">{t('cookies.kicker')}</span>
             </div>
-            <p className="hidden text-[10px] text-secondary-foreground leading-snug md:hidden">
+            <p className="consent-banner-brief mt-0.5 text-[9px] leading-snug text-secondary-foreground md:hidden">
               {t('cookies.brief')}
               {' '}
               <button
@@ -125,7 +124,7 @@ export const ConsentBanner: React.FC = () => {
               </button>
             </p>
             {expanded && (
-              <p className="mt-1 text-[10px] text-secondary-foreground leading-snug md:hidden">
+              <p className="mt-1 text-[9px] text-secondary-foreground leading-snug md:hidden">
                 {t('cookies.details')}
                 {' '}
                 <a href={l('/privacy')} className="underline underline-offset-2 hover:text-nyt-accent">{t('nav.privacy')}</a>.
@@ -137,17 +136,18 @@ export const ConsentBanner: React.FC = () => {
               <a href={l('/privacy')} className="underline underline-offset-2 hover:text-nyt-accent">{t('nav.privacy')}</a>.
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-1.5 self-auto md:pt-0.5">
+          <div className="flex shrink-0 items-center gap-1 self-auto md:pt-0.5">
             <button
               onClick={dismiss}
               aria-label={t('cookies.dismiss')}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-border/70 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground md:h-9 md:w-9 md:rounded-md"
+              className="inline-flex h-6 w-6 items-center justify-center rounded-sm border border-border/70 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground md:h-9 md:w-9 md:rounded-md"
             >
-              <X size={12} />
+              <X size={11} />
             </button>
             <button
               onClick={accept}
-              className="rounded-sm bg-foreground px-2.5 py-1.5 text-[8px] font-black uppercase tracking-[0.12em] text-background transition-colors hover:bg-nyt-accent hover:text-white md:rounded-md md:px-3.5 md:py-2 md:text-[10px]"
+              aria-label={t('cookies.accept')}
+              className="rounded-sm bg-foreground px-2 py-1 text-[7px] font-black uppercase tracking-[0.12em] text-background transition-colors hover:bg-nyt-accent hover:text-white md:rounded-md md:px-3.5 md:py-2 md:text-[10px]"
             >
               {t('cookies.accept')}
             </button>

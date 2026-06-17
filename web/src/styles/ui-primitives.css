@@ -391,6 +391,60 @@
     margin: 0;
   }
 
+  .article-image-placeholder-mark {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.35rem;
+    min-height: 2.35rem;
+    margin-bottom: 0.45rem;
+    border: 1px solid color-mix(in srgb, var(--placeholder-bg, #1e40af) 28%, var(--border));
+    background: color-mix(in srgb, var(--background) 72%, var(--placeholder-bg, #1e40af) 28%);
+    font-family: var(--font-ui);
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: color-mix(in srgb, var(--foreground) 82%, var(--placeholder-bg, #1e40af));
+  }
+
+  .topic-fallback-card--editorial {
+    justify-content: flex-end;
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .topic-fallback-card--compact {
+    padding: 0.55rem 0.6rem;
+    justify-content: space-between;
+    min-height: 100%;
+  }
+
+  .topic-fallback-card--compact .article-image-placeholder-mark {
+    min-width: 1.85rem;
+    min-height: 1.85rem;
+    margin-bottom: 0.3rem;
+    font-size: 0.68rem;
+  }
+
+  .topic-fallback-card--compact .article-image-placeholder-label {
+    font-size: 0.48rem;
+    letter-spacing: 0.12em;
+    -webkit-line-clamp: 2;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .topic-fallback-card--compact .article-image-placeholder-source {
+    font-size: 0.5rem;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .article-image-placeholder-chip {
     margin: 0;
     padding: 0.28rem 0.5rem 0.24rem;

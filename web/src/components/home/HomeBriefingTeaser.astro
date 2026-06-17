@@ -29,9 +29,8 @@ const snippet = briefing?.content ? getBriefingSnippet(briefing.content) : '';
 
 <style>
 	.home-briefing-teaser {
-		display: none;
 		margin: 0 0 1rem;
-		padding: 1rem 0.95rem;
+		padding: 0.85rem 0.95rem;
 		border: 1px solid color-mix(in srgb, var(--nyt-accent) 18%, var(--border));
 		border-left: 4px solid var(--nyt-accent);
 		background: color-mix(in srgb, var(--nyt-accent) 5%, var(--background));
@@ -65,11 +64,5 @@ const snippet = briefing?.content ? getBriefingSnippet(briefing.content) : '';
 
 	.home-briefing-cta:hover {
 		text-decoration: underline;
-	}
-
-	@media (max-width: 768px) {
-		.home-briefing-teaser {
-			display: block;
-		}
 	}
 </style>

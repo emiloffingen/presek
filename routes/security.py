@@ -94,23 +94,27 @@ async def verify_csrf_token(request: Request):
     # Allow GET, HEAD, OPTIONS requests
     if request.method in ("GET", "HEAD", "OPTIONS"):
         return True
-    
-    # Check for CSRF token in header or form data
-    csrf_token = request.headers.get("X-CSRF-Token")
-    
+
+    header_token = request.headers.get("X-CSRF-Token")
+    cookie_token = request.cookies.get("csrf_token")
+    csrf_token = header_token or cookie_token
+
     if not csrf_token:
         try:
             form_data = await request.form()
             csrf_token = form_data.get("csrf_token")
         except Exception:
             pass
-    
+
+    if header_token and cookie_token and header_token != cookie_token:
+        raise HTTPException(status_code=403, detail="Nevaliden CSRF token")
+
     if not validate_csrf_token(csrf_token):
         raise HTTPException(
             status_code=403,
             detail="Nevaliden CSRF token"
         )
-    
+
     return True
 
 

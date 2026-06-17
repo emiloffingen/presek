@@ -240,6 +240,8 @@ _RATE_LIMITED_API_PATHS = {
     "/api/intelligence/live-map",
     "/api/intelligence/pulse-overview",
     "/api/intelligence/compare-sources",
+    "/api/intelligence/briefing/audio",
+    "/api/research/{cluster_id}",
     "/api/profile/sync/init",
     "/api/profile/sync",
     "/api/profile/sync/personalized-news",
@@ -255,6 +257,8 @@ def _is_rate_limited_path(path: str) -> bool:
     if clean in _RATE_LIMITED_API_PATHS:
         return True
     if re.fullmatch(r"/api/intelligence/cluster/[a-f0-9]{6,64}/(research|analyst)", clean):
+        return True
+    if re.fullmatch(r"/api/research/[a-f0-9\-]{6,64}", clean):
         return True
     canonical = clean[4:] if clean.startswith("/api/") else clean
     return f"/api{canonical}" in _RATE_LIMITED_API_PATHS

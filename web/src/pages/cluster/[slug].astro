@@ -12,7 +12,7 @@ import { cleanAndDecode, isMostlyCyrillic, getEditionStr, stripCitationMarkers, 
 import { chooseClusterImage } from '../../utils/imageSelection';
 
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
-import { buildCanonicalUrl, localePath, homePath } from '../../lib/localePaths';
+import { buildCanonicalUrl, localePath, homePath, siteOrigin } from '../../lib/localePaths';
 import TinyAdzInlinedAd from '../../components/TinyAdzInlinedAd.astro';
 import TinyAdzRailAd from '../../components/TinyAdzRailAd.astro';
 import {
@@ -71,7 +71,7 @@ import type { Article, ClusterDetail } from '../../types';
 
 const { slug } = Astro.params;
 const API_URL = apiBaseUrl();
-const SITE_URL = 'https://presek.live';
+const SITE_URL = siteOrigin(lang);
 
 // Extract ID from slug (handles both legacy 8-char and new 12-char dashed IDs)
 const idMatch = slug?.match(/^([0-9a-f]{8}-[0-9a-f]{3,4}|[0-9a-f]{8,12})/);
@@ -221,7 +221,7 @@ const filteredRelated = relatedClusters.filter((c: { cluster_id: string }) => c.
 
 const adjacentTopic = cluster?.topics?.find((t: string) => t !== 'Srbija') || cluster?.topics?.[0] || '';
 
-const canonicalUrl = `https://presek.live/cluster/${canonicalPathSlug}`;
+const canonicalUrl = buildCanonicalUrl(`/cluster/${canonicalPathSlug}`, lang);
 const shareDescription = synthesisItems[0]?.content || mainArticle?.description || '';
 
 function getLeadVisual(c: ClusterDetail | null) {
@@ -548,7 +548,7 @@ const articleSchema = cluster ? {
 		"name": lang === 'sr' ? "PRESEK.rs" : "PRESEK.mk",
 		"logo": {
 			"@type": "ImageObject",
-			"url": `${SITE_URL}/static/img/presek_emblem.png`,
+			"url": `${SITE_URL}/img/presek_emblem.svg`,
 			"width": 512,
 			"height": 512
 		}

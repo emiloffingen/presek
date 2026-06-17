@@ -609,6 +609,21 @@ const COMMON_TAGS_MAP: Record<string, { sr: string; mk: string }> = {
     'zanimlivosti': { sr: 'Zanimljivosti', mk: 'Занимливости' },
 };
 
+export function getSourceInitials(source: string, max = 2): string {
+    const cleaned = cleanAndDecode(source).trim();
+    if (!cleaned) return 'P';
+    const words = cleaned.split(/[\s|·\-–—/]+/).filter(Boolean);
+    if (words.length >= 2) {
+        return words
+            .slice(0, max)
+            .map((word) => word[0] || '')
+            .join('')
+            .toUpperCase()
+            .slice(0, max);
+    }
+    return cleaned.slice(0, max).toUpperCase();
+}
+
 export function normalizeEntityOrTag(tag: string, lang: string): string {
     let cleaned = cleanAndDecode(tag).trim();
     if (!cleaned) return '';

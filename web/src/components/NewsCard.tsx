@@ -1,6 +1,6 @@
 import React from 'react';
 import { chooseClusterImage } from '../utils/imageSelection';
-import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, getDesignCardContext, slugify, transliterate } from '../utils/textUtils';
+import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, getDesignCardContext, slugify, transliterate, getSourceInitials } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
 import { dateLocaleForLang, localePathForLang } from '../lib/localePaths';
 import { getVisibleCardSignals, formatSignalBadge } from '../lib/signalBadges';
@@ -85,6 +85,8 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
   const cardContext = getDesignCardContext(cluster);
   const cardLabel = cardContext.labelKey ? t(cardContext.labelKey as any) : '';
+  const sourceInitials = getSourceInitials(main.source || '');
+  const localizedTopic = cluster.topics?.[0] || main.topic || main.category || '';
 
   function getCardSummary(article: Article, lead = false) {
     const text = getDisplaySummary(article);
@@ -204,20 +206,18 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         <div 
           className={`image-wrap ${isFallbackArt ? 'image-wrap-fallback' : ''}`} 
           data-image-state={isFallbackArt ? 'fallback' : 'loading'}
-          style={!isFallbackArt ? { '--placeholder-bg': tintColor } as any : undefined}
+          data-fallback-source={main.source || ''}
+          data-fallback-category={localizedTopic}
+          data-fallback-tint={tintColor}
+          data-fallback-label={cardLabel || localizedTopic || main.category || t('news.ongoing')}
+          style={{ '--placeholder-bg': tintColor } as React.CSSProperties}
         >
           <a href={clusterUrl} className="block h-full" data-testid="cluster-link" tabIndex={-1} aria-hidden="true">
             {isFallbackArt ? (
-              <div className="article-image-placeholder topic-fallback-card topic-fallback-card--proxy-only" style={{ '--placeholder-bg': tintColor } as React.CSSProperties}>
-                <img
-                  src={fallbackImageUrl}
-                  alt=""
-                  width={720}
-                  height={500}
-                  className="article-image article-image-fallback is-loaded"
-                  loading="lazy"
-                  decoding="async"
-                />
+              <div className={`article-image-placeholder topic-fallback-card topic-fallback-card--editorial${variant === 'compact' || variant === 'wire' ? ' topic-fallback-card--compact' : ''}`} style={{ '--placeholder-bg': tintColor } as React.CSSProperties}>
+                <span className="article-image-placeholder-mark" aria-hidden="true">{sourceInitials}</span>
+                <p className="article-image-placeholder-label">{cardLabel || localizedTopic || main.category || t('news.ongoing')}</p>
+                <p className="article-image-placeholder-source">{main.source}</p>
               </div>
             ) : (
               <div className="runtime-image-container relative w-full h-full">

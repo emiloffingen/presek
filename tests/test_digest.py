@@ -136,6 +136,7 @@ class TestNewsletterDelivery:
 
         sent = []
 
+        monkeypatch.setenv("SECRET_KEY", "test-digest-secret-key")
         monkeypatch.setenv("SMTP_USER", "sender@example.com")
         monkeypatch.setenv("SMTP_PASS", "secret")
         monkeypatch.setattr(database, "db_manager", FakeDb())
@@ -162,10 +163,12 @@ class TestNewsletterDelivery:
         assert digest.send_newsletter_to_all_subscribers(days=1) == 2
 
         by_email = {email: html for email, _subject, html in sent}
+        assert "token=" in by_email["reader+sr@example.com"]
         assert "lang=sr" in by_email["reader+sr@example.com"]
-        assert "email=reader%2Bsr%40example.com" in by_email["reader+sr@example.com"]
+        assert "email=reader%2Bsr%40example.com" not in by_email["reader+sr@example.com"]
+        assert "token=" in by_email["reader+mk@example.com"]
         assert "lang=mk" in by_email["reader+mk@example.com"]
-        assert "email=reader%2Bmk%40example.com" in by_email["reader+mk@example.com"]
+        assert "email=reader%2Bmk%40example.com" not in by_email["reader+mk@example.com"]
         assert "Test brifing" in by_email["reader+sr@example.com"]
         assert "Glavna vest dana." in by_email["reader+sr@example.com"]
 

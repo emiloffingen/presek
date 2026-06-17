@@ -14,15 +14,20 @@ from utils.time import DateTimeEncoder
 log = logging.getLogger("presek")
 
 redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+_IS_PRODUCTION = os.environ.get("ENV") == "production"
 try:
     redis_client = redis.Redis.from_url(redis_url, decode_responses=True)
     redis_client.ping()
     log.info(f"Redis connected: {redis_url.split('@')[-1].split('/')[0]}")
 except redis.ConnectionError as e:
     log.error(f"Redis connection failed to {redis_url}: {e}")
+    if _IS_PRODUCTION:
+        raise RuntimeError(f"Redis connection failed in production: {e}") from e
     redis_client = redis.Redis.from_url("redis://localhost:6379/0", decode_responses=True)
 except Exception as e:
     log.error(f"Redis initialization error: {e}")
+    if _IS_PRODUCTION:
+        raise RuntimeError(f"Redis initialization failed in production: {e}") from e
     redis_client = redis.Redis.from_url("redis://localhost:6379/0", decode_responses=True)
 
 
@@ -125,7 +130,9 @@ def check_rate_limit(ip: str, path: str = "", is_authenticated: bool = False) ->
         results = pipe.execute()
         return results[1] < max_reqs
     except Exception as e:
-        log.debug(f"Rate limit check failed: {e}")
+        log.warning(f"Rate limit check failed: {e}")
+        if _IS_PRODUCTION:
+            return False
         return True
 
 

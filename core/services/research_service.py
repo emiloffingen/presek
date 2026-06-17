@@ -9,7 +9,7 @@ from lxml import html
 from prometheus_client import Histogram
 from core.ai_engine import async_call_ai, clean_json_response
 from core.prompts import RESEARCH_SYSTEM_PROMPT, RESEARCH_SYSTEM_PROMPT_MK
-from routes.intelligence import _RESEARCH_MODE_QUERIES, _build_gemma_research_context
+from core.research_helpers import RESEARCH_MODE_QUERIES, build_gemma_research_context
 from core.entities import extract_entities
 from core.embeddings import get_query_embedding_async
 from nlp.local_analyst import ResearchQueryResponse
@@ -133,8 +133,8 @@ class ResearchService:
         if clean_mode not in {"facts", "perspectives", "context", "custom"}:
             clean_mode = "facts"
 
-        effective_lang = lang if lang in _RESEARCH_MODE_QUERIES else "sr"
-        research_query = query if clean_mode == "custom" else _RESEARCH_MODE_QUERIES[effective_lang][clean_mode]
+        effective_lang = lang if lang in RESEARCH_MODE_QUERIES else "sr"
+        research_query = query if clean_mode == "custom" else RESEARCH_MODE_QUERIES[effective_lang][clean_mode]
 
         # 1. Check Semantic Cache
         query_embedding = await get_query_embedding_async(research_query)
@@ -142,7 +142,7 @@ class ResearchService:
         if cached:
             return cached
 
-        context, sources = await _build_gemma_research_context(cluster_id, clean_mode, query)
+        context, sources = await build_gemma_research_context(cluster_id, clean_mode, query)
 
         google_response = await ResearchService._get_google_grounded_research(
             research_query,

@@ -1,5 +1,6 @@
 ---
 import { useTranslations } from '../../i18n/utils';
+import { highlightFactText } from '../../lib/clusterBriefUtils';
 
 interface Props {
   facts: string[];
@@ -9,15 +10,6 @@ interface Props {
 const { facts, lang } = Astro.props;
 const t = useTranslations(lang);
 const displayFacts = facts.slice(0, 5);
-
-const highlightFactText = (text: string) => {
-  let html = text;
-  const moneyRegex = /(\d+[\beta\s\.]*(?:евра|evra|денари|denara|динара|dinara|EUR|€)|половина милион евра|polovina milion evra|пола милион евра|pola miliona evra)/gi;
-  html = html.replace(moneyRegex, '<strong class="text-nyt-accent font-black">$1</strong>');
-  const locationRegex = /(ГП\s+Табановце|Табановце|Tabanovce|Германија|Germanija|Албанија|Albanija)/gi;
-  html = html.replace(locationRegex, '<strong class="text-foreground font-semibold">$1</strong>');
-  return html;
-};
 ---
 
 {displayFacts.length > 0 && (

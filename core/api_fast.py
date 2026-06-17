@@ -247,9 +247,16 @@ def _upload_image_file_path(filename: str) -> str | None:
     return candidate
 
 
-def _is_local_metrics_client(request: Request) -> bool:
+_LOCAL_OPS_CLIENTS = _LOCAL_METRICS_CLIENTS | frozenset({"testclient"})
+
+
+def _is_trusted_ops_client(request: Request) -> bool:
     client_host = str(getattr(getattr(request, "client", None), "host", "") or "")
-    return client_host in _LOCAL_METRICS_CLIENTS
+    return client_host in _LOCAL_OPS_CLIENTS
+
+
+def _is_local_metrics_client(request: Request) -> bool:
+    return _is_trusted_ops_client(request)
 
 
 def _iter_file_range(path: str, start: int, end: int, chunk_size: int = 64 * 1024):
@@ -357,7 +364,7 @@ def _safe_rank_cluster_citations(question: str, answer: str, articles, citation_
 
 @app.get("/api/health")
 @exempt_from_rate_limit
-async def health_check():
+async def health_check(request: Request):
     """Comprehensive health check for smoke tests and monitoring."""
     import core.health as health
     from core.health import _freshness_payload, _start_time
@@ -373,14 +380,6 @@ async def health_check():
 
     synthesis_quality = health.get_synthesis_quality_snapshot()
     celery_queue = health._probe_celery_queue()
-    celery_public = {
-        "celery_depth": celery_queue.get("celery_depth", 0),
-        "total_depth": celery_queue.get("total_depth", 0),
-        "warn_depth": celery_queue.get("warn_depth", 100),
-        "critical_depth": celery_queue.get("critical_depth", 500),
-        "degraded": celery_queue.get("degraded", False),
-        "queues": celery_queue.get("queues", {}),
-    }
     operational_status = health.get_operational_status(
         db_status["ok"],
         redis_status["ok"],
@@ -388,17 +387,29 @@ async def health_check():
         celery_queue,
     )
 
-    return {
+    payload = {
         "status": operational_status,
         "version": APP_VERSION,
         "uptime_seconds": int(time.time() - _start_time),
         "database": db_public,
         "redis": redis_public,
-        "freshness": _freshness_payload(health.load_last_refresh_time()),
-        "celery_queue": celery_public,
-        "synthesis_quality": synthesis_quality,
         "time": datetime.datetime.now().isoformat(),
     }
+
+    if _is_trusted_ops_client(request):
+        celery_public = {
+            "celery_depth": celery_queue.get("celery_depth", 0),
+            "total_depth": celery_queue.get("total_depth", 0),
+            "warn_depth": celery_queue.get("warn_depth", 100),
+            "critical_depth": celery_queue.get("critical_depth", 500),
+            "degraded": celery_queue.get("degraded", False),
+            "queues": celery_queue.get("queues", {}),
+        }
+        payload["freshness"] = _freshness_payload(health.load_last_refresh_time())
+        payload["celery_queue"] = celery_public
+        payload["synthesis_quality"] = synthesis_quality
+
+    return payload
 
 
 if hasattr(app, "head"):
@@ -479,8 +490,26 @@ async def get_generated_image(filename: str):
 
 @app.get("/api/delivery/track/{event_type}")
 @exempt_from_rate_limit
-async def track_delivery_event(event_type: str, event_id: int, redirect: str = "/briefing"):
+async def track_delivery_event(
+    event_type: str,
+    event_id: int,
+    token: str,
+    redirect: str = "/briefing",
+):
+    from core.signed_tokens import ALLOWED_DELIVERY_EVENT_TYPES, parse_delivery_track_token
     from routes.common import _safe_tracking_redirect_path
+
+    clean_type = str(event_type or "").strip().lower()
+    if clean_type not in ALLOWED_DELIVERY_EVENT_TYPES:
+        return JSONResponse(status_code=400, content={"detail": "Invalid event type"})
+
+    parsed = parse_delivery_track_token(token)
+    if not parsed:
+        return JSONResponse(status_code=400, content={"detail": "Invalid tracking token"})
+
+    parsed_event_id, parsed_type, parsed_redirect = parsed
+    if parsed_event_id != event_id or parsed_type != clean_type:
+        return JSONResponse(status_code=400, content={"detail": "Invalid tracking token"})
 
     p = await db.async_execute_one(
         "SELECT sync_token, delivery_kind, channel, target, cluster_id FROM delivery_tracking_events WHERE id = %s",
@@ -491,7 +520,7 @@ async def track_delivery_event(event_type: str, event_id: int, redirect: str = "
             "INSERT INTO delivery_tracking_events (parent_event_id, event_type, sync_token, delivery_kind, channel, target, cluster_id) VALUES (%s, %s, %s, %s, %s, %s, %s)",
             (
                 event_id,
-                event_type,
+                clean_type,
                 p["sync_token"],
                 p["delivery_kind"],
                 p["channel"],
@@ -501,7 +530,7 @@ async def track_delivery_event(event_type: str, event_id: int, redirect: str = "
             fetch=False,
         )
     _public_site_url = os.environ.get("PUBLIC_SITE_URL", "https://presek.live")
-    redirect = _safe_tracking_redirect_path(redirect)
+    redirect = _safe_tracking_redirect_path(parsed_redirect or redirect)
     return RedirectResponse(url=f"{_public_site_url}{redirect}", status_code=302)
 
 

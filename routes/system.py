@@ -130,39 +130,6 @@ _WMO_ICON = {
 
 from routes.security import admin_auth
 
-async def optional_admin_auth(request: Request) -> bool:
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        return False
-    try:
-        await admin_auth(request)
-        return True
-    except HTTPException:
-        return False
-
-
-@router.get("/health")
-async def health(request: Request, authorized: bool = Depends(optional_admin_auth, use_cache=False)):
-    """Health check endpoint. Admin token required for sensitive details."""
-    authorized = authorized is True
-    db_s = _probe_database()
-    rd_s = _probe_redis()
-
-    if not authorized:
-        # Omit sensitive details for public status
-        for probe in [db_s, rd_s]:
-            probe.pop("url", None)
-            probe.pop("error", None)
-            probe.pop("config", None)
-
-    return {
-        "status": "ok" if db_s["ok"] and rd_s["ok"] else "degraded",
-        **version_payload(),
-        "uptime_seconds": int(time.time() - _STARTED_AT),
-        "database": db_s,
-        "redis": rd_s,
-    }
-
 
 @router.get("/system/media-quality")
 async def media_quality_report(limit: int = Query(30, ge=1, le=200), lang: Optional[str] = "sr"):

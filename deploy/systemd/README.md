@@ -75,7 +75,7 @@ bash deploy/backup_postgres.sh
 
 - `presek-fastapi-unified.service` is the public API service.
 - `presek-astro.service` runs from `current/web` and still guards against stale or broken `dist` output.
-- `presek-ingestion-worker.service` keeps RSS fetches moving even when slower AI follow-up tasks backlog.
+- `presek-worker-ingestion.service` keeps RSS fetches moving even when slower AI follow-up tasks backlog.
 - `presek-beat.service` stores scheduler state in `shared/celerybeat-schedule`, not inside a release.
 - Celery queues are split so `run_ingestion` cannot be buried behind delivery or downstream intelligence backlog.
 - These units do not manage PostgreSQL, Redis, or nginx. Keep those as separate system services.

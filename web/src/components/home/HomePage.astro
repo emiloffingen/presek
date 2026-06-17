@@ -164,6 +164,11 @@ if (homepageFlags.shouldSetErrorStatus) {
             document.documentElement.dataset.homepageMode = 'analiza';
         </script>
     )}
+    {isHomepage && !isPregled && (
+        <script is:inline>
+            document.documentElement.dataset.page = 'home';
+        </script>
+    )}
     <NYTHeader q={q} category={category} topic={topic} entity={entity} subcategory={subcategory} stats={stats} latestTickerItems={topWireArticles} />
 
 	<main
@@ -245,12 +250,6 @@ if (homepageFlags.shouldSetErrorStatus) {
                     <EmptyState trending={trending} errorMessage={error} />
                 )}
 
-                {!error && isHomepage && !isPregled && !q && !category && !topic && !entity && !subcategory && (
-                    <div class="home-mobile-order-start-here home-feed-only">
-                        <HomeStartHere lang={lang} />
-                    </div>
-                )}
-
                 {!error && isHomepage && !isPregled && (
                     <div class={`homepage-simple-expand ${isSimpleHomepage ? '' : 'hidden'}`} data-simple-expand>
                         <p class="homepage-simple-expand-copy">
@@ -295,6 +294,18 @@ if (homepageFlags.shouldSetErrorStatus) {
 					</div>
 				)}
 
+                {!error && isHomepage && briefing && !isPregled && (
+                    <div class="section-wrapper home-mobile-order-briefing home-feed-secondary-spotlight home-feed-only">
+                        <HomeBriefingTeaser briefing={briefing} getBriefingSnippet={getBriefingSnippet} />
+                    </div>
+                )}
+
+                {!error && isHomepage && !isPregled && !q && !category && !topic && !entity && !subcategory && (
+                    <div class="home-mobile-order-start-here home-feed-only">
+                        <HomeStartHere lang={lang} />
+                    </div>
+                )}
+
                 {!error && isHomepage && !isPregled && !isSimpleHomepage && (
                     <div class="section-wrapper home-mobile-order-pregled-teaser home-feed-only home-edition-collapsed">
                         <HomePregledTeaser lang={lang} pluralismPct={pluralismPct} stats={stats} />
@@ -304,18 +315,6 @@ if (homepageFlags.shouldSetErrorStatus) {
                 {!error && isHomepage && analizaNavItems.length > 0 && showAnalysisLayers && (
                     <div class="homepage-analiza-only">
                         <AnalizaSectionNav items={analizaNavItems} lang={lang} />
-                    </div>
-                )}
-
-				{!error && isHomepage && briefing && showAnalysisLayers && (
-                    <div class="home-mobile-order-briefing homepage-analiza-only">
-					    <HomeBriefingTeaser briefing={briefing} getBriefingSnippet={getBriefingSnippet} />
-                    </div>
-				)}
-
-                {!error && isHomepage && showAnalysisLayers && (
-                    <div class="home-mobile-order-live homepage-analiza-only">
-                        <HomeLiveStrip articles={topWireArticles} getTimeStr={getTimeStr} lang={lang} />
                     </div>
                 )}
 
@@ -332,22 +331,6 @@ if (homepageFlags.shouldSetErrorStatus) {
                 {!error && isHomepage && !isPregled && (
                     <div class="section-wrapper home-inline-ad-slot home-inline-ad-slot--rail-feed home-feed-only home-edition-collapsed">
                         <TinyAdzRailAd class="home-feed-rail-ad" />
-                    </div>
-                )}
-
-                {!error && isHomepage && !isPregled && feedSynthesisTeaser && showAnalysisLayers && (
-                    <div class="section-wrapper home-mobile-order-synthesis-teaser home-feed-only home-edition-collapsed">
-                        <HomeSynthesisTeaser
-                            cluster={feedSynthesisTeaser}
-                            lang={lang}
-                            moreCount={feedSynthesisMoreCount}
-                        />
-                    </div>
-                )}
-
-                {!error && isHomepage && showAnalysisLayers && (
-                    <div class="home-mobile-order-trending homepage-analiza-only">
-                        <TrendingPreviewRail clusters={displayedTrendingClusters} lang={lang} />
                     </div>
                 )}
 
@@ -515,6 +498,28 @@ if (homepageFlags.shouldSetErrorStatus) {
                 )}
 
                 </div>
+
+                {!error && isHomepage && !isPregled && feedSynthesisTeaser && showAnalysisLayers && (
+                    <div class="section-wrapper home-mobile-order-synthesis-teaser home-analiza-deferred home-feed-only">
+                        <HomeSynthesisTeaser
+                            cluster={feedSynthesisTeaser}
+                            lang={lang}
+                            moreCount={feedSynthesisMoreCount}
+                        />
+                    </div>
+                )}
+
+                {!error && isHomepage && showAnalysisLayers && (
+                    <div class="home-mobile-order-trending home-analiza-deferred">
+                        <TrendingPreviewRail clusters={displayedTrendingClusters} lang={lang} />
+                    </div>
+                )}
+
+                {!error && isHomepage && showAnalysisLayers && (
+                    <div class="home-mobile-order-live home-analiza-deferred">
+                        <HomeLiveStrip articles={topWireArticles} getTimeStr={getTimeStr} lang={lang} />
+                    </div>
+                )}
 
                 {!error && isHomepage && !isPregled && (
                     <div class="section-wrapper home-expand-analysis home-edition-expand-panel home-mobile-order-expand">

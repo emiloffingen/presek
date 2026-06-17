@@ -159,7 +159,11 @@ main() {
     fi
     cp "$NGINX_DIR/cloudflare-realip.conf" "$REALIP_SNIPPET"
     cp "$NGINX_DIR/security-headers.conf" "$SECURITY_SNIPPET"
+    cp "$NGINX_DIR/rate-limit-zones.conf" "/etc/nginx/snippets/rate-limit-zones.conf"
     cp "$NGINX_DIR/presek-routes.conf" "/etc/nginx/snippets/presek-routes.conf"
+    if ! grep -q 'snippets/rate-limit-zones.conf' /etc/nginx/nginx.conf 2>/dev/null; then
+      bash "$APP_DIR/deploy/nginx/setup-rate-limit-zones.sh" || true
+    fi
     ln -sfn "$SITE_AVAILABLE" "$SITE_ENABLED"
 
     if [ "$INSTALL_MK_NGINX" = "1" ]; then
@@ -197,9 +201,9 @@ main() {
   echo "Deployment files installed."
   echo "Check services with:"
   echo "  sudo systemctl status presek.target"
-  echo "  sudo systemctl status presek-ingestion-worker.service"
+  echo "  sudo systemctl status presek-worker-ingestion.service"
   echo "  sudo journalctl -u presek-fastapi-unified.service -f"
-  echo "  sudo journalctl -u presek-ingestion-worker.service -f"
+  echo "  sudo journalctl -u presek-worker-ingestion.service -f"
   echo "Release root:"
   echo "  $APP_ROOT"
   if [ "$INSTALL_NGINX" = "1" ]; then

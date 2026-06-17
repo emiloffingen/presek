@@ -48,7 +48,7 @@ sudo systemctl status presek.target --no-pager
 sudo journalctl -u presek-astro.service -n 50 --no-pager
 sudo journalctl -u presek-fastapi-unified.service -n 50 --no-pager
 sudo journalctl -u presek-worker.service -n 50 --no-pager
-sudo journalctl -u presek-ingestion-worker.service -n 50 --no-pager
+sudo journalctl -u presek-worker-ingestion.service -n 50 --no-pager
 sudo journalctl -u presek-beat.service -n 50 --no-pager
 ```
 
@@ -96,5 +96,5 @@ Then rerun:
 ```sh
 bash deploy/smoke_check.sh
 sudo systemctl status presek.target --no-pager
-sudo systemctl status presek-ingestion-worker.service --no-pager
+sudo systemctl status presek-worker-ingestion.service --no-pager
 ```

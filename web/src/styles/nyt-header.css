@@ -162,6 +162,14 @@
         text-decoration: none;
         padding: 0.35rem 0.25rem;
     }
+    .utility-menu-search {
+        display: block;
+        width: 100%;
+        border: 0;
+        background: transparent;
+        text-align: left;
+        cursor: pointer;
+    }
     .utility-menu-link:hover { color: var(--nyt-accent); }
     .activity-chip {
         display: flex; align-items: center; gap: 0.4rem; padding: 0.2rem 0.5rem;

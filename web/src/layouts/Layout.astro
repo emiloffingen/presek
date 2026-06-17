@@ -88,9 +88,15 @@ const organizationSchema = {
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
+  gtag('consent', 'default', {
+    'ad_storage': 'denied',
+    'ad_user_data': 'denied',
+    'ad_personalization': 'denied',
+    'analytics_storage': 'denied',
+    'wait_for_update': 500
+  });
   gtag('js', new Date());
-
-  gtag('config', 'G-YJZH9KK8X9');
+  gtag('config', 'G-YJZH9KK8X9', { 'anonymize_ip': true });
 </script>`} />
 		) : (
 			<Fragment set:html={`<!-- Google tag (gtag.js) -->
@@ -98,9 +104,15 @@ const organizationSchema = {
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
+  gtag('consent', 'default', {
+    'ad_storage': 'denied',
+    'ad_user_data': 'denied',
+    'ad_personalization': 'denied',
+    'analytics_storage': 'denied',
+    'wait_for_update': 500
+  });
   gtag('js', new Date());
-
-  gtag('config', 'G-SV2R3LZJ5C');
+  gtag('config', 'G-SV2R3LZJ5C', { 'anonymize_ip': true });
 </script>`} />
 		)}
 		<script is:inline>
@@ -437,13 +449,48 @@ const organizationSchema = {
 				return `${proxyBase}/proxy?cat=${encodeURIComponent(cat)}&lang=${pageLang}&w=720`;
 			};
 
+			const getSourceInitials = (source: string) => {
+				const cleaned = source.trim();
+				if (!cleaned) return 'P';
+				const words = cleaned.split(/[\s|·\-–—/]+/).filter(Boolean);
+				if (words.length >= 2) {
+					return words.slice(0, 2).map((word) => word[0] || '').join('').toUpperCase();
+				}
+				return cleaned.slice(0, 2).toUpperCase();
+			};
+
+			const renderEditorialImageFallback = (imageWrap: HTMLElement) => {
+				if (imageWrap.querySelector('.topic-fallback-card--editorial')) return;
+				const source = imageWrap.getAttribute('data-fallback-source') || '';
+				const category = imageWrap.getAttribute('data-fallback-category') || '';
+				const label = imageWrap.getAttribute('data-fallback-label') || category || 'Presek';
+				const tint = imageWrap.getAttribute('data-fallback-tint') || '#1e40af';
+				const initials = getSourceInitials(source);
+				imageWrap.classList.add('image-wrap-fallback');
+				imageWrap.setAttribute('data-image-state', 'fallback');
+				imageWrap.style.setProperty('--placeholder-bg', tint);
+				const link = imageWrap.querySelector('a');
+				if (!link) return;
+				link.innerHTML = `
+					<div class="article-image-placeholder topic-fallback-card topic-fallback-card--editorial topic-fallback-card--compact">
+						<span class="article-image-placeholder-mark" aria-hidden="true">${initials}</span>
+						<p class="article-image-placeholder-label">${label}</p>
+						<p class="article-image-placeholder-source">${source}</p>
+					</div>
+				`;
+			};
+
 			const handleImageError = (img: HTMLImageElement) => {
 				const markArticleImageFailed = () => {
 					const imageWrap = img.closest('.image-wrap');
-					const article = img.closest('.nyt-article');
+					if (imageWrap && imageWrap.hasAttribute('data-fallback-source')) {
+						renderEditorialImageFallback(imageWrap);
+						return;
+					}
 					if (imageWrap) {
 						imageWrap.setAttribute('data-image-state', 'failed');
 					}
+					const article = img.closest('.nyt-article');
 					if (article) {
 						article.classList.add('image-failed');
 					}
@@ -462,11 +509,11 @@ const organizationSchema = {
 				}
 				if (img.classList.contains('article-image') && img.classList.contains('article-image-fallback')) {
 					if (img.dataset.emergencyTried === '1') {
-						img.classList.add('is-loaded');
 						const imageWrap = img.closest('.image-wrap');
 						if (imageWrap) {
-							imageWrap.classList.add('image-wrap-fallback');
-							imageWrap.setAttribute('data-image-state', 'fallback');
+							renderEditorialImageFallback(imageWrap);
+						} else {
+							markArticleImageFailed();
 						}
 						return;
 					}

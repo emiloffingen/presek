@@ -210,11 +210,6 @@ const steps = [
             localStorage.setItem(DISMISS_KEY, '1');
             strip.remove();
         });
-
-        const details = strip.querySelector<HTMLDetailsElement>('.home-start-here-details');
-        if (details && window.matchMedia('(min-width: 769px)').matches) {
-            details.open = true;
-        }
     }
 
     initHomeStartHere();

@@ -1,7 +1,7 @@
 ---
 /* Cache-bust marker for NewsCard stylesheet hashing. */
 import { chooseClusterImage } from '../utils/imageSelection';
-import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, slugify, getDesignCardContext, transliterate, cleanAndDecode, normalizeEntityOrTag } from '../utils/textUtils';
+import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, slugify, getDesignCardContext, transliterate, cleanAndDecode, normalizeEntityOrTag, getSourceInitials } from '../utils/textUtils';
 import { getVisibleCardSignals } from '../lib/signalBadges';
 import { sanitizeHtml } from '../lib/sanitize';
 import { Clock, Layers, ShieldCheck, Globe, Zap, AlertCircle, Palette, Building2, TrendingUp, Award, Cpu, Newspaper, ArrowRight } from 'lucide-react';
@@ -127,6 +127,7 @@ const compactPluralismMeta = (variant === 'compact' || variant === 'wire')
 const cardContext = getDesignCardContext(cluster);
 const cardLabel = cardContext.labelKey ? t(cardContext.labelKey as any) : '';
 const cardSub = cardContext.subKey ? t(cardContext.subKey as any) : '';
+const sourceInitials = getSourceInitials(main.source || '');
 
 const IconComponent =
     cardContext.icon === 'palette' ? Palette :
@@ -274,11 +275,19 @@ function getTimeStr(dateStr: string) {
     </div>
 
     {showMedia && (
-    <div class:list={["image-wrap", { "image-wrap-fallback": isFallbackArt }]} data-image-state={isFallbackArt ? 'fallback' : 'loading'} style={!isFallbackArt ? `--placeholder-bg: ${tintColor}` : undefined}>
+    <div
+        class:list={["image-wrap", { "image-wrap-fallback": isFallbackArt }]}
+        data-image-state={isFallbackArt ? 'fallback' : 'loading'}
+        data-fallback-source={main.source || ''}
+        data-fallback-category={localizedTopic || main.category || ''}
+        data-fallback-tint={tintColor}
+        data-fallback-label={cardLabel || localizedTopic || main.category || t('news.ongoing')}
+        style={`--placeholder-bg: ${tintColor}`}
+    >
         <a href={clusterUrl} class="block h-full" data-testid="cluster-link" tabindex="-1" aria-hidden="true">
             {isFallbackArt ? (
                 isLead ? (
-                    <div class:list={["article-image-placeholder topic-fallback-card", { "article-image-placeholder-title-cyrillic": titleIsCyrillic }]} style={`--placeholder-bg: ${tintColor}`}>
+                    <div class:list={["article-image-placeholder topic-fallback-card topic-fallback-card--editorial", { "article-image-placeholder-title-cyrillic": titleIsCyrillic }]} style={`--placeholder-bg: ${tintColor}`}>
                         <div class="article-image-placeholder-topline">
                             <p class="article-image-placeholder-label">{cardLabel || main.category || t('news.ongoing')}</p>
                             <span class="article-image-placeholder-chip">{cardSub || `${uniqueSources} ${uniqueSources === 1 ? t('news.source') : t('news.sources')}`}</span>
@@ -288,16 +297,10 @@ function getTimeStr(dateStr: string) {
                         <p class="article-image-placeholder-source">{main.source}</p>
                     </div>
                 ) : (
-                    <div class="article-image-placeholder topic-fallback-card topic-fallback-card--proxy-only" style={`--placeholder-bg: ${tintColor}`}>
-                        <img
-                            src={fallbackImageUrl}
-                            alt=""
-                            width="720"
-                            height="500"
-                            class="article-image article-image-fallback is-loaded"
-                            loading="lazy"
-                            decoding="async"
-                        />
+                    <div class:list={["article-image-placeholder topic-fallback-card topic-fallback-card--editorial", { "topic-fallback-card--compact": variant === 'compact' || variant === 'wire' }]} style={`--placeholder-bg: ${tintColor}`}>
+                        <span class="article-image-placeholder-mark" aria-hidden="true">{sourceInitials}</span>
+                        <p class="article-image-placeholder-label">{cardLabel || localizedTopic || main.category || t('news.ongoing')}</p>
+                        <p class="article-image-placeholder-source">{main.source}</p>
                     </div>
                 )
             ) : (
@@ -603,7 +606,7 @@ function getTimeStr(dateStr: string) {
 
     .nyt-article.image-failed .image-wrap,
     .image-wrap[data-image-state="failed"] {
-        display: none;
+        display: block;
     }
 
     @keyframes card-image-sheen {
