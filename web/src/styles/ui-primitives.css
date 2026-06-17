@@ -809,7 +809,7 @@
   h4,
   h5,
   h6 {
-    font-family: "Noto Serif", "Georgia", "Times New Roman", serif;
+    font-family: var(--font-serif);
     letter-spacing: -0.02em;
     text-wrap: balance;
     hyphens: auto;

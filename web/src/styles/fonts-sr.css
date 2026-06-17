@@ -1,13 +1,10 @@
 /* Serbian (Latin) editorial stack — subset imports only */
 
-@import "@fontsource/noto-serif-display/latin-700.css";
-@import "@fontsource/noto-serif-display/latin-900.css";
-@import "@fontsource/noto-serif-display/latin-900-italic.css";
 @import "@fontsource/source-serif-4/latin-400.css";
 @import "@fontsource/source-serif-4/latin-700.css";
 @import "@fontsource/source-serif-4/latin-400-italic.css";
-@import "@fontsource/manrope/latin-600.css";
-@import "@fontsource/manrope/latin-700.css";
-@import "@fontsource/manrope/latin-800.css";
+@import "@fontsource/ibm-plex-sans/latin-500.css";
+@import "@fontsource/ibm-plex-sans/latin-600.css";
+@import "@fontsource/ibm-plex-sans/latin-700.css";
 @import "@fontsource/noto-sans/latin-400.css";
 @import "@fontsource/noto-sans/latin-700.css";

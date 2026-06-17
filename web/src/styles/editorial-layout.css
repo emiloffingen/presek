@@ -280,6 +280,6 @@
   --text-muted: var(--muted-foreground);
   --border-color: var(--border);
   --accent-color: var(--nyt-red);
-  --nyt-font-serif: "Noto Serif", serif;
-  --nyt-font-sans: "Manrope", sans-serif;
+  --nyt-font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --nyt-font-sans: "IBM Plex Sans", "Noto Sans", sans-serif;
 }
