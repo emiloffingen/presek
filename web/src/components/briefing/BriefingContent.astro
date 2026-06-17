@@ -5,37 +5,62 @@ interface Props {
 }
 
 import { sanitizeHtml } from '../../lib/sanitize';
+import { useTranslations } from '../../i18n/utils';
 
 const { formattedBriefing, lang = 'sr' } = Astro.props;
 const safeBriefing = sanitizeHtml(formattedBriefing);
-const isMK = lang === 'mk';
+const t = useTranslations(lang as 'sr' | 'mk');
 ---
 
 <article class="briefing-content-container">
-    <header class="briefing-article-lockup">
-        <span>{isMK ? 'Уреднички преглед' : 'Urednički pregled'}</span>
-        <div></div>
-        <span>{isMK ? 'Дневен контекст' : 'Dnevni kontekst'}</span>
+    <header class="editorial-review-lockup briefing-review-lockup">
+        <h2 class="editorial-review-title">{t('cluster.editorial_review')}</h2>
+        <p class="editorial-review-kicker">
+            <span class="editorial-review-sep" aria-hidden="true">·</span>
+            {t('cluster.daily_context')}
+        </p>
     </header>
 	<div class="briefing-body" set:html={safeBriefing}></div>
 </article>
 
 <style is:global>
     .briefing-content-container { max-width: 880px; margin: 0 auto; width: 100%; box-sizing: border-box; padding: 0 1.5rem; }
-    .briefing-article-lockup {
-        display: grid;
-        grid-template-columns: max-content 1fr max-content;
-        align-items: center;
-        gap: 1rem;
-        margin-bottom: 3rem;
-        color: var(--muted-foreground);
-        font-family: var(--font-sans);
-        font-size: 0.62rem;
-        font-weight: 950;
-        letter-spacing: 0.22em;
-        text-transform: uppercase;
+    .briefing-review-lockup {
+        margin-bottom: 2.5rem;
     }
-    .briefing-article-lockup div { height: 1px; background: var(--border); }
+    .editorial-review-lockup {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0.35rem 0.55rem;
+        min-width: 0;
+    }
+    .editorial-review-title {
+        margin: 0;
+        font-family: var(--font-serif);
+        font-size: clamp(1.35rem, 2vw, 1.75rem);
+        font-weight: 800;
+        line-height: 1.15;
+        letter-spacing: -0.01em;
+        text-transform: none;
+        color: var(--foreground);
+    }
+    .editorial-review-kicker {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 0.45rem;
+        margin: 0;
+        font-family: var(--font-ui);
+        font-size: var(--text-xs);
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        text-transform: none;
+        color: var(--muted-foreground);
+    }
+    .editorial-review-sep {
+        color: color-mix(in srgb, var(--muted-foreground) 70%, transparent);
+        font-weight: 500;
+    }
     .briefing-body { font-family: var(--font-nyt-body); font-size: clamp(1.12rem, 1.4vw, 1.36rem); line-height: 1.82; color: var(--foreground); letter-spacing: 0; }
     .briefing-section-title {
         clear: both;
@@ -141,16 +166,8 @@ const isMK = lang === 'mk';
             padding: 0 0.25rem;
         }
 
-        .briefing-article-lockup {
-            grid-template-columns: 1fr;
-            gap: 0.55rem;
+        .briefing-review-lockup {
             margin-bottom: 1.75rem;
-            font-size: 0.5rem;
-            letter-spacing: 0.16em;
-        }
-
-        .briefing-article-lockup div {
-            order: -1;
         }
 
         .briefing-body {

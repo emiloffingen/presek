@@ -35,6 +35,7 @@ interface Props {
   isMissingSynthesis: boolean;
   pipelineBusy: boolean;
   primaryNarrativeLabel: string;
+  primaryNarrativeNavLabel: string;
   showKeyFactsBand: boolean;
   showCredibilitySection: boolean;
   cleanTopicLabel: (value?: string) => string;
@@ -59,6 +60,7 @@ const {
   isMissingSynthesis,
   pipelineBusy,
   primaryNarrativeLabel,
+  primaryNarrativeNavLabel,
   showKeyFactsBand,
   showCredibilitySection,
   cleanTopicLabel,
@@ -108,7 +110,7 @@ const {
       <div class="cluster-header-toolbar">
         <ClusterReadingNav
           lang={lang}
-          primaryNarrativeLabel={primaryNarrativeLabel}
+          primaryNarrativeLabel={primaryNarrativeNavLabel}
           showKeyFacts={showKeyFactsBand}
           showAnalysis={showCredibilitySection}
         />

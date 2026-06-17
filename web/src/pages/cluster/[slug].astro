@@ -289,8 +289,9 @@ const hasGeneratedNarrative = Boolean(generatedArticle && generatedArticle.trim(
 const hasSublimat = synthesisItems.length > 0;
 const hasFactcheck = Boolean(verificationReport && (verificationReport.agreements?.length > 0 || verificationReport.conflicts?.length > 0));
 const hasStrongLeadNarrative = hasGeneratedNarrative && (cluster?.articles?.length || 0) >= 3;
-const primaryNarrativeLabel = lang === 'sr' ? 'PREGLED PRIČE' : 'ПРЕСЕК НА ПРИКАЗНАТА';
-const primaryNarrativeEyebrow = lang === 'sr' ? 'Šta je potvrđeno, šta nedostaje' : 'Што е потврдено, што недостига';
+const primaryNarrativeLabel = t('cluster.editorial_review');
+const primaryNarrativeEyebrow = t('cluster.daily_context');
+const primaryNarrativeNavLabel = t('cluster.nav_review');
 const conflictsCount = verificationReport?.conflicts?.length || 0;
 const agreementsCount = verificationReport?.agreements?.length || 0;
 const trustSummary = cluster?.trust_summary || buildTrustChip({
@@ -634,6 +635,7 @@ const articleSchema = cluster ? {
 					isMissingSynthesis={isMissingSynthesis}
 					pipelineBusy={pipelineBusy}
 					primaryNarrativeLabel={primaryNarrativeLabel}
+					primaryNarrativeNavLabel={primaryNarrativeNavLabel}
 					showKeyFactsBand={showKeyFactsBand}
 					showCredibilitySection={showCredibilitySection}
 					cleanTopicLabel={cleanTopicLabel}
