@@ -397,6 +397,11 @@ AUTO_SUMMARIZE_MIN_SRC = int(os.environ.get("AUTO_SUMMARIZE_MIN_SRC", "2"))
 AUTO_SUMMARIZE_DELAY = float(os.environ.get("AUTO_SUMMARIZE_DELAY", "1.5"))
 AUTO_SUMMARIZE_FRESH_HOURS = int(os.environ.get("AUTO_SUMMARIZE_FRESH_HOURS", "6"))
 HOMEPAGE_SYNTHESIS_ONLY = os.environ.get("HOMEPAGE_SYNTHESIS_ONLY", "true").lower() in ("1", "true", "yes")
+HOMEPAGE_SYNTHESIS_PRIORITIZE_LIMIT = int(os.environ.get("HOMEPAGE_SYNTHESIS_PRIORITIZE_LIMIT", "24"))
+HOMEPAGE_SYNTHESIS_PRIORITIZE_INTERVAL_SECONDS = float(
+    os.environ.get("HOMEPAGE_SYNTHESIS_PRIORITIZE_INTERVAL_SECONDS", "300")
+)
+HOMEPAGE_SYNTHESIS_QUEUE_HEADROOM = int(os.environ.get("HOMEPAGE_SYNTHESIS_QUEUE_HEADROOM", "60"))
 
 # ── API limits ────────────────────────────────────────────────────
 API_MAX_PAGE = 1000  # Maximum page number for pagination

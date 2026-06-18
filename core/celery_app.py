@@ -10,6 +10,7 @@ from celery.schedules import crontab
 from celery.signals import task_failure, worker_process_init
 from kombu import Queue
 
+from core.config import HOMEPAGE_SYNTHESIS_PRIORITIZE_INTERVAL_SECONDS, HOMEPAGE_SYNTHESIS_PRIORITIZE_LIMIT
 from core.logging_config import get_logger
 
 log = get_logger("presek_celery")
@@ -197,7 +198,8 @@ celery_app.conf.update(
         },
         "prioritize-homepage-syntheses": {
             "task": "tasks.maintenance.prioritize_homepage_syntheses_task",
-            "schedule": 900.0,
+            "schedule": HOMEPAGE_SYNTHESIS_PRIORITIZE_INTERVAL_SECONDS,
+            "kwargs": {"limit": HOMEPAGE_SYNTHESIS_PRIORITIZE_LIMIT},
         },
         "boost-homepage-cluster-supply": {
             "task": "tasks.maintenance.boost_homepage_cluster_supply_task",

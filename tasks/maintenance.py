@@ -624,17 +624,20 @@ def catch_up_cluster_syntheses_task(hours=48, limit=50):
 
 
 @celery_app.task
-def prioritize_homepage_syntheses_task(limit=8):
+def prioritize_homepage_syntheses_task(limit=None):
     """Enqueue synthesis for homepage-visible clusters missing or stale summaries."""
+    from core.config import HOMEPAGE_SYNTHESIS_PRIORITIZE_LIMIT, HOMEPAGE_SYNTHESIS_QUEUE_HEADROOM
     from routes.news import fetch_news_data
     from tasks.intelligence.synthesis import synthesize_cluster_task, synthesize_urgent_task
     from tasks.utils import fast_track_dispatches_deferred, safe_async_run
 
     synthesis_depth = _synthesis_queue_depth()
     use_fast_track = _synthesis_dispatch_deferred() or fast_track_dispatches_deferred()
-    dispatch_limit = max(1, int(limit))
+    batch_limit = HOMEPAGE_SYNTHESIS_PRIORITIZE_LIMIT if limit is None else int(limit)
+    dispatch_limit = max(1, batch_limit)
     if not use_fast_track:
-        dispatch_limit = min(dispatch_limit, max(1, 40 - synthesis_depth))
+        queue_headroom = max(1, HOMEPAGE_SYNTHESIS_QUEUE_HEADROOM - synthesis_depth)
+        dispatch_limit = min(dispatch_limit, queue_headroom)
         if dispatch_limit <= 0:
             return {"skipped": True, "reason": "no_headroom", "synthesis_depth": synthesis_depth}
 
