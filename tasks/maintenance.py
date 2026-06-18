@@ -77,10 +77,16 @@ def _iter_homepage_payload_clusters(payload: dict):
 
 
 def _fetch_homepage_visible_clusters(lang: str) -> list[dict]:
-    from routes.home import get_home
-    from tasks.utils import safe_async_run
+    import json
+    import urllib.request
 
-    payload = safe_async_run(lambda: get_home(lang=lang)) or {}
+    url = f"http://127.0.0.1:5001/api/home?lang={lang}"
+    try:
+        with urllib.request.urlopen(url, timeout=30) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except Exception as exc:
+        log.warning("[maintenance] Failed to fetch homepage payload for %s: %s", lang, exc)
+        return []
     if payload.get("status") != "success":
         return []
 
