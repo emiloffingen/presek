@@ -155,6 +155,7 @@ class TestPrioritizeHomepageSyntheses:
         with (
             patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=True),
             patch("tasks.maintenance._synthesis_queue_depth", return_value=55),
+            patch("tasks.maintenance._fetch_homepage_visible_clusters", return_value=[]),
             patch("tasks.utils.fast_track_dispatches_deferred", return_value=False),
             patch("tasks.utils.safe_async_run", return_value=payload),
             patch("tasks.intelligence.synthesis.synthesize_urgent_task") as mock_urgent,
@@ -180,6 +181,7 @@ class TestPrioritizeHomepageSyntheses:
         with (
             patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=False),
             patch("tasks.maintenance._synthesis_queue_depth", return_value=5),
+            patch("tasks.maintenance._fetch_homepage_visible_clusters", return_value=[]),
             patch("tasks.utils.safe_async_run", return_value=payload),
             patch("tasks.intelligence.synthesis.synthesize_cluster_task") as mock_task,
         ):
@@ -204,6 +206,7 @@ class TestPrioritizeHomepageSyntheses:
         with (
             patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=False),
             patch("tasks.maintenance._synthesis_queue_depth", return_value=5),
+            patch("tasks.maintenance._fetch_homepage_visible_clusters", return_value=[]),
             patch("tasks.utils.safe_async_run", return_value=payload),
             patch("tasks.intelligence.synthesis.synthesize_cluster_task") as mock_task,
         ):
