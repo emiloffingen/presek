@@ -181,6 +181,33 @@ class TestCatchUpClusterSyntheses:
 
 
 class TestPrioritizeHomepageSyntheses:
+    def test_collects_hero_targets_before_other_sections(self):
+        sr_payload = {
+            "status": "success",
+            "lead": {"cluster_id": "lead-sr", "has_synthesis": False, "articles": [{"id": 1}, {"id": 2}]},
+            "supporting": [],
+            "developing": [
+                {"cluster_id": "dev-sr", "has_synthesis": False, "articles": [{"id": 1}, {"id": 2}]},
+            ],
+        }
+        mk_payload = {
+            "status": "success",
+            "lead": {"cluster_id": "lead-mk", "has_synthesis": False, "articles": [{"id": 1}, {"id": 2}]},
+            "supporting": [],
+            "developing": [],
+        }
+
+        def fake_fetch(lang):
+            return sr_payload if lang == "sr" else mk_payload
+
+        with patch("tasks.maintenance._fetch_homepage_payload", side_effect=fake_fetch):
+            from tasks.maintenance import _collect_homepage_synthesis_targets
+
+            result = _collect_homepage_synthesis_targets()
+
+        assert result[:2] == ["lead-sr", "lead-mk"]
+        assert "dev-sr" in result
+
     def test_uses_fast_track_when_synthesis_backlogged(self):
         payload = {
             "clusters": [
@@ -196,7 +223,8 @@ class TestPrioritizeHomepageSyntheses:
             patch("tasks.maintenance._homepage_synthesis_only", return_value=False),
             patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=True),
             patch("tasks.maintenance._synthesis_queue_depth", return_value=55),
-            patch("tasks.maintenance._fetch_homepage_visible_clusters", return_value=[]),
+            patch("tasks.maintenance._collect_homepage_synthesis_targets", return_value=["home-urgent"]),
+            patch("tasks.maintenance._collect_homepage_hero_cluster_ids", return_value=set()),
             patch("tasks.utils.fast_track_dispatches_deferred", return_value=False),
             patch("tasks.utils.safe_async_run", return_value=payload),
             patch("tasks.intelligence.synthesis.synthesize_urgent_task") as mock_urgent,
@@ -223,7 +251,8 @@ class TestPrioritizeHomepageSyntheses:
             patch("tasks.maintenance._homepage_synthesis_only", return_value=False),
             patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=False),
             patch("tasks.maintenance._synthesis_queue_depth", return_value=5),
-            patch("tasks.maintenance._fetch_homepage_visible_clusters", return_value=[]),
+            patch("tasks.maintenance._collect_homepage_synthesis_targets", return_value=["home-1"]),
+            patch("tasks.maintenance._collect_homepage_hero_cluster_ids", return_value=set()),
             patch("tasks.utils.fast_track_dispatches_deferred", return_value=False),
             patch("tasks.utils.safe_async_run", return_value=payload),
             patch("tasks.intelligence.synthesis.synthesize_cluster_task") as mock_task,
@@ -250,7 +279,8 @@ class TestPrioritizeHomepageSyntheses:
             patch("tasks.maintenance._homepage_synthesis_only", return_value=False),
             patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=False),
             patch("tasks.maintenance._synthesis_queue_depth", return_value=5),
-            patch("tasks.maintenance._fetch_homepage_visible_clusters", return_value=[]),
+            patch("tasks.maintenance._collect_homepage_synthesis_targets", return_value=["home-2"]),
+            patch("tasks.maintenance._collect_homepage_hero_cluster_ids", return_value=set()),
             patch("tasks.utils.fast_track_dispatches_deferred", return_value=False),
             patch("tasks.utils.safe_async_run", return_value=payload),
             patch("tasks.intelligence.synthesis.synthesize_cluster_task") as mock_task,
@@ -271,18 +301,18 @@ class TestPrioritizeHomepageSyntheses:
             patch("tasks.maintenance._homepage_synthesis_only", return_value=True),
             patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=False),
             patch("tasks.maintenance._synthesis_queue_depth", return_value=5),
-            patch("tasks.maintenance._fetch_homepage_visible_clusters", return_value=[home_cluster]),
+            patch("tasks.maintenance._collect_homepage_synthesis_targets", return_value=["lead-home"]),
+            patch("tasks.maintenance._collect_homepage_hero_cluster_ids", return_value={"lead-home"}),
             patch("tasks.utils.fast_track_dispatches_deferred", return_value=False),
-            patch("tasks.intelligence.synthesis.synthesize_cluster_task") as mock_task,
+            patch("tasks.intelligence.synthesis.synthesize_urgent_task") as mock_urgent,
         ):
             result = prioritize_homepage_syntheses_task(limit=5)
 
         assert result["enqueued"] == 1
-        mock_task.apply_async.assert_called_once_with(
+        mock_urgent.apply_async.assert_called_once_with(
             ("lead-home", None),
-            {"fast_mode": False},
             countdown=0,
-            queue="synthesis",
+            queue="fast-track",
         )
 
 

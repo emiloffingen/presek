@@ -23,6 +23,10 @@ log = logging.getLogger("presek")
 router = APIRouter()
 _background_tasks: set[asyncio.Task] = set()
 _LEAD_TIEBREAK_WINDOW = 0.10
+_HOMEPAGE_HERO_COUNT = 4
+_HOMEPAGE_HERO_CANDIDATE_POOL = 20
+_HOMEPAGE_HERO_SYNTHESIS_BAND = 0.72
+_HOMEPAGE_HERO_SYNTHESIS_LOCK_TTL = 3600
 _HOMEPAGE_FEED_START = 5
 _HOMEPAGE_DEVELOPING_LIMIT = 10
 _HOMEPAGE_WIRE_LIMIT = 11
@@ -208,6 +212,92 @@ def _apply_synthesis_lead_tiebreak(
     return [synth_pick] + [
         cluster for cluster in clusters if cluster.get("cluster_id") != synth_pick.get("cluster_id")
     ]
+
+
+def _select_homepage_hero_clusters(
+    clusters: List[Dict[str, Any]],
+    *,
+    hero_count: int = _HOMEPAGE_HERO_COUNT,
+    candidate_pool: int = _HOMEPAGE_HERO_CANDIDATE_POOL,
+    synthesis_band: float = _HOMEPAGE_HERO_SYNTHESIS_BAND,
+) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """Pick lead + supporting clusters, preferring synthesis within an editorial score band."""
+    pool = list(clusters[:candidate_pool])
+    if not pool:
+        return [], list(clusters)
+
+    top_score = _homepage_cluster_score(pool[0])
+    score_floor = top_score * synthesis_band if top_score > 0 else 0.0
+    hero: List[Dict[str, Any]] = []
+    used_ids: set[str] = set()
+
+    lead_candidates = _apply_synthesis_lead_tiebreak(pool[: min(4, len(pool))])
+    if lead_candidates:
+        lead = lead_candidates[0]
+        hero.append(lead)
+        used_ids.add(str(lead["cluster_id"]))
+
+    for _ in range(max(0, hero_count - len(hero))):
+        remaining = [
+            cluster
+            for cluster in pool
+            if cluster.get("cluster_id") and cluster.get("cluster_id") not in used_ids
+        ]
+        if not remaining:
+            break
+
+        synth_candidates = [
+            cluster
+            for cluster in remaining
+            if cluster.get("has_synthesis") and _homepage_cluster_score(cluster) >= score_floor
+        ]
+        pick = (
+            max(synth_candidates, key=_homepage_cluster_score)
+            if synth_candidates
+            else max(remaining, key=_homepage_cluster_score)
+        )
+        hero.append(pick)
+        used_ids.add(str(pick["cluster_id"]))
+
+    remainder = [cluster for cluster in clusters if cluster.get("cluster_id") not in used_ids]
+    return hero, remainder
+
+
+def _cluster_can_synthesize(cluster: Dict[str, Any]) -> bool:
+    return _cluster_source_count(cluster) >= 2
+
+
+def _schedule_cluster_synthesis(cluster_id: str) -> None:
+    try:
+        from tasks.intelligence.synthesis import synthesize_urgent_task
+        from tasks.utils import schedule_task_once
+
+        scheduled = schedule_task_once(
+            f"lock:home_synth:{cluster_id}",
+            _HOMEPAGE_HERO_SYNTHESIS_LOCK_TTL,
+            synthesize_urgent_task,
+            args=(cluster_id, None),
+            queue="fast-track",
+        )
+        if scheduled:
+            log.info("[home] Queued urgent synthesis for homepage cluster %s", cluster_id)
+    except Exception as exc:
+        log.error("[home] Failed to queue synthesis for %s: %s", cluster_id, exc)
+
+
+async def _ensure_cluster_synthesis(cluster: Dict[str, Any], *, enqueue: bool = False) -> Dict[str, Any]:
+    """Ensure homepage hero clusters are queued for synthesis when missing."""
+    if not cluster or cluster.get("has_synthesis"):
+        return cluster
+
+    cluster_id = cluster.get("cluster_id")
+    if not cluster_id or not _cluster_can_synthesize(cluster):
+        return cluster
+
+    if enqueue:
+        _schedule_cluster_synthesis(cluster_id)
+        cluster["synthesis_pending"] = True
+    return cluster
 
 
 def _schedule_background_task(coro) -> asyncio.Task:
@@ -784,10 +874,11 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
 
         synthesis_pick_ids = {c["cluster_id"] for c in synthesis_picks}
         clusters = [c for c in clusters if c["cluster_id"] not in synthesis_pick_ids]
-        clusters = _apply_synthesis_lead_tiebreak(clusters)
+        hero, remainder = _select_homepage_hero_clusters(clusters)
+        clusters = hero + remainder
 
         lead = clusters[0] if clusters else None
-        supporting = clusters[1:4]
+        supporting = clusters[1:_HOMEPAGE_HERO_COUNT]
         priority_audio_ids = set()
         priority_audio_budget = _AUDIO_PRIORITY_GENERATION_LIMIT
 
@@ -805,11 +896,13 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
             return True
 
         if lead:
+            lead = await _ensure_cluster_synthesis(lead, enqueue=True)
             lead = await _ensure_cluster_audio(lead, generate=should_generate_priority_audio(lead))
             priority_audio_ids.add(lead.get("cluster_id"))
             clusters[0] = lead
 
         for idx, cluster in enumerate(supporting, start=1):
+            cluster = await _ensure_cluster_synthesis(cluster, enqueue=True)
             supporting[idx - 1] = await _ensure_cluster_audio(
                 cluster,
                 generate=should_generate_priority_audio(cluster),

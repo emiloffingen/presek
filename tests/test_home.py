@@ -257,6 +257,54 @@ def test_apply_synthesis_lead_tiebreak_keeps_leader_when_gap_is_large():
     assert reordered[0]["cluster_id"] == "a"
 
 
+def test_select_homepage_hero_clusters_prefers_synthesis_within_score_band():
+    home = _load_home_module()
+
+    clusters = [
+        {"cluster_id": "a", "homepage_score": 100, "has_synthesis": False},
+        {"cluster_id": "b", "homepage_score": 95, "has_synthesis": False},
+        {"cluster_id": "c", "homepage_score": 80, "has_synthesis": True},
+        {"cluster_id": "d", "homepage_score": 78, "has_synthesis": True},
+        {"cluster_id": "e", "homepage_score": 50, "has_synthesis": True},
+    ]
+
+    hero, remainder = home._select_homepage_hero_clusters(clusters, hero_count=4)
+
+    assert [cluster["cluster_id"] for cluster in hero] == ["a", "c", "d", "b"]
+    assert [cluster["cluster_id"] for cluster in remainder] == ["e"]
+
+
+def test_select_homepage_hero_clusters_keeps_editorial_leader_without_nearby_synthesis():
+    home = _load_home_module()
+
+    clusters = [
+        {"cluster_id": "a", "homepage_score": 100, "has_synthesis": False},
+        {"cluster_id": "b", "homepage_score": 95, "has_synthesis": False},
+        {"cluster_id": "c", "homepage_score": 94, "has_synthesis": False},
+        {"cluster_id": "d", "homepage_score": 93, "has_synthesis": False},
+    ]
+
+    hero, remainder = home._select_homepage_hero_clusters(clusters, hero_count=4)
+
+    assert [cluster["cluster_id"] for cluster in hero] == ["a", "b", "c", "d"]
+    assert remainder == []
+
+
+def test_schedule_cluster_synthesis_uses_fast_track_once(monkeypatch):
+    home = _load_home_module()
+    calls = []
+
+    def fake_schedule_task_once(lock_key, ttl, task, *, args=None, kwargs=None, countdown=0, queue=None):
+        calls.append((lock_key, args, queue))
+        return True
+
+    monkeypatch.setattr("tasks.utils.schedule_task_once", fake_schedule_task_once)
+
+    home._schedule_cluster_synthesis("cluster-1")
+
+    assert calls == [("lock:home_synth:cluster-1", ("cluster-1", None), "fast-track")]
+
+
 def test_fill_developing_clusters_backfills_when_primary_pool_empty():
     home = _load_home_module()
 

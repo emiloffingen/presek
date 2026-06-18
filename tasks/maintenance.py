@@ -60,6 +60,11 @@ _HOMEPAGE_CLUSTER_SECTIONS = (
     "global",
 )
 
+_HOMEPAGE_HERO_SYNTHESIS_SECTIONS = (
+    "lead",
+    "supporting",
+)
+
 
 def _iter_homepage_payload_clusters(payload: dict):
     for section in _HOMEPAGE_CLUSTER_SECTIONS:
@@ -76,7 +81,22 @@ def _iter_homepage_payload_clusters(payload: dict):
                     yield cluster
 
 
-def _fetch_homepage_visible_clusters(lang: str) -> list[dict]:
+def _iter_homepage_payload_clusters_for_sections(payload: dict, sections: tuple[str, ...]):
+    for section in sections:
+        value = payload.get(section)
+        if not value:
+            continue
+        if isinstance(value, dict):
+            if value.get("cluster_id"):
+                yield value
+            continue
+        if isinstance(value, list):
+            for cluster in value:
+                if isinstance(cluster, dict) and cluster.get("cluster_id"):
+                    yield cluster
+
+
+def _fetch_homepage_payload(lang: str) -> dict:
     import json
     import urllib.request
 
@@ -86,8 +106,15 @@ def _fetch_homepage_visible_clusters(lang: str) -> list[dict]:
             payload = json.loads(response.read().decode("utf-8"))
     except Exception as exc:
         log.warning("[maintenance] Failed to fetch homepage payload for %s: %s", lang, exc)
-        return []
+        return {}
     if payload.get("status") != "success":
+        return {}
+    return payload
+
+
+def _fetch_homepage_visible_clusters(lang: str) -> list[dict]:
+    payload = _fetch_homepage_payload(lang)
+    if not payload:
         return []
 
     clusters: list[dict] = []
@@ -99,6 +126,41 @@ def _fetch_homepage_visible_clusters(lang: str) -> list[dict]:
         seen.add(cluster_id)
         clusters.append(cluster)
     return clusters
+
+
+def _collect_homepage_synthesis_targets() -> list[str]:
+    """Return homepage cluster IDs needing synthesis, hero sections first."""
+    targets: list[str] = []
+    seen: set[str] = set()
+    other_sections = tuple(
+        section for section in _HOMEPAGE_CLUSTER_SECTIONS if section not in _HOMEPAGE_HERO_SYNTHESIS_SECTIONS
+    )
+
+    for sections in (_HOMEPAGE_HERO_SYNTHESIS_SECTIONS, other_sections):
+        for lang in ("sr", "mk"):
+            payload = _fetch_homepage_payload(lang)
+            if not payload:
+                continue
+            for cluster in _iter_homepage_payload_clusters_for_sections(payload, sections):
+                cluster_id = str(cluster.get("cluster_id") or "").strip()
+                if not cluster_id or cluster_id in seen or not _cluster_needs_synthesis(cluster):
+                    continue
+                seen.add(cluster_id)
+                targets.append(cluster_id)
+    return targets
+
+
+def _collect_homepage_hero_cluster_ids() -> set[str]:
+    hero_ids: set[str] = set()
+    for lang in ("sr", "mk"):
+        payload = _fetch_homepage_payload(lang)
+        if not payload:
+            continue
+        for cluster in _iter_homepage_payload_clusters_for_sections(payload, _HOMEPAGE_HERO_SYNTHESIS_SECTIONS):
+            cluster_id = str(cluster.get("cluster_id") or "").strip()
+            if cluster_id:
+                hero_ids.add(cluster_id)
+    return hero_ids
 
 
 def _cluster_needs_synthesis(cluster: dict) -> bool:
@@ -641,15 +703,9 @@ def prioritize_homepage_syntheses_task(limit=None):
         if dispatch_limit <= 0:
             return {"skipped": True, "reason": "no_headroom", "synthesis_depth": synthesis_depth}
 
-    targets: list[str] = []
-    seen: set[str] = set()
-    for lang in ("sr", "mk"):
-        for cluster in _fetch_homepage_visible_clusters(lang):
-            cluster_id = str(cluster.get("cluster_id") or "").strip()
-            if not cluster_id or cluster_id in seen or not _cluster_needs_synthesis(cluster):
-                continue
-            seen.add(cluster_id)
-            targets.append(cluster_id)
+    targets = _collect_homepage_synthesis_targets()
+    hero_ids = _collect_homepage_hero_cluster_ids()
+    seen = set(targets)
     if not _homepage_synthesis_only():
         for lang in ("sr", "mk"):
             payload = safe_async_run(lambda: fetch_news_data(sort="score", page_size=24, lang=lang)) or {}
@@ -662,7 +718,8 @@ def prioritize_homepage_syntheses_task(limit=None):
 
     enqueued = 0
     for idx, cluster_id in enumerate(targets[:dispatch_limit]):
-        if use_fast_track:
+        use_hero_fast_track = cluster_id in hero_ids
+        if use_hero_fast_track or use_fast_track:
             synthesize_urgent_task.apply_async(
                 (cluster_id, None),
                 countdown=idx * 5,
