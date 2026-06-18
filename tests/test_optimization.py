@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from tasks.utils import invalidate_cluster_caches, invalidate_public_data_caches_debounced
 
@@ -41,6 +41,7 @@ class TestAutoSummarizeOptimization:
     @patch("tasks.intelligence.synthesize_cluster_task.apply_async")
     @patch("tasks.utils.get_celery_queue_depth", return_value=0)
     @patch("core.database.db_manager")
+    @patch("core.config.HOMEPAGE_SYNTHESIS_ONLY", False)
     def test_auto_summarize_skips_fresh_summaries_and_backfill(
         self, mock_db, _mock_depth, mock_apply_async, _mock_backpressure, _mock_synthesis_deferred
     ):

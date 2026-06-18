@@ -1,3 +1,4 @@
+import os
 import re
 import threading
 from collections import Counter
@@ -13,6 +14,8 @@ _keybert_unavailable = False
 def _get_keybert():
     """Lazy-load KeyBERT once, reusing the shared sentence-transformers model."""
     global _keybert_model, _keybert_unavailable
+    if os.environ.get("PRESEK_DISABLE_KEYBERT", "").lower() in {"1", "true", "yes"}:
+        return None
     if _keybert_unavailable:
         return None
     if _keybert_model is not None:

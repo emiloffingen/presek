@@ -8,11 +8,11 @@ from fastapi.testclient import TestClient
 
 from routes.security import generate_csrf_token
 
-os.environ["DATABASE_URL"] = "postgresql://test:test@localhost:5432/test"
-os.environ["SECRET_KEY"] = "test-secret-key-integration"
-os.environ["JWT_SECRET"] = "test-jwt-secret-integration"
-os.environ["CSRF_TOKEN_SECRET"] = "test-csrf-secret-integration"
-os.environ["ENV"] = "development"
+os.environ.setdefault("DATABASE_URL", "postgresql://test:test@localhost:5432/test")
+os.environ.setdefault("SECRET_KEY", "test-secret-key-integration")
+os.environ.setdefault("JWT_SECRET", "test-jwt-secret-integration")
+os.environ.setdefault("CSRF_TOKEN_SECRET", "test-csrf-secret-integration")
+os.environ.setdefault("ENV", "development")
 os.environ["CORS_ORIGINS"] = "http://localhost:3000"
 
 
@@ -20,8 +20,11 @@ os.environ["CORS_ORIGINS"] = "http://localhost:3000"
 def client():
     from core.api_fast import app
 
-    with TestClient(app) as test_client:
+    test_client = TestClient(app)
+    try:
         yield test_client
+    finally:
+        test_client.close()
 
 
 class TestNewsletterUnsubscribeSecurity:

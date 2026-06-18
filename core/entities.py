@@ -9,6 +9,7 @@ Pipeline:
 """
 
 import logging
+import os
 import re
 import threading
 
@@ -23,6 +24,8 @@ def _get_spacy():
     """Lazy-load spaCy multilingual NER once per process. Returns None if
     spaCy or the model is unavailable — callers must handle the fallback."""
     global _spacy_nlp, _spacy_unavailable
+    if os.environ.get("PRESEK_DISABLE_SPACY", "").lower() in {"1", "true", "yes"}:
+        return None
     if _spacy_unavailable:
         return None
     if _spacy_nlp is not None:

@@ -59,8 +59,9 @@ from tasks.intelligence.synthesis_merge import (
     _cosine_dist,
     _split_cluster_merge_score,
 )
+from tasks.intelligence import synthesis_scheduling as _synthesis_scheduling
 from tasks.intelligence.synthesis_scheduling import (
-    _schedule_copy_purity_retry,
+    _COPY_PURITY_RETRY_DELAY_SECONDS,
     _schedule_deep_analyst_work,
     _schedule_fast_synthesis_upgrade,
 )
@@ -98,6 +99,20 @@ import sys
 import threading
 
 from tasks.intelligence._queue import intelligence_soft_deferred
+
+
+def _schedule_copy_purity_retry(cluster_id: str, content, *, lang: str, fast_mode: bool) -> bool:
+    original_schedule_task_once = _synthesis_scheduling.schedule_task_once
+    _synthesis_scheduling.schedule_task_once = schedule_task_once
+    try:
+        return _synthesis_scheduling._schedule_copy_purity_retry(
+            cluster_id,
+            content,
+            lang=lang,
+            fast_mode=fast_mode,
+        )
+    finally:
+        _synthesis_scheduling.schedule_task_once = original_schedule_task_once
 
 
 @celery_app.task(name="tasks.intelligence.upgrade_fast_synthesis_task", queue="maintenance")

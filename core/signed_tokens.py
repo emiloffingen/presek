@@ -39,6 +39,9 @@ def _decode_signed(token: str) -> str | None:
     try:
         padding = "=" * (-len(token) % 4)
         raw = base64.urlsafe_b64decode((token + padding).encode("ascii")).decode("utf-8")
+        canonical = base64.urlsafe_b64encode(raw.encode("utf-8")).decode("ascii").rstrip("=")
+        if not hmac.compare_digest(token, canonical):
+            return None
         payload, exp_str, sig = raw.rsplit(":", 2)
         exp = int(exp_str)
         if exp < int(time.time()):

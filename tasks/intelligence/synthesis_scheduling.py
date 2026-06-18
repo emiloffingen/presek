@@ -179,3 +179,4 @@ def _schedule_copy_purity_retry(
             lang,
             _COPY_PURITY_RETRY_DELAY_SECONDS,
         )
+    return scheduled

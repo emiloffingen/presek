@@ -279,16 +279,16 @@ class TestSynthesizeClusterTaskQuality:
         with (
             patch("core.llm_router.SmartModelRouter.route_cluster", return_value="local"),
             patch(
-                "tasks.intelligence.synthesis._call_ai",
+                "tasks.intelligence.synthesis_generation._call_ai",
                 side_effect=[
                     (bad_payload, "local"),
                     (good_payload, "mistral_small"),
                 ],
             ),
-            patch("tasks.intelligence.synthesis._attempt_gemma_rescue", return_value=None),
-            patch("tasks.intelligence.synthesis._is_grounded_synthesis", return_value=True),
-            patch("tasks.intelligence.synthesis._score_synthesis_quality", return_value=0.9),
-            patch("tasks.intelligence.synthesis._score_editorial_summary", return_value=0.9),
+            patch("tasks.intelligence.synthesis_generation._attempt_gemma_rescue", return_value=None),
+            patch("tasks.intelligence.synthesis_generation._is_grounded_synthesis", return_value=True),
+            patch("tasks.intelligence.synthesis_generation._score_synthesis_quality", return_value=0.9),
+            patch("tasks.intelligence.synthesis_generation._score_editorial_summary", return_value=0.9),
         ):
             result = _generate_synthesis_via_cascade(
                 article_rows,
@@ -315,7 +315,7 @@ class TestSynthesizeClusterTaskQuality:
     def test_schedule_fast_synthesis_upgrade_uses_task_once_lock(self):
         from tasks.intelligence import _schedule_fast_synthesis_upgrade, upgrade_fast_synthesis_task
 
-        with patch("tasks.intelligence.synthesis.schedule_task_once", return_value=True) as mock_schedule:
+        with patch("tasks.intelligence.synthesis_scheduling.schedule_task_once", return_value=True) as mock_schedule:
             assert _schedule_fast_synthesis_upgrade("cluster-9", "legacy") is True
 
         mock_schedule.assert_called_once()
@@ -476,9 +476,10 @@ class TestSynthesizeClusterTaskQuality:
         }
 
         with (
-            patch("tasks.intelligence.synthesis.db") as mock_db,
+            patch("tasks.intelligence.synthesis_prompt.db") as mock_prompt_db,
+            patch("tasks.intelligence.synthesis_persist.db") as mock_db,
             patch(
-                "tasks.intelligence.synthesis._generate_synthesis_via_cascade",
+                "tasks.intelligence.synthesis_pipeline._generate_synthesis_via_cascade",
                 return_value={
                     "status": "success",
                     "provider": "nvidia",
@@ -490,11 +491,13 @@ class TestSynthesizeClusterTaskQuality:
                     "cascade_depth": 1,
                 },
             ),
-            patch("tasks.intelligence.synthesis.generate_cover_art", return_value=None),
-            patch("tasks.intelligence.synthesis.invalidate_cluster_caches"),
+            patch("tasks.intelligence.synthesis_persist.generate_cover_art", return_value=None),
+            patch("tasks.intelligence.synthesis_persist.invalidate_cluster_caches"),
+            patch("tasks.intelligence.synthesis_persist._schedule_deep_analyst_work"),
+            patch("core.audio_service.AudioService.generate_cluster_audio"),
             patch("tasks.utils.record_task_event"),
-            patch("tasks.intelligence.synthesis.analyst") as mock_analyst,
-            patch("tasks.intelligence.metadata.generate_cluster_metadata_task") as mock_metadata,
+            patch("tasks.intelligence.synthesis_scheduling.analyst") as mock_analyst,
+            patch("tasks.intelligence.metadata.generate_cluster_metadata_task"),
         ):
 
             mock_analyst.extract_deep_metadata.return_value = {
@@ -510,12 +513,16 @@ class TestSynthesizeClusterTaskQuality:
             # Call 4: Strong image check
             # Call 5: Update cluster_metadata impact_score
             # Call 6: Strong image check (second call)
-            mock_db.execute.side_effect = [article_rows, None, None, None, None, None]
+            mock_prompt_db.execute.return_value = article_rows
+            mock_db.execute.side_effect = [None, None, None, None, None]
             mock_db.execute_one.return_value = {"dummy": 1}
 
             tasks.synthesize_cluster_task("cluster-1", "content")
 
-        insert_call = mock_db.execute.call_args_list[2]
+        insert_call = next(
+            call for call in mock_db.execute.call_args_list
+            if "INSERT INTO cluster_summaries" in call.args[0]
+        )
         stored_summary = insert_call.args[1][2]
         stored_perspectives = json.loads(insert_call.args[1][3])
         stored_citation_sources = json.loads(insert_call.args[1][13])
@@ -1659,21 +1666,21 @@ class TestProfileDeliveryTasks:
         }
 
         with (
-            patch("tasks.delivery.briefing._load_recent_breaking_clusters", return_value=[cluster]),
+            patch("tasks.delivery.briefing_alerts._load_recent_breaking_clusters", return_value=[cluster]),
             patch(
-                "tasks.delivery.briefing._load_cluster_alert_material",
+                "tasks.delivery.briefing_alerts._load_cluster_alert_material",
                 return_value=(
                     [{"title": "a", "source": "MIA", "created_at": recent_iso}],
                     now,
                 ),
             ),
-            patch("tasks.delivery.briefing._load_delivery_kind_performance", return_value={}),
+            patch("tasks.delivery.briefing_alerts._load_delivery_kind_performance", return_value={}),
             patch(
-                "tasks.delivery.briefing._load_breaking_target_performance",
+                "tasks.delivery.briefing_alerts._load_breaking_target_performance",
                 return_value={"topics": {}, "sources": {}},
             ),
             patch(
-                "tasks.delivery.briefing.assess_cluster_synthesis_freshness",
+                "tasks.delivery.briefing_alerts.assess_cluster_synthesis_freshness",
                 return_value=freshness,
             ),
         ):
@@ -1708,9 +1715,9 @@ class TestProfileDeliveryTasks:
         }
 
         with (
-            patch("tasks.delivery.briefing._load_recent_breaking_clusters", return_value=[cluster]),
+            patch("tasks.delivery.briefing_alerts._load_recent_breaking_clusters", return_value=[cluster]),
             patch(
-                "tasks.delivery.briefing._load_cluster_alert_material",
+                "tasks.delivery.briefing_alerts._load_cluster_alert_material",
                 return_value=(
                     [
                         {
@@ -1722,13 +1729,13 @@ class TestProfileDeliveryTasks:
                     older,
                 ),
             ),
-            patch("tasks.delivery.briefing._load_delivery_kind_performance", return_value={}),
+            patch("tasks.delivery.briefing_alerts._load_delivery_kind_performance", return_value={}),
             patch(
-                "tasks.delivery.briefing._load_breaking_target_performance",
+                "tasks.delivery.briefing_alerts._load_breaking_target_performance",
                 return_value={"topics": {}, "sources": {}},
             ),
             patch(
-                "tasks.delivery.briefing.assess_cluster_synthesis_freshness",
+                "tasks.delivery.briefing_alerts.assess_cluster_synthesis_freshness",
                 return_value=freshness,
             ),
         ):

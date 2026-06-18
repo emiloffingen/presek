@@ -7,7 +7,7 @@ from core.llm_router import SmartModelRouter
 
 
 @contextmanager
-def _router_env(*, local_available: bool = False, **env_overrides):
+def _router_env(*, local_available: bool = False, fallback_pressure: str = "ok", **env_overrides):
     """Isolate router decisions from the host machine and .env."""
     env = {
         "FREE_API_KEYS_ENABLED": "false",
@@ -18,6 +18,7 @@ def _router_env(*, local_available: bool = False, **env_overrides):
     env.update(env_overrides)
     with (
         patch("core.llm_router._local_model_available", return_value=local_available),
+        patch.object(SmartModelRouter, "_synthesis_fallback_pressure", staticmethod(lambda: fallback_pressure)),
         patch.dict(os.environ, env, clear=True),
     ):
         yield
@@ -191,17 +192,17 @@ def test_route_cluster_quality_profile_avoids_local_for_multi_source_clusters(mo
         assert SmartModelRouter.route_cluster(articles) == "mistral_small"
 
 
-def test_route_cluster_fallback_pressure_prefers_local(monkeypatch):
+def test_route_cluster_critical_fallback_pressure_prefers_large():
     articles = [
         {"title": "Vest 1", "description": "Detalji."},
         {"title": "Vest 2", "description": "Detalji."},
         {"title": "Vest 3", "description": "Detalji."},
     ]
-    monkeypatch.setattr(SmartModelRouter, "_synthesis_fallback_pressure", staticmethod(lambda: "critical"))
     with _router_env(
         local_available=True,
+        fallback_pressure="critical",
         LOCAL_MODEL_PATH="/path/to/model",
         LOCAL_SYNTHESIS_PREFER_LOCAL="false",
         SYNTHESIS_PROFILE="balanced",
     ):
-        assert SmartModelRouter.route_cluster(articles) == "local"
+        assert SmartModelRouter.route_cluster(articles) == "mistral_large"

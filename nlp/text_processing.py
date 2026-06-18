@@ -1,4 +1,5 @@
 import math
+import os
 import re
 
 # Irregular lemmas for Serbian
@@ -425,6 +426,11 @@ def extract_entities_semantic(text: str) -> set[str]:
 
     if not text:
         return set()
+
+    if os.environ.get("PRESEK_DISABLE_SEMANTIC_NER", "").lower() in {"1", "true", "yes"}:
+        from nlp.extraction import extract_title_entities_regex
+
+        return extract_title_entities_regex(text)
 
     if _ner_pipeline is None:
         try:

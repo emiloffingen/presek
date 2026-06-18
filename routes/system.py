@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Optional
 
 import redis as _redis_lib
-from fastapi import APIRouter, HTTPException, Query, Request, Depends
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import FileResponse, Response
 from prometheus_client import REGISTRY, Counter
 
@@ -128,7 +128,31 @@ _WMO_ICON = {
 }
 
 
-from routes.security import admin_auth
+from routes.security import admin_auth  # noqa: F401
+
+
+@router.get("/health")
+async def health(request: Request):
+    """Public health payload with internal connection details stripped."""
+    db_status = _probe_database()
+    redis_status = _probe_redis()
+    db_public = dict(db_status)
+    redis_public = dict(redis_status)
+    db_public.pop("error", None)
+    redis_public.pop("url", None)
+    redis_public.pop("error", None)
+    redis_public.pop("config", None)
+
+    payload = {
+        "status": "healthy" if db_status.get("ok") and redis_status.get("ok") else "degraded",
+        "version": version_payload()["version"],
+        "version_label": version_payload()["version_label"],
+        "uptime_seconds": int(time.time() - _STARTED_AT),
+        "database": db_public,
+        "redis": redis_public,
+        "time": time.strftime("%Y-%m-%dT%H:%M:%S"),
+    }
+    return payload
 
 
 @router.get("/system/media-quality")

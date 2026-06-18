@@ -232,7 +232,7 @@ def _clean_briefing_snippet(text):
 def _normalize_briefing_line(text):
     clean = _clean_briefing_snippet(text)
     clean = re.sub(
-        r"Инцидент\s+Респонсе\s+анд\s+Сецуритy\s+Теамс",
+        r"(?:Форум\s+оф\s+)?Инцидент\s+Респонсе\s+анд\s+Сецурит[yу]\s+Теамс|Сецурит[yу]\s+Теамс",
         "тимови за одговор на безбедносни инциденти",
         clean,
         flags=re.IGNORECASE,
@@ -1034,6 +1034,7 @@ def compare_cluster_sources(articles, lang="mk"):
     ]
     if unique_entities:
         entity, sources = unique_entities[0]
+        entity = _normalize_briefing_line(entity)
         if lang == "sr":
             difference_points.append(
                 f"{sources[0]} izdvaja „{entity}“ kao poseban akcenat koji drugi izvori ne stavljaju u prvi plan."

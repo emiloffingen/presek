@@ -22,13 +22,15 @@ class TestAstroFrontendIntegrity:
 
     def test_layout_contains_required_seo_structures(self):
         layout = _read("web/src/layouts/Layout.astro")
+        head = _read("web/src/components/layout/LayoutHead.astro")
+        boot = _read("web/public/js/presek-boot.js")
         # Check for dynamic HTML lang attribute (used for i18n)
         assert 'lang={lang ===' in layout
         # Check for core SEO tags
-        assert '<link rel="canonical"' in layout
-        assert '<link rel="alternate" hreflang=' in layout
+        assert '<link rel="canonical"' in head
+        assert '<link rel="alternate" hreflang=' in head
         # Check for theme logic usage
-        assert "typeof localStorage !== 'undefined'" in layout
+        assert "typeof localStorage !== 'undefined'" in boot
 
     def test_mk_middleware_redirects_to_presek_mk(self):
         middleware = _read("web/src/middleware.ts")
@@ -39,9 +41,11 @@ class TestAstroFrontendIntegrity:
     def test_canonical_url_uses_logic(self):
         layout = _read("web/src/layouts/Layout.astro")
         locale_paths = _read("web/src/lib/localePaths.ts")
+        layout_meta = _read("web/src/lib/layoutMeta.ts")
         # Canonical URL logic lives in the shared locale helper.
         assert "function buildCanonicalUrl" in locale_paths
-        assert "buildCanonicalUrl" in layout
+        assert "buildCanonicalUrl" in layout_meta
+        assert "resolveLayoutUrls" in layout
         assert "canonicalUrl" in layout
 
     def test_astro_config_has_correct_routing(self):
@@ -137,13 +141,15 @@ class TestAstroFrontendIntegrity:
 
     def test_macedonian_topic_and_entity_pages_keep_locale_contract(self):
         topic_page = _read("web/src/pages/mk/tema/[topic].astro")
+        topic_component = _read("web/src/components/topic/TopicPage.astro")
         entity_page = _read("web/src/pages/mk/subjekt/[name].astro")
 
-        assert "url.searchParams.set('lang', lang);" in topic_page
-        assert "`${API_URL}/cluster/${id}?lang=${lang}`" in topic_page
-        assert 'lang={lang}' in topic_page
-        assert "Tema trenutno nije dostupna." not in topic_page
-        assert "pojavljivanja" not in topic_page
+        assert '<TopicPage locale="mk" />' in topic_page
+        assert "locale?: 'sr' | 'mk'" in topic_component
+        assert "loadTopicPageData" in topic_component
+        assert "lang={lang}" in topic_component
+        assert "Tema trenutno nije dostupna." not in topic_component
+        assert "pojavljivanja" not in topic_component
 
         assert "homePath(lang, hostHeader)" in entity_page
         assert 'lang={lang}' in entity_page

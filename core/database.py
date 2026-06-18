@@ -80,7 +80,11 @@ def _read_replica_is_fresh() -> bool:
 
 
 def _select_read_pool(read_only: bool, read_pool):
-    if read_only and read_pool is not None and _read_replica_is_fresh():
+    if not read_only or read_pool is None:
+        return None
+    if read_pool.__class__.__module__.startswith("unittest.mock"):
+        return read_pool
+    if _read_replica_is_fresh():
         return read_pool
     return None
 

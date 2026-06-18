@@ -68,6 +68,7 @@ class TestHistoricalSummaryBackfill:
 
     def test_scheduler_runs_inline_with_lock(self):
         with (
+            patch("core.config.HOMEPAGE_SYNTHESIS_ONLY", False),
             patch("tasks.intelligence.backfill.intelligence_secondary_deferred", return_value=False),
             patch("core.llm_router._local_model_available", return_value=True),
             patch("tasks.intelligence.backfill.acquire_task_lock", return_value=True) as mock_lock,

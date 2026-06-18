@@ -9,6 +9,9 @@ import pytest
 os.environ.setdefault("SECRET_KEY", "test-secret-key")
 os.environ.setdefault("CSRF_TOKEN_SECRET", "test-csrf-secret")
 os.environ.setdefault("PRESEK_SKIP_DB_POOL_INIT", "1")
+os.environ.setdefault("PRESEK_DISABLE_SEMANTIC_NER", "1")
+os.environ.setdefault("PRESEK_DISABLE_KEYBERT", "1")
+os.environ.setdefault("PRESEK_DISABLE_SPACY", "1")
 os.environ.setdefault("DATABASE_URL", "postgresql://presek:presek_pass_2026@localhost/presek_test")
 os.environ["DATABASE_READ_REPLICA_URL"] = "postgresql://presek:presek_pass_2026@localhost/presek_test"
 

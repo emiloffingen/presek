@@ -72,6 +72,13 @@ SHARED_COMPONENTS_WITH_AD = [
 ]
 
 
+def _read_page_or_delegated_ad_surface(path: str) -> str:
+    source = Path(path).read_text(encoding="utf-8")
+    if "TopicPage" in source:
+        return source + Path("web/src/components/topic/TopicPageContent.astro").read_text(encoding="utf-8")
+    return source
+
+
 def test_tinyadz_helper_module_exists():
     helper = Path("web/src/lib/tinyadz.ts")
     assert helper.exists()
@@ -85,12 +92,14 @@ def test_tinyadz_helper_module_exists():
 
 def test_layout_wires_tinyadz_for_mk_and_live():
     layout = Path("web/src/layouts/Layout.astro").read_text(encoding="utf-8")
+    body_chrome = Path("web/src/components/layout/LayoutBodyChrome.astro").read_text(encoding="utf-8")
     script = Path("web/src/components/TinyAdzScript.astro").read_text(encoding="utf-8")
     helper = Path("web/src/lib/tinyadz.ts").read_text(encoding="utf-8")
-    assert "TinyAdzScript" in layout
     assert "shouldLoadTinyAdzScript" in layout
     assert "tinyAdzSiteId" in layout
-    assert "siteId={tinyAdzSite}" in layout
+    assert "tinyAdzSite={tinyAdzSite}" in layout
+    assert "TinyAdzScript" in body_chrome
+    assert "siteId={tinyAdzSite}" in body_chrome
     assert "TINYADZ_SCRIPT_URL" in script
     assert "setAttribute('site-id', siteId)" in script
     assert "setAttribute('data-site-id', siteId)" in script
@@ -114,31 +123,31 @@ def test_tinyadz_rail_wrapper_exists():
 
 def test_mk_only_content_pages_include_tinyadz_slots():
     for path in MK_PAGES_WITH_RAIL_AD:
-        source = Path(path).read_text(encoding="utf-8")
+        source = _read_page_or_delegated_ad_surface(path)
         assert "TinyAdzRailAd" in source, path
 
     for path in MK_PAGES_WITH_INLINE_AD:
-        source = Path(path).read_text(encoding="utf-8")
+        source = _read_page_or_delegated_ad_surface(path)
         assert "TinyAdzInlinedAd" in source, path
 
 
 def test_shared_mk_host_pages_include_tinyadz_slots():
     for path in SHARED_MK_HOST_PAGES_WITH_RAIL_AD:
-        source = Path(path).read_text(encoding="utf-8")
+        source = _read_page_or_delegated_ad_surface(path)
         assert "TinyAdzRailAd" in source, path
 
     for path in SHARED_MK_HOST_PAGES_WITH_INLINE_AD:
-        source = Path(path).read_text(encoding="utf-8")
+        source = _read_page_or_delegated_ad_surface(path)
         assert "TinyAdzInlinedAd" in source, path
 
 
 def test_live_content_pages_include_tinyadz_slots():
     for path in LIVE_PAGES_WITH_RAIL_AD:
-        source = Path(path).read_text(encoding="utf-8")
+        source = _read_page_or_delegated_ad_surface(path)
         assert "TinyAdzRailAd" in source, path
 
     for path in LIVE_PAGES_WITH_INLINE_AD:
-        source = Path(path).read_text(encoding="utf-8")
+        source = _read_page_or_delegated_ad_surface(path)
         assert "TinyAdzInlinedAd" in source, path
 
 
