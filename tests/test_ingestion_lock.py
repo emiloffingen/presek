@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 from core.ingestion_lock import (
     INGESTION_LOCK_KEY,
     INGESTION_LOCK_TTL_SECONDS,
+    break_stale_ingestion_lock,
     is_ingestion_in_flight,
     release_ingestion_lock,
     renew_ingestion_lock,
@@ -18,7 +19,8 @@ class TestIngestionLock:
             assert try_acquire_ingestion_lock() is True
         args, kwargs = mock_redis.set.call_args
         assert args[0] == INGESTION_LOCK_KEY
-        assert len(args[1]) == 32
+        assert ":" in args[1]
+        assert len(args[1].split(":", 1)[0]) == 32
         assert kwargs == {"nx": True, "ex": INGESTION_LOCK_TTL_SECONDS}
 
     def test_acquire_returns_none_on_redis_error(self):
@@ -65,3 +67,23 @@ class TestIngestionLock:
         mock_redis.exists.return_value = 1
         with patch("core.ingestion_lock.redis_client", mock_redis):
             assert is_ingestion_in_flight() is True
+
+    def test_break_stale_lock_when_no_active_task(self):
+        mock_redis = MagicMock()
+        mock_redis.get.return_value = "deadowner:1"
+        with (
+            patch("core.ingestion_lock.redis_client", mock_redis),
+            patch("core.ingestion_lock._ingestion_celery_task_active", return_value=False),
+        ):
+            assert break_stale_ingestion_lock() is True
+        mock_redis.delete.assert_called_once_with(INGESTION_LOCK_KEY)
+
+    def test_break_stale_lock_keeps_active_task(self):
+        mock_redis = MagicMock()
+        mock_redis.get.return_value = "liveowner:1"
+        with (
+            patch("core.ingestion_lock.redis_client", mock_redis),
+            patch("core.ingestion_lock._ingestion_celery_task_active", return_value=True),
+        ):
+            assert break_stale_ingestion_lock() is False
+        mock_redis.delete.assert_not_called()

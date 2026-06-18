@@ -154,6 +154,12 @@ MAINTENANCE_HEAVY_TASKS = frozenset(
         "tasks.intelligence.repair_split_clusters_task",
     }
 )
+MAINTENANCE_DEFERRABLE_TASKS = frozenset(
+    {
+        "tasks.intelligence.generate_cluster_metadata_task",
+        "tasks.intelligence.upgrade_fast_synthesis_task",
+    }
+)
 MAINTENANCE_SINGLETON_TASKS = frozenset(
     {
         "tasks.maintenance.prune_intel_queue_task",
@@ -580,6 +586,22 @@ def reprioritize_maintenance_queue(*, groom_threshold: int = 80, dry_run: bool =
                 seen_upgrade_clusters.add(cluster_id)
 
         kept.append(raw)
+
+    from core.limits import MAINTENANCE_QUEUE_DEFER_LIMIT
+
+    defer_cap = max(20, MAINTENANCE_QUEUE_DEFER_LIMIT // 3)
+    if len(kept) > MAINTENANCE_QUEUE_DEFER_LIMIT:
+        trimmed: list[str] = []
+        defer_kept = 0
+        for raw in kept:
+            task_name = _parse_queue_task_name(raw)
+            if task_name in MAINTENANCE_DEFERRABLE_TASKS:
+                if defer_kept >= defer_cap:
+                    removed += 1
+                    continue
+                defer_kept += 1
+            trimmed.append(raw)
+        kept = trimmed
 
     result = {
         "skipped": False,

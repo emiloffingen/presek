@@ -434,7 +434,7 @@ def ensure_ingestion_freshness_task(max_age_minutes=120):
     from core.health import load_last_refresh_time, _freshness_payload
     from tasks.ingestion_task import run_ingestion
 
-    from core.ingestion_lock import is_ingestion_in_flight
+    from core.ingestion_lock import break_stale_ingestion_lock, is_ingestion_in_flight
 
     prune_ingestion_queue(max_pending=1)
 
@@ -442,7 +442,7 @@ def ensure_ingestion_freshness_task(max_age_minutes=120):
     age_minutes = freshness.get("age_minutes")
     if age_minutes is not None and age_minutes <= int(max_age_minutes):
         return {"skipped": True, "age_minutes": age_minutes}
-    if is_ingestion_in_flight():
+    if is_ingestion_in_flight() and not break_stale_ingestion_lock():
         return {"skipped": True, "reason": "in_flight", "age_minutes": age_minutes}
 
     run_ingestion.apply_async(expires=540)

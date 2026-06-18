@@ -1087,7 +1087,7 @@ async def ingest_all_sources_async():
                         if dist >= (VECTOR_THRESHOLD * 0.78):
                             continue
                         if topic == "vesti" or not topic:
-                            incoming_entities = _extract_title_entities(display_title)
+                            incoming_entities = _extract_title_entities(display_title, semantic=False)
                             batch_entities = bc.get("entities", set())
                             shared_entities = (
                                 incoming_entities.intersection(batch_entities)
@@ -1109,6 +1109,7 @@ async def ingest_all_sources_async():
                         category=category,
                         source=c["source"],
                         topic=topic,
+                        semantic_entities=False,
                     )
 
                 clean_desc = re.sub(r"<[^>]+>", "", c["desc"]).strip() if c["desc"] else ""
@@ -1147,7 +1148,7 @@ async def ingest_all_sources_async():
                             "category": category,
                             "topic": topic,
                             "title": display_title,
-                            "entities": _extract_title_entities(display_title),
+                            "entities": _extract_title_entities(display_title, semantic=False),
                         }
                     )
                 recent_articles.insert(

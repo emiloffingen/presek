@@ -350,12 +350,12 @@ from nlp.extraction import extract_title_entities_regex
 from nlp.text_processing import extract_entities_semantic
 
 
-def _extract_title_entities(title: str) -> set[str]:
-    """Extracts entities using a semantic NER model (Transformers), falling back to Regex."""
-    # Run semantic extraction (lazy-loads model on first call)
-    entities = extract_entities_semantic(str(title or ""))
-    if entities:
-        return entities
+def _extract_title_entities(title: str, *, semantic: bool = True) -> set[str]:
+    """Extracts entities using semantic NER when allowed, otherwise regex only."""
+    if semantic:
+        entities = extract_entities_semantic(str(title or ""))
+        if entities:
+            return entities
 
     return extract_title_entities_regex(str(title or ""))
 
@@ -460,6 +460,7 @@ def find_cluster_semantic(
     category: str | None = None,
     topic: str | None = None,
     title: str | None = None,
+    semantic_entities: bool = True,
 ) -> str | None:
     if not embedding:
         return None
@@ -528,7 +529,7 @@ def find_cluster_semantic(
                     from core.database import db_manager
 
                     ents = db_manager.get_cluster_entities([cid]).get(cid, set())
-                    input_ents = _extract_title_entities(title or "")
+                    input_ents = _extract_title_entities(title or "", semantic=semantic_entities)
                     if ents and input_ents and not _entity_token_overlap(ents, input_ents):
                         return None
                     if dist > (threshold * 0.7) and not input_ents:
@@ -558,6 +559,7 @@ def find_or_create_cluster(
     source: str | None = None,
     topic: str | None = None,
     lang: str = "sr",
+    semantic_entities: bool = True,
 ) -> str:
     """
     Unified clustering pipeline:
@@ -567,7 +569,14 @@ def find_or_create_cluster(
     """
     # 1. Semantic Vector Match (Primary Path)
     if embedding:
-        cid = find_cluster_semantic(conn, embedding, category=category, topic=topic, title=title)
+        cid = find_cluster_semantic(
+            conn,
+            embedding,
+            category=category,
+            topic=topic,
+            title=title,
+            semantic_entities=semantic_entities,
+        )
         if cid:
             return cid
 
@@ -579,7 +588,7 @@ def find_or_create_cluster(
     if not vec1:
         return uuid.uuid4().hex[:12]
 
-    potential_entities = _extract_title_entities(title)
+    potential_entities = _extract_title_entities(title, semantic=semantic_entities)
     normalized_input = _normalize_cluster_title(title)
 
     cluster_docs = {}

@@ -15,6 +15,7 @@ from core.crawler import crawler
 from core.database import db_manager as db
 from core.health import record_refresh, record_task_event
 from core.ingestion_lock import (
+    break_stale_ingestion_lock,
     release_ingestion_lock,
     try_acquire_ingestion_lock,
 )
@@ -132,8 +133,15 @@ def run_ingestion():
         Notifier.send_alert("INGESTION_LOCK_FAILURE", "Redis lock check failed")
         return
     if not acquired:
-        log.info(f"Presek {APP_VERSION_LABEL}: ingestion cycle already in flight, skipping duplicate dispatch.")
-        return
+        if break_stale_ingestion_lock():
+            acquired = try_acquire_ingestion_lock()
+        if acquired is None:
+            log.error("[ingestion] Redis lock check failed after stale-lock recovery, skipping cycle for safety")
+            Notifier.send_alert("INGESTION_LOCK_FAILURE", "Redis lock check failed after stale-lock recovery")
+            return
+        if not acquired:
+            log.info(f"Presek {APP_VERSION_LABEL}: ingestion cycle already in flight, skipping duplicate dispatch.")
+            return
     try:
         from core.ingestion import ingest_feeds
 

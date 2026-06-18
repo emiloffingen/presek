@@ -74,7 +74,7 @@ class TestRefreshFallbackSyntheses:
             patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=False),
             patch("tasks.maintenance._collect_homepage_cluster_ids", return_value=["cluster-a"]),
             patch("tasks.maintenance.db") as mock_db,
-            patch("tasks.intelligence.synthesis.synthesize_cluster_task") as mock_task,
+            patch("tasks.intelligence.synthesize_cluster_task") as mock_task,
             patch("tasks.maintenance._effective_synthesis_refresh_hourly_cap", return_value=120),
         ):
             mock_db.execute.return_value = [
@@ -110,12 +110,27 @@ class TestEnsureIngestionFreshness:
             patch("core.health.load_last_refresh_time", return_value="2026-06-13T00:00:00+00:00"),
             patch("core.health._freshness_payload", return_value={"age_minutes": 300}),
             patch("core.ingestion_lock.is_ingestion_in_flight", return_value=True),
+            patch("core.ingestion_lock.break_stale_ingestion_lock", return_value=False),
             patch("tasks.ingestion_task.run_ingestion") as mock_ingest,
         ):
             result = ensure_ingestion_freshness_task(max_age_minutes=120)
 
         assert result == {"skipped": True, "reason": "in_flight", "age_minutes": 300}
         mock_ingest.delay.assert_not_called()
+
+    def test_breaks_stale_lock_before_triggering_ingestion(self):
+        with (
+            patch("core.health.load_last_refresh_time", return_value="2026-06-13T00:00:00+00:00"),
+            patch("core.health._freshness_payload", return_value={"age_minutes": 300}),
+            patch("core.ingestion_lock.is_ingestion_in_flight", return_value=True),
+            patch("core.ingestion_lock.break_stale_ingestion_lock", return_value=True),
+            patch("tasks.maintenance.prune_ingestion_queue"),
+            patch("tasks.ingestion_task.run_ingestion") as mock_ingest,
+        ):
+            result = ensure_ingestion_freshness_task(max_age_minutes=120)
+
+        assert result["triggered"] is True
+        mock_ingest.apply_async.assert_called_once_with(expires=540)
 
 
 class TestCatchUpClusterSyntheses:
@@ -208,7 +223,7 @@ class TestRefreshLowScoreSyntheses:
         with (
             patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=False),
             patch("tasks.maintenance.db") as mock_db,
-            patch("tasks.intelligence.synthesis.synthesize_cluster_task") as mock_task,
+            patch("tasks.intelligence.synthesize_cluster_task") as mock_task,
         ):
             mock_db.execute.return_value = [{"cluster_id": "cluster-a", "lang": "sr", "quality_score": 0.62}]
             result = refresh_low_score_syntheses_task(min_score=0.75, limit=5)
