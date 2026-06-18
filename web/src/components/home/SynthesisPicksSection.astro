@@ -10,9 +10,10 @@ import { ArrowRight } from 'lucide-react';
 interface Props {
     synthesisPicks: NewsCluster[];
     lang?: keyof typeof ui;
+    defaultOpen?: boolean;
 }
 
-const { synthesisPicks, lang: propLang } = Astro.props;
+const { synthesisPicks, lang: propLang, defaultOpen = false } = Astro.props;
 const hostHeader = Astro.request?.headers.get('host');
 const urlLang = getLangFromUrl(Astro.url, hostHeader || undefined);
 const lang = propLang || urlLang;
@@ -49,7 +50,7 @@ const synthesisTeaser = synthesisPicks[0]?.synthetic_headline || synthesisPicks[
 ---
 
 {synthesisPicks && synthesisPicks.length > 0 && (
-    <details class="synthesis-picks-details" data-synthesis-band>
+    <details class="synthesis-picks-details" data-synthesis-band open={defaultOpen || undefined}>
         <summary class="synthesis-picks-summary" aria-label={t('home.synthesis_picks_title')}>
             <span class="synthesis-picks-summary-label">
                 <span class="badge-text">{lang === 'sr' ? 'Sistemska sinteza' : 'Системска синтеза'}</span>

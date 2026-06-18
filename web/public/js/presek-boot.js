@@ -7,7 +7,13 @@
   try {
     var path = window.location.pathname || '';
     var isPregled = path === '/pregled' || path === '/mk/pregled';
+    var isHome = path === '/' || path === '/mk' || path === '/mk/';
     document.documentElement.dataset.homepageMode = isPregled ? 'analiza' : 'vesti';
+    if (isHome && !isPregled) {
+      document.documentElement.dataset.page = 'home';
+    } else {
+      delete document.documentElement.dataset.page;
+    }
   } catch (e) {}
 
   function applyTheme() {

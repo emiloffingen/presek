@@ -354,22 +354,3 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl);
     )}
 </section>
 
-{compact && (
-    <script is:inline>
-        (function bindLeadFeedScroll() {
-            const bind = () => {
-                document.querySelectorAll('[data-scroll-home-feed]').forEach((button) => {
-                    if (button.dataset.bound) return;
-                    button.dataset.bound = '1';
-                    button.addEventListener('click', () => {
-                        const feed = document.getElementById('home-unified-feed') || document.querySelector('[data-testid="news-feed"] .home-mobile-order-feed');
-                        feed?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        window.dispatchEvent(new CustomEvent('presek:scroll-to-feed'));
-                    });
-                });
-            };
-            bind();
-            document.addEventListener('astro:page-load', bind);
-        })();
-    </script>
-)}

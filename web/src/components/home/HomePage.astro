@@ -159,16 +159,6 @@ if (homepageFlags.shouldSetErrorStatus) {
 		: t('layout.home_description')}
     image={!isPregled ? (leadVisual?.proxiedUrl || undefined) : undefined}
 >
-    {isPregled && (
-        <script is:inline>
-            document.documentElement.dataset.homepageMode = 'analiza';
-        </script>
-    )}
-    {isHomepage && !isPregled && (
-        <script is:inline>
-            document.documentElement.dataset.page = 'home';
-        </script>
-    )}
     <NYTHeader q={q} category={category} topic={topic} entity={entity} subcategory={subcategory} stats={stats} latestTickerItems={topWireArticles} />
 
 	<main
@@ -203,15 +193,15 @@ if (homepageFlags.shouldSetErrorStatus) {
                         <h1 class="home-pregled-title">{t('home.pregled_title')}</h1>
                         <p class="home-pregled-deck">{t('home.pregled_deck')}</p>
                         {analysisOverviewItems.length > 0 && (
-                            <dl class="home-analysis-overview" aria-label={t('home.analysis_overview_label')}>
+                            <div class="home-analysis-overview" role="group" aria-label={t('home.analysis_overview_label')}>
                                 {analysisOverviewItems.map((item) => (
                                     <div class="home-analysis-overview-item">
-                                        <dt>{item.label}</dt>
-                                        <dd>{item.value}</dd>
-                                        <p>{item.note}</p>
+                                        <p class="home-analysis-overview-label">{item.label}</p>
+                                        <p class="home-analysis-overview-value">{item.value}</p>
+                                        <p class="home-analysis-overview-note">{item.note}</p>
                                     </div>
                                 ))}
-                            </dl>
+                            </div>
                         )}
                     </header>
                 )}
@@ -230,24 +220,6 @@ if (homepageFlags.shouldSetErrorStatus) {
                             <p class="home-error-note">{t('home.partial_error_note')}</p>
                         )}
                     </div>
-                )}
-
-                {isHomepage && (
-                    <script is:inline>
-                        (function initHomepageSession() {
-                            const root = document.querySelector('[data-home-session-root]');
-                            if (!root) return;
-                            const visitKey = 'homepage-visit-count';
-                            const expandedKey = 'homepage-analysis-expanded';
-                            const visits = Number(localStorage.getItem(visitKey) || '0');
-                            if (visits < 1) root.classList.add('home-first-session');
-                            if (localStorage.getItem(expandedKey) === '1') {
-                                root.classList.add('home-analysis-expanded');
-                                root.querySelector('.home-edition-expand-panel')?.remove();
-                            }
-                            localStorage.setItem(visitKey, String(visits + 1));
-                        })();
-                    </script>
                 )}
 
                 {showEmptyState && (
@@ -343,6 +315,7 @@ if (homepageFlags.shouldSetErrorStatus) {
 						<SynthesisPicksSection
 							synthesisPicks={displayedSynthesisPicks}
 							lang={lang}
+							defaultOpen={isPregled}
 						/>
 					</div>
 				)}
@@ -556,137 +529,22 @@ if (homepageFlags.shouldSetErrorStatus) {
 </Layout>
 
 {isHomepage && showAnalysisLayers && (perspectiveBandItems.length > 0 || radarBandItems.length > 0 || consensusBandItems.length > 0) && (
-	<AnalysisBandsLazy
-		perspectiveItems={perspectiveBandItems}
-		radarItems={radarBandItems}
-		consensusItems={consensusBandItems}
-		labels={analysisBandLabels}
-	/>
+	<>
+		<script type="application/json" id="presek-analysis-bands-data" set:html={JSON.stringify({
+			perspectiveItems: perspectiveBandItems,
+			radarItems: radarBandItems,
+			consensusItems: consensusBandItems,
+			labels: analysisBandLabels,
+		})}></script>
+		<AnalysisBandsLazy
+			perspectiveItems={perspectiveBandItems}
+			radarItems={radarBandItems}
+			consensusItems={consensusBandItems}
+			labels={analysisBandLabels}
+		/>
+	</>
 )}
 
-<script is:inline>
-	(function autoSimpleHomepage() {
-		try {
-			const params = new URLSearchParams(window.location.search);
-			if (params.get('simple') === '1' || params.get('view') === 'simple') return;
-			if (params.get('category') || params.get('topic') || params.get('entity') || params.get('subcategory') || params.get('q')) return;
-			const onboardRaw = localStorage.getItem('presek_onboarding_v1');
-			const onboard = onboardRaw ? JSON.parse(onboardRaw) : null;
-			const onboarded = Boolean(onboard && (onboard.dismissed || onboard.completedAt));
-			const profileRaw = localStorage.getItem('presek_reader_profile_v1');
-			const profile = profileRaw ? JSON.parse(profileRaw) : null;
-			const hasSignals = Boolean(
-				(profile?.followedTopics || []).length
-				|| (profile?.followedSources || []).length
-				|| (profile?.recentClusters || []).length
-			);
-			if (onboarded || hasSignals) return;
-			document.documentElement.dataset.presekSimpleHome = '1';
-			document.querySelectorAll('.homepage-analiza-only').forEach((node) => {
-				node.classList.add('hidden');
-			});
-			document.querySelector('[data-simple-expand]')?.classList.remove('hidden');
-		} catch (_) {}
-	})();
-
-	(function bindSimpleHomeExpand() {
-		const expandBtn = document.querySelector('[data-expand-analysis]');
-		if (!expandBtn) return;
-		expandBtn.addEventListener('click', () => {
-			document.documentElement.dataset.presekSimpleHome = '0';
-			document.documentElement.classList.add('home-analysis-expanded');
-			try {
-				localStorage.setItem('presek_home_analysis_expanded_v1', '1');
-			} catch (_) {}
-			document.querySelectorAll('.homepage-analiza-only').forEach((node) => {
-				node.classList.remove('hidden');
-			});
-			document.querySelector('[data-simple-expand]')?.classList.add('hidden');
-			document.querySelector('.homepage-analiza-only')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-		});
-	})();
-
-	(function homeDetailsDefaults() {
-		const DETAIL_SELECTORS = [
-			'.home-mobile-stats-details',
-			'[data-synthesis-band]',
-			'[data-consensus-band]',
-			'[data-perspectives-band]',
-			'[data-radar-band]',
-			'[data-trending-strip]',
-			'[data-live-strip]',
-		];
-
-		const bindToggleMemory = () => {
-			for (const selector of DETAIL_SELECTORS) {
-				const details = document.querySelector(selector);
-				if (!details || details.dataset.bound) continue;
-				details.dataset.bound = '1';
-				details.addEventListener('toggle', () => {
-					details.dataset.userToggled = '1';
-				});
-			}
-		};
-
-		const applyStatsDefaults = () => {
-			const details = document.querySelector('.home-mobile-stats-details');
-			if (!details || details.dataset.userToggled) return;
-			if (window.matchMedia('(min-width: 769px)').matches) {
-				details.setAttribute('open', '');
-			} else {
-				details.removeAttribute('open');
-			}
-		};
-
-		const applyAnalizaDefaults = () => {
-			const isPregledView = document.querySelector('.home-page-variant-pregled');
-			if (!isPregledView && document.documentElement.dataset.homepageMode !== 'analiza') return;
-			const isDesktop = window.matchMedia('(min-width: 769px)').matches;
-
-			const openUnlessToggled = (selector, forceOpen) => {
-				const details = document.querySelector(selector);
-				if (!details || details.dataset.userToggled) return;
-				if (forceOpen || isDesktop) details.setAttribute('open', '');
-			};
-
-			openUnlessToggled('[data-synthesis-band]', true);
-			if (isDesktop) {
-				openUnlessToggled('[data-consensus-band]');
-			}
-		};
-
-		const apply = () => {
-			applyStatsDefaults();
-			applyAnalizaDefaults();
-		};
-
-		const bind = () => {
-			bindToggleMemory();
-			apply();
-		};
-
-		bind();
-		window.addEventListener('resize', apply, { passive: true });
-		document.addEventListener('astro:page-load', bind);
-
-	})();
-
-	(function homeExpandAnalysis() {
-		const bind = () => {
-			const root = document.querySelector('[data-home-session-root]');
-			const button = document.querySelector('[data-expand-home-analysis]');
-			if (!root || !button || button.dataset.bound) return;
-			button.dataset.bound = '1';
-			button.addEventListener('click', () => {
-				root.classList.add('home-analysis-expanded');
-				root.classList.remove('home-first-session');
-				localStorage.setItem('homepage-analysis-expanded', '1');
-				const expandPanel = button.closest('.home-expand-analysis');
-				if (expandPanel) expandPanel.remove();
-				document.querySelector('.homepage-analiza-only')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-			});
-		};
-		bind();
-		document.addEventListener('astro:page-load', bind);
-	})();
-</script>
+{isHomepage && (
+	<script is:inline src="/js/presek-home.js" defer></script>
+)}
