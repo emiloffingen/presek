@@ -118,10 +118,13 @@ def _cluster_needs_synthesis(cluster: dict) -> bool:
     return len(articles) >= min_sources
 
 
-def _collect_homepage_cluster_ids(limit: int = 48) -> list[str]:
-    from routes.news import fetch_news_data
-    from tasks.utils import safe_async_run
+def _homepage_synthesis_only() -> bool:
+    from core.config import HOMEPAGE_SYNTHESIS_ONLY
 
+    return HOMEPAGE_SYNTHESIS_ONLY
+
+
+def _collect_homepage_layout_cluster_ids(limit: int = 48) -> list[str]:
     targets: list[str] = []
     seen: set[str] = set()
     for lang in ("sr", "mk"):
@@ -133,6 +136,18 @@ def _collect_homepage_cluster_ids(limit: int = 48) -> list[str]:
             targets.append(cluster_id)
             if len(targets) >= limit:
                 return targets
+    return targets
+
+
+def _collect_homepage_cluster_ids(limit: int = 48) -> list[str]:
+    targets = _collect_homepage_layout_cluster_ids(limit)
+    if len(targets) >= limit or _homepage_synthesis_only():
+        return targets
+
+    from routes.news import fetch_news_data
+    from tasks.utils import safe_async_run
+
+    seen = set(targets)
     for lang in ("sr", "mk"):
         payload = safe_async_run(lambda: fetch_news_data(sort="score", page_size=24, lang=lang)) or {}
         for cluster in payload.get("clusters") or []:
@@ -144,6 +159,17 @@ def _collect_homepage_cluster_ids(limit: int = 48) -> list[str]:
             if len(targets) >= limit:
                 return targets
     return targets
+
+
+def filter_cluster_ids_for_synthesis(cluster_ids: list[str]) -> list[str]:
+    """Return cluster IDs that should receive scheduled synthesis work."""
+    normalized = [str(cluster_id).strip() for cluster_id in (cluster_ids or []) if str(cluster_id).strip()]
+    if not normalized:
+        return []
+    if not _homepage_synthesis_only():
+        return normalized
+    homepage_ids = set(_collect_homepage_layout_cluster_ids())
+    return [cluster_id for cluster_id in normalized if cluster_id in homepage_ids]
 
 
 def _synthesis_refresh_budget_remaining() -> int:
@@ -275,6 +301,9 @@ def upgrade_stuck_fast_syntheses_task(limit=None):
         max_age_hours=FAST_SYNTHESIS_STUCK_HOURS,
         limit=batch_limit,
     )
+    if _homepage_synthesis_only():
+        homepage_ids = set(_collect_homepage_layout_cluster_ids())
+        cluster_ids = [cluster_id for cluster_id in cluster_ids if cluster_id in homepage_ids]
     if not cluster_ids:
         return {"enqueued": 0, "stuck_total": 0}
 
@@ -405,19 +434,38 @@ def catch_up_recent_summaries_task(hours=72, limit=400):
     headroom = max(0, int(os.environ.get("INTEL_QUEUE_FULL_DEFER_LIMIT", "800")) - depth - 40)
     scaled_limit = min(max(1, int(limit)), max(1, headroom * 8))
 
+    homepage_ids = _collect_homepage_layout_cluster_ids() if _homepage_synthesis_only() else None
+    if homepage_ids is not None and not homepage_ids:
+        return {"skipped": True, "reason": "no_homepage_clusters"}
+
     try:
-        rows = db.execute(
-            """
-            SELECT id
-            FROM articles
-            WHERE summary IS NULL
-              AND created_at >= NOW() - make_interval(hours => %s)
-            ORDER BY created_at DESC
-            LIMIT %s
-            """,
-            (max(1, int(hours)), scaled_limit),
-            read_only=True,
-        ) or []
+        if homepage_ids is not None:
+            rows = db.execute(
+                """
+                SELECT id
+                FROM articles
+                WHERE summary IS NULL
+                  AND created_at >= NOW() - make_interval(hours => %s)
+                  AND cluster_id = ANY(%s)
+                ORDER BY created_at DESC
+                LIMIT %s
+                """,
+                (max(1, int(hours)), homepage_ids, scaled_limit),
+                read_only=True,
+            ) or []
+        else:
+            rows = db.execute(
+                """
+                SELECT id
+                FROM articles
+                WHERE summary IS NULL
+                  AND created_at >= NOW() - make_interval(hours => %s)
+                ORDER BY created_at DESC
+                LIMIT %s
+                """,
+                (max(1, int(hours)), scaled_limit),
+                read_only=True,
+            ) or []
         article_ids = [int(row["id"]) for row in rows]
         if not article_ids:
             return {"enqueued": 0}
@@ -536,6 +584,10 @@ def catch_up_cluster_syntheses_task(hours=48, limit=50):
     """Enqueue full synthesis for recent multi-source clusters missing cluster summaries."""
     from tasks.intelligence import synthesize_cluster_task
 
+    if _homepage_synthesis_only():
+        log.info("[maintenance] Skipping cluster synthesis catch-up in homepage-only mode.")
+        return {"skipped": True, "reason": "homepage_only"}
+
     if _synthesis_dispatch_deferred():
         log.info("[maintenance] Skipping cluster synthesis catch-up while synthesis queue backlog is high.")
         return {"skipped": True, "reason": "synthesis_backlog"}
@@ -572,7 +624,7 @@ def catch_up_cluster_syntheses_task(hours=48, limit=50):
 
 
 @celery_app.task
-def prioritize_homepage_syntheses_task(limit=12):
+def prioritize_homepage_syntheses_task(limit=8):
     """Enqueue synthesis for homepage-visible clusters missing or stale summaries."""
     from routes.news import fetch_news_data
     from tasks.intelligence.synthesis import synthesize_cluster_task, synthesize_urgent_task
@@ -586,8 +638,6 @@ def prioritize_homepage_syntheses_task(limit=12):
         if dispatch_limit <= 0:
             return {"skipped": True, "reason": "no_headroom", "synthesis_depth": synthesis_depth}
 
-    from routes.news import fetch_news_data
-
     targets: list[str] = []
     seen: set[str] = set()
     for lang in ("sr", "mk"):
@@ -597,13 +647,15 @@ def prioritize_homepage_syntheses_task(limit=12):
                 continue
             seen.add(cluster_id)
             targets.append(cluster_id)
-        payload = safe_async_run(lambda: fetch_news_data(sort="score", page_size=24, lang=lang)) or {}
-        for cluster in payload.get("clusters") or []:
-            cluster_id = str(cluster.get("cluster_id") or "").strip()
-            if not cluster_id or cluster_id in seen or not _cluster_needs_synthesis(cluster):
-                continue
-            seen.add(cluster_id)
-            targets.append(cluster_id)
+    if not _homepage_synthesis_only():
+        for lang in ("sr", "mk"):
+            payload = safe_async_run(lambda: fetch_news_data(sort="score", page_size=24, lang=lang)) or {}
+            for cluster in payload.get("clusters") or []:
+                cluster_id = str(cluster.get("cluster_id") or "").strip()
+                if not cluster_id or cluster_id in seen or not _cluster_needs_synthesis(cluster):
+                    continue
+                seen.add(cluster_id)
+                targets.append(cluster_id)
 
     enqueued = 0
     for idx, cluster_id in enumerate(targets[:dispatch_limit]):
@@ -704,12 +756,19 @@ def refresh_low_score_syntheses_task(min_score=None, limit=None):
         ORDER BY cs.quality_score ASC, source_count DESC, MAX(a.created_at) DESC
         LIMIT %s
         """,
-        (float(score_floor), batch_limit),
+        (float(score_floor), max(batch_limit * 4, batch_limit)),
         read_only=True,
     ) or []
 
+    homepage_ids = set(_collect_homepage_layout_cluster_ids()) if _homepage_synthesis_only() else set()
+    ordered_rows = rows
+    if homepage_ids:
+        ordered_rows = [row for row in rows if str(row["cluster_id"]) in homepage_ids]
+    elif _homepage_synthesis_only():
+        return {"skipped": True, "reason": "homepage_only", "candidates": 0}
+
     enqueued = 0
-    for idx, row in enumerate(rows):
+    for idx, row in enumerate(ordered_rows[:batch_limit]):
         if not _consume_synthesis_refresh_budget():
             break
         synthesize_cluster_task.apply_async(

@@ -1068,6 +1068,12 @@ def auto_summarize_top_clusters(target_cluster_ids: list[str] = None):
             log.info("[ai/auto_summarize] Skipping cycle while celery queue backlog is high.")
             return
 
+        from core.config import HOMEPAGE_SYNTHESIS_ONLY
+
+        if not target_cluster_ids and HOMEPAGE_SYNTHESIS_ONLY:
+            log.info("[ai/auto_summarize] Skipping broad top-cluster sweep in homepage-only mode.")
+            return
+
         if target_cluster_ids:
             rows = db.execute(
                 "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",

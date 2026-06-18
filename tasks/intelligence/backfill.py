@@ -172,7 +172,12 @@ def discover_storylines_task():
 @celery_app.task(name="tasks.intelligence.schedule_backfill_historical_summaries_task")
 def schedule_backfill_historical_summaries_task():
     """Beat entrypoint for Gemma-only historical article summary backfill."""
+    from core.config import HOMEPAGE_SYNTHESIS_ONLY
     from core.llm_router import _local_model_available
+
+    if HOMEPAGE_SYNTHESIS_ONLY:
+        log.info("[tasks] Skipping historical summary backfill in homepage-only mode.")
+        return {"skipped": True, "reason": "homepage_only"}
 
     if intelligence_secondary_deferred():
         log.info("[tasks] Skipping scheduled historical summary backfill while intel-heavy backlog is high.")

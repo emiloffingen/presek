@@ -4,6 +4,7 @@ from tasks.maintenance import (
     catch_up_cluster_syntheses_task,
     catch_up_recent_summaries_task,
     ensure_ingestion_freshness_task,
+    filter_cluster_ids_for_synthesis,
     prioritize_homepage_syntheses_task,
     refresh_fallback_syntheses_task,
     refresh_low_score_syntheses_task,
@@ -20,6 +21,7 @@ class TestCatchUpRecentSummaries:
 
     def test_enqueues_recent_unsummarized_articles(self):
         with (
+            patch("tasks.maintenance._homepage_synthesis_only", return_value=False),
             patch("tasks.utils.pipeline_backpressure_active", return_value=False),
             patch("tasks.intelligence.intelligence_batches_deferred", return_value=False),
             patch("tasks.utils.get_celery_queue_depth", return_value=100),
@@ -32,6 +34,35 @@ class TestCatchUpRecentSummaries:
 
         assert result == {"enqueued": 3}
         mock_dispatch.assert_called_once_with(mock_task, [1, 2, 3])
+
+    def test_limits_catch_up_to_homepage_clusters(self):
+        with (
+            patch("tasks.maintenance._homepage_synthesis_only", return_value=True),
+            patch("tasks.maintenance._collect_homepage_layout_cluster_ids", return_value=["home-1"]),
+            patch("tasks.utils.pipeline_backpressure_active", return_value=False),
+            patch("tasks.intelligence.intelligence_batches_deferred", return_value=False),
+            patch("tasks.utils.get_celery_queue_depth", return_value=100),
+            patch("tasks.maintenance.db") as mock_db,
+            patch("tasks.intelligence._dispatch_batched") as mock_dispatch,
+            patch("tasks.intelligence.summarize_articles_local_batch_task") as mock_task,
+        ):
+            mock_db.execute.return_value = [{"id": 9}]
+            result = catch_up_recent_summaries_task(hours=24, limit=50)
+
+        assert result == {"enqueued": 1}
+        mock_dispatch.assert_called_once_with(mock_task, [9])
+        sql = mock_db.execute.call_args.args[0]
+        assert "cluster_id = ANY" in sql
+
+
+class TestFilterClusterIdsForSynthesis:
+    def test_keeps_only_homepage_clusters_when_enabled(self):
+        with (
+            patch("tasks.maintenance._homepage_synthesis_only", return_value=True),
+            patch("tasks.maintenance._collect_homepage_layout_cluster_ids", return_value=["home-1", "home-2"]),
+        ):
+            result = filter_cluster_ids_for_synthesis(["home-1", "feed-9", "home-2", "feed-3"])
+        assert result == ["home-1", "home-2"]
 
 
 class TestRefreshSynthesisQuality:
@@ -50,6 +81,7 @@ class TestRefreshSynthesisQuality:
 class TestUpgradeStuckFastSyntheses:
     def test_enqueues_stuck_cluster_upgrades(self):
         with (
+            patch("tasks.maintenance._homepage_synthesis_only", return_value=False),
             patch(
                 "core.synthesis_quality.list_stuck_fast_synthesis_cluster_ids",
                 return_value=["cluster-a", "cluster-b"],
@@ -135,9 +167,17 @@ class TestEnsureIngestionFreshness:
 
 class TestCatchUpClusterSyntheses:
     def test_skips_when_backlog_full(self):
-        with patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=True):
+        with (
+            patch("tasks.maintenance._homepage_synthesis_only", return_value=False),
+            patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=True),
+        ):
             result = catch_up_cluster_syntheses_task()
         assert result == {"skipped": True, "reason": "synthesis_backlog"}
+
+    def test_skips_in_homepage_only_mode(self):
+        with patch("tasks.maintenance._homepage_synthesis_only", return_value=True):
+            result = catch_up_cluster_syntheses_task()
+        assert result == {"skipped": True, "reason": "homepage_only"}
 
 
 class TestPrioritizeHomepageSyntheses:
@@ -153,6 +193,7 @@ class TestPrioritizeHomepageSyntheses:
             ]
         }
         with (
+            patch("tasks.maintenance._homepage_synthesis_only", return_value=False),
             patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=True),
             patch("tasks.maintenance._synthesis_queue_depth", return_value=55),
             patch("tasks.maintenance._fetch_homepage_visible_clusters", return_value=[]),
@@ -179,9 +220,11 @@ class TestPrioritizeHomepageSyntheses:
             ]
         }
         with (
+            patch("tasks.maintenance._homepage_synthesis_only", return_value=False),
             patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=False),
             patch("tasks.maintenance._synthesis_queue_depth", return_value=5),
             patch("tasks.maintenance._fetch_homepage_visible_clusters", return_value=[]),
+            patch("tasks.utils.fast_track_dispatches_deferred", return_value=False),
             patch("tasks.utils.safe_async_run", return_value=payload),
             patch("tasks.intelligence.synthesis.synthesize_cluster_task") as mock_task,
         ):
@@ -204,9 +247,11 @@ class TestPrioritizeHomepageSyntheses:
             ]
         }
         with (
+            patch("tasks.maintenance._homepage_synthesis_only", return_value=False),
             patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=False),
             patch("tasks.maintenance._synthesis_queue_depth", return_value=5),
             patch("tasks.maintenance._fetch_homepage_visible_clusters", return_value=[]),
+            patch("tasks.utils.fast_track_dispatches_deferred", return_value=False),
             patch("tasks.utils.safe_async_run", return_value=payload),
             patch("tasks.intelligence.synthesis.synthesize_cluster_task") as mock_task,
         ):
@@ -223,10 +268,11 @@ class TestPrioritizeHomepageSyntheses:
             "synthesis_freshness": {"is_stale": True, "reasons": ["missing_synthesis"]},
         }
         with (
+            patch("tasks.maintenance._homepage_synthesis_only", return_value=True),
             patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=False),
             patch("tasks.maintenance._synthesis_queue_depth", return_value=5),
             patch("tasks.maintenance._fetch_homepage_visible_clusters", return_value=[home_cluster]),
-            patch("tasks.utils.safe_async_run", return_value={"clusters": []}),
+            patch("tasks.utils.fast_track_dispatches_deferred", return_value=False),
             patch("tasks.intelligence.synthesis.synthesize_cluster_task") as mock_task,
         ):
             result = prioritize_homepage_syntheses_task(limit=5)
@@ -248,6 +294,7 @@ class TestRefreshLowScoreSyntheses:
 
     def test_enqueues_low_score_clusters(self):
         with (
+            patch("tasks.maintenance._homepage_synthesis_only", return_value=False),
             patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=False),
             patch("tasks.maintenance.db") as mock_db,
             patch("tasks.intelligence.synthesize_cluster_task") as mock_task,

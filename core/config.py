@@ -396,6 +396,7 @@ AUTO_SUMMARIZE_TOP_N = int(os.environ.get("AUTO_SUMMARIZE_TOP_N", "20"))
 AUTO_SUMMARIZE_MIN_SRC = int(os.environ.get("AUTO_SUMMARIZE_MIN_SRC", "2"))
 AUTO_SUMMARIZE_DELAY = float(os.environ.get("AUTO_SUMMARIZE_DELAY", "1.5"))
 AUTO_SUMMARIZE_FRESH_HOURS = int(os.environ.get("AUTO_SUMMARIZE_FRESH_HOURS", "6"))
+HOMEPAGE_SYNTHESIS_ONLY = os.environ.get("HOMEPAGE_SYNTHESIS_ONLY", "true").lower() in ("1", "true", "yes")
 
 # ── API limits ────────────────────────────────────────────────────
 API_MAX_PAGE = 1000  # Maximum page number for pagination

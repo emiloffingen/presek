@@ -163,6 +163,9 @@ def run_ingestion():
             # We fetch from DB to get cluster_ids for all inserted articles
             inserted_data = db.execute("SELECT cluster_id FROM articles WHERE id = ANY(%s)", (inserted_ids,))
             modified_cluster_ids = list(set(art["cluster_id"] for art in inserted_data if art.get("cluster_id")))
+            from tasks.maintenance import filter_cluster_ids_for_synthesis
+
+            synthesis_cluster_ids = filter_cluster_ids_for_synthesis(modified_cluster_ids)
             # Lazy import to avoid circular dependencies
             from tasks.intelligence import (
                 auto_summarize_task,
@@ -183,8 +186,9 @@ def run_ingestion():
                 classify_topics_task.si(),
                 extract_entities_task.si(),
                 recategorize_clusters_task.si(),
-                auto_summarize_task.si(cluster_ids=modified_cluster_ids),
             )
+            if synthesis_cluster_ids:
+                ingestion_chain |= auto_summarize_task.si(cluster_ids=synthesis_cluster_ids)
             ingestion_chain.apply_async()
 
         log.info(f"Ingestion cycle orchestrated. Added {new_count} articles.")
