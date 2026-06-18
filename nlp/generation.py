@@ -1589,6 +1589,125 @@ def _build_minimum_cluster_summary(articles, comparison=None, lang="mk"):
     return f"• {t['sto_se_slucuva']}: {lead['title']}\n• {t['pokrienost']}: {len(articles)} {t['izvori']}, {t['sledeno_od']} i {_source_list(articles)}."
 
 
+def _placeholder_svg_escape(text: str) -> str:
+    return (
+        str(text or "")
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
+
+
+def _placeholder_paint_tokens(
+    c_bg: str,
+    c_spot: str,
+    c_accent: str,
+    *,
+    light: bool,
+) -> dict[str, str]:
+    if light:
+        return {
+            "glass_fill": "rgba(255,255,255,0.22)",
+            "glass_stroke": "rgba(0,0,0,0.06)",
+            "grid_stroke": "rgba(0,0,0,0.035)",
+            "text_primary": "#0f172a",
+            "text_meta": "#334155",
+            "meta_opacity": "0.7",
+            "category_opacity": "0.95",
+            "accent": c_accent,
+            "line_light": "rgba(0,0,0,0.12)",
+            "line_vlight": "rgba(0,0,0,0.05)",
+            "line_vvlight": "rgba(0,0,0,0.02)",
+            "dot": "#0f172a",
+            "grain_fill": "#000000",
+            "grain_opacity": "0.015",
+            "bg_start": c_bg,
+            "bg_end": "#f1f3f5",
+            "mesh_start": c_spot,
+            "mesh_start_opacity": "0.35",
+            "mesh_end": "#f1f3f5",
+            "glow_start": c_accent,
+            "glow_start_opacity": "0.25",
+            "glow_end": "#f1f3f5",
+        }
+    return {
+        "glass_fill": "rgba(255,255,255,0.015)",
+        "glass_stroke": "rgba(255,255,255,0.06)",
+        "grid_stroke": "rgba(255,255,255,0.06)",
+        "text_primary": "#ffffff",
+        "text_meta": "#ffffff",
+        "meta_opacity": "0.6",
+        "category_opacity": "0.8",
+        "accent": c_accent,
+        "line_light": "rgba(255,255,255,0.15)",
+        "line_vlight": "rgba(255,255,255,0.05)",
+        "line_vvlight": "rgba(255,255,255,0.03)",
+        "dot": "#ffffff",
+        "grain_fill": "#ffffff",
+        "grain_opacity": "0.04",
+        "bg_start": c_bg,
+        "bg_end": "#020408",
+        "mesh_start": c_spot,
+        "mesh_start_opacity": "0.45",
+        "mesh_end": "#020408",
+        "glow_start": c_accent,
+        "glow_start_opacity": "0.35",
+        "glow_end": "#020408",
+    }
+
+
+def _placeholder_paint_css(tokens: dict[str, str]) -> str:
+    return f"""
+            .ph-glass {{ fill: {tokens["glass_fill"]}; stroke: {tokens["glass_stroke"]}; }}
+            .ph-grain {{ fill: {tokens["grain_fill"]}; opacity: {tokens["grain_opacity"]}; }}
+            .ph-grid {{ stroke: {tokens["grid_stroke"]}; fill: none; }}
+            .ph-headline {{ fill: {tokens["text_primary"]}; }}
+            .ph-meta {{ fill: {tokens["text_meta"]}; opacity: {tokens["meta_opacity"]}; }}
+            .ph-category {{ fill: {tokens["accent"]}; opacity: {tokens["category_opacity"]}; }}
+            .ph-accent-fill {{ fill: {tokens["accent"]}; }}
+            .ph-fill-dot {{ fill: {tokens["dot"]}; }}
+            .ph-stroke-accent {{ stroke: {tokens["accent"]}; fill: none; }}
+            .ph-stroke-line {{ stroke: {tokens["line_light"]}; fill: none; }}
+            .ph-stroke-vline {{ stroke: {tokens["line_vlight"]}; fill: none; }}
+            .ph-stroke-vvline {{ stroke: {tokens["line_vvlight"]}; fill: none; }}
+            .ph-fill-vvline {{ fill: {tokens["line_vvlight"]}; }}
+            .ph-fill-line {{ fill: {tokens["line_light"]}; }}
+            .ph-accent-shape {{ stroke: {tokens["accent"]}; fill: {tokens["line_vvlight"]}; }}
+            .bg-stop-start {{ stop-color: {tokens["bg_start"]}; }}
+            .bg-stop-end {{ stop-color: {tokens["bg_end"]}; }}
+            .mesh-stop-start {{ stop-color: {tokens["mesh_start"]}; stop-opacity: {tokens["mesh_start_opacity"]}; }}
+            .mesh-stop-end {{ stop-color: {tokens["mesh_end"]}; stop-opacity: 0; }}
+            .art-glow-start {{ stop-color: {tokens["glow_start"]}; stop-opacity: {tokens["glow_start_opacity"]}; }}
+            .art-glow-end {{ stop-color: {tokens["glow_end"]}; stop-opacity: 0; }}
+        """
+
+
+def _placeholder_style_block(
+    theme_l: str,
+    c_bg_dark: str,
+    c_spot_dark: str,
+    c_accent_dark: str,
+    c_bg_light: str,
+    c_spot_light: str,
+    c_accent_light: str,
+) -> str:
+    dark_tokens = _placeholder_paint_tokens(c_bg_dark, c_spot_dark, c_accent_dark, light=False)
+    light_tokens = _placeholder_paint_tokens(c_bg_light, c_spot_light, c_accent_light, light=True)
+    if theme_l == "light":
+        return _placeholder_paint_css(light_tokens)
+    if theme_l == "dark":
+        return _placeholder_paint_css(dark_tokens)
+    return (
+        _placeholder_paint_css(dark_tokens)
+        + """
+            @media (prefers-color-scheme: light) {
+        """
+        + _placeholder_paint_css(light_tokens)
+        + "\n            }\n"
+    )
+
+
 def generate_local_placeholder(cluster_id, title, category="vesti", theme=None, lang="sr"):
     import hashlib
 
@@ -1660,115 +1779,15 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None, 
     c_bg_light, c_spot_light, c_accent_light = colors_light
 
     theme_l = str(theme or "").lower()
-    if theme_l == "light":
-        style_content = f"""
-            svg, :root {{
-                --glass-fill: rgba(255,255,255,0.22);
-                --glass-stroke: rgba(0,0,0,0.06);
-                --grid-stroke: rgba(0,0,0,0.035);
-                --text-primary: #0f172a;
-                --text-meta: #334155;
-                --meta-opacity: 0.7;
-                --category-opacity: 0.95;
-                --art-accent: {c_accent_light};
-                --art-line-light: rgba(0,0,0,0.12);
-                --art-line-vlight: rgba(0,0,0,0.05);
-                --art-line-vvlight: rgba(0,0,0,0.02);
-                --art-circle-dot: #0f172a;
-                --text-shadow: 0 2px 4px rgba(255,255,255,0.8);
-                --drop-shadow: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
-                --grain-fill: black;
-                --grain-opacity: 0.015;
-            }}
-            .bg-stop-start {{ stop-color: {c_bg_light}; }}
-            .bg-stop-end {{ stop-color: #f1f3f5; }}
-            .mesh-stop-start {{ stop-color: {c_spot_light}; stop-opacity: 0.35; }}
-            .mesh-stop-end {{ stop-color: #f1f3f5; stop-opacity: 0; }}
-            .art-glow-start {{ stop-color: {c_accent_light}; stop-opacity: 0.25; }}
-            .art-glow-end {{ stop-color: #f1f3f5; stop-opacity: 0; }}
-        """
-    elif theme_l == "dark":
-        style_content = f"""
-            svg, :root {{
-                --glass-fill: rgba(255,255,255,0.015);
-                --glass-stroke: rgba(255,255,255,0.06);
-                --grid-stroke: rgba(255,255,255,0.06);
-                --text-primary: #ffffff;
-                --text-meta: #ffffff;
-                --meta-opacity: 0.6;
-                --category-opacity: 0.8;
-                --art-accent: {c_accent_dark};
-                --art-line-light: rgba(255,255,255,0.15);
-                --art-line-vlight: rgba(255,255,255,0.05);
-                --art-line-vvlight: rgba(255,255,255,0.03);
-                --art-circle-dot: #ffffff;
-                --text-shadow: 0 4px 12px rgba(0,0,0,0.5);
-                --drop-shadow: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
-                --grain-fill: white;
-                --grain-opacity: 0.04;
-            }}
-            .bg-stop-start {{ stop-color: {c_bg_dark}; }}
-            .bg-stop-end {{ stop-color: #020408; }}
-            .mesh-stop-start {{ stop-color: {c_spot_dark}; stop-opacity: 0.45; }}
-            .mesh-stop-end {{ stop-color: #020408; stop-opacity: 0; }}
-            .art-glow-start {{ stop-color: {c_accent_dark}; stop-opacity: 0.35; }}
-            .art-glow-end {{ stop-color: #020408; stop-opacity: 0; }}
-        """
-    else:
-        # Auto/System: Default to Dark, override on light prefers-color-scheme
-        style_content = f"""
-            svg, :root {{
-                --glass-fill: rgba(255,255,255,0.015);
-                --glass-stroke: rgba(255,255,255,0.06);
-                --grid-stroke: rgba(255,255,255,0.06);
-                --text-primary: #ffffff;
-                --text-meta: #ffffff;
-                --meta-opacity: 0.6;
-                --category-opacity: 0.8;
-                --art-accent: {c_accent_dark};
-                --art-line-light: rgba(255,255,255,0.15);
-                --art-line-vlight: rgba(255,255,255,0.05);
-                --art-line-vvlight: rgba(255,255,255,0.03);
-                --art-circle-dot: #ffffff;
-                --text-shadow: 0 4px 12px rgba(0,0,0,0.5);
-                --drop-shadow: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
-                --grain-fill: white;
-                --grain-opacity: 0.04;
-            }}
-            .bg-stop-start {{ stop-color: {c_bg_dark}; }}
-            .bg-stop-end {{ stop-color: #020408; }}
-            .mesh-stop-start {{ stop-color: {c_spot_dark}; stop-opacity: 0.45; }}
-            .mesh-stop-end {{ stop-color: #020408; stop-opacity: 0; }}
-            .art-glow-start {{ stop-color: {c_accent_dark}; stop-opacity: 0.35; }}
-            .art-glow-end {{ stop-color: #020408; stop-opacity: 0; }}
-
-            @media (prefers-color-scheme: light) {{
-                svg, :root {{
-                    --glass-fill: rgba(255,255,255,0.22);
-                    --glass-stroke: rgba(0,0,0,0.06);
-                    --grid-stroke: rgba(0,0,0,0.035);
-                    --text-primary: #0f172a;
-                    --text-meta: #334155;
-                    --meta-opacity: 0.7;
-                    --category-opacity: 0.95;
-                    --art-accent: {c_accent_light};
-                    --art-line-light: rgba(0,0,0,0.12);
-                    --art-line-vlight: rgba(0,0,0,0.05);
-                    --art-line-vvlight: rgba(0,0,0,0.02);
-                    --art-circle-dot: #0f172a;
-                    --text-shadow: 0 2px 4px rgba(255,255,255,0.8);
-                    --drop-shadow: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
-                    --grain-fill: black;
-                    --grain-opacity: 0.015;
-                }}
-                .bg-stop-start {{ stop-color: {c_bg_light}; }}
-                .bg-stop-end {{ stop-color: #f1f3f5; }}
-                .mesh-stop-start {{ stop-color: {c_spot_light}; stop-opacity: 0.35; }}
-                .mesh-stop-end {{ stop-color: #f1f3f5; stop-opacity: 0; }}
-                .art-glow-start {{ stop-color: {c_accent_light}; stop-opacity: 0.25; }}
-                .art-glow-end {{ stop-color: #f1f3f5; stop-opacity: 0; }}
-            }}
-        """
+    style_content = _placeholder_style_block(
+        theme_l,
+        c_bg_dark,
+        c_spot_dark,
+        c_accent_dark,
+        c_bg_light,
+        c_spot_light,
+        c_accent_light,
+    )
 
     # Deterministic geometric adjustments
     angle = seed % 360
@@ -1811,71 +1830,71 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None, 
     tspans = ""
     for i, line in enumerate(display_lines):
         y = y_start + i * line_height
-        line_clean = line.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        line_clean = _placeholder_svg_escape(line)
         tspans += f'<tspan x="80" y="{y}">{line_clean}</tspan>'
 
     # Vector Art backgrounds centered at cx=590, cy=225
     art_templates = {
         "Sport": f"""
-            <ellipse cx="590" cy="225" rx="110" ry="60" fill="none" stroke="var(--art-line-vvlight)" stroke-width="1.5"/>
-            <ellipse cx="590" cy="225" rx="140" ry="80" fill="none" stroke="var(--art-accent)" stroke-width="2" stroke-dasharray="6 4" opacity="0.25"/>
-            <line x1="450" y1="280" x2="730" y2="170" stroke="var(--art-accent)" stroke-width="4" stroke-linecap="round" opacity="0.3"/>
-            <circle cx="680" cy="190" r="10" fill="var(--art-accent)" opacity="0.7"/>
-            <circle cx="680" cy="190" r="4" fill="var(--art-circle-dot)" opacity="0.9"/>
+            <ellipse cx="590" cy="225" rx="110" ry="60" class="ph-stroke-vvline" stroke-width="1.5"/>
+            <ellipse cx="590" cy="225" rx="140" ry="80" class="ph-stroke-accent" stroke-width="2" stroke-dasharray="6 4" opacity="0.25"/>
+            <line x1="450" y1="280" x2="730" y2="170" class="ph-stroke-accent" stroke-width="4" stroke-linecap="round" opacity="0.3"/>
+            <circle cx="680" cy="190" r="10" class="ph-accent-fill" opacity="0.7"/>
+            <circle cx="680" cy="190" r="4" class="ph-fill-dot" opacity="0.9"/>
         """,
         "Ekonomija": f"""
-            <path d="M 450 280 L 510 230 L 570 250 L 630 170 L 690 120" fill="none" stroke="var(--art-accent)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.35"/>
+            <path d="M 450 280 L 510 230 L 570 250 L 630 170 L 690 120" class="ph-stroke-accent" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.35"/>
             <path d="M 450 280 L 510 230 L 570 250 L 630 170 L 690 120 L 690 280 L 450 280 Z" fill="url(#art_glow_{cluster_id})" opacity="0.1" stroke="none"/>
-            <line x1="440" y1="280" x2="700" y2="280" stroke="var(--art-line-light)" stroke-width="1.5"/>
-            <line x1="440" y1="230" x2="700" y2="230" stroke="var(--art-line-vlight)" stroke-width="1" stroke-dasharray="4 4"/>
-            <line x1="440" y1="170" x2="700" y2="170" stroke="var(--art-line-vlight)" stroke-width="1" stroke-dasharray="4 4"/>
-            <circle cx="690" cy="120" r="8" fill="var(--art-accent)" opacity="0.7"/>
+            <line x1="440" y1="280" x2="700" y2="280" class="ph-stroke-line" stroke-width="1.5"/>
+            <line x1="440" y1="230" x2="700" y2="230" class="ph-stroke-vline" stroke-width="1" stroke-dasharray="4 4"/>
+            <line x1="440" y1="170" x2="700" y2="170" class="ph-stroke-vline" stroke-width="1" stroke-dasharray="4 4"/>
+            <circle cx="690" cy="120" r="8" class="ph-accent-fill" opacity="0.7"/>
         """,
         "Tehnologija": f"""
-            <circle cx="590" cy="225" r="70" fill="none" stroke="var(--art-line-vvlight)" stroke-width="1"/>
-            <rect x="520" y="155" width="140" height="140" rx="12" fill="none" stroke="var(--art-accent)" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.3"/>
-            <circle cx="590" cy="225" r="22" fill="var(--art-accent)" opacity="0.4"/>
-            <circle cx="535" cy="170" r="6" fill="var(--art-accent)" opacity="0.7"/>
-            <circle cx="645" cy="280" r="6" fill="var(--art-accent)" opacity="0.7"/>
-            <circle cx="645" cy="170" r="8" fill="var(--art-line-light)" opacity="0.5"/>
-            <line x1="535" y1="170" x2="590" y2="225" stroke="var(--art-line-light)" stroke-width="1.5"/>
-            <line x1="645" y1="280" x2="590" y2="225" stroke="var(--art-line-light)" stroke-width="1.5"/>
+            <circle cx="590" cy="225" r="70" class="ph-stroke-vvline" stroke-width="1"/>
+            <rect x="520" y="155" width="140" height="140" rx="12" class="ph-stroke-accent" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.3"/>
+            <circle cx="590" cy="225" r="22" class="ph-accent-fill" opacity="0.4"/>
+            <circle cx="535" cy="170" r="6" class="ph-accent-fill" opacity="0.7"/>
+            <circle cx="645" cy="280" r="6" class="ph-accent-fill" opacity="0.7"/>
+            <circle cx="645" cy="170" r="8" class="ph-fill-line" opacity="0.5"/>
+            <line x1="535" y1="170" x2="590" y2="225" class="ph-stroke-line" stroke-width="1.5"/>
+            <line x1="645" y1="280" x2="590" y2="225" class="ph-stroke-line" stroke-width="1.5"/>
         """,
         "Zabava": f"""
-            <path d="M 460 240 C 510 160, 550 290, 590 225 C 630 160, 670 290, 720 210" fill="none" stroke="var(--art-accent)" stroke-width="4" stroke-linecap="round" opacity="0.35"/>
-            <circle cx="590" cy="225" r="45" fill="var(--art-accent)" opacity="0.3" filter="blur(1px)"/>
-            <circle cx="610" cy="205" r="8" fill="var(--art-circle-dot)" opacity="0.6"/>
+            <path d="M 460 240 C 510 160, 550 290, 590 225 C 630 160, 670 290, 720 210" class="ph-stroke-accent" stroke-width="4" stroke-linecap="round" opacity="0.35"/>
+            <circle cx="590" cy="225" r="45" class="ph-accent-fill" opacity="0.3"/>
+            <circle cx="610" cy="205" r="8" class="ph-fill-dot" opacity="0.6"/>
         """,
         "Politika": f"""
-            <path d="M 480 270 L 700 270" stroke="var(--art-accent)" stroke-width="4" stroke-linecap="round" opacity="0.3"/>
-            <path d="M 480 160 L 700 160" stroke="var(--art-accent)" stroke-width="4" stroke-linecap="round" opacity="0.3"/>
-            <path d="M 515 160 L 515 270 M 552 160 L 552 270 M 590 160 L 590 270 M 627 160 L 627 270 M 665 160 L 665 270" stroke="var(--art-line-light)" stroke-width="2" opacity="0.6"/>
-            <path d="M 495 160 L 590 110 L 685 160 Z" stroke="var(--art-accent)" stroke-width="3" fill="var(--art-line-vvlight)" opacity="0.3"/>
-            <circle cx="590" cy="215" r="20" fill="var(--art-accent)" opacity="0.5"/>
+            <path d="M 480 270 L 700 270" class="ph-stroke-accent" stroke-width="4" stroke-linecap="round" opacity="0.3"/>
+            <path d="M 480 160 L 700 160" class="ph-stroke-accent" stroke-width="4" stroke-linecap="round" opacity="0.3"/>
+            <path d="M 515 160 L 515 270 M 552 160 L 552 270 M 590 160 L 590 270 M 627 160 L 627 270 M 665 160 L 665 270" class="ph-stroke-line" stroke-width="2" opacity="0.6"/>
+            <path d="M 495 160 L 590 110 L 685 160 Z" class="ph-accent-shape" stroke-width="3" opacity="0.3"/>
+            <circle cx="590" cy="215" r="20" class="ph-accent-fill" opacity="0.5"/>
         """,
         "Svet": f"""
-            <circle cx="590" cy="225" r="90" fill="none" stroke="var(--art-accent)" stroke-width="2.5" opacity="0.3"/>
-            <ellipse cx="590" cy="225" rx="90" ry="32" fill="none" stroke="var(--art-line-light)" stroke-width="1.5"/>
-            <ellipse cx="590" cy="225" rx="32" ry="90" fill="none" stroke="var(--art-line-light)" stroke-width="1.5"/>
-            <circle cx="625" cy="180" r="7" fill="var(--art-accent)" opacity="0.7"/>
+            <circle cx="590" cy="225" r="90" class="ph-stroke-accent" stroke-width="2.5" opacity="0.3"/>
+            <ellipse cx="590" cy="225" rx="90" ry="32" class="ph-stroke-line" stroke-width="1.5"/>
+            <ellipse cx="590" cy="225" rx="32" ry="90" class="ph-stroke-line" stroke-width="1.5"/>
+            <circle cx="625" cy="180" r="7" class="ph-accent-fill" opacity="0.7"/>
         """,
         "Local": f"""
-            <circle cx="590" cy="225" r="90" fill="none" stroke="var(--art-line-vvlight)" stroke-width="1"/>
-            <circle cx="590" cy="225" r="70" fill="none" stroke="var(--art-accent)" stroke-width="2" stroke-dasharray="6 4" opacity="0.35"/>
-            <circle cx="590" cy="225" r="40" fill="none" stroke="var(--art-line-light)" stroke-width="1"/>
-            <line x1="490" y1="225" x2="690" y2="225" stroke="var(--art-line-light)" stroke-width="1.5"/>
-            <line x1="590" y1="125" x2="590" y2="325" stroke="var(--art-line-light)" stroke-width="1.5"/>
-            <circle cx="550" cy="245" r="10" fill="var(--art-accent)" opacity="0.7"/>
-            <circle cx="550" cy="245" r="4" fill="var(--art-circle-dot)" opacity="0.9"/>
+            <circle cx="590" cy="225" r="90" class="ph-stroke-vvline" stroke-width="1"/>
+            <circle cx="590" cy="225" r="70" class="ph-stroke-accent" stroke-width="2" stroke-dasharray="6 4" opacity="0.35"/>
+            <circle cx="590" cy="225" r="40" class="ph-stroke-line" stroke-width="1"/>
+            <line x1="490" y1="225" x2="690" y2="225" class="ph-stroke-line" stroke-width="1.5"/>
+            <line x1="590" y1="125" x2="590" y2="325" class="ph-stroke-line" stroke-width="1.5"/>
+            <circle cx="550" cy="245" r="10" class="ph-accent-fill" opacity="0.7"/>
+            <circle cx="550" cy="245" r="4" class="ph-fill-dot" opacity="0.9"/>
         """,
         "default": f"""
-            <circle cx="590" cy="225" r="60" fill="none" stroke="var(--art-line-vvlight)" stroke-width="1"/>
-            <circle cx="590" cy="225" r="85" fill="none" stroke="var(--art-accent)" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.25"/>
-            <circle cx="590" cy="225" r="22" fill="var(--art-accent)" opacity="0.4"/>
-            <circle cx="535" cy="185" r="7" fill="var(--art-accent)" opacity="0.6"/>
-            <circle cx="645" cy="260" r="6" fill="var(--art-accent)" opacity="0.6"/>
-            <line x1="535" y1="185" x2="590" y2="225" stroke="var(--art-line-light)" stroke-width="1.5"/>
-            <line x1="645" y1="260" x2="590" y2="225" stroke="var(--art-line-light)" stroke-width="1.5"/>
+            <circle cx="590" cy="225" r="60" class="ph-stroke-vvline" stroke-width="1"/>
+            <circle cx="590" cy="225" r="85" class="ph-stroke-accent" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.25"/>
+            <circle cx="590" cy="225" r="22" class="ph-accent-fill" opacity="0.4"/>
+            <circle cx="535" cy="185" r="7" class="ph-accent-fill" opacity="0.6"/>
+            <circle cx="645" cy="260" r="6" class="ph-accent-fill" opacity="0.6"/>
+            <line x1="535" y1="185" x2="590" y2="225" class="ph-stroke-line" stroke-width="1.5"/>
+            <line x1="645" y1="260" x2="590" y2="225" class="ph-stroke-line" stroke-width="1.5"/>
         """
     }
 
@@ -1954,13 +1973,13 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None, 
         f'<rect width="100%" height="100%" fill="url(#mesh_{cluster_id})" />',
         
         # 2. Tactile Grain Overlay
-        '<rect width="100%" height="100%" fill="var(--grain-fill)" opacity="var(--grain-opacity)" filter="url(#grain)" />',
+        '<rect width="100%" height="100%" class="ph-grain" filter="url(#grain)" />',
         
         # 3. Editorial panel
-        '<rect x="40" y="40" width="720" height="370" rx="10" fill="var(--glass-fill)" stroke="var(--glass-stroke)" stroke-width="1.25" />',
+        '<rect x="40" y="40" width="720" height="370" rx="10" class="ph-glass" stroke-width="1.25" />',
         
         # 4. Editorial Layout Grid Lines
-        '<g stroke="var(--grid-stroke)" stroke-width="1" stroke-dasharray="6 8">',
+        '<g class="ph-grid" stroke-width="1" stroke-dasharray="6 8">',
         '  <line x1="120" y1="40" x2="120" y2="410" />',
         '  <line x1="460" y1="40" x2="460" y2="410" />',
         '  <line x1="40" y1="110" x2="760" y2="110" />',
@@ -1968,20 +1987,20 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None, 
         '</g>',
         
         # 5. Editorial status
-        '<circle cx="80" cy="75" r="4" fill="var(--art-accent)" opacity="0.72" />',
-        f'<text x="96" y="79" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="900" letter-spacing="2" fill="var(--text-meta)" opacity="var(--meta-opacity)">{status_label}</text>',
+        '<circle cx="80" cy="75" r="4" class="ph-accent-fill" opacity="0.72" />',
+        f'<text x="96" y="79" class="ph-meta" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="900" letter-spacing="2">{status_label}</text>',
         
         # 6. Beautiful Category Vector Art
         f'{art_svg}',
         
         # 7. Asymmetric Headline Typography
-        f'<text font-family="Georgia, \'Times New Roman\', serif" font-size="{font_size}" font-weight="900" fill="var(--text-primary)" text-shadow="var(--text-shadow)" filter="var(--drop-shadow)">',
+        f'<text class="ph-headline" font-family="Georgia, \'Times New Roman\', serif" font-size="{font_size}" font-weight="900">',
         f'  {tspans}',
         '</text>',
         
         # 8. Premium Branding Metadata
-        f'<text x="80" y="378" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" letter-spacing="4" fill="var(--text-meta)" opacity="var(--meta-opacity)">{site_label}</text>',
-        f'<text x="720" y="378" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" letter-spacing="2" fill="var(--art-accent)" opacity="var(--category-opacity)">{category_label}</text>',
+        f'<text x="80" y="378" class="ph-meta" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" letter-spacing="4">{site_label}</text>',
+        f'<text x="720" y="378" text-anchor="end" class="ph-category" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" letter-spacing="2">{category_label}</text>',
         
         '</svg>'
     ]

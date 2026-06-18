@@ -168,9 +168,10 @@ a:hover .design-card-cta {
     position: absolute;
     inset: 0;
     z-index: 0;
-    filter: saturate(0.38) contrast(0.9) opacity(0.38);
-    object-fit: contain;
-    padding: 0.9rem;
+    filter: saturate(0.82) contrast(0.98);
+    object-fit: cover;
+    padding: 0;
+    opacity: 1;
 }
 
 .nyt-article:hover .article-image-placeholder,

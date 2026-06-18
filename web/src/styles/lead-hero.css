@@ -628,12 +628,12 @@
 	    .lead-media-frame-proxy-fallback .lead-media-image {
 	        object-fit: cover;
 	        padding: 0;
-	        opacity: 0.18;
+	        opacity: 1;
 	        transform: scale(1.02);
 	        background:
 	            radial-gradient(circle at 78% 18%, color-mix(in srgb, var(--dominant-color) 8%, transparent), transparent 38%),
 	            linear-gradient(135deg, color-mix(in srgb, var(--background) 94%, var(--dominant-color) 6%), color-mix(in srgb, var(--secondary) 82%, var(--background) 18%));
-	        filter: saturate(0.35) contrast(0.82) blur(1px);
+	        filter: saturate(0.92) contrast(0.98);
 	    }
 
 	    .lead-media-frame-proxy-fallback .lead-media-loading-shell {
