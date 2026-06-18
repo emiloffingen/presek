@@ -214,20 +214,65 @@ def _apply_synthesis_lead_tiebreak(
     ]
 
 
+def _cluster_has_full_synthesis(cluster: Dict[str, Any]) -> bool:
+    if not cluster or not cluster.get("has_synthesis"):
+        return False
+    if str(cluster.get("generated_article") or "").strip():
+        return True
+    if str(cluster.get("synthetic_headline") or "").strip():
+        return True
+    return False
+
+
+def _merge_clusters_by_id(*groups: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    merged: dict[str, Dict[str, Any]] = {}
+    order: list[str] = []
+    for group in groups:
+        for cluster in group or []:
+            cluster_id = str(cluster.get("cluster_id") or "").strip()
+            if not cluster_id:
+                continue
+            if cluster_id not in merged:
+                order.append(cluster_id)
+                merged[cluster_id] = cluster
+                continue
+            existing = merged[cluster_id]
+            if _cluster_has_full_synthesis(cluster) and not _cluster_has_full_synthesis(existing):
+                merged[cluster_id] = cluster
+            elif cluster.get("generated_article") and not existing.get("generated_article"):
+                merged[cluster_id] = {**existing, **cluster}
+    return [merged[cluster_id] for cluster_id in order]
+
+
 def _select_homepage_hero_clusters(
     clusters: List[Dict[str, Any]],
     *,
     hero_count: int = _HOMEPAGE_HERO_COUNT,
     candidate_pool: int = _HOMEPAGE_HERO_CANDIDATE_POOL,
-    synthesis_band: float = _HOMEPAGE_HERO_SYNTHESIS_BAND,
+    synthesis_backfill: List[Dict[str, Any]] | None = None,
+    force_synthesis: bool = True,
 ) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
-    """Pick lead + supporting clusters, preferring synthesis within an editorial score band."""
-    pool = list(clusters[:candidate_pool])
+    """Pick lead + supporting clusters. When forced, only full synthesis clusters qualify."""
+    pool = _merge_clusters_by_id(clusters[:candidate_pool], synthesis_backfill or [])
     if not pool:
         return [], list(clusters)
 
+    if force_synthesis:
+        synth_pool = [cluster for cluster in pool if _cluster_has_full_synthesis(cluster)]
+        synth_pool.sort(
+            key=lambda cluster: (
+                _homepage_cluster_score(cluster),
+                _parse_time(_article_freshness_time(_primary_article(cluster))),
+            ),
+            reverse=True,
+        )
+        hero = synth_pool[:hero_count]
+        used_ids = {str(cluster["cluster_id"]) for cluster in hero if cluster.get("cluster_id")}
+        remainder = [cluster for cluster in clusters if cluster.get("cluster_id") not in used_ids]
+        return hero, remainder
+
     top_score = _homepage_cluster_score(pool[0])
-    score_floor = top_score * synthesis_band if top_score > 0 else 0.0
+    score_floor = top_score * _HOMEPAGE_HERO_SYNTHESIS_BAND if top_score > 0 else 0.0
     hero: List[Dict[str, Any]] = []
     used_ids: set[str] = set()
 
@@ -698,16 +743,16 @@ def _is_usable_focus_entity(name):
     return True
 
 
-async def fetch_synthesis_picks(lang: str = "sr") -> List[Dict[str, Any]]:
-    """Fetches the latest clusters that have a generated synthesis for the given language."""
+async def _fetch_synthesized_clusters(lang: str, *, limit: int) -> List[Dict[str, Any]]:
+    """Load recent clusters that have full generated synthesis for the target language."""
     from collections import defaultdict
     from core.database import db_manager as db
     from utils import score_cluster, score_cluster_for_homepage, is_balanced, annotate_cluster_articles
     from routes.news import _compute_editorial_signals, _public_article_payload, _as_list, _parse_maybe_json
     from core.language import transliterate_cyr_to_lat, transliterate_lat_to_cyr
 
-    # Get latest cluster IDs with synthesis for this language
-    sql = """
+    rows = await db.async_execute(
+        """
         SELECT DISTINCT s.cluster_id, s.created_at
         FROM cluster_summaries s
         WHERE s.lang = %s
@@ -715,14 +760,15 @@ async def fetch_synthesis_picks(lang: str = "sr") -> List[Dict[str, Any]]:
           AND COALESCE(s.generated_article, '') != ''
           AND EXISTS (SELECT 1 FROM articles a WHERE a.cluster_id = s.cluster_id)
         ORDER BY s.created_at DESC
-        LIMIT 4
-    """
-    rows = await db.async_execute(sql, (lang,), read_only=True)
+        LIMIT %s
+        """,
+        (lang, max(1, int(limit))),
+        read_only=True,
+    )
     cids = [r["cluster_id"] for r in rows]
     if not cids:
         return []
 
-    # Fetch articles in these clusters
     art_rows = await db.async_execute(
         "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
         (cids,),
@@ -731,8 +777,7 @@ async def fetch_synthesis_picks(lang: str = "sr") -> List[Dict[str, Any]]:
 
     clusters_grouped = defaultdict(list)
     for art in art_rows:
-        cid = art["cluster_id"]
-        clusters_grouped[cid].append(art)
+        clusters_grouped[art["cluster_id"]].append(art)
 
     meta_rows = await db.async_execute(
         "SELECT cluster_id, representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = ANY(%s)",
@@ -760,43 +805,59 @@ async def fetch_synthesis_picks(lang: str = "sr") -> List[Dict[str, Any]]:
         if not arts:
             continue
 
-        # Annotate articles in cluster
         arts = annotate_cluster_articles(arts)
-
         main = arts[0]
-        s = score_cluster(arts)
+        score = score_cluster(arts)
         homepage_score = score_cluster_for_homepage(arts)
-        editorial = _compute_editorial_signals(arts, s, homepage_score)
+        editorial = _compute_editorial_signals(arts, score, homepage_score)
         meta = meta_map.get(cid, {})
         summary = summary_map.get(cid, {})
 
-        fc = {
-            "cluster_id": cid,
-            "articles": [_public_article_payload(article, lang=lang) for article in arts],
-            "representative_image": meta.get("representative_image"),
-            "dominant_color": meta.get("dominant_color"),
-            "synthetic_headline": summary.get("synthetic_headline"),
-            "synthetic_standfirst": summary.get("synthetic_standfirst"),
-            "generated_article": summary.get("generated_article"),
-            "quote": summary.get("quote"),
-            "key_facts": _as_list(summary.get("key_facts")),
-            "analyst_entities": _as_list(summary.get("analyst_entities")),
-            "pulse_score": summary.get("pulse_score"),
-            "pluralism_score": summary.get("pluralism_score"),
-            "narrative_diversity": _parse_maybe_json(summary.get("narrative_diversity")),
-            "reading_time": main.get("reading_time", 1),
-            "score": round(s, 3),
-            "homepage_score": round(homepage_score, 3),
-            "is_breaking": s >= 1.5,
-            "has_synthesis": True,
-            "has_fact_check": any(a.get("is_fact_check") for a in arts),
-            "has_balanced": is_balanced(arts),
-            "entities": [transliterate_cyr_to_lat(e) for e in main.get("entity_names", [])] if lang == "sr" else ([transliterate_lat_to_cyr(e) for e in main.get("entity_names", [])] if lang == "mk" else main.get("entity_names", [])),
-            **editorial,
-        }
-        formatted_clusters.append(fc)
+        formatted_clusters.append(
+            {
+                "cluster_id": cid,
+                "articles": [_public_article_payload(article, lang=lang) for article in arts],
+                "representative_image": meta.get("representative_image"),
+                "dominant_color": meta.get("dominant_color"),
+                "synthetic_headline": summary.get("synthetic_headline"),
+                "synthetic_standfirst": summary.get("synthetic_standfirst"),
+                "generated_article": summary.get("generated_article"),
+                "quote": summary.get("quote"),
+                "key_facts": _as_list(summary.get("key_facts")),
+                "analyst_entities": _as_list(summary.get("analyst_entities")),
+                "pulse_score": summary.get("pulse_score"),
+                "pluralism_score": summary.get("pluralism_score"),
+                "narrative_diversity": _parse_maybe_json(summary.get("narrative_diversity")),
+                "reading_time": main.get("reading_time", 1),
+                "score": round(score, 3),
+                "homepage_score": round(homepage_score, 3),
+                "is_breaking": score >= 1.5,
+                "has_synthesis": True,
+                "has_fact_check": any(a.get("is_fact_check") for a in arts),
+                "has_balanced": is_balanced(arts),
+                "entities": [transliterate_cyr_to_lat(e) for e in main.get("entity_names", [])]
+                if lang == "sr"
+                else (
+                    [transliterate_lat_to_cyr(e) for e in main.get("entity_names", [])]
+                    if lang == "mk"
+                    else main.get("entity_names", [])
+                ),
+                **editorial,
+            }
+        )
 
+    formatted_clusters.sort(key=_homepage_cluster_score, reverse=True)
     return formatted_clusters
+
+
+async def fetch_synthesis_hero_candidates(lang: str = "sr", limit: int = 24) -> List[Dict[str, Any]]:
+    """Return the strongest recent synthesized clusters for homepage hero backfill."""
+    return await _fetch_synthesized_clusters(lang, limit=limit)
+
+
+async def fetch_synthesis_picks(lang: str = "sr") -> List[Dict[str, Any]]:
+    """Fetches the latest clusters that have a generated synthesis for the given language."""
+    return await _fetch_synthesized_clusters(lang, limit=4)
 
 
 @router.get("/home", response_model=HomeResponse)
@@ -810,9 +871,9 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
     sync_token = _extract_sync_token(request) if request else ""
     
     if sync_token:
-        cache_key = f"api:home:v6:{lang}:personalized:{sync_token}"
+        cache_key = f"api:home:v7:{lang}:personalized:{sync_token}"
     else:
-        cache_key = f"api:home:v6:{lang}"
+        cache_key = f"api:home:v7:{lang}"
         
     cached = cached_response(cache_key, ttl=300)
     if cached:
@@ -827,12 +888,12 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
             get_trending_route(lang=lang),
             get_top_entities(limit=12, lang=lang),
             get_stats_summary(lang=lang),
-            fetch_synthesis_picks(lang=lang),
+            fetch_synthesis_hero_candidates(lang=lang),
             get_latest_briefing(lang=lang),
             return_exceptions=True,
         )
 
-        news_result, trending, top_entities, stats, synthesis_picks, briefing_result = results
+        news_result, trending, top_entities, stats, synthesis_hero_pool, briefing_result = results
 
         # Basic error check (ensure news_result is a dict)
         if isinstance(news_result, Exception):
@@ -848,9 +909,9 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
             top_entities = []
         if isinstance(stats, Exception):
             stats = {}
-        if isinstance(synthesis_picks, Exception):
-            log.error(f"Failed to fetch synthesis picks: {synthesis_picks}")
-            synthesis_picks = []
+        if isinstance(synthesis_hero_pool, Exception):
+            log.error(f"Failed to fetch synthesis hero pool: {synthesis_hero_pool}")
+            synthesis_hero_pool = []
         if isinstance(briefing_result, Exception):
             log.error(f"Failed to fetch briefing for home: {briefing_result}")
             briefing_result = None
@@ -872,13 +933,19 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
         clusters = news_result.get("clusters") or []
         global_clusters = news_result.get("global_clusters") or []
 
-        synthesis_pick_ids = {c["cluster_id"] for c in synthesis_picks}
-        clusters = [c for c in clusters if c["cluster_id"] not in synthesis_pick_ids]
-        hero, remainder = _select_homepage_hero_clusters(clusters)
+        hero, remainder = _select_homepage_hero_clusters(
+            clusters,
+            synthesis_backfill=synthesis_hero_pool,
+            force_synthesis=True,
+        )
+        hero_ids = {cluster.get("cluster_id") for cluster in hero if cluster.get("cluster_id")}
         clusters = hero + remainder
+        synthesis_picks = [
+            cluster for cluster in synthesis_hero_pool if cluster.get("cluster_id") not in hero_ids
+        ][:4]
 
-        lead = clusters[0] if clusters else None
-        supporting = clusters[1:_HOMEPAGE_HERO_COUNT]
+        lead = hero[0] if hero else None
+        supporting = hero[1:_HOMEPAGE_HERO_COUNT]
         priority_audio_ids = set()
         priority_audio_budget = _AUDIO_PRIORITY_GENERATION_LIMIT
 
@@ -896,13 +963,11 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
             return True
 
         if lead:
-            lead = await _ensure_cluster_synthesis(lead, enqueue=True)
             lead = await _ensure_cluster_audio(lead, generate=should_generate_priority_audio(lead))
             priority_audio_ids.add(lead.get("cluster_id"))
             clusters[0] = lead
 
         for idx, cluster in enumerate(supporting, start=1):
-            cluster = await _ensure_cluster_synthesis(cluster, enqueue=True)
             supporting[idx - 1] = await _ensure_cluster_audio(
                 cluster,
                 generate=should_generate_priority_audio(cluster),

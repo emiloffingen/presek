@@ -263,31 +263,38 @@ def test_select_homepage_hero_clusters_prefers_synthesis_within_score_band():
     clusters = [
         {"cluster_id": "a", "homepage_score": 100, "has_synthesis": False},
         {"cluster_id": "b", "homepage_score": 95, "has_synthesis": False},
-        {"cluster_id": "c", "homepage_score": 80, "has_synthesis": True},
-        {"cluster_id": "d", "homepage_score": 78, "has_synthesis": True},
-        {"cluster_id": "e", "homepage_score": 50, "has_synthesis": True},
+        {"cluster_id": "c", "homepage_score": 80, "has_synthesis": True, "generated_article": "Synth C"},
+        {"cluster_id": "d", "homepage_score": 78, "has_synthesis": True, "generated_article": "Synth D"},
+        {"cluster_id": "e", "homepage_score": 50, "has_synthesis": True, "generated_article": "Synth E"},
     ]
 
-    hero, remainder = home._select_homepage_hero_clusters(clusters, hero_count=4)
+    hero, remainder = home._select_homepage_hero_clusters(clusters, hero_count=4, force_synthesis=True)
 
-    assert [cluster["cluster_id"] for cluster in hero] == ["a", "c", "d", "b"]
-    assert [cluster["cluster_id"] for cluster in remainder] == ["e"]
+    assert [cluster["cluster_id"] for cluster in hero] == ["c", "d", "e"]
+    assert [cluster["cluster_id"] for cluster in remainder] == ["a", "b"]
 
 
-def test_select_homepage_hero_clusters_keeps_editorial_leader_without_nearby_synthesis():
+def test_select_homepage_hero_clusters_backfills_from_synthesis_pool():
     home = _load_home_module()
 
     clusters = [
         {"cluster_id": "a", "homepage_score": 100, "has_synthesis": False},
         {"cluster_id": "b", "homepage_score": 95, "has_synthesis": False},
-        {"cluster_id": "c", "homepage_score": 94, "has_synthesis": False},
-        {"cluster_id": "d", "homepage_score": 93, "has_synthesis": False},
+    ]
+    synthesis_backfill = [
+        {"cluster_id": "s1", "homepage_score": 70, "has_synthesis": True, "generated_article": "One"},
+        {"cluster_id": "s2", "homepage_score": 65, "has_synthesis": True, "generated_article": "Two"},
     ]
 
-    hero, remainder = home._select_homepage_hero_clusters(clusters, hero_count=4)
+    hero, remainder = home._select_homepage_hero_clusters(
+        clusters,
+        synthesis_backfill=synthesis_backfill,
+        hero_count=2,
+        force_synthesis=True,
+    )
 
-    assert [cluster["cluster_id"] for cluster in hero] == ["a", "b", "c", "d"]
-    assert remainder == []
+    assert [cluster["cluster_id"] for cluster in hero] == ["s1", "s2"]
+    assert remainder == clusters
 
 
 def test_schedule_cluster_synthesis_uses_fast_track_once(monkeypatch):
