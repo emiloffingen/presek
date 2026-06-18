@@ -1,6 +1,6 @@
 ---
 import { renderSynthesisHtml as sharedRenderSynthesisHtml } from '../../utils/renderSynthesisHtml';
-import { getLangFromUrl } from '../../i18n/utils';
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import { localePath } from '../../lib/localePaths';
 
 interface Props {
@@ -16,6 +16,7 @@ const { hasStrongLeadNarrative, generatedArticle, synthesisItems, hasCitationSou
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
+const t = useTranslations(lang);
 const entityPathPrefix = localePath('/subjekt/', lang, hostHeader);
 
 const cleanNarrativeParagraph = (text: string) => String(text || '')
@@ -118,10 +119,7 @@ const renderSynthesisHtml = (text: string) => {
 		</div>
 	) : (
 		<div class="empty-narrative-fallback italic text-muted-foreground font-serif">
-            {lang === 'sr'
-                ? 'Detaljna sinteza za ovaj razvoj je u procesu konsolidacije. Molimo pogledajte kratak pregled iznad.'
-                : 'Деталната синтеза за овој развој е во процес на консолидација. Ве молиме погледнете го краткиот преглед погоре.'
-            }
+            {t('narrative.pending_consolidation')}
         </div>
 	)}
 </div>

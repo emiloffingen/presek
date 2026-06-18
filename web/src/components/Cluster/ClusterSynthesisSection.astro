@@ -3,6 +3,7 @@ import { BookOpen, Clock3, RefreshCw } from 'lucide-react';
 import EditorialNarrative from './EditorialNarrative.astro';
 import EditorialSectionLockup from '../editorial/EditorialSectionLockup.astro';
 import AudioPlayer from '../audio/AudioPlayer.astro';
+import { useTranslations } from '../../i18n/utils';
 
 interface SynthesisItem {
 	content: string;
@@ -47,39 +48,22 @@ const {
 	isPageLead = false,
 } = Astro.props;
 
+const t = useTranslations(lang);
 const synthesisReady = hasGeneratedNarrative || synthesisItems.length > 0;
 const reasons = synthesisFreshness.reasons || [];
 const isMissing = reasons.includes('missing_synthesis');
 const isStale = Boolean(synthesisFreshness.is_stale);
 const newArticleCount = Number(synthesisFreshness.new_article_count || 0);
 
-const pendingTitle = lang === 'sr' ? 'Sinteza u pripremi' : 'Синтезата се подготвува';
-const pendingBody =
-	lang === 'sr'
-		? `${uniqueSourcesCount} izvora je povezano u klaster. Urednički pregled se generiše i uskoro će biti dostupan.`
-		: `${uniqueSourcesCount} извори се поврзани во кластерот. Уредничкиот преглед се генерира и наскоро ќе биде достапен.`;
-
-const staleTitle = lang === 'sr' ? 'Sinteza se osvežava' : 'Синтезата се освежува';
-const staleBody =
-	lang === 'sr'
-		? newArticleCount > 0
-			? `Stiglo je ${newArticleCount} novih objava. Pregled se ažurira da uključi najnovije izvore.`
-			: 'Pregled je zastareo u odnosu na izvore; ažuriranje je u toku.'
-		: newArticleCount > 0
-			? `Пристигнаа ${newArticleCount} нови објави. Прегледот се ажурира со најновите извори.`
-			: 'Прегледот е застарен според изворите; ажурирањето е во тек.';
-
-const staleBanner =
-	lang === 'sr'
-		? 'Stigli su noviji izvori — pregled ispod može biti delimično zastareo.'
-		: 'Пристигнаа понови извори — прегледот подолу може делумно да биде застарен.';
-
-const provisionalBanner =
-	lang === 'sr'
-		? 'Prikazan je privremeni pregled — puna urednička sinteza se nadograđuje u pozadini.'
-		: 'Прикажан е привремен преглед — целосната уредничка синтеза се надградува во позадина.';
-
-const sourcesCta = lang === 'sr' ? 'Pogledaj izvore' : 'Погледни извори';
+const pendingTitle = t('freshness.pending_synthesis');
+const pendingBody = t('cluster.synthesis.pending_body').replace('{count}', String(uniqueSourcesCount));
+const staleTitle = t('freshness.stale_updating');
+const staleBody = newArticleCount > 0
+	? t('cluster.synthesis.stale_body_new').replace('{count}', String(newArticleCount))
+	: t('cluster.synthesis.stale_body_generic');
+const staleBanner = t('cluster.synthesis.stale_banner');
+const provisionalBanner = t('cluster.synthesis.provisional_banner');
+const sourcesCta = t('cluster.synthesis.view_sources');
 ---
 
 	<section class:list={["editorial-section narrative-section mb-24", { "narrative-section--lead": isPageLead }]} id="cluster-synthesis">
@@ -92,7 +76,7 @@ const sourcesCta = lang === 'sr' ? 'Pogledaj izvore' : 'Погледни изв�
 					type="cluster"
 					clusterId={clusterId}
 					lang={lang}
-					title={lang === 'sr' ? 'Audio sinteza' : 'Аудио синтеза'}
+					title={t('cluster.audio.synthesis_title')}
 				/>
 			</div>
 		)}

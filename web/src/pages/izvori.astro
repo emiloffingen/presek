@@ -3,6 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import IzvoriPage from '../components/IzvoriPage';
+import { ErrorBoundary } from '../components/ui/ErrorBoundary.tsx';
 import Footer from '../components/Footer.astro';
 import TinyAdzInlinedAd from '../components/TinyAdzInlinedAd.astro';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
@@ -18,7 +19,9 @@ const t = useTranslations(lang);
 	<main class="site-layout broadsheet-layout page-content-top pb-[var(--page-py)]">
 		<Breadcrumbs items={[{ label: t('sources.breadcrumb') }]} />
 		<TinyAdzInlinedAd class="page-inline-ad mb-10" />
-		<IzvoriPage lang={lang} client:load />
+		<ErrorBoundary client:idle lang={lang}>
+			<IzvoriPage lang={lang} client:idle />
+		</ErrorBoundary>
 	</main>
 	<Footer />
 </Layout>

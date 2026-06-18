@@ -2,6 +2,7 @@
 import Layout from '../../../layouts/Layout.astro';
 import Footer from '../../../components/Footer.astro';
 import AdminDashboard from '../../../components/AdminDashboard.tsx';
+import { ErrorBoundary } from '../../../components/ui/ErrorBoundary.tsx';
 import { APP_VERSION } from '../../../lib/version';
 import { homePath } from '../../../lib/localePaths';
 
@@ -35,7 +36,9 @@ const versionLabel = APP_VERSION;
         </header>
 
         <main class="max-w-7xl mx-auto px-6 py-12">
-            <AdminDashboard client:load />
+            <ErrorBoundary client:idle lang="mk">
+                <AdminDashboard client:idle />
+            </ErrorBoundary>
         </main>
 
         <Footer />
