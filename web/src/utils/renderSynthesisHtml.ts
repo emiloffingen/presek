@@ -3,7 +3,7 @@
  * Used by multiple cluster components to avoid code duplication.
  */
 
-import { cleanAndDecode, parseFootnotes, stripCitationMarkers } from './textUtils.ts';
+import { cleanAndDecode, stripCitationMarkers } from './textUtils.ts';
 import { sanitizeHtml } from '../lib/sanitize.ts';
 
 /**
@@ -14,14 +14,12 @@ import { sanitizeHtml } from '../lib/sanitize.ts';
  * - Converts **text** to <strong>text</strong>
  * - Converts *text* to <em>text</em>
  * - Converts (izvor: Name) or (Name) to <span class="citation-badge">Name</span>
- * - When citation sources exist: [1], [2] become superscript links to the source list
- * - Otherwise strips numeric citation markers from prose
+ * - Strips numeric citation markers like [1], [2] from prose
  *
  * @param text - The raw synthesis text
- * @param hasCitationSources - When true, inline [N] markers link to the citation footer
  * @returns Sanitized HTML string
  */
-export function renderSynthesisHtml(text: string, hasCitationSources: boolean = false): string {
+export function renderSynthesisHtml(text: string): string {
 	if (!text) return '';
 	let clean = cleanAndDecode(text);
 	if (!clean) return '';
@@ -41,6 +39,5 @@ export function renderSynthesisHtml(text: string, hasCitationSources: boolean = 
 		return `<span class="citation-badge">${name.trim()}</span>`;
 	});
 
-	const withCitations = hasCitationSources ? parseFootnotes(clean) : stripCitationMarkers(clean);
-	return sanitizeHtml(withCitations);
+	return sanitizeHtml(stripCitationMarkers(clean));
 }

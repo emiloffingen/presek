@@ -463,29 +463,6 @@ export function stripCitationMarkers(text: string): string {
         .trim();
 }
 
-/**
- * Converts [1], [2], [1, 2] or raw trailing numbers into quiet source links.
- * Visible numbers stay out of prose; exact reference numbers remain in labels and hrefs.
- */
-export function parseFootnotes(text: string): string {
-    if (!text) return '';
-
-    let processed = text;
-
-    // 1. Convert raw numbers at the end of words/sentences into brackets
-    // Matches a space, then 1-3 digits, followed by a period or end of string
-    // e.g. "pretsedatelot 1" -> "pretsedatelot [1]"
-    processed = processed.replace(/\s(\d{1,3})(?=\.|\,|$|\s)/g, ' [$1]');
-
-    // 2. Handle [1, 2, 3] style (comma separated inside brackets)
-    processed = normalizeCitationMarkers(processed);
-
-    // 3. Convert all [N] into quiet source links without visible numbers.
-    return processed.replace(/\[(\d+)\]/g, (_match, num) => {
-        return `<sup class="citation-ref-wrap"><a href="#citation-${num}" class="citation-ref" title="izvor ${num}" aria-label="izvor ${num}"></a></sup>`;
-    });
-}
-
 const COMMON_TAGS_MAP: Record<string, { sr: string; mk: string }> = {
     // Countries & Regions
     'amerika': { sr: 'Amerika', mk: 'Америка' },

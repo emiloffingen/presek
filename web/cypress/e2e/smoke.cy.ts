@@ -1,12 +1,28 @@
 /// <reference types="cypress" />
 
 describe('Presek Smoke Tests', () => {
-  beforeEach(() => {
+  it('loads the Serbian homepage', () => {
     cy.visit('/')
+    cy.contains('Presek').should('be.visible')
   })
 
-  it('loads the homepage', () => {
+  it('loads the Macedonian homepage', () => {
+    cy.visit('/mk/', {
+      headers: {
+        Host: 'presek.live',
+      },
+    })
     cy.contains('Presek').should('be.visible')
+    cy.get('[data-testid="news-feed"]').should('exist')
+  })
+
+  it('loads the briefing page', () => {
+    cy.visit('/briefing')
+    cy.get('main').should('exist')
+  })
+
+  beforeEach(() => {
+    cy.visit('/')
   })
 
   it('has working navigation', () => {

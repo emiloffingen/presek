@@ -21,6 +21,19 @@ from tasks.utils import (
 )
 
 
+def maintenance_task(*task_args, **task_kwargs):
+    """Celery decorator with transient-failure retries for maintenance jobs."""
+    opts = {
+        "autoretry_for": (Exception,),
+        "retry_backoff": True,
+        "max_retries": 2,
+    }
+    opts.update(task_kwargs)
+    if task_args:
+        return celery_app.task(*task_args, **opts)
+    return celery_app.task(**opts)
+
+
 def _synthesis_queue_depth() -> int:
     from tasks.utils import get_celery_queue_depth
 
@@ -265,7 +278,7 @@ def _consume_synthesis_refresh_budget(count: int = 1) -> bool:
         return True
 
 
-@celery_app.task
+@maintenance_task
 def run_prune_db():
     """Standard maintenance."""
     try:
@@ -290,7 +303,7 @@ def run_prune_db():
         log.error(f"[tasks] cleanup_storage failed: {e}", exc_info=True)
 
 
-@celery_app.task
+@maintenance_task
 def prune_fast_track_queue_task(dry_run=False):
     """Drop misrouted synthesis work from the fast-track queue."""
     try:
@@ -310,7 +323,7 @@ def prune_fast_track_queue_task(dry_run=False):
         raise
 
 
-@celery_app.task
+@maintenance_task
 def prune_maintenance_queue_task(dry_run=False):
     """Drop duplicate heavy maintenance dispatches when the queue is congested."""
     try:
@@ -330,7 +343,7 @@ def prune_maintenance_queue_task(dry_run=False):
         raise
 
 
-@celery_app.task
+@maintenance_task
 def prune_intel_queue_task(defer_threshold=None, dry_run=False):
     """Drop deferrable intel-heavy tasks and prioritize summarize batches when congested."""
     threshold = int(defer_threshold or os.environ.get("INTEL_QUEUE_SECONDARY_DEFER_LIMIT", "150"))
@@ -351,7 +364,7 @@ def prune_intel_queue_task(defer_threshold=None, dry_run=False):
         raise
 
 
-@celery_app.task
+@maintenance_task
 def upgrade_stuck_fast_syntheses_task(limit=None):
     """Enqueue full-quality upgrades for fast-mode publishes that stayed provisional too long."""
     from core.limits import FAST_SYNTHESIS_STUCK_HOURS, FAST_SYNTHESIS_UPGRADE_SWEEP_LIMIT
@@ -392,7 +405,7 @@ def upgrade_stuck_fast_syntheses_task(limit=None):
     return {"enqueued": enqueued, "stuck_total": len(cluster_ids)}
 
 
-@celery_app.task
+@maintenance_task
 def refresh_fallback_syntheses_task(limit=None):
     """Re-run full synthesis for provisional or deterministic fallback summaries."""
     from core.limits import FALLBACK_SYNTHESIS_REFRESH_LIMIT
@@ -459,7 +472,7 @@ def refresh_fallback_syntheses_task(limit=None):
     }
 
 
-@celery_app.task
+@maintenance_task
 def refresh_synthesis_quality_task():
     """Refresh the Redis synthesis quality snapshot used by /api/health."""
     try:
@@ -478,7 +491,7 @@ def refresh_synthesis_quality_task():
         raise
 
 
-@celery_app.task
+@maintenance_task
 def catch_up_recent_summaries_task(hours=72, limit=400):
     """Enqueue summarize batches for recent articles missing summaries when the queue has headroom."""
     from tasks.intelligence import (
@@ -540,7 +553,7 @@ def catch_up_recent_summaries_task(hours=72, limit=400):
         raise
 
 
-@celery_app.task
+@maintenance_task
 def prune_crawl_queue_task(dry_run=False):
     """Drop duplicate crawl_article_task dispatches from the ingestion-crawl queue."""
     try:
@@ -558,7 +571,7 @@ def prune_crawl_queue_task(dry_run=False):
         raise
 
 
-@celery_app.task
+@maintenance_task
 def catch_up_deferred_crawls_task(limit=None):
     """Enqueue crawls for recent articles missing full_content when crawl queue has headroom."""
     from core.limits import CRAWL_CATCH_UP_LIMIT, CRAWL_QUEUE_SOFT_LIMIT
@@ -598,7 +611,7 @@ def catch_up_deferred_crawls_task(limit=None):
     return {"enqueued": enqueued, "depth": depth}
 
 
-@celery_app.task
+@maintenance_task
 def prune_ingestion_queue_task(max_pending=1, dry_run=False):
     """Drop duplicate queued run_ingestion dispatches."""
     try:
@@ -616,7 +629,7 @@ def prune_ingestion_queue_task(max_pending=1, dry_run=False):
         raise
 
 
-@celery_app.task
+@maintenance_task
 def ensure_ingestion_freshness_task(max_age_minutes=120):
     """Trigger ingestion when the public freshness badge has gone stale."""
     from core.health import load_last_refresh_time, _freshness_payload
@@ -641,7 +654,7 @@ def ensure_ingestion_freshness_task(max_age_minutes=120):
     return {"triggered": True, "age_minutes": age_minutes}
 
 
-@celery_app.task
+@maintenance_task
 def catch_up_cluster_syntheses_task(hours=48, limit=50):
     """Enqueue full synthesis for recent multi-source clusters missing cluster summaries."""
     from tasks.intelligence import synthesize_cluster_task
@@ -685,7 +698,7 @@ def catch_up_cluster_syntheses_task(hours=48, limit=50):
     return {"enqueued": enqueued}
 
 
-@celery_app.task
+@maintenance_task
 def prioritize_homepage_syntheses_task(limit=None):
     """Enqueue synthesis for homepage-visible clusters missing or stale summaries."""
     from core.config import HOMEPAGE_SYNTHESIS_PRIORITIZE_LIMIT, HOMEPAGE_SYNTHESIS_QUEUE_HEADROOM
@@ -748,7 +761,7 @@ def prioritize_homepage_syntheses_task(limit=None):
     }
 
 
-@celery_app.task(soft_time_limit=120, time_limit=180)
+@maintenance_task(soft_time_limit=120, time_limit=180)
 def boost_homepage_cluster_supply_task(hours=36, recluster_limit=600, repair_limit=800):
     """Queue recluster/repair work for homepage supply without blocking maintenance workers."""
     from core.limits import INTEL_QUEUE_SECONDARY_DEFER_LIMIT
@@ -787,7 +800,7 @@ def boost_homepage_cluster_supply_task(hours=36, recluster_limit=600, repair_lim
     return {"dispatched": True, "intel_depth": intel_depth}
 
 
-@celery_app.task
+@maintenance_task
 def refresh_low_score_syntheses_task(min_score=None, limit=None):
     """Re-run full synthesis for recent low-scoring cluster summaries."""
     from core.limits import LOW_SCORE_SYNTHESIS_MIN, LOW_SCORE_SYNTHESIS_REFRESH_LIMIT
@@ -844,7 +857,7 @@ def refresh_low_score_syntheses_task(min_score=None, limit=None):
     return {"enqueued": enqueued}
 
 
-@celery_app.task
+@maintenance_task
 def validate_cluster_images_task():
     """
     Checks the representative_image for the 100 most recent active clusters.
@@ -937,7 +950,7 @@ def validate_cluster_images_task():
     return f"Checked {len(recent_clusters)} clusters, fixed {fixed_count} images."
 
 
-@celery_app.task
+@maintenance_task
 def repair_knowledge_graph_task():
     """Merges fragmented entities and cleans up noise in the knowledge graph."""
     from core.entities import normalize_entity_name
@@ -1086,7 +1099,7 @@ def repair_knowledge_graph_task():
         return str(e)
 
 
-@celery_app.task
+@maintenance_task
 def prune_system_logs_and_releases():
     """Prunes logs older than 30 days and removes old deployments."""
     import time

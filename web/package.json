@@ -11,7 +11,8 @@
     "build": "astro build",
     "preview": "node scripts/preview-server.mjs && astro preview",
     "astro": "astro",
-    "test": "node --test src/lib/**/*.test.mjs",
+    "test": "node --test src/lib/**/*.test.mjs src/utils/**/*.test.mjs",
+    "analyze": "astro build && node scripts/analyze-bundle.mjs",
     "test:e2e": "cypress run --e2e",
     "test:e2e:ui": "cypress open --e2e",
     "test:component": "cypress run --component",
@@ -29,7 +30,6 @@
   "dependencies": {
     "@astrojs/check": "^0.9.9",
     "@astrojs/node": "^10.0.6",
-    "@astrojs/partytown": "^2.1.7",
     "@astrojs/react": "^5.0.4",
     "@astrojs/sitemap": "^3.7.2",
     "@base-ui/react": "^1.4.1",

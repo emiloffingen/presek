@@ -424,12 +424,21 @@ def test_fastapi_only_registers_prefixed_routers(mock_all):
     assert "app.include_router(news.router)\n" not in content
 
 
+def _with_homepage_synthesis(cluster, *, homepage_score=5.0):
+    enriched = dict(cluster)
+    enriched["has_synthesis"] = True
+    enriched["generated_article"] = f"Sinteza za {enriched['cluster_id']}."
+    enriched["synthetic_headline"] = enriched["articles"][0]["title"]
+    enriched["homepage_score"] = homepage_score
+    return enriched
+
+
 def test_home_route_composes_named_slots(mock_all):
     import routes.home as home
 
-    news_payload = {
-        "status": "success",
-        "clusters": [
+    hero_cluster_ids = {"lead", "support-1", "support-2", "support-3"}
+
+    raw_clusters = [
             {
                 "cluster_id": "lead",
                 "articles": [
@@ -667,24 +676,8 @@ def test_home_route_composes_named_slots(mock_all):
                 ],
                 "is_breaking": False,
             },
-        ],
-        "global": [
-            {
-                "cluster_id": "global-1",
-                "articles": [
-                    {
-                        "title": "Global",
-                        "source": "CNN",
-                        "topic": "Politika",
-                        "category": "Amerika",
-                        "created_at": "2026-04-22T05:00:00Z",
-                    }
-                ],
-                "is_breaking": False,
-            }
-        ],
-    }
-    news_payload["clusters"].extend(
+        ]
+    raw_clusters.extend(
         [
             {
                 "cluster_id": "live-1",
@@ -744,8 +737,38 @@ def test_home_route_composes_named_slots(mock_all):
             },
         ]
     )
+    global_clusters = [
+        {
+            "cluster_id": "global-1",
+            "articles": [
+                {
+                    "title": "Global",
+                    "source": "CNN",
+                    "topic": "Politika",
+                    "category": "Amerika",
+                    "created_at": "2026-04-22T05:00:00Z",
+                }
+            ],
+            "is_breaking": False,
+        }
+    ]
+    clusters = [
+        _with_homepage_synthesis(c, homepage_score=10.0 if c["cluster_id"] == "lead" else 5.0)
+        if c["cluster_id"] in hero_cluster_ids
+        else c
+        for c in raw_clusters
+    ]
+    news_payload = {
+        "status": "success",
+        "clusters": clusters,
+        "global_clusters": global_clusters,
+    }
 
     with (
+        patch(
+            "routes.home.fetch_synthesis_hero_candidates",
+            new=AsyncMock(return_value=[]),
+        ),
         patch(
             "routes.home.fetch_news_data",
             new=AsyncMock(return_value=news_payload),

@@ -878,34 +878,3 @@
 
 		}
 
-.citation-ref-wrap {
-	line-height: 0;
-	margin-left: 0.1em;
-}
-
-.citation-ref {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	width: 0.42rem;
-	height: 0.42rem;
-	padding: 0;
-	font-family: var(--font-sans);
-	font-size: 0.58rem;
-	font-weight: 950;
-	line-height: 1;
-	color: var(--nyt-accent);
-	text-decoration: none;
-	border: 1px solid color-mix(in srgb, var(--nyt-accent) 42%, transparent);
-	border-radius: 999px;
-	background: color-mix(in srgb, var(--nyt-accent) 18%, var(--background));
-	vertical-align: super;
-	opacity: 0.72;
-	transition: background 0.15s ease, opacity 0.15s ease, transform 0.15s ease;
-}
-
-.citation-ref:hover {
-	background: var(--nyt-accent);
-	opacity: 1;
-	transform: scale(1.3);
-}

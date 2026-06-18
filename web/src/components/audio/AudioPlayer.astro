@@ -1,6 +1,7 @@
 ---
 // AudioPlayer.astro - reusable cluster and briefing audio player
 import { Loader2, Pause, Play, RotateCcw, RotateCw } from 'lucide-react';
+import { useTranslations } from '../../i18n/utils';
 
 interface Props {
     clusterId?: string;
@@ -13,7 +14,7 @@ interface Props {
 }
 
 const { clusterId, briefingDate, lang, type, initialAudioUrl, title, compact = false } = Astro.props;
-const isMK = lang === 'mk';
+const t = useTranslations(lang as 'sr' | 'mk');
 const apiBase = import.meta.env.PUBLIC_API_BASE || '';
 const params = new URLSearchParams();
 params.set('lang', lang);
@@ -24,18 +25,16 @@ const apiEndpoint = type === 'cluster'
     : `${apiBase}/api/intelligence/briefing/audio?${params.toString()}`;
 
 const labels = {
-    title: title || (type === 'briefing'
-        ? (isMK ? 'Аудио брифинг' : 'Audio brifing')
-        : (isMK ? 'Аудио синтеза' : 'Audio sinteza')),
-    idle: isMK ? 'Подготвено за слушање' : 'Spremno za slušanje',
-    loading: isMK ? 'Подготвувам аудио...' : 'Pripremam audio...',
-    playing: isMK ? 'Се пушта' : 'Se pušta',
-    paused: isMK ? 'Паузирано' : 'Pauzirano',
-    error: isMK ? 'Грешка при вчитување.' : 'Greška pri učitavanju.',
-    play: isMK ? 'Пушти аудио' : 'Pusti audio',
-    pause: isMK ? 'Паузирај аудио' : 'Pauziraj audio',
-    rewind: isMK ? 'Назад 10 секунди' : 'Nazad 10 sekundi',
-    forward: isMK ? 'Напред 10 секунди' : 'Napred 10 sekundi',
+    title: title || (type === 'briefing' ? t('cluster.audio.briefing_title') : t('cluster.audio.synthesis_title')),
+    idle: t('cluster.audio.idle'),
+    loading: t('cluster.audio.loading'),
+    playing: t('cluster.audio.playing'),
+    paused: t('cluster.audio.paused'),
+    error: t('cluster.audio.error'),
+    play: t('cluster.audio.play'),
+    pause: t('cluster.audio.pause'),
+    rewind: t('cluster.audio.rewind'),
+    forward: t('cluster.audio.forward'),
 };
 ---
 
@@ -49,7 +48,7 @@ const labels = {
     data-api-endpoint={apiEndpoint}
     data-state="idle"
     data-audio-bound="false"
-    data-kicker={isMK ? 'АУДИО' : 'AUDIO'}
+    data-kicker={t('cluster.audio.kicker')}
 >
     <div class="audio-main-row">
         <button class="audio-play-toggle" type="button" aria-label={labels.play} title={labels.play}>
@@ -63,7 +62,7 @@ const labels = {
                 <span class="audio-title">{labels.title}</span>
                 <span class="audio-state">{labels.idle}</span>
             </div>
-            <button class="audio-progress" type="button" aria-label={isMK ? 'Премотај аудио' : 'Premotaj audio'}>
+            <button class="audio-progress" type="button" aria-label={t('cluster.audio.seek')}>
                 <span class="audio-progress-buffer"></span>
                 <span class="audio-progress-fill"></span>
             </button>
@@ -76,12 +75,12 @@ const labels = {
         </span>
     </div>
 
-    <div class="audio-controls-row" aria-label={isMK ? 'Аудио контроли' : 'Audio kontrole'}>
+    <div class="audio-controls-row" aria-label={t('cluster.audio.controls')}>
         <button class="audio-skip" type="button" data-skip="-10" aria-label={labels.rewind} title={labels.rewind}>
             <RotateCcw size={13} />
             <span>10</span>
         </button>
-        <button class="audio-speed" type="button" aria-label={isMK ? 'Брзина на пуштање' : 'Brzina puštanja'} title="1x">1x</button>
+        <button class="audio-speed" type="button" aria-label={t('cluster.audio.speed')} title="1x">1x</button>
         <button class="audio-skip" type="button" data-skip="10" aria-label={labels.forward} title={labels.forward}>
             <span>10</span>
             <RotateCw size={13} />

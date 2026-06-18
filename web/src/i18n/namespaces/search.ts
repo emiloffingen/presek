@@ -63,6 +63,7 @@ export const search = {
     'search.global_search': 'Globalna pretraga',
     'search.smart_assist': 'Pametna asistencija',
     'search.open_search': 'Otvori pretragu',
+    'search.dialog_label': 'Pretraga vesti',
     'search.hint_topics': 'Vesti, teme, subjekti',
   },
   mk: {
@@ -129,6 +130,7 @@ export const search = {
     'search.global_search': 'Глобално пребарување',
     'search.smart_assist': 'Паметна асистенција',
     'search.open_search': 'Отвори пребарување',
+    'search.dialog_label': 'Пребарување вести',
     'search.hint_topics': 'Вести, теми, субјекти',
   },
 } as const;

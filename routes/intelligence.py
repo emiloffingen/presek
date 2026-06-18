@@ -221,7 +221,7 @@ async def get_cluster_storyline_history(cluster_id: str):
 
 
 @router.get("/intelligence/cluster/{cluster_id}/research")
-@custom_rate_limit("5/minute")
+@custom_rate_limit("3/minute")
 async def get_deep_research(request: Request, cluster_id: str, mode: str = "facts", q: str = "", lang: str = "sr"):
     """
     Performs on-demand cluster research with the best available AI provider.
@@ -874,7 +874,7 @@ class NodeSynthesisRequest(BaseModel):
 
 
 @router.post("/intelligence/synthesize-nodes")
-@custom_rate_limit("10/minute")
+@custom_rate_limit("5/minute")
 async def synthesize_nodes(
     request: Request,
     payload: NodeSynthesisRequest,
@@ -1377,7 +1377,7 @@ async def save_insight(
     return {"status": "success", "message": "Insight saved successfully."}
 
 @router.get("/intelligence/briefing/audio")
-@custom_rate_limit("3/minute")
+@custom_rate_limit("2/minute")
 async def get_briefing_audio(request: Request, date: Optional[str] = None, lang: str = "sr"):
     """Generates or fetches the daily briefing TTS audio and returns its public URL."""
     if date:

@@ -8,6 +8,7 @@ import SettingsProfileIsland from '../components/SettingsProfileIsland.tsx';
 import SettingsOverviewIsland from '../components/SettingsOverviewIsland.tsx';
 import AccountSyncIsland from '../components/AccountSyncIsland.tsx';
 import OnboardingIsland from '../components/OnboardingIsland.tsx';
+import { ErrorBoundary } from '../components/ui/ErrorBoundary.tsx';
 import { KeyRound, Radio, ShieldCheck, UserCircle2, Sparkles, ArrowUpRight, LayoutDashboard } from 'lucide-react';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import { localePath } from '../lib/localePaths';
@@ -99,7 +100,9 @@ const t = useTranslations(lang);
               <h2 class="section-label ui-label text-foreground">{t('settings.section_overview')}</h2>
               <div class="section-divider flex-1 h-[1px] bg-border/40 ml-4"></div>
             </div>
-            <SettingsOverviewIsland lang={lang} client:visible />
+            <ErrorBoundary client:idle lang={lang}>
+              <SettingsOverviewIsland lang={lang} client:visible />
+            </ErrorBoundary>
           </div>
 
           <div id="tab-profil" class="settings-tab-content">
@@ -108,7 +111,9 @@ const t = useTranslations(lang);
               <h2 class="section-label ui-label text-foreground">{t('settings.section_profil')}</h2>
               <div class="section-divider flex-1 h-[1px] bg-border/40 ml-4"></div>
             </div>
-            <SettingsProfileIsland lang={lang} client:visible />
+            <ErrorBoundary client:idle lang={lang}>
+              <SettingsProfileIsland lang={lang} client:visible />
+            </ErrorBoundary>
           </div>
 
           <div id="tab-dostava" class="settings-tab-content">
@@ -118,7 +123,9 @@ const t = useTranslations(lang);
               <div class="section-divider flex-1 h-[1px] bg-border/40 ml-4"></div>
             </div>
             <div class="premium-card">
-              <BriefingDeliveryIsland lang={lang} client:visible variant="full" />
+              <ErrorBoundary client:idle lang={lang}>
+                <BriefingDeliveryIsland lang={lang} client:visible variant="full" />
+              </ErrorBoundary>
             </div>
           </div>
 
@@ -128,7 +135,9 @@ const t = useTranslations(lang);
               <h2 class="section-label ui-label text-foreground">{t('settings.section_sync')}</h2>
               <div class="section-divider flex-1 h-[1px] bg-border/40 ml-4"></div>
             </div>
-            <AccountSyncIsland lang={lang} client:visible />
+            <ErrorBoundary client:idle lang={lang}>
+              <AccountSyncIsland lang={lang} client:visible />
+            </ErrorBoundary>
           </div>
 
           <div id="tab-vodic" class="settings-tab-content">
@@ -138,7 +147,9 @@ const t = useTranslations(lang);
               <div class="section-divider flex-1 h-[1px] bg-border/40 ml-4"></div>
             </div>
             <div class="premium-card">
-              <OnboardingIsland lang={lang} client:visible />
+              <ErrorBoundary client:idle lang={lang}>
+                <OnboardingIsland lang={lang} client:visible />
+              </ErrorBoundary>
             </div>
           </div>
 

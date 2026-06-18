@@ -546,6 +546,7 @@ export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initi
       className="fixed inset-0 z-[10000] bg-background/95 backdrop-blur-2xl flex items-center justify-center transition-all animate-in fade-in duration-300"
       role="dialog"
       aria-modal="true"
+      aria-label={t('search.dialog_label')}
       onKeyDown={onDialogKeyDown}
       onClick={closeSearch}
     >

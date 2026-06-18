@@ -171,11 +171,16 @@ async def retry_failed_tasks(
         return {"status": "success", "message": "Nema neuspešnih zadataka."}
 
     retry_count = 0
+    registered_tasks = set(celery_app.tasks.keys())
     for task_row in failed:
+        task_name = str(task_row.get("task_name") or "").strip()
+        if not task_name or task_name not in registered_tasks:
+            log.warning("Skipping unknown or unregistered failed task: %s", task_name or task_row.get("id"))
+            continue
         try:
             # Re-dispatch by name using send_task to avoid direct imports
             celery_app.send_task(
-                task_row["task_name"],
+                task_name,
                 args=task_row["args"] or [],
                 kwargs=task_row["kwargs"] or {},
             )

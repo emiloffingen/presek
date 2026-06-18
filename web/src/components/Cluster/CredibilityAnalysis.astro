@@ -39,7 +39,7 @@ effectiveUrl.hostname = hostHeader;
 const lang = propLang || getLangFromUrl(effectiveUrl);
 const t = useTranslations(lang);
 
-const renderSynthesisHtml = (text: string) => sharedRenderSynthesisHtml(text, hasCitationSources);
+const renderSynthesisHtml = (text: string) => sharedRenderSynthesisHtml(text);
 
 function normalizePerspective(p: any) {
 	const angle = String(p?.angle || '').trim();
@@ -57,9 +57,7 @@ function normalizePerspective(p: any) {
 	) {
 		return {
 			angle,
-			content: lang === 'sr'
-				? 'Izvori ne nude bitno različite uglove; razlika je uglavnom u uredničkom naslovu i izboru detalja za prvi plan.'
-				: 'Изворите не нудат суштински различни агли; разликата е главно во уредничкиот наслов и изборот на детали за прв план.',
+			content: t('cluster.credibility.perspective_nuance'),
 		};
 	}
 
@@ -69,9 +67,7 @@ function normalizePerspective(p: any) {
 	) {
 		return {
 			angle,
-			content: lang === 'sr'
-				? 'Nije izdvojena konkretna sporna činjenica; otvoreno je samo kako će se priča razvijati kroz naredne dopune izvora.'
-				: 'Не е издвоен конкретен спорен факт; отворено е само како ќе се развива приказната низ следните дополнувања од изворите.',
+			content: t('cluster.credibility.perspective_open'),
 		};
 	}
 
@@ -110,26 +106,22 @@ const shouldShowSignalCard = hasPluralismMetric || hasObjectivityMetric;
 const objectivityPercent = hasObjectivityMetric ? clampPercent(Number(toneAnalysis?.objectivity) * 100) : null;
 const pluralismPercent = hasPluralismMetric ? clampPercent(pluralismScore) : null;
 const pluralismLabel = pluralismPercent === null ? '' : pluralismPercent >= 70
-	? (lang === 'sr' ? 'visok pluralizam' : 'висок плурализам')
+	? t('cluster.credibility.pluralism_high')
 	: pluralismPercent >= 45
-		? (lang === 'sr' ? 'umeren pluralizam' : 'умерен плурализам')
-		: (lang === 'sr' ? 'nizak pluralizam' : 'низок плурализам');
+		? t('cluster.credibility.pluralism_mid')
+		: t('cluster.credibility.pluralism_low');
 const objectivityLabel = objectivityPercent === null ? '' : objectivityPercent >= 70
-	? (lang === 'sr' ? 'visoka objektivnost' : 'висока објективност')
+	? t('cluster.credibility.objectivity_high')
 	: objectivityPercent >= 45
-		? (lang === 'sr' ? 'umerena objektivnost' : 'умерена објективност')
-		: (lang === 'sr' ? 'niska objektivnost' : 'ниска објективност');
+		? t('cluster.credibility.objectivity_mid')
+		: t('cluster.credibility.objectivity_low');
 const signalSummary = pluralismLabel && objectivityLabel
-	? (lang === 'sr'
-		? `Pokriće pokazuje ${pluralismLabel} i ${objectivityLabel} u uredničkoj obradi.`
-		: `Покриеноста покажува ${pluralismLabel} и ${objectivityLabel} во уредничката обработка.`)
+	? t('cluster.credibility.signal_summary_both')
+		.replace('{pluralism}', pluralismLabel)
+		.replace('{objectivity}', objectivityLabel)
 	: pluralismLabel
-		? (lang === 'sr'
-			? `Pokriće pokazuje ${pluralismLabel} u izboru izvora.`
-			: `Покриеноста покажува ${pluralismLabel} во изборот на извори.`)
-		: (lang === 'sr'
-			? `Pokriće pokazuje ${objectivityLabel} u uredničkoj obradi.`
-			: `Покриеноста покажува ${objectivityLabel} во уредничката обработка.`);
+		? t('cluster.credibility.signal_summary_pluralism').replace('{pluralism}', pluralismLabel)
+		: t('cluster.credibility.signal_summary_objectivity').replace('{objectivity}', objectivityLabel);
 ---
 
 <section class="editorial-section analysis-section mb-10 border-t-2 border-foreground pt-6">
@@ -194,32 +186,32 @@ const signalSummary = pluralismLabel && objectivityLabel
                 {shouldShowSignalCard && (
                 <div class="media-signal-card">
                     <div class="signal-header">
-                        <h5 class="signal-label">{lang === 'sr' ? 'SIGNAL MEDIJSKOG DISKURSA' : 'СИГНАЛ НА МЕДИУМСКИОТ ДИСКУРС'}</h5>
+                        <h5 class="signal-label">{t('cluster.credibility.signal_discourse')}</h5>
                         <p class="signal-summary">{signalSummary}</p>
                     </div>
                     <div class="signal-metrics">
                         {pluralismPercent !== null && (
                         <div class="signal-metric">
                             <div class="signal-metric-head">
-                                <span>{lang === 'sr' ? 'Pluralizam izvora' : 'Плурализам на извори'}</span>
+                                <span>{t('cluster.credibility.pluralism_sources')}</span>
                                 <strong>{pluralismPercent}%</strong>
                             </div>
                             <div class="signal-bar" aria-hidden="true">
                                 <div class="signal-bar-fill pluralism" style={`width: ${pluralismPercent}%`}></div>
                             </div>
-                            <p>{lang === 'sr' ? 'Koliko se izvori razlikuju u uglu i pokrivenosti.' : 'Колку се разликуваат изворите во аголот и покривањето.'}</p>
+                            <p>{t('cluster.credibility.pluralism_sources_desc')}</p>
                         </div>
                         )}
                         {objectivityPercent !== null && (
                         <div class="signal-metric">
                             <div class="signal-metric-head">
-                                <span>{lang === 'sr' ? 'Objektivnost obrade' : 'Објективност на обработка'}</span>
+                                <span>{t('cluster.credibility.objectivity_processing')}</span>
                                 <strong>{objectivityPercent}%</strong>
                             </div>
                             <div class="signal-bar" aria-hidden="true">
                                 <div class="signal-bar-fill objectivity" style={`width: ${objectivityPercent}%`}></div>
                             </div>
-                            <p>{lang === 'sr' ? 'Koliko je urednička obrada udaljena od senzacionalizma.' : 'Колку уредничката обработка е оддалечена од сензационализам.'}</p>
+                            <p>{t('cluster.credibility.objectivity_processing_desc')}</p>
                         </div>
                         )}
                     </div>
@@ -242,7 +234,7 @@ const signalSummary = pluralismLabel && objectivityLabel
                         </>
                     ) : consensusNote ? (
                         <div class="consensus-note-card">
-                            <h4 class="perspectives-label">{lang === 'sr' ? 'Pokrivenost izvora' : 'Покриеност на извори'}</h4>
+                            <h4 class="perspectives-label">{t('cluster.credibility.source_coverage')}</h4>
                             <p class="consensus-note-copy">{consensusNote}</p>
                         </div>
                     ) : null}

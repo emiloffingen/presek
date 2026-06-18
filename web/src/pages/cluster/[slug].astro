@@ -7,6 +7,7 @@ import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import ReaderTracker from '../../components/ReaderTracker.tsx';
 import ClusterSidebarTabs from '../../components/Cluster/ClusterSidebarTabs.tsx';
 import ClusterMobileFocusIsland from '../../components/Cluster/ClusterMobileFocusIsland.tsx';
+import { ErrorBoundary } from '../../components/ui/ErrorBoundary.tsx';
 import { apiBaseUrl } from '../../lib/apiBase';
 import { cleanAndDecode, isMostlyCyrillic, getEditionStr, stripCitationMarkers, deShout, slugify, normalizeAndDeduplicateTags, transliterate } from '../../utils/textUtils';
 import { chooseClusterImage } from '../../utils/imageSelection';
@@ -598,7 +599,9 @@ const articleSchema = cluster ? {
     />
 
 	<ZenReadingContext headline={displayHeadline} lang={lang} client:idle />
-	<ClusterMobileFocusIsland lang={lang} client:idle />
+	<ErrorBoundary client:idle lang={lang}>
+		<ClusterMobileFocusIsland lang={lang} client:idle />
+	</ErrorBoundary>
 
 	<main class="site-layout py-0">
 		<div class="scroll-progress-container">

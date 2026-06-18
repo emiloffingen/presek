@@ -40,13 +40,26 @@
     imageWrap.style.setProperty('--placeholder-bg', tint);
     const link = imageWrap.querySelector('a');
     if (!link) return;
-    link.innerHTML = `
-      <div class="article-image-placeholder topic-fallback-card topic-fallback-card--editorial topic-fallback-card--compact">
-        <span class="article-image-placeholder-mark" aria-hidden="true">${initials}</span>
-        <p class="article-image-placeholder-label">${label}</p>
-        <p class="article-image-placeholder-source">${source}</p>
-      </div>
-    `;
+
+    link.replaceChildren();
+    const card = document.createElement('div');
+    card.className = 'article-image-placeholder topic-fallback-card topic-fallback-card--editorial topic-fallback-card--compact';
+
+    const mark = document.createElement('span');
+    mark.className = 'article-image-placeholder-mark';
+    mark.setAttribute('aria-hidden', 'true');
+    mark.textContent = initials;
+
+    const labelEl = document.createElement('p');
+    labelEl.className = 'article-image-placeholder-label';
+    labelEl.textContent = label;
+
+    const sourceEl = document.createElement('p');
+    sourceEl.className = 'article-image-placeholder-source';
+    sourceEl.textContent = source;
+
+    card.append(mark, labelEl, sourceEl);
+    link.appendChild(card);
   };
 
   const handleImageError = (img) => {

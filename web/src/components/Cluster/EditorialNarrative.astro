@@ -1,6 +1,7 @@
 ---
 import { renderSynthesisHtml as sharedRenderSynthesisHtml } from '../../utils/renderSynthesisHtml';
 import { getLangFromUrl } from '../../i18n/utils';
+import { localePath } from '../../lib/localePaths';
 
 interface Props {
 	hasStrongLeadNarrative: boolean;
@@ -15,6 +16,7 @@ const { hasStrongLeadNarrative, generatedArticle, synthesisItems, hasCitationSou
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
+const entityPathPrefix = localePath('/subjekt/', lang, hostHeader);
 
 const cleanNarrativeParagraph = (text: string) => String(text || '')
     .replace(/\s+/g, ' ')
@@ -30,7 +32,7 @@ const narrativeParagraphs = String(generatedArticle || '')
     .filter(Boolean);
 
 const renderSynthesisHtml = (text: string) => {
-    let html = sharedRenderSynthesisHtml(text, hasCitationSources);
+    let html = sharedRenderSynthesisHtml(text);
     if (!entities || entities.length === 0) return html;
 
     const patterns: { regex: RegExp; entity: string; length: number }[] = [];
@@ -124,7 +126,7 @@ const renderSynthesisHtml = (text: string) => {
 	)}
 </div>
 
-<script>
+<script define:vars={{ entityPathPrefix }}>
     import { createPopper } from '@popperjs/core';
 
     document.addEventListener('astro:page-load', () => {
@@ -140,19 +142,28 @@ const renderSynthesisHtml = (text: string) => {
             let tooltip: HTMLDivElement | null = null;
 
             entity.addEventListener('mouseenter', async () => {
-                // Create tooltip element
                 tooltip = document.createElement('div');
                 tooltip.className = 'entity-tooltip';
-                const loadingText = isSr ? `Učitavam kontekst za ${name}...` : `Вчитувам контекст за ${name}...`;
-                tooltip.innerHTML = `
-                    <div class="tooltip-card bg-background/95 dark:bg-zinc-900/95 backdrop-blur-md border border-border/80 shadow-2xl rounded-xl p-4 w-72 text-sm text-foreground flex items-center gap-3">
-                        <div class="relative w-4 h-4 flex items-center justify-center">
-                            <span class="absolute inline-flex h-full w-full rounded-full bg-nyt-accent opacity-75 animate-ping"></span>
-                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-nyt-accent"></span>
-                        </div>
-                        <span class="text-xs font-bold text-muted-foreground uppercase tracking-wider animate-pulse">${loadingText}</span>
-                    </div>
-                `;
+
+                const loadingCard = document.createElement('div');
+                loadingCard.className = 'tooltip-card bg-background/95 dark:bg-zinc-900/95 backdrop-blur-md border border-border/80 shadow-2xl rounded-xl p-4 w-72 text-sm text-foreground flex items-center gap-3';
+
+                const pulseWrap = document.createElement('div');
+                pulseWrap.className = 'relative w-4 h-4 flex items-center justify-center';
+                const pulseOuter = document.createElement('span');
+                pulseOuter.className = 'absolute inline-flex h-full w-full rounded-full bg-nyt-accent opacity-75 animate-ping';
+                const pulseInner = document.createElement('span');
+                pulseInner.className = 'relative inline-flex rounded-full h-2.5 w-2.5 bg-nyt-accent';
+                pulseWrap.append(pulseOuter, pulseInner);
+
+                const loadingLabel = document.createElement('span');
+                loadingLabel.className = 'text-xs font-bold text-muted-foreground uppercase tracking-wider animate-pulse';
+                loadingLabel.textContent = isSr
+                    ? `Učitavam kontekst za ${name}...`
+                    : `Вчитувам контекст за ${name}...`;
+
+                loadingCard.append(pulseWrap, loadingLabel);
+                tooltip.appendChild(loadingCard);
                 document.body.appendChild(tooltip);
 
                 popperInstance = createPopper(entity as HTMLElement, tooltip, {
@@ -212,7 +223,7 @@ const renderSynthesisHtml = (text: string) => {
                             seen.textContent = `${labelLastSeen}: ${lastSeenDate}`;
 
                             const profileLink = document.createElement('a');
-                            profileLink.href = `/subjekt/${encodeURIComponent(name)}`;
+                            profileLink.href = `${entityPathPrefix}${encodeURIComponent(name)}`;
                             profileLink.className = 'font-bold text-nyt-accent hover:underline flex items-center gap-0.5 uppercase';
                             profileLink.textContent = `${labelProfile} →`;
 

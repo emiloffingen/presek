@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { extractCleanSummaryText, getDisplaySummary, getStoryPreviewText, isSyntheticStandfirstBoilerplate, parseFootnotes, stripCitationMarkers } from '../utils/textUtils.ts';
+import { extractCleanSummaryText, getDisplaySummary, getStoryPreviewText, isSyntheticStandfirstBoilerplate, stripCitationMarkers } from '../utils/textUtils.ts';
 
 test('story previews skip generated standfirst boilerplate', () => {
   const cluster = {
@@ -45,16 +45,6 @@ test('stripCitationMarkers removes comma-separated citation groups', () => {
 
 test('stripCitationMarkers removes single citation markers', () => {
   assert.equal(stripCitationMarkers('Potvrđeno u više medija [1].'), 'Potvrđeno u više medija.');
-});
-
-test('parseFootnotes converts inline markers into anchor links', () => {
-  const html = parseFootnotes('Potvrđeno u više medija [1] i [2, 3].');
-  assert.match(html, /href="#citation-1"/);
-  assert.match(html, /href="#citation-2"/);
-  assert.match(html, /href="#citation-3"/);
-  assert.match(html, /<sup class="citation-ref-wrap">/);
-  assert.match(html, /aria-label="izvor 1"/);
-  assert.doesNotMatch(html, />1<\/a>/);
 });
 
 test('extractCleanSummaryText unwraps truncated json summary blobs', () => {
