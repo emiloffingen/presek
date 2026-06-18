@@ -481,8 +481,24 @@ const labels = {
             });
             audio.addEventListener('error', () => setState('error'));
 
+            async function prefetchAudioMetadata() {
+                if (audio.currentSrc || audio.getAttribute('src')) {
+                    audio.load();
+                    return;
+                }
+                try {
+                    await ensureAudioLoaded();
+                    updateProgress();
+                } catch (error) {
+                    console.warn('Failed to prefetch audio metadata:', error);
+                }
+            }
+
             if (audio.getAttribute('src')) {
                 audio.addEventListener('loadedmetadata', updateProgress, { once: true });
+                audio.load();
+            } else {
+                prefetchAudioMetadata();
             }
             setState('idle');
         });

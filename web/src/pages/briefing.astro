@@ -36,6 +36,7 @@ const quickMode = url.searchParams.get('mode') === 'quick';
 let briefingData: any = null;
 let homeData: any = null;
 let stats: any = null;
+let briefingAudioUrl: string | null = null;
 let error = null;
 
 try {
@@ -51,6 +52,17 @@ try {
     if (briefRes.ok) briefingData = normalizeBriefingPayload(await briefRes.json(), lang);
     if (homeRes.ok) homeData = await homeRes.json();
     if (statsRes.ok) stats = await statsRes.json();
+
+    if (briefingData?.date) {
+        const audioParams = new URLSearchParams({ lang, date: briefingData.date });
+        const audioRes = await fetch(`${API_URL}/intelligence/briefing/audio?${audioParams.toString()}`);
+        if (audioRes.ok) {
+            const audioData = await audioRes.json();
+            if (audioData?.status === 'success' && audioData.audio_url) {
+                briefingAudioUrl = audioData.audio_url;
+            }
+        }
+    }
 
     if (!briefingData || briefingData.status === 'error') {
         error = briefingData?.message || (isMK ? "Брифингот моментално не е достапен." : "Brifing trenutno nije dostupan.");
@@ -137,6 +149,7 @@ const leadVisualTitle = briefingData?.lead_cluster?.synthetic_headline || briefi
                                 briefingDate={briefingData.date}
                                 lang={lang}
                                 title={isMK ? 'Аудио брифинг' : 'Audio brifing'}
+                                initialAudioUrl={briefingAudioUrl || undefined}
                                 compact
                             />
                         </div>
