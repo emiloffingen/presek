@@ -138,8 +138,8 @@ const renderSynthesisHtml = (text: string) => {
             const name = entity.getAttribute('data-entity');
             if (!name) return;
 
-            let popperInstance: ReturnType<typeof createPopper> | null = null;
-            let tooltip: HTMLDivElement | null = null;
+            let popperInstance = null;
+            let tooltip = null;
 
             entity.addEventListener('mouseenter', async () => {
                 tooltip = document.createElement('div');
@@ -166,7 +166,7 @@ const renderSynthesisHtml = (text: string) => {
                 tooltip.appendChild(loadingCard);
                 document.body.appendChild(tooltip);
 
-                popperInstance = createPopper(entity as HTMLElement, tooltip, {
+                popperInstance = createPopper(entity, tooltip, {
                     placement: 'top',
                     modifiers: [{ name: 'offset', options: { offset: [0, 8] } }]
                 });
