@@ -43,7 +43,7 @@ class TestMonitorSynthesisQuality:
     )
     @patch("core.synthesis_quality.count_stuck_fast_syntheses", return_value=0)
     @patch("scripts.monitor_synthesis_quality._unsummarized_counts", return_value={"unsummarized_total": 60100, "unsummarized_24h": 847})
-    @patch("scripts.monitor_synthesis_quality._celery_queue_depth", return_value=160)
+    @patch("scripts.monitor_synthesis_quality._synthesis_ops_queue_depth", return_value=160)
     @patch("scripts.monitor_synthesis_quality.build_report")
     def test_build_snapshot_marks_warn_on_queue(
         self,

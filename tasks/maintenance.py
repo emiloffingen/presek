@@ -49,12 +49,84 @@ def _effective_synthesis_refresh_hourly_cap() -> int:
     return SYNTHESIS_REFRESH_HOURLY_CAP
 
 
+_HOMEPAGE_CLUSTER_SECTIONS = (
+    "lead",
+    "supporting",
+    "developing",
+    "live_now",
+    "synthesis_picks",
+    "for_you_pool",
+    "wire",
+    "global",
+)
+
+
+def _iter_homepage_payload_clusters(payload: dict):
+    for section in _HOMEPAGE_CLUSTER_SECTIONS:
+        value = payload.get(section)
+        if not value:
+            continue
+        if isinstance(value, dict):
+            if value.get("cluster_id"):
+                yield value
+            continue
+        if isinstance(value, list):
+            for cluster in value:
+                if isinstance(cluster, dict) and cluster.get("cluster_id"):
+                    yield cluster
+
+
+def _fetch_homepage_visible_clusters(lang: str) -> list[dict]:
+    from routes.home import get_home
+    from tasks.utils import safe_async_run
+
+    payload = safe_async_run(lambda: get_home(lang=lang)) or {}
+    if payload.get("status") != "success":
+        return []
+
+    clusters: list[dict] = []
+    seen: set[str] = set()
+    for cluster in _iter_homepage_payload_clusters(payload):
+        cluster_id = str(cluster.get("cluster_id") or "").strip()
+        if not cluster_id or cluster_id in seen:
+            continue
+        seen.add(cluster_id)
+        clusters.append(cluster)
+    return clusters
+
+
+def _cluster_needs_synthesis(cluster: dict) -> bool:
+    articles = cluster.get("articles") or []
+    freshness = cluster.get("synthesis_freshness") or {}
+    synthesis_meta = cluster.get("synthesis_meta") or {}
+    reasons = freshness.get("reasons") or []
+    needs_synthesis = (
+        not cluster.get("has_synthesis")
+        or bool(freshness.get("is_stale"))
+        or bool(synthesis_meta.get("needs_upgrade"))
+        or "missing_synthesis" in reasons
+    )
+    if not needs_synthesis:
+        return False
+    min_sources = 1 if ("missing_synthesis" in reasons or not cluster.get("has_synthesis")) else 2
+    return len(articles) >= min_sources
+
+
 def _collect_homepage_cluster_ids(limit: int = 48) -> list[str]:
     from routes.news import fetch_news_data
     from tasks.utils import safe_async_run
 
     targets: list[str] = []
     seen: set[str] = set()
+    for lang in ("sr", "mk"):
+        for cluster in _fetch_homepage_visible_clusters(lang):
+            cluster_id = str(cluster.get("cluster_id") or "").strip()
+            if not cluster_id or cluster_id in seen:
+                continue
+            seen.add(cluster_id)
+            targets.append(cluster_id)
+            if len(targets) >= limit:
+                return targets
     for lang in ("sr", "mk"):
         payload = safe_async_run(lambda: fetch_news_data(sort="score", page_size=24, lang=lang)) or {}
         for cluster in payload.get("clusters") or []:
@@ -508,28 +580,21 @@ def prioritize_homepage_syntheses_task(limit=12):
         if dispatch_limit <= 0:
             return {"skipped": True, "reason": "no_headroom", "synthesis_depth": synthesis_depth}
 
+    from routes.news import fetch_news_data
+
     targets: list[str] = []
     seen: set[str] = set()
     for lang in ("sr", "mk"):
+        for cluster in _fetch_homepage_visible_clusters(lang):
+            cluster_id = str(cluster.get("cluster_id") or "").strip()
+            if not cluster_id or cluster_id in seen or not _cluster_needs_synthesis(cluster):
+                continue
+            seen.add(cluster_id)
+            targets.append(cluster_id)
         payload = safe_async_run(lambda: fetch_news_data(sort="score", page_size=24, lang=lang)) or {}
         for cluster in payload.get("clusters") or []:
             cluster_id = str(cluster.get("cluster_id") or "").strip()
-            if not cluster_id or cluster_id in seen:
-                continue
-            articles = cluster.get("articles") or []
-            freshness = cluster.get("synthesis_freshness") or {}
-            synthesis_meta = cluster.get("synthesis_meta") or {}
-            reasons = freshness.get("reasons") or []
-            needs_synthesis = (
-                not cluster.get("has_synthesis")
-                or bool(freshness.get("is_stale"))
-                or bool(synthesis_meta.get("needs_upgrade"))
-                or "missing_synthesis" in reasons
-            )
-            if not needs_synthesis:
-                continue
-            min_sources = 1 if ("missing_synthesis" in reasons or not cluster.get("has_synthesis")) else 2
-            if len(articles) < min_sources:
+            if not cluster_id or cluster_id in seen or not _cluster_needs_synthesis(cluster):
                 continue
             seen.add(cluster_id)
             targets.append(cluster_id)

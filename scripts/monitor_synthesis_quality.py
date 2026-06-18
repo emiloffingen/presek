@@ -105,6 +105,15 @@ def _celery_queue_depth(queue_name: str = "celery") -> int:
         return 0
 
 
+def _synthesis_ops_queue_depth() -> int:
+    """Depth across reader-facing synthesis queues (excludes maintenance/crawl housekeeping)."""
+    return max(
+        _celery_queue_depth("synthesis"),
+        _celery_queue_depth("fast-track"),
+        _celery_queue_depth("intel-heavy"),
+    )
+
+
 def build_report(days: int):
     counts = _provider_counts(days)
     total = sum(counts.values())
@@ -183,7 +192,7 @@ def build_snapshot(primary_days: int = 1, history_days: int = 7):
 
     primary = build_report(primary_days)
     history = build_report(history_days)
-    queue_depth = _celery_queue_depth()
+    queue_depth = _synthesis_ops_queue_depth()
     unsummarized = _unsummarized_counts()
     stuck_fast = count_stuck_fast_syntheses(FAST_SYNTHESIS_STUCK_HOURS)
     upgradeable = count_upgradeable_syntheses(days=primary_days)

@@ -212,6 +212,30 @@ class TestPrioritizeHomepageSyntheses:
         assert result["enqueued"] == 1
         mock_task.apply_async.assert_called_once()
 
+    def test_prioritizes_home_layout_lead_before_feed(self):
+        home_cluster = {
+            "cluster_id": "lead-home",
+            "has_synthesis": False,
+            "articles": [{"id": 1}],
+            "synthesis_freshness": {"is_stale": True, "reasons": ["missing_synthesis"]},
+        }
+        with (
+            patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=False),
+            patch("tasks.maintenance._synthesis_queue_depth", return_value=5),
+            patch("tasks.maintenance._fetch_homepage_visible_clusters", return_value=[home_cluster]),
+            patch("tasks.utils.safe_async_run", return_value={"clusters": []}),
+            patch("tasks.intelligence.synthesis.synthesize_cluster_task") as mock_task,
+        ):
+            result = prioritize_homepage_syntheses_task(limit=5)
+
+        assert result["enqueued"] == 1
+        mock_task.apply_async.assert_called_once_with(
+            ("lead-home", None),
+            {"fast_mode": False},
+            countdown=0,
+            queue="synthesis",
+        )
+
 
 class TestRefreshLowScoreSyntheses:
     def test_skips_when_backlog_full(self):
