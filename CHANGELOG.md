@@ -1,5 +1,12 @@
 # Presek Changelog
 
+## v8.3.8 (2026-06-18)
+
+### Pipeline ops
+- Clear orphaned ingestion locks when no Celery ingestion task is actually running
+- Cap deferrable maintenance metadata/upgrade tasks when the queue stays congested
+- Use regex-only entity extraction during ingestion clustering to avoid NER OOM kills
+
 ## v8.3.7 (2026-06-18)
 
 ### Pipeline ops
