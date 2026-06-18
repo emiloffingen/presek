@@ -61,12 +61,14 @@ def test_count_synthesis_persist_gap(monkeypatch):
         def hgetall(self, _key):
             return {
                 "synthesis_path|lang=sr|mode=mistral_small": 3,
+                "synthesis_path|lang=sr|mode=enhanced_fallback|reason=router_empty_articles": 2,
                 "synthesis_db_persisted|lang=sr|mode=mistral_small": 1,
             }
 
     monkeypatch.setattr("utils.redis_client", _FakeRedis())
     metrics = count_synthesis_persist_gap()
     assert metrics["synthesis_events"] == 3
+    assert metrics["excluded_synthesis_events"] == 2
     assert metrics["db_persisted_events"] == 1
     assert metrics["persist_gap"] == 2
 

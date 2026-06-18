@@ -231,6 +231,16 @@ def _parse_upgrade_fast_synthesis_cluster_id(raw_message: str) -> str | None:
     return match.group(1) if match else None
 
 
+def _parse_synthesize_urgent_cluster_id(raw_message: str) -> str | None:
+    import json
+
+    body = json.loads(raw_message)
+    task_name = str((body.get("headers") or {}).get("task") or "")
+    if task_name != "tasks.intelligence.synthesize_urgent_task":
+        return None
+    return _parse_upgrade_fast_synthesis_cluster_id(raw_message)
+
+
 def _parse_maintenance_dedupe_key(raw_message: str, task_name: str) -> str:
     if task_name != "tasks.intelligence.generate_cluster_metadata_task":
         return task_name
@@ -492,17 +502,32 @@ def reprioritize_fast_track_queue(*, groom_threshold: int = 60, dry_run: bool = 
         }
 
     raw_items = redis_client.lrange(FAST_TRACK_QUEUE_NAME, 0, -1) or []
-    priority_items = []
-    kept_other = []
+    urgent_by_cluster: dict[str, str] = {}
+    breaking_alerts: list[str] = []
+    kept_other: list[str] = []
     removed = 0
     seen_auto_summarize = False
+    seen_breaking_alerts = False
+    urgent_duplicates_removed = 0
 
     for raw in raw_items:
         if isinstance(raw, bytes):
             raw = raw.decode("utf-8")
         task_name = _parse_queue_task_name(raw)
-        if task_name in FAST_TRACK_PRIORITY_TASKS:
-            priority_items.append(raw)
+        if task_name == "tasks.intelligence.synthesize_urgent_task":
+            cluster_id = _parse_synthesize_urgent_cluster_id(raw)
+            if cluster_id:
+                if cluster_id in urgent_by_cluster:
+                    removed += 1
+                    urgent_duplicates_removed += 1
+                urgent_by_cluster[cluster_id] = raw
+                continue
+        if task_name == "tasks.delivery.briefing.send_profile_breaking_alerts_task":
+            if seen_breaking_alerts:
+                removed += 1
+                continue
+            seen_breaking_alerts = True
+            breaking_alerts.append(raw)
             continue
         if task_name == "tasks.intelligence.auto_summarize_task":
             if seen_auto_summarize:
@@ -516,6 +541,7 @@ def reprioritize_fast_track_queue(*, groom_threshold: int = 60, dry_run: bool = 
             continue
         kept_other.append(raw)
 
+    priority_items = list(urgent_by_cluster.values()) + breaking_alerts
     rebuilt = priority_items + kept_other
     result = {
         "skipped": False,
@@ -524,6 +550,7 @@ def reprioritize_fast_track_queue(*, groom_threshold: int = 60, dry_run: bool = 
         "removed": removed,
         "priority_count": len(priority_items),
         "kept_other_count": len(kept_other),
+        "urgent_deduped": urgent_duplicates_removed,
         "dry_run": dry_run,
         "groom_threshold": groom_threshold,
     }

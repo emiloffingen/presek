@@ -82,6 +82,7 @@ class TestUpgradeStuckFastSyntheses:
     def test_enqueues_stuck_cluster_upgrades(self):
         with (
             patch("tasks.maintenance._homepage_synthesis_only", return_value=False),
+            patch("core.synthesis_quality.prune_stale_fast_synthesis_pending", return_value=0),
             patch(
                 "core.synthesis_quality.list_stuck_fast_synthesis_cluster_ids",
                 return_value=["cluster-a", "cluster-b"],
@@ -90,7 +91,7 @@ class TestUpgradeStuckFastSyntheses:
         ):
             result = upgrade_stuck_fast_syntheses_task(limit=5)
 
-        assert result == {"enqueued": 1, "stuck_total": 2}
+        assert result == {"enqueued": 1, "stuck_total": 2, "cleared_pending": 0}
         assert mock_schedule.call_count == 2
         assert mock_schedule.call_args.kwargs["queue"] == "maintenance"
 

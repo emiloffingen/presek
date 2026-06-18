@@ -146,6 +146,27 @@ def record_synthesis_db_persisted(
     )
 
 
+_PERSIST_GAP_EXCLUDED_REASONS = frozenset(
+    {
+        "router_empty_articles",
+        "router_selected_fallback",
+        "mk_copy_purity_failed",
+        "sr_copy_purity_failed",
+    }
+)
+
+
+def _synthesis_path_counts_toward_persist_gap(field_key: str) -> bool:
+    if not field_key.startswith("synthesis_path|"):
+        return False
+    for part in field_key.split("|")[1:]:
+        if part.startswith("reason="):
+            reason = part.removeprefix("reason=").strip().lower()
+            if reason in _PERSIST_GAP_EXCLUDED_REASONS:
+                return False
+    return True
+
+
 def count_synthesis_persist_gap() -> dict[str, int]:
     """Compare today's synthesis_path vs synthesis_db_persisted Redis counters."""
     from datetime import datetime, timezone
@@ -155,12 +176,16 @@ def count_synthesis_persist_gap() -> dict[str, int]:
     bucket = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     data = redis_client.hgetall(f"presek:runtime_events:{bucket}") or {}
     synthesis_events = 0
+    excluded_events = 0
     db_persisted_events = 0
     for field, count in data.items():
         key = field.decode() if isinstance(field, bytes) else str(field)
         value = int(count)
         if key.startswith("synthesis_path|"):
-            synthesis_events += value
+            if _synthesis_path_counts_toward_persist_gap(key):
+                synthesis_events += value
+            else:
+                excluded_events += value
         elif key.startswith("synthesis_db_persisted|"):
             db_persisted_events += value
     gap = max(0, synthesis_events - db_persisted_events)
@@ -168,6 +193,7 @@ def count_synthesis_persist_gap() -> dict[str, int]:
         "synthesis_events": synthesis_events,
         "db_persisted_events": db_persisted_events,
         "persist_gap": gap,
+        "excluded_synthesis_events": excluded_events,
     }
 
 
@@ -255,3 +281,46 @@ def list_stuck_fast_synthesis_cluster_ids(
         return stuck
 
     return stuck[: max(1, int(limit))]
+
+
+def prune_stale_fast_synthesis_pending(*, limit: int = 200) -> int:
+    """Clear pending markers when the cluster already has a non-provisional summary."""
+    from core.database import db_manager as db
+    from utils import redis_client
+
+    if not os.environ.get("REDIS_URL"):
+        return 0
+
+    prefix = "presek:fast_synthesis_pending:"
+    cleared = 0
+    try:
+        for key in redis_client.scan_iter(f"{prefix}*", count=200):
+            if cleared >= max(1, int(limit)):
+                break
+            key_str = key.decode() if isinstance(key, bytes) else str(key)
+            if not key_str.startswith(prefix):
+                continue
+            cluster_id = key_str.removeprefix(prefix)
+            if not cluster_id:
+                continue
+            row = db.execute_one(
+                """
+                SELECT fallback_reason, generation_provider
+                FROM cluster_summaries
+                WHERE cluster_id = %s
+                ORDER BY CASE WHEN lang = 'sr' THEN 0 ELSE 1 END, created_at DESC
+                LIMIT 1
+                """,
+                (cluster_id,),
+                read_only=True,
+            )
+            if not row:
+                continue
+            fallback_reason = (row.get("fallback_reason") or "").strip().lower()
+            provider = (row.get("generation_provider") or "").strip().lower()
+            if fallback_reason != "fast_mode_provisional" and provider != "enhanced_fallback":
+                clear_fast_synthesis_pending(cluster_id)
+                cleared += 1
+    except Exception:
+        return cleared
+    return cleared

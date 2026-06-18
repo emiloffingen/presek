@@ -368,19 +368,17 @@ def prune_intel_queue_task(defer_threshold=None, dry_run=False):
 def upgrade_stuck_fast_syntheses_task(limit=None):
     """Enqueue full-quality upgrades for fast-mode publishes that stayed provisional too long."""
     from core.limits import FAST_SYNTHESIS_STUCK_HOURS, FAST_SYNTHESIS_UPGRADE_SWEEP_LIMIT
-    from core.synthesis_quality import list_stuck_fast_synthesis_cluster_ids
+    from core.synthesis_quality import list_stuck_fast_synthesis_cluster_ids, prune_stale_fast_synthesis_pending
     from tasks.intelligence.synthesis import upgrade_fast_synthesis_task
 
+    cleared_pending = prune_stale_fast_synthesis_pending()
     batch_limit = max(1, int(limit or FAST_SYNTHESIS_UPGRADE_SWEEP_LIMIT))
     cluster_ids = list_stuck_fast_synthesis_cluster_ids(
         max_age_hours=FAST_SYNTHESIS_STUCK_HOURS,
         limit=batch_limit,
     )
-    if _homepage_synthesis_only():
-        homepage_ids = set(_collect_homepage_layout_cluster_ids())
-        cluster_ids = [cluster_id for cluster_id in cluster_ids if cluster_id in homepage_ids]
     if not cluster_ids:
-        return {"enqueued": 0, "stuck_total": 0}
+        return {"enqueued": 0, "stuck_total": 0, "cleared_pending": cleared_pending}
 
     enqueued = 0
     for cluster_id in cluster_ids:
@@ -402,7 +400,7 @@ def upgrade_stuck_fast_syntheses_task(limit=None):
         len(cluster_ids),
         FAST_SYNTHESIS_STUCK_HOURS,
     )
-    return {"enqueued": enqueued, "stuck_total": len(cluster_ids)}
+    return {"enqueued": enqueued, "stuck_total": len(cluster_ids), "cleared_pending": cleared_pending}
 
 
 @maintenance_task

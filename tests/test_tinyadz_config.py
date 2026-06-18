@@ -23,6 +23,10 @@ SHARED_MK_HOST_PAGES_WITH_RAIL_AD = [
     "web/src/pages/tema/[topic].astro",
     "web/src/pages/cluster/[slug].astro",
     "web/src/pages/graf.astro",
+]
+
+# Legacy MK slug; canonical content lives on /graf (see grafik.astro redirect).
+REDIRECT_ONLY_PAGES = [
     "web/src/pages/grafik.astro",
 ]
 
@@ -46,13 +50,11 @@ LIVE_PAGES_WITH_RAIL_AD = [
     "web/src/pages/tema/[topic].astro",
     "web/src/pages/cluster/[slug].astro",
     "web/src/pages/graf.astro",
-    "web/src/pages/grafik.astro",
 ]
 
 LIVE_PAGES_WITH_INLINE_AD = [
     "web/src/pages/izvori.astro",
     "web/src/pages/graf.astro",
-    "web/src/pages/grafik.astro",
     "web/src/pages/pulse.astro",
     "web/src/pages/tema/[topic].astro",
     "web/src/pages/archive.astro",
@@ -149,6 +151,14 @@ def test_live_content_pages_include_tinyadz_slots():
     for path in LIVE_PAGES_WITH_INLINE_AD:
         source = _read_page_or_delegated_ad_surface(path)
         assert "TinyAdzInlinedAd" in source, path
+
+
+def test_redirect_only_pages_do_not_carry_ad_slots():
+    for path in REDIRECT_ONLY_PAGES:
+        source = Path(path).read_text(encoding="utf-8")
+        assert "Astro.redirect" in source, path
+        assert "TinyAdzRailAd" not in source, path
+        assert "TinyAdzInlinedAd" not in source, path
 
 
 def test_shared_components_include_tinyadz_slots():
