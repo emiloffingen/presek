@@ -19,6 +19,8 @@ def test_jwt_token_creation_and_verification():
     assert "iat" in payload
     assert "exp" in payload
     assert "jti" in payload
+    assert payload["iss"] == "presek-api"
+    assert payload["aud"] == "presek-admin"
 
 
 def test_admin_jwt_creation_and_verification():

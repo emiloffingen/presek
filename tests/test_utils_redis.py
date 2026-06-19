@@ -3,6 +3,13 @@
 import json
 from unittest.mock import MagicMock, patch
 
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def _reset_env_for_rate_limit_tests(monkeypatch):
+    monkeypatch.setenv("ENV", "test")
+
 
 class TestCachedResponse:
     @patch("utils.cache.redis_client")
@@ -67,12 +74,21 @@ class TestCheckRateLimit:
         assert check_rate_limit("1.2.3.4") is False
 
     @patch("utils.cache.redis_client")
-    def test_redis_failure_allows_request(self, mock_redis):
-        """If Redis is down, rate limiter should fail open to keep the site up."""
+    def test_redis_failure_allows_request_in_non_production(self, mock_redis, monkeypatch):
+        """If Redis is down outside production, rate limiter fails open to keep the site up."""
         from utils import check_rate_limit
 
+        monkeypatch.setenv("ENV", "test")
         mock_redis.pipeline.side_effect = Exception("Connection refused")
         assert check_rate_limit("1.2.3.4") is True
+
+    @patch("utils.cache.redis_client")
+    def test_redis_failure_blocks_request_in_production(self, mock_redis, monkeypatch):
+        from utils import check_rate_limit
+
+        monkeypatch.setenv("ENV", "production")
+        mock_redis.pipeline.side_effect = Exception("Connection refused")
+        assert check_rate_limit("1.2.3.4") is False
 
     @patch("utils.cache.redis_client")
     def test_ai_path_uses_daily_limit(self, mock_redis):

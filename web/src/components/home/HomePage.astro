@@ -20,6 +20,7 @@ import HomeSynthesisTeaser from './HomeSynthesisTeaser.astro';
 import TinyAdzInlinedAd from '../TinyAdzInlinedAd.astro';
 import TinyAdzRailAd from '../TinyAdzRailAd.astro';
 import { loadHomepageViewModel } from '../../lib/homepageViewModel';
+import { safeJsonForScript } from '../../lib/safeJson';
 import { getBriefingSnippet } from '../../lib/homepageData';
 import FilterHeader from './FilterHeader.astro';
 import HomeRail from './HomeRail.astro';
@@ -543,7 +544,7 @@ if (analizaNavItems.length > 0) {
 
 {isHomepage && (perspectiveBandItems.length > 0 || radarBandItems.length > 0 || consensusBandItems.length > 0) && (
 	<>
-		<script type="application/json" id="presek-analysis-bands-data" set:html={JSON.stringify({
+		<script type="application/json" id="presek-analysis-bands-data" set:html={safeJsonForScript({
 			perspectiveItems: perspectiveBandItems,
 			radarItems: radarBandItems,
 			consensusItems: consensusBandItems,

@@ -1,5 +1,6 @@
 ---
 import { ClientRouter } from 'astro:transitions';
+import { safeJsonForScript } from '../../lib/safeJson';
 
 interface Props {
   lang: 'sr' | 'mk';
@@ -97,6 +98,6 @@ const {
 <ClientRouter />
 
 {schema && (
-  <script type="application/ld+json" is:inline set:html={JSON.stringify(schema)} />
+  <script type="application/ld+json" is:inline set:html={safeJsonForScript(schema)} />
 )}
-<script type="application/ld+json" is:inline set:html={JSON.stringify(organizationSchema)} />
+<script type="application/ld+json" is:inline set:html={safeJsonForScript(organizationSchema)} />

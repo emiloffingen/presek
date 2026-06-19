@@ -131,6 +131,8 @@ def check_rate_limit(ip: str, path: str = "", is_authenticated: bool = False) ->
         return results[1] < max_reqs
     except Exception as e:
         log.warning(f"Rate limit check failed: {e}")
+        if os.environ.get("ENV") == "production":
+            return False
         return True
 
 

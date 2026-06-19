@@ -13,6 +13,7 @@
     "astro": "astro",
     "test": "node --test src/lib/**/*.test.mjs src/utils/**/*.test.mjs",
     "analyze": "astro build && node scripts/analyze-bundle.mjs",
+    "analyze:ci": "astro build && node scripts/analyze-bundle.mjs --enforce",
     "test:e2e": "cypress run --e2e",
     "test:e2e:ui": "cypress open --e2e",
     "test:component": "cypress run --component",

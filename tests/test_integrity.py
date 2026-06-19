@@ -57,13 +57,12 @@ class TestAstroFrontendIntegrity:
     def test_primary_pages_fetch_api_through_supported_base_url(self):
         # Pages can either import the shared apiBaseUrl() helper (which
         # centralises PUBLIC_API_URL + SSR/client fallback logic) or inline
-        # the env lookup directly. Either pattern is acceptable.
+        # the env lookup directly. Delegated view components may also own fetch logic.
         for rel_path in (
             "web/src/components/home/HomePage.astro",
             "web/src/pages/briefing.astro",
             "web/src/pages/stats.astro",
             "web/src/pages/cluster/[slug].astro",
-            "web/src/pages/subjekt/[name].astro",
             "web/src/pages/archive.astro",
         ):
             content = _read(rel_path)
@@ -72,6 +71,13 @@ class TestAstroFrontendIntegrity:
             assert uses_helper or uses_inline_env, f"Missing apiBaseUrl()/PUBLIC_API_URL in {rel_path}"
             if uses_inline_env:
                 assert "127.0.0.1:5001/api" in content or '"/api"' in content, f"Missing FastAPI fallback in {rel_path}"
+
+        entity_page = _read("web/src/pages/subjekt/[name].astro")
+        entity_view = _read("web/src/components/entity/EntitySubjectView.astro")
+        entity_loader = _read("web/src/lib/loadEntitySubject.ts")
+        assert "loadEntitySubject" in entity_page
+        assert "EntitySubjectView" in entity_page
+        assert "apiBaseUrl" in entity_loader or "PUBLIC_API_URL" in entity_loader
 
         # The shared helper must still contain the canonical fallback values
         # so that the assertion above is actually meaningful.
@@ -88,7 +94,8 @@ class TestAstroFrontendIntegrity:
     def test_header_fetches_stats_summary_when_page_does_not_supply_stats(self):
         header = _read("web/src/components/NYTHeader.astro")
         assert "shouldFetchStats" in header
-        assert "fetch(`${API_URL}/stats/summary?lang=${lang}`)" in header
+        assert "fetchJsonCached" in header
+        assert "/stats/summary" in header
         assert "const hasDispatchStats = Boolean(stats && intel?.pluralism);" in header
 
     def test_schema_and_ingestion_track_ingestion_time(self):
@@ -126,7 +133,7 @@ class TestAstroFrontendIntegrity:
 
         assert "getTimeStr(main.ingested_at || main.created_at)" in homepage
         assert "getTimeStr(main.ingested_at || main.created_at)" in interactive_card
-        assert "getTimeStr(article.ingested_at || article.created_at, lang)" in live_updates
+        assert "getTimeStr(article.ingested_at || article.created_at)" in live_updates
         assert "getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)" in lead
 
     def test_generated_article_footnotes_are_sanitized_before_html_rendering(self):
@@ -143,6 +150,7 @@ class TestAstroFrontendIntegrity:
         topic_page = _read("web/src/pages/mk/tema/[topic].astro")
         topic_component = _read("web/src/components/topic/TopicPage.astro")
         entity_page = _read("web/src/pages/mk/subjekt/[name].astro")
+        entity_view = _read("web/src/components/entity/EntitySubjectView.astro")
 
         assert '<TopicPage locale="mk" />' in topic_page
         assert "locale?: 'sr' | 'mk'" in topic_component
@@ -151,8 +159,10 @@ class TestAstroFrontendIntegrity:
         assert "Tema trenutno nije dostupna." not in topic_component
         assert "pojavljivanja" not in topic_component
 
-        assert "homePath(lang, hostHeader)" in entity_page
-        assert 'lang={lang}' in entity_page
+        assert "EntitySubjectView" in entity_page
+        assert "loadEntitySubject" in entity_page
+        assert "homePath(lang, hostHeader)" in entity_view
+        assert 'lang={lang}' in entity_view
 
     def test_editorial_interactive_widgets_avoid_placeholder_and_nan_output(self):
         source_comparison = _read("web/src/components/SourceComparisonIsland.tsx")
@@ -168,7 +178,10 @@ class TestAstroFrontendIntegrity:
 
     def test_briefing_page_shows_real_error_state_and_not_only_processing_state(self):
         briefing = _read("web/src/pages/briefing.astro")
-        assert "Brifing trenutno nije dostupan." in briefing
+        briefing_content = _read("web/src/components/briefing/BriefingContent.astro")
+        briefing_i18n = _read("web/src/i18n/namespaces/briefing.ts")
+        assert "BriefingContent" in briefing
+        assert "briefing.error_unavailable" in briefing_content or "Brifing trenutno nije dostupan." in briefing_i18n
 
     def test_pulse_page_has_real_error_state_and_safe_category_math(self):
         pulse = _read("web/src/pages/pulse.astro")
@@ -187,12 +200,12 @@ class TestAstroFrontendIntegrity:
         assert "TinyAdzRailAd" not in for_you_page
         assert "TinyAdzInlinedAd" not in for_you_page
         assert "ErrorBoundary client:idle lang={lang}" in for_you_page
-        assert "<ForYouPageIsland client:idle lang={lang} />" in for_you_page
+        assert "<ForYouPageIsland client:visible lang={lang} />" in for_you_page
         assert "const [clusterLoading, setClusterLoading]" in for_you_island
         assert "ForYouSkeleton" in for_you_island
         assert "fetch(`${apiBaseUrl()}/news?page_size=32&lang=${lang}`)" in for_you_island
         assert "const [semanticError, setSemanticError] = useState<string | null>(null);" in for_you_island
-        assert "}, [profile, lang, isMK]);" in for_you_island
+        assert "}, [profile, lang, initialClusters.length, clusterFetchError]);" in for_you_island
         assert "const pageError = semanticError || clusterError;" in for_you_island
         assert "COALESCE(ingested_at, created_at)" in profile_route
         assert (

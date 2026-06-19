@@ -6,6 +6,9 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const clientDir = path.join(root, 'dist', 'client', '_astro');
 
+const TOTAL_BUDGET_BYTES = Number(process.env.BUNDLE_BUDGET_TOTAL_BYTES || 1_450_000);
+const CLIENT_JS_BUDGET_BYTES = Number(process.env.BUNDLE_BUDGET_CLIENT_JS_BYTES || 190_000);
+
 async function walk(dir) {
   const entries = await readdir(dir, { withFileTypes: true });
   const files = [];
@@ -21,6 +24,8 @@ async function walk(dir) {
 }
 
 async function main() {
+  const enforce = process.argv.includes('--enforce');
+
   let files;
   try {
     files = await walk(clientDir);
@@ -35,6 +40,7 @@ async function main() {
     return {
       file: path.relative(root, file),
       bytes: info.size,
+      name: path.basename(file),
     };
   }));
 
@@ -47,7 +53,30 @@ async function main() {
   }
 
   const total = assets.reduce((sum, asset) => sum + asset.bytes, 0);
+  const clientJs = assets.find((asset) => asset.name.startsWith('client.') && asset.name.endsWith('.js'));
   console.log(`\nTotal _astro assets: ${(total / 1024 / 1024).toFixed(2)} MB (${assets.length} files)`);
+
+  if (!enforce) {
+    return;
+  }
+
+  const violations = [];
+  if (total > TOTAL_BUDGET_BYTES) {
+    violations.push(`total bundle ${total} bytes exceeds budget ${TOTAL_BUDGET_BYTES}`);
+  }
+  if (clientJs && clientJs.bytes > CLIENT_JS_BUDGET_BYTES) {
+    violations.push(`client.js ${clientJs.bytes} bytes exceeds budget ${CLIENT_JS_BUDGET_BYTES}`);
+  }
+
+  if (violations.length > 0) {
+    console.error('\nBundle budget violations:');
+    for (const violation of violations) {
+      console.error(`- ${violation}`);
+    }
+    process.exit(1);
+  }
+
+  console.log('\nBundle budgets OK.');
 }
 
 main();

@@ -240,6 +240,7 @@ def _safe_tracking_redirect_path(path: str) -> str:
 
 
 _RATE_LIMITED_API_PATHS = {
+    "/api/proxy",
     "/api/news",
     "/api/trending",
     "/api/intelligence/cluster/{cluster_id}/research",
@@ -260,8 +261,18 @@ _RATE_LIMITED_API_PATHS = {
 }
 
 
-def _is_rate_limited_path(path: str) -> bool:
+def _normalize_rate_limit_path(path: str) -> str:
+    """Map versioned API paths (/api/v1/...) to canonical /api/... form."""
     clean = str(path or "").strip()
+    if clean.startswith("/api/v1/"):
+        return "/api/" + clean[len("/api/v1/") :]
+    if clean == "/api/v1":
+        return "/api"
+    return clean
+
+
+def _is_rate_limited_path(path: str) -> bool:
+    clean = _normalize_rate_limit_path(str(path or "").strip())
     if not clean.startswith("/"):
         return False
     if clean in _RATE_LIMITED_API_PATHS:

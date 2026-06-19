@@ -1,31 +1,19 @@
+# Dev-only backend stack — NOT production parity.
+# Production uses systemd + nginx (see deploy/MINIMUM_PROD.md).
+# This compose file runs FastAPI + Celery + Postgres + Redis for local API/worker development.
+# There is no Astro SSR service; use `cd web && npm run dev` separately for the frontend.
+
 version: '3.8'
 
 services:
   db:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: presek
       POSTGRES_USER: presek
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
-    networks:
-      - presek-net
-
-  db-replica:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_DB: presek
-      POSTGRES_USER: presek
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
-    command: |
-      bash -c '
-      echo "primary_host=db" >> /var/lib/postgresql/data/postgresql.conf
-      echo "primary_port=5432" >> /var/lib/postgresql/data/postgresql.conf
-      echo "hot_standby=on" >> /var/lib/postgresql/data/postgresql.conf
-      '
-    depends_on:
-      - db
     networks:
       - presek-net
 
@@ -38,11 +26,12 @@ services:
   api:
     build: .
     command: uvicorn core.api_fast:app --host 0.0.0.0 --port 8000
-    volumes:
-      - .:/app
     environment:
       - DATABASE_URL=postgresql://presek:${DATABASE_PASSWORD}@db:5432/presek
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key}
+      - CSRF_TOKEN_SECRET=${CSRF_TOKEN_SECRET:-dev-csrf-secret}
+      - ENV=development
     depends_on:
       - db
       - redis
@@ -52,11 +41,11 @@ services:
   worker:
     build: .
     command: celery -A core.celery_app worker --loglevel=info
-    volumes:
-      - .:/app
     environment:
       - DATABASE_URL=postgresql://presek:${DATABASE_PASSWORD}@db:5432/presek
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key}
+      - ENV=development
     depends_on:
       - db
       - redis

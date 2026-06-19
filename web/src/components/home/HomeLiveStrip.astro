@@ -1,5 +1,5 @@
 ---
-import '../../styles/home-live-strip.css';
+import { safeJsonForScript } from '../../lib/safeJson';
 import { Activity, ChevronRight } from 'lucide-react';
 import { getDisplayTitle } from '../../utils/textUtils';
 import { useTranslations } from '../../i18n/utils';
@@ -55,5 +55,5 @@ const wireTeaser = wireItems[0]?.title || '';
             <div class="home-live-items hide-scrollbar" data-live-mount></div>
         </section>
     </details>
-    <script type="application/json" id="presek-live-data" set:html={JSON.stringify(wireItems)}></script>
+    <script type="application/json" id="presek-live-data" set:html={safeJsonForScript(wireItems)}></script>
 )}

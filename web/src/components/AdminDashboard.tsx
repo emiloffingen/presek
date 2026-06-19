@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { apiBaseUrl } from '../lib/apiBase';
 import { buildCsrfHeadersAsync } from '../lib/personalization.js';
 import {
@@ -65,7 +65,6 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
         const payload = await res.json();
         setData(payload);
         setIsAuthenticated(true);
-        if (typeof window !== 'undefined') sessionStorage.setItem('presek_admin_token', activeToken);
         fetchSynthesisTraces(activeToken);
       } else {
         setError(lang === 'sr' ? 'Pristup je odbijen. Nevalidan token.' : 'Пристапот е одбиен. Невалиден токен.');
@@ -185,15 +184,6 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
       alert(lang === 'sr' ? 'Greška pri učitavanju nedeljnog izveštaja.' : 'Грешка при вчитување на неделен извештај.');
     }
   };
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const stored = sessionStorage.getItem('presek_admin_token') || '';
-    if (stored) {
-      setToken(stored);
-      fetchDashboard(stored);
-    }
-  }, []);
 
   if (!isAuthenticated) {
     return (

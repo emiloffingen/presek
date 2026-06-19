@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import secrets
 from typing import List
 
@@ -24,6 +25,8 @@ from .security import verify_csrf_token
 
 log = logging.getLogger("presek")
 router = APIRouter()
+
+SYNC_TOKEN_MAX_AGE_DAYS = int(os.environ.get("SYNC_TOKEN_MAX_AGE_DAYS", "365"))
 
 
 class DeliveryPreferences(BaseModel):
@@ -162,6 +165,19 @@ def _normalize_server_delivery_row(row):
     )
 
 
+def _assert_sync_token_not_expired(row: dict) -> None:
+    created_at = row.get("created_at")
+    if not created_at:
+        return
+    from datetime import datetime, timezone
+
+    if getattr(created_at, "tzinfo", None) is None:
+        created_at = created_at.replace(tzinfo=timezone.utc)
+    age_days = (datetime.now(timezone.utc) - created_at).days
+    if age_days > SYNC_TOKEN_MAX_AGE_DAYS:
+        raise HTTPException(status_code=401, detail="Sync token expired")
+
+
 @router.post("/profile/sync/init", response_model=ProfileInitResponse)
 @custom_rate_limit("10/minute")
 async def init_profile_sync(request: Request = None, csrf_valid: bool = Depends(verify_csrf_token)):
@@ -179,11 +195,12 @@ async def init_profile_sync(request: Request = None, csrf_valid: bool = Depends(
 async def get_profile_sync(request: Request):
     token = _validate_sync_token_value(_extract_sync_token(request))
     row = await db.async_execute_one(
-        "SELECT profile_data, updated_at FROM synced_reader_profiles WHERE sync_token = %s",
+        "SELECT profile_data, updated_at, created_at FROM synced_reader_profiles WHERE sync_token = %s",
         (token,),
     )
     if not row:
         raise HTTPException(status_code=404, detail="Profil nije pronadjen")
+    _assert_sync_token_not_expired(row)
     profile = _normalize_synced_profile(row.get("profile_data") or {})
     pruned_recent = await _prune_recent_clusters(profile.get("recentClusters") or [])
     if len(pruned_recent) != len(profile.get("recentClusters") or []):
@@ -210,11 +227,12 @@ async def save_profile_sync(request: Request, csrf_valid: bool = Depends(verify_
     token = _validate_sync_token_value(payload.get("token"))
     incoming = _normalize_synced_profile(payload.get("profile") or {})
     existing = await db.async_execute_one(
-        "SELECT profile_data FROM synced_reader_profiles WHERE sync_token = %s",
+        "SELECT profile_data, created_at FROM synced_reader_profiles WHERE sync_token = %s",
         (token,),
     )
     if not existing:
         raise HTTPException(status_code=404, detail="Profil nije pronadjen")
+    _assert_sync_token_not_expired(existing)
     merged = _merge_synced_profiles(existing.get("profile_data") or {}, incoming)
     merged["recentClusters"] = await _prune_recent_clusters(merged.get("recentClusters") or [])
     await db.async_execute(

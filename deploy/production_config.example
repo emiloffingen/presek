@@ -94,6 +94,16 @@ PUBLIC_TINYADZ_TEST_MODE=false
 # Post-deploy smoke checks against public URLs (recommended in production).
 ENABLE_PUBLIC_CHECK=1
 ENABLE_MK_PUBLIC_CHECK=1
+ENABLE_PUBLIC_SECURITY_HEADER_CHECK=1
+
+# Optional: gate /admin HTML shell behind a shared secret (query ?token= or X-Admin-Page-Token header).
+# ADMIN_PAGE_TOKEN=
+
+# Shared static uploads path (defaults to /home/emiloffingen/presek-runtime/shared/static).
+# STATIC_ROOT=/home/emiloffingen/presek-runtime/shared/static
+
+# Reader sync token max age in days (default 365).
+# SYNC_TOKEN_MAX_AGE_DAYS=365
 
 # Cloudflare API (optional — DNS automation). Replace placeholder; rotate if leaked.
 # CLOUDFLARE_API_TOKEN=

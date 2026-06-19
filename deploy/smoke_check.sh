@@ -285,10 +285,14 @@ main() {
     public_base="${PUBLIC_URL%/}"
     # Allow 200 or 301 for the root domain as it often redirects to / or www.
     wait_http_ok "Public site" "$PUBLIC_URL" "200" || wait_http_ok "Public site" "$PUBLIC_URL" "301"
-    wait_http_ok "Public admin page" "$public_base/admin" 200
+    admin_url="$public_base/admin"
+    if [ -n "${ADMIN_PAGE_TOKEN:-}" ]; then
+      admin_url="$admin_url?token=$ADMIN_PAGE_TOKEN"
+    fi
+    wait_http_ok "Public admin page" "$admin_url" 200
     wait_http_ok "Public status page" "$public_base/status" 200
     if [ "$ENABLE_PUBLIC_SECURITY_HEADER_CHECK" = "1" ]; then
-      # wait_header_contains "Public site CSP" "$PUBLIC_URL" "Content-Security-Policy" "default-src 'self'"
+      wait_header_contains "Public site CSP" "$PUBLIC_URL" "Content-Security-Policy" "default-src 'self'"
       wait_header_contains "Public site HSTS" "$PUBLIC_URL" "Strict-Transport-Security" "max-age=63072000"
     else
       warn "Skipping public security header checks (set ENABLE_PUBLIC_SECURITY_HEADER_CHECK=1 to enable)"

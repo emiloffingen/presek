@@ -73,7 +73,7 @@ def validate_recommended_env():
 def check_sensitive_values():
     """Warn if sensitive environment variables contain default/test values."""
     dangerous_patterns = [
-        ("DATABASE_URL", ["password", "1234", "test", "changeme", "postgres://"]),
+        ("DATABASE_URL", ["password", "1234", "changeme"]),
         ("SECRET_KEY", ["secret", "test", "changeme", "123"]),
         ("PRESEK_ADMIN_TOKEN", ["admin", "test", "123", "changeme"]),
     ]

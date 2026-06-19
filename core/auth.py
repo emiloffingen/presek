@@ -21,6 +21,8 @@ if not JWT_SECRET:
         raise RuntimeError("JWT_SECRET must be set in production")
     JWT_SECRET = secrets.token_urlsafe(32)
 JWT_ALGORITHM = "HS256"
+JWT_ISSUER = os.environ.get("JWT_ISSUER", "presek-api")
+JWT_AUDIENCE = os.environ.get("JWT_AUDIENCE", "presek-admin")
 JWT_EXPIRE_MINUTES = int(os.environ.get("JWT_EXPIRE_MINUTES", "60"))
 
 
@@ -58,6 +60,8 @@ def create_jwt_token(subject: str, additional_claims: Optional[Dict[str, Any]] =
         "iat": now,
         "exp": now + timedelta(minutes=JWT_EXPIRE_MINUTES),
         "jti": secrets.token_hex(16),
+        "iss": JWT_ISSUER,
+        "aud": JWT_AUDIENCE,
     }
 
     if additional_claims:
@@ -69,7 +73,13 @@ def create_jwt_token(subject: str, additional_claims: Optional[Dict[str, Any]] =
 def decode_jwt(token: str) -> Optional[Dict[str, Any]]:
     """Decode and verify a JWT token."""
     try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        payload = jwt.decode(
+            token,
+            JWT_SECRET,
+            algorithms=[JWT_ALGORITHM],
+            issuer=JWT_ISSUER,
+            audience=JWT_AUDIENCE,
+        )
         return payload
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")

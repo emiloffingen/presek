@@ -59,5 +59,21 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return new Response('Not found', { status: 404 });
   }
 
+  const adminPageToken = process.env.ADMIN_PAGE_TOKEN?.trim();
+  if (
+    isProductionHost
+    && adminPageToken
+    && pathname.startsWith('/admin')
+    && pathname !== '/admin/status'
+  ) {
+    const provided =
+      url.searchParams.get('token')
+      || context.request.headers.get('x-admin-page-token')
+      || '';
+    if (provided !== adminPageToken) {
+      return new Response('Not found', { status: 404 });
+    }
+  }
+
   return attachFrameAncestors(await next());
 });

@@ -203,6 +203,10 @@ jobs:
         working-directory: web
         run: npm test
 
+      - name: Run npm audit
+        working-directory: web
+        run: npm audit --audit-level=high
+
       - name: Run frontend component tests (Cypress)
         working-directory: web
         run: npm run test:component
@@ -210,6 +214,10 @@ jobs:
       - name: Build frontend
         working-directory: web
         run: npm run build
+
+      - name: Enforce bundle budgets
+        working-directory: web
+        run: npm run analyze:ci
 
       - name: Install Chromium for Lighthouse
         run: sudo apt-get update && sudo apt-get install -y chromium

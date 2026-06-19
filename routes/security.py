@@ -36,22 +36,13 @@ def _raise_http_error(status_code: int, detail: str):
 # CSRF Protection System
 # =============================================================================
 
-# Initialize CSRF secret - use environment variable or generate a stable one
-_CSRF_SECRET_FILE = "/tmp/presek_csrf_secret.txt"
+# Initialize CSRF secret - use environment variable or generate an in-memory dev secret
 if os.environ.get("CSRF_TOKEN_SECRET"):
     CSRF_TOKEN_SECRET = os.environ.get("CSRF_TOKEN_SECRET")
 elif os.environ.get("ENV") == "production":
     raise RuntimeError("CSRF_TOKEN_SECRET must be set in production")
-elif os.path.exists(_CSRF_SECRET_FILE):
-    with open(_CSRF_SECRET_FILE, "r") as f:
-        CSRF_TOKEN_SECRET = f.read().strip()
 else:
     CSRF_TOKEN_SECRET = secrets.token_urlsafe(32)
-    try:
-        with open(_CSRF_SECRET_FILE, "w") as f:
-            f.write(CSRF_TOKEN_SECRET)
-    except Exception:
-        pass  # If we can't write the file, just use the in-memory secret
 
 CSRF_TOKEN_EXPIRY = 3600  # 1 hour
 
@@ -115,6 +106,9 @@ async def verify_csrf_token(request: Request):
             status_code=403,
             detail="Nevaliden CSRF token"
         )
+
+    if os.environ.get("ENV") == "production" and not cookie_token:
+        raise HTTPException(status_code=403, detail="CSRF cookie required")
 
     return True
 
@@ -391,9 +385,9 @@ class EnhancedRateLimitMiddleware(BaseHTTPMiddleware):
         client_ip = _client_ip_for_request(request)
 
         # Security enhancement: Only allow bypass for specific admin endpoints in development
-        if (client_ip in {"127.0.0.1", "::1", "::ffff:127.0.0.1"} 
+        if (client_ip in {"127.0.0.1", "::1", "::ffff:127.0.0.1"}
             and os.environ.get("ENV") != "production"
-            and not request.url.path.startswith("/admin/")):
+            and not request.url.path.startswith(("/admin/", "/api/admin"))):
             return await call_next(request)
 
         # Check if this path should be rate limited

@@ -78,6 +78,8 @@ def _read_page_or_delegated_ad_surface(path: str) -> str:
     source = Path(path).read_text(encoding="utf-8")
     if "TopicPage" in source:
         return source + Path("web/src/components/topic/TopicPageContent.astro").read_text(encoding="utf-8")
+    if "EntitySubjectView" in source:
+        return source + Path("web/src/components/entity/EntitySubjectView.astro").read_text(encoding="utf-8")
     return source
 
 

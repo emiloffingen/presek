@@ -2,6 +2,7 @@
 import { ChevronRight, Home } from 'lucide-react';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import { homePath, siteOrigin } from '../lib/localePaths';
+import { safeJsonForScript } from '../lib/safeJson';
 
 interface Crumb {
   label: string;
@@ -57,7 +58,7 @@ const breadcrumbSchema = {
     ))}
   </ol>
 
-  <script type="application/ld+json" is:inline set:html={JSON.stringify(breadcrumbSchema)} />
+  <script type="application/ld+json" is:inline set:html={safeJsonForScript(breadcrumbSchema)} />
 </nav>
 
 <style>

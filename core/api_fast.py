@@ -187,6 +187,21 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    log.exception("Unhandled exception on %s", request.url.path)
+    try:
+        from core.error_tracking import capture_exception
+
+        capture_exception(exc, {"path": request.url.path, "method": request.method})
+    except Exception:
+        pass
+    return JSONResponse(
+        status_code=500,
+        content=normalize_http_exception_content("Internal server error"),
+    )
+
+
 @app.get("/api/csrf-token")
 @app.get("/api/v1/csrf-token")
 def get_csrf_token():
@@ -212,7 +227,7 @@ if _rate_limiter_enabled:
 _AUDIO_FILENAME_RE = re.compile(r"^[A-Za-z0-9_.-]+\.mp3$")
 _UPLOAD_IMAGE_FILENAME_RE = re.compile(r"^art_\d+\.webp$")
 _GENERATED_FILENAME_RE = re.compile(r"^[A-Za-z0-9_.-]+\.(?:jpg|jpeg|png|svg|webp)$", re.IGNORECASE)
-_STATIC_ROOT = "/home/emiloffingen/presek-runtime/shared/static"
+_STATIC_ROOT = os.environ.get("STATIC_ROOT", "/home/emiloffingen/presek-runtime/shared/static")
 if not os.path.exists(_STATIC_ROOT):
     _STATIC_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "static"))
 _AUDIO_UPLOAD_DIR = os.path.join(_STATIC_ROOT, "uploads", "audio")
@@ -268,8 +283,12 @@ _LOCAL_OPS_CLIENTS = _LOCAL_METRICS_CLIENTS | frozenset({"testclient"})
 
 
 def _is_trusted_ops_client(request: Request) -> bool:
+    from routes.common import _client_ip_for_request
+
     client_host = str(getattr(getattr(request, "client", None), "host", "") or "")
-    return client_host in _LOCAL_OPS_CLIENTS
+    if client_host in _LOCAL_OPS_CLIENTS:
+        return True
+    return _client_ip_for_request(request) in _LOCAL_OPS_CLIENTS
 
 
 def _is_local_metrics_client(request: Request) -> bool:
@@ -580,7 +599,7 @@ def trigger_reclustering(
         }
     except Exception as e:
         log.error(f"Failed to trigger reclustering: {e}")
-        return {"status": "error", "error": str(e)}
+        raise HTTPException(status_code=503, detail="Failed to trigger reclustering") from e
 
 
 @app.post("/api/admin/trigger-storyline-discovery")
@@ -600,7 +619,7 @@ def trigger_storyline_discovery(
         return {"status": "success", "task_id": str(task.id), "message": "Triggered storyline discovery"}
     except Exception as e:
         log.error(f"Failed to trigger storyline discovery: {e}")
-        return {"status": "error", "error": str(e)}
+        raise HTTPException(status_code=503, detail="Failed to trigger storyline discovery") from e
 
 
 @app.get("/api/admin/clustering-status")

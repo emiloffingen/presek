@@ -120,7 +120,7 @@ class CrawlerService:
                     p_ip = _peer_ip(resp)
                     if not p_ip or p_ip not in safe_ips:
                         log.warning(f"SSRF blocked: Peer IP {p_ip} not in safe list for {url}")
-                        return await self._extract_headless(url)
+                        return {"url": url, "error": "Security block: peer IP mismatch", "method": "fast"}
 
                     await resp.aread()
                     resp.raise_for_status()

@@ -1,5 +1,5 @@
 ---
-import '../../styles/trending-preview.css';
+import { safeJsonForScript } from '../../lib/safeJson';
 import { TrendingUp } from 'lucide-react';
 import type { NewsCluster } from '../../types';
 import { useTranslations } from '../../i18n/utils';
@@ -50,5 +50,5 @@ const trendItems = clusters.map((cluster: NewsCluster) => {
             <div class="trending-row hide-scrollbar" data-trending-mount aria-label={trendLabel}></div>
         </div>
     </details>
-    <script type="application/json" id="presek-trending-data" set:html={JSON.stringify(trendItems)}></script>
+    <script type="application/json" id="presek-trending-data" set:html={safeJsonForScript(trendItems)}></script>
 )}
