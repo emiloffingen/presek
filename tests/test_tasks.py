@@ -323,7 +323,7 @@ class TestSynthesizeClusterTaskQuality:
         assert lock_key == "lock:fast_synthesis_upgrade:cluster-9"
         assert task is upgrade_fast_synthesis_task
         assert mock_schedule.call_args.kwargs["kwargs"] == {"content": "legacy", "defer_attempt": 0}
-        assert mock_schedule.call_args.kwargs["queue"] == "maintenance"
+        assert mock_schedule.call_args.kwargs["queue"] == "synthesis"
 
     def test_upgrade_fast_synthesis_task_defers_when_intel_queue_is_busy(self):
         from tasks.intelligence import upgrade_fast_synthesis_task

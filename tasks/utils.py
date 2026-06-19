@@ -158,6 +158,23 @@ MAINTENANCE_DEFERRABLE_TASKS = frozenset(
     {
         "tasks.intelligence.generate_cluster_metadata_task",
         "tasks.intelligence.upgrade_fast_synthesis_task",
+        "tasks.intelligence.generate_embeddings_task",
+    }
+)
+MAINTENANCE_QUEUE_GROOM_TASKS = frozenset(
+    {
+        "tasks.maintenance.prune_maintenance_queue_task",
+        "tasks.maintenance.prune_fast_track_queue_task",
+        "tasks.maintenance.prune_intel_queue_task",
+        "tasks.maintenance.prune_ingestion_queue_task",
+        "tasks.maintenance.prune_crawl_queue_task",
+        "tasks.maintenance.refresh_synthesis_quality_task",
+        "tasks.maintenance.ensure_ingestion_freshness_task",
+    }
+)
+MAINTENANCE_MISROUTED_TASKS = frozenset(
+    {
+        "tasks.intelligence.upgrade_fast_synthesis_task",
     }
 )
 MAINTENANCE_SINGLETON_TASKS = frozenset(
@@ -178,6 +195,7 @@ MAINTENANCE_SINGLETON_TASKS = frozenset(
         "tasks.maintenance.refresh_low_score_syntheses_task",
         "tasks.maintenance.boost_homepage_cluster_supply_task",
         "tasks.intelligence.generate_cluster_metadata_task",
+        "tasks.intelligence.generate_embeddings_task",
     }
 )
 INTEL_DEFERRABLE_TASKS = frozenset(
@@ -592,6 +610,9 @@ def reprioritize_maintenance_queue(*, groom_threshold: int = 80, dry_run: bool =
         if isinstance(raw, bytes):
             raw = raw.decode("utf-8")
         task_name = _parse_queue_task_name(raw)
+        if task_name in MAINTENANCE_MISROUTED_TASKS:
+            removed += 1
+            continue
         dedupe_key = _parse_maintenance_dedupe_key(raw, task_name)
 
         if task_name in MAINTENANCE_HEAVY_TASKS:
@@ -629,6 +650,18 @@ def reprioritize_maintenance_queue(*, groom_threshold: int = 80, dry_run: bool =
                 defer_kept += 1
             trimmed.append(raw)
         kept = trimmed
+
+    def _maintenance_queue_sort_key(raw: str) -> tuple[int, int]:
+        task_name = _parse_queue_task_name(raw)
+        if task_name in MAINTENANCE_QUEUE_GROOM_TASKS:
+            return (0, 0)
+        if task_name in MAINTENANCE_HEAVY_TASKS:
+            return (2, 0)
+        if task_name in MAINTENANCE_DEFERRABLE_TASKS:
+            return (3, 0)
+        return (1, 0)
+
+    kept.sort(key=_maintenance_queue_sort_key)
 
     result = {
         "skipped": False,

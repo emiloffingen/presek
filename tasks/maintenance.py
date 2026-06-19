@@ -367,9 +367,14 @@ def prune_intel_queue_task(defer_threshold=None, dry_run=False):
 @maintenance_task
 def upgrade_stuck_fast_syntheses_task(limit=None):
     """Enqueue full-quality upgrades for fast-mode publishes that stayed provisional too long."""
-    from core.limits import FAST_SYNTHESIS_STUCK_HOURS, FAST_SYNTHESIS_UPGRADE_SWEEP_LIMIT
+    from core.limits import FAST_SYNTHESIS_STUCK_HOURS, FAST_SYNTHESIS_UPGRADE_QUEUE, FAST_SYNTHESIS_UPGRADE_SWEEP_LIMIT
     from core.synthesis_quality import list_stuck_fast_synthesis_cluster_ids, prune_stale_fast_synthesis_pending
     from tasks.intelligence.synthesis import upgrade_fast_synthesis_task
+    from tasks.utils import maintenance_dispatches_deferred
+
+    if maintenance_dispatches_deferred():
+        log.info("[maintenance] Skipping stuck fast synthesis sweep while maintenance queue is congested.")
+        return {"skipped": True, "reason": "maintenance_backlog"}
 
     cleared_pending = prune_stale_fast_synthesis_pending()
     batch_limit = max(1, int(limit or FAST_SYNTHESIS_UPGRADE_SWEEP_LIMIT))
@@ -390,7 +395,7 @@ def upgrade_stuck_fast_syntheses_task(limit=None):
             args=(cluster_id,),
             kwargs={"content": None, "defer_attempt": 0},
             countdown=30,
-            queue=os.environ.get("FAST_SYNTHESIS_UPGRADE_QUEUE", "maintenance"),
+            queue=os.environ.get("FAST_SYNTHESIS_UPGRADE_QUEUE", FAST_SYNTHESIS_UPGRADE_QUEUE),
         ):
             enqueued += 1
 
@@ -702,10 +707,25 @@ def prioritize_homepage_syntheses_task(limit=None):
     from core.config import HOMEPAGE_SYNTHESIS_PRIORITIZE_LIMIT, HOMEPAGE_SYNTHESIS_QUEUE_HEADROOM
     from routes.news import fetch_news_data
     from tasks.intelligence.synthesis import synthesize_cluster_task, synthesize_urgent_task
-    from tasks.utils import fast_track_dispatches_deferred, safe_async_run
+    from tasks.utils import fast_track_dispatches_deferred, maintenance_dispatches_deferred, safe_async_run
+
+    if maintenance_dispatches_deferred():
+        log.info("[maintenance] Skipping homepage synthesis prioritization while maintenance queue is congested.")
+        return {"skipped": True, "reason": "maintenance_backlog"}
 
     synthesis_depth = _synthesis_queue_depth()
-    use_fast_track = _synthesis_dispatch_deferred() or fast_track_dispatches_deferred()
+    synthesis_deferred = _synthesis_dispatch_deferred()
+    fast_track_congested = fast_track_dispatches_deferred()
+    if synthesis_deferred and fast_track_congested:
+        log.info("[maintenance] Skipping homepage synthesis prioritization while synthesis and fast-track are congested.")
+        return {
+            "skipped": True,
+            "reason": "synthesis_and_fast_track_backlog",
+            "synthesis_depth": synthesis_depth,
+        }
+
+    # Use fast-track only as a fallback when synthesis is backed up but fast-track still has headroom.
+    use_fast_track = synthesis_deferred and not fast_track_congested
     batch_limit = HOMEPAGE_SYNTHESIS_PRIORITIZE_LIMIT if limit is None else int(limit)
     dispatch_limit = max(1, batch_limit)
     if not use_fast_track:
@@ -729,7 +749,7 @@ def prioritize_homepage_syntheses_task(limit=None):
 
     enqueued = 0
     for idx, cluster_id in enumerate(targets[:dispatch_limit]):
-        use_hero_fast_track = cluster_id in hero_ids
+        use_hero_fast_track = cluster_id in hero_ids and not fast_track_congested
         if use_hero_fast_track or use_fast_track:
             synthesize_urgent_task.apply_async(
                 (cluster_id, None),

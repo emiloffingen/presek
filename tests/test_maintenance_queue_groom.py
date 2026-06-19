@@ -29,12 +29,34 @@ class TestMaintenanceQueueGroom:
 
         with patch("tasks.utils.redis_client", fake_redis), patch(
             "tasks.utils.get_celery_queue_depth",
-            side_effect=[200, 4],
+            side_effect=[200, 3],
         ):
             result = reprioritize_maintenance_queue()
 
-        assert result["removed"] == 8
-        assert result["depth_after"] == 4
+        assert result["removed"] == 9
+        assert result["depth_after"] == 3
+
+    def test_drops_misrouted_upgrade_tasks(self):
+        messages = [
+            _message("tasks.intelligence.upgrade_fast_synthesis_task", argsrepr="('abc123',)"),
+            _message("tasks.maintenance.prune_fast_track_queue_task"),
+            _message("tasks.maintenance.prune_maintenance_queue_task"),
+        ]
+        fake_redis = MagicMock()
+        fake_pipe = MagicMock()
+        fake_redis.lrange.return_value = messages
+        fake_redis.pipeline.return_value = fake_pipe
+
+        with patch("tasks.utils.redis_client", fake_redis), patch(
+            "tasks.utils.get_celery_queue_depth",
+            side_effect=[200, 2],
+        ):
+            result = reprioritize_maintenance_queue()
+
+        assert result["removed"] == 1
+        assert result["depth_after"] == 2
+        rebuilt = fake_pipe.rpush.call_args.args[1:]
+        assert json.loads(rebuilt[0])["headers"]["task"] == "tasks.maintenance.prune_fast_track_queue_task"
 
     def test_caps_deferrable_tasks_when_queue_stays_congested(self):
         messages = [

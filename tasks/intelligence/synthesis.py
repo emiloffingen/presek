@@ -115,7 +115,7 @@ def _schedule_copy_purity_retry(cluster_id: str, content, *, lang: str, fast_mod
         _synthesis_scheduling.schedule_task_once = original_schedule_task_once
 
 
-@celery_app.task(name="tasks.intelligence.upgrade_fast_synthesis_task", queue="maintenance")
+@celery_app.task(name="tasks.intelligence.upgrade_fast_synthesis_task", queue="synthesis")
 def upgrade_fast_synthesis_task(cluster_id, content=None, defer_attempt=0):
     """Run full-quality synthesis after fast-mode publish, deferring when intel-heavy is congested."""
     from core.limits import FAST_SYNTHESIS_UPGRADE_FORCE_AFTER_DEFERS, FAST_SYNTHESIS_UPGRADE_QUEUE

@@ -82,6 +82,7 @@ class TestUpgradeStuckFastSyntheses:
     def test_enqueues_stuck_cluster_upgrades(self):
         with (
             patch("tasks.maintenance._homepage_synthesis_only", return_value=False),
+            patch("tasks.utils.maintenance_dispatches_deferred", return_value=False),
             patch("core.synthesis_quality.prune_stale_fast_synthesis_pending", return_value=0),
             patch(
                 "core.synthesis_quality.list_stuck_fast_synthesis_cluster_ids",
@@ -93,7 +94,7 @@ class TestUpgradeStuckFastSyntheses:
 
         assert result == {"enqueued": 1, "stuck_total": 2, "cleared_pending": 0}
         assert mock_schedule.call_count == 2
-        assert mock_schedule.call_args.kwargs["queue"] == "maintenance"
+        assert mock_schedule.call_args.kwargs["queue"] == "synthesis"
 
 
 class TestRefreshFallbackSyntheses:
@@ -227,6 +228,7 @@ class TestPrioritizeHomepageSyntheses:
             patch("tasks.maintenance._collect_homepage_synthesis_targets", return_value=["home-urgent"]),
             patch("tasks.maintenance._collect_homepage_hero_cluster_ids", return_value=set()),
             patch("tasks.utils.fast_track_dispatches_deferred", return_value=False),
+            patch("tasks.utils.maintenance_dispatches_deferred", return_value=False),
             patch("tasks.utils.safe_async_run", return_value=payload),
             patch("tasks.intelligence.synthesis.synthesize_urgent_task") as mock_urgent,
         ):
@@ -255,6 +257,7 @@ class TestPrioritizeHomepageSyntheses:
             patch("tasks.maintenance._collect_homepage_synthesis_targets", return_value=["home-1"]),
             patch("tasks.maintenance._collect_homepage_hero_cluster_ids", return_value=set()),
             patch("tasks.utils.fast_track_dispatches_deferred", return_value=False),
+            patch("tasks.utils.maintenance_dispatches_deferred", return_value=False),
             patch("tasks.utils.safe_async_run", return_value=payload),
             patch("tasks.intelligence.synthesis.synthesize_cluster_task") as mock_task,
         ):
@@ -283,6 +286,7 @@ class TestPrioritizeHomepageSyntheses:
             patch("tasks.maintenance._collect_homepage_synthesis_targets", return_value=["home-2"]),
             patch("tasks.maintenance._collect_homepage_hero_cluster_ids", return_value=set()),
             patch("tasks.utils.fast_track_dispatches_deferred", return_value=False),
+            patch("tasks.utils.maintenance_dispatches_deferred", return_value=False),
             patch("tasks.utils.safe_async_run", return_value=payload),
             patch("tasks.intelligence.synthesis.synthesize_cluster_task") as mock_task,
         ):
@@ -305,6 +309,7 @@ class TestPrioritizeHomepageSyntheses:
             patch("tasks.maintenance._collect_homepage_synthesis_targets", return_value=["lead-home"]),
             patch("tasks.maintenance._collect_homepage_hero_cluster_ids", return_value={"lead-home"}),
             patch("tasks.utils.fast_track_dispatches_deferred", return_value=False),
+            patch("tasks.utils.maintenance_dispatches_deferred", return_value=False),
             patch("tasks.intelligence.synthesis.synthesize_urgent_task") as mock_urgent,
         ):
             result = prioritize_homepage_syntheses_task(limit=5)
@@ -315,6 +320,27 @@ class TestPrioritizeHomepageSyntheses:
             countdown=0,
             queue="fast-track",
         )
+
+    def test_skips_when_fast_track_and_synthesis_are_congested(self):
+        with (
+            patch("tasks.maintenance._synthesis_dispatch_deferred", return_value=True),
+            patch("tasks.maintenance._synthesis_queue_depth", return_value=80),
+            patch("tasks.utils.fast_track_dispatches_deferred", return_value=True),
+            patch("tasks.utils.maintenance_dispatches_deferred", return_value=False),
+        ):
+            result = prioritize_homepage_syntheses_task(limit=5)
+
+        assert result == {
+            "skipped": True,
+            "reason": "synthesis_and_fast_track_backlog",
+            "synthesis_depth": 80,
+        }
+
+    def test_skips_when_maintenance_queue_is_congested(self):
+        with patch("tasks.utils.maintenance_dispatches_deferred", return_value=True):
+            result = prioritize_homepage_syntheses_task(limit=5)
+
+        assert result == {"skipped": True, "reason": "maintenance_backlog"}
 
 
 class TestRefreshLowScoreSyntheses:

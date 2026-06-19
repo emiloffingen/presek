@@ -120,7 +120,7 @@ celery_app.conf.update(
         "tasks.intelligence.refresh_cluster_centroid_task": {"queue": "maintenance"},
         "tasks.intelligence.generate_embeddings_task": {"queue": "maintenance"},
         "tasks.intelligence.generate_cluster_metadata_task": {"queue": "maintenance"},
-        "tasks.intelligence.upgrade_fast_synthesis_task": {"queue": "maintenance"},
+        "tasks.intelligence.upgrade_fast_synthesis_task": {"queue": "synthesis"},
         "tasks.intelligence.*": {"queue": "intel-heavy"},
         "tasks.delivery.briefing.send_profile_breaking_alerts_task": {"queue": "fast-track"},
         "tasks.delivery.email.*": {"queue": "delivery"},
@@ -167,63 +167,78 @@ celery_app.conf.update(
         "prune-intel-queue": {
             "task": "tasks.maintenance.prune_intel_queue_task",
             "schedule": 600.0,  # Every 10 minutes
+            "options": {"expires": 540},
         },
         "prune-fast-track-queue": {
             "task": "tasks.maintenance.prune_fast_track_queue_task",
             "schedule": 600.0,
+            "options": {"expires": 540},
         },
         "prune-maintenance-queue": {
             "task": "tasks.maintenance.prune_maintenance_queue_task",
             "schedule": 900.0,
+            "options": {"expires": 810},
         },
         "refresh-synthesis-quality": {
             "task": "tasks.maintenance.refresh_synthesis_quality_task",
             "schedule": 900.0,  # Every 15 minutes
+            "options": {"expires": 810},
         },
         "upgrade-stuck-fast-syntheses": {
             "task": "tasks.maintenance.upgrade_stuck_fast_syntheses_task",
             "schedule": 1800.0,  # Every 30 minutes
+            "options": {"expires": 1620},
         },
         "refresh-fallback-syntheses": {
             "task": "tasks.maintenance.refresh_fallback_syntheses_task",
             "schedule": 3600.0,  # Every hour
+            "options": {"expires": 3300},
         },
         "catch-up-recent-summaries": {
             "task": "tasks.maintenance.catch_up_recent_summaries_task",
             "schedule": 1800.0,  # Every 30 minutes
+            "options": {"expires": 1620},
         },
         "catch-up-cluster-syntheses": {
             "task": "tasks.maintenance.catch_up_cluster_syntheses_task",
             "schedule": 1800.0,
+            "options": {"expires": 1620},
         },
         "prioritize-homepage-syntheses": {
             "task": "tasks.maintenance.prioritize_homepage_syntheses_task",
             "schedule": HOMEPAGE_SYNTHESIS_PRIORITIZE_INTERVAL_SECONDS,
             "kwargs": {"limit": HOMEPAGE_SYNTHESIS_PRIORITIZE_LIMIT},
+            "options": {"expires": max(60, HOMEPAGE_SYNTHESIS_PRIORITIZE_INTERVAL_SECONDS - 30)},
         },
         "boost-homepage-cluster-supply": {
             "task": "tasks.maintenance.boost_homepage_cluster_supply_task",
             "schedule": 1800.0,
+            "options": {"expires": 1620},
         },
         "refresh-low-score-syntheses": {
             "task": "tasks.maintenance.refresh_low_score_syntheses_task",
             "schedule": 3600.0,
+            "options": {"expires": 3300},
         },
         "prune-ingestion-queue": {
             "task": "tasks.maintenance.prune_ingestion_queue_task",
             "schedule": 900.0,
+            "options": {"expires": 810},
         },
         "prune-crawl-queue": {
             "task": "tasks.maintenance.prune_crawl_queue_task",
             "schedule": 900.0,
+            "options": {"expires": 810},
         },
         "catch-up-deferred-crawls": {
             "task": "tasks.maintenance.catch_up_deferred_crawls_task",
             "schedule": 1800.0,
+            "options": {"expires": 1620},
         },
         "ensure-ingestion-freshness": {
             "task": "tasks.maintenance.ensure_ingestion_freshness_task",
             "schedule": 900.0,
+            "options": {"expires": 810},
         },
         "backfill-historical-summaries": {
             "task": "tasks.intelligence.schedule_backfill_historical_summaries_task",
@@ -300,6 +315,10 @@ celery_app.conf.update(
             "time_limit": 900,
         },
         "tasks.intelligence.synthesize_cluster_task": {
+            "soft_time_limit": 1500,
+            "time_limit": 1800,
+        },
+        "tasks.intelligence.upgrade_fast_synthesis_task": {
             "soft_time_limit": 1500,
             "time_limit": 1800,
         },
