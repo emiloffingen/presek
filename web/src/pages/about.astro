@@ -18,7 +18,7 @@ const l = (path: string) => localePath(path, lang, hostHeader);
     description={t('layout.home_description')}
 >
     <NYTHeader />
-    <main class="site-layout broadsheet-layout py-[var(--page-py)]">
+    <main class="site-layout broadsheet-layout py-[var(--page-py)] about-page-scope">
         <header class="editorial-masthead mb-12">
             <div class="masthead-top">
                 <span class="masthead-kicker">{t('about.masthead_kicker')}</span>
@@ -35,43 +35,37 @@ const l = (path: string) => localePath(path, lang, hostHeader);
             <div class="broadsheet-main">
                 <article class="prose-editorial">
                     <p class="first-paragraph">
-                        {lang === 'sr'
-                          ? 'Presek je nezavisni, neprofitni digitalni opservatorijum posvećen analitičkom istraživanju medijskog pluralizma, objektivnosti i narativne raznolikosti u digitalnom informativnom prostoru. U eri preopterećenja informacijama, naš naučni pristup NLP analizi služi za strukturiranje javnih debata i analizu medijskog izveštavanja.'
-                          : 'Пресек е независен, непрофитен дигитален опсерваториум посветен на аналитичко истражување на медиумскиот плурализам, објективноста и наративната разновидност во дигиталниот информативен простор. Во ерата на преоптовареност со информации, нашиот научен пристап кон NLP анализата служи за структурирање на јавните дебати и анализа на медиумското известување.'}
+                        {t('about.lede_1')}
                     </p>
 
                     <p>
-                        {lang === 'sr'
-                          ? 'Umesto da zamenjuje tradicionalne medijske redakcije, naš portal vrši funkciju nadzornog mehanizma koji omogućava komparativnu analizu različitih novinarskih izvora, nudeći javnosti transparentnu metodologiju za nezavisnu analizu pristrasnosti, sentimenta i pluralizma.'
-                          : 'Наместо да ги заменува традиционалните медиумски редакции, нашиот портал врши функција на надзорен механизам кој овозможува компаративна анализа на различни новинарски извори, нудејќи ѝ на јавноста транспарентна методологија за независна анализа на пристрасноста, сензибилноста и плурализмот.'}
+                        {t('about.lede_2')}
                     </p>
 
                     <div class="editorial-divider"></div>
 
-                    <h2 class="section-title-italic">{lang === 'sr' ? 'Ključni stubovi opservatorijuma' : 'Клучни столбови на опсерваториумот'}</h2>
+                    <h2 class="section-title-italic">{t('about.pillars_title')}</h2>
                     <ul class="editorial-list">
-                        <li><strong>{lang === 'sr' ? 'Komparativna sinteza:' : 'Компаративна синтеза:'}</strong> {lang === 'sr' ? 'Automatizovani naučni pregledi koji ujedinjuju činjenice iz svih dostupnih medijskih izvora radi analitičkog kontrasta.' : 'Автоматизирани научни прегледи кои ги обединуваат фактите од сите достапни медиумски извори со цел на аналитички контраст.'}</li>
-                        <li><strong>{lang === 'sr' ? 'Indeksiranje pluralizma:' : 'Индексирање на плурализмот:'}</strong> {lang === 'sr' ? 'Precizno matematičko mapiranje različitih uglova izveštavanja, identifikovanje informativnih praznina i tonalnih razlika između redakcija.' : 'Прецизно математичко мапирање на различни агли на известување, идентификување на информативни празнини и тонални разлики меѓу редакциите.'}</li>
-                        <li><strong>{lang === 'sr' ? 'Analiza sentimenta:' : 'Анализа на сензибилноста:'}</strong> {lang === 'sr' ? 'Statistička obrada rečenica radi otkrivanja prikrivenog tonalnog senzacionalizma i jednostranog izveštavanja.' : 'Статистичка обработка на речениците со цел откривање на прикриен тонален сензационализам и еднострано известување.'}</li>
+                        <li><strong>{t('about.pillar_synthesis_label')}</strong> {t('about.pillar_synthesis_body')}</li>
+                        <li><strong>{t('about.pillar_pluralism_label')}</strong> {t('about.pillar_pluralism_body')}</li>
+                        <li><strong>{t('about.pillar_sentiment_label')}</strong> {t('about.pillar_sentiment_body')}</li>
                     </ul>
 
                     <p>
-                        {lang === 'sr'
-                          ? 'Naša namera je naučno-istraživačka: manje šuma, više konteksta. Presek ne sugeriše zaključke; mi nudimo empirijske podatke i vizuelne metrike koji pomažu istraživačima, novinarima i građanima da kritički posmatraju medijski pejzaž.'
-                          : 'Нашата намера е научно-истражувачка: помалку шум, повеќе контекст. Пресек не сугерира заклучоци; ние нудиме емпириски податоци и визуелни метрики кои им помагаат на истражувачите, новинарите и граѓаните критички да го набљудуваат медиумскиот пејзаж.'}
+                        {t('about.intent_body')}
                     </p>
 
                     <div class="editorial-divider"></div>
 
-                    <h2 class="section-title-italic">{lang === 'sr' ? 'Naučna metodologija i Misija' : 'Научна методологија и Мисија'}</h2>
+                    <h2 class="section-title-italic">{t('about.methodology_title')}</h2>
                     <div class="two-col-grid">
                         <div class="grid-item">
-                            <h3>{lang === 'sr' ? 'NLP Arhitektura' : 'NLP Архитектура'}</h3>
-                            <p>{lang === 'sr' ? 'Presek koristi naprednu računarsku lingvistiku i sisteme za obradu prirodnog jezika (NLP) optimizovane za južnoslovenske jezike. Sistem sprovodi automatsko grupisanje primenom kosinusne sličnosti na višedimenzionalnim semantičkim vektorima.' : 'Пресек користи напредна компјутерска лингвистика и системи за обработка на природниот јазик (NLP) оптимизирани за јужнословенските јазици. Системот спроведува автоматско групирање со примена на косинусна сличност на повеќедимензионални семантички вектори.'}</p>
+                            <h3>{t('about.nlp_title')}</h3>
+                            <p>{t('about.nlp_body')}</p>
                         </div>
                         <div class="grid-item">
-                            <h3>{lang === 'sr' ? 'Istraživačka vizija' : 'Истражувачка визија'}</h3>
-                            <p>{lang === 'sr' ? 'Naš cilj je promovisanje medijske pismenosti i transparentnosti. Želimo da obezbedimo empirijski uvid u to kako se vesti formulišu, olakšavajući uočavanje medijskog monopola i jednostranog narativa.' : 'Нашата цел е промовирање на медиумската писменост и транспарентност. Сакаме да обезбедиме емпириски увид во тоа како се формулираат вестите, олеснувајќи го воочувањето на медиумскиот монопол и едностраниот наратив.'}</p>
+                            <h3>{t('about.vision_title')}</h3>
+                            <p>{t('about.vision_body')}</p>
                         </div>
                     </div>
                 </article>
@@ -81,18 +75,18 @@ const l = (path: string) => localePath(path, lang, hostHeader);
                 <TinyAdzRailAd />
 
                 <section class="rail-block rail-block-alt">
-                    <p class="rail-kicker">{lang === 'sr' ? 'Ukratko' : 'Накратко'}</p>
-                    <h3 class="rail-title">{lang === 'sr' ? 'GLAVNA NAMERA' : 'ГЛАВНА НАМЕРА'}</h3>
-                    <p class="rail-text">{lang === 'sr' ? 'Manje šuma, više konteksta. Manje raspršenih naslova, više jasnosti za ono što zaista oblikuje dan.' : 'Помалку шум, повеќе контекст. Помалку распрснати наслови, повеќе јасност за она што навистина го обликува денот.'}</p>
+                    <p class="rail-kicker">{t('about.rail_brief_kicker')}</p>
+                    <h3 class="rail-title">{t('about.rail_intent_title')}</h3>
+                    <p class="rail-text">{t('about.rail_intent_body')}</p>
                 </section>
 
                 <section class="rail-block">
-                    <p class="rail-kicker">{lang === 'sr' ? 'dalje' : 'понатаму'}</p>
+                    <p class="rail-kicker">{t('about.rail_next_kicker')}</p>
                     <div class="rail-directory">
-                        <a href={l('/editorial')} class="dir-link"><span class="name">{lang === 'sr' ? 'Standardi' : 'Стандарди'}</span></a>
-                        <a href={l('/briefing')} class="dir-link"><span class="name">{lang === 'sr' ? 'Brifing' : 'Брифинг'}</span></a>
-                        <a href={l('/for-you')} class="dir-link"><span class="name">{lang === 'sr' ? 'Za Vas' : 'За Вас'}</span></a>
-                        <a href={l('/izvori')} class="dir-link"><span class="name">{lang === 'sr' ? 'Izvori' : 'Извори'}</span></a>
+                        <a href={l('/editorial')} class="dir-link"><span class="name">{t('nav.standards')}</span></a>
+                        <a href={l('/briefing')} class="dir-link"><span class="name">{t('nav.briefing')}</span></a>
+                        <a href={l('/for-you')} class="dir-link"><span class="name">{t('nav.for_you')}</span></a>
+                        <a href={l('/izvori')} class="dir-link"><span class="name">{t('nav.sources')}</span></a>
                     </div>
                 </section>
             </aside>
@@ -105,7 +99,7 @@ const l = (path: string) => localePath(path, lang, hostHeader);
 <style>
     /* ── Masthead ────────────────────────────────────── */
     .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 2rem; margin-bottom: 3rem; }
-    .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
+    .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--presek-mark); }
     .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; margin: 1.5rem 0; letter-spacing: -0.02em; }
     .masthead-title span { font-weight: 400; font-style: italic; }
     .masthead-intro { font-family: var(--font-nyt-body); font-size: 1.15rem; line-height: 1.6; color: var(--secondary-foreground); max-width: 42rem; }
@@ -128,7 +122,7 @@ const l = (path: string) => localePath(path, lang, hostHeader);
 
     .editorial-list { list-style: none; padding: 0; margin-bottom: 2rem; }
     .editorial-list li { margin-bottom: 1rem; padding-left: 1.5rem; position: relative; }
-    .editorial-list li::before { content: "—"; position: absolute; left: 0; color: var(--nyt-accent); font-weight: 900; }
+    .editorial-list li::before { content: "—"; position: absolute; left: 0; color: var(--presek-mark); font-weight: 900; }
 
     .two-col-grid { display: grid; grid-template-columns: 1fr; gap: 2rem; margin-top: 2rem; }
     @media (min-width: 640px) { .two-col-grid { grid-template-columns: 1fr 1fr; } }
@@ -138,12 +132,12 @@ const l = (path: string) => localePath(path, lang, hostHeader);
     /* ── Rail ────────────────────────────────────────── */
     .rail-block { margin-bottom: 2.5rem; }
     .rail-block-alt { padding: 1.25rem; background: var(--secondary); border-radius: 0px; }
-    .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
+    .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--presek-mark); text-transform: uppercase; margin-bottom: 0.5rem; }
     .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
     .rail-text { font-family: var(--font-nyt-body); font-size: 0.9rem; line-height: 1.5; color: var(--secondary-foreground); }
 
     .rail-directory { display: flex; flex-direction: column; }
     .dir-link { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid var(--border); text-decoration: none; color: inherit; }
     .dir-link .name { font-family: var(--font-serif); font-size: 1rem; font-weight: 700; }
-    .dir-link:hover .name { color: var(--nyt-accent); text-decoration: underline; }
+    .dir-link:hover .name { color: var(--presek-mark); text-decoration: underline; }
 </style>

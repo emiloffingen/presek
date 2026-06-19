@@ -42,7 +42,15 @@ const narrativeParagraphs = String(generatedArticle || '')
 const storyParagraphs = narrativeParagraphs.filter((paragraph) => !isSynthesisMetaParagraph(paragraph, lang));
 const metaParagraphs = narrativeParagraphs.filter((paragraph) => isSynthesisMetaParagraph(paragraph, lang));
 const displayStoryParagraphs = storyParagraphs.length > 0 ? storyParagraphs : narrativeParagraphs.slice(0, 2);
-const sourceNotesLabel = lang === 'mk' ? 'Белешки за извори и разлики' : 'Napomene o izvorima i razlikama';
+const sourceNotesLabel = t('narrative.source_notes');
+const entityTooltipI18n = {
+	loading: t('narrative.loading'),
+	contextCard: t('entity.context_card'),
+	lastSeen: t('entity.last_seen'),
+	profile: t('entity.profile'),
+	noDetails: t('narrative.no_details'),
+	unavailable: t('entity.unavailable'),
+};
 
 const renderSynthesisHtml = (text: string) => {
     let html = sharedRenderSynthesisHtml(text);
@@ -146,7 +154,7 @@ const renderSynthesisHtml = (text: string) => {
 	)}
 </div>
 
-<script define:vars={{ entityPathPrefix }}>
+<script define:vars={{ entityPathPrefix, entityTooltipI18n }}>
     import { createPopper } from '@popperjs/core';
 
     document.addEventListener('astro:page-load', () => {
@@ -171,16 +179,14 @@ const renderSynthesisHtml = (text: string) => {
                 const pulseWrap = document.createElement('div');
                 pulseWrap.className = 'relative w-4 h-4 flex items-center justify-center';
                 const pulseOuter = document.createElement('span');
-                pulseOuter.className = 'absolute inline-flex h-full w-full rounded-full bg-nyt-accent opacity-75 animate-ping';
+                pulseOuter.className = 'absolute inline-flex h-full w-full rounded-full bg-presek-mark opacity-75 animate-ping';
                 const pulseInner = document.createElement('span');
-                pulseInner.className = 'relative inline-flex rounded-full h-2.5 w-2.5 bg-nyt-accent';
+                pulseInner.className = 'relative inline-flex rounded-full h-2.5 w-2.5 bg-presek-mark';
                 pulseWrap.append(pulseOuter, pulseInner);
 
                 const loadingLabel = document.createElement('span');
                 loadingLabel.className = 'text-xs font-bold text-muted-foreground uppercase tracking-wider animate-pulse';
-                loadingLabel.textContent = isSr
-                    ? `Učitavam kontekst za ${name}...`
-                    : `Вчитувам контекст за ${name}...`;
+                loadingLabel.textContent = entityTooltipI18n.loading.replace('{name}', name);
 
                 loadingCard.append(pulseWrap, loadingLabel);
                 tooltip.appendChild(loadingCard);
@@ -196,16 +202,16 @@ const renderSynthesisHtml = (text: string) => {
                     const res = await fetch(`/api/entity-graph/${encodeURIComponent(name)}?lang=${activeLang}`);
                     const json = await res.json();
                     if (json.status === 'success') {
-                        const labelCard = isSr ? 'KONTEKST KARTICA' : 'КОНТЕКСТ КАРТИЧКА';
-                        const labelLastSeen = isSr ? 'POSLEDNJI PUT VIĐENO' : 'ПОСЛЕДНО ВИДЕНО';
-                        const labelProfile = isSr ? 'PROFIL' : 'ПРОФИЛ';
-                        const noDetailsText = isSr ? 'Nema dostupnih detalja.' : 'Нема достапни детали.';
+                        const labelCard = entityTooltipI18n.contextCard;
+                        const labelLastSeen = entityTooltipI18n.lastSeen;
+                        const labelProfile = entityTooltipI18n.profile;
+                        const noDetailsText = entityTooltipI18n.noDetails;
 
                         const bioSummary = json.data?.bio_summary || json.data?.summary || noDetailsText;
                         const score = json.data?.importance_score !== undefined ? json.data.importance_score : 1;
                         const lastSeenDate = json.data?.last_seen 
                             ? new Date(json.data.last_seen).toLocaleDateString(isSr ? 'sr-RS' : 'mk-MK') 
-                            : (isSr ? 'Nije dostupno' : 'Не е достапно');
+                            : entityTooltipI18n.unavailable;
 
                         if (tooltip) {
                             tooltip.replaceChildren();
@@ -216,7 +222,7 @@ const renderSynthesisHtml = (text: string) => {
                             header.className = 'flex justify-between items-start mb-2.5 pb-2 border-b border-border/60';
 
                             const kicker = document.createElement('span');
-                            kicker.className = 'entity-tooltip-kicker text-nyt-accent';
+                            kicker.className = 'entity-tooltip-kicker text-presek-mark';
                             kicker.textContent = labelCard;
 
                             const scoreWrap = document.createElement('div');
@@ -244,7 +250,7 @@ const renderSynthesisHtml = (text: string) => {
 
                             const profileLink = document.createElement('a');
                             profileLink.href = `${entityPathPrefix}${encodeURIComponent(name)}`;
-                            profileLink.className = 'font-bold text-nyt-accent hover:underline flex items-center gap-0.5 uppercase';
+                            profileLink.className = 'font-bold text-presek-mark hover:underline flex items-center gap-0.5 uppercase';
                             profileLink.textContent = `${labelProfile} →`;
 
                             footer.append(seen, profileLink);
@@ -278,12 +284,12 @@ const renderSynthesisHtml = (text: string) => {
         text-decoration-style: dotted;
         text-underline-offset: 4px;
         cursor: help;
-        color: var(--nyt-accent);
+        color: var(--presek-mark);
         transition: all 0.2s ease;
         font-weight: 600;
     }
     .inline-entity:hover {
-        background: color-mix(in srgb, var(--nyt-accent) 8%, transparent);
+        background: color-mix(in srgb, var(--presek-mark) 8%, transparent);
         text-decoration-style: solid;
         border-radius: var(--radius-sm, 0px);
     }
@@ -395,15 +401,15 @@ const renderSynthesisHtml = (text: string) => {
 		padding-right: 12px;
 		padding-left: 2px;
 		font-weight: 950;
-		color: var(--cluster-accent, var(--nyt-accent));
-        text-shadow: 1px 1px 0 var(--background), 3px 3px 0 color-mix(in srgb, var(--cluster-accent, var(--nyt-accent)) 15%, transparent);
+		color: var(--cluster-accent, var(--presek-mark));
+        text-shadow: 1px 1px 0 var(--background), 3px 3px 0 color-mix(in srgb, var(--cluster-accent, var(--presek-mark)) 15%, transparent);
 	}
 
     .narrative-facts-box {
         margin-top: 4rem;
         padding: 2rem;
-        background: color-mix(in srgb, var(--cluster-accent, var(--nyt-accent)) 4%, var(--background));
-        border-left: 4px solid var(--cluster-accent, var(--nyt-accent));
+        background: color-mix(in srgb, var(--cluster-accent, var(--presek-mark)) 4%, var(--background));
+        border-left: 4px solid var(--cluster-accent, var(--presek-mark));
         border-radius: 0px;
         box-shadow: var(--shadow-editorial);
     }
@@ -412,8 +418,8 @@ const renderSynthesisHtml = (text: string) => {
     .narrative-body blockquote {
         margin: 2.5rem 0;
         padding: 1.5rem 2rem 1.5rem 2.5rem;
-        border-left: 4px solid var(--cluster-accent, var(--nyt-accent));
-        background: color-mix(in srgb, var(--cluster-accent, var(--nyt-accent)) 4%, var(--background));
+        border-left: 4px solid var(--cluster-accent, var(--presek-mark));
+        background: color-mix(in srgb, var(--cluster-accent, var(--presek-mark)) 4%, var(--background));
         font-family: var(--font-nyt-body);
         font-size: 1.25rem;
         font-style: italic;
@@ -429,7 +435,7 @@ const renderSynthesisHtml = (text: string) => {
         top: -0.2rem;
         font-size: 3.5rem;
         font-family: var(--font-serif);
-        color: var(--cluster-accent, var(--nyt-accent));
+        color: var(--cluster-accent, var(--presek-mark));
         opacity: 0.25;
         line-height: 1;
     }
@@ -448,7 +454,7 @@ const renderSynthesisHtml = (text: string) => {
 		font-family: var(--font-sans);
 		font-size: 0.6rem;
 		font-weight: 950;
-		color: var(--nyt-accent);
+		color: var(--presek-mark);
 		white-space: nowrap;
 		margin-top: 0.25rem;
         text-transform: uppercase;
@@ -461,9 +467,9 @@ const renderSynthesisHtml = (text: string) => {
 		font-size: 0.65rem;
 		font-weight: 950;
 		padding: 0.1rem 0.5rem;
-		background: color-mix(in srgb, var(--nyt-accent) 10%, var(--secondary) 90%);
-		color: var(--nyt-accent);
-		border: 1px solid color-mix(in srgb, var(--nyt-accent) 20%, transparent);
+		background: color-mix(in srgb, var(--presek-mark) 10%, var(--secondary) 90%);
+		color: var(--presek-mark);
+		border: 1px solid color-mix(in srgb, var(--presek-mark) 20%, transparent);
 		border-radius: 0px;
 		vertical-align: middle;
 		margin: 0 0.25rem;
@@ -472,7 +478,7 @@ const renderSynthesisHtml = (text: string) => {
         transition: all 0.2s;
 	}
     :global(.citation-badge:hover) {
-        background: var(--nyt-accent);
+        background: var(--presek-mark);
         color: white;
     }
 

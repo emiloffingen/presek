@@ -57,20 +57,20 @@ const articles = [
 ---
 
 <Layout
-    title={`Medijske Analize i Istraživanja — Presek`}
-    description="Portal za dubinske analize medijske scene, istraživanje pluralizma, bias praćenje i analizu novinarskih standarda na Balkanu."
+    title={t('analize.meta_title')}
+    description={t('analize.meta_description')}
 >
     <NYTHeader />
-    <main class="site-layout broadsheet-layout py-[var(--page-py)]">
+    <main class="site-layout broadsheet-layout py-[var(--page-py)] analize-page-scope">
         <header class="editorial-masthead mb-12">
             <div class="masthead-top">
-                <span class="masthead-kicker">NEZAVISNA ISTRAŽIVAČKA REDAKCIJA</span>
+                <span class="masthead-kicker">{t('analize.masthead_kicker')}</span>
             </div>
             <div class="masthead-main">
-                <h1 class="masthead-title">Medijske <span>Analize</span></h1>
+                <h1 class="masthead-title">{t('analize.masthead_title')} <span>{t('analize.masthead_title_span')}</span></h1>
             </div>
             <p class="masthead-intro">
-                Dubinske studije, naučni osvrti i empirijska istraživanja medijskih narativa, pluralizma i novinarske etike.
+                {t('analize.masthead_intro')}
             </p>
         </header>
 
@@ -79,7 +79,7 @@ const articles = [
                 <div class="space-y-20">
                     {articles.map((article) => (
                         <article class="prose-editorial border-b border-border/40 pb-16 last:border-0 last:pb-0" id={article.id}>
-                            <div class="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-nyt-accent mb-4">
+                            <div class="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-presek-mark mb-4">
                                 <span>{article.kicker}</span>
                                 <span class="text-muted-foreground opacity-40">·</span>
                                 <span class="text-muted-foreground">{article.date}</span>
@@ -92,7 +92,7 @@ const articles = [
                             </p>
                             
                             <div class="text-[11px] font-bold uppercase tracking-wider text-foreground/80 mb-6">
-                                {lang === 'sr' ? 'Autor' : 'Автор'}: <span class="text-nyt-accent">{article.author}</span>
+                                {t('analize.author_label')}: <span class="text-presek-mark">{article.author}</span>
                             </div>
 
                             <div class="space-y-6 font-nyt-body text-base md:text-lg leading-relaxed text-foreground/90">

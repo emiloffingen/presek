@@ -77,9 +77,7 @@ function normalizePerspective(p: any) {
 	) {
 		return {
 			angle,
-			content: lang === 'sr'
-				? content.replace('potvrđuju istu osnovnu liniju događaja', 'se poklapaju oko osnovnog događaja, dok detalje treba čitati kroz njihove pojedinačne naslove i opise')
-				: content,
+			content: t('cluster.credibility.perspective_consensus'),
 		};
 	}
 
@@ -409,7 +407,7 @@ const signalSummary = pluralismLabel && objectivityLabel
 	}
 	.editorial-angle-card:hover {
 		transform: translateY(-2px);
-		border-color: color-mix(in srgb, var(--nyt-accent) 30%, var(--border));
+		border-color: color-mix(in srgb, var(--presek-mark) 30%, var(--border));
 		box-shadow: var(--shadow-md);
 	}
 
@@ -419,7 +417,7 @@ const signalSummary = pluralismLabel && objectivityLabel
 		font-weight: 950;
 		text-transform: uppercase;
 		margin-bottom: 0.45rem;
-		color: var(--nyt-accent);
+		color: var(--presek-mark);
 	}
 
 	.angle-content {
@@ -467,7 +465,7 @@ const signalSummary = pluralismLabel && objectivityLabel
         font-size: 0.68rem;
         font-weight: 950;
         text-transform: uppercase;
-        color: var(--nyt-accent);
+        color: var(--presek-mark);
         margin: 0;
         letter-spacing: 0.08em;
     }
@@ -530,11 +528,11 @@ const signalSummary = pluralismLabel && objectivityLabel
     }
 
     .signal-bar-fill.pluralism {
-        background: linear-gradient(90deg, var(--nyt-accent), var(--editorial-positive));
+        background: linear-gradient(90deg, var(--presek-mark), var(--editorial-positive));
     }
 
     .signal-bar-fill.objectivity {
-        background: linear-gradient(90deg, var(--nyt-red), var(--nyt-accent));
+        background: linear-gradient(90deg, var(--nyt-red), var(--presek-mark));
     }
 
     .signal-metric p {

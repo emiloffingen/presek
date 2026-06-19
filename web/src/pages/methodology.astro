@@ -14,22 +14,20 @@ const l = (path: string) => localePath(path, lang, hostHeader);
 ---
 
 <Layout
-    title={`${t('nav.methodology') || (lang === 'mk' ? 'Методологија' : 'Metodologija')} — Presek`}
-    description={lang === 'mk'
-        ? 'Детално објаснување на научната методологија, NLP алгоритмите и формулите што Presek ги користи за медиски плурализам и синтеза.'
-        : 'Detaljno objašnjenje naučne metodologije, NLP algoritama i matematičkih formula koje Presek koristi za izračunavanje medijskog pluralizma i sentimenta.'}
+    title={`${t('nav.methodology')} — Presek`}
+    description={t('methodology.meta_description')}
 >
     <NYTHeader />
-    <main class="site-layout broadsheet-layout py-[var(--page-py)]">
+    <main class="site-layout broadsheet-layout py-[var(--page-py)] methodology-page-scope">
         <header class="editorial-masthead mb-12">
             <div class="masthead-top">
-                <span class="masthead-kicker">NAUČNI OKVIR I INDEKSIRANJE</span>
+                <span class="masthead-kicker">{t('methodology.masthead_kicker')}</span>
             </div>
             <div class="masthead-main">
-                <h1 class="masthead-title">{lang === 'mk' ? 'Методологија' : 'Metodologija'} <span>{lang === 'mk' ? 'и метрика' : 'i metrika'}</span></h1>
+                <h1 class="masthead-title">{t('methodology.masthead_title')} <span>{t('methodology.masthead_title_span')}</span></h1>
             </div>
             <p class="masthead-intro">
-                Kako naši NLP algoritmi analiziraju, grupišu i ocenjuju medijski sadržaj na bazi empirijskih jezičkih modela.
+                {t('methodology.masthead_intro')}
             </p>
         </header>
 
@@ -79,23 +77,19 @@ const l = (path: string) => localePath(path, lang, hostHeader);
 
                     <div class="editorial-divider"></div>
 
-                    <h2 class="section-title-italic">{lang === 'mk' ? '5. Сигнали на доверба за читателот' : '5. Signali poverenja za čitaoca'}</h2>
+                    <h2 class="section-title-italic">{t('methodology.trust_section_title')}</h2>
                     <p>
-                        {lang === 'mk'
-                            ? 'Покрај техничките метрики, Presek на картичките и страниците на кластерот прикажува сигнали на доверба кои објаснуваат колку е зрела приказната за читање:'
-                            : 'Pored tehničkih metrika, Presek na karticama i stranicama klastera prikazuje signale poverenja koji objašnjavaju koliko je priča zrela za čitanje:'}
+                        {t('methodology.trust_section_intro')}
                     </p>
                     <ul class="editorial-list">
-                        <li><strong>{lang === 'mk' ? 'Ран сигнал' : 'Rani signal'}</strong> — {lang === 'mk' ? 'уште една редакција; третирајте го како почетен извештај.' : 'još jedna redakcija; tretirajte kao početni izveštaj.'}</li>
-                        <li><strong>{lang === 'mk' ? 'Привремен преглед' : 'Privremeni pregled'}</strong> — {lang === 'mk' ? 'брзата синтеза е објавена, целосната верзија се надградува.' : 'brza sinteza je objavljena, puna verzija se nadograđuje.'}</li>
-                        <li><strong>{lang === 'mk' ? 'Консензус' : 'Konsenzus'}</strong> — {lang === 'mk' ? 'повеќе извори ја покриваат истата приказна со сличен наглас.' : 'više izvora pokriva istu priču sa sličnim naglaskom.'}</li>
-                        <li><strong>{lang === 'mk' ? 'Плурализам' : 'Pluralizam'}</strong> — {lang === 'mk' ? 'изворите се разликуваат во тон или интерпретација.' : 'izvori se razlikuju u tonu ili interpretaciji.'}</li>
-                        <li><strong>{lang === 'mk' ? 'Проверено' : 'Provereno'}</strong> — {lang === 'mk' ? 'повеќе независни извори и свежа синтеза.' : 'više nezavisnih izvora i sveža sinteza.'}</li>
+                        <li><strong>{t('methodology.trust_early_signal_label')}</strong> — {t('methodology.trust_early_signal_body')}</li>
+                        <li><strong>{t('methodology.trust_provisional_label')}</strong> — {t('methodology.trust_provisional_body')}</li>
+                        <li><strong>{t('methodology.trust_consensus_label')}</strong> — {t('methodology.trust_consensus_body')}</li>
+                        <li><strong>{t('methodology.trust_pluralism_label')}</strong> — {t('methodology.trust_pluralism_body')}</li>
+                        <li><strong>{t('methodology.trust_verified_label')}</strong> — {t('methodology.trust_verified_body')}</li>
                     </ul>
                     <p>
-                        {lang === 'mk'
-                            ? 'Брзата синтеза (fast-track) се објавува со ознака за привремен преглед; системот потоа автоматски ја надградува кога капацитетот дозволува.'
-                            : 'Brza sinteza (fast-track) objavljuje se uz oznaku privremenog pregleda; sistem zatim automatski pokreće punu nadogradnju kada kapacitet dozvoli.'}
+                        {t('methodology.trust_fasttrack_note')}
                     </p>
                 </article>
             </div>
@@ -104,20 +98,20 @@ const l = (path: string) => localePath(path, lang, hostHeader);
                 <TinyAdzRailAd />
 
                 <section class="rail-block rail-block-alt">
-                    <p class="rail-kicker">Metrika</p>
-                    <h3 class="rail-title">FORMULA PLURALIZMA</h3>
+                    <p class="rail-kicker">{t('methodology.rail_formula_kicker')}</p>
+                    <h3 class="rail-title">{t('methodology.rail_formula_title')}</h3>
                     <p class="rail-text">
-                        Indeks Pluralizma = f(Nezavisni Izvori) * Semantički Diverzitet * Tonalna Entropija. Cilj je matematičko mapiranje informativnih praznina.
+                        {t('methodology.rail_formula_body')}
                     </p>
                 </section>
 
                 <section class="rail-block">
-                    <p class="rail-kicker">Navigacija</p>
+                    <p class="rail-kicker">{t('methodology.rail_nav_kicker')}</p>
                     <div class="rail-directory">
-                        <a href={l('/about')} class="dir-link"><span class="name">O nama</span></a>
-                        <a href={l('/editorial')} class="dir-link"><span class="name">Standardi</span></a>
-                        <a href={l('/izvori')} class="dir-link"><span class="name">Izvori</span></a>
-                        <a href={l('/analize')} class="dir-link"><span class="name">Analize</span></a>
+                        <a href={l('/about')} class="dir-link"><span class="name">{t('nav.about')}</span></a>
+                        <a href={l('/editorial')} class="dir-link"><span class="name">{t('nav.standards')}</span></a>
+                        <a href={l('/izvori')} class="dir-link"><span class="name">{t('nav.sources')}</span></a>
+                        <a href={l('/analize')} class="dir-link"><span class="name">{t('nav.analize')}</span></a>
                     </div>
                 </section>
             </aside>
@@ -130,7 +124,7 @@ const l = (path: string) => localePath(path, lang, hostHeader);
 <style>
     /* ── Masthead ────────────────────────────────────── */
     .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 2rem; margin-bottom: 3rem; }
-    .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
+    .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--presek-mark); }
     .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; margin: 1.5rem 0; letter-spacing: -0.02em; }
     .masthead-title span { font-weight: 400; font-style: italic; }
     .masthead-intro { font-family: var(--font-nyt-body); font-size: 1.15rem; line-height: 1.6; color: var(--secondary-foreground); max-width: 42rem; }
@@ -153,7 +147,7 @@ const l = (path: string) => localePath(path, lang, hostHeader);
 
     .editorial-list { list-style: none; padding: 0; margin-bottom: 2rem; }
     .editorial-list li { margin-bottom: 1rem; padding-left: 1.5rem; position: relative; }
-    .editorial-list li::before { content: "—"; position: absolute; left: 0; color: var(--nyt-accent); font-weight: 900; }
+    .editorial-list li::before { content: "—"; position: absolute; left: 0; color: var(--presek-mark); font-weight: 900; }
 
     .two-col-grid { display: grid; grid-template-columns: 1fr; gap: 2rem; margin-top: 2rem; }
     @media (min-width: 640px) { .two-col-grid { grid-template-columns: 1fr 1fr; } }
@@ -163,12 +157,12 @@ const l = (path: string) => localePath(path, lang, hostHeader);
     /* ── Rail ────────────────────────────────────────── */
     .rail-block { margin-bottom: 2.5rem; }
     .rail-block-alt { padding: 1.25rem; background: var(--secondary); border-radius: 0px; }
-    .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
+    .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--presek-mark); text-transform: uppercase; margin-bottom: 0.5rem; }
     .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
     .rail-text { font-family: var(--font-nyt-body); font-size: 0.9rem; line-height: 1.5; color: var(--secondary-foreground); }
 
     .rail-directory { display: flex; flex-direction: column; }
     .dir-link { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid var(--border); text-decoration: none; color: inherit; }
     .dir-link .name { font-family: var(--font-serif); font-size: 1rem; font-weight: 700; }
-    .dir-link:hover .name { color: var(--nyt-accent); text-decoration: underline; }
+    .dir-link:hover .name { color: var(--presek-mark); text-decoration: underline; }
 </style>

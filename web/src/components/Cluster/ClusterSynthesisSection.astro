@@ -106,9 +106,7 @@ const sourcesCta = t('cluster.synthesis.view_sources');
 				entities={entities}
 			/>
 			<p class="synthesis-provenance-note">
-				{lang === 'sr'
-					? `Ovaj pregled je automatski sastavljen iz ${uniqueSourcesCount} javno dostupnih izvora. Originalne objave proverite u listi izvora ispod.`
-					: `Овој пресек е автоматски составен од ${uniqueSourcesCount} јавно достапни извори. Оригиналните објави проверете ги во листата на извори подолу.`}
+				{t('cluster.synthesis.provenance_note').replace('{count}', String(uniqueSourcesCount))}
 			</p>
 		</>
 	) : (
@@ -148,8 +146,8 @@ const sourcesCta = t('cluster.synthesis.view_sources');
 	}
 
 	.synthesis-state-banner-provisional {
-		border-color: color-mix(in srgb, var(--nyt-accent) 35%, var(--border));
-		background: color-mix(in srgb, var(--nyt-accent) 8%, var(--background));
+		border-color: color-mix(in srgb, var(--presek-mark) 35%, var(--border));
+		background: color-mix(in srgb, var(--presek-mark) 8%, var(--background));
 	}
 
 	.synthesis-state-panel {
@@ -161,7 +159,7 @@ const sourcesCta = t('cluster.synthesis.view_sources');
 	}
 
 	.synthesis-state-panel.is-pending {
-		border-left: 4px solid var(--nyt-accent);
+		border-left: 4px solid var(--presek-mark);
 	}
 
 	.synthesis-state-panel.is-stale {
@@ -169,7 +167,7 @@ const sourcesCta = t('cluster.synthesis.view_sources');
 	}
 
 	.synthesis-state-icon {
-		color: var(--nyt-accent);
+		color: var(--presek-mark);
 	}
 
 	.synthesis-state-panel.is-stale .synthesis-state-icon {
@@ -202,7 +200,7 @@ const sourcesCta = t('cluster.synthesis.view_sources');
 		font-weight: 800;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
-		color: var(--nyt-accent);
+		color: var(--presek-mark);
 		text-decoration: none;
 	}
 

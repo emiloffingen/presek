@@ -264,7 +264,7 @@ export default function SearchIsland({
 
   const CATEGORIES = [
     { id: 'all', label: t('search.category_all'), color: 'bg-foreground' },
-    { id: lang === 'sr' ? 'Srbija' : 'Makedonija', label: t('search.category_country'), color: 'bg-nyt-red' },
+    { id: t('search.category_country_value'), label: t('search.category_country'), color: 'bg-nyt-red' },
     { id: 'Politika', label: t('search.category_politika'), color: 'bg-blue-600' },
     { id: 'Ekonomija', label: t('search.category_ekonomija'), color: 'bg-emerald-600' },
     { id: 'Sport', label: t('search.category_sport'), color: 'bg-orange-500' },
