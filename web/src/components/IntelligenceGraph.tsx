@@ -2,6 +2,8 @@ import { localePathForLang } from '../lib/localePaths';
 import React, { useState, useEffect, useRef } from 'react';
 import { apiBaseUrl } from '../lib/apiBase';
 import { buildCsrfHeadersAsync } from '../lib/personalization.js';
+import { useClientTranslations } from '../i18n/clientTranslations';
+import { graph } from '../i18n/namespaces/graph';
 import { 
   Search, 
   Settings, 
@@ -35,51 +37,8 @@ interface Edge {
   direction?: 'a_to_b' | 'b_to_a' | 'mutual';
 }
 
-const ui = {
-  sr: {
-    title: 'Interaktivni medijski graf',
-    subtitle: 'Vizuelna mreža političkih aktera, institucija i njihovih međusobnih veza u domaćim medijima.',
-    searchPlaceholder: 'Pretraži aktera...',
-    sidebarTitle: 'Detalji subjekta',
-    sidebarPlaceholder: 'Kliknite na bilo koji čvor na mapi da biste istražili njegove veze i sentiment.',
-    category: 'Kategorija',
-    mentions: 'Ukupno pominjanja',
-    sentiment: 'Medijski ton',
-    connections: 'Direktne veze',
-    loading: 'Učitavanje medijske mreže...',
-    noConnections: 'Nisu pronađene jače veze za ovog aktera.',
-    minWeightLabel: 'Prag jačine veze',
-    searchButton: 'Prikaži mrežu',
-    reset: 'Resetuj na globalni prikaz',
-    sentimentPositive: 'Pozitivan',
-    sentimentNeutral: 'Neutralan',
-    sentimentNegative: 'Negativan',
-    viewProfile: 'Vidi kompletan profil aktera →'
-  },
-  mk: {
-    title: 'Интерактивен медиумски граф',
-    subtitle: 'Визуелна мрежа на политички актери, институции и нивните меѓусебни врски во домашните медиуми.',
-    searchPlaceholder: 'Пребарај актер...',
-    sidebarTitle: 'Детали за субјектот',
-    sidebarPlaceholder: 'Кликнете на кој било јазол на мапата за да ги истражите неговите врски и сентимент.',
-    category: 'Kатегорија',
-    mentions: 'Вкупно споменувања',
-    sentiment: 'Медиумски тон',
-    connections: 'Директни врски',
-    loading: 'Вчитување на медиумската мрежа...',
-    noConnections: 'Не се пронајдени посилни врски за овој актер.',
-    minWeightLabel: 'Праг на јачина на врска',
-    searchButton: 'Прикажи мрежа',
-    reset: 'Ресетирај на глобален приказ',
-    sentimentPositive: 'Позитивен',
-    sentimentNeutral: 'Неутрален',
-    sentimentNegative: 'Негативен',
-    viewProfile: 'Види комплетен профил на актерот →'
-  }
-};
-
 export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' }) {
-  const t = ui[lang] || ui.sr;
+  const t = useClientTranslations(lang, graph);
   
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
@@ -328,12 +287,12 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
           setSynthesis(data.synthesis);
           setCitations(data.citations || []);
         } else {
-          setSynthesis(data.message || 'Greška.');
+          setSynthesis(data.message || t('graph.synthesis_error'));
         }
       })
       .catch(err => {
         console.error(err);
-        setSynthesis('Greška prilikom povezivanja sa serverom.');
+        setSynthesis(t('graph.synthesis_server_error'));
       })
       .finally(() => {
         setSynthesisLoading(false);
@@ -356,43 +315,48 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
     <div className="intelligence-graph-shell flex w-full max-w-full min-w-0 flex-col gap-6 md:gap-8 overflow-hidden px-0">
       {/* Title Header */}
       <div className="border-b border-nyt-border pb-4 md:pb-6">
-        <span className="nyt-section-label tracking-wide uppercase text-xs text-nyt-accent font-black block mb-2">
-          {lang === 'sr' ? 'PRESEK INTEGRITY GRAPH' : 'ПРЕСЕК INTEGRITY GRAPH'}
+        <span className="nyt-section-label tracking-wide uppercase text-xs text-presek-mark font-black block mb-2">
+          {t('graph.page_kicker')}
         </span>
         <h1 className="font-serif text-3xl md:text-5xl font-black text-nyt-text tracking-tight mb-2">
-          {t.title}
+          {t('graph.title')}
         </h1>
         <p className="text-muted-foreground font-serif italic text-sm md:text-base leading-relaxed max-w-3xl">
-          {t.subtitle}
+          {t('graph.subtitle')}
         </p>
       </div>
 
       <div className="intelligence-graph-grid grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-[minmax(13rem,0.85fr)_minmax(0,3.15fr)] lg:gap-6">
         {/* Sidebar Controls and Lookup Inspector */}
         <div className="flex min-w-0 flex-col gap-5">
-          {/* Controls box */}
+          <details className="graph-controls-details">
+            <summary className="graph-controls-summary">
+              <span className="graph-controls-title">{t('graph.controls_panel')}</span>
+              <span className="graph-controls-hint">{t('graph.controls_hint')}</span>
+            </summary>
+            <div className="graph-controls-body">
           <div className="intelligence-panel flex flex-col gap-4 p-5">
-            <h3 className="font-serif font-black text-lg text-nyt-text flex items-center gap-2 pb-2 border-b border-nyt-border">
-              <Settings size={18} className="text-nyt-accent" />
-              {lang === 'sr' ? 'Pretraga i filteri' : 'Пребарување и филтри'}
+            <h3 className="font-serif font-black text-lg text-nyt-text flex items-center gap-2 pb-2 border-b border-nyt-border lg:hidden">
+              <Settings size={18} className="text-presek-mark" />
+              {t('graph.controls_panel')}
             </h3>
             
             {/* Search form */}
             <form onSubmit={handleSearchSubmit} className="relative">
               <input
                 type="text"
-                placeholder={t.searchPlaceholder}
+                placeholder={t('graph.search_placeholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-nyt-border rounded-none text-sm bg-background text-nyt-text focus:outline-none focus:border-nyt-accent"
+                className="w-full pl-10 pr-4 py-2 border border-nyt-border rounded-none text-sm bg-background text-nyt-text focus:outline-none focus:border-presek-mark"
               />
               <Search className="absolute left-3 top-2.5 text-muted-foreground" size={16} />
               {searchQuery && (
                 <button
                   type="submit"
-                  className="absolute right-2 top-1.5 px-3 py-1 bg-nyt-accent text-white text-xs font-black hover:bg-black uppercase tracking-wider"
+                  className="absolute right-2 top-1.5 px-3 py-1 bg-presek-mark text-white text-xs font-black hover:bg-black uppercase tracking-wider"
                 >
-                  {t.searchButton}
+                  {t('graph.search_button')}
                 </button>
               )}
             </form>
@@ -400,8 +364,8 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
             {/* Range threshold slider */}
             <div className="flex flex-col gap-2 mt-2">
               <div className="flex justify-between text-xs font-black uppercase text-muted-foreground">
-                <span>{t.minWeightLabel}</span>
-                <span className="text-nyt-accent font-black">{minWeight}</span>
+                <span>{t('graph.min_weight_label')}</span>
+                <span className="text-presek-mark font-black">{minWeight}</span>
               </div>
               <input
                 type="range"
@@ -409,36 +373,38 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
                 max="8"
                 value={minWeight}
                 onChange={(e) => setMinWeight(parseInt(e.target.value))}
-                className="accent-nyt-accent cursor-pointer h-1.5 bg-nyt-border w-full rounded-none"
+                className="accent-presek-mark cursor-pointer h-1.5 bg-nyt-border w-full rounded-none"
               />
             </div>
 
             {activeEntity && (
               <button
                 onClick={resetToGlobal}
-                className="w-full mt-2 border border-nyt-accent text-nyt-accent font-black py-2 text-xs hover:bg-nyt-accent hover:text-white transition-colors duration-150 uppercase tracking-wider flex items-center justify-center gap-2"
+                className="w-full mt-2 border border-presek-mark text-presek-mark font-black py-2 text-xs hover:bg-presek-mark hover:text-white transition-colors duration-150 uppercase tracking-wider flex items-center justify-center gap-2"
               >
                 <ArrowLeft size={14} />
-                {t.reset}
+                {t('graph.reset')}
               </button>
             )}
           </div>
+            </div>
+          </details>
 
           {/* Details Sidebar panel */}
           <div className="intelligence-panel flex flex-grow flex-col gap-4 p-5">
             <h3 className="font-serif font-black text-lg text-nyt-text flex items-center gap-2 pb-2 border-b border-nyt-border">
-              <Info size={18} className="text-nyt-accent" />
-              {t.sidebarTitle}
+              <Info size={18} className="text-presek-mark" />
+              {t('graph.sidebar_title')}
             </h3>
 
             {selectedNodes.length > 1 ? (
               <div className="flex flex-col gap-4 animate-fade-in">
                 <div>
                   <span className="text-[10px] uppercase tracking-wider font-black text-muted-foreground bg-nyt-border px-2 py-0.5 rounded-none block w-max mb-1">
-                    {lang === 'sr' ? 'GRUPNA SELEKCIJA' : 'ГРУПНА СЕЛЕКЦИЈА'}
+                    {t('graph.group_selection')}
                   </span>
                   <h4 className="font-serif font-black text-xl text-nyt-text">
-                    {lang === 'sr' ? 'Analiza aktera' : 'Анализа на актери'}
+                    {t('graph.actor_analysis')}
                   </h4>
                   <div className="flex flex-wrap gap-1.5 mt-2 max-h-24 overflow-y-auto border border-nyt-border p-2 bg-background/50">
                     {selectedNodes.map(name => (
@@ -448,9 +414,9 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
                           const found = nodes.find(n => n.id === name);
                           if (found) setSelectedNode(found);
                         }}
-                        className="cursor-pointer text-xs font-serif font-bold text-nyt-text hover:text-nyt-accent border border-nyt-border px-2 py-0.5 bg-card flex items-center gap-1.5 hover:border-nyt-accent"
+                        className="cursor-pointer text-xs font-serif font-bold text-nyt-text hover:text-presek-mark border border-nyt-border px-2 py-0.5 bg-card flex items-center gap-1.5 hover:border-presek-mark"
                       >
-                        <span className="w-1.5 h-1.5 rounded-full bg-nyt-accent"></span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-presek-mark"></span>
                         {name}
                       </span>
                     ))}
@@ -461,32 +427,32 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
                   {!synthesis && !synthesisLoading && (
                     <button
                       onClick={generateGroupSynthesis}
-                      className="w-full bg-black text-white hover:bg-nyt-accent font-black py-3 text-xs uppercase tracking-wider transition-colors duration-150 flex items-center justify-center gap-2 border border-black hover:border-nyt-accent"
+                      className="w-full bg-black text-white hover:bg-presek-mark font-black py-3 text-xs uppercase tracking-wider transition-colors duration-150 flex items-center justify-center gap-2 border border-black hover:border-presek-mark"
                     >
                       <TrendingUp size={16} />
-                      {lang === 'sr' ? 'Generiši analizu grupe' : 'Генерирај анализа на група'}
+                      {t('graph.generate_group')}
                     </button>
                   )}
 
                   {synthesisLoading && (
                     <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
-                      <Loader2 className="animate-spin text-nyt-accent mb-3" size={24} />
+                      <Loader2 className="animate-spin text-presek-mark mb-3" size={24} />
                       <p className="font-serif italic text-xs">
-                        {lang === 'sr' ? 'Lokalni analitičar sastavlja izveštaj...' : 'Локалниот аналитичар го составува извештајот...'}
+                        {t('graph.synthesis_loading')}
                       </p>
                     </div>
                   )}
 
                   {synthesis && (
                     <div className="flex flex-col gap-4 animate-fade-in">
-                      <div className="p-4 bg-card border-l-2 border-nyt-accent font-serif text-sm leading-relaxed text-nyt-text italic bg-background/30 max-h-72 overflow-y-auto scrollbar-thin">
+                      <div className="p-4 bg-card border-l-2 border-presek-mark font-serif text-sm leading-relaxed text-nyt-text italic bg-background/30 max-h-72 overflow-y-auto scrollbar-thin">
                         <p className="whitespace-pre-line">{synthesis}</p>
                       </div>
 
                       {citations.length > 0 && (
                         <div className="flex flex-col gap-2 border-t border-nyt-border pt-3">
                           <span className="text-muted-foreground uppercase font-black text-[9px]">
-                            {lang === 'sr' ? 'Korišćeni izvori' : 'Користени извори'}
+                            {t('graph.citations_used')}
                           </span>
                           <div className="grid grid-cols-1 gap-1.5 max-h-36 overflow-y-auto pr-1">
                             {citations.map(cite => (
@@ -497,7 +463,7 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
                                 rel="noopener noreferrer"
                                 className="text-[11px] py-1.5 px-2 hover:bg-nyt-border cursor-pointer transition-colors duration-150 border border-nyt-border flex justify-between items-center"
                               >
-                                <span className="font-serif font-bold text-nyt-text hover:text-nyt-accent truncate max-w-[80%]">
+                                <span className="font-serif font-bold text-nyt-text hover:text-presek-mark truncate max-w-[80%]">
                                   [{cite.id}] {cite.title}
                                 </span>
                                 <span className="font-mono text-[9px] uppercase tracking-wider bg-nyt-border px-1.5 py-0.5 text-muted-foreground font-black">
@@ -513,7 +479,7 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
                         onClick={() => { setSynthesis(null); setCitations([]); }}
                         className="w-full mt-2 border border-nyt-border text-muted-foreground font-black py-2 text-xs hover:bg-nyt-border transition-colors duration-150 uppercase tracking-wider"
                       >
-                        {lang === 'sr' ? 'Nova analiza' : 'Нова анализа'}
+                        {t('graph.new_analysis')}
                       </button>
                     </div>
                   )}
@@ -523,7 +489,7 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
               <div className="flex flex-col gap-4 animate-fade-in">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="p-1.5 bg-nyt-border rounded-full text-nyt-accent">
+                    <span className="p-1.5 bg-nyt-border rounded-full text-presek-mark">
                       {selectedNode.type === 'PERSON' ? <User size={16} /> : <Building2 size={16} />}
                     </span>
                     <span className="text-[10px] uppercase tracking-wider font-black text-muted-foreground bg-nyt-border px-2 py-0.5 rounded-none">
@@ -535,21 +501,21 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
 
                 <div className="grid grid-cols-2 gap-4 py-3 border-y border-nyt-border text-xs">
                   <div className="flex flex-col gap-1 border-r border-nyt-border pr-2">
-                    <span className="text-muted-foreground uppercase font-black text-[9px]">{t.mentions}</span>
+                    <span className="text-muted-foreground uppercase font-black text-[9px]">{t('graph.mentions')}</span>
                     <strong className="text-lg text-nyt-text font-black">{selectedNode.mentions}</strong>
                   </div>
                   <div className="flex flex-col gap-1 pl-2">
-                    <span className="text-muted-foreground uppercase font-black text-[9px]">{t.sentiment}</span>
+                    <span className="text-muted-foreground uppercase font-black text-[9px]">{t('graph.sentiment')}</span>
                     <strong 
                       className={`text-lg font-black ${
                         selectedNode.sentiment > 0.15 ? 'text-green-600' : selectedNode.sentiment < -0.15 ? 'text-red-500' : 'text-amber-500'
                       }`}
                     >
                       {selectedNode.sentiment > 0.15 
-                        ? t.sentimentPositive 
+                        ? t('graph.sentiment_positive') 
                         : selectedNode.sentiment < -0.15 
-                          ? t.sentimentNegative 
-                          : t.sentimentNeutral}
+                          ? t('graph.sentiment_negative') 
+                          : t('graph.sentiment_neutral')}
                       <span className="text-[10px] font-mono font-medium block text-muted-foreground">
                         ({selectedNode.sentiment > 0 ? '+' : ''}{selectedNode.sentiment.toFixed(2)})
                       </span>
@@ -559,7 +525,7 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
 
                 {/* Direct connections in this visible sub-graph */}
                 <div className="flex flex-col gap-2">
-                  <span className="text-muted-foreground uppercase font-black text-[9px]">{t.connections}</span>
+                  <span className="text-muted-foreground uppercase font-black text-[9px]">{t('graph.connections')}</span>
                   <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto pr-1">
                     {edges
                       .filter(edge => edge.source === selectedNode.id || edge.target === selectedNode.id)
@@ -591,38 +557,36 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
                             className="flex flex-col gap-0.5 py-2 px-2 hover:bg-nyt-border cursor-pointer transition-colors duration-150 border-b border-nyt-border"
                           >
                             <div className="flex justify-between items-center text-xs">
-                              <span className="font-serif font-bold text-nyt-text hover:text-nyt-accent">
+                              <span className="font-serif font-bold text-nyt-text hover:text-presek-mark">
                                 {relationArrow} {partnerName}
                               </span>
-                              <span className="font-mono text-nyt-accent font-black">w: {edge.weight}</span>
+                              <span className="font-mono text-presek-mark font-black">w: {edge.weight}</span>
                             </div>
                             {edge.direction && edge.direction !== 'mutual' && (
                               <div className="text-[10px] text-muted-foreground font-mono">
-                                {relationArrow === '→' 
-                                  ? (lang === 'sr' ? `${selectedNode.id} utiče sa ${ratio}%` : `${selectedNode.id} влијае со ${ratio}%`)
-                                  : (lang === 'sr' ? `${partnerName} utiče sa ${ratio}%` : `${partnerName} влијае со ${ratio}%`)}
+                                {relationArrow === '→' ? t('graph.influence_out', { actor: selectedNode.id, ratio }) : t('graph.influence_in', { partner: partnerName, ratio })}
                               </div>
                             )}
                           </div>
                         );
                       })}
                     {edges.filter(edge => edge.source === selectedNode.id || edge.target === selectedNode.id).length === 0 && (
-                      <p className="text-xs text-muted-foreground italic">{t.noConnections}</p>
+                      <p className="text-xs text-muted-foreground italic">{t('graph.no_connections')}</p>
                     )}
                   </div>
                 </div>
 
                 <a 
                   href={`${localePathForLang('/subjekt', lang)}/${encodeURIComponent(selectedNode.id)}`}
-                  className="w-full mt-3 text-center bg-black text-white hover:bg-nyt-accent font-black py-2.5 text-xs uppercase tracking-wider transition-colors duration-150"
+                  className="w-full mt-3 text-center bg-black text-white hover:bg-presek-mark font-black py-2.5 text-xs uppercase tracking-wider transition-colors duration-150"
                 >
-                  {t.viewProfile}
+                  {t('graph.view_profile')}
                 </a>
               </div>
             ) : (
               <div className="flex-grow flex flex-col justify-center items-center text-center p-6 text-muted-foreground">
                 <HelpCircle size={36} className="text-nyt-border mb-3 animate-pulse" />
-                <p className="text-xs font-serif leading-relaxed italic">{t.sidebarPlaceholder}</p>
+                <p className="text-xs font-serif leading-relaxed italic">{t('graph.sidebar_placeholder')}</p>
               </div>
             )}
           </div>
@@ -632,15 +596,15 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
         <div className="intelligence-graph-canvas relative flex min-h-[500px] min-w-0 select-none items-center justify-center overflow-hidden">
           {loading && (
             <div className="absolute inset-0 bg-background/70 backdrop-blur-xs flex flex-col items-center justify-center z-20 animate-fade-in">
-              <Loader2 className="animate-spin text-nyt-accent mb-3" size={36} />
-              <p className="font-serif italic text-sm text-nyt-text">{t.loading}</p>
+              <Loader2 className="animate-spin text-presek-mark mb-3" size={36} />
+              <p className="font-serif italic text-sm text-nyt-text">{t('graph.loading')}</p>
             </div>
           )}
 
           {simNodes.length === 0 && !loading ? (
             <div className="text-center p-8 z-10 flex flex-col items-center">
               <TrendingUp size={44} className="text-nyt-border mb-3" />
-              <p className="font-serif italic text-muted-foreground">{lang === 'sr' ? 'Nema podataka u ovoj mreži.' : 'Нема податоци во оваа мрежа.'}</p>
+              <p className="font-serif italic text-muted-foreground">{t('graph.no_data')}</p>
             </div>
           ) : (
             <svg
@@ -661,7 +625,7 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
                   <path d="M0,-4L8,0L0,4" fill="rgba(0, 0, 0, 0.2)" />
                 </marker>
                 <marker id="influence-arrow-active" viewBox="0 -5 10 10" refX="0" refY="0" markerWidth="5" markerHeight="5" orient="auto">
-                  <path d="M0,-4L8,0L0,4" fill="rgb(217, 119, 6)" />
+                  <path d="M0,-4L8,0L0,4" fill="var(--presek-mark)" />
                 </marker>
               </defs>
               <style>{`
@@ -712,7 +676,7 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
                       y1={sourceNode.y}
                       x2={x2}
                       y2={y2}
-                      stroke={isHighlighted ? 'rgb(217, 119, 6)' : 'rgba(0, 0, 0, 0.08)'}
+                      stroke={isHighlighted ? 'var(--presek-mark)' : 'rgba(0, 0, 0, 0.08)'}
                       strokeWidth={isHighlighted ? Math.max(edge.weight / 1.5, 2.5) : Math.max(edge.weight / 2, 1.2)}
                       markerEnd={isDirected ? `url(#${isHighlighted ? 'influence-arrow-active' : 'influence-arrow'})` : undefined}
                       className={`transition-all duration-150 ${flowClass}`}
@@ -743,8 +707,8 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
                       {selectedNodes.includes(node.id) && (
                         <circle
                           r={radius + 8}
-                          fill="rgba(217, 119, 6, 0.04)"
-                          stroke="rgb(217, 119, 6)"
+                          fill="color-mix(in srgb, var(--presek-mark) 4%, transparent)"
+                          stroke="var(--presek-mark)"
                           strokeWidth={isSelected ? "2.5" : "1.5"}
                           strokeDasharray={isSelected ? "none" : "3,3"}
                           className="animate-pulse"
@@ -799,8 +763,8 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
                         textAnchor="middle"
                         className={`font-serif text-[10px] select-none pointer-events-none transition-all duration-150 ${
                           isSelected 
-                            ? 'font-black fill-nyt-accent scale-105' 
-                            : 'font-bold fill-nyt-text group-hover:fill-nyt-accent'
+                            ? 'font-black fill-presek-mark scale-105' 
+                            : 'font-bold fill-nyt-text group-hover:fill-presek-mark'
                         }`}
                       >
                         {node.id}
@@ -814,10 +778,10 @@ export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' 
 
           {/* Map stats badge */}
           <div className="absolute bottom-4 right-4 bg-background/90 border border-nyt-border px-3 py-1.5 text-[10px] font-black uppercase text-muted-foreground select-none z-10">
-            {lang === 'sr' ? 'Aktivni čvorovi: ' : 'Активни јазли: '}
+            {t('graph.active_nodes')}: 
             <span className="text-nyt-text">{nodes.length}</span>
             <span className="mx-2 text-nyt-border">|</span>
-            {lang === 'sr' ? 'Veze: ' : 'Врски: '}
+            {t('graph.edges')}: 
             <span className="text-nyt-text">{edges.length}</span>
           </div>
         </div>

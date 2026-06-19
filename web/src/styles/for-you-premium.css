@@ -684,6 +684,8 @@
     .for-you-hero h1,
     .for-you-cold-start h1 {
         max-width: 12ch;
+        font-size: clamp(2rem, 11vw, 2.75rem);
+        line-height: 0.98;
     }
 
     .signal-metrics,

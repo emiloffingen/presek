@@ -1,0 +1,117 @@
+/* Graph (graf) page — brand accents and collapsed controls panel */
+
+.graph-page-scope .ui-kicker--accent,
+.graph-page-scope .masthead-kicker,
+.graph-page-scope .nyt-section-label {
+  color: var(--presek-mark);
+}
+
+.graph-controls-details {
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--secondary) 18%, var(--background));
+}
+
+.graph-controls-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.graph-controls-summary::-webkit-details-marker {
+  display: none;
+}
+
+.graph-controls-title {
+  font-family: var(--font-ui);
+  font-size: var(--text-ui-kicker);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--foreground);
+}
+
+.graph-controls-hint {
+  font-family: var(--font-ui);
+  font-size: var(--text-ui-min);
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-align: right;
+}
+
+.graph-controls-summary::after {
+  content: '+';
+  flex-shrink: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--presek-mark);
+  line-height: 1;
+  margin-left: 0.35rem;
+}
+
+.graph-controls-details[open] .graph-controls-summary::after {
+  content: '−';
+}
+
+.graph-controls-body {
+  padding: 0.85rem 0.9rem 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+}
+
+.graph-page-scope .intelligence-panel {
+  border-left: 3px solid color-mix(in srgb, var(--presek-mark) 35%, var(--border));
+}
+
+.graph-page-scope .intelligence-graph-canvas {
+  border-color: color-mix(in srgb, var(--presek-mark) 18%, var(--border));
+}
+
+.graph-page-scope .graph-accent {
+  color: var(--presek-mark);
+}
+
+.graph-page-scope .graph-accent-bg {
+  background: var(--presek-mark);
+}
+
+.graph-page-scope .graph-accent-border {
+  border-color: var(--presek-mark);
+}
+
+.graph-page-scope .graph-accent-fill {
+  fill: var(--presek-mark);
+}
+
+.graph-page-scope .graph-accent-stroke {
+  stroke: var(--presek-mark);
+}
+
+@media (min-width: 1024px) {
+  .graph-controls-details {
+    border: none;
+    background: transparent;
+  }
+
+  .graph-controls-summary {
+    display: none;
+  }
+
+  .graph-controls-body {
+    padding: 0;
+    border-top: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .graph-controls-summary {
+    flex-wrap: wrap;
+  }
+
+  .graph-controls-hint {
+    flex: 1 1 auto;
+    text-align: left;
+  }
+}

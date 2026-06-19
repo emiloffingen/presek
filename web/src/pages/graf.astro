@@ -7,25 +7,24 @@ import { ErrorBoundary } from '../components/ui/ErrorBoundary.tsx';
 import Footer from '../components/Footer.astro';
 import TinyAdzInlinedAd from '../components/TinyAdzInlinedAd.astro';
 import TinyAdzRailAd from '../components/TinyAdzRailAd.astro';
-import { getLangFromUrl } from '../i18n/utils';
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import { shouldShowTinyAdzInlinedAds } from '../lib/tinyadz';
+import '../styles/graph-premium.css';
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
-const isMK = lang === 'mk';
+const t = useTranslations(lang);
 const showRailAd = shouldShowTinyAdzInlinedAds(lang, hostHeader || Astro.url.hostname);
 ---
 
 <Layout
-    title={isMK ? 'Медиумска Мрежа | Интерактивен Граф' : 'Medijska Mreža | Interaktivni Graf'}
-    description={isMK
-        ? 'Истражете ја интерактивната мрежа на врски, сентимент и споменувања на политички актери и институции во македонските медиуми.'
-        : 'Istražite interaktivnu mrežu veza, sentimenta i pominjanja političkih aktera i institucija u srpskim medijima.'}
+    title={t('graph.page_title')}
+    description={t('graph.page_description')}
 >
     <NYTHeader />
 
-	<main class="site-layout broadsheet-layout graph-page py-[var(--page-py)] animate-rise">
-		<Breadcrumbs items={[{ label: isMK ? 'граф' : 'graf' }]} />
+	<main class="site-layout broadsheet-layout graph-page graph-page-scope py-[var(--page-py)] animate-rise">
+		<Breadcrumbs items={[{ label: t('graph.breadcrumb') }]} />
 		<div class="broadsheet-grid">
 			<div class="broadsheet-main">
 				<TinyAdzInlinedAd class="page-inline-ad mb-10" />

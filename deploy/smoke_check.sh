@@ -244,6 +244,8 @@ main() {
   wait_http_ok "Astro entity SSR" "$ASTRO_URL/subjekt/__smoke__" 404 'entity-page-scope'
   wait_http_ok "Astro sources SSR" "$ASTRO_URL/izvori" 200 'sources-page-scope'
   wait_http_ok "Astro briefing SSR" "$ASTRO_URL/briefing" 200 'briefing-page-scope'
+  wait_http_ok "Astro graph SSR" "$ASTRO_URL/graf" 200 'graph-page-scope'
+  wait_http_ok "Astro settings SSR" "$ASTRO_URL/settings" 200 'settings-page-scope'
   wait_http_ok "Astro MK frontend" "$ASTRO_URL/mk" 200
   wait_http_ok "Astro MK homepage SSR" "$ASTRO_URL/mk" 200 'data-page="home"'
   wait_http_ok "Image proxy" "http://127.0.0.1:5001/proxy?url=https://example.com/image.jpg&w=100" 200

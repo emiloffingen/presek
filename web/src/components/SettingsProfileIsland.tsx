@@ -3,6 +3,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowUpRight, Clock3, Newspaper, Sparkles, X, Trash2, Check } from 'lucide-react';
 import { useStore } from '@nanostores/react';
 import { $profile, updateProfile } from '../lib/store.ts';
+import { useClientTranslations } from '../i18n/clientTranslations';
+import { settings } from '../i18n/namespaces/settings';
 import {
   buildSurfaceFollowSuggestions,
   recordSuggestionFollow,
@@ -20,9 +22,11 @@ function summarizeRecent(profile: any) {
   })).filter((item: any) => item.clusterId && item.title);
 }
 
-export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }) {
+export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: 'sr' | 'mk' }) {
   const profile = useStore($profile);
   const [resetConfirm, setResetConfirm] = useState(false);
+  const t = useClientTranslations(lang, settings);
+  const locale = lang;
 
   useEffect(() => {
     let cancelled = false;
@@ -125,35 +129,31 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
     setResetConfirm(false);
   };
 
-  const isMK = lang === 'mk';
-
   return (
     <div className="settings-island space-y-8">
       {/* Overview stats */}
       <section className="premium-card">
         <div className="settings-module-head mb-6">
           <div>
-            <p className="settings-kicker"><Sparkles size={14} /> {isMK ? 'Вашиот профил на читање' : 'Vaš profil čitanja'}</p>
-            <h2 className="text-xl sm:text-2xl font-black font-serif italic mt-1">{isMK ? 'Што Пресек памети на овој уред' : 'Šta Presek pamti na ovom uređaju'}</h2>
+            <p className="settings-kicker"><Sparkles size={14} /> {t('settings.profile.reading_kicker')}</p>
+            <h2 className="text-xl sm:text-2xl font-black font-serif italic mt-1">{t('settings.profile.reading_title')}</h2>
           </div>
           <p className="settings-copy mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            {isMK
-              ? 'Овие сигнали го обликуваат вашиот „За Вас“ модул, изборот на извештаи и неделната достава уште пред синхронизација.'
-              : 'Ovi signali oblikuju vaš „Za Vas“ modul, izbor izveštaja i nedeljnu dostavu još pre sinhronizacije.'}
+            {t('settings.profile.reading_copy')}
           </p>
         </div>
 
         <div className="settings-stat-grid">
           <div className="stat-glow-card">
-            <span>{isMK ? 'Следени теми' : 'Praćene teme'}</span>
+            <span>{t('settings.profile.followed_topics')}</span>
             <strong>{followedTopics.length}</strong>
           </div>
           <div className="stat-glow-card">
-            <span>{isMK ? 'Следени извори' : 'Praćeni izvori'}</span>
+            <span>{t('settings.profile.followed_sources')}</span>
             <strong>{followedSources.length}</strong>
           </div>
           <div className="stat-glow-card">
-            <span>{isMK ? 'Неодамнешни' : 'Nedavni'}</span>
+            <span>{t('settings.profile.recent')}</span>
             <strong>{(profile?.recentClusters || []).length}</strong>
           </div>
         </div>
@@ -161,13 +161,11 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
         {topFocusTopic && (
           <div className="mt-6 p-4 bg-secondary border border-border rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             <div>
-              <p className="text-[11px] font-black uppercase text-muted-foreground tracking-widest mb-0.5">{isMK ? 'Ваша примарна фокус тема' : 'Vaša primarna fokus tema'}</p>
+              <p className="text-[11px] font-black uppercase text-muted-foreground tracking-widest mb-0.5">{t('settings.profile.focus_topic')}</p>
               <h4 className="font-serif font-black text-lg italic">{topFocusTopic}</h4>
             </div>
             <p className="text-[11px] text-muted-foreground leading-tight max-w-[200px]">
-              {isMK
-                ? 'Врз основа на последното читање. Го користиме за „За Вас“.'
-                : 'Na osnovu poslednjeg čitanja. Koristimo ga za „Za Vas“.'}
+              {t('settings.profile.focus_topic_copy')}
             </p>
           </div>
         )}
@@ -186,8 +184,8 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
             {resetConfirm ? <Check size={14} /> : <Trash2 size={14} />}
             <span>
               {resetConfirm
-                ? (isMK ? 'Дали сте сигурни?' : 'Da li ste sigurni?')
-                : (isMK ? 'Ресетирај го профилот' : 'Resetuj profil')}
+                ? t('settings.profile.reset_confirm')
+                : t('settings.profile.reset')}
             </span>
           </button>
         </div>
@@ -197,8 +195,8 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
       <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="premium-card">
           <div className="settings-module-head mb-4">
-            <p className="settings-kicker"><Newspaper size={14} /> {isMK ? 'Следени теми' : 'Praćene teme'}</p>
-            <h3 className="text-base font-bold font-sans mt-0.5">{isMK ? 'Теми кои сакате да се појавуваат побрзо' : 'Teme koje želite da se pojavljuju brže'}</h3>
+            <p className="settings-kicker"><Newspaper size={14} /> {t('settings.profile.followed_topics')}</p>
+            <h3 className="text-base font-bold font-sans mt-0.5">{t('settings.profile.topics_title')}</h3>
           </div>
           {followedTopics.length > 0 ? (
             <div className="flex flex-wrap gap-2 mt-4">
@@ -208,7 +206,7 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
                   <button
                     type="button"
                     onClick={() => removeFollow('topic', topic)}
-                    title={isMK ? 'Отстрани тема' : 'Ukloni temu'}
+                    title={t('settings.profile.remove_topic')}
                   >
                     <X size={12} />
                   </button>
@@ -217,17 +215,15 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
             </div>
           ) : (
             <p className="text-xs text-muted-foreground mt-4 leading-relaxed">
-              {isMK
-                ? 'Сè уште немате следени теми. Следете тема од страната за теми за да добиете персонализирана достава и рангирање.'
-                : 'Još uvek nemate praćene teme. Pratite temu sa strane za teme da biste dobili personalizovanu dostavu i rangiranje.'}
+              {t('settings.profile.no_topics')}
             </p>
           )}
         </div>
 
         <div className="premium-card">
           <div className="settings-module-head mb-4">
-            <p className="settings-kicker"><Newspaper size={14} /> {isMK ? 'Следени извори' : 'Praćeni izvori'}</p>
-            <h3 className="text-base font-bold font-sans mt-0.5">{isMK ? 'Извори што сакате повнимателно да ги следите' : 'Izvori koje želite pažljivije da pratite'}</h3>
+            <p className="settings-kicker"><Newspaper size={14} /> {t('settings.profile.followed_sources')}</p>
+            <h3 className="text-base font-bold font-sans mt-0.5">{t('settings.profile.sources_title')}</h3>
           </div>
           {followedSources.length > 0 ? (
             <div className="flex flex-wrap gap-2 mt-4">
@@ -237,7 +233,7 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
                   <button
                     type="button"
                     onClick={() => removeFollow('source', source)}
-                    title={isMK ? 'Отстрани извор' : 'Ukloni izvor'}
+                    title={t('settings.profile.remove_source')}
                   >
                     <X size={12} />
                   </button>
@@ -246,9 +242,7 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
             </div>
           ) : (
             <p className="text-xs text-muted-foreground mt-4 leading-relaxed">
-              {isMK
-                ? 'Сè уште немате следени извори. Следете го водечкиот извор од страницата на кластерот за да добивате ажурирања специфични за изворот.'
-                : 'Još uvek nemate praćene izvore. Pratite vodeći izvor sa stranice klastera da biste dobijali ažuriranja specifična za izvor.'}
+              {t('settings.profile.no_sources')}
             </p>
           )}
         </div>
@@ -258,8 +252,8 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
       <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="premium-card">
           <div className="settings-module-head mb-4">
-            <p className="settings-kicker"><Sparkles size={14} /> {isMK ? 'Предлози за теми' : 'Predlozi za teme'}</p>
-            <h3 className="text-base font-bold font-sans mt-0.5">{isMK ? 'Што вредно следно да следите' : 'Šta vredno sledeće da pratite'}</h3>
+            <p className="settings-kicker"><Sparkles size={14} /> {t('settings.profile.topic_suggestions_kicker')}</p>
+            <h3 className="text-base font-bold font-sans mt-0.5">{t('settings.profile.topic_suggestions_title')}</h3>
           </div>
           {recommendations.topics.length > 0 ? (
             <div className="space-y-2 mt-4">
@@ -274,23 +268,21 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
                     <span className="block font-sans font-bold text-xs uppercase tracking-wider text-foreground group-hover:text-foreground transition-colors">{item.value}</span>
                     <span className="block text-[11px] text-muted-foreground mt-0.5">{item.reason}</span>
                   </div>
-                  <span className="text-xs font-black text-muted-foreground group-hover:text-foreground px-2.5 py-1 bg-secondary rounded-lg group-hover:bg-muted transition-all">+ PRATI</span>
+                  <span className="text-xs font-black text-muted-foreground group-hover:text-foreground px-2.5 py-1 bg-secondary rounded-lg group-hover:bg-muted transition-all">{t('settings.profile.follow_action')}</span>
                 </button>
               ))}
             </div>
           ) : (
             <p className="text-xs text-muted-foreground mt-4 leading-relaxed">
-              {isMK
-                ? 'Кога ќе прочитате уште неколку кластери, овде ќе се појават теми кои има смисла да ги следите.'
-                : 'Kad pročitate još nekoliko klastera, ovde će se pojaviti teme koje ima smisla da pratite.'}
+              {t('settings.profile.no_topic_suggestions')}
             </p>
           )}
         </div>
 
         <div className="premium-card">
           <div className="settings-module-head mb-4">
-            <p className="settings-kicker"><Sparkles size={14} /> {isMK ? 'Предлози за извори' : 'Predlozi za izvore'}</p>
-            <h3 className="text-base font-bold font-sans mt-0.5">{isMK ? 'Извори кои се вклопуваат во вашето читање' : 'Izvori koji se već uklapaju u vaše čitanje'}</h3>
+            <p className="settings-kicker"><Sparkles size={14} /> {t('settings.profile.source_suggestions_kicker')}</p>
+            <h3 className="text-base font-bold font-sans mt-0.5">{t('settings.profile.source_suggestions_title')}</h3>
           </div>
           {recommendations.sources.length > 0 ? (
             <div className="space-y-2 mt-4">
@@ -305,15 +297,13 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
                     <span className="block font-sans font-bold text-xs uppercase tracking-wider text-foreground group-hover:text-foreground transition-colors">{item.value}</span>
                     <span className="block text-[11px] text-muted-foreground mt-0.5">{item.reason}</span>
                   </div>
-                  <span className="text-xs font-black text-muted-foreground group-hover:text-foreground px-2.5 py-1 bg-secondary rounded-lg group-hover:bg-muted transition-all">+ PRATI</span>
+                  <span className="text-xs font-black text-muted-foreground group-hover:text-foreground px-2.5 py-1 bg-secondary rounded-lg group-hover:bg-muted transition-all">{t('settings.profile.follow_action')}</span>
                 </button>
               ))}
             </div>
           ) : (
             <p className="text-xs text-muted-foreground mt-4 leading-relaxed">
-              {isMK
-                ? 'Кога ќе се појават извори што се повторуваат во вашето читање, овде ќе добиете брзи предлози за следење.'
-                : 'Kad se pojave izvori koji se ponavljaju u vašem čitanju, ovde ćete dobiti brze predloge za praćenje.'}
+              {t('settings.profile.no_source_suggestions')}
             </p>
           )}
         </div>
@@ -322,21 +312,21 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
       {/* Recent history */}
       <section className="premium-card">
         <div className="settings-module-head mb-4">
-          <p className="settings-kicker"><Clock3 size={14} /> {isMK ? 'Неодамнешно читање' : 'Nedavno čitanje'}</p>
-          <h3 className="text-base sm:text-lg font-bold font-sans mt-0.5">{isMK ? 'Кластери што го обликуваат вашиот моментален профил' : 'Klasteri koji oblikuju vaš trenutni profil'}</h3>
+          <p className="settings-kicker"><Clock3 size={14} /> {t('settings.profile.recent_kicker')}</p>
+          <h3 className="text-base sm:text-lg font-bold font-sans mt-0.5">{t('settings.profile.recent_title')}</h3>
         </div>
         {recentItems.length > 0 ? (
           <div className="grid grid-cols-1 gap-3 mt-4">
             {recentItems.map((item: any) => (
               <a
                 key={item.clusterId}
-                href={localePathForLang(`/cluster/${item.clusterId}`, isMK ? 'mk' : 'sr')}
+                href={localePathForLang(`/cluster/${item.clusterId}`, locale)}
                 className="flex items-start justify-between gap-4 p-4 bg-secondary/20 hover:bg-secondary/40 border border-border/40 hover:border-border rounded-xl transition-all group"
               >
                 <div className="min-w-0">
-                  <span className="inline-block text-[11px] font-black uppercase text-muted-foreground tracking-widest mb-1">{item.topic || (isMK ? 'кластер' : 'klaster')}</span>
+                  <span className="inline-block text-[11px] font-black uppercase text-muted-foreground tracking-widest mb-1">{item.topic || t('settings.profile.fallback_cluster')}</span>
                   <h4 className="font-serif font-black text-sm sm:text-base leading-tight text-foreground group-hover:text-foreground transition-colors line-clamp-2">{item.title}</h4>
-                  <span className="inline-block text-[11px] text-muted-foreground mt-1.5">{item.source || (isMK ? 'извор' : 'izvor')}</span>
+                  <span className="inline-block text-[11px] text-muted-foreground mt-1.5">{item.source || t('settings.profile.fallback_source')}</span>
                 </div>
                 <ArrowUpRight size={16} className="text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0 mt-0.5" />
               </a>
@@ -344,9 +334,7 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
           </div>
         ) : (
           <p className="text-xs text-muted-foreground mt-4 leading-relaxed">
-            {isMK
-              ? 'Отворете неколку кластери и оваа страница ќе почне да објаснува што ја придвижува вашата персонализација и достава.'
-              : 'Otvorite nekoliko klastera i ova stranica će početi da objašnjava šta pokreće vašu personalizaciju i dostavu.'}
+            {t('settings.profile.no_recent')}
           </p>
         )}
       </section>

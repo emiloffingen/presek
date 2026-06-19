@@ -1056,8 +1056,8 @@
 			.lead-copy { gap: 0.22rem; }
 
 			.headline-lead {
-				font-size: clamp(1.72rem, 8vw, 2.06rem) !important;
-				line-height: 1.12 !important;
+				font-size: clamp(1.62rem, 7.6vw, 1.95rem) !important;
+				line-height: 1.1 !important;
 				letter-spacing: -0.018em !important;
 				margin-bottom: 0.48rem;
 				padding-bottom: 0.08em;
