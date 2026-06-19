@@ -753,10 +753,10 @@
 		position: relative;
 		overflow: hidden;
 		background:
-            radial-gradient(circle at top right, color-mix(in srgb, var(--placeholder-bg, #1e40af) 20%, transparent), transparent 60%),
+            radial-gradient(circle at top right, color-mix(in srgb, var(--placeholder-bg, var(--presek-mark)) 20%, transparent), transparent 60%),
             linear-gradient(135deg,
-                color-mix(in srgb, var(--placeholder-bg, #070c16) 90%, #000000) 0%,
-                color-mix(in srgb, var(--placeholder-bg, #132a4f) 70%, #000000) 50%,
+            color-mix(in srgb, var(--placeholder-bg, var(--presek-mark)) 90%, var(--background)) 0%,
+                color-mix(in srgb, var(--placeholder-bg, var(--presek-mark)) 55%, var(--secondary)) 50%,
                 #070a13 100%
             );
 		box-shadow:

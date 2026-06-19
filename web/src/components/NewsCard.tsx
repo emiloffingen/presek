@@ -3,6 +3,7 @@ import { chooseClusterImage } from '../utils/imageSelection';
 import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, getDesignCardContext, slugify, transliterate, getSourceInitials } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
 import { dateLocaleForLang, localePathForLang } from '../lib/localePaths';
+import { resolvePlaceholderTint } from '../lib/placeholderTheme';
 import { buildPrimaryCardBadge, primaryCardBadgeTier } from '../lib/trustSignals';
 import { useClientTranslations } from '../i18n/clientTranslations';
 import { news } from '../i18n/namespaces/news';
@@ -45,7 +46,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   const isFallbackArt = selectedImage.isWeak;
   const fallbackImageUrl = selectedImage.fallbackUrl;
   const showMedia = Boolean(thumbSrc);
-  const tintColor = cluster.dominant_color || '#1e40af';
+  const tintColor = resolvePlaceholderTint(cluster.dominant_color);
 
   const rawLeadTitle = cluster.synthetic_headline || getDisplayTitle(main);
   let displayTitle = highlightScores(rawLeadTitle);

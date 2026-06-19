@@ -10,6 +10,7 @@ import { buildEmergencyFallbackUrl } from '../../utils/imageSelection';
 import StoryFreshnessBadge from '../StoryFreshnessBadge.astro';
 import { formatStoryFreshness } from '../../utils/storyFreshness';
 import { buildPrimaryCardBadge, primaryCardBadgeTier } from '../../lib/trustSignals';
+import { resolvePlaceholderTint } from '../../lib/placeholderTheme';
 
 interface Props {
     leadCluster: NewsCluster;
@@ -52,7 +53,7 @@ const urlLang = getLangFromUrl(Astro.url, hostHeader);
 const lang = propLang || urlLang;
 const t = useTranslations(lang);
 
-const tintColor = dominantColor || '#1e40af';
+const tintColor = resolvePlaceholderTint(dominantColor);
 const primaryArticle = leadCluster.articles?.[0] || {};
 const leadFreshness = leadCluster.synthesis_freshness || {};
 const leadMissingSynthesis = (leadFreshness.reasons || []).includes('missing_synthesis');
@@ -186,7 +187,7 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl);
 	                            <h2 class:list={["overlay-headline", { "headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(finalLeadTitle)}></h2>
                         </div>
                     </div>
-                    <div class="lead-media-placeholder lead-media-placeholder-error design-card absolute inset-0" style="display: none; --placeholder-bg: #27272a;">
+                    <div class="lead-media-placeholder lead-media-placeholder-error design-card absolute inset-0" style="display: none; --placeholder-bg: var(--presek-mark);">
                         <div class="design-card-pattern opacity-5"></div>
                         <div class="design-card-main p-8 flex items-center justify-center h-full">
                             <Newspaper size={42} className="text-current opacity-25" />
@@ -363,7 +364,7 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl);
 	                            <h2 class:list={["overlay-headline", { "headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(finalLeadTitle)}></h2>
                         </div>
                     </div>
-                    <div class="lead-media-placeholder lead-media-placeholder-error design-card absolute inset-0" style="display: none; --placeholder-bg: #27272a;">
+                    <div class="lead-media-placeholder lead-media-placeholder-error design-card absolute inset-0" style="display: none; --placeholder-bg: var(--presek-mark);">
                         <div class="design-card-pattern opacity-5"></div>
                         <div class="design-card-main p-8 flex items-center justify-center h-full">
                             <Newspaper size={42} className="text-current opacity-25" />

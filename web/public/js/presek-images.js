@@ -33,7 +33,7 @@
     const source = imageWrap.getAttribute('data-fallback-source') || '';
     const category = imageWrap.getAttribute('data-fallback-category') || '';
     const label = imageWrap.getAttribute('data-fallback-label') || category || 'Presek';
-    const tint = imageWrap.getAttribute('data-fallback-tint') || '#1e40af';
+    const tint = imageWrap.getAttribute('data-fallback-tint') || '#c45c26';
     const initials = getSourceInitials(source);
     imageWrap.classList.add('image-wrap-fallback');
     imageWrap.setAttribute('data-image-state', 'fallback');

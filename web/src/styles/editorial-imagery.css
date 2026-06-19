@@ -4,7 +4,7 @@
 .image-wrap {
   aspect-ratio: 3 / 2; /* Editorial standard */
   background:
-    linear-gradient(145deg, color-mix(in srgb, var(--background) 94%, var(--placeholder-bg, #1e40af) 6%), color-mix(in srgb, var(--secondary) 90%, var(--placeholder-bg, #1e40af) 10%)),
+    linear-gradient(145deg, color-mix(in srgb, var(--background) 94%, var(--placeholder-bg, var(--presek-mark)) 6%), color-mix(in srgb, var(--secondary) 90%, var(--placeholder-bg, var(--presek-mark)) 10%)),
     var(--secondary);
   overflow: hidden;
   border: 1px solid var(--border);

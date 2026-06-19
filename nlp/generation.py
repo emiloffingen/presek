@@ -1608,52 +1608,52 @@ def _placeholder_paint_tokens(
 ) -> dict[str, str]:
     if light:
         return {
-            "glass_fill": "rgba(255,255,255,0.22)",
-            "glass_stroke": "rgba(0,0,0,0.06)",
-            "grid_stroke": "rgba(0,0,0,0.035)",
-            "text_primary": "#0f172a",
-            "text_meta": "#334155",
-            "meta_opacity": "0.7",
+            "glass_fill": "rgba(255,255,255,0.28)",
+            "glass_stroke": "rgba(196,92,38,0.12)",
+            "grid_stroke": "rgba(16,16,16,0.04)",
+            "text_primary": "#101010",
+            "text_meta": "#686257",
+            "meta_opacity": "0.85",
             "category_opacity": "0.95",
             "accent": c_accent,
-            "line_light": "rgba(0,0,0,0.12)",
-            "line_vlight": "rgba(0,0,0,0.05)",
-            "line_vvlight": "rgba(0,0,0,0.02)",
-            "dot": "#0f172a",
-            "grain_fill": "#000000",
-            "grain_opacity": "0.015",
+            "line_light": "rgba(16,16,16,0.10)",
+            "line_vlight": "rgba(16,16,16,0.05)",
+            "line_vvlight": "rgba(16,16,16,0.03)",
+            "dot": "#101010",
+            "grain_fill": "#101010",
+            "grain_opacity": "0.018",
             "bg_start": c_bg,
-            "bg_end": "#f1f3f5",
+            "bg_end": "#ece8df",
             "mesh_start": c_spot,
-            "mesh_start_opacity": "0.35",
-            "mesh_end": "#f1f3f5",
+            "mesh_start_opacity": "0.42",
+            "mesh_end": "#ece8df",
             "glow_start": c_accent,
-            "glow_start_opacity": "0.25",
-            "glow_end": "#f1f3f5",
+            "glow_start_opacity": "0.22",
+            "glow_end": "#ece8df",
         }
     return {
-        "glass_fill": "rgba(255,255,255,0.015)",
-        "glass_stroke": "rgba(255,255,255,0.06)",
-        "grid_stroke": "rgba(255,255,255,0.06)",
-        "text_primary": "#ffffff",
-        "text_meta": "#ffffff",
-        "meta_opacity": "0.6",
-        "category_opacity": "0.8",
+        "glass_fill": "rgba(255,255,255,0.02)",
+        "glass_stroke": "rgba(224,122,61,0.14)",
+        "grid_stroke": "rgba(255,255,255,0.05)",
+        "text_primary": "#fffefa",
+        "text_meta": "#d8d3c6",
+        "meta_opacity": "0.72",
+        "category_opacity": "0.88",
         "accent": c_accent,
-        "line_light": "rgba(255,255,255,0.15)",
-        "line_vlight": "rgba(255,255,255,0.05)",
+        "line_light": "rgba(255,255,255,0.14)",
+        "line_vlight": "rgba(255,255,255,0.06)",
         "line_vvlight": "rgba(255,255,255,0.03)",
-        "dot": "#ffffff",
-        "grain_fill": "#ffffff",
-        "grain_opacity": "0.04",
+        "dot": "#fffefa",
+        "grain_fill": "#fffefa",
+        "grain_opacity": "0.035",
         "bg_start": c_bg,
-        "bg_end": "#020408",
+        "bg_end": "#0a0908",
         "mesh_start": c_spot,
-        "mesh_start_opacity": "0.45",
-        "mesh_end": "#020408",
+        "mesh_start_opacity": "0.48",
+        "mesh_end": "#0a0908",
         "glow_start": c_accent,
-        "glow_start_opacity": "0.35",
-        "glow_end": "#020408",
+        "glow_start_opacity": "0.32",
+        "glow_end": "#0a0908",
     }
 
 
@@ -1711,6 +1711,8 @@ def _placeholder_style_block(
 def generate_local_placeholder(cluster_id, title, category="vesti", theme=None, lang="sr"):
     import hashlib
 
+    from nlp.placeholder_brand import category_palette_pair
+
     lang = "mk" if str(lang or "sr").lower().startswith("mk") else "sr"
     seed = int(hashlib.md5(str(cluster_id).encode(), usedforsecurity=False).hexdigest(), 16)
     category_raw = str(category or "vesti")
@@ -1741,40 +1743,8 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None, 
             "Sport", "Tehnologija", "Ekonomija", "Hronika", "Zabava",
         } else "default"
 
-    # 2. Premium Palettes: Base, Spot, Accent (Dark and Light)
-    palettes_dark = {
-        "Srbija": ["#150305", "#4a0e10", "#9e2a2b"],       # Crimson Red
-        "Makedonija": ["#1a0500", "#5c1200", "#d62828"],   # Sun Orange/Red
-        "Balkan": ["#03140c", "#0f3a24", "#2d4a3e"],       # Deep Emerald/Forest
-        "Evropa": ["#020b18", "#0b2545", "#1b3a5a"],       # Royal Blue
-        "Amerika": ["#020b18", "#0b2240", "#1a365d"],      # Navy Blue
-        "Svet": ["#0c0614", "#2a1b40", "#4a3f5a"],         # Global Violet
-        "Sport": ["#1a0a03", "#5c2505", "#e85d04"],         # Dynamic Clay Orange
-        "Tehnologija": ["#080214", "#20063b", "#8b5cf6"],  # Cyber Purple
-        "Ekonomija": ["#020f1c", "#0b3154", "#3b82f6"],    # Deep Financial Blue
-        "Hronika": ["#0a0d14", "#272e3f", "#4b5563"],      # Industrial Charcoal
-        "Zabava": ["#140210", "#3d0a2d", "#ec4899"],       # Artsy Rose Magenta
-        "default": ["#090d16", "#1c2536", "#64748b"]       # Neutral Slate
-    }
-
-    palettes_light = {
-        "Srbija": ["#fdf8f8", "#ffd2d4", "#9e2a2b"],       # Crimson Red
-        "Makedonija": ["#fdf9f7", "#ffe5db", "#d62828"],   # Sun Orange/Red
-        "Balkan": ["#f7faf8", "#d8ecd5", "#1b4d3e"],       # Deep Emerald/Forest
-        "Evropa": ["#f6f8fb", "#d0e1fd", "#1e3a8a"],       # Royal Blue
-        "Amerika": ["#f6f8fb", "#d0e1fd", "#1e3a8a"],      # Navy Blue
-        "Svet": ["#faf7fc", "#ebdcfc", "#581c87"],         # Global Violet
-        "Sport": ["#fdfaf7", "#ffecd6", "#c2410c"],         # Clay Orange
-        "Tehnologija": ["#f9f7fc", "#eedffd", "#6d28d9"],  # Purple
-        "Ekonomija": ["#f6fafe", "#d7eafd", "#1d4ed8"],    # Financial Blue
-        "Hronika": ["#f8fafc", "#e2e8f0", "#475569"],      # Charcoal Slate
-        "Zabava": ["#fdf7fa", "#fce7f3", "#be185d"],       # Rose Magenta
-        "default": ["#f8fafc", "#e2e8f0", "#475569"]       # Neutral Slate
-    }
-
-    colors_dark = palettes_dark.get(category_key, palettes_dark["default"])
-    colors_light = palettes_light.get(category_key, palettes_light["default"])
-
+    # Warm editorial palettes aligned with presek-identity.css (paper + mark accent).
+    colors_dark, colors_light = category_palette_pair(category_key)
     c_bg_dark, c_spot_dark, c_accent_dark = colors_dark
     c_bg_light, c_spot_light, c_accent_light = colors_light
 
@@ -1975,8 +1945,9 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None, 
         # 2. Tactile Grain Overlay
         '<rect width="100%" height="100%" class="ph-grain" filter="url(#grain)" />',
         
-        # 3. Editorial panel
-        '<rect x="40" y="40" width="720" height="370" rx="10" class="ph-glass" stroke-width="1.25" />',
+        # 3. Editorial panel (paper card + brand cut)
+        '<rect x="40" y="40" width="720" height="370" rx="2" class="ph-glass" stroke-width="1" />',
+        '<rect x="40" y="40" width="5" height="370" class="ph-accent-fill" opacity="0.92" />',
         
         # 4. Editorial Layout Grid Lines
         '<g class="ph-grid" stroke-width="1" stroke-dasharray="6 8">',

@@ -330,7 +330,7 @@
     position: relative;
     overflow: hidden;
     background:
-      linear-gradient(145deg, color-mix(in srgb, var(--background) 94%, var(--placeholder-bg, #1e40af) 6%), color-mix(in srgb, var(--secondary) 90%, var(--placeholder-bg, #1e40af) 10%));
+      linear-gradient(145deg, color-mix(in srgb, var(--background) 94%, var(--placeholder-bg, var(--presek-mark)) 6%), color-mix(in srgb, var(--secondary) 90%, var(--placeholder-bg, var(--presek-mark)) 10%));
     border: 1px solid
       color-mix(in srgb, var(--border) 68%, rgba(255, 255, 255, 0.2) 32%);
     box-shadow:
@@ -342,7 +342,7 @@
     position: absolute;
     inset: 0;
     background:
-      radial-gradient(circle at 18% 16%, color-mix(in srgb, var(--placeholder-bg, #1e40af) 12%, transparent), transparent 36%),
+      radial-gradient(circle at 18% 16%, color-mix(in srgb, var(--placeholder-bg, var(--presek-mark)) 12%, transparent), transparent 36%),
       linear-gradient(
         180deg,
         transparent 0%,
@@ -400,13 +400,13 @@
     min-width: 2.35rem;
     min-height: 2.35rem;
     margin-bottom: 0.45rem;
-    border: 1px solid color-mix(in srgb, var(--placeholder-bg, #1e40af) 28%, var(--border));
-    background: color-mix(in srgb, var(--background) 72%, var(--placeholder-bg, #1e40af) 28%);
+    border: 1px solid color-mix(in srgb, var(--placeholder-bg, var(--presek-mark)) 28%, var(--border));
+    background: color-mix(in srgb, var(--background) 72%, var(--placeholder-bg, var(--presek-mark)) 28%);
     font-family: var(--font-ui);
     font-size: 0.82rem;
     font-weight: 800;
     letter-spacing: 0.08em;
-    color: color-mix(in srgb, var(--foreground) 82%, var(--placeholder-bg, #1e40af));
+    color: color-mix(in srgb, var(--foreground) 82%, var(--placeholder-bg, var(--presek-mark)));
   }
 
   .topic-fallback-card--editorial {

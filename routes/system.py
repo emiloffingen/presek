@@ -780,6 +780,7 @@ async def proxy_image(
     def serve_fallback(reason="error"):
         try:
             from nlp.generation import generate_local_placeholder
+            from nlp.placeholder_brand import minimal_fallback_svg
 
             svg = generate_local_placeholder(cid or "px", t or "vest", cat or "vesti", theme=theme, lang=lang or "sr")
             log.warning(f"[proxy] Serving fallback for {url or 'unknown'}: {reason}")
@@ -797,7 +798,7 @@ async def proxy_image(
         except Exception as fe:
             log.error(f"[proxy] Critical failure in fallback generator: {fe}")
             # Ultra-minimal fallback SVG if even the generator fails
-            minimal_svg = '<svg width="800" height="450" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="#27272a"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="white" font-family="serif" font-size="24">PRESEK</text></svg>'
+            minimal_svg = minimal_fallback_svg(lang=lang or "sr")
             return Response(minimal_svg, media_type="image/svg+xml")
 
     try:
