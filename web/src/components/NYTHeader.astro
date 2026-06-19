@@ -138,6 +138,13 @@ const overflowNavItems = (lang === 'sr' || lang === 'mk')
 
 const pregledHref = l('/pregled');
 const homeHref = l('/');
+const toolNavItems: NavItem[] = [
+    { label: t('nav.briefing'), href: l('/briefing') },
+    { label: t('nav.for_you'), href: l('/for-you') },
+    { label: t('nav.pulse'), href: l('/pulse') },
+    { label: t('nav.graph'), href: l('/graf') },
+    { label: t('nav.settings'), href: l('/settings') },
+];
 const normalizedPath = Astro.url.pathname.replace(/\/$/, '');
 const isPregledActive = normalizedPath === pregledHref.replace(/\/$/, '');
 const isBrowseEditionActive =
@@ -284,7 +291,11 @@ function getRelativeTimeStr(dateStr?: string) {
                                 {t('search.dialog_label')}
                             </button>
                             <a href={l('/for-you')} class="utility-menu-link">{t('nav.for_you')}</a>
+                            <a href={l('/briefing')} class="utility-menu-link">{t('nav.briefing')}</a>
                             <a href={pregledHref} class="utility-menu-link">{t('nav.pregled')}</a>
+                            <a href={l('/pulse')} class="utility-menu-link">{t('nav.pulse')}</a>
+                            <a href={l('/graf')} class="utility-menu-link">{t('nav.graph')}</a>
+                            <a href={l('/settings')} class="utility-menu-link">{t('nav.settings')}</a>
                             <ScriptSwitcher />
                             <TextScaleIsland client:media="(max-width: 768px)" lang={lang} />
                         </div>
@@ -306,6 +317,19 @@ function getRelativeTimeStr(dateStr?: string) {
                             <a href={pregledHref} class:list={['nav-rail-link', 'nav-rail-link--analysis', { 'is-active': isPregledActive }]}>
                                 <span class="link-label">{t('nav.deep_analysis')}</span>
                             </a>
+                        </div>
+                    </div>
+                    <div class="nav-rail-group group-tools">
+                        <div class="group-links nav-tool-links">
+                            {toolNavItems.map((item) => {
+                                const itemPath = item.href.replace(/\/$/, '');
+                                const isToolActive = normalizedPath === itemPath || normalizedPath.startsWith(`${itemPath}/`);
+                                return (
+                                    <a href={item.href} class:list={['nav-rail-link', 'nav-rail-link--tool', { 'is-active': isToolActive }]}>
+                                        <span class="link-label">{item.label}</span>
+                                    </a>
+                                );
+                            })}
                         </div>
                     </div>
                     {primaryNavSections.map((section: any, idx) => {

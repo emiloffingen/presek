@@ -2,7 +2,7 @@ import { localePathForLang } from '../lib/localePaths';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, CheckCircle2, Sparkles, X } from 'lucide-react';
 import { useStore } from '@nanostores/react';
-import { $profile, $onboarding, updateProfile, updateOnboarding, getStoredOnboardingProgress } from '../lib/store.ts';
+import { $profile, $onboarding, updateProfile, updateOnboarding } from '../lib/store.ts';
 import {
   buildSurfaceFollowSuggestions,
   completeOnboarding,
@@ -13,8 +13,13 @@ import {
   recordSuggestionImpressions,
   sendSuggestionEvents,
 } from '../lib/personalization.js';
+import { useClientTranslations } from '../i18n/clientTranslations';
+import { common } from '../i18n/namespaces/common';
+import { nav } from '../i18n/namespaces/nav';
 
 export default function OnboardingIsland({ compact = false, lang = 'sr' }: { compact?: boolean, lang?: string }) {
+  const locale = lang === 'mk' ? 'mk' : 'sr';
+  const t = useClientTranslations(locale, common, nav);
   const profile = useStore($profile);
   const onboarding = useStore($onboarding);
   const [isMounted, setIsMounted] = useState(false);
@@ -25,7 +30,6 @@ export default function OnboardingIsland({ compact = false, lang = 'sr' }: { com
 
   const progress = useMemo(() => getOnboardingProgress(isMounted ? undefined : null as any, lang), [isMounted, profile, onboarding, lang]);
   const [visible, setVisible] = useState(true);
-  const isMK = lang === 'mk';
 
   useEffect(() => {
     if (!progress.shouldShow) {
@@ -42,8 +46,8 @@ export default function OnboardingIsland({ compact = false, lang = 'sr' }: { com
   useEffect(() => {
     if (!compact || !visible) return;
     const result = recordSuggestionImpressions('onboarding', [
-      ...recommendations.topics.map((item) => ({ kind: 'topic', value: item.value })),
-      ...recommendations.sources.map((item) => ({ kind: 'source', value: item.value })),
+      ...recommendations.topics.map((item) => ({ kind: 'topic' as const, value: item.value })),
+      ...recommendations.sources.map((item) => ({ kind: 'source' as const, value: item.value })),
     ]);
     sendSuggestionEvents(
       result.recorded.map((item) => ({
@@ -106,28 +110,24 @@ export default function OnboardingIsland({ compact = false, lang = 'sr' }: { com
     <section className={`onboarding-card ${compact ? 'is-compact' : ''}`}>
       <div className="onboarding-head">
         <div>
-          <p className="onboarding-kicker"><Sparkles size={14} /> {isMK ? 'Почетно подесување' : 'Početno podešavanje'}</p>
-          <h2>{isMK ? 'Поставете што сакате да следите' : 'Postavite šta želite da pratite'}</h2>
+          <p className="onboarding-kicker"><Sparkles size={14} /> {t('onboarding.kicker')}</p>
+          <h2>{t('onboarding.title')}</h2>
         </div>
-        <button type="button" className="onboarding-dismiss" onClick={close} aria-label={isMK ? "Затвори" : "Zatvori"}>
+        <button type="button" className="onboarding-dismiss" onClick={close} aria-label={t('nav.close')}>
           <X size={14} />
         </button>
       </div>
 
-      <p className="onboarding-copy">
-        {isMK
-          ? 'Изберете неколку теми или извори за да ја персонализирате вашата содржина. Овие сигнали му помагаат на модулот „За Вас“, дневниот брифинг и извештаите да бидат попрецизни.'
-          : 'Izaberite nekoliko tema ili izvora da biste personalizovali vaš sadržaj. Ovi signali pomažu modulu „Za Vas“, dnevni brifing i izveštaji da budu precizniji.'}
-      </p>
+      <p className="onboarding-copy">{t('onboarding.copy')}</p>
 
       <div className="onboarding-progress mt-4 mb-6">
         <div className="flex justify-between items-center text-[10px] font-black tracking-wider uppercase text-muted-foreground mb-1.5">
-          <span>{isMK ? 'Напредок на запознавање' : 'Napredak upoznavanja'}</span>
+          <span>{t('onboarding.progress')}</span>
           <strong>{progress.doneCount}/{progress.total}</strong>
         </div>
         <div className="premium-progress-track">
-          <div 
-            className="premium-progress-fill" 
+          <div
+            className="premium-progress-fill"
             style={{ width: `${(progress.doneCount / (progress.total || 1)) * 100}%` }}
           />
         </div>
@@ -145,8 +145,8 @@ export default function OnboardingIsland({ compact = false, lang = 'sr' }: { com
       {compact && (recommendations.topics.length > 0 || recommendations.sources.length > 0) && (
         <div className="onboarding-starters">
           <div>
-            <p className="onboarding-starters-title">{isMK ? 'Брз почеток' : 'Brzi početak'}</p>
-            <p className="onboarding-starters-copy">{isMK ? 'Изберете 1 до 2 сигнали за првиот персонализиран преглед.' : 'Izaberite 1 do 2 signala za prvi personalizovani pregled.'}</p>
+            <p className="onboarding-starters-title">{t('onboarding.quick_start')}</p>
+            <p className="onboarding-starters-copy">{t('onboarding.quick_start_copy')}</p>
           </div>
 
           {recommendations.topics.length > 0 && (
@@ -184,8 +184,8 @@ export default function OnboardingIsland({ compact = false, lang = 'sr' }: { com
       )}
 
       <div className="onboarding-actions">
-        <a href={localePathForLang('/settings', isMK ? 'mk' : 'sr')} className="onboarding-action">{isMK ? 'Отвори подесувања' : 'Otvori podešavanja'}</a>
-        <button type="button" className="onboarding-action secondary" onClick={markDone}>{isMK ? 'Скриј водич' : 'Sakrij vodič'}</button>
+        <a href={localePathForLang('/settings', locale)} className="onboarding-action">{t('onboarding.open_settings')}</a>
+        <button type="button" className="onboarding-action secondary" onClick={markDone}>{t('onboarding.hide_guide')}</button>
       </div>
     </section>
   );

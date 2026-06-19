@@ -1705,3 +1705,18 @@
   text-transform: uppercase;
   cursor: pointer;
 }
+
+@media (max-width: 639px) {
+  .home-page-scope .daily-edition-bar {
+    margin-bottom: 0.5rem;
+  }
+
+  .home-page-scope .home-mobile-order-edition {
+    gap: 0.35rem;
+  }
+
+  .home-page-scope .broadsheet-grid {
+    padding-left: 0.65rem;
+    padding-right: 0.65rem;
+  }
+}

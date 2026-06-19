@@ -311,6 +311,28 @@
         background: color-mix(in srgb, var(--foreground) 6%, var(--card));
         border-color: color-mix(in srgb, var(--foreground) 18%, var(--border));
     }
+
+    .nav-rail-group.group-tools {
+        padding-left: 0.35rem;
+        margin-left: 0.15rem;
+        border-left: 1px solid color-mix(in srgb, var(--foreground) 8%, var(--border));
+    }
+
+    .nav-tool-links {
+        gap: 0.2rem;
+    }
+
+    .nav-rail-link--tool {
+        font-size: var(--text-ui-min);
+        font-weight: 650;
+        color: var(--muted-foreground);
+    }
+
+    .nav-rail-link--tool:hover,
+    .nav-rail-link--tool.is-active {
+        color: var(--presek-mark);
+    }
+
     .live-indicator-dot {
         box-shadow: 0 0 8px var(--nyt-red);
     }
@@ -379,7 +401,7 @@
     @media (max-width: 640px) {
         .dispatch-container { min-width: 0; }
         .unified-dispatch-bar {
-            height: 1.8rem;
+            height: 1.65rem;
             background: color-mix(in srgb, var(--background) 94%, transparent);
         }
         .ticker-prefix {
