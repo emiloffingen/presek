@@ -815,3 +815,17 @@
     display: flex;
 }
 
+.for-you-page-scope .for-you-briefing-kicker,
+.for-you-page-scope .for-you-kicker {
+    color: var(--presek-mark);
+}
+
+.home-page-scope .live-now-kicker,
+.home-page-scope .live-now-source {
+    color: var(--presek-mark);
+}
+
+.home-page-scope .live-now-card:hover h3 {
+    color: var(--presek-mark);
+}
+

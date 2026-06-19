@@ -3,6 +3,10 @@ import { Radio, RefreshCcw } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
 import { localePathForLang } from '../lib/localePaths';
 import { getDisplayTitle, getPersonalizedText } from '../utils/textUtils';
+import { useClientTranslations } from '../i18n/clientTranslations';
+import { home } from '../i18n/namespaces/home';
+import { common } from '../i18n/namespaces/common';
+import { news } from '../i18n/namespaces/news';
 
 interface ArticleLike {
   source?: string;
@@ -31,32 +35,33 @@ interface LiveState {
 
 const API_URL = apiBaseUrl();
 
-function getTimeStr(dateStr?: string, lang = 'sr') {
-  if (!dateStr) return '';
-  try {
-    const date = new Date(dateStr.replace("Z", ""));
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-
-    if (diffMins < 1) return lang === 'sr' ? 'UPRAVO SADA' : 'ТУКУШТО';
-    if (diffMins < 60) return lang === 'sr' ? `PRE ${diffMins} MIN` : `ПРЕД ${diffMins} МИН`;
-
-    return date.toLocaleTimeString(lang === 'sr' ? 'sr-RS' : 'mk-MK', {
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'Europe/Belgrade'
-    });
-  } catch {
-    return '';
-  }
-}
-
 export default function HomeLiveUpdatesIsland({ excludeClusterIds = [], initialClusters = [], lang = 'sr' }: HomeLiveUpdatesIslandProps) {
+  const locale = lang === 'mk' ? 'mk' : 'sr';
+  const t = useClientTranslations(locale, home, common, news);
   const [clusters, setClusters] = useState<ClusterLike[]>(initialClusters);
   const [liveState, setLiveState] = useState<LiveState | null>(null);
   const [loading, setLoading] = useState(initialClusters.length === 0);
-  const isMK = lang === 'mk';
+
+  const getTimeStr = (dateStr?: string) => {
+    if (!dateStr) return '';
+    try {
+      const date = new Date(dateStr.replace('Z', ''));
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+
+      if (diffMins < 1) return t('news.just_now');
+      if (diffMins < 60) return `${t('news.ago')} ${diffMins} ${t('news.min_short')}`;
+
+      return date.toLocaleTimeString(locale === 'sr' ? 'sr-RS' : 'mk-MK', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Europe/Belgrade',
+      });
+    } catch {
+      return '';
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -81,19 +86,18 @@ export default function HomeLiveUpdatesIsland({ excludeClusterIds = [], initialC
     source.onmessage = (event) => {
       try {
         const payload = JSON.parse(event.data);
-        // Support both batch and single article events
         if (payload?.type !== 'new_articles' && payload?.type !== 'new_article' && payload?.type !== 'new_articles_batch') return;
 
         if (payload.type === 'new_article') {
-             setLiveState(prev => ({
-                count: (prev?.count || 0) + 1,
-                time: payload.time || new Date().toISOString()
-             }));
+          setLiveState(prev => ({
+            count: (prev?.count || 0) + 1,
+            time: payload.time || new Date().toISOString(),
+          }));
         } else {
-            setLiveState({
-                count: Number(payload.count || 0),
-                time: String(payload.time || ''),
-            });
+          setLiveState({
+            count: Number(payload.count || 0),
+            time: String(payload.time || ''),
+          });
         }
 
         if (refreshTimer) clearTimeout(refreshTimer);
@@ -126,18 +130,18 @@ export default function HomeLiveUpdatesIsland({ excludeClusterIds = [], initialC
       <div className="live-now-head">
         <div>
           <p className="live-now-kicker">
-            <Radio size={13} /> {isMK ? 'Во живо' : 'Uživo'}
+            <Radio size={13} /> {t('home.live_kicker')}
           </p>
-          <h2 id="live-now-title">{isMK ? 'Што пристигнува токму сега' : 'Što pristiže upravo sada'}</h2>
+          <h2 id="live-now-title">{t('home.live_title')}</h2>
         </div>
         <div className="live-now-status">
           {liveState ? (
             <>
-              <span className="live-now-badge">+{liveState.count} {isMK ? 'нови објави' : 'nove objave'}</span>
-              <span className="live-now-time">{getTimeStr(liveState.time, lang)}</span>
+              <span className="live-now-badge">+{liveState.count} {t('home.live_new_posts')}</span>
+              <span className="live-now-time">{getTimeStr(liveState.time)}</span>
             </>
           ) : (
-            <span className="live-now-time">{isMK ? 'Следење во реално време' : 'Praćenje u realnom vremenu'}</span>
+            <span className="live-now-time">{t('home.live_tracking')}</span>
           )}
         </div>
       </div>
@@ -147,14 +151,14 @@ export default function HomeLiveUpdatesIsland({ excludeClusterIds = [], initialC
           const article = cluster.articles?.[0] || {};
           const title = getPersonalizedText(getDisplayTitle(article, '', lang), lang);
           return (
-            <a key={cluster.cluster_id} href={localePathForLang(`/cluster/${cluster.cluster_id}`, isMK ? 'mk' : 'sr')} className="live-now-card group">
+            <a key={cluster.cluster_id} href={localePathForLang(`/cluster/${cluster.cluster_id}`, locale)} className="live-now-card group">
               <div className="live-now-meta flex items-center justify-between gap-[var(--grid-gap)] mb-2">
-                <span className="live-now-source text-[10px] font-black uppercase tracking-widest text-nyt-accent group-hover:text-foreground transition-colors">{article.source || 'izvor'}</span>
-                <span className="text-[10px] font-bold text-muted-foreground tabular-nums">{getTimeStr(article.ingested_at || article.created_at, lang)}</span>
+                <span className="live-now-source text-[10px] font-black uppercase tracking-widest text-presek-mark group-hover:text-foreground transition-colors">{article.source || t('for_you.default_source')}</span>
+                <span className="text-[10px] font-bold text-muted-foreground tabular-nums">{getTimeStr(article.ingested_at || article.created_at)}</span>
               </div>
-              <h3 className="text-sm font-bold leading-snug group-hover:text-nyt-accent transition-colors line-clamp-3">{title}</h3>
+              <h3 className="text-sm font-bold leading-snug group-hover:text-presek-mark transition-colors line-clamp-3">{title}</h3>
               <div className="mt-3 flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                 <RefreshCcw size={12} className="text-nyt-accent animate-spin-slow" />
+                 <RefreshCcw size={12} className="text-presek-mark animate-spin-slow" />
               </div>
             </a>
           );

@@ -8,6 +8,8 @@ import {
   recordSuggestionImpressions,
   sendSuggestionEvents,
 } from '../lib/personalization.js';
+import { useClientTranslations } from '../i18n/clientTranslations';
+import { common } from '../i18n/namespaces/common';
 
 type Suggestion = {
   value: string;
@@ -49,6 +51,8 @@ export default function ClusterFollowSuggestionsIsland({
   adjacentTopic?: string;
   lang?: string;
 }) {
+  const locale = lang === 'mk' ? 'mk' : 'sr';
+  const t = useClientTranslations(locale, common);
   const profile = useStore($profile);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -57,7 +61,6 @@ export default function ClusterFollowSuggestionsIsland({
   }, []);
 
   const activeProfile = isMounted ? profile : null;
-  const isMK = lang === 'mk';
 
   const suggestions = useMemo(() => {
     const base = buildSurfaceFollowSuggestions(activeProfile, 'cluster', { topicLimit: 2, sourceLimit: 1, lang });
@@ -74,26 +77,26 @@ export default function ClusterFollowSuggestionsIsland({
 
     addUnique(topicSuggestions, {
       value: String(topic || '').trim(),
-      reason: isMK ? 'ова е главната тема на кластерот што го читате.' : 'ovo je glavna tema klastera koji čitate.',
+      reason: t('for_you.reason_cluster_main_topic'),
     }, followedTopics);
 
     if (adjacentTopic) {
         addUnique(topicSuggestions, {
           value: String(adjacentTopic || '').trim(),
-          reason: isMK ? 'оваа поврзана тема често ја носи следната развојна линија.' : 'ova povezana tema često nosi sledeću razvojnu liniju.',
+          reason: t('for_you.reason_adjacent_topic'),
         }, followedTopics);
     }
 
     addUnique(sourceSuggestions, {
       value: String(source || '').trim(),
-      reason: isMK ? 'овој извор ја води главната линија во кластерот што го читате.' : 'ovaj izvor vodi glavnu liniju u klasteru koji čitate.',
+      reason: t('for_you.reason_cluster_main_source'),
     }, followedSources);
 
     return {
       topics: topicSuggestions.slice(0, 2),
       sources: sourceSuggestions.slice(0, 2),
     };
-  }, [profile, topic, source, adjacentTopic, isMK]);
+  }, [profile, topic, source, adjacentTopic, lang]);
 
   useEffect(() => {
     const result = recordSuggestionImpressions('cluster', [
@@ -118,12 +121,10 @@ export default function ClusterFollowSuggestionsIsland({
     <section className="cluster-follow-suggestions">
       <div className="cluster-follow-suggestions-head">
         <p className="nyt-section-label flex items-center gap-1 text-muted-foreground">
-          <Sparkles size={12} /> {isMK ? 'Следете понатаму' : 'Pratite dalje'}
+          <Sparkles size={12} /> {t('for_you.follow_more')}
         </p>
         <p className="cluster-follow-suggestions-copy">
-          {isMK
-            ? 'Зачувајте ја темата или изворот што најмногу ја продолжува оваа приказна.'
-            : 'Sačuvajte temu ili izvor koji najbolje nastavlja ovu priču.'}
+          {t('for_you.follow_cluster_note')}
         </p>
       </div>
 
@@ -133,14 +134,14 @@ export default function ClusterFollowSuggestionsIsland({
           return (
             <div key={`topic:${item.value}`} className="cluster-follow-suggestion-card">
               <div>
-                <p className="cluster-follow-suggestion-kicker">{isMK ? 'Предлог тема' : 'Predlog tema'}</p>
+                <p className="cluster-follow-suggestion-kicker">{t('for_you.suggest_topic')}</p>
                 <h4>{displayValue}</h4>
                 <p className="cluster-follow-suggestion-reason">{item.reason}</p>
               </div>
               <PreferenceToggle
                 kind="topic"
                 value={item.value}
-                label={isMK ? `тема: ${displayValue}` : `tema: ${displayValue}`}
+                label={t('for_you.label_topic', { value: displayValue })}
                 lang={lang}
                 analyticsSurface="cluster"
               />
@@ -151,14 +152,14 @@ export default function ClusterFollowSuggestionsIsland({
         {suggestions.sources.map((item) => (
           <div key={`source:${item.value}`} className="cluster-follow-suggestion-card">
             <div>
-              <p className="cluster-follow-suggestion-kicker">{isMK ? 'Предлог извор' : 'Predlog izvor'}</p>
+              <p className="cluster-follow-suggestion-kicker">{t('for_you.suggest_source')}</p>
               <h4>{item.value}</h4>
               <p className="cluster-follow-suggestion-reason">{item.reason}</p>
             </div>
             <PreferenceToggle
               kind="source"
               value={item.value}
-              label={isMK ? `извор: ${item.value}` : `izvor: ${item.value}`}
+              label={t('for_you.label_source', { value: item.value })}
               lang={lang}
               analyticsSurface="cluster"
             />

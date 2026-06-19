@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { ArrowUpRight, Headphones, Newspaper } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
 import { localePathForLang } from '../lib/localePaths';
+import { useClientTranslations } from '../i18n/clientTranslations';
+import { common } from '../i18n/namespaces/common';
 
 function extractBriefingTitle(content: string) {
   const line = String(content || '')
@@ -34,7 +36,8 @@ export default function ForYouBriefingCard({
   lang?: string;
   embedded?: boolean;
 }) {
-  const isMK = lang === 'mk';
+  const locale = lang === 'mk' ? 'mk' : 'sr';
+  const t = useClientTranslations(locale, common);
   const [title, setTitle] = useState('');
   const [lead, setLead] = useState('');
   const [date, setDate] = useState('');
@@ -61,25 +64,25 @@ export default function ForYouBriefingCard({
   }, [lang]);
 
   const briefingHref = date
-    ? `${localePathForLang('/briefing', isMK ? 'mk' : 'sr')}?date=${date}`
-    : localePathForLang('/briefing', isMK ? 'mk' : 'sr');
+    ? `${localePathForLang('/briefing', locale)}?date=${date}`
+    : localePathForLang('/briefing', locale);
   const audioHref = `${briefingHref}#audio`;
 
   return (
     <section className={`for-you-briefing-card${embedded ? ' is-embedded' : ''}`}>
       <div className="for-you-briefing-copy">
         <span className="for-you-briefing-kicker">
-          <Newspaper size={14} /> {isMK ? 'Уредничко издание' : 'Uredničko izdanje'}
+          <Newspaper size={14} /> {t('for_you.briefing_kicker')}
         </span>
-        <h3>{title || (isMK ? 'Дневен брифинг' : 'Dnevni brifing')}</h3>
-        <p>{lead || (isMK ? 'Краток уреднички преглед на денот, со аудио верзија.' : 'Kratak urednički pregled dana, sa audio verzijom.')}</p>
+        <h3>{title || t('for_you.briefing_fallback_title')}</h3>
+        <p>{lead || t('for_you.briefing_fallback_lead')}</p>
       </div>
       <div className="for-you-briefing-actions">
         <a href={briefingHref} className="for-you-briefing-btn is-primary">
-          {isMK ? 'Прочитај го брифингот' : 'Pročitaj brifing'} <ArrowUpRight size={14} />
+          {t('for_you.briefing_read')} <ArrowUpRight size={14} />
         </a>
         <a href={audioHref} className="for-you-briefing-btn">
-          <Headphones size={14} /> {isMK ? 'Слушај' : 'Slušaj'}
+          <Headphones size={14} /> {t('for_you.briefing_listen')}
         </a>
       </div>
     </section>

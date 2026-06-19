@@ -6,6 +6,8 @@ import {
   recordSuggestionFollow,
   sendSuggestionEvents,
 } from '../lib/personalization.js';
+import { useClientTranslations } from '../i18n/clientTranslations';
+import { settings } from '../i18n/namespaces/settings';
 
 export default function PreferenceToggle({
   kind,
@@ -22,6 +24,8 @@ export default function PreferenceToggle({
   onChanged?: (isFollowing: boolean) => void;
   analyticsSurface?: string;
 }) {
+  const locale = lang === 'mk' ? 'mk' : 'sr';
+  const t = useClientTranslations(locale, settings);
   const profile = useStore($profile);
   const field = kind === 'source' ? 'followedSources' : 'followedTopics';
   const isFollowing = useMemo(() => (profile[field] || []).includes(value), [profile, field, value]);
@@ -47,9 +51,7 @@ export default function PreferenceToggle({
       window.clearTimeout(feedbackTimerRef.current);
     }
 
-    setFeedback(nextFollowing
-      ? (lang === 'mk' ? 'Зачувано' : 'Sačuvano')
-      : (lang === 'mk' ? 'Отстрането' : 'Uklonjeno'));
+    setFeedback(nextFollowing ? t('settings.pref_saved') : t('settings.pref_removed'));
     if (typeof window !== 'undefined') {
       feedbackTimerRef.current = window.setTimeout(() => setFeedback(''), 1800);
     }
@@ -66,18 +68,15 @@ export default function PreferenceToggle({
 
   const statusId = `pref-status-${kind}-${String(value || '').replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'value'}`;
 
-  const isMK = lang === 'mk';
   const displayValue = label || value;
   const shortAction = isFollowing
-    ? (isMK ? 'Се следи' : 'Se prati')
+    ? t('settings.pref_following')
     : kind === 'topic'
-      ? (isMK ? 'Следи тема' : 'Prati temu')
-      : (isMK ? 'Следи извор' : 'Prati izvor');
-  const clitic = isMK
-    ? (kind === 'topic' ? 'Ја' : 'Го')
-    : (kind === 'topic' ? 'Je' : 'Ga');
-  const followVerb = isMK ? 'следите' : 'pratite';
-  const negativePrefix = isMK ? 'Не' : 'Ne';
+      ? t('settings.pref_follow_topic')
+      : t('settings.pref_follow_source');
+  const clitic = kind === 'topic' ? t('settings.pref_clitic_topic') : t('settings.pref_clitic_source');
+  const followVerb = t('settings.pref_follow_verb');
+  const negativePrefix = t('settings.pref_not_prefix');
   const buttonLabel = feedback || shortAction;
   const liveMessage = feedback
     ? `${feedback}: ${displayValue}`

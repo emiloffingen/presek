@@ -8,6 +8,8 @@ import {
   recordSuggestionImpressions,
   sendSuggestionEvents,
 } from '../lib/personalization.js';
+import { useClientTranslations } from '../i18n/clientTranslations';
+import { common } from '../i18n/namespaces/common';
 
 type TopicSuggestion = {
   topic: string;
@@ -30,6 +32,8 @@ export default function TopicFollowSuggestionsIsland({
   strongSources?: SourceSuggestion[];
   lang?: string;
 }) {
+  const locale = lang === 'mk' ? 'mk' : 'sr';
+  const t = useClientTranslations(locale, common);
   const profile = useStore($profile);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -38,7 +42,6 @@ export default function TopicFollowSuggestionsIsland({
   }, []);
 
   const activeProfile = isMounted ? profile : null;
-  const isMK = lang === 'mk';
 
   const suggestions = useMemo(() => {
     const followedTopics = new Set(activeProfile?.followedTopics || []);
@@ -48,7 +51,7 @@ export default function TopicFollowSuggestionsIsland({
     const topicItems = [
       {
         topic: String(currentTopic || '').trim(),
-        reason: isMK ? 'ова е темата што веќе ја читате во длабочина.' : 'ovo je tema koju već čitate u dubini.',
+        reason: t('for_you.reason_reading_topic'),
       },
       ...relatedTopics,
       ...base.topics.map((item) => ({ topic: item.value, reason: item.reason })),
@@ -66,7 +69,7 @@ export default function TopicFollowSuggestionsIsland({
       topics: topicItems,
       sources: sourceItems,
     };
-  }, [profile, currentTopic, relatedTopics, strongSources, isMK]);
+  }, [profile, currentTopic, relatedTopics, strongSources, lang]);
 
   useEffect(() => {
     const result = recordSuggestionImpressions('topic', [
@@ -91,12 +94,10 @@ export default function TopicFollowSuggestionsIsland({
     <section className="topic-follow-suggestions">
       <div className="topic-follow-suggestions-head">
         <p className="nyt-section-label flex items-center gap-1 text-muted-foreground">
-          <Sparkles size={12} /> {isMK ? 'Следете понатаму' : 'Pratite dalje'}
+          <Sparkles size={12} /> {t('for_you.follow_more')}
         </p>
         <p className="topic-follow-suggestions-copy">
-          {isMK
-            ? 'Зачувајте ја темата или водечките извори за следниот преглед да биде попрецизен.'
-            : 'Sačuvajte temu ili vodeće izvore da bi sledeći pregled bio precizniji.'}
+          {t('for_you.follow_save_note')}
         </p>
       </div>
 
@@ -104,14 +105,14 @@ export default function TopicFollowSuggestionsIsland({
         {suggestions.topics.map((item) => (
           <div key={`topic:${item.topic}`} className="topic-follow-suggestion-card">
             <div>
-              <p className="topic-follow-suggestion-kicker">{isMK ? 'Предлог тема' : 'Predlog tema'}</p>
+              <p className="topic-follow-suggestion-kicker">{t('for_you.suggest_topic')}</p>
               <h4>{item.topic}</h4>
               <p className="topic-follow-suggestion-reason">{item.reason}</p>
             </div>
             <PreferenceToggle
               kind="topic"
               value={item.topic}
-              label={isMK ? `тема: ${item.topic}` : `tema: ${item.topic}`}
+              label={t('for_you.label_topic', { value: item.topic })}
               lang={lang}
               analyticsSurface="topic"
             />
@@ -121,14 +122,14 @@ export default function TopicFollowSuggestionsIsland({
         {suggestions.sources.map((item) => (
           <div key={`source:${item.source}`} className="topic-follow-suggestion-card">
             <div>
-              <p className="topic-follow-suggestion-kicker">{isMK ? 'Предлог извор' : 'Predlog izvor'}</p>
+              <p className="topic-follow-suggestion-kicker">{t('for_you.suggest_source')}</p>
               <h4>{item.source}</h4>
               <p className="topic-follow-suggestion-reason">{item.reason}</p>
             </div>
             <PreferenceToggle
               kind="source"
               value={item.source}
-              label={isMK ? `извор: ${item.source}` : `izvor: ${item.source}`}
+              label={t('for_you.label_source', { value: item.source })}
               lang={lang}
               analyticsSurface="topic"
             />
