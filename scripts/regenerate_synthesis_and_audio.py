@@ -6,7 +6,7 @@ import sys
 sys.path.append("/home/emiloffingen/presek")
 
 from core.database import db_manager as db
-from core.audio_service import AudioService
+from core.audio_service import AudioService, select_cluster_audio_text
 from tasks.intelligence import synthesize_cluster_task
 
 async def regenerate_cluster(cluster_id: str):
@@ -31,7 +31,7 @@ async def regenerate_cluster(cluster_id: str):
         print(f"Error: AI synthesis failed or returned empty content for {cluster_id}!")
         return
         
-    content = row.get("generated_article") or row.get("summary")
+    content = select_cluster_audio_text(row.get("generated_article"), row.get("summary"))
     print(f"\n--- NEW AI GENERATED ARTICLE ({cluster_id}) ---")
     print(content)
     print("--------------------------------\n")

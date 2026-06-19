@@ -186,6 +186,16 @@
 }
 
 /* Tier 3 #12 — 5-minute read mode */
+.briefing-edition-shell {
+    display: grid;
+    gap: 0.85rem;
+    margin: 0 0 1.25rem;
+}
+
+.briefing-edition-shell .briefing-edition-switch {
+    margin: 0;
+}
+
 .briefing-quick-panel {
     display: none;
     border: 1px solid color-mix(in srgb, var(--nyt-accent) 25%, var(--border));
@@ -221,7 +231,9 @@
     color: var(--muted-foreground);
 }
 
-.briefing-quick-panel.is-visible {
+.briefing-quick-panel.is-visible,
+html[data-briefing-mode='quick'] .briefing-quick-panel,
+main[data-briefing-mode='quick'] .briefing-quick-panel {
     display: block;
 }
 
@@ -374,6 +386,11 @@
     color: var(--background);
 }
 
+.briefing-audio-row {
+    max-width: 34rem;
+    margin: 0 0 1.5rem;
+}
+
 html[data-briefing-mode='quick'] .briefing-full-section,
 main[data-briefing-mode='quick'] .briefing-full-section {
     display: none !important;
@@ -483,8 +500,8 @@ main[data-briefing-mode='quick'] .briefing-sections-toc {
 }
 
 .briefing-audio-row {
-    max-width: 42rem;
-    margin: 0 auto 1.4rem;
+    max-width: 34rem;
+    margin: 0 0 1.5rem;
 }
 
 .briefing-edition-link {

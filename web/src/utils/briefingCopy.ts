@@ -18,6 +18,53 @@ const MACEDONIAN_REPLACEMENTS: Array<[RegExp, string]> = [
     [/\bсублимат\b/gi, 'преглед'],
 ];
 
+const BOILERPLATE_PATTERNS: Record<string, RegExp[]> = {
+    mk: [
+        /,?\s*со ограничено јавно значење\.?/gi,
+        /,?\s*со ограничено јавно значење на спортскиот контекст\.?/gi,
+        /\s*Јавното значење на овој настан е ограничено[^.]*\./gi,
+        /\s*Настанот е потврден од повеќе извори и претставува значајна[^.]*\./gi,
+        /\s*Прекинот е потврден од (?:два извори|повеќе извори) и претставува редовна техничка интервенција\.?/gi,
+    ],
+    sr: [
+        /,?\s*sa ograničenim javnim značajem\.?/gi,
+        /,?\s*sa ograničenim javnim značajem u sportskom kontekstu\.?/gi,
+        /\s*Javni značaj ovog događaja je ograničen[^.]*\./gi,
+        /\s*Događaj je potvrđen iz više izvora i predstavlja značajnu[^.]*\./gi,
+    ],
+};
+
+export function scrubBriefingBoilerplate(text: MaybeText, lang = 'sr'): string {
+    if (!text) return '';
+
+    const locale = lang === 'mk' ? 'mk' : 'sr';
+    let cleaned = text;
+    for (const pattern of BOILERPLATE_PATTERNS[locale]) {
+        cleaned = cleaned.replace(pattern, '');
+    }
+
+    return cleaned
+        .replace(/([.!?])\s*([.!?])+/g, '$1')
+        .replace(/\s+([,.;:!?])/g, '$1')
+        .replace(/[^\S\n]{2,}/g, ' ')
+        .trim();
+}
+
+export function simplifyBriefingBullet(text: MaybeText, lang = 'sr'): string {
+    const cleaned = scrubBriefingBoilerplate(normalizeBriefingText(text, lang), lang);
+    if (!cleaned) return '';
+
+    if (lang === 'mk') {
+        const match = cleaned.match(/^За (.+?), медиумите нагласуваат на (.+)$/i);
+        if (match) return `${match[1]}: ${match[2].replace(/\.$/, '')}.`;
+    } else {
+        const match = cleaned.match(/^Za (.+?), mediji naglašavaju (.+)$/i);
+        if (match) return `${match[1]}: ${match[2].replace(/\.$/, '')}.`;
+    }
+
+    return cleaned;
+}
+
 export function normalizeBriefingText(text: MaybeText, lang = 'sr'): string {
     if (!text) return '';
 
@@ -38,8 +85,9 @@ export function normalizeBriefingText(text: MaybeText, lang = 'sr'): string {
 export function normalizeBriefingMarkdown(markdown: MaybeText, lang = 'sr'): string {
     if (!markdown) return '';
     return markdown
+        .replace(/https?:\/\/(?:www\.)?presek\.mk\/cluster\/([a-f0-9-]+)\/?/gi, '[[$1]]')
         .split('\n')
-        .map((line) => normalizeBriefingText(line, lang))
+        .map((line) => scrubBriefingBoilerplate(normalizeBriefingText(line, lang), lang))
         .join('\n');
 }
 

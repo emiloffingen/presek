@@ -52,6 +52,7 @@ export default function SearchEntryIsland({
   const eager = Boolean(initialQuery && String(initialQuery).trim());
   const [active, setActive] = useState(eager);
   const open = useCallback(() => setActive(true), []);
+  const close = useCallback(() => setActive(false), []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -84,7 +85,13 @@ export default function SearchEntryIsland({
 
   return (
     <Suspense fallback={<SearchTriggerButton onClick={open} lang={lang} />}>
-      <SearchIsland initialQuery={initialQuery} lang={lang} startOpen />
+      <SearchIsland
+        initialQuery={initialQuery}
+        lang={lang}
+        startOpen
+        hideTrigger
+        onClose={close}
+      />
     </Suspense>
   );
 }

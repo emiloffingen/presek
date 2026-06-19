@@ -233,9 +233,9 @@ def persist_lang_synthesis(
         updated_shared_computed = True
 
     try:
-        from core.audio_service import AudioService
+        from core.audio_service import AudioService, select_cluster_audio_text
 
-        audio_content = generated_article or summary
+        audio_content = select_cluster_audio_text(generated_article, summary)
         if audio_content:
             log.info(
                 "[tasks] Auto-generating cluster audio in background for cluster %s (%s)...",

@@ -280,6 +280,7 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl);
             <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="lead-meta-link ui-kicker ui-kicker--accent" data-testid="cluster-link">{t('lead.full_synthesis')}</a>
         </div>
 
+        {!compact && (
         <div class="lead-value-strip" aria-label={t('lead.value_label')}>
             {valueStripItems.map((item) => (
                 <div class="lead-value-item">
@@ -292,6 +293,7 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl);
                 <ArrowRight size={13} aria-hidden="true" />
             </a>
         </div>
+        )}
 
         {!compact && relatedArticles.length > 0 && (
             <div class="lead-follow-strip">

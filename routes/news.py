@@ -1654,9 +1654,14 @@ async def get_cluster_audio(cluster_id: str, lang: Optional[str] = "sr"):
     if not s_row or (not s_row.get("generated_article") and not s_row.get("summary")):
         raise HTTPException(status_code=404, detail="Sinteza nije pronađena za ovaj klaster.")
         
-    content = s_row.get("generated_article") or s_row.get("summary")
-    
-    from core.audio_service import AudioService
+    from core.audio_service import AudioService, select_cluster_audio_text
+
+    content = select_cluster_audio_text(
+        s_row.get("generated_article"),
+        s_row.get("summary"),
+    )
+    if not content:
+        raise HTTPException(status_code=404, detail="Sinteza nije pronađena za ovaj klaster.")
     loop = asyncio.get_running_loop()
     audio_url = await loop.run_in_executor(
         None, AudioService.generate_cluster_audio, cluster_id, content, lang

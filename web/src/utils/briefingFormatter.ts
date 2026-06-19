@@ -56,7 +56,7 @@ export function formatBriefing(markdown: string, lang = 'sr', hostname?: string 
         return `<h2 id="${sectionId}" class="briefing-section-title"><span class="briefing-section-index">${String(sectionIndex).padStart(2, '0')}</span><span class="briefing-section-heading">${title}</span></h2>`;
     });
     html = html.replace(/^###\s+(\d+\.\s+)?(.+?)(\s+\[\[(.+?)\]\])?$/gm, (match, num, title, idGroup, id) => {
-        const idBadge = id ? `<a href="${l('/cluster/')}${id}" class="briefing-inline-badge">${isMK ? 'Кластер' : 'Klaster'}</a>` : '';
+        const idBadge = id ? `<a href="${l('/cluster/')}${id}" class="briefing-inline-badge">${isMK ? 'Тема' : 'Tema'}</a>` : '';
         const cleanTitle = normalizeBriefingText(stripDecorativePrefix(`${num || ''}${title}`), lang);
         return `<h3 class="briefing-item-title">${cleanTitle}${idBadge}</h3>`;
     });
@@ -68,7 +68,7 @@ export function formatBriefing(markdown: string, lang = 'sr', hostname?: string 
             : rawContent.trim();
         const title = normalizeBriefingText(stripDecorativePrefix(titlePart), lang);
         const idBadge = clusterId
-            ? `<a href="${l('/cluster/')}${clusterId}" class="briefing-inline-badge">${isMK ? 'Кластер' : 'Klaster'}</a>`
+            ? `<a href="${l('/cluster/')}${clusterId}" class="briefing-inline-badge">${isMK ? 'Тема' : 'Tema'}</a>`
             : '';
         return `<h3 class="briefing-item-title">${title}${idBadge}</h3>`;
     });

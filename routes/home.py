@@ -415,8 +415,13 @@ async def _ensure_cluster_audio(cluster: Dict[str, Any], generate: bool = False)
             return cluster
 
         # Check if cluster has generated synthesis content
-        if cluster.get('generated_article') or cluster.get('synthesis'):
-            content = cluster.get('generated_article') or cluster.get('synthesis') or ""
+        if cluster.get('generated_article') or cluster.get('synthesis') or cluster.get('summary'):
+            from core.audio_service import select_cluster_audio_text
+
+            content = select_cluster_audio_text(
+                cluster.get('generated_article') or cluster.get('synthesis'),
+                cluster.get('summary'),
+            )
             if content and len(content.strip()) > 50:  # Only generate for substantial content
                 log.info(f"[home] Cluster {cluster_id} has synthesis, ensuring audio generation")
                 

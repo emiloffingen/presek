@@ -65,6 +65,9 @@ export const search = {
     'search.open_search': 'Otvori pretragu',
     'search.dialog_label': 'Pretraga vesti',
     'search.hint_topics': 'Vesti, teme, subjekti',
+    'search.input_placeholder': 'Pretraži vesti, teme i subjekte…',
+    'search.type_more': 'Unesite još jedan znak za pretragu.',
+    'search.search_all': 'Pretraži sve rezultate za „{query}“',
   },
   mk: {
     'search.placeholder_1': 'Истражи ја медиумската архива...',
@@ -132,5 +135,8 @@ export const search = {
     'search.open_search': 'Отвори пребарување',
     'search.dialog_label': 'Пребарување вести',
     'search.hint_topics': 'Вести, теми, субјекти',
+    'search.input_placeholder': 'Пребарај вести, теми и субјекти…',
+    'search.type_more': 'Внесете уште еден знак за пребарување.',
+    'search.search_all': 'Пребарај ги сите резултати за „{query}“',
   },
 } as const;

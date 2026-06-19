@@ -65,10 +65,12 @@ const cspNonce = Astro.locals.cspNonce;
 const gtagId = gtagIdForLang(lang);
 const organizationSchema = buildOrganizationSchema(lang);
 const metaDescription = description || defaultDescription;
+const normalizedPath = requestUrl.pathname.replace(/\/$/, '') || '/';
+const pageKind = normalizedPath === '/' || normalizedPath === '/mk' ? 'home' : 'default';
 ---
 
 <!doctype html>
-<html lang={lang === 'sr' ? 'sr-Latn' : 'mk'} data-proxy-base={proxyBase}>
+<html lang={lang === 'sr' ? 'sr-Latn' : 'mk'} data-proxy-base={proxyBase} data-page={pageKind}>
 	<head>
 		<LayoutHead
 			lang={lang}

@@ -2,6 +2,10 @@
 import { renderSynthesisHtml as sharedRenderSynthesisHtml } from '../../utils/renderSynthesisHtml';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import { localePath } from '../../lib/localePaths';
+import {
+    isSynthesisMetaParagraph,
+    prepareSynthesisParagraph,
+} from '../../utils/synthesisCopy';
 
 interface Props {
 	hasStrongLeadNarrative: boolean;
@@ -19,18 +23,26 @@ const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
 const entityPathPrefix = localePath('/subjekt/', lang, hostHeader);
 
-const cleanNarrativeParagraph = (text: string) => String(text || '')
-    .replace(/\s+/g, ' ')
-    .replace(/([A-Za-zА-Яа-яЁёЃѓЌќЉљЊњЏџČĆŽŠĐčćžšđ])\(/g, '$1 (')
-    .replace(/\)([A-Za-zА-Яа-яЁёЃѓЌќЉљЊњЏџČĆŽŠĐčćžšđ])/g, ') $1')
-    .replace(/([.!?]){2,}/g, '$1')
-    .replace(/\s+([,.;:!?])/g, '$1')
-    .trim();
+const cleanNarrativeParagraph = (text: string) => prepareSynthesisParagraph(
+    String(text || '')
+        .replace(/\s+/g, ' ')
+        .replace(/([A-Za-zА-Яа-яЁёЃѓЌќЉљЊњЏџČĆŽŠĐčćžšđ])\(/g, '$1 (')
+        .replace(/\)([A-Za-zА-Яа-яЁёЃѓЌќЉљЊњЏџČĆŽŠĐčćžšđ])/g, ') $1')
+        .replace(/([.!?]){2,}/g, '$1')
+        .replace(/\s+([,.;:!?])/g, '$1')
+        .trim(),
+    lang,
+);
 
 const narrativeParagraphs = String(generatedArticle || '')
     .split('\n')
     .map((paragraph: string) => cleanNarrativeParagraph(paragraph))
     .filter(Boolean);
+
+const storyParagraphs = narrativeParagraphs.filter((paragraph) => !isSynthesisMetaParagraph(paragraph, lang));
+const metaParagraphs = narrativeParagraphs.filter((paragraph) => isSynthesisMetaParagraph(paragraph, lang));
+const displayStoryParagraphs = storyParagraphs.length > 0 ? storyParagraphs : narrativeParagraphs.slice(0, 2);
+const sourceNotesLabel = lang === 'mk' ? 'Белешки за извори и разлики' : 'Napomene o izvorima i razlikama';
 
 const renderSynthesisHtml = (text: string) => {
     let html = sharedRenderSynthesisHtml(text);
@@ -113,9 +125,19 @@ const renderSynthesisHtml = (text: string) => {
 <div class="editorial-narrative prose-editorial">
 	{generatedArticle ? (
 		<div class="narrative-body font-serif">
-			{narrativeParagraphs.map((paragraph: string, idx: number) => (
+			{displayStoryParagraphs.map((paragraph: string, idx: number) => (
 				<p class:list={["narrative-p", idx === 0 ? "drop-cap" : ""]} set:html={renderSynthesisHtml(paragraph)}></p>
 			))}
+			{metaParagraphs.length > 0 && storyParagraphs.length > 0 && (
+				<details class="narrative-meta-panel">
+					<summary>{sourceNotesLabel}</summary>
+					<div class="narrative-meta-body">
+						{metaParagraphs.map((paragraph: string) => (
+							<p class="narrative-p narrative-p-meta" set:html={renderSynthesisHtml(paragraph)}></p>
+						))}
+					</div>
+				</details>
+			)}
 		</div>
 	) : (
 		<div class="empty-narrative-fallback italic text-muted-foreground font-serif">
@@ -321,6 +343,38 @@ const renderSynthesisHtml = (text: string) => {
             0 10px 50px rgba(0, 0, 0, 0.4),
             inset 0 1px 0 rgba(255, 255, 255, 0.05);
     }
+
+	.narrative-meta-panel {
+		margin: 1.5rem 0 0.5rem;
+		border-top: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+		padding-top: 0.85rem;
+	}
+
+	.narrative-meta-panel summary {
+		cursor: pointer;
+		font-family: var(--font-sans);
+		font-size: 0.62rem;
+		font-weight: 850;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--muted-foreground);
+		list-style: none;
+	}
+
+	.narrative-meta-panel summary::-webkit-details-marker {
+		display: none;
+	}
+
+	.narrative-meta-body {
+		margin-top: 0.85rem;
+	}
+
+	.narrative-p-meta {
+		font-size: 0.98rem;
+		line-height: 1.65;
+		color: color-mix(in srgb, var(--foreground) 78%, var(--muted-foreground));
+		margin-bottom: 1rem;
+	}
 
 	.narrative-p {
 		font-family: var(--font-nyt-body);

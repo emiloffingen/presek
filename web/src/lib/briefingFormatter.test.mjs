@@ -41,3 +41,14 @@ test('extractBriefingSections keeps section titles from markdown', () => {
     assert.equal(sections[0].title, 'Velika Slika');
     assert.equal(sections[1].title, 'Ključne teme');
 });
+
+test('formatBriefing converts bare cluster urls into inline links', () => {
+    const html = formatBriefing(
+        '## Tema\n\n**Vest [[abc123]]**\nTekst.\n\nhttps://presek.mk/cluster/def456',
+        'sr',
+    );
+
+    assert.equal(html.includes('href="/cluster/abc123"'), true);
+    assert.equal(html.includes('href="/cluster/def456"'), true);
+    assert.equal(html.includes('https://presek.mk/cluster/def456'), false);
+});

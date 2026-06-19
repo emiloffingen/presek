@@ -43,6 +43,40 @@ def test_serbian_latin_to_cyrillic_uses_serbian_letters():
     assert result == "Данас: Ђоковић, Љубиша, Његош, џез, Чачак, ћирилица, шума, жито."
 
 
+def test_clean_briefing_text_joins_paragraphs_without_double_periods():
+    import core.audio_service as audio_service
+
+    cleaned = audio_service.clean_briefing_text_for_tts("Prvi pasus.\n\nDrugi pasus.")
+
+    assert cleaned == "Prvi pasus. Drugi pasus."
+    assert ". ." not in cleaned
+
+
+def test_select_cluster_audio_text_uses_first_two_article_paragraphs():
+    import core.audio_service as audio_service
+
+    article = (
+        "Lead vest sa dovoljno teksta da prođe prag za audio sintezu.\n"
+        "Drugi pasus sa dodatnim kontekstom za slušaoce.\n"
+        "Meta o izvorima i nepotvrđenim detaljima."
+    )
+    summary = "Kratak sažetak koji ne bi trebalo da se koristi."
+
+    selected = audio_service.select_cluster_audio_text(article, summary)
+
+    assert "Lead vest" in selected
+    assert "Drugi pasus" in selected
+    assert "Meta o izvorima" not in selected
+
+
+def test_select_cluster_audio_text_falls_back_to_summary():
+    import core.audio_service as audio_service
+
+    selected = audio_service.select_cluster_audio_text("", "Sažetak prve vesti.\nDrugi deo.")
+
+    assert selected == "Sažetak prve vesti.\nDrugi deo."
+
+
 def test_serbian_edge_failure_falls_back_like_macedonian_without_gtts(monkeypatch, tmp_path):
     import core.audio_service as audio_service
 

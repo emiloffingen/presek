@@ -5,6 +5,7 @@ import {
   getPersonalizedText,
   isSyntheticStandfirstBoilerplate,
 } from '../../utils/textUtils';
+import { prepareSynthesisParagraph } from '../../utils/synthesisCopy';
 
 interface Props {
   standfirst?: string | null;
@@ -16,7 +17,7 @@ const { standfirst, lang } = Astro.props;
 const raw = extractCleanSummaryText(standfirst || '');
 const displayStandfirst =
   raw && !isSyntheticStandfirstBoilerplate(raw)
-    ? getPersonalizedText(cleanAndDecode(raw), lang)
+    ? getPersonalizedText(prepareSynthesisParagraph(cleanAndDecode(raw), lang), lang)
     : null;
 ---
 

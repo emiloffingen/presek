@@ -1,6 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Clock3, Sparkles } from 'lucide-react';
-import { normalizeBriefingPayload, normalizeBriefingText } from '../../utils/briefingCopy';
+import {
+  normalizeBriefingPayload,
+  scrubBriefingBoilerplate,
+  simplifyBriefingBullet,
+} from '../../utils/briefingCopy';
 
 type Narrative = {
   text: string;
@@ -27,30 +31,47 @@ type Props = {
   initialMode?: 'quick' | 'full';
 };
 
-function readModeFromUrl(fallback: 'quick' | 'full' = 'full'): 'quick' | 'full' {
+function readModeFromUrl(fallback: 'quick' | 'full' = 'quick'): 'quick' | 'full' {
   if (typeof window === 'undefined') return fallback;
   const params = new URLSearchParams(window.location.search);
-  return params.get('mode') === 'quick' ? 'quick' : 'full';
+  return params.get('mode') === 'full' ? 'full' : 'quick';
 }
 
 export default function BriefingQuickRead({
   lang = 'sr',
   quickRead,
   narratives = [],
-  initialMode = 'full',
+  initialMode = 'quick',
 }: Props) {
   const isMK = lang === 'mk';
   const [mode, setMode] = useState<'quick' | 'full'>(() => readModeFromUrl(initialMode));
 
   const mergedNarratives = useMemo(() => {
     const fromQuick = quickRead?.narratives || [];
-    return normalizeBriefingPayload(fromQuick.length ? fromQuick : narratives, lang);
+    const source = fromQuick.length ? fromQuick : narratives;
+    return normalizeBriefingPayload(source, lang)
+      .map((item) => ({
+        ...item,
+        text: scrubBriefingBoilerplate(item.text, lang),
+      }))
+      .filter((item) => item.text.length > 0);
   }, [quickRead, narratives, lang]);
 
   const cleanQuickRead = useMemo(() => normalizeBriefingPayload(quickRead, lang), [quickRead, lang]);
 
+  const simplifiedBullets = useMemo(() => {
+    const bullets = cleanQuickRead?.bullets || [];
+    return bullets
+      .map((bullet: string) => simplifyBriefingBullet(bullet, lang))
+      .filter(Boolean);
+  }, [cleanQuickRead, lang]);
+
   useEffect(() => {
     document.documentElement.dataset.briefingMode = mode;
+    const main = document.querySelector('main[data-briefing-mode]');
+    if (main instanceof HTMLElement) {
+      main.dataset.briefingMode = mode;
+    }
     return () => {
       delete document.documentElement.dataset.briefingMode;
     };
@@ -58,8 +79,8 @@ export default function BriefingQuickRead({
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (mode === 'quick') {
-      params.set('mode', 'quick');
+    if (mode === 'full') {
+      params.set('mode', 'full');
     } else {
       params.delete('mode');
     }
@@ -68,39 +89,70 @@ export default function BriefingQuickRead({
     window.history.replaceState({}, '', nextUrl);
   }, [mode]);
 
-  const quickLabel = isMK ? '5 мин' : '5 min';
-  const fullLabel = isMK ? 'Цело' : 'Celo';
+  const readMinutes = cleanQuickRead?.read_minutes || 5;
+  const quickLabel = isMK ? 'Брз преглед' : 'Brzi pregled';
+  const fullLabel = isMK ? 'Цело издание' : 'Celo izdanje';
   const stats = cleanQuickRead?.stats || {};
+  const showBullets = simplifiedBullets.length > 0 && mergedNarratives.length === 0;
 
   return (
-    <>
-      <section className={`briefing-quick-panel ${mode === 'quick' ? 'is-visible' : ''}`} aria-label={cleanQuickRead.headline}>
+    <div className="briefing-edition-shell">
+      <div className="briefing-edition-switch" role="tablist" aria-label={isMK ? 'Режим на читање' : 'Režim čitanja'}>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === 'quick'}
+          className={`briefing-edition-link ${mode === 'quick' ? 'is-active' : ''}`}
+          onClick={() => setMode('quick')}
+        >
+          <span className="briefing-edition-link__label">{quickLabel}</span>
+          <span className="briefing-edition-link__hint">{readMinutes} min</span>
+        </button>
+        <span className="briefing-edition-sep" aria-hidden="true">·</span>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === 'full'}
+          className={`briefing-edition-link ${mode === 'full' ? 'is-active' : ''}`}
+          onClick={() => setMode('full')}
+        >
+          <span className="briefing-edition-link__label">{fullLabel}</span>
+          <span className="briefing-edition-link__hint">{isMK ? 'Сите секции' : 'Sve sekcije'}</span>
+        </button>
+      </div>
+
+      <section
+        className={`briefing-quick-panel ${mode === 'quick' ? 'is-visible' : ''}`}
+        aria-label={cleanQuickRead.subline || cleanQuickRead.headline}
+      >
         <div className="briefing-quick-head">
           <div>
             <p className="briefing-quick-kicker">
               <Sparkles size={14} />
-              <span>{cleanQuickRead.headline}</span>
+              <span>
+                {readMinutes} {isMK ? 'мин' : 'min'} · {isMK ? 'главни теми' : 'glavne teme'}
+              </span>
             </p>
             <h2 className="briefing-quick-title">{cleanQuickRead.subline}</h2>
           </div>
           <div className="briefing-quick-time">
             <Clock3 size={15} />
-            <span>{cleanQuickRead.read_minutes} min</span>
+            <span>{readMinutes} min</span>
           </div>
         </div>
 
         {mergedNarratives.length > 0 && (
           <div className="briefing-quick-narratives">
-            {mergedNarratives.slice(0, 3).map((item, index) => (
+            {mergedNarratives.slice(0, 4).map((item, index) => (
               <blockquote key={`${index}-${item.text.slice(0, 24)}`}>{item.text}</blockquote>
             ))}
           </div>
         )}
 
-        {cleanQuickRead.bullets?.length > 0 && (
+        {showBullets && (
           <ul className="briefing-quick-bullets">
-            {cleanQuickRead.bullets.map((bullet) => (
-              <li key={bullet.slice(0, 40)}>{normalizeBriefingText(bullet, lang)}</li>
+            {simplifiedBullets.map((bullet: string) => (
+              <li key={bullet.slice(0, 48)}>{bullet}</li>
             ))}
           </ul>
         )}
@@ -117,30 +169,6 @@ export default function BriefingQuickRead({
           )}
         </div>
       </section>
-
-      <div className="briefing-edition-switch" role="tablist" aria-label={isMK ? 'Режим на читање' : 'Režim čitanja'}>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={mode === 'quick'}
-          className={`briefing-edition-link ${mode === 'quick' ? 'is-active' : ''}`}
-          onClick={() => setMode('quick')}
-        >
-          <span className="briefing-edition-link__label">{quickLabel}</span>
-          <span className="briefing-edition-link__hint">{isMK ? 'Брз преглед' : 'Brzi pregled'}</span>
-        </button>
-        <span className="briefing-edition-sep" aria-hidden="true">·</span>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={mode === 'full'}
-          className={`briefing-edition-link ${mode === 'full' ? 'is-active' : ''}`}
-          onClick={() => setMode('full')}
-        >
-          <span className="briefing-edition-link__label">{fullLabel}</span>
-          <span className="briefing-edition-link__hint">{isMK ? 'Цело издание' : 'Celo izdanje'}</span>
-        </button>
-      </div>
-    </>
+    </div>
   );
 }

@@ -31,7 +31,8 @@ const isMK = lang === 'mk';
 
 const url = new URL(Astro.request.url);
 const dateParam = url.searchParams.get('date');
-const quickMode = url.searchParams.get('mode') === 'quick';
+const modeParam = url.searchParams.get('mode');
+const quickMode = modeParam !== 'full';
 
 let briefingData: any = null;
 let homeData: any = null;

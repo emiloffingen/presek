@@ -4,6 +4,7 @@ import type { NewsCluster } from '../../types';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import { localePath } from '../../lib/localePaths';
 import { getDisplayTitle, highlightScores, isMostlyCyrillic, transliterate } from '../../utils/textUtils';
+import { prepareSynthesisParagraph } from '../../utils/synthesisCopy';
 import { sanitizeHtml } from '../../lib/sanitize';
 
 interface Props {
@@ -23,7 +24,10 @@ let displayTitle = highlightScores(rawTitle);
 if (lang === 'sr' && isMostlyCyrillic(displayTitle)) {
     displayTitle = highlightScores(transliterate(rawTitle));
 }
-const summary = cluster.synthetic_standfirst || cluster.articles?.[0]?.summary || '';
+const summary = prepareSynthesisParagraph(
+    cluster.synthetic_standfirst || cluster.articles?.[0]?.summary || '',
+    lang,
+);
 const clusterUrl = l(`/cluster/${cluster.cluster_id}`);
 const sourceCount = Number((cluster as any).sources_count || (cluster as any).source_count || cluster.articles?.length || 0);
 ---

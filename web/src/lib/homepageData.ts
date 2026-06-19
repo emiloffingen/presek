@@ -1,5 +1,6 @@
 import type { NewsCluster } from '../types';
 import type { WireArticle } from './homepageSections';
+import { prepareSynthesisParagraph } from '../utils/synthesisCopy.ts';
 import {
     cleanAndDecode,
     extractCleanSummaryText,
@@ -376,11 +377,14 @@ export function buildLeadViewModel(options: {
 
     const leadSignal = leadCluster ? getLeadSignal(leadCluster) : '';
     const homepageLeadSummary = extractCleanSummaryText(homepageLeadDisplay?.summary || '');
-    const leadSummary = isHomepage && homepageLeadSummary && !isSyntheticStandfirstBoilerplate(homepageLeadSummary)
-        ? toLeadWhySentence(homepageLeadSummary)
-        : (leadCluster
-            ? toLeadWhySentence(getStoryPreviewText(leadCluster, leadCluster.articles?.[0], lang))
-            : '');
+    const leadSummary = prepareSynthesisParagraph(
+        (isHomepage && homepageLeadSummary && !isSyntheticStandfirstBoilerplate(homepageLeadSummary)
+            ? toLeadWhySentence(homepageLeadSummary)
+            : (leadCluster
+                ? toLeadWhySentence(getStoryPreviewText(leadCluster, leadCluster.articles?.[0], lang))
+                : '')),
+        lang,
+    );
     const leadTitle = highlightScores(isHomepage
         ? String(homepageLeadDisplay?.title || '')
         : (leadCluster?.articles?.[0] ? cleanAndDecode(leadCluster.articles[0].title) : ''));

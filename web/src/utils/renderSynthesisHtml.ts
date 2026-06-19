@@ -4,6 +4,7 @@
  */
 
 import { cleanAndDecode, stripCitationMarkers } from './textUtils.ts';
+import { stripBareUrls } from './synthesisCopy.ts';
 import { sanitizeHtml } from '../lib/sanitize.ts';
 
 /**
@@ -21,7 +22,7 @@ import { sanitizeHtml } from '../lib/sanitize.ts';
  */
 export function renderSynthesisHtml(text: string): string {
 	if (!text) return '';
-	let clean = cleanAndDecode(text);
+	let clean = stripBareUrls(cleanAndDecode(text));
 	if (!clean) return '';
 
 	// 1. Strip residual AI placeholders

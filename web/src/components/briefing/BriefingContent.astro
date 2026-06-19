@@ -4,19 +4,10 @@ interface Props {
     lang?: string;
 }
 
-import EditorialSectionLockup from '../editorial/EditorialSectionLockup.astro';
-import { useTranslations } from '../../i18n/utils';
-
-const { formattedBriefing, lang = 'sr' } = Astro.props;
-const t = useTranslations(lang as 'sr' | 'mk');
+const { formattedBriefing } = Astro.props;
 ---
 
 <article class="briefing-content-container">
-    <EditorialSectionLockup
-        class="briefing-review-lockup"
-        title={t('cluster.editorial_review')}
-        kicker={t('cluster.daily_context')}
-    />
 	<div class="briefing-body" set:html={formattedBriefing}></div>
 </article>
 
@@ -88,7 +79,7 @@ const t = useTranslations(lang as 'sr' | 'mk');
     }
     .briefing-pull-quote::before { content: ""; display: none; }
     .briefing-kicker { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; text-transform: uppercase; color: var(--nyt-accent); letter-spacing: 0.2em; margin-right: 1rem; display: block; margin-bottom: 0.5rem; }
-    .briefing-item-title { clear: both; font-family: var(--font-serif); font-size: clamp(1.35rem, 2.2vw, 1.85rem); font-weight: 900; margin: 2.75rem 0 0.85rem; color: var(--foreground); line-height: 1.2; letter-spacing: -0.01em; }
+    .briefing-item-title { clear: both; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.55rem 0.75rem; font-family: var(--font-serif); font-size: clamp(1.35rem, 2.2vw, 1.85rem); font-weight: 900; margin: 2.75rem 0 0.85rem; color: var(--foreground); line-height: 1.2; letter-spacing: -0.01em; }
     .briefing-section-title + .briefing-item-title { margin-top: 1.35rem; }
     .briefing-ul { list-style: none; padding: 0; margin: 0 0 3.5rem; display: flex; flex-direction: column; gap: 1.15rem; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
     .briefing-li { position: relative; padding: 1.1rem 0 1.1rem 2rem; border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent); font-size: clamp(1.02rem, 1.5vw, 1.18rem); line-height: 1.62; }
@@ -105,7 +96,7 @@ const t = useTranslations(lang as 'sr' | 'mk');
         font-weight: 950;
         padding: 0.22rem 0.58rem;
         border-radius: 0px;
-        margin-left: 1rem;
+        margin-left: 0;
         text-decoration: none;
         vertical-align: middle;
         transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -200,7 +191,7 @@ const t = useTranslations(lang as 'sr' | 'mk');
         }
 
         .briefing-inline-badge {
-            margin-left: 0.5rem;
+            margin-left: 0;
             padding: 0.18rem 0.5rem;
             font-size: 0.5rem;
             letter-spacing: 0.06em;

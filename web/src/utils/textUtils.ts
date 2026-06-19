@@ -1,5 +1,6 @@
 // Named HTML entities we actually see in scraped RS/EN news. Covers the long
 // tail via numeric fall-through; anything else passes through unchanged.
+import { prepareSynthesisParagraph, stripBareUrls } from './synthesisCopy.ts';
 const NAMED_ENTITIES: Record<string, string> = {
     amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: '\u00A0',
     hellip: '…', mdash: '—', ndash: '–',
@@ -282,7 +283,7 @@ export function extractCleanSummaryText(input: any): string {
     cleaned = cleaned.replace(/^\s*[-*+]\s+/gm, '');
     cleaned = cleaned.replace(/^\s*\d+\.\s+/gm, '');
 
-    return cleaned.trim();
+    return stripBareUrls(cleaned.trim());
 }
 
 function normalizeDisplayTitle(text: string): string {
@@ -325,14 +326,16 @@ export function isSyntheticStandfirstBoilerplate(input: any): boolean {
 export function getStoryPreviewText(cluster: any, fallbackArticle?: any, lang?: string): string {
     const standfirst = extractCleanSummaryText(cluster?.synthetic_standfirst || '');
     if (standfirst && !isSyntheticStandfirstBoilerplate(standfirst)) {
-        if (lang === 'sr' && isMostlyCyrillic(standfirst)) {
-            return transliterate(standfirst);
+        const cleaned = prepareSynthesisParagraph(standfirst, lang || 'sr');
+        if (lang === 'sr' && isMostlyCyrillic(cleaned)) {
+            return transliterate(cleaned);
         }
-        return standfirst;
+        return cleaned;
     }
 
     const article = fallbackArticle || cluster?.articles?.[0];
-    return getDisplaySummary(article, lang);
+    const summary = getDisplaySummary(article, lang);
+    return prepareSynthesisParagraph(summary, lang || 'sr');
 }
 
 export function getPersonalizedText(text: string, lang: string): string {

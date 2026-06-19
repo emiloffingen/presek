@@ -47,10 +47,40 @@ def clean_briefing_text_for_tts(text: str) -> str:
     text = text.replace("**", "").replace("*", "").replace("`", "")
     # Remove markdown bullets/list dashes
     text = re.sub(r"^\s*[\-\*•]\s*", "", text, flags=re.MULTILINE)
-    # Clean whitespace
-    text = re.sub(r"\n+", " . ", text)
+    # Join paragraphs with a space so TTS does not insert awkward ". ." pauses.
+    text = re.sub(r"\n+", " ", text)
     text = re.sub(r"\s+", " ", text).strip()
     return text
+
+
+def select_cluster_audio_text(
+    generated_article: Optional[str],
+    summary: Optional[str] = None,
+    *,
+    max_paragraphs: int = 2,
+) -> str:
+    """Pick spoken narrative for cluster audio, skipping editorial meta paragraphs."""
+    min_chars = 40
+
+    article = (generated_article or "").strip()
+    if article:
+        paragraphs = [p.strip() for p in article.split("\n") if p.strip()]
+        if paragraphs:
+            narrative = "\n".join(paragraphs[:max_paragraphs])
+            if len(narrative) >= min_chars:
+                return narrative
+
+    summ = (summary or "").strip()
+    if summ:
+        paragraphs = [p.strip() for p in summ.split("\n") if p.strip()]
+        if paragraphs:
+            narrative = "\n".join(paragraphs[:max_paragraphs])
+            if len(narrative) >= min_chars:
+                return narrative
+        if len(summ) >= min_chars:
+            return summ
+
+    return article or summ
 
 
 def version_audio_url(filepath: str, urlpath: str) -> str:

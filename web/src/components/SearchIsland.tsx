@@ -14,7 +14,7 @@ import {
   History, Compass, SlidersHorizontal
 } from 'lucide-react';
 import { fetchJsonCached } from '../lib/apiCache';
-import { getDisplaySummary, getDisplayTitle } from '../utils/textUtils';
+import { getDisplayTitle, getStoryPreviewText } from '../utils/textUtils';
 import { proxyUrl } from '../lib/apiBase';
 
 // Transliteration character mapping for Cyrillic/Latin script-agnostic matching
@@ -209,10 +209,14 @@ export default function SearchIsland({
   initialQuery = '',
   lang = 'sr',
   startOpen = false,
+  hideTrigger = false,
+  onClose,
 }: {
   initialQuery?: string | null;
   lang?: Locale;
   startOpen?: boolean;
+  hideTrigger?: boolean;
+  onClose?: () => void;
 }) {
   const t = useClientTranslations(lang, search, news, common);
   const [isOpen, setIsOpen] = useState(startOpen);
@@ -230,14 +234,26 @@ export default function SearchIsland({
   const recognitionRef = useRef<any>(null);
   const openSearch = useCallback(() => setIsOpen(true), []);
 
-  const [placeholderIdx, setPlaceholderIdx] = useState(0);
-  const placeholders = [
-    t('search.placeholder_1'),
-    t('search.placeholder_2'),
-    t('search.placeholder_3'),
-    t('search.placeholder_4'),
-    t('search.placeholder_5'),
-  ];
+  const closeSearch = useCallback(() => {
+    setIsOpen(false);
+    if (onClose) {
+      onClose();
+      return;
+    }
+    window.setTimeout(() => {
+      if (lastFocusedRef.current && document.contains(lastFocusedRef.current)) {
+        lastFocusedRef.current.focus();
+      } else {
+        triggerRef.current?.focus();
+      }
+    }, 0);
+  }, [onClose]);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const lastFocusedRef = useRef<HTMLElement | null>(null);
 
   const SEARCH_ACTIONS: SearchAction[] = [
     { id: 'act-briefing', label: t('search.action_briefing_label'), icon: Zap, href: localePathForLang('/briefing', lang), category: 'NAVIGATION', desc: t('search.action_briefing_desc') },
@@ -255,19 +271,6 @@ export default function SearchIsland({
     { id: 'Kultura', label: t('search.category_kultura'), color: 'bg-purple-600' },
     { id: 'Tehnologija', label: t('search.category_tehnologija'), color: 'bg-cyan-600' },
   ];
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-        setPlaceholderIdx((prev) => (prev + 1) % placeholders.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [placeholders.length]);
-
-  const inputRef = useRef<HTMLInputElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const lastFocusedRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (initialQuery !== undefined && initialQuery !== null && query !== initialQuery) {
@@ -292,6 +295,10 @@ export default function SearchIsland({
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (hideTrigger) {
+        if (e.key === 'Escape' && isOpen) closeSearch();
+        return;
+      }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         openSearch();
@@ -302,7 +309,7 @@ export default function SearchIsland({
         openSearch();
         return;
       }
-      if (e.key === 'Escape') setIsOpen(false);
+      if (e.key === 'Escape') closeSearch();
     };
 
     const handleOpenEvent = () => openSearch();
@@ -313,7 +320,7 @@ export default function SearchIsland({
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('presek:open-search', handleOpenEvent);
     };
-  }, [isOpen, openSearch]);
+  }, [isOpen, openSearch, closeSearch, hideTrigger]);
 
   const startVoiceSearch = useCallback(() => {
     if (typeof window === 'undefined' || !('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
@@ -447,13 +454,18 @@ export default function SearchIsland({
         const nextSuggestions = Array.isArray(data?.clusters)
           ? data.clusters.map((cluster: any) => {
               const article = cluster.articles?.[0] || {};
+              const syntheticTitle = String(cluster.synthetic_headline || '').trim();
+              const title = syntheticTitle
+                ? getDisplayTitle({ title: syntheticTitle }, t('search.title_fallback'), lang)
+                : getDisplayTitle(article, t('search.title_fallback'), lang);
+              const description = getStoryPreviewText(cluster, article, lang);
               return {
                 cluster_id: cluster.cluster_id,
-                title: getDisplayTitle(article, t('search.title_fallback')),
+                title,
                 image_url: cluster.representative_image || article.image_url || null,
                 source: article.source || '',
                 category: article.category || '',
-                description: getDisplaySummary(article),
+                description,
                 sourceCount: cluster.articles?.length || 0,
                 pulse_score: cluster.pulse_score,
                 has_synthesis: cluster.has_synthesis,
@@ -465,7 +477,7 @@ export default function SearchIsland({
         if (!cancelled) {
           setSuggestions(nextSuggestions);
           setEntityResult(data.entity || null);
-          setActiveIndex(nextSuggestions.length > 0 ? 0 : -1);
+          setActiveIndex(-1);
         }
       } catch (err) {
         if (!cancelled) {
@@ -482,9 +494,7 @@ export default function SearchIsland({
       cancelled = true;
       if (typeof window !== 'undefined') window.clearTimeout(timer);
     };
-  }, [query, isOpen, timespan, categoryFilter, lang]);
-
-  const closeSearch = () => setIsOpen(false);
+  }, [query, isOpen, timespan, categoryFilter, lang, t]);
 
   const persistRecentSearch = (searchQuery: string) => {
     const cleanQuery = searchQuery.trim();
@@ -511,14 +521,13 @@ export default function SearchIsland({
   };
 
   const onDialogKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const resultCount = suggestions.length + (entityResult ? 1 : 0) + filteredActions.length;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      const max = suggestions.length + (entityResult ? 1 : 0) + filteredActions.length;
-      setActiveIndex((prev) => (prev + 1) % max);
+      setActiveIndex((prev) => (prev < 0 ? 0 : (prev + 1) % resultCount));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      const max = suggestions.length + (entityResult ? 1 : 0) + filteredActions.length;
-      setActiveIndex((prev) => (prev <= 0 ? max - 1 : prev - 1));
+      setActiveIndex((prev) => (prev <= 0 ? -1 : prev - 1));
     } else if (e.key === 'Enter') {
       e.preventDefault();
       if (activeIndex === -1) {
@@ -575,7 +584,7 @@ export default function SearchIsland({
               data-testid="search-input"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={placeholders[placeholderIdx]}
+              placeholder={t('search.input_placeholder')}
               className="w-full bg-transparent py-2.5 sm:py-4 text-xl sm:text-2xl md:text-3xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground/40 border-b-2 border-transparent focus:border-nyt-accent transition-colors search-cmd-input"
               autoComplete="off"
               spellCheck="false"
@@ -767,9 +776,35 @@ export default function SearchIsland({
               </div>
             )}
 
+            {/* One-character hint */}
+            {query.trim().length === 1 && (
+              <div className="py-10 sm:py-14 flex flex-col items-center text-center text-muted-foreground">
+                <Search size={28} className="mb-4 opacity-30" />
+                <p className="text-sm sm:text-base max-w-sm">{t('search.type_more')}</p>
+              </div>
+            )}
+
             {/* Results List */}
             {query.trim().length >= 2 && (
               <div className="space-y-6 sm:space-y-8">
+                {!isLoading && (
+                  <button
+                    type="button"
+                    onClick={() => navigateToQuery(query)}
+                    className={`w-full flex items-center gap-3 p-3 sm:p-4 rounded-none border transition-all text-left ${
+                      activeIndex === -1
+                        ? 'bg-nyt-accent/5 border-nyt-accent/30 ring-1 ring-nyt-accent/20'
+                        : 'bg-secondary/20 border-border/50 hover:bg-secondary/40'
+                    }`}
+                  >
+                    <Search size={18} className="text-nyt-accent shrink-0" />
+                    <span className="search-cmd-action-title text-foreground">
+                      {t('search.search_all', { query: query.trim() })}
+                    </span>
+                    <ArrowUpRight size={16} className="ml-auto text-muted-foreground shrink-0" />
+                  </button>
+                )}
+
                 {isLoading ? (
                   <SearchSkeleton lang={lang} />
                 ) : (
@@ -827,6 +862,9 @@ export default function SearchIsland({
                                     )}
                                   </div>
                                   <p className="font-serif font-black text-base sm:text-lg leading-tight line-clamp-2 group-hover:text-nyt-accent transition-colors">{highlightMatch(item.title, query)}</p>
+                                  {item.description && (
+                                    <p className="mt-1 text-[12px] sm:text-[13px] text-muted-foreground line-clamp-2 leading-snug">{highlightMatch(item.description, query)}</p>
+                                  )}
                                   <div className="flex items-center gap-2 sm:gap-[var(--grid-gap)] mt-1.5 sm:mt-2 ui-label-min text-muted-foreground/60">
                                     <span>{item.source}</span>
                                     <span>{item.sourceCount} {item.sourceCount === 1 ? t('news.source') : t('news.sources')}</span>
@@ -1000,12 +1038,11 @@ export default function SearchIsland({
         </div>
 
         {/* Command Footer */}
-        <div className="px-4 sm:px-6 py-2.5 sm:py-3 border-t border-border/40 bg-secondary/5 flex items-center justify-between search-cmd-footer-hint">
-           <div className="hidden sm:flex items-center gap-[var(--grid-gap)]">
-              <span className="flex items-center gap-[var(--grid-gap)]"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded-none">Enter</kbd> {t('search.shortcut_select')}</span>
-              <span className="flex items-center gap-[var(--grid-gap)]"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded-none">↑</kbd><kbd className="px-1.5 py-0.5 bg-background border border-border rounded-none">↓</kbd> {t('search.shortcut_nav')}</span>
-              <span className="hidden md:flex items-center gap-[var(--grid-gap)]"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded-none">/</kbd> {t('search.shortcut_open')}</span>
-              <span className="flex items-center gap-[var(--grid-gap)]"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded-none">Esc</kbd> {t('search.shortcut_close')}</span>
+        <div className="px-4 sm:px-6 py-2.5 sm:py-3 border-t border-border/40 bg-secondary/5 flex items-center justify-between search-cmd-footer-hint gap-3">
+           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] sm:text-[11px]">
+              <span className="flex items-center gap-1"><kbd className="px-1 py-0.5 bg-background border border-border rounded-none">Enter</kbd> {t('search.shortcut_select')}</span>
+              <span className="hidden sm:flex items-center gap-1"><kbd className="px-1 py-0.5 bg-background border border-border rounded-none">↑</kbd><kbd className="px-1 py-0.5 bg-background border border-border rounded-none">↓</kbd> {t('search.shortcut_nav')}</span>
+              <span className="flex items-center gap-1"><kbd className="px-1 py-0.5 bg-background border border-border rounded-none">Esc</kbd> {t('search.shortcut_close')}</span>
            </div>
            <div className="flex items-center gap-2 sm:gap-[var(--grid-gap)]">
               <span className="flex items-center gap-1.5"><Globe size={12} /> {t('search.global_search')}</span>
@@ -1019,6 +1056,7 @@ export default function SearchIsland({
 
   return (
     <>
+      {!hideTrigger && (
       <button
         ref={triggerRef}
         type="button"
@@ -1044,6 +1082,7 @@ export default function SearchIsland({
           </kbd>
         </span>
       </button>
+      )}
 
       {typeof document !== 'undefined' ? createPortal(overlayContent, document.body) : null}
     </>
