@@ -16,7 +16,7 @@ const { clusters, lang } = Astro.props;
 const hostHeader = Astro.request?.headers.get('host');
 const t = useTranslations(lang);
 const l = (path: string) => localePath(path, lang, hostHeader);
-const expandLabel = lang === 'sr' ? 'Prikaži' : 'Прикажи';
+const expandLabel = t('home.analysis_expand');
 const trendLabel = t('home.trending');
 const trendTeaser = clusters[0]?.synthetic_headline || clusters[0]?.articles?.[0]?.title || '';
 
@@ -38,7 +38,7 @@ const trendItems = clusters.map((cluster: NewsCluster) => {
                 <TrendingUp size={14} />
                 <span class="trending-summary-copy">
                     <span class="trending-summary-title">{trendLabel}</span>
-                    {trendTeaser && <span class="trending-summary-teaser">{lang === 'sr' ? 'Prvo:' : 'Прво:'} {trendTeaser}</span>}
+                    {trendTeaser && <span class="trending-summary-teaser">{t('home.analysis_teaser_lead')} {trendTeaser}</span>}
                 </span>
             </span>
             <span class="trending-summary-meta">

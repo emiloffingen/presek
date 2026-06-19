@@ -159,9 +159,9 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
         </div>
 
         {topFocusTopic && (
-          <div className="mt-6 p-4 bg-nyt-accent/5 border border-nyt-accent/20 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <div className="mt-6 p-4 bg-secondary border border-border rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             <div>
-              <p className="text-[11px] font-black uppercase text-nyt-accent tracking-widest mb-0.5">{isMK ? 'Ваша примарна фокус тема' : 'Vaša primarna fokus tema'}</p>
+              <p className="text-[11px] font-black uppercase text-muted-foreground tracking-widest mb-0.5">{isMK ? 'Ваша примарна фокус тема' : 'Vaša primarna fokus tema'}</p>
               <h4 className="font-serif font-black text-lg italic">{topFocusTopic}</h4>
             </div>
             <p className="text-[11px] text-muted-foreground leading-tight max-w-[200px]">
@@ -267,14 +267,14 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
                 <button
                   key={item.value}
                   type="button"
-                  className="w-full flex items-center justify-between p-3 bg-secondary/30 hover:bg-secondary/60 border border-border/50 hover:border-nyt-accent/30 rounded-xl transition-all text-left group"
+                  className="w-full flex items-center justify-between p-3 bg-secondary/30 hover:bg-secondary/60 border border-border/50 hover:border-border rounded-xl transition-all text-left group"
                   onClick={() => addFollow('topic', item.value)}
                 >
                   <div>
-                    <span className="block font-sans font-bold text-xs uppercase tracking-wider text-foreground group-hover:text-nyt-accent transition-colors">{item.value}</span>
+                    <span className="block font-sans font-bold text-xs uppercase tracking-wider text-foreground group-hover:text-foreground transition-colors">{item.value}</span>
                     <span className="block text-[11px] text-muted-foreground mt-0.5">{item.reason}</span>
                   </div>
-                  <span className="text-xs font-black text-nyt-accent/60 group-hover:text-nyt-accent px-2.5 py-1 bg-nyt-accent/5 rounded-lg group-hover:bg-nyt-accent/15 transition-all">+ PRATI</span>
+                  <span className="text-xs font-black text-muted-foreground group-hover:text-foreground px-2.5 py-1 bg-secondary rounded-lg group-hover:bg-muted transition-all">+ PRATI</span>
                 </button>
               ))}
             </div>
@@ -298,14 +298,14 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
                 <button
                   key={item.value}
                   type="button"
-                  className="w-full flex items-center justify-between p-3 bg-secondary/30 hover:bg-secondary/60 border border-border/50 hover:border-nyt-accent/30 rounded-xl transition-all text-left group"
+                  className="w-full flex items-center justify-between p-3 bg-secondary/30 hover:bg-secondary/60 border border-border/50 hover:border-border rounded-xl transition-all text-left group"
                   onClick={() => addFollow('source', item.value)}
                 >
                   <div>
-                    <span className="block font-sans font-bold text-xs uppercase tracking-wider text-foreground group-hover:text-nyt-accent transition-colors">{item.value}</span>
+                    <span className="block font-sans font-bold text-xs uppercase tracking-wider text-foreground group-hover:text-foreground transition-colors">{item.value}</span>
                     <span className="block text-[11px] text-muted-foreground mt-0.5">{item.reason}</span>
                   </div>
-                  <span className="text-xs font-black text-nyt-accent/60 group-hover:text-nyt-accent px-2.5 py-1 bg-nyt-accent/5 rounded-lg group-hover:bg-nyt-accent/15 transition-all">+ PRATI</span>
+                  <span className="text-xs font-black text-muted-foreground group-hover:text-foreground px-2.5 py-1 bg-secondary rounded-lg group-hover:bg-muted transition-all">+ PRATI</span>
                 </button>
               ))}
             </div>
@@ -334,11 +334,11 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: string }
                 className="flex items-start justify-between gap-4 p-4 bg-secondary/20 hover:bg-secondary/40 border border-border/40 hover:border-border rounded-xl transition-all group"
               >
                 <div className="min-w-0">
-                  <span className="inline-block text-[11px] font-black uppercase text-nyt-accent tracking-widest mb-1">{item.topic || (isMK ? 'кластер' : 'klaster')}</span>
-                  <h4 className="font-serif font-black text-sm sm:text-base leading-tight text-foreground group-hover:text-nyt-accent transition-colors line-clamp-2">{item.title}</h4>
+                  <span className="inline-block text-[11px] font-black uppercase text-muted-foreground tracking-widest mb-1">{item.topic || (isMK ? 'кластер' : 'klaster')}</span>
+                  <h4 className="font-serif font-black text-sm sm:text-base leading-tight text-foreground group-hover:text-foreground transition-colors line-clamp-2">{item.title}</h4>
                   <span className="inline-block text-[11px] text-muted-foreground mt-1.5">{item.source || (isMK ? 'извор' : 'izvor')}</span>
                 </div>
-                <ArrowUpRight size={16} className="text-muted-foreground group-hover:text-nyt-accent group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0 mt-0.5" />
+                <ArrowUpRight size={16} className="text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0 mt-0.5" />
               </a>
             ))}
           </div>

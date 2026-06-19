@@ -835,8 +835,41 @@ const articleSchema = cluster ? {
 			} catch (e) {}
 		};
 
+		const applyModeShortcut = (mode) => {
+			try {
+				localStorage.setItem('reading-mode', mode);
+				localStorage.setItem('readerMode', mode === 'focus' ? 'true' : 'false');
+				syncReadingModeEarly();
+				if (mode === 'compare') {
+					window.dispatchEvent(new CustomEvent('presek:sidebar-tab', { detail: { tab: 'compare' } }));
+				}
+				window.dispatchEvent(new CustomEvent('presek:reading-mode-changed', { detail: { mode } }));
+			} catch (e) {}
+		};
+
+		const initReadingShortcuts = () => {
+			if (document.body.dataset.readingShortcutsBound === 'true') return;
+			document.body.dataset.readingShortcutsBound = 'true';
+			document.addEventListener('keydown', (event) => {
+				const target = event.target;
+				if (!(target instanceof HTMLElement)) return;
+				const tag = target.tagName;
+				if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable) return;
+				if (event.key === 'f' || event.key === 'F') {
+					event.preventDefault();
+					applyModeShortcut('focus');
+				} else if (event.key === 'c' || event.key === 'C') {
+					event.preventDefault();
+					applyModeShortcut('compare');
+				} else if (event.key === 'Escape') {
+					applyModeShortcut('standard');
+				}
+			});
+		};
+
 		const initReadingProgress = () => {
 			syncReadingModeEarly();
+			initReadingShortcuts();
 			const progress = document.getElementById('reading-progress');
 			if (!progress) return;
 			if (progress.dataset.bound === 'true') return;

@@ -1,4 +1,6 @@
 ---
+import { useTranslations } from '../../i18n/utils';
+
 interface EvidenceItem {
     label: string;
     value: string;
@@ -14,7 +16,8 @@ interface Props {
 }
 
 const { statusLabel, statusNote, tone, items, lang = 'sr' } = Astro.props;
-const expandLabel = lang === 'sr' ? 'Detalji signala' : 'Детали за сигналот';
+const t = useTranslations(lang as 'sr' | 'mk');
+const expandLabel = t('lead.evidence_expand');
 ---
 
 <details class:list={["lead-evidence-chips", `tone-${tone}`]}>

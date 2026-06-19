@@ -23,6 +23,11 @@
         box-shadow: 0 0 15px var(--cluster-accent, var(--nyt-accent));
     }
 
+    body.zen-mode .scroll-progress-bar {
+        background: var(--presek-mark);
+        box-shadow: 0 0 15px color-mix(in srgb, var(--presek-mark) 55%, transparent);
+    }
+
     @keyframes fadeInUp {
         from {
             opacity: 0;

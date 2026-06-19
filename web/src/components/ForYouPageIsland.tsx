@@ -1,4 +1,3 @@
-import { localePathForLang } from '../lib/localePaths';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowUpRight,
@@ -28,6 +27,7 @@ import {
   buildSurfaceFollowSuggestions,
 } from '../lib/personalization.js';
 import { apiBaseUrl } from '../lib/apiBase';
+import { localePathForLang } from '../lib/localePaths';
 import { useClientTranslations } from '../i18n/clientTranslations';
 import { common } from '../i18n/namespaces/common';
 import type { NewsCluster } from '../types';
@@ -38,9 +38,9 @@ interface ForYouPageIslandProps {
   lang?: string;
 }
 
-function ForYouSkeleton({ isMK }: { isMK: boolean }) {
+function ForYouSkeleton({ t }: { t: (key: string) => string }) {
   return (
-    <div className="for-you-dashboard for-you-skeleton" aria-busy="true" aria-label={isMK ? 'Се вчитува' : 'Učitavanje'}>
+    <div className="for-you-dashboard for-you-skeleton" aria-busy="true" aria-label={t('for_you.loading')}>
       <section className="for-you-hero for-you-skeleton-hero">
         <div className="for-you-skeleton-copy">
           <div className="for-you-skeleton-line for-you-skeleton-kicker" />
@@ -54,9 +54,7 @@ function ForYouSkeleton({ isMK }: { isMK: boolean }) {
         <div className="for-you-skeleton-card" />
         <div className="for-you-skeleton-card" />
       </div>
-      <p className="for-you-skeleton-status">
-        {isMK ? 'Го подготвуваме вашиот пресек...' : 'Pripremamo vaš Presek...'}
-      </p>
+      <p className="for-you-skeleton-status">{t('for_you.loading_status')}</p>
     </div>
   );
 }
@@ -105,13 +103,10 @@ export default function ForYouPageIsland({
   const [semanticLoading, setSemanticLoading] = useState(false);
   const [clusterError, setClusterError] = useState<string | null>(initialError);
   const [semanticError, setSemanticError] = useState<string | null>(null);
-  const isMK = lang === 'mk';
-  const locale = isMK ? 'mk' : 'sr';
+  const locale = lang === 'mk' ? 'mk' : 'sr';
   const t = useClientTranslations(locale, common);
   const hasSignals = hasPersonalizationSignal(profile);
-  const clusterFetchError = isMK
-    ? 'Не можеме да ги вчитаме почетните препораки во овој момент.'
-    : 'Ne možemo da učitamo početne preporuke u ovom trenutku.';
+  const clusterFetchError = t('for_you.error_seed');
 
   useEffect(() => {
     if (initialClusters.length > 0) {
@@ -204,7 +199,7 @@ export default function ForYouPageIsland({
         console.error('Semantic fetch failed', e);
         if (!cancelled) {
           setSemanticResults([]);
-          setSemanticError(isMK ? 'Не можеме да ги вчитаме персонализираните препораки во овој момент.' : 'Ne možemo da pročitamo personalizovane preporuke u ovom trenutku.');
+          setSemanticError(t('for_you.error_semantic'));
         }
       } finally {
         if (!cancelled) {
@@ -217,7 +212,7 @@ export default function ForYouPageIsland({
     return () => {
       cancelled = true;
     };
-  }, [profile, lang, isMK]);
+  }, [profile, lang, t]);
 
   const mergedClusters = useMemo<PersonalizedCluster[]>(() => {
     const local = buildPersonalizedClusters(seedClusters, profile, 48, [], lang);
@@ -247,12 +242,12 @@ export default function ForYouPageIsland({
     if (combined.length === 0 && hasPersonalizationSignal(profile)) {
       return seedClusters.slice(0, 10).map((cluster) => ({
         ...cluster,
-        reason: isMK ? 'Актуелно денес' : 'Aktuelno danas',
+        reason: t('for_you.reason_today'),
       }));
     }
 
     return combined;
-  }, [seedClusters, semanticResults, profile, isMK, lang]);
+  }, [seedClusters, semanticResults, profile, lang, t]);
 
   const followSuggestions = useMemo(() => {
     const suggestions = buildSurfaceFollowSuggestions(profile, 'for_you', { topicLimit: 5, sourceLimit: 3, lang });
@@ -287,7 +282,7 @@ export default function ForYouPageIsland({
   }, [mergedClusters]);
 
   if (pageBooting) {
-    return <ForYouSkeleton isMK={isMK} />;
+    return <ForYouSkeleton t={t} />;
   }
 
   if (!hasSignals) {
@@ -295,13 +290,9 @@ export default function ForYouPageIsland({
       <div className="for-you-dashboard">
         <section className="for-you-cold-start">
           <div className="cold-start-copy">
-            <span className="for-you-kicker-line"><Compass size={16} /> {isMK ? 'Почеток' : 'Početak'}</span>
-            <h1>{isMK ? 'Направете свој Пресек' : 'Napravite svoj Presek'}</h1>
-            <p>
-              {isMK
-                ? 'Изберете теми или извори — вестите се подредуваат според вашите сигнали, без регистрација.'
-                : 'Izaberite teme ili izvore — vesti se slažu prema vašim signalima, bez registracije.'}
-            </p>
+            <span className="for-you-kicker-line"><Compass size={16} /> {t('for_you.cold_start_kicker')}</span>
+            <h1>{t('for_you.cold_start_title')}</h1>
+            <p>{t('for_you.cold_start_lede')}</p>
           </div>
           <div className="cold-start-unified-panel">
             <ForYouBriefingCard lang={lang} embedded />
@@ -309,7 +300,7 @@ export default function ForYouPageIsland({
               <OnboardingIsland lang={lang} />
             </div>
             <div className="cold-start-email-row">
-              <MorningEmailSignup lang={isMK ? 'mk' : 'sr'} variant="compact" />
+              <MorningEmailSignup lang={locale} variant="compact" />
             </div>
           </div>
         </section>
@@ -322,50 +313,46 @@ export default function ForYouPageIsland({
       <section className="for-you-hero">
         <div className="for-you-hero-copy">
           <span className="for-you-kicker-line">
-            <Sparkles size={16} /> {isMK ? 'За Вас' : 'Za Vas'}
+            <Sparkles size={16} /> {t('for_you.hero_kicker')}
           </span>
-          <h1>{isMK ? 'Личен дневен пресек' : 'Lični dnevni presek'}</h1>
-          <p>
-            {isMK
-              ? 'Приоритети, нови агли и следни теми од вестите што најдобро се совпаѓаат со вашето читање.'
-              : 'Prioriteti, novi uglovi i sledeće teme iz vesti koje se najbolje poklapaju sa vašim čitanjem.'}
-          </p>
+          <h1>{t('for_you.hero_title')}</h1>
+          <p>{t('for_you.hero_lede')}</p>
         </div>
 
-        <div className="for-you-signal-panel" aria-label={isMK ? 'Состојба на профилот' : 'Stanje profila'}>
+        <div className="for-you-signal-panel" aria-label={t('for_you.signal_state')}>
           <div className="signal-head">
             <Gauge size={18} />
-            <span>{isMK ? 'Сигнал на профилот' : 'Signal profila'}</span>
+            <span>{t('for_you.signal_panel')}</span>
             <strong>{signalStrength}%</strong>
           </div>
           <div className="signal-meter" aria-hidden="true">
             <span style={{ width: `${signalStrength}%` }}></span>
           </div>
           <div className="signal-metrics">
-            <span title={isMK ? 'Следени сигнали (теми и извори)' : 'Praćeni signali (teme i izvori)'}>
+            <span title={t('for_you.metric_signals_title')}>
               <BellRing size={13} /> {followedTopics.length + followedSources.length}
-              <small className="ml-1 text-[11px] opacity-70 font-normal">{isMK ? 'сигнали' : 'signala'}</small>
+              <small className="ml-1 text-[11px] opacity-70 font-normal">{t('for_you.metric_signals')}</small>
             </span>
-            <span title={isMK ? 'Препорачани приказни' : 'Preporučene priče'}>
+            <span title={t('for_you.metric_stories_title')}>
               <Layers size={13} /> {mergedClusters.length}
-              <small className="ml-1 text-[11px] opacity-70 font-normal">{isMK ? 'вести' : 'vesti'}</small>
+              <small className="ml-1 text-[11px] opacity-70 font-normal">{t('for_you.metric_stories')}</small>
             </span>
-            <span title={isMK ? 'Опфатени извори' : 'Obuhvaćeni izvori'}>
+            <span title={t('for_you.metric_sources_title')}>
               <Radio size={13} /> {sourceCount}
-              <small className="ml-1 text-[11px] opacity-70 font-normal">{isMK ? 'извори' : 'izvora'}</small>
+              <small className="ml-1 text-[11px] opacity-70 font-normal">{t('for_you.metric_sources')}</small>
             </span>
           </div>
         </div>
       </section>
 
       <div className="for-you-action-bar">
-        <a href={localePathForLang('/briefing', isMK ? 'mk' : 'sr')} className="for-you-action-link">
+        <a href={localePathForLang('/briefing', locale)} className="for-you-action-link">
           <Newspaper size={15} /> {t('for_you.action_briefing')}
         </a>
-        <a href={localePathForLang('/settings', isMK ? 'mk' : 'sr')} className="for-you-action-link">
+        <a href={localePathForLang('/settings', locale)} className="for-you-action-link">
           <SlidersHorizontal size={15} /> {t('for_you.action_settings')}
         </a>
-        <a href={`${localePathForLang('/settings', isMK ? 'mk' : 'sr')}#dostava`} className="for-you-action-link">
+        <a href={`${localePathForLang('/settings', locale)}#dostava`} className="for-you-action-link">
           <BellRing size={15} /> {t('for_you.action_morning')}
         </a>
       </div>
@@ -383,11 +370,11 @@ export default function ForYouPageIsland({
         <main className="for-you-main">
           <section className="for-you-section-head">
             <div>
-              <span>{isMK ? 'Приоритет' : 'Prioritet'}</span>
-              <h2>{isMK ? 'Најрелевантно сега' : 'Najrelevantnije sada'}</h2>
+              <span>{t('for_you.priority_kicker')}</span>
+              <h2>{t('for_you.priority_title')}</h2>
             </div>
-            <a href={localePathForLang('/settings', isMK ? 'mk' : 'sr')} className="for-you-text-link">
-              <SlidersHorizontal size={14} /> {isMK ? 'Прилагоди' : 'Podesi'}
+            <a href={localePathForLang('/settings', locale)} className="for-you-text-link">
+              <SlidersHorizontal size={14} /> {t('for_you.adjust')}
             </a>
           </section>
 
@@ -396,7 +383,7 @@ export default function ForYouPageIsland({
               {priorityClusters.map((cluster, index) => (
                 <article key={cluster.cluster_id} className={`priority-story ${index === 0 ? 'is-primary' : ''}`}>
                   <PersonalizationWhyChip
-                    lang={isMK ? 'mk' : 'sr'}
+                    lang={locale}
                     reason={cluster.reason}
                     matchReasons={cluster.match_reasons}
                     matchedTopics={cluster.matched_topics}
@@ -415,7 +402,7 @@ export default function ForYouPageIsland({
             </div>
           ) : (
             <div className="for-you-empty">
-              <p>{isMK ? 'Немаме нови вести за вашите специфични интереси во овој момент.' : 'Nemamo novih vesti za vaše specifične interese u ovom trenutku.'}</p>
+              <p>{t('for_you.empty_feed')}</p>
             </div>
           )}
 
@@ -423,15 +410,15 @@ export default function ForYouPageIsland({
             <>
               <section className="for-you-section-head is-secondary">
                 <div>
-                  <span>{isMK ? 'Продолжете' : 'Nastavite'}</span>
-                  <h2>{isMK ? 'Уште препораки' : 'Još preporuka'}</h2>
+                  <span>{t('for_you.feed_continue')}</span>
+                  <h2>{t('for_you.feed_more')}</h2>
                 </div>
               </section>
               <div className="recommendation-grid">
                 {feedClusters.map((cluster) => (
                   <article key={cluster.cluster_id} className="recommendation-tile">
                     <PersonalizationWhyChip
-                      lang={isMK ? 'mk' : 'sr'}
+                      lang={locale}
                       reason={cluster.reason}
                       matchReasons={cluster.match_reasons}
                       matchedTopics={cluster.matched_topics}
@@ -447,14 +434,14 @@ export default function ForYouPageIsland({
         </main>
 
         <aside className="for-you-rail">
-          <MorningEmailSignup lang={isMK ? 'mk' : 'sr'} variant="settings" />
+          <MorningEmailSignup lang={locale} variant="settings" />
 
           <section className="rail-panel">
-            <h3><ListChecks size={16} /> {isMK ? 'Ваш профил' : 'Vaš profil'}</h3>
+            <h3><ListChecks size={16} /> {t('for_you.profile_panel')}</h3>
             <div className="profile-stat-grid">
-              <span><strong>{followedTopics.length}</strong>{isMK ? 'теми' : 'tema'}</span>
-              <span><strong>{followedSources.length}</strong>{isMK ? 'извори' : 'izvora'}</span>
-              <span><strong>{synthesisCount}</strong>{isMK ? 'синтези' : 'sinteza'}</span>
+              <span><strong>{followedTopics.length}</strong>{t('for_you.profile_topics')}</span>
+              <span><strong>{followedSources.length}</strong>{t('for_you.profile_sources')}</span>
+              <span><strong>{synthesisCount}</strong>{t('for_you.profile_synthesis')}</span>
             </div>
             <div className="followed-stack">
               {followedTopics.slice(0, 8).map((topic: string) => (
@@ -468,13 +455,13 @@ export default function ForYouPageIsland({
 
           <details className="for-you-rail-context">
             <summary className="for-you-rail-context-summary">
-              <span>{isMK ? 'Контекст и сигнали' : 'Kontekst i signali'}</span>
-              <span className="for-you-rail-context-hint ui-kicker text-muted-foreground">{isMK ? 'Отвори' : 'Otvori'}</span>
+              <span>{t('for_you.context_rail')}</span>
+              <span className="for-you-rail-context-hint ui-kicker text-muted-foreground">{t('for_you.context_open')}</span>
             </summary>
             <div className="for-you-rail-context-body">
               {categoryLeaders.length > 0 && (
                 <section className="rail-panel">
-                  <h3><Layers size={16} /> {isMK ? 'Фокус денес' : 'Fokus danas'}</h3>
+                  <h3><Layers size={16} /> {t('for_you.focus_today')}</h3>
                   <div className="category-bars">
                     {categoryLeaders.map(([category, count]) => (
                       <div key={category} className="category-row">
@@ -488,13 +475,13 @@ export default function ForYouPageIsland({
 
               {followSuggestions.length > 0 && (
                 <section className="rail-panel">
-                  <h3><Compass size={16} /> {isMK ? 'Додај сигнал' : 'Dodaj signal'}</h3>
+                  <h3><Compass size={16} /> {t('for_you.suggest_add')}</h3>
                   <div className="discover-stack">
                     {followSuggestions.map((item: any) => (
                       <div key={`${item.kind}:${item.value}`} className="discover-suggestion">
                         <div>
                           <strong>{item.value}</strong>
-                          <span>{item.kind === 'topic' ? (isMK ? 'тема' : 'tema') : (isMK ? 'извор' : 'izvor')}</span>
+                          <span>{item.kind === 'topic' ? t('for_you.kind_topic') : t('for_you.kind_source')}</span>
                         </div>
                         <PreferenceToggle
                           kind={item.kind as any}
@@ -510,10 +497,10 @@ export default function ForYouPageIsland({
 
               {queueClusters.length > 0 && (
                 <section className="rail-panel">
-                  <h3><Radio size={16} /> {isMK ? 'Следно' : 'Sledeće'}</h3>
+                  <h3><Radio size={16} /> {t('for_you.up_next')}</h3>
                   <div className="next-stack">
                     {queueClusters.map((cluster) => (
-                      <a key={cluster.cluster_id} href={localePathForLang(`/cluster/${cluster.cluster_id}`, isMK ? 'mk' : 'sr')} className="next-item">
+                      <a key={cluster.cluster_id} href={localePathForLang(`/cluster/${cluster.cluster_id}`, locale)} className="next-item">
                         <span>{formatTime(clusterTime(cluster), lang)}</span>
                         <strong>{clusterTitle(cluster)}</strong>
                         <ArrowUpRight size={13} />

@@ -116,7 +116,7 @@
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--nyt-accent);
+    color: var(--presek-mark);
 }
 
 .home-start-here-head {
@@ -134,7 +134,7 @@
     font-weight: 800;
     letter-spacing: 0.065em;
     text-transform: uppercase;
-    color: var(--nyt-accent);
+    color: var(--presek-mark);
 }
 
 .home-start-here-title {
@@ -186,14 +186,14 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1px;
     margin: 0 0 0.55rem;
-    border: 1px solid color-mix(in srgb, var(--nyt-accent) 18%, var(--border));
-    background: color-mix(in srgb, var(--nyt-accent) 16%, var(--border));
+    border: 1px solid color-mix(in srgb, var(--presek-mark) 18%, var(--border));
+    background: color-mix(in srgb, var(--presek-mark) 16%, var(--border));
 }
 
 .home-start-here-value {
     min-width: 0;
     padding: 0.48rem 0.56rem;
-    background: color-mix(in srgb, var(--background) 94%, var(--nyt-accent) 6%);
+    background: color-mix(in srgb, var(--background) 94%, var(--presek-mark) 6%);
 }
 
 .home-start-here-value span,
@@ -209,7 +209,7 @@
     font-weight: 900;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--nyt-accent);
+    color: var(--presek-mark);
 }
 
 .home-start-here-value strong {
@@ -275,8 +275,8 @@
 
 .home-start-here-action-primary {
     color: var(--primary-foreground);
-    border-color: var(--nyt-accent);
-    background: var(--nyt-accent);
+    border-color: var(--presek-mark);
+    background: var(--presek-mark);
 }
 
 .home-start-here-action-secondary {
@@ -317,7 +317,7 @@
 
 .home-start-here-dismiss:hover {
     color: var(--foreground);
-    border-color: var(--nyt-accent);
+    border-color: var(--presek-mark);
 }
 
 .home-start-here-steps {
@@ -345,8 +345,8 @@
 }
 
 .home-start-here-step:hover {
-    border-color: var(--nyt-accent);
-    color: var(--nyt-accent);
+    border-color: var(--presek-mark);
+    color: var(--presek-mark);
 }
 
 .home-start-here-step-index {
@@ -355,11 +355,11 @@
     justify-content: center;
     width: 1.18rem;
     height: 1.18rem;
-    border: 1px solid color-mix(in srgb, var(--nyt-accent) 35%, var(--border));
+    border: 1px solid color-mix(in srgb, var(--presek-mark) 35%, var(--border));
     font-family: var(--font-ui);
     font-size: 0.58rem;
     font-weight: 800;
-    color: var(--nyt-accent);
+    color: var(--presek-mark);
 }
 
 .home-start-here-step-arrow {
@@ -403,7 +403,7 @@
 }
 
 .home-evidence-status {
-    border-left: 4px solid var(--nyt-accent);
+    border-left: 4px solid var(--presek-mark);
 }
 
 .home-evidence-strip.tone-live .home-evidence-status { border-left-color: var(--nyt-red); }
@@ -468,8 +468,8 @@
 }
 
 .perspectives-section {
-    background: color-mix(in srgb, var(--nyt-accent) 4%, var(--background));
-    border-color: color-mix(in srgb, var(--nyt-accent) 18%, var(--border));
+    background: color-mix(in srgb, var(--presek-mark) 4%, var(--background));
+    border-color: color-mix(in srgb, var(--presek-mark) 18%, var(--border));
 }
 
 .consensus-section {
@@ -478,7 +478,7 @@
 }
 
 .perspectives-section .analysis-band-kicker {
-    color: var(--nyt-accent);
+    color: var(--presek-mark);
 }
 
 .radar-section .analysis-band-kicker {
@@ -603,7 +603,7 @@
 }
 
 .analysis-card-title-link:hover .type-card-title {
-    color: var(--nyt-accent);
+    color: var(--presek-mark);
 }
 
 .analysis-card-title-link.is-radar:hover .type-card-title {
@@ -685,7 +685,7 @@
 
 .consensus-lazy-card:hover {
     transform: translateY(-2px);
-    border-color: var(--nyt-accent);
+    border-color: var(--presek-mark);
     box-shadow: 0 12px 26px -18px rgba(15, 23, 42, 0.35);
 }
 
@@ -737,7 +737,7 @@
     font-weight: 900;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: var(--nyt-accent);
+    color: var(--presek-mark);
 }
 
 .analysis-band-title {
@@ -784,7 +784,7 @@
 .analiza-section-nav {
     margin: 0.35rem 0 1rem;
     padding: 0.75rem 0 0.85rem;
-    border-top: 1px solid color-mix(in srgb, var(--nyt-accent) 18%, var(--border));
+    border-top: 1px solid color-mix(in srgb, var(--presek-mark) 18%, var(--border));
     border-bottom: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
 }
 
@@ -795,7 +795,7 @@
     font-weight: 900;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: var(--nyt-accent);
+    color: var(--presek-mark);
 }
 
 .analiza-section-nav-chips {
@@ -820,19 +820,19 @@
 }
 
 .analiza-nav-chip:hover {
-    border-color: color-mix(in srgb, var(--nyt-accent) 40%, var(--border));
-    background: color-mix(in srgb, var(--nyt-accent) 5%, var(--card));
+    border-color: color-mix(in srgb, var(--presek-mark) 40%, var(--border));
+    background: color-mix(in srgb, var(--presek-mark) 5%, var(--card));
     transform: translateY(-1px);
 }
 
 .analiza-nav-chip.is-active {
-    border-color: color-mix(in srgb, var(--nyt-accent) 46%, var(--border));
-    background: color-mix(in srgb, var(--nyt-accent) 8%, var(--card));
-    box-shadow: inset 3px 0 0 var(--nyt-accent);
+    border-color: color-mix(in srgb, var(--presek-mark) 46%, var(--border));
+    background: color-mix(in srgb, var(--presek-mark) 8%, var(--card));
+    box-shadow: inset 3px 0 0 var(--presek-mark);
 }
 
 .analiza-nav-chip:focus-visible {
-    outline: 2px solid var(--nyt-accent);
+    outline: 2px solid var(--presek-mark);
     outline-offset: 3px;
 }
 
@@ -858,7 +858,7 @@
     font-size: var(--text-ui-min);
     font-weight: 800;
     letter-spacing: 0.08em;
-    color: var(--nyt-accent);
+    color: var(--presek-mark);
 }
 
 /* ── Empty + error states ────────────────────────── */
@@ -868,7 +868,7 @@
     margin: clamp(1rem, 2vw, 2rem) 0;
     border: 1px solid color-mix(in srgb, var(--foreground) 12%, var(--border));
     background:
-        radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--nyt-accent) 6%, transparent), transparent 55%),
+        radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--presek-mark) 6%, transparent), transparent 55%),
         color-mix(in srgb, var(--secondary) 35%, var(--background));
 }
 
@@ -878,7 +878,7 @@
     font-weight: 900;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--nyt-accent);
+    color: var(--presek-mark);
     margin: 0 0 0.85rem;
 }
 
@@ -1019,7 +1019,7 @@
     font-weight: 900;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: var(--nyt-accent);
+    color: var(--presek-mark);
 }
 
 .for-you-boundary-label {
@@ -1029,7 +1029,7 @@
     font-weight: 900;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: color-mix(in srgb, var(--nyt-accent) 75%, var(--foreground));
+    color: color-mix(in srgb, var(--presek-mark) 75%, var(--foreground));
 }
 
 .editorial-lead-boundary-label {
@@ -1097,7 +1097,7 @@
     font-weight: 900;
     letter-spacing: 0.07em;
     text-transform: uppercase;
-    color: var(--nyt-accent);
+    color: var(--presek-mark);
     text-decoration: none;
 }
 
@@ -1153,7 +1153,7 @@
 
 .carousel-nav-btn:hover {
     background: var(--secondary);
-    border-color: var(--nyt-accent);
+    border-color: var(--presek-mark);
     opacity: 1;
     transform: translateY(-50%) scale(1.05);
 }
@@ -1217,7 +1217,7 @@
 .consensus-section :global(.nyt-article:hover) {
     transform: translateY(-2px) !important;
     box-shadow: 0 12px 26px -18px rgba(15, 23, 42, 0.35) !important;
-    border-color: var(--nyt-accent) !important;
+    border-color: var(--presek-mark) !important;
 }
 
 .carousel-fade-hint.right {
@@ -1265,10 +1265,10 @@
 }
 
 .for-you-wrapper {
-    background: color-mix(in srgb, var(--nyt-accent) 5%, var(--background));
+    background: color-mix(in srgb, var(--presek-mark) 5%, var(--background));
     padding: 1.1rem 0.9rem;
-    border-top: 1px solid color-mix(in srgb, var(--nyt-accent) 15%, transparent);
-    border-bottom: 1px solid color-mix(in srgb, var(--nyt-accent) 15%, transparent);
+    border-top: 1px solid color-mix(in srgb, var(--presek-mark) 15%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--presek-mark) 15%, transparent);
     margin-bottom: 1rem;
     border-radius: var(--radius-lg, 0px);
 }
@@ -1353,7 +1353,7 @@
     transition: border-color 0.3s var(--ease-editorial), box-shadow 0.3s var(--ease-editorial);
 }
 .home-system-stats-panel:hover {
-    border-color: color-mix(in srgb, var(--nyt-accent) 36%, var(--border));
+    border-color: color-mix(in srgb, var(--presek-mark) 36%, var(--border));
     box-shadow: var(--shadow-md);
 }
 
@@ -1443,7 +1443,7 @@
     left: 0.5rem;
     right: 0.5rem;
     height: 2px;
-    background: linear-gradient(90deg, transparent, var(--nyt-accent), transparent);
+    background: linear-gradient(90deg, transparent, var(--presek-mark), transparent);
     opacity: 0;
     transform: scaleX(0.4);
     transition: all 0.3s var(--ease-editorial);
@@ -1531,7 +1531,7 @@
         border-radius: var(--radius-lg, 0px);
     }
     .stats-grid-item:hover {
-        border-color: color-mix(in srgb, var(--nyt-accent) 30%, var(--border));
+        border-color: color-mix(in srgb, var(--presek-mark) 30%, var(--border));
         background: color-mix(in srgb, var(--secondary) 45%, var(--background));
         transform: translateY(-2px);
     }
@@ -1549,34 +1549,40 @@
 
     .home-mobile-order-edition { order: 2; }
     .home-mobile-order-lead { order: 1; }
-    .home-mobile-order-briefing { order: 3; }
-    .home-mobile-order-start-here { order: 9; }
-    .home-mobile-order-expand { order: 5; }
-    .home-mobile-order-feed { order: 4; }
-    .home-mobile-order-feed-extended { order: 5; }
-    .home-mobile-order-supporting { order: 6; }
+    .home-mobile-order-supporting { order: 3; }
+    .home-mobile-order-briefing { order: 4; }
+    .home-mobile-order-feed { order: 5; }
+    .home-mobile-order-expand { order: 6; }
+    .home-mobile-order-start-here { order: 12; }
+    .home-mobile-order-feed-extended { order: 6; }
     .home-mobile-order-pregled-teaser { order: 7; }
     .home-mobile-order-synthesis-teaser { order: 8; }
     .home-mobile-order-trending { order: 9; }
     .home-mobile-order-synthesis { order: 10; }
     .home-mobile-order-analysis { order: 11; }
-    .home-mobile-order-stats { order: 12; }
-    .home-mobile-order-live { order: 13; display: none; }
+    .home-mobile-order-stats { order: 13; }
+    .home-mobile-order-live { order: 14; display: none; }
 
     .home-page-variant-feed:not(.home-first-session) .home-mobile-order-start-here {
         display: none;
     }
 
     .home-page-variant-feed.home-first-session .home-mobile-order-lead { order: 1; }
-    .home-page-variant-feed.home-first-session .home-mobile-order-briefing { order: 3; }
-    .home-page-variant-feed.home-first-session .home-mobile-order-feed { order: 4; }
-    .home-page-variant-feed.home-first-session .home-mobile-order-expand { order: 5; }
-    .home-page-variant-feed.home-first-session .home-mobile-order-start-here { order: 9; }
-    .home-page-variant-feed.home-first-session .home-mobile-order-supporting { order: 8; }
+    .home-page-variant-feed.home-first-session .home-mobile-order-supporting { order: 3; }
+    .home-page-variant-feed.home-first-session .home-mobile-order-briefing { order: 4; }
+    .home-page-variant-feed.home-first-session .home-mobile-order-feed { order: 5; }
+    .home-page-variant-feed.home-first-session .home-mobile-order-expand { order: 6; }
+    .home-page-variant-feed.home-first-session .home-mobile-order-start-here { order: 12; }
 
     .home-page-variant-feed.home-first-session .lead-synthesis-badge,
     .home-page-variant-feed.home-first-session .lead-status-badge,
+    .home-page-variant-feed.home-first-session .story-freshness-badge,
     .home-page-variant-feed.home-first-session .editorial-insight-panel {
+        display: none;
+    }
+
+    .home-page-variant-feed:not(.home-analysis-expanded) .lead-synthesis-badge,
+    .home-page-variant-feed:not(.home-analysis-expanded) .story-freshness-badge {
         display: none;
     }
 
@@ -1630,7 +1636,7 @@
         content: '+';
         font-size: 1rem;
         font-weight: 700;
-        color: var(--nyt-accent);
+        color: var(--presek-mark);
     }
 
     .home-mobile-stats-details[open] .home-mobile-stats-summary::after {

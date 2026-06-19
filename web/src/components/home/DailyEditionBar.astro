@@ -3,11 +3,13 @@ import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 
 interface Props {
     lang?: string;
+    modeLabel?: string | null;
 }
 
 const hostHeader = Astro.request?.headers.get('host');
 const urlLang = getLangFromUrl(Astro.url, hostHeader);
 const lang = (Astro.props.lang || urlLang) as 'sr' | 'mk';
+const { modeLabel = null } = Astro.props;
 const t = useTranslations(lang);
 
 const editionDate = new Intl.DateTimeFormat(lang === 'sr' ? 'sr-Latn-RS' : 'mk-MK', {
@@ -23,6 +25,7 @@ const editionDate = new Intl.DateTimeFormat(lang === 'sr' ? 'sr-Latn-RS' : 'mk-M
     <span class="daily-edition-mark" aria-hidden="true"></span>
     <div class="daily-edition-copy">
         <span class="daily-edition-kicker">{t('home.edition_kicker')}</span>
+        {modeLabel && <span class="daily-edition-mode">{modeLabel}</span>}
         <span class="daily-edition-date">{editionDate}</span>
     </div>
 </div>

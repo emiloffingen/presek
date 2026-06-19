@@ -15,6 +15,9 @@ const t = useTranslations(lang);
 const l = (path: string) => localePath(path, lang, hostHeader);
 
 const snippet = briefing?.content ? getBriefingSnippet(briefing.content) : '';
+const readMinutes = snippet
+    ? Math.max(1, Math.ceil(snippet.trim().split(/\s+/).filter(Boolean).length / 180))
+    : 0;
 const dateLocale = lang === 'mk' ? 'mk-MK' : 'sr-Latn-RS';
 const displayDate = briefing?.date
     ? new Intl.DateTimeFormat(dateLocale, {
@@ -29,7 +32,14 @@ const displayDate = briefing?.date
 	<section class="presek-briefing-card home-briefing-teaser home-mobile-order-briefing" aria-label={t('nav.briefing')}>
 		<div class="presek-briefing-card__head">
 			<p class="type-kicker">{t('nav.briefing')}</p>
-			{displayDate && <span class="presek-briefing-card__date">{displayDate}</span>}
+			<div class="presek-briefing-card__meta">
+				{displayDate && <span class="presek-briefing-card__date">{displayDate}</span>}
+				{readMinutes > 0 && (
+					<span class="presek-briefing-card__read-time">
+						{t('home.briefing_read_time', { minutes: readMinutes })}
+					</span>
+				)}
+			</div>
 		</div>
 		<p class="presek-briefing-card__text">{snippet}</p>
 		<a href={l('/briefing')} class="presek-briefing-card__cta">

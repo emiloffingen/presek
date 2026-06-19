@@ -11,6 +11,23 @@
     }
   }
 
+  function syncHomeModeDock(root) {
+    var dock = document.querySelector('[data-home-mode-dock]');
+    if (!dock || !root) return;
+    var expanded = root.classList.contains('home-analysis-expanded');
+    dock.hidden = false;
+    var dailyBtn = dock.querySelector('[data-home-mode-daily]');
+    var analizaBtn = dock.querySelector('[data-home-mode-analiza]');
+    if (dailyBtn) {
+      dailyBtn.classList.toggle('is-active', !expanded);
+      dailyBtn.setAttribute('aria-pressed', expanded ? 'false' : 'true');
+    }
+    if (analizaBtn) {
+      analizaBtn.classList.toggle('is-active', expanded);
+      analizaBtn.setAttribute('aria-pressed', expanded ? 'true' : 'false');
+    }
+  }
+
   function initHomepageSession() {
     var root = document.querySelector('[data-home-session-root]');
     if (!root) return;
@@ -20,51 +37,41 @@
     if (visits < 1) root.classList.add('home-first-session');
     if (localStorage.getItem(expandedKey) === '1') {
       root.classList.add('home-analysis-expanded');
-      root.querySelector('.home-edition-expand-panel')?.remove();
     }
+    syncHomeModeDock(root);
     localStorage.setItem(visitKey, String(visits + 1));
   }
 
-  function autoSimpleHomepage() {
+  function expandHomeAnalysis() {
+    var root = document.querySelector('[data-home-session-root]');
+    if (!root) return;
+    root.classList.add('home-analysis-expanded');
+    root.classList.remove('home-first-session');
     try {
-      var params = new URLSearchParams(window.location.search);
-      if (params.get('simple') === '1' || params.get('view') === 'simple') return;
-      if (params.get('category') || params.get('topic') || params.get('entity') || params.get('subcategory') || params.get('q')) return;
-      var onboardRaw = localStorage.getItem('presek_onboarding_v1');
-      var onboard = onboardRaw ? JSON.parse(onboardRaw) : null;
-      var onboarded = Boolean(onboard && (onboard.dismissed || onboard.completedAt));
-      var profileRaw = localStorage.getItem('presek_reader_profile_v1');
-      var profile = profileRaw ? JSON.parse(profileRaw) : null;
-      var hasSignals = Boolean(
-        (profile && profile.followedTopics && profile.followedTopics.length)
-        || (profile && profile.followedSources && profile.followedSources.length)
-        || (profile && profile.recentClusters && profile.recentClusters.length)
-      );
-      if (onboarded || hasSignals) return;
-      document.documentElement.dataset.presekSimpleHome = '1';
-      document.querySelectorAll('.homepage-analiza-only').forEach(function (node) {
-        node.classList.add('hidden');
-      });
-      document.querySelector('[data-simple-expand]')?.classList.remove('hidden');
+      localStorage.setItem('homepage-analysis-expanded', '1');
     } catch (_) {}
+    syncHomeModeDock(root);
+    document.querySelector('.homepage-analiza-only')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  function bindSimpleHomeExpand() {
-    var expandBtn = document.querySelector('[data-expand-analysis]');
-    if (!expandBtn || expandBtn.dataset.bound) return;
-    expandBtn.dataset.bound = '1';
-    expandBtn.addEventListener('click', function () {
-      document.documentElement.dataset.presekSimpleHome = '0';
-      document.documentElement.classList.add('home-analysis-expanded');
-      try {
-        localStorage.setItem('presek_home_analysis_expanded_v1', '1');
-      } catch (_) {}
-      document.querySelectorAll('.homepage-analiza-only').forEach(function (node) {
-        node.classList.remove('hidden');
-      });
-      document.querySelector('[data-simple-expand]')?.classList.add('hidden');
-      document.querySelector('.homepage-analiza-only')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
+  function collapseHomeAnalysis() {
+    var root = document.querySelector('[data-home-session-root]');
+    if (!root) return;
+    root.classList.remove('home-analysis-expanded');
+    try {
+      localStorage.removeItem('homepage-analysis-expanded');
+    } catch (_) {}
+    syncHomeModeDock(root);
+    var target = document.querySelector('.lead-wrapper') || document.querySelector('#home-unified-feed');
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function bindHomeModeDock() {
+    var dock = document.querySelector('[data-home-mode-dock]');
+    if (!dock || dock.dataset.bound) return;
+    dock.dataset.bound = '1';
+    dock.querySelector('[data-home-mode-daily]')?.addEventListener('click', collapseHomeAnalysis);
+    dock.querySelector('[data-home-mode-analiza]')?.addEventListener('click', expandHomeAnalysis);
   }
 
   function homeDetailsDefaults() {
@@ -100,8 +107,9 @@
     }
 
     function applyAnalizaDefaults() {
+      var root = document.querySelector('[data-home-session-root]');
       var isPregledView = document.querySelector('.home-page-variant-pregled');
-      if (!isPregledView && document.documentElement.dataset.homepageMode !== 'analiza') return;
+      if (!isPregledView && !(root && root.classList.contains('home-analysis-expanded'))) return;
       var isDesktop = window.matchMedia('(min-width: 769px)').matches;
 
       function openUnlessToggled(selector, forceOpen) {
@@ -122,18 +130,10 @@
   }
 
   function homeExpandAnalysis() {
-    var root = document.querySelector('[data-home-session-root]');
     var button = document.querySelector('[data-expand-home-analysis]');
-    if (!root || !button || button.dataset.bound) return;
+    if (!button || button.dataset.bound) return;
     button.dataset.bound = '1';
-    button.addEventListener('click', function () {
-      root.classList.add('home-analysis-expanded');
-      root.classList.remove('home-first-session');
-      localStorage.setItem('homepage-analysis-expanded', '1');
-      var expandPanel = button.closest('.home-expand-analysis');
-      if (expandPanel) expandPanel.remove();
-      document.querySelector('.homepage-analiza-only')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
+    button.addEventListener('click', expandHomeAnalysis);
   }
 
   function bindHomeFeedFilter() {
@@ -551,8 +551,7 @@
 
   function boot() {
     initHomepageSession();
-    autoSimpleHomepage();
-    bindSimpleHomeExpand();
+    bindHomeModeDock();
     homeDetailsDefaults();
     homeExpandAnalysis();
     bindHomeFeedFilter();

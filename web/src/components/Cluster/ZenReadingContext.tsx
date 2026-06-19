@@ -13,6 +13,7 @@ export default function ZenReadingContext({
 }) {
   const t = useClientTranslations(lang as 'sr' | 'mk', settings);
   const [visible, setVisible] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     const sync = () => {
@@ -27,6 +28,18 @@ export default function ZenReadingContext({
     };
   }, []);
 
+  useEffect(() => {
+    if (!visible) return;
+    const onScroll = () => {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      const pct = max > 0 ? Math.min(100, Math.max(0, (window.scrollY / max) * 100)) : 0;
+      setProgress(Math.round(pct));
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [visible]);
+
   if (!visible) return null;
 
   const exitFocus = () => {
@@ -36,11 +49,20 @@ export default function ZenReadingContext({
 
   return (
     <div className="zen-reading-context" role="status">
-      <p className="zen-reading-context-title">{headline}</p>
-      <button type="button" className="zen-reading-context-exit" onClick={exitFocus}>
-        <X size={14} aria-hidden="true" />
-        {t('reading.standard')}
-      </button>
+      <div className="zen-reading-context-progress" aria-hidden="true">
+        <span style={{ width: `${progress}%` }} />
+      </div>
+      <div className="zen-reading-context-body">
+        <span className="zen-reading-context-kicker">{t('reading.focus_mode')}</span>
+        <p className="zen-reading-context-title">{headline}</p>
+        <span className="zen-reading-context-pct">
+          {t('reading.focus_progress').replace('{percent}', String(progress))}
+        </span>
+        <button type="button" className="zen-reading-context-exit" onClick={exitFocus}>
+          <X size={14} aria-hidden="true" />
+          {t('reading.standard')}
+        </button>
+      </div>
     </div>
   );
 }

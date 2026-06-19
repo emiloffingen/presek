@@ -63,7 +63,7 @@
   }
 
   .ui-kicker--accent {
-    color: var(--nyt-accent);
+    color: var(--presek-mark);
   }
 
   .ui-status {
@@ -96,8 +96,8 @@
     .nyt-article:not(.lead-story):hover {
       transform: translateY(-2px);
       box-shadow: none;
-      border-color: var(--nyt-accent);
-      background: color-mix(in srgb, var(--card) 98%, var(--nyt-accent) 2%);
+      border-color: var(--ui-chrome-border);
+      background: var(--ui-chrome-soft);
       z-index: 10;
     }
   }
@@ -280,7 +280,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--nyt-accent);
+    color: var(--muted-foreground);
   }
 
   .footer-meta {
@@ -998,8 +998,8 @@ button:active,
 
 .source-reputation-card:hover,
 .nyt-article:hover {
-  border-color: var(--nyt-accent);
-  background: color-mix(in srgb, var(--background) 97%, var(--nyt-accent) 3%);
+  border-color: var(--ui-chrome-border);
+  background: var(--ui-chrome-soft);
 }
 
 .nyt-article {
@@ -1013,7 +1013,7 @@ button:active,
 .nyt-article:hover {
   transform: translateY(-2px);
   box-shadow: none;
-  border-color: var(--nyt-accent);
+  border-color: var(--ui-chrome-border);
 }
 
 .dark .nyt-article:hover {
@@ -1021,7 +1021,7 @@ button:active,
 }
 
 .headline-link:hover .headline {
-  color: var(--nyt-accent);
+  color: var(--link-hover);
 }
 
 /* Interactive Spotlight Effect */
@@ -1193,7 +1193,7 @@ button:active,
 
 .editorial-hover-card:hover {
   transform: translateY(-2px);
-  border-color: var(--nyt-accent);
+  border-color: var(--ui-chrome-border);
   box-shadow:
     var(--shadow-lg),
     0 10px 30px rgba(0, 0, 0, 0.04);
@@ -1216,7 +1216,7 @@ button:active,
   left: 50%;
   width: 0;
   height: 2px;
-  background-color: var(--nyt-accent);
+  background-color: var(--foreground);
   transition:
     width 0.4s var(--ease-editorial),
     left 0.4s var(--ease-editorial);

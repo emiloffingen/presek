@@ -301,6 +301,10 @@
   display: none !important;
 }
 
+.home-page-variant-feed:not(.home-analysis-expanded) .home-edition-core {
+  display: block !important;
+}
+
 /* Category/topic/search filters should show the full story list, not collapsed edition mode */
 .home-page-variant-feed.home-filtered-view:not(.home-analysis-expanded) .home-edition-collapsed,
 .home-page-variant-feed.home-filtered-view .home-filtered-feed-extended {
@@ -308,14 +312,6 @@
 }
 
 .home-page-variant-feed.home-filtered-view .homepage-analiza-only {
-  display: none !important;
-}
-
-.home-page-variant-feed:not(.home-analysis-expanded) .home-feed-core {
-  display: block !important;
-}
-
-.home-page-variant-feed.home-analysis-expanded .home-feed-core {
   display: none !important;
 }
 

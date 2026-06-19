@@ -33,7 +33,7 @@ test('buildHomepageViewModel maps fixture into analysis nav', () => {
   const vm = buildHomepageViewModel({
     homepageState,
     isHomepage: true,
-    isSimpleHomepage: false,
+    isSimpleHomepage: true,
     lang: 'sr',
     filters: {
       category: null,
@@ -55,4 +55,30 @@ test('buildHomepageViewModel maps fixture into analysis nav', () => {
   assert.equal(vm.showAnalysisLayers, true);
   assert.equal(typeof vm.getTimeStr, 'function');
   assert.ok(vm.getTimeStr('2026-06-16T12:00:00Z').length > 0);
+});
+
+test('buildHomepageViewModel marks simple homepage when analiza view is not requested', () => {
+  const homepageState = {
+    ...normalizeHomeApiResponse(HOME_FIXTURE),
+    error: null,
+  };
+  const vm = buildHomepageViewModel({
+    homepageState,
+    isHomepage: true,
+    isSimpleHomepage: true,
+    lang: 'sr',
+    filters: {
+      category: null,
+      topic: null,
+      entity: null,
+      subcategory: null,
+      q: null,
+      timespan: null,
+      isHomepage: true,
+    },
+    t: (key) => key,
+    localePath: (p) => p,
+  });
+
+  assert.equal(vm.showAnalysisLayers, true);
 });

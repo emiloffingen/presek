@@ -5,6 +5,8 @@ import {
   scrubBriefingBoilerplate,
   simplifyBriefingBullet,
 } from '../../utils/briefingCopy';
+import { useClientTranslations } from '../../i18n/clientTranslations';
+import { briefing } from '../../i18n/namespaces/briefing';
 
 type Narrative = {
   text: string;
@@ -43,7 +45,7 @@ export default function BriefingQuickRead({
   narratives = [],
   initialMode = 'quick',
 }: Props) {
-  const isMK = lang === 'mk';
+  const t = useClientTranslations(lang, briefing);
   const [mode, setMode] = useState<'quick' | 'full'>(() => readModeFromUrl(initialMode));
 
   const mergedNarratives = useMemo(() => {
@@ -90,14 +92,12 @@ export default function BriefingQuickRead({
   }, [mode]);
 
   const readMinutes = cleanQuickRead?.read_minutes || 5;
-  const quickLabel = isMK ? 'Брз преглед' : 'Brzi pregled';
-  const fullLabel = isMK ? 'Цело издание' : 'Celo izdanje';
   const stats = cleanQuickRead?.stats || {};
   const showBullets = simplifiedBullets.length > 0 && mergedNarratives.length === 0;
 
   return (
     <div className="briefing-edition-shell">
-      <div className="briefing-edition-switch" role="tablist" aria-label={isMK ? 'Режим на читање' : 'Režim čitanja'}>
+      <div className="briefing-edition-switch" role="tablist" aria-label={t('briefing.mode_reading_label')}>
         <button
           type="button"
           role="tab"
@@ -105,8 +105,8 @@ export default function BriefingQuickRead({
           className={`briefing-edition-link ${mode === 'quick' ? 'is-active' : ''}`}
           onClick={() => setMode('quick')}
         >
-          <span className="briefing-edition-link__label">{quickLabel}</span>
-          <span className="briefing-edition-link__hint">{readMinutes} min</span>
+          <span className="briefing-edition-link__label">{t('briefing.mode_quick')}</span>
+          <span className="briefing-edition-link__hint">{readMinutes} {t('briefing.min_short')}</span>
         </button>
         <span className="briefing-edition-sep" aria-hidden="true">·</span>
         <button
@@ -116,8 +116,8 @@ export default function BriefingQuickRead({
           className={`briefing-edition-link ${mode === 'full' ? 'is-active' : ''}`}
           onClick={() => setMode('full')}
         >
-          <span className="briefing-edition-link__label">{fullLabel}</span>
-          <span className="briefing-edition-link__hint">{isMK ? 'Сите секции' : 'Sve sekcije'}</span>
+          <span className="briefing-edition-link__label">{t('briefing.mode_full')}</span>
+          <span className="briefing-edition-link__hint">{t('briefing.mode_full_hint')}</span>
         </button>
       </div>
 
@@ -130,14 +130,14 @@ export default function BriefingQuickRead({
             <p className="briefing-quick-kicker">
               <Sparkles size={14} />
               <span>
-                {readMinutes} {isMK ? 'мин' : 'min'} · {isMK ? 'главни теми' : 'glavne teme'}
+                {readMinutes} {t('briefing.min_short')} · {t('briefing.main_themes')}
               </span>
             </p>
             <h2 className="briefing-quick-title">{cleanQuickRead.subline}</h2>
           </div>
           <div className="briefing-quick-time">
             <Clock3 size={15} />
-            <span>{readMinutes} min</span>
+            <span>{readMinutes} {t('briefing.min_short')}</span>
           </div>
         </div>
 
@@ -159,13 +159,13 @@ export default function BriefingQuickRead({
 
         <div className="briefing-quick-stats">
           {stats.total_articles != null && (
-            <span>{stats.total_articles} {isMK ? 'извештаи' : 'izveštaja'}</span>
+            <span>{stats.total_articles} {t('briefing.reports')}</span>
           )}
           {stats.pluralism_score != null && (
-            <span>{stats.pluralism_score}% {isMK ? 'плурализам' : 'pluralizam'}</span>
+            <span>{stats.pluralism_score}% {t('briefing.pluralism')}</span>
           )}
           {stats.intl_share != null && (
-            <span>{stats.intl_share}% {isMK ? 'интернационално' : 'internacionalno'}</span>
+            <span>{stats.intl_share}% {t('briefing.international')}</span>
           )}
         </div>
       </section>

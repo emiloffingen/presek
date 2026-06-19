@@ -16,7 +16,7 @@ const { articles, getTimeStr, lang } = Astro.props;
 const hostHeader = Astro.request?.headers.get('host');
 const t = useTranslations(lang);
 const l = (path: string) => localePath(path, lang, hostHeader);
-const expandLabel = lang === 'sr' ? 'Prikaži' : 'Прикажи';
+const expandLabel = t('home.analysis_expand');
 
 const wireItems = articles.map((article: any) => ({
     href: l(`/cluster/${article.cluster_id}`),
@@ -34,7 +34,7 @@ const wireTeaser = wireItems[0]?.title || '';
                 <Activity size={13} />
                 <span class="home-live-summary-copy">
                     <span class="home-live-summary-title">{t('home.wire_title')}</span>
-                    {wireTeaser && <span class="home-live-summary-teaser">{lang === 'sr' ? 'Prvo:' : 'Прво:'} {wireTeaser}</span>}
+                    {wireTeaser && <span class="home-live-summary-teaser">{t('home.analysis_teaser_lead')} {wireTeaser}</span>}
                 </span>
             </span>
             <span class="home-live-summary-meta">

@@ -31,6 +31,6 @@ const l = (path: string) => localePath(path, lang, hostHeader);
 		</div>
 	)}
 	<a href={homePath(lang, hostHeader)} class="home-empty-reset">
-		{lang === 'sr' ? 'Vrati se na naslovnu' : 'Врати се на насловна'}
+		{t('home.empty_back_home')}
 	</a>
 </div>

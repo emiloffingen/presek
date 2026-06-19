@@ -62,7 +62,7 @@
     .ticker-content-segment { display: flex; align-items: center; gap: 3rem; padding-right: 3rem; }
 
     .live-ticker-headline { font-family: var(--font-nyt-body); font-size: 0.78rem; font-weight: 600; color: var(--foreground); text-decoration: none; display: flex; align-items: center; gap: 0.6rem; transition: color 0.2s; }
-    .live-ticker-headline:hover { color: var(--nyt-accent); }
+    .live-ticker-headline:hover { color: var(--link-hover); }
     .ticker-time { font-family: var(--font-ui); font-size: var(--text-ui-min); font-weight: 700; color: var(--muted-foreground); opacity: 0.72; }
 
     /* ── Editorial Topbar ─────────────────────────────── */
@@ -108,9 +108,9 @@
         transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .user-action-link:hover {
-        background: color-mix(in srgb, var(--nyt-accent) 8%, transparent);
-        border-color: color-mix(in srgb, var(--nyt-accent) 35%, transparent);
-        color: var(--nyt-accent);
+        background: var(--ui-chrome-soft);
+        border-color: var(--ui-chrome-border);
+        color: var(--link-hover);
         transform: none;
         box-shadow: none;
     }
@@ -171,13 +171,13 @@
         text-align: left;
         cursor: pointer;
     }
-    .utility-menu-link:hover { color: var(--nyt-accent); }
+    .utility-menu-link:hover { color: var(--link-hover); }
     .activity-chip {
         display: flex; align-items: center; gap: 0.4rem; padding: 0.2rem 0.5rem;
-        background: color-mix(in srgb, var(--nyt-accent) 8%, transparent);
-        font-family: var(--font-ui); font-size: var(--text-ui-min); font-weight: 700; color: var(--nyt-accent); border-radius: 0px;
+        background: var(--ui-chrome-soft);
+        font-family: var(--font-ui); font-size: var(--text-ui-min); font-weight: 700; color: var(--foreground); border-radius: 0px;
     }
-    .activity-dot { width: 5px; height: 5px; background: var(--nyt-accent); border-radius: 50%; box-shadow: 0 0 8px var(--nyt-accent); }
+    .activity-dot { width: 5px; height: 5px; background: var(--presek-mark); border-radius: 50%; box-shadow: 0 0 8px color-mix(in srgb, var(--presek-mark) 55%, transparent); }
 
     /* ── Discovery Navigation ────────────────────────── */
     .discovery-nav-v2 {
@@ -264,7 +264,7 @@
         left: 50%;
         width: 0;
         height: 2px;
-        background: var(--nyt-accent);
+        background: var(--presek-mark);
         transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), left 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         border-radius: 0px;
         box-shadow: none;
@@ -274,9 +274,9 @@
         left: 0.72rem;
     }
     .nav-rail-link.is-active {
-        color: var(--nyt-accent);
-        background: color-mix(in srgb, var(--nyt-accent) 8%, transparent);
-        border-color: color-mix(in srgb, var(--nyt-accent) 25%, transparent);
+        color: var(--presek-mark);
+        background: color-mix(in srgb, var(--presek-mark) 8%, transparent);
+        border-color: color-mix(in srgb, var(--presek-mark) 25%, transparent);
     }
     .nav-rail-link.is-active::after {
         width: calc(100% - 1.44rem) !important;
@@ -294,16 +294,16 @@
 
     .nav-rail-link--analysis {
         font-weight: 800;
-        color: var(--nyt-accent);
+        color: var(--presek-mark);
         border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
         background: transparent;
     }
 
     .nav-rail-link--analysis:hover,
     .nav-rail-link--analysis.is-active {
-        color: var(--nyt-accent);
-        background: color-mix(in srgb, var(--nyt-accent) 7%, transparent);
-        border-color: color-mix(in srgb, var(--nyt-accent) 28%, var(--border));
+        color: var(--presek-mark);
+        background: color-mix(in srgb, var(--presek-mark) 7%, transparent);
+        border-color: color-mix(in srgb, var(--presek-mark) 28%, var(--border));
     }
 
     .nav-rail-link--browse.is-active {
@@ -314,7 +314,7 @@
     .live-indicator-dot {
         box-shadow: 0 0 8px var(--nyt-red);
     }
-    .nav-rail-link.is-tag { color: var(--nyt-accent); font-weight: 600; font-size: 0.7rem; }
+    .nav-rail-link.is-tag { color: var(--muted-foreground); font-weight: 600; font-size: 0.7rem; }
     .tag-prefix { opacity: 0.45; margin-right: 1px; font-weight: 500; }
 
     .script-toggle-btn {
@@ -322,7 +322,7 @@
         font-size: var(--text-ui-min);
         font-weight: 600;
         letter-spacing: 0.04em;
-        color: var(--nyt-accent);
+        color: var(--muted-foreground);
         background: transparent;
         border: 0;
         padding: 0.2rem 0.35rem;

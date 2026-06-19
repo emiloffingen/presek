@@ -124,34 +124,17 @@ const baseOverflowNavItems = overflowNavSections.flatMap((section: any) =>
     })),
 );
 
-const srMobileOverflowExtras: NavItem[] =
-    lang === 'sr'
-        ? [
-              { label: t('nav.deep_analysis'), href: '/pregled' },
-              ...((nonTrendingSections[1]?.items || []) as any[]).map((item: any) => ({
-                  label: String(item.label || ''),
-                  href: String(item.href || ''),
-              })),
-          ]
-        : [];
+const mobileOverflowExtras: NavItem[] = [
+    { label: t('nav.deep_analysis'), href: '/pregled' },
+    ...((nonTrendingSections[1]?.items || []) as any[]).map((item: any) => ({
+        label: String(item.label || ''),
+        href: String(item.href || ''),
+    })),
+];
 
-const mkMobileOverflowExtras: NavItem[] =
-    lang === 'mk'
-        ? [
-              { label: t('nav.deep_analysis'), href: '/pregled' },
-              ...((nonTrendingSections[1]?.items || []) as any[]).map((item: any) => ({
-                  label: String(item.label || ''),
-                  href: String(item.href || ''),
-              })),
-          ]
-        : [];
-
-const overflowNavItems =
-    lang === 'sr'
-        ? dedupeNavItems([...srMobileOverflowExtras, ...baseOverflowNavItems])
-        : lang === 'mk'
-          ? dedupeNavItems([...mkMobileOverflowExtras, ...baseOverflowNavItems])
-          : baseOverflowNavItems;
+const overflowNavItems = (lang === 'sr' || lang === 'mk')
+    ? dedupeNavItems([...mobileOverflowExtras, ...baseOverflowNavItems])
+    : baseOverflowNavItems;
 
 const pregledHref = l('/pregled');
 const homeHref = l('/');
@@ -289,7 +272,7 @@ function getRelativeTimeStr(dateStr?: string) {
                         <ThemeIsland client:media="(max-width: 768px)" lang={lang} />
                     </div>
                     <details class="utility-menu utility-mobile-only">
-                        <summary class="utility-menu-trigger" aria-label={lang === 'sr' ? 'Podešavanja' : 'Поставки'}>
+                        <summary class="utility-menu-trigger" aria-label={t('settings.breadcrumb')}>
                             <span aria-hidden="true">⋯</span>
                         </summary>
                         <div class="utility-menu-panel" data-no-script-convert>
@@ -298,7 +281,7 @@ function getRelativeTimeStr(dateStr?: string) {
                                 class="utility-menu-link utility-menu-search"
                                 data-presek-search-fab
                             >
-                                {lang === 'sr' ? 'Pretraga' : 'Пребарување'}
+                                {t('search.dialog_label')}
                             </button>
                             <a href={l('/for-you')} class="utility-menu-link">{t('nav.for_you')}</a>
                             <a href={pregledHref} class="utility-menu-link">{t('nav.pregled')}</a>
@@ -377,7 +360,7 @@ function getRelativeTimeStr(dateStr?: string) {
         type="button"
         class="search-fab-trigger"
         data-presek-search-fab
-        aria-label={lang === 'sr' ? 'Otvori pretragu' : 'Отвори пребарување'}
+        aria-label={t('search.open_search')}
     >
         <Search size={18} strokeWidth={2.25} aria-hidden="true" />
     </button>

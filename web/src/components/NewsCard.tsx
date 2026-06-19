@@ -3,8 +3,7 @@ import { chooseClusterImage } from '../utils/imageSelection';
 import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, getDesignCardContext, slugify, transliterate, getSourceInitials } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
 import { dateLocaleForLang, localePathForLang } from '../lib/localePaths';
-import { getVisibleCardSignals, formatSignalBadge } from '../lib/signalBadges';
-import { buildCompactPluralismMeta } from '../lib/trustSignals';
+import { buildPrimaryCardBadge, primaryCardBadgeTier } from '../lib/trustSignals';
 import { useClientTranslations } from '../i18n/clientTranslations';
 import { news } from '../i18n/namespaces/news';
 import { cluster } from '../i18n/namespaces/cluster';
@@ -60,31 +59,20 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
   const uniqueSources = Number((cluster as any).sources_count || (cluster as any).source_count || new Set(cluster.articles.map(a => a.source)).size);
 
-  const signalBadges = getVisibleCardSignals({
+  const trustInput = {
+    sourcesCount: uniqueSources,
     pluralismScore: cluster.pluralism_score,
-    pulseScore: cluster.pulse_score,
-    isBreaking: cluster.is_breaking,
-    topic: cluster.topics?.[0] || main.topic || main.category || '',
-  });
-  const cardSignals = signalBadges.map((badge) =>
-    formatSignalBadge(badge, locale, {
-      pluralism: cluster.pluralism_score,
-      pulse: cluster.pulse_score,
-      topic: cluster.topics?.[0] || main.topic || main.category || '',
-    }, translate),
-  );
+    isStale: false,
+    hasVerification: Boolean(cluster.has_fact_check),
+    quietFreshness: true,
+    isPendingSynthesis: false,
+    isProvisional: false,
+    needsUpgrade: false,
+  };
+  const primaryCardBadge = buildPrimaryCardBadge(trustInput, locale);
+  const primaryBadgeTier = primaryCardBadgeTier(trustInput);
 
   const hasPluralismConflict = (cluster.pluralism_score ?? 0) >= 55;
-  const compactPluralismMeta = (variant === 'compact' || variant === 'wire')
-    ? buildCompactPluralismMeta({
-        sourcesCount: uniqueSources,
-        pluralismScore: cluster.pluralism_score,
-      }, locale)
-    : null;
-  const conflictHeadlines = hasPluralismConflict
-    ? Array.from(new Set(cluster.articles.slice(0, 3).map((article) => getDisplayTitle(article)).filter(Boolean)))
-    : [];
-  const showConflictPreview = conflictHeadlines.length >= 2;
 
   const cardContext = getDesignCardContext(cluster);
   const cardLabel = cardContext.labelKey ? t(cardContext.labelKey as any) : '';
@@ -170,36 +158,22 @@ export const NewsCard: React.FC<NewsCardProps> = ({
           </div>
         )}
 
-        {cardSignals.length > 0 && variant !== 'wire' && variant !== 'compact' && (
-          <div className="cluster-signal-row" aria-label={t('signal.cluster_row')}>
-            <span>{cardSignals[0]}</span>
-          </div>
-        )}
-
-        {showConflictPreview && (
-          <div className="conflict-headline-preview" aria-label={t('pulse.conflict_angles')}>
-            <p className="conflict-headline-kicker">{t('pulse.conflict_angles')}</p>
-            {conflictHeadlines.slice(0, 2).map((headline, index) => (
-              <p key={index} className="conflict-headline-variant">
-                <strong>{t('pulse.conflict_headline')}:</strong> {headline}
-              </p>
-            ))}
+        {primaryCardBadge && variant !== 'wire' && variant !== 'compact' && (
+          <div className="cluster-trust-row" aria-label={t('signal.cluster_row')}>
+            <span className={`card-primary-badge card-primary-badge--${primaryBadgeTier}`} title={primaryCardBadge}>
+              {primaryCardBadge}
+            </span>
           </div>
         )}
 
         <div className="article-footer-meta mt-auto">
           <span className="time-stamp">{getTimeStr(main.ingested_at || main.created_at)}</span>
-          {compactPluralismMeta ? (
+          {(variant === 'compact' || variant === 'wire') && primaryCardBadge && (
             <>
               <span className="meta-dot">·</span>
-              <span className={`pluralism-meta${hasPluralismConflict ? ' pluralism-meta--conflict' : ''}`}>
-                {compactPluralismMeta}
+              <span className={`card-primary-badge card-primary-badge--${primaryBadgeTier} card-primary-badge--compact`}>
+                {primaryCardBadge}
               </span>
-            </>
-          ) : (
-            <>
-              <span className="meta-dot">·</span>
-              <span className="source-count">{uniqueSources} {uniqueSources === 1 ? t('news.source') : t('news.sources')}</span>
             </>
           )}
         </div>

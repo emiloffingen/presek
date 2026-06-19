@@ -21,13 +21,13 @@ import { formatBriefing, extractBriefingSections } from '../utils/briefingFormat
 import { normalizeBriefingPayload } from '../utils/briefingCopy';
 import { chooseClusterImage } from '../utils/imageSelection';
 import { Newspaper, ChevronRight } from 'lucide-react';
-import { getLangFromUrl } from '../i18n/utils';
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import { dateLocaleForLang, localePath, homePath } from '../lib/localePaths';
 
 const API_URL = apiBaseUrl();
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
-const isMK = lang === 'mk';
+const t = useTranslations(lang);
 
 const url = new URL(Astro.request.url);
 const dateParam = url.searchParams.get('date');
@@ -66,10 +66,10 @@ try {
     }
 
     if (!briefingData || briefingData.status === 'error') {
-        error = briefingData?.message || (isMK ? "Брифингот моментално не е достапен." : "Brifing trenutno nije dostupan.");
+        error = briefingData?.message || t('briefing.error_unavailable');
     }
 } catch (e) {
-    error = isMK ? "Грешка при вчитување на податоците." : "Greška pri učitavanju podataka.";
+    error = t('briefing.error_load');
 }
 
 const formattedBriefing = briefingData?.content ? formatBriefing(briefingData.content, lang, hostHeader) : "";
@@ -82,12 +82,10 @@ const displayDate = briefingData?.date
         month: 'long',
         year: 'numeric'
     })
-    : (isMK ? 'Денешно издание' : 'Današnje izdanje');
+    : t('briefing.today_edition');
 
-const pageTitle = isMK ? 'Уреднички брифинг' : 'Urednički brifing';
-const pageDescription = isMK
-    ? 'Дневен уреднички брифинг на Пресек: најважните теми, извори, ниво на консензус и сигнали што бараат дополнителна проверка.'
-    : 'Dnevni urednički brifing Preseka: najvažnije teme, izvori, nivo konsenzusa i signali koji traže dodatnu proveru.';
+const pageTitle = t('briefing.page_title');
+const pageDescription = t('briefing.page_description');
 const leadVisual = briefingData?.lead_cluster ? chooseClusterImage(briefingData.lead_cluster, 'hero', lang as 'sr' | 'mk') : null;
 const leadVisualTitle = briefingData?.lead_cluster?.synthetic_headline || briefingData?.lead_cluster?.articles?.[0]?.title || pageTitle;
 ---
@@ -96,12 +94,15 @@ const leadVisualTitle = briefingData?.lead_cluster?.synthetic_headline || briefi
     <NYTHeader stats={stats} />
 
     <main class="site-layout broadsheet-layout page-content-top pb-[var(--page-py)] overflow-x-hidden" data-briefing-mode={quickMode ? 'quick' : 'full'}>
+        <div class="scroll-progress-container briefing-scroll-progress">
+            <div class="scroll-progress-bar" id="briefing-reading-progress"></div>
+        </div>
         <div class="briefing-page-container">
             {error ? (
                 <div class="py-20 text-center animate-rise">
                     <h2 class="font-serif text-3xl mb-6 font-black italic">{error}</h2>
                     <a href={localePath('/briefing', lang, hostHeader)} class="inline-flex items-center gap-[var(--grid-gap)] px-6 py-3 bg-foreground text-background font-sans ui-status hover:bg-nyt-accent transition-colors">
-                        {isMK ? 'Врати се на последното издание' : 'Vrati se na poslednje izdanje'}
+                        {t('briefing.back_latest')}
                     </a>
                 </div>
             ) : briefingData ? (
@@ -128,7 +129,7 @@ const leadVisualTitle = briefingData?.lead_cluster?.synthetic_headline || briefi
                                         decoding="async"
                                     />
                                     <figcaption>
-                                        {isMK ? 'Визуелен фокус на водечката тема' : 'Vizuelni fokus vodeće teme'}
+                                        {t('briefing.lead_visual_caption')}
                                     </figcaption>
                                 </figure>
                             )}
@@ -149,7 +150,7 @@ const leadVisualTitle = briefingData?.lead_cluster?.synthetic_headline || briefi
                                 type="briefing"
                                 briefingDate={briefingData.date}
                                 lang={lang}
-                                title={isMK ? 'Аудио брифинг' : 'Audio brifing'}
+                                title={t('briefing.audio_title')}
                                 initialAudioUrl={briefingAudioUrl || undefined}
                                 compact
                             />
@@ -194,9 +195,9 @@ const leadVisualTitle = briefingData?.lead_cluster?.synthetic_headline || briefi
                         {homeData && (
                             <div class="mt-40 pt-16 border-t-4 border-foreground">
                                 <div class="flex items-center justify-between mb-12">
-                                    <h2 class="font-serif text-4xl font-black italic">{isMK ? 'Продолжете со читање' : 'Nastavite sa čitanjem'}</h2>
-                                    <a href={homePath(lang, hostHeader)} class="ui-label-min flex items-center gap-[var(--grid-gap)] text-nyt-accent hover:underline">
-                                        {isMK ? 'НАСЛОВНА' : 'NASLOVNA'} <ChevronRight size={14} />
+                                    <h2 class="font-serif text-4xl font-black italic">{t('briefing.continue_reading')}</h2>
+                                    <a href={homePath(lang, hostHeader)} class="ui-label-min flex items-center gap-[var(--grid-gap)] text-foreground hover:underline">
+                                        {t('briefing.home_link')} <ChevronRight size={14} />
                                     </a>
                                 </div>
                                 <BriefingDigest homeData={homeData} />
@@ -232,7 +233,7 @@ const leadVisualTitle = briefingData?.lead_cluster?.synthetic_headline || briefi
             ) : (
                 <div class="py-40 text-center flex flex-col items-center gap-[var(--grid-gap)]">
                     <div class="w-12 h-12 border-4 border-nyt-accent border-t-transparent rounded-full animate-spin"></div>
-                    <p class="font-serif text-xl italic text-muted-foreground">{isMK ? 'Подготвуваме дневен преглед...' : 'Pripremamo dnevni pregled...'}</p>
+                    <p class="font-serif text-xl italic text-muted-foreground">{t('briefing.loading')}</p>
                 </div>
             )}
         </div>
@@ -246,6 +247,13 @@ const leadVisualTitle = briefingData?.lead_cluster?.synthetic_headline || briefi
         max-width: 1300px;
         margin: 0 auto;
         padding: 0 1.5rem;
+        border-left: 3px solid var(--presek-mark);
+        padding-left: calc(1.5rem + 0.35rem);
+    }
+
+    .briefing-scroll-progress .scroll-progress-bar {
+        background: var(--presek-mark);
+        box-shadow: 0 0 15px color-mix(in srgb, var(--presek-mark) 55%, transparent);
     }
 
     .briefing-layout-grid {
@@ -333,3 +341,24 @@ const leadVisualTitle = briefingData?.lead_cluster?.synthetic_headline || briefi
         }
     }
 </style>
+
+<script is:inline>
+    (() => {
+        const initBriefingProgress = () => {
+            const progress = document.getElementById('briefing-reading-progress');
+            if (!progress || progress.dataset.bound === 'true') return;
+            progress.dataset.bound = 'true';
+
+            const updateProgress = () => {
+                const max = document.documentElement.scrollHeight - window.innerHeight;
+                const pct = max > 0 ? Math.min(100, Math.max(0, (window.scrollY / max) * 100)) : 0;
+                progress.style.width = `${pct}%`;
+            };
+            window.addEventListener('scroll', updateProgress, { passive: true });
+            updateProgress();
+        };
+
+        initBriefingProgress();
+        document.addEventListener('astro:page-load', initBriefingProgress);
+    })();
+</script>

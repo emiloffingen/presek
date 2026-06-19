@@ -64,14 +64,26 @@
     }
 
     .lead-entry-primary {
-        background: var(--nyt-accent);
-        border-color: var(--nyt-accent);
-        color: var(--primary-foreground);
+        background: var(--presek-mark);
+        border-color: var(--presek-mark);
+        color: #fffefa;
     }
 
     .lead-entry-primary:hover {
-        background: var(--link-hover);
-        border-color: var(--link-hover);
+        background: color-mix(in srgb, var(--presek-mark) 82%, #000);
+        border-color: color-mix(in srgb, var(--presek-mark) 82%, #000);
+    }
+
+    .lead-hero-compact .lead-edition-bar,
+    .lead-hero-compact .lead-synthesis-badge,
+    .lead-hero-compact .lead-status-badge,
+    .lead-hero-compact .lead-value-strip,
+    .lead-hero-compact .lead-follow-strip {
+        display: none;
+    }
+
+    .lead-hero-compact .lead-meta-primary .card-primary-badge {
+        margin-left: 0.15rem;
     }
 
     .lead-entry-secondary {
@@ -80,8 +92,8 @@
     }
 
     .lead-entry-secondary:hover {
-        border-color: var(--nyt-accent);
-        color: var(--nyt-accent);
+        border-color: var(--ui-chrome-border);
+        color: var(--link-hover);
     }
 
     .lead-hero-no-visual .lead-copy .headline-lead {
@@ -134,7 +146,7 @@
         font-family: var(--font-ui);
         font-size: 0.68rem;
         font-weight: 700;
-        color: var(--nyt-accent);
+        color: var(--presek-mark);
         letter-spacing: 0.02em;
     }
 
@@ -150,7 +162,7 @@
     .status-dot {
         width: 6px;
         height: 6px;
-        background: var(--nyt-accent);
+        background: var(--presek-mark);
         border-radius: 50%;
         position: relative;
         z-index: 2;
@@ -160,7 +172,7 @@
         position: absolute;
         width: 100%;
         height: 100%;
-        background: var(--nyt-accent);
+        background: var(--presek-mark);
         border-radius: 50%;
         z-index: 1;
         opacity: 0.4;
@@ -379,9 +391,9 @@
 		justify-content: center;
 		min-height: 2rem;
 		padding: 0.48rem 0.72rem;
-		border: 1px solid color-mix(in srgb, var(--nyt-accent) 38%, var(--border));
-		background: color-mix(in srgb, var(--nyt-accent) 6%, transparent);
-		color: var(--nyt-accent);
+		border: 1px solid var(--presek-mark-line);
+		background: var(--presek-mark-soft);
+		color: var(--presek-mark);
 		text-decoration: none;
 		line-height: 1;
 		transition:
@@ -392,8 +404,8 @@
 	}
 
 	.lead-meta-link:hover {
-		border-color: var(--nyt-accent);
-		background: var(--nyt-accent);
+		border-color: var(--presek-mark);
+		background: var(--presek-mark);
 		color: white;
 		transform: translateY(-1px);
 	}

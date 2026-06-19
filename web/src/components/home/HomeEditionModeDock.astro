@@ -1,0 +1,31 @@
+---
+import { useTranslations } from '../../i18n/utils';
+
+interface Props {
+    lang: 'sr' | 'mk';
+}
+
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+---
+
+<div class="home-mode-dock" data-home-mode-dock hidden>
+    <div class="home-mode-dock-inner site-layout">
+        <button
+            type="button"
+            class="home-mode-dock-btn is-active"
+            data-home-mode-daily
+            aria-pressed="true"
+        >
+            {t('home.mode_daily_short')}
+        </button>
+        <button
+            type="button"
+            class="home-mode-dock-btn"
+            data-home-mode-analiza
+            aria-pressed="false"
+        >
+            {t('home.mode_analiza')}
+        </button>
+    </div>
+</div>

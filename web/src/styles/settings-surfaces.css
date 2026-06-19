@@ -46,7 +46,7 @@
 }
 
 .onboarding-chip:hover {
-  border-color: var(--nyt-accent);
+  border-color: var(--ui-chrome);
   transform: translateY(-1px);
 }
 
@@ -94,7 +94,7 @@
   font-weight: 900;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--nyt-accent);
+  color: var(--ui-chrome);
 }
 
 .onboarding-head h2 {
@@ -177,7 +177,7 @@
 
 .onboarding-step-icon {
   display: inline-flex;
-  color: var(--nyt-accent);
+  color: var(--ui-chrome);
 }
 
 .onboarding-actions {
@@ -248,7 +248,7 @@
   font-weight: 900;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--nyt-accent);
+  color: var(--ui-chrome);
 }
 
 .settings-module-head h2,
@@ -383,7 +383,7 @@
   font-weight: 900;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--nyt-accent);
+  color: var(--ui-chrome);
 }
 
 .settings-recent-item h4 {
@@ -610,7 +610,7 @@
   font-weight: 900;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--nyt-accent);
+  color: var(--ui-chrome);
 }
 
 .delivery-status-copy {
@@ -650,8 +650,8 @@
 }
 
 .delivery-toggle.is-active {
-  color: var(--nyt-accent);
-  border-color: color-mix(in srgb, var(--nyt-accent) 38%, var(--border) 62%);
+  color: var(--ui-chrome);
+  border-color: color-mix(in srgb, var(--ui-chrome) 38%, var(--border) 62%);
 }
 
 .delivery-toggle-content,
@@ -722,7 +722,7 @@
   font-weight: 900;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--nyt-accent);
+  color: var(--ui-chrome);
 }
 
 .scheduled-delivery-copy {
@@ -759,7 +759,7 @@
   font-weight: 900;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--nyt-accent);
+  color: var(--ui-chrome);
 }
 
 .account-sync-copy,
@@ -819,7 +819,7 @@
 }
 
 .account-sync-message.is-done {
-  color: var(--nyt-accent);
+  color: var(--ui-chrome);
 }
 
 .account-sync-message.is-error {

@@ -18,7 +18,7 @@ if (!items.length) return;
 
 const t = useTranslations(lang);
 const navLabel = t('home.analiza_nav_label');
-const jumpLabel = lang === 'sr' ? 'Idi na odeljak' : 'Оди на оддел';
+const jumpLabel = t('home.analiza_nav_jump');
 ---
 
 <nav class="analiza-section-nav homepage-analiza-only" aria-label={navLabel}>

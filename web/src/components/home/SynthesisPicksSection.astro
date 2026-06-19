@@ -21,14 +21,8 @@ const t = useTranslations(lang);
 const l = (path: string) => localePath(path, lang, hostHeader);
 
 function getSourceBadgeLabel(count: number) {
-    if (lang === 'sr') {
-        if (count === 1) return '1 MEDIJ';
-        if (count >= 2 && count <= 4) return `${count} MEDIJA`;
-        return `${count} MEDIJA`;
-    } else {
-        if (count === 1) return '1 МЕДИУМ';
-        return `${count} МЕДИУМИ`;
-    }
+    if (count === 1) return t('home.synthesis_source_one');
+    return t('home.synthesis_source_other', { count });
 }
 
 function getClusterUrl(cluster: NewsCluster) {
@@ -36,14 +30,9 @@ function getClusterUrl(cluster: NewsCluster) {
 }
 
 function getPluralismLabel(value: number) {
-    if (lang === 'sr') {
-        if (value >= 75) return 'visok pluralizam';
-        if (value >= 60) return 'stabilan pluralizam';
-        return 'umeren pluralizam';
-    }
-    if (value >= 75) return 'висок плурализам';
-    if (value >= 60) return 'стабилен плурализам';
-    return 'умерен плурализам';
+    if (value >= 75) return t('home.pluralism_high');
+    if (value >= 60) return t('home.pluralism_stable');
+    return t('home.pluralism_moderate');
 }
 
 const synthesisTeaser = synthesisPicks[0]?.synthetic_headline || synthesisPicks[0]?.articles?.[0]?.title || '';
@@ -53,15 +42,15 @@ const synthesisTeaser = synthesisPicks[0]?.synthetic_headline || synthesisPicks[
     <details class="synthesis-picks-details" data-synthesis-band open={defaultOpen || undefined}>
         <summary class="synthesis-picks-summary" aria-label={t('home.synthesis_picks_title')}>
             <span class="synthesis-picks-summary-label">
-                <span class="badge-text">{lang === 'sr' ? 'Sistemska sinteza' : 'Системска синтеза'}</span>
+                <span class="badge-text">{t('home.synthesis_system_badge')}</span>
                 <strong>{t('home.synthesis_picks_title')}</strong>
                 {synthesisTeaser && (
-                    <span class="synthesis-picks-teaser">{lang === 'sr' ? 'Prvo:' : 'Прво:'} {synthesisTeaser}</span>
+                    <span class="synthesis-picks-teaser">{t('home.analysis_teaser_lead')} {synthesisTeaser}</span>
                 )}
             </span>
             <span class="synthesis-picks-summary-meta">
                 <span class="synthesis-picks-count">{synthesisPicks.length}</span>
-                <span>{lang === 'sr' ? 'Prikaži' : 'Прикажи'}</span>
+                <span>{t('home.analysis_expand')}</span>
             </span>
         </summary>
     <section class="synthesis-picks-section">
@@ -97,9 +86,9 @@ const synthesisTeaser = synthesisPicks[0]?.synthetic_headline || synthesisPicks[
                                             {cluster.articles?.[0]?.category || 'Tema'}
                                         </span>
                                         <div class="synthesis-badges">
-                                            <span class="synthesis-badge">{lang === 'sr' ? 'SINTEZA' : 'СИНТЕЗА'}</span>
+                                            <span class="synthesis-badge">{t('home.synthesis_badge_upper')}</span>
                                             {cluster.has_audio && (
-                                                <span class="synthesis-audio-badge">{lang === 'sr' ? '▶ Audio' : '▶ Аудио'}</span>
+                                                <span class="synthesis-audio-badge">{t('home.synthesis_audio_badge')}</span>
                                             )}
                                         </div>
                                     </div>
@@ -119,7 +108,7 @@ const synthesisTeaser = synthesisPicks[0]?.synthetic_headline || synthesisPicks[
                                 </div>
 
                                 <div class="card-footer">
-                                    <span>{lang === 'sr' ? 'Otvori sintezu' : 'Отвори синтеза'}</span>
+                                    <span>{t('home.synthesis_teaser_action')}</span>
                                     <ArrowRight size={16} strokeWidth={2.5} />
                                 </div>
                             </a>

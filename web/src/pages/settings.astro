@@ -29,7 +29,7 @@ const t = useTranslations(lang);
     <div class="max-w-[1200px] mx-auto mt-8 md:mt-12">
       <header class="settings-header editorial-header mb-[clamp(2rem, 4vw, 3.5rem)] motion-rise">
         <div class="flex items-center gap-[var(--grid-gap)] mb-4">
-            <div class="w-10 h-[1px] bg-nyt-accent"></div>
+            <div class="w-10 h-[1px] bg-presek-mark"></div>
             <span class="page-kicker ui-label !mb-0">{t('settings.kicker')}</span>
         </div>
         <h1 class="settings-headline editorial-headline italic text-[clamp(2rem, 4vw, 3.5rem)] font-serif">{t('settings.headline')} <span>{t('settings.headline_span')}</span></h1>
@@ -69,7 +69,7 @@ const t = useTranslations(lang);
           <button class="settings-tab-btn" data-tab="vodic">
             <Sparkles size={16} />
             <span>{t('settings.tab_guide')}</span>
-            <span class="ml-auto ui-label-min px-1.5 py-0.5 rounded-full bg-nyt-accent/10 text-nyt-accent border border-nyt-accent/20" id="guide-tab-badge">0/4</span>
+            <span class="ml-auto ui-label-min px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground border border-border" id="guide-tab-badge">0/4</span>
           </button>
 
           <div class="sidebar-identity-status hidden lg:block">
@@ -85,11 +85,11 @@ const t = useTranslations(lang);
           <div class="sidebar-help-links hidden lg:block mt-8 pt-6 border-t border-border/40">
             <h4 class="ui-label-min text-muted-foreground mb-4">{t('settings.help_title')}</h4>
             <div class="flex flex-col gap-2.5 text-xs font-semibold text-muted-foreground">
-              <a href={localePath('/for-you', lang, hostHeader)} class="flex justify-between items-center hover:text-nyt-accent transition-colors">{t('settings.help_for_you')} <ArrowUpRight size={12} /></a>
-              <a href={localePath('/pregled', lang, hostHeader)} class="flex justify-between items-center hover:text-nyt-accent transition-colors">{t('settings.help_analiza')} <ArrowUpRight size={12} /></a>
-              <a href={localePath('/briefing', lang, hostHeader)} class="flex justify-between items-center hover:text-nyt-accent transition-colors">{t('settings.help_briefing')} <ArrowUpRight size={12} /></a>
-              <a href={localePath('/izvori', lang, hostHeader)} class="flex justify-between items-center hover:text-nyt-accent transition-colors">{t('settings.help_sources')} <ArrowUpRight size={12} /></a>
-              <a href={localePath('/contact', lang, hostHeader)} class="flex justify-between items-center hover:text-nyt-accent transition-colors">{t('settings.help_contact')} <ArrowUpRight size={12} /></a>
+              <a href={localePath('/for-you', lang, hostHeader)} class="flex justify-between items-center hover:text-foreground transition-colors">{t('settings.help_for_you')} <ArrowUpRight size={12} /></a>
+              <a href={localePath('/pregled', lang, hostHeader)} class="flex justify-between items-center hover:text-foreground transition-colors">{t('settings.help_analiza')} <ArrowUpRight size={12} /></a>
+              <a href={localePath('/briefing', lang, hostHeader)} class="flex justify-between items-center hover:text-foreground transition-colors">{t('settings.help_briefing')} <ArrowUpRight size={12} /></a>
+              <a href={localePath('/izvori', lang, hostHeader)} class="flex justify-between items-center hover:text-foreground transition-colors">{t('settings.help_sources')} <ArrowUpRight size={12} /></a>
+              <a href={localePath('/contact', lang, hostHeader)} class="flex justify-between items-center hover:text-foreground transition-colors">{t('settings.help_contact')} <ArrowUpRight size={12} /></a>
             </div>
           </div>
         </aside>
@@ -97,7 +97,7 @@ const t = useTranslations(lang);
         <div class="settings-content-wrapper space-y-8">
           <div id="tab-pregled" class="settings-tab-content active">
             <div class="section-eyebrow mb-6 flex items-center gap-4">
-              <LayoutDashboard size={18} className="text-nyt-accent" />
+              <LayoutDashboard size={18} className="text-muted-foreground" />
               <h2 class="section-label ui-label text-foreground">{t('settings.section_overview')}</h2>
               <div class="section-divider flex-1 h-[1px] bg-border/40 ml-4"></div>
             </div>
@@ -108,7 +108,7 @@ const t = useTranslations(lang);
 
           <div id="tab-profil" class="settings-tab-content">
             <div class="section-eyebrow mb-6 flex items-center gap-4">
-              <ShieldCheck size={18} className="text-nyt-accent" />
+              <ShieldCheck size={18} className="text-muted-foreground" />
               <h2 class="section-label ui-label text-foreground">{t('settings.section_profil')}</h2>
               <div class="section-divider flex-1 h-[1px] bg-border/40 ml-4"></div>
             </div>
@@ -119,7 +119,7 @@ const t = useTranslations(lang);
 
           <div id="tab-dostava" class="settings-tab-content">
             <div class="section-eyebrow mb-6 flex items-center gap-4">
-              <Radio size={18} className="text-nyt-accent" />
+              <Radio size={18} className="text-muted-foreground" />
               <h2 class="section-label ui-label text-foreground">{t('settings.section_dostava')}</h2>
               <div class="section-divider flex-1 h-[1px] bg-border/40 ml-4"></div>
             </div>
@@ -132,7 +132,7 @@ const t = useTranslations(lang);
 
           <div id="tab-sinhronizacija" class="settings-tab-content">
             <div class="section-eyebrow mb-6 flex items-center gap-4">
-              <KeyRound size={18} className="text-nyt-accent" />
+              <KeyRound size={18} className="text-muted-foreground" />
               <h2 class="section-label ui-label text-foreground">{t('settings.section_sync')}</h2>
               <div class="section-divider flex-1 h-[1px] bg-border/40 ml-4"></div>
             </div>
@@ -143,7 +143,7 @@ const t = useTranslations(lang);
 
           <div id="tab-vodic" class="settings-tab-content">
             <div class="section-eyebrow mb-6 flex items-center gap-4">
-              <Sparkles size={18} className="text-nyt-accent" />
+              <Sparkles size={18} className="text-muted-foreground" />
               <h2 class="section-label ui-label text-foreground">{t('settings.section_guide')}</h2>
               <div class="section-divider flex-1 h-[1px] bg-border/40 ml-4"></div>
             </div>
@@ -157,9 +157,9 @@ const t = useTranslations(lang);
           <div class="block lg:hidden mt-12 pt-6 border-t border-border/40">
             <h4 class="ui-label-min text-muted-foreground mb-4">{t('settings.help_title')}</h4>
             <div class="grid grid-cols-3 gap-4 text-xs font-semibold text-muted-foreground">
-              <a href={localePath('/briefing', lang, hostHeader)} class="flex justify-between items-center hover:text-nyt-accent transition-colors">{t('settings.mobile_briefing')} <ArrowUpRight size={12} /></a>
-              <a href={localePath('/izvori', lang, hostHeader)} class="flex justify-between items-center hover:text-nyt-accent transition-colors">{t('settings.mobile_sources')} <ArrowUpRight size={12} /></a>
-              <a href={localePath('/contact', lang, hostHeader)} class="flex justify-between items-center hover:text-nyt-accent transition-colors">{t('settings.mobile_contact')} <ArrowUpRight size={12} /></a>
+              <a href={localePath('/briefing', lang, hostHeader)} class="flex justify-between items-center hover:text-foreground transition-colors">{t('settings.mobile_briefing')} <ArrowUpRight size={12} /></a>
+              <a href={localePath('/izvori', lang, hostHeader)} class="flex justify-between items-center hover:text-foreground transition-colors">{t('settings.mobile_sources')} <ArrowUpRight size={12} /></a>
+              <a href={localePath('/contact', lang, hostHeader)} class="flex justify-between items-center hover:text-foreground transition-colors">{t('settings.mobile_contact')} <ArrowUpRight size={12} /></a>
             </div>
           </div>
         </div>

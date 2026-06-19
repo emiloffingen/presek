@@ -93,7 +93,7 @@ export function buildHomepageViewModel(options: {
     localePath: (path: string) => string;
 }): HomepageViewModel {
     const { homepageState, isHomepage, isSimpleHomepage, lang, filters, t, localePath } = options;
-    const showAnalysisLayers = isHomepage && !isSimpleHomepage;
+    const showAnalysisLayers = isHomepage;
     const { category, topic, entity, subcategory, q } = filters;
     const {
         clusters,
@@ -418,10 +418,11 @@ export async function loadHomepageViewModel(options: {
 }): Promise<HomepageViewModel & { homepageState: HomepageDataState; filters: HomepageFilters; error: string | null }> {
     const filters = parseHomepageFilters(options.searchParams);
     const isHomepage = filters.isHomepage;
-    const isSimpleHomepage = isHomepage && options.variant !== 'pregled' && (
-        options.searchParams.get('simple') === '1'
-        || options.searchParams.get('view') === 'simple'
+    const wantsAnalizaLayers = options.variant === 'pregled' || (
+        options.searchParams.get('analiza') === '1'
+        || options.searchParams.get('view') === 'analiza'
     );
+    const isSimpleHomepage = isHomepage && options.variant !== 'pregled' && !wantsAnalizaLayers;
 
     const homepageState = await loadHomepageData({
         apiUrl: options.apiUrl,

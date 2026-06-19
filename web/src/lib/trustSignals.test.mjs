@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildTrustChip, buildCompactPluralismMeta } from './trustSignals.ts';
+import { buildTrustChip, buildCompactPluralismMeta, buildPrimaryCardBadge } from './trustSignals.ts';
 
 test('buildTrustChip shows pending label when synthesis is missing', () => {
   const chip = buildTrustChip(
@@ -38,4 +38,10 @@ test('buildCompactPluralismMeta shows consensus label', () => {
   const meta = buildCompactPluralismMeta({ sourcesCount: 5, pluralismScore: 10 }, 'sr');
   assert.match(meta, /Konsenzus/);
   assert.match(meta, /5 izv\./);
+});
+
+test('buildPrimaryCardBadge shows early signal for single source', () => {
+  const badge = buildPrimaryCardBadge({ sourcesCount: 1 }, 'sr');
+  assert.match(badge, /Rani signal/);
+  assert.match(badge, /1 izvor/);
 });

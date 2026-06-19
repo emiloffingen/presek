@@ -9,6 +9,7 @@ import MeshGradient from './MeshGradient.astro';
 import { buildEmergencyFallbackUrl } from '../../utils/imageSelection';
 import StoryFreshnessBadge from '../StoryFreshnessBadge.astro';
 import { formatStoryFreshness } from '../../utils/storyFreshness';
+import { buildPrimaryCardBadge, primaryCardBadgeTier } from '../../lib/trustSignals';
 
 interface Props {
     leadCluster: NewsCluster;
@@ -108,6 +109,19 @@ const consensusSuffix = (() => {
     }
 })();
 
+const leadSourceCount = Number((leadCluster as any).sources_count || (leadCluster as any).source_count || leadCluster.articles.length);
+const leadTrustInput = {
+    sourcesCount: leadSourceCount,
+    pluralismScore: leadCluster.pluralism_score,
+    isStale: Boolean(leadFreshness.is_stale) && !leadMissingSynthesis,
+    quietFreshness: leadMissingSynthesis,
+    isPendingSynthesis: leadMissingSynthesis,
+    isProvisional: Boolean(leadCluster.synthesis_meta?.is_provisional || leadCluster.synthesis_meta?.needs_upgrade),
+    needsUpgrade: Boolean(leadCluster.synthesis_meta?.needs_upgrade),
+};
+const leadPrimaryBadge = buildPrimaryCardBadge(leadTrustInput, lang as 'sr' | 'mk');
+const leadPrimaryBadgeTier = primaryCardBadgeTier(leadTrustInput);
+
 const valueStripItems = [
     {
         label: t('lead.value_grouped'),
@@ -200,7 +214,7 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl);
             <div class="lead-kicker-meta flex items-center gap-[var(--grid-gap)]">
                 {leadCluster.is_breaking && <span class="significance-badge is-breaking" aria-label={`${t('header.breaking')}: ${t('news.breaking')}`}>{t('news.breaking').toUpperCase()}</span>}
                 {leadSignal && (
-                    <span class="lead-status-badge" aria-label={lang === 'sr' ? `Signal: ${leadSignal}` : `Сигнал: ${leadSignal}`}>
+                    <span class="lead-status-badge" aria-label={`${t('lead.signal_aria')}: ${leadSignal}`}>
                         <div class="status-dot-wrap">
                             <span class="status-dot"></span>
                             <span class="status-dot-pulse"></span>
@@ -274,8 +288,16 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl);
         <div class="lead-meta border-t border-border/50 pt-4 mt-4 flex justify-between items-center">
             <div class="lead-meta-primary flex items-center gap-[var(--grid-gap)] text-[10px] font-bold uppercase tracking-tight text-muted-foreground">
                 <span>{getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)}</span>
-                <span class="opacity-30">·</span>
-                <span>{leadCluster.articles.length} {leadCluster.articles.length === 1 ? t('news.source') : t('news.sources')}</span>
+                {compact ? (
+                    <span class={`card-primary-badge card-primary-badge--${leadPrimaryBadgeTier} card-primary-badge--compact`}>
+                        {leadPrimaryBadge}
+                    </span>
+                ) : (
+                    <>
+                        <span class="opacity-30">·</span>
+                        <span>{leadSourceCount} {leadSourceCount === 1 ? t('news.source') : t('news.sources')}</span>
+                    </>
+                )}
             </div>
             <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="lead-meta-link ui-kicker ui-kicker--accent" data-testid="cluster-link">{t('lead.full_synthesis')}</a>
         </div>

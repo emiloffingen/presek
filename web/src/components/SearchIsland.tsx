@@ -263,7 +263,7 @@ export default function SearchIsland({
   ];
 
   const CATEGORIES = [
-    { id: 'all', label: t('search.category_all'), color: 'bg-nyt-accent' },
+    { id: 'all', label: t('search.category_all'), color: 'bg-foreground' },
     { id: lang === 'sr' ? 'Srbija' : 'Makedonija', label: t('search.category_country'), color: 'bg-nyt-red' },
     { id: 'Politika', label: t('search.category_politika'), color: 'bg-blue-600' },
     { id: 'Ekonomija', label: t('search.category_ekonomija'), color: 'bg-emerald-600' },
@@ -576,7 +576,7 @@ export default function SearchIsland({
       >
         {/* Command Header */}
         <div className="flex items-center gap-3 px-4 py-3 sm:px-6 sm:py-4 border-b border-border/40 bg-secondary/10">
-          <Search className="hidden sm:block text-nyt-accent" size={24} />
+          <Search className="hidden sm:block text-muted-foreground" size={24} />
           <div className="flex-1 relative">
             <input
               ref={inputRef}
@@ -585,25 +585,25 @@ export default function SearchIsland({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t('search.input_placeholder')}
-              className="w-full bg-transparent py-2.5 sm:py-4 text-xl sm:text-2xl md:text-3xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground/40 border-b-2 border-transparent focus:border-nyt-accent transition-colors search-cmd-input"
+              className="w-full bg-transparent py-2.5 sm:py-4 text-xl sm:text-2xl md:text-3xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground/40 border-b-2 border-transparent focus:border-foreground transition-colors search-cmd-input"
               autoComplete="off"
               spellCheck="false"
             />
             {isLoading && (
               <div className="absolute right-0 top-1/2 -translate-y-1/2">
-                <LoaderCircle size={20} className="animate-spin text-nyt-accent" />
+                <LoaderCircle size={20} className="animate-spin text-muted-foreground" />
               </div>
             )}
           </div>
           <div className="flex items-center gap-1 sm:gap-[var(--grid-gap)]">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`search-cmd-toolbar-btn p-2 hover:bg-secondary transition-colors ${showFilters ? 'text-nyt-accent' : 'text-muted-foreground'}`}
+              className={`search-cmd-toolbar-btn p-2 hover:bg-secondary transition-colors ${showFilters ? 'text-muted-foreground' : 'text-muted-foreground'}`}
               title={t('search.filters_title')}
             >
               <SlidersHorizontal size={18} />
             </button>
-            <button onClick={startVoiceSearch} className={`search-cmd-toolbar-btn p-2 rounded-none hover:bg-secondary transition-colors ${isListening ? 'text-nyt-accent animate-pulse' : 'text-muted-foreground'}`}>
+            <button onClick={startVoiceSearch} className={`search-cmd-toolbar-btn p-2 rounded-none hover:bg-secondary transition-colors ${isListening ? 'text-muted-foreground animate-pulse' : 'text-muted-foreground'}`}>
               <Mic size={18} />
             </button>
             <button onClick={closeSearch} className="search-cmd-toolbar-btn p-2 rounded-none hover:bg-secondary text-muted-foreground transition-colors">
@@ -615,7 +615,7 @@ export default function SearchIsland({
         {/* Voice Search listening overlay */}
         {isListening && (
           <div className="absolute inset-0 bg-background/95 backdrop-blur-md z-[10001] flex flex-col items-center justify-center gap-6 animate-in fade-in duration-300">
-            <div className="w-20 h-20 bg-nyt-accent/10 rounded-full flex items-center justify-center text-nyt-accent animate-pulse border border-nyt-accent/20 shadow-lg shadow-nyt-accent/10">
+            <div className="w-20 h-20 bg-secondary rounded-full flex items-center justify-center text-muted-foreground animate-pulse border border-border shadow-lg">
               <Mic size={36} />
             </div>
             
@@ -623,7 +623,7 @@ export default function SearchIsland({
               {[...Array(6)].map((_, i) => (
                 <div
                   key={i}
-                  className="w-1.5 bg-nyt-accent rounded-full animate-bounce"
+                  className="w-1.5 bg-foreground rounded-full animate-bounce"
                   style={{
                     height: '24px',
                     animationDelay: `${i * 0.15}s`,
@@ -661,7 +661,7 @@ export default function SearchIsland({
                     onClick={() => setCategoryFilter(cat.id)}
                     className={`search-cmd-chip px-3 py-1 rounded-none transition-all border ${
                       categoryFilter === cat.id
-                        ? 'bg-nyt-accent text-white border-nyt-accent shadow-sm'
+                        ? 'bg-foreground text-background border-foreground shadow-sm'
                         : 'bg-background hover:bg-secondary border-border text-foreground'
                     }`}
                   >
@@ -688,7 +688,7 @@ export default function SearchIsland({
                     onClick={() => setTimespan(option.id)}
                     className={`search-cmd-chip px-3 py-1 rounded-none transition-all border ${
                       timespan === option.id
-                        ? 'bg-nyt-accent text-white border-nyt-accent shadow-sm'
+                        ? 'bg-foreground text-background border-foreground shadow-sm'
                         : 'bg-background hover:bg-secondary border-border text-foreground'
                     }`}
                   >
@@ -748,7 +748,7 @@ export default function SearchIsland({
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-[var(--grid-gap)]">
                     {trendingItems.length > 0 ? trendingItems.map((item, i) => (
                       <button key={i} onClick={() => setQuery(item.word)} className="flex items-center gap-2 sm:gap-[var(--grid-gap)] p-2.5 sm:p-3 bg-secondary/30 hover:bg-secondary/60 rounded-none transition-all group text-left">
-                        <span className="ui-label-min text-nyt-accent/40 group-hover:text-nyt-accent">{(i+1).toString().padStart(2, '0')}</span>
+                        <span className="ui-label-min text-muted-foreground/50 group-hover:text-foreground">{(i+1).toString().padStart(2, '0')}</span>
                         <span className="font-serif font-black text-[13px] sm:text-sm truncate">{item.word}</span>
                       </button>
                     )) : [1,2,3,4,5,6].map(i => <div key={i} className="h-12 bg-secondary/20 animate-pulse rounded-none"></div>)}
@@ -762,7 +762,7 @@ export default function SearchIsland({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-[var(--grid-gap)]">
                     {SEARCH_ACTIONS.map(action => (
                       <button key={action.id} onClick={() => { closeSearch(); navigate(action.href); }} className="flex items-center gap-3 sm:gap-[var(--grid-gap)] p-3 sm:p-4 bg-secondary/30 hover:bg-secondary/60 border border-border/50 rounded-none transition-all group text-left">
-                        <div className="p-2 bg-background rounded-none text-muted-foreground group-hover:text-nyt-accent group-hover:bg-nyt-accent/10 transition-all">
+                        <div className="p-2 bg-background rounded-none text-muted-foreground group-hover:text-foreground group-hover:bg-secondary transition-all">
                           <action.icon size={18} />
                         </div>
                         <div>
@@ -793,11 +793,11 @@ export default function SearchIsland({
                     onClick={() => navigateToQuery(query)}
                     className={`w-full flex items-center gap-3 p-3 sm:p-4 rounded-none border transition-all text-left ${
                       activeIndex === -1
-                        ? 'bg-nyt-accent/5 border-nyt-accent/30 ring-1 ring-nyt-accent/20'
+                        ? 'bg-secondary/80 border-border ring-1 ring-border'
                         : 'bg-secondary/20 border-border/50 hover:bg-secondary/40'
                     }`}
                   >
-                    <Search size={18} className="text-nyt-accent shrink-0" />
+                    <Search size={18} className="text-muted-foreground shrink-0" />
                     <span className="search-cmd-action-title text-foreground">
                       {t('search.search_all', { query: query.trim() })}
                     </span>
@@ -814,13 +814,13 @@ export default function SearchIsland({
                         <h3 className="ui-kicker mb-3 sm:mb-4">{t('search.subjects')}</h3>
                         <button
                           onClick={() => navigateToQuery(entityResult.name)}
-                          className={`w-full flex items-center gap-3 sm:gap-[var(--grid-gap)] p-3 sm:p-4 rounded-none border transition-all text-left ${activeIndex === 0 ? 'bg-nyt-accent/5 border-nyt-accent/30 ring-1 ring-nyt-accent/20' : 'bg-transparent border-transparent hover:bg-secondary/30'}`}
+                          className={`w-full flex items-center gap-3 sm:gap-[var(--grid-gap)] p-3 sm:p-4 rounded-none border transition-all text-left ${activeIndex === 0 ? 'bg-secondary/80 border-border ring-1 ring-border' : 'bg-transparent border-transparent hover:bg-secondary/30'}`}
                         >
-                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-secondary flex items-center justify-center shrink-0 border-2 border-nyt-accent/20">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-secondary flex items-center justify-center shrink-0 border-2 border-border">
                             {entityResult.image_url ? (
                               <img src={proxiedImage(entityResult.image_url, 128)} className="w-full h-full object-cover" />
                             ) : (
-                              <User size={24} className="text-nyt-accent" />
+                              <User size={24} className="text-muted-foreground" />
                             )}
                           </div>
                           <div>
@@ -846,14 +846,14 @@ export default function SearchIsland({
                                   item.has_synthesis
                                     ? 'bg-amber-500/5 border-amber-500/10 hover:border-amber-500/30'
                                     : 'bg-transparent border-transparent hover:bg-secondary/30'
-                                } ${activeIndex === globalIdx ? 'bg-nyt-accent/5 border-nyt-accent/30 ring-1 ring-nyt-accent/20' : ''}`}
+                                } ${activeIndex === globalIdx ? 'bg-secondary/80 border-border ring-1 ring-border' : ''}`}
                               >
                                 <div className="w-14 sm:w-16 aspect-[4/3] rounded-none overflow-hidden bg-secondary shrink-0 border border-border/50">
                                   {item.image_url && <img src={proxiedImage(item.image_url, 200)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />}
                                 </div>
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-center gap-1.5 mb-1">
-                                    <span className={`ui-label-min ${item.has_synthesis ? 'text-amber-600 dark:text-amber-400' : 'text-nyt-accent'}`}>{item.category}</span>
+                                    <span className={`ui-label-min ${item.has_synthesis ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>{item.category}</span>
                                     {item.has_synthesis && (
                                       <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-none bg-amber-500/10 text-amber-600 dark:text-amber-400 ui-label-min">
                                         <Sparkles size={8} fill="currentColor" />
@@ -861,7 +861,7 @@ export default function SearchIsland({
                                       </span>
                                     )}
                                   </div>
-                                  <p className="font-serif font-black text-base sm:text-lg leading-tight line-clamp-2 group-hover:text-nyt-accent transition-colors">{highlightMatch(item.title, query)}</p>
+                                  <p className="font-serif font-black text-base sm:text-lg leading-tight line-clamp-2 group-hover:text-foreground transition-colors">{highlightMatch(item.title, query)}</p>
                                   {item.description && (
                                     <p className="mt-1 text-[12px] sm:text-[13px] text-muted-foreground line-clamp-2 leading-snug">{highlightMatch(item.description, query)}</p>
                                   )}
@@ -890,7 +890,7 @@ export default function SearchIsland({
                           <button
                             key={action.id}
                             onClick={() => { closeSearch(); navigate(action.href); }}
-                            className={`w-full flex items-center gap-3 sm:gap-[var(--grid-gap)] p-3 rounded-none border transition-all text-left ${activeIndex === globalIdx ? 'bg-nyt-accent/5 border-nyt-accent/30 ring-1 ring-nyt-accent/20' : 'bg-transparent border-transparent hover:bg-secondary/30'}`}
+                            className={`w-full flex items-center gap-3 sm:gap-[var(--grid-gap)] p-3 rounded-none border transition-all text-left ${activeIndex === globalIdx ? 'bg-secondary/80 border-border ring-1 ring-border' : 'bg-transparent border-transparent hover:bg-secondary/30'}`}
                           >
                             <div className="p-2 bg-secondary rounded-none text-muted-foreground">
                               <action.icon size={16} />
@@ -929,7 +929,7 @@ export default function SearchIsland({
 
                     <div>
                       <div className="flex items-center gap-2 mb-3">
-                         <span className="px-2 py-1 bg-nyt-accent text-white search-cmd-preview-badge rounded">{selectedItem.data.category}</span>
+                         <span className="px-2 py-1 bg-foreground text-background search-cmd-preview-badge rounded">{selectedItem.data.category}</span>
                          {selectedItem.data.has_synthesis && (
                            <span className="px-2 py-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white search-cmd-preview-badge rounded flex items-center gap-1 shadow-sm shadow-amber-500/20">
                              <Sparkles size={10} fill="currentColor" />
@@ -949,13 +949,13 @@ export default function SearchIsland({
                       </div>
                       <div>
                         <p className="ui-kicker text-muted-foreground mb-1">{t('search.score_label')}</p>
-                        <p className="text-xl font-black text-nyt-accent">{selectedItem.data.pulse_score || '8.2'}</p>
+                        <p className="text-xl font-black text-muted-foreground">{selectedItem.data.pulse_score || '8.2'}</p>
                       </div>
                     </div>
 
                     <button
                       onClick={() => navigateToCluster(selectedItem.data.cluster_id)}
-                      className="search-cmd-cta w-full py-4 bg-nyt-accent text-white rounded-none shadow-lg shadow-nyt-accent/20 hover:scale-[1.02] transition-all flex items-center justify-center gap-[var(--grid-gap)]"
+                      className="search-cmd-cta w-full py-4 bg-foreground text-background rounded-none shadow-lg hover:scale-[1.02] transition-all flex items-center justify-center gap-[var(--grid-gap)]"
                     >
                       {t('search.open_story')} <ChevronRight size={16} />
                     </button>
@@ -965,11 +965,11 @@ export default function SearchIsland({
                 {selectedItem.type === 'ENTITY' && (
                   <div className="space-y-8">
                     <div className="flex flex-col items-center text-center">
-                      <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-nyt-accent/10 mb-6 bg-secondary flex items-center justify-center">
+                      <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-border mb-6 bg-secondary flex items-center justify-center">
                         {selectedItem.data.image_url ? (
                           <img src={proxiedImage(selectedItem.data.image_url, 256)} className="w-full h-full object-cover" />
                         ) : (
-                          <User size={64} className="text-nyt-accent/40" />
+                          <User size={64} className="text-muted-foreground/40" />
                         )}
                       </div>
                       <h2 className="font-serif font-black text-3xl mb-2">{selectedItem.data.name}</h2>
@@ -981,8 +981,8 @@ export default function SearchIsland({
                           <p className="ui-kicker text-muted-foreground mb-4">{t('search.media_presence')}</p>
                           <div className="flex items-end gap-1 h-12 mb-2">
                             {[30, 50, 40, 80, 60, 90, 75, 85].map((h, i) => (
-                              <div key={i} className="flex-1 bg-nyt-accent/20 rounded-t-sm group relative" style={{ height: `${h}%` }}>
-                                <div className="absolute inset-0 bg-nyt-accent opacity-0 group-hover:opacity-100 transition-opacity rounded-t-sm" />
+                              <div key={i} className="flex-1 bg-muted rounded-t-sm group relative" style={{ height: `${h}%` }}>
+                                <div className="absolute inset-0 bg-foreground opacity-0 group-hover:opacity-100 transition-opacity rounded-t-sm" />
                               </div>
                             ))}
                           </div>
@@ -1000,7 +1000,7 @@ export default function SearchIsland({
 
                     <button
                       onClick={() => navigateToQuery(selectedItem.data.name)}
-                      className="search-cmd-cta w-full py-4 bg-foreground text-background rounded-none hover:bg-nyt-accent hover:text-white transition-all flex items-center justify-center gap-[var(--grid-gap)]"
+                      className="search-cmd-cta w-full py-4 bg-foreground text-background rounded-none hover:opacity-90 transition-all flex items-center justify-center gap-[var(--grid-gap)]"
                     >
                       {t('search.view_all_stories')} <ExternalLink size={16} />
                     </button>
@@ -1009,7 +1009,7 @@ export default function SearchIsland({
 
                 {selectedItem.type === 'ACTION' && (
                   <div className="h-full flex flex-col justify-center items-center text-center space-y-6">
-                    <div className="w-24 h-24 bg-nyt-accent/10 rounded-none flex items-center justify-center text-nyt-accent rotate-3">
+                    <div className="w-24 h-24 bg-secondary rounded-none flex items-center justify-center text-muted-foreground rotate-3">
                        <selectedItem.data.icon size={48} />
                     </div>
                     <div>
@@ -1018,7 +1018,7 @@ export default function SearchIsland({
                     </div>
                     <button
                       onClick={() => { closeSearch(); navigate(selectedItem.data.href); }}
-                      className="search-cmd-cta px-10 py-4 bg-foreground text-background rounded-none hover:bg-nyt-accent transition-all"
+                      className="search-cmd-cta px-10 py-4 bg-foreground text-background rounded-none hover:opacity-90 transition-all"
                     >
                       {t('search.open')}
                     </button>

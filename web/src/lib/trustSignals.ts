@@ -108,28 +108,43 @@ export function buildTrustChip(input: TrustInput, lang: 'sr' | 'mk'): TrustChipD
   };
 }
 
-/** Short footer label for compact/wire cards where TrustChip row is hidden. */
-export function buildCompactPluralismMeta(input: TrustInput, lang: 'sr' | 'mk'): string | null {
-  if ((input.sourcesCount || 0) < 2 || input.pluralismScore == null) {
-    return null;
+function sourcesShortLabel(count: number, lang: 'sr' | 'mk'): string {
+  if (lang === 'mk') {
+    return count === 1 ? '1 извор' : `${count} изв.`;
   }
+  return count === 1 ? '1 izvor' : `${count} izv.`;
+}
 
-  const trust = buildTrustChip(input, lang);
-  const sourcesLabel = lang === 'mk'
-    ? `${trust.sourcesCount} изв.`
-    : `${trust.sourcesCount} izv.`;
-
-  if (trust.tier === 'plural') {
-    return lang === 'mk'
-      ? `Различни агли · ${sourcesLabel} · ${input.pluralismScore}%`
-      : `Različiti uglovi · ${sourcesLabel} · ${input.pluralismScore}%`;
-  }
+/** Single-line trust badge for feed cards (replaces TrustChip + signal row + footer meta). */
+export function buildPrimaryCardBadge(input: TrustInput, lang: 'sr' | 'mk'): string {
+  const sources = Math.max(0, input.sourcesCount || 0);
+  const sourcesLabel = sourcesShortLabel(sources, lang);
+  const trust = buildTrustChip({ ...input, quietFreshness: true }, lang);
 
   if (trust.tier === 'consensus') {
-    return lang === 'mk'
-      ? `Консензус · ${sourcesLabel}`
-      : `Konsenzus · ${sourcesLabel}`;
+    return lang === 'mk' ? `Консензус · ${sourcesLabel}` : `Konsenzus · ${sourcesLabel}`;
+  }
+
+  if (trust.tier === 'plural') {
+    const pct = input.pluralismScore ?? '';
+    const pluralLabel = lang === 'mk' ? 'Различни агли' : 'Različiti uglovi';
+    return pct !== '' && pct != null
+      ? `${pluralLabel} · ${sourcesLabel} · ${pct}%`
+      : `${pluralLabel} · ${sourcesLabel}`;
   }
 
   return `${trust.label} · ${sourcesLabel}`;
+}
+
+export function primaryCardBadgeTier(input: TrustInput): TrustTier {
+  return buildTrustChip({ ...input, quietFreshness: true }, 'sr').tier;
+}
+
+/** Short footer label for compact/wire cards where TrustChip row is hidden. */
+export function buildCompactPluralismMeta(input: TrustInput, lang: 'sr' | 'mk'): string | null {
+  if ((input.sourcesCount || 0) < 1) {
+    return null;
+  }
+
+  return buildPrimaryCardBadge(input, lang);
 }

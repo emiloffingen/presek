@@ -28,7 +28,7 @@ import HomeLiveStrip from './HomeLiveStrip.astro';
 import HomeBriefingTeaser from './HomeBriefingTeaser.astro';
 import TrendingPreviewRail from './TrendingPreviewRail.astro';
 import DailyEditionBar from './DailyEditionBar.astro';
-import HomeStartHere from './HomeStartHere.astro';
+import HomeEditionModeDock from './HomeEditionModeDock.astro';
 import LeadEvidenceChips from './LeadEvidenceChips.astro';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { apiBaseUrl } from '../../lib/apiBase';
@@ -131,10 +131,9 @@ const {
 } = homepageVm;
 
 const { category, topic, entity, subcategory, q, timespan, isHomepage } = filters;
-const isSimpleHomepage = isHomepage && variant !== 'pregled' && (
-  Astro.url.searchParams.get('simple') === '1'
-  || Astro.url.searchParams.get('view') === 'simple'
-);
+const wantsAnalizaView = Astro.url.searchParams.get('analiza') === '1'
+    || Astro.url.searchParams.get('view') === 'analiza';
+const isSimpleHomepage = isHomepage && variant !== 'pregled' && !wantsAnalizaView;
 const {
     clusters,
     globalClusters,
@@ -148,6 +147,20 @@ if (homepageFlags.shouldSetErrorStatus) {
     Astro.response.status = 500;
 }
 
+const dailyModeLabel = isHomepage && variant !== 'pregled' && isSimpleHomepage
+    ? t('home.mode_daily')
+    : null;
+
+const expandPreviewChips: string[] = [];
+if (typeof pluralismPct === 'number' && pluralismPct > 0) {
+    expandPreviewChips.push(t('home.expand_preview_pluralism', { pct: pluralismPct }));
+}
+if (displayedSynthesisPicks.length > 0) {
+    expandPreviewChips.push(t('home.expand_preview_synthesis', { count: displayedSynthesisPicks.length }));
+}
+if (analizaNavItems.length > 0) {
+    expandPreviewChips.push(t('home.expand_preview_modules', { count: analizaNavItems.length }));
+}
 ---
 
 <Layout
@@ -169,6 +182,7 @@ if (homepageFlags.shouldSetErrorStatus) {
 			'site-layout broadsheet-layout py-0 max-w-full',
 			isPregled ? 'home-page-variant-pregled' : 'home-page-variant-feed',
 			!isHomepage && !isPregled ? 'home-filtered-view' : '',
+			wantsAnalizaView ? 'home-analysis-expanded' : '',
 		]}
 		data-testid="news-feed"
 		data-home-session-root
@@ -183,7 +197,7 @@ if (homepageFlags.shouldSetErrorStatus) {
 			<div class="broadsheet-main home-mobile-feed">
                 {!error && isHomepage && (
                     <div class="home-mobile-order-edition">
-                        <DailyEditionBar lang={lang} />
+                        <DailyEditionBar lang={lang} modeLabel={dailyModeLabel} />
                         {isPregled && (
                             <a href={l('/')} class="home-pregled-nav-link">{t('home.back_to_feed')}</a>
                         )}
@@ -216,7 +230,7 @@ if (homepageFlags.shouldSetErrorStatus) {
 
                 {error && (
                     <div class="home-error-panel" role="alert">
-                        <p class="home-error-kicker">{lang === 'sr' ? 'Greška' : 'Грешка'}</p>
+                        <p class="home-error-kicker">{t('home.error_kicker')}</p>
                         <p class="home-error-copy">{error}</p>
                         {hasPartialFeedContent && (
                             <p class="home-error-note">{t('home.partial_error_note')}</p>
@@ -226,19 +240,6 @@ if (homepageFlags.shouldSetErrorStatus) {
 
                 {showEmptyState && (
                     <EmptyState trending={trending} errorMessage={error} />
-                )}
-
-                {!error && isHomepage && !isPregled && (
-                    <div class={`homepage-simple-expand ${isSimpleHomepage ? '' : 'hidden'}`} data-simple-expand>
-                        <p class="homepage-simple-expand-copy">
-                            {lang === 'mk'
-                                ? 'Го гледате дневниот преглед. Отворете ја медиската анализа за плурализам, консензус и факт-чек.'
-                                : 'Gledate dnevni pregled. Otvorite medijsku analizu za pluralizam, konsenzus i fakt-ček.'}
-                        </p>
-                        <button type="button" class="homepage-simple-expand-btn" data-expand-analysis>
-                            {lang === 'mk' ? 'Медиска анализа' : 'Medijska analiza'}
-                        </button>
-                    </div>
                 )}
 
 				{leadCluster && !isPregled && (
@@ -261,20 +262,67 @@ if (homepageFlags.shouldSetErrorStatus) {
                             pipelineBusy={pipelineBusy}
 						/>
                         {leadStatus && leadEvidenceItems.length > 0 && (
-                            <LeadEvidenceChips
-                                statusLabel={leadStatus.label}
-                                statusNote={leadStatus.note}
-                                tone={leadStatus.tone}
-                                items={leadEvidenceItems}
-                                lang={lang}
-                            />
+                            <div class="homepage-analiza-only">
+                                <LeadEvidenceChips
+                                    statusLabel={leadStatus.label}
+                                    statusNote={leadStatus.note}
+                                    tone={leadStatus.tone}
+                                    items={leadEvidenceItems}
+                                    lang={lang}
+                                />
+                            </div>
                         )}
 					</div>
 				)}
 
+				{leadCluster && supportingClusters.length > 0 && !isPregled && (
+					<div class="section-wrapper home-mobile-order-supporting home-feed-only home-edition-core presek-section-mark">
+						<SupportingBand
+							supportingFeatured={supportingFeatured}
+							supportingCompact={supportingCompact}
+                            lang={lang}
+						/>
+					</div>
+				)}
+
                 {!error && isHomepage && briefing && !isPregled && (
-                    <div class="section-wrapper home-mobile-order-briefing home-feed-only">
+                    <div class="section-wrapper home-mobile-order-briefing home-feed-only home-edition-core">
                         <HomeBriefingTeaser briefing={briefing} getBriefingSnippet={getBriefingSnippet} />
+                    </div>
+                )}
+
+                {isHomepage && !isPregled && !error && (unifiedFeedItems.length > 0 || globalClusters.length > 0) && (
+                    <div id="home-unified-feed" class="section-wrapper home-mobile-order-feed home-edition-core presek-section-mark home-feed-only">
+                        {unifiedFeedItems.length > 0 ? (
+                            <HomeUnifiedFeed items={unifiedFeedItems} lang={lang} adInsertAfter={5} />
+                        ) : (
+                            <DevelopmentsSection
+                                title={t('home.global_title')}
+                                note={t('home.global_desc')}
+                                developmentsFeatured={globalClusters.slice(0, 2)}
+                                developmentsCompact={globalClusters.slice(2)}
+                                tone="global"
+                            />
+                        )}
+                    </div>
+                )}
+
+                {!error && isHomepage && !isPregled && (
+                    <div class="section-wrapper home-expand-analysis home-edition-expand-panel home-mobile-order-expand home-feed-only">
+                        <p class="type-kicker home-expand-analysis-kicker">{t('home.mode_analiza')}</p>
+                        {expandPreviewChips.length > 0 && (
+                            <div class="home-expand-analysis-preview" aria-label={t('home.expand_preview_label')}>
+                                {expandPreviewChips.map((chip) => (
+                                    <span class="home-expand-analysis-chip">{chip}</span>
+                                ))}
+                            </div>
+                        )}
+                        <button type="button" class="home-expand-analysis-btn" data-expand-home-analysis>
+                            {t('home.mode_open_analiza')}
+                        </button>
+                        <p class="home-expand-analysis-copy">
+                            {t('home.mode_analiza_hint')}
+                        </p>
                     </div>
                 )}
 
@@ -284,27 +332,17 @@ if (homepageFlags.shouldSetErrorStatus) {
                     </div>
                 )}
 
-                {!error && isHomepage && !isPregled && !isSimpleHomepage && (
-                    <div class="section-wrapper home-mobile-order-pregled-teaser home-feed-only home-edition-collapsed">
+                {!error && isHomepage && !isPregled && (
+                    <div class="section-wrapper home-mobile-order-pregled-teaser home-feed-only homepage-analiza-only">
                         <HomePregledTeaser lang={lang} pluralismPct={pluralismPct} stats={stats} />
                     </div>
                 )}
 
-                {!error && isHomepage && analizaNavItems.length > 0 && showAnalysisLayers && (
+                {!error && isHomepage && analizaNavItems.length > 0 && (
                     <div class="homepage-analiza-only">
                         <AnalizaSectionNav items={analizaNavItems} lang={lang} />
                     </div>
                 )}
-
-				{leadCluster && supportingClusters.length > 0 && !isPregled && (
-					<div class:list={['section-wrapper home-mobile-order-supporting home-feed-only', isHomepage ? 'home-edition-collapsed' : '']}>
-						<SupportingBand
-							supportingFeatured={supportingFeatured}
-							supportingCompact={supportingCompact}
-                            lang={lang}
-						/>
-					</div>
-				)}
 
                 {!error && isHomepage && !isPregled && (
                     <div class="section-wrapper home-inline-ad-slot home-inline-ad-slot--rail-feed home-feed-only home-edition-collapsed">
@@ -322,7 +360,7 @@ if (homepageFlags.shouldSetErrorStatus) {
 					</div>
 				)}
 
-				<div class={`home-mobile-order-analysis ${showAnalysisLayers ? 'homepage-analiza-only' : 'hidden'}`}>
+				<div class={`home-mobile-order-analysis ${isHomepage ? 'homepage-analiza-only' : 'hidden'}`}>
 				{/* ── UGAO GLEDANJA (PERSPECTIVE SPECTRUM) ── */}
 				{isHomepage && analysisBands.perspectives && perspectivesClusters && perspectivesClusters.length > 0 && (
 					<details class="section-wrapper analysis-band perspectives-section analysis-band-collapsible" data-perspectives-band>
@@ -425,7 +463,7 @@ if (homepageFlags.shouldSetErrorStatus) {
 
 				</div>
 
-                <div id="home-core-feed" class:list={['home-mobile-order-feed home-feed-core home-feed-only', !isHomepage ? 'home-filtered-feed-extended' : '']}>
+                <div id="home-core-feed" class:list={['home-mobile-order-feed-extended home-feed-core home-feed-only', isHomepage ? 'homepage-analiza-only' : 'home-filtered-feed-extended']}>
                 {!error && !isPregled && (developmentsFeatured.length > 0 || developmentsCompact.length > 0) && (
                     <div class="section-wrapper presek-section-mark">
                         <DevelopmentsSection
@@ -451,44 +489,13 @@ if (homepageFlags.shouldSetErrorStatus) {
                 )}
                 </div>
 
-                {!error && isHomepage && !isPregled && (
-                    <div class="section-wrapper home-expand-analysis home-edition-expand-panel home-mobile-order-expand home-feed-only">
-                        <p class="type-kicker home-expand-analysis-kicker">{t('home.mode_analiza')}</p>
-                        <button type="button" class="home-expand-analysis-btn" data-expand-home-analysis>
-                            {t('home.mode_open_analiza')}
-                        </button>
-                        <p class="home-expand-analysis-copy">
-                            {t('home.mode_analiza_hint')}
-                        </p>
-                    </div>
-                )}
-
-                <div id="home-unified-feed" class:list={['home-mobile-order-feed-extended', isHomepage ? 'homepage-analiza-only' : '']}>
+                <div class="home-mobile-order-feed-extended homepage-analiza-only">
                 {isHomepage && forYouClusters.length > 0 && (
 					<div class="section-wrapper for-you-wrapper" data-for-you-band>
                         <p class="for-you-boundary-label">{t('home.for_you_boundary')}</p>
 					    <ForYouIsland client:visible clusters={forYouClusters} excludeClusterIds={excludedClusterIds} lang={lang} />
                     </div>
 				)}
-
-                {isHomepage && unifiedFeedItems.length > 0 ? (
-                    <div class="section-wrapper presek-section-mark">
-                        <HomeUnifiedFeed items={unifiedFeedItems} lang={lang} adInsertAfter={5} />
-                    </div>
-                ) : (
-                    globalClusters.length > 0 && (
-                        <div class="section-wrapper presek-section-mark">
-                            <DevelopmentsSection
-                                title={t('home.global_title')}
-                                note={t('home.global_desc')}
-                                developmentsFeatured={globalClusters.slice(0, 2)}
-                                developmentsCompact={globalClusters.slice(2)}
-                                tone="global"
-                            />
-                        </div>
-                    )
-                )}
-
                 </div>
 
                 {!error && isHomepage && !isPregled && feedSynthesisTeaser && showAnalysisLayers && (
@@ -514,7 +521,7 @@ if (homepageFlags.shouldSetErrorStatus) {
                 )}
 			</div>
 			{/* HomeRail rendered horizontally at the bottom of the main feed */}
-			<div class={`w-full mt-16 pt-12 ${showAnalysisLayers ? 'homepage-analiza-only' : 'hidden'}`}>
+			<div class={`w-full mt-16 pt-12 ${isHomepage ? 'homepage-analiza-only' : 'hidden'}`}>
 				<div class="masthead-double-rule mb-12"></div>
 				<HomeRail
 					briefing={briefing}
@@ -528,9 +535,12 @@ if (homepageFlags.shouldSetErrorStatus) {
 	</main>
 
 	<Footer />
+    {!error && isHomepage && !isPregled && !q && !category && !topic && !entity && !subcategory && (
+        <HomeEditionModeDock lang={lang as 'sr' | 'mk'} />
+    )}
 </Layout>
 
-{isHomepage && showAnalysisLayers && (perspectiveBandItems.length > 0 || radarBandItems.length > 0 || consensusBandItems.length > 0) && (
+{isHomepage && (perspectiveBandItems.length > 0 || radarBandItems.length > 0 || consensusBandItems.length > 0) && (
 	<>
 		<script type="application/json" id="presek-analysis-bands-data" set:html={JSON.stringify({
 			perspectiveItems: perspectiveBandItems,

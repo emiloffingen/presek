@@ -36,6 +36,7 @@
   --color-nyt-gray-500: var(--nyt-gray-500);
   --color-nyt-gray-600: var(--nyt-gray-600);
   --color-nyt-accent: var(--nyt-accent);
+  --color-presek-mark: var(--presek-mark);
   --color-nyt-red: var(--nyt-red);
   --color-nyt-text: var(--foreground);
   --color-nyt-border: var(--border);
@@ -140,16 +141,16 @@
     --border: #d9d5c8;
     --muted: #f6f4ec;
     --muted-foreground: #686257;
-    --accent: #eef2ff;
+    --accent: #f3efe8;
     --accent-foreground: #121315;
     --destructive: #b91c1c;
     --input: #d8d6ca;
-    --ring: #1e3a8a;
+    --ring: #c45c26;
     --surface-soft: #f7f6f1;
     --surface-strong: #eeede6;
 
-    /* 10% Accent: Trust Blue (Primary Brand) */
-    --nyt-accent: #173f7a;
+    /* Neutral utility accent (search, settings); brand uses --presek-mark */
+    --nyt-accent: #5c574f;
     --nyt-red: #a31621;
     --editorial-positive: #047857;
     --editorial-watch: #92400e;
@@ -158,8 +159,8 @@
     /* Luminous Elements (for borders, overlays, glows) */
     --luminous: rgba(255, 255, 255, 0.8); /* White with opacity for light mode */
     --nyt-black: #101010;
-    --link: #173f7a;
-    --link-hover: #0f559f;
+    --link: #2c2924;
+    --link-hover: #101010;
 
     /* --- Premium Shadow System (Layered) --- */
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -237,11 +238,11 @@
     --destructive: #f87171;
     --border: #292722;
     --input: #302d27;
-    --ring: #5f91d6;
+    --ring: #e07a3d;
     --surface-soft: #111318;
     --surface-strong: #181a20;
 
-    /* Luminescent Shadows for Dark Mode */
+    /* Luminous Shadows for Dark Mode */
     --shadow-premium:
       0 30px 60px -12px rgba(0, 0, 0, 0.6), 0 0 1px rgba(255, 255, 255, 0.1);
 
@@ -255,13 +256,13 @@
     --nyt-gray-300: #1d2335;
     --nyt-gray-500: #8ea3bf; /* Improved contrast for WCAG AA compliance in dark mode */
     --nyt-gray-600: #cbd5e1; /* Improved contrast for secondary typography */
-    --nyt-accent: #60a5fa;
+    --nyt-accent: #aaa294;
     --nyt-red: #f87171;
     --editorial-positive: #34d399;
     --editorial-watch: #f59e0b;
     --editorial-premium: #fbbf24;
-    --link: #60a5fa;
-    --link-hover: #93c5fd;
+    --link: #d8d3c6;
+    --link-hover: #fffefa;
   }
 }
 
@@ -408,7 +409,7 @@ h6,
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--nyt-accent);
+  color: var(--presek-mark);
   display: block;
   margin-bottom: 0.5rem;
   line-height: 1.25;
@@ -551,7 +552,7 @@ textarea:focus-visible,
 select:focus-visible,
 [role="tab"]:focus-visible,
 [tabindex]:focus-visible {
-  outline: 2px solid var(--nyt-accent) !important;
+  outline: 2px solid var(--ring) !important;
   outline-offset: 4px !important;
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--background), transparent 20%) !important;
 }
@@ -564,7 +565,7 @@ select:focus-visible,
 .dark select:focus-visible,
 .dark [role="tab"]:focus-visible,
 .dark [tabindex]:focus-visible {
-  outline-color: var(--nyt-accent) !important;
+  outline-color: var(--ring) !important;
 }
 
 .headline-lead {

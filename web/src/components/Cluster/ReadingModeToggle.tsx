@@ -25,6 +25,15 @@ export default function ReadingModeToggle({ lang = 'sr' }: { lang?: string }) {
     applyReadingMode(initial);
   }, []);
 
+  useEffect(() => {
+    const onChange = (event: Event) => {
+      const detail = (event as CustomEvent<{ mode?: typeof mode }>).detail;
+      if (detail?.mode) setMode(detail.mode);
+    };
+    window.addEventListener('presek:reading-mode-changed', onChange);
+    return () => window.removeEventListener('presek:reading-mode-changed', onChange);
+  }, []);
+
   const selectMode = (next: ReadingMode) => {
     setMode(next);
     saveReadingMode(next);
