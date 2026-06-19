@@ -61,6 +61,19 @@ class TestPruneCrawlQueue:
         assert result["removed"] == 2
         assert result["depth_after"] == 3
 
+    def test_trims_to_soft_limit_after_dedupe(self):
+        messages = [_crawl_message(i) for i in range(200)]
+        with (
+            patch("tasks.utils.redis_client") as mock_redis,
+            patch("tasks.utils.get_celery_queue_depth", return_value=200),
+            patch("core.limits.CRAWL_QUEUE_SOFT_LIMIT", 150),
+        ):
+            mock_redis.lrange.return_value = messages
+            result = prune_crawl_queue(dry_run=True)
+
+        assert result["removed"] == 50
+        assert result["depth_after"] == 150
+
 
 class TestCatchUpDeferredCrawls:
     def test_skips_when_crawl_backlog_high(self):

@@ -524,20 +524,6 @@ def prune_crawl_queue(*, dry_run: bool = False) -> dict:
 
         kept.append(raw)
 
-    if len(kept) > CRAWL_QUEUE_SOFT_LIMIT:
-        trimmed: list[str] = []
-        invalidation_kept = 0
-        invalidation_cap = max(5, CRAWL_QUEUE_SOFT_LIMIT // 10)
-        for raw in kept:
-            task_name = _parse_queue_task_name(raw)
-            if task_name == "tasks.ingestion_task.post_crawl_invalidation_task":
-                if invalidation_kept >= invalidation_cap:
-                    removed += 1
-                    continue
-                invalidation_kept += 1
-            trimmed.append(raw)
-        kept = trimmed
-
     def _crawl_queue_sort_key(raw: str) -> int:
         task_name = _parse_queue_task_name(raw)
         if task_name == "tasks.ingestion_task.crawl_article_task":
@@ -547,6 +533,11 @@ def prune_crawl_queue(*, dry_run: bool = False) -> dict:
         return 2
 
     kept.sort(key=_crawl_queue_sort_key)
+
+    if len(kept) > CRAWL_QUEUE_SOFT_LIMIT:
+        overflow = len(kept) - CRAWL_QUEUE_SOFT_LIMIT
+        removed += overflow
+        kept = kept[:CRAWL_QUEUE_SOFT_LIMIT]
 
     result = {
         "skipped": False,
