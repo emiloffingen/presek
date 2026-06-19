@@ -187,7 +187,7 @@ def _persist_gap_metrics() -> dict[str, int]:
 
 
 def build_snapshot(primary_days: int = 1, history_days: int = 7):
-    from core.limits import FAST_SYNTHESIS_STUCK_HOURS, LOW_SCORE_SYNTHESIS_MIN
+    from core.limits import FAST_SYNTHESIS_STUCK_HOURS, STUCK_FAST_SYNTHESIS_CRITICAL_COUNT, LOW_SCORE_SYNTHESIS_MIN
     from core.synthesis_quality import count_low_score_syntheses, count_stuck_fast_syntheses, count_upgradeable_syntheses
 
     primary = build_report(primary_days)
@@ -200,17 +200,19 @@ def build_snapshot(primary_days: int = 1, history_days: int = 7):
     runtime_fallback_reasons = _runtime_fallback_reason_counts()
     persist_metrics = _persist_gap_metrics()
 
+    stuck_fast_critical = STUCK_FAST_SYNTHESIS_CRITICAL_COUNT
     status = "ok"
     if (
         primary["fallback_ratio"] >= _FALLBACK_RATIO_CRITICAL
         or queue_depth >= _QUEUE_CRITICAL_DEPTH
-        or stuck_fast > 0
+        or stuck_fast >= stuck_fast_critical
         or persist_metrics["persist_gap"] >= _PERSIST_GAP_CRITICAL
     ):
         status = "critical"
     elif (
         primary["fallback_ratio"] >= _FALLBACK_RATIO_WARN
         or queue_depth >= _QUEUE_WARN_DEPTH
+        or stuck_fast > 0
         or persist_metrics["persist_gap"] >= _PERSIST_GAP_WARN
     ):
         status = "warn"

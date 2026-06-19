@@ -69,6 +69,38 @@ class TestMonitorSynthesisQuality:
         assert snapshot["unsummarized_24h"] == 847
         assert snapshot["primary"]["fallback_ratio"] == 0.1
 
+    @patch("scripts.monitor_synthesis_quality._persist_gap_metrics", return_value={"synthesis_events": 0, "db_persisted_events": 0, "persist_gap": 0})
+    @patch("scripts.monitor_synthesis_quality._runtime_fallback_reason_counts", return_value={})
+    @patch("core.synthesis_quality.count_low_score_syntheses", return_value=0)
+    @patch(
+        "core.synthesis_quality.count_upgradeable_syntheses",
+        return_value={"provisional_count": 0, "fallback_count": 0},
+    )
+    @patch("core.synthesis_quality.count_stuck_fast_syntheses", return_value=14)
+    @patch("scripts.monitor_synthesis_quality._unsummarized_counts", return_value={"unsummarized_total": 0, "unsummarized_24h": 0})
+    @patch("scripts.monitor_synthesis_quality._synthesis_ops_queue_depth", return_value=0)
+    @patch("scripts.monitor_synthesis_quality.build_report")
+    def test_build_snapshot_warns_on_small_stuck_fast_backlog(
+        self,
+        mock_build_report,
+        _mock_depth,
+        _mock_unsummarized,
+        _mock_stuck_fast,
+        _mock_upgradeable,
+        _mock_low_score,
+        _mock_runtime_reasons,
+        _mock_persist_gap,
+    ):
+        mock_build_report.side_effect = [
+            {"window_days": 1, "total_summaries": 100, "fallback_total": 10, "fallback_ratio": 0.1, "providers": {}},
+            {"window_days": 7, "total_summaries": 1000, "fallback_total": 100, "fallback_ratio": 0.1, "providers": {}},
+        ]
+
+        snapshot = build_snapshot()
+
+        assert snapshot["status"] == "warn"
+        assert snapshot["stuck_fast_synthesis_count"] == 14
+
     def test_evaluate_report_warn_and_critical(self):
         base = {
             "window_days": 1,

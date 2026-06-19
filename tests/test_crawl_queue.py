@@ -43,6 +43,24 @@ class TestPruneCrawlQueue:
         assert result["removed"] == 1
         assert result["depth_after"] == 2
 
+    def test_dedupes_image_and_invalidation_tasks(self):
+        messages = [
+            _crawl_message(1),
+            json.dumps({"headers": {"task": "tasks.ingestion_task.process_article_image_task", "argsrepr": "(1,)"}}),
+            json.dumps({"headers": {"task": "tasks.ingestion_task.process_article_image_task", "argsrepr": "(1,)"}}),
+            json.dumps({"headers": {"task": "tasks.ingestion_task.post_crawl_invalidation_task", "argsrepr": "(2,)"}}),
+            json.dumps({"headers": {"task": "tasks.ingestion_task.post_crawl_invalidation_task", "argsrepr": "(2,)"}}),
+        ]
+        with (
+            patch("tasks.utils.redis_client") as mock_redis,
+            patch("tasks.utils.get_celery_queue_depth", side_effect=[5, 3]),
+        ):
+            mock_redis.lrange.return_value = messages
+            result = prune_crawl_queue(dry_run=True)
+
+        assert result["removed"] == 2
+        assert result["depth_after"] == 3
+
 
 class TestCatchUpDeferredCrawls:
     def test_skips_when_crawl_backlog_high(self):

@@ -48,8 +48,11 @@ const statusLabel = isHealthy
         : t('status.degraded');
 const statusClass = isHealthy ? 'ok' : isBusy ? 'busy' : 'degraded';
 const celeryQueue = (healthData.celery_queue || {}) as any;
-const intelHeavyDepth = Number(celeryQueue?.queues?.['intel-heavy']?.depth ?? celeryQueue?.celery_depth ?? 0);
-const pipelineBusy = Boolean(celeryQueue?.degraded) || intelHeavyDepth >= Number(celeryQueue?.warn_depth || 150);
+const readerQueueNames = ['ingestion', 'ingestion-crawl', 'fast-track', 'synthesis', 'intel-heavy', 'delivery'];
+const readerQueueDepths = readerQueueNames.map((name) => Number(celeryQueue?.queues?.[name]?.depth ?? 0));
+const readerMaxDepth = readerQueueDepths.length ? Math.max(...readerQueueDepths) : 0;
+const readerTotalDepth = readerQueueDepths.reduce((sum, depth) => sum + depth, 0);
+const pipelineBusy = Boolean(celeryQueue?.degraded) || readerMaxDepth >= Number(celeryQueue?.warn_depth || 150);
 const freshness = healthData.freshness || {};
 const synthesisQuality = (healthData.synthesis_quality || {}) as any;
 const synthesisStatus = String(synthesisQuality?.status || 'unknown');
@@ -146,7 +149,7 @@ const formattedUptime = (seconds: number) => {
                 <div class="metrics-grid">
                     <div class="metric-card">
                         <div class="metric-label">{t('status.pipeline_queue')}</div>
-                        <div class="metric-value">{intelHeavyDepth.toLocaleString()}</div>
+                        <div class="metric-value">{readerMaxDepth.toLocaleString()}</div>
                         <div class="metric-sub">{t('status.pipeline_queue_sub')}</div>
                     </div>
                     <div class="metric-card">
@@ -165,7 +168,7 @@ const formattedUptime = (seconds: number) => {
                     </div>
                     <div class="metric-card">
                         <div class="metric-label">{t('status.pipeline_total')}</div>
-                        <div class="metric-value">{Number(celeryQueue.total_depth || 0).toLocaleString()}</div>
+                        <div class="metric-value">{readerTotalDepth.toLocaleString()}</div>
                         <div class="metric-sub">{t('status.pipeline_total_sub')}</div>
                     </div>
                 </div>

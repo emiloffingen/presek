@@ -201,10 +201,26 @@ def auto_repair_sources_task():
     """
     Identifies paused sources and dispatches individual repair tasks.
     """
+    from tasks.utils import maintenance_dispatches_deferred, schedule_task_once
+
+    if maintenance_dispatches_deferred():
+        log.info("[tasks] Skipping auto-repair dispatch while maintenance queue is congested.")
+        return {"skipped": True, "reason": "maintenance_backlog"}
+
     try:
         paused_sources = db.execute("SELECT name FROM sources WHERE is_active = FALSE AND pause_mode = 'auto'")
+        enqueued = 0
         for source in paused_sources:
-            repair_single_source_task.delay(source["name"])
+            name = source["name"]
+            if schedule_task_once(
+                f"lock:repair_source:{name}",
+                int(os.environ.get("REPAIR_SOURCE_LOCK_TTL_SECONDS", "3600")),
+                repair_single_source_task,
+                args=(name,),
+                queue="maintenance",
+            ):
+                enqueued += 1
+        return {"enqueued": enqueued, "candidates": len(paused_sources or [])}
     except Exception as e:
         log.error(f"[tasks] Auto-repair dispatch failed: {e}")
         Notifier.send_alert("AUTO_REPAIR_FAILURE", f"Failed to dispatch repairs: {e}")

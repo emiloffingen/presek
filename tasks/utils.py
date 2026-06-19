@@ -196,6 +196,7 @@ MAINTENANCE_SINGLETON_TASKS = frozenset(
         "tasks.maintenance.boost_homepage_cluster_supply_task",
         "tasks.intelligence.generate_cluster_metadata_task",
         "tasks.intelligence.generate_embeddings_task",
+        "tasks.ingestion_task.repair_single_source_task",
     }
 )
 INTEL_DEFERRABLE_TASKS = frozenset(
@@ -259,8 +260,27 @@ def _parse_synthesize_urgent_cluster_id(raw_message: str) -> str | None:
     return _parse_upgrade_fast_synthesis_cluster_id(raw_message)
 
 
+def _parse_article_id_from_argsrepr(raw_message: str) -> int | None:
+    import json
+    import re
+
+    body = json.loads(raw_message)
+    argsrepr = str((body.get("headers") or {}).get("argsrepr") or "")
+    match = re.match(r"\((\d+)", argsrepr)
+    return int(match.group(1)) if match else None
+
+
 def _parse_maintenance_dedupe_key(raw_message: str, task_name: str) -> str:
     if task_name != "tasks.intelligence.generate_cluster_metadata_task":
+        if task_name == "tasks.ingestion_task.repair_single_source_task":
+            import json
+            import re
+
+            body = json.loads(raw_message)
+            argsrepr = str((body.get("headers") or {}).get("argsrepr") or "")
+            match = re.match(r"\('([^']+)'", argsrepr)
+            if match:
+                return f"{task_name}:{match.group(1)}"
         return task_name
 
     import json
@@ -458,7 +478,9 @@ def prune_ingestion_queue(*, max_pending: int = 1, dry_run: bool = False) -> dic
 
 
 def prune_crawl_queue(*, dry_run: bool = False) -> dict:
-    """Drop duplicate crawl_article_task dispatches, keeping the oldest per article."""
+    """Drop duplicate crawl/image/invalidation dispatches, keeping the oldest per article."""
+    from core.limits import CRAWL_QUEUE_SOFT_LIMIT
+
     depth_before = get_celery_queue_depth(INGESTION_CRAWL_QUEUE_NAME)
     if depth_before <= 1:
         return {
@@ -469,7 +491,9 @@ def prune_crawl_queue(*, dry_run: bool = False) -> dict:
 
     raw_items = redis_client.lrange(INGESTION_CRAWL_QUEUE_NAME, 0, -1) or []
     kept = []
-    seen_article_ids: set[int] = set()
+    seen_crawl_ids: set[int] = set()
+    seen_image_ids: set[int] = set()
+    seen_invalidation_ids: set[int] = set()
     removed = 0
 
     for raw in raw_items:
@@ -479,11 +503,50 @@ def prune_crawl_queue(*, dry_run: bool = False) -> dict:
         if task_name == "tasks.ingestion_task.crawl_article_task":
             article_id = _parse_crawl_article_id(raw)
             if article_id is not None:
-                if article_id in seen_article_ids:
+                if article_id in seen_crawl_ids:
                     removed += 1
                     continue
-                seen_article_ids.add(article_id)
+                seen_crawl_ids.add(article_id)
+        elif task_name == "tasks.ingestion_task.process_article_image_task":
+            article_id = _parse_article_id_from_argsrepr(raw)
+            if article_id is not None:
+                if article_id in seen_image_ids:
+                    removed += 1
+                    continue
+                seen_image_ids.add(article_id)
+        elif task_name == "tasks.ingestion_task.post_crawl_invalidation_task":
+            article_id = _parse_article_id_from_argsrepr(raw)
+            if article_id is not None:
+                if article_id in seen_invalidation_ids:
+                    removed += 1
+                    continue
+                seen_invalidation_ids.add(article_id)
+
         kept.append(raw)
+
+    if len(kept) > CRAWL_QUEUE_SOFT_LIMIT:
+        trimmed: list[str] = []
+        invalidation_kept = 0
+        invalidation_cap = max(5, CRAWL_QUEUE_SOFT_LIMIT // 10)
+        for raw in kept:
+            task_name = _parse_queue_task_name(raw)
+            if task_name == "tasks.ingestion_task.post_crawl_invalidation_task":
+                if invalidation_kept >= invalidation_cap:
+                    removed += 1
+                    continue
+                invalidation_kept += 1
+            trimmed.append(raw)
+        kept = trimmed
+
+    def _crawl_queue_sort_key(raw: str) -> int:
+        task_name = _parse_queue_task_name(raw)
+        if task_name == "tasks.ingestion_task.crawl_article_task":
+            return 0
+        if task_name == "tasks.ingestion_task.process_article_image_task":
+            return 1
+        return 2
+
+    kept.sort(key=_crawl_queue_sort_key)
 
     result = {
         "skipped": False,
