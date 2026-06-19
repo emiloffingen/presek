@@ -383,9 +383,16 @@ class LocalProvider(AIProvider):
             if json_mode or response_schema is not None:
                 prompt = self._local_synthesis_prompt(prompt, lang)
                 system = self._local_synthesis_system(lang)
-            from core.limits import LOCAL_LLM_SYNTHESIS_LOCK_TIMEOUT_SECONDS
+            from core.limits import (
+                LOCAL_LLM_SYNTHESIS_LOCK_TIMEOUT_SECONDS,
+                LOCAL_SYNTHESIS_MAX_TOKENS,
+                local_synthesis_enabled,
+            )
 
-            local_max_tokens = min(max_tokens, 2200)
+            if not local_synthesis_enabled():
+                return None
+
+            local_max_tokens = min(max_tokens, LOCAL_SYNTHESIS_MAX_TOKENS)
             res = analyst.analyze(
                 prompt,
                 system,
@@ -516,8 +523,17 @@ def build_provider_fallback_order(
     else:
         order = list(base_order)
 
-    if "local" in PROVIDERS and "local" not in order:
+    from core.limits import local_synthesis_enabled
+
+    if (
+        "local" in PROVIDERS
+        and "local" not in order
+        and not (task_type == "synthesis" and not local_synthesis_enabled())
+    ):
         order.append("local")
+
+    if task_type == "synthesis" and not local_synthesis_enabled():
+        order = [provider for provider in order if provider != "local"]
 
     excluded = set(exclude_providers or [])
     return [provider for provider in order if provider not in excluded]

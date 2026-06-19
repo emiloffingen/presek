@@ -128,10 +128,14 @@ def _attempt_gemma_rescue(
     exclude_providers,
 ):
     """Explicit local/Gemma attempt before deterministic fallback."""
-    from core.limits import SYNTHESIS_GEMMA_BEFORE_DETERMINISTIC
+    from core.limits import SYNTHESIS_GEMMA_BEFORE_DETERMINISTIC, local_synthesis_enabled
     from core.llm_router import _local_model_available
 
-    if not SYNTHESIS_GEMMA_BEFORE_DETERMINISTIC or not _local_model_available():
+    if (
+        not SYNTHESIS_GEMMA_BEFORE_DETERMINISTIC
+        or not local_synthesis_enabled()
+        or not _local_model_available()
+    ):
         return None
     if "local" in exclude_providers:
         return None

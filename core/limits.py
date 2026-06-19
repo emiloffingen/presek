@@ -42,8 +42,13 @@ SYNTHESIS_QUALITY_MIN_MISTRAL_LARGE = float(os.environ.get("SYNTHESIS_QUALITY_MI
 SYNTHESIS_QUALITY_MIN_NVIDIA = float(os.environ.get("SYNTHESIS_QUALITY_MIN_NVIDIA", "0.70"))
 
 SYNTHESIS_MK_TRANSLATE_FROM_SR = os.environ.get("SYNTHESIS_MK_TRANSLATE_FROM_SR", "true").lower() == "true"
+def local_synthesis_enabled() -> bool:
+    """When false, Gemma is reserved for article summaries — not cluster synthesis."""
+    return os.environ.get("LOCAL_SYNTHESIS_PREFER_LOCAL", "true").lower() == "true"
+
+
 SYNTHESIS_GEMMA_BEFORE_DETERMINISTIC = (
-    os.environ.get("SYNTHESIS_GEMMA_BEFORE_DETERMINISTIC", "true").lower() == "true"
+    os.environ.get("SYNTHESIS_GEMMA_BEFORE_DETERMINISTIC", "false").lower() == "true"
 )
 
 FAST_SYNTHESIS_STUCK_HOURS = int(os.environ.get("FAST_SYNTHESIS_STUCK_HOURS", "24"))
@@ -68,7 +73,8 @@ SYNTHESIS_PERSIST_GAP_WARN = int(os.environ.get("SYNTHESIS_PERSIST_GAP_WARN", "5
 SYNTHESIS_PERSIST_GAP_CRITICAL = int(os.environ.get("SYNTHESIS_PERSIST_GAP_CRITICAL", "20"))
 LOCAL_LLM_LOCK_TIMEOUT_SECONDS = int(os.environ.get("LOCAL_LLM_LOCK_TIMEOUT_SECONDS", "300"))
 LOCAL_LLM_SYNTHESIS_LOCK_TIMEOUT_SECONDS = int(
-    os.environ.get("LOCAL_LLM_SYNTHESIS_LOCK_TIMEOUT_SECONDS", "420")
+    os.environ.get("LOCAL_LLM_SYNTHESIS_LOCK_TIMEOUT_SECONDS", "120")
 )
+LOCAL_SYNTHESIS_MAX_TOKENS = int(os.environ.get("LOCAL_SYNTHESIS_MAX_TOKENS", "1500"))
 ROUTER_FALLBACK_PRESSURE_LOCAL = os.environ.get("ROUTER_FALLBACK_PRESSURE_LOCAL", "true").lower() == "true"
 LOCAL_SYNTHESIS_SIMPLIFIED_SCHEMA = os.environ.get("LOCAL_SYNTHESIS_SIMPLIFIED_SCHEMA", "true").lower() == "true"

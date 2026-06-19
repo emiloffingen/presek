@@ -108,6 +108,7 @@ def test_clean_json_response_repairs_raw_newlines_inside_json_strings():
 
 
 def test_local_provider_uses_compact_editorial_json_prompt_for_synthesis(monkeypatch):
+    monkeypatch.setenv("LOCAL_SYNTHESIS_PREFER_LOCAL", "true")
     analyst = Mock()
     analyst.analyze.return_value = '{"summary":["x"],"article":"p"}'
     module = types.ModuleType("nlp.local_analyst")
@@ -137,6 +138,7 @@ def test_local_provider_uses_compact_editorial_json_prompt_for_synthesis(monkeyp
 
 
 def test_local_provider_uses_macedonian_compact_synthesis_prompt(monkeypatch):
+    monkeypatch.setenv("LOCAL_SYNTHESIS_PREFER_LOCAL", "true")
     analyst = Mock()
     analyst.analyze.return_value = '{"summary":["x"],"article":"p"}'
     module = types.ModuleType("nlp.local_analyst")
@@ -206,6 +208,7 @@ def test_local_provider_returns_none_when_synthesis_fails(monkeypatch):
 
 
 def test_provider_override_local_cascades_to_remote(monkeypatch):
+    monkeypatch.setenv("LOCAL_SYNTHESIS_PREFER_LOCAL", "true")
     local_provider = Mock()
     local_provider.call.return_value = None
     remote_provider = Mock()
@@ -244,6 +247,7 @@ def test_provider_override_local_cascades_to_remote(monkeypatch):
 
 
 def test_build_provider_fallback_order_excludes_providers(monkeypatch):
+    monkeypatch.setenv("LOCAL_SYNTHESIS_PREFER_LOCAL", "true")
     monkeypatch.setattr(
         "core.ai_engine.PROVIDERS",
         {
@@ -269,6 +273,28 @@ def test_build_provider_fallback_order_excludes_providers(monkeypatch):
     )
 
     assert order == ["mistral_large", "nvidia", "local"]
+
+
+def test_build_provider_fallback_order_omits_local_synthesis_when_disabled(monkeypatch):
+    monkeypatch.setattr(
+        "core.ai_engine.PROVIDERS",
+        {
+            "local": Mock(),
+            "mistral_large": Mock(),
+            "mistral_small": Mock(),
+            "nvidia": Mock(),
+        },
+    )
+    monkeypatch.setenv("LOCAL_SYNTHESIS_PREFER_LOCAL", "false")
+    monkeypatch.setattr(
+        "core.llm_router.SmartModelRouter.get_dynamic_fallback_order",
+        lambda task_type="synthesis": ["mistral_small", "mistral_large", "nvidia"],
+    )
+
+    order = build_provider_fallback_order("synthesis", provider_override="mistral_small")
+
+    assert order == ["mistral_small", "mistral_large", "nvidia"]
+    assert "local" not in order
 
 
 def test_call_ai_skips_rate_limited_provider(monkeypatch):

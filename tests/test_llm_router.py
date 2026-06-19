@@ -224,3 +224,16 @@ def test_route_cluster_busy_system_respects_remote_preference():
         patch("core.llm_router.os.cpu_count", return_value=4),
     ):
         assert SmartModelRouter.route_cluster(articles) == "mistral_small"
+
+
+def test_dynamic_fallback_order_omits_local_when_synthesis_disabled(monkeypatch):
+    monkeypatch.setenv("LOCAL_SYNTHESIS_PREFER_LOCAL", "false")
+    SmartModelRouter._provider_performance = {
+        "mistral_small": {"success_rate": 0.9, "avg_latency": 5.0},
+        "mistral_large": {"success_rate": 0.95, "avg_latency": 10.0},
+        "nvidia": {"success_rate": 0.8, "avg_latency": 8.0},
+        "local": {"success_rate": 0.7, "avg_latency": 120.0},
+    }
+    order = SmartModelRouter.get_dynamic_fallback_order("synthesis")
+    assert "local" not in order
+    assert "mistral_small" in order

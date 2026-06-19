@@ -212,6 +212,11 @@ class SmartModelRouter:
         )
         if chosen != candidate:
             routing_decision["reason"] = f"{reason}_quality_adjusted"
+        from core.limits import local_synthesis_enabled
+
+        if chosen == "local" and not local_synthesis_enabled():
+            chosen = "mistral_large" if is_high_complexity else "mistral_small"
+            routing_decision["reason"] = f"{routing_decision.get('reason', reason)}_local_disabled"
         routing_decision["chosen_provider"] = chosen
         log.info(f"[router] Decision: {json.dumps(routing_decision, ensure_ascii=False)}")
         return chosen
@@ -252,11 +257,16 @@ class SmartModelRouter:
         sorted_providers = sorted(providers_with_stats, key=lambda x: x['score'], reverse=True)
         dynamic_order = [p['name'] for p in sorted_providers]
         
+        from core.limits import local_synthesis_enabled
+
+        if task_type == "synthesis" and not local_synthesis_enabled():
+            return [provider for provider in dynamic_order if provider != "local"]
+
         # Ensure local is last
         if 'local' in dynamic_order:
             dynamic_order.remove('local')
             dynamic_order.append('local')
-        
+
         return dynamic_order
 
     @staticmethod
