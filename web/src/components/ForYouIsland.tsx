@@ -218,7 +218,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
                   matchedSources={item.matched_sources || item.matchedSources}
                   whySummary={whySummary}
                 />
-                <p className={`for-you-card-kicker ${isSemantic ? 'text-nyt-accent' : ''} flex items-center gap-[var(--grid-gap)] px-3 py-1 bg-secondary/10 rounded-full w-fit mb-4 min-w-max`}>
+                <p className={`for-you-card-kicker ${isSemantic ? 'text-presek-mark' : ''} flex items-center gap-[var(--grid-gap)] px-3 py-1 bg-secondary/10 rounded-full w-fit mb-4 min-w-max`}>
                   {isSemantic ? <BrainCircuit size={12} /> : <Compass size={12} />}
                   <span className="leading-none">{isSemantic ? t('for_you.semantic_rec') : (item.reason || t('for_you.related_topic'))}</span>
                 </p>

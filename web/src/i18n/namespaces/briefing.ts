@@ -53,6 +53,8 @@ export const briefing = {
     'briefing.digest_trust_framing': 'Dnevni pregled prvo pokazuje gde se mediji slažu, pa gde se razlikuju.',
     'briefing.digest_focus_topics': 'Aktuelne fokusne teme',
     'briefing.digest_trending': 'U trendu',
+    'briefing.topic_badge': 'Tema',
+    'briefing.cluster_link_title': 'Pogledajte ovaj klaster',
   },
   mk: {
     'briefing.focus_locations': 'ФОКУС ЛОКАЦИИ',
@@ -108,5 +110,7 @@ export const briefing = {
     'briefing.digest_trust_framing': 'Дневниот преглед прво ја покажува каде медиумите се согласуваат, па каде се разликуваат.',
     'briefing.digest_focus_topics': 'Актуелни теми во фокус',
     'briefing.digest_trending': 'Во тренд',
+    'briefing.topic_badge': 'Тема',
+    'briefing.cluster_link_title': 'Погледнете го овој кластер',
   },
 } as const;

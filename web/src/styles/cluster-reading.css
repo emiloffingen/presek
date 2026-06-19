@@ -51,7 +51,7 @@
 }
 
 .cluster-source-details-meta.tone-pending {
-  color: var(--nyt-accent);
+  color: var(--presek-mark);
 }
 
 .cluster-source-details-body {
@@ -217,7 +217,7 @@
   flex-shrink: 0;
   font-size: 1rem;
   font-weight: 700;
-  color: var(--nyt-accent);
+  color: var(--presek-mark);
   line-height: 1;
 }
 
@@ -272,8 +272,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--nyt-accent) 14%, var(--background));
-  color: var(--nyt-accent);
+  background: color-mix(in srgb, var(--presek-mark) 14%, var(--background));
+  color: var(--presek-mark);
   font-family: var(--font-ui);
   font-size: 0.7rem;
   font-weight: 900;
@@ -435,7 +435,7 @@ body.zen-mode .section-eyebrow {
 }
 
 .cluster-meta-chip.tone-pending {
-  color: var(--nyt-accent);
+  color: var(--presek-mark);
 }
 
 .cluster-header-actions {
@@ -504,8 +504,8 @@ body.zen-mode .section-eyebrow {
 }
 
 .cluster-sidebar-tab.is-active {
-  color: var(--nyt-accent);
-  background: color-mix(in srgb, var(--nyt-accent) 7%, var(--background));
+  color: var(--presek-mark);
+  background: color-mix(in srgb, var(--presek-mark) 7%, var(--background));
 }
 
 .cluster-sidebar-panels {
@@ -545,8 +545,8 @@ body.zen-mode .section-eyebrow {
   margin: 0 auto 0.75rem;
   max-width: 1280px;
   padding: 0.55rem 0.75rem;
-  border: 1px solid color-mix(in srgb, var(--nyt-accent) 28%, var(--border));
-  background: color-mix(in srgb, var(--nyt-accent) 6%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--presek-mark) 28%, var(--border));
+  background: color-mix(in srgb, var(--presek-mark) 6%, var(--card));
   font-family: var(--font-ui);
   font-size: var(--text-ui-kicker);
   line-height: 1.35;
@@ -613,8 +613,8 @@ body.compare-mode .cluster-sidebar-details[open] .cluster-sidebar-details-summar
   display: none;
   margin: 0 0 1rem;
   padding: 0.65rem 0.85rem;
-  border: 1px solid color-mix(in srgb, var(--nyt-accent) 28%, var(--border));
-  background: color-mix(in srgb, var(--nyt-accent) 6%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--presek-mark) 28%, var(--border));
+  background: color-mix(in srgb, var(--presek-mark) 6%, var(--card));
   font-family: var(--font-ui);
   font-size: var(--text-sm);
   line-height: 1.45;
@@ -642,8 +642,8 @@ body.compare-mode .editorial-grid {
 }
 
 body.compare-mode .cluster-sidebar-panel.compare-source-diff-panel {
-  border-left: 3px solid var(--nyt-accent);
-  background: color-mix(in srgb, var(--nyt-accent) 4%, var(--card));
+  border-left: 3px solid var(--presek-mark);
+  background: color-mix(in srgb, var(--presek-mark) 4%, var(--card));
   padding-left: 0.75rem;
 }
 

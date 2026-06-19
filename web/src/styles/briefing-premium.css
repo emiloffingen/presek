@@ -135,7 +135,7 @@
 }
 
 .briefing-deck-item.accent-intl:hover {
-    background: color-mix(in srgb, var(--nyt-accent) 4%, color-mix(in srgb, var(--card) 70%, transparent));
+    background: color-mix(in srgb, var(--presek-mark) 4%, color-mix(in srgb, var(--card) 70%, transparent));
 }
 
 /* 3. Divider styling */
@@ -208,8 +208,8 @@
 
 .briefing-quick-panel {
     display: none;
-    border: 1px solid var(--presek-surface-border, color-mix(in srgb, var(--nyt-accent) 25%, var(--border)));
-    background: var(--presek-surface, color-mix(in srgb, var(--nyt-accent) 4%, var(--card)));
+    border: 1px solid var(--presek-surface-border, color-mix(in srgb, var(--presek-mark) 25%, var(--border)));
+    background: var(--presek-surface, color-mix(in srgb, var(--presek-mark) 4%, var(--card)));
     border-left: 3px solid var(--presek-mark);
     border-radius: 1rem;
     padding: 1.25rem 1.35rem;
@@ -266,7 +266,7 @@ main[data-briefing-mode='quick'] .briefing-quick-panel {
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--nyt-accent);
+    color: var(--presek-mark);
 }
 
 .briefing-quick-title {
@@ -331,7 +331,7 @@ main[data-briefing-mode='quick'] .briefing-quick-panel {
     width: 0.35rem;
     height: 0.35rem;
     border-radius: 50%;
-    background: var(--nyt-accent);
+    background: var(--presek-mark);
 }
 
 .briefing-quick-stats {
@@ -495,7 +495,7 @@ main[data-briefing-mode='quick'] .briefing-sections-toc {
 }
 
 .briefing-stats-strip__item.is-intl .briefing-stats-strip__value {
-    color: var(--nyt-accent);
+    color: var(--presek-mark);
 }
 
 /* Editorial edition switch — replaces product-y pill toggle */
@@ -713,7 +713,7 @@ main[data-briefing-mode='quick'] .briefing-sections-toc {
     font-size: 0.62rem;
     font-weight: 800;
     letter-spacing: 0.08em;
-    color: var(--nyt-accent);
+    color: var(--presek-mark);
 }
 
 .briefing-sections-link__title {
@@ -725,7 +725,7 @@ main[data-briefing-mode='quick'] .briefing-sections-toc {
 
 .briefing-sections-link.is-active .briefing-sections-link__title {
     text-decoration: underline;
-    text-decoration-color: color-mix(in srgb, var(--nyt-accent) 55%, transparent);
+    text-decoration-color: color-mix(in srgb, var(--presek-mark) 55%, transparent);
     text-underline-offset: 0.18em;
 }
 
@@ -782,7 +782,7 @@ main[data-briefing-mode='quick'] .briefing-sections-toc {
     font-weight: 800;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: var(--nyt-accent);
+    color: var(--presek-mark);
 }
 
 .morning-email-signup__editorial-title {
@@ -832,7 +832,7 @@ main[data-briefing-mode='quick'] .briefing-sections-toc {
 }
 
 .morning-email-signup__editorial-field input:focus {
-    border-bottom-color: var(--nyt-accent);
+    border-bottom-color: var(--presek-mark);
 }
 
 .morning-email-signup__editorial-submit {
@@ -852,7 +852,7 @@ main[data-briefing-mode='quick'] .briefing-sections-toc {
 }
 
 .morning-email-signup__editorial-submit:hover:not(:disabled) {
-    color: var(--nyt-accent);
+    color: var(--presek-mark);
 }
 
 .morning-email-signup__editorial-submit:disabled {

@@ -1,4 +1,5 @@
 import type { NewsCluster } from '../types';
+import { home } from '../i18n/namespaces/home.ts';
 
 export type LeadStatusTone = 'live' | 'early' | 'consensus' | 'confirmed';
 
@@ -6,6 +7,13 @@ export interface LeadStatus {
   label: string;
   note: string;
   tone: LeadStatusTone;
+}
+
+type LeadLang = 'sr' | 'mk';
+
+function leadT(lang: LeadLang, key: string): string {
+  const dict = home[lang] as Record<string, string>;
+  return dict[key] ?? key;
 }
 
 export function getFirstArticle(cluster: NewsCluster | null) {
@@ -17,7 +25,7 @@ export function getFirstArticle(cluster: NewsCluster | null) {
   })[0];
 }
 
-export function buildLeadStatus(cluster: NewsCluster | null, lang: 'sr' | 'mk'): LeadStatus | null {
+export function buildLeadStatus(cluster: NewsCluster | null, lang: LeadLang): LeadStatus | null {
   if (!cluster) return null;
 
   const uniqueSources = Number(
@@ -28,39 +36,31 @@ export function buildLeadStatus(cluster: NewsCluster | null, lang: 'sr' | 'mk'):
 
   if (cluster.is_breaking) {
     return {
-      label: lang === 'sr' ? 'UŽIVO SE RAZVIJA' : 'СЕ РАЗВИВА ВО ЖИВО',
-      note: lang === 'sr'
-        ? 'Priča ima najjači trenutni signal u redakcijskom poretku.'
-        : 'Приказната има најсилен тековен сигнал во уредничкиот редослед.',
+      label: leadT(lang, 'home.lead_status_live_label'),
+      note: leadT(lang, 'home.lead_status_live_note'),
       tone: 'live',
     };
   }
 
   if (uniqueSources <= 1) {
     return {
-      label: lang === 'sr' ? 'RANI SIGNAL' : 'РАН СИГНАЛ',
-      note: lang === 'sr'
-        ? 'Trenutno dolazi iz jedne redakcije; pratimo da li se širi.'
-        : 'Моментално доаѓа од една редакција; следиме дали ќе се прошири.',
+      label: leadT(lang, 'home.lead_status_early_label'),
+      note: leadT(lang, 'home.lead_status_early_note'),
       tone: 'early',
     };
   }
 
   if (uniqueSources >= 5) {
     return {
-      label: lang === 'sr' ? 'ŠIROK KONSENZUS' : 'ШИРОК КОНСЕНЗУС',
-      note: lang === 'sr'
-        ? 'Više redakcija prati istu priču, što je čini glavnim signalom dana.'
-        : 'Повеќе редакции ја следат истата приказна, што ја прави главен сигнал на денот.',
+      label: leadT(lang, 'home.lead_status_consensus_label'),
+      note: leadT(lang, 'home.lead_status_consensus_note'),
       tone: 'consensus',
     };
   }
 
   return {
-    label: lang === 'sr' ? 'POTVRĐENO IZ VIŠE IZVORA' : 'ПОТВРДЕНО ОД ПОВЕЌЕ ИЗВОРИ',
-    note: lang === 'sr'
-      ? 'Klaster je povezan zajedničkom temom, akterima i vremenom objave.'
-      : 'Кластерот е поврзан со заедничка тема, актери и време на објава.',
+    label: leadT(lang, 'home.lead_status_confirmed_label'),
+    note: leadT(lang, 'home.lead_status_confirmed_note'),
     tone: 'confirmed',
   };
 }

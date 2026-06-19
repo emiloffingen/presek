@@ -182,7 +182,7 @@
 }
 
 .signal-head svg {
-    color: var(--nyt-accent);
+    color: var(--presek-mark);
 }
 
 .signal-head strong {
@@ -203,7 +203,7 @@
     height: 100%;
     min-width: 8px;
     border-radius: inherit;
-    background: linear-gradient(90deg, var(--presek-mark), color-mix(in srgb, var(--presek-mark) 45%, var(--nyt-accent)));
+    background: linear-gradient(90deg, var(--presek-mark), color-mix(in srgb, var(--presek-mark) 45%, var(--presek-mark)));
 }
 
 .signal-metrics {
@@ -321,7 +321,7 @@
 .priority-story.is-primary {
     grid-column: 1 / -1;
     padding: 1.15rem;
-    background: color-mix(in srgb, var(--card) 86%, var(--nyt-accent) 4%);
+    background: color-mix(in srgb, var(--card) 86%, var(--presek-mark) 4%);
 }
 
 .recommendation-grid {
@@ -339,7 +339,7 @@
     max-width: 100%;
     gap: 0.4rem;
     margin-bottom: 0.65rem;
-    color: var(--nyt-accent);
+    color: var(--presek-mark);
 }
 
 .story-reason span {
@@ -454,7 +454,7 @@
 }
 
 .category-row strong {
-    color: var(--nyt-accent);
+    color: var(--presek-mark);
 }
 
 .next-item {
@@ -472,7 +472,7 @@
 }
 
 .next-item:hover strong {
-    color: var(--nyt-accent);
+    color: var(--presek-mark);
 }
 
 .for-you-empty {
@@ -512,7 +512,7 @@
     border: 0;
     border-radius: 0;
     border-bottom: 1px solid color-mix(in srgb, var(--foreground) 8%, var(--border));
-    background: color-mix(in srgb, var(--card) 82%, var(--nyt-accent) 4%);
+    background: color-mix(in srgb, var(--card) 82%, var(--presek-mark) 4%);
 }
 
 .cold-start-onboarding {
@@ -581,7 +581,7 @@
     padding: 1.1rem 1.2rem;
     border: 1px solid var(--border);
     border-radius: var(--radius-lg, 0px);
-    background: color-mix(in srgb, var(--card) 82%, var(--nyt-accent) 4%);
+    background: color-mix(in srgb, var(--card) 82%, var(--presek-mark) 4%);
 }
 
 .for-you-briefing-kicker {
@@ -594,7 +594,7 @@
     font-weight: 700;
     letter-spacing: 0.05em;
     text-transform: uppercase;
-    color: var(--nyt-accent);
+    color: var(--presek-mark);
 }
 
 .for-you-briefing-copy h3 {
@@ -642,8 +642,8 @@
 }
 
 .for-you-briefing-btn.is-primary:hover {
-    background: var(--nyt-accent);
-    border-color: var(--nyt-accent);
+    background: var(--presek-mark);
+    border-color: var(--presek-mark);
 }
 
 .for-you-rail .morning-email-signup--settings {
@@ -719,13 +719,13 @@
 .priority-story:hover,
 .recommendation-tile:hover {
     transform: translateY(-3px);
-    border-color: var(--nyt-accent);
+    border-color: var(--presek-mark);
     box-shadow: var(--shadow-lg);
-    background: color-mix(in srgb, var(--card) 94%, var(--nyt-accent) 6%);
+    background: color-mix(in srgb, var(--card) 94%, var(--presek-mark) 6%);
 }
 
 .priority-story.is-primary:hover {
-    background: color-mix(in srgb, var(--card) 90%, var(--nyt-accent) 10%);
+    background: color-mix(in srgb, var(--card) 90%, var(--presek-mark) 10%);
 }
 
 .cold-start-panel .onboarding-card {
@@ -742,13 +742,13 @@
     margin: 0 0 0.75rem;
     padding: 0.25rem 0.55rem;
     border-radius: 999px;
-    border: 1px solid color-mix(in srgb, var(--nyt-accent) 25%, var(--border));
-    background: color-mix(in srgb, var(--nyt-accent) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--presek-mark) 25%, var(--border));
+    background: color-mix(in srgb, var(--presek-mark) 8%, transparent);
     font-family: var(--font-ui);
     font-size: var(--text-ui-min);
     font-weight: 600;
     letter-spacing: 0.03em;
-    color: var(--nyt-accent);
+    color: var(--presek-mark);
 }
 
 .for-you-rail-context {
@@ -779,7 +779,7 @@
 
 .for-you-rail-context-hint::after {
     content: ' +';
-    color: var(--nyt-accent);
+    color: var(--presek-mark);
 }
 
 .for-you-rail-context[open] .for-you-rail-context-hint::after {

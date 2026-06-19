@@ -37,7 +37,7 @@ export default function NarrativeList({ narratives, lang = 'sr' }: Props) {
     return (
         <section className="narrative-highlights animate-rise">
             <div className="flex items-center gap-[var(--grid-gap)] mb-8">
-                <Target size={20} className="text-nyt-accent" />
+                <Target size={20} className="text-presek-mark" />
                 <h2 className="font-bold text-lg uppercase tracking-tighter">
                     {t('briefing.narratives_title')}
                 </h2>

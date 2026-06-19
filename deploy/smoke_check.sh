@@ -250,6 +250,7 @@ main() {
   wait_http_ok "Astro about SSR" "$ASTRO_URL/about" 200 'about-page-scope'
   wait_http_ok "Astro methodology SSR" "$ASTRO_URL/methodology" 200 'methodology-page-scope'
   wait_http_ok "Astro analize SSR" "$ASTRO_URL/analize" 200 'analize-page-scope'
+  wait_http_ok "Astro editorial SSR" "$ASTRO_URL/editorial" 200 'editorial-page-scope'
   wait_http_ok "Astro MK frontend" "$ASTRO_URL/mk" 200
   wait_http_ok "Astro MK homepage SSR" "$ASTRO_URL/mk" 200 'home-page-scope'
   wait_http_ok "Image proxy" "http://127.0.0.1:5001/proxy?url=https://example.com/image.jpg&w=100" 200

@@ -18,6 +18,7 @@ import { sources } from './namespaces/sources';
 import { graph } from './namespaces/graph';
 import { methodology } from './namespaces/methodology';
 import { analize } from './namespaces/analize';
+import { editorial } from './namespaces/editorial';
 
 export const ui = {
   sr: {
@@ -37,6 +38,7 @@ export const ui = {
     ...graph.sr,
     ...methodology.sr,
     ...analize.sr,
+    ...editorial.sr,
   },
   mk: {
     ...nav.mk,
@@ -55,5 +57,6 @@ export const ui = {
     ...graph.mk,
     ...methodology.mk,
     ...analize.mk,
+    ...editorial.mk,
   },
 } as const;

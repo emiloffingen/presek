@@ -18,9 +18,9 @@ const l = (path: string) => localePath(path, isMK ? 'mk' : 'sr', hostHeader);
         <h3 class="ui-kicker ui-kicker--accent mb-6">{t('briefing.digest_focus_topics')}</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-[var(--grid-gap)]">
             {homeData.developing.slice(0, 6).map((c: any) => (
-                <a href={l(`/cluster/${c.cluster_id}`)} class="block p-6 bg-secondary/50 border border-border hover:border-nyt-accent transition-all group">
+                <a href={l(`/cluster/${c.cluster_id}`)} class="block p-6 bg-secondary/50 border border-border hover:border-presek-mark transition-all group">
                     <p class="ui-kicker ui-kicker--accent mb-3">{t('briefing.digest_trending')}</p>
-                    <h4 class="font-serif font-black text-xl leading-tight group-hover:underline decoration-2 underline-offset-4 decoration-nyt-accent/30">{c.synthetic_headline || (c.articles?.[0] ? c.articles[0].title : '')}</h4>
+                    <h4 class="font-serif font-black text-xl leading-tight group-hover:underline decoration-2 underline-offset-4 decoration-presek-mark/30">{c.synthetic_headline || (c.articles?.[0] ? c.articles[0].title : '')}</h4>
                     {(() => {
                         const summaryText = getStoryPreviewText(c, c.articles?.[0], lang);
                         if (!summaryText) return null;

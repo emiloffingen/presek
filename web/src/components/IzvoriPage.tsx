@@ -657,8 +657,8 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
 
           <details className="izvori-rail-context">
             <summary className="izvori-rail-context-summary">
-              <span>{lang === 'mk' ? 'Контекст и методологија' : 'Kontekst i metodologija'}</span>
-              <span className="izvori-rail-context-hint ui-kicker text-muted-foreground">{lang === 'mk' ? 'Отвори' : 'Otvori'}</span>
+              <span>{t('sources.rail_context_title')}</span>
+              <span className="izvori-rail-context-hint ui-kicker text-muted-foreground">{t('sources.rail_context_open')}</span>
             </summary>
             <div className="izvori-rail-context-body">
               <section className="rail-module mb-8 md:mb-12">

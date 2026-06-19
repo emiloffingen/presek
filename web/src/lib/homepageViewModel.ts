@@ -217,31 +217,31 @@ export function buildHomepageViewModel(options: {
 
     const leadEvidenceItems = leadCluster ? [
         {
-            label: lang === 'sr' ? 'Redakcije' : 'Редакции',
+            label: t('home.lead_evidence_sources'),
             value: String(leadUniqueSources),
             detail: leadCluster.articles.slice(0, 4).map((article) => article.source).filter(Boolean).join(' · '),
         },
         {
-            label: lang === 'sr' ? 'Prva objava' : 'Прва објава',
+            label: t('home.lead_evidence_first'),
             value: leadFirstArticle?.source || '',
             detail: leadFirstArticle ? getTimeStr(leadFirstArticle.ingested_at || leadFirstArticle.created_at) : '',
         },
         {
-            label: lang === 'sr' ? 'Najnovije' : 'Најново',
+            label: t('home.lead_evidence_latest'),
             value: leadLatestArticle?.source || '',
             detail: leadLatestArticle ? getTimeStr(leadLatestArticle.ingested_at || leadLatestArticle.created_at) : '',
         },
         {
-            label: lang === 'sr' ? 'Signal' : 'Сигнал',
+            label: t('home.lead_evidence_signal'),
             value: leadSignals[0] || leadLatestArticle?.category || '',
             detail: leadSignals.slice(1).join(' · '),
         },
     ].filter((item) => item.value) : [];
 
-    const reportingLabel = lang === 'sr' ? 'Izveštavaju:' : 'Известуваат:';
-    const factsConfirmedLabel = lang === 'sr' ? 'Činjenice potvrđene' : 'Фактите потврдени';
-    const factCheckSourceLabel = lang === 'sr' ? 'Fakt-ček izvor:' : 'Факт-чек извор:';
-    const portalFallbackLabel = lang === 'sr' ? 'Portal' : 'Портал';
+    const reportingLabel = t('home.analysis_reporting');
+    const factsConfirmedLabel = t('home.analysis_facts_confirmed');
+    const factCheckSourceLabel = t('home.analysis_factcheck_source');
+    const portalFallbackLabel = t('home.analysis_portal_fallback');
 
     const perspectiveBandItems = perspectivesClusters.map((cluster: NewsCluster) => ({
         href: localePath(`/cluster/${cluster.cluster_id}`),
@@ -285,7 +285,7 @@ export function buildHomepageViewModel(options: {
     if (displayedSynthesisPicks.length > 0) {
         analizaNavItems.push({
             target: '[data-synthesis-band]',
-            kicker: lang === 'sr' ? 'Sinteza' : 'Синтеза',
+            kicker: t('home.feed_synthesis_badge'),
             label: t('home.synthesis_picks_title'),
             count: displayedSynthesisPicks.length,
         });
@@ -294,7 +294,7 @@ export function buildHomepageViewModel(options: {
         analizaNavItems.push({
             target: '[data-trending-strip]',
             kicker: t('home.trending'),
-            label: lang === 'sr' ? 'Brzi pregled' : 'Брз преглед',
+            label: t('home.nav_quick_preview'),
             count: displayedTrendingClusters.length,
         });
     }
@@ -325,8 +325,8 @@ export function buildHomepageViewModel(options: {
     if (forYouClusters.length > 0) {
         analizaNavItems.push({
             target: '[data-for-you-band]',
-            kicker: lang === 'sr' ? 'Za vas' : 'За вас',
-            label: lang === 'sr' ? 'Personalizovano' : 'Персонализирано',
+            kicker: t('nav.for_you'),
+            label: t('home.nav_personalized'),
             count: forYouClusters.length,
         });
     }
