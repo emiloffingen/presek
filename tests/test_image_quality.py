@@ -20,6 +20,13 @@ def test_logo_urls_are_weak():
     assert "logo" in reason
 
 
+def test_online_in_hostname_is_not_weak():
+    url = "https://strugaonline.mk/wp-content/uploads/2024/photo-1200x800.jpg"
+    assert is_weak_image(url) is False
+    quality, _reason = classify_image_url(url)
+    assert quality == "ok"
+
+
 def test_pick_best_image_url_prefers_editorial_photo():
     candidates = [
         ("https://cdn.example.com/thumb/logo-small.png", "Portal"),

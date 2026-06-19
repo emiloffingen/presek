@@ -206,3 +206,21 @@ def test_route_cluster_critical_fallback_pressure_prefers_large():
         SYNTHESIS_PROFILE="balanced",
     ):
         assert SmartModelRouter.route_cluster(articles) == "mistral_large"
+
+
+def test_route_cluster_busy_system_respects_remote_preference():
+    articles = [
+        {"title": "Obicna vest o vremenu", "description": "Danas ce sijati sunce."},
+        {"title": "Jos jedna vest o vremenu", "description": "Toplo leto."},
+    ]
+    with (
+        _router_env(
+            local_available=True,
+            LOCAL_MODEL_PATH="/path/to/model",
+            LOCAL_SYNTHESIS_PREFER_LOCAL="false",
+            ROUTER_FALLBACK_PRESSURE_LOCAL="false",
+        ),
+        patch("core.llm_router.os.getloadavg", return_value=(32.0, 16.0, 8.0)),
+        patch("core.llm_router.os.cpu_count", return_value=4),
+    ):
+        assert SmartModelRouter.route_cluster(articles) == "mistral_small"

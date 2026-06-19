@@ -5,12 +5,28 @@ const MIN_URL_LENGTH = config.min_url_length as number;
 const GENERATED_EXEMPT_PATH = config.generated_exempt_path as string;
 const SOURCE_BONUSES = config.source_bonuses as Record<string, number>;
 
+function weakPatternTarget(url: string): string {
+  const value = url.toLowerCase().trim();
+  if (!value) return value;
+  if (value.startsWith('/')) return value;
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return `${parsed.pathname}${parsed.search}`.toLowerCase();
+    }
+  } catch {
+    // fall through
+  }
+  return value;
+}
+
 export function isWeakVisual(url?: string | null): boolean {
   const value = String(url || '').toLowerCase().trim();
   if (!value) return true;
   if (value.includes(GENERATED_EXEMPT_PATH)) return false;
   if (value.length < MIN_URL_LENGTH) return true;
-  return WEAK_PATTERNS.some((token) => value.includes(token));
+  const target = weakPatternTarget(value);
+  return WEAK_PATTERNS.some((token) => target.includes(token));
 }
 
 function extractImageDimensions(url: string) {

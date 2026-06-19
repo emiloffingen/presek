@@ -421,7 +421,12 @@ class SmartModelRouter:
             )
         
         # Original cost-aware routing for when APIs aren't free
-        if (routing_decision['is_peak_hour'] or is_system_busy) and local_available and not is_high_complexity:
+        if (
+            (routing_decision['is_peak_hour'] or is_system_busy)
+            and local_available
+            and prefer_local_synthesis
+            and not is_high_complexity
+        ):
             return SmartModelRouter._finalize_route(
                 "local",
                 "peak_hour_cost_optimization",
@@ -465,7 +470,7 @@ class SmartModelRouter:
             )
 
         # Low Complexity: 1-2 articles, straightforward routine news
-        if local_available:
+        if local_available and prefer_local_synthesis:
             return SmartModelRouter._finalize_route(
                 "local",
                 "low_complexity",
@@ -477,7 +482,7 @@ class SmartModelRouter:
 
         return SmartModelRouter._finalize_route(
             "mistral_small",
-            "low_complexity_local_unavailable",
+            "low_complexity_remote",
             routing_decision,
             article_count=article_count,
             has_high_weight=has_high_weight,

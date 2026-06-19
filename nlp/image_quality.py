@@ -34,6 +34,22 @@ def source_bonuses() -> dict[str, int]:
     return {str(k): int(v) for k, v in _config()["source_bonuses"].items()}
 
 
+def _weak_pattern_target(url: str) -> str:
+    """Match weak patterns against path/query, not hostnames (e.g. strugaonline.mk)."""
+    value = str(url or "").strip().lower()
+    if not value:
+        return value
+    if value.startswith("/"):
+        return value
+    try:
+        parsed = urlparse(value)
+    except Exception:
+        return value
+    if parsed.scheme in ("http", "https"):
+        return f"{parsed.path or ''}{parsed.query and '?' + parsed.query or ''}".lower()
+    return value
+
+
 def is_weak_image(url: str | None) -> bool:
     value = str(url or "").strip().lower()
     if not value:
@@ -42,7 +58,8 @@ def is_weak_image(url: str | None) -> bool:
         return False
     if len(value) < min_url_length():
         return True
-    return any(pattern in value for pattern in weak_patterns())
+    target = _weak_pattern_target(value)
+    return any(pattern in target for pattern in weak_patterns())
 
 
 def classify_image_url(url: str | None) -> tuple[str, str]:
@@ -53,8 +70,9 @@ def classify_image_url(url: str | None) -> tuple[str, str]:
     if generated_exempt_path() in lowered:
         return "ok", "generated cover art"
     if is_weak_image(value):
+        target = _weak_pattern_target(value)
         for pattern in weak_patterns():
-            if pattern in lowered:
+            if pattern in target:
                 return "weak", f"matches {pattern}"
         return "weak", "url too short"
     if not re.match(r"^https?://|^/static/", value, re.I):

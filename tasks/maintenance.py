@@ -881,26 +881,6 @@ def validate_cluster_images_task():
     Checks the representative_image for the 100 most recent active clusters.
     If the image is broken (non-200) or weak, promotes the next best available image from cluster articles.
     """
-    import httpx
-
-    from nlp.image_quality import classify_image_url, pick_best_image_url
-
-    def image_url_reachable(client: httpx.Client, url: str) -> bool:
-        try:
-            resp = client.head(url)
-            if resp.status_code == 200:
-                return True
-            if resp.status_code not in (403, 404, 405, 501):
-                return False
-        except Exception:
-            pass
-        try:
-            resp = client.get(url, headers={"Range": "bytes=0-0"})
-            return resp.status_code in (200, 206)
-        except Exception:
-            return False
-
-    # 1. Get recent clusters
     recent_clusters = db.execute(
         """
         SELECT cluster_id, representative_image
@@ -914,67 +894,175 @@ def validate_cluster_images_task():
     if not recent_clusters:
         return
 
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PresekHealthCheck/1.0"}
-
-    fixed_count = 0
-    with httpx.Client(headers=headers, timeout=5.0, follow_redirects=True) as client:
-        for cluster in recent_clusters:
-            img_url = cluster.get("representative_image")
-            if not img_url:
-                continue
-
-            quality, _reason = classify_image_url(img_url)
-            needs_replacement = quality != "ok"
-            if not needs_replacement and img_url.startswith("http"):
-                try:
-                    needs_replacement = not image_url_reachable(client, img_url)
-                except Exception as e:
-                    log.warning(f"[maintenance] Failed to check image {img_url}: {e}")
-                    needs_replacement = True
-
-            if not needs_replacement:
-                continue
-
-            if img_url.startswith("http"):
-                log.info(
-                    f"[maintenance] Image needs replacement for cluster {cluster['cluster_id']}: {img_url} ({quality})"
-                )
-
-            # 2. Find a fallback from the same cluster
-            articles = db.execute(
-                """
-                SELECT image_url, source FROM articles
-                WHERE cluster_id = %s
-                  AND image_url IS NOT NULL
-                  AND image_url != %s
-                ORDER BY created_at DESC
-            """,
-                (cluster["cluster_id"], img_url),
-            )
-
-            new_img = pick_best_image_url([(art["image_url"], art.get("source")) for art in articles or []])
-            if new_img and new_img.startswith("http"):
-                if image_url_reachable(client, new_img):
-                    db.execute(
-                        "UPDATE cluster_metadata SET representative_image = %s WHERE cluster_id = %s",
-                        (new_img, cluster["cluster_id"]),
-                        fetch=False,
-                    )
-                    log.info(f"[maintenance] Fixed cluster {cluster['cluster_id']} with new image: {new_img}")
-                    fixed_count += 1
-                    continue
-
-            # No good images found, set to NULL so it uses brand fallback
-            db.execute(
-                "UPDATE cluster_metadata SET representative_image = NULL WHERE cluster_id = %s",
-                (cluster["cluster_id"],),
-                fetch=False,
-            )
-
-    if fixed_count > 0:
+    stats = repair_cluster_representative_images(recent_clusters)
+    if stats["replaced"] or stats["cleared"]:
         invalidate_public_data_caches()
 
-    return f"Checked {len(recent_clusters)} clusters, fixed {fixed_count} images."
+    return (
+        f"Checked {stats['checked']} clusters, "
+        f"replaced {stats['replaced']}, cleared {stats['cleared']} images."
+    )
+
+
+@maintenance_task(name="tasks.maintenance.backfill_weak_representative_images_task")
+def backfill_weak_representative_images_task(days=30, limit=500, check_reachability=True):
+    """One-off style backfill for weak or broken representative images."""
+    from nlp.image_quality import classify_image_url
+
+    rows = db.execute(
+        """
+        SELECT cm.cluster_id, cm.representative_image
+        FROM cluster_metadata cm
+        JOIN cluster_summaries cs ON cs.cluster_id = cm.cluster_id
+        WHERE cm.representative_image IS NOT NULL
+          AND cm.updated_at >= NOW() - (%s || ' days')::interval
+        ORDER BY cm.updated_at DESC
+        LIMIT %s
+    """,
+        (int(days), int(limit)),
+    )
+
+    if not rows:
+        return "No clusters found for image backfill."
+
+    candidates = [
+        row
+        for row in rows
+        if classify_image_url(row.get("representative_image"))[0] != "ok"
+    ]
+
+    if not candidates:
+        return f"Checked {len(rows)} clusters, none had weak representative images."
+
+    stats = repair_cluster_representative_images(
+        candidates,
+        check_reachability=bool(check_reachability),
+    )
+    if stats["replaced"] or stats["cleared"]:
+        invalidate_public_data_caches()
+
+    return (
+        f"Scanned {len(rows)} clusters, repaired {len(candidates)} weak reps: "
+        f"replaced {stats['replaced']}, cleared {stats['cleared']}."
+    )
+
+
+def image_url_reachable(client, url: str) -> bool:
+    try:
+        resp = client.head(url)
+        if resp.status_code == 200:
+            return True
+        if resp.status_code not in (403, 404, 405, 501):
+            return False
+    except Exception:
+        pass
+    try:
+        resp = client.get(url, headers={"Range": "bytes=0-0"})
+        return resp.status_code in (200, 206)
+    except Exception:
+        return False
+
+
+def repair_cluster_representative_image(
+    client,
+    cluster_id: str,
+    img_url: str | None,
+    *,
+    check_reachability: bool = True,
+    dry_run: bool = False,
+) -> str:
+    from nlp.image_quality import classify_image_url, pick_best_image_url
+
+    if not img_url:
+        return "skipped"
+
+    quality, _reason = classify_image_url(img_url)
+    needs_replacement = quality != "ok"
+    if not needs_replacement and check_reachability and img_url.startswith("http"):
+        try:
+            needs_replacement = not image_url_reachable(client, img_url)
+        except Exception as e:
+            log.warning(f"[maintenance] Failed to check image {img_url}: {e}")
+            needs_replacement = True
+
+    if not needs_replacement:
+        return "unchanged"
+
+    if img_url.startswith("http"):
+        log.info(
+            f"[maintenance] Image needs replacement for cluster {cluster_id}: {img_url} ({quality})"
+        )
+
+    articles = db.execute(
+        """
+        SELECT image_url, source FROM articles
+        WHERE cluster_id = %s
+          AND image_url IS NOT NULL
+          AND image_url != %s
+        ORDER BY created_at DESC
+    """,
+        (cluster_id, img_url),
+    )
+
+    new_img = pick_best_image_url([(art["image_url"], art.get("source")) for art in articles or []])
+    if new_img and new_img.startswith("http"):
+        if not check_reachability or image_url_reachable(client, new_img):
+            if not dry_run:
+                db.execute(
+                    "UPDATE cluster_metadata SET representative_image = %s WHERE cluster_id = %s",
+                    (new_img, cluster_id),
+                    fetch=False,
+                )
+            log.info(f"[maintenance] Fixed cluster {cluster_id} with new image: {new_img}")
+            return "replaced"
+
+    if not dry_run:
+        db.execute(
+            "UPDATE cluster_metadata SET representative_image = NULL WHERE cluster_id = %s",
+            (cluster_id,),
+            fetch=False,
+        )
+    log.info(f"[maintenance] Cleared weak representative image for cluster {cluster_id}")
+    return "cleared"
+
+
+def repair_cluster_representative_images(
+    clusters,
+    *,
+    check_reachability: bool = True,
+    dry_run: bool = False,
+) -> dict[str, int]:
+    import httpx
+
+    from nlp.image_quality import classify_image_url
+
+    stats = {"checked": 0, "replaced": 0, "cleared": 0, "unchanged": 0, "skipped": 0}
+    if not clusters:
+        return stats
+
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PresekHealthCheck/1.0"}
+    with httpx.Client(headers=headers, timeout=5.0, follow_redirects=True) as client:
+        for cluster in clusters:
+            stats["checked"] += 1
+            img_url = cluster.get("representative_image")
+            if not img_url:
+                stats["skipped"] += 1
+                continue
+
+            if classify_image_url(img_url)[0] == "ok" and not check_reachability:
+                stats["unchanged"] += 1
+                continue
+
+            outcome = repair_cluster_representative_image(
+                client,
+                cluster["cluster_id"],
+                img_url,
+                check_reachability=check_reachability,
+                dry_run=dry_run,
+            )
+            stats[outcome] = stats.get(outcome, 0) + 1
+
+    return stats
 
 
 @maintenance_task
