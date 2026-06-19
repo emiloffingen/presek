@@ -5,7 +5,10 @@ import { sanitizeHtml } from '../lib/sanitize';
 import { dateLocaleForLang, localePathForLang } from '../lib/localePaths';
 import { getVisibleCardSignals, formatSignalBadge } from '../lib/signalBadges';
 import { buildCompactPluralismMeta } from '../lib/trustSignals';
-import { useTranslations } from '../i18n/utils';
+import { useClientTranslations } from '../i18n/clientTranslations';
+import { news } from '../i18n/namespaces/news';
+import { cluster } from '../i18n/namespaces/cluster';
+import { common } from '../i18n/namespaces/common';
 import type { NewsCluster, Article } from '../types';
 
 interface NewsCardProps {
@@ -22,7 +25,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   lang = 'sr'
 }) => {
   const locale = lang === 'mk' ? 'mk' : 'sr';
-  const t = useTranslations(locale);
+  const t = useClientTranslations(locale, news, cluster, common);
   const translate = (key: string, params?: Record<string, string | number>) => t(key as any, params);
   const l = (path: string) => localePathForLang(path, locale);
 

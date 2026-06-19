@@ -1,6 +1,8 @@
-import '../styles/search-command.css';
 import { localePath, localePathForLang, type Locale } from '../lib/localePaths';
-import { useTranslations } from '../i18n/utils';
+import { useClientTranslations } from '../i18n/clientTranslations';
+import { search } from '../i18n/namespaces/search';
+import { news } from '../i18n/namespaces/news';
+import { common } from '../i18n/namespaces/common';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { navigate } from 'astro:transitions/client';
@@ -203,9 +205,17 @@ function isEditableTarget(target: EventTarget | null): boolean {
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable;
 }
 
-export default function SearchIsland({ initialQuery = '', lang = 'sr' }: { initialQuery?: string | null, lang?: Locale }) {
-  const t = useTranslations(lang);
-  const [isOpen, setIsOpen] = useState(false);
+export default function SearchIsland({
+  initialQuery = '',
+  lang = 'sr',
+  startOpen = false,
+}: {
+  initialQuery?: string | null;
+  lang?: Locale;
+  startOpen?: boolean;
+}) {
+  const t = useClientTranslations(lang, search, news, common);
+  const [isOpen, setIsOpen] = useState(startOpen);
   const [query, setQuery] = useState(initialQuery || '');
   const [timespan, setTimespan] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');

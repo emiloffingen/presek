@@ -16,7 +16,8 @@ import { $deliveryPrefs, $profile, $syncToken } from '../lib/store.ts';
 import { hasPersonalizationSignal } from '../lib/personalization.js';
 import { localePathForLang } from '../lib/localePaths';
 import MorningEmailSignup from './MorningEmailSignup.tsx';
-import { useTranslations } from '../i18n/utils';
+import { useClientTranslations } from '../i18n/clientTranslations';
+import { settings } from '../i18n/namespaces/settings';
 
 type TabId = 'pregled' | 'profil' | 'dostava' | 'sinhronizacija' | 'vodic';
 
@@ -30,7 +31,7 @@ export default function SettingsOverviewIsland({ lang = 'sr' }: { lang?: string 
   const syncToken = useStore($syncToken);
   const deliveryPrefs = useStore($deliveryPrefs);
   const locale = lang === 'mk' ? 'mk' : 'sr';
-  const t = useTranslations(locale);
+  const t = useClientTranslations(locale, settings);
 
   const followedTopics = profile?.followedTopics || [];
   const followedSources = profile?.followedSources || [];

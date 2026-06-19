@@ -1,10 +1,7 @@
-export const languages = {
-  sr: 'Srpski',
-  mk: 'Makedonski',
-};
+export { languages, defaultLang } from './config';
+export type { Locale } from './config';
 
-export const defaultLang = 'sr';
-
+import { defaultLang } from './config';
 import { nav } from './namespaces/nav';
 import { home } from './namespaces/home';
 import { cluster } from './namespaces/cluster';

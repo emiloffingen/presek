@@ -75,13 +75,13 @@ const uniqueEntities = Array.from(uniqueEntitiesMap.values())
 		</section>
 	)}
 
-	<NationalMoodIsland lang={lang} client:idle />
+	<NationalMoodIsland lang={lang} client:visible />
 
-	<SourceMapIsland lang={lang} client:idle />
+	<SourceMapIsland lang={lang} client:visible />
 
-	<HomeRailSuggestionsIsland lang={lang} client:idle />
+	<HomeRailSuggestionsIsland lang={lang} client:visible />
 
-	<NewsletterIsland lang={lang} client:idle />
+	<NewsletterIsland lang={lang} client:visible />
 
 	{stats?.quote_of_the_day && (
 		<section class="rail-block">

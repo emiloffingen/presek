@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Type, Check } from 'lucide-react';
-import { useTranslations } from '../i18n/utils';
+import { useClientTranslations } from '../i18n/clientTranslations';
+import { settings } from '../i18n/namespaces/settings';
 
 const SCALES = [
   { value: '1', label: '100%', nameKey: 'typography.scale_standard' },
@@ -9,7 +10,7 @@ const SCALES = [
 ] as const;
 
 export default function TextScaleIsland({ lang = 'sr' }: { lang?: string }) {
-  const t = useTranslations(lang as 'sr' | 'mk');
+  const t = useClientTranslations(lang as 'sr' | 'mk', settings);
   const [scale, setScale] = useState('1');
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);

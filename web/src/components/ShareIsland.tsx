@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { MessageCircle } from "lucide-react";
-import { useTranslations } from "../i18n/utils";
+import { useClientTranslations } from "../i18n/clientTranslations";
+import { cluster } from "../i18n/namespaces/cluster";
 
 const FacebookIcon = ({ size = 16 }: { size?: number }) => (
   <svg
@@ -65,7 +66,7 @@ interface ShareIslandProps {
 }
 
 export default function ShareIsland({ title, url, lang = 'sr' }: ShareIslandProps) {
-  const t = useTranslations(lang);
+  const t = useClientTranslations(lang, cluster);
   const [currentUrl, setCurrentUrl] = useState(url);
 
   useEffect(() => {

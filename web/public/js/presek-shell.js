@@ -72,6 +72,60 @@
   bindSearchFab();
   document.addEventListener('astro:page-load', bindSearchFab);
 
+  function initHeaderScroll() {
+    const header = document.getElementById('main-header');
+    if (!header) return undefined;
+
+    let lastY = window.scrollY;
+    let ticking = false;
+    const mobileQuery = window.matchMedia('(max-width: 768px)');
+
+    const update = () => {
+      const y = window.scrollY;
+      const scrollingUp = y < lastY;
+      const isMobile = mobileQuery.matches;
+
+      if (isMobile) {
+        header.classList.toggle('header--compact', y > 40);
+        header.classList.toggle('header--show-ticker', y > 72 || (scrollingUp && y > 20));
+        header.classList.add('header--show-nav');
+        header.classList.remove('header--hide-ticker');
+      } else {
+        const compact = y > 96;
+        const showTicker = scrollingUp && y > 24;
+        const showNav = scrollingUp && y > 72;
+        header.classList.toggle('header--compact', compact);
+        header.classList.toggle('header--show-ticker', showTicker);
+        header.classList.toggle('header--show-nav', showNav);
+        header.classList.remove('header--hide-ticker');
+      }
+
+      lastY = y;
+      ticking = false;
+    };
+
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(update);
+    };
+
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return onScroll;
+  }
+
+  let headerScrollHandler = null;
+  const bindHeaderScroll = () => {
+    if (headerScrollHandler) {
+      window.removeEventListener('scroll', headerScrollHandler);
+      headerScrollHandler = null;
+    }
+    headerScrollHandler = initHeaderScroll();
+  };
+  bindHeaderScroll();
+  document.addEventListener('astro:page-load', bindHeaderScroll);
+
   document.addEventListener('astro:page-load', () => {
     if (!('IntersectionObserver' in window)) return;
     const prefetched = new Set();

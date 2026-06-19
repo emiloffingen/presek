@@ -1,5 +1,6 @@
 ---
 import '../../styles/cluster-page.css';
+import '../../styles/cluster-reading.css';
 import Layout from '../../layouts/Layout.astro';
 import NYTHeader from '../../components/NYTHeader.astro';
 import Footer from '../../components/Footer.astro';
@@ -595,12 +596,12 @@ const articleSchema = cluster ? {
         primarySource={cluster?.articles?.[0]?.source}
         sources={allSourcesNames}
         tags={cluster?.tags}
-        client:idle
+        client:visible
     />
 
 	<ZenReadingContext headline={displayHeadline} lang={lang} client:idle />
 	<ErrorBoundary client:idle lang={lang}>
-		<ClusterMobileFocusIsland lang={lang} client:idle />
+		<ClusterMobileFocusIsland lang={lang} client:media="(max-width: 768px)" client:visible />
 	</ErrorBoundary>
 
 	<main class="site-layout py-0">

@@ -17,8 +17,8 @@ const skipLabel = lang === 'mk' ? 'Прескокни до содржина' : '
 <div class="noise-overlay" aria-hidden="true"></div>
 <div id="loading-bar" class="fixed top-0 left-0 z-[9999] transition-all duration-300 opacity-0 w-0"></div>
 <slot />
-<UiConceptOnboarding client:idle lang={lang} />
-<ConsentBanner client:idle />
+<UiConceptOnboarding client:visible lang={lang} />
+<ConsentBanner client:visible />
 <script is:inline src="/js/presek-shell.js" defer></script>
 <script is:inline src="/js/presek-motion.js" defer></script>
 <script is:inline src="/js/presek-images.js" defer></script>

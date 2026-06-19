@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { apiBaseUrl } from '../lib/apiBase';
-import { useTranslations } from '../i18n/utils';
+import { useClientTranslations } from '../i18n/clientTranslations';
+import { common } from '../i18n/namespaces/common';
 import type { ui } from '../i18n/ui';
 import { Mail, CheckCircle2, Loader2 } from 'lucide-react';
 
@@ -24,7 +25,7 @@ export default function MorningEmailSignup({
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
-  const t = useTranslations(lang);
+  const t = useClientTranslations(lang, common);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

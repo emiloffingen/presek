@@ -414,10 +414,20 @@ async def get_navigation(lang: Optional[str] = "sr"):
         (target_country, target_country, target_country),
     )
 
+    cluster_ids = [c["cluster_id"] for c in recent_clusters if c.get("cluster_id") and c.get("title")]
+    articles_by_cluster: dict[str, list] = defaultdict(list)
+    if cluster_ids:
+        article_rows = await db.async_execute(
+            "SELECT * FROM articles WHERE cluster_id = ANY(%s)",
+            (cluster_ids,),
+        )
+        for row in article_rows:
+            articles_by_cluster[row["cluster_id"]].append(row)
+
     for c in recent_clusters:
         if not c.get("title"):
             continue
-        arts = await db.async_execute("SELECT * FROM articles WHERE cluster_id = %s", (c["cluster_id"],))
+        arts = articles_by_cluster.get(c["cluster_id"], [])
         if score_cluster(arts) >= BREAKING_SCORE_THRESHOLD:
             created_at = c.get("created_at")
             breaking_items.append(
@@ -577,7 +587,7 @@ async def get_navigation(lang: Optional[str] = "sr"):
             {"label": "Opservatorijum" if lang == "sr" else "Опсерваториум", "items": observatory_items, "type": "core"},
         ],
     }
-    set_cache(cache_key, res, ttl=300)
+    set_cache(cache_key, res, ttl=600)
     return res
 
 

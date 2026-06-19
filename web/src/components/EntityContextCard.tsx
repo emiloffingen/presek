@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { User, TrendingUp, Loader2 } from 'lucide-react';
-import { useTranslations } from '../i18n/utils';
+import { useClientTranslations } from '../i18n/clientTranslations';
+import { common } from '../i18n/namespaces/common';
 
 interface EntityContextCardProps {
   name: string;
@@ -10,7 +11,7 @@ interface EntityContextCardProps {
 export default function EntityContextCard({ name, lang = 'sr' }: EntityContextCardProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const t = useTranslations(lang);
+  const t = useClientTranslations(lang, common);
 
   useEffect(() => {
     fetch(`/api/entity-graph/${encodeURIComponent(name)}`)

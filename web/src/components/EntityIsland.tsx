@@ -10,7 +10,8 @@ import {
   User,
 } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
-import { useTranslations } from '../i18n/utils';
+import { useClientTranslations } from '../i18n/clientTranslations';
+import { common } from '../i18n/namespaces/common';
 import type { ui } from '../i18n/ui';
 
 interface EntityProfile {
@@ -172,7 +173,7 @@ export default function EntityIsland({
 }) {
   const [data, setData] = useState<EntityPayload | null>(initialData);
   const [loading, setLoading] = useState(!initialData);
-  const t = useTranslations(lang);
+  const t = useClientTranslations(lang, common);
 
   useEffect(() => {
     if (initialData) return;

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { applyReadingMode, saveReadingMode } from '../../lib/readingMode';
-import { useTranslations } from '../../i18n/utils';
+import { useClientTranslations } from '../../i18n/clientTranslations';
+import { settings } from '../../i18n/namespaces/settings';
 
 export default function ZenReadingContext({
   headline,
@@ -10,7 +11,7 @@ export default function ZenReadingContext({
   headline: string;
   lang?: string;
 }) {
-  const t = useTranslations(lang as 'sr' | 'mk');
+  const t = useClientTranslations(lang as 'sr' | 'mk', settings);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {

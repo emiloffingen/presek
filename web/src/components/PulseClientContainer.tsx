@@ -3,7 +3,8 @@ import { Activity, Zap, ShieldCheck, Globe, Timer, Loader2, BarChart3, TrendingU
 import SourceComparisonIsland from './SourceComparisonIsland';
 import TinyAdzRailSlot from './TinyAdzRailSlot';
 import { apiBaseUrl } from '../lib/apiBase';
-import { useTranslations } from '../i18n/utils';
+import { useClientTranslations } from '../i18n/clientTranslations';
+import { common } from '../i18n/namespaces/common';
 
 const PulseLandscapeIsland = lazy(() => import('./PulseLandscapeIsland'));
 const PulseHeatmapIsland = lazy(() => import('./pulse/PulseHeatmapIsland'));
@@ -42,7 +43,7 @@ interface PulseClientContainerProps {
 export default function PulseClientContainer({ initialGlobalPulse, initialPulseData, categories, ssrFailed, lang = 'sr' }: PulseClientContainerProps) {
     const locale = lang === 'mk' ? 'mk' : 'sr';
     const isMK = locale === 'mk';
-    const t = useTranslations(locale);
+    const t = useClientTranslations(locale, common);
 
     // URL-aware category state
     const [category, setCategory] = useState<string | null>(() => {

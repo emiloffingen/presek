@@ -2,7 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Loader2, CalendarRange } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
 import { localePathForLang } from '../lib/localePaths';
-import { useTranslations } from '../i18n/utils';
+import { useClientTranslations } from '../i18n/clientTranslations';
+import { common } from '../i18n/namespaces/common';
+import { news } from '../i18n/namespaces/news';
 
 interface HeatmapDay {
   day: string;
@@ -20,7 +22,7 @@ export default function ArchiveHeatmapIsland({ selectedDate, lang = 'sr' }: Prop
   const [loading, setLoading] = useState(true);
   const activeLang = lang === 'mk' ? 'mk' : 'sr';
   const isMK = activeLang === 'mk';
-  const t = useTranslations(activeLang);
+  const t = useClientTranslations(activeLang, common, news);
 
   useEffect(() => {
     console.log('[ArchiveHeatmap] Fetching data...');

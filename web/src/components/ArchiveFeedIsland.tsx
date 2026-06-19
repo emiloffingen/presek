@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { NewsCard } from './NewsCard';
-import { useTranslations } from '../i18n/utils';
+import { useClientTranslations } from '../i18n/clientTranslations';
+import { common } from '../i18n/namespaces/common';
+import { news } from '../i18n/namespaces/news';
 
 interface ArchiveFeedIslandProps {
   initialClusters: any[];
@@ -81,7 +83,7 @@ const ArchiveFeedIsland: React.FC<ArchiveFeedIslandProps> = ({
   );
 
   const activeLang = lang === 'mk' ? 'mk' : 'sr';
-  const t = useTranslations(activeLang);
+  const t = useClientTranslations(activeLang, common, news);
 
   return (
     <div className="archive-feed-container">

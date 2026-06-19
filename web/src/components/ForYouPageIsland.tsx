@@ -28,7 +28,8 @@ import {
   buildSurfaceFollowSuggestions,
 } from '../lib/personalization.js';
 import { apiBaseUrl } from '../lib/apiBase';
-import { ui } from '../i18n/ui';
+import { useClientTranslations } from '../i18n/clientTranslations';
+import { common } from '../i18n/namespaces/common';
 import type { NewsCluster } from '../types';
 
 interface ForYouPageIslandProps {
@@ -105,7 +106,8 @@ export default function ForYouPageIsland({
   const [clusterError, setClusterError] = useState<string | null>(initialError);
   const [semanticError, setSemanticError] = useState<string | null>(null);
   const isMK = lang === 'mk';
-  const copy = ui[isMK ? 'mk' : 'sr'];
+  const locale = isMK ? 'mk' : 'sr';
+  const t = useClientTranslations(locale, common);
   const hasSignals = hasPersonalizationSignal(profile);
   const clusterFetchError = isMK
     ? 'Не можеме да ги вчитаме почетните препораки во овој момент.'
@@ -358,13 +360,13 @@ export default function ForYouPageIsland({
 
       <div className="for-you-action-bar">
         <a href={localePathForLang('/briefing', isMK ? 'mk' : 'sr')} className="for-you-action-link">
-          <Newspaper size={15} /> {copy['for_you.action_briefing']}
+          <Newspaper size={15} /> {t('for_you.action_briefing')}
         </a>
         <a href={localePathForLang('/settings', isMK ? 'mk' : 'sr')} className="for-you-action-link">
-          <SlidersHorizontal size={15} /> {copy['for_you.action_settings']}
+          <SlidersHorizontal size={15} /> {t('for_you.action_settings')}
         </a>
         <a href={`${localePathForLang('/settings', isMK ? 'mk' : 'sr')}#dostava`} className="for-you-action-link">
-          <BellRing size={15} /> {copy['for_you.action_morning']}
+          <BellRing size={15} /> {t('for_you.action_morning')}
         </a>
       </div>
 

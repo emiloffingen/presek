@@ -1,13 +1,13 @@
 ---
-import SearchIsland from './SearchIsland';
+import SearchEntryIsland from './SearchEntryIsland';
 import ThemeIsland from './ThemeIsland';
 import TextScaleIsland from './TextScaleIsland';
-import HeaderScrollIsland from './HeaderScrollIsland';
 import NavOverflowMenu from './NavOverflowMenu.tsx';
 import { ErrorBoundary } from './ui/ErrorBoundary.tsx';
 import ScriptSwitcher from './ScriptSwitcher.astro';
 import { ArrowLeftRight, Sparkles, BarChart3, Radio, ShieldCheck, Compass, Search } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
+import { fetchJsonCached } from '../lib/apiCache';
 import { getEditionStr } from '../utils/textUtils';
 import Branding from './Branding.astro';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
@@ -61,24 +61,23 @@ let latestTickerItems: any[] = (Array.isArray(propLatestTickerItems) ? propLates
     .slice(0, 6);
 
 try {
-    const requests = [fetch(`${API_URL}/navigation?lang=${lang}`)];
+    const requests = [fetchJsonCached(`${API_URL}/navigation?lang=${lang}`, 120_000)];
     const shouldFetchStats = !stats || typeof stats.last_1h !== 'number' || typeof stats.total_feeds === 'undefined';
     if (shouldFetchStats) {
-        requests.push(fetch(`${API_URL}/stats/summary?lang=${lang}`));
+        requests.push(fetchJsonCached(`${API_URL}/stats/summary?lang=${lang}`, 60_000));
     }
 
     const results = await Promise.allSettled(requests);
-    if (results[0].status === 'fulfilled' && results[0].value.ok) {
-        navigationData = await results[0].value.json();
+    if (results[0].status === 'fulfilled') {
+        navigationData = results[0].value;
     }
-    if (shouldFetchStats && results[1]?.status === 'fulfilled' && results[1].value.ok) {
-        stats = await results[1].value.json();
+    if (shouldFetchStats && results[1]?.status === 'fulfilled') {
+        stats = results[1].value;
     }
 
     if (!navigationData.breaking.length && latestTickerItems.length === 0) {
-        const latestRes = await fetch(`${API_URL}/news?page_size=8&sort=recent&lang=${lang}`);
-        if (latestRes.ok) {
-            const latestData = await latestRes.json();
+        const latestData = await fetchJsonCached(`${API_URL}/news?page_size=8&sort=recent&lang=${lang}`, 60_000).catch(() => null);
+        if (latestData) {
             latestTickerItems = (latestData?.clusters || []).map((cluster: any) => {
                 const lead = Array.isArray(cluster?.articles) ? cluster.articles[0] : null;
                 return {
@@ -200,7 +199,6 @@ function getRelativeTimeStr(dateStr?: string) {
 }
 ---
 
-<HeaderScrollIsland client:idle />
 <div class="header-sticky-wrapper" id="main-header">
     {hasTicker && (
     <div class="unified-dispatch-bar">
@@ -257,7 +255,7 @@ function getRelativeTimeStr(dateStr?: string) {
             <div class="topbar-left-stack">
                 <div class="search-entry-wrap search-entry-wrap--desktop">
                     <ErrorBoundary client:idle lang={lang}>
-                        <SearchIsland initialQuery={q} client:idle lang={lang} />
+                        <SearchEntryIsland initialQuery={q} client:idle lang={lang} />
                     </ErrorBoundary>
                 </div>
                 {overflowNavItems.length > 0 && (
@@ -284,11 +282,11 @@ function getRelativeTimeStr(dateStr?: string) {
                     <a href={l('/for-you')} class="user-action-link utility-desktop-only">{t('nav.for_you')}</a>
                     <div class="utility-inline utility-desktop-only" data-no-script-convert>
                         <ScriptSwitcher />
-                        <ThemeIsland client:idle lang={lang} />
-                        <TextScaleIsland client:idle lang={lang} />
+                        <ThemeIsland client:media="(min-width: 769px)" lang={lang} />
+                        <TextScaleIsland client:media="(min-width: 769px)" lang={lang} />
                     </div>
                     <div class="utility-theme-mobile utility-mobile-only" data-no-script-convert>
-                        <ThemeIsland client:idle lang={lang} />
+                        <ThemeIsland client:media="(max-width: 768px)" lang={lang} />
                     </div>
                     <details class="utility-menu utility-mobile-only">
                         <summary class="utility-menu-trigger" aria-label={lang === 'sr' ? 'Podešavanja' : 'Поставки'}>
@@ -305,7 +303,7 @@ function getRelativeTimeStr(dateStr?: string) {
                             <a href={l('/for-you')} class="utility-menu-link">{t('nav.for_you')}</a>
                             <a href={pregledHref} class="utility-menu-link">{t('nav.pregled')}</a>
                             <ScriptSwitcher />
-                            <TextScaleIsland client:idle lang={lang} />
+                            <TextScaleIsland client:media="(max-width: 768px)" lang={lang} />
                         </div>
                     </details>
                 </div>

@@ -7,6 +7,7 @@ import ForYouPageIsland from '../components/ForYouPageIsland.tsx';
 import { ErrorBoundary } from '../components/ui/ErrorBoundary.tsx';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import '../styles/for-you-premium.css';
+import '../styles/settings-surfaces.css';
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
@@ -25,7 +26,7 @@ const t = useTranslations(lang);
         <div class="broadsheet-grid mt-6 md:mt-8">
             <div class="broadsheet-main">
                 <ErrorBoundary client:idle lang={lang}>
-                    <ForYouPageIsland client:idle lang={lang} />
+                    <ForYouPageIsland client:visible lang={lang} />
                 </ErrorBoundary>
             </div>
         </div>

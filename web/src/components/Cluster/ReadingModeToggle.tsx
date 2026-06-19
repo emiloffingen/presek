@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { BookOpen, Columns2, LayoutTemplate } from 'lucide-react';
 import { applyReadingMode, loadReadingMode, saveReadingMode, type ReadingMode } from '../../lib/readingMode';
-import { useTranslations } from '../../i18n/utils';
+import { useClientTranslations } from '../../i18n/clientTranslations';
+import { settings } from '../../i18n/namespaces/settings';
 
 const MODES: { id: ReadingMode; icon: typeof BookOpen; labelKey: 'reading.standard' | 'reading.focus' | 'reading.compare' }[] = [
   { id: 'standard', icon: LayoutTemplate, labelKey: 'reading.standard' },
@@ -10,7 +11,7 @@ const MODES: { id: ReadingMode; icon: typeof BookOpen; labelKey: 'reading.standa
 ];
 
 export default function ReadingModeToggle({ lang = 'sr' }: { lang?: string }) {
-  const t = useTranslations(lang as 'sr' | 'mk');
+  const t = useClientTranslations(lang as 'sr' | 'mk', settings);
   const [mode, setMode] = useState<ReadingMode>('standard');
   const labels = {
     standard: t('reading.standard'),

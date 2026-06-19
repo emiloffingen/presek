@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { Moon, Sun } from 'lucide-react';
 import { $theme, updateTheme } from '../lib/store';
-import { useTranslations } from '../i18n/utils';
+import { useClientTranslations } from '../i18n/clientTranslations';
+import { settings } from '../i18n/namespaces/settings';
 
 function applyThemeToDocument(next: 'light' | 'dark') {
   if (typeof document === 'undefined') return;
@@ -42,7 +43,7 @@ function readStoredTheme(): 'light' | 'dark' {
 export default function ThemeIsland({ fixed = false, lang = 'sr' }: { fixed?: boolean; lang?: string }) {
   const theme = useStore($theme);
   const [ready, setReady] = useState(false);
-  const t = useTranslations(lang as any);
+  const t = useClientTranslations(lang as 'sr' | 'mk', settings);
 
   useEffect(() => {
     const resolved = readStoredTheme();

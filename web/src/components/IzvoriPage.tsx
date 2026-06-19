@@ -2,7 +2,9 @@ import { homePath, localePathForLang } from '../lib/localePaths';
 import React, { useEffect, useMemo, useState } from 'react';
 import { apiBaseUrl } from '../lib/apiBase';
 import { Search, ShieldCheck, Zap, Activity, ChevronRight, Globe, Compass, HelpCircle } from 'lucide-react';
-import { useTranslations } from '../i18n/utils';
+import { useClientTranslations } from '../i18n/clientTranslations';
+import { common } from '../i18n/namespaces/common';
+import { briefing } from '../i18n/namespaces/briefing';
 import TinyAdzRailSlot from './TinyAdzRailSlot';
 import type { ui } from '../i18n/ui';
 
@@ -173,7 +175,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTier, setFilterTier] = useState<string>('all');
-  const t = useTranslations(lang);
+  const t = useClientTranslations(lang, common, briefing);
   const dateLocale = lang === 'mk' ? 'mk-MK' : 'sr-RS';
   const defaultCountry = lang === 'mk' ? 'MK' : 'RS';
 

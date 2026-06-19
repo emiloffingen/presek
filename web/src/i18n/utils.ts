@@ -1,17 +1,18 @@
 import { ui, defaultLang } from './ui';
+import { isLocale, type Locale } from './config';
 
-export function getLangFromUrl(url: URL, hostname?: string | null) {
+export function getLangFromUrl(url: URL, hostname?: string | null): Locale {
   const [, lang] = url.pathname.split('/');
 
   const effectiveHost = hostname || url.hostname;
 
   // Check domain first for Macedonian site
   if (effectiveHost === 'presek.mk' || effectiveHost === 'www.presek.mk') {
-    return 'mk' as keyof typeof ui;
+    return 'mk';
   }
 
   // Fall back to path-based detection for Serbian site
-  if (lang in ui) return lang as keyof typeof ui;
+  if (isLocale(lang)) return lang;
   return defaultLang;
 }
 

@@ -14,7 +14,8 @@ import {
 } from '../lib/personalization.js';
 import { sanitizeHtml } from '../lib/sanitize';
 import { localePathForLang, type Locale } from '../lib/localePaths';
-import { useTranslations } from '../i18n/utils';
+import { useClientTranslations } from '../i18n/clientTranslations';
+import { common } from '../i18n/namespaces/common';
 import { getDisplayTitle, getStoryPreviewText, highlightScores, getPersonalizedText } from '../utils/textUtils';
 
 function getSummary(cluster: any, lang: string) {
@@ -37,7 +38,7 @@ interface ForYouIslandProps {
 
 export default function ForYouIsland({ clusters = [], excludeClusterIds = [], lang = 'sr' }: ForYouIslandProps) {
   const locale = lang === 'mk' ? 'mk' : 'sr';
-  const t = useTranslations(locale);
+  const t = useClientTranslations(locale, common);
   const profile = useStore($profile);
   const syncToken = useStore($syncToken);
 

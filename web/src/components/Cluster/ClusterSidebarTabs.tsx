@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useTranslations } from '../../i18n/utils';
+import { useClientTranslations } from '../../i18n/clientTranslations';
+import { cluster } from '../../i18n/namespaces/cluster';
 import { SourceSpectrum } from '../SourceSpectrum';
 import SourceComparisonIsland from '../SourceComparisonIsland';
 import { MediaPulseRadar } from '../MediaPulseRadar';
@@ -35,7 +36,7 @@ export default function ClusterSidebarTabs({
   keyEntities,
 }: Props) {
   const locale = lang === 'mk' ? 'mk' : 'sr';
-  const t = useTranslations(locale);
+  const t = useClientTranslations(locale, cluster);
   const tabs = useMemo(() => {
     const items: { id: TabId; label: string; disabled?: boolean }[] = [
       { id: 'spectrum', label: t('cluster.tab_spectrum') },

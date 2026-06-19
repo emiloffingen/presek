@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { getLangFromUrl, useTranslations } from '../i18n/utils';
+import { getLangFromUrl } from '../i18n/utils';
+import { useClientTranslations } from '../i18n/clientTranslations';
+import { about } from '../i18n/namespaces/about';
+import { nav } from '../i18n/namespaces/nav';
 import { localePathForLang } from '../lib/localePaths';
 
 const CONSENT_KEY = 'presek_cookie_consent';
@@ -44,7 +47,7 @@ export const ConsentBanner: React.FC = () => {
     return getLangFromUrl(new URL(window.location.href)) as 'sr' | 'mk';
   });
 
-  const t = useTranslations(lang);
+  const t = useClientTranslations(lang, about, nav);
   const l = (path: string) => localePathForLang(path, lang);
 
   useEffect(() => {

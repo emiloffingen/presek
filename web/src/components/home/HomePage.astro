@@ -1,6 +1,8 @@
 ---
 /* Cache-bust marker for homepage stylesheet hashing. */
 import '../../styles/home-page.css';
+import '../../styles/home-feed.css';
+import '../../styles/next-level-home.css';
 import Layout from '../../layouts/Layout.astro';
 import NYTHeader from '../NYTHeader.astro';
 import AnalysisBandsLazy from './AnalysisBandsLazy.astro';
@@ -465,7 +467,7 @@ if (homepageFlags.shouldSetErrorStatus) {
                 {isHomepage && forYouClusters.length > 0 && (
 					<div class="section-wrapper for-you-wrapper" data-for-you-band>
                         <p class="for-you-boundary-label">{t('home.for_you_boundary')}</p>
-					    <ForYouIsland client:idle clusters={forYouClusters} excludeClusterIds={excludedClusterIds} lang={lang} />
+					    <ForYouIsland client:visible clusters={forYouClusters} excludeClusterIds={excludedClusterIds} lang={lang} />
                     </div>
 				)}
 

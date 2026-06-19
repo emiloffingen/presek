@@ -20,7 +20,7 @@ const t = useTranslations(lang);
 		<Breadcrumbs items={[{ label: t('sources.breadcrumb') }]} />
 		<TinyAdzInlinedAd class="page-inline-ad mb-10" />
 		<ErrorBoundary client:idle lang={lang}>
-			<IzvoriPage lang={lang} client:idle />
+			<IzvoriPage lang={lang} client:visible />
 		</ErrorBoundary>
 	</main>
 	<Footer />

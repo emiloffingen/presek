@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
-import { useTranslations } from '../i18n/utils';
+import { useClientTranslations } from '../i18n/clientTranslations';
+import { nav } from '../i18n/namespaces/nav';
+import { common } from '../i18n/namespaces/common';
 import { localePathForLang } from '../lib/localePaths';
 
 const STORAGE_KEY = 'ui-concepts-onboarding-dismissed';
@@ -33,7 +35,7 @@ function isFeedInFocus() {
 }
 
 export default function UiConceptOnboarding({ lang = 'sr' }: { lang?: string }) {
-  const t = useTranslations(lang as 'sr' | 'mk');
+  const t = useClientTranslations(lang as 'sr' | 'mk', nav, common);
   const [visible, setVisible] = useState(false);
   const [step, setStep] = useState(0);
   const [leadHref, setLeadHref] = useState<string>('');
