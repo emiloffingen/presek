@@ -4,40 +4,26 @@ import NYTHeader from '../NYTHeader.astro';
 import NewsCard from '../NewsCard.astro';
 import EntityIsland from '../EntityIsland';
 import Footer from '../Footer.astro';
-import { apiBaseUrl } from '../../lib/apiBase';
 import { isMostlyCyrillic } from '../../utils/textUtils';
-import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+import { useTranslations } from '../../i18n/utils';
 import { homePath } from '../../lib/localePaths';
 import TinyAdzRailAd from '../TinyAdzRailAd.astro';
 import TinyAdzInlinedAd from '../TinyAdzInlinedAd.astro';
+import type { ui } from '../../i18n/ui';
 import '../../styles/page-systems.css';
 
-const hostHeader = Astro.request?.headers.get('host');
-const lang = getLangFromUrl(Astro.url, hostHeader);
-const t = useTranslations(lang);
-
-const { name } = Astro.params;
-const decodedName = decodeURIComponent(name || '');
-const API_URL = apiBaseUrl();
-
-let entityData = null;
-let error: string | null = null;
-
-try {
-    const entityRes = await fetch(`${API_URL}/intelligence/entity/${encodeURIComponent(decodedName)}?lang=${lang}`);
-    if (entityRes.ok) {
-        entityData = await entityRes.json();
-    } else {
-        error = t('entity.error.not_found');
-        Astro.response.status = entityRes.status === 404 ? 404 : 500;
-    }
-} catch (e) {
-    console.error(e);
-    error = t('entity.error.connection');
-    Astro.response.status = 500;
+interface Props {
+  lang: keyof typeof ui;
+  decodedName: string;
+  entityData: Record<string, unknown> | null;
+  error: string | null;
+  hostHeader?: string | null;
 }
 
-const clusters = entityData?.clusters || [];
+const { lang, decodedName, entityData, error, hostHeader = null } = Astro.props;
+const t = useTranslations(lang);
+
+const clusters = (entityData?.clusters as any[]) || [];
 const featuredClusters = clusters.slice(0, 4);
 const compactClusters = clusters.slice(4, 10);
 const nameIsCyrillic = isMostlyCyrillic(decodedName);

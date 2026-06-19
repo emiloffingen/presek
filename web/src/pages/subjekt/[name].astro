@@ -1,5 +1,10 @@
 ---
-import EntitySubjectPage from '../../components/entity/EntitySubjectPage.astro';
+import EntitySubjectView from '../../components/entity/EntitySubjectView.astro';
+import { loadEntitySubject } from '../../lib/loadEntitySubject';
+
+const hostHeader = Astro.request?.headers.get('host');
+const subject = await loadEntitySubject(Astro.params, Astro.url, hostHeader);
+if (subject.httpStatus) Astro.response.status = subject.httpStatus;
 ---
 
-<EntitySubjectPage />
+<EntitySubjectView {...subject} />
