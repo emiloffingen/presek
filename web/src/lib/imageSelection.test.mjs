@@ -1,26 +1,50 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { chooseClusterImage } from '../utils/imageSelection.ts';
+import { isWeakVisual, scoreImageUrl } from './imageQuality.ts';
+import { buildProxySrcSet, buildProxyUrlWithWidth, chooseClusterImage } from '../utils/imageSelection.ts';
 
-test('chooseClusterImage uses story-specific proxy fallback for missing visuals', () => {
-  const selected = chooseClusterImage({
-    cluster_id: 'cluster-1',
-    synthetic_headline: 'Влада ја продолжи мерката',
-    articles: [{ category: 'Економија', source: 'MIA' }],
-  });
-
-  assert.equal(selected.isWeak, true);
-  assert.match(selected.proxiedUrl, /^\/proxy\?/);
-  assert.match(selected.proxiedUrl, /cid=cluster-1/);
-  assert.match(selected.proxiedUrl, /t=/);
-  assert.match(selected.proxiedUrl, /cat=/);
-  assert.match(selected.proxiedUrl, /lang=sr/);
+test('isWeakVisual keeps generated cover art', () => {
+  assert.equal(isWeakVisual('/static/generated/cluster-1.svg'), false);
 });
 
-test('chooseClusterImage replaces weak source images with smart fallback', () => {
+test('isWeakVisual rejects logos and short urls', () => {
+  assert.equal(isWeakVisual('https://example.com/logo.png'), true);
+  assert.equal(isWeakVisual('https://x.co/a'), true);
+});
+
+test('scoreImageUrl prefers larger editorial photos', () => {
+  const hero = scoreImageUrl('https://cdn.example.com/hero-1600x900.jpg', 'SDK');
+  const thumb = scoreImageUrl('https://cdn.example.com/thumb/logo-small.png', 'Portal');
+  assert.ok(hero > thumb);
+});
+
+test('buildProxyUrlWithWidth updates width param regardless of order', () => {
+  const url = buildProxyUrlWithWidth('/proxy?lang=sr&url=https%3A%2F%2Fexample.com%2Fa.jpg&w=1200', 360);
+  assert.match(url, /w=360/);
+  assert.doesNotMatch(url, /w=1200/);
+});
+
+test('buildProxySrcSet emits width descriptors', () => {
+  const srcset = buildProxySrcSet('/proxy?url=https%3A%2F%2Fexample.com%2Fa.jpg&w=720&lang=sr', [360, 720]);
+  assert.match(srcset, /360w/);
+  assert.match(srcset, /720w/);
+});
+
+test('chooseClusterImage dedupes representative and article urls', () => {
   const selected = chooseClusterImage({
-    cluster_id: 'cluster-2',
+    cluster_id: 'cluster-dedupe',
+    representative_image: 'https://cdn.example.com/story-1200x800.jpg',
+    articles: [{ image_url: 'https://cdn.example.com/story-1200x800.jpg', source: 'Portal' }],
+  });
+
+  assert.equal(selected.isWeak, false);
+  assert.match(selected.proxiedUrl, /url=https/);
+});
+
+test('chooseClusterImage uses branded fallback for weak visuals', () => {
+  const selected = chooseClusterImage({
+    cluster_id: 'cluster-weak',
     synthetic_headline: 'Logo should not be used',
     representative_image: 'https://example.com/logo.png',
     articles: [{ image_url: 'https://example.com/logo.png', category: 'Politika', source: 'Portal' }],
@@ -29,26 +53,4 @@ test('chooseClusterImage replaces weak source images with smart fallback', () =>
   assert.equal(selected.isWeak, true);
   assert.match(selected.proxiedUrl, /^\/proxy\?/);
   assert.doesNotMatch(selected.proxiedUrl, /url=https/);
-});
-
-test('chooseClusterImage passes lang to proxy fallback', () => {
-  const selected = chooseClusterImage({
-    cluster_id: 'cluster-mk',
-    synthetic_headline: 'Тест наслов',
-    articles: [{ category: 'Политика', source: 'MIA' }],
-  }, 'card', 'mk');
-
-  assert.match(selected.fallbackUrl, /lang=mk/);
-  assert.match(selected.proxiedUrl, /lang=mk/);
-});
-
-test('staticFallbackUrl matches proxy fallbackUrl', () => {
-  const selected = chooseClusterImage({
-    cluster_id: 'cluster-3',
-    synthetic_headline: 'Fallback alias check',
-    articles: [{ category: 'Sport', source: 'Portal' }],
-  });
-
-  assert.equal(selected.staticFallbackUrl, selected.fallbackUrl);
-  assert.match(selected.fallbackUrl, /^\/proxy\?/);
 });

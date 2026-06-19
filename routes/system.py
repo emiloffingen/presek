@@ -58,43 +58,11 @@ from utils import _peer_ip, _resolve_public_ips
 
 from .common import _PROXY_MAX_BYTES, _is_allowed_proxy_content_type, cleanAndDecode
 from .security import validate_cluster_id
+from nlp.image_quality import classify_image_url as _image_quality
 
 log = logging.getLogger("presek")
 router = APIRouter()
 _STARTED_AT = time.time()
-
-_WEAK_IMAGE_PATTERNS = (
-    ".svg",
-    "placeholder",
-    "default",
-    "logo",
-    "emblem",
-    "avatar",
-    "icon",
-    "watermark",
-    "sprite",
-    "facebook-share",
-    "twitter-share",
-    "social-default",
-    "fallback",
-    "no-image",
-    "img-missing",
-    "breaking-news-generic",
-)
-
-
-def _image_quality(url: str | None) -> tuple[str, str]:
-    value = str(url or "").strip().lower()
-    if not value:
-        return "missing", "no representative image"
-    if len(value) < 15:
-        return "weak", "url too short"
-    for pattern in _WEAK_IMAGE_PATTERNS:
-        if pattern in value:
-            return "weak", f"matches {pattern}"
-    if not re.match(r"^https?://|^/static/", value):
-        return "weak", "unsupported scheme"
-    return "ok", "usable candidate"
 
 _FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"
 

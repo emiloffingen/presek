@@ -1,6 +1,6 @@
 ---
 /* Cache-bust marker for NewsCard stylesheet hashing. */
-import { chooseClusterImage } from '../utils/imageSelection';
+import { chooseClusterImage, buildProxySrcSet } from '../utils/imageSelection';
 import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, slugify, getDesignCardContext, transliterate, cleanAndDecode, normalizeEntityOrTag, getSourceInitials } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
 import { Clock, Layers, ShieldCheck, Globe, Zap, AlertCircle, Palette, Building2, TrendingUp, Award, Cpu, Newspaper, ArrowRight } from 'lucide-react';
@@ -46,6 +46,7 @@ const isFallbackArt = selectedImage.isWeak;
 const fallbackImageUrl = selectedImage.fallbackUrl;
 const showMedia = Boolean(thumbSrc);
 const mediaSrc = thumbSrc || '';
+const cardSrcset = !isFallbackArt && mediaSrc ? buildProxySrcSet(mediaSrc, [360, 720, 1200]) : '';
 const tintColor = resolvePlaceholderTint(cluster.dominant_color);
 const rawLeadTitle = cluster.synthetic_headline || getDisplayTitle(main);
 
@@ -247,7 +248,7 @@ function getTimeStr(dateStr: string) {
                 <div class="runtime-image-container relative w-full h-full">
                     <img
                         src={mediaSrc}
-                        srcset={`${mediaSrc.replace('w=720', 'w=360')} 360w, ${mediaSrc} 720w, ${mediaSrc.replace('w=720', 'w=1200')} 1200w`}
+                        srcset={cardSrcset}
                         sizes="(max-width: 640px) 7.25rem, (max-width: 1280px) 50vw, 33vw"
                         alt={displayTitle}
                         width="700"

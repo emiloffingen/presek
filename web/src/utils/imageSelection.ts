@@ -1,4 +1,5 @@
 import { proxyUrl } from '../lib/apiBase.ts';
+import { isWeakVisual, scoreImageUrl } from '../lib/imageQuality.ts';
 
 type ArticleLike = {
   image_url?: string | null;
@@ -20,112 +21,7 @@ type ClusterLike = {
 };
 
 export type SiteLang = 'sr' | 'mk';
-
-const WEAK_VISUAL_TOKENS = [
-  '.svg',
-  'placeholder',
-  'default',
-  'logo',
-  'emblem',
-  'avatar',
-  'icon',
-  'watermark',
-  'republika',
-  'online',
-  'banner',
-  'sprite',
-  'facebook-share',
-  'twitter-share',
-  'social-default',
-  'fallback',
-  'no-image',
-  'img-missing',
-  'bez-slika',
-  'naslovna',
-  'logo-fixed',
-  'breaking-news-generic',
-];
-
-export function isWeakVisual(url?: string | null) {
-  const value = String(url || '').toLowerCase().trim();
-  if (!value) return true;
-  // Generated AI art is never weak
-  if (value.includes('/static/generated/')) return false;
-  if (value.length < 15) return true;
-  return WEAK_VISUAL_TOKENS.some((token) => value.includes(token));
-}
-
-function tryParseUrl(url: string) {
-  try {
-    return new URL(url, 'https://presek.mk');
-  } catch {
-    return null;
-  }
-}
-
-function extractImageDimensions(url: string) {
-  const parsed = tryParseUrl(url);
-  const haystack = `${parsed?.pathname || ''} ${parsed?.search || ''} ${url}`.toLowerCase();
-
-  const dimensionMatch = haystack.match(/(^|[^0-9])(\d{2,5})x(\d{2,5})([^0-9]|$)/);
-  if (dimensionMatch) {
-    return {
-      width: Number(dimensionMatch[2]) || 0,
-      height: Number(dimensionMatch[3]) || 0,
-    };
-  }
-
-  const width =
-    Number(parsed?.searchParams.get('w')) ||
-    Number(parsed?.searchParams.get('width')) ||
-    Number(parsed?.searchParams.get('max_width')) ||
-    0;
-  const height =
-    Number(parsed?.searchParams.get('h')) ||
-    Number(parsed?.searchParams.get('height')) ||
-    Number(parsed?.searchParams.get('max_height')) ||
-    0;
-
-  return { width, height };
-}
-
-function scoreImage(url: string, source?: string): number {
-  let score = 0;
-  const val = url.toLowerCase();
-  const { width, height } = extractImageDimensions(url);
-  const area = width * height;
-
-  if (isWeakVisual(url)) score -= 12;
-
-  // Prefer JPG/WEBP over PNG (usually photos vs logos)
-  if (val.includes('.avif')) score += 3;
-  if (val.includes('.jpg') || val.includes('.jpeg')) score += 2;
-  if (val.includes('.webp')) score += 2;
-  if (val.includes('.png')) score -= 1;
-
-  // CDNs often have higher quality images than direct uploads
-  if (val.includes('cdn') || val.includes('imgix') || val.includes('cloudinary')) score += 1;
-
-  if (area) score += Math.min(area / 240000, 10);
-  if (width >= 1400 || height >= 1400) score += 4;
-  else if (width >= 1000 || height >= 1000) score += 2.5;
-  else if (width >= 700 || height >= 700) score += 1.25;
-  if (width && width < 180) score -= 6;
-  if (height && height < 180) score -= 6;
-
-  if (/(thumb|thumbnail|sprite|logo|icon|avatar|favicon|pixel|small)/.test(val)) score -= 7;
-  if (/(hero|lead|main|large|full|original)/.test(val)) score += 2;
-
-  // High-quality source bonus
-  const highQualSources = ['sdk', '360stepeni', 'prizma', 'slobodnaevropa', 'dw'];
-  if (source && highQualSources.some(s => source.toLowerCase().includes(s))) {
-    score += 2;
-  }
-
-  return score;
-}
-
-type ImageVariant = 'hero' | 'card' | 'thumb';
+export type ImageVariant = 'hero' | 'card' | 'thumb';
 
 const VARIANT_WIDTH: Record<ImageVariant, number> = {
   hero: 1200,
@@ -185,6 +81,21 @@ function getFallbackKind(cluster: ClusterLike): FallbackKind {
   return 'general';
 }
 
+export function buildProxyUrlWithWidth(baseUrl: string, width: number): string {
+  try {
+    const url = new URL(baseUrl, 'https://presek.mk');
+    url.searchParams.set('w', String(width));
+    return `${url.pathname}${url.search}`;
+  } catch {
+    return baseUrl;
+  }
+}
+
+export function buildProxySrcSet(baseUrl: string | null | undefined, widths: number[]): string {
+  if (!baseUrl || widths.length === 0) return '';
+  return widths.map((width) => `${buildProxyUrlWithWidth(baseUrl, width)} ${width}w`).join(', ');
+}
+
 export function buildProxyFallbackUrl(
   cluster: ClusterLike,
   lang: SiteLang = 'sr',
@@ -220,28 +131,40 @@ export function getFallbackImage(cluster: ClusterLike, lang: SiteLang = 'sr', va
   };
 }
 
+function uniqueCandidates(cluster: ClusterLike) {
+  const articles = cluster?.articles || [];
+  const representativeSource = articles.find((article) => article.image_url === cluster?.representative_image)?.source;
+  const seen = new Set<string>();
+  const candidates: { url: string; source?: string }[] = [];
+
+  for (const candidate of [
+    { url: cluster?.representative_image, source: representativeSource },
+    ...articles.map((article) => ({ url: article.image_url, source: article.source })),
+  ]) {
+    const url = String(candidate.url || '').trim();
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    candidates.push({ url, source: candidate.source });
+  }
+
+  return candidates;
+}
+
 export function chooseClusterImage(
   cluster: ClusterLike,
   variant: ImageVariant = 'card',
   lang: SiteLang = 'sr',
 ) {
-  const articles = cluster?.articles || [];
-  const representativeSource = articles.find((article) => article.image_url === cluster?.representative_image)?.source;
+  const candidates = uniqueCandidates(cluster);
 
-  const candidates = [
-    { url: cluster?.representative_image, source: representativeSource },
-    ...articles.map(a => ({ url: a.image_url, source: a.source }))
-  ].filter(c => !!c.url) as { url: string, source: string }[];
-
-  // Rank candidates
   const ranked = candidates
-    .map((c, index) => {
-      const dimensions = extractImageDimensions(c.url);
+    .map((candidate, index) => {
+      const dimensions = extractImageDimensions(candidate.url);
       return {
-        ...c,
+        ...candidate,
         index,
         area: dimensions.width * dimensions.height,
-        score: scoreImage(c.url, c.source),
+        score: scoreImageUrl(candidate.url, candidate.source),
       };
     })
     .sort((a, b) => b.score - a.score || b.area - a.area || a.index - b.index);
@@ -250,7 +173,6 @@ export function chooseClusterImage(
   const width = VARIANT_WIDTH[variant];
   const isWeak = isWeakVisual(chosen);
   const fallback = getFallbackImage(cluster, lang, variant);
-
   const context = fallbackContext(cluster);
 
   let proxiedUrl = null;
@@ -274,5 +196,36 @@ export function chooseClusterImage(
     /** @deprecated Use fallbackUrl — kept for callers that still read this field */
     staticFallbackUrl: fallback.smartSrc,
     fallbackKind: fallback.kind,
+  };
+}
+
+function extractImageDimensions(url: string) {
+  let parsed: URL | null = null;
+  try {
+    parsed = new URL(url, 'https://presek.mk');
+  } catch {
+    parsed = null;
+  }
+
+  const haystack = `${parsed?.pathname || ''} ${parsed?.search || ''} ${url}`.toLowerCase();
+  const dimensionMatch = haystack.match(/(^|[^0-9])(\d{2,5})x(\d{2,5})([^0-9]|$)/);
+  if (dimensionMatch) {
+    return {
+      width: Number(dimensionMatch[2]) || 0,
+      height: Number(dimensionMatch[3]) || 0,
+    };
+  }
+
+  return {
+    width:
+      Number(parsed?.searchParams.get('w')) ||
+      Number(parsed?.searchParams.get('width')) ||
+      Number(parsed?.searchParams.get('max_width')) ||
+      0,
+    height:
+      Number(parsed?.searchParams.get('h')) ||
+      Number(parsed?.searchParams.get('height')) ||
+      Number(parsed?.searchParams.get('max_height')) ||
+      0,
   };
 }

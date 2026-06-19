@@ -6,7 +6,7 @@ import { Zap, Palette, Building2, TrendingUp, Award, Cpu, Newspaper, ArrowRight 
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import { localePath } from '../../lib/localePaths';
 import MeshGradient from './MeshGradient.astro';
-import { buildEmergencyFallbackUrl } from '../../utils/imageSelection';
+import { buildEmergencyFallbackUrl, buildProxySrcSet } from '../../utils/imageSelection';
 import StoryFreshnessBadge from '../StoryFreshnessBadge.astro';
 import { formatStoryFreshness } from '../../utils/storyFreshness';
 import { buildPrimaryCardBadge, primaryCardBadgeTier } from '../../lib/trustSignals';
@@ -140,18 +140,7 @@ const valueStripItems = [
     },
 ];
 
-const getProxiedUrl = (width: number) => {
-    if (!leadVisual?.proxiedUrl) return '';
-    try {
-        const url = new URL(leadVisual.proxiedUrl, 'https://presek.mk');
-        url.searchParams.set('w', width.toString());
-        return url.pathname + url.search;
-    } catch {
-        return leadVisual.proxiedUrl;
-    }
-};
-
-const leadSrcset = leadVisual?.proxiedUrl ? [400, 600, 800, 1000, 1200].map(w => `${getProxiedUrl(w)} ${w}w`).join(', ') : '';
+const leadSrcset = leadVisual?.proxiedUrl ? buildProxySrcSet(leadVisual.proxiedUrl, [400, 600, 800, 1000, 1200]) : '';
 const leadSizes = "(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 1200px";
 const fallbackImageUrl = leadVisual?.fallbackUrl || buildEmergencyFallbackUrl(lang as 'sr' | 'mk');
 const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl);

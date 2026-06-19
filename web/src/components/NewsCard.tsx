@@ -1,5 +1,5 @@
 import React from 'react';
-import { chooseClusterImage } from '../utils/imageSelection';
+import { chooseClusterImage, buildProxySrcSet } from '../utils/imageSelection';
 import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, getDesignCardContext, slugify, transliterate, getSourceInitials } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
 import { dateLocaleForLang, localePathForLang } from '../lib/localePaths';
@@ -46,6 +46,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   const isFallbackArt = selectedImage.isWeak;
   const fallbackImageUrl = selectedImage.fallbackUrl;
   const showMedia = Boolean(thumbSrc);
+  const cardSrcset = !isFallbackArt && thumbSrc ? buildProxySrcSet(thumbSrc, [360, 720, 1200]) : '';
   const tintColor = resolvePlaceholderTint(cluster.dominant_color);
 
   const rawLeadTitle = cluster.synthetic_headline || getDisplayTitle(main);
@@ -201,18 +202,28 @@ export const NewsCard: React.FC<NewsCardProps> = ({
               <div className="runtime-image-container relative w-full h-full">
                 <img
                   src={thumbSrc || undefined}
-                  alt=""
+                  srcSet={cardSrcset || undefined}
+                  alt={displayTitle}
                   width="700"
                   height="500"
-                  className="article-image is-loaded w-full h-full object-cover rounded-md"
+                  className="article-image w-full h-full object-cover rounded-md"
                   loading={isLead ? 'eager' : 'lazy'}
+                  decoding="async"
                   data-fallback-url={fallbackImageUrl}
+                  onLoad={(event) => {
+                    const image = event.currentTarget;
+                    image.classList.add('is-loaded');
+                    const wrap = image.closest('.image-wrap');
+                    if (wrap) {
+                      wrap.setAttribute('data-image-state', 'ready');
+                    }
+                  }}
                   onError={(event) => {
                     const image = event.currentTarget;
                     image.onerror = null;
                     image.removeAttribute('srcset');
                     image.src = fallbackImageUrl;
-                    image.classList.add('article-image-fallback');
+                    image.classList.add('is-loaded', 'article-image-fallback');
                     const wrap = image.closest('.image-wrap');
                     if (wrap) {
                       wrap.classList.add('image-wrap-fallback');

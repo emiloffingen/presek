@@ -243,52 +243,9 @@ def generate_cluster_metadata_task(hours=24, target_clusters=None):
             centroid = _compute_centroid_from_values(r.get("embeddings") or [])
             centroid_str = f"[{','.join(map(str, centroid))}]" if centroid and len(centroid) == 384 else None
 
-            # Smart image selection: prefer high-quality sources and non-placeholder URLs
-            img_row = db.execute_one(
-                """
-                SELECT image_url, source
-                FROM articles
-                WHERE cluster_id = %s
-                  AND image_url IS NOT NULL
-                  AND image_url NOT LIKE '%%placeholder%%'
-                  AND image_url NOT LIKE '%%default%%'
-                  AND image_url NOT LIKE '%%.svg'
-                  AND image_url NOT LIKE '%%logo%%'
-                  AND image_url NOT LIKE '%%emblem%%'
-                  AND image_url NOT LIKE '%%avatar%%'
-                  AND image_url NOT LIKE '%%icon%%'
-                  AND image_url NOT LIKE '%%favicon%%'
-                  AND image_url NOT LIKE '%%sprite%%'
-                  AND image_url NOT LIKE '%%banner%%'
-                  AND image_url NOT LIKE '%%social%%'
-                  AND image_url NOT LIKE '%%fallback%%'
-                  AND image_url NOT LIKE '%%no-image%%'
-                ORDER BY
-                    (
-                        CASE WHEN image_url ~* '(thumb|thumbnail|sprite|logo|icon|avatar|favicon|pixel|small|social)' THEN -15 ELSE 0 END +
-                        CASE WHEN image_url ~* '(hero|lead|main|large|full|original)' THEN 5 ELSE 0 END +
-                        CASE WHEN image_url ~* '\\.(avif|webp)(\\?|$)' THEN 4 ELSE 0 END +
-                        CASE WHEN image_url ~* '\\.(jpe?g)(\\?|$)' THEN 3 ELSE 0 END +
-                        CASE WHEN image_url ~* '\\.png(\\?|$)' THEN -2 ELSE 0 END +
-                        CASE WHEN image_url ~* '(^|[^0-9])(1[2-9][0-9]{2}|[2-9][0-9]{3})x(1[2-9][0-9]{2}|[2-9][0-9]{3})([^0-9]|$)' THEN 6 ELSE 0 END +
-                        CASE
-                            WHEN source ILIKE '%%sdk%%' THEN 4
-                            WHEN source ILIKE '%%360stepeni%%' THEN 4
-                            WHEN source ILIKE '%%prizma%%' THEN 4
-                            WHEN source ILIKE '%%sitel%%' THEN 2
-                            WHEN source ILIKE '%%kanal5%%' THEN 2
-                            WHEN source ILIKE '%%telma%%' THEN 3
-                            WHEN source ILIKE '%%dw%%' THEN 4
-                            ELSE 0
-                        END
-                    ) DESC,
-                    created_at DESC
-                LIMIT 1
-            """,
-                (r["cluster_id"],),
-            )
+            from nlp.image_quality import select_representative_image
 
-            rep_image = img_row["image_url"] if img_row else None
+            rep_image = select_representative_image(db, r["cluster_id"])
 
             if not rep_image:
                 # If we still have no image, try to generate one (AI cover art)

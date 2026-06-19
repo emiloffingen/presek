@@ -31,7 +31,7 @@ class TestIntelligenceBatching:
             patch("tasks.intelligence.metadata.extract_cluster_tags_locally", return_value=["tag"]),
             patch("tasks.intelligence.metadata.filter_cluster_tags", return_value=["tag"]),
             patch("tasks.intelligence.metadata._compute_centroid_from_values", return_value=None),
-            patch("tasks.intelligence.metadata.generate_cover_art", return_value="https://example.com/c1.jpg"),
+            patch("nlp.image_quality.select_representative_image", return_value=None),
             patch("tasks.intelligence.metadata.generate_local_placeholder", return_value="<svg/>"),
             patch("tasks.intelligence.metadata.invalidate_public_data_caches"),
             patch("tasks.intelligence.metadata.schedule_task_once", return_value=True) as mock_schedule,

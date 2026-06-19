@@ -879,9 +879,26 @@ def refresh_low_score_syntheses_task(min_score=None, limit=None):
 def validate_cluster_images_task():
     """
     Checks the representative_image for the 100 most recent active clusters.
-    If the image is broken (non-200), promotes the next best available image from cluster articles.
+    If the image is broken (non-200) or weak, promotes the next best available image from cluster articles.
     """
     import httpx
+
+    from nlp.image_quality import classify_image_url, pick_best_image_url
+
+    def image_url_reachable(client: httpx.Client, url: str) -> bool:
+        try:
+            resp = client.head(url)
+            if resp.status_code == 200:
+                return True
+            if resp.status_code not in (403, 404, 405, 501):
+                return False
+        except Exception:
+            pass
+        try:
+            resp = client.get(url, headers={"Range": "bytes=0-0"})
+            return resp.status_code in (200, 206)
+        except Exception:
+            return False
 
     # 1. Get recent clusters
     recent_clusters = db.execute(
@@ -903,47 +920,41 @@ def validate_cluster_images_task():
     with httpx.Client(headers=headers, timeout=5.0, follow_redirects=True) as client:
         for cluster in recent_clusters:
             img_url = cluster.get("representative_image")
-            if not img_url or not img_url.startswith("http"):
+            if not img_url:
                 continue
 
-            try:
-                resp = client.head(img_url)
-                if resp.status_code == 200:
-                    continue
+            quality, _reason = classify_image_url(img_url)
+            needs_replacement = quality != "ok"
+            if not needs_replacement and img_url.startswith("http"):
+                try:
+                    needs_replacement = not image_url_reachable(client, img_url)
+                except Exception as e:
+                    log.warning(f"[maintenance] Failed to check image {img_url}: {e}")
+                    needs_replacement = True
 
-                # If we get here, the image is likely broken (404, 403, etc.)
+            if not needs_replacement:
+                continue
+
+            if img_url.startswith("http"):
                 log.info(
-                    f"[maintenance] Image broken for cluster {cluster['cluster_id']}: {img_url} (Status: {resp.status_code})"
+                    f"[maintenance] Image needs replacement for cluster {cluster['cluster_id']}: {img_url} ({quality})"
                 )
 
-                # 2. Find a fallback from the same cluster
-                articles = db.execute(
-                    """
-                    SELECT image_url FROM articles
-                    WHERE cluster_id = %s
-                      AND image_url IS NOT NULL
-                      AND image_url != %s
-                    ORDER BY created_at DESC
-                """,
-                    (cluster["cluster_id"], img_url),
-                )
+            # 2. Find a fallback from the same cluster
+            articles = db.execute(
+                """
+                SELECT image_url, source FROM articles
+                WHERE cluster_id = %s
+                  AND image_url IS NOT NULL
+                  AND image_url != %s
+                ORDER BY created_at DESC
+            """,
+                (cluster["cluster_id"], img_url),
+            )
 
-                new_img = None
-                for art in articles:
-                    cand_url = art["image_url"]
-                    if not cand_url or not cand_url.startswith("http"):
-                        continue
-                    try:
-                        c_resp = client.head(cand_url)
-                        if c_resp.status_code == 200:
-                            new_img = cand_url
-                            break
-                    except Exception as e:
-                        # Network error, try next candidate
-                        log.debug(f"Failed to check image URL {cand_url}: {e}")
-                        continue
-
-                if new_img:
+            new_img = pick_best_image_url([(art["image_url"], art.get("source")) for art in articles or []])
+            if new_img and new_img.startswith("http"):
+                if image_url_reachable(client, new_img):
                     db.execute(
                         "UPDATE cluster_metadata SET representative_image = %s WHERE cluster_id = %s",
                         (new_img, cluster["cluster_id"]),
@@ -951,16 +962,14 @@ def validate_cluster_images_task():
                     )
                     log.info(f"[maintenance] Fixed cluster {cluster['cluster_id']} with new image: {new_img}")
                     fixed_count += 1
-                else:
-                    # No good images found, set to NULL so it uses brand fallback
-                    db.execute(
-                        "UPDATE cluster_metadata SET representative_image = NULL WHERE cluster_id = %s",
-                        (cluster["cluster_id"],),
-                        fetch=False,
-                    )
+                    continue
 
-            except Exception as e:
-                log.warning(f"[maintenance] Failed to check image {img_url}: {e}")
+            # No good images found, set to NULL so it uses brand fallback
+            db.execute(
+                "UPDATE cluster_metadata SET representative_image = NULL WHERE cluster_id = %s",
+                (cluster["cluster_id"],),
+                fetch=False,
+            )
 
     if fixed_count > 0:
         invalidate_public_data_caches()

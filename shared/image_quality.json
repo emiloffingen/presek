@@ -1,0 +1,50 @@
+{
+  "min_url_length": 15,
+  "generated_exempt_path": "/static/generated/",
+  "weak_patterns": [
+    ".svg",
+    "placeholder",
+    "default",
+    "logo",
+    "emblem",
+    "avatar",
+    "icon",
+    "watermark",
+    "republika",
+    "online",
+    "banner",
+    "sprite",
+    "facebook-share",
+    "twitter-share",
+    "social-default",
+    "fallback",
+    "no-image",
+    "img-missing",
+    "bez-slika",
+    "naslovna",
+    "logo-fixed",
+    "breaking-news-generic",
+    "favicon",
+    "social"
+  ],
+  "high_quality_sources": [
+    "sdk",
+    "360stepeni",
+    "prizma",
+    "slobodnaevropa",
+    "dw",
+    "sitel",
+    "kanal5",
+    "telma"
+  ],
+  "source_bonuses": {
+    "sdk": 4,
+    "360stepeni": 4,
+    "prizma": 4,
+    "slobodnaevropa": 2,
+    "dw": 4,
+    "sitel": 2,
+    "kanal5": 2,
+    "telma": 3
+  }
+}
