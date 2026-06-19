@@ -1,4 +1,4 @@
-"""Shared image URL quality heuristics — keep in sync with shared/image_quality.json."""
+"""Shared image URL quality heuristics — keep in sync with web/shared/image_quality.json."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
-_CONFIG_PATH = Path(__file__).resolve().parent.parent / "shared" / "image_quality.json"
+_CONFIG_PATH = Path(__file__).resolve().parent.parent / "web" / "shared" / "image_quality.json"
 
 
 @lru_cache(maxsize=1)
