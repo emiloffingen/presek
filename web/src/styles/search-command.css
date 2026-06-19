@@ -251,3 +251,24 @@
     padding: 0;
   }
 }
+
+/* Search modal — brand accent scoped to dialog root */
+.search-page-scope .search-cmd-input:focus {
+  border-bottom-color: var(--presek-mark) !important;
+}
+
+.search-page-scope .search-cmd-toolbar-btn:hover,
+.search-page-scope .search-cmd-toolbar-btn:focus-visible {
+  color: var(--presek-mark);
+}
+
+.search-page-scope .search-cmd-chip.bg-foreground {
+  background: var(--presek-mark);
+  border-color: var(--presek-mark);
+  color: var(--background);
+}
+
+.search-page-scope mark {
+  background: color-mix(in srgb, var(--presek-mark) 18%, transparent);
+  color: inherit;
+}

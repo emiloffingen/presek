@@ -14,6 +14,7 @@ import { search } from './namespaces/search';
 import { pulse } from './namespaces/pulse';
 import { archive } from './namespaces/archive';
 import { entity } from './namespaces/entity';
+import { sources } from './namespaces/sources';
 
 export const ui = {
   sr: {
@@ -29,6 +30,7 @@ export const ui = {
     ...pulse.sr,
     ...archive.sr,
     ...entity.sr,
+    ...sources.sr,
   },
   mk: {
     ...nav.mk,
@@ -43,5 +45,6 @@ export const ui = {
     ...pulse.mk,
     ...archive.mk,
     ...entity.mk,
+    ...sources.mk,
   },
 } as const;

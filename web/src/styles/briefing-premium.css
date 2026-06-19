@@ -971,3 +971,45 @@ main[data-briefing-mode='quick'] .briefing-sections-toc {
         display: none;
     }
 }
+
+/* Brand accent overrides within briefing page scope */
+.briefing-page-scope .briefing-deck-item.accent-intl:hover {
+    background: color-mix(in srgb, var(--presek-mark) 4%, color-mix(in srgb, var(--card) 70%, transparent));
+}
+
+.briefing-page-scope .briefing-quick-panel {
+    border-color: color-mix(in srgb, var(--presek-mark) 25%, var(--border));
+    background: color-mix(in srgb, var(--presek-mark) 4%, var(--card));
+}
+
+.briefing-page-scope .briefing-quick-kicker {
+    color: var(--presek-mark);
+}
+
+.briefing-page-scope .briefing-quick-bullets li::before {
+    background: var(--presek-mark);
+}
+
+.briefing-page-scope .briefing-stats-strip__item.is-intl .briefing-stats-strip__value {
+    color: var(--presek-mark);
+}
+
+.briefing-page-scope .briefing-sections-link__index {
+    color: var(--presek-mark);
+}
+
+.briefing-page-scope .briefing-sections-link.is-active .briefing-sections-link__title {
+    text-decoration-color: color-mix(in srgb, var(--presek-mark) 55%, transparent);
+}
+
+.briefing-page-scope .morning-email-signup__editorial-kicker {
+    color: var(--presek-mark);
+}
+
+.briefing-page-scope .morning-email-signup__editorial-field input:focus {
+    border-bottom-color: var(--presek-mark);
+}
+
+.briefing-page-scope .morning-email-signup__editorial-submit:hover:not(:disabled) {
+    color: var(--presek-mark);
+}

@@ -571,7 +571,8 @@ export default function SearchIsland({
     >
       <div
         ref={dialogRef}
-        className="w-full max-w-6xl h-[100dvh] sm:h-[92vh] md:h-[80vh] bg-background/95 border-x border-border/50 sm:border sm:border-border/50 shadow-2xl rounded-none flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 mx-0 sm:mx-4"
+        className="search-page-scope w-full max-w-6xl h-[100dvh] sm:h-[92vh] md:h-[80vh] bg-background/95 border-x border-border/50 sm:border sm:border-border/50 shadow-2xl rounded-none flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 mx-0 sm:mx-4"
+        data-page-scope="search"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Command Header */}

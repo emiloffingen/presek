@@ -37,20 +37,20 @@ wait_http_ok() {
   local expected="${3:-200}"
   local body_pattern="${4:-}"
   local code=""
-  local body=""
+  local _tmp=""
 
   info "Checking $name at $url"
   for _ in $(seq 1 "$MAX_ATTEMPTS"); do
     _tmp="$(mktemp)"
     code="$(curl -sS -o "$_tmp" -w "%{http_code}" "$url" 2>/dev/null || true)"
-    body="$(cat "$_tmp" 2>/dev/null || true)"
-    rm -f "$_tmp" 2>/dev/null || true
     if [ "$code" = "$expected" ]; then
-      if [ -z "$body_pattern" ] || printf "%s" "$body" | grep -Fq "$body_pattern"; then
+      if [ -z "$body_pattern" ] || grep -Fq "$body_pattern" "$_tmp" 2>/dev/null; then
+        rm -f "$_tmp" 2>/dev/null || true
         ok "$name responded with HTTP $code"
         return 0
       fi
     fi
+    rm -f "$_tmp" 2>/dev/null || true
     sleep "$SLEEP_SECONDS"
   done
 
@@ -242,6 +242,8 @@ main() {
   wait_http_ok "Astro pulse SSR" "$ASTRO_URL/pulse" 200 'pulse-page-scope'
   wait_http_ok "Astro archive SSR" "$ASTRO_URL/archive" 200 'archive-page-scope'
   wait_http_ok "Astro entity SSR" "$ASTRO_URL/subjekt/__smoke__" 404 'entity-page-scope'
+  wait_http_ok "Astro sources SSR" "$ASTRO_URL/izvori" 200 'sources-page-scope'
+  wait_http_ok "Astro briefing SSR" "$ASTRO_URL/briefing" 200 'briefing-page-scope'
   wait_http_ok "Astro MK frontend" "$ASTRO_URL/mk" 200
   wait_http_ok "Astro MK homepage SSR" "$ASTRO_URL/mk" 200 'data-page="home"'
   wait_http_ok "Image proxy" "http://127.0.0.1:5001/proxy?url=https://example.com/image.jpg&w=100" 200

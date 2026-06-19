@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { apiBaseUrl } from '../lib/apiBase';
 import { Search, ShieldCheck, Zap, Activity, ChevronRight, Globe, Compass, HelpCircle } from 'lucide-react';
 import { useClientTranslations } from '../i18n/clientTranslations';
-import { common } from '../i18n/namespaces/common';
+import { sources } from '../i18n/namespaces/sources';
 import { briefing } from '../i18n/namespaces/briefing';
 import TinyAdzRailSlot from './TinyAdzRailSlot';
 import type { ui } from '../i18n/ui';
@@ -175,7 +175,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTier, setFilterTier] = useState<string>('all');
-  const t = useClientTranslations(lang, common, briefing);
+  const t = useClientTranslations(lang, sources, briefing);
   const dateLocale = lang === 'mk' ? 'mk-MK' : 'sr-RS';
   const defaultCountry = lang === 'mk' ? 'MK' : 'RS';
 
@@ -258,7 +258,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
         key={source.source}
         id={rowId}
         href={`${localePathForLang('/', lang)}?source=${encodeURIComponent(source.source)}`}
-        className={`editorial-source-item group no-underline transition-all duration-300 ${isSelected ? 'border-l-4 border-l-nyt-accent pl-4 bg-nyt-accent/5' : ''}`}
+        className={`editorial-source-item group no-underline transition-all duration-300 ${isSelected ? 'border-l-4 border-l-presek-mark pl-4 bg-presek-mark/5' : ''}`}
         onClick={(e) => {
           // If they click on the item directly, let normal navigation run, but record selection state
           setSelectedSource(source);
@@ -267,9 +267,9 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
         <div className="item-main">
           <div className="item-head mb-2">
             <div className={`health-dot ${health}`} title={health === 'active' ? t('sources.health_active') : health === 'stale' ? t('sources.health_stale') : t('sources.health_critical')}></div>
-            <h3 className="section-heading group-hover:text-nyt-accent transition-colors">{source.source}</h3>
+            <h3 className="section-heading group-hover:text-presek-mark transition-colors">{source.source}</h3>
             {HIGH_TRUST_TIERS.has(source.trust_tier) && (
-              <ShieldCheck size={14} className="text-nyt-accent" />
+              <ShieldCheck size={14} className="text-presek-mark" />
             )}
           </div>
           <p className="item-tendency font-nyt-body text-sm text-muted-foreground line-clamp-1 mb-2 md:mb-3">{source.tendency}</p>
@@ -291,7 +291,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
               <span className="ui-kicker text-muted-foreground mb-0.5">{t('sources.news_24h')}</span>
               <strong className="text-base md:text-lg font-black tabular-nums leading-none">{source.recent_volume}</strong>
             </div>
-            <div className="stat-box flex flex-col items-end text-nyt-accent">
+            <div className="stat-box flex flex-col items-end text-presek-mark">
               <span className="ui-kicker opacity-60 mb-0.5">{t('sources.quality')}</span>
               <strong className="text-base md:text-lg font-black tabular-nums leading-none">{reliabilityIndex}</strong>
             </div>
@@ -314,7 +314,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
               else if (value > 0.2) opacity = 'opacity-40';
 
               if (HIGH_TRUST_TIERS.has(source.trust_tier)) bgClass = 'bg-emerald-500';
-              else if (VERIFIED_TIERS.has(source.trust_tier)) bgClass = 'bg-nyt-accent';
+              else if (VERIFIED_TIERS.has(source.trust_tier)) bgClass = 'bg-presek-mark';
 
               const height = Math.min(100, Math.max(15, value * 100));
 
@@ -336,11 +336,11 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
     <div className="broadsheet-sources">
       <header className="editorial-masthead mb-10 md:mb-16 border-t border-foreground pt-4">
         <div className="masthead-top mb-6 md:mb-8">
-          <span className="masthead-kicker ui-kicker ui-kicker--accent">{t('sources.reputation')}</span>
+          <span className="masthead-kicker ui-kicker ui-kicker--accent">{t('sources.page_kicker')}</span>
         </div>
         <div className="masthead-main mb-8 md:mb-12">
           <h1 className="masthead-title font-serif text-4xl md:text-6xl font-black leading-[0.92] tracking-tighter">
-            {t('sources.title').split(' ')[0]} <span className="text-nyt-accent italic font-light">{t('sources.title').split(' ')[1] || ''}</span>
+            {t('sources.title').split(' ')[0]} <span className="text-presek-mark italic font-light">{t('sources.title').split(' ')[1] || ''}</span>
           </h1>
           <p className="mt-4 md:mt-6 font-serif text-lg md:text-xl italic text-muted-foreground leading-snug max-w-2xl">
             {t('sources.desc')}
@@ -354,7 +354,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder={t('sources.search_placeholder')}
-              className="w-full bg-secondary/20 border-b-2 border-border py-2 pl-2 pr-10 font-serif font-bold text-base md:text-lg outline-none focus:border-nyt-accent placeholder:italic placeholder:font-normal placeholder:opacity-40 transition-all"
+              className="w-full bg-secondary/20 border-b-2 border-border py-2 pl-2 pr-10 font-serif font-bold text-base md:text-lg outline-none focus:border-presek-mark placeholder:italic placeholder:font-normal placeholder:opacity-40 transition-all"
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none opacity-40">
               <Search size={18} />
@@ -372,7 +372,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                 onClick={() => setFilterTier(t_tier.id)}
                 className={`flex-1 md:flex-none px-3 md:px-4 py-2 rounded-none ui-label-min transition-all ${
                   filterTier === t_tier.id
-                    ? 'bg-nyt-accent text-white shadow-md'
+                    ? 'bg-presek-mark text-white shadow-md'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
@@ -383,13 +383,18 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
         </div>
       </header>
 
-      {/* NEW: Media Pluralism & Bias Spectrum Dashboard */}
       {!loading && !error && domesticGraphSources.length > 0 && (
-        <section className="media-spectrum-dashboard mb-16 border border-border/80 bg-secondary/5 dark:bg-secondary/5 rounded-none p-5 md:p-8 backdrop-blur-xl relative overflow-hidden">
+        <details className="sources-analytics-details mb-16">
+          <summary className="sources-analytics-summary">
+            <span className="sources-analytics-title">{t('sources.analytics_panel')}</span>
+            <span className="sources-analytics-hint">{t('sources.analytics_hint')}</span>
+          </summary>
+          <div className="sources-analytics-body">
+        <section className="media-spectrum-dashboard border border-border/80 bg-secondary/5 dark:bg-secondary/5 rounded-none p-5 md:p-8 backdrop-blur-xl relative overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/60 pb-5 mb-6">
             <div>
               <div className="flex items-center gap-2 mb-1.5">
-                <Compass className="text-nyt-accent shrink-0" size={20} />
+                <Compass className="text-presek-mark shrink-0" size={20} />
                 <h2 className="font-serif font-black text-xl md:text-2xl text-foreground leading-none">{t('sources.spectrum_title')}</h2>
               </div>
               <p className="font-serif text-sm italic text-muted-foreground/90">{t('sources.spectrum_subtitle')}</p>
@@ -402,7 +407,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                 value={graphSearch}
                 onChange={(e) => setGraphSearch(e.target.value)}
                 placeholder={t('sources.graph_search_placeholder')}
-                className="w-full bg-background border border-border rounded-none py-1.5 pl-3 pr-8 text-xs font-sans placeholder:italic placeholder:opacity-50 focus:border-nyt-accent focus:ring-1 focus:ring-nyt-accent/30 outline-none transition-all"
+                className="w-full bg-background border border-border rounded-none py-1.5 pl-3 pr-8 text-xs font-sans placeholder:italic placeholder:opacity-50 focus:border-presek-mark focus:ring-1 focus:ring-presek-mark/30 outline-none transition-all"
               />
               <div className="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none opacity-40">
                 <Search size={14} />
@@ -459,8 +464,8 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                 </div>
 
                 {/* Center marker */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full border border-nyt-accent/25 bg-background/50 backdrop-blur-[3px] pointer-events-none flex items-center justify-center shadow-sm">
-                  <span className="text-[7px] font-sans font-black tracking-widest text-nyt-accent/80">CENTER</span>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full border border-presek-mark/25 bg-background/50 backdrop-blur-[3px] pointer-events-none flex items-center justify-center shadow-sm">
+                  <span className="text-[7px] font-sans font-black tracking-widest text-presek-mark/80">CENTER</span>
                 </div>
 
                 {/* Rendering reactive nodes */}
@@ -481,7 +486,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                   if (HIGH_TRUST_TIERS.has(s.trust_tier)) {
                     colorClass = 'bg-emerald-500 border border-background dark:border-background/60 shadow-[0_0_12px_rgba(16,185,129,0.7)]';
                   } else if (VERIFIED_TIERS.has(s.trust_tier)) {
-                    colorClass = 'bg-nyt-accent border border-background dark:border-background/60 shadow-[0_0_12px_rgba(235,94,40,0.7)]';
+                    colorClass = 'bg-presek-mark border border-background dark:border-background/60 shadow-[0_0_12px_rgba(235,94,40,0.7)]';
                   }
                   
                   // Opacity and scale adjustments based on current filters
@@ -490,7 +495,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                   return (
                     <div
                       key={s.source}
-                      className={`absolute transform -translate-x-1/2 -translate-y-1/2 rounded-full cursor-pointer transition-all duration-300 node-interactive ${colorClass} ${activeOpacity} ${isSelected ? 'ring-4 ring-nyt-accent/40 scale-125 z-30' : 'hover:scale-130'}`}
+                      className={`absolute transform -translate-x-1/2 -translate-y-1/2 rounded-full cursor-pointer transition-all duration-300 node-interactive ${colorClass} ${activeOpacity} ${isSelected ? 'ring-4 ring-presek-mark/40 scale-125 z-30' : 'hover:scale-130'}`}
                       style={{
                         left: `${coords.pctX}%`,
                         top: `${coords.pctY}%`,
@@ -506,11 +511,11 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                     >
                       {/* Search radar pulse */}
                       {isSearched && (
-                        <div className="absolute -inset-3 rounded-full border-2 border-nyt-accent animate-ping pointer-events-none" />
+                        <div className="absolute -inset-3 rounded-full border-2 border-presek-mark animate-ping pointer-events-none" />
                       )}
                       {/* Small text label for highly prominent media */}
                       {(s.recent_volume > 15 || isSelected || isSearched || isHovered) && matched && (
-                        <span className={`absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-1 py-0.5 rounded-none bg-background/90 text-foreground font-sans ui-label-min tracking-tight border border-border/40 whitespace-nowrap shadow-sm pointer-events-none ${isHovered || isSelected ? 'opacity-100 z-50 scale-105 border-nyt-accent/50' : 'opacity-55'}`}>
+                        <span className={`absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-1 py-0.5 rounded-none bg-background/90 text-foreground font-sans ui-label-min tracking-tight border border-border/40 whitespace-nowrap shadow-sm pointer-events-none ${isHovered || isSelected ? 'opacity-100 z-50 scale-105 border-presek-mark/50' : 'opacity-55'}`}>
                           {s.source}
                         </span>
                       )}
@@ -544,7 +549,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                       <div className="grid grid-cols-2 gap-2 ui-label-min border-t border-border/60 pt-2.5">
                         <div className="flex flex-col">
                           <span className="ui-kicker text-muted-foreground/60">{t('sources.hover_quality')}</span>
-                          <strong className="text-xs font-black text-nyt-accent">{reliability}</strong>
+                          <strong className="text-xs font-black text-presek-mark">{reliability}</strong>
                         </div>
                         <div className="flex flex-col">
                           <span className="ui-kicker text-muted-foreground/60">{t('sources.hover_consensus')}</span>
@@ -560,7 +565,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                         </div>
                       </div>
                       
-                      <div className="mt-3.5 ui-label-min text-nyt-accent flex items-center gap-1">
+                      <div className="mt-3.5 ui-label-min text-presek-mark flex items-center gap-1">
                         <ShieldCheck size={10} />
                         {hoveredSource.trust_tier}
                       </div>
@@ -587,7 +592,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                     </p>
                   </div>
                   <div>
-                    <span className="inline-block px-1.5 py-0.5 rounded-none bg-nyt-accent/10 text-nyt-accent ui-label-min mb-1">{t('sources.verified')}</span>
+                    <span className="inline-block px-1.5 py-0.5 rounded-none bg-presek-mark/10 text-presek-mark ui-label-min mb-1">{t('sources.verified')}</span>
                     <p className="text-[11px] text-muted-foreground leading-snug">
                       {t('sources.legend_verified_desc')}
                     </p>
@@ -604,13 +609,15 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
             </div>
           </div>
         </section>
+          </div>
+        </details>
       )}
 
       <div className="broadsheet-grid">
         <div className="broadsheet-main">
           {loading ? (
             <div className="py-32 text-center opacity-30">
-              <Activity size={48} className="animate-spin mx-auto text-nyt-accent" />
+              <Activity size={48} className="animate-spin mx-auto text-presek-mark" />
             </div>
           ) : error ? (
             <div className="py-24 text-center border-2 border-dashed border-border rounded-none">
@@ -640,7 +647,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
 
         <aside className="broadsheet-rail pl-0 md:pl-4">
           <TinyAdzRailSlot lang={lang} />
-          <section className="rail-module mb-8 md:mb-12 p-4 md:p-8 bg-nyt-accent/5 border border-nyt-accent/10 rounded-none">
+          <section className="rail-module mb-8 md:mb-12 p-4 md:p-8 bg-presek-mark/5 border border-presek-mark/10 rounded-none">
             <span className="block ui-kicker ui-kicker--accent mb-3 md:mb-4">{t('briefing.system_balance')}</span>
             <h3 className="section-heading mb-4 leading-tight tracking-tight">{t('sources.qi_title')}</h3>
             <p className="font-nyt-body text-sm leading-relaxed text-muted-foreground">
@@ -660,7 +667,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                   {fastMovers.map(s => (
                     <div key={s.source} className="flex items-center justify-between py-2 border-b border-border/40 hover:bg-secondary/10 px-1 transition-all gap-2">
                       <span className="font-serif font-bold text-sm md:text-base">{s.source}</span>
-                      <span className="ui-label text-nyt-accent bg-nyt-accent/10 px-2 py-0.5 rounded-none">+{s.speed_first_count}</span>
+                      <span className="ui-label text-presek-mark bg-presek-mark/10 px-2 py-0.5 rounded-none">+{s.speed_first_count}</span>
                     </div>
                   ))}
                 </div>
@@ -696,7 +703,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
 
       <style>{`
         .editorial-source-item { display: flex; justify-content: space-between; align-items: center; padding: 1.35rem 0; border-bottom: 1px solid var(--border); transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
-        .editorial-source-item:hover { background: color-mix(in srgb, var(--background) 96%, var(--nyt-accent) 4%); padding-left: 1rem; padding-right: 1rem; margin-left: -1rem; margin-right: -1rem; border-radius: 0px; border-bottom-color: var(--nyt-accent); }
+        .editorial-source-item:hover { background: color-mix(in srgb, var(--background) 96%, var(--presek-mark) 4%); padding-left: 1rem; padding-right: 1rem; margin-left: -1rem; margin-right: -1rem; border-radius: 0px; border-bottom-color: var(--presek-mark); }
         .item-main { flex: 1; min-width: 0; }
         .item-head { display: flex; align-items: center; gap: 0.75rem; }
         .health-dot { width: 6px; height: 6px; border-radius: 50%; }
@@ -730,7 +737,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
 
         .izvori-rail-context-summary::-webkit-details-marker { display: none; }
 
-        .izvori-rail-context-hint::after { content: ' +'; color: var(--nyt-accent); }
+        .izvori-rail-context-hint::after { content: ' +'; color: var(--presek-mark); }
         .izvori-rail-context[open] .izvori-rail-context-hint::after { content: ' −'; }
 
         .izvori-rail-context-body {
@@ -747,17 +754,6 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
         .vertical-text {
           writing-mode: vertical-lr;
           transform: rotate(180deg);
-        }
-
-        @keyframes highlightPulse {
-          0% { background-color: rgba(235, 94, 40, 0.25); border-left-color: var(--nyt-accent); }
-          50% { background-color: rgba(235, 94, 40, 0.1); }
-          100% { background-color: transparent; }
-        }
-        .highlight-pulse {
-          animation: highlightPulse 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-          border-left: 4px solid var(--nyt-accent);
-          padding-left: 1rem;
         }
 
         .node-interactive {

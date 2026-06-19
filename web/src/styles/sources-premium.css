@@ -1,0 +1,112 @@
+/* Sources (izvori) page — brand accents and collapsed spectrum panel */
+
+.sources-page-scope .ui-kicker--accent,
+.sources-page-scope .masthead-kicker {
+    color: var(--presek-mark);
+}
+
+.sources-analytics-details {
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--secondary) 18%, var(--background));
+}
+
+.sources-analytics-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem 0.9rem;
+    cursor: pointer;
+    list-style: none;
+}
+
+.sources-analytics-summary::-webkit-details-marker {
+    display: none;
+}
+
+.sources-analytics-title {
+    font-family: var(--font-ui);
+    font-size: var(--text-ui-kicker);
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--foreground);
+}
+
+.sources-analytics-hint {
+    font-family: var(--font-ui);
+    font-size: var(--text-ui-min);
+    font-weight: 600;
+    color: var(--muted-foreground);
+    text-align: right;
+}
+
+.sources-analytics-summary::after {
+    content: '+';
+    flex-shrink: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--presek-mark);
+    line-height: 1;
+    margin-left: 0.35rem;
+}
+
+.sources-analytics-details[open] .sources-analytics-summary::after {
+    content: '−';
+}
+
+.sources-analytics-body {
+    padding: 0.85rem 0.9rem 1rem;
+    border-top: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+}
+
+.sources-page-scope .media-spectrum-dashboard {
+    border-color: color-mix(in srgb, var(--presek-mark) 18%, var(--border));
+    border-left: 3px solid var(--presek-mark);
+    background: color-mix(in srgb, var(--presek-mark) 3%, var(--secondary));
+}
+
+.sources-page-scope .izvori-rail-context-hint::after {
+    color: var(--presek-mark);
+}
+
+.sources-page-scope .editorial-source-item:hover {
+    background: color-mix(in srgb, var(--background) 96%, var(--presek-mark) 4%);
+    border-bottom-color: var(--presek-mark);
+}
+
+@keyframes sourcesHighlightPulse {
+    0% {
+        background-color: color-mix(in srgb, var(--presek-mark) 25%, transparent);
+        border-left-color: var(--presek-mark);
+    }
+    50% {
+        background-color: color-mix(in srgb, var(--presek-mark) 10%, transparent);
+    }
+    100% {
+        background-color: transparent;
+    }
+}
+
+.sources-page-scope .highlight-pulse {
+    animation: sourcesHighlightPulse 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    border-left: 4px solid var(--presek-mark);
+    padding-left: 1rem;
+}
+
+@media (min-width: 1024px) {
+    .sources-analytics-details[open] .sources-analytics-summary {
+        border-bottom: 1px solid color-mix(in srgb, var(--presek-mark) 18%, var(--border));
+    }
+}
+
+@media (max-width: 768px) {
+    .sources-analytics-summary {
+        flex-wrap: wrap;
+    }
+
+    .sources-analytics-hint {
+        flex: 1 1 auto;
+        text-align: left;
+    }
+}

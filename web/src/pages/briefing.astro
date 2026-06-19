@@ -93,7 +93,7 @@ const leadVisualTitle = briefingData?.lead_cluster?.synthetic_headline || briefi
 <Layout title={`${pageTitle} — Presek`} description={pageDescription}>
     <NYTHeader stats={stats} />
 
-    <main class="site-layout broadsheet-layout page-content-top pb-[var(--page-py)] overflow-x-hidden" data-briefing-mode={quickMode ? 'quick' : 'full'}>
+    <main class="site-layout broadsheet-layout page-content-top pb-[var(--page-py)] overflow-x-hidden briefing-page-scope" data-briefing-mode={quickMode ? 'quick' : 'full'}>
         <div class="scroll-progress-container briefing-scroll-progress">
             <div class="scroll-progress-bar" id="briefing-reading-progress"></div>
         </div>
@@ -101,7 +101,7 @@ const leadVisualTitle = briefingData?.lead_cluster?.synthetic_headline || briefi
             {error ? (
                 <div class="py-20 text-center animate-rise">
                     <h2 class="font-serif text-3xl mb-6 font-black italic">{error}</h2>
-                    <a href={localePath('/briefing', lang, hostHeader)} class="inline-flex items-center gap-[var(--grid-gap)] px-6 py-3 bg-foreground text-background font-sans ui-status hover:bg-nyt-accent transition-colors">
+                    <a href={localePath('/briefing', lang, hostHeader)} class="inline-flex items-center gap-[var(--grid-gap)] px-6 py-3 bg-foreground text-background font-sans ui-status hover:bg-presek-mark transition-colors">
                         {t('briefing.back_latest')}
                     </a>
                 </div>
@@ -232,7 +232,7 @@ const leadVisualTitle = briefingData?.lead_cluster?.synthetic_headline || briefi
                 </div>
             ) : (
                 <div class="py-40 text-center flex flex-col items-center gap-[var(--grid-gap)]">
-                    <div class="w-12 h-12 border-4 border-nyt-accent border-t-transparent rounded-full animate-spin"></div>
+                    <div class="w-12 h-12 border-4 border-presek-mark border-t-transparent rounded-full animate-spin"></div>
                     <p class="font-serif text-xl italic text-muted-foreground">{t('briefing.loading')}</p>
                 </div>
             )}
