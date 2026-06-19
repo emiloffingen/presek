@@ -9,8 +9,13 @@ const { lang } = Astro.props;
 const t = useTranslations(lang);
 ---
 
-<div class="home-mode-dock" data-home-mode-dock hidden>
-    <div class="home-mode-dock-inner site-layout">
+<div
+    class="home-mode-dock"
+    data-home-mode-dock
+    role="tablist"
+    aria-label={t('home.edition_mode_nav_label')}
+>
+    <div class="home-mode-dock-inner">
         <button
             type="button"
             class="home-mode-dock-btn is-active"

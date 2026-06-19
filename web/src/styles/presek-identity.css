@@ -237,28 +237,62 @@
   color: color-mix(in srgb, var(--foreground) 78%, var(--presek-mark));
 }
 
-/* ── Sticky homepage mode dock ───────────────────── */
+/* ── Homepage edition header + inline mode switch ── */
+.home-mobile-order-edition {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.85rem;
+  margin-bottom: 0.35rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--presek-mark) 18%, var(--border));
+}
+
+.home-mobile-order-edition .daily-edition-bar {
+  flex: 1 1 14rem;
+  min-width: 0;
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
 .home-mode-dock {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 45;
-  padding: 0.45rem 0.75rem calc(0.45rem + env(safe-area-inset-bottom, 0px));
-  pointer-events: none;
+  position: static;
+  flex: 1 1 100%;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  pointer-events: auto;
 }
 
 .home-mode-dock-inner {
   display: flex;
   gap: 0.35rem;
-  max-width: 28rem;
-  margin: 0 auto;
-  padding: 0.35rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.28rem;
   border: 1px solid color-mix(in srgb, var(--presek-mark) 28%, var(--border));
-  background: color-mix(in srgb, var(--background) 92%, transparent);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 12px 32px -12px color-mix(in srgb, var(--foreground) 22%, transparent);
-  pointer-events: auto;
+  background: color-mix(in srgb, var(--secondary) 38%, var(--background));
+  box-shadow: none;
+}
+
+@media (min-width: 769px) {
+  .home-mode-dock {
+    flex: 0 1 22rem;
+    width: auto;
+    max-width: 22rem;
+    margin-left: auto;
+  }
+
+  .home-mode-dock-inner {
+    padding: 0.32rem;
+  }
+
+  .home-mode-dock-btn {
+    min-height: 2.35rem;
+    font-size: 0.68rem;
+  }
 }
 
 .home-mode-dock-btn {
@@ -289,23 +323,6 @@
 .home-mode-dock-btn:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--presek-mark) 70%, transparent);
   outline-offset: 2px;
-}
-
-html[data-page="home"] body:has([data-home-mode-dock]:not([hidden])) {
-  padding-bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px));
-}
-
-@media (min-width: 769px) {
-  .home-mode-dock {
-    top: auto;
-    bottom: 1.25rem;
-    padding-bottom: 0;
-  }
-
-  .home-mode-dock-inner {
-    margin-right: 1.5rem;
-    margin-left: auto;
-  }
 }
 
 .dark .card-primary-badge {
@@ -448,8 +465,10 @@ html[data-page="home"] body:has([data-home-mode-dock]:not([hidden])) {
 @media (max-width: 768px) {
   .home-mobile-order-edition .daily-edition-bar {
     padding: 0.3rem 0 0.4rem;
-    margin-bottom: 0;
-    border-bottom: none;
+  }
+
+  .home-mobile-order-edition .home-mode-dock {
+    margin-top: 0;
   }
 
   .daily-edition-mark {

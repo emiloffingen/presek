@@ -15,7 +15,6 @@
     var dock = document.querySelector('[data-home-mode-dock]');
     if (!dock || !root) return;
     var expanded = root.classList.contains('home-analysis-expanded');
-    dock.hidden = false;
     var dailyBtn = dock.querySelector('[data-home-mode-daily]');
     var analizaBtn = dock.querySelector('[data-home-mode-analiza]');
     if (dailyBtn) {

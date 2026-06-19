@@ -336,14 +336,6 @@ html[data-page="home"] .search-fab-mobile {
 }
 
 @media (max-width: 768px) {
-  .home-mobile-order-edition {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem 0.75rem;
-    margin-bottom: 0.35rem;
-  }
-
   .home-mobile-order-edition .daily-edition-bar {
     flex: 1 1 auto;
     min-width: 0;
@@ -356,7 +348,7 @@ html[data-page="home"] .search-fab-mobile {
   }
 
   .ui-concept-onboarding {
-    bottom: 4.25rem;
+    bottom: 1rem;
     padding: 0.85rem 0.9rem;
     transition: bottom 0.3s var(--ease-editorial);
   }

@@ -203,6 +203,9 @@ if (analizaNavItems.length > 0) {
                         {isPregled && (
                             <a href={l('/')} class="home-pregled-nav-link">{t('home.back_to_feed')}</a>
                         )}
+                        {!isPregled && !q && !category && !topic && !entity && !subcategory && (
+                            <HomeEditionModeDock lang={lang as 'sr' | 'mk'} />
+                        )}
                     </div>
                 )}
 
@@ -537,9 +540,6 @@ if (analizaNavItems.length > 0) {
 	</main>
 
 	<Footer />
-    {!error && isHomepage && !isPregled && !q && !category && !topic && !entity && !subcategory && (
-        <HomeEditionModeDock lang={lang as 'sr' | 'mk'} />
-    )}
 </Layout>
 
 {isHomepage && (perspectiveBandItems.length > 0 || radarBandItems.length > 0 || consensusBandItems.length > 0) && (
