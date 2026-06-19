@@ -503,7 +503,7 @@ rsync -a \
     --exclude 'web/node_modules/' \
     --exclude 'web/dist/' \
     --exclude 'logs/' \
-    --exclude 'shared/' \
+    --exclude '/shared/' \
     --exclude 'releases/' \
     --exclude 'current' \
     "$COPY_ROOT/" "$RELEASE_DIR/"

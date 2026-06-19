@@ -1,4 +1,4 @@
-import config from '../../shared/image_quality.json' with { type: 'json' };
+import config from '../../config/image_quality.json' with { type: 'json' };
 
 const WEAK_PATTERNS = config.weak_patterns as string[];
 const MIN_URL_LENGTH = config.min_url_length as number;
