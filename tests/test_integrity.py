@@ -362,8 +362,11 @@ class TestDeploymentIntegrity:
     def test_nginx_routes_api_and_site_to_separate_upstreams(self):
         nginx_conf = _read("deploy/nginx/presek.live.conf")
         routes_snippet = _read("deploy/nginx/presek-routes.conf")
+        rate_zones = _read("deploy/nginx/rate-limit-zones.conf")
         assert "upstream presek_fastapi" in nginx_conf
         assert "upstream presek_astro" in nginx_conf
+        assert "limit_req_zone" not in nginx_conf
+        assert "limit_req_zone" in rate_zones
         assert "location ^~ /api/" in routes_snippet
         assert "proxy_pass http://presek_fastapi;" in routes_snippet
         assert "location / {" in routes_snippet

@@ -173,6 +173,11 @@ main() {
       replace_mk_paths "$NGINX_DIR/presek-mk.conf" "$MK_SITE_AVAILABLE"
       cp "$NGINX_DIR/presek-routes-mk.conf" "/etc/nginx/snippets/presek-routes-mk.conf"
       ln -sfn "$MK_SITE_AVAILABLE" "$MK_SITE_ENABLED"
+
+      # Disable legacy presek-mk.conf if it duplicates the canonical $MK_DOMAIN.conf site.
+      if [ -e "/etc/nginx/sites-enabled/presek-mk.conf" ] && [ "$MK_SITE_ENABLED" != "/etc/nginx/sites-enabled/presek-mk.conf" ]; then
+        mv "/etc/nginx/sites-enabled/presek-mk.conf" "$DISABLED_SITES_DIR/presek-mk.enabled.disabled.$(date +%Y%m%d%H%M%S)"
+      fi
     fi
 
     if [ -e "$LEGACY_SITE_ENABLED" ] && grep -q "server_name .*presek.live" "$LEGACY_SITE_ENABLED"; then

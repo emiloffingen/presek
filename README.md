@@ -56,6 +56,7 @@ Presek runs as a **systemd target** (`presek.target`). See [deploy/MINIMUM_PROD.
 - The older root Vite frontend and Jinja template frontend were removed.
 - `start.sh` is a local/manual runtime helper, not the production entrypoint.
 - Production serves from the release runtime root at `/home/emiloffingen/presek-runtime/current` behind nginx/systemd.
+- `docker-compose.yml` is a **dev-only** backend stub (API + workers + Postgres + Redis). It does not run Astro SSR; use `cd web && npm run dev` for the frontend locally.
 
 ## Runtime Paths
 
