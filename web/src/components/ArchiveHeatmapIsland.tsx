@@ -3,7 +3,7 @@ import { Loader2, CalendarRange } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
 import { localePathForLang } from '../lib/localePaths';
 import { useClientTranslations } from '../i18n/clientTranslations';
-import { common } from '../i18n/namespaces/common';
+import { archive } from '../i18n/namespaces/archive';
 import { news } from '../i18n/namespaces/news';
 
 interface HeatmapDay {
@@ -21,8 +21,7 @@ export default function ArchiveHeatmapIsland({ selectedDate, lang = 'sr' }: Prop
   const [data, setData] = useState<HeatmapDay[]>([]);
   const [loading, setLoading] = useState(true);
   const activeLang = lang === 'mk' ? 'mk' : 'sr';
-  const isMK = activeLang === 'mk';
-  const t = useClientTranslations(activeLang, common, news);
+  const t = useClientTranslations(activeLang, archive, news);
 
   useEffect(() => {
     console.log('[ArchiveHeatmap] Fetching data...');
@@ -43,7 +42,7 @@ export default function ArchiveHeatmapIsland({ selectedDate, lang = 'sr' }: Prop
   if (loading) {
     return (
       <div className="flex justify-center items-center h-24 border border-dashed border-border rounded-lg">
-        <Loader2 className="animate-spin text-nyt-accent mr-2" size={16} />
+        <Loader2 className="animate-spin text-presek-mark mr-2" size={16} />
         <span className="text-xs text-muted-foreground uppercase font-black tracking-widest">
             {t('archive.heatmap_loading')}
         </span>
@@ -90,15 +89,15 @@ export default function ArchiveHeatmapIsland({ selectedDate, lang = 'sr' }: Prop
       if (ratio > 0.2) return 'bg-nyt-red/70';
       return 'bg-nyt-red/40';
     } else {
-      if (ratio > 0.6) return 'bg-nyt-accent text-white shadow-[0_0_8px_rgba(30,64,175,0.3)]';
-      if (ratio > 0.2) return 'bg-nyt-accent/70';
-      return 'bg-nyt-accent/40';
+      if (ratio > 0.6) return 'bg-presek-mark text-white shadow-[0_0_8px_color-mix(in_srgb,var(--presek-mark)_45%,transparent)]';
+      if (ratio > 0.2) return 'bg-presek-mark/70';
+      return 'bg-presek-mark/40';
     }
   };
 
   const getLabel = (dateStr: string) => {
     const d = new Date(dateStr.replace("Z", ""));
-    return d.toLocaleDateString(isMK ? 'mk-MK' : 'sr-RS', { month: 'short', day: 'numeric' });
+    return d.toLocaleDateString(activeLang === 'mk' ? 'mk-MK' : 'sr-RS', { month: 'short', day: 'numeric' });
   };
 
   return (
@@ -106,14 +105,14 @@ export default function ArchiveHeatmapIsland({ selectedDate, lang = 'sr' }: Prop
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-[var(--grid-gap)] mb-6">
         <div>
           <h2 className="section-heading">
-            <CalendarRange size={18} className="text-nyt-accent" /> {t('archive.heatmap_title')}
+            <CalendarRange size={18} className="text-presek-mark" /> {t('archive.heatmap_title')}
           </h2>
           <p className="text-[11px] text-muted-foreground uppercase font-black tracking-widest mt-1">
               {t('archive.heatmap_subtitle')}
           </p>
         </div>
         <div className="flex gap-[var(--grid-gap)] text-xs font-bold font-sans">
-          <div className="flex items-center gap-[var(--grid-gap)]"><span className="w-3 h-3 bg-nyt-accent/60 rounded-sm"></span> {t('archive.heatmap_volume')}</div>
+          <div className="flex items-center gap-[var(--grid-gap)]"><span className="w-3 h-3 bg-presek-mark/60 rounded-sm"></span> {t('archive.heatmap_volume')}</div>
           <div className="flex items-center gap-[var(--grid-gap)]"><span className="w-3 h-3 bg-nyt-red/60 rounded-sm"></span> {t('archive.heatmap_urgent')}</div>
         </div>
       </div>

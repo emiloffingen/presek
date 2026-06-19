@@ -443,13 +443,13 @@
 	.editorial-grid {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
-		gap: 4rem;
+		gap: 2.5rem;
 	}
 
 	@media (min-width: 1024px) {
 		.editorial-grid {
 			grid-template-columns: 2.2fr 1fr;
-            gap: 3.5rem;
+            gap: 2rem;
             align-items: start;
 		}
 	}

@@ -18,7 +18,6 @@ import TinyAdzInlinedAd from '../components/TinyAdzInlinedAd.astro';
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
-const isMK = lang === 'mk';
 
 const date = Astro.url.searchParams.get('date') || new Date().toISOString().split('T')[0];
 const q = Astro.url.searchParams.get('q') || '';
@@ -66,10 +65,10 @@ const buildFilterHref = (kind: 'source' | 'topic' | 'q', value: string) => {
   if (kind === 'source') { if (value) params.set('source', value); if (topic) params.set('topic', topic); if (q) params.set('q', q); }
   else if (kind === 'topic') { if (source) params.set('source', source); if (value) params.set('topic', value); if (q) params.set('q', q); }
   else { if (source) params.set('source', source); if (topic) params.set('topic', topic); if (value) params.set('q', value); }
-  return `${localePath('/archive', isMK ? 'mk' : 'sr', hostHeader)}?${params.toString()}`;
+  return `${localePath('/archive', lang, hostHeader)}?${params.toString()}`;
 };
 
-const formattedDisplayDate = new Date(archive.date).toLocaleDateString(isMK ? 'mk-MK' : 'sr-RS', { day: 'numeric', month: 'long', year: 'numeric' });
+const formattedDisplayDate = new Date(archive.date).toLocaleDateString(lang === 'mk' ? 'mk-MK' : 'sr-RS', { day: 'numeric', month: 'long', year: 'numeric' });
 
 const briefingItems: string[] = briefingData.briefing ? briefingData.briefing.split(/\s*[•·]\s*/) : [];
 
@@ -83,9 +82,9 @@ function formatBriefingItem(item: string) {
 <Layout title={`${t('nav.archive')} — Presek`} description={t('archive.description')}>
   <NYTHeader />
 
-  <main class="site-layout broadsheet-layout page-content-top pb-[var(--page-py)]">
-    <header class="editorial-masthead mb-16 border-t border-foreground pt-4">
-        <div class="masthead-top mb-8 flex justify-between items-center">
+  <main class="site-layout broadsheet-layout page-content-top pb-[var(--page-py)] archive-page-scope">
+    <header class="editorial-masthead mb-10 border-t border-foreground pt-4">
+        <div class="masthead-top mb-6 flex justify-between items-center">
             <span class="masthead-kicker ui-kicker ui-kicker--accent">{t('archive.memory')}</span>
             <div class="masthead-meta-compact hidden md:flex items-center gap-[var(--grid-gap)] ui-label-min text-muted-foreground opacity-60">
                 <span class="flex items-center gap-[var(--grid-gap)]"><CalendarDays size={12} /> {formattedDisplayDate}</span>
@@ -96,16 +95,16 @@ function formatBriefingItem(item: string) {
             </div>
         </div>
 
-        <div class="masthead-main flex flex-col md:flex-row justify-between items-start md:items-end gap-12 mb-12 animate-rise">
+        <div class="masthead-main flex flex-col md:flex-row justify-between items-start md:items-end gap-8 mb-8 animate-rise">
             <div class="max-w-3xl">
-                <h1 class="masthead-title font-serif text-4xl md:text-6xl font-black leading-[0.95] tracking-tighter mb-4">{t('nav.archive')} <span class="text-nyt-accent italic font-light">{t('archive.edition')}</span></h1>
+                <h1 class="masthead-title font-serif text-4xl md:text-6xl font-black leading-[0.95] tracking-tighter mb-4">{t('nav.archive')} <span class="text-presek-mark italic font-light">{t('archive.edition')}</span></h1>
                 <p class="font-serif text-xl italic text-muted-foreground leading-snug max-w-2xl">
                     {t('archive.masthead_desc')}
                 </p>
             </div>
             <div class="archive-premium-deck w-full md:w-auto">
                 <div class="archive-deck-stat">
-                    <span class="block text-2xl font-black tabular-nums">{archive.total.toLocaleString(isMK ? 'mk-MK' : 'sr-RS')}</span>
+                    <span class="block text-2xl font-black tabular-nums">{archive.total.toLocaleString(lang === 'mk' ? 'mk-MK' : 'sr-RS')}</span>
                     <span class="ui-label-min text-muted-foreground">{t('archive.objava')}</span>
                 </div>
                 <div class="archive-deck-stat">
@@ -113,27 +112,33 @@ function formatBriefingItem(item: string) {
                     <span class="ui-label-min text-muted-foreground">{t('archive.redakcija')}</span>
                 </div>
                 <div class="archive-deck-stat accent-total-themes">
-                    <span class="block text-2xl font-black tabular-nums text-nyt-accent">{archive.total_clusters}</span>
-                    <span class="ui-label-min text-nyt-accent/70">{t('archive.tema')}</span>
+                    <span class="block text-2xl font-black tabular-nums text-presek-mark">{archive.total_clusters}</span>
+                    <span class="ui-label-min text-presek-mark/70">{t('archive.tema')}</span>
                 </div>
             </div>
         </div>
 
         {briefingItems.length > 0 && (
-            <div class="archive-briefing-glow-panel mb-16 shadow-editorial">
-                <div class="flex items-center gap-[var(--grid-gap)] mb-6">
-                    <Sparkles size={14} className="text-nyt-accent" />
-                    <span class="ui-kicker ui-kicker--accent">{t('archive.briefing_kicker')}</span>
-                </div>
+            <details class="archive-briefing-details mb-10 group">
+                <summary class="archive-briefing-summary list-none cursor-pointer">
+                    <div class="flex items-center gap-[var(--grid-gap)]">
+                        <Sparkles size={14} className="text-presek-mark" />
+                        <span class="ui-kicker ui-kicker--accent">{t('archive.briefing_kicker')}</span>
+                    </div>
+                    <span class="ui-label-min text-presek-mark group-open:hidden">{t('archive.briefing_open')} ↓</span>
+                    <span class="ui-label-min text-presek-mark hidden group-open:inline">{t('archive.briefing_close')} ↑</span>
+                </summary>
+                <div class="archive-briefing-glow-panel archive-briefing-glow-panel--expanded shadow-editorial">
                 <ul class="space-y-4">
                     {briefingItems.map((item: string) => (
                         <li class="font-nyt-body text-lg md:text-xl leading-relaxed italic text-foreground/80 relative pl-6">
-                            <span class="absolute left-0 top-3 w-1.5 h-1.5 rounded-full bg-nyt-accent/40"></span>
+                            <span class="absolute left-0 top-3 w-1.5 h-1.5 rounded-full bg-presek-mark/40"></span>
                             <span set:html={formatBriefingItem(item)}></span>
                         </li>
                     ))}
                 </ul>
-            </div>
+                </div>
+            </details>
         )}
 
         <div class="archive-sticky-navbar">
@@ -156,14 +161,14 @@ function formatBriefingItem(item: string) {
 
                     <div class="flex items-center gap-1">
                         <a
-                            href={`${localePath('/archive', isMK ? 'mk' : 'sr', hostHeader)}?date=${new Date(new Date(date).getTime() - 86400000).toISOString().split('T')[0]}`}
+                            href={`${localePath('/archive', lang, hostHeader)}?date=${new Date(new Date(date).getTime() - 86400000).toISOString().split('T')[0]}`}
                             class="archive-nav-btn"
                         >
                             ← {t('archive.previous')}
                         </a>
                         {new Date(date) < new Date(new Date().toISOString().split('T')[0]) && (
                             <a
-                                  href={`${localePath('/archive', isMK ? 'mk' : 'sr', hostHeader)}?date=${new Date(new Date(date).getTime() + 86400000).toISOString().split('T')[0]}`}
+                                  href={`${localePath('/archive', lang, hostHeader)}?date=${new Date(new Date(date).getTime() + 86400000).toISOString().split('T')[0]}`}
                                   class="archive-nav-btn"
                             >
                                 {t('archive.next')} →
@@ -191,10 +196,10 @@ function formatBriefingItem(item: string) {
         </div>
     </header>
 
-    <details class="archive-pulse-deck-toggle mb-20 group">
+    <details class="archive-pulse-deck-toggle mb-10 group">
         <summary class="list-none p-6 bg-secondary/5 cursor-pointer flex justify-between items-center group-open:bg-secondary/10">
             <div class="flex items-center gap-[var(--grid-gap)]">
-                <div class="p-2 bg-nyt-accent/10 rounded-lg text-nyt-accent">
+                <div class="p-2 bg-presek-mark/10 rounded-lg text-presek-mark">
                     <Activity size={18} />
                 </div>
                 <div>
@@ -202,7 +207,7 @@ function formatBriefingItem(item: string) {
                     <span class="text-xs text-muted-foreground">{t('archive.heatmap_desc')}</span>
                 </div>
             </div>
-            <div class="flex items-center gap-[var(--grid-gap)] ui-label-min text-nyt-accent">
+            <div class="flex items-center gap-[var(--grid-gap)] ui-label-min text-presek-mark">
                 <span class="group-open:hidden">{t('archive.open_overview')} ↓</span>
                 <span class="hidden group-open:inline">{t('archive.close_overview')} ↑</span>
             </div>
@@ -215,14 +220,14 @@ function formatBriefingItem(item: string) {
     <div class="broadsheet-grid">
         <section class="broadsheet-main">
             {q || source || topic ? (
-                <div class="active-filters mb-12 flex items-center gap-[var(--grid-gap)] p-4 bg-nyt-accent/[0.03] border border-nyt-accent/10 rounded-lg">
+                <div class="active-filters mb-12 flex items-center gap-[var(--grid-gap)] p-4 bg-presek-mark/[0.03] border border-presek-mark/10 rounded-lg">
                     <span class="ui-label-min text-muted-foreground">{t('archive.active_filter')}</span>
                     <div class="flex flex-wrap gap-[var(--grid-gap)]">
                         {q && <span class="px-3 py-1 bg-foreground text-background rounded-full ui-label-min flex items-center gap-[var(--grid-gap)]">🔍 {q} <a href={buildFilterHref('q', '')} class="ml-1 opacity-60 hover:opacity-100">×</a></span>}
                         {source && <span class="px-3 py-1 bg-foreground text-background rounded-full ui-label-min flex items-center gap-[var(--grid-gap)]">🏢 {source} <a href={buildFilterHref('source', '')} class="ml-1 opacity-60 hover:opacity-100">×</a></span>}
                         {topic && <span class="px-3 py-1 bg-foreground text-background rounded-full ui-label-min flex items-center gap-[var(--grid-gap)]"># {topic} <a href={buildFilterHref('topic', '')} class="ml-1 opacity-60 hover:opacity-100">×</a></span>}
                     </div>
-                    <a href={`${localePath('/archive', isMK ? 'mk' : 'sr', hostHeader)}?date=${date}`} class="ml-auto ui-label-min text-nyt-accent underline decoration-2 underline-offset-4">{t('archive.clear')}</a>
+                    <a href={`${localePath('/archive', lang, hostHeader)}?date=${date}`} class="ml-auto ui-label-min text-presek-mark underline decoration-2 underline-offset-4">{t('archive.clear')}</a>
                 </div>
             ) : null}
 
@@ -239,7 +244,7 @@ function formatBriefingItem(item: string) {
                     <div class="py-32 text-center border-2 border-dashed border-border rounded-2xl">
                         <h2 class="font-serif text-3xl font-black italic mb-4">{t('archive.empty')}</h2>
                         <p class="font-nyt-body text-muted-foreground">{t('archive.try_other_filters')}</p>
-                        <a href={localePath('/archive', isMK ? 'mk' : 'sr', hostHeader)} class="mt-8 inline-block px-8 py-3 bg-foreground text-background ui-label-min hover:bg-nyt-accent transition-all">{t('archive.back_today')}</a>
+                        <a href={localePath('/archive', lang, hostHeader)} class="mt-8 inline-block px-8 py-3 bg-foreground text-background ui-label-min hover:bg-presek-mark transition-all">{t('archive.back_today')}</a>
                     </div>
                 )}
             </div>
@@ -249,7 +254,7 @@ function formatBriefingItem(item: string) {
             <TinyAdzRailAd />
 
             <div class="rail-nav-block mb-12">
-                <a href={localePath('/archive', isMK ? 'mk' : 'sr', hostHeader)} class="group flex items-center justify-between p-4 bg-foreground text-background rounded-sm transition-all hover:bg-nyt-accent shadow-lg shadow-black/5 hover:-translate-y-1">
+                <a href={localePath('/archive', lang, hostHeader)} class="group flex items-center justify-between p-4 bg-foreground text-background rounded-sm transition-all hover:bg-presek-mark shadow-lg shadow-black/5 hover:-translate-y-1">
                     <span class="ui-label">{t('archive.back_today')}</span>
                     <ChevronRight size={16} />
                 </a>
@@ -276,8 +281,8 @@ function formatBriefingItem(item: string) {
                                         <img src={onThisDay.image} alt="" class="w-full aspect-video object-cover transition-transform group-hover:scale-105 duration-700" />
                                     </div>
                                 )}
-                                <a href={localePath(`/cluster/${onThisDay.cluster_id}`, isMK ? 'mk' : 'sr', hostHeader)} class="block group">
-                                    <h4 class="font-serif font-black text-lg leading-tight group-hover:text-nyt-accent transition-colors mb-3">{onThisDay.title}</h4>
+                                <a href={localePath(`/cluster/${onThisDay.cluster_id}`, lang, hostHeader)} class="block group">
+                                    <h4 class="font-serif font-black text-lg leading-tight group-hover:text-presek-mark transition-colors mb-3">{onThisDay.title}</h4>
                                 </a>
                                 <p class="font-nyt-body text-sm leading-relaxed text-muted-foreground line-clamp-4 italic">"{onThisDay.summary}"</p>
                             </div>
@@ -289,7 +294,7 @@ function formatBriefingItem(item: string) {
                         <div class="flex flex-col gap-1">
                             {archive.top_topics?.slice(0, 15).map((item: any) => (
                                 <a href={buildFilterHref('topic', item.topic)} class="archive-sidebar-item group">
-                                    <span class="font-serif font-bold text-base group-hover:text-nyt-accent transition-colors">{item.topic}</span>
+                                    <span class="font-serif font-bold text-base group-hover:text-presek-mark transition-colors">{item.topic}</span>
                                     <span class="archive-sidebar-count">{item.n}</span>
                                 </a>
                             ))}
@@ -301,7 +306,7 @@ function formatBriefingItem(item: string) {
                         <div class="flex flex-col gap-1">
                             {archive.top_sources?.slice(0, 15).map((item: any) => (
                                 <a href={buildFilterHref('source', item.source)} class="archive-sidebar-item group">
-                                    <span class="font-serif font-bold text-base group-hover:text-nyt-accent transition-colors flex items-center gap-[var(--grid-gap)]">
+                                    <span class="font-serif font-bold text-base group-hover:text-presek-mark transition-colors flex items-center gap-[var(--grid-gap)]">
                                         <Building2 size={12} className="opacity-30 group-hover:opacity-100 transition-opacity" />
                                         {item.source}
                                     </span>
@@ -321,7 +326,7 @@ function formatBriefingItem(item: string) {
 
 <style>
     .broadsheet-layout { background: var(--background); }
-    .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 4rem; }
+    .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 2.5rem; }
 
     @media (min-width: 1024px) {
         .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 320px; }

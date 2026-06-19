@@ -11,6 +11,9 @@ import { settings } from './namespaces/settings';
 import { about } from './namespaces/about';
 import { common } from './namespaces/common';
 import { search } from './namespaces/search';
+import { pulse } from './namespaces/pulse';
+import { archive } from './namespaces/archive';
+import { entity } from './namespaces/entity';
 
 export const ui = {
   sr: {
@@ -23,6 +26,9 @@ export const ui = {
     ...about.sr,
     ...common.sr,
     ...search.sr,
+    ...pulse.sr,
+    ...archive.sr,
+    ...entity.sr,
   },
   mk: {
     ...nav.mk,
@@ -34,5 +40,8 @@ export const ui = {
     ...about.mk,
     ...common.mk,
     ...search.mk,
+    ...pulse.mk,
+    ...archive.mk,
+    ...entity.mk,
   },
 } as const;

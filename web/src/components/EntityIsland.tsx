@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
 import { useClientTranslations } from '../i18n/clientTranslations';
-import { common } from '../i18n/namespaces/common';
+import { entity } from '../i18n/namespaces/entity';
 import type { ui } from '../i18n/ui';
 
 interface EntityProfile {
@@ -55,7 +55,7 @@ interface EntityPayload {
   clusters: NewsCluster[];
 }
 
-function formatDate(value: string | undefined, lang: keyof typeof ui, t: any) {
+function formatDate(value: string | undefined, lang: keyof typeof ui, t: ReturnType<typeof useClientTranslations>) {
   if (!value) return t('entity.unknown');
   try {
     return new Date(value).toLocaleDateString(lang === 'sr' ? 'sr-RS' : 'mk-MK', {
@@ -68,7 +68,7 @@ function formatDate(value: string | undefined, lang: keyof typeof ui, t: any) {
   }
 }
 
-function formatRelative(value: string | undefined, lang: keyof typeof ui, t: any) {
+function formatRelative(value: string | undefined, lang: keyof typeof ui, t: ReturnType<typeof useClientTranslations>) {
   if (!value) return t('entity.recently');
   const now = new Date();
   const date = new Date(value);
@@ -80,7 +80,7 @@ function formatRelative(value: string | undefined, lang: keyof typeof ui, t: any
   return formatDate(value, lang, t);
 }
 
-function sentimentLabel(score: number, t: any) {
+function sentimentLabel(score: number, t: ReturnType<typeof useClientTranslations>) {
   if (score >= 0.2) return t('entity.tone_pos');
   if (score <= -0.2) return t('entity.tone_crit');
   return t('entity.tone_neut');
@@ -125,25 +125,20 @@ function splitRelated(related: Relationship[]) {
   return { strongest, broader };
 }
 
-function buildWhyItMatters(profile: EntityProfile, clusters: NewsCluster[], related: Relationship[], lang: keyof typeof ui) {
+function buildWhyItMatters(
+  profile: EntityProfile,
+  clusters: NewsCluster[],
+  related: Relationship[],
+  t: ReturnType<typeof useClientTranslations>,
+) {
   const recentCount = clusters.length;
-  if (lang === 'sr') {
-    if (recentCount >= 5) {
-      return `${profile.name} je u snažnom fokusu sa ${recentCount} aktivnih tema u poslednjem periodu, što ukazuje na visok javni i medijski interes.`;
-    }
-    if (related.length >= 5) {
-      return `${profile.name} se pojavljuje u kontekstu ${related.length} drugih ključnih subjekata, gradeći kompleksnu mrežu povezanosti u vestima.`;
-    }
-    return `Prisustvo ${profile.name} u medijima se prati putem analize tona i frekvencije pominjanja u realnom vremenu.`;
-  } else {
-    if (recentCount >= 5) {
-      return `${profile.name} е во силен фокус со ${recentCount} активни теми во последниот период, што укажува на висок јавен и медиумски интерес.`;
-    }
-    if (related.length >= 5) {
-      return `${profile.name} се појавува во контекст на ${related.length} други клучни субјекти, градејќи комплексна мрежа на поврзаност во вестите.`;
-    }
-    return `Присуството на ${profile.name} во медиумите се следи преку анализа на тонот и фреквенцијата на споменувања во реално време.`;
+  if (recentCount >= 5) {
+    return t('entity.why_strong_focus').replace('{name}', profile.name).replace('{count}', String(recentCount));
   }
+  if (related.length >= 5) {
+    return t('entity.why_network').replace('{name}', profile.name).replace('{count}', String(related.length));
+  }
+  return t('entity.why_default').replace('{name}', profile.name);
 }
 
 function coMentionedEntities(clusters: NewsCluster[], currentName: string) {
@@ -151,8 +146,8 @@ function coMentionedEntities(clusters: NewsCluster[], currentName: string) {
   const current = currentName.toLowerCase();
   for (const cluster of clusters) {
     const ents = cluster.entities || [];
-    for (const entity of ents) {
-      const clean = String(entity || '').trim();
+    for (const entityName of ents) {
+      const clean = String(entityName || '').trim();
       if (!clean || clean.toLowerCase() === current) continue;
       counts.set(clean, (counts.get(clean) || 0) + 1);
     }
@@ -173,7 +168,7 @@ export default function EntityIsland({
 }) {
   const [data, setData] = useState<EntityPayload | null>(initialData);
   const [loading, setLoading] = useState(!initialData);
-  const t = useClientTranslations(lang, common);
+  const t = useClientTranslations(lang, entity);
 
   useEffect(() => {
     if (initialData) return;
@@ -188,7 +183,7 @@ export default function EntityIsland({
   if (loading) {
     return (
       <div className="flex flex-col items-center py-20">
-        <Loader2 className="animate-spin text-nyt-accent mb-4" size={32} />
+        <Loader2 className="animate-spin text-presek-mark mb-4" size={32} />
         <p className="nyt-section-label text-muted-foreground">{t('entity.preparing')}</p>
       </div>
     );
@@ -200,7 +195,7 @@ export default function EntityIsland({
   const timeline = buildTimeline(sentiment_history, lang);
   const trend = getSentimentTrend(sentiment_history);
   const relationBands = splitRelated(related);
-  const whyItMatters = buildWhyItMatters(profile, clusters, related, lang);
+  const whyItMatters = buildWhyItMatters(profile, clusters, related, t);
   const contextEntities = coMentionedEntities(clusters, profile.name);
   const leadingCategories = (categories || []).slice(0, 4);
 
@@ -209,15 +204,12 @@ export default function EntityIsland({
       <header className="entity-hero">
         <div className="entity-hero-main">
           <div className="entity-badge">
-            {profile.type === 'PERSON' ? <User size={32} className="text-nyt-accent" /> : <Building2 size={32} className="text-nyt-accent" />}
+            {profile.type === 'PERSON' ? <User size={32} className="text-presek-mark" /> : <Building2 size={32} className="text-presek-mark" />}
           </div>
           <div className="entity-copy">
             <span className="entity-type">{profile.type === 'ORG' ? t('entity.org') : t('entity.person')}</span>
-            <h1 className="entity-name">{profile.name}</h1>
             <p className="entity-summary-copy">
-              {lang === 'sr'
-                ? `Sistemski profil koji prati medijsko prisustvo, mrežu povezanosti i ton izveštavanja za ${profile.name}.`
-                : `Системски профил кој го следи медиумското присуство, мрежата на поврзаност и тонот на известување за ${profile.name}.`}
+              {t('entity.summary_copy').replace('{name}', profile.name)}
             </p>
           </div>
         </div>
@@ -234,7 +226,7 @@ export default function EntityIsland({
           <div className="entity-metric">
             <p>{t('entity.media_tone')}</p>
             <div className="flex flex-col">
-                <strong className={profile.sentiment_score > 0.2 ? 'text-green-600' : profile.sentiment_score < -0.2 ? 'text-nyt-red' : 'text-nyt-accent'}>
+                <strong className={profile.sentiment_score > 0.2 ? 'text-green-600' : profile.sentiment_score < -0.2 ? 'text-nyt-red' : 'text-presek-mark'}>
                 {sentimentLabel(profile.sentiment_score, t)}
                 </strong>
                 {trend !== 'stable' && (
@@ -265,72 +257,76 @@ export default function EntityIsland({
             </div>
           </section>
 
-          <div className="entity-insight-grid">
-            <section className="entity-summary">
-              <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:justify-between mb-3 md:mb-4">
-                <h2 className="entity-section-title flex items-center gap-2 md:gap-[var(--grid-gap)] m-0"><TrendingUp size={14} /> {t('entity.dynamics')}</h2>
-                <span className="ui-kicker">{t('entity.last_14_days')}</span>
-              </div>
-              <div className="entity-pulse h-28 md:h-32 flex items-end gap-1 px-1 md:px-2">
-                {timeline.map((item) => (
-                  <div key={item.key} className="flex-1 group relative">
-                    <div
-                        className={`w-full rounded-t-sm transition-all ${item.sentiment > 0.1 ? 'bg-green-500/40' : item.sentiment < -0.1 ? 'bg-nyt-red/40' : 'bg-nyt-accent/40'} group-hover:opacity-100`}
-                        style={{ height: `${item.percent}%`, opacity: 0.7 }}
-                    />
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-foreground text-background text-[9px] font-bold py-1 px-2 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity z-10">
-                        {item.count} {t('entity.publications')} • {item.label}
-                    </div>
+          <details className="entity-analytics-details">
+            <summary className="entity-analytics-summary">
+              <span className="entity-analytics-title">{t('entity.analytics_panel')}</span>
+              <span className="entity-analytics-hint">{t('entity.analytics_hint')}</span>
+            </summary>
+            <div className="entity-analytics-body">
+              <div className="entity-insight-grid">
+                <section className="entity-summary">
+                  <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:justify-between mb-3 md:mb-4">
+                    <h2 className="entity-section-title flex items-center gap-2 md:gap-[var(--grid-gap)] m-0"><TrendingUp size={14} /> {t('entity.dynamics')}</h2>
+                    <span className="ui-kicker">{t('entity.last_14_days')}</span>
                   </div>
-                ))}
-              </div>
-              <div className="flex justify-between mt-2 px-1 ui-kicker text-[8px] md:text-[9px]">
-                  <span>{timeline[0]?.label}</span>
-                  <span>{timeline[Math.floor(timeline.length/2)]?.label}</span>
-                  <span>{timeline[timeline.length-1]?.label}</span>
-              </div>
-            </section>
-
-            <section className="entity-summary">
-              <h2 className="entity-section-title flex items-center gap-2 md:gap-[var(--grid-gap)]"><Newspaper size={14} /> {t('entity.thematic_profile')}</h2>
-              <div className="space-y-3 mt-4">
-                {leadingCategories.map((c) => (
-                  <div key={c.category} className="flex items-center justify-between">
-                    <span className="ui-kicker">{c.category}</span>
-                    <div className="flex items-center gap-2 md:gap-[var(--grid-gap)]">
-                      <div className="w-20 md:w-24 h-1.5 bg-secondary rounded-full overflow-hidden">
+                  <div className="entity-pulse h-28 md:h-32 flex items-end gap-1 px-1 md:px-2">
+                    {timeline.map((item) => (
+                      <div key={item.key} className="flex-1 group relative">
                         <div
-                          className="h-full bg-foreground opacity-80"
-                          style={{ width: `${Math.min((c.count / (clusters.length || 1)) * 100, 100)}%` }}
+                            className={`w-full rounded-t-sm transition-all ${item.sentiment > 0.1 ? 'bg-green-500/40' : item.sentiment < -0.1 ? 'bg-nyt-red/40' : 'bg-presek-mark/40'} group-hover:opacity-100`}
+                            style={{ height: `${item.percent}%`, opacity: 0.7 }}
                         />
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-foreground text-background text-[9px] font-bold py-1 px-2 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity z-10">
+                            {item.count} {t('entity.publications')} • {item.label}
+                        </div>
                       </div>
-                      <span className="font-sans text-[9px] md:text-[10px] font-black w-7 md:w-8 text-right">{Math.round((c.count / (clusters.length || 1)) * 100)}%</span>
-                    </div>
+                    ))}
                   </div>
-                ))}
-                {leadingCategories.length === 0 && <p className="text-xs text-muted italic">{t('entity.no_thematic_data')}</p>}
-                {categories && categories.length > leadingCategories.length && (
-                  <p className="ui-kicker pt-1">
-                    {lang === 'sr'
-                      ? `Prikazani su vodeći ${leadingCategories.length} tematski pravci.`
-                      : `Прикажани се водечките ${leadingCategories.length} тематски правци.`}
-                  </p>
-                )}
+                  <div className="flex justify-between mt-2 px-1 ui-kicker text-[8px] md:text-[9px]">
+                      <span>{timeline[0]?.label}</span>
+                      <span>{timeline[Math.floor(timeline.length/2)]?.label}</span>
+                      <span>{timeline[timeline.length-1]?.label}</span>
+                  </div>
+                </section>
+
+                <section className="entity-summary">
+                  <h2 className="entity-section-title flex items-center gap-2 md:gap-[var(--grid-gap)]"><Newspaper size={14} /> {t('entity.thematic_profile')}</h2>
+                  <div className="space-y-3 mt-4">
+                    {leadingCategories.map((c) => (
+                      <div key={c.category} className="flex items-center justify-between">
+                        <span className="ui-kicker">{c.category}</span>
+                        <div className="flex items-center gap-2 md:gap-[var(--grid-gap)]">
+                          <div className="w-20 md:w-24 h-1.5 bg-secondary rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-foreground opacity-80"
+                              style={{ width: `${Math.min((c.count / (clusters.length || 1)) * 100, 100)}%` }}
+                            />
+                          </div>
+                          <span className="font-sans text-[9px] md:text-[10px] font-black w-7 md:w-8 text-right">{Math.round((c.count / (clusters.length || 1)) * 100)}%</span>
+                        </div>
+                      </div>
+                    ))}
+                    {leadingCategories.length === 0 && <p className="text-xs text-muted italic">{t('entity.no_thematic_data')}</p>}
+                    {categories && categories.length > leadingCategories.length && (
+                      <p className="ui-kicker pt-1">
+                        {t('entity.themes_shown').replace('{count}', String(leadingCategories.length))}
+                      </p>
+                    )}
+                  </div>
+                </section>
               </div>
-            </section>
-          </div>
+            </div>
+          </details>
 
           <section className="entity-summary">
             <h2 className="entity-section-title flex items-center gap-2 md:gap-[var(--grid-gap)]"><Link2 size={14} /> {t('entity.same_context')}</h2>
             <p className="entity-summary-copy">
-              {lang === 'sr'
-                ? `Ova imena se najčešće pojavljuju zajedno sa ${profile.name} u istim klasterima i pomažu da se vidi šira mreža oko priče.`
-                : `Овие имиња најчесто се појавуваат заедно со ${profile.name} во исти кластери и помагаат да се види пошироката мрежа околу приказната.`}
+              {t('entity.co_mention_copy').replace('{name}', profile.name)}
             </p>
             <div className="entity-chip-list">
-              {contextEntities.map(([entity, count]) => (
-                <a key={entity} href={localePathForLang(`/subjekt/${encodeURIComponent(entity)}`, lang)} className="entity-chip entity-chip-link">
-                  {entity} · {count}
+              {contextEntities.map(([entityName, count]) => (
+                <a key={entityName} href={localePathForLang(`/subjekt/${encodeURIComponent(entityName)}`, lang)} className="entity-chip entity-chip-link">
+                  {entityName} · {count}
                 </a>
               ))}
               {contextEntities.length === 0 && (
@@ -350,9 +346,7 @@ export default function EntityIsland({
           <div className="rail-card">
             <h3 className="rail-card-title flex items-center gap-2 md:gap-[var(--grid-gap)]"><Link2 size={14} /> {t('entity.closest_connected')}</h3>
             <p className="rail-copy">
-              {lang === 'sr'
-                ? `Ovde su prikazani subjekti koji najčešće ulaze u isti kontekst sa ${profile.name}, sa najjačim vezama na vrhu.`
-                : `Овде се прикажани субјектите кои најчесто влегуваат во ист контекст со ${profile.name}, со најсилните врски на врвот.`}
+              {t('entity.related_rail_copy').replace('{name}', profile.name)}
             </p>
             <div className="space-y-4">
               {relationBands.strongest.map((rel) => (
@@ -363,7 +357,7 @@ export default function EntityIsland({
                   </div>
                   <div className="flex items-center gap-2 md:gap-[var(--grid-gap)]">
                     <div className="entity-related-track">
-                      <div className="h-full bg-nyt-accent" style={{ width: `${Math.min(rel.weight * 10, 100)}%` }} />
+                      <div className="h-full bg-presek-mark" style={{ width: `${Math.min(rel.weight * 10, 100)}%` }} />
                     </div>
                     <span className="entity-related-weight">{rel.weight}</span>
                   </div>
@@ -376,9 +370,7 @@ export default function EntityIsland({
           <div className="rail-card rail-card-accent">
             <h3 className="rail-card-title">{t('entity.how_to_read')}</h3>
             <p className="rail-copy">
-              {lang === 'sr'
-                ? `Ton pokazuje kako se menja medijski okvir, a povezani subjekti pokazuju sa kim se najčešće vezuje priča oko ${profile.name}.`
-                : `Тонот покажува како се менува медиумската рамка, а поврзаните субјекти покажуваат со кого најчесто се поврзува приказната околу ${profile.name}.`}
+              {t('entity.how_to_read_body').replace('{name}', profile.name)}
             </p>
           </div>
 

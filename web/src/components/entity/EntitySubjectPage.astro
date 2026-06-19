@@ -1,0 +1,229 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import NYTHeader from '../NYTHeader.astro';
+import NewsCard from '../NewsCard.astro';
+import EntityIsland from '../EntityIsland';
+import Footer from '../Footer.astro';
+import { apiBaseUrl } from '../../lib/apiBase';
+import { isMostlyCyrillic } from '../../utils/textUtils';
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+import { homePath } from '../../lib/localePaths';
+import TinyAdzRailAd from '../TinyAdzRailAd.astro';
+import TinyAdzInlinedAd from '../TinyAdzInlinedAd.astro';
+import '../../styles/page-systems.css';
+
+const hostHeader = Astro.request?.headers.get('host');
+const lang = getLangFromUrl(Astro.url, hostHeader);
+const t = useTranslations(lang);
+
+const { name } = Astro.params;
+const decodedName = decodeURIComponent(name || '');
+const API_URL = apiBaseUrl();
+
+let entityData = null;
+let error: string | null = null;
+
+try {
+    const entityRes = await fetch(`${API_URL}/intelligence/entity/${encodeURIComponent(decodedName)}?lang=${lang}`);
+    if (entityRes.ok) {
+        entityData = await entityRes.json();
+    } else {
+        error = t('entity.error.not_found');
+        Astro.response.status = entityRes.status === 404 ? 404 : 500;
+    }
+} catch (e) {
+    console.error(e);
+    error = t('entity.error.connection');
+    Astro.response.status = 500;
+}
+
+const clusters = entityData?.clusters || [];
+const featuredClusters = clusters.slice(0, 4);
+const compactClusters = clusters.slice(4, 10);
+const nameIsCyrillic = isMostlyCyrillic(decodedName);
+const pageDescription = t('entity.meta_description').replace('{name}', decodedName);
+---
+
+<Layout title={`${decodedName} | ${t('entity.profile')}`} description={pageDescription}>
+	<NYTHeader />
+
+	<main class="site-layout broadsheet-layout page-content-top pb-[var(--page-py)] entity-page-scope">
+        <header class="editorial-masthead entity-page-masthead">
+            <div class="masthead-top">
+                <span class="masthead-kicker ui-label">{t('entity.page_kicker')}</span>
+            </div>
+            <div class="masthead-main">
+                <h1 class:list={["masthead-title", { "headline-cyrillic": nameIsCyrillic }]}>{decodedName}</h1>
+            </div>
+        </header>
+
+        {error ? (
+            <div class="empty-state">
+                <p class="empty-kicker">{t('entity.error.kicker')}</p>
+                <h2>{error}</h2>
+                <a href={homePath(lang, hostHeader)} class="clear-filter mt-4">{t('entity.error.back_home')}</a>
+            </div>
+        ) : (
+            <div class="broadsheet-grid entity-broadsheet-grid">
+                <div class="broadsheet-main">
+                    <div class="motion-rise">
+                        <EntityIsland client:visible name={decodedName} initialData={entityData} lang={lang} />
+                    </div>
+
+                    <TinyAdzInlinedAd class="page-inline-ad entity-inline-ad mb-10" />
+
+                    <section class="entity-related-events">
+                        <h2 class="section-title-italic">{t('entity.related_events')}</h2>
+
+                        <div class="broadsheet-feed">
+                            {featuredClusters.map((cluster: any) => (
+                                <div class="feed-item-wrap">
+                                    <NewsCard cluster={cluster} variant="featured" lang={lang} />
+                                </div>
+                            ))}
+                        </div>
+
+                        {compactClusters.length > 0 && (
+                            <div class="broadsheet-feed entity-compact-feed">
+                                {compactClusters.map((cluster: any) => (
+                                    <div class="feed-item-wrap">
+                                        <NewsCard cluster={cluster} variant="compact" lang={lang} />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {clusters.length === 0 && (
+                            <div class="empty-state">
+                                <p>{t('entity.empty_clusters')}</p>
+                            </div>
+                        )}
+                    </section>
+                </div>
+
+                <aside class="editorial-broadsheet-rail">
+                    <TinyAdzRailAd />
+
+                    <details class="editorial-rail-context">
+                        <summary class="editorial-rail-context-summary">
+                            <span class="ui-label">{t('entity.rail.context')}</span>
+                            <span class="editorial-rail-context-hint ui-label-min text-muted-foreground">{t('entity.rail.open')}</span>
+                        </summary>
+                        <div class="editorial-rail-context-body">
+                            <section class="editorial-rail-block editorial-rail-block-alt">
+                                <p class="editorial-rail-kicker">{t('entity.rail.about')}</p>
+                                <h3 class="editorial-rail-title">{t('entity.rail.connectivity')}</h3>
+                                <p class="editorial-rail-text">
+                                    {t('entity.rail.connectivity_body').replace('{name}', decodedName)}
+                                </p>
+                            </section>
+                        </div>
+                    </details>
+                </aside>
+            </div>
+        )}
+	</main>
+
+    <Footer />
+</Layout>
+
+<style>
+    .entity-page-masthead {
+        border-bottom: 4px double var(--foreground);
+        padding-bottom: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .entity-page-scope .masthead-kicker {
+        color: var(--presek-mark);
+    }
+
+    .masthead-title {
+        font-family: var(--font-serif);
+        font-size: clamp(2.25rem, 5.5vw, 4rem);
+        font-weight: 900;
+        line-height: 0.92;
+        margin: 1rem 0 0;
+        letter-spacing: -0.02em;
+    }
+
+    .entity-broadsheet-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 2.5rem;
+    }
+
+    .section-title-italic {
+        font-family: var(--font-serif);
+        font-size: 1.8rem;
+        font-weight: 900;
+        font-style: italic;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 0.75rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .entity-related-events {
+        margin-top: 2.5rem;
+    }
+
+    .entity-compact-feed {
+        margin-top: 1.25rem;
+    }
+
+    .broadsheet-feed {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    @media (min-width: 768px) {
+        .broadsheet-feed { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .feed-item-wrap {
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 1.5rem;
+    }
+
+    .feed-item-wrap:last-child { border-bottom: none; }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 1rem;
+        border: 1px dashed var(--border);
+    }
+
+    .empty-kicker {
+        font-family: var(--font-ui);
+        font-size: var(--text-ui-min);
+        font-weight: 950;
+        color: var(--presek-mark);
+        margin-bottom: 1rem;
+    }
+
+    .clear-filter {
+        font-family: var(--font-ui);
+        font-size: var(--text-ui-min);
+        font-weight: 900;
+        text-decoration: underline;
+        color: var(--foreground);
+    }
+
+    @media (max-width: 639.98px) {
+        .entity-page-masthead {
+            padding-bottom: 1rem;
+            margin-bottom: 1.25rem;
+            border-bottom-width: 3px;
+        }
+
+        .masthead-title {
+            font-size: clamp(1.9rem, 9vw, 2.7rem);
+        }
+
+        .entity-broadsheet-grid { gap: 1.5rem; }
+        .section-title-italic { font-size: 1.45rem; }
+        .entity-related-events { margin-top: 1.5rem; }
+        .empty-state { padding: 2.5rem 0.9rem; }
+    }
+</style>

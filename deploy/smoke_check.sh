@@ -238,7 +238,12 @@ main() {
 
   wait_health_ready "API health" "$HEALTH_URL" 1 1
   wait_http_ok "Astro frontend" "$ASTRO_URL" 200
+  wait_http_ok "Astro homepage SSR" "$ASTRO_URL" 200 'data-page="home"'
+  wait_http_ok "Astro pulse SSR" "$ASTRO_URL/pulse" 200 'pulse-page-scope'
+  wait_http_ok "Astro archive SSR" "$ASTRO_URL/archive" 200 'archive-page-scope'
+  wait_http_ok "Astro entity SSR" "$ASTRO_URL/subjekt/__smoke__" 404 'entity-page-scope'
   wait_http_ok "Astro MK frontend" "$ASTRO_URL/mk" 200
+  wait_http_ok "Astro MK homepage SSR" "$ASTRO_URL/mk" 200 'data-page="home"'
   wait_http_ok "Image proxy" "http://127.0.0.1:5001/proxy?url=https://example.com/image.jpg&w=100" 200
 
   if [ "$ENABLE_FASTAPI_CHECK" = "1" ]; then

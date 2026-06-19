@@ -143,7 +143,7 @@
   flex-shrink: 0;
   font-size: 1rem;
   font-weight: 700;
-  color: var(--nyt-accent);
+  color: var(--presek-mark);
   line-height: 1;
 }
 
@@ -574,6 +574,20 @@ body.zen-mode .section-eyebrow {
 body.zen-mode .cluster-header-toolbar,
 body.zen-mode .cluster-reading-hint {
   display: none;
+}
+
+@media (min-width: 1024px) {
+  .cluster-reading-hint {
+    display: none;
+  }
+}
+
+body.compare-mode .cluster-sidebar-details {
+  border-color: color-mix(in srgb, var(--presek-mark) 28%, var(--border));
+}
+
+body.compare-mode .cluster-sidebar-details[open] .cluster-sidebar-details-summary {
+  border-bottom: 1px solid color-mix(in srgb, var(--presek-mark) 18%, var(--border));
 }
 
 @media (max-width: 768px) {

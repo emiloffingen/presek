@@ -6,7 +6,7 @@ import PulseClientContainer from '../components/PulseClientContainer';
 import '../styles/pulse-premium.css';
 
 import { apiBaseUrl } from '../lib/apiBase';
-import { getLangFromUrl } from '../i18n/utils';
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import { APP_VERSION } from '../lib/version';
 import { Activity, Timer, Zap } from 'lucide-react';
 import TinyAdzInlinedAd from '../components/TinyAdzInlinedAd.astro';
@@ -14,7 +14,7 @@ import TinyAdzInlinedAd from '../components/TinyAdzInlinedAd.astro';
 const hostHeader = Astro.request?.headers.get('host');
 const API_URL = apiBaseUrl();
 const lang = getLangFromUrl(Astro.url, hostHeader);
-const isMK = lang === 'mk';
+const t = useTranslations(lang);
 
 let initialPulseData = null;
 let globalPulse: any = null;
@@ -58,20 +58,22 @@ const currentDate = new Date().toLocaleDateString(lang === 'mk' ? 'mk-MK' : 'sr-
     timeZone: 'Europe/Belgrade'
 });
 
-const siteTitle = isMK ? 'Медиумски Пулс' : 'Medijski Puls';
+const siteTitle = t('pulse.page_title');
 const formatCount = (value: number | null | undefined) => value ? String(Math.round(value)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : '–';
+const liveLabel = t('pulse.live');
+const agoTemplate = t('pulse.ago_mins');
 ---
 
 <Layout
     title={`${siteTitle} — Presek`}
-    description={isMK ? "Анализа на медиумскиот пејзаж преку податоци и алгоритми." : "Analiza medijskog pejzaža kroz podatke i algoritamsku obradu."}
+    description={t('pulse.description')}
 >
     <NYTHeader />
     <main class="site-layout broadsheet-layout page-content-top pb-[var(--page-py)] overflow-x-hidden pulse-page-scope">
 
         <header class="editorial-masthead masthead-double-rule">
             <div class="masthead-top">
-                <span class="masthead-kicker">{isMK ? 'ЕДИТОРИЈАЛНО ИЗДАНИЕ' : 'EDITORIJALNO IZDANJE'}</span>
+                <span class="masthead-kicker">{t('pulse.meta_edition')}</span>
                 <div class="masthead-meta">
                     <span class="meta-item">
                         <svg class="live-heartbeat mr-1" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -79,7 +81,7 @@ const formatCount = (value: number | null | undefined) => value ? String(Math.ro
                                 <animate attributeName="stroke-dasharray" from="0, 50" to="50, 0" dur="2s" repeatCount="indefinite" />
                             </path>
                         </svg>
-                        <Timer size={11} /> <span id="last-updated" data-is-mk={isMK ? "true" : "false"}>{isMK ? 'ВО ЖИВО' : 'UŽIVO'}</span>
+                        <Timer size={11} /> <span id="last-updated" data-live-label={liveLabel} data-ago-template={agoTemplate}>{liveLabel}</span>
                     </span>
                     <span class="meta-item"><Activity size={11} /> V.{APP_VERSION}</span>
                 </div>
@@ -87,16 +89,17 @@ const formatCount = (value: number | null | undefined) => value ? String(Math.ro
 
             <script is:inline>
                 const lastUpdatedEl = document.getElementById('last-updated');
-                const isMK = lastUpdatedEl?.getAttribute('data-is-mk') === 'true';
+                const liveLabel = lastUpdatedEl?.getAttribute('data-live-label') || '';
+                const agoTemplate = lastUpdatedEl?.getAttribute('data-ago-template') || '';
                 const startTime = new Date();
 
                 function updateClock() {
                     const now = new Date();
                     const diffMins = Math.floor((now - startTime) / 60000);
                     if (diffMins === 0) {
-                        lastUpdatedEl.textContent = isMK ? 'ВО ЖИВО' : 'UŽIVO';
+                        lastUpdatedEl.textContent = liveLabel;
                     } else {
-                        lastUpdatedEl.textContent = isMK ? `ПРЕД ${diffMins} МИН.` : `PRE ${diffMins} MIN.`;
+                        lastUpdatedEl.textContent = agoTemplate.replace('{mins}', String(diffMins));
                     }
                 }
 
@@ -106,8 +109,8 @@ const formatCount = (value: number | null | undefined) => value ? String(Math.ro
 
             <div class="masthead-main">
                 <div class="masthead-branding">
-                    <Zap size={32} className="text-nyt-accent pulse-zap-icon" fill="currentColor" />
-                    <h1 class="masthead-title">{isMK ? 'Медиумски' : 'Medijski'} <span class="italic-serif">Puls</span></h1>
+                    <Zap size={32} className="text-presek-mark pulse-zap-icon" fill="currentColor" />
+                    <h1 class="masthead-title">{t('pulse.page_title_medijski')} <span class="italic-serif">{t('pulse.page_title_puls')}</span></h1>
                 </div>
                 <div class="masthead-date">
                     <p>{currentDate}</p>
@@ -115,13 +118,13 @@ const formatCount = (value: number | null | undefined) => value ? String(Math.ro
             </div>
 
             <div class="masthead-standfirst mt-6">
-                <p>{isMK ? 'Дневна слика на медиумскиот пејзаж: обем, ритам, диверзитет и системска транспарентност. Анализирано преку систем за длабока анализа за објективност и плурализам.' : 'Dnevna slika medijskog pejzaža: obim, ritam, diverzitet i sistemska transparentnost. Analizirano kroz sistem duboke analize za objektivnost i pluralizam.'}</p>
+                <p>{t('pulse.standfirst')}</p>
             </div>
 
             <div class="masthead-deck mt-8">
-                <span class="deck-item"><strong class="mr-1.5">{categories.length || '–'}</strong> {isMK ? 'Категории' : 'Kategorije'}</span>
-                <span class="deck-item"><strong class="mr-1.5">{globalPulse?.intelligence?.pluralism?.pluralism_pct > 0 ? globalPulse?.intelligence?.pluralism?.pluralism_pct + '%' : '–'}</strong> {isMK ? 'Диверзитет' : 'Diverzitet'}</span>
-                <span class="deck-item"><strong class="mr-1.5">{formatCount(globalPulse?.last_24h)}</strong> {isMK ? 'Објави денес' : 'Objava danas'}</span>
+                <span class="deck-item"><strong class="mr-1.5">{categories.length || '–'}</strong> {t('pulse.deck_categories')}</span>
+                <span class="deck-item"><strong class="mr-1.5">{globalPulse?.intelligence?.pluralism?.pluralism_pct > 0 ? globalPulse?.intelligence?.pluralism?.pluralism_pct + '%' : '–'}</strong> {t('pulse.deck_diversity')}</span>
+                <span class="deck-item"><strong class="mr-1.5">{formatCount(globalPulse?.last_24h)}</strong> {t('pulse.deck_posts_today')}</span>
             </div>
         </header>
 
@@ -219,7 +222,7 @@ const formatCount = (value: number | null | undefined) => value ? String(Math.ro
     .editorial-masthead {
         height: auto;
         padding: 1.5rem 0;
-        margin-bottom: 3rem;
+        margin-bottom: 2rem;
         border-top: 1px solid var(--border);
         border-bottom: 4px solid var(--foreground);
     }
@@ -229,7 +232,7 @@ const formatCount = (value: number | null | undefined) => value ? String(Math.ro
     .italic-serif {
         font-style: italic;
         font-weight: 400;
-        color: var(--nyt-accent);
+        color: var(--presek-mark);
     }
     .pulse-zap-icon {
         animation: pulse-icon 2.5s infinite;
@@ -248,7 +251,7 @@ const formatCount = (value: number | null | undefined) => value ? String(Math.ro
     }
 
     .masthead-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-    .masthead-kicker { font-family: var(--font-sans); font-size: var(--text-ui-kicker); font-weight: 950; letter-spacing: 0.1em; color: var(--nyt-accent); }
+    .masthead-kicker { font-family: var(--font-sans); font-size: var(--text-ui-kicker); font-weight: 950; letter-spacing: 0.1em; color: var(--presek-mark); }
     .masthead-meta { display: flex; gap: 1.25rem; }
     .meta-item { display: flex; align-items: center; gap: 0.35rem; font-family: var(--font-sans); font-size: var(--text-ui-min); font-weight: 900; color: var(--muted-foreground); letter-spacing: 0.04em; }
 
@@ -303,7 +306,7 @@ const formatCount = (value: number | null | undefined) => value ? String(Math.ro
     :global(.card-value) { font-family: var(--font-serif); font-size: clamp(1.8rem, 3vw, 2.2rem); font-weight: 900; line-height: 1; }
     :global(.card-note) { font-family: var(--font-sans); font-size: var(--text-ui-min); font-weight: 850; text-transform: uppercase; color: var(--muted-foreground); }
     :global(.card-sparkline) { display: flex; align-items: end; gap: 2px; height: 2rem; margin-top: 0.5rem; }
-    :global(.card-sparkline .bar) { flex: 1; background: var(--nyt-accent); opacity: 0.2; }
+    :global(.card-sparkline .bar) { flex: 1; background: var(--presek-mark); opacity: 0.2; }
     :global(.card-list) { display: flex; flex-direction: column; gap: 0.4rem; }
     :global(.list-item) { display: flex; justify-content: space-between; font-size: 0.75rem; font-family: var(--font-serif); font-weight: 700; border-bottom: 1px solid var(--border); padding-bottom: 0.2rem; }
 
@@ -313,7 +316,7 @@ const formatCount = (value: number | null | undefined) => value ? String(Math.ro
     :global(.section-title-italic) { font-family: var(--font-serif); font-size: clamp(1.5rem, 3vw, 1.8rem); font-weight: 900; font-style: italic; margin-bottom: 1.25rem; }
 
     :global(.rail-block) { margin-bottom: 2rem; }
-    :global(.rail-kicker) { font-family: var(--font-sans); font-size: var(--text-ui-min); font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.4rem; }
+    :global(.rail-kicker) { font-family: var(--font-sans); font-size: var(--text-ui-min); font-weight: 950; color: var(--presek-mark); text-transform: uppercase; margin-bottom: 0.4rem; }
     :global(.rail-title) { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; margin-bottom: 0.8rem; }
     :global(.rail-text) { font-family: var(--font-nyt-body); font-size: 0.9rem; line-height: 1.5; color: var(--secondary-foreground); }
 
@@ -332,7 +335,7 @@ const formatCount = (value: number | null | undefined) => value ? String(Math.ro
     :global(.tone-label) { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 900; text-transform: uppercase; }
     :global(.stat-row) { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; }
     :global(.stat-bar) { height: 6px; width: 80px; background: var(--secondary); overflow: hidden; border-radius: 999px; }
-    :global(.stat-bar div) { height: 100%; background: var(--nyt-accent); }
+    :global(.stat-bar div) { height: 100%; background: var(--presek-mark); }
     :global(.stat-bar.bar-red div) { background: var(--nyt-red); }
     :global(.stat-num) { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 800; width: 2.75rem; tabular-nums: true; }
 

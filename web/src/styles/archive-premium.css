@@ -44,11 +44,11 @@
 }
 
 .archive-deck-stat.accent-total-themes {
-    background: color-mix(in srgb, var(--nyt-accent) 4%, var(--card));
+    background: color-mix(in srgb, var(--presek-mark) 4%, var(--card));
 }
 
 .archive-deck-stat.accent-total-themes:hover {
-    background: color-mix(in srgb, var(--nyt-accent) 8%, var(--card));
+    background: color-mix(in srgb, var(--presek-mark) 8%, var(--card));
 }
 
 /* 2. Floating Sticky Navigation Bar */
@@ -62,7 +62,7 @@
     border-top: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
     padding: 0.85rem 1.25rem;
-    margin-bottom: 3.5rem;
+    margin-bottom: 2rem;
     border-radius: var(--radius-lg, 0px);
     box-shadow: var(--shadow-sm);
     transition: all 0.3s ease;
@@ -91,9 +91,9 @@
 .archive-date-input:focus-visible,
 .archive-date-input:focus,
 .archive-date-input:hover {
-    border-color: var(--nyt-accent);
+    border-color: var(--presek-mark);
     background: color-mix(in srgb, var(--card) 90%, transparent);
-    box-shadow: 0 0 10px -2px color-mix(in srgb, var(--nyt-accent) 15%, transparent);
+    box-shadow: 0 0 10px -2px color-mix(in srgb, var(--presek-mark) 15%, transparent);
 }
 
 .archive-nav-btn {
@@ -128,9 +128,9 @@
 
 .archive-search-input:focus-visible,
 .archive-search-input:focus {
-    border-color: var(--nyt-accent);
-    box-shadow: 0 4px 12px -8px color-mix(in srgb, var(--nyt-accent) 30%, transparent);
-    outline: 2px solid var(--nyt-accent);
+    border-color: var(--presek-mark);
+    box-shadow: 0 4px 12px -8px color-mix(in srgb, var(--presek-mark) 30%, transparent);
+    outline: 2px solid var(--presek-mark);
     outline-offset: 3px;
 }
 
@@ -168,7 +168,7 @@
 .archive-otd-card:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
-    border-color: var(--nyt-accent);
+    border-color: var(--presek-mark);
 }
 
 .archive-otd-card::before {
@@ -178,7 +178,7 @@
     right: 0;
     width: 120px;
     height: 120px;
-    background: radial-gradient(circle at top right, color-mix(in srgb, var(--nyt-accent) 8%, transparent), transparent 70%);
+    background: radial-gradient(circle at top right, color-mix(in srgb, var(--presek-mark) 8%, transparent), transparent 70%);
     pointer-events: none;
     opacity: 0.6;
 }
@@ -225,17 +225,17 @@
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
     border: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
-    border-left: 4px solid var(--nyt-accent);
+    border-left: 4px solid var(--presek-mark);
     padding: 1.75rem;
     border-radius: var(--radius-lg, 0px);
-    box-shadow: var(--shadow-sm), 0 4px 20px -8px color-mix(in srgb, var(--nyt-accent) 10%, transparent);
+    box-shadow: var(--shadow-sm), 0 4px 20px -8px color-mix(in srgb, var(--presek-mark) 10%, transparent);
     transition: all 0.3s ease;
 }
 
 .archive-briefing-glow-panel:hover {
-    box-shadow: var(--shadow-md), 0 4px 25px -6px color-mix(in srgb, var(--nyt-accent) 15%, transparent);
+    box-shadow: var(--shadow-md), 0 4px 25px -6px color-mix(in srgb, var(--presek-mark) 15%, transparent);
     border-color: color-mix(in srgb, var(--border) 85%, transparent);
-    border-left-color: var(--nyt-accent);
+    border-left-color: var(--presek-mark);
 }
 
 /* 8. Fix nested visual card layers & add premium row animations */
@@ -268,7 +268,7 @@
     }
 
     .archive-cluster-row:hover {
-        background: color-mix(in srgb, var(--card) 93%, var(--nyt-accent) 7%);
+        background: color-mix(in srgb, var(--card) 93%, var(--presek-mark) 7%);
         box-shadow: var(--shadow-sm);
         transform: translateY(-2px);
     }
@@ -299,7 +299,7 @@
 
 .archive-rail-context-hint::after {
     content: ' +';
-    color: var(--nyt-accent);
+    color: var(--presek-mark);
 }
 
 .archive-rail-context[open] .archive-rail-context-hint::after {
@@ -326,5 +326,40 @@
         padding: 0;
         border-top: none;
     }
+}
+
+/* Collapsed daily briefing */
+.archive-briefing-details {
+    border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    border-radius: var(--radius-lg, 0px);
+    overflow: hidden;
+    background: color-mix(in srgb, var(--card) 35%, transparent);
+}
+
+.archive-briefing-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    list-style: none;
+}
+
+.archive-briefing-summary::-webkit-details-marker {
+    display: none;
+}
+
+.archive-briefing-glow-panel--expanded {
+    margin: 0;
+    border-radius: 0;
+    border-left-width: 0;
+    border-right-width: 0;
+    border-bottom-width: 0;
+    padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.archive-page-scope .ui-kicker--accent,
+.archive-page-scope .masthead-kicker {
+    color: var(--presek-mark);
 }
 

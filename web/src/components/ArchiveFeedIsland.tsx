@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { NewsCard } from './NewsCard';
 import { useClientTranslations } from '../i18n/clientTranslations';
-import { common } from '../i18n/namespaces/common';
+import { archive } from '../i18n/namespaces/archive';
 import { news } from '../i18n/namespaces/news';
 
 interface ArchiveFeedIslandProps {
@@ -83,7 +83,7 @@ const ArchiveFeedIsland: React.FC<ArchiveFeedIslandProps> = ({
   );
 
   const activeLang = lang === 'mk' ? 'mk' : 'sr';
-  const t = useClientTranslations(activeLang, common, news);
+  const t = useClientTranslations(activeLang, archive, news);
 
   return (
     <div className="archive-feed-container">
@@ -93,7 +93,7 @@ const ArchiveFeedIsland: React.FC<ArchiveFeedIslandProps> = ({
             <div className="flex flex-col md:flex-row gap-3 md:gap-[var(--grid-gap)]">
               <div className="archive-cluster-index-col w-full md:w-20 pt-1 md:pt-2 flex-shrink-0">
                 <div className="sticky top-24 flex md:block items-baseline gap-2 md:gap-[var(--grid-gap)]">
-                  <span className="font-sans text-[10px] font-black uppercase tracking-widest text-nyt-accent block mb-1 hidden md:block">{t('archive.edition')}</span>
+                  <span className="font-sans text-[10px] font-black uppercase tracking-widest text-presek-mark block mb-1 hidden md:block">{t('archive.edition')}</span>
                   <strong className="font-serif text-base md:text-3xl font-black block leading-none opacity-20 md:opacity-40">{String(index + 1).padStart(2, '0')}</strong>
                   <span className="font-sans text-[9px] md:text-[10px] font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground md:hidden opacity-40">{t('archive.pos')}</span>
                 </div>

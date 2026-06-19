@@ -88,10 +88,10 @@ try {
     const res = await fetch(`${API_URL}/cluster/${id}?lang=${lang}`);
     if (!res.ok) {
         if (res.status === 404) {
-            error = lang === 'sr' ? 'Klaster nije pronađen.' : 'Кластер не е пронајден.';
+            error = t('cluster.error.not_found');
             Astro.response.status = 404;
         } else {
-            error = lang === 'sr' ? 'Greška pri učitavanju podataka.' : 'Грешка при вчитување на податоците.';
+            error = t('cluster.error.load');
             Astro.response.status = 500;
         }
     } else {
@@ -101,7 +101,7 @@ try {
     }
     } catch (e) {
     Astro.response.status = 500;
-    error = lang === 'sr' ? 'Neuspešno povezivanje sa serverom.' : 'Неуспешно поврзување со серверот.';
+    error = t('cluster.error.connection');
 }
 
 const mainArticle = cluster?.articles?.[0];
@@ -118,7 +118,7 @@ const sourceDocArticle = cluster?.articles?.find((article) => {
     return text.length > 0;
 });
 const sourceDocText = sourceDocArticle ? cleanSourceDocumentText(sourceDocArticle.full_content) : '';
-const displayHeadline = cluster?.synthetic_headline || (mainArticle ? cleanAndDecode(mainArticle.title) : (lang === 'sr' ? 'Detalji vesti' : 'Детали за веста'));
+const displayHeadline = cluster?.synthetic_headline || (mainArticle ? cleanAndDecode(mainArticle.title) : t('cluster.headline_fallback'));
 
 // --- SEO Slug Enforcement ---
 // If the current slug is just the ID or doesn't match the headline slug,
@@ -137,14 +137,8 @@ const headlineIsCyrillic = isMostlyCyrillic(displayHeadline);
 const allSourcesNames: string[] = Array.from(new Set((cluster?.articles || []).map((a: Article) => a.source)));
 const sourcePreview = allSourcesNames.slice(0, 5);
 const uniqueSourcesCount = allSourcesNames.length;
-const newsroomCountLabel = (count: number) => {
-    if (lang === 'mk') return count === 1 ? 'РЕДАКЦИЈА' : 'РЕДАКЦИИ';
-    return count === 1 ? 'REDAKCIJA' : 'REDAKCIJE';
-};
-const newsroomOverviewLabel = (count: number) => {
-    if (lang === 'mk') return count === 1 ? 'редакција во прегледот' : 'редакции во прегледот';
-    return count === 1 ? 'redakcija u pregledu' : 'redakcije u pregledu';
-};
+const newsroomCountLabel = (count: number) => (count === 1 ? t('cluster.newsroom_one') : t('cluster.newsroom_many'));
+const newsroomOverviewLabel = (count: number) => (count === 1 ? t('cluster.newsroom_overview_one') : t('cluster.newsroom_overview_many'));
 const hasCitationSources = resolveHasCitationSources(cluster?.citation_sources);
 const citationSources = cluster?.citation_sources || [];
 
@@ -181,26 +175,26 @@ const articleRows = (cluster?.articles || []).map((a: Article, idx: number, arr:
     const timelineEntry = (cluster?.timeline || []).find((item) => item.article_id === a.id);
 
     // 1. Dynamic Journalistic Role (Timeline)
-    let relLabel: string = lang === 'sr' ? 'POVEZANA PRIČA' : 'ПОВРЗАН ИЗВОР';
+    let relLabel: string = t('cluster.rel_linked');
     let relTone = 'neutral';
 
     if (timelineEntry?.is_first) {
-        relLabel = lang === 'sr' ? 'PRVI IZVOR' : 'ПРВ ИЗВОР';
+        relLabel = t('cluster.rel_first_upper');
         relTone = 'origin';
     } else if (idx === 0 && !synthesisFreshness.is_stale) {
-        relLabel = lang === 'sr' ? 'NAJNOVIJE' : 'НАЈНОВО';
+        relLabel = t('cluster.rel_latest_upper');
         relTone = 'latest';
     } else if (timelineEntry?.milestone?.toLowerCase() === 'konsenzus') {
-        relLabel = lang === 'sr' ? 'KONSENZUS' : 'КОНСЕНЗУС';
+        relLabel = t('cluster.rel_consensus');
         relTone = 'deep';
     } else if (timelineEntry?.is_major) {
-        relLabel = lang === 'sr' ? 'POTVRDA IZVORA' : 'ПОТВРДА ОД ИЗВОР';
+        relLabel = t('cluster.rel_source_confirm');
         relTone = 'deep';
     } else if (signal.role_label) {
         relLabel = signal.role_label.toUpperCase();
         relTone = signal.role_tone || 'deep';
     } else if ((a.credibility || 0) > 1.2) {
-        relLabel = lang === 'sr' ? 'ŠIRI KONTEKST' : 'ПОШИРОК КОНТЕКСТ';
+        relLabel = t('cluster.rel_broader');
         relTone = 'deep';
     }
 
@@ -381,13 +375,13 @@ function cleanTopicLabel(value?: string) {
     return clean;
 }
 const storyKindLabel = (() => {
-    if (isWeatherStory) return lang === 'sr' ? 'VREMENSKA PROGNOZA' : 'ВРЕМЕНСКА ПРОГНОЗА';
-    if (isSportsStory) return lang === 'sr' ? 'SPORTSKI SIGNAL' : 'СПОРТСКИ СИГНАЛ';
+    if (isWeatherStory) return t('cluster.story_weather');
+    if (isSportsStory) return t('cluster.story_sport');
     if (primaryCategory) return cleanTopicLabel(primaryCategory).toUpperCase();
-    return lang === 'sr' ? 'TEMATSKI SIGNAL' : 'ТЕМАТСКИ СИГНАЛ';
+    return t('cluster.story_topic');
 })();
 const displayTopicSignals = Array.from(new Set([
-    ...(isWeatherStory ? [lang === 'sr' ? 'Vreme' : 'Време'] : []),
+    ...(isWeatherStory ? [t('cluster.topic_weather')] : []),
     ...primaryTopics
         .map((topic: string) => cleanTopicLabel(topic))
         .filter((topic: string) => topic && !['Vesti', 'Вести'].includes(topic)),
@@ -423,80 +417,68 @@ const consensusNote = shouldShowConsensusNote(clusterLayoutInput)
 const clusterStatus = (() => {
     if (isMissingSynthesis) {
         return {
-            label: lang === 'sr' ? 'SINTEZA U PRIPREMI' : 'СИНТЕЗАТА СЕ ПОДГОТВУВА',
-            description: lang === 'sr'
-                ? 'Izvori su povezani; urednički pregled se trenutno generiše.'
-                : 'Изворите се поврзани; уредничкиот преглед моментално се генерира.',
+            label: t('cluster.status.synthesis_pending'),
+            description: t('cluster.status.synthesis_pending_desc'),
             tone: 'pending',
         };
     }
     if (isSynthesisRefreshStale) {
         return {
-            label: lang === 'sr' ? 'SINTEZA ZASTARELA' : 'СИНТЕЗАТА Е ЗАСТАРЕНА',
-            description: lang === 'sr'
-                ? 'Stigli su noviji izvori; pregled treba čitati uz izvorni zapis.'
-                : 'Пристигнале понови извори; прегледот треба да се чита со изворниот запис.',
+            label: t('cluster.status.synthesis_stale'),
+            description: t('cluster.status.synthesis_stale_desc'),
             tone: 'stale',
         };
     }
     if (isSingleSource) {
         return {
-            label: lang === 'sr' ? 'JEDAN IZVOR' : 'ЕДЕН ИЗВОР',
-            description: lang === 'sr'
-                ? 'Klaster trenutno ima jednu redakciju; čitajte ga kao rani signal, ne kao potvrđen konsenzus.'
-                : 'Кластерот моментално има една редакција; третирајте го како ран сигнал.',
+            label: t('cluster.status.single_source'),
+            description: t('cluster.status.single_source_desc'),
             tone: 'early',
         };
     }
     if (hasConflicts) {
         return {
-            label: lang === 'sr' ? 'VIŠE IZVORA, RAZLIKE' : 'ПОВЕЌЕ ИЗВОРИ, РАЗЛИКИ',
-            description: lang === 'sr'
-                ? 'Izvori pokrivaju istu priču, ali se razlikuju u detaljima ili naglasku.'
-                : 'Изворите ја покриваат истата приказна, но се разликуваат во детали или нагласок.',
+            label: t('cluster.status.conflicts'),
+            description: t('cluster.status.conflicts_desc'),
             tone: 'mixed',
         };
     }
     return {
-        label: lang === 'sr' ? 'VIŠE IZVORA' : 'ПОВЕЌЕ ИЗВОРИ',
+        label: t('cluster.status.multi_source'),
         description: isWeatherStory
-            ? (lang === 'sr'
-                ? 'Grupisano prema istoj prognozi, području i bliskom vremenu objave.'
-                : 'Групирано според иста прогноза, подрачје и блиско време на објава.')
-            : (lang === 'sr'
-                ? 'Grupisano po zajedničkoj temi, akterima i bliskom vremenu objave.'
-                : 'Групирано според заедничка тема, актери и блиско време на објава.'),
+            ? t('cluster.status.multi_weather_desc')
+            : t('cluster.status.multi_default_desc'),
         tone: 'verified',
     };
 })();
 
 const evidenceItems = [
     {
-        label: lang === 'sr' ? 'Redakcije' : 'Редакции',
+        label: t('cluster.evidence.newsrooms'),
         value: String(uniqueSourcesCount),
         detail: sourcePreview.join(' · '),
     },
     ...(cluster?.pluralism_score != null ? [{
-        label: lang === 'sr' ? 'Indeks Pluralizma' : 'Индекс на Плурализам',
+        label: t('cluster.evidence.pluralism_index'),
         value: `${cluster.pluralism_score}%`,
         detail: cluster.narrative_diversity?.verdict
             ? `“${(lang === 'mk' && !isMostlyCyrillic(cluster.narrative_diversity.verdict)
                 ? transliterate(cluster.narrative_diversity.verdict)
                 : cluster.narrative_diversity.verdict).slice(0, 60)}...”`
-            : (lang === 'sr' ? 'Raznolikost perspektiva' : 'Разновидност на перспективи'),
+            : t('cluster.evidence.perspective_diversity'),
     }] : []),
     {
-        label: lang === 'sr' ? 'Prva objava' : 'Прва објава',
+        label: t('cluster.evidence.first_publish'),
         value: firstArticle?.source || '—',
         detail: firstArticle?.created_at ? getRelativeTimeStr(firstArticle.created_at) : '',
     },
     {
-        label: lang === 'sr' ? 'Poslednji razvoj' : 'Последен развој',
+        label: t('cluster.evidence.latest_development'),
         value: latestArticle?.source || '—',
         detail: latestArticle?.created_at ? getRelativeTimeStr(latestArticle.created_at) : '',
     },
     {
-        label: lang === 'sr' ? 'Ključne oznake' : 'Клучни ознаки',
+        label: t('cluster.evidence.key_tags'),
         value: sharedEntities.length && !isWeatherStory ? sharedEntities.slice(0, 2).join(', ') : (displayTopicSignals[0] || '—'),
         detail: displayTopicSignals.slice(sharedEntities.length && !isWeatherStory ? 0 : 1).join(' · '),
     },
@@ -516,15 +498,15 @@ const describeRelatedEvidence = (rel: any) => {
 const totalSourcesCount = cluster?.articles?.length || 0;
 const isBreakingFlag = cluster?.articles?.some((a: Article) => a.is_breaking) || false;
 
-let momentumKicker = { label: lang === 'sr' ? 'REDAKCIJSKI UVID' : 'УРЕДНИЧКИ УВИД', color: 'text-muted-foreground' };
+let momentumKicker = { label: t('cluster.momentum.editorial'), color: 'text-muted-foreground' };
 if (isBreakingFlag && totalSourcesCount >= 4) {
-    momentumKicker = { label: lang === 'sr' ? 'UDAREN NARATIV' : 'УДАРЕН НАРАТИВ', color: 'text-nyt-red' };
+    momentumKicker = { label: t('cluster.momentum.breaking'), color: 'text-nyt-red' };
 } else if (conflictsCount >= 3) {
-    momentumKicker = { label: lang === 'sr' ? 'KONTRADIKTOREN RAZVOJ' : 'КОНТРАДИКТОРЕН РАЗВОЈ', color: 'cluster-tone-watch' };
+    momentumKicker = { label: t('cluster.momentum.contradictory'), color: 'cluster-tone-watch' };
 } else if (totalSourcesCount >= 6) {
-    momentumKicker = { label: lang === 'sr' ? 'ŠIROK INTERES' : 'ШИРОК ИНТЕРЕС', color: 'cluster-tone-positive' };
+    momentumKicker = { label: t('cluster.momentum.wide_interest'), color: 'cluster-tone-positive' };
 } else if (totalSourcesCount >= 2 && !isSynthesisRefreshStale && !isMissingSynthesis) {
-    momentumKicker = { label: lang === 'sr' ? 'KONSOLIDOVAN PREGLED' : 'КОНСОЛИДИРАН ПРЕГЛЕД', color: 'text-nyt-accent' };
+    momentumKicker = { label: t('cluster.momentum.consolidated'), color: 'text-nyt-accent' };
 }
 
 // --- SEO & Schema ---
@@ -622,7 +604,7 @@ const articleSchema = cluster ? {
 		{error ? (
 			<div class="py-20 text-center">
 				<h1 class="text-2xl font-serif mb-4">{error}</h1>
-                <a href="/" class="text-nyt-accent hover:underline">{lang === 'sr' ? 'Nazad na početnu' : 'Назад на почетна'}</a>
+                <a href="/" class="text-nyt-accent hover:underline">{t('cluster.error.back_home')}</a>
 			</div>
 		) : cluster && (
 			<article class="cluster-article-container" style={cluster.dominant_color ? `--cluster-accent: ${cluster.dominant_color};` : ''}>
@@ -652,7 +634,7 @@ const articleSchema = cluster ? {
 				/>
 
 					{showHeroVisual && (
-					<div class="hero-full mb-24" id="cluster-visual">
+					<div class="hero-full mb-10 md:mb-14" id="cluster-visual">
 						<HeroVisual
 							leadVisual={leadVisual}
 							dominantColor={cluster.dominant_color || undefined}
@@ -686,13 +668,13 @@ const articleSchema = cluster ? {
 							)}
 
 							<TrustBlock
-								lang={lang as 'sr' | 'mk'}
 								trustLabel={trustSummary.label}
 								trustDetail={trustSummary.detail}
 								trustScore={trustSummary.score}
 								evidenceItems={evidenceItems}
 								conflictsCount={conflictsCount}
 								agreementsCount={agreementsCount}
+								t={translate}
 							/>
 
 							<ClusterSynthesisSection
@@ -774,24 +756,32 @@ const articleSchema = cluster ? {
 
 					{/* 4. SIDEBAR COLUMN */}
 					<aside class="editorial-sidebar-col">
-						<div class="sticky-sidebar cluster-sidebar-stack">
-							<ClusterSidebarTabs
-								client:visible
-								lang={lang}
-								articles={cluster.articles.map((a: Article) => ({ source: a.source }))}
-								allSourcesNames={allSourcesNames}
-								sentimentData={sentimentData}
-								showCompare={showCompareTab}
-								showPulse={showPulseTab}
-								topic={cluster.topics?.[0] || ''}
-								source={cluster.articles?.[0]?.source || ''}
-								adjacentTopic={adjacentTopic}
-								keyEntities={keyEntities}
-							/>
-							<div class="sidebar-module sidebar-ad-slot">
-								<TinyAdzRailAd />
+						<details class="cluster-sidebar-details">
+							<summary class="cluster-sidebar-details-summary">
+								<span class="cluster-sidebar-details-title">{t('cluster.sidebar_tools')}</span>
+								<span class="cluster-sidebar-details-hint">{t('cluster.sidebar_more_hint')}</span>
+							</summary>
+							<div class="cluster-sidebar-details-body">
+								<div class="sticky-sidebar cluster-sidebar-stack">
+									<ClusterSidebarTabs
+										client:visible
+										lang={lang}
+										articles={cluster.articles.map((a: Article) => ({ source: a.source }))}
+										allSourcesNames={allSourcesNames}
+										sentimentData={sentimentData}
+										showCompare={showCompareTab}
+										showPulse={showPulseTab}
+										topic={cluster.topics?.[0] || ''}
+										source={cluster.articles?.[0]?.source || ''}
+										adjacentTopic={adjacentTopic}
+										keyEntities={keyEntities}
+									/>
+									<div class="sidebar-module sidebar-ad-slot">
+										<TinyAdzRailAd />
+									</div>
+								</div>
 							</div>
-						</div>
+						</details>
 					</aside>
 				</div>
 			</article>

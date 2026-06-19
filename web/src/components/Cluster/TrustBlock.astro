@@ -8,44 +8,37 @@ interface EvidenceItem {
 }
 
 interface Props {
-  lang: 'sr' | 'mk';
   trustLabel: string;
   trustDetail: string;
   trustScore: number;
   evidenceItems: EvidenceItem[];
   conflictsCount?: number;
   agreementsCount?: number;
+  t: (key: string) => string;
 }
 
 const {
-  lang,
   trustLabel,
   trustDetail,
   trustScore,
   evidenceItems,
   conflictsCount = 0,
   agreementsCount = 0,
+  t,
 } = Astro.props;
 
-const title = lang === 'mk' ? 'Зошто веруваме' : 'Zašto verujemo';
 const framing =
   conflictsCount > 0
-    ? (lang === 'mk'
-      ? 'Изворите се согласуваат околу темата, но се разликуваат во детали.'
-      : 'Izvori se slažu oko teme, ali se razlikuju u detaljima.')
+    ? t('cluster.trust.framing_conflicts')
     : agreementsCount > 0
-      ? (lang === 'mk'
-        ? 'Повеќе извори ја потврдуваат истата јадрена тврдење.'
-        : 'Više izvora potvrđuje istu jezgru tvrdnje.')
-      : (lang === 'mk'
-        ? 'Прегледот ја групира истата приказна од повеќе редакции.'
-        : 'Pregled grupiše istu priču iz više redakcija.');
+      ? t('cluster.trust.framing_agreements')
+      : t('cluster.trust.framing_default');
 ---
 
-<details class="cluster-trust-block" open>
+<details class="cluster-trust-block">
   <summary class="cluster-trust-summary">
     <ShieldCheck size={16} />
-    <span>{title}</span>
+    <span>{t('cluster.trust.title')}</span>
     <span class="cluster-trust-pill">{trustLabel}</span>
     <span class="cluster-trust-score">{trustScore}</span>
   </summary>
@@ -66,11 +59,11 @@ const framing =
 
 <style>
   .cluster-trust-block {
-    border: 1px solid color-mix(in srgb, var(--nyt-accent) 25%, var(--border));
-    background: color-mix(in srgb, var(--nyt-accent) 4%, var(--card));
+    border: 1px solid color-mix(in srgb, var(--presek-mark) 22%, var(--border));
+    background: color-mix(in srgb, var(--presek-mark) 4%, var(--card));
     border-radius: 1rem;
     padding: 1rem 1.1rem;
-    margin: 1.25rem 0 1.75rem;
+    margin: 1rem 0 1.25rem;
   }
   .cluster-trust-summary {
     display: flex;
@@ -90,8 +83,8 @@ const framing =
     margin-left: auto;
     padding: 0.15rem 0.45rem;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--nyt-accent) 12%, transparent);
-    color: var(--nyt-accent);
+    background: color-mix(in srgb, var(--presek-mark) 12%, transparent);
+    color: var(--presek-mark);
     font-size: 0.56rem;
   }
   .cluster-trust-score {

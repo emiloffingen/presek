@@ -136,10 +136,10 @@
 }
 
 .pulse-category-pill.active {
-    background: var(--nyt-accent);
+    background: var(--presek-mark);
     color: white;
-    border-color: var(--nyt-accent);
-    box-shadow: 0 4px 12px -4px color-mix(in srgb, var(--nyt-accent) 40%, transparent);
+    border-color: var(--presek-mark);
+    box-shadow: 0 4px 12px -4px color-mix(in srgb, var(--presek-mark) 40%, transparent);
 }
 
 /* Glassmorphic Command & Chart Cards */
@@ -178,17 +178,17 @@
     right: 0;
     width: 100px;
     height: 100px;
-    background: radial-gradient(circle at top right, color-mix(in srgb, var(--nyt-accent) 8%, transparent), transparent 70%);
+    background: radial-gradient(circle at top right, color-mix(in srgb, var(--presek-mark) 8%, transparent), transparent 70%);
     pointer-events: none;
     opacity: 0.5;
 }
 
 .pulse-glow-card:hover {
-    border-color: color-mix(in srgb, var(--nyt-accent) 28%, var(--border));
+    border-color: color-mix(in srgb, var(--presek-mark) 28%, var(--border));
 }
 
 .pulse-glow-card.accent-border {
-    border-top: 3px solid var(--nyt-accent);
+    border-top: 3px solid var(--presek-mark);
 }
 
 /* Lazy chart placeholders */
@@ -251,15 +251,15 @@
     left: 0;
     width: 3px;
     height: 100%;
-    background: color-mix(in srgb, var(--nyt-accent) 30%, transparent);
+    background: color-mix(in srgb, var(--presek-mark) 30%, transparent);
     transition: background 0.3s ease;
 }
 
 .actor-card--featured {
     grid-column: 1 / -1;
     padding: 1.5rem 1.65rem;
-    border-color: color-mix(in srgb, var(--nyt-accent) 35%, var(--border));
-    background: color-mix(in srgb, var(--nyt-accent) 5%, var(--card));
+    border-color: color-mix(in srgb, var(--presek-mark) 35%, var(--border));
+    background: color-mix(in srgb, var(--presek-mark) 5%, var(--card));
 }
 
 .actor-card--featured .actor-card-name {
@@ -267,11 +267,11 @@
 }
 
 .actor-card:hover {
-    border-color: var(--nyt-accent);
+    border-color: var(--presek-mark);
 }
 
 .actor-card:hover::before {
-    background: var(--nyt-accent);
+    background: var(--presek-mark);
 }
 
 .actor-card-top {
@@ -288,8 +288,8 @@
     font-weight: 700;
     letter-spacing: 0.05em;
     text-transform: uppercase;
-    color: var(--nyt-accent);
-    background: color-mix(in srgb, var(--nyt-accent) 8%, transparent);
+    color: var(--presek-mark);
+    background: color-mix(in srgb, var(--presek-mark) 8%, transparent);
     padding: 0.2rem 0.45rem;
 }
 
@@ -311,7 +311,7 @@
 }
 
 .actor-card:hover .actor-card-name {
-    color: var(--nyt-accent);
+    color: var(--presek-mark);
 }
 
 .actor-sentiment-row {
@@ -454,9 +454,88 @@
 
 .pulse-bar-fill {
     height: 100%;
-    background: linear-gradient(90deg, var(--nyt-accent), color-mix(in srgb, var(--nyt-accent) 70%, var(--foreground) 30%));
+    background: linear-gradient(90deg, var(--presek-mark), color-mix(in srgb, var(--presek-mark) 70%, var(--foreground) 30%));
     border-radius: 999px;
     transition: width 0.8s ease;
+}
+
+/* Pulse page: restore brand accent on editorial kickers */
+.pulse-page-scope .ui-kicker--accent,
+.pulse-page-scope .rail-kicker {
+    color: var(--presek-mark);
+}
+
+/* Collapsed analytics panel (heatmap + gauges) */
+.pulse-analytics-details {
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--secondary) 18%, var(--background));
+}
+
+.pulse-analytics-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem 0.9rem;
+    cursor: pointer;
+    list-style: none;
+}
+
+.pulse-analytics-summary::-webkit-details-marker {
+    display: none;
+}
+
+.pulse-analytics-title {
+    font-family: var(--font-ui);
+    font-size: var(--text-ui-kicker);
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--foreground);
+}
+
+.pulse-analytics-hint {
+    font-family: var(--font-ui);
+    font-size: var(--text-ui-min);
+    font-weight: 600;
+    color: var(--muted-foreground);
+    text-align: right;
+}
+
+.pulse-analytics-summary::after {
+    content: '+';
+    flex-shrink: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--presek-mark);
+    line-height: 1;
+    margin-left: 0.35rem;
+}
+
+.pulse-analytics-details[open] .pulse-analytics-summary::after {
+    content: '−';
+}
+
+.pulse-analytics-body {
+    padding: 0.85rem 0.9rem 1rem;
+    border-top: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+}
+
+@media (min-width: 1024px) {
+    .pulse-analytics-details[open] .pulse-analytics-summary {
+        border-bottom: 1px solid color-mix(in srgb, var(--presek-mark) 18%, var(--border));
+    }
+}
+
+@media (max-width: 768px) {
+    .pulse-analytics-summary {
+        flex-wrap: wrap;
+    }
+
+    .pulse-analytics-hint {
+        flex: 1 1 auto;
+        text-align: left;
+    }
 }
 
 .pulse-bar-track.bar-red .pulse-bar-fill {
