@@ -1,5 +1,6 @@
 ---
 import type { BriefingSection } from '../../utils/briefingFormatter';
+import { useTranslations } from '../../i18n/utils';
 
 interface Props {
 	sections: BriefingSection[];
@@ -7,22 +8,20 @@ interface Props {
 }
 
 const { sections, lang = 'sr' } = Astro.props;
-const isMK = lang === 'mk';
+const t = useTranslations(lang as any);
 
 if (!sections.length) {
 	return null;
 }
 
 const sectionCount = sections.length;
-const countLabel = isMK
-	? `${sectionCount} ${sectionCount === 1 ? 'секција' : 'секции'}`
-	: `${sectionCount} ${sectionCount === 1 ? 'sekcija' : 'sekcije'}`;
+const countLabel = `${sectionCount} ${sectionCount === 1 ? t('briefing.toc_section_one') : t('briefing.toc_section_many')}`;
 ---
 
 <details class="briefing-sections-toc" id="briefing-sections-toc">
 	<summary class="briefing-sections-toc__summary">
 		<span class="briefing-sections-toc__summary-label">
-			<span class="briefing-sections-toc__kicker">{isMK ? 'Содржина' : 'Sadržaj'}</span>
+			<span class="briefing-sections-toc__kicker">{t('briefing.toc_kicker')}</span>
 			<span class="briefing-sections-toc__count">{countLabel}</span>
 		</span>
 	</summary>

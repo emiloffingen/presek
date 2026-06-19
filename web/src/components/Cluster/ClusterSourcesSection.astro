@@ -30,7 +30,7 @@ const { lang, sourceDocArticle, sourceDocText, articleRows, t } = Astro.props;
           <div class="flex items-center gap-[var(--grid-gap)]">
             <div class="w-2 h-8 bg-nyt-accent"></div>
             <h4 class="ui-kicker text-foreground">
-              {lang === 'sr' ? 'Pun izvorni zapis' : 'Целосен изворен запис'} ({sourceDocArticle.source})
+              {t('cluster.source_document_full')} ({sourceDocArticle.source})
             </h4>
           </div>
           <div class="text-muted-foreground group-open:rotate-180 transition-transform duration-300">
@@ -50,7 +50,7 @@ const { lang, sourceDocArticle, sourceDocText, articleRows, t } = Astro.props;
               rel="noopener noreferrer"
               class="ui-kicker ui-kicker--accent hover:underline flex items-center gap-[var(--grid-gap)] bg-background px-6 py-3 rounded-full border border-nyt-accent/20 shadow-sm transition-all hover:shadow-md"
             >
-              {lang === 'sr' ? 'Pročitaj ceo zapis na' : 'Прочитај го целиот запис на'} {sourceDocArticle.source}
+              {t('cluster.source_document_read')} {sourceDocArticle.source}
               <ExternalLink size={14} />
             </a>
           </div>

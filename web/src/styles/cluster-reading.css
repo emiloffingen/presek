@@ -383,11 +383,24 @@ body.zen-mode .section-eyebrow {
 
 /* ── Cluster header toolbar + compact meta ─────────── */
 .cluster-meta-compact {
-  display: flex;
+  display: none;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.45rem;
-  margin: 0.85rem 0 1rem;
+  margin: 0.65rem 0 0.75rem;
+}
+
+.cluster-header-toolbar .cluster-reading-nav {
+  display: none;
+}
+
+.cluster-header-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.25rem;
 }
 
 .cluster-header-freshness {
@@ -423,15 +436,6 @@ body.zen-mode .section-eyebrow {
 
 .cluster-meta-chip.tone-pending {
   color: var(--nyt-accent);
-}
-
-.cluster-header-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem 1rem;
-  margin-bottom: 0.35rem;
 }
 
 .cluster-header-actions {

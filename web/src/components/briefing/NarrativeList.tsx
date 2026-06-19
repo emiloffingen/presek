@@ -1,6 +1,8 @@
 import React from 'react';
-import { Target, MessageSquare, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Target, MessageSquare, ShieldCheck } from 'lucide-react';
 import { normalizeBriefingText } from '../../utils/briefingCopy';
+import { useClientTranslations } from '../../i18n/clientTranslations';
+import { briefing } from '../../i18n/namespaces/briefing';
 
 interface Narrative {
     text: string;
@@ -13,7 +15,8 @@ interface Props {
 }
 
 export default function NarrativeList({ narratives, lang = 'sr' }: Props) {
-    const isMK = lang === 'mk';
+    const locale = lang === 'mk' ? 'mk' : 'sr';
+    const t = useClientTranslations(locale, briefing);
 
     if (!narratives || narratives.length === 0) return null;
 
@@ -26,9 +29,9 @@ export default function NarrativeList({ narratives, lang = 'sr' }: Props) {
 
     const getSentimentLabel = (sentiment: string) => {
         const s = sentiment.toUpperCase();
-        if (s.includes('POZITIVAN') || s.includes('ПОЗИТИВЕН')) return isMK ? 'ПОЗИТИВЕН' : 'POZITIVAN';
-        if (s.includes('KRITIČAN') || s.includes('КРИТИЧЕН')) return isMK ? 'КРИТИЧЕН' : 'KRITIČAN';
-        return isMK ? 'НЕУТРАЛЕН' : 'NEUTRALAN';
+        if (s.includes('POZITIVAN') || s.includes('ПОЗИТИВЕН')) return t('briefing.sentiment_positive');
+        if (s.includes('KRITIČAN') || s.includes('КРИТИЧЕН')) return t('briefing.sentiment_critical');
+        return t('briefing.sentiment_neutral');
     };
 
     return (
@@ -36,7 +39,7 @@ export default function NarrativeList({ narratives, lang = 'sr' }: Props) {
             <div className="flex items-center gap-[var(--grid-gap)] mb-8">
                 <Target size={20} className="text-nyt-accent" />
                 <h2 className="font-bold text-lg uppercase tracking-tighter">
-                    {isMK ? 'Клучни наративи' : 'Ključni narativi'}
+                    {t('briefing.narratives_title')}
                 </h2>
                 <div className="h-px flex-1 bg-border/40 ml-2" />
             </div>
@@ -55,7 +58,7 @@ export default function NarrativeList({ narratives, lang = 'sr' }: Props) {
                         </p>
                         <div className="mt-4 pt-3 border-t border-border/40 flex items-center gap-[var(--grid-gap)] text-[9px] font-black uppercase text-muted-foreground opacity-40 narrative-card-footer">
                             <ShieldCheck size={10} />
-                            {isMK ? 'СИСТЕМСКА ВЕРИФИКАЦИЈА' : 'SISTEMSKA VERIFIKACIJA'}
+                            {t('briefing.narratives_verification')}
                         </div>
                     </div>
                 ))}

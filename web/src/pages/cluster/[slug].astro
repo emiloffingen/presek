@@ -529,12 +529,12 @@ const articleSchema = cluster ? {
 	"dateModified": cluster.synthesis_updated_at || cluster.articles?.[0]?.created_at,
 	"author": {
 		"@type": "Organization",
-		"name": lang === 'sr' ? "PRESEK.rs" : "PRESEK.mk",
+		"name": translate('cluster.publisher_name'),
 		"url": SITE_URL
 	},
 	"publisher": {
 		"@type": "Organization",
-		"name": lang === 'sr' ? "PRESEK.rs" : "PRESEK.mk",
+		"name": translate('cluster.publisher_name'),
 		"logo": {
 			"@type": "ImageObject",
 			"url": `${SITE_URL}/img/presek_emblem.svg`,
@@ -559,7 +559,7 @@ const articleSchema = cluster ? {
 	"copyrightYear": new Date().getFullYear(),
 	"copyrightHolder": {
 		"@type": "Organization",
-		"name": lang === 'sr' ? "PRESEK.rs" : "PRESEK.mk"
+		"name": translate('cluster.publisher_name')
 	}
 } : null;
 ---
@@ -707,7 +707,7 @@ const articleSchema = cluster ? {
 						/>
 
 						{showCredibilitySection && (
-							<ClusterAnalysisSection lang={lang as 'sr' | 'mk'}>
+							<ClusterAnalysisSection t={translate}>
 								<CredibilityAnalysis
 									hasFactcheck={hasFactcheck}
 									verificationReport={verificationReport}

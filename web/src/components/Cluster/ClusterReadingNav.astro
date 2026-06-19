@@ -2,27 +2,23 @@
 import { BookOpen, ListChecks, Layers, ShieldCheck } from 'lucide-react';
 
 interface Props {
-  lang: 'sr' | 'mk';
   primaryNarrativeLabel: string;
   showKeyFacts: boolean;
   showAnalysis: boolean;
+  t: (key: string) => string;
 }
 
-const { lang, primaryNarrativeLabel, showKeyFacts, showAnalysis } = Astro.props;
-
-const keyFactsLabel = lang === 'sr' ? 'Ključno' : 'Клучно';
-const sourcesLabel = lang === 'sr' ? 'Izvori' : 'Извори';
-const analysisLabel = lang === 'sr' ? 'Analiza' : 'Анализа';
+const { primaryNarrativeLabel, showKeyFacts, showAnalysis, t } = Astro.props;
 ---
 
-<nav class="reader-actions cluster-reading-nav" aria-label={lang === 'sr' ? 'Navigacija kroz priču' : 'Навигација низ приказната'}>
+<nav class="reader-actions cluster-reading-nav" aria-label={t('cluster.reading_nav_aria')}>
   <a href="#cluster-synthesis"><BookOpen size={14} /> {primaryNarrativeLabel}</a>
   {showKeyFacts && (
-    <a href="#cluster-key-facts"><Layers size={14} /> {keyFactsLabel}</a>
+    <a href="#cluster-key-facts"><Layers size={14} /> {t('cluster.nav_key_facts')}</a>
   )}
-  <a href="#cluster-sources"><ListChecks size={14} /> {sourcesLabel}</a>
+  <a href="#cluster-sources"><ListChecks size={14} /> {t('cluster.nav_sources')}</a>
   {showAnalysis && (
-    <a href="#cluster-analysis"><ShieldCheck size={14} /> {analysisLabel}</a>
+    <a href="#cluster-analysis"><ShieldCheck size={14} /> {t('cluster.nav_analysis')}</a>
   )}
 </nav>
 

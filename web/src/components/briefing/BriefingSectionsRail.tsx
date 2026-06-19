@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import type { BriefingSection } from '../../utils/briefingFormatter';
+import { useClientTranslations } from '../../i18n/clientTranslations';
+import { briefing } from '../../i18n/namespaces/briefing';
 
 type Props = {
   sections: BriefingSection[];
@@ -7,7 +9,8 @@ type Props = {
 };
 
 export default function BriefingSectionsRail({ sections, lang = 'sr' }: Props) {
-  const isMK = lang === 'mk';
+  const locale = lang === 'mk' ? 'mk' : 'sr';
+  const t = useClientTranslations(locale, briefing);
   const [activeId, setActiveId] = useState(sections[0]?.id ?? '');
 
   useEffect(() => {
@@ -40,9 +43,9 @@ export default function BriefingSectionsRail({ sections, lang = 'sr' }: Props) {
   return (
     <nav
       className="briefing-sections-rail is-revealed"
-      aria-label={isMK ? 'Секции' : 'Sekcije'}
+      aria-label={t('briefing.sections_aria')}
     >
-      <p className="briefing-sections-rail__kicker">{isMK ? 'Секции' : 'Sekcije'}</p>
+      <p className="briefing-sections-rail__kicker">{t('briefing.sections_kicker')}</p>
       <ol className="briefing-sections-rail__list">
         {sections.map((section) => (
           <li key={section.id}>

@@ -1,26 +1,25 @@
 ---
-import { getLangFromUrl } from '../../i18n/utils';
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import { localePath, homePath } from '../../lib/localePaths';
 import { getStoryPreviewText } from '../../utils/textUtils';
 const { homeData } = Astro.props;
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
 const isMK = lang === 'mk';
+const t = useTranslations(lang);
 const l = (path: string) => localePath(path, isMK ? 'mk' : 'sr', hostHeader);
 ---
 
 {homeData && homeData.developing && (
     <section class="mt-8">
         <p class="briefing-trust-framing">
-            {isMK
-                ? 'Дневниот преглед прво ја покажува каде медиумите се согласуваат, па каде се разликуваат.'
-                : 'Dnevni pregled prvo pokazuje gde se mediji slažu, pa gde se razlikuju.'}
+            {t('briefing.digest_trust_framing')}
         </p>
-        <h3 class="ui-kicker ui-kicker--accent mb-6">{isMK ? 'Актуелни теми во фокус' : 'Aktuelne fokusne teme'}</h3>
+        <h3 class="ui-kicker ui-kicker--accent mb-6">{t('briefing.digest_focus_topics')}</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-[var(--grid-gap)]">
             {homeData.developing.slice(0, 6).map((c: any) => (
                 <a href={l(`/cluster/${c.cluster_id}`)} class="block p-6 bg-secondary/50 border border-border hover:border-nyt-accent transition-all group">
-                    <p class="ui-kicker ui-kicker--accent mb-3">{isMK ? 'Во тренд' : 'U trendu'}</p>
+                    <p class="ui-kicker ui-kicker--accent mb-3">{t('briefing.digest_trending')}</p>
                     <h4 class="font-serif font-black text-xl leading-tight group-hover:underline decoration-2 underline-offset-4 decoration-nyt-accent/30">{c.synthetic_headline || (c.articles?.[0] ? c.articles[0].title : '')}</h4>
                     {(() => {
                         const summaryText = getStoryPreviewText(c, c.articles?.[0], lang);
