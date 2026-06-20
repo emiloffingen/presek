@@ -437,8 +437,8 @@ class SecurityAudit:
         python_files = [f for f in python_files if not any(excl in str(f) for excl in exclude_paths)]
 
         dangerous_patterns = [
-            (r"eval\(", "Use of eval() - potential code injection"),
-            (r"exec\(", "Use of exec() - potential code injection"),
+            (r"(?<!\.)\beval\(", "Use of eval() - potential code injection"),
+            (r"(?<!\.)\bexec\(", "Use of exec() - potential code injection"),
             (r"pickle\.load\(", "Use of pickle.load() - potential RCE"),
             (r"yaml\.load\(", "Use of yaml.load() without Loader - potential RCE"),
             (r"subprocess\.run.*shell=True", "subprocess with shell=True - potential command injection"),
