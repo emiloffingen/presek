@@ -34,7 +34,7 @@ from tasks.utils import (
 _ALLOWED_ARTICLE_COLUMNS = {"full_content", "image_url"}
 
 
-@celery_app.task(rate_limit="100/m", autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
+@celery_app.task(rate_limit="100/m", autoretry_for=(Exception,), retry_backoff=True, max_retries=2, time_limit=60, soft_time_limit=45)
 def crawl_article_task(article_id, url):
     """
     Main crawler orchestrator.
@@ -119,7 +119,7 @@ def post_crawl_invalidation_task(article_id):
         log.debug(f"Invalidated caches for article {article_id}")
 
 
-@celery_app.task(acks_late=True, reject_on_worker_lost=True)
+@celery_app.task(acks_late=True, reject_on_worker_lost=True, time_limit=300, soft_time_limit=240)
 def run_ingestion():
     """
     Main ingestion orchestrator.
