@@ -140,7 +140,7 @@ def _attempt_gemma_rescue(
     if "local" in exclude_providers:
         return None
 
-    remote = ["mistral_small", "mistral_large", "nvidia"]
+    remote = ["nvidia"]
     raw, provider = _call_ai(
         full_prompt,
         system_prompt,

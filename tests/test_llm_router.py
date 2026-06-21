@@ -34,7 +34,7 @@ def test_route_cluster_low_complexity():
         {"title": "Jos jedna vest o vremenu", "description": "Meteorolozi najavljuju toplo leto."},
     ]
     with _router_env(local_available=False):
-        assert SmartModelRouter.route_cluster(articles) == "mistral_small"
+        assert SmartModelRouter.route_cluster(articles) == "nvidia"
 
     with _router_env(
         local_available=True,
@@ -47,7 +47,7 @@ def test_route_cluster_low_complexity():
         local_available=False,
         LOCAL_MODEL_PATH="/path/to/model",
     ):
-        assert SmartModelRouter.route_cluster(articles) == "mistral_small"
+        assert SmartModelRouter.route_cluster(articles) == "nvidia"
 
 
 def test_route_cluster_medium_complexity_by_count():
@@ -57,7 +57,7 @@ def test_route_cluster_medium_complexity_by_count():
         {"title": "Vest 3", "description": "Nesto se dogodilo."},
     ]
     with _router_env(local_available=False):
-        assert SmartModelRouter.route_cluster(articles) == "mistral_small"
+        assert SmartModelRouter.route_cluster(articles) == "nvidia"
 
 
 def test_route_cluster_medium_complexity_by_weight():
@@ -65,7 +65,7 @@ def test_route_cluster_medium_complexity_by_weight():
         {"title": "Vlada donela odluku", "description": "Novi detalji o sednici vlade."},
     ]
     with _router_env(local_available=False):
-        assert SmartModelRouter.route_cluster(articles) == "mistral_small"
+        assert SmartModelRouter.route_cluster(articles) == "nvidia"
 
 
 def test_route_cluster_medium_complexity_local_model(monkeypatch):
@@ -87,7 +87,7 @@ def test_route_cluster_medium_complexity_local_model(monkeypatch):
 def test_route_cluster_high_complexity_large_cluster():
     articles = [{"title": f"Vest {i}", "description": "Detalji."} for i in range(5)]
     with _router_env(local_available=False):
-        assert SmartModelRouter.route_cluster(articles) == "mistral_large"
+        assert SmartModelRouter.route_cluster(articles) == "nvidia"
 
     with _router_env(
         local_available=True,
@@ -95,7 +95,7 @@ def test_route_cluster_high_complexity_large_cluster():
         LOCAL_SYNTHESIS_HIGH_COMPLEXITY_REMOTE="false",
         LOCAL_SYNTHESIS_PREFER_LOCAL="true",
     ):
-        assert SmartModelRouter.route_cluster(articles) == "mistral_large"
+        assert SmartModelRouter.route_cluster(articles) == "nvidia"
 
 
 def test_route_cluster_high_complexity_medium_with_weight():
@@ -105,7 +105,7 @@ def test_route_cluster_high_complexity_medium_with_weight():
         {"title": "Saopstenje vlada", "description": "Detalji odluke."},
     ]
     with _router_env(local_available=False):
-        assert SmartModelRouter.route_cluster(articles) == "mistral_large"
+        assert SmartModelRouter.route_cluster(articles) == "nvidia"
 
     with _router_env(
         local_available=True,
@@ -113,7 +113,7 @@ def test_route_cluster_high_complexity_medium_with_weight():
         LOCAL_SYNTHESIS_HIGH_COMPLEXITY_REMOTE="false",
         LOCAL_SYNTHESIS_PREFER_LOCAL="true",
     ):
-        assert SmartModelRouter.route_cluster(articles) == "mistral_large"
+        assert SmartModelRouter.route_cluster(articles) == "nvidia"
 
 
 def test_route_cluster_high_complexity_sports_conflict():
@@ -122,7 +122,7 @@ def test_route_cluster_high_complexity_sports_conflict():
         {"title": "Zvezda savladala Partizan rezultatom 2:0", "description": "Veliki derbi."},
     ]
     with _router_env(local_available=False):
-        assert SmartModelRouter.route_cluster(articles) == "mistral_large"
+        assert SmartModelRouter.route_cluster(articles) == "nvidia"
 
 
 def test_route_cluster_free_api_mode():
@@ -131,7 +131,7 @@ def test_route_cluster_free_api_mode():
         for i in range(3)
     ]
     with _router_env(local_available=True, FREE_API_KEYS_ENABLED="true"):
-        assert SmartModelRouter.route_cluster(articles) == "mistral_small"
+        assert SmartModelRouter.route_cluster(articles) == "nvidia"
 
 
 def test_route_cluster_free_api_mode_low_complexity_uses_local():
@@ -158,7 +158,7 @@ def test_route_cluster_avoids_local_when_quality_is_low():
         LOCAL_MODEL_PATH="/path/to/model",
         LOCAL_SYNTHESIS_PREFER_LOCAL="true",
     ):
-        assert SmartModelRouter.route_cluster(articles) == "mistral_small"
+        assert SmartModelRouter.route_cluster(articles) == "nvidia"
 
 
 def test_route_cluster_upgrades_small_when_quality_is_low_on_weighted_story():
@@ -166,13 +166,13 @@ def test_route_cluster_upgrades_small_when_quality_is_low_on_weighted_story():
         {"title": "Vlada donela odluku", "description": "Novi detalji o sednici vlade."},
     ]
     SmartModelRouter._provider_quality = {
-        "mistral_small": [
+        "nvidia": [
             {"cluster_id": f"c{i}", "score": 0.78, "timestamp": datetime.datetime.now()}
             for i in range(6)
         ]
     }
     with _router_env(local_available=False):
-        assert SmartModelRouter.route_cluster(articles) == "mistral_large"
+        assert SmartModelRouter.route_cluster(articles) == "nvidia"
 
 
 def test_route_cluster_quality_profile_avoids_local_for_multi_source_clusters(monkeypatch):
@@ -189,7 +189,7 @@ def test_route_cluster_quality_profile_avoids_local_for_multi_source_clusters(mo
         LOCAL_SYNTHESIS_PREFER_LOCAL="true",
         SYNTHESIS_PROFILE="quality",
     ):
-        assert SmartModelRouter.route_cluster(articles) == "mistral_small"
+        assert SmartModelRouter.route_cluster(articles) == "nvidia"
 
 
 def test_route_cluster_critical_fallback_pressure_prefers_large():
@@ -205,7 +205,7 @@ def test_route_cluster_critical_fallback_pressure_prefers_large():
         LOCAL_SYNTHESIS_PREFER_LOCAL="false",
         SYNTHESIS_PROFILE="balanced",
     ):
-        assert SmartModelRouter.route_cluster(articles) == "mistral_large"
+        assert SmartModelRouter.route_cluster(articles) == "nvidia"
 
 
 def test_route_cluster_busy_system_respects_remote_preference():
@@ -223,17 +223,37 @@ def test_route_cluster_busy_system_respects_remote_preference():
         patch("core.llm_router.os.getloadavg", return_value=(32.0, 16.0, 8.0)),
         patch("core.llm_router.os.cpu_count", return_value=4),
     ):
-        assert SmartModelRouter.route_cluster(articles) == "mistral_small"
+        assert SmartModelRouter.route_cluster(articles) == "nvidia"
 
 
 def test_dynamic_fallback_order_omits_local_when_synthesis_disabled(monkeypatch):
     monkeypatch.setenv("LOCAL_SYNTHESIS_PREFER_LOCAL", "false")
     SmartModelRouter._provider_performance = {
-        "mistral_small": {"success_rate": 0.9, "avg_latency": 5.0},
-        "mistral_large": {"success_rate": 0.95, "avg_latency": 10.0},
+        "nvidia": {"success_rate": 0.9, "avg_latency": 5.0},
+        "nvidia": {"success_rate": 0.95, "avg_latency": 10.0},
         "nvidia": {"success_rate": 0.8, "avg_latency": 8.0},
         "local": {"success_rate": 0.7, "avg_latency": 120.0},
     }
     order = SmartModelRouter.get_dynamic_fallback_order("synthesis")
     assert "local" not in order
-    assert "mistral_small" in order
+    assert "nvidia" in order
+
+
+def test_route_cluster_synthesis_local_only_forces_local():
+    articles = [
+        {"title": "Vlada usvojila predlog", "description": "Sindikati traže rokove."},
+        {"title": "Sindikati traže garancije", "description": "Nije jasno kada mere stupaju."},
+    ]
+    with _router_env(
+        local_available=True,
+        LOCAL_MODEL_PATH="/path/to/model",
+        SYNTHESIS_LOCAL_ONLY="true",
+        LOCAL_SYNTHESIS_PREFER_LOCAL="false",
+    ):
+        assert SmartModelRouter.route_cluster(articles) == "local"
+
+
+def test_dynamic_fallback_order_local_only():
+    with _router_env(SYNTHESIS_LOCAL_ONLY="true"):
+        assert SmartModelRouter.get_dynamic_fallback_order("synthesis") == ["local"]
+        assert SmartModelRouter.get_dynamic_fallback_order("translation") == ["local"]

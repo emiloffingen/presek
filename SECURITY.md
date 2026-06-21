@@ -185,7 +185,6 @@ tags = validate_list_param(["tag1", "tag2"], "tags", max_items=10)
 - `SMTP_PASS`: SMTP password
 - `CLOUDFLARE_API_TOKEN`: Cloudflare API token
 - `R2_SECRET_ACCESS_KEY`: R2 secret access key
-- `POLLINATIONS_API_KEY`: Pollinations API key
 - `CF_AI_GATEWAY_TOKEN`: Cloudflare AI gateway token
 
 ### Protection Measures

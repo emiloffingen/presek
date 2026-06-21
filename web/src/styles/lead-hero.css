@@ -623,8 +623,9 @@
 		object-fit: contain;
 		object-position: center;
         background-color: #171717;
-		opacity: 0;
-		transition: opacity 0.45s ease-out, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+		opacity: 1;
+		filter: blur(4px);
+		transition: filter 0.45s ease-out, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
         max-height: 70vh;
 	}
 
@@ -634,7 +635,7 @@
     }
 
 		.lead-media-image.is-loaded {
-			opacity: 1;
+			filter: blur(0);
 		}
 
 	    .lead-media-frame-proxy-fallback .lead-media-image {

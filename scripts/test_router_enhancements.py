@@ -22,20 +22,20 @@ def test_performance_tracking():
     SmartModelRouter._update_performance_metrics("local", True, 0.6)
     SmartModelRouter._update_performance_metrics("local", False, 0.0)
     
-    SmartModelRouter._update_performance_metrics("mistral_small", True, 2.1)
-    SmartModelRouter._update_performance_metrics("mistral_small", True, 1.9)
+    SmartModelRouter._update_performance_metrics("nvidia", True, 2.1)
+    SmartModelRouter._update_performance_metrics("nvidia", True, 1.9)
     
-    SmartModelRouter._update_performance_metrics("mistral_large", True, 3.5)
-    SmartModelRouter._update_performance_metrics("mistral_large", False, 0.0)
+    SmartModelRouter._update_performance_metrics("nvidia", True, 3.5)
+    SmartModelRouter._update_performance_metrics("nvidia", False, 0.0)
     
     # Check metrics
     local_perf = SmartModelRouter._get_provider_performance("local")
-    small_perf = SmartModelRouter._get_provider_performance("mistral_small")
-    large_perf = SmartModelRouter._get_provider_performance("mistral_large")
+    small_perf = SmartModelRouter._get_provider_performance("nvidia")
+    large_perf = SmartModelRouter._get_provider_performance("nvidia")
     
     print(f"Local: Success rate={local_perf['success_rate']:.2f}, Avg latency={local_perf['avg_latency']:.2f}s")
-    print(f"Mistral Small: Success rate={small_perf['success_rate']:.2f}, Avg latency={small_perf['avg_latency']:.2f}s")
-    print(f"Mistral Large: Success rate={large_perf['success_rate']:.2f}, Avg latency={large_perf['avg_latency']:.2f}s")
+    print(f"NVIDIA: Success rate={small_perf['success_rate']:.2f}, Avg latency={small_perf['avg_latency']:.2f}s")
+    print(f"NVIDIA (alt): Success rate={large_perf['success_rate']:.2f}, Avg latency={large_perf['avg_latency']:.2f}s")
     
     # Test dynamic fallback order
     dynamic_order = SmartModelRouter.get_dynamic_fallback_order()
@@ -50,13 +50,13 @@ def test_quality_feedback():
     # Record some quality scores
     SmartModelRouter._record_quality_feedback("local", "test-cluster-1", 0.85)
     SmartModelRouter._record_quality_feedback("local", "test-cluster-2", 0.90)
-    SmartModelRouter._record_quality_feedback("mistral_small", "test-cluster-3", 0.75)
+    SmartModelRouter._record_quality_feedback("nvidia", "test-cluster-3", 0.75)
     
     local_quality = SmartModelRouter._provider_quality.get("local", [])
-    small_quality = SmartModelRouter._provider_quality.get("mistral_small", [])
+    small_quality = SmartModelRouter._provider_quality.get("nvidia", [])
     
     print(f"Local quality samples: {len(local_quality)}")
-    print(f"Mistral Small quality samples: {len(small_quality)}")
+    print(f"NVIDIA quality samples: {len(small_quality)}")
     
     if local_quality:
         avg_local_quality = sum(item['score'] for item in local_quality) / len(local_quality)

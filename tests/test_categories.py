@@ -185,6 +185,11 @@ class TestDetectTopic:
         assert detect_topic("Hapšenje i suđenje za korupciju u tužilaštvu") == "Kriminal"
         assert detect_topic("Nova izložba i kultura u pozorištu") == "Kultura"
 
+    def test_detects_macedonian_volleyball_as_sport(self):
+        title = "Македонија надмоќна со Косovo во Европската лига во одбојka"
+        description = "„Црвено-жолтите“ ја запишаа третата победа во петтиот меч сезонава, славејќи со 3:0"
+        assert detect_topic(title, description=description) == "Sport"
+
 
 
 

@@ -8,7 +8,7 @@ from core.ops_report import build_weekly_ops_report
 async def test_build_weekly_ops_report_shape():
     async def _fake_execute(query, *args, **kwargs):
         if "generation_provider" in query:
-            return [{"provider": "mistral_small", "count": 12}]
+            return [{"provider": "nvidia", "count": 12}]
         if "unnest(tags)" in query:
             return []
         return []

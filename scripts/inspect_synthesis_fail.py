@@ -40,7 +40,7 @@ async def main():
     
     full_prompt = "\n\n".join(part for part in prompt_parts if part)
     
-    print("Calling Mistral Large...")
+    print("Calling NVIDIA remote provider...")
     raw, provider = _call_ai(
         full_prompt,
         SYNTHESIS_SYSTEM_PROMPT_SR,
@@ -48,7 +48,7 @@ async def main():
         task_type="synthesis",
         max_tokens=3000,
         lang=lang,
-        provider_override="mistral_large"
+        provider_override="nvidia"
     )
     
     print("\n--- RAW RESPONSE ---")

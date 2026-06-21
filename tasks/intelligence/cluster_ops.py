@@ -65,7 +65,7 @@ def recluster_recent_articles_task(hours=24, limit=800):
         rows = (
             db.execute(
                 """
-            SELECT id, cluster_id, title, source, category, topic, created_at, embedding
+            SELECT id, cluster_id, title, source, category, topic, country, created_at, embedding
             FROM articles
             WHERE created_at >= %s
             ORDER BY created_at ASC, id ASC
@@ -111,13 +111,12 @@ def recluster_recent_articles_task(hours=24, limit=800):
                     if topic == "vesti" or not topic:
                         incoming_entities = clustering._extract_title_entities(title)
                         candidate_entities = candidate.get("entities", set())
-                        shared_entities = (
-                            incoming_entities.intersection(candidate_entities)
-                            if incoming_entities and candidate_entities
-                            else set()
+                        row_lang = "mk" if row.get("country") == "MK" else "sr"
+                        meaningful_shared = clustering._meaningful_entity_token_overlap(
+                            incoming_entities, candidate_entities, lang=row_lang
                         )
                         phrase_overlap = clustering._cluster_title_overlap(title, candidate["title"])
-                        if not shared_entities and phrase_overlap < 0.28:
+                        if not meaningful_shared and phrase_overlap < 0.28:
                             continue
                     new_cluster_id = candidate["cid"]
                     break

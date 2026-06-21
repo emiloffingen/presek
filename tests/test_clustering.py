@@ -503,3 +503,41 @@ def test_gold_standard_different_topics_dont_cluster():
     ]
     cid = find_or_create_cluster(MagicMock(), "Nogometen meč Makedonija Albanija", recent_articles)
     assert cid != "c1"
+
+
+@patch("core.clustering._extract_title_entities")
+@patch(_DB_PATCH, _mock_db)
+def test_eu_survey_and_volleyball_do_not_cluster(_extract_mock):
+    """Regression: shared Macedonia/European tokens must not merge unrelated Balkan stories."""
+    volleyball_title = "Македонија надмоќна со Косovo во Европската лига во одбојka"
+    eu_title = "Поддршката за ЕУ во Македонија е 60 отсто: анкета на Европската комисија"
+
+    _extract_mock.side_effect = [
+        {"Македонија", "Косovo", "Европската"},
+        {"Поддршката", "Македонија", "Европската"},
+    ]
+    _mock_db.get_cluster_entities.return_value = {"c1": {"Македонија", "Косovo", "Европската"}}
+
+    recent_articles = [
+        {
+            "cluster_id": "c1",
+            "title": volleyball_title,
+            "created_at": datetime.datetime.now() - datetime.timedelta(hours=2),
+            "source": "Ekspres.mk",
+            "category": "Balkan",
+            "topic": "Sport",
+        }
+    ]
+
+    cid = find_or_create_cluster(
+        MagicMock(),
+        eu_title,
+        recent_articles,
+        category="Balkan",
+        source="Nezavisen.mk",
+        topic="vesti",
+        lang="mk",
+        embedding=None,
+    )
+
+    assert cid != "c1"

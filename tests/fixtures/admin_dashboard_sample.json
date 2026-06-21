@@ -2,9 +2,9 @@
   "status": "success",
   "timestamp": "2026-06-16T12:00:00",
   "ai": {
-    "current_provider": "mistral_small",
+    "current_provider": "nvidia",
     "status": "operational",
-    "fallback_order": ["mistral_small", "local"]
+    "fallback_order": ["nvidia", "local"]
   },
   "scrapers": {
     "total_sources": 42,

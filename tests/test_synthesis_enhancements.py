@@ -26,7 +26,8 @@ def test_clean_macedonian_spelling_and_script():
     assert _clean_macedonian_spelling_and_script("[1] vest") == "[1] вест"
     assert _clean_macedonian_spelling_and_script("NATO и EU") == "NATO и EU"
 
-def test_score_synthesis_quality():
+def test_score_synthesis_quality(monkeypatch):
+    monkeypatch.setattr("core.limits.LOCAL_SYNTHESIS_SIMPLIFIED_SCHEMA", False)
     # Good synthesis
     headline = "Novi predsednik preuzeo dužnost"
     article = "Prvi pasus o preuzimanju dužnosti.\n\nDrugi pasus o ceremoniji.\n\nTreći pasus o dogovoru medija [1].\n\nČetvrti pasus o tome gde se razlikuju [2].\n\nPeti pasus o neverifikovanom razvoju i otvoreno pitanje?"
@@ -53,7 +54,16 @@ def test_score_synthesis_quality():
     assert score < 1.0
 
 
-def test_score_synthesis_quality_penalizes_unsupported_abstraction():
+def test_score_synthesis_quality_accepts_compact_three_paragraph_schema(monkeypatch):
+    monkeypatch.setenv("LOCAL_SYNTHESIS_SIMPLIFIED_SCHEMA", "true")
+    headline = "Novi predsednik preuzeo dužnost"
+    article = (
+        "Prvi pasus o preuzimanju dužnosti.\n\n"
+        "Drugi pasus o ceremoniji i dogovoru medija [1].\n\n"
+        "Treći pasus o otvorenim pitanjima i razlikama izvora [2]."
+    )
+    key_facts = ["Fact 1", "Fact 2", "Fact 3"]
+    assert _score_synthesis_quality(headline, article, key_facts) == 1.0
     headline = "Požar zatvorio tržni centar"
     article = (
         "Požar je izbio u tržnom centru i vatrogasci su evakuisali posetioce.\n\n"

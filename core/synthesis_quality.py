@@ -6,8 +6,6 @@ import os
 
 from core.limits import (
     SYNTHESIS_QUALITY_MIN_LOCAL,
-    SYNTHESIS_QUALITY_MIN_MISTRAL_LARGE,
-    SYNTHESIS_QUALITY_MIN_MISTRAL_SMALL,
     SYNTHESIS_QUALITY_MIN_NVIDIA,
 )
 
@@ -20,11 +18,9 @@ def synthesis_quality_threshold(provider: str | None, *, fast_mode: bool = False
     normalized = (provider or "").strip().lower()
     thresholds = {
         "local": SYNTHESIS_QUALITY_MIN_LOCAL,
-        "mistral_small": SYNTHESIS_QUALITY_MIN_MISTRAL_SMALL,
-        "mistral_large": SYNTHESIS_QUALITY_MIN_MISTRAL_LARGE,
         "nvidia": SYNTHESIS_QUALITY_MIN_NVIDIA,
     }
-    return thresholds.get(normalized, SYNTHESIS_QUALITY_MIN_MISTRAL_SMALL)
+    return thresholds.get(normalized, SYNTHESIS_QUALITY_MIN_NVIDIA)
 
 
 def synthesis_needs_upgrade(

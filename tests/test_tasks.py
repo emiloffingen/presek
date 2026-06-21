@@ -278,11 +278,12 @@ class TestSynthesizeClusterTaskQuality:
 
         with (
             patch("core.llm_router.SmartModelRouter.route_cluster", return_value="local"),
+            patch("core.ai_engine.build_provider_fallback_order", return_value=["local", "nvidia"]),
             patch(
                 "tasks.intelligence.synthesis_generation._call_ai",
                 side_effect=[
                     (bad_payload, "local"),
-                    (good_payload, "mistral_small"),
+                    (good_payload, "nvidia"),
                 ],
             ),
             patch("tasks.intelligence.synthesis_generation._attempt_gemma_rescue", return_value=None),
@@ -301,7 +302,7 @@ class TestSynthesizeClusterTaskQuality:
             )
 
         assert result["status"] == "success"
-        assert result["provider"] == "mistral_small"
+        assert result["provider"] == "nvidia"
         assert result["res_data"]["synthetic_headline"] == "Naslov"
 
     def test_cluster_synthesis_languages_follow_article_countries(self):

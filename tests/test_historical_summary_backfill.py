@@ -108,7 +108,7 @@ class TestLocalOnlySummarize:
         mock_call.assert_called_once()
         _args, kwargs = mock_call.call_args
         assert kwargs["provider_override"] == "local"
-        assert kwargs["exclude_providers"] == ["mistral_small", "mistral_large", "nvidia"]
+        assert kwargs["exclude_providers"] == ["nvidia"]
 
     def test_skips_when_summary_already_exists(self):
         with (

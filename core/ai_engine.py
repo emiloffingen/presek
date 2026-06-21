@@ -261,7 +261,11 @@ class OpenAICompatibleProvider(AIProvider):
             "Authorization": f"Bearer {self.api_key}",
         }
         try:
-            timeout = 300.0 if task_type == "daily_brief" else 120.0
+            if task_type == "daily_brief":
+                from core.limits import NVIDIA_DAILY_BRIEF_TIMEOUT_SECONDS
+                timeout = float(NVIDIA_DAILY_BRIEF_TIMEOUT_SECONDS)
+            else:
+                timeout = 120.0
             with httpx.Client(timeout=timeout) as client:
                 resp = client.post(self.api_url, json=payload, headers=headers)
                 resp.raise_for_status()
@@ -443,11 +447,6 @@ class LocalProvider(AIProvider):
         return res
 
 
-class MistralProvider(OpenAICompatibleProvider):
-    def __init__(self, provider_name: str, api_key: str, api_url: str, model: str):
-        super().__init__(provider_name, api_key, api_url, model)
-
-
 class NvidiaProvider(OpenAICompatibleProvider):
     def __init__(self, api_key: str, api_url: str, model: str):
         super().__init__("nvidia", api_key, api_url, model)
@@ -458,18 +457,6 @@ PROVIDERS = {
         api_key=os.environ.get("NVIDIA_API_KEY", ""),
         api_url=os.environ.get("NVIDIA_API_URL", "https://integrate.api.nvidia.com/v1/chat/completions"),
         model=os.environ.get("NVIDIA_MODEL", "nvidia/llama-3.1-nemotron-70b-instruct"),
-    ),
-    "mistral_large": MistralProvider(
-        provider_name="mistral_large",
-        api_key=os.environ.get("MISTRAL_API_KEY", ""),
-        api_url=os.environ.get("MISTRAL_API_URL", "https://api.mistral.ai/v1/chat/completions"),
-        model=os.environ.get("MISTRAL_MODEL", "mistral-large-latest"),
-    ),
-    "mistral_small": MistralProvider(
-        provider_name="mistral_small",
-        api_key=os.environ.get("MISTRAL_SMALL_API_KEY", ""),
-        api_url=os.environ.get("MISTRAL_API_URL", "https://api.mistral.ai/v1/chat/completions"),
-        model=os.environ.get("MISTRAL_SMALL_MODEL", "mistral-small-latest"),
     ),
     "local": LocalProvider(),
 }
@@ -500,6 +487,21 @@ def build_provider_fallback_order(
     exclude_providers: list[str] | None = None,
 ) -> list[str]:
     """Build provider cascade order with optional primary override and exclusions."""
+    from core.limits import synthesis_local_only
+
+    if synthesis_local_only() and task_type in ("synthesis", "summarize", "translation"):
+        order = ["local"]
+        if provider_override == "local" or not provider_override:
+            excluded = set(exclude_providers or [])
+            return [provider for provider in order if provider not in excluded]
+        if provider_override in PROVIDERS and provider_override != "local":
+            log.warning(
+                "[ai/cascade] Ignoring provider_override=%s because SYNTHESIS_LOCAL_ONLY=true",
+                provider_override,
+            )
+        excluded = set(exclude_providers or [])
+        return [provider for provider in order if provider not in excluded]
+
     if task_type == "research":
         base_order = list(PROVIDER_FALLBACK_ORDER_RESEARCH)
     elif task_type in ("summarize", "synthesis"):

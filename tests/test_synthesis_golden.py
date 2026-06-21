@@ -34,7 +34,7 @@ def test_golden_sr_candidate_passes_quality_and_copy_gates():
 
     evaluated, fail_reason, _ = _evaluate_synthesis_candidate(
         res_data,
-        provider="mistral_small",
+        provider="nvidia",
         article_rows=article_rows,
         lang="sr",
         fast_mode=False,
@@ -63,7 +63,7 @@ def test_golden_sr_candidate_rejects_cyrillic_leak():
 
     evaluated, fail_reason, diagnostics = _evaluate_synthesis_candidate(
         res_data,
-        provider="mistral_small",
+        provider="nvidia",
         article_rows=article_rows,
         lang="sr",
         fast_mode=True,
@@ -98,7 +98,7 @@ def test_golden_mk_candidate_rejects_latin_leak():
 
     evaluated, fail_reason, diagnostics = _evaluate_synthesis_candidate(
         res_data,
-        provider="mistral_small",
+        provider="nvidia",
         article_rows=article_rows,
         lang="mk",
         fast_mode=True,
@@ -127,7 +127,7 @@ def test_golden_sr_candidate_rejects_ungrounded_numbers():
 
     evaluated, fail_reason, _ = _evaluate_synthesis_candidate(
         res_data,
-        provider="mistral_small",
+        provider="nvidia",
         article_rows=article_rows,
         lang="sr",
         fast_mode=False,
@@ -161,7 +161,7 @@ def test_golden_mk_candidate_passes_clean_cyrillic():
 
     evaluated, fail_reason, _ = _evaluate_synthesis_candidate(
         res_data,
-        provider="mistral_small",
+        provider="nvidia",
         article_rows=article_rows,
         lang="mk",
         fast_mode=True,
@@ -189,7 +189,7 @@ def test_golden_fast_mode_skips_hallucination_gate():
 
     evaluated, fail_reason, _ = _evaluate_synthesis_candidate(
         res_data,
-        provider="mistral_small",
+        provider="nvidia",
         article_rows=article_rows,
         lang="sr",
         fast_mode=True,

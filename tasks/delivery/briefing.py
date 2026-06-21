@@ -483,20 +483,16 @@ def generate_daily_brief_task(
 
         full_context = f"<briefing_context>\n{content_context}\n{system_insight}\n{history_context}\n</briefing_context>"
         prompt = DAILY_BRIEF_SYSTEM_PROMPT if lang == "sr" else DAILY_BRIEF_SYSTEM_PROMPT_MK
-        provider_exclusions = None
-        if provider_override:
-            provider_exclusions = [
-                candidate
-                for candidate in ("mistral_small", "mistral_large", "nvidia", "local")
-                if candidate != provider_override
-            ]
+        from core.limits import resolve_briefing_ai_providers
+
+        effective_provider, provider_exclusions = resolve_briefing_ai_providers(provider_override)
         brief, brief_provider = _call_ai(
             full_context,
             prompt,
             task_type="daily_brief",
             max_tokens=4000,
             lang=lang,
-            provider_override=provider_override,
+            provider_override=effective_provider,
             exclude_providers=provider_exclusions,
         )
         if brief and (
@@ -554,7 +550,7 @@ def generate_daily_brief_task(
                     task_type="extraction",
                     max_tokens=1000,
                     lang=lang,
-                    provider_override=provider_override,
+                    provider_override=effective_provider,
                     exclude_providers=provider_exclusions,
                 )
 

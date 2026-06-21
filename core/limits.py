@@ -37,13 +37,47 @@ FACT_GROUNDING_MAX_UNGROUNDED_FAST = int(os.environ.get("FACT_GROUNDING_MAX_UNGR
 SYNTHESIS_PROFILE = (os.environ.get("SYNTHESIS_PROFILE") or "balanced").strip().lower()
 
 SYNTHESIS_QUALITY_MIN_LOCAL = float(os.environ.get("SYNTHESIS_QUALITY_MIN_LOCAL", "0.65"))
-SYNTHESIS_QUALITY_MIN_MISTRAL_SMALL = float(os.environ.get("SYNTHESIS_QUALITY_MIN_MISTRAL_SMALL", "0.70"))
-SYNTHESIS_QUALITY_MIN_MISTRAL_LARGE = float(os.environ.get("SYNTHESIS_QUALITY_MIN_MISTRAL_LARGE", "0.75"))
 SYNTHESIS_QUALITY_MIN_NVIDIA = float(os.environ.get("SYNTHESIS_QUALITY_MIN_NVIDIA", "0.70"))
 
 SYNTHESIS_MK_TRANSLATE_FROM_SR = os.environ.get("SYNTHESIS_MK_TRANSLATE_FROM_SR", "true").lower() == "true"
+
+
+def synthesis_local_only() -> bool:
+    """When true, cluster synthesis and related translation use Gemma only (no remote LLMs)."""
+    return os.environ.get("SYNTHESIS_LOCAL_ONLY", "false").lower() == "true"
+
+
+def briefing_remote_provider() -> str | None:
+    """Optional remote LLM for daily briefings only (e.g. nvidia). Independent of SYNTHESIS_LOCAL_ONLY."""
+    raw = (os.environ.get("BRIEFING_REMOTE_PROVIDER") or "").strip().lower()
+    if not raw or raw in {"none", "off", "false", "0", "default"}:
+        return None
+    if raw == "local":
+        return "local"
+    return raw
+
+
+def resolve_briefing_ai_providers(provider_override: str | None = None) -> tuple[str | None, list[str] | None]:
+    """Return (provider_override, exclude_providers) for daily briefing AI calls."""
+    configured = briefing_remote_provider()
+    effective = (provider_override or configured or "").strip().lower()
+    if not effective:
+        return None, None
+    if effective == "local":
+        return "local", ["nvidia"]
+    if effective == "nvidia":
+        # Keep Gemma free for synthesis; template fallback if NVIDIA fails.
+        return "nvidia", ["local"]
+    return None, None
+
+
+NVIDIA_DAILY_BRIEF_TIMEOUT_SECONDS = int(os.environ.get("NVIDIA_DAILY_BRIEF_TIMEOUT_SECONDS", "600"))
+
+
 def local_synthesis_enabled() -> bool:
     """When false, Gemma is reserved for article summaries — not cluster synthesis."""
+    if synthesis_local_only():
+        return True
     return os.environ.get("LOCAL_SYNTHESIS_PREFER_LOCAL", "true").lower() == "true"
 
 

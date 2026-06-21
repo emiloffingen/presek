@@ -20,8 +20,8 @@
   ],
   "cascade_success": {
     "status": "success",
-    "provider": "mistral_small",
-    "model": "mistral-small",
+    "provider": "nvidia",
+    "model": "nvidia",
     "quality_score": 0.84,
     "fallback_reason": null,
     "cascade_depth": 1,

@@ -360,6 +360,36 @@ def _extract_title_entities(title: str, *, semantic: bool = True) -> set[str]:
     return extract_title_entities_regex(str(title or ""))
 
 
+# Country/region tokens that appear in many unrelated Balkan headlines and must
+# not alone justify merging generic `vesti` stories.
+_WEAK_ENTITY_TOKENS = frozenset(
+    {
+        "makedonija",
+        "srbija",
+        "kosovo",
+        "evropskata",
+        "evropa",
+        "evrop",
+        "balkan",
+        "germanija",
+        "amerika",
+        "svet",
+        "albanija",
+        "hrvatska",
+        "bugarska",
+        "grcka",
+        "turcija",
+        "crna",
+        "gora",
+        "bosna",
+        "hercegovina",
+        "ukraina",
+        "moldavija",
+        "georgija",
+    }
+)
+
+
 def _entity_token_overlap(left_entities: set[str], right_entities: set[str], lang: str = "sr") -> set[str]:
     # Use lowercase stemmed tokens and apply synonyms to improve overlap detection
     # (e.g., "Vlada" and "Ministarstvo" -> "vlad")
@@ -377,6 +407,14 @@ def _entity_token_overlap(left_entities: set[str], right_entities: set[str], lan
     }
     res = left_tokens & right_tokens
     return res
+
+
+def _meaningful_entity_token_overlap(left_entities: set[str], right_entities: set[str], lang: str = "sr") -> set[str]:
+    return _entity_token_overlap(left_entities, right_entities, lang=lang) - _WEAK_ENTITY_TOKENS
+
+
+def _meaningful_entity_tokens(tokens: set[str]) -> set[str]:
+    return {token for token in (tokens or set()) if str(token).strip().lower() not in _WEAK_ENTITY_TOKENS}
 
 
 def _rep_age_hours(created_at) -> float:
@@ -530,7 +568,9 @@ def find_cluster_semantic(
 
                     ents = db_manager.get_cluster_entities([cid]).get(cid, set())
                     input_ents = _extract_title_entities(title or "", semantic=semantic_entities)
-                    if ents and input_ents and not _entity_token_overlap(ents, input_ents):
+                    overlap = _entity_token_overlap(ents, input_ents)
+                    meaningful = overlap - _WEAK_ENTITY_TOKENS
+                    if ents and input_ents and not meaningful:
                         return None
                     if dist > (threshold * 0.7) and not input_ents:
                         return None
@@ -643,6 +683,7 @@ def find_or_create_cluster(
         )
         if not shared_entities and potential_entities and rep_entities:
             shared_entities = _entity_token_overlap(potential_entities, rep_entities, lang=lang)
+        meaningful_shared = _meaningful_entity_tokens(shared_entities)
         topic_bridge = _topic_bridge_allowed(
             incoming_topic,
             rep_topic,
@@ -667,7 +708,7 @@ def find_or_create_cluster(
             incoming_topic == "vesti"
             and potential_entities
             and rep_entities
-            and not shared_entities
+            and not meaningful_shared
         ):
             continue
 
@@ -703,10 +744,10 @@ def find_or_create_cluster(
         # 1. Shared Entity Boost
         # If articles share multiple capitalized proper nouns, they are highly likely related.
         entity_boost = 1.0
-        if shared_entities:
-            if len(shared_entities) >= 2:
+        if meaningful_shared:
+            if len(meaningful_shared) >= 2:
                 entity_boost = 1.25  # Significant boost for 2+ shared entities
-            elif len(shared_entities) == 1:
+            elif len(meaningful_shared) == 1:
                 entity_boost = 1.1
 
         current_best_rep_score = 0.0
@@ -728,7 +769,7 @@ def find_or_create_cluster(
                 if (
                     phrase_score < 0.26
                     and lexical_score < 0.58
-                    and not (len(shared_entities) >= 1 if shared_entities else False)
+                    and not (len(meaningful_shared) >= 1 if meaningful_shared else False)
                 ):
                     continue
 
@@ -739,7 +780,7 @@ def find_or_create_cluster(
             if (
                 incoming_topic == rep_topic
                 and category == rep_category
-                and len(shared_entities or set()) >= 2
+                and len(meaningful_shared) >= 2
                 and freshest_rep_hours <= 24
                 and lexical_score >= 0.38
             ):
@@ -777,7 +818,7 @@ def find_or_create_cluster(
             current_threshold = max(threshold, 0.58)  # Be more demanding for 'vesti'
             if (
                 category == rep_category
-                and len(shared_entities or set()) >= 2
+                and len(meaningful_shared) >= 2
                 and freshest_rep_hours <= 24
                 and current_best_rep_score >= 0.32
             ):

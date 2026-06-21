@@ -35,8 +35,8 @@ def test_briefing_fixture_has_content_and_date():
 def test_cluster_synthesis_meta_from_fixture_lead():
     payload = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
     row = {
-        "generation_provider": "mistral_small",
-        "generation_model": "mistral-small",
+        "generation_provider": "nvidia",
+        "generation_model": "nvidia",
         "quality_score": 0.81,
         "fallback_reason": None,
         "synthetic_headline": payload["lead"]["synthetic_headline"],

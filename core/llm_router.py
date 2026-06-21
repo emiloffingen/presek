@@ -155,8 +155,12 @@ class SmartModelRouter:
         routing_decision: dict,
     ) -> str:
         """Promote/demote provider candidates using recorded synthesis quality."""
+        from core.limits import synthesis_local_only
+
+        if synthesis_local_only() and candidate == "local":
+            return candidate
+
         local_min = float(os.environ.get("ROUTER_LOCAL_MIN_QUALITY", "0.80"))
-        small_upgrade = float(os.environ.get("ROUTER_SMALL_UPGRADE_QUALITY", "0.85"))
 
         if candidate == "local":
             if article_count >= 3 and not routing_decision.get("allow_local_multi_source"):
@@ -172,22 +176,13 @@ class SmartModelRouter:
                     return candidate
 
                 routing_decision["quality_adjustment"] = "multi_source_avoids_local"
-                if has_high_weight or is_high_complexity:
-                    return "mistral_large"
-                return "mistral_small"
+                return "nvidia"
 
             local_avg = SmartModelRouter._get_recent_quality_average("local")
             if local_avg is not None and local_avg < local_min:
                 routing_decision["quality_adjustment"] = "local_quality_below_threshold"
                 routing_decision["local_quality_avg"] = round(local_avg, 3)
-                return "mistral_small"
-
-        if candidate == "mistral_small" and (has_high_weight or is_high_complexity):
-            small_avg = SmartModelRouter._get_recent_quality_average("mistral_small")
-            if small_avg is not None and small_avg < small_upgrade:
-                routing_decision["quality_adjustment"] = "small_quality_upgrade_large"
-                routing_decision["small_quality_avg"] = round(small_avg, 3)
-                return "mistral_large"
+                return "nvidia"
 
         return candidate
 
@@ -215,7 +210,7 @@ class SmartModelRouter:
         from core.limits import local_synthesis_enabled
 
         if chosen == "local" and not local_synthesis_enabled():
-            chosen = "mistral_large" if is_high_complexity else "mistral_small"
+            chosen = "nvidia"
             routing_decision["reason"] = f"{routing_decision.get('reason', reason)}_local_disabled"
         routing_decision["chosen_provider"] = chosen
         log.info(f"[router] Decision: {json.dumps(routing_decision, ensure_ascii=False)}")
@@ -239,6 +234,11 @@ class SmartModelRouter:
     @staticmethod
     def get_dynamic_fallback_order(task_type="synthesis"):
         """Generate fallback order based on recent provider performance"""
+        from core.limits import synthesis_local_only
+
+        if synthesis_local_only() and task_type in ("synthesis", "summarize", "translation"):
+            return ["local"]
+
         SmartModelRouter._load_metrics_from_redis()
         from core.config import PROVIDER_FALLBACK_ORDER_SUMMARY
         
@@ -273,10 +273,33 @@ class SmartModelRouter:
     def route_cluster(articles: list[dict], lang: str = "sr") -> str:
         """
         Determines the optimal LLM provider or local fallback for a given news cluster.
-        Returns one of: 'local', 'mistral_small', 'mistral_large', 'nvidia', or 'enhanced_fallback' (empty input only).
+        Returns one of: 'local', 'nvidia', or 'enhanced_fallback' (empty input only).
         """
+        from core.limits import synthesis_local_only
+
         SmartModelRouter._load_metrics_from_redis()
         if not articles:
+            return "enhanced_fallback"
+
+        if synthesis_local_only():
+            if _local_model_available():
+                return SmartModelRouter._finalize_route(
+                    "local",
+                    "synthesis_local_only",
+                    {
+                        "article_count": len(articles),
+                        "local_available": True,
+                        "prefer_local_synthesis": True,
+                        "force_remote_high_complexity": False,
+                        "is_system_busy": False,
+                        "is_peak_hour": False,
+                        "chosen_provider": "local",
+                        "fallback_pressure": "ok",
+                    },
+                    article_count=len(articles),
+                    has_high_weight=False,
+                    is_high_complexity=False,
+                )
             return "enhanced_fallback"
 
         article_count = len(articles)
@@ -361,7 +384,7 @@ class SmartModelRouter:
         
         # A/B testing override
         if ab_test_triggered:
-            override_target = random.choice(["local", "mistral_small", "mistral_large"])
+            override_target = random.choice(["local", "nvidia"])
             log.info(f"[router/ab] Overriding to {override_target} for experimentation")
             routing_decision['ab_test'] = True
             return SmartModelRouter._finalize_route(
@@ -389,7 +412,7 @@ class SmartModelRouter:
 
         if use_quality_profile and not is_high_complexity and article_count >= 3:
             return SmartModelRouter._finalize_route(
-                "mistral_small",
+                "nvidia",
                 "free_api_quality_optimization",
                 routing_decision,
                 article_count=article_count,
@@ -406,7 +429,7 @@ class SmartModelRouter:
 
         if fallback_pressure == "critical" and not is_high_complexity and article_count >= 2:
             return SmartModelRouter._finalize_route(
-                "mistral_large",
+                "nvidia",
                 "fallback_pressure_quality_recovery",
                 routing_decision,
                 article_count=article_count,
@@ -460,7 +483,7 @@ class SmartModelRouter:
         # High Complexity: Serious disputes, large clusters, high political/economic weight, or sports conflicts
         if is_high_complexity:
             return SmartModelRouter._finalize_route(
-                "mistral_large",
+                "nvidia",
                 "high_complexity",
                 routing_decision,
                 article_count=article_count,
@@ -471,7 +494,7 @@ class SmartModelRouter:
         # Medium Complexity: Standard news, moderate cluster size
         if article_count >= 3 or has_high_weight:
             return SmartModelRouter._finalize_route(
-                "mistral_small",
+                "nvidia",
                 "medium_complexity",
                 routing_decision,
                 article_count=article_count,
@@ -491,7 +514,7 @@ class SmartModelRouter:
             )
 
         return SmartModelRouter._finalize_route(
-            "mistral_small",
+            "nvidia",
             "low_complexity_remote",
             routing_decision,
             article_count=article_count,

@@ -218,18 +218,16 @@ def test_provider_override_local_cascades_to_remote(monkeypatch):
         "core.ai_engine.PROVIDERS",
         {
             "local": local_provider,
-            "mistral_large": remote_provider,
-            "mistral_small": remote_provider,
             "nvidia": remote_provider,
         },
     )
     monkeypatch.setattr(
         "core.ai_engine.PROVIDER_FALLBACK_ORDER_SUMMARY",
-        ["mistral_small", "mistral_large", "nvidia", "local"],
+        ["nvidia", "local"],
     )
     monkeypatch.setattr(
         "core.llm_router.SmartModelRouter.get_dynamic_fallback_order",
-        lambda task_type="synthesis": ["mistral_small", "mistral_large", "nvidia", "local"],
+        lambda task_type="synthesis": ["nvidia", "local"],
     )
 
     raw, provider = _call_ai(
@@ -241,7 +239,7 @@ def test_provider_override_local_cascades_to_remote(monkeypatch):
     )
 
     assert raw == '{"summary":["remote"],"article":"remote"}'
-    assert provider == "mistral_small"
+    assert provider == "nvidia"
     assert local_provider.call.call_count == 1
     assert remote_provider.call.call_count == 1
 
@@ -252,27 +250,25 @@ def test_build_provider_fallback_order_excludes_providers(monkeypatch):
         "core.ai_engine.PROVIDERS",
         {
             "local": Mock(),
-            "mistral_large": Mock(),
-            "mistral_small": Mock(),
             "nvidia": Mock(),
         },
     )
     monkeypatch.setattr(
         "core.ai_engine.PROVIDER_FALLBACK_ORDER_SUMMARY",
-        ["mistral_small", "mistral_large", "nvidia", "local"],
+        ["nvidia", "local"],
     )
     monkeypatch.setattr(
         "core.llm_router.SmartModelRouter.get_dynamic_fallback_order",
-        lambda task_type="synthesis": ["mistral_small", "mistral_large", "nvidia", "local"],
+        lambda task_type="synthesis": ["nvidia", "local"],
     )
 
     order = build_provider_fallback_order(
         "synthesis",
-        provider_override="mistral_small",
-        exclude_providers=["mistral_small"],
+        provider_override="nvidia",
+        exclude_providers=["nvidia"],
     )
 
-    assert order == ["mistral_large", "nvidia", "local"]
+    assert order == ["local"]
 
 
 def test_build_provider_fallback_order_omits_local_synthesis_when_disabled(monkeypatch):
@@ -280,20 +276,18 @@ def test_build_provider_fallback_order_omits_local_synthesis_when_disabled(monke
         "core.ai_engine.PROVIDERS",
         {
             "local": Mock(),
-            "mistral_large": Mock(),
-            "mistral_small": Mock(),
             "nvidia": Mock(),
         },
     )
     monkeypatch.setenv("LOCAL_SYNTHESIS_PREFER_LOCAL", "false")
     monkeypatch.setattr(
         "core.llm_router.SmartModelRouter.get_dynamic_fallback_order",
-        lambda task_type="synthesis": ["mistral_small", "mistral_large", "nvidia"],
+        lambda task_type="synthesis": ["nvidia"],
     )
 
-    order = build_provider_fallback_order("synthesis", provider_override="mistral_small")
+    order = build_provider_fallback_order("synthesis", provider_override="nvidia")
 
-    assert order == ["mistral_small", "mistral_large", "nvidia"]
+    assert order == ["nvidia"]
     assert "local" not in order
 
 
@@ -301,21 +295,24 @@ def test_call_ai_skips_rate_limited_provider(monkeypatch):
     from core import ai_engine
 
     cooled_provider = Mock()
-    next_provider = Mock()
-    next_provider.call.return_value = '{"summary":["ok"],"article":"ok"}'
+    local_provider = Mock()
+    local_provider.call.return_value = '{"summary":["ok"],"article":"ok"}'
 
     monkeypatch.setattr(
         ai_engine,
         "PROVIDERS",
         {
-            "mistral_large": cooled_provider,
-            "mistral_small": next_provider,
-            "nvidia": Mock(),
-            "local": Mock(),
+            "nvidia": cooled_provider,
+            "local": local_provider,
         },
     )
-    monkeypatch.setattr(ai_engine, "PROVIDER_FALLBACK_ORDER_SUMMARY", ["mistral_large", "mistral_small"])
-    monkeypatch.setitem(ai_engine._PROVIDER_COOLDOWN_UNTIL, "mistral_large", ai_engine.time.time() + 60)
+    monkeypatch.setattr(ai_engine, "PROVIDER_FALLBACK_ORDER_SUMMARY", ["nvidia", "local"])
+    monkeypatch.setenv("LOCAL_SYNTHESIS_PREFER_LOCAL", "true")
+    monkeypatch.setattr(
+        "core.llm_router.SmartModelRouter.get_dynamic_fallback_order",
+        lambda task_type="synthesis": ["nvidia", "local"],
+    )
+    monkeypatch.setitem(ai_engine._PROVIDER_COOLDOWN_UNTIL, "nvidia", ai_engine.time.time() + 60)
 
     raw, provider = ai_engine._call_ai(
         "prompt",
@@ -324,10 +321,10 @@ def test_call_ai_skips_rate_limited_provider(monkeypatch):
         json_mode=True,
     )
 
-    assert provider == "mistral_small"
+    assert provider == "local"
     assert raw == '{"summary":["ok"],"article":"ok"}'
     cooled_provider.call.assert_not_called()
-    next_provider.call.assert_called_once()
+    local_provider.call.assert_called_once()
 
 
 def test_sanitize_ai_prompt_allows_serbian_dan_colon_phrases():

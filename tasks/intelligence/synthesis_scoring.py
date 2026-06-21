@@ -9,6 +9,12 @@ from core.editorial_quality import weak_editorial_abstraction_count
 def _paragraph_fingerprint(text: str) -> str:
     return re.sub(r"\W+", " ", str(text or "").casefold()).strip()
 
+def _expected_article_paragraphs() -> int:
+    from core.limits import LOCAL_SYNTHESIS_SIMPLIFIED_SCHEMA
+
+    return 3 if LOCAL_SYNTHESIS_SIMPLIFIED_SCHEMA else 5
+
+
 def _score_synthesis_quality(headline: str, article: str, key_facts: list, lang: str = "sr") -> float:
     """
     Evaluates synthesis quality, returning a score between 0.0 and 1.0.
@@ -17,6 +23,9 @@ def _score_synthesis_quality(headline: str, article: str, key_facts: list, lang:
     score = 1.0
     if not headline or not article:
         return 0.0
+
+    expected_paragraphs = _expected_article_paragraphs()
+    min_citations_or_facts = 3 if expected_paragraphs == 3 else 4
 
     # 1. Headline repetition in body
     h_clean = headline.lower().strip()
@@ -27,12 +36,12 @@ def _score_synthesis_quality(headline: str, article: str, key_facts: list, lang:
     # 2. Source-grounded facts/citations density
     citations = re.findall(r'\[\d+\]', article)
     facts_count = len(key_facts) if isinstance(key_facts, list) else 0
-    if len(citations) < 4 and facts_count < 4:
+    if len(citations) < min_citations_or_facts and facts_count < min_citations_or_facts:
         score -= 0.3
 
-    # 3. Paragraph structure check (strictly 5 paragraphs)
+    # 3. Paragraph structure check (3 for compact Gemma schema, 5 for full schema)
     paragraphs = [p.strip() for p in re.split(r'\n{2,}', article) if p.strip()]
-    if len(paragraphs) != 5:
+    if len(paragraphs) != expected_paragraphs:
         score -= 0.3
 
     weak_count = weak_editorial_abstraction_count(article)

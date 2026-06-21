@@ -28,7 +28,7 @@ def test_translate_success_path(monkeypatch):
         "article": "Владата усвои измени на законот според извештаите на МРТ.",
     }
 
-    with patch("tasks.intelligence.synthesis_translation._call_ai", return_value=('{"ok":true}', "mistral_small")):
+    with patch("tasks.intelligence.synthesis_translation._call_ai", return_value=('{"ok":true}', "nvidia")):
         with patch("tasks.intelligence.synthesis_translation.clean_json_response", return_value=trans_data):
             with patch("tasks.intelligence.synthesis_translation._is_fact_grounded_synthesis", return_value=True):
                 with patch("core.copy_quality.copy_bundle_passes_publish_gate", return_value=(True, {})):

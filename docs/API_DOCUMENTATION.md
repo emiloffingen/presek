@@ -211,7 +211,7 @@ GET /api/intelligence/analysis/{topic}
       }
     ],
     "generated_at": "2024-01-15T12:05:00Z",
-    "model_used": "mistral-large-latest"
+    "model_used": "local"
   }
 }
 ```
@@ -233,7 +233,7 @@ GET /admin/dashboard
   "status": "success",
   "timestamp": "2024-01-15T12:10:00Z",
   "ai": {
-    "current_provider": "mistral_large",
+    "current_provider": "local",
     "status": "operational"
   },
   "scrapers": {
@@ -298,9 +298,8 @@ GET /api/health
       "response_time_ms": 8
     },
     "ai_providers": {
-      "mistral_large": "available",
-      "nvidia": "available",
-      "openai": "available"
+      "local": "available",
+      "nvidia": "available"
     }
   },
   "metrics": {

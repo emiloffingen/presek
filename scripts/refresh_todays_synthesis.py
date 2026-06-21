@@ -36,7 +36,7 @@ def _parse_args():
     parser.add_argument("--dry-run", action="store_true", help="List clusters without regenerating synthesis.")
     parser.add_argument(
         "--target-provider",
-        choices=["mistral_large", "mistral_small", "nvidia"],
+        choices=["nvidia", "local"],
         help="Force regenerated synthesis through a remote provider instead of the router.",
     )
     parser.add_argument(

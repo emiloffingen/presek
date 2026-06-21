@@ -59,7 +59,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--provider",
-        choices=("mistral_small", "mistral_large", "nvidia", "local"),
+        choices=("nvidia", "local"),
         help="Force a specific AI provider for briefing generation",
     )
     args = parser.parse_args()

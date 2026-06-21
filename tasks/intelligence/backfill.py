@@ -93,7 +93,6 @@ def backfill_cover_art_task():
     if _skip_when_intel_backlog("cover art backfill"):
         return
     lock_key = "lock:backfill_cover_art"
-    cooldown_key = "ai:cover_art:pollinations:cooldown"
     try:
         if not redis_client.set(lock_key, "1", nx=True, ex=1200):
             log.info("Cover art backfill already in progress, skipping duplicate dispatch.")
@@ -105,13 +104,6 @@ def backfill_cover_art_task():
         if get_celery_queue_depth("intel-heavy") >= _BACKFILL_QUEUE_DEPTH_LIMIT:
             log.info("[tasks] Backfill cover art skipping: queue depth limit exceeded.")
             return
-
-        try:
-            if redis_client.get(cooldown_key):
-                log.info("Cover art backfill paused due to Pollinations cooldown.")
-                return
-        except Exception as e:
-            log.debug(f"Failed to check Redis cooldown: {e}")
 
         # Find clusters from last 24h that either:
         # 1. Have no representative image

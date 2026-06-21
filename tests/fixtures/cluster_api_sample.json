@@ -10,8 +10,8 @@
       { "title": "Opozicija kritikuje", "source": "N1", "category": "Politika" }
     ],
     "synthesis_meta": {
-      "generation_provider": "mistral_small",
-      "generation_model": "mistral-small",
+      "generation_provider": "nvidia",
+      "generation_model": "nvidia",
       "quality_score": 0.84,
       "is_provisional": false,
       "needs_upgrade": false,

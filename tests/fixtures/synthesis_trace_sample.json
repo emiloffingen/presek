@@ -13,7 +13,7 @@
   "stuck_fast_upgrade": false,
   "active_summary": {
     "lang": "sr",
-    "generation_provider": "mistral_small",
+    "generation_provider": "nvidia",
     "quality_score": 0.84,
     "is_provisional": false,
     "needs_upgrade": false,
@@ -22,7 +22,7 @@
   "languages": [
     {
       "lang": "sr",
-      "generation_provider": "mistral_small",
+      "generation_provider": "nvidia",
       "quality_score": 0.84,
       "fallback_reason": null,
       "has_headline": true,

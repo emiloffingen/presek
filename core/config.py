@@ -40,7 +40,6 @@ SENSITIVE_ENV_KEYS = (
     "SMTP_PASS",
     "CLOUDFLARE_API_TOKEN",
     "R2_SECRET_ACCESS_KEY",
-    "POLLINATIONS_API_KEY",
     "VAPID_PRIVATE_KEY",
     "CF_AI_GATEWAY_TOKEN",
 )
@@ -584,9 +583,6 @@ JUNK_KEYWORDS = [
 # ── Balanced Coverage Settings ──────────────────────────────────
 BALANCED_COVERAGE_THRESHOLD = 3  # clusters with 3+ diverse sources get a badge
 
-# ── Image Generation Configuration ──────────────────────────────
-POLLINATIONS_API_KEY = os.environ.get("POLLINATIONS_API_KEY", "")
-
 # ── Performance & Resource Management ───────────────────────────
 # Local model tasks can take significant RAM and can slow down the server.
 # Set to False to disable local translation/style normalization.
@@ -622,9 +618,9 @@ def resolve_primary_database_url() -> str:
     return url
 
 # ── AI Routing Configuration ────────────────────────────────────
-PROVIDER_FALLBACK_ORDER_RESEARCH = ["mistral_large", "mistral_small", "nvidia", "local"]
-PROVIDER_FALLBACK_ORDER_SUMMARY = ["mistral_small", "mistral_large", "nvidia", "local"]
-PROVIDER_FALLBACK_ORDER = ["mistral_small", "mistral_large", "nvidia", "local"]  # default
+PROVIDER_FALLBACK_ORDER_RESEARCH = ["nvidia", "local"]
+PROVIDER_FALLBACK_ORDER_SUMMARY = ["nvidia", "local"]
+PROVIDER_FALLBACK_ORDER = ["nvidia", "local"]  # default
 
 # ── Clustering Parameters ───────────────────────────────────────
 CLUSTERING_THRESHOLDS = {

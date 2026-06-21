@@ -14,7 +14,7 @@ class TestMonitorSynthesisQuality:
         assert _is_fallback_provider("enhanced_fallback") is True
         assert _is_fallback_provider("local") is True
         assert _is_fallback_provider("NULL") is False
-        assert _is_fallback_provider("mistral_small") is False
+        assert _is_fallback_provider("nvidia") is False
 
     @patch("scripts.monitor_synthesis_quality._provider_counts")
     @patch("scripts.monitor_synthesis_quality._fallback_reason_counts")
@@ -22,7 +22,7 @@ class TestMonitorSynthesisQuality:
         mock_counts.return_value = {
             "NULL": 50,
             "enhanced_fallback": 30,
-            "mistral_small": 70,
+            "nvidia": 70,
         }
         mock_reasons.return_value = {"backfill_enhanced_fallback": 20}
 
@@ -32,7 +32,7 @@ class TestMonitorSynthesisQuality:
         assert report["fallback_total"] == 30
         assert report["legacy_unknown_total"] == 50
         assert report["fallback_ratio"] == 0.2
-        assert report["providers"]["mistral_small"] == 70
+        assert report["providers"]["nvidia"] == 70
 
     @patch("scripts.monitor_synthesis_quality._persist_gap_metrics", return_value={"synthesis_events": 0, "db_persisted_events": 0, "persist_gap": 0})
     @patch("scripts.monitor_synthesis_quality._runtime_fallback_reason_counts", return_value={})

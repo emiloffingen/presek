@@ -997,6 +997,15 @@ TOPICS = [
             "jokić",
             "doncic",
             "dončić",
+            # Macedonian sport terms (post-transliteration forms)
+            "odbojka",
+            "odbojkar",
+            "mech",
+            "pobeda",
+            "turnir",
+            "sampionat",
+            "plivanje",
+            "atletichar",
         ],
     ),
     (

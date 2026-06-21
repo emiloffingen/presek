@@ -1046,7 +1046,7 @@ async def ingest_all_sources_async():
         )
         recent_articles = [dict(r) for r in cur.fetchall()]
 
-        from core.clustering import VECTOR_THRESHOLD, _cluster_title_overlap, _extract_title_entities
+        from core.clustering import VECTOR_THRESHOLD, _cluster_title_overlap, _extract_title_entities, _meaningful_entity_token_overlap
 
         prepared_rows = []
         batch_clusters = []
@@ -1089,13 +1089,12 @@ async def ingest_all_sources_async():
                         if topic == "vesti" or not topic:
                             incoming_entities = _extract_title_entities(display_title, semantic=False)
                             batch_entities = bc.get("entities", set())
-                            shared_entities = (
-                                incoming_entities.intersection(batch_entities)
-                                if incoming_entities and batch_entities
-                                else set()
+                            article_lang = "mk" if c["country"] == "MK" else "sr"
+                            meaningful_shared = _meaningful_entity_token_overlap(
+                                incoming_entities, batch_entities, lang=article_lang
                             )
                             phrase_overlap = _cluster_title_overlap(display_title, bc["title"])
-                            if not shared_entities and phrase_overlap < 0.34:
+                            if not meaningful_shared and phrase_overlap < 0.34:
                                 continue
                             cluster_id = bc["cid"]
                             break

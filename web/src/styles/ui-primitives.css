@@ -15,14 +15,14 @@
 /* --- Premium Interactions --- */
 .article-image,
 .cluster-visual-image {
-  opacity: 0;
-  transform: scale(1.01);
-  filter: blur(2px);
+  opacity: 1;
+  transform: scale(1);
+  filter: blur(3px);
   transition:
     opacity 0.8s var(--ease-editorial),
     transform 0.8s var(--ease-editorial),
     filter 0.8s var(--ease-editorial);
-  will-change: transform, opacity;
+  will-change: transform, filter;
 }
 
 .nyt-article:hover .article-image,
