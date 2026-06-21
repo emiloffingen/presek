@@ -32,11 +32,8 @@ const hostHeader = Astro.request?.headers.get('host') || requestUrl.hostname;
 const effectiveUrl = new URL(requestUrl);
 effectiveUrl.hostname = hostHeader;
 const lang = getLangFromUrl(effectiveUrl);
-if (lang === 'mk') {
-	await import('../styles/fonts-mk.css');
-} else {
-	await import('../styles/fonts-sr.css');
-}
+import '../styles/fonts-sr.css';
+import '../styles/fonts-mk.css';
 const t = useTranslations(lang);
 
 const {

@@ -62,10 +62,10 @@ class SmartModelRouter:
         try:
             from utils.cache import redis_client
 
-            redis_client.setex(
+            redis_client.set(
                 _ROUTER_PERF_KEY,
-                _ROUTER_METRICS_TTL,
                 json.dumps(SmartModelRouter._provider_performance),
+                ex=_ROUTER_METRICS_TTL,
             )
             quality_payload = {
                 provider: [
@@ -79,7 +79,7 @@ class SmartModelRouter:
                 ]
                 for provider, samples in SmartModelRouter._provider_quality.items()
             }
-            redis_client.setex(_ROUTER_QUALITY_KEY, _ROUTER_METRICS_TTL, json.dumps(quality_payload))
+            redis_client.set(_ROUTER_QUALITY_KEY, json.dumps(quality_payload), ex=_ROUTER_METRICS_TTL)
         except Exception as e:
             log.debug(f"[router] Failed to persist metrics to Redis: {e}")
 

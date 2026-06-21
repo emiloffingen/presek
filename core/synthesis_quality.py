@@ -223,7 +223,7 @@ def mark_fast_synthesis_pending(cluster_id: str) -> None:
         return
     ttl = int(os.environ.get("FAST_SYNTHESIS_PENDING_TTL_SECONDS", str(48 * 3600)))
     try:
-        redis_client.setex(f"presek:fast_synthesis_pending:{cluster_id}", ttl, "1")
+        redis_client.set(f"presek:fast_synthesis_pending:{cluster_id}", "1", ex=ttl)
     except Exception:
         pass
 

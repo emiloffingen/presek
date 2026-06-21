@@ -177,7 +177,7 @@ def generate_query_embedding(text: str) -> list[float] | None:
     if vector:
         try:
             # Cache query embeddings for 24 hours
-            redis_client.setex(cache_key, 86400, json.dumps(vector))
+            redis_client.set(cache_key, json.dumps(vector), ex=86400)
         except Exception as e:
             log.warning(f"[embeddings] Cache write error for query '{clean_text}': {e}")
 

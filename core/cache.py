@@ -21,7 +21,7 @@ class RedisCache:
     
     def set(self, key: str, value: str, expires: int = 3600) -> bool:
         """Set value in cache with expiration"""
-        return self.redis.setex(key, expires, value)
+        return self.redis.set(key, value, ex=expires)
     
     def delete(self, key: str) -> bool:
         """Delete key from cache"""
