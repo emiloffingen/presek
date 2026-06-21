@@ -1260,6 +1260,8 @@ def synthesize_cluster_fallback(articles, lang="mk"):
         if detail_sentence:
             summary_lines.append(f"• {detail_sentence}")
 
+    title_hash = sum(ord(char) for char in lead_title)
+
     common = (
         comparison.get("common_line", "")
         .replace("Poveceto izvori se soglasuvaat okolu ", "")
@@ -1273,28 +1275,54 @@ def synthesize_cluster_fallback(articles, lang="mk"):
     )
     if common and len(common) > 18 and "," not in common:
         if lang == "sr":
-            summary_lines.append(f"• Izvori se najjasnije poklapaju oko {_sentence(common).lower()}")
+            common_templates_sr = [
+                f"• Izvori se najjasnije poklapaju oko {_sentence(common).lower()}",
+                f"• Većina medija se u izveštavanju fokusira na {_sentence(common).lower()}",
+                f"• Glavna tačka saglasnosti među izvorima odnosi se na {_sentence(common).lower()}",
+            ]
+            summary_lines.append(common_templates_sr[title_hash % len(common_templates_sr)])
         else:
-            summary_lines.append(f"• Изворите најјасно се поклопуваат околу {_sentence(common).lower()}")
+            common_templates_mk = [
+                f"• Изворите најјасно се поклопуваат околу {_sentence(common).lower()}",
+                f"• Повеќето медиуми во известувањето се фокусираат на {_sentence(common).lower()}",
+                f"• Главната точка на согласност меѓу изворите се однесува на {_sentence(common).lower()}",
+            ]
+            summary_lines.append(common_templates_mk[title_hash % len(common_templates_mk)])
 
     sources_str = _source_list(articles, limit=4)
     if lang == "sr":
-        summary_lines.append(
-            f"• Priču prati {len(articles)} {_source_count_label(len(articles), lang)} ({sources_str}), što daje osnov za poređenje akcenata, ali ne i za tvrdnje van objavljenih podataka."
-        )
+        sources_templates_sr = [
+            f"• Priču prati {len(articles)} {_source_count_label(len(articles), lang)} ({sources_str}), što daje osnov za poređenje akcenata, ali ne i za tvrdnje van objavljenih podataka.",
+            f"• Događaj pokriva {len(articles)} {_source_count_label(len(articles), lang)} ({sources_str}), čime se pruža uvid u različite uglove bez dodavanja eksternih interpretacija.",
+            f"• Izveštavanje obuhvata {len(articles)} {_source_count_label(len(articles), lang)} ({sources_str}), nudeći osnovu za analizu bez spekulacija van primarnih izvora.",
+        ]
+        summary_lines.append(sources_templates_sr[title_hash % len(sources_templates_sr)])
     else:
-        summary_lines.append(
-            f"• Приказната ја следат {len(articles)} {_source_count_label(len(articles), lang)} ({sources_str}), што дава основа за споредба на акцентите, но не и за тврдења надвор од објавените податоци."
-        )
+        sources_templates_mk = [
+            f"• Приказната ја следат {len(articles)} {_source_count_label(len(articles), lang)} ({sources_str}), што дава основа за споредба на акцентите, но не и за тврдења надвор од објавените податоци.",
+            f"• Настанот го покриваат {len(articles)} {_source_count_label(len(articles), lang)} ({sources_str}), со што се овозможува споредба на аглите без додавање на надворешни толкувања.",
+            f"• Известувањето опфаќа {len(articles)} {_source_count_label(len(articles), lang)} ({sources_str}), нудејќи основа за анализа без спекулации надвор од примарните извори.",
+        ]
+        summary_lines.append(sources_templates_mk[title_hash % len(sources_templates_mk)])
 
     if comparison.get("open_points"):
         open_sentence = _fallback_open_sentence(comparison["open_points"][0], lang=lang)
         if open_sentence:
             open_sentence = open_sentence.rstrip(" .;:")
             if lang == "sr":
-                summary_lines.append(f"• Otvoreno ostaje {open_sentence}.")
+                open_templates_sr = [
+                    f"• Otvoreno ostaje {open_sentence}.",
+                    f"• Kao otvoreno pitanje se izdvaja {open_sentence}.",
+                    f"• Trenutno ostaje nerazjašnjeno {open_sentence}.",
+                ]
+                summary_lines.append(open_templates_sr[title_hash % len(open_templates_sr)])
             else:
-                summary_lines.append(f"• Отворено останува {open_sentence}.")
+                open_templates_mk = [
+                    f"• Отворено останува {open_sentence}.",
+                    f"• Како отворено прашање се издвојува {open_sentence}.",
+                    f"• Во моментов останува неразјаснето {open_sentence}.",
+                ]
+                summary_lines.append(open_templates_mk[title_hash % len(open_templates_mk)])
 
     summary = "\n".join(summary_lines)
 
