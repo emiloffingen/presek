@@ -227,6 +227,7 @@ def test_route_cluster_busy_system_respects_remote_preference():
 
 
 def test_dynamic_fallback_order_omits_local_when_synthesis_disabled(monkeypatch):
+    monkeypatch.setenv("SYNTHESIS_LOCAL_ONLY", "false")
     monkeypatch.setenv("LOCAL_SYNTHESIS_PREFER_LOCAL", "false")
     SmartModelRouter._provider_performance = {
         "nvidia": {"success_rate": 0.9, "avg_latency": 5.0},

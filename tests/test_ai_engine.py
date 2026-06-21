@@ -208,6 +208,7 @@ def test_local_provider_returns_none_when_synthesis_fails(monkeypatch):
 
 
 def test_provider_override_local_cascades_to_remote(monkeypatch):
+    monkeypatch.setenv("SYNTHESIS_LOCAL_ONLY", "false")
     monkeypatch.setenv("LOCAL_SYNTHESIS_PREFER_LOCAL", "true")
     local_provider = Mock()
     local_provider.call.return_value = None
@@ -279,6 +280,7 @@ def test_build_provider_fallback_order_omits_local_synthesis_when_disabled(monke
             "nvidia": Mock(),
         },
     )
+    monkeypatch.setenv("SYNTHESIS_LOCAL_ONLY", "false")
     monkeypatch.setenv("LOCAL_SYNTHESIS_PREFER_LOCAL", "false")
     monkeypatch.setattr(
         "core.llm_router.SmartModelRouter.get_dynamic_fallback_order",
