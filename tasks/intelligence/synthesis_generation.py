@@ -126,6 +126,7 @@ def _attempt_gemma_rescue(
     current_context,
     legacy_summary,
     exclude_providers,
+    last_fallback_reason: str | None = None,
 ):
     """Explicit local/Gemma attempt before deterministic fallback."""
     from core.limits import SYNTHESIS_GEMMA_BEFORE_DETERMINISTIC, local_synthesis_enabled
@@ -185,6 +186,7 @@ def _attempt_gemma_rescue(
         "res_data": res_data,
         "quality_score": evaluated["quality_score"],
         "raw": raw,
+        "rescue_source_failures": last_fallback_reason,
     }
 
 
@@ -374,6 +376,7 @@ def _generate_synthesis_via_cascade(
         current_context,
         legacy_summary,
         exclude_providers,
+        last_fallback_reason=last_fallback_reason,
     )
     if rescue:
         rescue["cascade_depth"] = len(exclude_providers) + 1
