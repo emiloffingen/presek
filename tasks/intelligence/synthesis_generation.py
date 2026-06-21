@@ -25,6 +25,48 @@ def _resolve_generation_model(provider: str | None):
     return provider
 
 
+def _heal_synthesis_paragraph_structure(article: str, expected: int) -> str:
+    import re
+
+    article = str(article or "").strip()
+    if not article:
+        return article
+
+    # First check: did it use single newlines instead of double newlines?
+    paragraphs_double = [p.strip() for p in re.split(r'\n{2,}', article) if p.strip()]
+    if len(paragraphs_double) == expected:
+        return article
+
+    paragraphs_single = [p.strip() for p in re.split(r'\n', article) if p.strip()]
+    if len(paragraphs_single) == expected:
+        return "\n\n".join(paragraphs_single)
+
+    # Second check: did it output everything in 1 paragraph?
+    if len(paragraphs_double) == 1:
+        # Split into sentences using a simple regex
+        sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', paragraphs_double[0]) if s.strip()]
+        if len(sentences) >= expected:
+            # Distribute sentences into expected paragraphs
+            if expected == 3:
+                n = len(sentences)
+                p1_len = max(1, n // 3)
+                p2_len = max(1, (n - p1_len) // 2)
+                p1 = " ".join(sentences[:p1_len])
+                p2 = " ".join(sentences[p1_len:p1_len + p2_len])
+                p3 = " ".join(sentences[p1_len + p2_len:])
+                return f"{p1}\n\n{p2}\n\n{p3}"
+            elif expected == 5:
+                n = len(sentences)
+                p_len = max(1, n // 5)
+                parts = []
+                for i in range(4):
+                    parts.append(" ".join(sentences[i * p_len:(i + 1) * p_len]))
+                parts.append(" ".join(sentences[4 * p_len:]))
+                return "\n\n".join(parts)
+
+    return article
+
+
 def _evaluate_synthesis_candidate(
     res_data,
     *,
@@ -43,6 +85,16 @@ def _evaluate_synthesis_candidate(
     synthetic_headline = res_data.get("synthetic_headline", "")
     if isinstance(summary, list):
         summary = "\n".join(str(s) for s in summary)
+
+    # Heal paragraph structure if needed to prevent incorrect point docking
+    from tasks.intelligence.synthesis_scoring import _expected_article_paragraphs
+    expected_paragraphs = _expected_article_paragraphs()
+    generated_article = _heal_synthesis_paragraph_structure(generated_article, expected_paragraphs)
+
+    if "article" in res_data:
+        res_data["article"] = generated_article
+    else:
+        res_data["generated_article"] = generated_article
 
     if not summary or not generated_article:
         return None, "partial_response", None
