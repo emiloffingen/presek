@@ -1,6 +1,6 @@
 import React from 'react';
 import { chooseClusterImage, buildProxySrcSet } from '../utils/imageSelection';
-import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, getDesignCardContext, slugify, transliterate, getSourceInitials } from '../utils/textUtils';
+import { getDisplayTitle, getDisplaySummary, smartTruncate, isMostlyCyrillic, highlightScores, getDesignCardContext, slugify, transliterate, getSourceInitials } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
 import { dateLocaleForLang, localePathForLang } from '../lib/localePaths';
 import { resolvePlaceholderTint } from '../lib/placeholderTheme';
@@ -85,7 +85,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
     const text = getDisplaySummary(article);
     if (!text) return '';
     const limit = lead ? 300 : 180;
-    const truncated = text.length > limit ? `${text.slice(0, limit).trimEnd()}...` : text;
+    const truncated = smartTruncate(text, limit);
     return highlightScores(truncated);
   }
 

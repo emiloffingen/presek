@@ -1,7 +1,7 @@
 ---
 /* Cache-bust marker for NewsCard stylesheet hashing. */
 import { chooseClusterImage, buildProxySrcSet } from '../utils/imageSelection';
-import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, slugify, getDesignCardContext, transliterate, cleanAndDecode, normalizeEntityOrTag, getSourceInitials } from '../utils/textUtils';
+import { getDisplayTitle, getDisplaySummary, smartTruncate, isMostlyCyrillic, highlightScores, slugify, getDesignCardContext, transliterate, cleanAndDecode, normalizeEntityOrTag, getSourceInitials } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
 import { Clock, Layers, ShieldCheck, Globe, Zap, AlertCircle, Palette, Building2, TrendingUp, Award, Cpu, Newspaper, ArrowRight } from 'lucide-react';
 import type { NewsCluster, Article } from '../types';
@@ -126,7 +126,7 @@ function getCardSummary(article: Article, lead = false) {
 	const text = getDisplaySummary(article);
 	if (!text) return '';
 	const limit = lead ? 300 : 180;
-	const truncated = text.length > limit ? `${text.slice(0, limit).trimEnd()}...` : text;
+	const truncated = smartTruncate(text, limit);
 	return highlightScores(truncated);
 }
 

@@ -311,6 +311,22 @@ export function getDisplaySummary(article: any, lang?: string): string {
     return summary;
 }
 
+export function smartTruncate(text: string, limit: number): string {
+    if (!text || text.length <= limit) return text;
+    const sliced = text.slice(0, limit);
+    const lastSpace = Math.max(
+        sliced.lastIndexOf(' '),
+        sliced.lastIndexOf('.'),
+        sliced.lastIndexOf(','),
+        sliced.lastIndexOf('-'),
+        sliced.lastIndexOf('–')
+    );
+    if (lastSpace > limit - 25 && lastSpace > 0) {
+        return `${sliced.slice(0, lastSpace).trimEnd()}...`;
+    }
+    return `${sliced.trimEnd()}...`;
+}
+
 export function isSyntheticStandfirstBoilerplate(input: any): boolean {
     const text = extractCleanSummaryText(input);
     if (!text) return false;

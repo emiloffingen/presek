@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { extractCleanSummaryText, getDisplaySummary, getStoryPreviewText, isSyntheticStandfirstBoilerplate, stripCitationMarkers } from '../utils/textUtils.ts';
+import { extractCleanSummaryText, getDisplaySummary, getStoryPreviewText, isSyntheticStandfirstBoilerplate, stripCitationMarkers, smartTruncate } from '../utils/textUtils.ts';
 
 test('story previews skip generated standfirst boilerplate', () => {
   const cluster = {
@@ -61,4 +61,11 @@ test('getDisplaySummary re-cleans leaked display_summary values', () => {
     summary: 'Fallback',
   };
   assert.equal(getDisplaySummary(article), 'Cisto rezime iz API sloja');
+});
+
+test('smartTruncate cuts on word boundaries and appends ellipsis', () => {
+  const text = 'Svi izvori se slažu oko toga. Kolona je krenula u 11 sati.';
+  // 'Svi izvori se slažu oko' is 23 characters, ending with a space before the next word
+  assert.equal(smartTruncate(text, 25), 'Svi izvori se slažu oko...');
+  assert.equal(smartTruncate(text, 100), text);
 });

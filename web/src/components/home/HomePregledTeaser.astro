@@ -39,11 +39,11 @@ const last24h = stats?.last_24h || 0;
         {(feeds > 0 || last24h > 0 || (typeof pluralismPct === 'number' && pluralismPct > 0)) && (
             <p class="home-pregled-teaser-stat">
                 {feeds > 0 && <span>{feeds} {t('home.stats_media')}</span>}
-                {feeds > 0 && last24h > 0 && <span class="home-pregled-teaser-dot">·</span>}
+                {feeds > 0 && last24h > 0 && <span class="home-pregled-teaser-dot"> · </span>}
                 {last24h > 0 && <span>{last24h} {t('home.stats_posts_24h')}</span>}
                 {typeof pluralismPct === 'number' && pluralismPct > 0 && (
                     <>
-                        {(feeds > 0 || last24h > 0) && <span class="home-pregled-teaser-dot">·</span>}
+                        {(feeds > 0 || last24h > 0) && <span class="home-pregled-teaser-dot"> · </span>}
                         <span>{t('home.pregled_cta_stat').replace('{pct}', String(pluralismPct))}</span>
                     </>
                 )}
