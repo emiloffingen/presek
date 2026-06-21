@@ -246,9 +246,13 @@ class SmartModelRouter:
             return ["local"]
 
         SmartModelRouter._load_metrics_from_redis()
-        from core.config import PROVIDER_FALLBACK_ORDER_SUMMARY
+        from core.config import PROVIDER_FALLBACK_ORDER_SUMMARY, PROVIDER_RESERVE_FOR_SYNTHESIS
         
         base_order = list(PROVIDER_FALLBACK_ORDER_SUMMARY)
+
+        # Exclude providers reserved for synthesis from non-synthesis tasks
+        if PROVIDER_RESERVE_FOR_SYNTHESIS and task_type != "synthesis":
+            base_order = [p for p in base_order if p not in PROVIDER_RESERVE_FOR_SYNTHESIS]
         
         # Sort by performance (success rate descending, latency ascending)
         providers_with_stats = []

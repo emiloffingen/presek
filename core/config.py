@@ -622,6 +622,16 @@ PROVIDER_FALLBACK_ORDER_RESEARCH = ["gemini", "nvidia", "local"]
 PROVIDER_FALLBACK_ORDER_SUMMARY = ["gemini", "nvidia", "local"]
 PROVIDER_FALLBACK_ORDER = ["gemini", "nvidia", "local"]  # default
 
+# Providers reserved exclusively for synthesis tasks.
+# When set, these providers are excluded from summarize/research/default cascades
+# so their rate-limit quota is preserved for higher-value synthesis calls.
+# Comma-separated list, e.g. "gemini" or "gemini,nvidia".
+PROVIDER_RESERVE_FOR_SYNTHESIS = [
+    p.strip()
+    for p in os.environ.get("PROVIDER_RESERVE_FOR_SYNTHESIS", "").split(",")
+    if p.strip()
+]
+
 # ── Clustering Parameters ───────────────────────────────────────
 CLUSTERING_THRESHOLDS = {
     "SIMILARITY_THRESHOLD": 0.45,

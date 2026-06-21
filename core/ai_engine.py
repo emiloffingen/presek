@@ -581,6 +581,20 @@ def build_provider_fallback_order(
         order = [provider for provider in order if provider != "local"]
 
     excluded = set(exclude_providers or [])
+
+    # Reserve certain providers for synthesis-only to protect their rate limits
+    from core.config import PROVIDER_RESERVE_FOR_SYNTHESIS
+
+    if PROVIDER_RESERVE_FOR_SYNTHESIS and task_type not in ("synthesis",):
+        for reserved in PROVIDER_RESERVE_FOR_SYNTHESIS:
+            if reserved in order and len(order) > 1:
+                log.debug(
+                    "[ai/cascade] Reserving provider %s for synthesis (task=%s)",
+                    reserved,
+                    task_type,
+                )
+                excluded.add(reserved)
+
     return [provider for provider in order if provider not in excluded]
 
 
