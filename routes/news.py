@@ -1567,13 +1567,10 @@ async def get_historical_events(cluster_id: str):
         if not vec_rows:
             return {"status": "success", "events": []}
 
-        try:
-            import numpy as np
-        except ImportError:
-            import sys
-
-            if "numpy" not in sys.modules:
-                raise
+        import sys
+        if "numpy" in sys.modules:
+            np = sys.modules["numpy"]
+        else:
             import numpy as np
 
         def parse_vec(v):

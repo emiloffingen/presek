@@ -4,6 +4,11 @@ import sys
 import types
 from unittest.mock import MagicMock
 
+try:
+    import numpy
+except ImportError:
+    pass
+
 import pytest
 
 os.environ.setdefault("SECRET_KEY", "test-secret-key")
