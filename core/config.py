@@ -618,9 +618,9 @@ def resolve_primary_database_url() -> str:
     return url
 
 # ── AI Routing Configuration ────────────────────────────────────
-PROVIDER_FALLBACK_ORDER_RESEARCH = ["nvidia", "local"]
-PROVIDER_FALLBACK_ORDER_SUMMARY = ["nvidia", "local"]
-PROVIDER_FALLBACK_ORDER = ["nvidia", "local"]  # default
+PROVIDER_FALLBACK_ORDER_RESEARCH = ["gemini", "nvidia", "local"]
+PROVIDER_FALLBACK_ORDER_SUMMARY = ["gemini", "nvidia", "local"]
+PROVIDER_FALLBACK_ORDER = ["gemini", "nvidia", "local"]  # default
 
 # ── Clustering Parameters ───────────────────────────────────────
 CLUSTERING_THRESHOLDS = {

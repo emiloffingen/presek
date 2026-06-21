@@ -134,6 +134,15 @@ def test_route_cluster_free_api_mode():
         assert SmartModelRouter.route_cluster(articles) == "nvidia"
 
 
+def test_route_cluster_gemini_provider():
+    articles = [
+        {"title": f"Vest {i}", "description": "Detalji dogadjaja."}
+        for i in range(3)
+    ]
+    with _router_env(local_available=True, FREE_API_KEYS_ENABLED="true", GEMINI_API_KEY="some_key"):
+        assert SmartModelRouter.route_cluster(articles) == "gemini"
+
+
 def test_route_cluster_free_api_mode_low_complexity_uses_local():
     articles = [
         {"title": "Obicna vest o vremenu", "description": "Danas ce sijati sunce."},

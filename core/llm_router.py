@@ -20,6 +20,12 @@ def _local_model_available() -> bool:
     return os.path.exists("models/gemma-4-E2B-it-Q4_K_M.gguf")
 
 
+def _default_remote_provider() -> str:
+    if os.environ.get("GEMINI_API_KEY"):
+        return "gemini"
+    return "nvidia"
+
+
 class SmartModelRouter:
     _provider_performance = {}  # {provider: {success: int, total: int, latency: [float]}}
     _provider_quality = {}    # {provider: [{cluster_id: str, score: float, timestamp: datetime}]}
@@ -176,13 +182,13 @@ class SmartModelRouter:
                     return candidate
 
                 routing_decision["quality_adjustment"] = "multi_source_avoids_local"
-                return "nvidia"
+                return _default_remote_provider()
 
             local_avg = SmartModelRouter._get_recent_quality_average("local")
             if local_avg is not None and local_avg < local_min:
                 routing_decision["quality_adjustment"] = "local_quality_below_threshold"
                 routing_decision["local_quality_avg"] = round(local_avg, 3)
-                return "nvidia"
+                return _default_remote_provider()
 
         return candidate
 
@@ -210,7 +216,7 @@ class SmartModelRouter:
         from core.limits import local_synthesis_enabled
 
         if chosen == "local" and not local_synthesis_enabled():
-            chosen = "nvidia"
+            chosen = _default_remote_provider()
             routing_decision["reason"] = f"{routing_decision.get('reason', reason)}_local_disabled"
         routing_decision["chosen_provider"] = chosen
         log.info(f"[router] Decision: {json.dumps(routing_decision, ensure_ascii=False)}")
@@ -384,7 +390,7 @@ class SmartModelRouter:
         
         # A/B testing override
         if ab_test_triggered:
-            override_target = random.choice(["local", "nvidia"])
+            override_target = random.choice(["local", _default_remote_provider()])
             log.info(f"[router/ab] Overriding to {override_target} for experimentation")
             routing_decision['ab_test'] = True
             return SmartModelRouter._finalize_route(
@@ -412,7 +418,7 @@ class SmartModelRouter:
 
         if use_quality_profile and not is_high_complexity and article_count >= 3:
             return SmartModelRouter._finalize_route(
-                "nvidia",
+                _default_remote_provider(),
                 "free_api_quality_optimization",
                 routing_decision,
                 article_count=article_count,
@@ -429,7 +435,7 @@ class SmartModelRouter:
 
         if fallback_pressure == "critical" and not is_high_complexity and article_count >= 2:
             return SmartModelRouter._finalize_route(
-                "nvidia",
+                _default_remote_provider(),
                 "fallback_pressure_quality_recovery",
                 routing_decision,
                 article_count=article_count,
@@ -483,7 +489,7 @@ class SmartModelRouter:
         # High Complexity: Serious disputes, large clusters, high political/economic weight, or sports conflicts
         if is_high_complexity:
             return SmartModelRouter._finalize_route(
-                "nvidia",
+                _default_remote_provider(),
                 "high_complexity",
                 routing_decision,
                 article_count=article_count,
@@ -494,7 +500,7 @@ class SmartModelRouter:
         # Medium Complexity: Standard news, moderate cluster size
         if article_count >= 3 or has_high_weight:
             return SmartModelRouter._finalize_route(
-                "nvidia",
+                _default_remote_provider(),
                 "medium_complexity",
                 routing_decision,
                 article_count=article_count,
@@ -514,7 +520,7 @@ class SmartModelRouter:
             )
 
         return SmartModelRouter._finalize_route(
-            "nvidia",
+            _default_remote_provider(),
             "low_complexity_remote",
             routing_decision,
             article_count=article_count,

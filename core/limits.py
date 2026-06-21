@@ -64,10 +64,12 @@ def resolve_briefing_ai_providers(provider_override: str | None = None) -> tuple
     if not effective:
         return None, None
     if effective == "local":
-        return "local", ["nvidia"]
+        return "local", ["nvidia", "gemini"]
     if effective == "nvidia":
         # Keep Gemma free for synthesis; template fallback if NVIDIA fails.
         return "nvidia", ["local"]
+    if effective == "gemini":
+        return "gemini", ["local"]
     return None, None
 
 

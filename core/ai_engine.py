@@ -452,11 +452,25 @@ class NvidiaProvider(OpenAICompatibleProvider):
         super().__init__("nvidia", api_key, api_url, model)
 
 
+class GeminiProvider(OpenAICompatibleProvider):
+    def __init__(self, api_key: str, model: str):
+        super().__init__(
+            "gemini",
+            api_key,
+            "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+            model,
+        )
+
+
 PROVIDERS = {
     "nvidia": NvidiaProvider(
         api_key=os.environ.get("NVIDIA_API_KEY", ""),
         api_url=os.environ.get("NVIDIA_API_URL", "https://integrate.api.nvidia.com/v1/chat/completions"),
         model=os.environ.get("NVIDIA_MODEL", "nvidia/llama-3.1-nemotron-70b-instruct"),
+    ),
+    "gemini": GeminiProvider(
+        api_key=os.environ.get("GEMINI_API_KEY", ""),
+        model=os.environ.get("GEMINI_MODEL", "gemini-1.5-flash"),
     ),
     "local": LocalProvider(),
 }

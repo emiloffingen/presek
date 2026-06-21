@@ -8,6 +8,7 @@ from core.limits import briefing_remote_provider, resolve_briefing_ai_providers
     [
         ("nvidia", "nvidia"),
         ("local", "local"),
+        ("gemini", "gemini"),
         ("", None),
         ("none", None),
         ("default", None),
@@ -22,9 +23,11 @@ def test_briefing_remote_provider(monkeypatch, env_value, expected):
     ("env_value", "task_override", "expected_provider", "expected_exclusions"),
     [
         ("nvidia", None, "nvidia", ["local"]),
-        ("local", None, "local", ["nvidia"]),
+        ("local", None, "local", ["nvidia", "gemini"]),
         ("", None, None, None),
-        ("nvidia", "local", "local", ["nvidia"]),
+        ("nvidia", "local", "local", ["nvidia", "gemini"]),
+        ("gemini", None, "gemini", ["local"]),
+        ("nvidia", "gemini", "gemini", ["local"]),
     ],
 )
 def test_resolve_briefing_ai_providers(
