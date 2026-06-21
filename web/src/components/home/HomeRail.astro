@@ -63,8 +63,6 @@ const uniqueEntities = Array.from(uniqueEntitiesMap.values())
 
 <aside class="broadsheet-rail">
 
-	<TinyAdzRailAd class="rail-inlined-ad" />
-
 	{briefing && briefing.content && (
 		<section class="rail-block rail-briefing-block">
 			<h3 class="rail-section-title">{t('nav.briefing')}</h3>
@@ -74,6 +72,8 @@ const uniqueEntities = Array.from(uniqueEntitiesMap.values())
 			<a href={l('/briefing')} class="rail-cta">{t('rail.full_overview')} <TrendingUp size={10} /></a>
 		</section>
 	)}
+
+	<TinyAdzRailAd class="rail-inlined-ad" />
 
 	<NationalMoodIsland lang={lang} client:visible />
 
