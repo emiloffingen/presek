@@ -37,7 +37,7 @@ class TestRecordRefresh:
 
     def test_record_refresh_stores_data(self):
         r, store = self._make_redis()
-        with patch("health._get_redis", return_value=r):
+        with patch("core.health._get_redis", return_value=r):
             record_refresh(42, ["error1"])
         data = json.loads(store[_REDIS_KEY])
         assert data["count"] == 42
@@ -46,7 +46,7 @@ class TestRecordRefresh:
 
     def test_record_refresh_no_errors(self):
         r, store = self._make_redis()
-        with patch("health._get_redis", return_value=r):
+        with patch("core.health._get_redis", return_value=r):
             record_refresh(10)
         data = json.loads(store[_REDIS_KEY])
         assert data["count"] == 10
@@ -54,7 +54,7 @@ class TestRecordRefresh:
 
     def test_record_refresh_overwrites(self):
         r, store = self._make_redis()
-        with patch("health._get_redis", return_value=r):
+        with patch("core.health._get_redis", return_value=r):
             record_refresh(5)
             record_refresh(15, ["e"])
         data = json.loads(store[_REDIS_KEY])
@@ -64,7 +64,7 @@ class TestRecordRefresh:
 class TestTaskEvents:
     def test_record_task_event_stores_payload(self):
         r, _store = TestRecordRefresh()._make_redis()
-        with patch("health._get_redis", return_value=r):
+        with patch("core.health._get_redis", return_value=r):
             record_task_event("daily_brief", "fallback", "date:current")
         raw = r._hash_store[_TASK_REDIS_KEY]["daily_brief"]
         data = json.loads(raw)
@@ -76,7 +76,7 @@ class TestTaskEvents:
 class TestSourceEvents:
     def test_record_source_fetch_stores_payload(self):
         r, _store = TestRecordRefresh()._make_redis()
-        with patch("health._get_redis", return_value=r):
+        with patch("core.health._get_redis", return_value=r):
             record_source_fetch("MIA", "ok", fetched=10, accepted=4)
         raw = r._hash_store[_SOURCE_REDIS_KEY]["MIA"]
         data = json.loads(raw)
@@ -103,7 +103,7 @@ class TestSourceQuality:
 class TestSourcePolicy:
     def test_source_policy_flags_low_acceptance(self):
         r, _store = TestRecordRefresh()._make_redis()
-        with patch("health._get_redis", return_value=r):
+        with patch("core.health._get_redis", return_value=r):
             state = None
             for _ in range(3):
                 state = update_source_policy("Feed", "warning", fetched=10, accepted=1)
@@ -112,7 +112,7 @@ class TestSourcePolicy:
 
     def test_source_policy_auto_pauses_after_repeated_errors(self):
         r, _store = TestRecordRefresh()._make_redis()
-        with patch("health._get_redis", return_value=r):
+        with patch("core.health._get_redis", return_value=r):
             state = None
             for _ in range(3):
                 state = update_source_policy("Feed", "error", fetched=0, accepted=0)
@@ -120,7 +120,7 @@ class TestSourcePolicy:
 
     def test_reset_source_policy_clears_state(self):
         r, _store = TestRecordRefresh()._make_redis()
-        with patch("health._get_redis", return_value=r):
+        with patch("core.health._get_redis", return_value=r):
             update_source_policy("Feed", "error", fetched=0, accepted=0)
             assert "Feed" in r._hash_store[_SOURCE_POLICY_REDIS_KEY]
             reset_source_policy("Feed")
@@ -130,7 +130,7 @@ class TestSourcePolicy:
 class TestFreshnessPayload:
     def test_freshness_payload_recent(self):
         recent = "2026-04-04T22:00:00+00:00"
-        with patch("health.datetime") as mock_datetime:
+        with patch("core.health.datetime") as mock_datetime:
             mock_datetime.now.return_value = datetime(2026, 4, 4, 22, 10, tzinfo=timezone.utc)
             mock_datetime.fromisoformat.side_effect = datetime.fromisoformat
             result = _freshness_payload(recent)
@@ -138,7 +138,7 @@ class TestFreshnessPayload:
 
     def test_freshness_payload_stale(self):
         stale = "2026-04-04T20:00:00+00:00"
-        with patch("health.datetime") as mock_datetime:
+        with patch("core.health.datetime") as mock_datetime:
             mock_datetime.now.return_value = datetime(2026, 4, 4, 22, 0, tzinfo=timezone.utc)
             mock_datetime.fromisoformat.side_effect = datetime.fromisoformat
             result = _freshness_payload(stale)
@@ -175,9 +175,9 @@ class TestHealthProbes:
         mock_cursor.fetchone.return_value = [12]
         mock_conn.execute.return_value = mock_cursor
         with (
-            patch("health.database.get_db", return_value=mock_conn),
+            patch("core.health.database.get_db", return_value=mock_conn),
             patch(
-                "health.database.get_db_size",
+                "core.health.database.get_db_size",
                 side_effect=RuntimeError("permission denied"),
             ),
         ):
@@ -190,7 +190,7 @@ class TestHealthProbes:
     def test_probe_redis_returns_error_details(self):
         mock_redis = MagicMock()
         mock_redis.ping.side_effect = RuntimeError("connection refused")
-        with patch("health._get_redis", return_value=mock_redis):
+        with patch("core.health._get_redis", return_value=mock_redis):
             result = _probe_redis()
         assert result["ok"] is False
         assert "connection refused" in result["error"]
