@@ -86,7 +86,7 @@ export const search = {
     'search.action_archive_desc': 'Пребарајте ги сите досегашни објави.',
     'search.category_all': 'Сите теми',
     'search.category_country': 'Македонија',
-    'search.category_country_value': 'Makedonija',
+    'search.category_country_value': 'Македонија',
     'search.category_politika': 'Политика',
     'search.category_ekonomija': 'Економија',
     'search.category_sport': 'Спорт',
