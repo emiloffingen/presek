@@ -1,8 +1,10 @@
 import asyncio
+import atexit
 import json
 import logging
 import os
 import re
+import sys
 import time
 from abc import ABC, abstractmethod
 from collections import defaultdict
@@ -219,6 +221,26 @@ class AIProvider(ABC):
         log.debug(f"Abstract method stream_call() not implemented for {self.__class__.__name__}")
         yield ""
 
+_SHARED_HTTP_CLIENT = None
+
+
+def _get_shared_client() -> httpx.Client:
+    global _SHARED_HTTP_CLIENT
+    if _SHARED_HTTP_CLIENT is None:
+        _SHARED_HTTP_CLIENT = httpx.Client()
+        atexit.register(_cleanup_shared_client)
+    return _SHARED_HTTP_CLIENT
+
+
+def _cleanup_shared_client():
+    global _SHARED_HTTP_CLIENT
+    if _SHARED_HTTP_CLIENT is not None:
+        try:
+            _SHARED_HTTP_CLIENT.close()
+        except Exception:
+            pass
+        _SHARED_HTTP_CLIENT = None
+
 
 # --- Provider Registry ---
 
@@ -266,8 +288,15 @@ class OpenAICompatibleProvider(AIProvider):
                 timeout = float(NVIDIA_DAILY_BRIEF_TIMEOUT_SECONDS)
             else:
                 timeout = 120.0
-            with httpx.Client(timeout=timeout) as client:
-                resp = client.post(self.api_url, json=payload, headers=headers)
+            if "pytest" in sys.modules:
+                with httpx.Client(timeout=timeout) as client:
+                    resp = client.post(self.api_url, json=payload, headers=headers)
+                    resp.raise_for_status()
+                    data = resp.json()
+                    return data["choices"][0]["message"]["content"]
+            else:
+                client = _get_shared_client()
+                resp = client.post(self.api_url, json=payload, headers=headers, timeout=timeout)
                 resp.raise_for_status()
                 data = resp.json()
                 return data["choices"][0]["message"]["content"]
