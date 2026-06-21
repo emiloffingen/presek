@@ -5,6 +5,9 @@ import { normalizeFocusEntitySurface } from './focusEntityNormalize.ts';
 test('normalizeFocusEntitySurface maps known inflections', () => {
   assert.equal(normalizeFocusEntitySurface('srbije'), 'Srbija');
   assert.equal(normalizeFocusEntitySurface('zvezde'), 'Crvena zvezda');
+  assert.equal(normalizeFocusEntitySurface('prvenstv'), 'Prvenstvo');
+  assert.equal(normalizeFocusEntitySurface('svetskom'), 'Svetsko prvenstvo');
+  assert.equal(normalizeFocusEntitySurface('mundijalu'), 'Mundijal');
 });
 
 test('normalizeFocusEntitySurface capitalizes unknown lowercase names', () => {
