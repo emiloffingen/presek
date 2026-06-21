@@ -302,7 +302,7 @@ def clean_rss_footer(text: str) -> str:
         return ""
     text = clean_extracted_article_text(text)
     
-    text = re.sub(r"The post .* appeared first on .*", "", text)
+    text = re.sub(r"\s*The post (?:.* appeared first on .*|.*$)", "", text)
     text = re.sub(r"Procitajte povece na .*", "", text)
     text = re.sub(r"This article was originally published on .*", "", text)
     text = re.sub(r"Source: https?://.*", "", text)

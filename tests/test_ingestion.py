@@ -38,6 +38,9 @@ def test_clean_rss_footer():
     text4 = "Just normal news text without any footer."
     assert clean_rss_footer(text4) == text4
 
+    text5 = "This is some news content. The post Some title"
+    assert clean_rss_footer(text5) == "This is some news content."
+
 
 def test_clean_rss_footer_macedonian():
     text = "Sodrzina na vestta. Procitajte povece na example.com"
