@@ -387,7 +387,7 @@ app.mount("/static", StaticFiles(directory="static", follow_symlink=False), name
 
 
 # Import and include routers
-from routes import admin, home, intelligence, news, profile, stats, system
+from routes import admin, home, intelligence, news, profile, stats, system, marketing
 
 
 def _safe_rank_cluster_citations(question: str, answer: str, articles, citation_numbers) -> list[dict]:
@@ -678,6 +678,7 @@ app.include_router(profile.router, prefix="/api")
 app.include_router(stats.router, prefix="/api")
 app.include_router(system.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
+app.include_router(marketing.router, prefix="/api")
 
 # Also include v1-prefixed routers for API versioning
 app.include_router(news.router, prefix=f"/api/{API_VERSION}")
@@ -687,3 +688,4 @@ app.include_router(profile.router, prefix=f"/api/{API_VERSION}")
 app.include_router(stats.router, prefix=f"/api/{API_VERSION}")
 app.include_router(system.router, prefix=f"/api/{API_VERSION}")
 app.include_router(admin.router, prefix=f"/api/{API_VERSION}")
+app.include_router(marketing.router, prefix=f"/api/{API_VERSION}")
