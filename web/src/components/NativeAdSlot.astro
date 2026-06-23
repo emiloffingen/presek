@@ -56,9 +56,10 @@ const title = isMk ? 'Купете го овој рекламен простор
 const desc = isMk 
   ? 'Автоматизиран самопослужен систем за реклами со Stripe плаќање.' 
   : 'Automatski samouslužni sistem za reklame sa Stripe plaćanjem.';
+const rsdPrice = Math.round(meta.price * 117);
 const priceStr = isMk 
   ? `Од €${meta.price.toFixed(2)} / 1000 импресии (~${meta.priceMkd} ден.)` 
-  : `Od €${meta.price.toFixed(2)} / 1000 impresija (~${meta.priceMkd} MKD)`;
+  : `Od €${meta.price.toFixed(2)} / 1000 impresija (~${rsdPrice} RSD)`;
 const btnText = isMk ? 'Рекламирај се' : 'Oglašavaj se';
 ---
 

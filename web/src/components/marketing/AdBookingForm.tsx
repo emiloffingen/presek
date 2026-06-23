@@ -24,6 +24,7 @@ const CPM_RATES: Record<string, number> = {
 };
 
 const MKD_PER_EUR = 61.5;
+const RSD_PER_EUR = 117.0;
 const MIN_CHECKOUT_EUR = 50;
 
 const translations = {
@@ -471,7 +472,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
           <div className="space-y-3 font-mono text-sm">
             <div className="flex justify-between text-slate-400">
               <span>{t.cpm}:</span>
-              <span className="text-slate-200 font-bold">€{CPM_RATES[slotId].toFixed(2)} <span className="text-slate-500 text-xxs font-normal">(~{Math.round(CPM_RATES[slotId] * MKD_PER_EUR)} MKD)</span></span>
+              <span className="text-slate-200 font-bold">€{CPM_RATES[slotId].toFixed(2)} <span className="text-slate-500 text-xxs font-normal">(~{Math.round(CPM_RATES[slotId] * (lang === 'mk' ? MKD_PER_EUR : RSD_PER_EUR))} {lang === 'mk' ? 'MKD' : 'RSD'})</span></span>
             </div>
             <div className="flex justify-between text-slate-400">
               <span>{t.totalDays}:</span>
@@ -486,7 +487,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
             <div className="border-t border-slate-800 pt-3 flex justify-between text-base font-sans">
               <span className="text-slate-300 font-semibold">{t.totalPrice}:</span>
               <span className={`font-bold text-lg ${totalCost < MIN_CHECKOUT_EUR ? 'text-amber-500' : 'text-emerald-400'}`}>
-                €{totalCost.toFixed(2)} <span className="text-sm font-normal text-slate-500">(~{Math.round(totalCost * MKD_PER_EUR).toLocaleString()} MKD)</span>
+                €{totalCost.toFixed(2)} <span className="text-sm font-normal text-slate-500">(~{Math.round(totalCost * (lang === 'mk' ? MKD_PER_EUR : RSD_PER_EUR)).toLocaleString()} {lang === 'mk' ? 'MKD' : 'RSD'})</span>
               </span>
             </div>
           </div>
