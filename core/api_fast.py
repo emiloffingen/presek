@@ -228,7 +228,8 @@ if _rate_limiter_enabled:
 _AUDIO_FILENAME_RE = re.compile(r"^[A-Za-z0-9_.-]+\.mp3$")
 _UPLOAD_IMAGE_FILENAME_RE = re.compile(r"^art_\d+\.webp$")
 _GENERATED_FILENAME_RE = re.compile(r"^[A-Za-z0-9_.-]+\.(?:jpg|jpeg|png|svg|webp)$", re.IGNORECASE)
-_STATIC_ROOT = os.environ.get("STATIC_ROOT", "/home/emiloffingen/presek-runtime/shared/static")
+_home_dir = os.environ.get("HOME") or "/home/emiloffingen"
+_STATIC_ROOT = os.environ.get("STATIC_ROOT", os.path.join(_home_dir, "presek-runtime", "shared", "static"))
 if not os.path.exists(_STATIC_ROOT):
     _STATIC_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "static"))
 _AUDIO_UPLOAD_DIR = os.path.join(_STATIC_ROOT, "uploads", "audio")
