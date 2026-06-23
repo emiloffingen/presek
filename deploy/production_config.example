@@ -86,10 +86,7 @@ SENTRY_DSN=https://your_sentry_dsn@sentry.io/123456
 PUBLIC_SITE_URL=https://presek.live
 CORS_ORIGINS=https://presek.live,https://www.presek.live
 
-# TinyAdz publisher settings (from app.tinyadz.com dashboard)
-PUBLIC_TINYADZ_SITE_ID=6a2995c32b7233c34b097a9c
-PUBLIC_TINYADZ_LIVE_SITE_ID=6a29a71de09ffcc4c9bbd83e
-PUBLIC_TINYADZ_TEST_MODE=false
+# TinyAdz configurations have been removed from this project.
 
 # Post-deploy smoke checks against public URLs (recommended in production).
 ENABLE_PUBLIC_CHECK=1

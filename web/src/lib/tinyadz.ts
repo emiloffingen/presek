@@ -37,17 +37,10 @@ function isLiveHost(host: string): boolean {
 }
 
 export function isPremiumAdFreePage(pathname: string): boolean {
-  return PREMIUM_AD_FREE_PATHS.has(normalizePath(pathname));
+  return true;
 }
 
 export function shouldLoadTinyAdzScript(lang: 'sr' | 'mk', hostname: string): boolean {
-  const host = normalizeHost(hostname);
-  if (lang === 'mk' && isMkHost(host)) {
-    return true;
-  }
-  if (lang === 'sr' && isLiveHost(host)) {
-    return true;
-  }
   return false;
 }
 
@@ -57,26 +50,18 @@ export function shouldShowTinyAdzInlinedAds(
   hostname: string,
   pathname = '',
 ): boolean {
-  if (pathname && isPremiumAdFreePage(pathname)) {
-    return false;
-  }
-  return shouldLoadTinyAdzScript(lang, hostname);
+  return false;
 }
 
 /** @deprecated Use shouldLoadTinyAdzScript or shouldShowTinyAdzInlinedAds. */
 export function shouldLoadTinyAdz(lang: 'sr' | 'mk', hostname: string): boolean {
-  return shouldLoadTinyAdzScript(lang, hostname);
+  return false;
 }
 
 export function tinyAdzSiteId(lang: 'sr' | 'mk', hostname: string): string {
-  const host = normalizeHost(hostname);
-  if (lang === 'sr' && isLiveHost(host)) {
-    return readEnv('PUBLIC_TINYADZ_LIVE_SITE_ID') || TINYADZ_LIVE_SITE_ID;
-  }
-  return readEnv('PUBLIC_TINYADZ_SITE_ID') || readEnv('PUBLIC_TINYADZ_MK_SITE_ID') || TINYADZ_MK_SITE_ID;
+  return '';
 }
 
 export function tinyAdzTestMode(): boolean {
-  const raw = readEnv('PUBLIC_TINYADZ_TEST_MODE').toLowerCase();
-  return raw === 'true' || raw === '1';
+  return false;
 }

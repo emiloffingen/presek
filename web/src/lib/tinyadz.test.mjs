@@ -10,8 +10,8 @@ test('isPremiumAdFreePage blocks reader premium surfaces', () => {
   assert.equal(isPremiumAdFreePage('/settings'), true);
   assert.equal(isPremiumAdFreePage('/briefing'), true);
   assert.equal(isPremiumAdFreePage('/mk/for-you'), true);
-  assert.equal(isPremiumAdFreePage('/cluster/abc'), false);
-  assert.equal(isPremiumAdFreePage('/archive'), false);
+  assert.equal(isPremiumAdFreePage('/cluster/abc'), true);
+  assert.equal(isPremiumAdFreePage('/archive'), true);
 });
 
 test('shouldShowTinyAdzInlinedAds respects premium page guard', () => {
@@ -25,6 +25,6 @@ test('shouldShowTinyAdzInlinedAds respects premium page guard', () => {
   );
   assert.equal(
     shouldShowTinyAdzInlinedAds('sr', 'presek.live', '/cluster/abc'),
-    true,
+    false,
   );
 });
