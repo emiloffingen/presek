@@ -57,7 +57,7 @@ export default function TinyAdzRailSlot({ lang = 'sr', className = '' }: Props) 
   };
 
   if (loading) {
-    return <div className={`h-[250px] w-full bg-slate-900/10 border border-slate-800/80 rounded-xl animate-pulse ${className}`} />;
+    return <div className={`h-[250px] w-full bg-[var(--surface-soft)] border border-[var(--border)] rounded-none animate-pulse ${className}`} />;
   }
 
   const isMk = lang === 'mk';
@@ -74,8 +74,8 @@ export default function TinyAdzRailSlot({ lang = 'sr', className = '' }: Props) 
   return (
     <div className={`native-ad-slot-react sidebar-placement ${className}`} style={{ minHeight: '250px', display: 'flex', width: '100%' }}>
       {activeAd ? (
-        <div className="active-ad-container relative w-full h-full bg-black/5 dark:bg-white/5 border border-slate-800 rounded-xl p-1 flex items-center justify-center">
-          <div className="ad-badge absolute top-1.5 left-2 bg-black/60 text-white text-[10px] font-bold uppercase px-1.5 py-0.5 rounded pointer-events-none z-10 tracking-wider">
+        <div className="active-ad-container relative w-full h-full bg-black/5 dark:bg-white/5 border border-[var(--border)] rounded-none p-1 flex items-center justify-center">
+          <div className="ad-badge absolute top-1.5 left-2 bg-[var(--foreground)] text-[var(--background)] text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-none pointer-events-none z-10 tracking-wider">
             {isMk ? 'Реклама' : 'Oglas'}
           </div>
           <a 
@@ -85,36 +85,35 @@ export default function TinyAdzRailSlot({ lang = 'sr', className = '' }: Props) 
             className="ad-link block w-full text-center"
             onClick={handleAdClick}
           >
-            <img src={activeAd.image_url} alt="Advertisement" className="ad-image max-w-full max-h-full object-contain mx-auto rounded" />
+            <img src={activeAd.image_url} alt="Advertisement" className="ad-image max-w-full max-h-full object-contain mx-auto rounded-none" />
           </a>
         </div>
       ) : (
-        <div className="fallback-ad-card relative overflow-hidden rounded-xl border border-slate-800/50 hover:border-indigo-500/35 bg-gradient-to-br from-slate-900/80 to-slate-950/95 text-white p-5 flex flex-col justify-between transition-all duration-300 shadow-lg w-full">
-          <div className="fallback-glow absolute -top-1/2 -left-1/2 w-[200%] h-[200%] bg-[radial-gradient(circle,rgba(99,102,241,0.12)_0%,transparent_60%)] pointer-events-none" />
+        <div className="fallback-ad-card relative overflow-hidden rounded-none border border-[var(--border)] hover:border-[var(--foreground)] bg-[var(--surface-soft)] hover:bg-[var(--surface-strong)] text-[var(--foreground)] p-5 flex flex-col justify-between transition-all duration-300 w-full">
           <div className="fallback-content relative z-10 flex flex-col gap-1.5">
             <div className="fallback-kicker-wrap flex items-center gap-1.5 mb-0.5">
               <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--nyt-red)] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[var(--nyt-red)]"></span>
               </span>
-              <div className="fallback-kicker text-[9px] font-extrabold text-indigo-400 tracking-widest uppercase">
+              <div className="fallback-kicker text-[9px] font-extrabold text-[var(--nyt-gray-500)] tracking-widest uppercase">
                 {isMk ? 'СЛОБОДЕН РЕКЛАМЕН ПРОСТОР' : 'SLOBODAN REKLAMNI PROSTOR'} (300x250)
               </div>
             </div>
-            <h4 className="fallback-title text-sm font-bold text-slate-100 m-0 leading-snug">
+            <h4 className="fallback-title text-sm font-bold text-[var(--foreground)] m-0 leading-snug font-serif">
               {title}
             </h4>
-            <p className="fallback-desc text-xs text-slate-400 m-0 leading-relaxed">
+            <p className="fallback-desc text-xs text-[var(--muted-foreground)] m-0 leading-relaxed">
               {desc}
             </p>
           </div>
           <div className="fallback-footer relative z-10 flex items-center justify-between mt-4 gap-2 flex-wrap">
-            <span className="fallback-price text-xs font-bold text-emerald-400 font-mono">
+            <span className="fallback-price text-xs font-bold text-[var(--nyt-red)] font-mono">
               {priceStr}
             </span>
             <a 
               href={marketingUrl} 
-              className="fallback-btn bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-600 text-white text-[11px] font-bold py-1.5 px-3 rounded shadow transition-all hover:scale-[1.02] active:scale-95 text-decoration-none flex items-center gap-1"
+              className="fallback-btn bg-[var(--primary)] hover:bg-transparent text-[var(--primary-foreground)] hover:text-[var(--foreground)] border border-[var(--primary)] text-[11px] font-bold py-1.5 px-3 rounded-none transition-all duration-200 text-decoration-none flex items-center gap-1"
             >
               <span>{btnText}</span>
               <span>➔</span>
