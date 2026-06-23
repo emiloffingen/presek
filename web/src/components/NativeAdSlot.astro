@@ -1,0 +1,325 @@
+---
+import { apiBaseUrl } from '../lib/apiBase';
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
+import { localePath } from '../lib/localePaths';
+
+interface Props {
+  slotId: 'top_banner' | 'sidebar' | 'mobile_content';
+  class?: string;
+}
+
+const { slotId, class: className = '' } = Astro.props;
+const hostHeader = Astro.request?.headers.get('host');
+const lang = getLangFromUrl(Astro.url, hostHeader);
+const t = useTranslations(lang);
+const marketingUrl = localePath('/marketing', lang, hostHeader);
+
+let activeAd = null;
+try {
+  const res = await fetch(`${apiBaseUrl()}/marketing/ads/active`);
+  if (res.ok) {
+    const data = await res.json();
+    const ads = data.ads?.[slotId] || [];
+    if (ads.length > 0) {
+      // Pick a random active ad for the slot
+      activeAd = ads[Math.floor(Math.random() * ads.length)];
+    }
+  }
+} catch (e) {
+  console.error(`[NativeAdSlot] Error fetching active ads for ${slotId}:`, e);
+}
+
+// CPM rates and sizes for fallback metadata
+const meta = {
+  top_banner: {
+    price: 60,
+    size: '990x80 / 990x150',
+    minHeight: '120px'
+  },
+  sidebar: {
+    price: 75,
+    size: '300x250 / 300x600',
+    minHeight: '250px'
+  },
+  mobile_content: {
+    price: 125,
+    size: '300x250',
+    minHeight: '250px'
+  }
+}[slotId];
+
+const isMk = lang === 'mk';
+const title = isMk ? 'Купете го овој рекламен простор' : 'Kupite ovaj reklamni prostor';
+const desc = isMk 
+  ? 'Автоматизиран самопослужен систем за реклами со Stripe плаќање.' 
+  : 'Automatski samouslužni sistem za reklame sa Stripe plaćanjem.';
+const priceStr = isMk 
+  ? `Од ${meta.price} ден. / 1000 импресии (CPM)` 
+  : `Od ${meta.price} MKD / 1000 impresija (CPM)`;
+const btnText = isMk ? 'Рекламирај се' : 'Oglašavaj se';
+---
+
+{activeAd ? (
+  <div 
+    class={`native-ad-slot active-ad-container ${slotId} ${className}`} 
+    data-ad-id={activeAd.id}
+    style={`min-height: ${meta.minHeight}`}
+  >
+    <div class="ad-badge">{isMk ? 'Реклама' : 'Oglas'}</div>
+    <a 
+      href={activeAd.target_url} 
+      target="_blank" 
+      rel="noopener noreferrer" 
+      class="ad-link"
+      data-ad-id={activeAd.id}
+    >
+      <img src={activeAd.image_url} alt="Advertisement" class="ad-image" />
+    </a>
+  </div>
+) : (
+  <div class={`native-ad-slot fallback-ad-card ${slotId} ${className}`} style={`min-height: ${meta.minHeight}`}>
+    <div class="fallback-glow"></div>
+    <div class="fallback-content">
+      <div class="fallback-kicker">{isMk ? 'РЕКЛАМЕН ПРОСТОР' : 'REKLAMNI PROSTOR'} ({meta.size})</div>
+      <h4 class="fallback-title">{title}</h4>
+      <p class="fallback-desc">{desc}</p>
+      <div class="fallback-footer">
+        <span class="fallback-price">{priceStr}</span>
+        <a href={marketingUrl} class="fallback-btn">{btnText}</a>
+      </div>
+    </div>
+  </div>
+)}
+
+<script>
+  // Client-side tracking
+  document.addEventListener('DOMContentLoaded', () => {
+    // 1. Impression Tracking
+    const activeAds = document.querySelectorAll('.active-ad-container');
+    const observerOptions = {
+      root: null,
+      threshold: 0.1 // Trigger when 10% visible
+    };
+
+    const impressionObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const adContainer = entry.target;
+          const adId = adContainer.getAttribute('data-ad-id');
+          if (adId) {
+            fetch(`/api/marketing/ads/${adId}/impression`, { method: 'POST' })
+              .catch(err => console.error('Failed to log impression:', err));
+            // Unobserve to avoid double logging impressions on scroll
+            observer.unobserve(adContainer);
+          }
+        }
+      });
+    }, observerOptions);
+
+    activeAds.forEach(ad => {
+      impressionObserver.observe(ad);
+    });
+
+    // 2. Click Tracking
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const adLink = target.closest('.ad-link');
+      if (adLink) {
+        const adId = adLink.getAttribute('data-ad-id');
+        if (adId) {
+          fetch(`/api/marketing/ads/${adId}/click`, { method: 'POST' })
+            .catch(err => console.error('Failed to log click:', err));
+        }
+      }
+    });
+  });
+</script>
+
+<style>
+  .native-ad-slot {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin: 1.5rem auto;
+    overflow: hidden;
+    border-radius: 12px;
+    box-sizing: border-box;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Active Ad Styling */
+  .active-ad-container {
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border);
+  }
+  
+  :global(.dark) .active-ad-container {
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .ad-badge {
+    position: absolute;
+    top: 6px;
+    left: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+    pointer-events: none;
+    z-index: 10;
+    letter-spacing: 0.05em;
+  }
+
+  .ad-link {
+    display: block;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+  }
+
+  .ad-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    margin: 0 auto;
+    display: block;
+    border-radius: 8px;
+  }
+
+  /* Fallback Premium Aesthetics */
+  .fallback-ad-card {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    color: #f8fafc;
+    padding: 1.5rem;
+  }
+
+  :global(.dark) .fallback-ad-card {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(2, 6, 23, 0.95) 100%);
+    border-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .fallback-glow {
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 60%);
+    opacity: 0.8;
+    pointer-events: none;
+    transition: transform 0.5s ease;
+  }
+
+  .fallback-ad-card:hover .fallback-glow {
+    transform: scale(1.1);
+  }
+
+  .fallback-ad-card:hover {
+    border-color: rgba(99, 102, 241, 0.3);
+    box-shadow: 0 10px 40px -10px rgba(99, 102, 241, 0.2);
+    transform: translateY(-2px);
+  }
+
+  .fallback-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .fallback-kicker {
+    font-size: 10px;
+    font-weight: 800;
+    color: #818cf8;
+    letter-spacing: 0.15em;
+  }
+
+  .fallback-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.3;
+    color: #f8fafc;
+  }
+
+  .fallback-desc {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .fallback-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.75rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .fallback-price {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #34d399;
+  }
+
+  .fallback-btn {
+    background: linear-gradient(90deg, #4f46e5 0%, #6366f1 100%);
+    color: #ffffff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+  }
+
+  .fallback-btn:hover {
+    background: linear-gradient(90deg, #4338ca 0%, #4f46e5 100%);
+    box-shadow: 0 4px 16px rgba(79, 70, 229, 0.45);
+    transform: scale(1.03);
+  }
+
+  /* Responsive Adjustments based on Slot type */
+  .top_banner {
+    max-width: 990px;
+    margin-inline: auto;
+  }
+
+  .sidebar {
+    max-width: 300px;
+    flex-direction: column;
+  }
+
+  .mobile_content {
+    max-width: 300px;
+    flex-direction: column;
+  }
+
+  @media (max-width: 768px) {
+    .top_banner {
+      min-height: 120px !important;
+      padding: 1rem;
+    }
+    .fallback-footer {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+    .fallback-btn {
+      width: 100%;
+      text-align: center;
+    }
+  }
+</style>
