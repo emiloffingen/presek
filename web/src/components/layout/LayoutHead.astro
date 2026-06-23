@@ -95,9 +95,9 @@ const {
 
 <title>{pageTitle}</title>
 
-<ClientRouter />
+<ClientRouter nonce={cspNonce} />
 
 {schema && (
-  <script type="application/ld+json" is:inline set:html={safeJsonForScript(schema)} />
+  <script type="application/ld+json" is:inline set:html={safeJsonForScript(schema)} nonce={cspNonce} />
 )}
-<script type="application/ld+json" is:inline set:html={safeJsonForScript(organizationSchema)} />
+<script type="application/ld+json" is:inline set:html={safeJsonForScript(organizationSchema)} nonce={cspNonce} />

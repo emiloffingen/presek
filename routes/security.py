@@ -152,7 +152,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             csp = (
                 "default-src 'self'; "
                 f"script-src 'self' 'nonce-{csp_nonce}' https://cdn.jsdelivr.net; "
-                f"style-src 'self' 'nonce-{csp_nonce}' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
+                f"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
                 "font-src 'self' https://fonts.gstatic.com; "
                 "img-src 'self' data: https: blob: https://www.google-analytics.com https://www.googletagmanager.com; "
                 "connect-src 'self' https: https://www.google-analytics.com https://analytics.google.com wss:; "

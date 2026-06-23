@@ -94,7 +94,7 @@ const pageKind = normalizedPath === '/' || normalizedPath === '/mk' ? 'home' : '
 			{ 'script-latin': lang === 'sr', 'script-cyrillic': lang === 'mk' },
 		]}
 	>
-		<LayoutBodyChrome lang={lang} loadTinyAdz={loadTinyAdz} tinyAdzSite={tinyAdzSite}>
+		<LayoutBodyChrome lang={lang} loadTinyAdz={loadTinyAdz} tinyAdzSite={tinyAdzSite} cspNonce={cspNonce}>
 			<slot />
 		</LayoutBodyChrome>
 	</body>

@@ -520,6 +520,10 @@ if [ "$RUN_FRONTEND_BUILD" = "1" ]; then
     info "Building frontend..."
     install_frontend_dependencies "$RELEASE_DIR/web"
     npm run build --silent
+    info "Copying server-only font assets to client directory..."
+    mkdir -p "$RELEASE_DIR/web/dist/client/_astro"
+    cp -n "$RELEASE_DIR/web/dist/server/_astro"/*.woff2 "$RELEASE_DIR/web/dist/client/_astro/" 2>/dev/null || true
+    cp -n "$RELEASE_DIR/web/dist/server/_astro"/*.woff "$RELEASE_DIR/web/dist/client/_astro/" 2>/dev/null || true
 else
     info "Skipping frontend build for DEPLOY_MODE=$DEPLOY_MODE"
     if [ -L "$CURRENT_LINK" ] && [ -d "$(readlink -f "$CURRENT_LINK")/web/dist" ]; then

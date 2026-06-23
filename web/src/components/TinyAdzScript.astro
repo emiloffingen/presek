@@ -3,13 +3,14 @@ import { tinyAdzTestMode, TINYADZ_SCRIPT_URL } from '../lib/tinyadz';
 
 interface Props {
   siteId: string;
+  cspNonce: string;
 }
 
-const { siteId } = Astro.props;
+const { siteId, cspNonce } = Astro.props;
 const testMode = String(tinyAdzTestMode());
 ---
 
-<script is:inline define:vars={{ siteId, testMode, scriptUrl: TINYADZ_SCRIPT_URL }}>
+<script is:inline nonce={cspNonce} define:vars={{ siteId, testMode, scriptUrl: TINYADZ_SCRIPT_URL }}>
 	(function loadTinyAdz() {
 		const globalKey = '__PRESEK_TINYADZ_LOADED__';
 		if (window[globalKey]) {

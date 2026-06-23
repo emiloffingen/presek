@@ -101,6 +101,10 @@ rebuild_dist() {
   fi
 
   if (cd "$WEB_DIR" && npm run build); then
+    echo "Copying server-only font assets to client directory..." >&2
+    mkdir -p "$WEB_DIR/dist/client/_astro"
+    cp -n "$WEB_DIR/dist/server/_astro"/*.woff2 "$WEB_DIR/dist/client/_astro/" 2>/dev/null || true
+    cp -n "$WEB_DIR/dist/server/_astro"/*.woff "$WEB_DIR/dist/client/_astro/" 2>/dev/null || true
     rm -rf "$backup_dir"
     return 0
   fi
