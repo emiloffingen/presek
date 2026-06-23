@@ -141,3 +141,56 @@ def test_checkout_and_ad_lifecycle(client):
     
     # Clean up test database row
     db.execute("DELETE FROM advertising_campaigns WHERE id = %s", (campaign_id,))
+
+
+def test_stripe_webhook_processing(client):
+    from unittest.mock import patch
+    
+    mock_event = {
+        "type": "checkout.session.completed",
+        "data": {
+            "object": {
+                "metadata": {"campaign_id": "test_campaign_id_123"},
+                "id": "cs_test_123"
+            }
+        }
+    }
+    
+    with patch("stripe.Webhook.construct_event", return_value=mock_event):
+        with patch("routes.marketing.STRIPE_WEBHOOK_SECRET", "whsec_test"):
+            # Set up a pending campaign in DB
+            db.execute(
+                """INSERT INTO advertising_campaigns (
+                    id, buyer_name, buyer_email, slot_id, target_impressions,
+                    image_url, target_url, start_date, end_date, status, stripe_session_id
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                (
+                    "test_campaign_id_123",
+                    "Webhook Buyer",
+                    "webhook@example.com",
+                    "top_banner",
+                    5000,
+                    "/static/ads/test.png",
+                    "https://webhook.com",
+                    date.today(),
+                    date.today(),
+                    "pending",
+                    "cs_test_123"
+                )
+            )
+            
+            response = client.post(
+                "/api/marketing/webhook",
+                json=mock_event,
+                headers={"stripe-signature": "dummy_signature"}
+            )
+            assert response.status_code == 200
+            assert response.json() == {"status": "ok"}
+            
+            # Verify database updated to paid
+            campaign = db.execute("SELECT status FROM advertising_campaigns WHERE id = %s", ("test_campaign_id_123",))
+            assert campaign[0]["status"] == "paid"
+            
+            # Clean up
+            db.execute("DELETE FROM advertising_campaigns WHERE id = %s", ("test_campaign_id_123",))
+
