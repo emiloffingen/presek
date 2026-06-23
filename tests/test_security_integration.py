@@ -103,3 +103,68 @@ class TestCorsPolicy:
         response = client.get("/api/health", headers={"Origin": "https://evil.example"})
         assert response.status_code == 200
         assert "access-control-allow-origin" not in response.headers
+
+
+class TestSaveInsight:
+    def test_save_insight_requires_auth(self, client):
+        response = client.post("/api/intelligence/save-insight", json={})
+        assert response.status_code == 401
+
+    def test_save_insight_rejects_invalid_jwt(self, client):
+        response = client.post(
+            "/api/intelligence/save-insight",
+            json={},
+            headers={"Authorization": "Bearer invalid-jwt-token"}
+        )
+        assert response.status_code == 403
+
+    def test_save_insight_requires_csrf_token(self, client):
+        from core.auth import create_jwt_token
+        admin_token = create_jwt_token("test-admin-user", {"role": "admin", "scope": "full-access"})
+        response = client.post(
+            "/api/intelligence/save-insight",
+            json={
+                "cluster_id": "test-cluster",
+                "title": "Test Title",
+                "report": "Test Report"
+            },
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 403
+        assert "CSRF" in response.json().get("detail", "")
+
+    def test_save_insight_success(self, client):
+        from core.auth import create_jwt_token
+        from core.database import db_manager as db
+        
+        admin_token = create_jwt_token("test-admin-user", {"role": "admin", "scope": "full-access"})
+        csrf_token = generate_csrf_token()
+        client.cookies.set("csrf_token", csrf_token)
+        
+        payload = {
+            "cluster_id": "test-cluster-123",
+            "title": "A Great Insight",
+            "report": "Analysis of the market trends."
+        }
+        
+        response = client.post(
+            "/api/intelligence/save-insight",
+            json=payload,
+            headers={
+                "Authorization": f"Bearer {admin_token}",
+                "X-CSRF-Token": csrf_token
+            }
+        )
+        assert response.status_code == 200
+        assert response.json()["status"] == "success"
+        
+        # Verify db content
+        rows = db.execute("SELECT * FROM saved_insights WHERE cluster_id = %s", ("test-cluster-123",))
+        assert len(rows) >= 1
+        # Check that user_id matches the decoded JWT subject
+        assert rows[-1]["user_id"] == "test-admin-user"
+        assert rows[-1]["title"] == "A Great Insight"
+        assert rows[-1]["report"] == "Analysis of the market trends."
+        
+        # Clean up database
+        db.execute("DELETE FROM saved_insights WHERE cluster_id = %s", ("test-cluster-123",))

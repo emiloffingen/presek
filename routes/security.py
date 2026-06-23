@@ -461,6 +461,14 @@ async def admin_auth(request: Request) -> str:
     token = auth_header.split("Bearer ")[1]
     if not verify_admin_jwt(token):
         raise HTTPException(status_code=403, detail="Not authorized")
+    
+    from core.auth import decode_jwt
+    try:
+        payload = decode_jwt(token)
+        if payload and "sub" in payload:
+            return payload["sub"]
+    except Exception:
+        pass
     return "admin"
 
 

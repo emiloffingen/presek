@@ -46,7 +46,7 @@ Full application audit covering FastAPI backend, Astro frontend, deployment/ops,
 |---|-------|--------|
 | 22 | Duplicate `/api/health` contracts | **Fixed** | Single app-level route (router duplicate removed) |
 | 23 | Inconsistent error handling | **Fixed** | `core/api_errors.py` + global exception handlers; `soft_error()` for graceful 200s |
-| 24 | `saved_insights` admin label as user_id | Open |
+| 24 | `saved_insights` admin label as user_id | **Fixed** | Extracted and saved JWT `sub` as the user_id |
 | 25 | f-string SQL pattern | Open — audit-only |
 | 26 | Alembic without ORM models | Open — by design |
 | 27 | Global font payload | **Fixed** | Locale-split `fonts-sr.css` / `fonts-mk.css` |
@@ -58,7 +58,7 @@ Full application audit covering FastAPI backend, Astro frontend, deployment/ops,
 | 32 | `shared/.env` permissions | **Fixed** | `chmod 600` in bootstrap |
 | 33 | Single uvicorn worker | **Fixed** | `UVICORN_WORKERS` (default 2) + raised MemoryMax |
 | 34 | No offsite backup cron | **Fixed** | `sync_backups_offsite.sh` + crontab + `verify_backup.sh` |
-| 35 | Rollback vs migrations | Open — documented |
+| 35 | Rollback vs migrations | **Fixed** | Documented in `docs/DEPLOYMENT_CHECKLIST.md` |
 
 ## Low (P3)
 
@@ -72,8 +72,7 @@ Full application audit covering FastAPI backend, Astro frontend, deployment/ops,
 
 ## Recommended fix order (remaining)
 
-1. `saved_insights` admin label (P2 #24) — cosmetic
-2. Rollback vs migrations documentation (P2 #35)
+*No remaining P1/P2 fixes.*
 
 ---
 

@@ -244,6 +244,37 @@ This document provides a comprehensive checklist for deploying Presek in product
    sudo systemctl restart presek-*.service
    ```
 
+### 🗄️ Database Migrations during Rollbacks (Rollback vs Migrations)
+
+If the deployment you are rolling back introduced database schema changes (i.e. migrations), you must determine whether the database needs to be rolled back.
+
+1. **Determine compatibility**:
+   * If the schema changes are backward-compatible (e.g., adding a nullable column), the older code should function normally, and **no database rollback is required**.
+   * If the schema changes are backward-incompatible (e.g., column drop, rename, table constraint changes), you must revert the database schema.
+
+2. **Reverting via Alembic (Cleanest Option)**:
+   If the rollback is clean and you want to use Alembic:
+   ```bash
+   # Enter the app directory and activate virtual env
+   cd /home/emiloffingen/presek
+   
+   # Check the current database migration revision
+   .venv/bin/alembic current
+   
+   # Downgrade to the revision just before the failed migration
+   .venv/bin/alembic downgrade <previous_revision_id>
+   # Or to downgrade by exactly 1 revision step:
+   .venv/bin/alembic downgrade -1
+   ```
+
+3. **Reverting via Database Backup (Safest Option)**:
+   A pre-deploy database backup is automatically created during deployment before migrations run. If the Alembic downgrade is failing or dangerous:
+   ```bash
+   # Locate the automatic database backup in deploy log / backup folder (e.g., under backups/)
+   # Restore the database using backup tools:
+   pg_restore -d presek backups/db_backup_pre_deploy_<timestamp>.dump
+   ```
+
 ## 📝 Configuration Reference
 
 ### Production Environment Variables
