@@ -25,7 +25,7 @@ const CPM_RATES: Record<string, number> = {
 
 const MKD_PER_EUR = 61.5;
 const RSD_PER_EUR = 117.0;
-const MIN_CHECKOUT_EUR = 50;
+const MIN_CHECKOUT_EUR = 10;
 
 const translations = {
   mk: {
