@@ -7,8 +7,8 @@ import Footer from '../Footer.astro';
 import { isMostlyCyrillic } from '../../utils/textUtils';
 import { useTranslations } from '../../i18n/utils';
 import { homePath } from '../../lib/localePaths';
-import TinyAdzRailAd from '../TinyAdzRailAd.astro';
-import TinyAdzInlinedAd from '../TinyAdzInlinedAd.astro';
+import PresekRailAd from '../PresekRailAd.astro';
+import PresekInlinedAd from '../PresekInlinedAd.astro';
 import type { ui } from '../../i18n/ui';
 import '../../styles/page-systems.css';
 
@@ -56,7 +56,7 @@ const pageDescription = t('entity.meta_description').replace('{name}', decodedNa
                         <EntityIsland client:visible name={decodedName} initialData={entityData} lang={lang} />
                     </div>
 
-                    <TinyAdzInlinedAd class="page-inline-ad entity-inline-ad mb-10" />
+                    <PresekInlinedAd class="page-inline-ad entity-inline-ad mb-10" />
 
                     <section class="entity-related-events">
                         <h2 class="section-title-italic">{t('entity.related_events')}</h2>
@@ -88,7 +88,7 @@ const pageDescription = t('entity.meta_description').replace('{name}', decodedNa
                 </div>
 
                 <aside class="editorial-broadsheet-rail">
-                    <TinyAdzRailAd />
+                    <PresekRailAd />
 
                     <details class="editorial-rail-context">
                         <summary class="editorial-rail-context-summary">

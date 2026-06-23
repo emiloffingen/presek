@@ -16,8 +16,8 @@ import { prepareSynthesisParagraph } from '../../utils/synthesisCopy';
 
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import { buildCanonicalUrl, localePath, homePath, siteOrigin } from '../../lib/localePaths';
-import TinyAdzInlinedAd from '../../components/TinyAdzInlinedAd.astro';
-import TinyAdzRailAd from '../../components/TinyAdzRailAd.astro';
+import PresekInlinedAd from '../../components/PresekInlinedAd.astro';
+import PresekRailAd from '../../components/PresekRailAd.astro';
 import {
 	getConsensusNote,
 	resolveHasCitationSources,
@@ -721,7 +721,7 @@ const articleSchema = cluster ? {
 							</ClusterAnalysisSection>
 						)}
 
-						<TinyAdzInlinedAd class="cluster-inlined-ad mb-12" />
+						<PresekInlinedAd class="cluster-inlined-ad mb-12" />
 
 						{/* RELATED SECTION */}
 						{crossLingualCounterparts.length > 0 && (
@@ -777,7 +777,7 @@ const articleSchema = cluster ? {
 										keyEntities={keyEntities}
 									/>
 									<div class="sidebar-module sidebar-ad-slot">
-										<TinyAdzRailAd />
+										<PresekRailAd />
 									</div>
 								</div>
 							</div>

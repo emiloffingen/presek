@@ -3,7 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
-import TinyAdzRailAd from '../components/TinyAdzRailAd.astro';
+import PresekRailAd from '../components/PresekRailAd.astro';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import { localePath } from '../lib/localePaths';
 
@@ -64,7 +64,7 @@ const l = (path: string) => localePath(path, lang, hostHeader);
             </div>
 
             <aside class="broadsheet-rail">
-                <TinyAdzRailAd />
+                <PresekRailAd />
 
                 <section class="rail-block rail-block-alt">
                     <p class="rail-kicker">{t('editorial.rail_focus_kicker')}</p>

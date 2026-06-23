@@ -1,7 +1,7 @@
 ---
 import NewsCard from '../NewsCard.astro';
-import TinyAdzInlinedAd from '../TinyAdzInlinedAd.astro';
-import TinyAdzRailAd from '../TinyAdzRailAd.astro';
+import PresekInlinedAd from '../PresekInlinedAd.astro';
+import PresekRailAd from '../PresekRailAd.astro';
 import TopicPageHero from './TopicPageHero.astro';
 import { ArrowRight } from 'lucide-react';
 import type { TopicPageLabels } from '../../lib/topicPageData';
@@ -95,7 +95,7 @@ const l = localePath;
       </section>
     )}
 
-    <TinyAdzInlinedAd class="topic-inline-ad mb-10" />
+    <PresekInlinedAd class="topic-inline-ad mb-10" />
 
     {keyAngles.length > 0 && (
       <section class="topic-angles">
@@ -153,7 +153,7 @@ const l = localePath;
   </div>
 
   <aside class="topic-rail">
-    <TinyAdzRailAd />
+    <PresekRailAd />
 
     <details class="topic-rail-context">
       <summary class="topic-rail-context-summary">

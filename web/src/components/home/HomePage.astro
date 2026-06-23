@@ -17,8 +17,8 @@ import DevelopmentsSection from './DevelopmentsSection.astro';
 import HomeUnifiedFeed from './HomeUnifiedFeed.astro';
 import HomePregledTeaser from './HomePregledTeaser.astro';
 import HomeSynthesisTeaser from './HomeSynthesisTeaser.astro';
-import TinyAdzInlinedAd from '../TinyAdzInlinedAd.astro';
-import TinyAdzRailAd from '../TinyAdzRailAd.astro';
+import PresekInlinedAd from '../PresekInlinedAd.astro';
+import PresekRailAd from '../PresekRailAd.astro';
 import { loadHomepageViewModel } from '../../lib/homepageViewModel';
 import { safeJsonForScript } from '../../lib/safeJson';
 import { getBriefingSnippet } from '../../lib/homepageData';
@@ -229,7 +229,7 @@ if (analizaNavItems.length > 0) {
 
                 {isPregled && isHomepage && !error && (
                     <div class="section-wrapper home-inline-ad-slot home-inline-ad-slot--pregled-top">
-                        <TinyAdzInlinedAd class="home-inline-ad" />
+                        <PresekInlinedAd class="home-inline-ad" />
                     </div>
                 )}
 
@@ -351,7 +351,7 @@ if (analizaNavItems.length > 0) {
 
                 {!error && isHomepage && !isPregled && (
                     <div class="section-wrapper home-inline-ad-slot home-inline-ad-slot--rail-feed home-feed-only home-edition-collapsed">
-                        <TinyAdzRailAd class="home-feed-rail-ad" />
+                        <PresekRailAd class="home-feed-rail-ad" />
                     </div>
                 )}
 

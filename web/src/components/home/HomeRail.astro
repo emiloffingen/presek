@@ -7,7 +7,7 @@ import NewsletterIsland from '../NewsletterIsland.tsx';
 import { getDisplayTitle } from '../../utils/textUtils';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import { localePath, homePath } from '../../lib/localePaths';
-import TinyAdzRailAd from '../TinyAdzRailAd.astro';
+import PresekRailAd from '../PresekRailAd.astro';
 import { normalizeFocusEntitySurface } from '../../lib/focusEntityNormalize';
 
 
@@ -73,7 +73,7 @@ const uniqueEntities = Array.from(uniqueEntitiesMap.values())
 		</section>
 	)}
 
-	<TinyAdzRailAd class="rail-inlined-ad" />
+	<PresekRailAd class="rail-inlined-ad" />
 
 	<NationalMoodIsland lang={lang} client:visible />
 

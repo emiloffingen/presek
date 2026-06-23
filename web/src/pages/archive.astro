@@ -12,8 +12,8 @@ import { CalendarDays, ChevronRight, Hash, Building2, Sparkles, Search, Activity
 
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import { localePath, homePath } from '../lib/localePaths';
-import TinyAdzRailAd from '../components/TinyAdzRailAd.astro';
-import TinyAdzInlinedAd from '../components/TinyAdzInlinedAd.astro';
+import PresekRailAd from '../components/PresekRailAd.astro';
+import PresekInlinedAd from '../components/PresekInlinedAd.astro';
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
@@ -231,7 +231,7 @@ function formatBriefingItem(item: string) {
                 </div>
             ) : null}
 
-            <TinyAdzInlinedAd class="page-inline-ad archive-inline-ad mb-10" />
+            <PresekInlinedAd class="page-inline-ad archive-inline-ad mb-10" />
 
             <div class="archive-feed-list">
                 {error ? (
@@ -251,7 +251,7 @@ function formatBriefingItem(item: string) {
         </section>
 
         <aside class="broadsheet-rail pl-4">
-            <TinyAdzRailAd />
+            <PresekRailAd />
 
             <div class="rail-nav-block mb-12">
                 <a href={localePath('/archive', lang, hostHeader)} class="group flex items-center justify-between p-4 bg-foreground text-background rounded-sm transition-all hover:bg-presek-mark shadow-lg shadow-black/5 hover:-translate-y-1">

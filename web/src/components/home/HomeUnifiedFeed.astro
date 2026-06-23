@@ -1,6 +1,6 @@
 ---
 import NewsCard from '../NewsCard.astro';
-import TinyAdzInlinedAd from '../TinyAdzInlinedAd.astro';
+import PresekInlinedAd from '../PresekInlinedAd.astro';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import type { UnifiedFeedItem } from '../../lib/unifiedFeed';
 import { countFeedBuckets } from '../../lib/unifiedFeed';
@@ -65,7 +65,7 @@ function getBentoSpan(cluster: UnifiedFeedItem['cluster']) {
                     <>
                         {showMidFeedAd && (
                             <div class="home-feed-ad-break">
-                                <TinyAdzInlinedAd class="home-inline-ad home-inline-ad--mid-feed" />
+                                <PresekInlinedAd class="home-inline-ad home-inline-ad--mid-feed" />
                             </div>
                         )}
                     <div

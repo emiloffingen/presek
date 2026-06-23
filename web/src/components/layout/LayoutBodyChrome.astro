@@ -1,16 +1,13 @@
 ---
 import ConsentBanner from '../ConsentBanner';
 import UiConceptOnboarding from '../UiConceptOnboarding';
-import TinyAdzScript from '../TinyAdzScript.astro';
 
 interface Props {
   lang: 'sr' | 'mk';
-  loadTinyAdz: boolean;
-  tinyAdzSite: string;
   cspNonce: string;
 }
 
-const { lang, loadTinyAdz, tinyAdzSite, cspNonce } = Astro.props;
+const { lang, cspNonce } = Astro.props;
 const skipLabel = lang === 'mk' ? 'Прескокни до содржина' : 'Preskoči na sadržaj';
 ---
 
@@ -24,4 +21,3 @@ const skipLabel = lang === 'mk' ? 'Прескокни до содржина' : '
 <script is:inline src="/js/presek-motion.js" defer></script>
 <script is:inline src="/js/presek-images.js" defer></script>
 <script is:inline src="/js/presek-audio.js" defer></script>
-{loadTinyAdz && <TinyAdzScript siteId={tinyAdzSite} cspNonce={cspNonce} />}

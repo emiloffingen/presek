@@ -15,7 +15,6 @@ import {
   siteDisplayName,
 } from '../lib/layoutMeta';
 import { proxyBaseUrl } from '../lib/apiBase';
-import { shouldLoadTinyAdzScript, tinyAdzSiteId } from '../lib/tinyadz';
 
 interface Props {
 	title: string;
@@ -55,8 +54,6 @@ const { canonicalUrl, imageUrl, srHref, mkHref } = resolveLayoutUrls(
 	image,
 	canonical,
 );
-const loadTinyAdz = shouldLoadTinyAdzScript(lang, hostHeader);
-const tinyAdzSite = loadTinyAdz ? tinyAdzSiteId(lang, hostHeader) : '';
 const proxyBase = proxyBaseUrl();
 const cspNonce = Astro.locals.cspNonce;
 const gtagId = gtagIdForLang(lang);
@@ -94,7 +91,7 @@ const pageKind = normalizedPath === '/' || normalizedPath === '/mk' ? 'home' : '
 			{ 'script-latin': lang === 'sr', 'script-cyrillic': lang === 'mk' },
 		]}
 	>
-		<LayoutBodyChrome lang={lang} loadTinyAdz={loadTinyAdz} tinyAdzSite={tinyAdzSite} cspNonce={cspNonce}>
+		<LayoutBodyChrome lang={lang} cspNonce={cspNonce}>
 			<slot />
 		</LayoutBodyChrome>
 	</body>

@@ -5,7 +5,7 @@ import Breadcrumbs from '../components/Breadcrumbs.astro';
 import IzvoriPage from '../components/IzvoriPage';
 import { ErrorBoundary } from '../components/ui/ErrorBoundary.tsx';
 import Footer from '../components/Footer.astro';
-import TinyAdzInlinedAd from '../components/TinyAdzInlinedAd.astro';
+import PresekInlinedAd from '../components/PresekInlinedAd.astro';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import '../styles/sources-premium.css';
 
@@ -19,7 +19,7 @@ const t = useTranslations(lang);
 
 	<main class="site-layout broadsheet-layout page-content-top pb-[var(--page-py)] sources-page-scope">
 		<Breadcrumbs items={[{ label: t('sources.breadcrumb') }]} />
-		<TinyAdzInlinedAd class="page-inline-ad mb-10" />
+		<PresekInlinedAd class="page-inline-ad mb-10" />
 		<ErrorBoundary client:idle lang={lang}>
 			<IzvoriPage lang={lang} client:visible />
 		</ErrorBoundary>
