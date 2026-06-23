@@ -145,7 +145,8 @@ async def create_ad_checkout(
                 end_dt,
                 status,
                 session_id
-            )
+            ),
+            fetch=False
         )
 
         return {"status": "success", "checkout_url": checkout_url, "campaign_id": campaign_id}
@@ -180,11 +181,11 @@ async def stripe_webhook(request: Request):
 
         if campaign_id:
             sql = "UPDATE advertising_campaigns SET status = 'paid' WHERE id = %s"
-            await db.async_execute(sql, (campaign_id,))
+            await db.async_execute(sql, (campaign_id,), fetch=False)
             log.info(f"[marketing] Ad campaign {campaign_id} successfully paid and activated.")
         elif session_id:
             sql = "UPDATE advertising_campaigns SET status = 'paid' WHERE stripe_session_id = %s"
-            await db.async_execute(sql, (session_id,))
+            await db.async_execute(sql, (session_id,), fetch=False)
             log.info(f"[marketing] Ad session {session_id} successfully paid and activated.")
 
     return {"status": "ok"}
@@ -221,7 +222,7 @@ async def get_active_ads():
 async def track_ad_click(ad_id: str):
     try:
         sql = "UPDATE advertising_campaigns SET clicks = clicks + 1 WHERE id = %s"
-        await db.async_execute(sql, (ad_id,))
+        await db.async_execute(sql, (ad_id,), fetch=False)
         return {"status": "success"}
     except Exception as e:
         log.error(f"[marketing] Click tracking failed for {ad_id}: {e}")
@@ -231,14 +232,14 @@ async def track_ad_click(ad_id: str):
 async def track_ad_impression(ad_id: str):
     try:
         sql = "UPDATE advertising_campaigns SET impressions_delivered = impressions_delivered + 1 WHERE id = %s"
-        await db.async_execute(sql, (ad_id,))
+        await db.async_execute(sql, (ad_id,), fetch=False)
         
         # Check if campaign target was reached to auto-complete
         check_sql = "SELECT impressions_delivered, target_impressions FROM advertising_campaigns WHERE id = %s"
         row = await db.async_execute_one(check_sql, (ad_id,))
         if row and row["impressions_delivered"] >= row["target_impressions"]:
             update_status_sql = "UPDATE advertising_campaigns SET status = 'completed' WHERE id = %s"
-            await db.async_execute(update_status_sql, (ad_id,))
+            await db.async_execute(update_status_sql, (ad_id,), fetch=False)
             log.info(f"[marketing] Ad campaign {ad_id} has reached its impression target and is completed.")
             
         return {"status": "success"}
