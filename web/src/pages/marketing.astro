@@ -80,22 +80,22 @@ const campaignId = Astro.url.searchParams.get('campaign_id');
           <div class="flex justify-between items-center text-sm">
             <span class="text-slate-200 font-bold">Top Banner (990x80/990x150)</span>
             <div class="flex gap-10 font-mono">
-              <span class="text-slate-500 line-through">120 MKD</span>
-              <span class="text-emerald-400 font-bold">60 MKD</span>
+              <span class="text-slate-500 line-through">{lang === 'mk' ? '120 MKD' : '234 RSD'}</span>
+              <span class="text-emerald-400 font-bold">{lang === 'mk' ? '60 MKD' : '117 RSD'}</span>
             </div>
           </div>
           <div class="flex justify-between items-center text-sm">
             <span class="text-slate-200 font-bold">Sidebar (300x250/300x600)</span>
             <div class="flex gap-10 font-mono">
-              <span class="text-slate-500 line-through">150 MKD</span>
-              <span class="text-emerald-400 font-bold">75 MKD</span>
+              <span class="text-slate-500 line-through">{lang === 'mk' ? '150 MKD' : '292 RSD'}</span>
+              <span class="text-emerald-400 font-bold">{lang === 'mk' ? '75 MKD' : '146 RSD'}</span>
             </div>
           </div>
           <div class="flex justify-between items-center text-sm">
             <span class="text-slate-200 font-bold">Mobile Content (300x250)</span>
             <div class="flex gap-10 font-mono">
-              <span class="text-slate-500 line-through">250 MKD</span>
-              <span class="text-emerald-400 font-bold">125 MKD</span>
+              <span class="text-slate-500 line-through">{lang === 'mk' ? '250 MKD' : '468 RSD'}</span>
+              <span class="text-emerald-400 font-bold">{lang === 'mk' ? '125 MKD' : '234 RSD'}</span>
             </div>
           </div>
         </div>
