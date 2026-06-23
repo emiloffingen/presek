@@ -144,6 +144,7 @@ const toolNavItems: NavItem[] = [
     { label: t('nav.for_you'), href: l('/for-you') },
     { label: t('nav.pulse'), href: l('/pulse') },
     { label: t('nav.graph'), href: l('/graf') },
+    { label: t('nav.marketing'), href: l('/marketing') },
     { label: t('nav.settings'), href: l('/settings') },
 ];
 const normalizedPath = Astro.url.pathname.replace(/\/$/, '');
@@ -301,6 +302,7 @@ const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
                             <a href={pregledHref} class="utility-menu-link">{t('nav.pregled')}</a>
                             <a href={l('/pulse')} class="utility-menu-link">{t('nav.pulse')}</a>
                             <a href={l('/graf')} class="utility-menu-link">{t('nav.graph')}</a>
+                            <a href={l('/marketing')} class="utility-menu-link">{t('nav.marketing')}</a>
                             <a href={l('/settings')} class="utility-menu-link">{t('nav.settings')}</a>
                             <ScriptSwitcher />
                             <TextScaleIsland client:media="(max-width: 768px)" lang={lang} />

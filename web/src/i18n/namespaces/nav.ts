@@ -31,6 +31,7 @@ export const nav = {
     'nav.support': 'Podrži Presek',
     'nav.terms': 'Uslovi korišćenja',
     'nav.top': 'NA VRH',
+    'nav.marketing': 'Oglašavanje',
   },
   mk: {
     'nav.about': 'За нас',
@@ -64,5 +65,6 @@ export const nav = {
     'nav.support': 'Поддржи го Пресек',
     'nav.terms': 'Услови на користење',
     'nav.top': 'НА ВРВ',
+    'nav.marketing': 'Рекламирање',
   },
 } as const;
