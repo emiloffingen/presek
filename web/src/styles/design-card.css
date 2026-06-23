@@ -169,7 +169,7 @@ a:hover .design-card-cta {
     inset: 0;
     z-index: 0;
     filter: saturate(0.82) contrast(0.98);
-    object-fit: cover;
+    object-fit: contain;
     padding: 0;
     opacity: 1;
 }
@@ -191,7 +191,7 @@ a:hover .design-card-cta {
         width: 100%;
         height: 100%;
         padding: 0;
-        object-fit: cover;
+        object-fit: contain;
         filter: saturate(0.72) contrast(0.96);
         opacity: 1;
     }
@@ -203,7 +203,7 @@ a:hover .design-card-cta {
 
     .nyt-article:not(.lead-story) .image-wrap[data-image-state="fallback"] .runtime-image-container .article-image-fallback {
         padding: 0;
-        object-fit: cover;
+        object-fit: contain;
         filter: saturate(0.72) contrast(0.96);
         opacity: 1;
     }

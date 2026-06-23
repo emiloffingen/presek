@@ -533,7 +533,7 @@
 
   .article-image-fallback {
     aspect-ratio: 8 / 5;
-    object-fit: cover;
+    object-fit: contain;
     background: color-mix(in srgb, var(--background) 80%, #f4ede3 20%);
   }
 

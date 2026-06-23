@@ -631,7 +631,7 @@ function getTimeStr(dateStr: string) {
         inset: 0;
         z-index: 0;
         filter: saturate(0.82) contrast(0.98);
-        object-fit: cover;
+        object-fit: contain;
         padding: 0;
         opacity: 1;
     }
@@ -753,14 +753,14 @@ function getTimeStr(dateStr: string) {
             width: 100%;
             height: 100%;
             padding: 0;
-            object-fit: cover;
+            object-fit: contain;
             filter: saturate(0.72) contrast(0.96);
             opacity: 1;
         }
 
         .nyt-article:not(.lead-story).has-useful-image .image-wrap[data-image-state="fallback"] .article-image-fallback {
             padding: 0;
-            object-fit: cover;
+            object-fit: contain;
             filter: saturate(0.72) contrast(0.96);
             opacity: 1;
         }
