@@ -1,5 +1,5 @@
 ---
-import TinyAdzInlinedAd from './TinyAdzInlinedAd.astro';
+import NativeAdSlot from './NativeAdSlot.astro';
 
 interface Props {
   class?: string;
@@ -8,7 +8,7 @@ interface Props {
 const { class: className } = Astro.props;
 ---
 
-<TinyAdzInlinedAd class:list={['page-rail-ad', className]} />
+<NativeAdSlot slotId="sidebar" class={`page-rail-ad ${className || ''}`} />
 
 <style>
   :global(.page-rail-ad) {

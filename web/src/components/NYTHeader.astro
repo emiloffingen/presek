@@ -13,6 +13,7 @@ import Branding from './Branding.astro';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import { localePath, homePath } from '../lib/localePaths';
 import { filterTrendingNavItems } from '../lib/navEntityFilter';
+import NativeAdSlot from './NativeAdSlot.astro';
 
 interface Props {
     category?: string | null;
@@ -187,7 +188,12 @@ function getRelativeTimeStr(dateStr?: string) {
         return '';
     }
 }
+
+const adFreePaths = ['/for-you', '/settings', '/briefing', '/marketing', '/mk/marketing'];
+const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
 ---
+
+{showTopAd && <NativeAdSlot slotId="top_banner" class="max-w-[990px] mx-auto my-4 px-4" />}
 
 <div class="header-sticky-wrapper" id="main-header">
     {hasTicker && (

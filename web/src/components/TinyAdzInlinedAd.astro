@@ -1,6 +1,6 @@
 ---
+import NativeAdSlot from './NativeAdSlot.astro';
 import { getLangFromUrl } from '../i18n/utils';
-import { shouldShowTinyAdzInlinedAds } from '../lib/tinyadz';
 
 interface Props {
   class?: string;
@@ -11,100 +11,10 @@ const { class: className } = Astro.props;
 const requestUrl = Astro.request ? new URL(Astro.request.url) : Astro.url;
 const hostHeader = Astro.request?.headers.get('host') || requestUrl.hostname;
 const lang = getLangFromUrl(requestUrl, hostHeader);
-const pathname = requestUrl.pathname;
+
+// Exclude ad-free pages
+const adFreePaths = ['/for-you', '/settings', '/briefing', '/marketing', '/mk/marketing'];
+const showAd = !adFreePaths.some(p => requestUrl.pathname.endsWith(p));
 ---
 
-{shouldShowTinyAdzInlinedAds(lang, hostHeader, pathname) && (
-  <div
-    ta-ad-container=""
-    class:list={['tinyadz-inlined', className]}
-    aria-label={lang === 'sr' ? 'Oglas' : 'Реклама'}
-  />
-)}
-
-<style>
-  .tinyadz-inlined {
-    position: relative;
-    display: block;
-    width: 100%;
-    min-width: 250px;
-    min-height: 112px;
-    max-width: 900px;
-    margin-inline: auto;
-    border-top: 1px solid color-mix(in srgb, var(--foreground) 12%, var(--border));
-    border-bottom: 1px solid color-mix(in srgb, var(--foreground) 12%, var(--border));
-    background:
-      linear-gradient(90deg, color-mix(in srgb, var(--foreground) 4%, transparent) 0 1px, transparent 1px 100%),
-      color-mix(in srgb, var(--secondary) 28%, transparent);
-    background-size: 2.75rem 100%, auto;
-  }
-
-  .tinyadz-inlined::before {
-    content: attr(aria-label);
-    position: absolute;
-    top: -0.62rem;
-    left: 0.7rem;
-    padding: 0 0.35rem;
-    background: var(--background);
-    color: color-mix(in srgb, var(--muted-foreground) 72%, transparent);
-    font-family: var(--font-ui);
-    font-size: var(--text-ui-min);
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    line-height: 1;
-    text-transform: uppercase;
-  }
-
-  :global(.page-rail-ad) {
-    max-width: 320px;
-    min-height: 280px;
-    border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
-    border-top: 2px solid color-mix(in srgb, var(--foreground) 72%, var(--border));
-    background:
-      radial-gradient(circle at 24% 12%, color-mix(in srgb, var(--nyt-accent) 7%, transparent), transparent 34%),
-      color-mix(in srgb, var(--secondary) 34%, var(--background));
-  }
-
-  :global(.page-rail-ad)::before {
-    top: 0.75rem;
-    left: 0.8rem;
-    background: transparent;
-  }
-
-  :global(.rail-inlined-ad) {
-    margin-bottom: 1.5rem;
-  }
-
-  :global(.page-inline-ad) {
-    margin-bottom: 2.5rem;
-  }
-
-  :global(.tinyadz-inlined.cluster-inlined-ad),
-  :global(.tinyadz-inlined.archive-inline-ad),
-  :global(.tinyadz-inlined.topic-inline-ad),
-  :global(.tinyadz-inlined.entity-inline-ad),
-  :global(.tinyadz-inlined.page-inline-ad) {
-    min-height: 88px;
-    border-top-color: color-mix(in srgb, var(--foreground) 8%, var(--border));
-    border-bottom-color: color-mix(in srgb, var(--foreground) 8%, var(--border));
-    background:
-      linear-gradient(90deg, color-mix(in srgb, var(--foreground) 2%, transparent) 0 1px, transparent 1px 100%),
-      color-mix(in srgb, var(--secondary) 18%, transparent);
-  }
-
-  :global(.tinyadz-inlined.page-rail-ad) {
-    min-height: 240px;
-    border-top-width: 1px;
-    background:
-      radial-gradient(circle at 24% 12%, color-mix(in srgb, var(--nyt-accent) 4%, transparent), transparent 34%),
-      color-mix(in srgb, var(--secondary) 22%, var(--background));
-  }
-
-  @media (max-width: 767px) {
-    .tinyadz-inlined {
-      min-height: 92px;
-      min-width: 0;
-      background-size: 2.25rem 100%, auto;
-    }
-  }
-</style>
+{showAd && <NativeAdSlot slotId="mobile_content" class={className} />}
