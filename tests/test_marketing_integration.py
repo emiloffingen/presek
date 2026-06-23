@@ -75,25 +75,27 @@ def test_checkout_validation_large_file(client):
     assert "File size exceeds maximum allowed of 150KB" in response.json()["detail"]
 
 def test_checkout_and_ad_lifecycle(client):
+    from unittest.mock import patch
     # Ensure tables are clean or we can query
     file_data = io.BytesIO(b"valid image data")
     today = date.today().isoformat()
     tomorrow = (date.today() + timedelta(days=1)).isoformat()
     
     # 1. Success checkout flow (sandbox)
-    response = client.post(
-        "/api/marketing/checkout",
-        data={
-            "buyer_name": "Lifecycle Buyer",
-            "buyer_email": "lifecycle@example.com",
-            "slot_id": "top_banner",
-            "target_impressions": 10000,
-            "target_url": "https://lifecycle-test.com",
-            "start_date": today,
-            "end_date": tomorrow
-        },
-        files={"file": ("test.png", file_data, "image/png")}
-    )
+    with patch("routes.marketing.STRIPE_API_KEY", ""):
+        response = client.post(
+            "/api/marketing/checkout",
+            data={
+                "buyer_name": "Lifecycle Buyer",
+                "buyer_email": "lifecycle@example.com",
+                "slot_id": "top_banner",
+                "target_impressions": 10000,
+                "target_url": "https://lifecycle-test.com",
+                "start_date": today,
+                "end_date": tomorrow
+            },
+            files={"file": ("test.png", file_data, "image/png")}
+        )
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "success"
