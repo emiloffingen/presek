@@ -32,5 +32,6 @@ fi
 export APP_ROOT
 export DEPLOY_GIT_DIR
 export DEPLOY_GIT_BRANCH
+export SPLIT_VENVS="${SPLIT_VENVS:-1}"
 
 exec bash "$DEPLOY_SCRIPT"

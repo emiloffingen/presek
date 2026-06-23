@@ -57,6 +57,11 @@ ensure_shared_env() {
 }
 
 ensure_runtime_venv() {
+  if [ "${SPLIT_VENVS:-}" = "" ] && [ -f "$SHARED_DIR/.env" ] && grep -q '^PRESEK_API_VENV=' "$SHARED_DIR/.env"; then
+    info "Detected PRESEK_API_VENV in shared/.env — enabling SPLIT_VENVS=1"
+    SPLIT_VENVS=1
+  fi
+
   if [ "${SPLIT_VENVS:-0}" = "1" ]; then
     info "SPLIT_VENVS=1 — creating API and worker venvs"
     SOURCE_ROOT="$SOURCE_ROOT" APP_ROOT="$APP_ROOT" FORCE_BOOTSTRAP="$FORCE_BOOTSTRAP" \
