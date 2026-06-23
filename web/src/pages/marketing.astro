@@ -21,39 +21,39 @@ const campaignId = Astro.url.searchParams.get('campaign_id');
   
   <main class="site-layout broadsheet-layout py-[var(--page-py)] marketing-page-scope">
     {status === 'success' && (
-      <div className="max-w-4xl mx-auto mb-8 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg shadow-emerald-500/5">
+      <div class="max-w-4xl mx-auto mb-8 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg shadow-emerald-500/5">
         <div>
-          <h3 className="font-extrabold text-lg mb-1">
+          <h3 class="font-extrabold text-lg mb-1">
             {lang === 'mk' ? 'Резервацијата е успешна!' : 'Rezervacija je uspešna!'}
           </h3>
-          <p className="text-sm opacity-90">
+          <p class="text-sm opacity-90">
             {lang === 'mk' 
               ? 'Вашата уплата е потврдена и кампањата е активирана.' 
               : 'Vaša uplata je potvrđena i kampanja je aktivirana.'}
           </p>
           {campaignId && (
-            <span className="text-xxs font-mono text-emerald-500/70 block mt-2">
+            <span class="text-xxs font-mono text-emerald-500/70 block mt-2">
               Campaign ID: {campaignId}
             </span>
           )}
         </div>
-        <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 text-xl font-bold">✓</div>
+        <div class="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 text-xl font-bold">✓</div>
       </div>
     )}
 
     {status === 'cancel' && (
-      <div className="max-w-4xl mx-auto mb-8 bg-amber-500/10 border border-amber-500/20 text-amber-400 p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg shadow-amber-500/5">
+      <div class="max-w-4xl mx-auto mb-8 bg-amber-500/10 border border-amber-500/20 text-amber-400 p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg shadow-amber-500/5">
         <div>
-          <h3 className="font-extrabold text-lg mb-1">
+          <h3 class="font-extrabold text-lg mb-1">
             {lang === 'mk' ? 'Плаќањето е откажано' : 'Plaćanje je otkazano'}
           </h3>
-          <p className="text-sm opacity-90">
+          <p class="text-sm opacity-90">
             {lang === 'mk'
               ? 'Резервацијата на рекламниот простор беше прекината. Ве молиме обидете се повторно.'
               : 'Rezervacija reklamnog prostora je prekinuta. Molimo pokušajte ponovo.'}
           </p>
         </div>
-        <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 shrink-0 text-xl font-bold">!</div>
+        <div class="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 shrink-0 text-xl font-bold">!</div>
       </div>
     )}
 
