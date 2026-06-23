@@ -416,13 +416,10 @@
             white-space: nowrap;
         }
         .unified-ticker-track-wrap {
-            display: none;
+            display: block;
         }
         .mobile-ticker-compact {
-            display: flex;
-            flex: 1;
-            min-width: 0;
-            padding-right: 0.55rem;
+            display: none;
         }
         .live-ticker-headline {
             font-size: 0.75rem;
