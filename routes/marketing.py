@@ -182,13 +182,25 @@ async def stripe_webhook(request: Request):
         session_id = session.get("id")
 
         if campaign_id:
-            sql = "UPDATE advertising_campaigns SET status = 'paid' WHERE id = %s"
-            await db.async_execute(sql, (campaign_id,), fetch=False)
-            log.info(f"[marketing] Ad campaign {campaign_id} successfully paid and activated.")
+            # Enforce webhook handler idempotency
+            check_sql = "SELECT status FROM advertising_campaigns WHERE id = %s"
+            row = await db.async_execute_one(check_sql, (campaign_id,))
+            if row and row.get("status") == "paid":
+                log.info(f"[marketing] Ad campaign {campaign_id} already marked as paid (webhook call ignored).")
+            else:
+                sql = "UPDATE advertising_campaigns SET status = 'paid' WHERE id = %s"
+                await db.async_execute(sql, (campaign_id,), fetch=False)
+                log.info(f"[marketing] Ad campaign {campaign_id} successfully paid and activated.")
         elif session_id:
-            sql = "UPDATE advertising_campaigns SET status = 'paid' WHERE stripe_session_id = %s"
-            await db.async_execute(sql, (session_id,), fetch=False)
-            log.info(f"[marketing] Ad session {session_id} successfully paid and activated.")
+            # Enforce webhook handler idempotency
+            check_sql = "SELECT status FROM advertising_campaigns WHERE stripe_session_id = %s"
+            row = await db.async_execute_one(check_sql, (session_id,))
+            if row and row.get("status") == "paid":
+                log.info(f"[marketing] Ad session {session_id} already marked as paid (webhook call ignored).")
+            else:
+                sql = "UPDATE advertising_campaigns SET status = 'paid' WHERE stripe_session_id = %s"
+                await db.async_execute(sql, (session_id,), fetch=False)
+                log.info(f"[marketing] Ad session {session_id} successfully paid and activated.")
 
     return {"status": "ok"}
 

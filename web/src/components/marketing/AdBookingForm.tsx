@@ -268,7 +268,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Form panel */}
-        <form onSubmit={handleSubmit} className="lg:col-span-8 bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-2xl p-6 md:p-8 space-y-6">
+        <form onSubmit={handleSubmit} className="lg:col-span-8 bg-slate-950/20 border border-slate-900 rounded-none p-6 md:p-8 space-y-6">
           {errors.length > 0 && (
             <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-red-400 flex gap-3">
               <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
@@ -299,7 +299,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
                     value={buyerName}
                     onChange={(e) => setBuyerName(e.target.value)}
                     placeholder="e.g. Petar Petrovski" 
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-slate-200 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors placeholder:text-slate-600"
+                    className="w-full bg-slate-950/40 border border-slate-800 rounded-none py-2.5 pl-10 pr-4 text-slate-200 text-sm focus:outline-none focus:border-indigo-500 focus:ring-0 transition-colors placeholder:text-slate-600"
                   />
                 </div>
               </div>
@@ -314,7 +314,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
                     value={buyerEmail}
                     onChange={(e) => setBuyerEmail(e.target.value)}
                     placeholder="e.g. petar@example.com" 
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-slate-200 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors placeholder:text-slate-600"
+                    className="w-full bg-slate-950/40 border border-slate-800 rounded-none py-2.5 pl-10 pr-4 text-slate-200 text-sm focus:outline-none focus:border-indigo-500 focus:ring-0 transition-colors placeholder:text-slate-600"
                   />
                 </div>
               </div>
@@ -339,9 +339,9 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
                     key={type}
                     type="button"
                     onClick={() => setSlotId(type)}
-                    className={`flex flex-col text-left p-4 rounded-xl border transition-all relative overflow-hidden group ${
+                    className={`flex flex-col text-left p-4 rounded-none border transition-all relative overflow-hidden group ${
                       active 
-                        ? 'bg-indigo-500/5 border-indigo-500 shadow-[0_0_20px_-5px_rgba(99,102,241,0.2)]' 
+                        ? 'bg-indigo-500/5 border-indigo-500' 
                         : 'bg-slate-950/30 border-slate-800 hover:border-slate-700 hover:bg-slate-950/50'
                     }`}
                   >
@@ -381,7 +381,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
                     value={targetUrl}
                     onChange={(e) => setTargetUrl(e.target.value)}
                     placeholder="https://yourwebsite.com/landing" 
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-slate-200 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors placeholder:text-slate-600"
+                    className="w-full bg-slate-950/40 border border-slate-800 rounded-none py-2.5 pl-10 pr-4 text-slate-200 text-sm focus:outline-none focus:border-indigo-500 focus:ring-0 transition-colors placeholder:text-slate-600"
                   />
                 </div>
               </div>
@@ -396,7 +396,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
                     min={todayStr}
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-slate-200 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors text-slate-200"
+                    className="w-full bg-slate-950/40 border border-slate-800 rounded-none py-2.5 pl-10 pr-4 text-slate-200 text-sm focus:outline-none focus:border-indigo-500 focus:ring-0 transition-colors text-slate-200"
                   />
                 </div>
               </div>
@@ -411,7 +411,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
                     min={startDate}
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-slate-200 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors text-slate-200"
+                    className="w-full bg-slate-950/40 border border-slate-800 rounded-none py-2.5 pl-10 pr-4 text-slate-200 text-sm focus:outline-none focus:border-indigo-500 focus:ring-0 transition-colors text-slate-200"
                   />
                 </div>
               </div>
@@ -427,7 +427,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
                     min={1000}
                     value={targetImpressions}
                     onChange={(e) => setTargetImpressions(Math.max(1000, Number(e.target.value)))}
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-slate-200 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors placeholder:text-slate-600"
+                    className="w-full bg-slate-950/40 border border-slate-800 rounded-none py-2.5 pl-10 pr-4 text-slate-200 text-sm focus:outline-none focus:border-indigo-500 focus:ring-0 transition-colors placeholder:text-slate-600"
                   />
                 </div>
               </div>
@@ -438,7 +438,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full bg-slate-950/60 border border-slate-800 border-dashed hover:border-slate-700 hover:bg-slate-950/80 rounded-xl py-2.5 px-4 text-slate-400 text-sm focus:outline-none transition-colors flex items-center justify-between text-left"
+                  className="w-full bg-slate-950/40 border border-slate-800 border-dashed hover:border-slate-700 hover:bg-slate-950/60 rounded-none py-2.5 px-4 text-slate-400 text-sm focus:outline-none transition-colors flex items-center justify-between text-left"
                 >
                   <span className="truncate max-w-[80%]">
                     {file ? file.name : (lang === 'mk' ? 'Изберете слика...' : 'Izaberite sliku...')}
@@ -458,7 +458,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
         </form>
 
         {/* Calculation Details and Checkout Panel */}
-        <div className="lg:col-span-4 bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-2xl p-6 md:p-8 space-y-6 sticky top-8">
+        <div className="lg:col-span-4 bg-slate-950/20 border border-slate-900 rounded-none p-6 md:p-8 space-y-6 sticky top-8">
           <h3 className="text-lg font-bold text-slate-200 border-b border-slate-800 pb-2 flex items-center gap-2">
             <Calculator className="w-5 h-5 text-indigo-400" />
             {lang === 'mk' ? 'Калкулатор и Преглед' : 'Kalkulator i Pregled'}
@@ -469,7 +469,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
               <span className="block text-xxs font-semibold text-slate-500 uppercase tracking-wider">
                 {lang === 'mk' ? 'Преглед на Банер' : 'Pregled Banera'}
               </span>
-              <div className="border border-slate-800 rounded-xl overflow-hidden bg-slate-950/60 p-2 flex items-center justify-center min-h-[100px]">
+              <div className="border border-slate-800 rounded-none bg-slate-950/40 p-2 flex items-center justify-center min-h-[100px]">
                 <img src={filePreview} alt="Preview" className="max-h-[150px] object-contain rounded" />
               </div>
             </div>
@@ -500,12 +500,12 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
 
           {/* Validation Warnings */}
           <div className="space-y-2 text-xxs leading-relaxed">
-            <div className="flex items-center gap-2 px-2 py-1.5 rounded bg-slate-950/60 border border-slate-800 text-slate-400">
-              <div className={`w-2 h-2 rounded-full shrink-0 ${dailyAvg >= 2000 ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+            <div className="flex items-center gap-2 px-2 py-1.5 rounded-none bg-slate-950/40 border border-slate-800 text-slate-400">
+              <div className={`w-1.5 h-1.5 shrink-0 ${dailyAvg >= 2000 ? 'bg-emerald-500' : 'bg-amber-500'}`} />
               <span>{lang === 'mk' ? 'Минимум 2,000 импресии/ден' : 'Minimum 2,000 impresija/dan'}</span>
             </div>
-            <div className="flex items-center gap-2 px-2 py-1.5 rounded bg-slate-950/60 border border-slate-800 text-slate-400">
-              <div className={`w-2 h-2 rounded-full shrink-0 ${totalCost >= MIN_CHECKOUT_EUR ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+            <div className="flex items-center gap-2 px-2 py-1.5 rounded-none bg-slate-950/40 border border-slate-800 text-slate-400">
+              <div className={`w-1.5 h-1.5 shrink-0 ${totalCost >= MIN_CHECKOUT_EUR ? 'bg-emerald-500' : 'bg-amber-500'}`} />
               <span>{lang === 'mk' ? `Минимум €${MIN_CHECKOUT_EUR} плаќање` : `Minimum €${MIN_CHECKOUT_EUR} plaćanje`}</span>
             </div>
           </div>
@@ -514,7 +514,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="w-full bg-gradient-to-r from-indigo-500 via-indigo-600 to-indigo-500 hover:from-indigo-600 hover:to-indigo-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2"
+            className="w-full bg-indigo-700 hover:bg-indigo-800 border border-indigo-600 text-white font-bold py-3 px-4 rounded-none active:scale-[0.99] transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2"
           >
             {isSubmitting ? t.submitting : (
               <>
