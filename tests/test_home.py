@@ -46,6 +46,8 @@ def _install_fake_fastapi():
 def _load_home_module():
     original_fastapi = _install_fake_fastapi()
     original_modules = {
+        "routes": sys.modules.get("routes"),
+        "routes.home": sys.modules.get("routes.home"),
         "utils": sys.modules.get("utils"),
         "routes.common": sys.modules.get("routes.common"),
         "routes.intelligence": sys.modules.get("routes.intelligence"),
@@ -116,9 +118,13 @@ def _load_home_module():
     sys.modules["routes.stats"] = fake_stats
     sys.modules["routes.system"] = fake_system
     sys.modules.pop("routes.home", None)
+    sys.modules.pop("routes", None)
     try:
-        return importlib.import_module("routes.home")
+        mod = importlib.import_module("routes.home")
+        return mod
     finally:
+        sys.modules.pop("routes.home", None)
+        sys.modules.pop("routes", None)
         for module_name, module_value in original_fastapi.items():
             if module_value is None:
                 sys.modules.pop(module_name, None)

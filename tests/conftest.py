@@ -254,7 +254,7 @@ _install_playwright_stub()
 
 _REAL_DATABASE_MODULE = importlib.import_module("core.database")
 _MODULES_TO_RELOAD = (
-    "api_fast",
+    "core.api_fast",
     "routes.news",
     "routes.profile",
     "routes.stats",

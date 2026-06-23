@@ -182,6 +182,7 @@ def _install_fake_fastapi_modules():
     sys.modules.update(_get_fake_fastapi_modules())
     for name in [
         "api_fast",
+        "core.api_fast",
         "routes",
         "routes.home",
         "routes.news",
@@ -202,6 +203,7 @@ def _install_fake_fastapi_modules():
                 sys.modules[name] = original
         for name in [
             "api_fast",
+            "core.api_fast",
             "routes",
             "routes.home",
             "routes.news",

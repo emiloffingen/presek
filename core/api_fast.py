@@ -53,14 +53,15 @@ async def lifespan(app: FastAPI):
         log.warning("Rate limiting disabled - slowapi not installed")
 
     # Warm up async database pools on startup
-    try:
-        from core.database import async_db, db_manager
+    if os.environ.get("PRESEK_SKIP_DB_POOL_INIT") != "1":
+        try:
+            from core.database import async_db, db_manager
 
-        # Uvicorn prefork workers inherit parent pool state — rebuild both sync pools.
-        db_manager._reset_pool()
-        await async_db._ensure_pool()
-    except Exception as e:
-        log.error(f"Failed to initialize async database pools on startup: {e}")
+            # Uvicorn prefork workers inherit parent pool state — rebuild both sync pools.
+            db_manager._reset_pool()
+            await async_db._ensure_pool()
+        except Exception as e:
+            log.error(f"Failed to initialize async database pools on startup: {e}")
 
     yield
 
@@ -234,11 +235,15 @@ _AUDIO_UPLOAD_DIR = os.path.join(_STATIC_ROOT, "uploads", "audio")
 _UPLOADS_DIR = os.path.join(_STATIC_ROOT, "uploads")
 _GENERATED_DIR = os.path.join(_STATIC_ROOT, "generated")
 _LOCAL_METRICS_CLIENTS = frozenset({"127.0.0.1", "::1", "::ffff:127.0.0.1"})
-_CELERY_QUEUE_DEPTH = Gauge(
-    "presek_celery_queue_depth",
-    "Pending Celery tasks by queue",
-    ["queue"],
-)
+from prometheus_client import REGISTRY
+if "presek_celery_queue_depth" in REGISTRY._names_to_collectors:
+    _CELERY_QUEUE_DEPTH = REGISTRY._names_to_collectors["presek_celery_queue_depth"]
+else:
+    _CELERY_QUEUE_DEPTH = Gauge(
+        "presek_celery_queue_depth",
+        "Pending Celery tasks by queue",
+        ["queue"],
+    )
 
 
 def _audio_file_path(filename: str) -> str | None:

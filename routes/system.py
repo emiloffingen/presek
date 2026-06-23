@@ -700,12 +700,30 @@ def _path_is_relative_to(candidate: Path, root: Path) -> bool:
 
 def _allowed_static_roots() -> list[Path]:
     roots = [_STATIC_ROOT.resolve()]
-    shared_root = (_APP_ROOT.parent.parent / "shared" / "static").resolve()
-    if shared_root.exists():
-        roots.append(shared_root)
-    runtime_shared = Path("/home/emiloffingen/presek-runtime/shared/static").resolve()
-    if runtime_shared.exists():
-        roots.append(runtime_shared)
+    try:
+        shared_root = (_APP_ROOT.parent.parent / "shared" / "static").resolve()
+        if shared_root.exists():
+            roots.append(shared_root)
+    except Exception:
+        pass
+
+    app_root_env = os.environ.get("APP_ROOT")
+    if app_root_env:
+        try:
+            env_shared = (Path(app_root_env) / "shared" / "static").resolve()
+            if env_shared.exists():
+                roots.append(env_shared)
+        except Exception:
+            pass
+
+    home_dir = os.environ.get("HOME") or "/home/emiloffingen"
+    try:
+        runtime_shared = (Path(home_dir) / "presek-runtime" / "shared" / "static").resolve()
+        if runtime_shared.exists():
+            roots.append(runtime_shared)
+    except Exception:
+        pass
+
     unique: list[Path] = []
     for root in roots:
         if root not in unique:
