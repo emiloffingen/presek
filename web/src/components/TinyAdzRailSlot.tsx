@@ -89,11 +89,17 @@ export default function TinyAdzRailSlot({ lang = 'sr', className = '' }: Props) 
           </a>
         </div>
       ) : (
-        <div className="fallback-ad-card relative overflow-hidden rounded-xl border border-slate-800/50 hover:border-indigo-500/30 bg-gradient-to-br from-slate-900/70 to-slate-950/90 text-white p-5 flex flex-col justify-between transition-all duration-300 shadow-md w-full">
-          <div className="fallback-glow absolute -top-1/2 -left-1/2 w-[200%] h-[200%] bg-[radial-gradient(circle,rgba(99,102,241,0.08)_0%,transparent_60%)] pointer-events-none" />
+        <div className="fallback-ad-card relative overflow-hidden rounded-xl border border-slate-800/50 hover:border-indigo-500/35 bg-gradient-to-br from-slate-900/80 to-slate-950/95 text-white p-5 flex flex-col justify-between transition-all duration-300 shadow-lg w-full">
+          <div className="fallback-glow absolute -top-1/2 -left-1/2 w-[200%] h-[200%] bg-[radial-gradient(circle,rgba(99,102,241,0.12)_0%,transparent_60%)] pointer-events-none" />
           <div className="fallback-content relative z-10 flex flex-col gap-1.5">
-            <div className="fallback-kicker text-[10px] font-bold text-indigo-400 tracking-wider">
-              {isMk ? 'РЕКЛАМЕН ПРОСТОР' : 'REKLAMNI PROSTOR'} (300x250)
+            <div className="fallback-kicker-wrap flex items-center gap-1.5 mb-0.5">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+              </span>
+              <div className="fallback-kicker text-[9px] font-extrabold text-indigo-400 tracking-widest uppercase">
+                {isMk ? 'СЛОБОДЕН РЕКЛАМЕН ПРОСТОР' : 'SLOBODAN REKLAMNI PROSTOR'} (300x250)
+              </div>
             </div>
             <h4 className="fallback-title text-sm font-bold text-slate-100 m-0 leading-snug">
               {title}
@@ -103,14 +109,15 @@ export default function TinyAdzRailSlot({ lang = 'sr', className = '' }: Props) 
             </p>
           </div>
           <div className="fallback-footer relative z-10 flex items-center justify-between mt-4 gap-2 flex-wrap">
-            <span className="fallback-price text-xs font-semibold text-emerald-400 font-mono">
+            <span className="fallback-price text-xs font-bold text-emerald-400 font-mono">
               {priceStr}
             </span>
             <a 
               href={marketingUrl} 
-              className="fallback-btn bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-600 text-white text-[11px] font-bold py-1.5 px-3 rounded shadow transition-all active:scale-95 text-decoration-none"
+              className="fallback-btn bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-600 text-white text-[11px] font-bold py-1.5 px-3 rounded shadow transition-all hover:scale-[1.02] active:scale-95 text-decoration-none flex items-center gap-1"
             >
-              {btnText}
+              <span>{btnText}</span>
+              <span>➔</span>
             </a>
           </div>
         </div>

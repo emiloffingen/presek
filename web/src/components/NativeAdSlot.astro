@@ -79,13 +79,22 @@ const btnText = isMk ? 'Рекламирај се' : 'Oglašavaj se';
 ) : (
   <div class={`native-ad-slot fallback-ad-card ${slotId} ${className}`} style={`min-height: ${meta.minHeight}`}>
     <div class="fallback-glow"></div>
+    <div class="fallback-border-glowing"></div>
     <div class="fallback-content">
-      <div class="fallback-kicker">{isMk ? 'РЕКЛАМЕН ПРОСТОР' : 'REKLAMNI PROSTOR'} ({meta.size})</div>
-      <h4 class="fallback-title">{title}</h4>
-      <p class="fallback-desc">{desc}</p>
+      <div class="fallback-text-side">
+        <div class="fallback-kicker-wrap">
+          <span class="pulse-indicator"></span>
+          <div class="fallback-kicker">{isMk ? 'СЛОБОДЕН РЕКЛАМЕН ПРОСТОР' : 'SLOBODAN REKLAMNI PROSTOR'} ({meta.size})</div>
+        </div>
+        <h4 class="fallback-title">{title}</h4>
+        <p class="fallback-desc">{desc}</p>
+      </div>
       <div class="fallback-footer">
         <span class="fallback-price">{priceStr}</span>
-        <a href={marketingUrl} class="fallback-btn">{btnText}</a>
+        <a href={marketingUrl} class="fallback-btn">
+          <span>{btnText}</span>
+          <span class="btn-arrow">➔</span>
+        </a>
       </div>
     </div>
   </div>
@@ -193,16 +202,40 @@ const btnText = isMk ? 'Рекламирај се' : 'Oglašavaj se';
 
   /* Fallback Premium Aesthetics */
   .fallback-ad-card {
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.75) 0%, rgba(15, 23, 42, 0.95) 100%);
+    border: 1px solid rgba(99, 102, 241, 0.15);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
     color: #f8fafc;
     padding: 1.5rem;
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
   }
 
   :global(.dark) .fallback-ad-card {
-    background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(2, 6, 23, 0.95) 100%);
-    border-color: rgba(255, 255, 255, 0.05);
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(2, 6, 23, 0.98) 100%);
+    border-color: rgba(99, 102, 241, 0.1);
+  }
+
+  .fallback-border-glowing {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: 12px;
+    padding: 1.5px;
+    background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), rgba(52, 211, 153, 0.3), transparent);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    background-size: 200% 100%;
+    animation: fallback-glow-flow 6s linear infinite;
+    opacity: 0.7;
+    z-index: 1;
+  }
+
+  @keyframes fallback-glow-flow {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
   }
 
   .fallback-glow {
@@ -211,19 +244,20 @@ const btnText = isMk ? 'Рекламирај се' : 'Oglašavaj se';
     left: -50%;
     width: 200%;
     height: 200%;
-    background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 60%);
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, transparent 60%);
     opacity: 0.8;
     pointer-events: none;
     transition: transform 0.5s ease;
+    z-index: 0;
   }
 
   .fallback-ad-card:hover .fallback-glow {
-    transform: scale(1.1);
+    transform: scale(1.15);
   }
 
   .fallback-ad-card:hover {
-    border-color: rgba(99, 102, 241, 0.3);
-    box-shadow: 0 10px 40px -10px rgba(99, 102, 241, 0.2);
+    border-color: rgba(99, 102, 241, 0.35);
+    box-shadow: 0 12px 40px -10px rgba(99, 102, 241, 0.3);
     transform: translateY(-2px);
   }
 
@@ -236,11 +270,33 @@ const btnText = isMk ? 'Рекламирај се' : 'Oglašavaj se';
     gap: 0.5rem;
   }
 
+  .fallback-kicker-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.15rem;
+  }
+
+  .pulse-indicator {
+    width: 6px;
+    height: 6px;
+    background: #10b981;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #10b981;
+    animation: indicator-pulsing 1.8s infinite ease-in-out;
+  }
+
+  @keyframes indicator-pulsing {
+    0%, 100% { transform: scale(1); opacity: 0.6; }
+    50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 12px #10b981; }
+  }
+
   .fallback-kicker {
     font-size: 10px;
     font-weight: 800;
     color: #818cf8;
     letter-spacing: 0.15em;
+    text-transform: uppercase;
   }
 
   .fallback-title {
@@ -269,8 +325,9 @@ const btnText = isMk ? 'Рекламирај се' : 'Oglašavaj se';
 
   .fallback-price {
     font-size: 0.85rem;
-    font-weight: 600;
+    font-weight: 700;
     color: #34d399;
+    font-family: var(--font-mono, monospace);
   }
 
   .fallback-btn {
@@ -278,23 +335,54 @@ const btnText = isMk ? 'Рекламирај се' : 'Oglašavaj se';
     color: #ffffff;
     font-size: 0.8rem;
     font-weight: 700;
-    padding: 0.5rem 1rem;
+    padding: 0.55rem 1.15rem;
     border-radius: 6px;
     text-decoration: none;
-    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
   }
 
   .fallback-btn:hover {
     background: linear-gradient(90deg, #4338ca 0%, #4f46e5 100%);
-    box-shadow: 0 4px 16px rgba(79, 70, 229, 0.45);
-    transform: scale(1.03);
+    box-shadow: 0 4px 18px rgba(79, 70, 229, 0.5);
+    transform: scale(1.02);
+  }
+
+  .btn-arrow {
+    transition: transform 0.2s ease;
+  }
+
+  .fallback-btn:hover .btn-arrow {
+    transform: translateX(3px);
   }
 
   /* Responsive Adjustments based on Slot type */
   .top_banner {
     max-width: 990px;
     margin-inline: auto;
+  }
+
+  .top_banner .fallback-content {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  .top_banner .fallback-text-side {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    gap: 0.15rem;
+  }
+
+  .top_banner .fallback-footer {
+    margin-top: 0;
+    flex-shrink: 0;
+    gap: 1.5rem;
   }
 
   .sidebar {
@@ -312,6 +400,17 @@ const btnText = isMk ? 'Рекламирај се' : 'Oglašavaj se';
       min-height: 120px !important;
       padding: 1rem;
     }
+    .top_banner .fallback-content {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 1rem;
+    }
+    .top_banner .fallback-footer {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.5rem;
+    }
     .fallback-footer {
       flex-direction: column;
       align-items: flex-start;
@@ -319,7 +418,7 @@ const btnText = isMk ? 'Рекламирај се' : 'Oglašavaj se';
     }
     .fallback-btn {
       width: 100%;
-      text-align: center;
+      justify-content: center;
     }
   }
 </style>
