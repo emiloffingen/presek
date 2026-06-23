@@ -901,7 +901,7 @@ async def proxy_image(
             optimized = out.getvalue()
 
             try:
-                binary_redis_client.setex(cache_key, 86400, optimized)
+                binary_redis_client.set(cache_key, optimized, ex=86400)
             except Exception:
                 pass
 

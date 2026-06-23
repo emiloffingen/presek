@@ -46,7 +46,7 @@ def set_cache(key: str, val, ttl: int = 60):
     """Write a JSON value to Redis cache."""
     try:
         json_val = json.dumps(val, cls=DateTimeEncoder)
-        redis_client.setex(key, ttl, json_val)
+        redis_client.set(key, json_val, ex=ttl)
     except Exception as e:
         log.warning(f"[cache] write error on {key}: {e}")
 

@@ -43,13 +43,13 @@ class TestSetCache:
         from utils import set_cache
 
         set_cache("key", {"foo": "bar"}, ttl=120)
-        mock_redis.setex.assert_called_once_with("key", 120, json.dumps({"foo": "bar"}))
+        mock_redis.set.assert_called_once_with("key", json.dumps({"foo": "bar"}), ex=120)
 
     @patch("utils.cache.redis_client")
     def test_set_cache_redis_error(self, mock_redis):
         from utils import set_cache
 
-        mock_redis.setex.side_effect = Exception("Connection refused")
+        mock_redis.set.side_effect = Exception("Connection refused")
         # Should not raise
         set_cache("key", {"foo": "bar"})
 

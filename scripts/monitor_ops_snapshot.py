@@ -33,7 +33,7 @@ def _write_redis(snapshot: dict):
     try:
         from utils import redis_client
 
-        redis_client.setex(_REDIS_KEY, 3600, json.dumps(snapshot))
+        redis_client.set(_REDIS_KEY, json.dumps(snapshot), ex=3600)
     except Exception as exc:
         log.warning(f"[ops-monitor] Redis write failed: {exc}")
 
@@ -51,7 +51,7 @@ def _mark_alert_sent():
     try:
         from utils import redis_client
 
-        redis_client.setex(_ALERT_COOLDOWN_KEY, _ALERT_COOLDOWN_SECONDS, "1")
+        redis_client.set(_ALERT_COOLDOWN_KEY, "1", ex=_ALERT_COOLDOWN_SECONDS)
     except Exception as exc:
         log.warning(f"[ops-monitor] cooldown write failed: {exc}")
 
