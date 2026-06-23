@@ -32,6 +32,7 @@ dependencies = [
     "idna>=3.18",
     "sentry-sdk>=2.60.0",
     "stripe>=15.2.1",
+    "python-multipart>=0.0.18",
 ]
 
 [project.optional-dependencies]
