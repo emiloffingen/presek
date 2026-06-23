@@ -16,11 +16,13 @@ STRIPE_API_KEY = os.environ.get("STRIPE_API_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 stripe.api_key = STRIPE_API_KEY
 
-# CPM Prices in MKD (Macedonian Denar)
-CPM_RATES = {
-    "top_banner": 60.0,      # 990x80 / 990x150
-    "sidebar": 75.0,         # 300x250 / 300x600
-    "mobile_content": 125.0,  # 300x250 / 800x200
+# CPM Prices in EUR (converted from MKD at ~61.5 MKD/EUR)
+# Display MKD equivalents on frontend for local context
+MKD_PER_EUR = 61.5
+CPM_RATES_EUR = {
+    "top_banner": 1.00,      # ~60 MKD — 990x80 / 990x150
+    "sidebar": 1.25,         # ~75 MKD — 300x250 / 300x600
+    "mobile_content": 2.00,  # ~125 MKD — 300x250 / 800x200
 }
 
 @router.post("/marketing/checkout")
@@ -37,7 +39,7 @@ async def create_ad_checkout(
 ):
     try:
         # 1. Validation
-        if slot_id not in CPM_RATES:
+        if slot_id not in CPM_RATES_EUR:
             raise HTTPException(status_code=400, detail="Invalid slot selection")
 
         if target_impressions < 1000:
@@ -74,11 +76,11 @@ async def create_ad_checkout(
 
         image_url = f"/static/uploads/ads/{safe_filename}"
 
-        # 3. Pricing Calculation
-        cpm = CPM_RATES[slot_id]
-        total_amount_mkd = int((target_impressions / 1000.0) * cpm)
-        if total_amount_mkd < 1:
-            total_amount_mkd = 1
+        # 3. Pricing Calculation (in EUR)
+        cpm_eur = CPM_RATES_EUR[slot_id]
+        total_amount_eur = round((target_impressions / 1000.0) * cpm_eur, 2)
+        if total_amount_eur < 0.50:  # Stripe minimum charge is €0.50
+            total_amount_eur = 0.50
 
         # 4. Stripe Checkout Session Creation
         session_id = None
@@ -95,12 +97,12 @@ async def create_ad_checkout(
                     payment_method_types=["card"],
                     line_items=[{
                         "price_data": {
-                            "currency": "mkd",
+                            "currency": "eur",
                             "product_data": {
                                 "name": f"Presek Banner Ad - {slot_id.replace('_', ' ').title()}",
                                 "description": f"{target_impressions:,} impressions target from {start_date} to {end_date}",
                             },
-                            "unit_amount": int(total_amount_mkd * 100), # Stripe amount in subunits
+                            "unit_amount": int(round(total_amount_eur * 100)),  # Stripe expects cents
                         },
                         "quantity": 1,
                     }],

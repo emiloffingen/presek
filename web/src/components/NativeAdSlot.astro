@@ -32,17 +32,20 @@ try {
 // CPM rates and sizes for fallback metadata
 const meta = {
   top_banner: {
-    price: 60,
+    price: 1.00,
+    priceMkd: 60,
     size: '990x80 / 990x150',
     minHeight: '120px'
   },
   sidebar: {
-    price: 75,
+    price: 1.25,
+    priceMkd: 75,
     size: '300x250 / 300x600',
     minHeight: '250px'
   },
   mobile_content: {
-    price: 125,
+    price: 2.00,
+    priceMkd: 125,
     size: '300x250',
     minHeight: '250px'
   }
@@ -54,8 +57,8 @@ const desc = isMk
   ? 'Автоматизиран самопослужен систем за реклами со Stripe плаќање.' 
   : 'Automatski samouslužni sistem za reklame sa Stripe plaćanjem.';
 const priceStr = isMk 
-  ? `Од ${meta.price} ден. / 1000 импресии (CPM)` 
-  : `Od ${meta.price} MKD / 1000 impresija (CPM)`;
+  ? `Од €${meta.price.toFixed(2)} / 1000 импресии (~${meta.priceMkd} ден.)` 
+  : `Od €${meta.price.toFixed(2)} / 1000 impresija (~${meta.priceMkd} MKD)`;
 const btnText = isMk ? 'Рекламирај се' : 'Oglašavaj se';
 ---
 

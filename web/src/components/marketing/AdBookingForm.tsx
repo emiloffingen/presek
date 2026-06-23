@@ -17,11 +17,14 @@ interface AdBookingFormProps {
   lang: 'sr' | 'mk';
 }
 
-const CPM_RATES = {
-  top_banner: 60.0,      // 990x80 / 990x150
-  sidebar: 75.0,         // 300x250 / 300x600
-  mobile_content: 125.0,  // 300x250
+const CPM_RATES: Record<string, number> = {
+  top_banner: 1.00,       // ~60 MKD — 990x80 / 990x150
+  sidebar: 1.25,          // ~75 MKD — 300x250 / 300x600
+  mobile_content: 2.00,   // ~125 MKD — 300x250
 };
+
+const MKD_PER_EUR = 61.5;
+const MIN_CHECKOUT_EUR = 50;
 
 const translations = {
   mk: {
@@ -39,7 +42,7 @@ const translations = {
     dailyAverage: 'Просечно импресии дневно',
     totalDays: 'Вкупно денови',
     totalPrice: 'Вкупна цена за плаќање',
-    minCheckoutError: 'Минималниот износ за плаќање е 3,000 денари.',
+    minCheckoutError: `Минималниот износ за плаќање е €${MIN_CHECKOUT_EUR}.`,
     minDailyError: 'Минималниот просечен број на импресии дневно е 2,000.',
     dateError: 'Крајниот датум мора да биде почетниот датум или подоцна.',
     futureDateError: 'Почетниот датум не може да биде во минатото.',
@@ -68,7 +71,7 @@ const translations = {
     dailyAverage: 'Prosečno impresija dnevno',
     totalDays: 'Ukupno dana',
     totalPrice: 'Ukupna cena za plaćanje',
-    minCheckoutError: 'Minimalni iznos za plaćanje je 3,000 MKD.',
+    minCheckoutError: `Minimalni iznos za plaćanje je €${MIN_CHECKOUT_EUR}.`,
     minDailyError: 'Minimalni prosečni broj impresija dnevno je 2,000.',
     dateError: 'Krajnji datum mora biti isti ili nakon početnog datuma.',
     futureDateError: 'Početni datum ne može biti u prošlosti.',
@@ -140,7 +143,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
     }
 
     const cpm = CPM_RATES[slotId];
-    setTotalCost(Math.round((targetImpressions / 1000) * cpm));
+    setTotalCost(Math.round((targetImpressions / 1000) * cpm * 100) / 100);
   }, [startDate, endDate, targetImpressions, slotId]);
 
   // Handle file select
@@ -186,7 +189,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
     if (dailyAvg < 2000) {
       newErrors.push(t.minDailyError);
     }
-    if (totalCost < 3000) {
+    if (totalCost < MIN_CHECKOUT_EUR) {
       newErrors.push(t.minCheckoutError);
     }
     if (!file) {
@@ -340,7 +343,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
                         {type.replace('_', ' ').toUpperCase()}
                       </span>
                       <span className="text-xs font-extrabold text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded">
-                        {price} MKD CPM
+                        €{price.toFixed(2)} CPM
                       </span>
                     </div>
                     <span className="text-slate-500 text-xxs font-mono mb-2">{sizeStr}</span>
@@ -468,7 +471,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
           <div className="space-y-3 font-mono text-sm">
             <div className="flex justify-between text-slate-400">
               <span>{t.cpm}:</span>
-              <span className="text-slate-200 font-bold">{CPM_RATES[slotId]} MKD</span>
+              <span className="text-slate-200 font-bold">€{CPM_RATES[slotId].toFixed(2)} <span className="text-slate-500 text-xxs font-normal">(~{Math.round(CPM_RATES[slotId] * MKD_PER_EUR)} MKD)</span></span>
             </div>
             <div className="flex justify-between text-slate-400">
               <span>{t.totalDays}:</span>
@@ -482,8 +485,8 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
             </div>
             <div className="border-t border-slate-800 pt-3 flex justify-between text-base font-sans">
               <span className="text-slate-300 font-semibold">{t.totalPrice}:</span>
-              <span className={`font-bold text-lg ${totalCost < 3000 ? 'text-amber-500' : 'text-emerald-400'}`}>
-                {totalCost.toLocaleString()} MKD
+              <span className={`font-bold text-lg ${totalCost < MIN_CHECKOUT_EUR ? 'text-amber-500' : 'text-emerald-400'}`}>
+                €{totalCost.toFixed(2)} <span className="text-sm font-normal text-slate-500">(~{Math.round(totalCost * MKD_PER_EUR).toLocaleString()} MKD)</span>
               </span>
             </div>
           </div>
@@ -495,8 +498,8 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
               <span>{lang === 'mk' ? 'Минимум 2,000 импресии/ден' : 'Minimum 2,000 impresija/dan'}</span>
             </div>
             <div className="flex items-center gap-2 px-2 py-1.5 rounded bg-slate-950/60 border border-slate-800 text-slate-400">
-              <div className={`w-2 h-2 rounded-full shrink-0 ${totalCost >= 3000 ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-              <span>{lang === 'mk' ? 'Минимум 3,000 денари плаќање' : 'Minimum 3,000 MKD plaćanje'}</span>
+              <div className={`w-2 h-2 rounded-full shrink-0 ${totalCost >= MIN_CHECKOUT_EUR ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+              <span>{lang === 'mk' ? `Минимум €${MIN_CHECKOUT_EUR} плаќање` : `Minimum €${MIN_CHECKOUT_EUR} plaćanje`}</span>
             </div>
           </div>
 
