@@ -57,7 +57,7 @@ This document defines the visual and structural language of the Presek platform:
 ### Base Tones
 - **Background:** Warm paper (`#fbfaf5`) / near-black newsroom terminal (`#08090b`) in dark mode.
 - **Foreground:** Ink black (`#101010`) / warm white (`#f4f1e8`) in dark mode.
-- **Borders:** Paper rule (`#d9d5c8`) / muted ink rule (`#292722`) in dark mode.
+- **Borders:** Paper rule (`#d9d5c8`) / muted ink rule (`#1b1d22`) in dark mode.
 
 ### Brand Accents
 - **Trust Blue (`--nyt-accent`):** `#173f7a`. Used for verified signals and interactive states.
