@@ -48,7 +48,18 @@ _BRIEFING_LOW_SIGNAL_TITLE_MARKERS = (
     "svecenost",
     "odbelezuvanje",
     "godisnina",
+    "horoskop",
+    "хороскоп",
+    "astro",
+    "астро",
+    "loto",
+    "лото",
+    "lotarija",
+    "лотарија",
+    "tv programa",
+    "тв програма",
 )
+
 
 _BRIEFING_PUBLIC_INTEREST_MARKERS = (
     "izbor",
