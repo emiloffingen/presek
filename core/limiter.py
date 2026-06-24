@@ -21,14 +21,22 @@ try:
     from slowapi.util import get_remote_address
 
     def get_custom_client_ip(request) -> str:
+        ip = None
         try:
-            if hasattr(request, "client") and request.client:
-                host = request.client.host
-                if host in ("127.0.0.1", "::1"):
-                    return "localhost"
+            from routes.common import _client_ip_for_request
+            ip = _client_ip_for_request(request)
         except Exception:
             pass
-        return get_remote_address(request)
+
+        if not ip:
+            try:
+                ip = get_remote_address(request)
+            except Exception:
+                ip = "0.0.0.0"
+
+        if ip in ("127.0.0.1", "::1", "localhost", "0.0.0.0"):
+            return ""
+        return ip
 
     RateLimitExceeded = errors.RateLimitExceeded
     _rate_limiter_enabled = True
